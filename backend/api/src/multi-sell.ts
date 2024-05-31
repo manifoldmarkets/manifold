@@ -132,7 +132,6 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       (result) => result.allOrdersToCancel
     )
     const makers = results.flatMap((result) => result.makers ?? [])
-    const contract = results[0].contract
     const user = results[0].user
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
   }

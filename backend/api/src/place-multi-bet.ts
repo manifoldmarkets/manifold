@@ -1,3 +1,4 @@
+import * as admin from 'firebase-admin'
 import * as crypto from 'crypto'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
@@ -13,6 +14,7 @@ import {
 import { log } from 'shared/utils'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { MarketContract } from 'common/contract'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -30,13 +32,17 @@ export const placeMultiBetMain = async (
 ) => {
   const { amount, contractId } = body
 
+  const contractDoc = firestore.doc(`contracts/${contractId}`)
+  const contractSnap = await contractDoc.get()
+  if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
+  const contract = contractSnap.data() as MarketContract
+
   const results = await runEvilTransaction(async (pgTrans, fbTrans) => {
-    const { user, contract, contractDoc } = await validateBet(
+    const  user = await validateBet(
       uid,
       amount,
-      contractId,
+      contract,
       pgTrans,
-      fbTrans,
       isApi
     )
 
@@ -115,7 +121,6 @@ export const placeMultiBetMain = async (
       (result) => result.allOrdersToCancel
     )
     const makers = results.flatMap((result) => result.makers ?? [])
-    const contract = results[0].contract
     const user = results[0].user
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
   }
@@ -129,3 +134,5 @@ export const placeMultiBetMain = async (
     continue: continuation,
   }
 }
+
+const firestore = admin.firestore()

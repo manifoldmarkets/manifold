@@ -37,14 +37,14 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
 ) => {
   const { contractId, shares, outcome, answerId } = props
 
-  const user = await getUser(auth.uid)
-  if (!user) throw new APIError(401, 'Your account was not found')
+  const contractDoc = firestore.doc(`contracts/${contractId}`)
+  const contractSnap = await contractDoc.get()
+  if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
+  const contract = contractSnap.data() as Contract
 
   const result = await runEvilTransaction(async (pgTrans, fbTrans) => {
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await fbTrans.get(contractDoc)
-    if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
-    const contract = contractSnap.data() as Contract
+    const user = await getUser(auth.uid, pgTrans)
+    if (!user) throw new APIError(401, 'Your account was not found')
 
     log(
       `Checking for limit orders and bets in sellshares for user ${auth.uid} on contract id ${contractId}.`
@@ -315,10 +315,10 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     makers,
     maxShares,
     soldShares,
-    contract,
     otherResultsWithBet,
     fullBets,
     allOrdersToCancel,
+    user,
   } = result
 
   if (contract.mechanism === 'cpmm-1' && floatingEqual(maxShares, soldShares)) {

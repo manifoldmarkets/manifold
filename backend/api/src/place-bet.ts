@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { DocumentReference, Transaction } from 'firebase-admin/firestore'
 import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
+import { CPMM_MIN_POOL_QTY, Contract, MarketContract } from 'common/contract'
 import { User } from 'common/user'
 import {
   BetInfo,
@@ -13,7 +13,7 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { getUser, getUsers, log, metrics } from 'shared/utils'
+import { getUser, log, metrics } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
@@ -21,7 +21,11 @@ import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
-import { SupabaseTransaction } from 'shared/supabase/init'
+import {
+  SupabaseDirectClient,
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { convertBet } from 'common/supabase/bets'
@@ -39,41 +43,56 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   )
 }
 
-// Note: this returns a continuation function that should be run for consistency.
+// Note: Reads the contract and bets outside of a transaction, so must be queued.
 export const placeBetMain = async (
   body: ValidatedAPIParams<'bet'>,
   uid: string,
   isApi: boolean
 ) => {
-  const { amount, contractId, replyToCommentId } = body
+  const { amount, contractId, replyToCommentId, answerId } = body
+
+  const contractDoc = firestore.doc(`contracts/${contractId}`)
+  const contractSnap = await contractDoc.get()
+  if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
+  const contract = contractSnap.data() as MarketContract
+
+  const { closeTime, outcomeType, mechanism } = contract
+  if (closeTime && Date.now() > closeTime)
+    throw new APIError(403, 'Trading is closed.')
+
+  let answers: Answer[] | undefined
+  if (answerId) {
+    const answersSnap = await contractDoc.collection('answersCpmm').get()
+    answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+  }
+
+  const unfilledBets = await getUnfilledBets(
+    createSupabaseDirectClient(),
+    contractId,
+    // Fetch all limit orders if answers should sum to one.
+    'shouldAnswersSumToOne' in contract && contract.shouldAnswersSumToOne
+      ? undefined
+      : answerId
+  )
+  const unfilledBetUserIds = uniq(unfilledBets.map((bet) => bet.userId))
 
   const result = await runEvilTransaction(async (pgTrans, fbTrans) => {
-    const { user, contract, contractDoc } = await validateBet(
-      uid,
-      amount,
-      contractId,
-      pgTrans,
-      fbTrans,
-      isApi
-    )
+    const [user, balanceByUserId] = await Promise.all([
+      validateBet(uid, amount, contract, pgTrans, isApi),
+      getUserBalances(pgTrans, unfilledBetUserIds),
+    ])
 
-    const { closeTime, outcomeType, mechanism } = contract
-    if (closeTime && Date.now() > closeTime)
-      throw new APIError(403, 'Trading is closed.')
-
-    const newBetResult = await (async (): Promise<
-      BetInfo & {
-        makers?: maker[]
-        ordersToCancel?: LimitBet[]
-        otherBetResults?: {
-          answer: Answer
-          bet: CandidateBet<Bet>
-          cpmmState: CpmmState
-          makers: maker[]
-          ordersToCancel: LimitBet[]
-        }[]
-      }
-    > => {
+    const newBetResult = ((): BetInfo & {
+      makers?: maker[]
+      ordersToCancel?: LimitBet[]
+      otherBetResults?: {
+        answer: Answer
+        bet: CandidateBet<Bet>
+        cpmmState: CpmmState
+        makers: maker[]
+        ordersToCancel: LimitBet[]
+      }[]
+    } => {
       if (
         (outcomeType == 'BINARY' ||
           outcomeType === 'PSEUDO_NUMERIC' ||
@@ -102,9 +121,6 @@ export const placeBetMain = async (
         log(
           `Checking for limit orders in placebet for user ${uid} on contract id ${contractId}.`
         )
-        const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(pgTrans, contractDoc)
-
         return getBinaryCpmmBetInfo(
           contract,
           outcome,
@@ -119,17 +135,14 @@ export const placeBetMain = async (
         mechanism == 'cpmm-multi-1'
       ) {
         const { shouldAnswersSumToOne } = contract
-        if (!body.answerId) {
+        if (!body.answerId || !answers) {
           throw new APIError(400, 'answerId must be specified for multi bets')
         }
 
         const { answerId, outcome, limitProb, expiresAt } = body
         if (expiresAt && expiresAt < Date.now())
           throw new APIError(403, 'Bet cannot expire in the past.')
-        const answersSnap = await fbTrans.get(
-          contractDoc.collection('answersCpmm')
-        )
-        const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+
         const answer = answers.find((a) => a.id === answerId)
         if (!answer) throw new APIError(404, 'Answer not found')
         if ('resolution' in answer && answer.resolution)
@@ -141,14 +154,6 @@ export const placeBetMain = async (
           )
 
         const roundedLimitProb = getRoundedLimitProb(limitProb)
-
-        const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(
-            pgTrans,
-            contractDoc,
-            // Fetch all limit orders if answers should sum to one.
-            shouldAnswersSumToOne ? undefined : answerId
-          )
 
         return getNewMultiCpmmBetInfo(
           contract,
@@ -173,7 +178,8 @@ export const placeBetMain = async (
       mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
         ? crypto.randomBytes(12).toString('hex')
         : undefined
-    return processNewBetResult(
+
+    const result = await processNewBetResult(
       newBetResult,
       contractDoc,
       contract,
@@ -184,6 +190,7 @@ export const placeBetMain = async (
       replyToCommentId,
       betGroupId
     )
+    return result
   })
 
   const {
@@ -191,7 +198,6 @@ export const placeBetMain = async (
     fullBets,
     allOrdersToCancel,
     betId,
-    contract,
     makers,
     user,
     betGroupId,
@@ -212,28 +218,46 @@ export const placeBetMain = async (
 
 const firestore = admin.firestore()
 
-export const getUnfilledBetsAndUserBalances = async (
-  pgTrans: SupabaseTransaction,
-  contractDoc: DocumentReference,
+export const getUnfilledBets = async (
+  pg: SupabaseDirectClient,
+  contractId: string,
   answerId?: string
 ) => {
-  const unfilledBets = await pgTrans.map(
+  return await pg.map(
     `select * from contract_bets
     where contract_id = $1
     and (data->'isFilled')::boolean = false
     and (data->'isCancelled')::boolean = false
     ${answerId ? `and answer_id = $2` : ''}`,
-    [contractDoc.id, answerId],
+    [contractId, answerId],
     (r) => convertBet(r) as LimitBet
   )
+}
 
-  // Get balance of all users with open limit orders.
+export const getUserBalances = async (
+  pgTrans: SupabaseTransaction,
+  userIds: string[]
+) => {
+  const users =
+    userIds.length === 0
+      ? []
+      : await pgTrans.map(
+          `select balance, id from users where id = any($1)`,
+          [userIds],
+          (r) => r as { balance: number; id: string }
+        )
+
+  return Object.fromEntries(users.map((user) => [user.id, user.balance]))
+}
+
+export const getUnfilledBetsAndUserBalances = async (
+  pgTrans: SupabaseTransaction,
+  contractDoc: DocumentReference,
+  answerId?: string
+) => {
+  const unfilledBets = await getUnfilledBets(pgTrans, contractDoc.id, answerId)
   const userIds = uniq(unfilledBets.map((bet) => bet.userId))
-  const users = userIds.length === 0 ? [] : await getUsers(userIds, pgTrans)
-
-  const balanceByUserId = Object.fromEntries(
-    users.map((user) => [user.id, user.balance])
-  )
+  const balanceByUserId = await getUserBalances(pgTrans, userIds)
 
   return { unfilledBets, balanceByUserId }
 }
@@ -455,7 +479,6 @@ export const processNewBetResult = async (
   return {
     newBet,
     betId: betRow.bet_id,
-    contract,
     makers,
     allOrdersToCancel,
     fullBets,
@@ -467,16 +490,11 @@ export const processNewBetResult = async (
 export const validateBet = async (
   uid: string,
   amount: number,
-  contractId: string,
+  contract: Contract,
   pgTrans: SupabaseTransaction,
-  fbTrans: Transaction,
   isApi: boolean
 ) => {
   log(`Inside main transaction for ${uid}.`)
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-  const contractSnap = await fbTrans.get(contractDoc)
-  if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
-  const contract = contractSnap.data() as MarketContract
 
   const user = await getUser(uid, pgTrans)
   if (!user) throw new APIError(404, 'User not found.')
@@ -501,11 +519,7 @@ export const validateBet = async (
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
   )
 
-  return {
-    user,
-    contract,
-    contractDoc,
-  }
+  return user
 }
 
 export type maker = {
