@@ -11,3 +11,6 @@ export type FeedContract = {
   repost?: Repost
   bet?: Bet
 }
+
+// Technically we were trying to record earlier, but there was a sneaky bug with view recordings
+export const VIEW_RECORDINGS_START = 1716917400000

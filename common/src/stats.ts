@@ -30,6 +30,7 @@ export type Stats = {
   d1BetAverage: number[]
   d1Bet3DayAverage: number[]
   dailyNewRealUserSignups: number[]
+  feedConversionScores: number[]
 }
 
 export type ManaSupply = {

@@ -19,6 +19,7 @@ import { Row as rowfor } from 'common/supabase/utils'
 import { BonusSummary } from 'web/components/stats/bonus-summary'
 import { ManaSupplySummary } from 'web/components/stats/mana-summary'
 import { Row } from 'web/components/layout/row'
+import { VIEW_RECORDINGS_START } from 'common/feed'
 
 export const getStaticProps = async () => {
   try {
@@ -108,6 +109,7 @@ export function CustomAnalytics(props: {
     dailyNewRealUserSignups,
     d1BetAverage,
     d1Bet3DayAverage,
+    feedConversionScores,
   } = props.stats
 
   const { manaSupplyOverTime, fromBankSummary, toBankSummary } = props
@@ -611,6 +613,25 @@ export function CustomAnalytics(props: {
             title: 'Monthly',
             content: (
               <DailyChart dailyValues={manaBetMonthly} startDate={startDate} />
+            ),
+          },
+        ]}
+      />
+      <Spacer h={8} />
+      <Title>Home feed conversion rate</Title>
+      <p className="text-ink-500">Interactions/views</p>
+      <Tabs
+        className="mb-4"
+        defaultIndex={0}
+        tabs={[
+          {
+            title: 'Daily',
+            content: (
+              <DailyChart
+                dailyValues={feedConversionScores}
+                startDate={VIEW_RECORDINGS_START}
+                pct
+              />
             ),
           },
         ]}

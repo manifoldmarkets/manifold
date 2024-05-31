@@ -30,6 +30,7 @@ import { isUserLikelySpammer } from 'common/user'
 import { convertTxn } from 'common/supabase/txns'
 import { MANA_PURCHASE_RATE_CHANGE_DATE } from 'common/envs/constants'
 import { calculateManaStats } from 'shared/calculate-mana-stats'
+import { getFeedConversionScores } from 'shared/feed-analytics'
 
 const numberOfDays = 365
 
@@ -226,12 +227,14 @@ export const updateStatsCore = async () => {
     dailyComments,
     dailyNewUsers,
     dailyManaSales,
+    feedConversionScores,
   ] = await Promise.all([
     getDailyBets(pg, start, numberOfDays),
     getDailyContracts(pg, start, numberOfDays),
     getDailyComments(pg, start, numberOfDays),
     getDailyNewUsers(pg, start, numberOfDays),
     getSales(pg, start, numberOfDays),
+    getFeedConversionScores(pg, start, numberOfDays),
   ])
   logMemory()
 
@@ -561,6 +564,7 @@ export const updateStatsCore = async () => {
     d1BetAverage,
     d1Bet3DayAverage,
     dailyNewRealUserSignups,
+    feedConversionScores,
   }
 
   const rows = Object.entries(statsData).map(([title, daily_values]) => ({
