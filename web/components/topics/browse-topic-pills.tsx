@@ -29,7 +29,7 @@ export const BrowseTopicPills = (props: {
             onClick={() => setTopicSlug(g.slug)}
             className="bg-ink-100 hover:bg-ink-200 rounded p-1 text-ink-600"
           >
-            <span className="text-ink-400">#</span>
+            <span className="text-ink-300">#</span>
             {removeEmojis(g.name)}
           </button>
         ))}
