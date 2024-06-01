@@ -6,6 +6,7 @@ import {
   UniqueBettorData,
 } from 'common/notification'
 import {
+  formatLargeNumber,
   formatMoney,
   formatMoneyToDecimal,
   maybePluralize,
@@ -45,6 +46,7 @@ import {
 } from 'common/partner'
 import { isVerified } from 'common/user'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -584,8 +586,9 @@ export function LeagueChangedNotification(props: {
       subtitle={
         bonusAmount > 0 ? (
           <span>
-            You earned <IncomeNotificationLabel notification={notification} />{' '}
-            as a prize
+            You earned{' '}
+            <PrizeIncomeNotificationLabel notification={notification} /> as a
+            prize
             {previousLeague &&
               ` for placing Rank ${previousLeague.rank} this season`}
             .
@@ -616,6 +619,22 @@ export function LeagueChangedNotification(props: {
         </span>
       </div>
     </NotificationFrame>
+  )
+}
+
+function PrizeIncomeNotificationLabel(props: {
+  notification: Notification
+  className?: string
+}) {
+  const { notification, className } = props
+  const { sourceText } = notification
+  return sourceText ? (
+    <span className={clsx('', className)}>
+      <SpiceCoin className="mb-0.5" />
+      {formatLargeNumber(parseFloat(sourceText))}
+    </span>
+  ) : (
+    <div />
   )
 }
 
