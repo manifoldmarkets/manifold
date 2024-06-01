@@ -49,9 +49,9 @@ export function TierTooltip(props: {
         <div
           className={clsx(
             tier == 'plus'
-              ? 'text-purple-600 dark:text-purple-500'
+              ? 'text-blue-600 dark:text-blue-500'
               : tier == 'premium'
-              ? 'text-fuchsia-500 dark:text-fuchsia-400'
+              ? 'text-purple-500 dark:text-purple-400'
               : tier == 'crystal'
               ? 'bg-gradient-to-r from-pink-700 to-pink-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-pink-300'
               : ''

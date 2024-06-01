@@ -30,7 +30,7 @@ export const CostSection = (props: {
   return (
     <Col className="items-start px-1">
       <label className="mb-1 gap-2">
-        <span>Cost </span>
+        <span>Tier</span>
         <InfoTooltip
           text={
             outcomeType == 'BOUNTIED_QUESTION'
@@ -152,9 +152,9 @@ function Tier(props: {
           ? tier == 'basic'
             ? 'outline-ink-500'
             : tier == 'plus'
-            ? 'outline-purple-500'
+            ? 'outline-blue-500'
             : tier == 'premium'
-            ? 'outline-fuchsia-400'
+            ? 'outline-purple-400'
             : 'outline-pink-500'
           : tier == 'basic'
           ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
