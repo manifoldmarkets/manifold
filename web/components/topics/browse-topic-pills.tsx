@@ -27,16 +27,16 @@ export const BrowseTopicPills = (props: {
           <button
             key={'pill-' + g.slug}
             onClick={() => setTopicSlug(g.slug)}
-            className="bg-ink-200 hover:bg-ink-300 rounded p-1"
+            className="bg-ink-100 hover:bg-ink-200 rounded p-1 text-ink-600"
           >
-            <span className="text-ink-400">#</span>
+            <span className="text-ink-300">#</span>
             {removeEmojis(g.name)}
           </button>
         ))}
         {topics.length > MAX_INIT_TOPICS && (
           <button
             onClick={() => setShowMore(!showMore)}
-            className="text-primary-700 bg-ink-200 hover:bg-ink-300 flex flex-row items-center gap-1 rounded p-2 py-1"
+            className="text-primary-700 bg-ink-100 hover:bg-ink-200 flex flex-row items-center gap-1 rounded p-2 py-1"
           >
             {showMore
               ? `Show less`
