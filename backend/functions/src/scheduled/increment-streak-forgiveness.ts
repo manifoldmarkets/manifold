@@ -2,11 +2,13 @@
 
 import * as functions from 'firebase-functions'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { secrets } from 'common/secrets'
 
 export const incrementStreakForgiveness = functions
-  .runWith({ timeoutSeconds: 540, memory: '4GB' })
+  .runWith({ timeoutSeconds: 540, secrets })
   // On every 1st day of the month at 12am PST
   .pubsub.schedule(`0 0 1 * *`)
+  .timeZone('America/Los_Angeles')
   .onRun(async () => {
     await incrementStreakForgivenessInternal()
   })
@@ -14,9 +16,8 @@ export const incrementStreakForgiveness = functions
 const incrementStreakForgivenessInternal = async () => {
   const pg = createSupabaseDirectClient()
   pg.none(`
-    update users
-    set data = data || 
-      json_build_object('streakForgiveness', 
+    update users set data = data || 
+      jsonb_build_object('streakForgiveness', 
         coalesce((data->>'streakForgiveness')::numeric, 0) + 1
       )
   `)
