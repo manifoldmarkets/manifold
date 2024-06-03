@@ -51,6 +51,7 @@ export const placeBetMain = async (
   isApi: boolean
 ) => {
   const { amount, contractId, replyToCommentId, answerId } = body
+  const pg = createSupabaseDirectClient()
 
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await contractDoc.get()
@@ -63,8 +64,7 @@ export const placeBetMain = async (
 
   let answers: Answer[] | undefined
   if (answerId) {
-    const answersSnap = await contractDoc.collection('answersCpmm').get()
-    answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+    answers = await getAnswersForContract(pg, contractId)
   }
 
   const unfilledBets = await getUnfilledBets(
@@ -136,6 +136,7 @@ export const placeBetMain = async (
         mechanism == 'cpmm-multi-1'
       ) {
         const { shouldAnswersSumToOne } = contract
+        if (!body.answerId || !answers) {
           throw new APIError(400, 'answerId must be specified for multi bets')
         }
 

@@ -72,6 +72,7 @@ import {
   broadcastNewBets,
   broadcastUpdatedAnswer,
 } from 'shared/websockets/helpers'
+import { getAnswer, getAnswersForContract } from 'shared/supabase/answers'
 
 const firestore = admin.firestore()
 
@@ -86,21 +87,12 @@ export const onCreateBets = async (
   broadcastNewBets(contract, bets)
 
   if (contract.mechanism === 'cpmm-multi-1') {
+    const pg = createSupabaseDirectClient()
     if (!contract.shouldAnswersSumToOne && answerId) {
-      const answerDoc = firestore.doc(
-        `contracts/${contract.id}/answersCpmm/${answerId}`
-      )
-      const answerSnap = await answerDoc.get()
-      if (answerSnap.exists) {
-        const answer = answerSnap.data() as Answer
-        broadcastUpdatedAnswer(contract, answer)
-      }
+      const answer = await getAnswer(pg, answerId)
+      if (answer) broadcastUpdatedAnswer(contract, answer)
     } else {
-      const answersCol = firestore.collection(
-        `contracts/${contract.id}/answersCpmm`
-      )
-      const answersSnap = await answersCol.get()
-      const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+      const answers = await getAnswersForContract(pg, contract.id)
       answers.forEach((answer) => broadcastUpdatedAnswer(contract, answer))
     }
   }
