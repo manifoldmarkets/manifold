@@ -5,7 +5,7 @@ import {
   ContractUndoOldResolutionPayoutTxn,
   ContractUndoProduceSpiceTxn,
 } from 'common/txn'
-import { chunk, clone, omit } from 'lodash'
+import { chunk, omit } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'

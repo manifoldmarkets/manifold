@@ -156,7 +156,7 @@ export const createAnswerCpmmMain = async (
         loverUserId,
       })
 
-      let updatedAnswers: Answer[] = []
+      const updatedAnswers: Answer[] = []
       if (shouldAnswersSumToOne) {
         const updatedAnswers = await createAnswerAndSumAnswersToOne(
           pgTrans,
