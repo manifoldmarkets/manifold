@@ -117,6 +117,7 @@ export const DEFAULT_SORTS = ['freshness-score', 'close-date', 'newest']
 export const DEFAULT_BOUNTY_SORTS = ['bounty-amount', 'newest']
 export const DEFAULT_POLL_SORTS = ['newest']
 
+export const DEFAULT_FILTERS = ['open', 'closed', 'resolved']
 export const DEFAULT_FILTER = 'all'
 
 export const DEFAULT_CONTRACT_TYPE = 'ALL'

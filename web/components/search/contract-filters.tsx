@@ -18,6 +18,7 @@ import {
   DEFAULT_CONTRACT_TYPE,
   DEFAULT_CONTRACT_TYPES,
   DEFAULT_FILTER,
+  DEFAULT_FILTERS,
   DEFAULT_POLL_SORTS,
   DEFAULT_SORT,
   DEFAULT_SORTS,
@@ -105,9 +106,11 @@ export function ContractFilters(props: {
       ? DEFAULT_POLL_SORTS
       : DEFAULT_SORTS
 
+
   const [openFilterModal, setOpenFilterModal] = useState(false)
 
-  const nonDefaultFilter = filter !== DEFAULT_FILTER
+  const nonDefaultFilter =
+    !DEFAULT_FILTERS.some((s) => s == filter) && filter !== DEFAULT_FILTER
   const nonDefaultSort =
     !DEFAULT_SORTS.some((s) => s == sort) && sort !== DEFAULT_SORT
   const nonDefaultContractType =
@@ -157,6 +160,23 @@ export function ContractFilters(props: {
           </div>
           Prize
         </FilterPill>
+        {!hideFilter &&
+          DEFAULT_FILTERS.map((filterValue) => (
+            <FilterPill
+              key={filterValue}
+              selected={filterValue === filter}
+              onSelect={() => {
+                if (filterValue === filter) {
+                  selectFilter(DEFAULT_FILTER)
+                } else {
+                  selectFilter(filterValue as Filter)
+                }
+              }}
+              type="filter"
+            >
+              {getLabelFromValue(FILTERS, filterValue)}
+            </FilterPill>
+          ))}
         {sortItems.map((sortValue) => (
           <FilterPill
             key={sortValue}
