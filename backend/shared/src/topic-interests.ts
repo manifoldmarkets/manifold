@@ -4,6 +4,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { chunk } from 'lodash'
+import { FOLLOWED_TOPIC_CONVERSION_PRIOR } from 'common/feed'
 
 export type TopicToInterestWeights = { [groupId: string]: number }
 export const userIdsToAverageTopicConversionScores: {
@@ -61,10 +62,14 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
             userIdsToAverageTopicConversionScores[userId][groupId]
           if (groupScore === undefined) {
             userIdsToAverageTopicConversionScores[userId][groupId] =
-              hasFewInterests ? 2 : 1.25
+              hasFewInterests
+                ? FOLLOWED_TOPIC_CONVERSION_PRIOR
+                : FOLLOWED_TOPIC_CONVERSION_PRIOR / 2
           } else {
             userIdsToAverageTopicConversionScores[userId][groupId] +=
-              hasFewInterests ? 0.5 : 0.25
+              hasFewInterests
+                ? FOLLOWED_TOPIC_CONVERSION_PRIOR / 2
+                : FOLLOWED_TOPIC_CONVERSION_PRIOR / 4
           }
         }
       }),
