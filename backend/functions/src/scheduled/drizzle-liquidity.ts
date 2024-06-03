@@ -7,6 +7,7 @@ import {
   addCpmmLiquidity,
   addCpmmLiquidityFixedP,
   addCpmmMultiLiquidityAnswersSumToOne,
+  addCpmmMultiLiquidityToAnswersIndependently,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
 import { formatMoneyWithDecimals } from 'common/util/format'
@@ -70,17 +71,14 @@ const drizzleMarket = async (contractId: string) => {
     const amount = subsidyPool <= 1 ? subsidyPool : r * v * subsidyPool
 
     if (contract.mechanism === 'cpmm-multi-1') {
-      if (!contract.shouldAnswersSumToOne) return // will be drizzled by drizzleAnswer
-
       const answers = await getAnswersForContract(pgTrans, contractId)
 
       const poolsByAnswer = Object.fromEntries(
         answers.map((a) => [a.id, { YES: a.poolYes, NO: a.poolNo }])
       )
-      const newPools = addCpmmMultiLiquidityAnswersSumToOne(
-        poolsByAnswer,
-        amount
-      )
+      const newPools = contract.shouldAnswersSumToOne
+        ? addCpmmMultiLiquidityAnswersSumToOne(poolsByAnswer, amount)
+        : addCpmmMultiLiquidityToAnswersIndependently(poolsByAnswer, amount)
 
       const poolEntries = Object.entries(newPools).slice(0, 50_000)
 
