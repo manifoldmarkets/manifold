@@ -1,4 +1,4 @@
-import { Dictionary, max, sumBy, uniq } from 'lodash'
+import { Dictionary, min, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetricsPerAnswer } from './calculate'
 import { Bet, LimitBet } from './bet'
 import {
@@ -195,7 +195,7 @@ const computeMultiCpmmElasticity = (
       betAmount
     )
   })
-  return max(elasticities) ?? 1_000_000
+  return min(elasticities) ?? 1_000_000
 }
 
 export const calculateNewPortfolioMetrics = (
