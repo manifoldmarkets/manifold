@@ -106,7 +106,6 @@ export function ContractFilters(props: {
       ? DEFAULT_POLL_SORTS
       : DEFAULT_SORTS
 
-
   const [openFilterModal, setOpenFilterModal] = useState(false)
 
   const nonDefaultFilter =
