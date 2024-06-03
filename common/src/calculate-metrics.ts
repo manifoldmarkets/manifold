@@ -1,10 +1,15 @@
-import { Dictionary, sumBy, uniq } from 'lodash'
+import { Dictionary, max, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetricsPerAnswer } from './calculate'
 import { Bet, LimitBet } from './bet'
-import { Contract, CPMMContract, getAdjustedProfit } from './contract'
+import {
+  Contract,
+  CPMMMultiContract,
+  CPMMMultiNumeric,
+  getAdjustedProfit,
+} from './contract'
 import { User } from './user'
 import { computeFills } from './new-bet'
-import { getCpmmProbability } from './calculate-cpmm'
+import { CpmmState, getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
@@ -83,14 +88,20 @@ export const computeElasticity = (
         contract,
         betAmount
       )
+    case 'cpmm-multi-1':
+      return computeMultiCpmmElasticity(
+        isResolved ? [] : unfilledBets, // only consider limit orders for open markets
+        contract,
+        betAmount
+      )
     default: // there are some contracts on the dev DB with crazy mechanisms
-      return 1
+      return 1_000_000
   }
 }
 
 export const computeBinaryCpmmElasticity = (
   unfilledBets: LimitBet[],
-  contract: CPMMContract,
+  cpmmState: CpmmState,
   betAmount: number
 ) => {
   const sortedBets = unfilledBets.sort((a, b) => a.createdTime - b.createdTime)
@@ -100,12 +111,6 @@ export const computeBinaryCpmmElasticity = (
   const userBalances = Object.fromEntries(
     userIds.map((id) => [id, Number.MAX_SAFE_INTEGER])
   )
-
-  const cpmmState = {
-    pool: contract.pool,
-    p: contract.p,
-    collectedFees: contract.collectedFees,
-  }
 
   const {
     cpmmState: { pool: poolY, p: pY },
@@ -168,6 +173,29 @@ export const computeBinaryCpmmElasticityFromAnte = (
   const safeNo = Number.isFinite(resultNo) ? resultNo : 0
 
   return logit(safeYes) - logit(safeNo)
+}
+
+const computeMultiCpmmElasticity = (
+  unfilledBets: LimitBet[],
+  contract: CPMMMultiContract | CPMMMultiNumeric,
+  betAmount: number
+) => {
+  const elasticities = contract.answers.map((a) => {
+    const cpmmState = {
+      pool: { YES: a.poolYes, NO: a.poolNo },
+      p: 0.5,
+      collectedFees: noFees,
+    }
+    const unfilledBetsForAnswer = unfilledBets.filter(
+      (b) => b.answerId === a.id
+    )
+    return computeBinaryCpmmElasticity(
+      unfilledBetsForAnswer,
+      cpmmState,
+      betAmount
+    )
+  })
+  return max(elasticities) ?? 1_000_000
 }
 
 export const calculateNewPortfolioMetrics = (
