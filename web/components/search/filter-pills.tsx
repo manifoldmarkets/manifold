@@ -2,6 +2,7 @@ import { XCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { ReactNode } from 'react'
 import { Row } from '../layout/row'
+import { Filter } from '../supabase-search'
 
 export function FilterPill(props: {
   selected: boolean
