@@ -1,5 +1,5 @@
 'use client'
-import { XIcon } from '@heroicons/react/outline'
+import { SparklesIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { LiteGroup } from 'common/group'
@@ -422,16 +422,15 @@ export function SupabaseSearch(props: {
                       onChange({ [FOR_YOU_KEY]: forYou ? '0' : '1' })
                     }
                     className={clsx(
-                      'bg-ink-200 hover:bg-ink-300 rounded p-1',
-                      forYou ? 'bg-primary-400 text-white' : ''
+                      'bg-ink-100 hover:bg-ink-200 text-ink-600 rounded p-1',
+                      forYou
+                        ? 'bg-primary-400 hover:bg-primary-300 text-white'
+                        : ''
                     )}
                   >
-                    <span
-                      className={clsx(forYou ? 'text-white' : 'text-ink-400')}
-                    >
-                      #
+                    <span>
+                      <SparklesIcon className="inline h-4 w-4" /> For you
                     </span>
-                    For you
                   </button>
                 }
               />
