@@ -263,11 +263,10 @@ function ContractQuestion(props: {
           <span>
             <Tooltip
               text={SPICE_MARKET_TOOLTIP}
-              className=" relative mr-0.5 inline-flex items-baseline"
+              className=" relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
             >
-              <div className="relative h-[1em] w-[1.1em]">
-                <SpiceCoin className="absolute inset-0 top-[0.2em]"/>
-              </div>
+
+                <SpiceCoin className="absolute inset-0 top-[0.2em]" />
             </Tooltip>
           </span>
         )}
@@ -278,7 +277,7 @@ function ContractQuestion(props: {
               tier={contract.marketTier}
               contract={contract}
               noTitle
-              className="mr-0.5 inline-flex items-baseline relative h-[1em] w-[1.1em]"
+              className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
               iconClassName="absolute inset-0 top-[0.2em]"
             />
           </span>
