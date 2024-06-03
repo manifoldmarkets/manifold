@@ -5,7 +5,7 @@ import {
   ContractUndoOldResolutionPayoutTxn,
   ContractUndoProduceSpiceTxn,
 } from 'common/txn'
-import { chunk } from 'lodash'
+import { chunk, clone, omit } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
@@ -19,6 +19,8 @@ import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract
 import { bulkIncrementBalances } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { assert } from 'common/util/assert'
+import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
+import { Answer } from 'common/answer'
 
 const firestore = admin.firestore()
 
@@ -268,6 +270,8 @@ const undoResolution = async (
         `contracts/${contractId}/answersCpmm/${answer.id}`
       )
       await answerDoc.update(updatedAttrs)
+      const updated = omit(answer, ['resolutionTime', 'resolverId'])
+      broadcastUpdatedAnswer(contract, updated)
     }
   } else if (answerId) {
     const updatedAttrs = {
@@ -276,9 +280,12 @@ const undoResolution = async (
       resolutionProbability: admin.firestore.FieldValue.delete(),
       resolverId: admin.firestore.FieldValue.delete(),
     }
-    await firestore
-      .doc(`contracts/${contractId}/answersCpmm/${answerId}`)
-      .update(updatedAttrs)
+    const answerDoc = firestore.doc(
+      `contracts/${contractId}/answersCpmm/${answerId}`
+    )
+    await answerDoc.update(updatedAttrs)
+    const updated = (await answerDoc.get()).data() as Answer | undefined
+    if (updated) broadcastUpdatedAnswer(contract, updated)
   }
 
   log('updated contract')
