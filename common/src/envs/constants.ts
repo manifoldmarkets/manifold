@@ -324,6 +324,7 @@ export const OPTED_OUT_OF_LEAGUES = [
   'BhNkw088bMNwIFF2Aq5Gg9NTPzz1', // acc
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
+  'NndHcEmeJhPQ6n7e7yqAPa3Oiih2', //josh
 ]
 
 export const HIDE_FROM_LEADERBOARD_USER_IDS = [
