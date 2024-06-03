@@ -87,8 +87,8 @@ export const bulkUpdateAnswers = async (
   }
 }
 
-export const answerToRow = (answer: Omit<Answer, 'id'>) => ({
-  id: randomString(),
+export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
+  id: 'id' in answer ? answer.id : randomString(),
   index: answer.index,
   contract_id: answer.contractId,
   user_id: answer.userId,
