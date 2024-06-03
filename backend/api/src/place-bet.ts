@@ -206,7 +206,14 @@ export const placeBetMain = async (
   metrics.inc('app/bet_count', { contract_id: contractId })
 
   const continuation = async () => {
-    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
+    await onCreateBets(
+      fullBets,
+      contract,
+      user,
+      allOrdersToCancel,
+      makers,
+      answerId
+    )
   }
 
   return {
@@ -304,6 +311,17 @@ export const processNewBetResult = async (
       Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
   ) {
     throw new APIError(403, 'Trade too large for current liquidity pool.')
+  }
+
+  if (
+    !isFinite(newBet.amount) ||
+    !isFinite(newBet.shares) ||
+    !isFinite(newBet.probAfter)
+  ) {
+    throw new APIError(
+      500,
+      'Bet calculation produced invalid number, please try again later.'
+    )
   }
 
   // Special case for relationship markets.

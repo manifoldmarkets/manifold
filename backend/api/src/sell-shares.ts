@@ -323,10 +323,14 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   }
 
   const continuation = async () => {
-    await onCreateBets(fullBets, contract, user, allOrdersToCancel, [
-      ...makers,
-      ...otherResultsWithBet.flatMap((r) => r.makers),
-    ])
+    await onCreateBets(
+      fullBets,
+      contract,
+      user,
+      allOrdersToCancel,
+      [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)],
+      answerId
+    )
   }
   return { result: { ...newBet, betId }, continue: continuation }
 }

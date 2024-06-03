@@ -50,7 +50,9 @@ export const DailyProfit = memo(function DailyProfit(props: {
   }, [portfolio])
 
   const networth = portfolio
-    ? portfolio.investmentValue + (user?.balance ?? 0)
+    ? portfolio.investmentValue +
+      (user?.balance ?? 0) +
+      (user?.spiceBalance ?? 0)
     : 0
 
   const [open, setOpen] = useState(false)

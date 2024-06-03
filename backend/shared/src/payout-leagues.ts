@@ -1,4 +1,3 @@
-
 import { getLeaguePrize, league_user_info } from 'common/leagues'
 import { SupabaseDirectClient } from './supabase/init'
 import { createLeagueChangedNotification } from './create-notification'
@@ -33,7 +32,12 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
           | league_user_info
           | undefined
         if (prevRow) {
-          return sendEndOfSeasonNotificationAndBonus(pg, prevRow, newRow)
+          return sendEndOfSeasonNotificationAndBonus(
+            pg,
+            prevRow,
+            newRow,
+            prevSeason
+          )
         }
         return Promise.resolve()
       })
@@ -44,34 +48,46 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
 const sendEndOfSeasonNotificationAndBonus = async (
   pg: SupabaseDirectClient,
   prevRow: league_user_info,
-  newRow: league_user_info
+  newRow: league_user_info,
+  season: number
 ) => {
   const { user_id: userId, division, rank } = prevRow
 
   const prize = getLeaguePrize(division, rank)
-  console.log(
-    'send',
-    newRow.user_id,
-    'division',
-    division,
-    'rank',
-    rank,
-    'prize',
-    prize
-  )
+  if (!prize) return
 
-  if (prize) {
-    const data: Omit<LeaguePrizeTxn, 'fromId' | 'id' | 'createdTime'> = {
-      fromType: 'BANK',
-      toId: userId,
-      toType: 'USER',
-      amount: prize,
-      token: 'SPICE',
-      category: 'LEAGUE_PRIZE',
-      data: prevRow,
-    }
-
-    pg.tx((tx) => runTxnFromBank(tx, data))
+  const data: Omit<LeaguePrizeTxn, 'fromId' | 'id' | 'createdTime'> = {
+    fromType: 'BANK',
+    toId: userId,
+    toType: 'USER',
+    amount: prize,
+    token: 'SPICE',
+    category: 'LEAGUE_PRIZE',
+    data: prevRow,
   }
-  await createLeagueChangedNotification(userId, prevRow, newRow, prize, pg)
+
+  const alreadyGotPrize = await pg.oneOrNone(
+    `select * from txns
+      where category = 'LEAGUE_PRIZE'
+      and data->'data'->>'season' = $1
+      and to_id = $2`,
+    [season.toString(), userId]
+  )
+  if (!alreadyGotPrize) {
+    console.log(
+      'send',
+      newRow.user_id,
+      'division',
+      division,
+      'rank',
+      rank,
+      'prize',
+      prize
+    )
+
+    await pg.tx(async (tx) => {
+      await runTxnFromBank(tx, data)
+      await createLeagueChangedNotification(userId, prevRow, newRow, prize, tx)
+    })
+  }
 }

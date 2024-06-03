@@ -3,6 +3,7 @@ import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
+import { Answer } from 'common/answer'
 
 export function broadcastNewBets(contract: Contract, bets: Bet[]) {
   const contractTopic = `contract/${contract.id}`
@@ -57,5 +58,25 @@ export function broadcastUpdatedContract(contract: Contract) {
   const payload = { contract }
   const contractTopic = `contract/${contract.id}`
   const topics = [contractTopic, `${contractTopic}/updated-metadata`]
+  broadcastMulti(topics, payload)
+}
+
+export function broadcastNewAnswer(contract: Contract, answer: Answer) {
+  const payload = { answer }
+  const contractTopic = `contract/${contract.id}`
+  const topics = [`${contractTopic}/new-answer`]
+  if (contract.visibility === 'public') {
+    topics.push('global', 'global/new-answer')
+  }
+  broadcastMulti(topics, payload)
+}
+
+export function broadcastUpdatedAnswer(contract: Contract, answer: Answer) {
+  const payload = { answer }
+  const contractTopic = `contract/${contract.id}`
+  const topics = [`${contractTopic}/updated-answer`]
+  if (contract.visibility === 'public') {
+    topics.push('global', 'global/updated-answer')
+  }
   broadcastMulti(topics, payload)
 }

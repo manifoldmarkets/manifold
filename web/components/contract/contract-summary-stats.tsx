@@ -17,12 +17,12 @@ export function ContractSummaryStats(props: {
   editable?: boolean
 }) {
   const { contract, editable } = props
-  const { viewCount: views, creatorId, marketTier } = contract
+  const { viewCount: views, creatorId, marketTier, outcomeType } = contract
   const isCreator = useUser()?.id === creatorId
 
   return (
     <>
-      {contract.outcomeType == 'BOUNTIED_QUESTION' ? (
+      {outcomeType == 'BOUNTIED_QUESTION' ? (
         <BountyLeft
           bountyLeft={contract.bountyLeft}
           totalBounty={contract.totalBounty}
@@ -30,17 +30,15 @@ export function ContractSummaryStats(props: {
         />
       ) : (
         <Row className="gap-4">
-          {contract.outcomeType == 'POLL' && (
-            <Tooltip
-              text={'Voters'}
-              placement="bottom"
-              noTap
-              className="flex flex-row items-center gap-1"
-            >
-              <UserIcon className="text-ink-500 h-4 w-4" />
-              <div>{shortFormatNumber(contract.uniqueBettorCount ?? 0)}</div>
-            </Tooltip>
-          )}
+          <Tooltip
+            text={outcomeType == 'POLL' ? 'Voters' : 'Traders'}
+            placement="bottom"
+            noTap
+            className="flex flex-row items-center gap-1"
+          >
+            <UserIcon className="text-ink-500 h-4 w-4" />
+            <div>{shortFormatNumber(contract.uniqueBettorCount ?? 0)}</div>
+          </Tooltip>
           {marketTier && <TierTooltip tier={marketTier} contract={contract} />}
           {!!contract.volume && (
             <Tooltip

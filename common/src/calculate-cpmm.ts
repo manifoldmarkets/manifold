@@ -210,6 +210,7 @@ export function calculateAmountToBuySharesFixedP(
   const { takers } = computeFills(
     state,
     outcome,
+    // First, bet more than required to get shares.
     shares,
     undefined,
     unfilledBets,
@@ -227,7 +228,7 @@ export function calculateAmountToBuySharesFixedP(
       return currAmount + fillAmount
     }
     if (currShares + fillShares > shares) {
-      // First fill that goes over the required shares.
+      // This is first fill that goes over the required shares.
       if (matchedBetId) {
         // Match a portion of the fill to get the exact shares.
         const remainingShares = shares - currShares

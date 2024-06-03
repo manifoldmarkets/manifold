@@ -37,6 +37,10 @@ import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import {
+  broadcastNewAnswer,
+  broadcastUpdatedAnswer,
+} from 'shared/websockets/helpers'
+import {
   getAnswersForContract,
   insertAnswer,
   updateAnswer,
@@ -95,7 +99,7 @@ export const createAnswerCpmmMain = async (
   const pg = createSupabaseDirectClient()
 
   let needToDoSketchyFirebaseRevert = false // for updating contract liquidity
-  const { newAnswerId, user } = await pg
+  const { newAnswer, updatedAnswers, user } = await pg
     .tx({ mode: SERIAL }, async (pgTrans) => {
       const user = await getUser(creatorId, pgTrans)
       if (!user) throw new APIError(401, 'Your account was not found')
@@ -158,6 +162,7 @@ export const createAnswerCpmmMain = async (
         loverUserId,
       })
 
+      let updatedAnswers: Answer[] = []
       if (shouldAnswersSumToOne) {
         const updatedAnswers = await createAnswerAndSumAnswersToOne(
           pgTrans,
@@ -188,7 +193,7 @@ export const createAnswerCpmmMain = async (
         await insertLiquidity(pgTrans, lp)
       }
 
-      return { newAnswerId: newAnswer.id, user }
+      return { newAnswer, updatedAnswers, user }
     })
     // end of pgTrans
     .catch(async (e) => {
@@ -208,15 +213,18 @@ export const createAnswerCpmmMain = async (
     })
 
   const continuation = async () => {
+    broadcastNewAnswer(contract, newAnswer)
+    updatedAnswers.forEach((a) => broadcastUpdatedAnswer(contract, a))
+
     await createNewAnswerOnContractNotification(
-      newAnswerId,
+      newAnswer.id,
       user,
       text,
       contract
     )
     await addUserToContractFollowers(contractId, creatorId)
   }
-  return { result: { newAnswerId }, continue: continuation }
+  return { result: { newAnswerId: newAnswer.id }, continue: continuation }
 }
 
 async function createAnswerAndSumAnswersToOne(

@@ -5,7 +5,7 @@ import {
   ContractUndoOldResolutionPayoutTxn,
   ContractUndoProduceSpiceTxn,
 } from 'common/txn'
-import { chunk } from 'lodash'
+import { chunk, clone, omit } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
@@ -19,6 +19,8 @@ import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract
 import { bulkIncrementBalances } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { assert } from 'common/util/assert'
+import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
+import { Answer } from 'common/answer'
 
 const firestore = admin.firestore()
 
@@ -266,6 +268,7 @@ const undoResolution = async (
       where contract_id = $1`,
       [contractId]
     )
+    // TODO: broadcast
   } else if (answerId) {
     await pg.none(
       `update answers
@@ -273,6 +276,7 @@ const undoResolution = async (
       where id = $1`,
       [answerId]
     )
+    // TODO: broadcast
   }
 
   log('updated contract')

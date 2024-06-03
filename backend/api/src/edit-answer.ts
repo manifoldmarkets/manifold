@@ -9,6 +9,7 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { HOUR_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { log } from 'shared/utils'
+import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
 import { getAnswer, updateAnswer } from 'shared/supabase/answers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
@@ -67,9 +68,10 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
     throw new APIError(403, 'Contract owner, mod, or answer owner required')
 
   const update = removeUndefinedProps({ text, color })
+  const newAnswer = { ...answer, ...update }
 
   const answers = contract.answers.map((answer) =>
-    answer.id === answerId ? { ...answer, ...update } : answer
+    answer.id === answerId ? newAnswer : answer
   )
 
   await updateAnswer(pg, answerId, update)
@@ -79,6 +81,7 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
   })
 
   await recordContractEdit(contract, auth.uid, ['answers'])
+  broadcastUpdatedAnswer(contract, newAnswer as Answer)
 
   return { status: 'success' }
 })

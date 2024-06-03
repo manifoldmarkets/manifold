@@ -13,7 +13,7 @@ fi
 
 SERVICE_NAME="api"
 SERVICE_GROUP="${SERVICE_NAME}-group"
-ZONE="us-central1-a"
+ZONE="us-east4-a"
 ENV=${1:-dev}
 
 case $ENV in
