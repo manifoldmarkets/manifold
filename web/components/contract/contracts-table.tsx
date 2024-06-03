@@ -257,23 +257,33 @@ function ContractQuestion(props: {
           />
         </UserHovercard>
       )}
-      <Row className="gap-1">
-        <VisibilityIcon contract={contract} />
+      <span>
+        {/* <VisibilityIcon contract={contract} /> */}
         {!!contract.isSpicePayout && (
-          <Tooltip text={SPICE_MARKET_TOOLTIP}>
-            <SpiceCoin />
-          </Tooltip>
+          <span>
+            <Tooltip
+              text={SPICE_MARKET_TOOLTIP}
+              className=" relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+            >
+
+                <SpiceCoin className="absolute inset-0 top-[0.2em]" />
+            </Tooltip>
+          </span>
         )}
         {!!contract.marketTier && (
-          <TierTooltip
-            placement={'top'}
-            tier={contract.marketTier}
-            contract={contract}
-            noTitle
-          />
+          <span>
+            <TierTooltip
+              placement={'top'}
+              tier={contract.marketTier}
+              contract={contract}
+              noTitle
+              className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+              iconClassName="absolute inset-0 top-[0.2em]"
+            />
+          </span>
         )}
         {removeEmojis(contract.question)}
-      </Row>
+      </span>
     </Row>
   )
 }
