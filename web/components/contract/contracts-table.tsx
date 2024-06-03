@@ -265,8 +265,7 @@ function ContractQuestion(props: {
               text={SPICE_MARKET_TOOLTIP}
               className=" relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
             >
-
-                <SpiceCoin className="absolute inset-0 top-[0.2em]" />
+              <SpiceCoin className="absolute inset-0 top-[0.2em]" />
             </Tooltip>
           </span>
         )}

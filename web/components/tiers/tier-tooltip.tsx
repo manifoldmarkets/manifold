@@ -52,7 +52,7 @@ export function TierTooltip(props: {
         className
       )}
     >
-      <TierIcon tier={tier} className={iconClassName}/>
+      <TierIcon tier={tier} className={iconClassName} />
       {!noTitle && (
         <div
           className={clsx(
@@ -72,16 +72,16 @@ export function TierTooltip(props: {
   )
 }
 
-export function TierIcon(props: { tier: MarketTierType, className?: string}) {
+export function TierIcon(props: { tier: MarketTierType; className?: string }) {
   const { tier, className } = props
   if (tier == 'plus') {
-    return <PlusTier className={className}/>
+    return <PlusTier className={className} />
   }
   if (tier == 'premium') {
-    return <PremiumTier className={className}/>
+    return <PremiumTier className={className} />
   }
   if (tier == 'crystal') {
-    return <CrystalTier className={className}/>
+    return <CrystalTier className={className} />
   }
   return <></>
 }
