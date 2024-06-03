@@ -21,6 +21,7 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 import { assert } from 'common/util/assert'
 import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
 import { Answer } from 'common/answer'
+import { convertAnswer } from 'common/supabase/contracts'
 
 const firestore = admin.firestore()
 
@@ -262,21 +263,25 @@ const undoResolution = async (
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
     // remove resolutionTime and resolverId from all answers in the contract
-    await pg.none(
+    const newAnswers = await pg.map(
       `update answers
       set data = data - 'resolutionTime' - 'resolverId'
-      where contract_id = $1`,
-      [contractId]
+      where contract_id = $1
+      returning *`,
+      [contractId],
+      convertAnswer
     )
-    // TODO: broadcast
+    newAnswers.forEach((ans) => broadcastUpdatedAnswer(contract, ans))
   } else if (answerId) {
-    await pg.none(
+    const answer = await pg.one(
       `update answers
       set data = data - '{resolution,resolutionTime,resolutionProbability,resolverId}'::text[]
-      where id = $1`,
-      [answerId]
+      where id = $1
+      returning *`,
+      [answerId],
+      convertAnswer
     )
-    // TODO: broadcast
+    broadcastUpdatedAnswer(contract, answer)
   }
 
   log('updated contract')

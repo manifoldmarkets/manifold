@@ -198,17 +198,16 @@ export const resolveMarketHelper = async (
     log('contract resolved')
   }
   if (updateAnswerAttrs && answerId) {
-    // contractId, answerId
-    await updateAnswer(pg, answerId, removeUndefinedProps(updateAnswerAttrs))
-    const updated = (await answerDoc.get()).data() as Answer | undefined
-    if (updated) broadcastUpdatedAnswer(contract, updated)
+    const props = removeUndefinedProps(updateAnswerAttrs)
+    const updated = await updateAnswer(pg, answerId, props)
+    broadcastUpdatedAnswer(contract, updated)
   } else if (
     updateAnswerAttrs &&
     unresolvedContract.mechanism === 'cpmm-multi-1'
   ) {
     for (const answer of unresolvedContract.answers) {
-      await updateAnswer(pg, answer.id, removeUndefinedProps(updateAnswerAttrs))
-      const updated = { ...answer, ...updateAnswerAttrs }
+      const props = removeUndefinedProps(updateAnswerAttrs)
+      const updated = await updateAnswer(pg, answer.id, props)
       broadcastUpdatedAnswer(contract, updated)
     }
   }

@@ -391,12 +391,12 @@ async function createAnswerAndSumAnswersToOne(
       poolNo,
       prob,
     })
-    await updateAnswer(pgTrans, answer.id, {
+    const updated = await updateAnswer(pgTrans, answer.id, {
       poolYes,
       poolNo,
       prob,
     })
-    updatedAnswers.push({ ...answer, poolYes, poolNo, prob })
+    updatedAnswers.push(updated)
 
     await updateMakers(makers, betRow.bet_id, pgTrans)
     await cancelLimitOrders(
