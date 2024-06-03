@@ -1,11 +1,7 @@
 import { DocumentData, DocumentSnapshot } from 'firebase-admin/firestore'
 import { Change, EventContext, firestore } from 'firebase-functions'
 import { PubSub } from '@google-cloud/pubsub'
-import {
-  TableName,
-  collectionTables,
-  subcollectionTables,
-} from 'common/supabase/utils'
+import { TableName, collectionTables } from 'common/supabase/utils'
 const RUNNING_EMULATOR = process.env.EMULATOR === 'true'
 const pubSubClient = new PubSub()
 const writeTopic = pubSubClient.topic('firestoreWrite')
@@ -48,16 +44,6 @@ export const logCollections = firestore
   .onWrite(async (change, ctx) => {
     if (RUNNING_EMULATOR) return
     const tableName = collectionTables[ctx.params.coll]
-    if (tableName != null) {
-      await publishChange(change, ctx, tableName)
-    }
-  })
-
-export const logSubcollections = firestore
-  .document('{coll}/{parent}/{subcoll}/{id}')
-  .onWrite(async (change, ctx) => {
-    if (RUNNING_EMULATOR) return
-    const tableName = subcollectionTables[ctx.params.coll]?.[ctx.params.subcoll]
     if (tableName != null) {
       await publishChange(change, ctx, tableName)
     }

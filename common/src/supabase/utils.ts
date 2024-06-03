@@ -37,16 +37,6 @@ export const collectionTables: CollectionTableMapping = {
   manalinks: 'manalinks',
 }
 
-export type SubcollectionTableMapping = {
-  [parent: string]: { [child: string]: TableName }
-}
-export const subcollectionTables: SubcollectionTableMapping = {
-  contracts: {
-    answersCpmm: 'answers',
-    follows: 'contract_follows',
-  },
-}
-
 export function createClient(
   instanceId: string,
   key: string,

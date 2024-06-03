@@ -13,7 +13,7 @@ create table if not exists
     total_liquidity numeric default 0, -- for historical reasons, this the total subsidy amount added in M
     subsidy_pool numeric default 0, -- current value of subsidy pool in M
     data jsonb not null,
-    fs_updated_time timestamp not null,
+    fs_updated_time timestamp,
     text_fts tsvector generated always as (to_tsvector('english', text)) stored,
     prob_change_day numeric default 0, -- change in prob in the last 24h
     prob_change_week numeric default 0, -- change in prob in the last week

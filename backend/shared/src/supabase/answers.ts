@@ -2,12 +2,7 @@ import { SupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import { groupBy } from 'lodash'
 import { Answer } from 'common/answer'
-import {
-  bulkInsert,
-  updateData,
-  updateDataAndReturn,
-  insert as upsert,
-} from './utils'
+import { bulkInsert, updateDataAndReturn, insert as upsert } from './utils'
 import { randomString } from 'common/util/random'
 import { removeUndefinedProps } from 'common/util/object'
 import { millisToTs } from 'common/supabase/utils'
@@ -103,5 +98,4 @@ export const answerToRow = (answer: Omit<Answer, 'id'>) => ({
   prob: answer.prob,
   created_time: answer.createdTime ? millisToTs(answer.createdTime) : undefined,
   data: JSON.stringify(removeUndefinedProps(answer)) + '::jsonb',
-  fs_updated_time: 'TODO remove',
 })
