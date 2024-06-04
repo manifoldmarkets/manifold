@@ -6,7 +6,7 @@ import {
 } from 'common/contract'
 
 export const FIXED_ANTE = 1000
-export const ANSWER_COST = FIXED_ANTE / 4
+export const ANSWER_COST = FIXED_ANTE / 10
 const ANTES = {
   BINARY: FIXED_ANTE,
   MULTIPLE_CHOICE: ANSWER_COST, // Amount per answer.
@@ -42,7 +42,7 @@ export const getTieredCost = (
   if (CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)) {
     return baseCost
   }
-  
+
   const tieredCost = tier ? baseCost * MARKET_TIER_MULTIPLES[tier] : baseCost
 
   if (outcomeType == 'NUMBER' && tier != 'basic') {
