@@ -86,6 +86,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 export const ContractOverview = memo(
   (props: {
     contract: Contract
+    answers: Answer[] | undefined
     betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
     showResolver: boolean
     resolutionRating?: ReactNode
@@ -96,6 +97,7 @@ export const ContractOverview = memo(
     const {
       betPoints,
       contract,
+      answers,
       showResolver,
       resolutionRating,
       setShowResolver,
@@ -140,6 +142,7 @@ export const ContractOverview = memo(
         return (
           <ChoiceOverview
             contract={contract}
+            answers={answers ?? []}
             points={betPoints as any}
             showResolver={showResolver}
             setShowResolver={setShowResolver}
@@ -490,6 +493,7 @@ const ChartAnnotation = (props: {
 const ChoiceOverview = (props: {
   points: MultiPoints
   contract: MultiContract
+  answers: Answer[]
   showResolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
