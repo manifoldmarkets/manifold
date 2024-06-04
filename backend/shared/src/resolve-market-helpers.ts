@@ -374,6 +374,11 @@ async function undoUniqueBettorRewardsIfCancelResolution(
     const totalBonusAmount = sumBy(bonusTxnsOnThisContract, (txn) => txn.amount)
     log('totalBonusAmount to be withdrawn ' + totalBonusAmount)
 
+    if (totalBonusAmount === 0) {
+      log('No bonus to cancel')
+      return
+    }
+
     const bonusTxn = {
       fromId: contract.creatorId,
       fromType: 'USER',
