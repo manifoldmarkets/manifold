@@ -14,7 +14,7 @@ if (require.main === module) {
         join users on tp.to_id = users.id
         where tp.category = 'MANA_PURCHASE'
           and (users.data->>'isBannedFromPosting' is null or users.data->>'isBannedFromPosting' = 'false')
-          and tp.created_time < '2024-05-16 18:20:00'
+          and tp.created_time > '2024-05-16 18:20:00'
         group by tp.to_id, users.username
         order by amount desc
     `,
@@ -36,7 +36,7 @@ if (require.main === module) {
     }))
 
     await writeCsv(
-      'mana-purchases.csv',
+      'mana-purchases-post-pivot.csv',
       ['username', 'userId', 'amount', 'last_purchase', 'email'],
       data,
       ','
