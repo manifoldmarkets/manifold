@@ -31,15 +31,6 @@ export const CostSection = (props: {
     <Col className="items-start px-1">
       <label className="mb-1 gap-2">
         <span>Tier</span>
-        <InfoTooltip
-          text={
-            outcomeType == 'BOUNTIED_QUESTION'
-              ? 'Your bounty. This amount is put upfront.'
-              : outcomeType == 'POLL'
-              ? 'Cost to create your poll.'
-              : `Cost to create your question. This amount is used to subsidize predictions.`
-          }
-        />
       </label>
 
       <PriceSection
@@ -80,8 +71,8 @@ function PriceSection(props: {
   return (
     <Col className="w-full gap-2">
       <div className="text-ink-600 text-sm">
-        Choose a tier to determine the cost of creating your question. Higher
-        tiers offer more rewards, which will attract more bettors!
+        Choose a tier to determine how much initial liquidity to inject into the
+        market. More liquidity attracts more traders but has a higher cost.
       </div>
       <div
         className={clsx(
