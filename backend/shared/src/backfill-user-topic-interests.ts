@@ -16,7 +16,12 @@ export const backfillUserTopicInterests = async (pg: SupabaseDirectClient) => {
     const startTime = now - DAY_MS * (MAX_DAYS - i)
     if (startTime < startOfViewRecordings) continue
     console.log('Topic interests iteration:', i)
-    await calculateUserTopicInterests(startTime, READONLY, TEST_USER_ID)
+    await calculateUserTopicInterests(
+      startTime,
+      READONLY,
+      TEST_USER_ID,
+      startTimes
+    )
     startTimes.push(new Date(startTime).toISOString())
   }
   console.log('Deleting interests not in processed start times:', startTimes)

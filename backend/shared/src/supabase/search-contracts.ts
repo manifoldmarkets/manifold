@@ -128,7 +128,7 @@ export async function getForYouSQL(
       // If the user has no contract-matching topic score, use only the contract's importance score
       orderBy(`case
       when bool_or(uti.avg_conversion_score is not null)
-      then avg(power(coalesce(uti.avg_conversion_score, ${FEED_CARD_CONVERSION_PRIOR}),0.75) * contracts.${sortByScore})
+      then avg(coalesce(uti.avg_conversion_score, ${FEED_CARD_CONVERSION_PRIOR}) * contracts.${sortByScore})
       else avg(contracts.${sortByScore}*${FEED_CARD_CONVERSION_PRIOR})
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2

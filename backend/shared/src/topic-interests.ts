@@ -34,23 +34,21 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
           pg.map(
             `
             with top_interests as (
-              select * from get_user_topic_interests_1($1, 50)
-              where avg_conversion_score > 1
-              order by avg_conversion_score desc limit 150
+              select * from get_user_topic_interests_2($1)
+              order by score desc limit 300
             ),
             top_disinterests as (
-              select * from get_user_topic_interests_1($1, 50)
-              where avg_conversion_score < 1
-              order by avg_conversion_score limit 150
+              select * from get_user_topic_interests_2($1)
+              order by score limit 150
             )
-            select group_id, avg_conversion_score from top_interests
+            select group_id, score from top_interests
             union all
-            select group_id, avg_conversion_score from top_disinterests
+            select group_id, score from top_disinterests
           `,
             [userId],
             (r) => {
               userIdsToAverageTopicConversionScores[userId][r.group_id] =
-                r.avg_conversion_score
+                r.score
             }
           ),
         ])
@@ -62,14 +60,13 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
             userIdsToAverageTopicConversionScores[userId][groupId]
           if (groupScore === undefined) {
             userIdsToAverageTopicConversionScores[userId][groupId] =
-              hasFewInterests
-                ? FOLLOWED_TOPIC_CONVERSION_PRIOR
-                : FOLLOWED_TOPIC_CONVERSION_PRIOR / 2
+              FOLLOWED_TOPIC_CONVERSION_PRIOR
           } else {
-            userIdsToAverageTopicConversionScores[userId][groupId] +=
-              hasFewInterests
-                ? FOLLOWED_TOPIC_CONVERSION_PRIOR / 2
-                : FOLLOWED_TOPIC_CONVERSION_PRIOR / 4
+            userIdsToAverageTopicConversionScores[userId][groupId] = Math.min(
+              groupScore +
+                FOLLOWED_TOPIC_CONVERSION_PRIOR * (hasFewInterests ? 0.5 : 0.3),
+              1
+            )
           }
         }
       }),
