@@ -23,7 +23,7 @@ export async function runTxn(
   }
 
   if (!isAdminId(fromId) && amount <= 0) {
-    throw new APIError(400, "Amount can't be negative")
+    throw new APIError(400, 'Amount must be positive')
   }
 
   if (token !== 'SPICE' && token !== 'M$') {
