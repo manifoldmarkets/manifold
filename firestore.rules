@@ -46,10 +46,6 @@ service cloud.firestore {
       allow delete: if request.resource.data.creatorId == request.auth.uid || isAdmin();
     }
 
-    match /{somePath=**}/answersCpmm/{answerId} {
-      allow read;
-    }
-
     match /refresh-all-clients/{id} {
       allow read;
     }

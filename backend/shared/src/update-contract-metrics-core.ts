@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin'
 import {
   createSupabaseDirectClient,
+  pgp,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { log } from 'shared/utils'
@@ -12,6 +13,7 @@ import { hasChanges } from 'common/util/object'
 import { chunk, groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
+import { bulkUpdateAnswers } from './supabase/answers'
 
 export async function updateContractMetricsCore(
   outcomeType: 'multi' | 'non-multi'
@@ -77,6 +79,15 @@ export async function updateContractMetricsCore(
     log('Computing metric updates...')
     const writer = new SafeBulkWriter()
 
+    const answerUpdates: {
+      id: string
+      probChanges: {
+        day: number
+        week: number
+        month: number
+      }
+    }[] = []
+
     for (const contract of contracts) {
       let cpmmFields: Partial<CPMM> = {}
       if (contract.mechanism === 'cpmm-1') {
@@ -119,13 +130,11 @@ export async function updateContractMetricsCore(
               month: resTime && resTime <= monthAgo ? 0 : prob - monthAgoProb,
             },
           }
-          const answerDoc = firestore
-            .collection('contracts')
-            .doc(contract.id)
-            .collection('answersCpmm')
-            .doc(answer.id)
           if (hasChanges(answer, answerCpmmFields)) {
-            writer.update(answerDoc, answerCpmmFields)
+            answerUpdates.push({
+              id: answer.id,
+              probChanges: answerCpmmFields.probChanges,
+            })
           }
         }
       }
@@ -146,8 +155,12 @@ export async function updateContractMetricsCore(
     await writer.close()
     i += contracts.length
     log(`Finished ${i}/${allContracts.length} contracts.`)
+
+    log('Writing answer updates...')
+    await bulkUpdateAnswers(pg, answerUpdates)
+
+    log('Done.')
   }
-  log('Done.')
 }
 
 const getUnfilledLimitOrders = async (

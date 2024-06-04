@@ -19,7 +19,7 @@ import {
   MULTI_NUMERIC_CREATION_ENABLED,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
-  add_answers_mode
+  add_answers_mode,
 } from 'common/contract'
 import { getAnte, getTieredCost } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
@@ -52,6 +52,7 @@ import { getUser, getUserByUsername, htmlToRichText, log } from 'shared/utils'
 import { broadcastNewContract } from 'shared/websockets/helpers'
 import { z } from 'zod'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
+import { bulkInsertAnswers } from 'shared/supabase/answers'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
@@ -234,7 +235,7 @@ const totalMarketCost = marketTier ? getTieredCost(ante, marketTier, outcomeType
   })
 
   if (answers && contract.mechanism === 'cpmm-multi-1')
-    await createAnswers(contract)
+    await createAnswers(pg, contract)
 
   if (groups) {
     await Promise.all(
@@ -252,7 +253,7 @@ const totalMarketCost = marketTier ? getTieredCost(ante, marketTier, outcomeType
     ante,
     totalMarketCost,
     contractRef
-  )   
+  )
 
   await generateContractEmbeddings(contract, pg)
 
@@ -547,6 +548,7 @@ async function getGroupCheckPermissions(
 }
 
 async function createAnswers(
+  pg: SupabaseDirectClient,
   contract: CPMMMultiContract | CPMMNumericContract
 ) {
   const { isLove } = contract
@@ -570,14 +572,7 @@ async function createAnswers(
     )
   }
 
-  await Promise.all(
-    answers.map((answer) => {
-      return firestore
-        .collection(`contracts/${contract.id}/answersCpmm`)
-        .doc(answer.id)
-        .set(answer)
-    })
-  )
+  await bulkInsertAnswers(pg, answers)
 }
 
 async function getLoveAnswerUserIds(answers: string[]) {
@@ -642,31 +637,33 @@ async function generateAntes(
 
     await insertLiquidity(pg, lp)
   }
-      const drizzledAmount = totalMarketCost - ante 
-      if (drizzledAmount > 0 && (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')) {
-          return await pg.tx(async (tx) => {
-            await runTxn(tx, {
-              fromId: providerId,
-              amount: drizzledAmount,
-              toId: contract.id,
-              toType: 'CONTRACT',
-              category: 'ADD_SUBSIDY',
-              token: 'M$',
-              fromType: 'USER',
-            })
-                const newLiquidityProvision = getNewLiquidityProvision(
-      providerId,
-      drizzledAmount,
-      contract
-    )
+  const drizzledAmount = totalMarketCost - ante
+  if (
+    drizzledAmount > 0 &&
+    (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
+  ) {
+    return await pg.tx(async (tx) => {
+      await runTxn(tx, {
+        fromId: providerId,
+        amount: drizzledAmount,
+        toId: contract.id,
+        toType: 'CONTRACT',
+        category: 'ADD_SUBSIDY',
+        token: 'M$',
+        fromType: 'USER',
+      })
+      const newLiquidityProvision = getNewLiquidityProvision(
+        providerId,
+        drizzledAmount,
+        contract
+      )
 
-    await insertLiquidity(tx, newLiquidityProvision)
+      await insertLiquidity(tx, newLiquidityProvision)
 
-    contractRef.update({
-      subsidyPool: FieldValue.increment(drizzledAmount),
-      totalLiquidity: FieldValue.increment(drizzledAmount),
+      contractRef.update({
+        subsidyPool: FieldValue.increment(drizzledAmount),
+        totalLiquidity: FieldValue.increment(drizzledAmount),
+      })
     })
-
-  })
-}
+  }
 }

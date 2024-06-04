@@ -21,6 +21,7 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 import { assert } from 'common/util/assert'
 import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
 import { Answer } from 'common/answer'
+import { convertAnswer } from 'common/supabase/contracts'
 
 const firestore = admin.firestore()
 
@@ -261,31 +262,26 @@ const undoResolution = async (
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
-    const updatedAttrs = {
-      resolutionTime: admin.firestore.FieldValue.delete(),
-      resolverId: admin.firestore.FieldValue.delete(),
-    }
-    for (const answer of contract.answers) {
-      const answerDoc = firestore.doc(
-        `contracts/${contractId}/answersCpmm/${answer.id}`
-      )
-      await answerDoc.update(updatedAttrs)
-      const updated = omit(answer, ['resolutionTime', 'resolverId'])
-      broadcastUpdatedAnswer(contract, updated)
-    }
-  } else if (answerId) {
-    const updatedAttrs = {
-      resolution: admin.firestore.FieldValue.delete(),
-      resolutionTime: admin.firestore.FieldValue.delete(),
-      resolutionProbability: admin.firestore.FieldValue.delete(),
-      resolverId: admin.firestore.FieldValue.delete(),
-    }
-    const answerDoc = firestore.doc(
-      `contracts/${contractId}/answersCpmm/${answerId}`
+    // remove resolutionTime and resolverId from all answers in the contract
+    const newAnswers = await pg.map(
+      `update answers
+      set data = data - 'resolutionTime' - 'resolverId'
+      where contract_id = $1
+      returning *`,
+      [contractId],
+      convertAnswer
     )
-    await answerDoc.update(updatedAttrs)
-    const updated = (await answerDoc.get()).data() as Answer | undefined
-    if (updated) broadcastUpdatedAnswer(contract, updated)
+    newAnswers.forEach((ans) => broadcastUpdatedAnswer(contract, ans))
+  } else if (answerId) {
+    const answer = await pg.one(
+      `update answers
+      set data = data - '{resolution,resolutionTime,resolutionProbability,resolverId}'::text[]
+      where id = $1
+      returning *`,
+      [answerId],
+      convertAnswer
+    )
+    broadcastUpdatedAnswer(contract, answer)
   }
 
   log('updated contract')

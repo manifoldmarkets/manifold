@@ -10,6 +10,8 @@ import { HOUR_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { log } from 'shared/utils'
 import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
+import { getAnswer, updateAnswer } from 'shared/supabase/answers'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const bodySchema = z
   .object({
@@ -23,12 +25,8 @@ const firestore = admin.firestore()
 
 export const editanswercpmm = authEndpoint(async (req, auth) => {
   const { contractId, answerId, text, color } = validate(bodySchema, req.body)
-  log('Received', {
-    contractId,
-    answerId,
-    text,
-    color,
-  })
+
+  const pg = createSupabaseDirectClient()
 
   const contractDoc = firestore.doc(`contracts/${contractId}`)
 
@@ -43,15 +41,9 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
   if (closeTime && Date.now() > closeTime)
     throw new APIError(403, 'Cannot edit answer after market closes')
 
-  const answerDoc = firestore
-    .collection(`contracts/${contractId}/answersCpmm/`)
-    .doc(answerId)
+  const answer = await getAnswer(pg, answerId)
+  if (!answer) throw new APIError(404, 'Answer not found')
 
-  const answerSnap = await answerDoc.get()
-  if (!answerSnap.exists)
-    throw new APIError(404, 'Answer with that id not found')
-
-  const answer = answerSnap.data() as Answer
   if (answer.resolution)
     throw new APIError(403, 'Cannot edit answer that is already resolved')
 
@@ -75,18 +67,15 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
   )
     throw new APIError(403, 'Contract owner, mod, or answer owner required')
 
-  const newAnswer = { ...answer, ...removeUndefinedProps({ text, color }) }
+  const update = removeUndefinedProps({ text, color })
+  const newAnswer = { ...answer, ...update }
 
   const answers = contract.answers.map((answer) =>
     answer.id === answerId ? newAnswer : answer
   )
 
-  await answerDoc.update(
-    removeUndefinedProps({
-      text,
-      color,
-    })
-  )
+  await updateAnswer(pg, answerId, update)
+
   await contractDoc.update({
     answers,
   })

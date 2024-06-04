@@ -1,8 +1,6 @@
 import * as admin from 'firebase-admin'
 import * as crypto from 'crypto'
-
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { Answer } from 'common/answer'
 import { onCreateBets } from 'api/on-create-bet'
 import {
   getUnfilledBetsAndUserBalances,
@@ -15,6 +13,7 @@ import { incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { getAnswersForContract } from 'shared/supabase/answers'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
   return await betsQueue.enqueueFn(
@@ -47,8 +46,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       `Checking for limit orders and bets in sellshares for user ${uid} on contract id ${contractId}.`
     )
 
-    const answersSnap = await fbTrans.get(contractDoc.collection('answersCpmm'))
-    const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+    const answers = await getAnswersForContract(pgTrans, contractId)
     const answersToSell = answers.filter((a) => answerIds.includes(a.id))
     if (!answersToSell) throw new APIError(404, 'Answers not found')
     if ('resolution' in answersToSell && answersToSell.resolution)

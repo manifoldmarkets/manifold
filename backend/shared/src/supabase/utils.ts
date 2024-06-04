@@ -107,3 +107,18 @@ export async function updateData<T extends TableName>(
     [JSON.stringify(rest)]
   )
 }
+
+export async function updateDataAndReturn<T extends TableName>(
+  db: SupabaseDirectClient,
+  table: T,
+  idField: Column<T>,
+  data: Partial<DataFor<T>>
+) {
+  const { [idField]: id, ...rest } = data
+  if (!id) throw new Error(`Missing id field ${idField} in data`)
+
+  return await db.one<Row<T>>(
+    `update ${table} set data = data || $1 where ${idField} = '${id}' returning *`,
+    [JSON.stringify(rest)]
+  )
+}

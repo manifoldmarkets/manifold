@@ -13,6 +13,7 @@ import { Bet } from '../bet'
 import { ContractMetric } from '../contract-metric'
 import { Group } from '../group'
 import { Txn } from '../txn'
+import { Answer } from 'common/answer'
 
 export type Schema = Database['public']
 export type Tables = Schema['Tables']
@@ -34,16 +35,6 @@ export const collectionTables: CollectionTableMapping = {
   'private-users': 'private_users',
   contracts: 'contracts',
   manalinks: 'manalinks',
-}
-
-export type SubcollectionTableMapping = {
-  [parent: string]: { [child: string]: TableName }
-}
-export const subcollectionTables: SubcollectionTableMapping = {
-  contracts: {
-    answersCpmm: 'answers',
-    follows: 'contract_follows',
-  },
 }
 
 export function createClient(
@@ -81,6 +72,7 @@ type JsonTypes = {
   user_contract_metrics: ContractMetric
   contracts: Contract
   cotracts_rbac: Contract
+  answers: Answer
   contract_bets: Bet
   public_contract_bets: Bet
   groups: Group
