@@ -219,7 +219,7 @@ export const BuyPanelBody = (props: {
       ? multiProps.answerText ?? multiProps.answerToBuy.text
       : undefined
 
-  const initialBetAmount = 50
+  const initialBetAmount = contract.marketTier === 'play' ? 5 : 50
 
   const [betAmount, setBetAmount] = useState<number | undefined>(
     initialBetAmount
@@ -498,6 +498,7 @@ export const BuyPanelBody = (props: {
                 inputRef={inputRef}
                 binaryOutcome={isBinaryMC ? undefined : outcome}
                 showSlider={isAdvancedTrader}
+                marketTier={contract.marketTier}
               />
 
               {isAdvancedTrader && (

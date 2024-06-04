@@ -1,6 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { runScript } from './run-script'
-import { ANSWER_COST } from 'common/economy'
+import { getTieredAnswerCost } from 'common/economy'
 
 if (require.main === module) {
   runScript(async ({ pg, firestore }) => {
@@ -12,18 +12,19 @@ if (require.main === module) {
 
     console.log('createdAnswers', createdAnswers)
 
+    const answerCost = getTieredAnswerCost(undefined)
     for (const answer of createdAnswers) {
       console.log(
         'decrease deposits for user',
         answer.user_id,
         'by',
-        ANSWER_COST
+        answerCost
       )
       await firestore
         .collection('users')
         .doc(answer.user_id)
         .update({
-          totalDeposits: FieldValue.increment(-ANSWER_COST),
+          totalDeposits: FieldValue.increment(-answerCost),
         })
     }
   })

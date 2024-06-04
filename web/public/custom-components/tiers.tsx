@@ -1,9 +1,19 @@
 import clsx from 'clsx'
-import { Contract, MarketTierType } from 'common/contract'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { capitalize } from 'lodash'
-import { getAnte, getTieredCost } from 'common/economy'
-import { shortenNumber } from 'web/lib/util/formatNumber'
+import { BiGame } from 'react-icons/bi'
+
+export function PlayTier(props: { className?: string }) {
+  const { className } = props
+  return (
+    <BiGame
+      className={clsx('inline-block', className)}
+      style={{
+        width: '1em',
+        height: '1em',
+        marginRight: '0.1em',
+      }}
+    />
+  )
+}
 
 export function PlusTier(props: { className?: string }) {
   const { className } = props

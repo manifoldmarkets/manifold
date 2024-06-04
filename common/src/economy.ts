@@ -6,16 +6,22 @@ import {
 } from 'common/contract'
 
 export const FIXED_ANTE = 1000
-export const ANSWER_COST = FIXED_ANTE / 10
+const BASE_ANSWER_COST = FIXED_ANTE / 10
 const ANTES = {
   BINARY: FIXED_ANTE,
-  MULTIPLE_CHOICE: ANSWER_COST, // Amount per answer.
-  FREE_RESPONSE: ANSWER_COST, // Amount per answer.
+  MULTIPLE_CHOICE: BASE_ANSWER_COST, // Amount per answer.
+  FREE_RESPONSE: BASE_ANSWER_COST, // Amount per answer.
   PSEUDO_NUMERIC: FIXED_ANTE * 2.5,
   STONK: FIXED_ANTE,
   BOUNTIED_QUESTION: 0,
   POLL: FIXED_ANTE / 10,
   NUMBER: FIXED_ANTE * 10,
+}
+
+export const getTieredAnswerCost = (marketTier: MarketTierType | undefined) => {
+  return marketTier
+    ? BASE_ANSWER_COST * MARKET_TIER_MULTIPLES[marketTier]
+    : BASE_ANSWER_COST
 }
 
 export const MINIMUM_BOUNTY = 10000
@@ -45,7 +51,7 @@ export const getTieredCost = (
 
   const tieredCost = tier ? baseCost * MARKET_TIER_MULTIPLES[tier] : baseCost
 
-  if (outcomeType == 'NUMBER' && tier != 'basic') {
+  if (outcomeType == 'NUMBER' && tier != 'basic' && tier != 'play') {
     return tieredCost / 10
   }
 

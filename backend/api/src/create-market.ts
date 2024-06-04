@@ -137,12 +137,12 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
-  const ante =
+  const unmodifiedAnte =
     (specialLiquidityPerAnswer ??
       totalBounty ??
       getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
 
-  if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
+  if (unmodifiedAnte < 1) throw new APIError(400, 'Ante must be at least 1')
 
   const closeTime = await getCloseTimestamp(
     closeTimeRaw,
@@ -153,7 +153,10 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   const pg = createSupabaseDirectClient()
 
-const totalMarketCost = marketTier ? getTieredCost(ante, marketTier, outcomeType): ante
+  const totalMarketCost = marketTier
+    ? getTieredCost(unmodifiedAnte, marketTier, outcomeType)
+    : unmodifiedAnte
+  const ante = Math.min(unmodifiedAnte, totalMarketCost)
 
   const contract = await pg.tx(async (tx) => {
     const user = await getUser(userId, tx)

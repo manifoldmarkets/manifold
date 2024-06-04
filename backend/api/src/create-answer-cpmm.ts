@@ -5,7 +5,7 @@ import { User } from 'common/user'
 import { CandidateBet, getBetDownToOneMultiBetInfo } from 'common/new-bet'
 import { Answer, getMaximumAnswers } from 'common/answer'
 import { APIError, APIHandler } from './helpers/endpoint'
-import { ANSWER_COST } from 'common/economy'
+import { getTieredAnswerCost } from 'common/economy'
 import { randomString } from 'common/util/random'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { FieldValue } from 'firebase-admin/firestore'
@@ -98,6 +98,8 @@ export const createAnswerCpmmMain = async (
 
   const pg = createSupabaseDirectClient()
 
+  const answerCost = getTieredAnswerCost(contract.marketTier)
+
   let needToDoSketchyFirebaseRevert = false // for updating contract liquidity
   const { newAnswer, updatedAnswers, user } = await pg
     .tx({ mode: SERIAL }, async (pgTrans) => {
@@ -105,13 +107,13 @@ export const createAnswerCpmmMain = async (
       if (!user) throw new APIError(401, 'Your account was not found')
       if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-      if (user.balance < ANSWER_COST && !specialLiquidityPerAnswer)
-        throw new APIError(403, 'Insufficient balance, need M' + ANSWER_COST)
+      if (user.balance < answerCost && !specialLiquidityPerAnswer)
+        throw new APIError(403, 'Insufficient balance, need M' + answerCost)
 
       if (!specialLiquidityPerAnswer) {
         await incrementBalance(pgTrans, user.id, {
-          balance: -ANSWER_COST,
-          totalDeposits: -ANSWER_COST,
+          balance: -answerCost,
+          totalDeposits: -answerCost,
         })
       }
 
@@ -125,9 +127,9 @@ export const createAnswerCpmmMain = async (
         )
       }
 
-      let poolYes = ANSWER_COST
-      let poolNo = ANSWER_COST
-      let totalLiquidity = ANSWER_COST
+      let poolYes = answerCost
+      let poolNo = answerCost
+      let totalLiquidity = answerCost
       let prob = 0.5
 
       if (specialLiquidityPerAnswer) {
@@ -169,7 +171,8 @@ export const createAnswerCpmmMain = async (
           user,
           contract,
           answers,
-          newAnswer
+          newAnswer,
+          answerCost
         )
         await convertOtherAnswerShares(pgTrans, updatedAnswers, newAnswer.id)
       } else {
@@ -178,14 +181,14 @@ export const createAnswerCpmmMain = async (
 
       if (!specialLiquidityPerAnswer) {
         await firestore.doc(`contracts/${contractId}`).update({
-          totalLiquidity: FieldValue.increment(ANSWER_COST),
+          totalLiquidity: FieldValue.increment(answerCost),
         })
         needToDoSketchyFirebaseRevert = true
 
         const lp = getCpmmInitialLiquidity(
           user.id,
           contract,
-          ANSWER_COST,
+          answerCost,
           createdTime,
           newAnswer.id
         )
@@ -200,11 +203,11 @@ export const createAnswerCpmmMain = async (
       if (needToDoSketchyFirebaseRevert) {
         try {
           await firestore.doc(`contracts/${contractId}`).update({
-            totalLiquidity: FieldValue.increment(-ANSWER_COST),
+            totalLiquidity: FieldValue.increment(-answerCost),
           })
         } catch (e) {
           log.error(
-            `Failed to revert contract liquidity by ${ANSWER_COST}. Must manually reconcile!`
+            `Failed to revert contract liquidity by ${answerCost}. Must manually reconcile!`
           )
           throw e
         }
@@ -232,7 +235,8 @@ async function createAnswerAndSumAnswersToOne(
   user: User,
   contract: CPMMMultiContract,
   answers: Answer[],
-  newAnswer: Answer
+  newAnswer: Answer,
+  answerCost: number
 ) {
   const [otherAnswers, answersWithoutOther] = partition(
     answers,
@@ -248,14 +252,14 @@ async function createAnswerAndSumAnswersToOne(
 
   const contractDoc = firestore.doc(`contracts/${contract.id}`)
 
-  // 1. Create a mana budget including ANSWER_COST, and shares from Other.
+  // 1. Create a mana budget including answerCost, and shares from Other.
   // 2. Keep track of excess Yes and No shares of Other. Other has been divided
   // into three pieces: mana, excessYesShares, excessNoShares.
   // 3a. Recreate liquidity for the new answer and other by spending mana.
   // 3b. Add excessYesShares to both other and the new answer's pools.
   // These Yes shares can be copied because, conceptually, if the new answer is split out of Other,
   // then original yes shares in Other should pay out if either it or Other is chosen.
-  // Note that the new answer has up to ANSWER_COST liquidity, while the remainder of liquidity,
+  // Note that the new answer has up to answerCost liquidity, while the remainder of liquidity,
   // which could be a lot, is spent on the other answer.
   // 4. Convert excess No shares in Other into Yes shares in all the previous answers and add them
   // to previous answers' pools.
@@ -265,11 +269,11 @@ async function createAnswerAndSumAnswersToOne(
   // prob of new answer + prob of other answer must be > than previous prob of other answer. Empirically true...
   // b. If there are excess No shares, then new answer & other answer each has 50% prob.
   // 6. Betting it down to 1 produces mana, which we then insert as subsidy.
-  const mana = ANSWER_COST + Math.min(otherAnswer.poolYes, otherAnswer.poolNo)
+  const mana = answerCost + Math.min(otherAnswer.poolYes, otherAnswer.poolNo)
   const excessYesShares = Math.max(0, otherAnswer.poolYes - otherAnswer.poolNo)
   const excessNoShares = Math.max(0, otherAnswer.poolNo - otherAnswer.poolYes)
 
-  const answerCostOrHalf = Math.min(ANSWER_COST, mana / 2)
+  const answerCostOrHalf = Math.min(answerCost, mana / 2)
   const newAnswerPool = {
     YES: answerCostOrHalf + excessYesShares,
     NO: answerCostOrHalf,

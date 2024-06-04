@@ -7,6 +7,7 @@ import {
   CrystalTier,
   PlusTier,
   PremiumTier,
+  PlayTier,
 } from 'web/public/custom-components/tiers'
 import { capitalize } from 'lodash'
 import { Placement } from '@floating-ui/react'
@@ -56,7 +57,9 @@ export function TierTooltip(props: {
       {!noTitle && (
         <div
           className={clsx(
-            tier == 'plus'
+            tier == 'play'
+              ? 'text-green-600 dark:text-green-500'
+              : tier == 'plus'
               ? 'text-blue-600 dark:text-blue-500'
               : tier == 'premium'
               ? 'text-purple-500 dark:text-purple-400'
@@ -74,6 +77,9 @@ export function TierTooltip(props: {
 
 export function TierIcon(props: { tier: MarketTierType; className?: string }) {
   const { tier, className } = props
+  if (tier == 'play') {
+    return <PlayTier className={className} />
+  }
   if (tier == 'plus') {
     return <PlusTier className={className} />
   }

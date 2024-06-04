@@ -21,6 +21,7 @@ import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { MarketTierType } from 'common/contract'
 
 export function AmountInput(
   props: {
@@ -162,12 +163,14 @@ export function BuyAmountInput(props: {
   quickButtonValues?: number[] | 'large'
   disableQuickButtons?: boolean
   token?: 'M$' | 'SPICE'
+  marketTier?: MarketTierType | undefined
 }) {
   const {
     amount,
     onChange,
     error,
     setError,
+    marketTier,
     disabled,
     binaryOutcome,
     showBalance,
@@ -221,10 +224,12 @@ export function BuyAmountInput(props: {
   }
 
   const isAdvancedTrader = useIsAdvancedTrader()
-  const advancedIncrementValues = hasLotsOfMana
-    ? [50, 250, 1000]
-    : [10, 50, 250]
-  const defaultIncrementValues = hasLotsOfMana ? [50, 250] : [10, 100]
+  const advancedIncrementValues = (
+    hasLotsOfMana ? [50, 250, 1000] : [10, 50, 250]
+  ).map((v) => (marketTier === 'play' ? v / 10 : v))
+  const defaultIncrementValues = (hasLotsOfMana ? [50, 250] : [10, 100]).map(
+    (v) => (marketTier === 'play' ? v / 10 : v)
+  )
 
   const incrementValues =
     quickButtonValues === 'large'

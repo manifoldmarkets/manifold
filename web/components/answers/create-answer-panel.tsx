@@ -8,7 +8,7 @@ import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
-import { ANSWER_COST } from 'common/economy'
+import { getTieredAnswerCost } from 'common/economy'
 import { Input } from '../widgets/input'
 
 export function CreateAnswerCpmmPanel(props: {
@@ -75,7 +75,7 @@ export function CreateAnswerCpmmPanel(props: {
             disabled={!canSubmit}
             onClick={withTracking(submitAnswer, 'submit answer')}
           >
-            Add answer ({formatMoney(ANSWER_COST)})
+            Add answer ({formatMoney(getTieredAnswerCost(contract.marketTier))})
           </Button>
         </Row>
       </Row>
