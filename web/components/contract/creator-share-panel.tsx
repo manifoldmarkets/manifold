@@ -14,6 +14,7 @@ import { useUser } from 'web/hooks/use-user'
 import { ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { AddBountyButton, CancelBountyButton } from './bountied-question'
+import { UpgradeTierButton } from './upgrade-tier-button'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -25,8 +26,8 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
           <AddBountyButton contract={contract} />
         )}
+        <UpgradeTierButton contract={contract}/>
         <ShareLinkButton contract={contract} />
-
         <TweetButton
           tweetText={
             'I created a question. ' +
@@ -34,7 +35,6 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
           }
           className="hidden sm:flex"
         />
-
         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
           <CancelBountyButton contract={contract} />
         )}
