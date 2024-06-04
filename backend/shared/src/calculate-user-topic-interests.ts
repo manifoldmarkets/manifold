@@ -126,19 +126,6 @@ export async function calculateUserTopicInterests(
       ])
       const groupIdsToConversionScore = Object.fromEntries(
         allGroupIds.map((groupId) => {
-          const prior =
-            myPriorConversionScores[groupId] ?? FEED_CARD_CONVERSION_PRIOR
-          const priorStrength = 20
-          const alpha = priorStrength * prior
-          const beta = (1 - prior) * priorStrength
-          const cardWeights = myGroupWeights[groupId]?.card ?? [0]
-          const pageWeights = myGroupWeights[groupId]?.page ?? [0]
-          const cardViews = cardViewedGroupIds.filter(
-            (id) => id === groupId
-          ).length
-          const pageViews = pageViewedGroupIds.filter(
-            (id) => id === groupId
-          ).length
           const priorStats =
             myPriorConversionScores[groupId] ??
             ({
