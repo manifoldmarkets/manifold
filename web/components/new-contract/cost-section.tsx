@@ -168,7 +168,7 @@ function Tier(props: {
           : tier == 'premium'
           ? 'opacity-50 outline-transparent hover:outline-fuchsia-400/50'
           : 'opacity-50 outline-transparent hover:outline-pink-500/50',
-        'bg-canvas-50 w-full cursor-pointer select-none items-center rounded py-2 px-4 outline transition-colors',
+        'bg-canvas-50 w-full cursor-pointer select-none items-center rounded px-4 py-2 outline transition-colors',
         'flex flex-row gap-2 sm:flex-col sm:gap-0'
       )}
       onClick={() => setMarketTier(tier)}
