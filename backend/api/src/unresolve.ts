@@ -5,7 +5,7 @@ import {
   ContractUndoOldResolutionPayoutTxn,
   ContractUndoProduceSpiceTxn,
 } from 'common/txn'
-import { chunk, omit } from 'lodash'
+import { chunk } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
@@ -20,7 +20,6 @@ import { bulkIncrementBalances } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { assert } from 'common/util/assert'
 import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
-import { Answer } from 'common/answer'
 import { convertAnswer } from 'common/supabase/contracts'
 
 const firestore = admin.firestore()

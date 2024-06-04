@@ -1,7 +1,6 @@
 import * as admin from 'firebase-admin'
 import {
   createSupabaseDirectClient,
-  pgp,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { log } from 'shared/utils'

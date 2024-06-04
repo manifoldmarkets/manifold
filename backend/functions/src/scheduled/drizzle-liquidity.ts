@@ -11,7 +11,6 @@ import {
   getCpmmProbability,
 } from 'common/calculate-cpmm'
 import { formatMoneyWithDecimals } from 'common/util/format'
-import { Answer } from 'common/answer'
 import { shuffle } from 'lodash'
 import {
   SupabaseDirectClient,
