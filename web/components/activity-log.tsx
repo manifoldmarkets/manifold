@@ -19,7 +19,7 @@ import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
 import {
   usePublicContracts,
-  useRealtimeNewContracts,
+  useLiveAllNewContracts,
 } from 'web/hooks/use-contract-supabase'
 import {
   usePrivateUser,
@@ -109,7 +109,7 @@ export function ActivityLog(props: {
 
   const realtimeComments = useRealtimeComments(count * 3)
 
-  const newContracts = useRealtimeNewContracts(count * 3)?.filter(
+  const newContracts = useLiveAllNewContracts(count * 3)?.filter(
     (c) =>
       !blockedContractIds.includes(c.id) &&
       !blockedUserIds.includes(c.creatorId) &&

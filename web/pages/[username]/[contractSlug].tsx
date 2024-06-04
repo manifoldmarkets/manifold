@@ -45,11 +45,10 @@ import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useBets, useSubscribeNewBets } from 'web/hooks/use-bets-supabase'
 import {
-  useFirebasePublicContract,
   useIsPrivateContractMember,
+  useLiveContract,
 } from 'web/hooks/use-contract-supabase'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
@@ -169,18 +168,7 @@ export function ContractPageContent(props: ContractParams) {
     lastBetTime,
   } = props
 
-  const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
-  let answers: Answer[] | undefined
-  if (contract.mechanism === 'cpmm-multi-1') {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const updatedAnswers = useAnswersCpmm(contract.id)
-    if (updatedAnswers) {
-      answers = updatedAnswers
-      contract.answers = answers
-    }
-  }
+  const contract = useLiveContract(props.contract)
   if (!contract.viewCount) {
     contract.viewCount = props.contract.viewCount
   }

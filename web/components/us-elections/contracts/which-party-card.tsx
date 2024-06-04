@@ -13,7 +13,7 @@ import {
 } from 'web/components/contract/contracts-table'
 import { YourMetricsFooter } from 'web/components/contract/feed-contract-card'
 import { useAdTimer } from 'web/hooks/use-ad-timer'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useLiveContract } from 'web/hooks/use-contract-supabase'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -52,9 +52,7 @@ export function WhichPartyCard(props: {
   } = props
   const user = useUser()
 
-  const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
+  const contract = useLiveContract(props.contract)
 
   const { closeTime, outcomeType, mechanism } = contract
 

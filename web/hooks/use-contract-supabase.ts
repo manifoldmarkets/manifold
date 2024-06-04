@@ -1,4 +1,4 @@
-import { Contract, Visibility } from 'common/contract'
+import { type Contract } from 'common/contract'
 import { useEffect, useState } from 'react'
 import {
   getContract,
@@ -8,10 +8,11 @@ import {
   getPublicContractsByIds,
   getRecentPublicContractRows,
 } from 'web/lib/supabase/contracts'
-import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { useContractFirebase } from './use-contract-firebase'
 import { difference, uniqBy } from 'lodash'
+import { useApiSubscription } from './use-api-subscription'
+import { useAnswersCpmm } from './use-answers'
+import { convertContract } from 'common/supabase/contracts'
 
 export const usePublicContracts = (
   contractIds: string[] | undefined,
@@ -40,16 +41,6 @@ export const usePublicContracts = (
   }, [contractIds, topicSlugs, ignoreSlugs])
 
   return contracts
-}
-
-export function useRealtimeContract(contractId: string) {
-  const { rows } = useSubscription('contracts', {
-    k: 'id',
-    v: contractId ?? '_',
-  })
-  return rows != null && rows.length > 0
-    ? (rows[0].data as Contract)
-    : undefined
 }
 
 export function useIsPrivateContractMember(userId: string, contractId: string) {
@@ -98,19 +89,50 @@ export const useContract = (contractId: string | undefined) => {
   return contract
 }
 
-export function useRealtimeNewContracts(limit: number) {
-  const [startTime] = useState<string>(new Date().toISOString())
-  const { rows } = useSubscription(
-    'contracts',
-    { k: 'created_time', op: 'gte', v: startTime },
-    () => getRecentPublicContractRows({ limit })
-  )
-  return (rows ?? []).map((r) => r.data as Contract)
+export function useLiveAllNewContracts(limit: number) {
+  const [contracts, setContracts] = useState<Contract[]>([])
+
+  useEffect(() => {
+    getRecentPublicContractRows({ limit }).then((result) => {
+      setContracts(result.map(convertContract))
+    })
+  }, [])
+
+  useApiSubscription({
+    topics: ['global/new-contract'],
+    onBroadcast: ({ data }) => {
+      setContracts((old) => [data.contract as Contract, ...old])
+    },
+  })
+
+  return contracts
 }
 
-export function useFirebasePublicContract(
-  visibility: Visibility,
-  contractId: string
+export function useLiveContract<C extends Contract = Contract>(initial: C) {
+  const [contract, setContract] = useState<C>(initial)
+
+  useApiSubscription({
+    topics: [`contract/${initial.id}`],
+    onBroadcast: ({ data }) => {
+      setContract(data.contract as C)
+    },
+  })
+
+  return contract
+}
+
+export function useLiveContractWithAnswers<C extends Contract = Contract>(
+  initial: C
 ) {
-  return useContractFirebase(contractId) // useRealtimeContract(contractId)
+  const contract = useLiveContract(initial)
+
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
+  }
+
+  return contract
 }

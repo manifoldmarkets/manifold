@@ -1,6 +1,6 @@
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useLiveContract } from 'web/hooks/use-contract-supabase'
 import { PolicyContractType } from 'web/public/data/policy-data'
 import { MobilePolicy, Policy } from './conditional-market'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
@@ -12,17 +12,11 @@ export function ConditionalMarkets(props: {
   const policyContracts = props.rawPolicyContracts.map((policy) => {
     const bidenContract = policy.bidenContract
       ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useFirebasePublicContract(
-          policy.bidenContract.visibility,
-          policy.bidenContract.id
-        )
+        useLiveContract(policy.bidenContract)
       : policy.bidenContract
     const trumpContract = policy.trumpContract
       ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useFirebasePublicContract(
-          policy.trumpContract.visibility,
-          policy.trumpContract.id
-        )
+        useLiveContract(policy.trumpContract)
       : policy.trumpContract
 
     return {
