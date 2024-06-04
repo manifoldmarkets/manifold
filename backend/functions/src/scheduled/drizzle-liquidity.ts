@@ -24,6 +24,7 @@ import {
   updateAnswer,
 } from 'shared/supabase/answers'
 import { runEvilTransaction } from 'shared/evil-transaction'
+import { secrets } from 'common/secrets'
 
 const firestore = admin.firestore()
 
@@ -54,7 +55,7 @@ export const drizzleLiquidity = async () => {
 }
 
 export const drizzleLiquidityScheduler = functions
-  .runWith({ memory: '1GB', timeoutSeconds: 540 })
+  .runWith({ memory: '1GB', timeoutSeconds: 540, secrets })
   .pubsub.schedule('*/7 * * * *')
   .onRun(drizzleLiquidity)
 
