@@ -100,7 +100,7 @@ export const getTopicReposts = async (
   return pg.map(
     `
         select
-            avg(avg_conversion_score) as topic_conversion_score,
+            avg(group_score) as topic_conversion_score,
             contracts.data as contract_data,
             contracts.importance_score,
             contracts.view_count,
@@ -111,7 +111,7 @@ export const getTopicReposts = async (
             contract_bets.data as bet_data,
             posts.*
         from 
-            (select unnest(array[$1]) as group_id, unnest(array[$2]) as avg_conversion_score) as uti
+            (select unnest(array[$1]) as group_id, unnest(array[$2]) as group_score) as uti
            join group_contracts on group_contracts.group_id = uti.group_id
            join posts on posts.contract_id = group_contracts.contract_id
            join contracts on contracts.id = posts.contract_id
@@ -124,7 +124,7 @@ export const getTopicReposts = async (
                 and posts.created_time < coalesce(greatest(ucv.last_page_view_ts, ucv.last_card_view_ts),millis_to_ts(0))
               )
              and posts.user_id not in (select follow_id from user_follows where user_id = $3)
-             and avg_conversion_score > 1
+             and group_score > 0.45
              and contract_comments.likes > 0
              and contracts.close_time > now()
              and posts.created_time > now() - interval '1 week'
@@ -134,7 +134,7 @@ export const getTopicReposts = async (
              ${userBlockSql}
              and contracts.id not in (select contract_id from user_disinterests where user_id = $3 and contract_id = contracts.id)
         group by contracts.id, posts.id, comment, bet_data, comment_likes
-        order by avg(avg_conversion_score  * contracts.conversion_score) desc
+        order by avg(group_score  * contracts.conversion_score) desc
         offset $4 limit $5
 `,
     [userInterestTopicIds, userInterestWeights, userId, offset, limit],
