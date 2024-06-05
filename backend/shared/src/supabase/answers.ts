@@ -1,4 +1,4 @@
-import { SupabaseDirectClient, pgp } from 'shared/supabase/init'
+import { SupabaseDirectClient } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import { groupBy } from 'lodash'
 import { Answer } from 'common/answer'
