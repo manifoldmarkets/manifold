@@ -73,6 +73,7 @@ export const Stats = (props: {
     resolutionTime,
     uniqueBettorCount,
     mechanism,
+    viewCount,
     outcomeType,
     id,
     elasticity,
@@ -211,6 +212,11 @@ export const Stats = (props: {
             <tr>
               <td>{capitalize(BETTORS)}</td>
               <td>{uniqueBettorCount ?? '0'}</td>
+            </tr>
+
+            <tr>
+              <td>Views</td>
+              <td>{viewCount ?? '0'}</td>
             </tr>
           </>
         )}
