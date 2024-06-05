@@ -1,7 +1,10 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { chunk, sortBy, uniq } from 'lodash'
-import { createSupabaseClient } from 'shared/supabase/init'
+import { chunk, sortBy } from 'lodash'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 import { getAnswersForContracts } from 'common/supabase/contracts'
 import { SupabaseClient } from 'common/supabase/utils'
@@ -15,28 +18,23 @@ export const denormalizeAnswers = functions
   .onRun(denormalizeAnswersCore)
 
 export async function denormalizeAnswersCore() {
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
   // Fetch answers modified in the last minute (plus 5 seconds)
   const oneMinuteAgo = new Date(Date.now() - 65 * 1000)
-  const { data: recentAnswers } = await db
-    .from('answers')
-    .select('contract_id')
-    .gt('fs_updated_time', oneMinuteAgo.toISOString())
-
-  if (!recentAnswers || recentAnswers.length === 0) {
-    console.log('No recently updated answers')
-    return
-  }
-
-  const contractIds = uniq(
-    recentAnswers.map((answer) => answer.contract_id as string)
+  const contractIds = await pg.map(
+    `
+        select id from contracts
+        where last_updated_time > $1
+        and mechanism = 'cpmm-multi-1'
+        `,
+    [oneMinuteAgo.toISOString()],
+    (r) => r.id as string
   )
-
   console.log('Denormalizing answers for contracts: ', contractIds)
 
   const contractIdChunks = chunk(contractIds, 20)
-
+  const db = createSupabaseClient()
   for (const contractIdChunk of contractIdChunks) {
     await denormalizeContractAnswers(db, contractIdChunk)
   }
