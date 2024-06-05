@@ -27,9 +27,9 @@ export function createJobs() {
   return [
     // Hourly jobs:
     createJob(
-      'update-contract-metrics-multi',
+      'update-contract-metrics',
       '0 */21 * * * *', // every 21 minutes - (on the 3rd minute of every hour)
-      () => updateContractMetricsCore('multi'),
+      updateContractMetricsCore,
       30 * MINUTE_MS
     ),
     createJob(
@@ -51,12 +51,6 @@ export function createJobs() {
       'check-push-receipts',
       '0 15 * * * *', // on the 15th minute of every hour
       checkPushNotificationReceipts
-    ),
-    createJob(
-      'update-contract-metrics-non-multi',
-      '0 */19 * * * *', // every 19 minutes - (on the 16th minute of every hour)
-      () => updateContractMetricsCore('non-multi'),
-      30 * MINUTE_MS
     ),
     createJob(
       'calculate-conversion-scores',

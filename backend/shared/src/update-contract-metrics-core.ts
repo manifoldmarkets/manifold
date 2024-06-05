@@ -14,21 +14,16 @@ import { LimitBet } from 'common/bet'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { bulkUpdateAnswers } from './supabase/answers'
 
-export async function updateContractMetricsCore(
-  outcomeType: 'multi' | 'non-multi'
-) {
+export async function updateContractMetricsCore() {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
   const allContracts = await pg.map(
     `
     select data from contracts
-    where case 
-      when $1 = 'multi' then outcome_type = $2 
-      else outcome_type != $2 end
-    and (resolution_time is null or resolution_time > now() - interval '1 month')
+    where (resolution_time is null or resolution_time > now() - interval '1 month')
     `,
-    [outcomeType, 'MULTIPLE_CHOICE'],
+    [],
     (r) => r.data as Contract
   )
   log(`Loaded ${allContracts.length} contracts.`)
