@@ -40,6 +40,9 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { UserHovercard } from '../user/user-hovercard'
+import { IconButton } from 'web/components/buttons/button'
+import { ChevronUpIcon } from '@heroicons/react/solid'
+import { OutcomeLabel } from 'web/components/outcome-label'
 
 type BetSort =
   | 'newest'
@@ -545,42 +548,66 @@ function BetsTable(props: {
               contract.mechanism === 'cpmm-1'
                 ? signedInUser
                 : undefined
+            const maxOutcome = metricsByContractId[contract.id].maxSharesOutcome
             return (
               <Row
                 key={contract.id + 'bets-table-row'}
                 className={
                   'border-ink-200 hover:bg-canvas-50 cursor-pointer border-b py-2'
                 }
-                onClick={() => setNewExpandedId(contract.id)}
               >
                 <Col className={'w-full'}>
                   {/* Contract title*/}
                   <Row className={'-mb-2'}>
-                    <Col>
-                      <Link
-                        href={contractPath(contract)}
-                        className={clsx(linkClass, 'line-clamp-2 pr-2 sm:pr-1')}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {contract.question}
-                      </Link>
-                      <UserHovercard
-                        className="self-start"
-                        userId={contract.creatorId}
-                      >
-                        <UserLink
-                          className={'text-ink-600 w-fit text-sm'}
-                          user={{
-                            id: contract.creatorId,
-                            name: contract.creatorName,
-                            username: contract.creatorUsername,
-                          }}
-                        />
-                      </UserHovercard>
+                    <Col className={'w-full'}>
+                      <Row className={'justify-between'}>
+                        <Link
+                          href={contractPath(contract)}
+                          className={clsx(
+                            linkClass,
+                            'line-clamp-2 pr-2 sm:pr-1'
+                          )}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {contract.question}
+                        </Link>
+                        <IconButton
+                          size={'2xs'}
+                          onClick={() => setNewExpandedId(contract.id)}
+                        >
+                          {expandedIds.includes(contract.id) ? (
+                            <ChevronUpIcon className="h-4" />
+                          ) : (
+                            <ChevronUpIcon className="h-4 rotate-180" />
+                          )}
+                        </IconButton>
+                      </Row>
+                      <Row className={'items-center gap-2'}>
+                        {maxOutcome && contract.outcomeType === 'BINARY' && (
+                          <OutcomeLabel
+                            contract={contract}
+                            outcome={maxOutcome}
+                            truncate={'short'}
+                          />
+                        )}
+                        <UserHovercard userId={contract.creatorId}>
+                          <UserLink
+                            className={'text-ink-600 w-fit text-sm'}
+                            user={{
+                              id: contract.creatorId,
+                              name: contract.creatorName,
+                              username: contract.creatorUsername,
+                            }}
+                          />
+                        </UserHovercard>
+                      </Row>
                     </Col>
                   </Row>
                   {/* Contract Metrics details*/}
-                  <div className={'grid-cols-15 mt-1 grid w-full pt-2'}>
+                  <div
+                    className={'grid-cols-15 mt-1 grid w-full pt-2'}
+                    onClick={() => setNewExpandedId(contract.id)}
+                  >
                     {dataColumns.map((c) => (
                       <div
                         className={clsx(getColSpan(c.span))}
