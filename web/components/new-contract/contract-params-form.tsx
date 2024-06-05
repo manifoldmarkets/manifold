@@ -9,7 +9,6 @@ import {
   contractPath,
   CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
   CreateableOutcomeType,
-  MarketTierType,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MULTI_NUMERIC_BUCKETS_MAX,
@@ -58,6 +57,7 @@ import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-nu
 import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
 import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
+import { MarketTierType } from 'common/tier'
 
 export function ContractParamsForm(props: {
   creator: User

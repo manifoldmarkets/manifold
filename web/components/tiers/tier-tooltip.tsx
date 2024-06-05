@@ -1,15 +1,16 @@
-import { Contract, MarketTierType } from 'common/contract'
-import { Tooltip } from '../widgets/tooltip'
+import { Placement } from '@floating-ui/react'
 import clsx from 'clsx'
+import { Contract } from 'common/contract'
+import { formatMoney } from 'common/util/format'
+import { capitalize } from 'lodash'
 import {
   CrystalTier,
+  PlayTier,
   PlusTier,
   PremiumTier,
-  PlayTier,
 } from 'web/public/custom-components/tiers'
-import { capitalize } from 'lodash'
-import { Placement } from '@floating-ui/react'
-import { formatMoney } from 'common/util/format'
+import { Tooltip } from '../widgets/tooltip'
+import { MarketTierType } from 'common/tier'
 
 export function TierTooltip(props: {
   tier: MarketTierType

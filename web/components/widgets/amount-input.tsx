@@ -1,27 +1,26 @@
-import clsx from 'clsx'
 import { XIcon } from '@heroicons/react/solid'
-
+import clsx from 'clsx'
+import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { User, verifiedPhone } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
+import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { useUser } from 'web/hooks/use-user'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { AddFundsModal } from '../add-funds-modal'
+import { BetSlider } from '../bet/bet-slider'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Input } from './input'
-import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
-import { BetSlider } from '../bet/bet-slider'
 import {
   IncrementButton,
   IncrementDecrementAmountButton,
 } from './increment-button'
-import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { User, verifiedPhone } from 'common/user'
-import { PHONE_VERIFICATION_BONUS } from 'common/economy'
-import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
-import { MarketTierType } from 'common/contract'
+import { Input } from './input'
+import { MarketTierType } from 'common/tier'
 
 export function AmountInput(
   props: {
