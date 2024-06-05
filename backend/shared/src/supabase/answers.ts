@@ -73,9 +73,7 @@ export const bulkUpdateAnswers = async (
 ) => {
   if (answers.length > 0) {
     const values = answers
-      .map((ans) =>
-        pgp.as.format(`($1, $2)`, [ans.id, JSON.stringify(ans) + '::jsonb'])
-      )
+      .map((ans) => `('${ans.id}', '${JSON.stringify(ans)}'::jsonb)`)
       .join(',\n')
 
     await pg.none(
