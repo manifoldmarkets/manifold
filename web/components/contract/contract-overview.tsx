@@ -930,11 +930,13 @@ const BinaryChoiceOverview = (props: {
         <>
           {resolutionRating}
           <BinaryMultiAnswersPanel contract={contract} answers={answers} />
-          <UserBetsSummary
-            className="border-ink-200 !mb-2 mt-2 "
-            contract={contract}
-            includeSellButton={user}
-          />
+          {tradingAllowed(contract) && (
+            <UserBetsSummary
+              className="border-ink-200 !mb-2 mt-2 "
+              contract={contract}
+              includeSellButton={user}
+            />
+          )}
         </>
       )}
     </>
