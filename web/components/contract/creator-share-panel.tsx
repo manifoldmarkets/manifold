@@ -1,18 +1,18 @@
-import { Contract } from 'common/contract'
-import { getShareUrl } from 'common/util/share'
-import { TweetButton } from '../buttons/tweet-button'
-import { GradientContainer } from '../widgets/gradient-container'
-import { BoostButton } from './boost-button'
-import { Button } from '../buttons/button'
 import { LinkIcon } from '@heroicons/react/outline'
-import { getIsNative } from 'web/lib/native/is-native'
-import { copyToClipboard } from 'web/lib/util/copy'
-import { trackShareEvent } from 'web/lib/service/analytics'
-import toast from 'react-hot-toast'
-import { Row } from '../layout/row'
-import { useUser } from 'web/hooks/use-user'
 import { ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { Contract } from 'common/contract'
+import { getShareUrl } from 'common/util/share'
+import toast from 'react-hot-toast'
+import { useUser } from 'web/hooks/use-user'
+import { getIsNative } from 'web/lib/native/is-native'
+import { trackShareEvent } from 'web/lib/service/analytics'
+import { copyToClipboard } from 'web/lib/util/copy'
+import { Button } from '../buttons/button'
+import { TweetButton } from '../buttons/tweet-button'
+import { Row } from '../layout/row'
+import { GradientContainer } from '../widgets/gradient-container'
+import { BoostButton } from './boost-button'
 import { AddBountyButton, CancelBountyButton } from './bountied-question'
 import { UpgradeTierButton } from './upgrade-tier-button'
 
@@ -26,7 +26,10 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
           <AddBountyButton contract={contract} />
         )}
-        <UpgradeTierButton contract={contract}/>
+        {(contract.mechanism == 'cpmm-1' ||
+          contract.mechanism == 'cpmm-multi-1') && (
+          <UpgradeTierButton contract={contract} />
+        )}
         <ShareLinkButton contract={contract} />
         <TweetButton
           tweetText={

@@ -1,9 +1,8 @@
 import {
   OutcomeType,
-  MarketTierType,
-  MARKET_TIER_MULTIPLES,
   CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
 } from 'common/contract'
+import { MARKET_TIER_MULTIPLES, MarketTierType } from './tier'
 
 export const FIXED_ANTE = 1000
 export const ANSWER_COST = FIXED_ANTE / 4

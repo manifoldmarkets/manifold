@@ -1,4 +1,4 @@
-import { CreateableOutcomeType, MarketTierType } from 'common/contract'
+import { CreateableOutcomeType } from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -16,6 +16,7 @@ import {
 } from 'web/public/custom-components/tiers'
 import { LogoIcon } from '../icons/logo-icon'
 import { CoinNumber } from '../widgets/manaCoinNumber'
+import { MarketTierType } from 'common/tier'
 
 export const CostSection = (props: {
   balance: number

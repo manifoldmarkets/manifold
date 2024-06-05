@@ -1,32 +1,39 @@
-import { Contract } from 'common/contract'
-import { formatMoney, formatWithCommas } from 'common/util/format'
-import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
-import { ReactNode, useState } from 'react'
-import { api, boostMarket, getAdAnalytics } from 'web/lib/firebase/api'
-import { Button } from '../buttons/button'
-import toast from 'react-hot-toast'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { DEFAULT_AD_COST_PER_VIEW, MIN_AD_COST_PER_VIEW } from 'common/boost'
-import { Table } from '../widgets/table'
-import { Modal } from '../layout/modal'
-import { Col } from '../layout/col'
-import { Title } from '../widgets/title'
-import { Row } from '../layout/row'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { track } from 'web/lib/service/analytics'
-import { useQuery } from 'web/hooks/use-query'
-import { TbRocket } from 'react-icons/tb'
 import clsx from 'clsx'
-import { ControlledTabs } from '../layout/tabs'
-import { AddLiquidityPanel } from './liquidity-modal'
-import { buildArray } from 'common/util/array'
-import { ShowMoreLessButton } from '../widgets/collapsible-content'
-import { SUBSIDY_FEE } from 'common/economy'
-import { APISchema } from 'common/api/schema'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+  CreateableOutcomeType,
+} from 'common/contract'
+import { MarketTierType, getTierFromLiquidity, tiers } from 'common/tier'
+import { ReactNode, useState } from 'react'
 import { CrystalTier } from 'web/public/custom-components/tiers'
+import { Button } from '../buttons/button'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
+import { Title } from '../widgets/title'
+import { AddLiquidityPanel } from './liquidity-modal'
+import { getAnte, getTieredCost } from 'common/economy'
+import { capitalize } from 'lodash'
+import { CoinNumber } from '../widgets/manaCoinNumber'
+import { LogoIcon } from '../icons/logo-icon'
+import { Row } from '../layout/row'
+import { TierIcon } from '../tiers/tier-tooltip'
+import { api } from 'web/lib/firebase/api'
+import { track } from '@amplitude/analytics-browser'
+import { useUser } from 'web/hooks/use-user'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { AddFundsModal } from '../add-funds-modal'
 
-export function UpgradeTierButton(props: { contract: Contract; className?: string }) {
+export type ContractWithLiquidity =
+  | CPMMContract
+  | CPMMMultiContract
+  | CPMMNumericContract
+
+export function UpgradeTierButton(props: {
+  contract: ContractWithLiquidity
+  className?: string
+}) {
   const { contract, className } = props
   const [open, setOpen] = useState(false)
 
@@ -37,6 +44,9 @@ export function UpgradeTierButton(props: { contract: Contract; className?: strin
 
   if (disabled) return <></>
 
+  const alreadyHighestTier =
+    getTierFromLiquidity(contract, contract.totalLiquidity) === 'crystal'
+
   return (
     <Button
       onClick={() => setOpen(true)}
@@ -44,237 +54,202 @@ export function UpgradeTierButton(props: { contract: Contract; className?: strin
       color="indigo-outline"
       className={clsx(className, 'group')}
     >
-      <CrystalTier className="mr-1 h-5 w-5" />
-      Upgrade Tier
-      <BoostDialog contract={contract} isOpen={open} setOpen={setOpen} />
+      <CrystalTier className="mr-2 h-5 w-5" />
+      {alreadyHighestTier ? 'Add liquidity' : 'Upgrade Tier'}
+      <AddLiquidityDialogue
+        contract={contract}
+        isOpen={open}
+        setOpen={setOpen}
+      />
     </Button>
   )
 }
 
-export function BoostDialog(props: {
-  contract: Contract
+export function AddLiquidityDialogue(props: {
+  contract: ContractWithLiquidity
   isOpen: boolean
   setOpen: (open: boolean) => void
 }) {
   const { contract, isOpen, setOpen } = props
+  const { outcomeType } = contract
 
-  const [index, setIndex] = useState(0)
+  let numAnswers = undefined
+  if ('answers' in contract) {
+    numAnswers = contract.answers.length
+  }
+  const ante = getAnte(outcomeType, numAnswers)
 
-  const [amount, setAmount] = useState<number | undefined>(5000)
+  const currentTier = getTierFromLiquidity(contract, contract.totalLiquidity)
+  const currentTierIndex = tiers.indexOf(currentTier)
+  const alreadyHighestTier = currentTier === 'crystal'
+
+  const [amount, setAmount] = useState<number | undefined>(
+    alreadyHighestTier
+      ? 1000
+      : getTieredCost(ante, tiers[currentTierIndex + 1], outcomeType) -
+          contract.totalLiquidity
+  )
 
   return (
     <Modal open={isOpen} setOpen={setOpen} size="sm">
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
-        <Title className="!mb-2">🚀 Boost this question</Title>
-        <ControlledTabs
-          tabs={buildArray(
-            {
-              title: 'Feed promo',
-              content: (
-                <BoostFormRow
-                  contract={contract}
-                  amount={amount}
-                  setAmount={setAmount}
-                />
-              ),
-            },
-            {
-              title: 'Analytics',
-              content: <FeedAnalytics contractId={contract.id} />,
-            }
-          )}
-          activeIndex={index}
-          onClick={(_, i) => setIndex(i)}
-          trackingName="boost tabs"
-        />
+        <Title className="!mb-2">
+          {alreadyHighestTier ? 'Add liquidity' : 'Upgrade Tier'}
+        </Title>
+        {alreadyHighestTier ? (
+          <AddLiquidityPanel
+            contract={contract}
+            amount={amount}
+            setAmount={setAmount}
+          />
+        ) : (
+          <UpgradeTierContent
+            currentTierIndex={currentTierIndex}
+            contract={contract}
+            ante={ante}
+            amount={amount}
+            setAmount={setAmount}
+          />
+        )}
       </Col>
     </Modal>
   )
 }
 
-function BoostFormRow(props: {
-  contract: Contract
+function UpgradeTierContent(props: {
+  currentTierIndex: number
+  contract: ContractWithLiquidity
+  ante: number
   amount: number | undefined
   setAmount: (amount: number | undefined) => void
 }) {
-  const { contract, amount, setAmount } = props
+  const { currentTierIndex, contract, ante, amount, setAmount } = props
+  const { outcomeType, id: contractId, slug } = contract
+  const totalOptions = tiers.length - 1 - currentTierIndex
 
-  const [loading, setLoading] = useState(false)
-  const [showBid, setShowBid] = useState(true)
-  const [costPerView, setCostPerView] = useState<number | undefined>(
-    DEFAULT_AD_COST_PER_VIEW
-  )
+  const [error, setError] = useState<string | undefined>(undefined)
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
-  const redeems = amount && costPerView ? Math.floor(amount / costPerView) : 0
+  const submit = async () => {
+    if (!amount) return
 
-  const error =
-    !costPerView || costPerView < MIN_AD_COST_PER_VIEW
-      ? `Bid at least ${formatMoney(MIN_AD_COST_PER_VIEW)}`
-      : undefined
+    setIsLoading(true)
+    setIsSuccess(false)
 
-  const onSubmit = async () => {
-    if (!amount || !costPerView) return
-
-    setLoading(true)
     try {
-      await boostMarket({
-        marketId: contract.id,
-        totalCost: amount,
-        costPerView,
+      await api('market/:contractId/add-liquidity', {
+        amount,
+        contractId,
       })
-      toast.success('Boosted!')
-      setAmount(undefined)
-
-      track('boost market', {
-        slug: contract.slug,
-        totalCost: amount,
-        costPerView,
-      })
+      setIsSuccess(true)
+      setError(undefined)
+      track('add liquidity', { amount, contractId, slug })
     } catch (e) {
-      toast.error(
-        (e as any).message ??
-          (typeof e === 'string' ? e : 'Error boosting market')
-      )
+      setError('Server error')
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
+  const user = useUser()
+  const [fundsModalOpen, setFundsModalOpen] = useState(false)
+
+  const notEnoughFunds = !!user && !!amount && user.balance < amount
   return (
     <>
-      <div className="text-ink-600 mb-2">
-        Feed promotion boosts this question higher on the feed based on user
-        interests. Users earn a reward for clicking.
-      </div>
-
-      <Row className="items-center justify-between">
-        <BuyAmountInput
-          amount={amount}
-          onChange={setAmount}
-          error={error}
-          setError={(_e) => {}}
-          disabled={false}
-          quickButtonValues="large"
-        />
-      </Row>
-
-      {showBid && (
-        <>
-          <Row className="items-center justify-between">
-            <div>
-              Bid per click{' '}
-              <InfoTooltip text="Bid more to increase the priority of your boost. Uses a first-price auction mechanism." />
-            </div>
-            <AmountInput
-              amount={costPerView}
-              onChangeAmount={setCostPerView}
-              label={ENV_CONFIG.moneyMoniker}
-              error={!!error}
-              inputClassName="mr-2 w-36"
-            />
-          </Row>
-          {error && <div className="text-error text-right">{error}</div>}
-        </>
-      )}
-
-      <Col className="mb-2 gap-2">
-        <span className="text-ink-800 mr-2 text-lg">
-          = <strong>{redeems} clicks</strong>
-        </span>
-
-        {!showBid && (
-          <Row className="items-center text-sm">
-            at {formatMoney(costPerView ?? 0)} per click
-            <Button
-              onClick={() => setShowBid(true)}
-              size="2xs"
-              color="gray-outline"
-              className="ml-1"
-            >
-              Change
-            </Button>
-          </Row>
+      <div
+        className={clsx(
+          'w-full gap-2',
+          totalOptions > 2
+            ? 'grid grid-cols-2 sm:flex sm:flex-row'
+            : 'flex flex-row'
         )}
-      </Col>
-
-      <Button onClick={onSubmit} disabled={!!error || !redeems || loading}>
-        Buy
+      >
+        {tiers.slice(currentTierIndex + 1).map((tier) => (
+          <UpgradeTier
+            key={tier}
+            contract={contract}
+            baseCost={ante}
+            icon={<TierIcon tier={tier} />}
+            tier={tier}
+            outcomeType={outcomeType}
+            currentAmount={amount}
+            onClick={(upgradeCost) => setAmount(upgradeCost)}
+          />
+        ))}
+      </div>
+      <Button disabled={isLoading || !!error || !amount || notEnoughFunds}>
+        Upgrade{' '}
+        {amount &&
+          `to ${getTierFromLiquidity(
+            contract,
+            amount + contract.totalLiquidity
+          )}`}
       </Button>
-      {loading && <LoadingIndicator />}
+      {notEnoughFunds && (
+        <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">
+          <span className="text-scarlet-500 mr-2">Insufficient balance</span>
+          <Button
+            size="xs"
+            color="green"
+            onClick={() => setFundsModalOpen(true)}
+          >
+            Get {ENV_CONFIG.moneyMoniker}
+          </Button>
+          <AddFundsModal open={fundsModalOpen} setOpen={setFundsModalOpen} />
+        </div>
+      )}
     </>
   )
 }
 
-function FeedAnalytics(props: { contractId: string }) {
-  const { contractId } = props
+function UpgradeTier(props: {
+  contract: ContractWithLiquidity
+  baseCost: number
+  icon: ReactNode
+  tier: MarketTierType
+  outcomeType: CreateableOutcomeType
+  onClick: (upgradeCost: number) => void
+  currentAmount?: number
+}) {
   const {
-    data: adAnalytics,
-    error,
-    isLoading,
-  } = useQuery(async () =>
-    getAdAnalytics({
-      contractId,
-    })
-  )
-  if (error) {
-    return (
-      <div className="bg-scarlet-100 mb-2 rounded-md p-4">
-        Error loading analytics
-      </div>
-    )
-  }
-  if (isLoading || !adAnalytics) {
-    return (
-      <div className=" mb-2 p-4">
-        <LoadingIndicator />
-      </div>
-    )
-  }
+    contract,
+    baseCost,
+    icon,
+    tier,
+    outcomeType,
+    onClick,
+    currentAmount,
+  } = props
 
-  const {
-    totalViews,
-    uniqueViewers,
-    totalPromotedViews,
-    uniquePromotedViewers,
-    redeemCount,
-    isBoosted,
-    totalFunds,
-    adCreatedTime,
-  } = adAnalytics as APISchema<'get-ad-analytics'>['returns']
-
+  const additionalAmount =
+    getTieredCost(baseCost, tier, outcomeType) - contract.totalLiquidity
   return (
-    <div className="mt-4">
-      <div className="mb-2 text-lg">Feed Analytics</div>
-      <Table className="text-ink-900 max-w-sm table-fixed">
-        {adCreatedTime && (
-          <>
-            <TableItem
-              label="Campaign start"
-              value={new Date(adCreatedTime).toDateString()}
-            />
-            <TableItem label="Funds left" value={formatMoney(totalFunds)} />
-          </>
-        )}
-
-        <TableItem
-          label="Impressions"
-          value={`${totalViews} (${uniqueViewers} people)`}
-        />
-        {isBoosted && (
-          <TableItem
-            label="Boost Impressions"
-            value={`${totalPromotedViews} (${uniquePromotedViewers} people)`}
-          />
-        )}
-        {isBoosted && <TableItem label="Boost clicks" value={redeemCount} />}
-      </Table>
-    </div>
+    <Col
+      className={clsx(
+        currentAmount == additionalAmount
+          ? tier == 'basic'
+            ? 'outline-ink-500'
+            : tier == 'plus'
+            ? 'outline-blue-500'
+            : tier == 'premium'
+            ? 'outline-purple-400'
+            : 'outline-pink-500'
+          : tier == 'basic'
+          ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
+          : tier == 'plus'
+          ? 'opacity-50 outline-transparent hover:outline-purple-500/50'
+          : tier == 'premium'
+          ? 'opacity-50 outline-transparent hover:outline-fuchsia-400/50'
+          : 'opacity-50 outline-transparent hover:outline-pink-500/50',
+        'bg-canvas-50 w-full cursor-pointer select-none items-center rounded px-4 py-2 outline transition-colors'
+      )}
+      onClick={() => onClick(additionalAmount)}
+    >
+      <div className="text-4xl sm:text-5xl">{icon}</div>
+      <div className="text-ink-600">{capitalize(tier)}</div>
+      <CoinNumber className="text-xl font-semibold" amount={additionalAmount} />
+    </Col>
   )
 }
-
-const TableItem = (props: { label: ReactNode; value?: ReactNode }) => (
-  <tr>
-    <td className="!pl-0 !pt-0">{props.label}</td>
-    <td className="!pl-0 !pt-0">{props.value ?? '...'}</td>
-  </tr>
-)

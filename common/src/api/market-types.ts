@@ -6,7 +6,6 @@ import {
   Contract,
   MARKET_TIER_TYPES,
   MAX_QUESTION_LENGTH,
-  MarketTierType,
   MultiContract,
   RESOLUTIONS,
   VISIBILITIES,
@@ -19,6 +18,7 @@ import { z } from 'zod'
 import { MAX_ID_LENGTH } from 'common/group'
 import { contentSchema } from './zod-types'
 import { MINIMUM_BOUNTY } from 'common/economy'
+import { MarketTierType } from 'common/tier'
 
 export type LiteMarket = {
   // Unique identifier for this market

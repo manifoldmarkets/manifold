@@ -13,7 +13,6 @@ import {
   Stonk,
   Visibility,
   CPMMMultiNumeric,
-  MarketTierType,
 } from './contract'
 import { User } from './user'
 import { removeUndefinedProps } from './util/object'
@@ -22,6 +21,7 @@ import { randomString } from './util/random'
 import { PollOption } from './poll-option'
 import { Answer } from './answer'
 import { getMultiCpmmLiquidity } from './calculate-cpmm'
+import { MarketTierType } from './tier'
 
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
 

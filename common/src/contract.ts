@@ -13,6 +13,7 @@ import { PollOption } from './poll-option'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { MINUTE_MS } from './util/time'
 import { getLiquidity } from './calculate-cpmm'
+import { MarketTierType } from './tier'
 
 /************************************************
 
@@ -68,15 +69,6 @@ export const SORTS = [
 ] as const
 
 export type SortType = (typeof SORTS)[number]['value']
-
-export type MarketTierType = 'basic' | 'plus' | 'premium' | 'crystal'
-
-export const MARKET_TIER_MULTIPLES = {
-  'basic' : 1,
-  'plus' : 10,
-  'premium' : 100,
-  'crystal' : 1000
-}
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
