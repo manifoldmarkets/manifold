@@ -108,7 +108,7 @@ function OutcomeButton(props: {
 function AntePrice(props: { outcome: CreateableOutcomeType }) {
   const { outcome } = props
 
-  const ante = formatMoney(getAnte(outcome, 1))
+  const ante = formatMoney(getAnte(outcome))
 
   if (outcome === 'BOUNTIED_QUESTION') {
     return (

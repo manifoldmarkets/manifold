@@ -134,13 +134,9 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     : null
 
   const contractRef = firestore.collection('contracts').doc()
-
-  const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
-  const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
   const unmodifiedAnte =
-    (specialLiquidityPerAnswer ??
-      totalBounty ??
-      getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
+    (specialLiquidityPerAnswer ?? totalBounty ?? getAnte(outcomeType)) +
+    (extraLiquidity ?? 0)
 
   if (unmodifiedAnte < 1) throw new APIError(400, 'Ante must be at least 1')
 
@@ -210,7 +206,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           answerLoverUserIds,
           specialLiquidityPerAnswer,
           isAutoBounty,
-          marketTier,
         })
       )
 

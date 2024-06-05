@@ -10,6 +10,7 @@ import { Button } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { getTieredAnswerCost } from 'common/economy'
 import { Input } from '../widgets/input'
+import { getTierFromLiquidity } from 'common/tier'
 
 export function CreateAnswerCpmmPanel(props: {
   contract: CPMMMultiContract
@@ -75,7 +76,11 @@ export function CreateAnswerCpmmPanel(props: {
             disabled={!canSubmit}
             onClick={withTracking(submitAnswer, 'submit answer')}
           >
-            Add answer ({formatMoney(getTieredAnswerCost(contract.marketTier))})
+            Add answer (
+            {formatMoney(
+              getTieredAnswerCost(getTierFromLiquidity(contract.totalLiquidity))
+            )}
+            )
           </Button>
         </Row>
       </Row>
