@@ -1,7 +1,5 @@
 import { Contract, MarketTierType } from 'common/contract'
 import { Tooltip } from '../widgets/tooltip'
-import { shortenNumber } from 'web/lib/util/formatNumber'
-import { getAnte, getTieredCost } from 'common/economy'
 import clsx from 'clsx'
 import {
   CrystalTier,
@@ -11,6 +9,7 @@ import {
 } from 'web/public/custom-components/tiers'
 import { capitalize } from 'lodash'
 import { Placement } from '@floating-ui/react'
+import { formatMoney } from 'common/util/format'
 
 export function TierTooltip(props: {
   tier: MarketTierType
@@ -28,24 +27,16 @@ export function TierTooltip(props: {
     placement = 'bottom',
     iconClassName,
   } = props
-  const { outcomeType } = contract
-  let numAnswers = undefined
-  if ('answers' in contract) {
-    numAnswers = contract.answers.length
-  }
+  const { mechanism } = contract
+
+  if (mechanism !== 'cpmm-multi-1' && mechanism !== 'cpmm-1') return <></>
 
   if (tier == 'basic') {
     return <></>
   }
   return (
     <Tooltip
-      text={`Starts with ${shortenNumber(
-        getTieredCost(
-          getAnte(outcomeType, numAnswers),
-          tier,
-          contract.outcomeType
-        )
-      )} liquidity`}
+      text={`${formatMoney(contract.totalLiquidity)} in liquidity subsidies`}
       placement={placement}
       noTap
       className={clsx(
@@ -57,9 +48,7 @@ export function TierTooltip(props: {
       {!noTitle && (
         <div
           className={clsx(
-            tier == 'play'
-              ? 'text-green-600 dark:text-green-500'
-              : tier == 'plus'
+            tier == 'plus'
               ? 'text-blue-600 dark:text-blue-500'
               : tier == 'premium'
               ? 'text-purple-500 dark:text-purple-400'
