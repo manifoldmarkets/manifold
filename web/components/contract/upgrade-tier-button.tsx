@@ -20,10 +20,11 @@ import { LogoIcon } from '../icons/logo-icon'
 import { Row } from '../layout/row'
 import { TierIcon } from '../tiers/tier-tooltip'
 import { api } from 'web/lib/firebase/api'
-import { track } from '@amplitude/analytics-browser'
 import { useUser } from 'web/hooks/use-user'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { AddFundsModal } from '../add-funds-modal'
+import { track } from 'web/lib/service/analytics'
+import toast from 'react-hot-toast'
 
 export type ContractWithLiquidity =
   | CPMMContract
@@ -109,6 +110,7 @@ export function AddLiquidityDialogue(props: {
             ante={ante}
             amount={amount}
             setAmount={setAmount}
+            setOpen={setOpen}
           />
         )}
       </Col>
@@ -122,6 +124,7 @@ function UpgradeTierContent(props: {
   ante: number
   amount: number | undefined
   setAmount: (amount: number | undefined) => void
+  setOpen: (open: boolean) => void
 }) {
   const { currentTierIndex, contract, ante, amount, setAmount } = props
   const { outcomeType, id: contractId, slug } = contract
@@ -144,7 +147,11 @@ function UpgradeTierContent(props: {
       })
       setIsSuccess(true)
       setError(undefined)
-      track('add liquidity', { amount, contractId, slug })
+      track('upgrade market', { amount, contractId, slug })
+      setOpen(false)
+      toast('Your market has been upgraded!', {
+        icon: '🚀',
+      })
     } catch (e) {
       setError('Server error')
     } finally {
@@ -179,7 +186,11 @@ function UpgradeTierContent(props: {
           />
         ))}
       </div>
-      <Button disabled={isLoading || !!error || !amount || notEnoughFunds}>
+      <Button
+        disabled={isLoading || !!error || !amount || notEnoughFunds}
+        onClick={submit}
+        loading={isLoading}
+      >
         Upgrade{' '}
         {amount &&
           `to ${getTierFromLiquidity(
