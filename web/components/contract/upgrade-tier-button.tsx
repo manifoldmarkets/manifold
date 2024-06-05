@@ -1,8 +1,5 @@
 import clsx from 'clsx'
-import {
-  CreateableOutcomeType,
-  MarketContract,
-} from 'common/contract'
+import { CreateableOutcomeType, MarketContract } from 'common/contract'
 import { MarketTierType, getTierFromLiquidity, tiers } from 'common/tier'
 import { ReactNode, useState } from 'react'
 import { CrystalTier } from 'web/public/custom-components/tiers'
