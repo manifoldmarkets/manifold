@@ -6,8 +6,9 @@ import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { Row } from '../layout/row'
 import { Content } from './editor'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { Col } from 'web/components/layout/col'
 
-export const COLLAPSIBLE_HEIGHT = 26 * 3 // line height is 26px
+export const LINE_HEIGHT = 26 // line height is 26px
 export const SHOW_COLLAPSE_TRESHOLD = 180
 
 export function ShowMoreLessButton(props: {
@@ -47,8 +48,19 @@ export function CollapsibleContent(props: {
   stateKey: string
   defaultCollapse?: boolean
   hideCollapse?: boolean
+  mediaSize?: 'sm' | 'md' | 'lg'
+  collapseLines?: number
+  showMorePlacement?: 'top' | 'bottom'
 }) {
-  const { content, stateKey, defaultCollapse, hideCollapse } = props
+  const {
+    content,
+    mediaSize,
+    collapseLines,
+    stateKey,
+    defaultCollapse,
+    hideCollapse,
+    showMorePlacement = 'top',
+  } = props
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -64,14 +76,17 @@ export function CollapsibleContent(props: {
     return (
       <ActuallyCollapsibleContent
         content={content}
+        mediaSize={mediaSize}
         stateKey={stateKey}
         defaultCollapse={defaultCollapse}
+        collapseLines={collapseLines}
+        showMorePlacement={showMorePlacement}
       />
     )
   }
   return (
     <div ref={contentRef}>
-      <Content content={content} />
+      <Content size={mediaSize} content={content} />
     </div>
   )
 }
@@ -80,9 +95,19 @@ export function CollapsibleContent(props: {
 function ActuallyCollapsibleContent(props: {
   content: JSONContent | string
   stateKey: string
+  showMorePlacement: 'top' | 'bottom'
+  mediaSize?: 'sm' | 'md' | 'lg'
   defaultCollapse?: boolean
+  collapseLines?: number
 }) {
-  const { content, stateKey, defaultCollapse } = props
+  const {
+    content,
+    collapseLines = 3,
+    mediaSize,
+    stateKey,
+    defaultCollapse,
+    showMorePlacement,
+  } = props
   const [isCollapsed, setCollapsed] = usePersistentLocalState<boolean>(
     defaultCollapse ?? false,
     stateKey
@@ -94,21 +119,30 @@ function ActuallyCollapsibleContent(props: {
   return (
     <div>
       <div
-        style={{ height: isCollapsed ? COLLAPSIBLE_HEIGHT : 'auto' }}
+        style={{ height: isCollapsed ? LINE_HEIGHT * collapseLines : 'auto' }}
         className="relative w-full overflow-hidden"
       >
-        <Row className="justify-end gap-2">
-          <ShowMoreLessButton
-            onClick={() => setCollapsed(!isCollapsed)}
-            isCollapsed={isCollapsed}
-          />
-        </Row>
-        <Content content={content} />
-
+        {showMorePlacement === 'top' && (
+          <Row className="justify-end gap-2">
+            <ShowMoreLessButton
+              onClick={() => setCollapsed(!isCollapsed)}
+              isCollapsed={isCollapsed}
+            />
+          </Row>
+        )}
+        <Content size={mediaSize} content={content} />
         {isCollapsed && (
-          <div className="from-canvas-100 absolute bottom-0 h-8 w-full rounded-b-md bg-gradient-to-t" />
+          <Col className="from-canvas-0 via-canvas-0 absolute bottom-0 left-0 right-0 h-12 justify-end bg-gradient-to-t via-20% to-transparent" />
         )}
       </div>
+      {isCollapsed && showMorePlacement === 'bottom' && (
+        <button
+          onClick={() => setCollapsed(!isCollapsed)}
+          className="text-primary-600 hover:text-primary-700  hover:font-semibold"
+        >
+          Show more
+        </button>
+      )}
     </div>
   )
 }

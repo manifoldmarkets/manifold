@@ -7,7 +7,6 @@ import { memo, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
-import { Content } from 'web/components/widgets/editor'
 import { PrivateUser, User } from 'common/user'
 import { TradesButton } from 'web/components/contract/trades-button'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
@@ -28,6 +27,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { Bet } from 'common/bet'
 import { FeedDropdown } from 'web/components/feed/card-dropdown'
 import { Repost } from 'common/repost'
+import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 
 export const ScoredFeedRepost = memo(function (props: {
   contract: Contract
@@ -130,7 +130,14 @@ export const ScoredFeedRepost = memo(function (props: {
                     contract={contract}
                     inTimeline={true}
                   />
-                  <Content size={'md'} content={comment.content} />
+                  <CollapsibleContent
+                    mediaSize={'md'}
+                    content={comment.content}
+                    defaultCollapse={true}
+                    stateKey={'collapse-repost-' + repost.id + contract.id}
+                    collapseLines={12}
+                    showMorePlacement={'bottom'}
+                  />
                 </Col>
               </Row>
               {(commenterIsBettor || !bet) && !showTopLevelRow && (
