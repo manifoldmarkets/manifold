@@ -187,7 +187,7 @@ export function ContractParamsForm(props: {
   const [dismissedSimilarContractTitles, setDismissedSimilarContractTitles] =
     usePersistentInMemoryState<string[]>([], 'dismissed-similar-contracts')
 
-  const ante = getAnte(outcomeType)
+  const ante = getAnte(outcomeType, numAnswers)
 
   const timeInMs = params?.closeTime ? Number(params.closeTime) : undefined
   const initDate = (timeInMs ? dayjs(timeInMs) : dayjs().add(7, 'day')).format(

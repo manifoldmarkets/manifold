@@ -26,10 +26,18 @@ export const getTieredAnswerCost = (marketTier: MarketTierType | undefined) => {
 export const MINIMUM_BOUNTY = 10000
 export const MULTIPLE_CHOICE_MINIMUM_COST = 1000
 
-export const getAnte = (outcomeType: OutcomeType) => {
-  return ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
-}
+export const getAnte = (
+  outcomeType: OutcomeType,
+  numAnswers: number | undefined
+) => {
+  const ante = ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
 
+  if (outcomeType === 'MULTIPLE_CHOICE') {
+    return Math.max(ante * (numAnswers ?? 0), MULTIPLE_CHOICE_MINIMUM_COST)
+  }
+
+  return ante
+}
 export const getTieredCost = (
   baseCost: number,
   tier: MarketTierType | undefined,

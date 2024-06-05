@@ -66,7 +66,7 @@ export function AddLiquidityDialogue(props: {
   if ('answers' in contract) {
     numAnswers = contract.answers.length
   }
-  const ante = getAnte(outcomeType)
+  const ante = getAnte(outcomeType, numAnswers)
 
   const currentTier = getTierFromLiquidity(contract.totalLiquidity)
   const currentTierIndex = tiers.indexOf(currentTier)
