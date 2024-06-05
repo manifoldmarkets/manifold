@@ -179,18 +179,10 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'internet',
   'sports-default',
   'football', // ambiguous - both soccer and american football
+  'manifold-drama',
+  'permanent-markets',
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
   ...HIDE_FROM_NEW_USER_SLUGS,
-]
-
-export const SLUGS_TO_EXCLUDE_FROM_NEW_USER_HOME_SECTION = [
-  'death-markets',
-  'rationalussy',
-  'personal',
-  'manifold-6748e065087e',
-  'manifold-features-25bad7c7792e',
-  'manifold-drama',
-  'personal-goals',
 ]
 
 export const removeEmojis = (input: string) =>
