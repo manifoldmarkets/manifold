@@ -1,19 +1,18 @@
+import { JSONContent } from '@tiptap/core'
+import { getDisplayProbability } from 'common/calculate'
+import { GroupLink, Topic } from 'common/group'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { sum } from 'lodash'
 import { Answer } from './answer'
 import { Bet } from './bet'
-import { Fees } from './fees'
-import { JSONContent } from '@tiptap/core'
-import { GroupLink, Topic } from 'common/group'
-import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
-import { ContractComment } from './comment'
-import { ENV_CONFIG, isAdminId, isModId } from './envs/constants'
-import { formatMoney, formatPercent } from './util/format'
-import { sum } from 'lodash'
-import { getDisplayProbability } from 'common/calculate'
-import { PollOption } from './poll-option'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import { MINUTE_MS } from './util/time'
 import { getLiquidity } from './calculate-cpmm'
-import { MarketTierType } from './tier'
+import { ContractComment } from './comment'
+import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
+import { ENV_CONFIG, isAdminId, isModId } from './envs/constants'
+import { Fees } from './fees'
+import { PollOption } from './poll-option'
+import { formatMoney, formatPercent } from './util/format'
+import { MINUTE_MS } from './util/time'
 
 /************************************************
 
@@ -93,8 +92,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isRanked?: boolean
 
   gptCommentSummary?: string
-
-  marketTier?: MarketTierType
 
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.

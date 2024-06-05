@@ -9,13 +9,18 @@ import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
 import { CreatorFeesDisplay } from './creator-fees-display'
+import { getTierFromLiquidity } from 'common/tier'
 
 export function ContractSummaryStats(props: {
   contract: Contract
   editable?: boolean
 }) {
   const { contract, editable } = props
-  const { creatorId, marketTier, outcomeType } = contract
+  const { creatorId, outcomeType } = contract
+  const marketTier =
+    'totalLiquidity' in contract
+      ? getTierFromLiquidity(contract.totalLiquidity)
+      : undefined
   const isCreator = useUser()?.id === creatorId
 
   return (
