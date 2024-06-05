@@ -116,7 +116,7 @@ export const getAnswersForContracts = async (
     .from('answers')
     .select('*')
     .in('contract_id', contractIds)
-    .order('index', { ascending: false })
+    .order('index', { ascending: true })
   if (!data) return {}
   const answers = data.map(convertAnswer)
   return groupBy(answers, 'contractId')
