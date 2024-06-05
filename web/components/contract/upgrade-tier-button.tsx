@@ -1,8 +1,5 @@
 import clsx from 'clsx'
 import {
-  CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
   CreateableOutcomeType,
   MarketContract,
 } from 'common/contract'
@@ -17,8 +14,6 @@ import { AddLiquidityPanel } from './liquidity-modal'
 import { getAnte, getTieredCost } from 'common/economy'
 import { capitalize } from 'lodash'
 import { CoinNumber } from '../widgets/manaCoinNumber'
-import { LogoIcon } from '../icons/logo-icon'
-import { Row } from '../layout/row'
 import { TierIcon } from '../tiers/tier-tooltip'
 import { api } from 'web/lib/firebase/api'
 import { useUser } from 'web/hooks/use-user'
