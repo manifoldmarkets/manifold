@@ -15,7 +15,7 @@ export const WEB_PRICES = {
 
 export const IOS_PRICES = {
   [formatMoney(10000)]: 1499,
-  [formatMoney(25000)]: 3499,
+  [formatMoney(25000)]: 3599,
   [formatMoney(100000)]: 14299,
 }
 
