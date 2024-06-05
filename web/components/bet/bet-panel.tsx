@@ -54,6 +54,7 @@ import { getVersusColors } from '../charts/contract/choice'
 import { getFeeTotal } from 'common/fees'
 import { FeeDisplay } from './fees'
 import { floatingEqual } from 'common/util/math'
+import { getTierFromLiquidity } from 'common/tier'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -202,6 +203,8 @@ export const BuyPanelBody = (props: {
 
   const user = useUser()
 
+  const marketTier = getTierFromLiquidity(contract.totalLiquidity)
+
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(contract.id)
 
@@ -219,7 +222,7 @@ export const BuyPanelBody = (props: {
       ? multiProps.answerText ?? multiProps.answerToBuy.text
       : undefined
 
-  const initialBetAmount = contract.marketTier === 'play' ? 5 : 50
+  const initialBetAmount = marketTier === 'play' ? 5 : 50
 
   const [betAmount, setBetAmount] = useState<number | undefined>(
     initialBetAmount
@@ -498,7 +501,7 @@ export const BuyPanelBody = (props: {
                 inputRef={inputRef}
                 binaryOutcome={isBinaryMC ? undefined : outcome}
                 showSlider={isAdvancedTrader}
-                marketTier={contract.marketTier}
+                marketTier={marketTier}
               />
 
               {isAdvancedTrader && (
