@@ -131,7 +131,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
             onClick={() => {
               setError(null)
               setLoading(true)
-              postMessageToNative('checkout', { amount: amountSelected / 10 }) // account for rate change
+              postMessageToNative('checkout', { amount: amountSelected })
             }}
           >
             Checkout
