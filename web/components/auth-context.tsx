@@ -4,6 +4,7 @@ import { pickBy } from 'lodash'
 import { onIdTokenChanged, User as FirebaseUser } from 'firebase/auth'
 import {
   auth,
+  firebaseLogout,
   getPrivateUser,
   listenForPrivateUser,
 } from 'web/lib/firebase/users'
@@ -11,7 +12,11 @@ import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
-import { AUTH_COOKIE_NAME, TEN_YEARS_SECS } from 'common/envs/constants'
+import {
+  AUTH_COOKIE_NAME,
+  BLESSED_BANNED_USER_IDS,
+  TEN_YEARS_SECS,
+} from 'common/envs/constants'
 import { getCookie, setCookie } from 'web/lib/util/cookie'
 import {
   type PrivateUser,
@@ -113,6 +118,13 @@ export function AuthProvider(props: {
 
   useEffect(() => {
     if (authUser) {
+      if (
+        authUser.user.isBannedFromPosting &&
+        !BLESSED_BANNED_USER_IDS.includes(authUser.user.id)
+      ) {
+        firebaseLogout()
+        return
+      }
       // Persist to local storage, to reduce login blink next time.
       // Note: Cap on localStorage size is ~5mb
       safeLocalStorage?.setItem(CACHED_USER_KEY, JSON.stringify(authUser))
