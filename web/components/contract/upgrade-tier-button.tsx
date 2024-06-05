@@ -4,6 +4,7 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
   CreateableOutcomeType,
+  MarketContract,
 } from 'common/contract'
 import { MarketTierType, getTierFromLiquidity, tiers } from 'common/tier'
 import { ReactNode, useState } from 'react'
@@ -26,13 +27,8 @@ import { AddFundsModal } from '../add-funds-modal'
 import { track } from 'web/lib/service/analytics'
 import toast from 'react-hot-toast'
 
-export type ContractWithLiquidity =
-  | CPMMContract
-  | CPMMMultiContract
-  | CPMMNumericContract
-
 export function UpgradeTierButton(props: {
-  contract: ContractWithLiquidity
+  contract: MarketContract
   className?: string
 }) {
   const { contract, className } = props
@@ -67,7 +63,7 @@ export function UpgradeTierButton(props: {
 }
 
 export function AddLiquidityDialogue(props: {
-  contract: ContractWithLiquidity
+  contract: MarketContract
   isOpen: boolean
   setOpen: (open: boolean) => void
 }) {
@@ -120,7 +116,7 @@ export function AddLiquidityDialogue(props: {
 
 function UpgradeTierContent(props: {
   currentTierIndex: number
-  contract: ContractWithLiquidity
+  contract: MarketContract
   ante: number
   amount: number | undefined
   setAmount: (amount: number | undefined) => void
@@ -216,7 +212,7 @@ function UpgradeTierContent(props: {
 }
 
 function UpgradeTier(props: {
-  contract: ContractWithLiquidity
+  contract: MarketContract
   baseCost: number
   icon: ReactNode
   tier: MarketTierType
