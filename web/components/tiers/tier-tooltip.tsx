@@ -1,11 +1,11 @@
 import { Placement } from '@floating-ui/react'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { getAnte, getTieredCost } from 'common/economy'
+import { formatMoney } from 'common/util/format'
 import { capitalize } from 'lodash'
-import { shortenNumber } from 'web/lib/util/formatNumber'
 import {
   CrystalTier,
+  PlayTier,
   PlusTier,
   PremiumTier,
 } from 'web/public/custom-components/tiers'
@@ -28,24 +28,16 @@ export function TierTooltip(props: {
     placement = 'bottom',
     iconClassName,
   } = props
-  const { outcomeType } = contract
-  let numAnswers = undefined
-  if ('answers' in contract) {
-    numAnswers = contract.answers.length
-  }
+  const { mechanism } = contract
+
+  if (mechanism !== 'cpmm-multi-1' && mechanism !== 'cpmm-1') return <></>
 
   if (tier == 'basic') {
     return <></>
   }
   return (
     <Tooltip
-      text={`Starts with ${shortenNumber(
-        getTieredCost(
-          getAnte(outcomeType, numAnswers),
-          tier,
-          contract.outcomeType
-        )
-      )} liquidity`}
+      text={`${formatMoney(contract.totalLiquidity)} in liquidity subsidies`}
       placement={placement}
       noTap
       className={clsx(
@@ -75,6 +67,9 @@ export function TierTooltip(props: {
 
 export function TierIcon(props: { tier: MarketTierType; className?: string }) {
   const { tier, className } = props
+  if (tier == 'play') {
+    return <PlayTier className={className} />
+  }
   if (tier == 'plus') {
     return <PlusTier className={className} />
   }

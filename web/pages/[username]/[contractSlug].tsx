@@ -172,10 +172,12 @@ export function ContractPageContent(props: ContractParams) {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
+  let answers: Answer[] | undefined
   if (contract.mechanism === 'cpmm-multi-1') {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const answers = useAnswersCpmm(contract.id)
-    if (answers) {
+    const updatedAnswers = useAnswersCpmm(contract.id)
+    if (updatedAnswers) {
+      answers = updatedAnswers
       contract.answers = answers
     }
   }
@@ -468,6 +470,7 @@ export function ContractPageContent(props: ContractParams) {
               </div>
               <ContractOverview
                 contract={contract}
+                answers={answers}
                 betPoints={betPoints as any}
                 showResolver={showResolver}
                 resolutionRating={

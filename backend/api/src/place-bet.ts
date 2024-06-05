@@ -34,6 +34,7 @@ import { broadcastOrders } from 'shared/websockets/helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
+import { getAnswersForContract, updateAnswer } from 'shared/supabase/answers'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -50,6 +51,7 @@ export const placeBetMain = async (
   isApi: boolean
 ) => {
   const { amount, contractId, replyToCommentId, answerId } = body
+  const pg = createSupabaseDirectClient()
 
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await contractDoc.get()
@@ -62,8 +64,7 @@ export const placeBetMain = async (
 
   let answers: Answer[] | undefined
   if (answerId) {
-    const answersSnap = await contractDoc.collection('answersCpmm').get()
-    answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+    answers = await getAnswersForContract(pg, contractId)
   }
 
   const unfilledBets = await getUnfilledBets(
@@ -142,7 +143,6 @@ export const placeBetMain = async (
         const { answerId, outcome, limitProb, expiresAt } = body
         if (expiresAt && expiresAt < Date.now())
           throw new APIError(403, 'Bet cannot expire in the past.')
-
         const answer = answers.find((a) => a.id === answerId)
         if (!answer) throw new APIError(404, 'Answer not found')
         if ('resolution' in answer && answer.resolution)
@@ -421,8 +421,9 @@ export const processNewBetResult = async (
       if (newPool) {
         const { YES: poolYes, NO: poolNo } = newPool
         const prob = getCpmmProbability(newPool, 0.5)
-        fbTrans.update(
-          contractDoc.collection('answersCpmm').doc(newBet.answerId),
+        await updateAnswer(
+          pgTrans,
+          newBet.answerId,
           removeUndefinedProps({
             poolYes,
             poolNo,
@@ -462,13 +463,10 @@ export const processNewBetResult = async (
           fullBets.push(convertBet(betRow))
           const { YES: poolYes, NO: poolNo } = cpmmState.pool
           const prob = getCpmmProbability(cpmmState.pool, 0.5)
-          fbTrans.update(
-            contractDoc.collection('answersCpmm').doc(answer.id),
-            removeUndefinedProps({
-              poolYes,
-              poolNo,
-              prob,
-            })
+          await updateAnswer(
+            pgTrans,
+            answer.id,
+            removeUndefinedProps({ poolYes, poolNo, prob })
           )
         }
         await updateMakers(makers, betRow.bet_id, pgTrans)

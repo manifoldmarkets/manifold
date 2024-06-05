@@ -29,7 +29,7 @@ export const QUEST_DETAILS: Record<
   },
   MARKETS_CREATED: {
     requiredCount: 1,
-    rewardAmount: 500,
+    rewardAmount: 100,
     scoreId: 'marketsCreatedThisWeek',
     title: 'Question Creation',
   },

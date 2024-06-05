@@ -11,13 +11,26 @@ import {
   getCpmmProbability,
 } from 'common/calculate-cpmm'
 import { formatMoneyWithDecimals } from 'common/util/format'
-import { Answer } from 'common/answer'
-import { FieldValue } from 'firebase-admin/firestore'
 import { shuffle } from 'lodash'
+import {
+  SupabaseDirectClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { convertAnswer } from 'common/supabase/contracts'
+import {
+  bulkUpdateAnswers,
+  getAnswer,
+  getAnswersForContract,
+  updateAnswer,
+} from 'shared/supabase/answers'
+import { runEvilTransaction } from 'shared/evil-transaction'
+import { secrets } from 'common/secrets'
 
 const firestore = admin.firestore()
 
 export const drizzleLiquidity = async () => {
+  const pg = createSupabaseDirectClient()
+
   const snap = await firestore
     .collection('contracts')
     .where('subsidyPool', '>', 1e-7)
@@ -29,30 +42,26 @@ export const drizzleLiquidity = async () => {
 
   await mapAsync(contractIds, (cid) => drizzleMarket(cid), 10)
 
-  const answersSnap = await firestore
-    .collectionGroup('answersCpmm')
-    .where('subsidyPool', '>', 1e-7)
-    .get()
+  const answers = await pg.map(
+    `select * from answers where subsidy_pool > 1e-7`,
+    [],
+    convertAnswer
+  )
 
-  const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
   console.log('found', answers.length, 'answers to drizzle')
   console.log()
 
-  await mapAsync(
-    answers,
-    (answer) => drizzleAnswer(answer.contractId, answer.id),
-    10
-  )
+  await mapAsync(answers, (answer) => drizzleAnswer(pg, answer.id), 10)
 }
 
 export const drizzleLiquidityScheduler = functions
-  .runWith({ memory: '1GB', timeoutSeconds: 540 })
+  .runWith({ memory: '1GB', timeoutSeconds: 540, secrets })
   .pubsub.schedule('*/7 * * * *')
   .onRun(drizzleLiquidity)
 
 const drizzleMarket = async (contractId: string) => {
-  await firestore.runTransaction(async (trans) => {
-    const snap = await trans.get(firestore.doc(`contracts/${contractId}`))
+  await runEvilTransaction(async (pgTrans, fbTrans) => {
+    const snap = await fbTrans.get(firestore.doc(`contracts/${contractId}`))
     const contract = snap.data() as CPMMContract | CPMMMultiContract
     const { subsidyPool, slug, uniqueBettorCount } = contract
     if ((subsidyPool ?? 0) < 1e-7) return
@@ -62,10 +71,8 @@ const drizzleMarket = async (contractId: string) => {
     const amount = subsidyPool <= 1 ? subsidyPool : r * v * subsidyPool
 
     if (contract.mechanism === 'cpmm-multi-1') {
-      const answersSnap = await trans.get(
-        firestore.collection(`contracts/${contractId}/answersCpmm`)
-      )
-      const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+      const answers = await getAnswersForContract(pgTrans, contractId)
+
       const poolsByAnswer = Object.fromEntries(
         answers.map((a) => [a.id, { YES: a.poolYes, NO: a.poolNo }])
       )
@@ -73,20 +80,18 @@ const drizzleMarket = async (contractId: string) => {
         ? addCpmmMultiLiquidityAnswersSumToOne(poolsByAnswer, amount)
         : addCpmmMultiLiquidityToAnswersIndependently(poolsByAnswer, amount)
 
-      // Only update the first 495 answers to avoid exceeding the 500 document limit.
-      const poolEntries = Object.entries(newPools).slice(0, 495)
+      const poolEntries = Object.entries(newPools).slice(0, 50_000)
 
-      for (const [answerId, newPool] of poolEntries) {
-        trans.update(
-          firestore.doc(`contracts/${contract.id}/answersCpmm/${answerId}`),
-          {
-            poolYes: newPool.YES,
-            poolNo: newPool.NO,
-            prob: getCpmmProbability(newPool, 0.5),
-          }
-        )
-      }
-      trans.update(firestore.doc(`contracts/${contract.id}`), {
+      const answerUpdates = poolEntries.map(([answerId, newPool]) => ({
+        id: answerId,
+        poolYes: newPool.YES,
+        poolNo: newPool.NO,
+        prob: getCpmmProbability(newPool, 0.5),
+      }))
+
+      await bulkUpdateAnswers(pgTrans, answerUpdates)
+
+      fbTrans.update(firestore.doc(`contracts/${contract.id}`), {
         subsidyPool: subsidyPool - amount,
       })
     } else {
@@ -100,7 +105,7 @@ const drizzleMarket = async (contractId: string) => {
         )
       }
 
-      trans.update(firestore.doc(`contracts/${contract.id}`), {
+      fbTrans.update(firestore.doc(`contracts/${contract.id}`), {
         pool: newPool,
         p: newP,
         subsidyPool: subsidyPool - amount,
@@ -119,13 +124,11 @@ const drizzleMarket = async (contractId: string) => {
   })
 }
 
-const drizzleAnswer = async (contractId: string, answerId: string) => {
-  await firestore.runTransaction(async (trans) => {
-    const answerDoc = firestore.doc(
-      `contracts/${contractId}/answersCpmm/${answerId}`
-    )
-    const answerSnap = await trans.get(answerDoc)
-    const answer = answerSnap.data() as Answer
+const drizzleAnswer = async (pg: SupabaseDirectClient, answerId: string) => {
+  await pg.tx(async (tx) => {
+    const answer = await getAnswer(tx, answerId)
+    if (!answer) return
+
     const { subsidyPool, poolYes, poolNo } = answer
     if ((subsidyPool ?? 0) < 1e-7) return
 
@@ -142,11 +145,11 @@ const drizzleAnswer = async (contractId: string, answerId: string) => {
       )
     }
 
-    trans.update(answerDoc, {
+    await updateAnswer(tx, answerId, {
       poolYes: newPool.YES,
       poolNo: newPool.NO,
       prob: getCpmmProbability(newPool, 0.5),
-      subsidyPool: FieldValue.increment(-amount),
+      subsidyPool: subsidyPool - amount,
     })
 
     console.log(

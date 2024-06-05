@@ -37,17 +37,6 @@ the supabase trigger, or replication of contracts may fail!
 
 *************************************************/
 
-type AnyOutcomeType =
-  | Binary
-  | Cert
-  | QuadraticFunding
-  | Stonk
-  | BountiedQuestion
-  | Poll
-  | MultipleNumeric
-  | CPMMMulti
-  | PseudoNumeric
-
 type AnyContractType =
   | (CPMM & Binary)
   | (CPMM & PseudoNumeric)
@@ -58,17 +47,6 @@ type AnyContractType =
   | (NonBet & BountiedQuestion)
   | (NonBet & Poll)
   | CPMMMultiNumeric
-
-export const SORTS = [
-  { label: 'High %', value: 'prob-desc' },
-  { label: 'Low %', value: 'prob-asc' },
-  { label: 'Old', value: 'old' },
-  { label: 'New', value: 'new' },
-  { label: 'Trending', value: 'liquidity' },
-  { label: 'A-Z', value: 'alphabetical' },
-] as const
-
-export type SortType = (typeof SORTS)[number]['value']
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -116,6 +94,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   gptCommentSummary?: string
 
+  marketTier?: MarketTierType
+
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
@@ -144,13 +124,15 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   viewCount: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
-  marketTier?: MarketTierType
 } & T
 
 export type CPMMContract = Contract & CPMM
 export type CPMMMultiContract = Contract & CPMMMulti
 export type CPMMNumericContract = Contract & CPMMMultiNumeric
-export type MarketContract = CPMMContract | CPMMMultiContract | CPMMNumericContract
+export type MarketContract =
+  | CPMMContract
+  | CPMMMultiContract
+  | CPMMNumericContract
 
 export type BinaryContract = Contract & Binary
 export type CPMMBinaryContract = BinaryContract & CPMM
@@ -313,6 +295,17 @@ export type Poll = {
 
 export type MultiContract = CPMMMultiContract | CPMMNumericContract
 
+type AnyOutcomeType =
+  | Binary
+  | Cert
+  | QuadraticFunding
+  | Stonk
+  | BountiedQuestion
+  | Poll
+  | MultipleNumeric
+  | CPMMMulti
+  | PseudoNumeric
+
 export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
@@ -328,7 +321,7 @@ export const CREATEABLE_OUTCOME_TYPES = [
 
 export const CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES = [
   'POLL',
-  'BOUNTIED_QUESTION'
+  'BOUNTIED_QUESTION',
 ]
 
 export type CreateableOutcomeType = (typeof CREATEABLE_OUTCOME_TYPES)[number]
@@ -408,7 +401,16 @@ export const MULTI_NUMERIC_CREATION_ENABLED = true
 export type Visibility = 'public' | 'unlisted' | 'private'
 export const VISIBILITIES = ['public', 'unlisted'] as const
 
-export const MARKET_TIER_TYPES = ['basic', 'plus', 'premium', 'crystal'] as const
+export const SORTS = [
+  { label: 'High %', value: 'prob-desc' },
+  { label: 'Low %', value: 'prob-asc' },
+  { label: 'Old', value: 'old' },
+  { label: 'New', value: 'new' },
+  { label: 'Trending', value: 'liquidity' },
+  { label: 'A-Z', value: 'alphabetical' },
+] as const
+
+export type SortType = (typeof SORTS)[number]['value']
 
 export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
 

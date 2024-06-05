@@ -4,7 +4,6 @@ import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
   CREATEABLE_OUTCOME_TYPES,
   Contract,
-  MARKET_TIER_TYPES,
   MAX_QUESTION_LENGTH,
   MultiContract,
   RESOLUTIONS,
@@ -18,7 +17,7 @@ import { z } from 'zod'
 import { MAX_ID_LENGTH } from 'common/group'
 import { contentSchema } from './zod-types'
 import { MINIMUM_BOUNTY } from 'common/economy'
-import { MarketTierType } from 'common/tier'
+import { MarketTierType, tiers } from 'common/tier'
 
 export type LiteMarket = {
   // Unique identifier for this market
@@ -319,7 +318,7 @@ export const createMarketProps = z
     loverUserId2: z.string().optional(),
     matchCreatorId: z.string().optional(),
     isLove: z.boolean().optional(),
-    marketTier: z.enum(MARKET_TIER_TYPES).optional(),
+    marketTier: z.enum(tiers).optional(),
   })
   .and(
     z.union([

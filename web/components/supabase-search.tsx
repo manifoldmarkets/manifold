@@ -308,13 +308,17 @@ export function SupabaseSearch(props: {
 
   const emptyContractsState =
     props.emptyState ??
-    (filter !== 'all' || contractType !== 'ALL' ? (
+    (filter !== 'all' || contractType !== 'ALL' || prizeMarketState === '1' ? (
       <span className="text-ink-700 mx-2 my-6 text-center">
         No results found under this filter.{' '}
         <button
           className="text-indigo-500 hover:underline focus:underline"
           onClick={() =>
-            onChange({ [FILTER_KEY]: 'all', [CONTRACT_TYPE_KEY]: 'ALL' })
+            onChange({
+              [FILTER_KEY]: 'all',
+              [CONTRACT_TYPE_KEY]: 'ALL',
+              p: '0',
+            })
           }
         >
           Clear filter
@@ -476,22 +480,26 @@ export function SupabaseSearch(props: {
           />
           <LoadMoreUntilNotVisible loadMore={queryContracts} />
           {shouldLoadMore && <LoadingResults />}
-          {!shouldLoadMore && (filter !== 'all' || contractType !== 'ALL') && (
-            <div className="text-ink-500 mx-2 my-8 text-center">
-              No more results under this filter.{' '}
-              <button
-                className="text-primary-500 hover:underline focus:underline"
-                onClick={() =>
-                  onChange({
-                    [FILTER_KEY]: 'all',
-                    [CONTRACT_TYPE_KEY]: 'ALL',
-                  })
-                }
-              >
-                Clear filter
-              </button>
-            </div>
-          )}
+          {!shouldLoadMore &&
+            (filter !== 'all' ||
+              contractType !== 'ALL' ||
+              prizeMarketState === '1') && (
+              <div className="text-ink-500 mx-2 my-8 text-center">
+                No more results under this filter.{' '}
+                <button
+                  className="text-primary-500 hover:underline focus:underline"
+                  onClick={() =>
+                    onChange({
+                      [FILTER_KEY]: 'all',
+                      [CONTRACT_TYPE_KEY]: 'ALL',
+                      p: '0',
+                    })
+                  }
+                >
+                  Clear filter
+                </button>
+              </div>
+            )}
         </>
       )}
     </Col>

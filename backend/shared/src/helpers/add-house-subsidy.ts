@@ -68,19 +68,17 @@ export const addHouseSubsidyToAnswer = async (
   await pg.tx(async (tx) => {
     await insertLiquidity(tx, newLiquidityProvision)
 
-    return firestore.runTransaction(async (transaction) => {
-      const contractDoc = firestore.doc(`contracts/${contractId}`)
-      transaction.update(contractDoc, {
-        totalLiquidity: FieldValue.increment(amount),
-      })
+    await tx.none(
+      `update answers
+      set data = data ||
+        jsonb_build_object('totalLiquidity', data->>'totalLiquidity'::numeric + $1) ||
+        jsonb_build_object('subsidyPool', data->>'subsidyPool'::numeric + $1)
+      where id = $2`,
+      [amount, answerId]
+    )
 
-      const answerDoc = firestore.doc(
-        `contracts/${contractId}/answersCpmm/${answerId}`
-      )
-      transaction.update(answerDoc, {
-        totalLiquidity: FieldValue.increment(amount),
-        subsidyPool: FieldValue.increment(amount),
-      })
+    await firestore.doc(`contracts/${contractId}`).update({
+      totalLiquidity: FieldValue.increment(amount),
     })
   })
 }

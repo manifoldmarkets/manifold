@@ -20,6 +20,8 @@ import {
 import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
 import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { getAnswersForContract } from 'shared/supabase/answers'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   props,
@@ -36,6 +38,8 @@ const resolveMarketMain: APIHandler<'market/:contractId/resolve'> = async (
   props,
   auth
 ) => {
+  const db = createSupabaseDirectClient()
+
   const { contractId } = props
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await contractDoc.get()
@@ -46,10 +50,7 @@ const resolveMarketMain: APIHandler<'market/:contractId/resolve'> = async (
   let answers: Answer[] = []
   if (contract.mechanism === 'cpmm-multi-1') {
     // Denormalize answers.
-    const answersSnap = await firestore
-      .collection(`contracts/${contractId}/answersCpmm`)
-      .get()
-    answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+    answers = await getAnswersForContract(db, contractId)
     contract.answers = answers
   }
 
@@ -110,10 +111,8 @@ const resolveMarketMain: APIHandler<'market/:contractId/resolve'> = async (
     )
 
     // Refresh answers.
-    const answersSnap = await firestore
-      .collection(`contracts/${contractId}/answersCpmm`)
-      .get()
-    contract.answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+    const answers = await getAnswersForContract(db, contractId)
+    contract.answers = answers
   }
 
   await resolveMarketHelper(contract, caller, creator, resolutionParams)

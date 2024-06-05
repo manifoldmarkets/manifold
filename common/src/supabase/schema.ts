@@ -14,7 +14,7 @@ export type Database = {
           contract_id: string | null
           created_time: string | null
           data: Json
-          fs_updated_time: string
+          fs_updated_time: string | null
           id: string
           index: number | null
           pool_no: number | null
@@ -33,8 +33,8 @@ export type Database = {
           contract_id?: string | null
           created_time?: string | null
           data: Json
-          fs_updated_time: string
-          id: string
+          fs_updated_time?: string | null
+          id?: string
           index?: number | null
           pool_no?: number | null
           pool_yes?: number | null
@@ -52,7 +52,7 @@ export type Database = {
           contract_id?: string | null
           created_time?: string | null
           data?: Json
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           id?: string
           index?: number | null
           pool_no?: number | null

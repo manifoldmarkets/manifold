@@ -126,7 +126,7 @@ function UpgradeTierContent(props: {
   setAmount: (amount: number | undefined) => void
   setOpen: (open: boolean) => void
 }) {
-  const { currentTierIndex, contract, ante, amount, setAmount } = props
+  const { currentTierIndex, contract, ante, amount, setAmount, setOpen } = props
   const { outcomeType, id: contractId, slug } = contract
   const totalOptions = tiers.length - 1 - currentTierIndex
 

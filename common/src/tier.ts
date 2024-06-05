@@ -6,7 +6,7 @@ import {
 import { getAnte, getTieredCost } from './economy'
 
 // Array of tiers in order
-export const tiers = ['play', 'basic', 'plus', 'premium', 'crystal']
+export const tiers = ['play', 'basic', 'plus', 'premium', 'crystal'] as const
 
 // Derive the MarketTierType from the array
 export type MarketTierType = (typeof tiers)[number]

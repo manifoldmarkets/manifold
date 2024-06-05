@@ -2,7 +2,7 @@
 set -e
 
 # set to true to spin up all the resources for the first time
-INITIALIZE=true
+INITIALIZE=false
 
 SERVICE_NAME="scheduler"
 IP_ADDRESS_NAME="scheduler-east"

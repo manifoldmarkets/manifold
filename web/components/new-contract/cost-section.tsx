@@ -1,7 +1,6 @@
 import { CreateableOutcomeType } from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 import clsx from 'clsx'
 import { getTieredCost } from 'common/economy'
@@ -11,6 +10,7 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 import { Button } from 'web/components/buttons/button'
 import {
   CrystalTier,
+  PlayTier,
   PlusTier,
   PremiumTier,
 } from 'web/public/custom-components/tiers'
@@ -32,15 +32,6 @@ export const CostSection = (props: {
     <Col className="items-start px-1">
       <label className="mb-1 gap-2">
         <span>Tier</span>
-        <InfoTooltip
-          text={
-            outcomeType == 'BOUNTIED_QUESTION'
-              ? 'Your bounty. This amount is put upfront.'
-              : outcomeType == 'POLL'
-              ? 'Cost to create your poll.'
-              : `Cost to create your question. This amount is used to subsidize predictions.`
-          }
-        />
       </label>
 
       <PriceSection
@@ -81,24 +72,34 @@ function PriceSection(props: {
   return (
     <Col className="w-full gap-2">
       <div className="text-ink-600 text-sm">
-        Choose a tier to determine the cost of creating your question. Higher
-        tiers offer more rewards, which will attract more bettors!
+        Choose a tier to determine how much initial liquidity to inject into the
+        market. More liquidity attracts more traders but has a higher cost.
       </div>
       <div
         className={clsx(
           'grid w-full gap-2',
           outcomeType === 'NUMBER'
             ? 'grid-cols-3'
-            : 'grid-cols-2 sm:grid-cols-4'
+            : 'grid-cols-2 sm:grid-cols-5'
         )}
       >
+        {outcomeType !== 'NUMBER' && (
+          <Tier
+            baseCost={baseCost}
+            tier="play"
+            icon={<PlayTier />}
+            outcomeType={outcomeType}
+            currentTier={currentTier}
+            setMarketTier={setMarketTier}
+          />
+        )}
         {outcomeType !== 'NUMBER' && (
           <Tier
             baseCost={baseCost}
             tier="basic"
             icon={
               <LogoIcon
-                className="stroke-ink-600 h-[1em] w-[1em] shrink-0 transition-transform"
+                className="stroke-ink-600 h-[1em] w-[1em] shrink-0 stroke-[1.5px] transition-transform"
                 aria-hidden
               />
             }
@@ -150,13 +151,17 @@ function Tier(props: {
     <div
       className={clsx(
         currentTier == tier
-          ? tier == 'basic'
+          ? tier == 'play'
+            ? 'outline-green-500'
+            : tier == 'basic'
             ? 'outline-ink-500'
             : tier == 'plus'
             ? 'outline-blue-500'
             : tier == 'premium'
             ? 'outline-purple-400'
             : 'outline-pink-500'
+          : tier == 'play'
+          ? 'opacity-50 outline-transparent hover:outline-green-500/50'
           : tier == 'basic'
           ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
           : tier == 'plus'
