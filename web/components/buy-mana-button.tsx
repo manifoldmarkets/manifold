@@ -50,7 +50,7 @@ export function BuyManaButton(props: {
           onClick={() => {
             setError(null)
             setLoading(true)
-            postMessageToNative('checkout', { amount })
+            postMessageToNative('checkout', { amount: amount / 10 }) // account for rate change
           }}
           disabled
         >
