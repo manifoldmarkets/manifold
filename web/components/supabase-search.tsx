@@ -255,7 +255,7 @@ export function SupabaseSearch(props: {
 
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
-  const showSearchTypes = !hideSearchTypes && !contractsOnly && !topicSlug
+  const showSearchTypes = !hideSearchTypes && !contractsOnly
 
   const queryUsers = useEvent(async (query: string) =>
     searchUsers(query, USERS_PER_PAGE)
@@ -337,7 +337,8 @@ export function SupabaseSearch(props: {
       </Col>
     ))
 
-  const showUsers = userResults && userResults.length > 0 && query !== ''
+  const showUsers =
+    userResults && userResults.length > 0 && query !== '' && !topicSlug
   const showTopics = shownTopics && shownTopics.length > 0 && !!setTopicSlug
 
   return (
@@ -418,16 +419,22 @@ export function SupabaseSearch(props: {
               <BrowseTopicPills
                 className={'relative w-full px-2 pb-4'}
                 topics={shownTopics}
-                setTopicSlug={setTopicSlug}
+                currentTopicSlug={topicSlug}
                 forYouPill={
                   <button
                     key={'pill-for-you'}
-                    onClick={() =>
-                      onChange({ [FOR_YOU_KEY]: forYou ? '0' : '1' })
-                    }
+                    onClick={() => {
+                      if (topicSlug) {
+                        setTopicSlug(topicSlug)
+                      } else {
+                        onChange({
+                          [FOR_YOU_KEY]: forYou ? '0' : '1',
+                        })
+                      }
+                    }}
                     className={clsx(
                       'bg-ink-100 hover:bg-ink-200 text-ink-600 rounded p-1',
-                      forYou
+                      forYou && !topicSlug
                         ? 'bg-primary-400 hover:bg-primary-300 text-white'
                         : ''
                     )}
@@ -437,6 +444,9 @@ export function SupabaseSearch(props: {
                     </span>
                   </button>
                 }
+                onClick={(newSlug: string) => {
+                  setTopicSlug(newSlug)
+                }}
               />
             </>
           )}
