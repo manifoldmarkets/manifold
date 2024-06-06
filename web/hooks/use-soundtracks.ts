@@ -8,25 +8,26 @@ const useUserSounds = () => {
     [],
     'user-soundtrack-sounds'
   )
+  const loadSounds = async () => {
+    try {
+      const soundsRef = ref(storage, 'user-audios/soundtrack')
+      const result = await listAll(soundsRef)
+      const urls = await Promise.all(
+        result.items
+          .filter((i) => !sounds.includes(i.fullPath))
+          .map((itemRef) => getDownloadURL(itemRef))
+      )
+      setSounds(urls)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   useEffect(() => {
-    const loadSounds = async () => {
-      try {
-        const soundsRef = ref(storage, 'user-audios/soundtrack')
-        const result = await listAll(soundsRef)
-        const urls = await Promise.all(
-          result.items.map((itemRef) => getDownloadURL(itemRef))
-        )
-        setSounds(urls)
-      } catch (err) {
-        console.error(err)
-      }
-    }
-
     loadSounds()
   }, [])
 
-  return sounds
+  return { sounds, loadSounds }
 }
 
 export default useUserSounds

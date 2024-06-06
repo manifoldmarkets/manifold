@@ -1,14 +1,15 @@
 import { BetsSoundtrack } from 'web/components/soundtrack/bets-soundtrack'
 import SoundRecorder from 'web/components/soundtrack/sound-recorder'
 import { Row } from 'web/components/layout/row'
+import { Col } from 'web/components/layout/col'
 export default function Soundtrack() {
   return (
-    <div>
+    <Col>
       <Row className={'justify-between'}>
-        <h1>Welcome, pilgrim</h1>
+        <span>Welcome to the temple of gambling</span>
         <BetsSoundtrack />
       </Row>
       <SoundRecorder />
-    </div>
+    </Col>
   )
 }

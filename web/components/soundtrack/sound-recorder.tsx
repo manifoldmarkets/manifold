@@ -1,18 +1,25 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { uploadAudio } from 'web/lib/firebase/storage'
 import { Button } from 'web/components/buttons/button'
 import { SelectUsers } from 'web/components/select-users'
 import { Col } from 'web/components/layout/col'
 import { DisplayUser } from 'common/api/user-types'
+import useUserSounds from 'web/hooks/use-soundtracks'
+import { Dictionary } from 'lodash'
+
+export const soundsByUserId: Dictionary<string> = {}
 
 const SoundRecorder: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false)
-  const [audioUrl, setAudioUrl] = useState<string | null>(null)
-  const [uploadProgress, setUploadProgress] = useState<number>(0)
-  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number>(1)
   const [user, setUser] = useState<DisplayUser>()
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  const { sounds, loadSounds } = useUserSounds()
+
+  useEffect(() => {
+    sounds.forEach((s) => (soundsByUserId[soundUrlToUserId(s)] = s))
+  }, [JSON.stringify(sounds)])
 
   const startRecording = async () => {
     if (!user) {
@@ -30,8 +37,6 @@ const SoundRecorder: React.FC = () => {
 
     mediaRecorder.onstop = async () => {
       const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-      const url = URL.createObjectURL(blob)
-      setAudioUrl(url)
       const file = new File([blob], user.id + '.webm', {
         type: 'audio/webm',
       })
@@ -39,12 +44,13 @@ const SoundRecorder: React.FC = () => {
         const downloadURL = await uploadAudio(
           file,
           'soundtrack',
-          (progress, isRunning) => {
-            setIsUploading(isRunning)
+          (progress) => {
+            console.log('uploading', progress)
             setUploadProgress(progress)
           }
         )
         console.log('Uploaded file available at', downloadURL)
+        loadSounds()
       } catch (error) {
         console.error('Upload failed:', error)
       }
@@ -72,17 +78,15 @@ const SoundRecorder: React.FC = () => {
       />
       <Button
         onClick={isRecording ? stopRecording : startRecording}
-        loading={isUploading && uploadProgress > 0}
+        loading={uploadProgress != 1}
       >
-        {isRecording ? 'Stop Recording' : 'Start Recording'}
+        {isRecording ? 'Stop recording' : 'Record your prayer'}
       </Button>
-      {audioUrl && (
-        <div className="mt-4">
-          <audio controls src={audioUrl} />
-        </div>
-      )}
     </Col>
   )
 }
 
 export default SoundRecorder
+
+export const soundUrlToUserId = (s: string) =>
+  s.split('soundtrack%2F')[1].split('.webm')[0]
