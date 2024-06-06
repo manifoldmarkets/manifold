@@ -9,11 +9,12 @@ import { removeEmojis } from 'common/topics'
 
 export const BrowseTopicPills = (props: {
   topics: LiteGroup[]
-  setTopicSlug: (slug: string) => void
+  currentTopicSlug?: string
   className?: string
   forYouPill: ReactNode
+  onClick: (slug: string) => void
 }) => {
-  const { topics, forYouPill, className, setTopicSlug } = props
+  const { topics, forYouPill, className, currentTopicSlug, onClick } = props
   const [showMore, setShowMore] = useState<boolean>(false)
   const isMobile = useIsMobile()
   const MAX_INIT_TOPICS = isMobile ? MAX_SHOWN_MOBILE : MAX_SHOWN
@@ -26,8 +27,13 @@ export const BrowseTopicPills = (props: {
         {shownTopics.map((g) => (
           <button
             key={'pill-' + g.slug}
-            onClick={() => setTopicSlug(g.slug)}
-            className="bg-ink-100 hover:bg-ink-200 text-ink-600 rounded p-1"
+            onClick={() => onClick(g.slug)}
+            className={clsx(
+              'rounded p-1',
+              currentTopicSlug === g.slug
+                ? 'bg-primary-700 text-white'
+                : 'bg-ink-100 hover:bg-ink-200 text-ink-600 '
+            )}
           >
             <span className="text-ink-300">#</span>
             {removeEmojis(g.name)}
