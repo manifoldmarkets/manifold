@@ -26,9 +26,7 @@ export const getUserPortfolioInternal = async (userId: string) => {
     where
       cb.user_id = $1
       and c.resolution_time is null
-      and (a is null or a.data->'resolution' is null)
-      and cb.data->>'sale' is null
-      and (cb.data->>'isSold' is null or cb.data->>'isSold' = 'false')
+      and (a is null or ((a.data->'resolutionTime')::bigint) is null)
       `,
     [userId],
     (r) =>
@@ -52,7 +50,7 @@ export const getUserPortfolioInternal = async (userId: string) => {
             `select
       id,
       data->'pool' as pool,
-      data->>'mechanism' as mechanism,
+      mechanism,
       data->'totalShares' as total_shares,
       (data->>'p')::numeric as p
     from contracts where id in ($1:list)
