@@ -47,7 +47,13 @@ export const getTieredCost = (
     return baseCost
   }
 
-  const tieredCost = tier ? MARKET_TIER_AMOUNTS[tier] : baseCost
+  const tieredCost = tier
+    ? baseCost * 10 ** (tiers.indexOf(tier) - 1)
+    : baseCost
+
+  if (outcomeType == 'NUMBER' && tier != 'basic' && tier != 'play') {
+    return tieredCost / 10
+  }
 
   return tieredCost
 }
