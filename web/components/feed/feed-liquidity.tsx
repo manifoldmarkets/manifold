@@ -18,9 +18,9 @@ export function FeedLiquidity(props: {
   const { liquidity } = props
   const { userId, createdTime } = liquidity
 
-  const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
-  const bettor =
-    useDisplayUserById(isBeforeJune2022 ? userId : undefined) ?? undefined
+  const showUser = dayjs(createdTime).isAfter('2022-06-01')
+
+  const bettor = useDisplayUserById(userId) ?? undefined
 
   const user = useUser()
   const isSelf = user?.id === userId
@@ -30,7 +30,7 @@ export function FeedLiquidity(props: {
       <Row className="bg-ink-100 items-stretch gap-2 rounded-full">
         {isSelf ? (
           <Avatar avatarUrl={user.avatarUrl} username={user.username} />
-        ) : bettor ? (
+        ) : showUser && bettor ? (
           <UserHovercard userId={userId}>
             <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
           </UserHovercard>
