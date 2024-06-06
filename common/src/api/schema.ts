@@ -40,7 +40,10 @@ import { ManaSupply } from 'common/stats'
 import { Repost } from 'common/repost'
 import { adContract } from 'common/boost'
 import { PERIODS } from 'common/period'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
+import {
+  LivePortfolioMetrics,
+  PortfolioMetrics,
+} from 'common/portfolio-metrics'
 import { ModReport } from '../mod-report'
 
 // mqp: very unscientific, just balancing our willingness to accept load
@@ -1145,14 +1148,7 @@ export const API = (_apiTypeCheck = {
     props: z.object({
       userId: z.string(),
     }),
-    returns: {} as {
-      loanTotal: number
-      investmentValue: number
-      balance: number
-      spiceBalance: number
-      totalDeposits: number
-      timestamp: number
-    },
+    returns: {} as LivePortfolioMetrics,
   },
   'get-user-portfolio-history': {
     method: 'GET',

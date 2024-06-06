@@ -48,6 +48,6 @@ export const convertPortfolioHistory = (
     balance: +(row.balance ?? 0),
     spiceBalance: +row.spice_balance,
     loanTotal: +(row.loan_total ?? 0),
-    profit: row.profit,
+    profit: row.profit ? Number(row.profit) : undefined,
   } as PortfolioMetrics
 }

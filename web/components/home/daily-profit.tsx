@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { ArrowUpIcon } from '@heroicons/react/solid'
 import { User } from 'common/user'
@@ -10,7 +10,7 @@ import { CPMMContract } from 'common/contract'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { keyBy, partition, sortBy, sum } from 'lodash'
+import { keyBy, partition, sortBy } from 'lodash'
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
@@ -21,7 +21,7 @@ import { Table } from '../widgets/table'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { LivePortfolioMetrics } from 'common/portfolio-metrics'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
@@ -32,7 +32,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
   const { user } = props
 
   const [cachedPortfolio, setCachedPortfolio] = usePersistentLocalState<
-    PortfolioMetrics | undefined
+    LivePortfolioMetrics | undefined
   >(undefined, `portfolio-${user?.id}`)
   const { data: fetchedPortfolio } = useAPIGetter(
     'get-user-portfolio',
@@ -48,12 +48,12 @@ export const DailyProfit = memo(function DailyProfit(props: {
   useEffect(() => {
     if (portfolio) setCachedPortfolio(portfolio)
   }, [portfolio])
-
-  const networth = portfolio
-    ? portfolio.investmentValue +
-      (user?.balance ?? 0) +
-      (user?.spiceBalance ?? 0)
-    : 0
+  const { dailyProfit, investmentValue } = portfolio ?? {
+    dailyProfit: 0,
+    investmentValue: 0,
+  }
+  const networth =
+    investmentValue + (user?.balance ?? 0) + (user?.spiceBalance ?? 0)
 
   const [open, setOpen] = useState(false)
 
@@ -69,13 +69,6 @@ export const DailyProfit = memo(function DailyProfit(props: {
   useEffect(() => {
     if (open) refreshContractMetrics().then(setData)
   }, [open, refreshContractMetrics, setData])
-
-  const dailyProfit = Math.round(
-    useMemo(() => {
-      if (!data) return 0
-      return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
-    }, [data])
-  )
 
   if (!user) return <div />
 

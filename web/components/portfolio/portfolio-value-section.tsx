@@ -32,6 +32,7 @@ import {
 import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
+import { LivePortfolioMetrics } from 'common/portfolio-metrics'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
@@ -61,7 +62,7 @@ export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
     user: User
     defaultTimePeriod: Period
-    portfolio?: PortfolioSnapshot
+    portfolio?: LivePortfolioMetrics
     hideAddFundsButton?: boolean
     onlyShowProfit?: boolean
     graphContainerClassName?: string
@@ -192,7 +193,11 @@ export const PortfolioValueSection = memo(
     const totalValue =
       balance + investmentValue + spiceBalance * SPICE_TO_MANA_CONVERSION_RATE
 
-    const profit = totalValue - totalDeposits - firstProfit
+    const calculatedProfit = totalValue - totalDeposits - firstProfit
+    const profit =
+      currentTimePeriod === 'daily' && portfolio
+        ? portfolio.dailyProfit
+        : calculatedProfit
 
     const portfolioValues = {
       balance,

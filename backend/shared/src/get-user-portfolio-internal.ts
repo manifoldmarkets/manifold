@@ -2,10 +2,12 @@ import { getUser, log } from 'shared/utils'
 import { APIError } from 'common/api/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
-import { groupBy, keyBy, sumBy, uniq } from 'lodash'
+import { first, groupBy, keyBy, sumBy, uniq } from 'lodash'
 import { Contract } from 'common/contract'
 import { Answer } from 'common/answer'
 import { computeInvestmentValue } from 'common/calculate-metrics'
+import { getPortfolioHistory } from 'shared/supabase/portfolio-metrics'
+import { DAY_MS } from 'common/util/time'
 
 export const getUserPortfolioInternal = async (userId: string) => {
   const user = await getUser(userId)
@@ -90,6 +92,16 @@ export const getUserPortfolioInternal = async (userId: string) => {
 
   const contractsById = keyBy(contracts, 'id')
   const investmentValue = computeInvestmentValue(unresolvedBets, contractsById)
+  const dayAgoPortfolio = first(
+    await getPortfolioHistory(userId, Date.now() - DAY_MS, 1, pg)
+  )
+
+  const dayAgoProfit = dayAgoPortfolio
+    ? dayAgoPortfolio.spiceBalance +
+      dayAgoPortfolio.balance +
+      dayAgoPortfolio.investmentValue -
+      dayAgoPortfolio.totalDeposits
+    : 0
 
   log(
     'time',
@@ -109,6 +121,8 @@ export const getUserPortfolioInternal = async (userId: string) => {
     balance,
     spiceBalance,
     totalDeposits,
+    dailyProfit:
+      investmentValue + balance + spiceBalance - totalDeposits - dayAgoProfit,
     timestamp: Date.now(),
   }
 }

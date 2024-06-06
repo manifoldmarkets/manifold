@@ -7,3 +7,6 @@ export type PortfolioMetrics = {
   timestamp: number
   profit?: number
 }
+export type LivePortfolioMetrics = PortfolioMetrics & {
+  dailyProfit: number
+}
