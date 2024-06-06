@@ -114,7 +114,7 @@ export function useLiveContract<C extends Contract = Contract>(initial: C) {
   useApiSubscription({
     topics: [`contract/${initial.id}`],
     onBroadcast: ({ data }) => {
-      setContract(data.contract as C)
+      setContract((contract) => ({ ...contract, ...(data.contract as C) }))
     },
   })
 

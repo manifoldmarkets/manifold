@@ -5,7 +5,6 @@ import { SUBSIDY_FEE } from 'common/economy'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractSupabase, getUser } from 'shared/utils'
-import { broadcastNewSubsidy } from 'shared/websockets/helpers'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
@@ -73,8 +72,6 @@ export const addContractLiquidity = async (
         contract.totalLiquidity + subsidyAmount
       ),
     })
-
-    broadcastNewSubsidy(contract, subsidyAmount)
 
     return {
       result: liquidity,

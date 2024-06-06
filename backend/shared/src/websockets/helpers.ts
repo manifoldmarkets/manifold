@@ -5,7 +5,9 @@ import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
 import { Answer } from 'common/answer'
 
-export function broadcastNewBets(contract: Contract, bets: Bet[]) {
+type ContractChange = Partial<Contract> & { id: string }
+
+export function broadcastNewBets(contract: ContractChange, bets: Bet[]) {
   const payload = { contract, bets }
   const contractTopic = `contract/${contract.id}`
   broadcastMulti([contractTopic, `${contractTopic}/new-bet`], payload)
@@ -45,7 +47,7 @@ export function broadcastNewContract(contract: Contract, creator: User) {
   }
 }
 
-export function broadcastNewSubsidy(contract: Contract, amount: number) {
+export function broadcastNewSubsidy(contract: ContractChange, amount: number) {
   const payload = { contract, amount }
   const contractTopic = `contract/${contract.id}`
   const topics = [contractTopic, `${contractTopic}/new-subsidy`]
@@ -55,7 +57,7 @@ export function broadcastNewSubsidy(contract: Contract, amount: number) {
   broadcastMulti(topics, payload)
 }
 
-export function broadcastUpdatedContract(contract: Contract) {
+export function broadcastUpdatedContract(contract: ContractChange) {
   const payload = { contract }
   const contractTopic = `contract/${contract.id}`
   const topics = [contractTopic, `${contractTopic}/updated-metadata`]
