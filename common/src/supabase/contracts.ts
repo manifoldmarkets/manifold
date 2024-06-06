@@ -1,4 +1,4 @@
-import { chunk, groupBy } from 'lodash'
+import { chunk, groupBy, mapValues, sortBy } from 'lodash'
 import {
   convertSQLtoTS,
   millisToTs,
@@ -119,7 +119,7 @@ export const getAnswersForContracts = async (
     .order('index', { ascending: true })
   if (!data) return {}
   const answers = data.map(convertAnswer)
-  return groupBy(answers, 'contractId')
+  return mapValues(groupBy(answers, 'contractId'), (a) => sortBy(a, 'index'))
 }
 
 export const convertAnswer = (row: Row<'answers'>) =>
