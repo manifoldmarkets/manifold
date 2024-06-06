@@ -11,10 +11,10 @@ export const cancelBet: APIHandler<'bet/cancel/:betId'> = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const bet = await pg.tx(async (tx) => {
-    const bet = await pg.oneOrNone(
+    const bet = await tx.oneOrNone(
       `select * from contract_bets where bet_id = $1`,
       [betId],
-      convertBet
+      (row) => (row ? convertBet(row) : null)
     )
 
     if (!bet) throw new APIError(404, 'Bet not found')
