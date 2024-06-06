@@ -266,7 +266,14 @@ export function ContractPageContent(props: ContractParams) {
     }
   }, [pointsString, newBets.length])
 
-  const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
+  const {
+    isResolved,
+    outcomeType,
+    resolution,
+    closeTime,
+    creatorId,
+    coverImageUrl,
+  } = contract
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
@@ -274,11 +281,7 @@ export function ContractPageContent(props: ContractParams) {
   const isClosed = !!(closeTime && closeTime < Date.now())
   const [showResolver, setShowResolver] = useState(false)
   const [showReview, setShowReview] = useState(false)
-  const [coverImageUrl, setCoverImageUrl] = useState(contract.coverImageUrl)
-  // unhide on upload
-  useEffect(() => {
-    setCoverImageUrl(contract.coverImageUrl)
-  }, [contract.coverImageUrl])
+  const [imageError, setImageError] = useState(false)
 
   useSaveReferral(user, {
     defaultReferrerUsername: contract.creatorUsername,
@@ -356,7 +359,7 @@ export function ContractPageContent(props: ContractParams) {
                 : 'top-[-92px] h-[140px]'
             )}
           >
-            {coverImageUrl && (
+            {coverImageUrl && !imageError && (
               <div className="absolute -top-10 bottom-0 left-0 right-0 -z-10">
                 <Image
                   fill
@@ -369,7 +372,7 @@ export function ContractPageContent(props: ContractParams) {
                       contractId: contract.id,
                       imageUrl: coverImageUrl,
                     })
-                    setCoverImageUrl(undefined)
+                    setImageError(true)
                   }}
                   priority
                 />
