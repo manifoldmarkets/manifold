@@ -1,18 +1,9 @@
 import { Col } from 'web/components/layout/col'
-import {
-  formatMoney,
-  formatMoneyNoMoniker,
-  formatSpice,
-  getMoneyNumber,
-  shortFormatNumber,
-} from 'common/util/format'
+import { formatMoney, formatSpice, shortFormatNumber } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
-import { Button } from 'web/components/buttons/button'
-import { AddFundsModal } from 'web/components/add-funds-modal'
 import { User } from 'common/user'
 import { ReactNode, useState } from 'react'
-import { sumBy } from 'lodash'
 import { DAY_MS } from 'common/util/time'
 import {
   AnyBalanceChangeType,
@@ -22,7 +13,7 @@ import {
   isTxnChange,
 } from 'common/balance-change'
 import Link from 'next/link'
-import { ENV_CONFIG, SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 import {
   FaBackward,
   FaArrowRightArrowLeft,
@@ -36,85 +27,8 @@ import { ScaleIcon } from '@heroicons/react/outline'
 import { QuestType } from 'common/quest'
 import { Input } from 'web/components/widgets/input'
 import { formatJustTime, formatTimeShort } from 'web/lib/util/time'
-import { CoinNumber } from '../widgets/manaCoinNumber'
 import { assertUnreachable } from 'common/util/types'
 import { AnyTxnCategory } from 'common/txn'
-
-export const BalanceCard = (props: {
-  user: User
-  balanceChanges: AnyBalanceChangeType[]
-  onSeeChanges: () => void
-  className?: string
-}) => {
-  const { user, className, onSeeChanges } = props
-  const balanceChanges = props.balanceChanges.filter(
-    (b) => getMoneyNumber(b.amount) !== 0
-  )
-  const [showAddFunds, setShowAddFunds] = useState(false)
-  const spentToday = sumBy(
-    balanceChanges.filter(
-      (change) => change.createdTime > Date.now() - DAY_MS && change.amount < 0
-    ),
-    'amount'
-  )
-  const earnedToday = sumBy(
-    balanceChanges.filter(
-      (change) => change.createdTime > Date.now() - DAY_MS && change.amount > 0
-    ),
-    'amount'
-  )
-  return (
-    <Row className={className} onClick={onSeeChanges}>
-      <Col className={'w-full gap-1.5'}>
-        <Col>
-          <div className={'text-ink-800 text-4xl'}>
-            <CoinNumber amount={user.balance} />
-          </div>
-          {SPICE_PRODUCTION_ENABLED && (
-            <div className="text-ink-800 flex items-center text-4xl">
-              <div className="mr-1 rounded-full bg-amber-400 px-1.5 py-1 text-xl">
-                SP
-              </div>
-              {formatMoneyNoMoniker(user.spiceBalance)}
-            </div>
-          )}
-          <div className={'text-ink-800 ml-1 w-full flex-wrap gap-2'}>
-            Your balance
-          </div>
-        </Col>
-        <Row className="flex-1 items-center justify-between">
-          <Row className={'text-ink-600 mb-1 ml-1 gap-1'}>
-            {formatMoney(earnedToday)} in &{' '}
-            {formatMoney(spentToday).replace('-', '')} out today
-          </Row>
-          <Button
-            color={'gray-white'}
-            onClick={(e) => {
-              e.stopPropagation()
-              onSeeChanges()
-            }}
-          >
-            See log
-          </Button>
-        </Row>
-      </Col>
-      <div className={'absolute right-1 top-1'}>
-        <Button
-          color="gradient"
-          onClick={(e) => {
-            e.stopPropagation()
-            setShowAddFunds(true)
-          }}
-          size="xs"
-          className={'whitespace-nowrap'}
-        >
-          Add funds
-        </Button>
-        <AddFundsModal open={showAddFunds} setOpen={setShowAddFunds} />
-      </div>
-    </Row>
-  )
-}
 
 export const BalanceChangeTable = (props: {
   user: User
