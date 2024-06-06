@@ -62,7 +62,10 @@ export default function Wrapped2023(props: {
 
 function Wrapped2023Content(props: { user: User; username: string }) {
   const { user, username } = props
-  const [state, updateState] = usePersistentQueriesState({ page: '0' })
+  const [state, updateState] = usePersistentQueriesState(
+    { page: '0' },
+    'wrapped'
+  )
   const maxPages = 6
   const page = parseInt(state.page)
   const goToNextPage = () => {
