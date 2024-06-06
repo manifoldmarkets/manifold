@@ -695,7 +695,7 @@ const useSearchQueryState = (props: {
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : useShim
-  const [state, setState, ready] = useHook(defaults)
+  const [state, setState, ready] = useHook(defaults, persistPrefix)
 
   useEffect(() => {
     setLastSort(state.s)
@@ -704,7 +704,10 @@ const useSearchQueryState = (props: {
   return [state, setState, ready] as const
 }
 
-const useShim = <T extends Record<string, string | undefined>>(x: T) => {
+const useShim = <T extends Record<string, string | undefined>>(
+  x: T,
+  _persistPrefix: string
+) => {
   const [state, setState] = usePartialUpdater(x)
   return [state, setState, true] as const
 }

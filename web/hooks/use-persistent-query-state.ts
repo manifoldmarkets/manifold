@@ -1,14 +1,19 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { pickBy, debounce } from 'lodash'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 type UrlParams = Record<string, string | undefined>
 
 // for updating multiple query params
 export const usePersistentQueriesState = <T extends UrlParams>(
-  defaultValue: T
+  defaultValue: T,
+  persistPrefix: string
 ): [T, (newState: Partial<T>) => void, boolean] => {
-  const [state, setState] = useState(defaultValue)
+  const [state, setState] = usePersistentInMemoryState(
+    defaultValue,
+    `${persistPrefix}-queries-state`
+  )
 
   const router = useRouter()
   const [ready, setReady] = useState(false)
@@ -45,9 +50,12 @@ export const usePersistentQueryState = <K extends string>(
   key: K,
   defaultValue: string
 ): [string | undefined, (newState: string) => void] => {
-  const [state, updateState] = usePersistentQueriesState({
-    [key]: defaultValue,
-  })
+  const [state, updateState] = usePersistentQueriesState(
+    {
+      [key]: defaultValue,
+    },
+    ''
+  )
   return [
     state ? state[key] : undefined,
     (newState: string) => updateState({ [key]: newState }),
