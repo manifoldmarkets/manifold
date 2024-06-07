@@ -20,7 +20,6 @@ import {
 import { LogoIcon } from '../icons/logo-icon'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { MarketTierType } from 'common/tier'
-import { NON_PREDICTIVE_CONTRACT_TYPES } from './create-contract-types'
 
 export const CostSection = (props: {
   balance: number
