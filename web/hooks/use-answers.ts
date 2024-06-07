@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Answer } from 'common/answer'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { getAnswersForContracts } from 'common/supabase/contracts'
@@ -7,9 +7,7 @@ import { getAnswerBettorCount } from 'common/supabase/answers'
 import { useApiSubscription } from './use-api-subscription'
 
 export const useAnswersCpmm = (contractId: string) => {
-  const [answers, setAnswers] = usePersistentInMemoryState<
-    Answer[] | undefined
-  >(undefined, 'answersCpmm-' + contractId)
+  const [answers, setAnswers] = useState<Answer[] | undefined>(undefined)
 
   useEffect(() => {
     getAnswersForContracts(db, [contractId]).then((answers) =>
