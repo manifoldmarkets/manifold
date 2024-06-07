@@ -11,6 +11,7 @@ import {
 } from 'web/public/custom-components/tiers'
 import { Tooltip } from '../widgets/tooltip'
 import { MarketTierType } from 'common/tier'
+import { LogoIcon } from '../icons/logo-icon'
 
 export function TierTooltip(props: {
   tier: MarketTierType
@@ -69,6 +70,14 @@ export function TierIcon(props: { tier: MarketTierType; className?: string }) {
   const { tier, className } = props
   if (tier == 'play') {
     return <PlayTier className={className} />
+  }
+  if (tier == 'basic') {
+    return (
+      <LogoIcon
+        className="stroke-ink-600 h-[1em] w-[1em] shrink-0 stroke-[1.5px] transition-transform"
+        aria-hidden
+      />
+    )
   }
   if (tier == 'plus') {
     return <PlusTier className={className} />
