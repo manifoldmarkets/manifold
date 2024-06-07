@@ -37,7 +37,6 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 
 export default function Payments() {
