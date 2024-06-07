@@ -13,7 +13,7 @@ import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { getMappedValue } from 'common/pseudo-numeric'
-import { tiers } from 'common/tier'
+import { MarketTierType, tiers } from 'common/tier'
 import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
 import { z } from 'zod'
@@ -58,6 +58,7 @@ export type LiteMarket = {
   uniqueBettorCount: number
   lastUpdatedTime?: number
   lastBetTime?: number
+  marketTier?: MarketTierType
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -116,6 +117,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     loverUserId2,
     matchCreatorId,
     isLove,
+    marketTier,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -164,6 +166,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     lastBetTime,
     lastCommentTime,
     ...numericValues,
+    marketTier,
 
     // Manifold love props.
     loverUserId1,

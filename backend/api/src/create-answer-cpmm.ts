@@ -100,7 +100,7 @@ export const createAnswerCpmmMain = async (
   const pg = createSupabaseDirectClient()
 
   const answerCost = getTieredAnswerCost(
-    getTierFromLiquidity(contract.totalLiquidity)
+    getTierFromLiquidity(contract, contract.totalLiquidity)
   )
 
   let needToDoSketchyFirebaseRevert = false // for updating contract liquidity

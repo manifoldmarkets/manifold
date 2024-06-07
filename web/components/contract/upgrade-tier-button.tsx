@@ -34,7 +34,8 @@ export function UpgradeTierButton(props: {
   if (disabled) return <></>
 
   const alreadyHighestTier =
-    getTierFromLiquidity(contract.totalLiquidity) === 'crystal'
+    contract.marketTier === 'crystal' ??
+    getTierFromLiquidity(contract, contract.totalLiquidity) === 'crystal'
 
   return (
     <Button
@@ -68,7 +69,9 @@ export function AddLiquidityDialogue(props: {
   }
   const ante = getAnte(outcomeType, numAnswers)
 
-  const currentTier = getTierFromLiquidity(contract.totalLiquidity)
+  const currentTier =
+    contract.marketTier ??
+    getTierFromLiquidity(contract, contract.totalLiquidity)
   const currentTierIndex = tiers.indexOf(currentTier)
   const alreadyHighestTier = currentTier === 'crystal'
 
@@ -181,7 +184,10 @@ function UpgradeTierContent(props: {
       >
         Upgrade{' '}
         {amount &&
-          `to ${getTierFromLiquidity(amount + contract.totalLiquidity)}`}
+          `to ${getTierFromLiquidity(
+            contract,
+            amount + contract.totalLiquidity
+          )}`}
       </Button>
       {notEnoughFunds && (
         <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">

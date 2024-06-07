@@ -203,7 +203,9 @@ export const BuyPanelBody = (props: {
 
   const user = useUser()
 
-  const marketTier = getTierFromLiquidity(contract.totalLiquidity)
+  const marketTier =
+    contract.marketTier ??
+    getTierFromLiquidity(contract, contract.totalLiquidity)
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(contract.id)

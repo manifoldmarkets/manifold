@@ -21,6 +21,7 @@ import { PollOption } from './poll-option'
 import { User } from './user'
 import { removeUndefinedProps } from './util/object'
 import { randomString } from './util/random'
+import { MarketTierType } from './tier'
 
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
 
@@ -58,6 +59,7 @@ export function getNewContract(props: {
   specialLiquidityPerAnswer: number | undefined
 
   isAutoBounty: boolean | undefined
+  marketTier?: MarketTierType
 }) {
   const {
     id,
@@ -85,6 +87,7 @@ export function getNewContract(props: {
     specialLiquidityPerAnswer,
     answerLoverUserIds,
     isAutoBounty,
+    marketTier,
   } = props
   const createdTime = Date.now()
 
@@ -154,6 +157,7 @@ export function getNewContract(props: {
     loverUserId2,
     matchCreatorId,
     isLove,
+    marketTier,
   })
   if (visibility === 'unlisted') {
     contract.unlistedById = creator.id

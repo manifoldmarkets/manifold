@@ -245,10 +245,11 @@ function ContractQuestion(props: {
 }) {
   const { contract, className, hideAvatar } = props
   const hasBetOnContract = useHasBetOnContract(contract.id)
-  const marketTier =
-    'totalLiquidity' in contract
-      ? getTierFromLiquidity(contract.totalLiquidity)
-      : undefined
+  const marketTier = contract.marketTier
+    ? contract.marketTier
+    : 'totalLiquidity' in contract
+    ? getTierFromLiquidity(contract, contract.totalLiquidity)
+    : undefined
   return (
     <Row className={clsx('gap-2 sm:gap-4', className)}>
       {!hideAvatar && (

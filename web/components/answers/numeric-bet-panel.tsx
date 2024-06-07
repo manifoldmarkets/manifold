@@ -398,7 +398,10 @@ export const NumericBetPanel = (props: {
               disabled={isSubmitting}
               inputRef={inputRef}
               showSlider={isAdvancedTrader}
-              marketTier={getTierFromLiquidity(contract.totalLiquidity)}
+              marketTier={
+                contract.marketTier ??
+                getTierFromLiquidity(contract, contract.totalLiquidity)
+              }
             />
             <Col className={'mt-0.5'}>
               <Row className={'gap-1'}>

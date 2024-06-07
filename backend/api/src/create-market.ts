@@ -211,6 +211,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           answerLoverUserIds,
           specialLiquidityPerAnswer,
           isAutoBounty,
+          marketTier,
         })
       )
 

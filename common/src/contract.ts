@@ -13,6 +13,7 @@ import { Fees } from './fees'
 import { PollOption } from './poll-option'
 import { formatMoney, formatPercent } from './util/format'
 import { MINUTE_MS } from './util/time'
+import { MarketTierType } from './tier'
 
 /************************************************
 
@@ -92,6 +93,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isRanked?: boolean
 
   gptCommentSummary?: string
+
+  marketTier?: MarketTierType
 
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.

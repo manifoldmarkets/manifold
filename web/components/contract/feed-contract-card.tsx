@@ -99,10 +99,11 @@ export function FeedContractCard(props: {
     mechanism,
   } = contract
 
-  const marketTier =
-    'totalLiquidity' in contract
-      ? getTierFromLiquidity(contract.totalLiquidity)
-      : undefined
+  const marketTier = contract.marketTier
+    ? contract.marketTier
+    : 'totalLiquidity' in contract
+    ? getTierFromLiquidity(contract, contract.totalLiquidity)
+    : undefined
 
   const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'

@@ -78,7 +78,10 @@ export function CreateAnswerCpmmPanel(props: {
           >
             Add answer (
             {formatMoney(
-              getTieredAnswerCost(getTierFromLiquidity(contract.totalLiquidity))
+              getTieredAnswerCost(
+                contract.marketTier ??
+                  getTierFromLiquidity(contract, contract.totalLiquidity)
+              )
             )}
             )
           </Button>
