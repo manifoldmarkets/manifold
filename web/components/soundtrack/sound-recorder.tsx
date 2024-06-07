@@ -77,6 +77,7 @@ const SoundRecorder: React.FC = () => {
         ignoreUserIds={[]}
       />
       <Button
+        className={'w-40'}
         onClick={isRecording ? stopRecording : startRecording}
         loading={uploadProgress != 1}
       >
