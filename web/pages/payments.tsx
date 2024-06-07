@@ -22,7 +22,7 @@ import { UserAvatarAndBadge, UserLink } from 'web/components/widgets/user-link'
 import { QrcodeIcon, XIcon } from '@heroicons/react/outline'
 import { User } from 'web/lib/firebase/users'
 import { Avatar } from 'web/components/widgets/avatar'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatSpice } from 'common/util/format'
 import { Linkify } from 'web/components/widgets/linkify'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -33,6 +33,12 @@ import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { useRouter } from 'next/router'
 import { filterDefined } from 'common/util/array'
 import { UserHovercard } from 'web/components/user/user-hovercard'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 
 export default function Payments() {
   const { payments, load } = useAllManaPayments()
@@ -215,7 +221,9 @@ const PaymentCards = (props: {
                 }
               >
                 {decreasedBalance ? '-' : '+'}
-                {formatMoney(Math.abs(payment.amount))}
+                {payment.token === 'M$'
+                  ? formatMoney(Math.abs(payment.amount))
+                  : formatSpice(Math.abs(payment.amount))}
               </span>
             </Row>
             <Row className={'ml-1 mt-2'}>
@@ -250,6 +258,7 @@ export const PaymentsModal = (props: {
   const [message, setMessage] = useState(defaultMessage)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isSpice, setIsSpice] = useState(false)
   const [toUsers, setToUsers] = useState<DisplayUser[]>([])
   const [removedToUser, setRemovedToUser] = useState(false)
   const { canSend, message: cannotSendMessage } = useCanSendMana(fromUser)
@@ -257,6 +266,14 @@ export const PaymentsModal = (props: {
   useEffect(() => {
     if (toUser) setToUsers([toUser])
   }, [toUser])
+
+  const showSpice =
+    fromUser.id === HOUSE_LIQUIDITY_PROVIDER_ID ||
+    fromUser.id === DEV_HOUSE_LIQUIDITY_PROVIDER_ID ||
+    (toUsers.length == 1 &&
+      (toUsers[0].id === HOUSE_LIQUIDITY_PROVIDER_ID ||
+        toUsers[0].id === DEV_HOUSE_LIQUIDITY_PROVIDER_ID))
+
   return (
     <Modal open={show} setOpen={setShow}>
       <Col className={'bg-canvas-0 rounded-md p-4'}>
@@ -291,13 +308,30 @@ export const PaymentsModal = (props: {
             </Col>
           </Row>
           <Row className={'items-center justify-between'}>
+            {showSpice && (
+              <Col>
+                <span>Token</span>
+                <ChoicesToggleGroup
+                  currentChoice={isSpice ? 'PP' : 'M$'}
+                  setChoice={(val) => setIsSpice(val === 'PP')}
+                  choicesMap={{
+                    Mana: 'M$',
+                    'Prize Points': 'PP',
+                  }}
+                />
+              </Col>
+            )}
             <Col>
               <span>Amount</span>
               <AmountInput
                 amount={amount}
                 allowNegative={isAdmin}
                 onChangeAmount={setAmount}
-                label={ENV_CONFIG.moneyMoniker}
+                label={
+                  showSpice && isSpice
+                    ? ENV_CONFIG.spiceMoniker
+                    : ENV_CONFIG.moneyMoniker
+                }
                 inputClassName={'w-52'}
                 onBlur={() => {
                   if (amount && amount < 10 && !isAdmin) {
@@ -332,6 +366,7 @@ export const PaymentsModal = (props: {
                     amount,
                     message,
                     groupId,
+                    token: showSpice && isSpice ? 'PP' : 'M$',
                   })
                   setError('')
                   setShow(false)
