@@ -38,6 +38,7 @@ import { ShareQRButton } from '../buttons/share-qr-button'
 import dayjs from 'dayjs'
 import SuperBanControl from '../SuperBanControl'
 import { BoostButton } from './boost-button'
+import { SubsidizeButton } from './subsidize-button'
 
 export const Stats = (props: {
   contract: Contract
@@ -478,6 +479,10 @@ export function ContractInfoDialog(props: {
             <ShareQRButton contract={contract} />
             <ShareIRLButton contract={contract} />
             <ShareEmbedButton contract={contract} />
+            {(contract.mechanism == 'cpmm-1' ||
+              contract.mechanism == 'cpmm-multi-1') && (
+              <SubsidizeButton contract={contract} />
+            )}
           </Row>
           <Row className="flex-wrap gap-2">
             <ReportButton
