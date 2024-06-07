@@ -120,7 +120,6 @@ function UpgradeTierContent(props: {
   const { currentTierIndex, contract, ante, amount, setAmount, setOpen } = props
   const { outcomeType, id: contractId, slug } = contract
   const totalOptions = tiers.length - 1 - currentTierIndex
-  console.log(totalOptions)
 
   const [error, setError] = useState<string | undefined>(undefined)
   const [isSuccess, setIsSuccess] = useState(false)
