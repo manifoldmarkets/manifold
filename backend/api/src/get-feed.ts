@@ -139,6 +139,8 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       ],
       where(`contracts.close_time > now()`),
       where(`contracts.outcome_type != 'STONK'`),
+      where(`contracts.outcome_type != 'BOUNTIED_QUESTION'`),
+      where(`(contracts.data->>'marketTier') != 'play'`), // filtering by liquidity takes too long
       where(`contracts.visibility = 'public'`),
       where(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
