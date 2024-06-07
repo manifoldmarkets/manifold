@@ -15,7 +15,7 @@ import {
   FullMarket,
   updateMarketProps,
 } from './market-types'
-import type { ContractComment } from 'common/comment'
+import { MAX_COMMENT_LENGTH, type ContractComment } from 'common/comment'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
@@ -546,8 +546,9 @@ export const API = (_apiTypeCheck = {
       .object({
         amount: z.number().finite(),
         toIds: z.array(z.string()),
-        message: z.string(),
+        message: z.string().max(MAX_COMMENT_LENGTH),
         groupId: z.string().max(MAX_ID_LENGTH).optional(),
+        token: z.enum(['M$', 'PP']).default('M$'),
       })
       .strict(),
   },

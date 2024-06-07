@@ -426,7 +426,7 @@ type ManaPay = {
   category: 'MANA_PAYMENT'
   fromType: 'USER'
   toType: 'USER'
-  token: 'M$'
+  token: 'M$' | 'SPICE'
   data: {
     visibility: 'public' | 'private'
     message: string

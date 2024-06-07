@@ -1,4 +1,3 @@
-
 import { isVerified } from 'common/user'
 import { canSendMana } from 'common/can-send-mana'
 import { APIError, type APIHandler } from './helpers/endpoint'
@@ -6,21 +5,18 @@ import { insertTxns } from 'shared/txn/run-txn'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
 import { isAdminId } from 'common/envs/constants'
-import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getUser, getUsers } from 'shared/utils'
+import { getUser, getUsers, isProd } from 'shared/utils'
 import { bulkIncrementBalances } from 'shared/supabase/users'
 import { buildArray } from 'common/util/array'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 
-export const sendMana: APIHandler<'managram'> = async (props, auth) => {
-  const { amount, toIds, message, groupId: passedGroupId } = props
-  if (message.length > MAX_COMMENT_LENGTH) {
-    throw new APIError(
-      400,
-      `Message should be less than ${MAX_COMMENT_LENGTH} characters`
-    )
-  }
+export const managram: APIHandler<'managram'> = async (props, auth) => {
+  const { amount, toIds, message, token, groupId: passedGroupId } = props
   const fromId = auth.uid
 
   if (!isAdminId(fromId) && amount < 10) {
@@ -54,13 +50,33 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
       throw new APIError(403, errorMessage)
     }
 
+    if (token === 'PP') {
+      const ManifoldAccount = isProd()
+        ? HOUSE_LIQUIDITY_PROVIDER_ID
+        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+
+      if (fromId !== ManifoldAccount) {
+        if (toIds.length > 1)
+          throw new APIError(
+            400,
+            'You cannot send prize points to multiple users.'
+          )
+        if (toIds[0] !== ManifoldAccount)
+          throw new APIError(
+            400,
+            'Do send prize points only to @ManifoldMarkets.'
+          )
+      }
+    }
+
     const total = amount * toIds.length
-    if (fromUser.balance < total) {
+    const balance = token === 'M$' ? fromUser.balance : fromUser.spiceBalance
+    if (balance < total) {
       throw new APIError(
         403,
         `Insufficient balance: ${fromUser.name} needed ${
           amount * toIds.length
-        } but only had ${fromUser.balance} `
+        } but only had ${balance} `
       )
     }
 
@@ -72,17 +88,19 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
       throw new APIError(403, 'All destination users must be verified.')
     }
 
+    const balanceField = token === 'M$' ? 'balance' : 'spiceBalance'
+
     await bulkIncrementBalances(
       tx,
       buildArray(
         {
           id: fromId,
-          balance: -total,
+          [balanceField]: -total,
           totalDeposits: -total,
         },
         toIds.map((toId) => ({
           id: toId,
-          balance: amount,
+          [balanceField]: amount,
           totalDeposits: amount,
         }))
       )
@@ -101,7 +119,7 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
         toId,
         toType: 'USER',
         amount,
-        token: 'M$',
+        token: token === 'M$' ? 'M$' : 'SPICE',
         category: 'MANA_PAYMENT',
         data: {
           message,

@@ -56,7 +56,7 @@ import { createportfolio } from './create-portfolio'
 import { updateportfolio } from './update-portfolio'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
-import { sendMana } from './send-mana'
+import { managram } from './managram'
 import { leavereview } from './leave-review'
 import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
 import { castpollvote } from './cast-poll-vote'
@@ -265,7 +265,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   markets: getMarkets,
   'search-markets': searchMarketsLite,
   'search-markets-full': searchMarketsFull,
-  managram: sendMana,
+  managram: managram,
   managrams: getManagrams,
   manalink: createManalink,
   donate: donate,
