@@ -1,4 +1,7 @@
-import { CreateableOutcomeType } from 'common/contract'
+import {
+  CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
+  CreateableOutcomeType,
+} from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 
@@ -17,6 +20,7 @@ import {
 import { LogoIcon } from '../icons/logo-icon'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { MarketTierType } from 'common/tier'
+import { NON_PREDICTIVE_CONTRACT_TYPES } from './create-contract-types'
 
 export const CostSection = (props: {
   balance: number
@@ -31,7 +35,11 @@ export const CostSection = (props: {
   return (
     <Col className="items-start px-1">
       <label className="mb-1 gap-2">
-        <span>Tier</span>
+        <span>
+          {CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)
+            ? 'Cost'
+            : 'Tier'}
+        </span>
       </label>
 
       <PriceSection

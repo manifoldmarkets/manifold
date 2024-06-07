@@ -45,7 +45,7 @@ export function UpgradeTierButton(props: {
       className={clsx(className, 'group')}
     >
       <CrystalTier className="mr-2 h-5 w-5" />
-      {alreadyHighestTier ? 'Add liquidity' : 'Upgrade Tier'}
+      {alreadyHighestTier ? 'Add liquidity' : 'Upgrade'}
       <AddLiquidityDialogue
         contract={contract}
         isOpen={open}
@@ -120,6 +120,7 @@ function UpgradeTierContent(props: {
   const { currentTierIndex, contract, ante, amount, setAmount, setOpen } = props
   const { outcomeType, id: contractId, slug } = contract
   const totalOptions = tiers.length - 1 - currentTierIndex
+  console.log(totalOptions)
 
   const [error, setError] = useState<string | undefined>(undefined)
   const [isSuccess, setIsSuccess] = useState(false)
@@ -154,14 +155,13 @@ function UpgradeTierContent(props: {
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
   const notEnoughFunds = !!user && !!amount && user.balance < amount
+
   return (
     <>
       <div
         className={clsx(
           'w-full gap-2',
-          totalOptions > 2
-            ? 'grid grid-cols-2 sm:flex sm:flex-row'
-            : 'flex flex-row'
+          totalOptions > 2 ? 'grid grid-cols-2' : 'flex flex-row'
         )}
       >
         {tiers.slice(currentTierIndex + 1).map((tier) => (
