@@ -30,6 +30,7 @@ import { useABTest } from 'web/hooks/use-ab-test'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { track } from 'web/lib/service/analytics'
 import { TierTooltip } from '../tiers/tier-tooltip'
+import { getTierFromLiquidity } from 'common/tier'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -244,6 +245,11 @@ function ContractQuestion(props: {
 }) {
   const { contract, className, hideAvatar } = props
   const hasBetOnContract = useHasBetOnContract(contract.id)
+  const marketTier = contract.marketTier
+    ? contract.marketTier
+    : 'totalLiquidity' in contract
+    ? getTierFromLiquidity(contract, contract.totalLiquidity)
+    : undefined
   return (
     <Row className={clsx('gap-2 sm:gap-4', className)}>
       {!hideAvatar && (
@@ -269,11 +275,11 @@ function ContractQuestion(props: {
             </Tooltip>
           </span>
         )}
-        {!!contract.marketTier && (
+        {!!marketTier && (
           <span>
             <TierTooltip
               placement={'top'}
-              tier={contract.marketTier}
+              tier={marketTier}
               contract={contract}
               noTitle
               className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"

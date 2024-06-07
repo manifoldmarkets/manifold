@@ -137,6 +137,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
+
   const unmodifiedAnte =
     (specialLiquidityPerAnswer ??
       totalBounty ??

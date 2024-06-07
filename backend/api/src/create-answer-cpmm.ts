@@ -45,6 +45,7 @@ import {
   insertAnswer,
   updateAnswer,
 } from 'shared/supabase/answers'
+import { getTierFromLiquidity } from 'common/tier'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -98,7 +99,9 @@ export const createAnswerCpmmMain = async (
 
   const pg = createSupabaseDirectClient()
 
-  const answerCost = getTieredAnswerCost(contract.marketTier)
+  const answerCost = getTieredAnswerCost(
+    getTierFromLiquidity(contract, contract.totalLiquidity)
+  )
 
   let needToDoSketchyFirebaseRevert = false // for updating contract liquidity
   const { newAnswer, updatedAnswers, user } = await pg

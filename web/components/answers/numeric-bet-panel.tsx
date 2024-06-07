@@ -37,6 +37,7 @@ import { getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from '../bet/fees'
 import { XIcon } from '@heroicons/react/solid'
 import { useMultiNumericContract } from 'web/hooks/use-multi-numeric-contract'
+import { getTierFromLiquidity } from 'common/tier'
 
 export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
@@ -397,7 +398,10 @@ export const NumericBetPanel = (props: {
               disabled={isSubmitting}
               inputRef={inputRef}
               showSlider={isAdvancedTrader}
-              marketTier={contract.marketTier}
+              marketTier={
+                contract.marketTier ??
+                getTierFromLiquidity(contract, contract.totalLiquidity)
+              }
             />
             <Col className={'mt-0.5'}>
               <Row className={'gap-1'}>

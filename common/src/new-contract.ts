@@ -1,26 +1,26 @@
 import { JSONContent } from '@tiptap/core'
+import { Answer } from './answer'
+import { getMultiCpmmLiquidity } from './calculate-cpmm'
+import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
 import {
-  add_answers_mode,
   Binary,
   BountiedQuestion,
-  Contract,
   CPMM,
   CPMMMulti,
-  NonBet,
+  CPMMMultiNumeric,
   CREATEABLE_OUTCOME_TYPES,
+  Contract,
+  NonBet,
   Poll,
   PseudoNumeric,
   Stonk,
   Visibility,
-  CPMMMultiNumeric,
+  add_answers_mode,
 } from './contract'
+import { PollOption } from './poll-option'
 import { User } from './user'
 import { removeUndefinedProps } from './util/object'
-import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
 import { randomString } from './util/random'
-import { PollOption } from './poll-option'
-import { Answer } from './answer'
-import { getMultiCpmmLiquidity } from './calculate-cpmm'
 import { MarketTierType } from './tier'
 
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
@@ -87,7 +87,7 @@ export function getNewContract(props: {
     specialLiquidityPerAnswer,
     answerLoverUserIds,
     isAutoBounty,
-    marketTier
+    marketTier,
   } = props
   const createdTime = Date.now()
 

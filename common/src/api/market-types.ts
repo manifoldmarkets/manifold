@@ -9,15 +9,15 @@ import {
   RESOLUTIONS,
   VISIBILITIES,
 } from 'common/contract'
+import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
+import { MAX_ID_LENGTH } from 'common/group'
+import { getMappedValue } from 'common/pseudo-numeric'
+import { MarketTierType, tiers } from 'common/tier'
 import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
-import { getMappedValue } from 'common/pseudo-numeric'
 import { z } from 'zod'
-import { MAX_ID_LENGTH } from 'common/group'
 import { contentSchema } from './zod-types'
-import { MINIMUM_BOUNTY } from 'common/economy'
-import { MarketTierType, tiers } from 'common/tier'
 
 export type LiteMarket = {
   // Unique identifier for this market

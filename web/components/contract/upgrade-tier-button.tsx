@@ -34,6 +34,7 @@ export function UpgradeTierButton(props: {
   if (disabled) return <></>
 
   const alreadyHighestTier =
+    contract.marketTier === 'crystal' ??
     getTierFromLiquidity(contract, contract.totalLiquidity) === 'crystal'
 
   return (
@@ -68,7 +69,9 @@ export function AddLiquidityDialogue(props: {
   }
   const ante = getAnte(outcomeType, numAnswers)
 
-  const currentTier = getTierFromLiquidity(contract, contract.totalLiquidity)
+  const currentTier =
+    contract.marketTier ??
+    getTierFromLiquidity(contract, contract.totalLiquidity)
   const currentTierIndex = tiers.indexOf(currentTier)
   const alreadyHighestTier = currentTier === 'crystal'
 

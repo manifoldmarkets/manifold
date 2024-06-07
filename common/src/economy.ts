@@ -1,8 +1,8 @@
 import {
-  OutcomeType,
   CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
+  OutcomeType,
 } from 'common/contract'
-import { MARKET_TIER_MULTIPLES, MarketTierType } from './tier'
+import { MarketTierType, tiers } from './tier'
 
 export const FIXED_ANTE = 1000
 const BASE_ANSWER_COST = FIXED_ANTE / 10
@@ -19,7 +19,7 @@ const ANTES = {
 
 export const getTieredAnswerCost = (marketTier: MarketTierType | undefined) => {
   return marketTier
-    ? BASE_ANSWER_COST * MARKET_TIER_MULTIPLES[marketTier]
+    ? BASE_ANSWER_COST * 10 ** (tiers.indexOf(marketTier) - 1)
     : BASE_ANSWER_COST
 }
 
@@ -38,7 +38,6 @@ export const getAnte = (
 
   return ante
 }
-
 export const getTieredCost = (
   baseCost: number,
   tier: MarketTierType | undefined,
@@ -48,7 +47,9 @@ export const getTieredCost = (
     return baseCost
   }
 
-  const tieredCost = tier ? baseCost * MARKET_TIER_MULTIPLES[tier] : baseCost
+  const tieredCost = tier
+    ? baseCost * 10 ** (tiers.indexOf(tier) - 1)
+    : baseCost
 
   if (outcomeType == 'NUMBER' && tier != 'basic' && tier != 'play') {
     return tieredCost / 10
