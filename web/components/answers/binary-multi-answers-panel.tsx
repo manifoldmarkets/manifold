@@ -13,13 +13,14 @@ import { BuyPanelBody } from 'web/components/bet/bet-panel'
 import { VERSUS_COLORS, getVersusColor } from '../charts/contract/choice'
 import { useUser } from 'web/hooks/use-user'
 import { PencilIcon } from '@heroicons/react/solid'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
-  answers: Answer[]
   feedReason?: string
 }) {
-  const { feedReason, contract, answers } = props
+  const { feedReason, contract } = props
+  const answers = useAnswersCpmm(contract.id) ?? contract.answers
 
   const [colorLeft, colorRight] = answers.map(
     (a, i) => a.color ?? VERSUS_COLORS[i]

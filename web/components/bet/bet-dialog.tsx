@@ -71,6 +71,7 @@ export function MultiBetDialog(props: {
     defaultSort,
     'answer-sort' + contract.id
   )
+
   const isBinaryMC = isBinaryMulti(contract)
   return (
     <Modal
@@ -96,7 +97,6 @@ export function MultiBetDialog(props: {
             {isBinaryMC ? (
               <BinaryMultiAnswersPanel
                 contract={contract as CPMMMultiContract}
-                answers={contract.answers}
               />
             ) : (
               <AnswersPanel

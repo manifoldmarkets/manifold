@@ -473,7 +473,6 @@ export function ContractPageContent(props: ContractParams) {
               </div>
               <ContractOverview
                 contract={contract}
-                answers={answers}
                 betPoints={betPoints as any}
                 showResolver={showResolver}
                 resolutionRating={

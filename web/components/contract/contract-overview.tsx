@@ -74,7 +74,6 @@ import {
   MultiNumericDistributionChart,
   NumericBetPanel,
 } from 'web/components/answers/numeric-bet-panel'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
 import { NEW_GRAPH_COLOR } from 'common/multi-numeric'
 import { FaChartArea } from 'react-icons/fa'
@@ -86,7 +85,6 @@ import { useIsClient } from 'web/hooks/use-is-client'
 export const ContractOverview = memo(
   (props: {
     contract: Contract
-    answers: Answer[] | undefined
     betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
     showResolver: boolean
     resolutionRating?: ReactNode
@@ -97,7 +95,6 @@ export const ContractOverview = memo(
     const {
       betPoints,
       contract,
-      answers,
       showResolver,
       resolutionRating,
       setShowResolver,
@@ -142,7 +139,6 @@ export const ContractOverview = memo(
         return (
           <ChoiceOverview
             contract={contract}
-            answers={answers ?? []}
             points={betPoints as any}
             showResolver={showResolver}
             setShowResolver={setShowResolver}
@@ -493,7 +489,6 @@ const ChartAnnotation = (props: {
 const ChoiceOverview = (props: {
   points: MultiPoints
   contract: MultiContract
-  answers: Answer[]
   showResolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
@@ -929,7 +924,7 @@ const BinaryChoiceOverview = (props: {
       ) : (
         <>
           {resolutionRating}
-          <BinaryMultiAnswersPanel contract={contract} answers={answers} />
+          <BinaryMultiAnswersPanel contract={contract} />
           {tradingAllowed(contract) && (
             <UserBetsSummary
               className="border-ink-200 !mb-2 mt-2 "
@@ -946,7 +941,6 @@ const BinaryChoiceOverview = (props: {
 export const SimpleMultiOverview = (props: { contract: CPMMMultiContract }) => {
   const { contract } = props
   const user = useUser()
-  const answers = useAnswersCpmm(contract.id) ?? contract.answers
   const defaultSort = getDefaultSort(contract)
 
   const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
@@ -973,7 +967,7 @@ export const SimpleMultiOverview = (props: { contract: CPMMMultiContract }) => {
       </Row>
 
       <AnswersPanel
-        contract={{ ...contract, answers }}
+        contract={contract}
         selectedAnswerIds={[]}
         sort={sort}
         setSort={setSort}

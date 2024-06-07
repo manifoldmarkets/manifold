@@ -73,6 +73,7 @@ import { formatTime } from 'web/lib/util/time'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { getBets } from 'common/supabase/bets'
 import { db } from 'web/lib/supabase/db'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -115,7 +116,9 @@ export function AnswersPanel(props: {
 
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
-  const answers = contract.answers
+  const allAnswers = useAnswersCpmm(contract.id) ?? contract.answers
+
+  const answers = allAnswers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
     .map((a) => ({
       ...a,

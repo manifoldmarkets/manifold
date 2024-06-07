@@ -160,10 +160,7 @@ export function HorizontalDashboardCard(props: {
           {isBinaryMc &&
             contract.mechanism === 'cpmm-multi-1' &&
             contract.outcomeType !== 'NUMBER' && (
-              <BinaryMultiAnswersPanel
-                contract={contract}
-                answers={contract.answers}
-              />
+              <BinaryMultiAnswersPanel contract={contract} />
             )}
 
           {isBinaryCpmm && (showGraph || !ignore) && (

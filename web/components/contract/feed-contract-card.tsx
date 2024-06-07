@@ -310,7 +310,6 @@ export function FeedContractCard(props: {
           contract.outcomeType !== 'NUMBER' && (
             <BinaryMultiAnswersPanel
               contract={contract}
-              answers={contract.answers}
               feedReason={feedReason}
             />
           )}
