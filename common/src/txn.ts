@@ -53,6 +53,7 @@ type AnyTxnType =
   | ManachanTweet
   | BotCommentFee
   | AirDrop
+  | ManifestAirDrop
   | ExtraPurchasedMana
 
 export type AnyTxnCategory = AnyTxnType['category']
@@ -490,6 +491,13 @@ type AirDrop = {
   token: 'M$'
 }
 
+type ManifestAirDrop = {
+  category: 'MANIFEST_AIR_DROP'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+}
+
 type ExtraPurchasedMana = {
   category: 'EXTRA_PURCHASED_MANA'
   fromType: 'BANK'
@@ -548,4 +556,5 @@ export type ReclaimManaTxn = Txn & ReclaimMana
 export type ManachanTweetTxn = Txn & ManachanTweet
 export type BotCommentFeeTxn = Txn & BotCommentFee
 export type AirDropTxn = Txn & AirDrop
+export type ManifestAirDropTxn = Txn & ManifestAirDrop
 export type ExtraPurchasedManaTxn = Txn & ExtraPurchasedMana

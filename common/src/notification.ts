@@ -76,6 +76,7 @@ export type notification_source_types =
   | love_notification_source_types
   | 'push_notification_bonus'
   | 'airdrop'
+  | 'manifest_airdrop'
   | 'extra_purchased_mana'
 
 export type love_notification_source_types =
@@ -317,6 +318,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   airdrop: {
     simple: 'You received a gift of mana',
     detailed: 'Manifold has sent you a gift of mana',
+  },
+  manifest_airdrop: {
+    simple: 'You received a gift for attending Manifest',
+    detailed: 'Manifold has sent you a gift for attending Manifest',
   },
   extra_purchased_mana: {
     simple: 'You just received 9x your purchased mana in 2024',

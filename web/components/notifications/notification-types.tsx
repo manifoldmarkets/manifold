@@ -67,6 +67,7 @@ import {
   QuestionOrGroupLink,
 } from './notification-helpers'
 import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -383,6 +384,15 @@ export function NotificationItem(props: {
   } else if (reason === 'airdrop') {
     return (
       <AirdropNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'manifest_airdrop') {
+    return (
+      <ManifestAirdropNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -1769,8 +1779,33 @@ function AirdropNotification(props: {
       subtitle={<></>}
     >
       Congratulations! You just received{' '}
-      <span className="font-semibold">{formatMoney(amount)}</span> as a gift
-      from Manifold for being active for 30 days this year!
+      <span className="font-semibold">{formatMoney(amount)}</span>as a gift from
+      Manifold for being active for 30 days this year!
+    </NotificationFrame>
+  )
+}
+
+function ManifestAirdropNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const { amount } = notification.data as AirdropData
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<GiftIcon className="text-primary-500 h-8 w-8" />}
+      subtitle={<></>}
+    >
+      Congratulations! As a gift for attending Manifest, you just received{' '}
+      <span className="font-semibold">{formatMoney(amount)}</span> and{' '}
+      <SpiceCoin /> 5,000!
     </NotificationFrame>
   )
 }
