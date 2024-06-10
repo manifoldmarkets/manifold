@@ -9,7 +9,7 @@ import {
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { isVerified, User } from 'common/user'
-import { groupBy, keyBy, pick, sumBy, uniq, uniqBy } from 'lodash'
+import { groupBy, keyBy, sumBy, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
   createBetFillNotification,
