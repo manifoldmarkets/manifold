@@ -16,15 +16,9 @@ if (require.main === module) {
     const usernames = rows.map((o) => o.Username.replaceAll('@', '').trim())
 
     let i = 0
-    await pg.tx(async (tx) => {
-      for (const username of usernames) {
-        console.log(
-          'Airdropping to user',
-          username,
-          i++,
-          'of',
-          usernames.length
-        )
+    for (const username of usernames) {
+      console.log('Airdropping to user', username, i++, 'of', usernames.length)
+      await pg.tx(async (tx) => {
         const user = await getUserByUsernameWithAttempts(username, tx)
         if (user) {
           console.log('Found user:', user.username)
@@ -53,8 +47,8 @@ if (require.main === module) {
             description: 'Manifest airdrop!',
           })
         }
-      }
-    })
+      })
+    }
 
     console.log('Airdrop complete!')
   })
