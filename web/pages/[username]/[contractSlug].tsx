@@ -45,7 +45,7 @@ import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-import { useBets, useSubscribeNewBets } from 'web/hooks/use-bets-supabase'
+import { useBets, useSubscribeNewBets } from 'web/hooks/use-bets'
 import {
   useIsPrivateContractMember,
   useLiveContract,

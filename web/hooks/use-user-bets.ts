@@ -1,4 +1,4 @@
-import { useRealtimeBetsPolling } from './use-bets-supabase'
+import { useRealtimeBetsPolling } from './use-bets'
 
 export const useUserContractBets = (
   userId: string | undefined,

@@ -22,7 +22,6 @@ import {
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
-import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 import { Tooltip } from '../widgets/tooltip'
 import { sortAnswers } from 'common/answer'
 import { removeEmojis } from 'common/util/string'
@@ -243,7 +242,6 @@ function ContractQuestion(props: {
   hideAvatar?: boolean
 }) {
   const { contract, className, hideAvatar } = props
-  const hasBetOnContract = useHasBetOnContract(contract.id)
   const marketTier = contract.marketTier
     ? contract.marketTier
     : 'totalLiquidity' in contract

@@ -15,7 +15,7 @@ import {
   uniqBy,
 } from 'lodash'
 import { ReactNode, memo, useEffect, useState } from 'react'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
+import { useRealtimeBets } from 'web/hooks/use-bets'
 import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
 import {
   usePublicContracts,
