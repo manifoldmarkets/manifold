@@ -1,7 +1,4 @@
 import {
-  CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
   MarketContract,
 } from './contract'
 import { getAnte, getTieredCost } from './economy'
