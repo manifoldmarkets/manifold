@@ -1,7 +1,7 @@
 import { UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract, CPMMBinaryContract } from 'common/contract'
-import { use, useState } from 'react'
+import { useState } from 'react'
 import { useBets } from 'web/hooks/use-bets'
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
