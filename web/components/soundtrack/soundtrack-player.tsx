@@ -26,7 +26,7 @@ export const SoundtrackPlayer = () => {
   const [loading, setLoading] = useState(false)
 
   const notesInScale = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-  const allAvailableNotes = [1, 2, 3, 4, 5]
+  const allAvailableNotes = [1, 2, 3, 4]
     .map((i) => notesInScale.map((n) => n + i))
     .flat() as string[]
 
@@ -157,18 +157,5 @@ export const SoundtrackPlayer = () => {
         {enabled ? 'Disable' : 'Enable'} Soundtrack
       </Button>
     </Row>
-  )
-}
-
-const mapBetToVolume = (betAmount: number) => {
-  const minVolume = -10
-  const maxVolume = 0
-  const minBet = 0
-  const maxBet = 10000
-  return Math.min(
-    minVolume +
-      ((Math.abs(betAmount) - minBet) * (maxVolume - minVolume)) /
-        (maxBet - minBet),
-    0
   )
 }
