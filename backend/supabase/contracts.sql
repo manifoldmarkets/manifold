@@ -87,6 +87,7 @@ begin
         new.mechanism := (new.data) ->> 'mechanism';
         new.outcome_type := (new.data) ->> 'outcomeType';
         new.unique_bettor_count := ((new.data) -> 'uniqueBettorCount')::bigint;
+        new.tier := (new.data) ->> 'marketTier';
         new.created_time := case
                                 when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint)
                                 else null
