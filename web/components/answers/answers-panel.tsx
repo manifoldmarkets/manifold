@@ -116,9 +116,10 @@ export function AnswersPanel(props: {
 
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
-  const allAnswers = useAnswersCpmm(contract.id) ?? contract.answers
+  const liveAnswers = useAnswersCpmm(contract.id) ?? contract.answers
+  contract.answers = liveAnswers
 
-  const answers = allAnswers
+  const answers = liveAnswers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
     .map((a) => ({
       ...a,
@@ -206,7 +207,7 @@ export function AnswersPanel(props: {
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
 
   const privateUser = usePrivateUser()
-  const unresolvedAnswers = contract.answers.filter((a) =>
+  const unresolvedAnswers = answers.filter((a) =>
     'resolution' in a ? !a.resolution : true
   )
   const canAddAnswer = Boolean(
