@@ -70,7 +70,6 @@ export async function runAwardBountyTxn(
     // update bountied contract
     fbTransaction.update(contractDoc, {
       bountyLeft: FieldValue.increment(-amount),
-      bountyTxns: FieldValue.arrayUnion(txn.id),
     })
   })
 
@@ -123,7 +122,6 @@ export async function runCancelBountyTxn(
         resolutionTime,
         resolverId: txn.toId,
         lastUpdatedTime: resolutionTime,
-        bountyTxns: FieldValue.arrayUnion(txn.id),
       })
     })
     return txn

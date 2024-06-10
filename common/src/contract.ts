@@ -280,8 +280,8 @@ export type BountiedQuestion = {
   outcomeType: 'BOUNTIED_QUESTION'
   totalBounty: number
   bountyLeft: number
-  // the bounty txn ids
-  bountyTxns: string[]
+  /** @deprecated */
+  bountyTxns?: string[]
 
   // Special mode where bounty pays out automatically in proportion to likes over 48 hours.
   isAutoBounty?: boolean

@@ -1,7 +1,7 @@
 import { UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract, CPMMBinaryContract } from 'common/contract'
-import { useState } from 'react'
+import { use, useState } from 'react'
 import { useBets } from 'web/hooks/use-bets'
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -19,6 +19,7 @@ import { Answer } from 'common/answer'
 import { useUniqueBettorCountOnAnswer } from 'web/hooks/use-answers'
 import { Button, ColorType } from 'web/components/buttons/button'
 import { UserHovercard } from '../user/user-hovercard'
+import { useBountyAwardCount } from 'web/hooks/use-bounties'
 
 export function TradesButton(props: {
   contract: Contract
@@ -32,6 +33,8 @@ export function TradesButton(props: {
     contract.id,
     answer?.id
   )
+  const uniqueBountyRewardCount = useBountyAwardCount(contract)
+
   const [modalOpen, setModalOpen] = useState<boolean>(false)
 
   const isPoll = contract.outcomeType === 'POLL'
@@ -57,7 +60,7 @@ export function TradesButton(props: {
           <Row className="relative items-center  gap-1.5 text-sm">
             <UserIcon className="h-5 w-5" />
             {isBounty
-              ? contract.bountyTxns.length || ''
+              ? uniqueBountyRewardCount
               : answer
               ? uniqueAnswerBettorCount
               : uniqueTraders || ''}

@@ -375,7 +375,6 @@ const getBountiedQuestionProps = (
   const system: NonBet & BountiedQuestion = {
     mechanism: 'none',
     outcomeType: 'BOUNTIED_QUESTION',
-    bountyTxns: [],
     totalBounty: ante,
     bountyLeft: ante,
     isAutoBounty: isAutoBounty ?? false,
