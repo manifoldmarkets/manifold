@@ -62,19 +62,18 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     })
   )
 
-  await firestore.doc(`contracts/${contractId}`).update(
-    removeUndefinedProps({
-      question,
-      coverImageUrl,
-      closeTime,
-      visibility,
-      unlistedById: visibility === 'unlisted' ? auth.uid : undefined,
-      addAnswersMode,
-      sort,
-      description,
-      isSpicePayout,
-    })
-  )
+  const update = removeUndefinedProps({
+    question,
+    coverImageUrl,
+    closeTime,
+    visibility,
+    unlistedById: visibility === 'unlisted' ? auth.uid : undefined,
+    addAnswersMode,
+    sort,
+    description,
+    isSpicePayout,
+  })
+  await firestore.doc(`contracts/${contractId}`).update(update)
 
   log(`updated fields: ${Object.keys(fields).join(', ')}`)
 
@@ -92,7 +91,11 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   }
 
   const continuation = async () => {
-    broadcastUpdatedContract(contract)
+    broadcastUpdatedContract({
+      ...update,
+      coverImageUrl: contract.coverImageUrl || undefined,
+      id: contract.id,
+    })
     log(`Revalidating contract ${contract.id}.`)
     await revalidateContractStaticProps(contract)
     if (visibility) {

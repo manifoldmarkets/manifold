@@ -8,7 +8,6 @@ import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { ContractStatusLabel } from './contracts-table'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
 import Masonry from 'react-masonry-css'
 import { Button } from 'web/components/buttons/button'
@@ -234,11 +233,8 @@ const SidebarRelatedContractCard = memo(function (props: {
   twoLines?: boolean
   className?: string
 }) {
-  const { onContractClick, twoLines, className } = props
+  const { contract, onContractClick, twoLines, className } = props
 
-  const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
   const {
     creatorUsername,
     creatorAvatarUrl,
@@ -305,11 +301,7 @@ const RelatedContractCard = memo(function (props: {
   showGraph?: boolean
   className?: string
 }) {
-  const { onContractClick, showGraph, twoLines, className } = props
-
-  const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
+  const { contract, onContractClick, showGraph, twoLines, className } = props
   const {
     creatorUsername,
     creatorAvatarUrl,

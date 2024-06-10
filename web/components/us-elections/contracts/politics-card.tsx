@@ -6,8 +6,7 @@ import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { ClickFrame } from 'web/components/widgets/click-frame'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useLiveContractWithAnswers } from 'web/hooks/use-contract-supabase'
 import { track } from 'web/lib/service/analytics'
 import { CandidatePanel } from './candidates-panel/candidates-panel'
 import { SmallCandidatePanel } from './candidates-panel/small-candidate-panel'
@@ -38,19 +37,7 @@ export function PoliticsCard(props: {
     excludeAnswers,
   } = props
 
-  const contract =
-    (useFirebasePublicContract(
-      props.contract.visibility,
-      props.contract.id
-    ) as MultiContract) ?? props.contract
-
-  if (contract.mechanism === 'cpmm-multi-1') {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const answers = useAnswersCpmm(contract.id)
-    if (answers) {
-      contract.answers = answers
-    }
-  }
+  const contract = useLiveContractWithAnswers(props.contract)
 
   const path = contractPath(contract)
 

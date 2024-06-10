@@ -5,12 +5,15 @@ import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
 import { Answer } from 'common/answer'
 
-export function broadcastNewBets(contract: Contract, bets: Bet[]) {
+type ContractChange = Partial<Contract> & { id: string }
+
+export function broadcastNewBets(contract: ContractChange, bets: Bet[]) {
+  const payload = { contract, bets }
   const contractTopic = `contract/${contract.id}`
-  broadcastMulti([contractTopic, `${contractTopic}/new-bet`], { bets })
+  broadcastMulti([contractTopic, `${contractTopic}/new-bet`], payload)
 
   if (contract.visibility === 'public') {
-    broadcastMulti(['global', 'global/new-bet'], { contract, bets })
+    broadcastMulti(['global', 'global/new-bet'], payload)
   }
 
   const newOrders = bets.filter((b) => b.limitProb && !b.isFilled) as LimitBet[]
@@ -28,9 +31,9 @@ export function broadcastNewComment(
   creator: User,
   comment: ContractComment
 ) {
-  const payload = { contract, creator, comment }
+  const payload = { creator, comment }
   const contractTopic = `contract/${contract.id}`
-  const topics = [contractTopic, `${contractTopic}/new-comment`]
+  const topics = [`${contractTopic}/new-comment`]
   if (contract.visibility === 'public') {
     topics.push('global', 'global/new-comment')
   }
@@ -44,7 +47,7 @@ export function broadcastNewContract(contract: Contract, creator: User) {
   }
 }
 
-export function broadcastNewSubsidy(contract: Contract, amount: number) {
+export function broadcastNewSubsidy(contract: ContractChange, amount: number) {
   const payload = { contract, amount }
   const contractTopic = `contract/${contract.id}`
   const topics = [contractTopic, `${contractTopic}/new-subsidy`]
@@ -54,7 +57,7 @@ export function broadcastNewSubsidy(contract: Contract, amount: number) {
   broadcastMulti(topics, payload)
 }
 
-export function broadcastUpdatedContract(contract: Contract) {
+export function broadcastUpdatedContract(contract: ContractChange) {
   const payload = { contract }
   const contractTopic = `contract/${contract.id}`
   const topics = [contractTopic, `${contractTopic}/updated-metadata`]
