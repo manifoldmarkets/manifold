@@ -37,7 +37,8 @@ create table if not exists
                   last_bet_time timestamptz,
                   last_comment_time timestamptz,
                   is_politics boolean default false,
-                  unique_bettor_count bigint not null default 0
+                  unique_bettor_count bigint not null default 0,
+                  tier text
 );
 
 alter table contracts enable row level security;
@@ -87,6 +88,7 @@ begin
         new.mechanism := (new.data) ->> 'mechanism';
         new.outcome_type := (new.data) ->> 'outcomeType';
         new.unique_bettor_count := ((new.data) -> 'uniqueBettorCount')::bigint;
+        new.tier := (new.data) ->> 'marketTier';
         new.created_time := case
                                 when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint)
                                 else null
