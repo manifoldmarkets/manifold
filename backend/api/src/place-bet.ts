@@ -259,10 +259,10 @@ export const getUserBalances = async (
 
 export const getUnfilledBetsAndUserBalances = async (
   pgTrans: SupabaseTransaction,
-  contractDoc: DocumentReference,
+  contractId: string,
   answerId?: string
 ) => {
-  const unfilledBets = await getUnfilledBets(pgTrans, contractDoc.id, answerId)
+  const unfilledBets = await getUnfilledBets(pgTrans, contractId, answerId)
   const userIds = uniq(unfilledBets.map((bet) => bet.userId))
   const balanceByUserId = await getUserBalances(pgTrans, userIds)
 

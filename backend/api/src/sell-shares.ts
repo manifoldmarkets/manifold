@@ -67,7 +67,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       ),
       getUnfilledBetsAndUserBalances(
         pgTrans,
-        contractDoc,
+        contractId,
         answerId && isIndependentMulti ? answerId : undefined
       ),
     ])

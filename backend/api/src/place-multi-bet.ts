@@ -67,7 +67,7 @@ export const placeMultiBetMain = async (
     const unfilledBetsAndBalances = await Promise.all(
       answerIds.map(
         async (answerId) =>
-          await getUnfilledBetsAndUserBalances(pgTrans, contractDoc, answerId)
+          await getUnfilledBetsAndUserBalances(pgTrans, contractId, answerId)
       )
     )
     const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)

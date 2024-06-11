@@ -253,8 +253,6 @@ async function createAnswerAndSumAnswersToOne(
     )
   }
 
-  const contractDoc = firestore.doc(`contracts/${contract.id}`)
-
   // 1. Create a mana budget including answerCost, and shares from Other.
   // 2. Keep track of excess Yes and No shares of Other. Other has been divided
   // into three pieces: mana, excessYesShares, excessNoShares.
@@ -323,7 +321,7 @@ async function createAnswerAndSumAnswersToOne(
     updatedOtherAnswer,
   ]
   const { unfilledBets, balanceByUserId } =
-    await getUnfilledBetsAndUserBalances(pgTrans, contractDoc)
+    await getUnfilledBetsAndUserBalances(pgTrans, contract.id)
 
   // Cancel limit orders on Other answer.
   const [unfilledBetsOnOther, unfilledBetsExcludingOther] = partition(
