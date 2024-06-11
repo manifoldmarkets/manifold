@@ -157,11 +157,11 @@ const getDesktopNav = (
       //   href: '/ai',
       //   icon: PiRobotBold,
       // },
-      {
-        name: 'TV',
-        href: '/tv',
-        icon: PiTelevisionSimpleBold,
-      },
+      // {
+      //   name: 'TV',
+      //   href: '/tv',
+      //   icon: PiTelevisionSimpleBold,
+      // },
       {
         name: 'Messages',
         href: '/messages',
@@ -183,11 +183,11 @@ const getDesktopNav = (
       href: '/politics',
       icon: GiCapitol,
     },
-    {
-      name: 'AI',
-      href: '/ai',
-      icon: PiRobotBold,
-    },
+    // {
+    //   name: 'AI',
+    //   href: '/ai',
+    //   icon: PiRobotBold,
+    // },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'Browse', href: '/browse', icon: SearchIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
