@@ -29,7 +29,6 @@ import { useABTest } from 'web/hooks/use-ab-test'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { track } from 'web/lib/service/analytics'
 import { TierTooltip } from '../tiers/tier-tooltip'
-import { getTierFromLiquidity } from 'common/tier'
 
 export function ContractsTable(props: {
   contracts: Contract[]

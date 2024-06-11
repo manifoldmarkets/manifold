@@ -9,7 +9,6 @@ import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
 import { CreatorFeesDisplay } from './creator-fees-display'
-import { getTierFromLiquidity } from 'common/tier'
 
 export function ContractSummaryStats(props: {
   contract: Contract

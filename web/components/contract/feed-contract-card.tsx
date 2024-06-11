@@ -50,7 +50,6 @@ import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { TierTooltip } from '../tiers/tier-tooltip'
-import { getTierFromLiquidity } from 'common/tier'
 
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
