@@ -7,7 +7,6 @@ import { useUser } from 'web/hooks/use-user'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { Avatar } from '../widgets/avatar'
 import { TextEditor, useTextEditor } from '../widgets/editor'
-import { ReplyToUserInfo } from '../feed/feed-comments'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -18,9 +17,10 @@ import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
 import { APIError } from 'common/api/utils'
+import { DisplayUser } from 'common/api/user-types'
 
 export function CommentInput(props: {
-  replyToUserInfo?: ReplyToUserInfo
+  replyToUserInfo?: DisplayUser
   // Reply to another comment
   parentCommentId?: string
   onSubmitComment: (editor: Editor, type: CommentType) => Promise<void>

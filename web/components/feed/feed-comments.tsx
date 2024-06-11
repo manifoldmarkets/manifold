@@ -300,7 +300,7 @@ export const FeedComment = memo(function FeedComment(props: {
   return (
     <Col className="group">
       <CommentReplyHeader
-        hideBetHeader={comment.bettorUsername === comment.userUsername}
+        hideBetHeader={commenterAndBettorMatch(comment)}
         comment={comment}
         contract={contract}
       />
@@ -864,7 +864,6 @@ export function ContractCommentInput(props: {
     contract,
     replyTo,
     parentCommentId,
-    replyToUserInfo,
     className,
     clearReply,
     trackingLocation,
@@ -876,7 +875,7 @@ export function ContractCommentInput(props: {
   const privateUser = usePrivateUser()
   const isReplyToBet = replyTo && 'amount' in replyTo
   const isReplyToAnswer = replyTo && !isReplyToBet
-
+  const replyToUserInfo = useDisplayUserById(replyTo?.userId) ?? undefined
   const onSubmitComment = useEvent(
     async (editor: Editor, type: CommentType) => {
       if (!user) return
@@ -971,7 +970,6 @@ export function FeedCommentHeader(props: {
     userName,
     createdTime,
     editedTime,
-    bettorUsername,
     betOutcome,
     betAnswerId,
     answerOutcome,
@@ -988,7 +986,7 @@ export function FeedCommentHeader(props: {
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   const isReplyToBet = betAmount !== undefined
-  const commenterIsBettor = bettorUsername === userUsername
+  const commenterIsBettor = commenterAndBettorMatch(comment)
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
   return (
     <Col className={clsx('text-ink-600 text-sm ')}>
@@ -1041,7 +1039,7 @@ export function FeedCommentHeader(props: {
               </span>
             )}
             {/* Hide my status if replying to a bet, it's too much clutter*/}
-            {bettorUsername == undefined && !inTimeline && (
+            {!isReplyToBet && !inTimeline && (
               <span className="text-ink-500 ml-1">
                 <CommentStatus contract={contract} comment={comment} />
                 {bought} {money}
@@ -1135,6 +1133,7 @@ export function CommentReplyHeader(props: {
   const { comment, contract, hideBetHeader } = props
   const {
     bettorName,
+    bettorId,
     bettorUsername,
     betOutcome,
     betAnswerId,
@@ -1144,16 +1143,18 @@ export function CommentReplyHeader(props: {
     betLimitProb,
   } = comment
   if (
-    bettorUsername &&
-    bettorName &&
+    (bettorId || (bettorUsername && bettorName)) &&
     betOutcome &&
     betAmount !== undefined &&
     !hideBetHeader
   ) {
     return (
       <ReplyToBetRow
-        commenterIsBettor={comment.userUsername === bettorUsername}
+        bettorId={bettorId}
+        commenterIsBettor={commenterAndBettorMatch(comment)}
         betOutcome={betOutcome}
+        bettorName={bettorName}
+        bettorUsername={bettorUsername}
         betAnswerId={betAnswerId}
         betAmount={betAmount}
         betOrderAmount={betOrderAmount}
@@ -1179,6 +1180,8 @@ export function ReplyToBetRow(props: {
   betOutcome: string
   betAmount: number
   bettorId?: string
+  bettorName?: string
+  bettorUsername?: string
   betOrderAmount?: number
   betLimitProb?: number
   betAnswerId?: string
@@ -1188,6 +1191,8 @@ export function ReplyToBetRow(props: {
     betOutcome,
     commenterIsBettor,
     betAmount,
+    bettorUsername,
+    bettorName,
     bettorId,
     betAnswerId,
     contract,
@@ -1221,6 +1226,16 @@ export function ReplyToBetRow(props: {
               user={user}
             />
           </UserHovercard>
+        )}
+        {!commenterIsBettor && !bettorId && bettorName && bettorUsername && (
+          <UserLink
+            short={(isLimitBet || betAnswerId !== undefined) && isMobile}
+            user={{
+              id: bettorId ?? bettorName + bettorUsername,
+              name: bettorName,
+              username: bettorUsername,
+            }}
+          />
         )}
         {isLimitBet ? (
           <>
@@ -1267,3 +1282,6 @@ export function ReplyToBetRow(props: {
     </Row>
   )
 }
+
+const commenterAndBettorMatch = (c: ContractComment) =>
+  c.bettorUsername === c.userUsername || c.bettorId === c.userId

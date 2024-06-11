@@ -56,6 +56,7 @@ export type OnContract = {
   bettorName?: string
   betLimitProb?: number
   betOrderAmount?: number
+  bettorId?: string
 
   // denormalized based on betting history
   commenterPositionProb?: number // binary only
