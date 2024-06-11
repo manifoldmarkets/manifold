@@ -284,7 +284,8 @@ export function ContractParamsForm(props: {
     isValidQuestion &&
     ante !== undefined &&
     ante !== null &&
-    ante <= balance &&
+    // Disabled while it doesn't account for play tier (ante is 10x actual play cost)
+    // ante <= balance &&
     isValidDate &&
     isValidTopics &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
