@@ -49,6 +49,7 @@ const search = async (
     marketTier,
   } = props
 
+  console.log('THE MARKET TIER', marketTier)
   const isPrizeMarket =
     props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
   if (limit === 0) {
@@ -70,7 +71,7 @@ const search = async (
     (sort === 'score' || sort === 'freshness-score') &&
     !topicSlug
   ) {
-    const forYouSql = await getForYouSQL(
+    const forYouSql = await getForYouSQL({
       userId,
       filter,
       contractType,
@@ -78,8 +79,8 @@ const search = async (
       offset,
       sort,
       isPrizeMarket,
-      marketTier as TierParamsType
-    )
+      marketTier: marketTier as TierParamsType,
+    })
     const start = Date.now()
     contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
     log('For you search completed in (s):', (Date.now() - start) / 1000)

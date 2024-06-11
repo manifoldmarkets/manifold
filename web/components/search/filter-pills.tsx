@@ -123,7 +123,7 @@ export function TierDropdownPill(props: {
           checked: currentTiers[tiers.indexOf('crystal')] == '1',
         },
       ]}
-      buttonContent={(_open) => (
+      buttonContent={(open) => (
         <button
           className={clsx(
             'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
@@ -132,7 +132,13 @@ export function TierDropdownPill(props: {
               : 'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30 dark:bg-sky-500/20 dark:hover:bg-sky-500/30'
           )}
         >
-          Tier <ChevronDownIcon className="h-4 w-4" />
+          Tier{' '}
+          <ChevronDownIcon
+            className={clsx(
+              'h-4 w-4 transition-transform',
+              open ? 'rotate-180' : ''
+            )}
+          />
         </button>
       )}
     />

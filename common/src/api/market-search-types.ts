@@ -2,11 +2,6 @@ import { z } from 'zod'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
 
-const marketTierSchema = z
-  .string()
-  .regex(/^[01]{5}$/, 'Must be a 5-character binary string')
-  .default('00000')
-
 export const searchProps = z
   .object({
     term: z.string().optional(),
@@ -66,6 +61,9 @@ export const searchProps = z
         z.literal('0'),
       ])
       .default('0'),
-    marketTier: marketTierSchema,
+    marketTier: z
+      .string()
+      .regex(/^[01]{5}$/)
+      .default('00000'),
   })
   .strict()

@@ -59,18 +59,18 @@ export async function getForYouMarkets(
   limit: number,
   privateUser: PrivateUser
 ) {
-  const searchMarketSQL = await getForYouSQL(
+  const searchMarketSQL = await getForYouSQL({
     userId,
-    'open',
-    'ALL',
+    filter: 'open',
+    contractType: 'ALL',
     limit,
-    0,
-    'score',
-    false,
-    '00000',
+    offset: 0,
+    sort: 'score',
+    isPrizeMarket: false,
+    marketTier: '00000',
     privateUser,
-    200
-  )
+    threshold: 200,
+  })
   const pg = createSupabaseDirectClient()
   const contracts = await pg.map(searchMarketSQL, [], (r) => convertContract(r))
 

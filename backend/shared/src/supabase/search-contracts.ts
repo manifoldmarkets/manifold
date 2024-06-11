@@ -32,18 +32,32 @@ const DEBUG = false
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
 
-export async function getForYouSQL(
-  userId: string,
-  filter: string,
-  contractType: string,
-  limit: number,
-  offset: number,
-  sort: 'score' | 'freshness-score',
-  isPrizeMarket: boolean,
-  marketTier: TierParamsType,
-  privateUser?: PrivateUser,
-  threshold: number = DEFAULT_THRESHOLD
-) {
+export async function getForYouSQL(items: {
+  userId: string
+  filter: string
+  contractType: string
+  limit: number
+  offset: number
+  sort: 'score' | 'freshness-score'
+  isPrizeMarket: boolean
+  marketTier: TierParamsType
+  privateUser?: PrivateUser
+  threshold?: number
+}) {
+  const {
+    filter,
+    contractType,
+    limit,
+    offset,
+    sort,
+    isPrizeMarket,
+    marketTier,
+    privateUser,
+    threshold = DEFAULT_THRESHOLD,
+  } = items
+
+  let userId = items.userId
+
   if (
     importanceScoreThreshold === undefined ||
     freshnessScoreThreshold === undefined
@@ -193,6 +207,7 @@ export function getSearchContractSQL(args: {
   } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
+  console.log('MARKET TIER AGAIN', marketTier)
 
   const whereSql = getSearchContractWhereSQL({ ...args, hideStonks, hideLove })
   const isUrl = term.startsWith('https://manifold.markets/')
@@ -275,7 +290,7 @@ function getSearchContractWhereSQL(args: {
     isPrizeMarket,
     marketTier,
   } = args
-
+  console.log('MORE MARKET TIER', marketTier)
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
     open: 'resolution_time IS NULL AND (close_time > NOW() or close_time is null)',
@@ -320,7 +335,11 @@ function getSearchContractWhereSQL(args: {
     .filter(Boolean)
 
   const combinedTierFilter =
-    tierFilters.length > 1 ? `(${tierFilters.join(' OR ')})` : tierFilters[0]
+    tierFilters.length > 1
+      ? `(${tierFilters.join(' OR ')})`
+      : tierFilters[0] ?? ''
+
+  console.log('TIER FILTERSz', combinedTierFilter)
 
   return [
     where(filterSQL[filter]),

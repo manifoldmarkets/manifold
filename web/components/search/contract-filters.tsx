@@ -158,7 +158,6 @@ export function ContractFilters(props: {
             {contractTypeLabel}
           </AdditionalFilterPill>
         )}
-        <TierDropdownPill toggleTier={toggleTier} currentTiers={currentTiers} />
         <FilterPill
           selected={isPrizeMarketString === '1'}
           onSelect={togglePrizeMarket}
@@ -172,7 +171,12 @@ export function ContractFilters(props: {
           </div>
           Prize
         </FilterPill>
-        {/* <TierDropdownPill toggleTier={toggleTier} currentTiers={currentTiers} /> */}
+        {!hideFilter && (
+          <TierDropdownPill
+            toggleTier={toggleTier}
+            currentTiers={currentTiers}
+          />
+        )}
         {!hideFilter &&
           DEFAULT_FILTERS.map((filterValue) => (
             <FilterPill

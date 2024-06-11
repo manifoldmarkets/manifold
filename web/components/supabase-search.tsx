@@ -593,7 +593,8 @@ const useContractSearch = (
       topicSlug === state.lastSearchParams?.topicSlug &&
       topicSlug !== 'recent' &&
       isPrizeMarketString == state.lastSearchParams?.isPrizeMarket &&
-      forYou == state.lastSearchParams?.forYou
+      forYou == state.lastSearchParams?.forYou &&
+      marketTier == state.lastSearchParams?.marketTier
     ) {
       return state.shouldLoadMore
     }
@@ -620,8 +621,8 @@ const useContractSearch = (
         creatorId: additionalFilter?.creatorId,
         isPolitics: additionalFilter?.isPolitics,
         isPrizeMarket: isPrizeMarketString,
-        forYou,
         marketTier,
+        forYou,
       })
 
       if (id === requestId.current) {
