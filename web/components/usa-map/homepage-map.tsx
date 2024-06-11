@@ -8,8 +8,7 @@ import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useLiveContractWithAnswers } from 'web/hooks/use-contract-supabase'
 import {
   ElectoralCollegeVisual,
   sortByDemocraticDiff,
@@ -52,7 +51,7 @@ export function HomepageMap(props: {
     rawPresidencyStateContracts
   ).reduce((acc, key) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    acc[key] = useLiveContract(rawPresidencyStateContracts[key]!)
+    acc[key] = useLiveContractWithAnswers(rawPresidencyStateContracts[key]!)
     return acc
   }, {} as MapContractsDictionary)
 
@@ -63,7 +62,7 @@ export function HomepageMap(props: {
   const senateContractsDictionary = Object.keys(rawSenateStateContracts).reduce(
     (acc, key) => {
       // eslint-disable-next-line react-hooks/rules-of-hooks
-      acc[key] = useLiveContract(rawSenateStateContracts[key]!)
+      acc[key] = useLiveContractWithAnswers(rawSenateStateContracts[key]!)
       return acc
     },
     {} as MapContractsDictionary
@@ -73,11 +72,11 @@ export function HomepageMap(props: {
     rawGovernorStateContracts
   ).reduce((acc, key) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    acc[key] = useLiveContract(rawGovernorStateContracts[key]!)
+    acc[key] = useLiveContractWithAnswers(rawGovernorStateContracts[key]!)
     return acc
   }, {} as MapContractsDictionary)
 
-  const liveHouseContract = useLiveContract(houseContract)
+  const liveHouseContract = useLiveContractWithAnswers(houseContract)
 
   const [mode, setMode] = useState<MapMode>('presidency')
 
@@ -345,19 +344,4 @@ function MapTabButton(props: {
       </div>
     </button>
   )
-}
-
-function useLiveContract(inputContract: Contract): Contract {
-  const contract =
-    useFirebasePublicContract(inputContract.visibility, inputContract.id) ??
-    inputContract
-
-  if (contract.mechanism === 'cpmm-multi-1') {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const answers = useAnswersCpmm(contract.id)
-    if (answers) {
-      contract.answers = answers
-    }
-  }
-  return contract
 }

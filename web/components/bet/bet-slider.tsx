@@ -4,11 +4,12 @@ import { formatMoney, formatMoneyShort } from 'common/util/format'
 import { buildArray } from 'common/util/array'
 
 export const LARGE_SLIDER_VALUES = [
-  50, 100, 250, 500, 750, 1000, 1250, 1500, 1750, 2000, 2500, 3000, 3500, 4000,
-  4500, 5000, 6000, 7000, 8000, 9000, 10000, 15000, 20000, 25000,
+  1, 25, 50, 75, 100, 150, 250, 350, 500, 750, 1000, 1250, 1500, 2000, 2500,
+  3000, 3500, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 15000, 20000, 25000,
 ]
-export const LOW_MANA_SLIDER_VALUES = [
-  1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000,
+export const SMALL_SLIDER_VALUES = [
+  1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 75, 100, 200, 300, 400, 500, 750,
+  1000,
 ]
 
 export const BetSlider = (props: {
@@ -29,7 +30,7 @@ export const BetSlider = (props: {
   } = props
 
   const sliderAmounts = smallManaAmounts
-    ? LOW_MANA_SLIDER_VALUES
+    ? SMALL_SLIDER_VALUES
     : LARGE_SLIDER_VALUES
 
   const maxSliderIndex = sliderAmounts.length - 1

@@ -16,11 +16,6 @@ type AnyTxnType =
   | CharityFee
   | ManaPurchase
   | SignupBonus
-  | CertMint
-  | CertTransfer
-  | CertPayMana
-  | CertDividend
-  | CertBurn
   | ContractOldResolutionPayout
   | ContractProduceSpice
   | ContractUndoProduceSpice
@@ -82,52 +77,11 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   description?: string
 } & T
 
-type CertId = {
-  // TODO: should certIds be in data?
-  certId: string
-}
-
 type LootBoxPurchase = {
   category: 'LOOTBOX_PURCHASE'
   fromType: 'USER'
   toType: 'BANK'
   token: 'M$'
-}
-
-type CertMint = {
-  category: 'CERT_MINT'
-  fromType: 'BANK'
-  toType: 'USER'
-  token: 'SHARE'
-}
-
-// TODO: want some kind of ID that ties these together?
-type CertTransfer = {
-  category: 'CERT_TRANSFER'
-  fromType: 'USER' | 'CONTRACT'
-  toType: 'USER' | 'CONTRACT'
-  token: 'SHARE'
-}
-
-type CertPayMana = {
-  category: 'CERT_PAY_MANA'
-  fromType: 'USER' | 'CONTRACT'
-  toType: 'USER' | 'CONTRACT'
-  token: 'M$'
-}
-
-type CertDividend = {
-  category: 'CERT_DIVIDEND'
-  fromType: 'USER'
-  toType: 'USER'
-  token: 'M$'
-}
-
-type CertBurn = {
-  category: 'CERT_BURN'
-  fromType: 'USER'
-  toType: 'BANK'
-  token: 'SHARE'
 }
 
 type Donation = {
@@ -516,12 +470,6 @@ export type CancelUniqueBettorBonusTxn = Txn & CancelUniqueBettorBonus
 export type CharityFeeTxn = Txn & CharityFee
 export type ManaPurchaseTxn = Txn & ManaPurchase
 export type SignupBonusTxn = Txn & SignupBonus
-export type CertTxn = Txn & CertId
-export type CertMintTxn = CertTxn & CertMint
-export type CertTransferTxn = CertTxn & CertTransfer
-export type CertPayManaTxn = CertTxn & CertPayMana
-export type CertDividendTxn = CertTxn & CertDividend
-export type CertBurnTxn = CertTxn & CertBurn
 export type ContractOldResolutionPayoutTxn = Txn & ContractOldResolutionPayout
 export type ContractUndoOldResolutionPayoutTxn = Txn &
   ContractUndoOldResolutionPayout

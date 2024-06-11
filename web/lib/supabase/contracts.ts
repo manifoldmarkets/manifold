@@ -178,21 +178,3 @@ export async function getIsPrivateContractMember(
   })
   return data
 }
-
-export async function getHasBetOnContract(props: {
-  userId: string | undefined
-  contractId: string
-}) {
-  const { userId, contractId } = props
-  if (!userId) return false
-
-  const { data } = await db
-    .from('user_contract_metrics')
-    .select('contract_id')
-    .eq('user_id', userId)
-    .eq('contract_id', contractId)
-    .limit(1)
-    .maybeSingle()
-
-  return data !== null
-}

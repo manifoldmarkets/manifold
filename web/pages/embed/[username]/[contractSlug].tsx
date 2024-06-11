@@ -33,7 +33,7 @@ import { Row } from 'web/components/layout/row'
 import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
 import { QRCode } from 'web/components/widgets/qr-code'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useLiveContractWithAnswers } from 'web/hooks/use-contract-supabase'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
@@ -93,9 +93,7 @@ export default function ContractEmbedPage(props: {
   points: Points | null
   multiPoints?: MultiPoints | null
 }) {
-  const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
+  const contract = useLiveContractWithAnswers(props.contract)
 
   const router = useRouter()
 

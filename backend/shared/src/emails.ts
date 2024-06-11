@@ -136,9 +136,6 @@ const toDisplayResolution = (
   resolutions?: { [outcome: string]: number },
   answerId?: string
 ) => {
-  if (contract.outcomeType === 'CERT') {
-    return resolution + ' (CERT)'
-  }
   if (contract.outcomeType === 'BINARY') {
     const prob = resolutionProbability ?? getProbability(contract)
     return renderResolution(resolution, prob)

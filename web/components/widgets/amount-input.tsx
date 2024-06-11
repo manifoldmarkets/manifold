@@ -284,7 +284,7 @@ export function BuyAmountInput(props: {
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
             disabled={disabled}
-            smallManaAmounts={!hasLotsOfMana}
+            smallManaAmounts={!hasLotsOfMana || marketTier === 'play'}
           />
         )}
         {error ? (

@@ -4,6 +4,7 @@ import {
   revalidateContractStaticProps,
   getBettingStreakResetTimeBeforeNow,
   getUser,
+  getContract,
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -84,9 +85,8 @@ export const onCreateBets = async (
   makers: maker[] | undefined,
   answerId: string | undefined
 ) => {
-  broadcastNewBets(contract, bets)
-
   if (contract.mechanism === 'cpmm-multi-1') {
+    broadcastNewBets({ id: contract.id }, bets) // No changes to contract
     const pg = createSupabaseDirectClient()
     if (!contract.shouldAnswersSumToOne && answerId) {
       const answer = await getAnswer(pg, answerId)
@@ -94,6 +94,17 @@ export const onCreateBets = async (
     } else {
       const answers = await getAnswersForContract(pg, contract.id)
       answers.forEach((answer) => broadcastUpdatedAnswer(contract, answer))
+    }
+  } else if (contract.mechanism === 'cpmm-1') {
+    const newContract = (await getContract(contract.id)) as typeof contract
+    if (newContract) {
+      const updates = {
+        id: newContract.id,
+        prob: newContract.prob,
+        pool: newContract.pool,
+        p: newContract.p,
+      }
+      broadcastNewBets(updates, bets)
     }
   }
 

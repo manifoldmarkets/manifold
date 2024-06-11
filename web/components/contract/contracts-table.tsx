@@ -12,7 +12,7 @@ import { ContractMinibar } from '../charts/minibar'
 import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useLiveContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import {
   actionColumn,
@@ -22,7 +22,6 @@ import {
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
-import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 import { Tooltip } from '../widgets/tooltip'
 import { sortAnswers } from 'common/answer'
 import { removeEmojis } from 'common/util/string'
@@ -79,9 +78,8 @@ function ContractRow(props: {
   onClick?: () => void
   hideAvatar?: boolean
 }) {
-  const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
+  const contract = useLiveContract(props.contract)
+
   const answersABTest = useABTest('show answers in browse', ['show', 'hide'])
   const { columns, hideAvatar, highlighted, faded, onClick } = props
   return (
@@ -201,9 +199,6 @@ export function ContractStatusLabel(props: {
     case 'MULTIPLE_CHOICE': {
       return <ContractMinibar contract={contract} />
     }
-    case 'CERT': {
-      return <span>CERT</span>
-    }
     case 'QUADRATIC_FUNDING': {
       return <span>RAD</span>
     }
@@ -244,7 +239,6 @@ function ContractQuestion(props: {
   hideAvatar?: boolean
 }) {
   const { contract, className, hideAvatar } = props
-  const hasBetOnContract = useHasBetOnContract(contract.id)
   const marketTier = contract.marketTier
     ? contract.marketTier
     : 'totalLiquidity' in contract

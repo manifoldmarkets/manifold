@@ -41,8 +41,7 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
 
-  if (outcomeType === 'CERT' || outcomeType === 'QUADRATIC_FUNDING')
-    return <></>
+  if (outcomeType === 'QUADRATIC_FUNDING') return <></>
 
   if (outcomeType === 'STONK') {
     return <StonkOutcomeLabel outcome={outcome as any} />

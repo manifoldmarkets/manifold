@@ -167,8 +167,8 @@ export const ContractOverview = memo(
         return <BountyPanel contract={contract} />
       case 'POLL':
         return <PollPanel contract={contract} />
-      case 'CERT':
-        return <AlertBox title="Certs are deprecated" />
+      default:
+        return <AlertBox title="Invalid contract" />
     }
   }
 )

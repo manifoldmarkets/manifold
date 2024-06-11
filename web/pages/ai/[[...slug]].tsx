@@ -30,7 +30,7 @@ import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
-import { useMultiNumericContract } from 'web/hooks/use-multi-numeric-contract'
+import { useLiveContractWithAnswers } from 'web/hooks/use-contract-supabase'
 
 // In order to duplicate:
 // - duplicate this directory (endpoint/[[...slug]].tsx)
@@ -125,7 +125,7 @@ function MultiDashboard(props: MultiDashboardProps) {
     ENDPOINT,
     TOP_SLUG
   )
-  const whenAgi = useMultiNumericContract(props.whenAgi)
+  const whenAgi = useLiveContractWithAnswers(props.whenAgi)
 
   const user = useUser()
   const expectedValueAGI = getExpectedValue(whenAgi)
