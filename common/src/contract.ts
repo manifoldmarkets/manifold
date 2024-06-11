@@ -40,7 +40,6 @@ the supabase trigger, or replication of contracts may fail!
 type AnyContractType =
   | (CPMM & Binary)
   | (CPMM & PseudoNumeric)
-  | (Uniswap2 & Cert)
   | QuadraticFunding
   | (CPMM & Stonk)
   | CPMMMulti
@@ -137,8 +136,6 @@ export type MarketContract =
 export type BinaryContract = Contract & Binary
 export type CPMMBinaryContract = BinaryContract & CPMM
 export type PseudoNumericContract = Contract & PseudoNumeric
-export type CertContract = Contract & Cert
-export type Uniswap2CertContract = CertContract & Uniswap2
 export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
 export type CPMMStonkContract = StonkContract & CPMM
@@ -161,14 +158,6 @@ export type CPMM = {
     week: number
     month: number
   }
-}
-
-export type Uniswap2 = {
-  mechanism: 'uniswap-2'
-  // outcome can be e.g. 'M$' or a 'SHARE'
-  pool: { [outcome: string]: number }
-  // The price of the token in terms of M$. Similar to prob.
-  price: number
 }
 
 export type NonBet = {
@@ -225,10 +214,6 @@ export type CPMMMultiNumeric = {
 }
 
 export type add_answers_mode = 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
-
-export type Cert = {
-  outcomeType: 'CERT'
-}
 
 export type QuadraticFunding = {
   outcomeType: 'QUADRATIC_FUNDING'
@@ -297,7 +282,6 @@ export type MultiContract = CPMMMultiContract | CPMMNumericContract
 
 type AnyOutcomeType =
   | Binary
-  | Cert
   | QuadraticFunding
   | Stonk
   | BountiedQuestion

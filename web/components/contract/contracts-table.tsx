@@ -199,9 +199,6 @@ export function ContractStatusLabel(props: {
     case 'MULTIPLE_CHOICE': {
       return <ContractMinibar contract={contract} />
     }
-    case 'CERT': {
-      return <span>CERT</span>
-    }
     case 'QUADRATIC_FUNDING': {
       return <span>RAD</span>
     }
