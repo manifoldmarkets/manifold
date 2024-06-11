@@ -24,6 +24,7 @@ import {
 import { log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { FEED_CARD_CONVERSION_PRIOR } from 'common/feed'
+import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 
 const DEFAULT_THRESHOLD = 1000
 const DEBUG = false
@@ -39,6 +40,7 @@ export async function getForYouSQL(
   offset: number,
   sort: 'score' | 'freshness-score',
   isPrizeMarket: boolean,
+  marketTier: TierParamsType,
   privateUser?: PrivateUser,
   threshold: number = DEFAULT_THRESHOLD
 ) {
@@ -75,6 +77,7 @@ export async function getForYouSQL(
         uid: userId,
         hideStonks: true,
         isPrizeMarket,
+        marketTier,
       }),
       privateUserBlocksSql(privateUser),
       lim(limit, offset)
@@ -113,6 +116,7 @@ export async function getForYouSQL(
         uid: userId,
         hideStonks: true,
         isPrizeMarket,
+        marketTier,
       }),
       offset <= threshold / 2 &&
         sort === 'score' &&
@@ -174,6 +178,7 @@ export function getSearchContractSQL(args: {
   searchType: SearchTypes
   isPolitics?: boolean
   isPrizeMarket?: boolean
+  marketTier: TierParamsType
 }) {
   const {
     term,
@@ -184,6 +189,7 @@ export function getSearchContractSQL(args: {
     creatorId,
     searchType,
     isPolitics,
+    marketTier,
   } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
@@ -254,6 +260,7 @@ function getSearchContractWhereSQL(args: {
   hideStonks?: boolean
   hideLove?: boolean
   isPrizeMarket?: boolean
+  marketTier: TierParamsType
 }) {
   const {
     filter,
@@ -266,6 +273,7 @@ function getSearchContractWhereSQL(args: {
     hideStonks,
     hideLove,
     isPrizeMarket,
+    marketTier,
   } = args
 
   type FilterSQL = Record<string, string>
@@ -305,6 +313,15 @@ function getSearchContractWhereSQL(args: {
 
   const isPrizeMarketFilter = isPrizeMarket ? 'is_spice_payout = true' : ''
 
+  const tierFilters = tiers
+    .map((tier: MarketTierType, index) =>
+      marketTier[index] === '1' ? `tier = '${tier}'` : ''
+    )
+    .filter(Boolean)
+
+  const combinedTierFilter =
+    tierFilters.length > 1 ? `(${tierFilters.join(' OR ')})` : tierFilters[0]
+
   return [
     where(filterSQL[filter]),
     where(stonkFilter),
@@ -315,6 +332,7 @@ function getSearchContractWhereSQL(args: {
     where(creatorFilter),
     where(deletedFilter),
     where(isPrizeMarketFilter),
+    where(combinedTierFilter),
   ]
 }
 

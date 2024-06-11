@@ -1,10 +1,13 @@
-import {
-  MarketContract,
-} from './contract'
+import { MarketContract } from './contract'
 import { getAnte, getTieredCost } from './economy'
 
 // Array of tiers in order
 export const tiers = ['play', 'basic', 'plus', 'premium', 'crystal'] as const
+
+export type BinaryDigit = '0' | '1'
+
+export type TierParamsType =
+  `${BinaryDigit}${BinaryDigit}${BinaryDigit}${BinaryDigit}${BinaryDigit}`
 
 // Derive the MarketTierType from the array
 export type MarketTierType = (typeof tiers)[number]

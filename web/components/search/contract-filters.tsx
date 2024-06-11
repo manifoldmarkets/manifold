@@ -30,13 +30,12 @@ import {
   SORTS,
   SearchParams,
   Sort,
-  TierParamsType,
   bountySorts,
   predictionMarketSorts,
 } from '../supabase-search'
 import { AdditionalFilterPill, FilterPill } from './filter-pills'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { MarketTierType, tiers } from 'common/tier'
+import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { TierDropdownPill } from './filter-pills'
 
 export function ContractFilters(props: {

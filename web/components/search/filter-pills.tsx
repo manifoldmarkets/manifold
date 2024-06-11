@@ -1,25 +1,14 @@
 import { ChevronDownIcon, XCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { ReactNode, useState } from 'react'
-import { Row } from '../layout/row'
-import DropdownMenu, {
-  AnimationOrNothing,
-  DropdownItem,
-} from '../comments/dropdown-menu'
-import { usePopper } from 'react-popper'
-import { Popover } from '@headlessui/react'
-import { Checkbox } from '../widgets/checkbox'
-import CheckedDropdownMenu from '../widgets/checked-dropdown'
-import { TierParamsType } from '../supabase-search'
-import { MarketTierType, tiers } from 'common/tier'
-import { Basic } from 'next/font/google'
-import { ManifoldLogo } from '../nav/manifold-logo'
-import { LogoIcon } from '../icons/logo-icon'
+import { MarketTierType, TierParamsType, tiers } from 'common/tier'
+import { ReactNode } from 'react'
 import {
   CrystalTier,
   PlusTier,
   PremiumTier,
 } from 'web/public/custom-components/tiers'
+import { Row } from '../layout/row'
+import CheckedDropdownMenu from '../widgets/checked-dropdown'
 
 export function FilterPill(props: {
   selected: boolean

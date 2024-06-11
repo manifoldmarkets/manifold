@@ -34,7 +34,7 @@ import { UserResults } from './search/user-results'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
-import { tiers } from 'common/tier'
+import { BinaryDigit, TierParamsType, tiers } from 'common/tier'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -126,11 +126,6 @@ export const DEFAULT_CONTRACT_TYPES = ['BINARY', 'MULTIPLE_CHOICE', 'POLL']
 
 export type ContractTypeType = (typeof CONTRACT_TYPES)[number]['value']
 type SearchType = 'Users' | 'Questions' | undefined
-
-export type BinaryDigit = '0' | '1'
-
-export type TierParamsType =
-  `${BinaryDigit}${BinaryDigit}${BinaryDigit}${BinaryDigit}${BinaryDigit}`
 
 export type SearchParams = {
   [QUERY_KEY]: string
@@ -250,8 +245,6 @@ export function SupabaseSearch(props: {
   const prizeMarketState = searchParams[PRIZE_MARKET_KEY]
   const forYou = searchParams[FOR_YOU_KEY] === '1'
   const marketTiers = searchParams[MARKET_TIER_KEY]
-
-  console.log(marketTiers)
 
   const [userResults, setUserResults] = usePersistentInMemoryState<
     FullUser[] | undefined

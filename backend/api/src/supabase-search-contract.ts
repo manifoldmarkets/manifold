@@ -14,6 +14,7 @@ import { convertContract } from 'common/supabase/contracts'
 import { log } from 'shared/utils'
 import { toLiteMarket } from 'common/api/market-types'
 import { searchProps } from 'common/api/market-search-types'
+import { TierParamsType } from 'common/tier'
 
 export const searchMarketsLite: APIHandler<'search-markets'> = async (
   props,
@@ -76,7 +77,8 @@ const search = async (
       limit,
       offset,
       sort,
-      isPrizeMarket
+      isPrizeMarket,
+      marketTier as TierParamsType
     )
     const start = Date.now()
     contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
@@ -119,6 +121,7 @@ const search = async (
           searchType,
           isPolitics,
           isPrizeMarket,
+          marketTier: marketTier as TierParamsType,
         })
         return pg
           .map(searchSQL, null, (r) => ({
