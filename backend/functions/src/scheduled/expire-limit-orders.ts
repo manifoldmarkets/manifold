@@ -16,9 +16,9 @@ export async function expireLimitOrders() {
   const { count } = await pg.one(`
     update contract_bets
     set data = data || '{"isCancelled": true}'
-    where data->>'isFilled' = false
-    and data->>'isCancelled' = false
-    and data->>'expiresAt' < ts_to_millis(now())
+    where (data->'isFilled')::boolean = false
+    and (data->'isCancelled')::boolean = false
+    and (data->'expiresAt')::bigint < ts_to_millis(now())
     returning count(*)
   `)
 
