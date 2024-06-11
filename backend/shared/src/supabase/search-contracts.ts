@@ -24,6 +24,7 @@ import {
 import { log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { FEED_CARD_CONVERSION_PRIOR } from 'common/feed'
+import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 
 const DEFAULT_THRESHOLD = 1000
 const DEBUG = false
@@ -31,17 +32,32 @@ const DEBUG = false
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
 
-export async function getForYouSQL(
-  userId: string,
-  filter: string,
-  contractType: string,
-  limit: number,
-  offset: number,
-  sort: 'score' | 'freshness-score',
-  isPrizeMarket: boolean,
-  privateUser?: PrivateUser,
-  threshold: number = DEFAULT_THRESHOLD
-) {
+export async function getForYouSQL(items: {
+  userId: string
+  filter: string
+  contractType: string
+  limit: number
+  offset: number
+  sort: 'score' | 'freshness-score'
+  isPrizeMarket: boolean
+  marketTier: TierParamsType
+  privateUser?: PrivateUser
+  threshold?: number
+}) {
+  const {
+    filter,
+    contractType,
+    limit,
+    offset,
+    sort,
+    isPrizeMarket,
+    marketTier,
+    privateUser,
+    threshold = DEFAULT_THRESHOLD,
+  } = items
+
+  let userId = items.userId
+
   if (
     importanceScoreThreshold === undefined ||
     freshnessScoreThreshold === undefined
@@ -75,6 +91,7 @@ export async function getForYouSQL(
         uid: userId,
         hideStonks: true,
         isPrizeMarket,
+        marketTier,
       }),
       privateUserBlocksSql(privateUser),
       lim(limit, offset)
@@ -113,6 +130,7 @@ export async function getForYouSQL(
         uid: userId,
         hideStonks: true,
         isPrizeMarket,
+        marketTier,
       }),
       offset <= threshold / 2 &&
         sort === 'score' &&
@@ -174,6 +192,7 @@ export function getSearchContractSQL(args: {
   searchType: SearchTypes
   isPolitics?: boolean
   isPrizeMarket?: boolean
+  marketTier: TierParamsType
 }) {
   const {
     term,
@@ -184,6 +203,7 @@ export function getSearchContractSQL(args: {
     creatorId,
     searchType,
     isPolitics,
+    marketTier,
   } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
@@ -254,6 +274,7 @@ function getSearchContractWhereSQL(args: {
   hideStonks?: boolean
   hideLove?: boolean
   isPrizeMarket?: boolean
+  marketTier: TierParamsType
 }) {
   const {
     filter,
@@ -266,8 +287,8 @@ function getSearchContractWhereSQL(args: {
     hideStonks,
     hideLove,
     isPrizeMarket,
+    marketTier,
   } = args
-
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
     open: 'resolution_time IS NULL AND (close_time > NOW() or close_time is null)',
@@ -305,6 +326,17 @@ function getSearchContractWhereSQL(args: {
 
   const isPrizeMarketFilter = isPrizeMarket ? 'is_spice_payout = true' : ''
 
+  const tierFilters = tiers
+    .map((tier: MarketTierType, index) =>
+      marketTier[index] === '1' ? `tier = '${tier}'` : ''
+    )
+    .filter(Boolean)
+
+  const combinedTierFilter =
+    tierFilters.length > 1
+      ? `(${tierFilters.join(' OR ')})`
+      : tierFilters[0] ?? ''
+
   return [
     where(filterSQL[filter]),
     where(stonkFilter),
@@ -315,6 +347,7 @@ function getSearchContractWhereSQL(args: {
     where(creatorFilter),
     where(deletedFilter),
     where(isPrizeMarketFilter),
+    where(combinedTierFilter),
   ]
 }
 

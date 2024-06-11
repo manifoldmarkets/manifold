@@ -61,5 +61,9 @@ export const searchProps = z
         z.literal('0'),
       ])
       .default('0'),
+    marketTier: z
+      .string()
+      .regex(/^[01]{5}$/)
+      .default('00000'),
   })
   .strict()

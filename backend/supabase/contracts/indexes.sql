@@ -41,3 +41,5 @@ where
   outcome_type <> 'BINARY';
 
 create index contracts_group_slugs_importance on contracts using gin (group_slugs, importance_score);
+
+create index market_tier_idx ON contracts (tier);

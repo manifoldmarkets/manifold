@@ -1,4 +1,6 @@
 import clsx from 'clsx'
+import { ReactNode } from 'react'
+import { Row } from '../layout/row'
 
 export function Checkbox(props: {
   label: string
@@ -6,8 +8,9 @@ export function Checkbox(props: {
   toggle: (checked: boolean) => void
   className?: string
   disabled?: boolean
+  icon?: ReactNode
 }) {
-  const { label, checked, toggle, className, disabled } = props
+  const { label, checked, toggle, className, disabled, icon } = props
 
   return (
     <div className={clsx(className, 'space-y-5')}>
@@ -22,7 +25,8 @@ export function Checkbox(props: {
             disabled={disabled}
           />
         </div>
-        <div className="ml-3">
+        <Row className="ml-3 items-center">
+          {icon}
           <label
             htmlFor={label}
             className={clsx(
@@ -32,7 +36,7 @@ export function Checkbox(props: {
           >
             {label}
           </label>
-        </div>
+        </Row>
       </div>
     </div>
   )
