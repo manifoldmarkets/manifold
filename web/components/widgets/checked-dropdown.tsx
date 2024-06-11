@@ -3,8 +3,6 @@ import clsx from 'clsx'
 import { ReactNode, useState } from 'react'
 import { usePopper } from 'react-popper'
 import { AnimationOrNothing } from '../comments/dropdown-menu'
-import { Checkbox } from './checkbox'
-import { Row } from '../layout/row'
 
 export type CheckedDropdownItem = {
   name: string

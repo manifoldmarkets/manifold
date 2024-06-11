@@ -34,7 +34,7 @@ import { UserResults } from './search/user-results'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
-import { BinaryDigit, TierParamsType, tiers } from 'common/tier'
+import { BinaryDigit, TierParamsType } from 'common/tier'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
