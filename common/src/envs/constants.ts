@@ -397,22 +397,6 @@ export const HIDE_FROM_NEW_USER_SLUGS = [
   ...GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
 ]
 
-export const GROUP_SLUGS_TO_NOT_INTRODUCE_IN_FEED = [
-  'rationalussy',
-  'nsfw',
-  'planecrash',
-  'glowfic',
-  'no-resolution',
-  'the-market',
-  'spam',
-  'test',
-  'eto',
-  'friend-stocks',
-  'testing',
-  'all-stonks',
-  PROD_MANIFOLD_LOVE_GROUP_SLUG,
-]
-
 export const EXTERNAL_REDIRECTS = ['/umami']
 
 export const DISCORD_INVITE_LINK = 'https://discord.com/invite/eHQBNBqXuh'

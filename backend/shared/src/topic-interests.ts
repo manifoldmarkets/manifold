@@ -5,15 +5,6 @@ import {
 } from 'shared/supabase/init'
 import { chunk } from 'lodash'
 import { FOLLOWED_TOPIC_CONVERSION_PRIOR } from 'common/feed'
-import {
-  from,
-  join,
-  orderBy as order,
-  renderSql,
-  select,
-  where,
-} from 'shared/supabase/sql-builder'
-import { GROUP_SLUGS_TO_NOT_INTRODUCE_IN_FEED } from 'common/envs/constants'
 
 export type TopicToInterestWeights = { [groupId: string]: number }
 export const userIdsToAverageTopicConversionScores: {
@@ -33,11 +24,6 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
   }
 
   log('building cache for users: ', userIds.length)
-  const topicIdsMeetingMinimumBar = await pg.map(
-    renderSql(minimumTopicsQualityBarClauses),
-    [],
-    (r) => r.id as string
-  )
   const chunks = chunk(userIds, 1000)
   for (const userIds of chunks) {
     await Promise.all([
@@ -47,12 +33,19 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
           getFollowedTopics(pg, userId),
           pg.map(
             `
-              select distinct uti.*
-              from get_user_topic_interests_2($1) as uti
-              where uti.group_id in ($2:list)
-              order by uti.score desc
+            with top_interests as (
+              select * from get_user_topic_interests_2($1)
+              order by score desc limit 300
+            ),
+            top_disinterests as (
+              select * from get_user_topic_interests_2($1)
+              order by score limit 150
+            )
+            select group_id, score from top_interests
+            union all
+            select group_id, score from top_disinterests
           `,
-            [userId, topicIdsMeetingMinimumBar],
+            [userId],
             (r) => {
               userIdsToAverageTopicConversionScores[userId][r.group_id] =
                 r.score
@@ -94,29 +87,3 @@ const getFollowedTopics = async (pg: SupabaseDirectClient, userId: string) => {
     (row) => row.group_id as string
   )
 }
-
-export const minimumContractsQualityBarWhereClauses = [
-  where(`contracts.close_time > now()`),
-  where(`contracts.outcome_type != 'STONK'`),
-  where(`contracts.outcome_type != 'BOUNTIED_QUESTION'`),
-  where(`(contracts.data->>'marketTier') != 'play'`), // filtering by liquidity takes too long
-  where(`contracts.visibility = 'public'`),
-  where(`contracts.unique_bettor_count > 1`),
-]
-
-const contractsMeetingMinimumBar = renderSql(
-  select('1'),
-  from('contracts'),
-  where('group_contracts.contract_id = contracts.id'),
-  where(`coalesce(contracts.data->'isRanked', 'true')::boolean = true`),
-  ...minimumContractsQualityBarWhereClauses
-)
-
-export const minimumTopicsQualityBarClauses = [
-  select('distinct id, importance_score as topic_score'),
-  from('groups'),
-  join('group_contracts on group_contracts.group_id = groups.id'),
-  where(`exists (${contractsMeetingMinimumBar})`),
-  where(`groups.slug not in ($1:list)`, [GROUP_SLUGS_TO_NOT_INTRODUCE_IN_FEED]),
-  order(`topic_score desc`),
-]

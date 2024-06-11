@@ -181,7 +181,6 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'football', // ambiguous - both soccer and american football
   'manifold-drama',
   'permanent-markets',
-  'testing',
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
   ...HIDE_FROM_NEW_USER_SLUGS,
 ]

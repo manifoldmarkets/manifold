@@ -19,8 +19,6 @@ import { log } from 'shared/utils'
 import { adContract } from 'common/boost'
 import {
   buildUserInterestsCache,
-  minimumContractsQualityBarWhereClauses,
-  minimumTopicsQualityBarClauses,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
 import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
@@ -110,35 +108,25 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     order(`cost_per_view desc`),
     lim(50)
   )
-  const userInterestTopicIds = Object.keys(
+  const topicIds = Object.keys(userIdsToAverageTopicConversionScores[userId])
+  const topicWeights = Object.values(
     userIdsToAverageTopicConversionScores[userId]
   )
-  const userInterestTopicWeights = Object.values(
-    userIdsToAverageTopicConversionScores[userId]
-  )
-
-  const unseenTopicsQuery = renderSql(
-    minimumTopicsQualityBarClauses,
-    where(`id not in ($1:list)`, [userInterestTopicIds]),
-    lim(10)
-  )
-  const newUser = userInterestTopicIds.length < 100
-
   const baseQueryArray = (boosts = false) =>
     buildArray(
       select('contracts.*'),
       !boosts
         ? select(
-            `avg(uti.topic_score) as topic_conversion_score, cv.latest_seen_time`
+            `avg(uti.avg_conversion_score) as topic_conversion_score, cv.latest_seen_time`
           )
-        : select(`uti.topic_score as topic_conversion_score, ma.id as ad_id`),
+        : select(
+            `uti.avg_conversion_score as topic_conversion_score, ma.id as ad_id`
+          ),
       from(
         `(select
                unnest(array[$1]) as group_id,
-               unnest(array[$2]) as topic_score
-                ${newUser ? '' : 'union all (' + unseenTopicsQuery + ')'}
-                ) as uti`,
-        [userInterestTopicIds, userInterestTopicWeights]
+               unnest(array[$2]) as avg_conversion_score) as uti`,
+        [topicIds, topicWeights]
       ),
       join(`group_contracts on group_contracts.group_id = uti.group_id`),
       join(`contracts on contracts.id = group_contracts.contract_id`),
@@ -149,7 +137,11 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         ),
         where(`cv.latest_seen_time is null`),
       ],
-      ...minimumContractsQualityBarWhereClauses,
+      where(`contracts.close_time > now()`),
+      where(`contracts.outcome_type != 'STONK'`),
+      where(`contracts.outcome_type != 'BOUNTIED_QUESTION'`),
+      where(`(contracts.data->>'marketTier') != 'play'`), // filtering by liquidity takes too long
+      where(`contracts.visibility = 'public'`),
       where(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
@@ -165,7 +157,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     ...baseQueryArray(true),
     join(`(${adsJoin}) ma on ma.market_id = contracts.id`),
     order(
-      `uti.topic_score  * contracts.conversion_score * ma.cost_per_view desc`
+      `uti.avg_conversion_score  * contracts.conversion_score * ma.cost_per_view desc`
     )
   )
 
@@ -178,9 +170,9 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     order(`contracts.conversion_score desc`)
   )
   const sorts = {
-    conversion: `avg(uti.topic_score  * contracts.conversion_score) desc`,
-    importance: `avg(uti.topic_score  * contracts.importance_score) desc`,
-    freshness: `avg(uti.topic_score  * contracts.freshness_score) desc`,
+    conversion: `avg(uti.avg_conversion_score  * contracts.conversion_score) desc`,
+    importance: `avg(uti.avg_conversion_score  * contracts.importance_score) desc`,
+    freshness: `avg(uti.avg_conversion_score  * contracts.freshness_score) desc`,
   }
   const sortQueries = Object.values(sorts).map((orderQ) =>
     renderSql(...baseQueryArray(), order(orderQ))
@@ -242,8 +234,8 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       userId,
       limit,
       offset,
-      userInterestTopicIds,
-      userInterestTopicWeights,
+      topicIds,
+      topicWeights,
       renderSql(privateUserBlocksSql(privateUser)).replace('where', 'and'),
       pg
     ),
