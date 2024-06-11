@@ -65,10 +65,15 @@ export function ContractParamsForm(props: {
   params?: NewQuestionParams
 }) {
   const { creator, params, outcomeType } = props
+  const DEFAULT_TIER = CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(
+    outcomeType
+  )
+    ? undefined
+    : outcomeType == 'NUMBER'
+    ? 'plus'
+    : 'basic'
   const [marketTier, setMarketTier] = useState<MarketTierType | undefined>(
-    CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)
-      ? undefined
-      : 'plus'
+    DEFAULT_TIER
   )
   const paramsKey =
     (params?.q ?? '') +
@@ -361,11 +366,7 @@ export function ContractParamsForm(props: {
     setSimilarContracts([])
     setDismissedSimilarContractTitles([])
     setPrecision(1)
-    setMarketTier(
-      CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)
-        ? undefined
-        : 'plus'
-    )
+    setMarketTier(DEFAULT_TIER)
   }
 
   const [submitState, setSubmitState] = useState<
