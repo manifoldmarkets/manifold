@@ -95,13 +95,8 @@ export function FeedContractCard(props: {
     creatorAvatarUrl,
     outcomeType,
     mechanism,
+    marketTier,
   } = contract
-
-  const marketTier = contract.marketTier
-    ? contract.marketTier
-    : 'totalLiquidity' in contract
-    ? getTierFromLiquidity(contract, contract.totalLiquidity)
-    : undefined
 
   const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'

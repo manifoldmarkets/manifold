@@ -16,12 +16,8 @@ export function ContractSummaryStats(props: {
   editable?: boolean
 }) {
   const { contract, editable } = props
-  const { creatorId, outcomeType } = contract
-  const marketTier = contract.marketTier
-    ? contract.marketTier
-    : 'totalLiquidity' in contract
-    ? getTierFromLiquidity(contract, contract.totalLiquidity)
-    : undefined
+  const { creatorId, outcomeType, marketTier } = contract
+
   const isCreator = useUser()?.id === creatorId
 
   return (
