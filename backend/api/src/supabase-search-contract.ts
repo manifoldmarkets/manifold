@@ -49,7 +49,6 @@ const search = async (
     marketTier,
   } = props
 
-  console.log('THE MARKET TIER', marketTier)
   const isPrizeMarket =
     props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
   if (limit === 0) {
