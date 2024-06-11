@@ -20,6 +20,8 @@ export const userIdsToAverageTopicConversionScores: {
   [userId: string]: TopicToInterestWeights
 } = {}
 
+export const activeTopics: { [topicId: string]: number } = {}
+
 export const buildUserInterestsCache = async (userIds: string[]) => {
   log('Starting user topic interests cache build process')
   const pg = createSupabaseDirectClient()
@@ -33,11 +35,11 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
   }
 
   log('building cache for users: ', userIds.length)
-  const topicIdsMeetingMinimumBar = await pg.map(
-    renderSql(minimumTopicsQualityBarClauses),
-    [],
-    (r) => r.id as string
-  )
+  if (Object.keys(activeTopics).length === 0) await refreshActiveTopics(pg)
+  const topicIdsMeetingMinimumBar = Object.keys(activeTopics)
+  // Refresh the cache, and use the old one in the meantime
+  refreshActiveTopics(pg)
+
   const chunks = chunk(userIds, 1000)
   for (const userIds of chunks) {
     await Promise.all([
@@ -120,3 +122,9 @@ export const minimumTopicsQualityBarClauses = [
   where(`groups.slug not in ($1:list)`, [GROUP_SLUGS_TO_NOT_INTRODUCE_IN_FEED]),
   order(`topic_score desc`),
 ]
+
+const refreshActiveTopics = async (pg: SupabaseDirectClient) => {
+  await pg.map(renderSql(minimumTopicsQualityBarClauses), [], (r) => {
+    activeTopics[r.id] = r.topic_score
+  })
+}

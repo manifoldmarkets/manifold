@@ -18,9 +18,9 @@ import { buildArray, filterDefined } from 'common/util/array'
 import { log } from 'shared/utils'
 import { adContract } from 'common/boost'
 import {
+  activeTopics,
   buildUserInterestsCache,
   minimumContractsQualityBarWhereClauses,
-  minimumTopicsQualityBarClauses,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
 import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
@@ -116,13 +116,23 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const userInterestTopicWeights = Object.values(
     userIdsToAverageTopicConversionScores[userId]
   )
-
-  const unseenTopicsQuery = renderSql(
-    minimumTopicsQualityBarClauses,
-    where(`id not in ($1:list)`, [userInterestTopicIds]),
-    lim(10)
-  )
   const newUser = userInterestTopicIds.length < 100
+  if (!newUser) {
+    // add top trending topics from activeTopics that aren't in user's interests already
+    const topUnseenActiveTopics = orderBy(
+      Object.entries(activeTopics).filter(
+        ([topicId]) => !userInterestTopicIds.includes(topicId)
+      ),
+      ([, score]) => score,
+      'desc'
+    ).slice(0, 10)
+    userInterestTopicIds.push(
+      ...topUnseenActiveTopics.map(([topicId]) => topicId)
+    )
+    userInterestTopicWeights.push(
+      ...topUnseenActiveTopics.map(([, score]) => score)
+    )
+  }
 
   const baseQueryArray = (boosts = false) =>
     buildArray(
@@ -136,7 +146,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         `(select
                unnest(array[$1]) as group_id,
                unnest(array[$2]) as topic_score
-                ${newUser ? '' : 'union all (' + unseenTopicsQuery + ')'}
                 ) as uti`,
         [userInterestTopicIds, userInterestTopicWeights]
       ),
