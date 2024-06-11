@@ -45,6 +45,7 @@ const search = async (
     forYou,
     creatorId,
     isPolitics,
+    marketTier,
   } = props
 
   const isPrizeMarket =

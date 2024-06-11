@@ -1,7 +1,25 @@
-import { XCircleIcon } from '@heroicons/react/solid'
+import { ChevronDownIcon, XCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Row } from '../layout/row'
+import DropdownMenu, {
+  AnimationOrNothing,
+  DropdownItem,
+} from '../comments/dropdown-menu'
+import { usePopper } from 'react-popper'
+import { Popover } from '@headlessui/react'
+import { Checkbox } from '../widgets/checkbox'
+import CheckedDropdownMenu from '../widgets/checked-dropdown'
+import { TierParamsType } from '../supabase-search'
+import { MarketTierType, tiers } from 'common/tier'
+import { Basic } from 'next/font/google'
+import { ManifoldLogo } from '../nav/manifold-logo'
+import { LogoIcon } from '../icons/logo-icon'
+import {
+  CrystalTier,
+  PlusTier,
+  PremiumTier,
+} from 'web/public/custom-components/tiers'
 
 export function FilterPill(props: {
   selected: boolean
@@ -68,5 +86,66 @@ export function AdditionalFilterPill(props: {
         <XCircleIcon className="h-4 w-4 " />
       </button>
     </Row>
+  )
+}
+
+export function TierDropdownPill(props: {
+  toggleTier: (tier: MarketTierType) => void
+  currentTiers: TierParamsType
+}) {
+  const { toggleTier, currentTiers } = props
+  return (
+    <CheckedDropdownMenu
+      withinOverflowContainer
+      items={[
+        {
+          name: 'Plus',
+          content: (
+            <Row className="items-center text-sm font-semibold text-blue-600 dark:text-blue-500">
+              <PlusTier />
+              Plus
+            </Row>
+          ),
+          onToggle: () => toggleTier('plus'),
+          checked: currentTiers[tiers.indexOf('plus')] == '1',
+        },
+        {
+          name: 'Premium',
+          content: (
+            <Row className="items-center text-sm text-purple-600 dark:text-purple-400">
+              <PremiumTier />
+              Premium
+            </Row>
+          ),
+          onToggle: () => toggleTier('premium'),
+          checked: currentTiers[tiers.indexOf('premium')] == '1',
+        },
+        {
+          name: 'Crystal',
+          content: (
+            <Row className="items-center text-sm">
+              <CrystalTier />
+              <div className="bg-gradient-to-r from-pink-700 to-pink-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-pink-300">
+                Crystal
+              </div>
+            </Row>
+          ),
+          onToggle: () => toggleTier('crystal'),
+          checked: currentTiers[tiers.indexOf('crystal')] == '1',
+        },
+      ]}
+      buttonContent={(_open) => (
+        <button
+          className={clsx(
+            'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
+            currentTiers.includes('1')
+              ? 'bg-sky-500 text-white hover:bg-sky-600'
+              : 'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30 dark:bg-sky-500/20 dark:hover:bg-sky-500/30'
+          )}
+        >
+          Tier <ChevronDownIcon className="h-4 w-4" />
+        </button>
+      )}
+    />
   )
 }

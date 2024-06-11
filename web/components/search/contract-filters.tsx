@@ -30,11 +30,14 @@ import {
   SORTS,
   SearchParams,
   Sort,
+  TierParamsType,
   bountySorts,
   predictionMarketSorts,
 } from '../supabase-search'
 import { AdditionalFilterPill, FilterPill } from './filter-pills'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { MarketTierType, tiers } from 'common/tier'
+import { TierDropdownPill } from './filter-pills'
 
 export function ContractFilters(props: {
   className?: string
@@ -48,6 +51,7 @@ export function ContractFilters(props: {
     f: filter,
     ct: contractType,
     p: isPrizeMarketString,
+    mt: currentTiers,
   } = params
 
   const selectFilter = (selection: Filter) => {
@@ -88,6 +92,15 @@ export function ContractFilters(props: {
     updateParams({
       p: isPrizeMarketString == '1' ? '0' : '1',
     })
+  }
+
+  const toggleTier = (tier: MarketTierType) => {
+    const tierIndex = tiers.indexOf(tier)
+    if (tierIndex >= 0 && tierIndex < currentTiers.length) {
+      const tiersArray = currentTiers.split('')
+      tiersArray[tierIndex] = tiersArray[tierIndex] === '0' ? '1' : '0'
+      updateParams({ mt: tiersArray.join('') as TierParamsType })
+    }
   }
 
   const hideFilter =
@@ -146,6 +159,7 @@ export function ContractFilters(props: {
             {contractTypeLabel}
           </AdditionalFilterPill>
         )}
+        <TierDropdownPill toggleTier={toggleTier} currentTiers={currentTiers} />
         <FilterPill
           selected={isPrizeMarketString === '1'}
           onSelect={togglePrizeMarket}
@@ -159,6 +173,7 @@ export function ContractFilters(props: {
           </div>
           Prize
         </FilterPill>
+        {/* <TierDropdownPill toggleTier={toggleTier} currentTiers={currentTiers} /> */}
         {!hideFilter &&
           DEFAULT_FILTERS.map((filterValue) => (
             <FilterPill

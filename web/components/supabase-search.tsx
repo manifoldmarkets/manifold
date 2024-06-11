@@ -34,6 +34,7 @@ import { UserResults } from './search/user-results'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
+import { tiers } from 'common/tier'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -126,14 +127,20 @@ export const DEFAULT_CONTRACT_TYPES = ['BINARY', 'MULTIPLE_CHOICE', 'POLL']
 export type ContractTypeType = (typeof CONTRACT_TYPES)[number]['value']
 type SearchType = 'Users' | 'Questions' | undefined
 
+export type BinaryDigit = '0' | '1'
+
+export type TierParamsType =
+  `${BinaryDigit}${BinaryDigit}${BinaryDigit}${BinaryDigit}${BinaryDigit}`
+
 export type SearchParams = {
   [QUERY_KEY]: string
   [SORT_KEY]: Sort
   [FILTER_KEY]: Filter
   [CONTRACT_TYPE_KEY]: ContractTypeType
   [SEARCH_TYPE_KEY]: SearchType
-  [PRIZE_MARKET_KEY]: '1' | '0'
-  [FOR_YOU_KEY]: '1' | '0'
+  [PRIZE_MARKET_KEY]: BinaryDigit
+  [FOR_YOU_KEY]: BinaryDigit
+  [MARKET_TIER_KEY]: TierParamsType
 }
 
 const QUERY_KEY = 'q'
@@ -143,6 +150,7 @@ const CONTRACT_TYPE_KEY = 'ct'
 export const SEARCH_TYPE_KEY = 't'
 export const PRIZE_MARKET_KEY = 'p'
 export const FOR_YOU_KEY = 'fy'
+export const MARKET_TIER_KEY = 'mt'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
@@ -164,6 +172,7 @@ export type SearchState = {
     topicSlug: string
     isPrizeMarket: '1' | '0'
     forYou: '1' | '0'
+    marketTier: TierParamsType
   }
 }
 
@@ -240,6 +249,9 @@ export function SupabaseSearch(props: {
   const contractType = searchParams[CONTRACT_TYPE_KEY]
   const prizeMarketState = searchParams[PRIZE_MARKET_KEY]
   const forYou = searchParams[FOR_YOU_KEY] === '1'
+  const marketTiers = searchParams[MARKET_TIER_KEY]
+
+  console.log(marketTiers)
 
   const [userResults, setUserResults] = usePersistentInMemoryState<
     FullUser[] | undefined
@@ -285,6 +297,7 @@ export function SupabaseSearch(props: {
       isReady,
       prizeMarketState,
       forYou,
+      marketTiers,
     ]
   )
 
@@ -575,6 +588,7 @@ const useContractSearch = (
       ct: contractType,
       p: isPrizeMarketString,
       fy: forYou,
+      mt: marketTier,
     } = searchParams
     // if fresh query and the search params haven't changed (like user clicked back) do nothing
     if (
@@ -614,6 +628,7 @@ const useContractSearch = (
         isPolitics: additionalFilter?.isPolitics,
         isPrizeMarket: isPrizeMarketString,
         forYou,
+        marketTier,
       })
 
       if (id === requestId.current) {
@@ -634,6 +649,7 @@ const useContractSearch = (
             topicSlug,
             isPrizeMarket: isPrizeMarketString,
             forYou,
+            marketTier,
           },
         })
         clearTimeout(timeoutId)
@@ -677,6 +693,7 @@ const useSearchQueryState = (props: {
   defaultPrizeMarket?: '1' | '0'
   defaultForYou?: '1' | '0'
   useUrlParams?: boolean
+  defaultMarketTier?: TierParamsType
 }) => {
   const {
     persistPrefix,
@@ -687,6 +704,7 @@ const useSearchQueryState = (props: {
     useUrlParams,
     defaultPrizeMarket = '0',
     defaultForYou = '0',
+    defaultMarketTier = '00000',
   } = props
 
   const [lastSort, setLastSort] = usePersistentLocalState<Sort>(
@@ -702,6 +720,7 @@ const useSearchQueryState = (props: {
     [SEARCH_TYPE_KEY]: defaultSearchType,
     [PRIZE_MARKET_KEY]: defaultPrizeMarket,
     [FOR_YOU_KEY]: defaultForYou,
+    [MARKET_TIER_KEY]: defaultMarketTier,
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : useShim
