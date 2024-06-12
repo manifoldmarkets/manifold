@@ -436,7 +436,7 @@ export type Database = {
           deleted: boolean | null
           description_fts: unknown | null
           freshness_score: number | null
-          fs_updated_time: string
+          fs_updated_time: string | null
           group_slugs: string[] | null
           id: string
           importance_score: number | null
@@ -467,7 +467,7 @@ export type Database = {
           deleted?: boolean | null
           description_fts?: unknown | null
           freshness_score?: number | null
-          fs_updated_time: string
+          fs_updated_time?: string | null
           group_slugs?: string[] | null
           id: string
           importance_score?: number | null
@@ -498,7 +498,7 @@ export type Database = {
           deleted?: boolean | null
           description_fts?: unknown | null
           freshness_score?: number | null
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           group_slugs?: string[] | null
           id?: string
           importance_score?: number | null
