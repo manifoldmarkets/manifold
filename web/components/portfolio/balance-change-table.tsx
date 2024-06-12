@@ -22,7 +22,6 @@ import {
 } from 'react-icons/fa6'
 import { contractPathWithoutContract } from 'common/contract'
 import { linkClass } from 'web/components/widgets/site-link'
-import { Avatar } from 'web/components/widgets/avatar'
 import { ScaleIcon } from '@heroicons/react/outline'
 import { QuestType } from 'common/quest'
 import { Input } from 'web/components/widgets/input'
@@ -127,7 +126,6 @@ function RenderBalanceChanges(props: {
               key={change.key}
               change={change as TxnBalanceChange}
               balance={balanceRunningTotals[i]}
-              avatarUrl={user.avatarUrl}
               avatarSize={avatarSize}
               simple={simple}
               hideBalance={hideBalance}
@@ -305,16 +303,15 @@ const customFormatTime = (time: number) => {
 const TxnBalanceChangeRow = (props: {
   change: TxnBalanceChange
   balance: { mana: number; spice: number }
-  avatarUrl: string
   avatarSize: 'sm' | 'md'
   simple?: boolean
   hideBalance?: boolean
 }) => {
-  const { change, balance, avatarSize, avatarUrl, simple, hideBalance } = props
+  const { change, balance, avatarSize, simple, hideBalance } = props
   const { contract, amount, type, token, user, charity, description } = change
 
   const reasonToBgClassNameMap: Partial<{
-    [key in AnyTxnCategory | 'STARTING_BALANCE']: string
+    [key in AnyTxnCategory]: string
   }> = {
     QUEST_REWARD: 'bg-amber-400',
     BETTING_STREAK_BONUS: 'bg-red-400',
@@ -326,7 +323,7 @@ const TxnBalanceChangeRow = (props: {
     CONSUME_SPICE: 'bg-indigo-400',
     CONSUME_SPICE_DONE: 'bg-indigo-400',
     SIGNUP_BONUS: 'bg-yellow-200',
-    STARTING_BALANCE: 'bg-yellow-200',
+    MANA_PURCHASE: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
     MARKET_BOOST_REDEEM: 'bg-purple-200',
     MARKET_BOOST_CREATE: 'bg-purple-400',
     LEAGUE_PRIZE: 'bg-indigo-400',
@@ -342,64 +339,55 @@ const TxnBalanceChangeRow = (props: {
   return (
     <Row className={'gap-2'}>
       <Col className={'mt-0.5'}>
-        {type === 'STARTING_BALANCE' ? (
-          <Avatar
-            className={''}
-            avatarUrl={avatarUrl}
-            noLink={true}
-            size={avatarSize}
-          />
-        ) : (
-          <ChangeIcon
-            avatarSize={avatarSize}
-            slug={
-              contract?.slug
-                ? contractPathWithoutContract(
-                    contract.creatorUsername,
-                    contract.slug
-                  )
-                : user?.username
-            }
-            symbol={
-              type === 'MANA_PAYMENT' ? (
-                '💸'
-              ) : type === 'MARKET_BOOST_CREATE' ? (
-                '🚀'
-              ) : type === 'ADD_SUBSIDY' ? (
-                '💧'
-              ) : type === 'CONTRACT_RESOLUTION_PAYOUT' ||
-                type === 'PRODUCE_SPICE' ? (
-                '🎉'
-              ) : type === 'CONTRACT_UNDO_RESOLUTION_PAYOUT' ||
-                type === 'CONTRACT_UNDO_PRODUCE_SPICE' ? (
-                <FaBackward className={'h-5 w-5 text-white'} />
-              ) : type === 'CREATE_CONTRACT_ANTE' ||
-                type === 'BOUNTY_POSTED' ? (
-                <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
-              ) : type === 'CONSUME_SPICE' || type === 'CONSUME_SPICE_DONE' ? (
-                <FaArrowRightArrowLeft className={'h-4 w-4'} />
-              ) : type === 'CHARITY' ? (
-                '❤️'
-              ) : type === 'LOAN' ? (
-                '🏦'
-              ) : [
-                  'UNIQUE_BETTOR_BONUS',
-                  'BETTING_STREAK_BONUS',
-                  'SIGNUP_BONUS',
-                  'QUEST_REWARD',
-                  'STARTING_BALANCE',
-                  'MARKET_BOOST_REDEEM',
-                  'LEAGUE_PRIZE',
-                  'BOUNTY_AWARDED',
-                ].includes(type) ? (
-                '🎁'
-              ) : (
-                ''
-              )
-            }
-            className={reasonToBgClassNameMap[type] ?? 'bg-canvas-100'}
-          />
-        )}
+        <ChangeIcon
+          avatarSize={avatarSize}
+          slug={
+            contract?.slug
+              ? contractPathWithoutContract(
+                  contract.creatorUsername,
+                  contract.slug
+                )
+              : user?.username
+          }
+          symbol={
+            type === 'MANA_PAYMENT' ? (
+              '💸'
+            ) : type === 'MARKET_BOOST_CREATE' ? (
+              '🚀'
+            ) : type === 'ADD_SUBSIDY' ? (
+              '💧'
+            ) : type === 'CONTRACT_RESOLUTION_PAYOUT' ||
+              type === 'PRODUCE_SPICE' ? (
+              '🎉'
+            ) : type === 'CONTRACT_UNDO_RESOLUTION_PAYOUT' ||
+              type === 'CONTRACT_UNDO_PRODUCE_SPICE' ? (
+              <FaBackward className={'h-5 w-5 text-white'} />
+            ) : type === 'CREATE_CONTRACT_ANTE' || type === 'BOUNTY_POSTED' ? (
+              <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
+            ) : type === 'CONSUME_SPICE' || type === 'CONSUME_SPICE_DONE' ? (
+              <FaArrowRightArrowLeft className={'h-4 w-4'} />
+            ) : type === 'CHARITY' ? (
+              '❤️'
+            ) : type === 'LOAN' ? (
+              '🏦'
+            ) : type === 'MANA_PURCHASE' ? (
+              '🤑'
+            ) : [
+                'UNIQUE_BETTOR_BONUS',
+                'BETTING_STREAK_BONUS',
+                'SIGNUP_BONUS',
+                'QUEST_REWARD',
+                'MARKET_BOOST_REDEEM',
+                'LEAGUE_PRIZE',
+                'BOUNTY_AWARDED',
+              ].includes(type) ? (
+              '🎁'
+            ) : (
+              ''
+            )
+          }
+          className={reasonToBgClassNameMap[type] ?? 'bg-canvas-100'}
+        />
       </Col>
       <Col className={'w-full'}>
         <Row className={'justify-between'}>
@@ -486,6 +474,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Loan'
     case 'LEAGUE_PRIZE':
       return 'League prize'
+    case 'MANA_PURCHASE':
+      return 'Mana purchase'
     case 'MARKET_BOOST_REDEEM':
       return 'Claim boost'
     case 'SIGNUP_BONUS':
@@ -521,7 +511,7 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'CONSUME_SPICE':
     case 'CONSUME_SPICE_DONE':
       return ''
-    case 'STARTING_BALANCE':
+    case 'MANA_PURCHASE':
       return ''
     case 'ADD_SUBSIDY':
       return 'Subsidy'

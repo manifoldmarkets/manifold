@@ -37,7 +37,7 @@ export type BetBalanceChange = BalanceChange & {
 }
 
 export type TxnBalanceChange = BalanceChange & {
-  type: AnyTxnCategory | 'STARTING_BALANCE'
+  type: AnyTxnCategory
   token: Txn['token']
   contract?: MinimalContract
   questType?: QuestType
