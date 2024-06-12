@@ -37,6 +37,7 @@ import { convertBet } from 'common/supabase/bets'
 import { convertLiquidity } from 'common/supabase/liquidity'
 import { broadcastUpdatedAnswer } from './websockets/helpers'
 import { updateAnswer } from './supabase/answers'
+import { updateContract } from './supabase/contracts'
 
 export type ResolutionParams = {
   outcome: string
@@ -190,11 +191,9 @@ export const resolveMarketHelper = async (
     )
   }
 
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-
   if (updatedContractAttrs) {
     log('updating contract', { updatedContractAttrs })
-    await contractDoc.update(updatedContractAttrs)
+    await updateContract(pg, contractId, updatedContractAttrs)
     log('contract resolved')
   }
   if (updateAnswerAttrs && answerId) {

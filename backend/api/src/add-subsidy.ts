@@ -10,6 +10,8 @@ import { insertLiquidity } from 'shared/supabase/liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
 import { FieldValue } from 'firebase-admin/firestore'
 import { getTierFromLiquidity } from 'common/tier'
+import { FieldVal } from 'shared/supabase/utils'
+import { updateContract } from 'shared/supabase/contracts'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
@@ -64,9 +66,9 @@ export const addContractLiquidity = async (
     const liquidityRow = await insertLiquidity(tx, newLiquidityProvision)
     const liquidity = convertLiquidity(liquidityRow)
 
-    await firestore.doc(`contracts/${contractId}`).update({
-      subsidyPool: FieldValue.increment(subsidyAmount),
-      totalLiquidity: FieldValue.increment(subsidyAmount),
+    await updateContract(tx, contractId, {
+      subsidyPool: FieldVal.increment(subsidyAmount),
+      totalLiquidity: FieldVal.increment(subsidyAmount),
       marketTier: getTierFromLiquidity(
         contract,
         contract.totalLiquidity + subsidyAmount

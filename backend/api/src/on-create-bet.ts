@@ -33,7 +33,6 @@ import { BOT_USERNAMES, PARTNER_USER_IDS } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
-import * as admin from 'firebase-admin'
 import { getCommentSafe } from 'shared/supabase/contract_comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
 import { updateData } from 'shared/supabase/utils'
@@ -53,6 +52,7 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
   getUniqueBettorIds,
   getUniqueBettorIdsForAnswer,
+  updateContract,
 } from 'shared/supabase/contracts'
 import { Answer } from 'common/answer'
 import {
@@ -75,8 +75,6 @@ import {
 } from 'shared/websockets/helpers'
 import { getAnswer, getAnswersForContract } from 'shared/supabase/answers'
 
-const firestore = admin.firestore()
-
 export const onCreateBets = async (
   bets: Bet[],
   contract: Contract,
@@ -85,6 +83,8 @@ export const onCreateBets = async (
   makers: maker[] | undefined,
   answerId: string | undefined
 ) => {
+  const pg = createSupabaseDirectClient()
+
   if (contract.mechanism === 'cpmm-multi-1') {
     broadcastNewBets({ id: contract.id }, bets) // No changes to contract
     const pg = createSupabaseDirectClient()
@@ -96,13 +96,14 @@ export const onCreateBets = async (
       answers.forEach((answer) => broadcastUpdatedAnswer(contract, answer))
     }
   } else if (contract.mechanism === 'cpmm-1') {
-    const newContract = (await getContract(contract.id)) as typeof contract
+    const newContract = (await getContract(pg, contract.id)) as typeof contract
     if (newContract) {
       const updates = {
         id: newContract.id,
         prob: newContract.prob,
         pool: newContract.pool,
         p: newContract.p,
+        visibility: newContract.visibility,
       }
       broadcastNewBets(updates, bets)
     }
@@ -126,7 +127,6 @@ export const onCreateBets = async (
   if (!betUsers.find((u) => u.id == originalBettor.id))
     betUsers.push(originalBettor)
 
-  const pg = createSupabaseDirectClient()
   const usersToRefreshMetrics = betUsers.filter((user) =>
     uniq(
       bets.filter((b) => b.shares !== 0 && !b.isApi).map((bet) => bet.userId)
@@ -276,7 +276,9 @@ const debouncedContractUpdates = (contract: Contract) => {
       collectedFees,
     })
 
-    await firestore.doc(`contracts/${contract.id}`).update(
+    await updateContract(
+      pg,
+      contract.id,
       removeNullOrUndefinedProps({
         volume,
         lastBetTime: lastBetTime ? new Date(lastBetTime).valueOf() : undefined,

@@ -5,11 +5,13 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { broadcastNewSubsidy } from 'shared/websockets/helpers'
 import { type Contract } from 'common/contract'
 import { pick } from 'lodash'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const onCreateLiquidityProvision = async (
   liquidity: LiquidityProvision
 ) => {
-  const contract = (await getContract(liquidity.contractId)) as Contract & {
+  const pg = createSupabaseDirectClient()
+  const contract = (await getContract(pg, liquidity.contractId)) as Contract & {
     mechanism: 'cpmm-1' | 'cpmm-multi-1'
   }
 

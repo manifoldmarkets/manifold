@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import * as crypto from 'crypto'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { onCreateBets } from 'api/on-create-bet'
@@ -6,11 +5,11 @@ import {
   getUnfilledBetsAndUserBalances,
   processNewBetResult,
 } from 'api/place-bet'
-import { getContractSupabase, getUser, log } from 'shared/utils'
+import { getContract, getUser, log } from 'shared/utils'
 import { groupBy, mapValues, sum, sumBy } from 'lodash'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { incrementBalance } from 'shared/supabase/users'
-import { runEvilTransaction } from 'shared/evil-transaction'
+import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getAnswersForContract } from 'shared/supabase/answers'
@@ -27,20 +26,17 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
   const { uid } = auth
   const isApi = auth.creds.kind === 'key'
 
-  const contract = await getContractSupabase(contractId)
-  if (!contract) throw new APIError(404, 'Contract not found')
-  const { closeTime, mechanism } = contract
-  if (closeTime && Date.now() > closeTime)
-    throw new APIError(403, 'Trading is closed.')
-  if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract)) {
-    throw new APIError(400, 'Contract type/mechanism not supported')
-  }
-
   const user = await getUser(uid)
   if (!user) throw new APIError(401, 'Your account was not found')
 
-  const results = await runEvilTransaction(async (pgTrans, fbTrans) => {
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
+  const { bets, contract } = await runShortTrans(async (pgTrans) => {
+    const contract = await getContract(pgTrans, contractId)
+    if (!contract) throw new APIError(404, 'Contract not found')
+    const { closeTime, mechanism } = contract
+    if (closeTime && Date.now() > closeTime)
+      throw new APIError(403, 'Trading is closed.')
+    if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract))
+      throw new APIError(400, 'Contract type/mechanism not supported')
 
     log(
       `Checking for limit orders and bets in sellshares for user ${uid} on contract id ${contractId}.`
@@ -102,12 +98,10 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       betResults.map((newBetResult) =>
         processNewBetResult(
           newBetResult,
-          contractDoc,
           contract,
           user,
           isApi,
           pgTrans,
-          fbTrans,
           undefined,
           betGroupId
         )
@@ -119,18 +113,16 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
         balance: -loanPaid,
       })
     }
-    return bets
+    return { bets, contract }
   })
 
   log(`Main transaction finished - auth ${uid}.`)
 
   const continuation = async () => {
-    const fullBets = results.flatMap((result) => result.fullBets)
-    const allOrdersToCancel = results.flatMap(
-      (result) => result.allOrdersToCancel
-    )
-    const makers = results.flatMap((result) => result.makers ?? [])
-    const user = results[0].user
+    const fullBets = bets.flatMap((result) => result.fullBets)
+    const allOrdersToCancel = bets.flatMap((result) => result.allOrdersToCancel)
+    const makers = bets.flatMap((result) => result.makers ?? [])
+    const user = bets[0].user
     await onCreateBets(
       fullBets,
       contract,
@@ -142,7 +134,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
   }
 
   return {
-    result: results.map((result) => ({
+    result: bets.map((result) => ({
       ...result.newBet,
       betId: result.betId,
       betGroupId: result.betGroupId,
@@ -150,5 +142,3 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     continue: continuation,
   }
 }
-
-const firestore = admin.firestore()

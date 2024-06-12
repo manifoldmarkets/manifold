@@ -1,5 +1,13 @@
+import { noop } from 'lodash'
 import { pgp, SupabaseDirectClient } from './init'
-import { DataFor, Tables, TableName, Column, Row } from 'common/supabase/utils'
+import {
+  DataFor,
+  Tables,
+  TableName,
+  Column,
+  Row,
+  Selectable,
+} from 'common/supabase/utils'
 
 export async function getIds<T extends TableName>(
   db: SupabaseDirectClient,
@@ -97,28 +105,50 @@ export async function updateData<T extends TableName>(
   db: SupabaseDirectClient,
   table: T,
   idField: Column<T>,
-  data: Partial<DataFor<T>>
+  data: DataUpdate<T>
 ) {
   const { [idField]: id, ...rest } = data
   if (!id) throw new Error(`Missing id field ${idField} in data`)
 
-  await db.none(
-    `update ${table} set data = data || $1 where ${idField} = '${id}'`,
-    [JSON.stringify(rest)]
-  )
-}
-
-export async function updateDataAndReturn<T extends TableName>(
-  db: SupabaseDirectClient,
-  table: T,
-  idField: Column<T>,
-  data: Partial<DataFor<T>>
-) {
-  const { [idField]: id, ...rest } = data
-  if (!id) throw new Error(`Missing id field ${idField} in data`)
+  const basic: Partial<DataFor<T>> = {}
+  const extras: string[] = []
+  for (const key in rest) {
+    const val = rest[key as keyof typeof rest]
+    if (typeof val === 'function') {
+      extras.push(val(key))
+    } else {
+      basic[key as keyof typeof rest] = val
+    }
+  }
 
   return await db.one<Row<T>>(
-    `update ${table} set data = data || $1 where ${idField} = '${id}' returning *`,
-    [JSON.stringify(rest)]
+    `update ${table} set data = data || $1 
+    ${extras.join('\n')}
+    where ${idField} = '${id}' returning *`,
+    [JSON.stringify(basic)]
   )
 }
+
+/*
+ * this attempts to copy the firebase syntax
+ * each returns a function that takes the field name and returns a sql string that updateData can handle
+ */
+export const FieldVal = {
+  increment: (n: number) => (fieldName: string) =>
+    `|| jsonb_build_object('${fieldName}', data->'${fieldName}' + ${n})`,
+
+  delete: () => (fieldName: string) => `- '${fieldName}'`,
+
+  arrayRemove:
+    (...values: string[]) =>
+    (fieldName: string) => {
+      const valueString = `'{${values.join(',')}}'::text[]`
+      return `|| jsonb_build_object('${fieldName}', data->'${fieldName}' - ${valueString})`
+    },
+}
+
+type ValOrFieldVal<R extends Record<string, any>> = {
+  [key in keyof R]?: R[key] | ((fieldName: string) => string)
+}
+
+export type DataUpdate<T extends TableName> = ValOrFieldVal<DataFor<T>>

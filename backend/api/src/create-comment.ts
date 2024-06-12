@@ -200,8 +200,9 @@ export const validateComment = async (
   html: string | undefined,
   markdown: string | undefined
 ) => {
+  const pg = createSupabaseDirectClient()
   const you = await getUser(userId)
-  const contract = await getContract(contractId)
+  const contract = await getContract(pg, contractId)
 
   if (!you) throw new APIError(401, 'Your account was not found')
   if (you.isBannedFromPosting) throw new APIError(403, 'You are banned')

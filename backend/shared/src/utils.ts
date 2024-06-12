@@ -233,11 +233,10 @@ export const getValues = async <T>(query: admin.firestore.Query) => {
   return snap.docs.map((doc) => doc.data() as T)
 }
 
-export const getContract = (contractId: string) => {
-  return getDoc<Contract>('contracts', contractId)
-}
-export const getContractSupabase = async (contractId: string) => {
-  const pg = createSupabaseDirectClient()
+export const getContract = async (
+  pg: SupabaseDirectClient,
+  contractId: string
+) => {
   const res = await pg.map(
     `select data, importance_score, conversion_score, view_count from contracts where id = $1
             limit 1`,
@@ -246,6 +245,12 @@ export const getContractSupabase = async (contractId: string) => {
   )
   return first(res)
 }
+
+export const getContractSupabase = async (contractId: string) => {
+  const pg = createSupabaseDirectClient()
+  return await getContract(pg, contractId)
+}
+
 export const getContractFromSlugSupabase = async (contractSlug: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(

@@ -2,7 +2,7 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import { groupBy } from 'lodash'
 import { Answer } from 'common/answer'
-import { bulkInsert, updateDataAndReturn, insert as upsert } from './utils'
+import { bulkInsert, updateData, insert as upsert } from './utils'
 import { randomString } from 'common/util/random'
 import { removeUndefinedProps } from 'common/util/object'
 import { millisToTs } from 'common/supabase/utils'
@@ -62,9 +62,7 @@ export const updateAnswer = async (
   id: string,
   update: Partial<Answer>
 ) => {
-  return convertAnswer(
-    await updateDataAndReturn(pg, 'answers', 'id', { ...update, id })
-  )
+  return convertAnswer(await updateData(pg, 'answers', 'id', { ...update, id }))
 }
 
 export const bulkUpdateAnswers = async (

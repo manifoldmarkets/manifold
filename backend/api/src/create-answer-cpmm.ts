@@ -46,6 +46,8 @@ import {
   updateAnswer,
 } from 'shared/supabase/answers'
 import { getTierFromLiquidity } from 'common/tier'
+import { updateContract } from 'shared/supabase/contracts'
+import { FieldVal } from 'shared/supabase/utils'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -103,9 +105,9 @@ export const createAnswerCpmmMain = async (
     getTierFromLiquidity(contract, contract.totalLiquidity)
   )
 
-  let needToDoSketchyFirebaseRevert = false // for updating contract liquidity
-  const { newAnswer, updatedAnswers, user } = await pg
-    .tx({ mode: SERIAL }, async (pgTrans) => {
+  const { newAnswer, updatedAnswers, user } = await pg.tx(
+    { mode: SERIAL },
+    async (pgTrans) => {
       const user = await getUser(creatorId, pgTrans)
       if (!user) throw new APIError(401, 'Your account was not found')
       if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
@@ -183,10 +185,9 @@ export const createAnswerCpmmMain = async (
       }
 
       if (!specialLiquidityPerAnswer) {
-        await firestore.doc(`contracts/${contractId}`).update({
-          totalLiquidity: FieldValue.increment(answerCost),
+        await updateContract(pgTrans, contractId, {
+          totalLiquidity: FieldVal.increment(answerCost),
         })
-        needToDoSketchyFirebaseRevert = true
 
         const lp = getCpmmInitialLiquidity(
           user.id,
@@ -200,23 +201,8 @@ export const createAnswerCpmmMain = async (
       }
 
       return { newAnswer, updatedAnswers, user }
-    })
-    // end of pgTrans
-    .catch(async (e) => {
-      if (needToDoSketchyFirebaseRevert) {
-        try {
-          await firestore.doc(`contracts/${contractId}`).update({
-            totalLiquidity: FieldValue.increment(-answerCost),
-          })
-        } catch (e) {
-          log.error(
-            `Failed to revert contract liquidity by ${answerCost}. Must manually reconcile!`
-          )
-          throw e
-        }
-      }
-      throw e
-    })
+    }
+  )
 
   const continuation = async () => {
     broadcastNewAnswer(contract, newAnswer)

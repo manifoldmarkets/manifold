@@ -1,5 +1,3 @@
-import * as admin from 'firebase-admin'
-import { DocumentReference, Transaction } from 'firebase-admin/firestore'
 import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { CPMM_MIN_POOL_QTY, Contract, MarketContract } from 'common/contract'
@@ -13,7 +11,7 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { getUser, log, metrics } from 'shared/utils'
+import { getContract, getUser, log, metrics } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
@@ -27,7 +25,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
-import { runEvilTransaction } from 'shared/evil-transaction'
+import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { broadcastOrders } from 'shared/websockets/helpers'
@@ -35,6 +33,7 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
 import { getAnswersForContract, updateAnswer } from 'shared/supabase/answers'
+import { updateContract } from 'shared/supabase/contracts'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -53,10 +52,10 @@ export const placeBetMain = async (
   const { amount, contractId, replyToCommentId, answerId } = body
   const pg = createSupabaseDirectClient()
 
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-  const contractSnap = await contractDoc.get()
-  if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
-  const contract = contractSnap.data() as MarketContract
+  const contract = await getContract(pg, contractId)
+  if (!contract) throw new APIError(404, 'Contract not found.')
+  if (contract.mechanism === 'none' || contract.mechanism === 'qf')
+    throw new APIError(400, 'This is not a market')
 
   const { closeTime, outcomeType, mechanism } = contract
   if (closeTime && Date.now() > closeTime)
@@ -77,7 +76,7 @@ export const placeBetMain = async (
   )
   const unfilledBetUserIds = uniq(unfilledBets.map((bet) => bet.userId))
 
-  const result = await runEvilTransaction(async (pgTrans, fbTrans) => {
+  const result = await runShortTrans(async (pgTrans) => {
     const [user, balanceByUserId] = await Promise.all([
       validateBet(uid, amount, contract, pgTrans, isApi),
       getUserBalances(pgTrans, unfilledBetUserIds),
@@ -181,12 +180,10 @@ export const placeBetMain = async (
 
     const result = await processNewBetResult(
       newBetResult,
-      contractDoc,
       contract,
       user,
       isApi,
       pgTrans,
-      fbTrans,
       replyToCommentId,
       betGroupId
     )
@@ -222,8 +219,6 @@ export const placeBetMain = async (
     continue: continuation,
   }
 }
-
-const firestore = admin.firestore()
 
 export const getUnfilledBets = async (
   pg: SupabaseDirectClient,
@@ -283,12 +278,10 @@ export type NewBetResult = BetInfo & {
 
 export const processNewBetResult = async (
   newBetResult: NewBetResult,
-  contractDoc: DocumentReference,
   contract: MarketContract,
   user: User,
   isApi: boolean,
   pgTrans: SupabaseTransaction,
-  fbTrans: Transaction,
   replyToCommentId?: string,
   betGroupId?: string
 ) => {
@@ -432,13 +425,15 @@ export const processNewBetResult = async (
         )
       }
     } else {
-      fbTrans.update(
-        contractDoc,
+      await updateContract(
+        pgTrans,
+        contract.id,
         removeUndefinedProps({
           pool: newPool,
           p: newP,
           totalLiquidity: newTotalLiquidity,
-        })
+        }),
+        { silent: true }
       )
     }
 

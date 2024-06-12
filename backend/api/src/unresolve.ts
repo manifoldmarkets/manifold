@@ -21,6 +21,8 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 import { assert } from 'common/util/assert'
 import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
 import { convertAnswer } from 'common/supabase/contracts'
+import { updateContract } from 'shared/supabase/contracts'
+import { FieldVal } from 'shared/supabase/utils'
 
 const firestore = admin.firestore()
 
@@ -251,13 +253,13 @@ const undoResolution = async (
   if (contract.isResolved || contract.resolutionTime) {
     const updatedAttrs = {
       isResolved: false,
-      resolutionTime: admin.firestore.FieldValue.delete(),
-      resolution: admin.firestore.FieldValue.delete(),
-      resolutions: admin.firestore.FieldValue.delete(),
-      resolutionProbability: admin.firestore.FieldValue.delete(),
+      resolutionTime: FieldVal.delete(),
+      resolution: FieldVal.delete(),
+      resolutions: FieldVal.delete(),
+      resolutionProbability: FieldVal.delete(),
       closeTime: Date.now(),
     }
-    await firestore.doc(`contracts/${contractId}`).update(updatedAttrs)
+    await updateContract(pg, contractId, updatedAttrs)
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
