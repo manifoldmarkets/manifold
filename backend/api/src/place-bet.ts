@@ -404,6 +404,7 @@ export const processNewBetResult = async (
   if (totalCreatorFee !== 0) {
     await incrementBalance(pgTrans, contract.creatorId, {
       balance: totalCreatorFee,
+      totalDeposits: totalCreatorFee,
     })
 
     log(
