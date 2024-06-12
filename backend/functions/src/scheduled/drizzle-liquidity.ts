@@ -1,5 +1,4 @@
 import * as functions from 'firebase-functions'
-import * as admin from 'firebase-admin'
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { mapAsync } from 'common/util/promise'
 import { APIError } from 'common/api/utils'
@@ -28,17 +27,13 @@ import { secrets } from 'common/secrets'
 import { getContract } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
 
-const firestore = admin.firestore()
-
 export const drizzleLiquidity = async () => {
   const pg = createSupabaseDirectClient()
 
-  const snap = await firestore
-    .collection('contracts')
-    .where('subsidyPool', '>', 1e-7)
-    .get()
-
-  const contractIds = shuffle(snap.docs.map((doc) => doc.id))
+  const data = await pg.manyOrNone<{ id: string }>(
+    `select id from contracts where subsidy_pool > 1e-7`
+  )
+  const contractIds = shuffle(data.map((doc) => doc.id))
   console.log('found', contractIds.length, 'markets to drizzle')
   console.log()
 

@@ -1,16 +1,16 @@
-import * as admin from 'firebase-admin'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { convertBet } from 'common/supabase/bets'
 import { cancelLimitOrders } from 'shared/supabase/bets'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { type LimitBet } from 'common/bet'
+import { updateContract } from 'shared/supabase/contracts'
 
 export const cancelBet: APIHandler<'bet/cancel/:betId'> = async (
   { betId },
   auth
 ) => {
   const pg = createSupabaseDirectClient()
-  const bet = await pg.tx(async (tx) => {
+  return await pg.tx(async (tx) => {
     const bet = await tx.oneOrNone(
       `select * from contract_bets where bet_id = $1`,
       [betId],
@@ -25,17 +25,13 @@ export const cancelBet: APIHandler<'bet/cancel/:betId'> = async (
     if (bet.isCancelled) throw new APIError(403, 'Bet already cancelled')
 
     await cancelLimitOrders(tx, [betId])
+    const now = Date.now()
 
-    return { ...bet, isCancelled: true }
+    await updateContract(tx, bet.contractId, {
+      lastBetTime: now,
+      lastUpdatedTime: now,
+    })
+
+    return { ...(bet as LimitBet), isCancelled: true }
   })
-  const now = Date.now()
-
-  await firestore.collection('contracts').doc(bet.contractId).update({
-    lastBetTime: now,
-    lastUpdatedTime: now,
-  })
-
-  return bet as LimitBet
 }
-
-const firestore = admin.firestore()

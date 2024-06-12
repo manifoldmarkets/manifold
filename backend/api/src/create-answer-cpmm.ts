@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import { groupBy, partition, sumBy } from 'lodash'
 import { CPMMMultiContract, add_answers_mode } from 'common/contract'
 import { User } from 'common/user'
@@ -8,7 +7,6 @@ import { APIError, APIHandler } from './helpers/endpoint'
 import { getTieredAnswerCost } from 'common/economy'
 import { randomString } from 'common/util/random'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
-import { FieldValue } from 'firebase-admin/firestore'
 import {
   addCpmmMultiLiquidityAnswersSumToOne,
   getCpmmProbability,
@@ -403,8 +401,6 @@ async function createAnswerAndSumAnswersToOne(
 
   return updatedAnswers
 }
-
-const firestore = admin.firestore()
 
 async function convertOtherAnswerShares(
   pgTrans: SupabaseDirectClient,

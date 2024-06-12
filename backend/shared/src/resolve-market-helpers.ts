@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import { mapValues, groupBy, sum, sumBy, chunk } from 'lodash'
 import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -19,6 +18,7 @@ import {
   isProd,
   checkAndMergePayouts,
   log,
+  getContract,
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common//api/utils'
@@ -56,12 +56,11 @@ export const resolveMarketHelper = async (
   const pg = createSupabaseDirectClient()
 
   // Fetch fresh contract & check if resolved within lock.
-  const contractSnap = await firestore
-    .collection('contracts')
-    .doc(unresolvedContract.id)
-    .get()
-  unresolvedContract = contractSnap.data() as Contract
-
+  const fetch = await getContract(pg, unresolvedContract.id)
+  if (!fetch) {
+    throw new APIError(500, 'Contract not found')
+  }
+  unresolvedContract = fetch
   if (unresolvedContract.isResolved) {
     throw new APIError(403, 'Contract is already resolved')
   }
@@ -493,5 +492,3 @@ export const payUsersTransactions = async (
       })
   }
 }
-
-const firestore = admin.firestore()

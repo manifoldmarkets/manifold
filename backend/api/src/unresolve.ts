@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import {
   ContractOldResolutionPayoutTxn,
   ContractProduceSpiceTxn,
@@ -9,7 +8,7 @@ import { chunk } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
-import { log } from 'shared/utils'
+import { getContract, log } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -23,8 +22,6 @@ import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
 import { convertAnswer } from 'common/supabase/contracts'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
-
-const firestore = admin.firestore()
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
@@ -41,13 +38,10 @@ export const unresolve: APIHandler<'unresolve'> = async (
 
 const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
   const { contractId, answerId } = props
+  const pg = createSupabaseDirectClient()
 
   // Fetch fresh contract & verify within lock.
-  const contractSnap = await firestore
-    .collection('contracts')
-    .doc(contractId)
-    .get()
-  const contract = contractSnap.data() as Contract
+  const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
 
   await verifyUserCanUnresolve(contract, auth.uid, answerId)

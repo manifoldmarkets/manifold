@@ -1,6 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { log, revalidateContractStaticProps, getContract } from 'shared/utils'
-import * as admin from 'firebase-admin'
 import { trackPublicEvent } from 'shared/analytics'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { removeUndefinedProps } from 'common/util/object'
@@ -100,7 +99,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
       )
     }
     log(`Updating lastUpdatedTime for contract ${contract.id}.`)
-    await firestore.collection('contracts').doc(contract.id).update({
+    await updateContract(pg, contract.id, {
       lastUpdatedTime: Date.now(),
     })
 
@@ -115,8 +114,6 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     continue: continuation,
   }
 }
-
-const firestore = admin.firestore()
 
 async function updateContractSubcollectionsVisibility(
   contractId: string,

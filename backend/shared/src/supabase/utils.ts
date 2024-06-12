@@ -1,13 +1,5 @@
-import { noop } from 'lodash'
 import { pgp, SupabaseDirectClient } from './init'
-import {
-  DataFor,
-  Tables,
-  TableName,
-  Column,
-  Row,
-  Selectable,
-} from 'common/supabase/utils'
+import { DataFor, Tables, TableName, Column, Row } from 'common/supabase/utils'
 
 export async function getIds<T extends TableName>(
   db: SupabaseDirectClient,
@@ -98,6 +90,27 @@ export async function bulkUpsert<
     (upsertAssigns ? `do update set ${upsertAssigns}` : `do nothing`)
 
   await db.none(query)
+}
+
+// Replacement for BulkWriter
+export async function bulkUpdateData<T extends TableName>(
+  db: SupabaseDirectClient,
+  table: T,
+  // TODO: explicit id field
+  updates: (Partial<DataFor<T>> & { id: string })[]
+) {
+  if (updates.length > 0) {
+    const values = updates
+      .map((update) => `('${update.id}', '${JSON.stringify(update)}'::jsonb)`)
+      .join(',\n')
+
+    await db.none(
+      `update ${table} as c
+        set data = data || v.update
+      from (values ${values}) as v(id, update)
+      where c.id = v.id`
+    )
+  }
 }
 
 // Replacement for firebase updateDoc. Updates just the data field (what firebase would've replicated to)
