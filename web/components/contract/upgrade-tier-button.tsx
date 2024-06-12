@@ -11,7 +11,7 @@ import { AddLiquidityPanel } from './liquidity-modal'
 import { getAnte, getTieredCost } from 'common/economy'
 import { capitalize } from 'lodash'
 import { CoinNumber } from '../widgets/manaCoinNumber'
-import { TierIcon } from '../tiers/tier-tooltip'
+import { TierIcon, getPresentedTierName } from '../tiers/tier-tooltip'
 import { api } from 'web/lib/firebase/api'
 import { useUser } from 'web/hooks/use-user'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -249,7 +249,7 @@ function UpgradeTier(props: {
       onClick={() => onClick(additionalAmount)}
     >
       <div className="text-4xl sm:text-5xl">{icon}</div>
-      <div className="text-ink-600">{capitalize(tier)}</div>
+      <div className="text-ink-600">{getPresentedTierName(tier)}</div>
       <CoinNumber className="text-xl font-semibold" amount={additionalAmount} />
     </Col>
   )

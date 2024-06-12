@@ -20,6 +20,7 @@ import {
 import { LogoIcon } from '../icons/logo-icon'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { MarketTierType } from 'common/tier'
+import { getPresentedTierName } from '../tiers/tier-tooltip'
 
 export const CostSection = (props: {
   balance: number
@@ -106,8 +107,14 @@ function PriceSection(props: {
             tier="basic"
             icon={
               <LogoIcon
-                className="stroke-ink-600 h-[1em] w-[1em] shrink-0 stroke-[1.5px] transition-transform"
+                className="stroke-ink-600 flex-inline shrink-0 stroke-[1.5px]"
                 aria-hidden
+                style={{
+                  width: '1em',
+                  height: '1em',
+                  marginRight: '0.1em',
+                  marginBottom: '0.1em',
+                }}
               />
             }
             outcomeType={outcomeType}
@@ -183,7 +190,7 @@ function Tier(props: {
     >
       <div className="text-5xl sm:text-4xl">{icon}</div>
       <Col className="sm:items-center">
-        <div className="text-ink-600">{capitalize(tier)}</div>
+        <div className="text-ink-600">{getPresentedTierName(tier)}</div>
         <CoinNumber
           className="text-xl font-semibold"
           amount={getTieredCost(baseCost, tier, outcomeType)}

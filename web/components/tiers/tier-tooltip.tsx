@@ -59,11 +59,18 @@ export function TierTooltip(props: {
               : ''
           )}
         >
-          {capitalize(tier)}
+          {getPresentedTierName(tier)}
         </div>
       )}
     </Tooltip>
   )
+}
+
+export function getPresentedTierName(tier: MarketTierType) {
+  if (tier == 'play') {
+    return 'Mini'
+  }
+  return capitalize(tier)
 }
 
 export function TierIcon(props: { tier: MarketTierType; className?: string }) {
