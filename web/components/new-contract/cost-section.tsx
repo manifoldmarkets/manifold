@@ -8,7 +8,6 @@ import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
 import { getTieredCost } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { capitalize } from 'lodash'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { Button } from 'web/components/buttons/button'
 import {
