@@ -1,53 +1,52 @@
-
 create table if not exists
-    contracts (
-                  id text not null primary key,
-                  slug text,
-                  question text,
-                  creator_id text,
-                  visibility text,
-                  mechanism text,
-                  outcome_type text,
-                  created_time timestamptz,
-                  close_time timestamptz,
-                  resolution_time timestamptz,
-                  resolution_probability numeric,
-                  resolution text,
-                  is_spice_payout boolean default false,
-                  popularity_score numeric,
-                  importance_score numeric,
-                  freshness_score numeric default 0,
-                  conversion_score numeric default 0,
-                  view_count bigint default 0,
-                  data jsonb not null,
-                  question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
-                  question_nostop_fts tsvector generated always as (
-                         to_tsvector('english_nostop_with_prefix'::regconfig, question)
-                         ) stored,
-                  description_fts tsvector generated always as (
-                         to_tsvector(
-                                 'english'::regconfig,
-                                 add_creator_name_to_description (data)
-                         )
-                         ) stored,
-                  fs_updated_time timestamp not null,
-                  deleted boolean default false,
-                  group_slugs text[],
-                  last_updated_time timestamptz,
-                  last_bet_time timestamptz,
-                  last_comment_time timestamptz,
-                  is_politics boolean default false,
-                  unique_bettor_count bigint not null default 0,
-                  tier text
-);
+  contracts (
+    id text not null primary key,
+    slug text,
+    question text,
+    creator_id text,
+    visibility text,
+    mechanism text,
+    outcome_type text,
+    created_time timestamptz,
+    close_time timestamptz,
+    resolution_time timestamptz,
+    resolution_probability numeric,
+    resolution text,
+    is_spice_payout boolean default false,
+    popularity_score numeric,
+    importance_score numeric,
+    freshness_score numeric default 0,
+    conversion_score numeric default 0,
+    view_count bigint default 0,
+    data jsonb not null,
+    question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
+    question_nostop_fts tsvector generated always as (
+      to_tsvector('english_nostop_with_prefix'::regconfig, question)
+    ) stored,
+    description_fts tsvector generated always as (
+      to_tsvector(
+        'english'::regconfig,
+        add_creator_name_to_description (data)
+      )
+    ) stored,
+    fs_updated_time timestamp not null,
+    deleted boolean default false,
+    group_slugs text[],
+    last_updated_time timestamptz,
+    last_bet_time timestamptz,
+    last_comment_time timestamptz,
+    is_politics boolean default false,
+    unique_bettor_count bigint not null default 0,
+    tier text
+  );
 
 alter table contracts enable row level security;
 
 drop policy if exists "public read" on contracts;
 
 create policy "public read" on contracts for
-    select
-    using (true);
+select
+  using (true);
 
 create index if not exists contracts_slug on contracts (slug);
 
@@ -69,16 +68,21 @@ create index if not exists contracts_freshness_score on contracts (freshness_sco
 
 create index if not exists question_nostop_fts on contracts using gin (question_nostop_fts);
 
-create index if not exists idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
-create index if not exists idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
+create index if not exists idx_lover_user_id1 on contracts ((data ->> 'loverUserId1'))
+where
+  data ->> 'loverUserId1' is not null;
+
+create index if not exists idx_lover_user_id2 on contracts ((data ->> 'loverUserId2'))
+where
+  data ->> 'loverUserId2' is not null;
 
 create index concurrently if not exists contracts_politics on contracts (is_politics);
 
 alter table contracts
-    cluster on contracts_creator_id;
+cluster on contracts_creator_id;
 
 create
-    or replace function contract_populate_cols () returns trigger language plpgsql as $$
+or replace function contract_populate_cols () returns trigger language plpgsql as $$
 begin
     if new.data is not null then
         new.slug := (new.data) ->> 'slug';
@@ -130,6 +134,6 @@ end
 $$;
 
 create trigger contract_populate before insert
-    or
-    update on contracts for each row
+or
+update on contracts for each row
 execute function contract_populate_cols ();
