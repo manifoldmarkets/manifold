@@ -1,7 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import * as Tone from 'tone'
-import { useApiSubscription } from 'web/hooks/use-api-subscription'
-import { first } from 'lodash'
 import { Bet } from 'common/bet'
 import { Button } from 'web/components/buttons/button'
 import {
@@ -12,6 +10,8 @@ import { useEvent } from 'web/hooks/use-event'
 import { Row } from 'web/components/layout/row'
 import { RefreshIcon } from '@heroicons/react/solid'
 import { getTransport, GrainPlayer } from 'tone'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
+
 type ToneMap = Record<
   string,
   {
@@ -24,6 +24,7 @@ export const SoundtrackPlayer = () => {
   const [enabled, setEnabled] = useState(true)
   const [toneMap, setToneMap] = useState<ToneMap>({})
   const [loading, setLoading] = useState(false)
+  const [oldBets, setOldBets] = useState<Bet[]>([])
 
   const notesInScale = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
   const allAvailableNotes = [1, 2, 3, 4]
@@ -136,18 +137,32 @@ export const SoundtrackPlayer = () => {
     console.log('loaded sounds', newToneMap)
     getTransport().start()
   }
-
-  useApiSubscription({
-    enabled,
-    topics: ['global/new-bet'],
-    onBroadcast: (msg) => {
-      const bet = first(msg.data.bets as Bet[]) as Bet
-      onNewBet(bet)
-    },
-    onError: (err) => {
-      console.error('Error in bets soundtrack subscription', err)
-    },
+  const { rows: realtimeBets } = useRealtimeBets({
+    limit: 10,
+    filterRedemptions: true,
+    order: 'desc',
   })
+  useEffect(() => {
+    if (!realtimeBets) return
+    const newBets = realtimeBets.filter(
+      (b) => !oldBets.some((ob) => ob.id === b.id)
+    )
+    setOldBets(realtimeBets)
+    newBets.forEach((bet) => {
+      onNewBet(bet)
+    })
+  }, [realtimeBets?.length])
+  // useApiSubscription({
+  //   enabled,
+  //   topics: ['global/new-bet'],
+  //   onBroadcast: (msg) => {
+  //     const bet = first(msg.data.bets as Bet[]) as Bet
+  //     onNewBet(bet)
+  //   },
+  //   onError: (err) => {
+  //     console.error('Error in bets soundtrack subscription', err)
+  //   },
+  // })
   return (
     <Row>
       <Button color={'gray-white'} loading={loading} onClick={loadSounds}>
