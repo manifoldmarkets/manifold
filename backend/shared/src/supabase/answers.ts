@@ -2,7 +2,7 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import { groupBy } from 'lodash'
 import { Answer } from 'common/answer'
-import { bulkInsert, updateData, insert as upsert } from './utils'
+import { bulkInsert, updateData, insert } from './utils'
 import { randomString } from 'common/util/random'
 import { removeUndefinedProps } from 'common/util/object'
 import { millisToTs } from 'common/supabase/utils'
@@ -45,7 +45,7 @@ export const insertAnswer = async (
   pg: SupabaseDirectClient,
   ans: Omit<Answer, 'id'>
 ) => {
-  return await upsert(pg, 'answers', answerToRow(ans))
+  return await insert(pg, 'answers', answerToRow(ans))
 }
 
 export const bulkInsertAnswers = async (
@@ -63,24 +63,6 @@ export const updateAnswer = async (
   update: Partial<Answer>
 ) => {
   return convertAnswer(await updateData(pg, 'answers', 'id', { ...update, id }))
-}
-
-export const bulkUpdateAnswers = async (
-  pg: SupabaseDirectClient,
-  answers: (Partial<Answer> & { id: string })[]
-) => {
-  if (answers.length > 0) {
-    const values = answers
-      .map((ans) => `('${ans.id}', '${JSON.stringify(ans)}'::jsonb)`)
-      .join(',\n')
-
-    await pg.none(
-      `update answers as a
-        set data = data || v.update
-      from (values ${values}) as v(id, update)
-      where a.id = v.id`
-    )
-  }
 }
 
 export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({

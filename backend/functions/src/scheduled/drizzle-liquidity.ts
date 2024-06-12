@@ -17,7 +17,6 @@ import {
 } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import {
-  bulkUpdateAnswers,
   getAnswer,
   getAnswersForContract,
   updateAnswer,
@@ -26,6 +25,7 @@ import { runShortTrans } from 'shared/short-transaction'
 import { secrets } from 'common/secrets'
 import { getContract } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
+import { bulkUpdateData } from 'shared/supabase/utils'
 
 export const drizzleLiquidity = async () => {
   const pg = createSupabaseDirectClient()
@@ -88,7 +88,7 @@ const drizzleMarket = async (contractId: string) => {
         prob: getCpmmProbability(newPool, 0.5),
       }))
 
-      await bulkUpdateAnswers(pgTrans, answerUpdates)
+      await bulkUpdateData(pgTrans, 'answers', answerUpdates)
 
       await updateContract(pgTrans, contract.id, {
         subsidyPool: subsidyPool - amount,
