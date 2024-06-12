@@ -176,9 +176,24 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (reason === 'limit_order_cancelled') {
+  } else if (
+    reason === 'limit_order_cancelled' &&
+    sourceUpdateType === 'updated'
+  ) {
     return (
       <LimitOrderCancelledNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (
+    reason === 'limit_order_cancelled' &&
+    sourceUpdateType === 'expired'
+  ) {
+    return (
+      <LimitOrderExpiredNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -471,6 +486,75 @@ function LimitOrderCancelledNotification(props: {
       setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'🚫'} />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        {description}
+        {!isChildOfGroup && (
+          <span>
+            on <PrimaryNotificationLink text={sourceContractTitle} />
+          </span>
+        )}
+      </div>
+    </NotificationFrame>
+  )
+}
+function LimitOrderExpiredNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceText, data, sourceContractTitle } = notification
+  const {
+    creatorOutcome,
+    probability,
+    limitAt: dataLimitAt,
+    outcomeType,
+  } = (data as BetFillData) ?? {}
+  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'))
+  const limitAt =
+    dataLimitAt !== undefined
+      ? dataLimitAt
+      : Math.round(probability * 100) + '%'
+
+  const outcome =
+    outcomeType === 'PSEUDO_NUMERIC'
+      ? creatorOutcome === 'YES'
+        ? ' HIGHER'
+        : ' LOWER'
+      : creatorOutcome
+  const color =
+    creatorOutcome === 'YES'
+      ? 'text-teal-600'
+      : creatorOutcome === 'NO'
+      ? 'text-scarlet-600'
+      : 'text-blue-600'
+  const description = (
+    <span>
+      Your<span className={clsx('mx-1', color)}>{outcome}</span>
+      limit order for {amountRemaining} at {limitAt} has expired{' '}
+    </span>
+  )
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon
+          notification={
+            {
+              sourceUserName: MANIFOLD_USER_NAME,
+              sourceUserUsername: MANIFOLD_USER_USERNAME,
+              sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+            } as Notification
+          }
+          symbol={'🚫'}
+        />
       }
       link={getSourceUrl(notification)}
     >

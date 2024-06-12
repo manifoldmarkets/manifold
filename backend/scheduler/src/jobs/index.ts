@@ -22,6 +22,7 @@ import { resetWeeklyEmailsFlags } from 'replicator/jobs/reset-weekly-emails-flag
 import { calculateGroupImportanceScore } from 'shared/group-importance-score'
 import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
 import { sendStreakExpirationNotification } from 'replicator/jobs/streak-expiration-notice'
+import { expireLimitOrders } from 'shared/expire-limit-orders'
 
 export function createJobs() {
   return [
@@ -67,6 +68,11 @@ export function createJobs() {
       '0 * * * * *', // every minute
       () => updateUserMetricsCore(),
       10 * MINUTE_MS // The caches take time to build
+    ),
+    createJob(
+      'expire-limit-orders',
+      '0 */10 * * * *', // every 10 minutes
+      expireLimitOrders
     ),
     // Daily jobs:
     createJob(

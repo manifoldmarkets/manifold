@@ -93,6 +93,7 @@ export type notification_source_update_types =
   | 'deleted'
   | 'closed'
   | 'canceled'
+  | 'expired'
 
 /** @deprecated - use a notification_preference (in user-notification-preferences.ts) */
 export type notification_reason_types =
@@ -168,8 +169,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'New questions from users you follow',
   },
   limit_order_fills: {
-    simple: 'Limit order fills',
-    detailed: 'When your limit order is filled by another user',
+    simple: 'Limit order fills, expirations, and cancellations',
+    detailed: 'When your limit order fills, cancels, or expires',
   },
   loan_income: {
     simple: 'Automatic loans from your predictions in unresolved questions',
