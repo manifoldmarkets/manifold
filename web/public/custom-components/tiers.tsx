@@ -1,17 +1,27 @@
 import clsx from 'clsx'
 import { BiGame } from 'react-icons/bi'
+import { PiDiamond, PiDiamondFill } from 'react-icons/pi'
+import { IoTriangle, IoTriangleOutline } from 'react-icons/io5'
 
 export function PlayTier(props: { className?: string }) {
   const { className } = props
   return (
-    <BiGame
-      className={clsx('inline-block', className)}
+    <div
+      className="inline-flex items-center justify-center"
       style={{
         width: '1em',
         height: '1em',
         marginRight: '0.1em',
       }}
-    />
+    >
+      <PiDiamond
+        className={clsx('text-ink-400 mx-auto my-auto', className)}
+        style={{
+          width: '.7em',
+          height: '.7em',
+        }}
+      />
+    </div>
   )
 }
 
