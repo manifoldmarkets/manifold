@@ -35,7 +35,6 @@ import { convertTxn } from 'common/supabase/txns'
 import { bulkIncrementBalances } from './supabase/users'
 import { convertBet } from 'common/supabase/bets'
 import { convertLiquidity } from 'common/supabase/liquidity'
-import { broadcastUpdatedAnswer } from './websockets/helpers'
 import { updateAnswer } from './supabase/answers'
 import { updateContract } from './supabase/contracts'
 
@@ -197,16 +196,14 @@ export const resolveMarketHelper = async (
   }
   if (updateAnswerAttrs && answerId) {
     const props = removeUndefinedProps(updateAnswerAttrs)
-    const updated = await updateAnswer(pg, answerId, props)
-    broadcastUpdatedAnswer(contract, updated)
+    await updateAnswer(pg, answerId, props)
   } else if (
     updateAnswerAttrs &&
     unresolvedContract.mechanism === 'cpmm-multi-1'
   ) {
     for (const answer of unresolvedContract.answers) {
       const props = removeUndefinedProps(updateAnswerAttrs)
-      const updated = await updateAnswer(pg, answer.id, props)
-      broadcastUpdatedAnswer(contract, updated)
+      await updateAnswer(pg, answer.id, props)
     }
   }
   log('processing payouts', { payouts })

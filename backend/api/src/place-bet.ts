@@ -204,14 +204,7 @@ export const placeBetMain = async (
   metrics.inc('app/bet_count', { contract_id: contractId })
 
   const continuation = async () => {
-    await onCreateBets(
-      fullBets,
-      contract,
-      user,
-      allOrdersToCancel,
-      makers,
-      answerId
-    )
+    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
   }
 
   return {
@@ -432,8 +425,7 @@ export const processNewBetResult = async (
           pool: newPool,
           p: newP,
           totalLiquidity: newTotalLiquidity,
-        }),
-        { silent: true }
+        })
       )
     }
 

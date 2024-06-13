@@ -266,7 +266,7 @@ const undoResolution = async (
       [contractId],
       convertAnswer
     )
-    newAnswers.forEach((ans) => broadcastUpdatedAnswer(contract, ans))
+    newAnswers.forEach(broadcastUpdatedAnswer)
   } else if (answerId) {
     const answer = await pg.one(
       `update answers
@@ -276,7 +276,7 @@ const undoResolution = async (
       [answerId],
       convertAnswer
     )
-    broadcastUpdatedAnswer(contract, answer)
+    broadcastUpdatedAnswer(answer)
   }
 
   log('updated contract')

@@ -245,8 +245,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
           pool: newPool,
           p: newP,
           volume: volume + Math.abs(newBet.amount),
-        }),
-        { silent: true }
+        })
       )
     } else if (newBet.answerId) {
       const prob = getCpmmProbability(newPool, 0.5)
@@ -324,14 +323,10 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   }
 
   const continuation = async () => {
-    await onCreateBets(
-      fullBets,
-      contract,
-      user,
-      allOrdersToCancel,
-      [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)],
-      answerId
-    )
+    await onCreateBets(fullBets, contract, user, allOrdersToCancel, [
+      ...makers,
+      ...otherResultsWithBet.flatMap((r) => r.makers),
+    ])
   }
   return { result: { ...newBet, betId }, continue: continuation }
 }

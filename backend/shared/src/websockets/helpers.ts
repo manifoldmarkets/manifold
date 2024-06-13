@@ -1,18 +1,17 @@
 import { broadcast, broadcastMulti } from './server'
 import { Bet, LimitBet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { Contract, Visibility } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
 import { Answer } from 'common/answer'
 
 type ContractChange = Partial<Contract> & { id: string }
 
-export function broadcastNewBets(contract: ContractChange, bets: Bet[]) {
-  const payload = { contract, bets }
-  const contractTopic = `contract/${contract.id}`
-  broadcastMulti([contractTopic, `${contractTopic}/new-bet`], payload)
+export function broadcastNewBets(contractId: string, bets: Bet[]) {
+  const payload = { bets }
+  broadcastMulti([`contract/${contractId}/new-bet`], payload)
 
-  if (contract.visibility === 'public') {
+  if (bets.every((b) => b.visibility === 'public')) {
     broadcastMulti(['global', 'global/new-bet'], payload)
   }
 
@@ -27,14 +26,13 @@ export function broadcastOrders(bets: LimitBet[]) {
 }
 
 export function broadcastNewComment(
-  contract: Contract,
+  contractId: string,
   creator: User,
   comment: ContractComment
 ) {
   const payload = { creator, comment }
-  const contractTopic = `contract/${contract.id}`
-  const topics = [`${contractTopic}/new-comment`]
-  if (contract.visibility === 'public') {
+  const topics = [`contract/${contractId}/new-comment`]
+  if (comment.visibility === 'public') {
     topics.push('global', 'global/new-comment')
   }
   broadcastMulti(topics, payload)
@@ -47,11 +45,14 @@ export function broadcastNewContract(contract: Contract, creator: User) {
   }
 }
 
-export function broadcastNewSubsidy(contract: ContractChange, amount: number) {
-  const payload = { contract, amount }
-  const contractTopic = `contract/${contract.id}`
-  const topics = [contractTopic, `${contractTopic}/new-subsidy`]
-  if (contract.visibility === 'public') {
+export function broadcastNewSubsidy(
+  contractId: string,
+  visibility: Visibility,
+  amount: number
+) {
+  const payload = { amount }
+  const topics = [`contract/${contractId}/new-subsidy`]
+  if (visibility === 'public') {
     topics.push('global', 'global/new-subsidy')
   }
   broadcastMulti(topics, payload)
@@ -59,27 +60,20 @@ export function broadcastNewSubsidy(contract: ContractChange, amount: number) {
 
 export function broadcastUpdatedContract(contract: ContractChange) {
   const payload = { contract }
-  const contractTopic = `contract/${contract.id}`
-  const topics = [contractTopic, `${contractTopic}/updated-metadata`]
+  const topics = [`contract/${contract.id}`]
   broadcastMulti(topics, payload)
 }
 
-export function broadcastNewAnswer(contract: Contract, answer: Answer) {
+export function broadcastNewAnswer(answer: Answer) {
   const payload = { answer }
-  const contractTopic = `contract/${contract.id}`
-  const topics = [`${contractTopic}/new-answer`]
-  if (contract.visibility === 'public') {
-    topics.push('global', 'global/new-answer')
-  }
+  const topics = [`contract/${answer.contractId}/new-answer`]
+  // TODO: broadcast to global. we don't do this rn cuz too lazy get contract visibility to filter out unlisted
   broadcastMulti(topics, payload)
 }
 
-export function broadcastUpdatedAnswer(contract: Contract, answer: Answer) {
+export function broadcastUpdatedAnswer(answer: Answer) {
   const payload = { answer }
-  const contractTopic = `contract/${contract.id}`
-  const topics = [`${contractTopic}/updated-answer`]
-  if (contract.visibility === 'public') {
-    topics.push('global', 'global/updated-answer')
-  }
+  const topics = [`contract/${answer.contractId}/updated-answer`]
+  // TODO: broadcast to global
   broadcastMulti(topics, payload)
 }

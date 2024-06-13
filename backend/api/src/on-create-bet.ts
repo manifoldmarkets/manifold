@@ -4,7 +4,6 @@ import {
   revalidateContractStaticProps,
   getBettingStreakResetTimeBeforeNow,
   getUser,
-  getContract,
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -69,45 +68,17 @@ import { track } from 'shared/analytics'
 import { Fees } from 'common/fees'
 import { APIError } from 'common/api/utils'
 import { updateUser } from 'shared/supabase/users'
-import {
-  broadcastNewBets,
-  broadcastUpdatedAnswer,
-} from 'shared/websockets/helpers'
-import { getAnswer, getAnswersForContract } from 'shared/supabase/answers'
+import { broadcastNewBets } from 'shared/websockets/helpers'
 
 export const onCreateBets = async (
   bets: Bet[],
   contract: Contract,
   originalBettor: User,
   ordersToCancel: LimitBet[] | undefined,
-  makers: maker[] | undefined,
-  answerId: string | undefined
+  makers: maker[] | undefined
 ) => {
   const pg = createSupabaseDirectClient()
-
-  if (contract.mechanism === 'cpmm-multi-1') {
-    broadcastNewBets({ id: contract.id }, bets) // No changes to contract
-    const pg = createSupabaseDirectClient()
-    if (!contract.shouldAnswersSumToOne && answerId) {
-      const answer = await getAnswer(pg, answerId)
-      if (answer) broadcastUpdatedAnswer(contract, answer)
-    } else {
-      const answers = await getAnswersForContract(pg, contract.id)
-      answers.forEach((answer) => broadcastUpdatedAnswer(contract, answer))
-    }
-  } else if (contract.mechanism === 'cpmm-1') {
-    const newContract = (await getContract(pg, contract.id)) as typeof contract
-    if (newContract) {
-      const updates = {
-        id: newContract.id,
-        prob: newContract.prob,
-        pool: newContract.pool,
-        p: newContract.p,
-        visibility: newContract.visibility,
-      }
-      broadcastNewBets(updates, bets)
-    }
-  }
+  broadcastNewBets(contract.id, bets)
 
   if (ordersToCancel) {
     await Promise.all(

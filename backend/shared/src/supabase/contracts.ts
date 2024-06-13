@@ -204,17 +204,14 @@ export const generateContractEmbeddings = async (
 export const updateContract = async (
   pg: SupabaseDirectClient,
   contractId: string,
-  update: DataUpdate<'contracts'>,
-  options?: { silent?: boolean }
+  update: DataUpdate<'contracts'>
 ) => {
   const fullUpdate = { ...update, id: contractId }
   const newContract = convertContract(
     await updateData(pg, 'contracts', 'id', fullUpdate)
   )
-  if (!options?.silent) {
-    broadcastUpdatedContract(
-      mapKeys(fullUpdate, (_, key) => newContract[key as keyof Contract]) as any
-    )
-  }
+  broadcastUpdatedContract(
+    mapKeys(fullUpdate, (_, key) => newContract[key as keyof Contract]) as any
+  )
   return newContract
 }
