@@ -85,7 +85,7 @@ module.exports = {
       },
       {
         source: '/sitemap',
-        destination: '/about',
+        destination: '/sitemap',
         permanent: true,
       },
       {
