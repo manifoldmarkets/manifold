@@ -9,17 +9,26 @@ import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
 import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 
-export const ExplainerPanel = (props: { className?: string }) => {
-  const { className } = props
+export const ExplainerPanel = (props: {
+  className?: string
+  showWhatIsManifold?: boolean
+  showAccuracy?: boolean
+  showWhyBet?: boolean
+}) => {
+  const {
+    className,
+    showWhatIsManifold = true,
+    showAccuracy = true,
+    showWhyBet = true,
+  } = props
   const handleSectionClick = (sectionTitle: string) => {
     track('explainer section click', { sectionTitle })
   }
   return (
     <Col className={clsx(className)}>
-      <h2 className={clsx('text-ink-600 mb-2 text-xl')}>What is this?</h2>
-      <Accuracy onClick={handleSectionClick} />
-      <WhatAreOdds onClick={handleSectionClick} />
-      <WhyShouldI onClick={handleSectionClick} />
+      {showWhatIsManifold && <WhatIsManifold onClick={handleSectionClick} />}
+      {showAccuracy && <Accuracy onClick={handleSectionClick} />}
+      {showWhyBet && <WhyBet onClick={handleSectionClick} />}
     </Col>
   )
 }
@@ -32,7 +41,7 @@ export const ExpandSection = (props: {
   const { title, children, onClick } = props
 
   return (
-    <Card className="mb-4">
+    <Card className="my-2">
       <details className="group flex flex-col gap-2">
         <summary className="flex list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
           <Row className="items-center text-lg font-semibold">{title}</Row>
@@ -50,7 +59,7 @@ export const ExpandSection = (props: {
   )
 }
 
-const WhatAreOdds = ({
+const WhatIsManifold = ({
   onClick,
 }: {
   onClick: (sectionTitle: string) => void
@@ -59,25 +68,24 @@ const WhatAreOdds = ({
     title={
       <Row className="items-start">
         <FaPercentage className="mr-2 mt-[0.25em] flex-shrink-0 align-text-bottom" />{' '}
-        What are the odds?
+        What is Manifold?
       </Row>
     }
-    onClick={() => onClick('What are the odds?')}
+    onClick={() => onClick('What is Manifold?')}
   >
-    <div className="pb-2">The odds are the chance that the event happens.</div>
     <div className="pb-2">
-      The odds are set by traders who have insight into the question weighted
-      proportional to their confidence (bet size) and how correct they've been
-      in the past (balance).
+      Manifold lets you bet on upcoming events using play money. As other users
+      bet against you, it creates a probability of how likely the event will
+      happen—this is known as a prediction market.
+    </div>
+    <div className="pb-2">
+      Bet on current events, politics, tech, and AI, or create your own market
+      about an event you care about for others to trade on!
     </div>
   </ExpandSection>
 )
 
-const WhyShouldI = ({
-  onClick,
-}: {
-  onClick: (sectionTitle: string) => void
-}) => (
+const WhyBet = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
   <ExpandSection
     title={
       <>
@@ -86,16 +94,25 @@ const WhyShouldI = ({
     }
     onClick={() => onClick('Why should I bet?')}
   >
-    {SPICE_PRODUCTION_ENABLED && (
-      <div className="pb-2">
-        By betting, you can win prize points which are redeemable for real cash
-        charity donations
-      </div>
-    )}
     <div className="pb-2">
-      Betting on questions provides accurate answers of important real, world
+      Betting contributes to accurate answers of important, real-world
       questions.
     </div>
+    {SPICE_PRODUCTION_ENABLED && (
+      <div className="pb-2">
+        Bet to win prizepoints! Redeem them and we will donate to a charity of
+        your choice. Our users have{' '}
+        <a
+          className="text-primary-700 hover:underline"
+          target="_blank"
+          href="https://manifold.markets/calibration"
+        >
+          raised over $300,000 for charity
+        </a>{' '}
+        so far!
+      </div>
+    )}
+
     <div className="pb-2">Get started for free! No credit card required.</div>
   </ExpandSection>
 )
@@ -104,13 +121,13 @@ const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
   <ExpandSection
     title={
       <>
-        <TbTargetArrow className="mr-2" /> Are our forecasts accurate?
+        <TbTargetArrow className="mr-2" /> Are our predictions accurate?
       </>
     }
     onClick={() => onClick('Are our forecasts accurate?')}
   >
     <div className="pb-2">
-      Manifold is{' '}
+      Yes! Manifold is{' '}
       <a
         className="text-primary-700 hover:underline"
         target="_blank"
@@ -119,20 +136,20 @@ const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
         very well calibrated
       </a>
       , with forecasts on average within <strong>4 percentage points</strong> of
-      the true probability.
+      the true probability. Our probabilities are created by users buying and
+      selling shares of a market.
     </div>
     <div className="pb-2">
-      By using the combined wisdom of thousands of users, we outperform
-      real-money platforms. For example, in the{' '}
+      In the 2022 US midterm elections, we {''}
       <a
         className="text-primary-700 hover:underline"
         target="_blank"
         href="https://firstsigma.substack.com/p/midterm-elections-forecast-comparison-analysis"
       >
-        2022 US midterm elections
+        outperformed all other prediction market platforms {''}
       </a>
-      , we outperformed all prediction markets and were in line with
-      FiveThirtyEight’s performance.
+      and were in line with FiveThirtyEight’s performance. Many people who don't
+      like betting still use Manifold to get reliable news.
     </div>
     <div></div>
   </ExpandSection>

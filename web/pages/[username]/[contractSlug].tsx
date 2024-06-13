@@ -551,7 +551,10 @@ export function ContractPageContent(props: ContractParams) {
               />
             )}
             {showExplainerPanel && (
-              <ExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden" />
+              <div className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden">
+                <h2 className={clsx('text-ink-600  text-xl')}>What is this?</h2>
+                <ExplainerPanel />
+              </div>
             )}
             {comments.length > 3 && (
               <RelatedContractsGrid
@@ -602,7 +605,12 @@ export function ContractPageContent(props: ContractParams) {
           </Col>
         </Col>
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
-          {showExplainerPanel && <ExplainerPanel />}
+          {showExplainerPanel && (
+            <div>
+              <h2 className={clsx('text-ink-600  text-xl')}>What is this?</h2>
+              <ExplainerPanel />
+            </div>
+          )}
 
           <SidebarRelatedContractsList
             contracts={relatedMarkets}
