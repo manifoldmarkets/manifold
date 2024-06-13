@@ -83,7 +83,7 @@ module.exports = {
         destination: '/lab',
         permanent: true,
       },
-    
+
       {
         source: '/versus',
         destination: '/VersusBot?tab=questions',
