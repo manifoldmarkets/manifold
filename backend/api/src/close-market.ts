@@ -28,7 +28,7 @@ export const closeMarket: APIHandler<'market/:contractId/close'> = async (
         'Alternatively, do not provide a close time to close immediately.'
     )
 
-  updateContract(pg, contractId, {
+  await updateContract(pg, contractId, {
     closeTime: closeTime ? closeTime : now,
   })
 
