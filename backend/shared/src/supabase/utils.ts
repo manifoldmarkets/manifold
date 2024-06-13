@@ -1,3 +1,4 @@
+import { sortBy } from 'lodash'
 import { pgp, SupabaseDirectClient } from './init'
 import { DataFor, Tables, TableName, Column, Row } from 'common/supabase/utils'
 
@@ -134,10 +135,14 @@ export async function updateData<T extends TableName>(
       basic[key as keyof typeof rest] = val
     }
   }
+  const sortedExtraOperations = sortBy(extras, (statement) =>
+    statement.startsWith('-') ? -1 : 1
+  )
 
   return await db.one<Row<T>>(
-    `update ${table} set data = data || $1 
-    ${extras.join('\n')}
+    `update ${table} set data = data
+    ${sortedExtraOperations.join('\n')}
+    || $1
     where ${idField} = '${id}' returning *`,
     [JSON.stringify(basic)]
   )
@@ -149,7 +154,7 @@ export async function updateData<T extends TableName>(
  */
 export const FieldVal = {
   increment: (n: number) => (fieldName: string) =>
-    `|| jsonb_build_object('${fieldName}', data->'${fieldName}' + ${n})`,
+    `|| jsonb_build_object('${fieldName}', (data->'${fieldName}')::numeric + ${n})`,
 
   delete: () => (fieldName: string) => `- '${fieldName}'`,
 
