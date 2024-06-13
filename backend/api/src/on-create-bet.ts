@@ -78,7 +78,7 @@ export const onCreateBets = async (
   makers: maker[] | undefined
 ) => {
   const pg = createSupabaseDirectClient()
-  broadcastNewBets(contract.id, bets)
+  broadcastNewBets(contract.id, contract.visibility, bets)
 
   if (ordersToCancel) {
     await Promise.all(

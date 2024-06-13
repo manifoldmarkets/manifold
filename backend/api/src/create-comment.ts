@@ -121,7 +121,7 @@ export const createCommentOnContractInternal = async (
   if (ret.error) {
     throw new APIError(500, 'Failed to create comment: ' + ret.error.message)
   }
-  broadcastNewComment(contractId, creator, comment)
+  broadcastNewComment(contractId, contract.visibility, creator, comment)
 
   return {
     result: comment,

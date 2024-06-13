@@ -7,11 +7,15 @@ import { Answer } from 'common/answer'
 
 type ContractChange = Partial<Contract> & { id: string }
 
-export function broadcastNewBets(contractId: string, bets: Bet[]) {
+export function broadcastNewBets(
+  contractId: string,
+  visibility: Visibility,
+  bets: Bet[]
+) {
   const payload = { bets }
   broadcastMulti([`contract/${contractId}/new-bet`], payload)
 
-  if (bets.every((b) => b.visibility === 'public')) {
+  if (visibility === 'public') {
     broadcastMulti(['global', 'global/new-bet'], payload)
   }
 
@@ -27,12 +31,13 @@ export function broadcastOrders(bets: LimitBet[]) {
 
 export function broadcastNewComment(
   contractId: string,
+  visibility: Visibility,
   creator: User,
   comment: ContractComment
 ) {
   const payload = { creator, comment }
   const topics = [`contract/${contractId}/new-comment`]
-  if (comment.visibility === 'public') {
+  if (visibility === 'public') {
     topics.push('global', 'global/new-comment')
   }
   broadcastMulti(topics, payload)
@@ -58,9 +63,15 @@ export function broadcastNewSubsidy(
   broadcastMulti(topics, payload)
 }
 
-export function broadcastUpdatedContract(contract: ContractChange) {
+export function broadcastUpdatedContract(
+  visibility: Visibility,
+  contract: ContractChange
+) {
   const payload = { contract }
   const topics = [`contract/${contract.id}`]
+  if (visibility === 'public') {
+    topics.push('global', 'global/updated-contract')
+  }
   broadcastMulti(topics, payload)
 }
 

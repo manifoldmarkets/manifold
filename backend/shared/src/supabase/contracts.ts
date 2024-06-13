@@ -211,6 +211,7 @@ export const updateContract = async (
     await updateData(pg, 'contracts', 'id', fullUpdate)
   )
   broadcastUpdatedContract(
+    newContract.visibility,
     mapKeys(fullUpdate, (_, key) => newContract[key as keyof Contract]) as any
   )
   return newContract
