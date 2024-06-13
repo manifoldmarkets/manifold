@@ -51,8 +51,9 @@ export default Node.create<IframeOptions>({
 
   renderHTML({ HTMLAttributes }) {
     const iframeAttributes = mergeAttributes(
-      this.options.HTMLAttributes,
-      HTMLAttributes
+      HTMLAttributes,
+      // Add options second, so they override originals, which prevents a XSS attack.
+      this.options.HTMLAttributes
     )
     const { src } = HTMLAttributes
 
