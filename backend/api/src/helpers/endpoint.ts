@@ -12,6 +12,7 @@ import {
   APISchema,
   ValidatedAPIParams,
 } from 'common/api/schema'
+import { log } from 'shared/utils'
 
 export type Json = Record<string, unknown> | Json[]
 export type JsonHandler<T extends Json> = (
@@ -101,6 +102,9 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
         error: i.message,
       }
     })
+    if (issues.length > 0) {
+      log.error(issues.map((i) => `${i.field}: ${i.error}`).join('\n'))
+    }
     throw new APIError(400, 'Error validating request.', issues)
   } else {
     return result.data as z.infer<T>

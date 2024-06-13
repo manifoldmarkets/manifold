@@ -283,6 +283,15 @@ export const getUsers = async (
 export const getPrivateUser = (userId: string) => {
   return getDoc<PrivateUser>('private-users', userId)
 }
+export const getPrivateUserSupabase = (userId: string) => {
+  const pg = createSupabaseDirectClient()
+
+  return pg.oneOrNone(
+    `select data from private_users where id = $1`,
+    [userId],
+    (row) => row.data as PrivateUser
+  )
+}
 
 export const getAllPrivateUsers = async () => {
   const firestore = admin.firestore()

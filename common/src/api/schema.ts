@@ -197,13 +197,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'phone-number': {
-    method: 'GET',
-    visibility: 'undocumented',
-    authed: true,
-    returns: {} as { number: string },
-    props: z.object({}).strict(),
-  },
   'bet/cancel/:betId': {
     method: 'POST',
     visibility: 'public',
@@ -1239,6 +1232,26 @@ export const API = (_apiTypeCheck = {
         limitDays: z.coerce.number(),
       })
       .strict(),
+  },
+  'register-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      FirstName: z.string(),
+      LastName: z.string(),
+      DateOfBirth: z.string(),
+      CitizenshipCountryCode: z.string(),
+      IdentificationTypeCode: z.number().gte(1).lte(4),
+      IdentificationNumber: z.string(),
+      Latitude: z.number(),
+      Longitude: z.number(),
+      Radius: z.number(),
+      Altitude: z.number(),
+      Speed: z.number(),
+      DateTime: z.string(),
+    }),
+    returns: {} as { status: string },
   },
 } as const)
 
