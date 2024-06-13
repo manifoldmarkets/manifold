@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import { mapValues, groupBy, sum, sumBy, chunk } from 'lodash'
 import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -19,6 +18,7 @@ import {
   isProd,
   checkAndMergePayouts,
   log,
+  getContract,
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common//api/utils'
@@ -35,8 +35,8 @@ import { convertTxn } from 'common/supabase/txns'
 import { bulkIncrementBalances } from './supabase/users'
 import { convertBet } from 'common/supabase/bets'
 import { convertLiquidity } from 'common/supabase/liquidity'
-import { broadcastUpdatedAnswer } from './websockets/helpers'
 import { updateAnswer } from './supabase/answers'
+import { updateContract } from './supabase/contracts'
 
 export type ResolutionParams = {
   outcome: string
@@ -55,12 +55,11 @@ export const resolveMarketHelper = async (
   const pg = createSupabaseDirectClient()
 
   // Fetch fresh contract & check if resolved within lock.
-  const contractSnap = await firestore
-    .collection('contracts')
-    .doc(unresolvedContract.id)
-    .get()
-  unresolvedContract = contractSnap.data() as Contract
-
+  const fetch = await getContract(pg, unresolvedContract.id)
+  if (!fetch) {
+    throw new APIError(500, 'Contract not found')
+  }
+  unresolvedContract = fetch
   if (unresolvedContract.isResolved) {
     throw new APIError(403, 'Contract is already resolved')
   }
@@ -190,25 +189,21 @@ export const resolveMarketHelper = async (
     )
   }
 
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-
   if (updatedContractAttrs) {
     log('updating contract', { updatedContractAttrs })
-    await contractDoc.update(updatedContractAttrs)
+    await updateContract(pg, contractId, updatedContractAttrs)
     log('contract resolved')
   }
   if (updateAnswerAttrs && answerId) {
     const props = removeUndefinedProps(updateAnswerAttrs)
-    const updated = await updateAnswer(pg, answerId, props)
-    broadcastUpdatedAnswer(contract, updated)
+    await updateAnswer(pg, answerId, props)
   } else if (
     updateAnswerAttrs &&
     unresolvedContract.mechanism === 'cpmm-multi-1'
   ) {
     for (const answer of unresolvedContract.answers) {
       const props = removeUndefinedProps(updateAnswerAttrs)
-      const updated = await updateAnswer(pg, answer.id, props)
-      broadcastUpdatedAnswer(contract, updated)
+      await updateAnswer(pg, answer.id, props)
     }
   }
   log('processing payouts', { payouts })
@@ -494,5 +489,3 @@ export const payUsersTransactions = async (
       })
   }
 }
-
-const firestore = admin.firestore()

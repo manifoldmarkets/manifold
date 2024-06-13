@@ -1,19 +1,21 @@
 import * as admin from 'firebase-admin'
 import * as sharp from 'sharp'
 import { JSONContent } from '@tiptap/core'
-
 import { getUser, log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
-
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { createNewContractNotification } from 'shared/create-notification'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  SupabaseDirectClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import {
   generateContractEmbeddings,
   isContractNonPredictive,
+  updateContract,
 } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import {
@@ -89,24 +91,17 @@ export const onCreateMarket = async (
     )
   }
 
-  await uploadAndSetCoverImage(
-    question,
-    contract.id,
-    creatorUsername,
-    firestore
-  )
+  await uploadAndSetCoverImage(pg, question, contract.id, creatorUsername)
 }
 
 const uploadAndSetCoverImage = async (
+  pg: SupabaseDirectClient,
   question: string,
   contractId: string,
-  creatorUsername: string,
-  firestore: admin.firestore.Firestore
+  creatorUsername: string
 ) => {
   const dalleImage = await generateImage(question)
   if (!dalleImage) return
-  // first save the url to the contract
-  const snapshot = await firestore.collection('contracts').doc(contractId).get()
   console.log('generated dalle image: ' + dalleImage)
 
   // Upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
@@ -119,7 +114,7 @@ const uploadAndSetCoverImage = async (
   })
   if (!coverImageUrl) return
 
-  await snapshot.ref.update({ coverImageUrl })
+  await updateContract(pg, contractId, { coverImageUrl })
 }
 
 export const uploadToStorage = async (imgUrl: string, username: string) => {

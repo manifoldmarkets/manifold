@@ -1,11 +1,10 @@
-import * as admin from 'firebase-admin'
 import { z } from 'zod'
-
-import { Contract, contractPath } from 'common/contract'
-import { log, revalidateStaticProps } from 'shared/utils'
-
+import { contractPath } from 'common/contract'
+import { getContract, log, revalidateStaticProps } from 'shared/utils'
 import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateContract } from 'shared/supabase/contracts'
 
 const bodySchema = z
   .object({
@@ -14,12 +13,10 @@ const bodySchema = z
   .strict()
 
 export const deleteMarket = authEndpoint(async (req, auth) => {
+  const pg = createSupabaseDirectClient()
   const { contractId } = validate(bodySchema, req.body)
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-  const contractSnap = await contractDoc.get()
-  if (!contractSnap.exists)
-    throw new APIError(404, 'No contract exists with the provided ID')
-  const contract = contractSnap.data() as Contract
+  const contract = await getContract(pg, contractId)
+  if (!contract) throw new APIError(404, 'Contract not found')
   const { creatorId } = contract
 
   if (creatorId !== auth.uid && !isAdminId(auth.uid))
@@ -35,15 +32,10 @@ export const deleteMarket = authEndpoint(async (req, auth) => {
       'Contract must have less than 2 bettors to be deleted'
     )
 
-  await contractDoc.update({ deleted: true })
-
-  // Note: Wait for 3 seconds to allow the contract to replicated to supabase.
-  await new Promise((resolve) => setTimeout(resolve, 3000))
+  await updateContract(pg, contractId, { deleted: true })
   await revalidateStaticProps(contractPath(contract))
 
   log('contract ' + contractId + ' deleted')
 
   return { status: 'success' }
 })
-
-const firestore = admin.firestore()

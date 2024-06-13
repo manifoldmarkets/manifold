@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import { compact } from 'lodash'
 import { log, revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
@@ -16,8 +15,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { insertModReport } from 'shared/create-mod-report'
-
-const firestore = admin.firestore()
+import { updateContract } from 'shared/supabase/contracts'
 
 export const onCreateCommentOnContract = async (props: {
   contract: Contract
@@ -40,10 +38,10 @@ export const onCreateCommentOnContract = async (props: {
 
   await addUserToContractFollowers(contract.id, creator.id)
 
-  await firestore
-    .collection('contracts')
-    .doc(contract.id)
-    .update({ lastCommentTime, lastUpdatedTime: Date.now() })
+  await updateContract(pg, contract.id, {
+    lastCommentTime,
+    lastUpdatedTime: Date.now(),
+  })
 
   await handleCommentNotifications(pg, comment, contract, creator, bet)
 }

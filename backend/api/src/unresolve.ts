@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import {
   ContractOldResolutionPayoutTxn,
   ContractProduceSpiceTxn,
@@ -9,7 +8,7 @@ import { chunk } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
-import { log } from 'shared/utils'
+import { getContract, log } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -21,8 +20,8 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 import { assert } from 'common/util/assert'
 import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
 import { convertAnswer } from 'common/supabase/contracts'
-
-const firestore = admin.firestore()
+import { updateContract } from 'shared/supabase/contracts'
+import { FieldVal } from 'shared/supabase/utils'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
@@ -39,13 +38,10 @@ export const unresolve: APIHandler<'unresolve'> = async (
 
 const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
   const { contractId, answerId } = props
+  const pg = createSupabaseDirectClient()
 
   // Fetch fresh contract & verify within lock.
-  const contractSnap = await firestore
-    .collection('contracts')
-    .doc(contractId)
-    .get()
-  const contract = contractSnap.data() as Contract
+  const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
 
   await verifyUserCanUnresolve(contract, auth.uid, answerId)
@@ -251,13 +247,13 @@ const undoResolution = async (
   if (contract.isResolved || contract.resolutionTime) {
     const updatedAttrs = {
       isResolved: false,
-      resolutionTime: admin.firestore.FieldValue.delete(),
-      resolution: admin.firestore.FieldValue.delete(),
-      resolutions: admin.firestore.FieldValue.delete(),
-      resolutionProbability: admin.firestore.FieldValue.delete(),
+      resolutionTime: FieldVal.delete(),
+      resolution: FieldVal.delete(),
+      resolutions: FieldVal.delete(),
+      resolutionProbability: FieldVal.delete(),
       closeTime: Date.now(),
     }
-    await firestore.doc(`contracts/${contractId}`).update(updatedAttrs)
+    await updateContract(pg, contractId, updatedAttrs)
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
@@ -270,7 +266,7 @@ const undoResolution = async (
       [contractId],
       convertAnswer
     )
-    newAnswers.forEach((ans) => broadcastUpdatedAnswer(contract, ans))
+    newAnswers.forEach(broadcastUpdatedAnswer)
   } else if (answerId) {
     const answer = await pg.one(
       `update answers
@@ -280,7 +276,7 @@ const undoResolution = async (
       [answerId],
       convertAnswer
     )
-    broadcastUpdatedAnswer(contract, answer)
+    broadcastUpdatedAnswer(answer)
   }
 
   log('updated contract')

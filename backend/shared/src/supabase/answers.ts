@@ -2,10 +2,14 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import { groupBy } from 'lodash'
 import { Answer } from 'common/answer'
-import { bulkInsert, updateDataAndReturn, insert as upsert } from './utils'
+import { bulkInsert, updateData, insert, DataUpdate } from './utils'
 import { randomString } from 'common/util/random'
 import { removeUndefinedProps } from 'common/util/object'
 import { millisToTs } from 'common/supabase/utils'
+import {
+  broadcastNewAnswer,
+  broadcastUpdatedAnswer,
+} from 'shared/websockets/helpers'
 
 export const getAnswer = async (pg: SupabaseDirectClient, id: string) => {
   const row = await pg.oneOrNone(`select * from answers where id = $1`, [id])
@@ -45,7 +49,8 @@ export const insertAnswer = async (
   pg: SupabaseDirectClient,
   ans: Omit<Answer, 'id'>
 ) => {
-  return await upsert(pg, 'answers', answerToRow(ans))
+  const row = await insert(pg, 'answers', answerToRow(ans))
+  broadcastNewAnswer(convertAnswer(row))
 }
 
 export const bulkInsertAnswers = async (
@@ -53,36 +58,20 @@ export const bulkInsertAnswers = async (
   answers: Omit<Answer, 'id'>[]
 ) => {
   if (answers.length > 0) {
-    return await bulkInsert(pg, 'answers', answers.map(answerToRow))
+    const rows = await bulkInsert(pg, 'answers', answers.map(answerToRow))
+    rows.map(convertAnswer).forEach(broadcastNewAnswer)
   }
 }
 
 export const updateAnswer = async (
   pg: SupabaseDirectClient,
   id: string,
-  update: Partial<Answer>
+  update: DataUpdate<'answers'>
 ) => {
-  return convertAnswer(
-    await updateDataAndReturn(pg, 'answers', 'id', { ...update, id })
-  )
-}
-
-export const bulkUpdateAnswers = async (
-  pg: SupabaseDirectClient,
-  answers: (Partial<Answer> & { id: string })[]
-) => {
-  if (answers.length > 0) {
-    const values = answers
-      .map((ans) => `('${ans.id}', '${JSON.stringify(ans)}'::jsonb)`)
-      .join(',\n')
-
-    await pg.none(
-      `update answers as a
-        set data = data || v.update
-      from (values ${values}) as v(id, update)
-      where a.id = v.id`
-    )
-  }
+  const row = await updateData(pg, 'answers', 'id', { ...update, id })
+  const answer = convertAnswer(row)
+  broadcastUpdatedAnswer(answer)
+  return answer
 }
 
 export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({

@@ -22,8 +22,9 @@ export const hideComment: APIHandler<'hide-comment'> = async (
   }
 
   const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
-  const contract = await getContract(contractId)
+  const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
 
   const isContractCreator = contract.creatorId === auth.uid
@@ -38,7 +39,6 @@ export const hideComment: APIHandler<'hide-comment'> = async (
   const comment = await getComment(db, commentId)
 
   // update the comment
-  const pg = createSupabaseDirectClient()
   updateData(pg, 'contract_comments', 'comment_id', {
     comment_id: commentId,
     hidden: !comment.hidden,

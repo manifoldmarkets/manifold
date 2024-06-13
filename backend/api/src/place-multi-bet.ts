@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import * as crypto from 'crypto'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
@@ -10,11 +9,11 @@ import {
   processNewBetResult,
   validateBet,
 } from 'api/place-bet'
-import { log } from 'shared/utils'
-import { runEvilTransaction } from 'shared/evil-transaction'
+import { getContract, log } from 'shared/utils'
+import { runShortTrans } from 'shared/short-transaction'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { MarketContract } from 'common/contract'
 import { getAnswersForContract } from 'shared/supabase/answers'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -31,13 +30,11 @@ export const placeMultiBetMain = async (
   isApi: boolean
 ) => {
   const { amount, contractId } = body
+  const pg = createSupabaseDirectClient()
+  const contract = await getContract(pg, contractId)
+  if (!contract) throw new APIError(404, 'Contract not found.')
 
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-  const contractSnap = await contractDoc.get()
-  if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
-  const contract = contractSnap.data() as MarketContract
-
-  const results = await runEvilTransaction(async (pgTrans, fbTrans) => {
+  const results = await runShortTrans(async (pgTrans) => {
     const user = await validateBet(uid, amount, contract, pgTrans, isApi)
 
     const { closeTime, mechanism } = contract
@@ -94,12 +91,10 @@ export const placeMultiBetMain = async (
       newBetResults.map((newBetResult) =>
         processNewBetResult(
           newBetResult,
-          contractDoc,
           contract,
           user,
           isApi,
           pgTrans,
-          fbTrans,
           undefined,
           betGroupId
         )
@@ -116,14 +111,7 @@ export const placeMultiBetMain = async (
     )
     const makers = results.flatMap((result) => result.makers ?? [])
     const user = results[0].user
-    await onCreateBets(
-      fullBets,
-      contract,
-      user,
-      allOrdersToCancel,
-      makers,
-      undefined
-    )
+    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
   }
 
   return {
@@ -135,5 +123,3 @@ export const placeMultiBetMain = async (
     continue: continuation,
   }
 }
-
-const firestore = admin.firestore()

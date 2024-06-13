@@ -4,22 +4,20 @@ import { LiquidityProvision } from 'common/liquidity-provision'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { broadcastNewSubsidy } from 'shared/websockets/helpers'
 import { type Contract } from 'common/contract'
-import { pick } from 'lodash'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const onCreateLiquidityProvision = async (
   liquidity: LiquidityProvision
 ) => {
-  const contract = (await getContract(liquidity.contractId)) as Contract & {
+  const pg = createSupabaseDirectClient()
+  const contract = (await getContract(pg, liquidity.contractId)) as Contract & {
     mechanism: 'cpmm-1' | 'cpmm-multi-1'
   }
 
   if (!contract)
     throw new Error('Could not find contract corresponding with liquidity')
 
-  broadcastNewSubsidy(
-    pick(contract, ['id', 'subsidyPool', 'totalLiquidity', 'marketTier']),
-    liquidity.amount
-  )
+  broadcastNewSubsidy(contract.id, contract.visibility, liquidity.amount)
 
   // Ignore Manifold Markets liquidity for now - users see a notification for free market liquidity provision
   if (liquidity.isAnte) return

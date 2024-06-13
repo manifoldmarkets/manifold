@@ -1,7 +1,6 @@
-import * as admin from 'firebase-admin'
 import { Contract } from 'common/contract'
 import { GroupLink, GroupResponse } from 'common/group'
-import { createSupabaseClient } from './supabase/init'
+import { createSupabaseDirectClient } from './supabase/init'
 import {
   UNRANKED_GROUP_ID,
   UNSUBSIDIZED_GROUP_ID,
@@ -11,44 +10,43 @@ import { trackPublicEvent } from 'shared/analytics'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { GroupMember } from 'common/group-member'
 import { manifoldLoveRelationshipsGroupId } from 'common/love/constants'
-
-const firestore = admin.firestore()
+import { updateContract } from './supabase/contracts'
 
 export async function addGroupToContract(
   contract: Contract,
   group: { id: string; slug: string; name: string },
   userId?: string
 ) {
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
-  // insert into group_contracts table
-  await db
-    .from('group_contracts')
-    .upsert({ group_id: group.id, contract_id: contract.id })
+  await pg.none(
+    `insert into group_contracts (contract_id, group_id) values ($1, $2)`,
+    [contract.id, group.id]
+  )
 
   const linkedToGroupAlready = (contract?.groupLinks ?? []).some(
     (g) => g.groupId === group.id
   )
   if (!linkedToGroupAlready) {
     // update group slugs and group links
-    await firestore
-      .collection('contracts')
-      .doc(contract.id)
-      .update({
-        groupSlugs: admin.firestore.FieldValue.arrayUnion(group.slug),
-        groupLinks: admin.firestore.FieldValue.arrayUnion({
-          groupId: group.id,
-          createdTime: Date.now(),
-          slug: group.slug,
-          name: group.name,
-        }),
-        lastUpdatedTime: Date.now(),
-      })
+
+    const newSlugs = contract.groupSlugs?.concat(group.slug)
+    const newLinks = contract.groupLinks?.concat({
+      groupId: group.id,
+      createdTime: Date.now(),
+      slug: group.slug,
+      name: group.name,
+    })
+
+    await updateContract(pg, contract.id, {
+      groupSlugs: newSlugs,
+      groupLinks: newLinks,
+      lastUpdatedTime: Date.now(),
+    })
 
     if (group.id === UNRANKED_GROUP_ID) {
-      const isRanked = false
-      await firestore.collection('contracts').doc(contract.id).update({
-        isRanked,
+      await updateContract(pg, contract.id, {
+        isRanked: false,
       })
       if (userId) {
         await recordContractEdit(contract, userId, ['isRanked'])
@@ -56,7 +54,7 @@ export async function addGroupToContract(
     }
 
     if (group.id === UNSUBSIDIZED_GROUP_ID) {
-      await firestore.collection('contracts').doc(contract.id).update({
+      await updateContract(pg, contract.id, {
         isSubsidized: false,
       })
       if (userId) {
@@ -77,37 +75,33 @@ export async function removeGroupFromContract(
   group: { id: string; slug: string },
   userId: string
 ) {
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
   // delete from group_contracts table
-  await db
-    .from('group_contracts')
-    .delete()
-    .eq('contract_id', contract.id)
-    .eq('group_id', group.id)
+  await pg.none(
+    `delete from group_contracts where contract_id = $1 and group_id = $2`,
+    [contract.id, group.id]
+  )
 
   // update group slugs and group links
+  const newSlugs = contract.groupSlugs?.filter((s) => s !== group.slug)
   const newLinks = contract.groupLinks?.filter(
     (l: GroupLink) => l.groupId !== group.id
   )
-  await firestore
-    .collection('contracts')
-    .doc(contract.id)
-    .update({
-      groupSlugs: admin.firestore.FieldValue.arrayRemove(group.slug),
-      groupLinks: newLinks,
-      lastUpdatedTime: Date.now(),
-    })
+  await updateContract(pg, contract.id, {
+    groupSlugs: newSlugs,
+    groupLinks: newLinks,
+    lastUpdatedTime: Date.now(),
+  })
 
   if (group.id === UNRANKED_GROUP_ID) {
-    const isRanked = true
-    await firestore.collection('contracts').doc(contract.id).update({
-      isRanked,
+    await updateContract(pg, contract.id, {
+      isRanked: true,
     })
     await recordContractEdit(contract, userId, ['isRanked'])
   }
   if (group.id === UNSUBSIDIZED_GROUP_ID) {
-    await firestore.collection('contracts').doc(contract.id).update({
+    await updateContract(pg, contract.id, {
       isSubsidized: true,
     })
     await recordContractEdit(contract, userId, ['isSubsidized'])

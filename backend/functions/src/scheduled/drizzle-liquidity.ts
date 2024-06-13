@@ -1,5 +1,4 @@
 import * as functions from 'firebase-functions'
-import * as admin from 'firebase-admin'
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { mapAsync } from 'common/util/promise'
 import { APIError } from 'common/api/utils'
@@ -18,25 +17,23 @@ import {
 } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import {
-  bulkUpdateAnswers,
   getAnswer,
   getAnswersForContract,
   updateAnswer,
 } from 'shared/supabase/answers'
-import { runEvilTransaction } from 'shared/evil-transaction'
+import { runShortTrans } from 'shared/short-transaction'
 import { secrets } from 'common/secrets'
-
-const firestore = admin.firestore()
+import { getContract } from 'shared/utils'
+import { updateContract } from 'shared/supabase/contracts'
+import { bulkUpdateData } from 'shared/supabase/utils'
 
 export const drizzleLiquidity = async () => {
   const pg = createSupabaseDirectClient()
 
-  const snap = await firestore
-    .collection('contracts')
-    .where('subsidyPool', '>', 1e-7)
-    .get()
-
-  const contractIds = shuffle(snap.docs.map((doc) => doc.id))
+  const data = await pg.manyOrNone<{ id: string }>(
+    `select id from contracts where subsidy_pool > 1e-7`
+  )
+  const contractIds = shuffle(data.map((doc) => doc.id))
   console.log('found', contractIds.length, 'markets to drizzle')
   console.log()
 
@@ -60,9 +57,11 @@ export const drizzleLiquidityScheduler = functions
   .onRun(drizzleLiquidity)
 
 const drizzleMarket = async (contractId: string) => {
-  await runEvilTransaction(async (pgTrans, fbTrans) => {
-    const snap = await fbTrans.get(firestore.doc(`contracts/${contractId}`))
-    const contract = snap.data() as CPMMContract | CPMMMultiContract
+  await runShortTrans(async (pgTrans) => {
+    const fetched = await getContract(pgTrans, contractId)
+    if (!fetched) throw new APIError(404, 'Contract not found.')
+    const contract = fetched as CPMMContract | CPMMMultiContract
+
     const { subsidyPool, slug, uniqueBettorCount } = contract
     if ((subsidyPool ?? 0) < 1e-7) return
 
@@ -89,9 +88,9 @@ const drizzleMarket = async (contractId: string) => {
         prob: getCpmmProbability(newPool, 0.5),
       }))
 
-      await bulkUpdateAnswers(pgTrans, answerUpdates)
+      await bulkUpdateData(pgTrans, 'answers', answerUpdates)
 
-      fbTrans.update(firestore.doc(`contracts/${contract.id}`), {
+      await updateContract(pgTrans, contract.id, {
         subsidyPool: subsidyPool - amount,
       })
     } else {
@@ -105,7 +104,7 @@ const drizzleMarket = async (contractId: string) => {
         )
       }
 
-      fbTrans.update(firestore.doc(`contracts/${contract.id}`), {
+      await updateContract(pgTrans, contract.id, {
         pool: newPool,
         p: newP,
         subsidyPool: subsidyPool - amount,

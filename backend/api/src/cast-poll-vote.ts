@@ -1,11 +1,10 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import * as admin from 'firebase-admin'
 import { PollOption } from 'common/poll-option'
-import { PollContract } from 'common/contract'
 import { createVotedOnPollNotification } from 'shared/create-notification'
-import { getUser } from 'shared/utils'
+import { getContract, getUser } from 'shared/utils'
+import { updateContract } from 'shared/supabase/contracts'
 
 const schema = z
   .object({
@@ -17,11 +16,11 @@ const schema = z
 export const castpollvote = authEndpoint(async (req, auth) => {
   const { contractId, voteId } = validate(schema, req.body)
   const pg = createSupabaseDirectClient()
+  const contract = await getContract(pg, contractId)
+  if (!contract) {
+    throw new APIError(404, 'Contract not found')
+  }
 
-  const contractRef = firestore.collection('contracts').doc(contractId)
-  const contractSnap = await contractRef.get()
-  if (!contractSnap.exists) throw new APIError(404, 'Contract cannot be found')
-  const contract = contractSnap.data() as PollContract
   if (contract.outcomeType !== 'POLL') {
     throw new APIError(403, 'This contract is not a poll')
   }
@@ -54,11 +53,9 @@ export const castpollvote = authEndpoint(async (req, auth) => {
     }
 
     // Write the updated options back to the document
-    await admin.firestore().runTransaction(async (transaction) => {
-      transaction.update(contractRef, {
-        options: options,
-        uniqueBettorCount: totalVoters.length + 1,
-      })
+    await updateContract(t, contractId, {
+      options: options,
+      uniqueBettorCount: totalVoters.length + 1,
     })
 
     // create the vote row
@@ -77,5 +74,3 @@ export const castpollvote = authEndpoint(async (req, auth) => {
     return { status: 'success', voteId: id }
   })
 })
-
-const firestore = admin.firestore()

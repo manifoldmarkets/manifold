@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import { sumBy } from 'lodash'
 import {
   CPMMMultiContract,
@@ -6,7 +5,7 @@ import {
   CPMMNumericContract,
   canCancelContract,
 } from 'common/contract'
-import { log, getUser } from 'shared/utils'
+import { log, getUser, getContract } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
@@ -41,11 +40,8 @@ const resolveMarketMain: APIHandler<'market/:contractId/resolve'> = async (
   const db = createSupabaseDirectClient()
 
   const { contractId } = props
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-  const contractSnap = await contractDoc.get()
-  if (!contractSnap.exists)
-    throw new APIError(404, 'No contract exists with the provided ID')
-  const contract = contractSnap.data() as Contract
+  const contract = await getContract(db, contractId)
+  if (!contract) throw new APIError(404, 'Contract not found')
 
   let answers: Answer[] = []
   if (contract.mechanism === 'cpmm-multi-1') {
@@ -213,5 +209,3 @@ function validateAnswerCpmm(
     throw new APIError(403, `${answerId} is not a valid answer ID`)
   }
 }
-
-const firestore = admin.firestore()

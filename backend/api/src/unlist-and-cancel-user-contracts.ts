@@ -1,12 +1,15 @@
-import * as admin from 'firebase-admin'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { getUser } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { updateContract } from 'shared/supabase/contracts'
 
 export const unlistAndCancelUserContracts: APIHandler<
   'unlist-and-cancel-user-contracts'
@@ -27,6 +30,8 @@ export const unlistAndCancelUserContracts: APIHandler<
   }
 
   const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
+
   const { data, error } = await db
     .from('contracts')
     .select('data')
@@ -50,7 +55,7 @@ export const unlistAndCancelUserContracts: APIHandler<
   }
 
   for (const contract of contracts) {
-    await firestore.doc(`contracts/${contract.id}`).update({
+    await updateContract(pg, contract.id, {
       visibility: 'unlisted',
     })
   }
@@ -72,5 +77,3 @@ export const unlistAndCancelUserContracts: APIHandler<
     throw new APIError(500, 'Failed to update one or more contracts.')
   }
 }
-
-const firestore = admin.firestore()
