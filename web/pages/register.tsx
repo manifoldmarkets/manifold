@@ -1,13 +1,15 @@
-import { Registration } from 'web/components/gidx/register'
-import { useState } from 'react'
+import { useUser } from 'web/hooks/use-user'
+import { Page } from 'web/components/layout/page'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { UserInfo } from 'web/components/gidx/user-info'
 
 const HomePage = () => {
-  const [open, setOpen] = useState(true)
+  const user = useUser()
 
   return (
-    <div className="container mx-auto">
-      <Registration open={open} setOpen={setOpen} />
-    </div>
+    <Page trackPageView={'register user gidx'}>
+      {!user ? <LoadingIndicator /> : <UserInfo user={user} />}
+    </Page>
   )
 }
 

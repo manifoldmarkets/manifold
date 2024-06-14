@@ -49,11 +49,8 @@ const identificationTypeToCode = {
   'National Identity Card': 4,
 }
 
-export const UserInfo = (props: {
-  user: User
-  setOpen: (open: boolean) => void
-}) => {
-  const { user, setOpen } = props
+export const UserInfo = (props: { user: User }) => {
+  const { user } = props
   // const [page, setPage] = useState(user.verifiedPhone ? 1 : 0)
   const [page, setPage] = useState(2)
   const [loading, setLoading] = useState(false)
@@ -188,7 +185,7 @@ export const UserInfo = (props: {
   if (page === 0) {
     return (
       <RegistrationVerifyPhone
-        cancel={() => setOpen(false)}
+        cancel={() => null}
         next={() => setPage(page + 1)}
       />
     )
@@ -285,6 +282,7 @@ export const UserInfo = (props: {
         />
       </Col>
       {error && <span className={'text-error'}>{error}</span>}
+      {user.kycStatus === 'failed' && <Button></Button>}
       <Row className={'mb-4 mt-4 w-full gap-16'}>
         <Button
           color={'gray-white'}
