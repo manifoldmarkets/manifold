@@ -28,7 +28,6 @@ export default Node.create<IframeOptions>({
       HTMLAttributes: {
         class: 'w-full h-80',
         height: 80 * 4,
-        srcdoc: null,
         sandbox:
           'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox',
       },
@@ -56,6 +55,15 @@ export default Node.create<IframeOptions>({
       // Add options second, so they override originals, which prevents a XSS attack.
       this.options.HTMLAttributes
     )
+
+    const blacklistedAttributes = ['srcdoc']
+    const keysToRemove = Object.keys(iframeAttributes).filter((key) =>
+      blacklistedAttributes.includes(key.toLowerCase())
+    )
+    for (const key of keysToRemove) {
+      delete iframeAttributes[key]
+    }
+
     const { src } = HTMLAttributes
 
     // This is a hack to prevent native from opening the iframe in an in-app browser
