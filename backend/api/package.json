@@ -42,6 +42,7 @@
     "firebase-admin": "11.11.1",
     "gcp-metadata": "6.1.0",
     "jsonwebtoken": "9.0.0",
+    "libphonenumber-js": "1.11.3",
     "link-preview-js": "3.0.4",
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",

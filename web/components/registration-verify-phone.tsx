@@ -92,7 +92,7 @@ export function RegistrationVerifyPhone(props: {
               Enter verification code
             </span>
             <Input
-              className={'w-36 '}
+              className={'ml-3 w-36'}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               placeholder="123456"

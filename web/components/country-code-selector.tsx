@@ -2,6 +2,7 @@ import { Combobox } from '@headlessui/react'
 import { getCodeList } from 'country-list'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
+import { XIcon } from '@heroicons/react/outline'
 
 const countries = getCodeList()
 
@@ -20,21 +21,29 @@ export const CountryCodeSelector = (props: {
             country.toLowerCase().includes(query.toLowerCase()) ||
             code.toLowerCase().includes(query.toLowerCase())
         )
-
+  const displayCountry = (code: string) =>
+    code === ''
+      ? ''
+      : `${countries[code.toLowerCase()]} (${code.toUpperCase()})`
   return (
-    <Row className="">
+    <Row className="relative">
       <Combobox value={selectedCountry} onChange={setSelectedCountry}>
         <Combobox.Input
-          className="w-full rounded-md border border-gray-300 px-4 py-3 focus:border-blue-300 focus:outline-none focus:ring"
+          className="w-full rounded-md border border-gray-300 px-4 py-3 focus:border-blue-300 focus:outline-none focus:ring md:text-sm"
           onChange={(e) => setQuery(e.target.value)}
-          displayValue={(country: string) => country}
-          placeholder="Type a country or code"
+          displayValue={displayCountry}
+          placeholder="The country of which you are a citizen"
         />
-        <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+        {selectedCountry !== '' && (
+          <button onClick={() => setSelectedCountry('')}>
+            <XIcon className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
+          </button>
+        )}
+        <Combobox.Options className="absolute mt-1 max-h-60 overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none md:text-sm ">
           {filteredCountries.map(([code, country]) => (
             <Combobox.Option
               key={code}
-              value={`${country} (${code.toUpperCase()})`}
+              value={code.toUpperCase()}
               className={({ active }) =>
                 `relative cursor-default select-none py-2 pl-10 pr-4 ${
                   active ? 'bg-blue-600 text-white' : 'text-gray-900'

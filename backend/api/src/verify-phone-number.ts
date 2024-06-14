@@ -1,6 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getUser, isProd, log } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { PHONE_VERIFICATION_BONUS, SUS_STARTING_BALANCE } from 'common/economy'
 import { PrivateUser } from 'common/user'
@@ -24,7 +24,7 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
             `,
       [auth.uid, phoneNumber]
     )
-    if (userHasPhoneNumber && isProd()) {
+    if (userHasPhoneNumber) {
       throw new APIError(400, 'User verified phone number already.')
     }
     const authToken = process.env.TWILIO_AUTH_TOKEN
@@ -44,7 +44,7 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
       )
       .catch((e) => {
         log(e)
-        if (isProd()) throw new APIError(400, 'Phone number already exists')
+        throw new APIError(400, 'Phone number already exists')
       })
       .then(() => {
         log(verification.status, { phoneNumber, otpCode })
@@ -79,7 +79,7 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
       const user = await getUser(auth.uid, tx)
       if (!user) throw new APIError(401, `User ${auth.uid} not found`)
       const { verifiedPhone } = user
-      if (verifiedPhone === false) {
+      if (!verifiedPhone) {
         await updateUser(tx, auth.uid, {
           verifiedPhone: true,
         })

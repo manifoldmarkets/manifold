@@ -3,7 +3,7 @@ import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { useState } from 'react'
-import { VerifyPhone } from 'web/components/verify-phone'
+import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
@@ -47,7 +47,7 @@ export const VerifyPhoneModal = (props: {
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={'bg-canvas-0 p-4'}>
-        <VerifyPhone onClose={() => setOpen(false)} />
+        <OnboardingVerifyPhone onClose={() => setOpen(false)} />
       </Col>
     </Modal>
   )

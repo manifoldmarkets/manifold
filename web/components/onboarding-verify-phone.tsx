@@ -13,7 +13,7 @@ import { formatMoney } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 
-export function VerifyPhone(props: { onClose: () => void }) {
+export function OnboardingVerifyPhone(props: { onClose: () => void }) {
   const { onClose } = props
   const requestOTP = async () => {
     setLoading(true)

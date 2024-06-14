@@ -45,6 +45,7 @@ import {
   PortfolioMetrics,
 } from 'common/portfolio-metrics'
 import { ModReport } from '../mod-report'
+import { RegistrationReturnType } from 'common/reason-codes'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1242,16 +1243,27 @@ export const API = (_apiTypeCheck = {
       LastName: z.string(),
       DateOfBirth: z.string(),
       CitizenshipCountryCode: z.string(),
-      IdentificationTypeCode: z.number().gte(1).lte(4),
-      IdentificationNumber: z.string(),
       Latitude: z.number(),
       Longitude: z.number(),
       Radius: z.number(),
       Altitude: z.number(),
       Speed: z.number(),
       DateTime: z.string(),
+      // Must supply address or ID info
+      AddressLine1: z.string().optional(),
+      AddressLine2: z.string().optional(),
+      City: z.string().optional(),
+      StateCode: z.string().optional(),
+      PostalCode: z.string().optional(),
+      CountryCode: z.string().optional(),
+      IdentificationTypeCode: z.number().gte(1).lte(4).optional(),
+      IdentificationNumber: z.string().optional(),
+      // TODO: remove these in production
+      DeviceIpAddress: z.string(),
+      EmailAddress: z.string(),
+      MerchantCustomerID: z.string(),
     }),
-    returns: {} as { status: string },
+    returns: {} as RegistrationReturnType,
   },
 } as const)
 
