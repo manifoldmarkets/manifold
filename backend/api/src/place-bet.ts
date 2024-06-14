@@ -52,6 +52,8 @@ export const placeBetMain = async (
   const { amount, contractId, replyToCommentId, answerId } = body
   const pg = createSupabaseDirectClient()
 
+  const startTime = Date.now()
+
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found.')
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
@@ -206,6 +208,9 @@ export const placeBetMain = async (
   const continuation = async () => {
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
   }
+
+  const time = Date.now() - startTime
+  log(`Place bet took ${time}ms.`)
 
   return {
     result: { ...newBet, betId, betGroupId },
