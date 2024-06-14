@@ -31,7 +31,6 @@ import { STONK_INITIAL_PROB } from 'common/stonk'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import * as admin from 'firebase-admin'
 import { getCloseDate } from 'shared/helpers/openai-utils'
 import {
   generateContractEmbeddings,
@@ -61,14 +60,12 @@ type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
 }
 
-const firestore = admin.firestore()
-
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
   const market = await createMarketHelper(body, auth)
   return {
     result: toLiteMarket(market),
     continue: async () => {
-      await onCreateMarket(market, firestore)
+      await onCreateMarket(market)
     },
   }
 }

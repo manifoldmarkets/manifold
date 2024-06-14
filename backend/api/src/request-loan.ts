@@ -12,7 +12,6 @@ import { Bet } from 'common/bet'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { groupBy, uniq } from 'lodash'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
-import * as admin from 'firebase-admin'
 import * as dayjs from 'dayjs'
 import { LoanTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
@@ -21,8 +20,6 @@ const LOANS_DIABLED = true
 
 export const requestloan: APIHandler<'request-loan'> = async (_, auth) => {
   if (LOANS_DIABLED) throw new APIError(500, 'Loans are disabled')
-
-  const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
 
   const portfolioMetric = await pg.oneOrNone(

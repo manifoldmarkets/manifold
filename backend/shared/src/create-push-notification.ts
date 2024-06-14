@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import { partition } from 'lodash'
 import { Expo, ExpoPushMessage, ExpoPushSuccessTicket } from 'expo-server-sdk'
 
@@ -20,7 +19,6 @@ export const createPushNotification = async (
   title: string,
   body: string
 ) => {
-  const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   const expo = new Expo()
   const { sendToMobile } = getNotificationDestinationsForUser(

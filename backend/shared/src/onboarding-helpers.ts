@@ -1,6 +1,4 @@
-import * as admin from 'firebase-admin'
 import * as dayjs from 'dayjs'
-
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
@@ -81,10 +79,7 @@ const getRecentNonLoverUserIds = async () => {
   return { recentUserIds, userIdsToReceiveCreatorGuideEmail }
 }
 
-const sendNextDayManaBonus = async (
-  firestore: admin.firestore.Firestore,
-  user: User
-) => {
+const sendNextDayManaBonus = async (user: User) => {
   const pg = createSupabaseDirectClient()
 
   const { txn, privateUser } = await pg.tx(async (tx) => {
@@ -179,9 +174,8 @@ export const sendOnboardingMarketVisitBonus = async (userId: string) => {
 }
 
 const sendBonusNotifications = async (userIds: string[]) => {
-  const firestore = admin.firestore()
   const users = await getUsers(userIds)
-  await Promise.all(users.map((user) => sendNextDayManaBonus(firestore, user)))
+  await Promise.all(users.map((user) => sendNextDayManaBonus(user)))
 }
 
 const createSignupBonusNotification = async (
