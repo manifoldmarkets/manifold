@@ -1,5 +1,5 @@
 import { maxBy, orderBy, uniq, uniqBy, sortBy } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 import { Bet, BetFilter, LimitBet } from 'common/bet'
 import { db } from 'web/lib/supabase/db'
@@ -133,11 +133,9 @@ export const useSubscribeNewBets = (
 }
 
 export const useSubscribeGlobalBets = (params?: {
-  afterTime?: number
   includeRedemptions?: boolean
 }) => {
-  const [now] = useState(Date.now())
-  const { afterTime = now, includeRedemptions = false } = params ?? {}
+  const { includeRedemptions = false } = params ?? {}
 
   const [newBets, setNewBets] = usePersistentInMemoryState<Bet[]>(
     [],
@@ -150,19 +148,9 @@ export const useSubscribeGlobalBets = (params?: {
         uniqBy([...currentBets, ...bets], 'id'),
         'createdTime'
       )
-      return uniqueBets.filter(
-        (b) =>
-          b.createdTime > afterTime && (includeRedemptions || !b.isRedemption)
-      )
+      return uniqueBets.filter((b) => includeRedemptions || !b.isRedemption)
     })
   }
-
-  useEffect(() => {
-    getBets(db, {
-      afterTime,
-      filterRedemptions: !includeRedemptions,
-    }).then(addBets)
-  }, [afterTime])
 
   useApiSubscription({
     topics: [`global/new-bet`],

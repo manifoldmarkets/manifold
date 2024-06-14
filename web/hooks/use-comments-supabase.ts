@@ -1,6 +1,7 @@
 import { ContractComment } from 'common/comment'
 import { useEffect, useState } from 'react'
 import { useEvent } from 'web/hooks/use-event'
+import { sortBy, uniqBy } from 'lodash'
 
 import {
   getAllCommentRows,
@@ -16,6 +17,8 @@ import { convertContractComment } from 'common/supabase/comments'
 import { api } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { useApiSubscription } from './use-api-subscription'
 
 export function useNumContractComments(contractId: string) {
   const [numComments, setNumComments] = useState<number>(0)
@@ -89,13 +92,39 @@ export function useRealtimeCommentsOnContract(
   return { rows: rows?.map(convertContractComment), loadNewer }
 }
 
-export function useRealtimeComments(
-  limit: number
-): ContractComment[] | undefined {
-  const { rows } = useSubscription('contract_comments', undefined, () =>
-    getAllCommentRows(limit)
-  )
-  return rows?.map((r) => r.data as ContractComment)
+export const useSubscribeGlobalComments = () => {
+  const [newComments, setNewComments] = usePersistentInMemoryState<
+    ContractComment[]
+  >([], 'global-new-comments')
+
+  const addComment = (comment: ContractComment) => {
+    setNewComments((currentComments) =>
+      sortBy(uniqBy([...currentComments, comment], 'id'), 'createdTime')
+    )
+  }
+
+  useApiSubscription({
+    topics: [`global/new-comment`],
+    onBroadcast: (msg) => {
+      addComment(msg.data.comment as ContractComment)
+    },
+  })
+
+  return newComments
+}
+
+export const useGlobalComments = (limit: number) => {
+  const [comments, setComments] = usePersistentInMemoryState<
+    ContractComment[] | undefined
+  >(undefined, `global-comments-${limit}`)
+
+  useEffect(() => {
+    getAllCommentRows(limit).then((rows) =>
+      setComments(rows.map(convertContractComment))
+    )
+  }, [limit])
+
+  return comments
 }
 
 export function useRealtimeCommentsPolling(

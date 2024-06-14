@@ -15,7 +15,10 @@ import {
 } from 'lodash'
 import { ReactNode, memo, useEffect, useState } from 'react'
 import { useBets, useSubscribeGlobalBets } from 'web/hooks/use-bets'
-import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
+import {
+  useGlobalComments,
+  useSubscribeGlobalComments,
+} from 'web/hooks/use-comments-supabase'
 import {
   usePublicContracts,
   useLiveAllNewContracts,
@@ -110,7 +113,8 @@ export function ActivityLog(props: {
     .reverse()
     .slice(0, count * 3)
 
-  const realtimeComments = useRealtimeComments(count * 3)
+  const recentComments = useGlobalComments(count * 3)
+  const realtimeComments = useSubscribeGlobalComments()
 
   const newContracts = useLiveAllNewContracts(count * 3)?.filter(
     (c) =>
@@ -134,7 +138,11 @@ export function ActivityLog(props: {
       !blockedUserIds.includes(bet.userId)
   )
   const comments = uniqBy(
-    (realtimeComments ?? []).concat(recentTopicalComments ?? []),
+    [
+      ...(realtimeComments ?? []),
+      ...(recentTopicalComments ?? []),
+      ...(recentComments ?? []),
+    ],
     'id'
   ).filter(
     (c) =>
