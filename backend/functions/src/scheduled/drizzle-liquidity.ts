@@ -71,6 +71,9 @@ const drizzleMarket = async (contractId: string) => {
 
     if (contract.mechanism === 'cpmm-multi-1') {
       const answers = await getAnswersForContract(pgTrans, contractId)
+      if (!answers.length) {
+        return
+      }
 
       const poolsByAnswer = Object.fromEntries(
         answers.map((a) => [a.id, { YES: a.poolYes, NO: a.poolNo }])
