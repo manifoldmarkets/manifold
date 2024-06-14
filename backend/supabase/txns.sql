@@ -36,9 +36,9 @@ end
 $$;
 
 create trigger txns_populate before insert
-    or
-    update on txns for each row
-    execute function txns_populate_cols ();
+or
+update on txns for each row
+execute function txns_populate_cols ();
 
 create
 or replace function get_daily_claimed_boosts (user_id text) returns table (total numeric) as $$
@@ -62,25 +62,23 @@ or replace function get_donations_by_charity () returns table (
   total numeric
 ) as $$
     select to_id as charity_id,
-           count(distinct from_id) as num_supporters,
-           sum(amount) as total
+      count(distinct from_id) as num_supporters,
+      sum(case when (data->'token')::text = 'M$'
+        then amount / 100
+        else amount / 1000 end
+      ) as total
     from txns
     where category = 'CHARITY'
     group by to_id
     order by total desc
 $$ language sql;
 
-create index if not exists txns_category_to_id
-    on txns (category, to_id);
+create index if not exists txns_category_to_id on txns (category, to_id);
 
-create index if not exists  txns_category_native
-    on txns (category);
+create index if not exists txns_category_native on txns (category);
 
-create index if not exists  txns_to_created_time
-    on txns (to_id, created_time);
+create index if not exists txns_to_created_time on txns (to_id, created_time);
 
-create index if not exists  txns_from_created_time
-    on txns (from_id, created_time);
+create index if not exists txns_from_created_time on txns (from_id, created_time);
 
-create index if not exists txns_category_to_id_from_id
-    on txns (category,to_id,from_id)
+create index if not exists txns_category_to_id_from_id on txns (category, to_id, from_id)

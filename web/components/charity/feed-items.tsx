@@ -1,6 +1,6 @@
 import { type DisplayUser } from 'common/api/user-types'
 import { Avatar } from '../widgets/avatar'
-import { formatCents } from 'common/util/format'
+import { formatMoneyUSD } from 'common/util/format'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { UserLink } from 'web/components/widgets/user-link'
 import { UserHovercard } from '../user/user-hovercard'
@@ -30,7 +30,7 @@ export function Donation(props: {
             ) : (
               <>Someone</>
             )}{' '}
-            donated {formatCents(amount)}
+            donated {formatMoneyUSD(amount)}
             <RelativeTimestamp time={ts} />
           </p>
         </div>

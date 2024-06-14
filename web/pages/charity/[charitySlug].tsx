@@ -19,7 +19,7 @@ import {
   getDonationsPageQuery,
 } from 'web/lib/supabase/txns'
 import { Donation } from 'web/components/charity/feed-items'
-import { formatMoneyUSD, formatCents } from 'common/util/format'
+import { formatMoneyUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
@@ -121,7 +121,7 @@ function CharityPage(props: {
             user={user}
             charity={charity}
             onDonated={(user, ts, amount) => {
-              pagination.prepend({ user, ts, amount })
+              pagination.prepend({ user, ts, amount: amount / 1000 })
               setShowConfetti(true)
             }}
           />
@@ -150,7 +150,7 @@ function Details(props: {
   return (
     <Col className="gap-1 text-right">
       <div className="mb-2 text-4xl text-teal-500">
-        {formatCents(total ?? 0)} raised
+        {formatMoneyUSD(total ?? 0)} raised
       </div>
       {numSupporters && (
         <div className="text-ink-500">{numSupporters} supporters</div>
