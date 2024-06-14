@@ -45,11 +45,8 @@ export async function getUserAndPrivateUser(userId: string) {
   return { user, privateUser } as UserAndPrivateUser
 }
 
-export async function updatePrivateUser(
-  userId: string,
-  update: Partial<PrivateUser>
-) {
-  await updateDoc(doc(privateUsers, userId), { ...update })
+export async function updatePrivateUser(update: Partial<PrivateUser>) {
+  await api('me/private/update', update)
 }
 
 export function listenForPrivateUser(

@@ -168,6 +168,10 @@ import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
+import { getCurrentPrivateUser } from './get-current-private-user'
+import { updatePrivateUser } from './update-private-user'
+import { setPushToken } from './push-token'
+import { updateNotifSettings } from './update-notif-settings'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -274,6 +278,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   me: getMe,
   'me/update': updateMe,
   'me/delete': deleteMe,
+  'me/private': getCurrentPrivateUser,
+  'me/private/update': updatePrivateUser,
   'user/by-id/:id': getUser,
   'user/by-id/:id/lite': getDisplayUser,
   'user/:username': getUser,
@@ -285,6 +291,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-users': searchUsers,
   react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,
+  'set-push-token': setPushToken,
+  'update-notif-settings': updateNotifSettings,
   headlines: getHeadlines,
   'politics-headlines': getPoliticsHeadlines,
   'compatible-lovers': getCompatibleLovers,

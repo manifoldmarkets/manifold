@@ -27,12 +27,12 @@ export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
   )
 
   const updateApiKey = async (e?: React.MouseEvent) => {
-    const newApiKey = await generateNewApiKey(user.id)
+    const newApiKey = await generateNewApiKey()
     setApiKey(newApiKey ?? '')
     e?.preventDefault()
 
     if (!privateUser.twitchInfo) return
-    await updatePrivateUser(privateUser.id, {
+    await updatePrivateUser({
       twitchInfo: { ...privateUser.twitchInfo, needsRelinking: true },
     })
   }
