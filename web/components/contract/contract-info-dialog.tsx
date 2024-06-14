@@ -4,9 +4,9 @@ import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Contract, contractPool } from 'common/contract'
 import {
   ENV_CONFIG,
-  firestoreConsolePath,
   isAdminId,
   isModId,
+  supabaseConsoleContractPath,
 } from 'common/envs/constants'
 import { BETTORS, User } from 'common/user'
 import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
@@ -309,10 +309,10 @@ export const Stats = (props: {
         {(isAdmin || isDev) && (
           <>
             <tr className="bg-purple-500/30">
-              <td>Firestore link</td>
+              <td>Supabase link</td>
               <td>
                 <a
-                  href={firestoreConsolePath(id)}
+                  href={supabaseConsoleContractPath(id)}
                   target="_blank"
                   className="text-primary-600"
                   rel="noreferrer"
