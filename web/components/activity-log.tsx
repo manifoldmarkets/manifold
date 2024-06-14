@@ -15,7 +15,7 @@ import {
   uniqBy,
 } from 'lodash'
 import { ReactNode, memo, useEffect, useState } from 'react'
-import { useRealtimeBets } from 'web/hooks/use-bets'
+import { useSubscribeGlobalBets } from 'web/hooks/use-bets'
 import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
 import {
   usePublicContracts,
@@ -43,8 +43,6 @@ import { getBetsOnContracts } from 'common/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { Bet } from 'common/bet'
 import { UserHovercard } from './user/user-hovercard'
-
-const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
 export function ActivityLog(props: {
   count: number
@@ -101,11 +99,12 @@ export function ActivityLog(props: {
     if (topicSlugs) getRecentTopicalContent(topicSlugs)
   }, [topicSlugs])
 
-  const { rows: realtimeBets } = useRealtimeBets({
-    limit: count * 3,
-    filterRedemptions: true,
-    order: 'desc',
+  const allRealtimeBets = useSubscribeGlobalBets({
+    includeRedemptions: false,
   })
+  const realtimeBets = sortBy(allRealtimeBets, 'createdTime')
+    .reverse()
+    .slice(0, count * 3)
 
   const realtimeComments = useRealtimeComments(count * 3)
 

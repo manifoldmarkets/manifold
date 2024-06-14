@@ -1,74 +1,15 @@
 import { maxBy, orderBy, uniq, uniqBy, sortBy } from 'lodash'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Bet, BetFilter, LimitBet } from 'common/bet'
 import { db } from 'web/lib/supabase/db'
-import { useEvent } from 'web/hooks/use-event'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import {
-  applyBetsFilter,
-  convertBet,
-  getBetRows,
-  getBets,
-} from 'common/supabase/bets'
-import { Filter } from 'common/supabase/realtime'
-import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { Row, tsToMillis } from 'common/supabase/utils'
+import { applyBetsFilter, convertBet, getBets } from 'common/supabase/bets'
+import { Row } from 'common/supabase/utils'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 import { useApiSubscription } from './use-api-subscription'
 import { usePollUserBalances } from './use-user'
-
-function getFilteredQuery(filteredParam: string, filterId?: string) {
-  if (filteredParam === 'contractId' && filterId) {
-    return { k: 'contract_id', v: filterId } as const
-  }
-  return undefined
-}
-
-export function useRealtimeBets(options?: BetFilter) {
-  let filteredParam
-  let filteredQuery: Filter<'contract_bets'> | undefined
-  if (options?.contractId) {
-    filteredParam = 'contractId'
-    filteredQuery = getFilteredQuery(filteredParam, options.contractId)
-  }
-  const { rows, dispatch } = useSubscription(
-    'contract_bets',
-    filteredQuery,
-    () => getBetRows(db, { ...options, order: options?.order ?? 'asc' })
-  )
-
-  const loadNewer = useEvent(async () => {
-    const retryLoadNewer = async (attemptNumber: number) => {
-      const newRows = await getBetRows(db, {
-        ...options,
-        afterTime: tsToMillis(
-          maxBy(rows ?? [], (r) => tsToMillis(r.created_time))?.created_time ??
-            new Date(Date.now() - 500).toISOString()
-        ),
-      })
-      if (newRows.length) {
-        for (const r of newRows) {
-          // really is an upsert
-          dispatch({ type: 'CHANGE', change: { eventType: 'INSERT', new: r } })
-        }
-      } else if (attemptNumber < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, 100 * attemptNumber))
-        retryLoadNewer(attemptNumber + 1)
-      }
-    }
-
-    const maxAttempts = 10
-    await retryLoadNewer(1)
-  })
-
-  const newBets = rows
-    ?.map(convertBet)
-    .filter((b) => !betShouldBeFiltered(b, options))
-
-  return { rows: newBets, loadNewer }
-}
 
 export function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
   if (!options) {
@@ -183,6 +124,48 @@ export const useSubscribeNewBets = (
 
   useApiSubscription({
     topics: [`contract/${contractId}/new-bet`],
+    onBroadcast: (msg) => {
+      addBets(msg.data.bets as Bet[])
+    },
+  })
+
+  return newBets
+}
+
+export const useSubscribeGlobalBets = (params?: {
+  afterTime?: number
+  includeRedemptions?: boolean
+}) => {
+  const [now] = useState(Date.now())
+  const { afterTime = now, includeRedemptions = false } = params ?? {}
+
+  const [newBets, setNewBets] = usePersistentInMemoryState<Bet[]>(
+    [],
+    'global-new-bets'
+  )
+
+  const addBets = (bets: Bet[]) => {
+    setNewBets((currentBets) => {
+      const uniqueBets = sortBy(
+        uniqBy([...currentBets, ...bets], 'id'),
+        'createdTime'
+      )
+      return uniqueBets.filter(
+        (b) =>
+          b.createdTime > afterTime && (includeRedemptions || !b.isRedemption)
+      )
+    })
+  }
+
+  useEffect(() => {
+    getBets(db, {
+      afterTime,
+      filterRedemptions: !includeRedemptions,
+    }).then(addBets)
+  }, [afterTime])
+
+  useApiSubscription({
+    topics: [`global/new-bet`],
     onBroadcast: (msg) => {
       addBets(msg.data.bets as Bet[])
     },
