@@ -30,6 +30,9 @@ case $ENV in
         exit 1
 esac
 
+echo "Deploy start time: $(date "+%Y-%m-%d %I:%M:%S %p")"
+
+
 GIT_REVISION=$(git rev-parse --short HEAD)
 TIMESTAMP=$(date +"%s")
 IMAGE_TAG="${TIMESTAMP}-${GIT_REVISION}"
@@ -99,6 +102,7 @@ gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GRO
        --max-unavailable 0 # don't kill old one until new one is healthy
 
 echo "Rollout underway. Waiting for update to finish rolling out"
+echo "Current time: $(date "+%Y-%m-%d %I:%M:%S %p")"
 gcloud compute instance-groups managed wait-until --stable ${SERVICE_GROUP} \
        --project ${GCLOUD_PROJECT} \
        --zone ${ZONE}
