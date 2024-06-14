@@ -48,15 +48,6 @@ drop publication if exists supabase_realtime;
 create publication supabase_realtime;
 
 alter publication supabase_realtime
-add table contracts;
-
-alter publication supabase_realtime
-add table contract_bets;
-
-alter publication supabase_realtime
-add table contract_comments;
-
-alter publication supabase_realtime
 add table group_contracts;
 
 alter publication supabase_realtime
