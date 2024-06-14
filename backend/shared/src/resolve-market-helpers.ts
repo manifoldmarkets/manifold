@@ -219,7 +219,7 @@ export const resolveMarketHelper = async (
         payouts,
         contractId,
         answerId,
-        !!contract.isSpicePayout
+        !!contract.isSpicePayout && outcome !== 'CANCEL'
       )
 
       // TODO: we may want to support clawing back trader bonuses on MC markets too
