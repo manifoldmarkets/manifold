@@ -4,7 +4,7 @@ import { getUser } from './utils'
 import { PrivateUser } from '../../common/user'
 
 export const unsubscribe: EndpointDefinition = {
-  opts: { method: 'GET', minInstances: 1 },
+  opts: { method: 'GET', minInstances: 0 },
   handler: async (req, res) => {
     const id = req.query.id as string
     let type = req.query.type as string

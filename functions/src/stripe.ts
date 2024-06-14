@@ -43,7 +43,7 @@ const manticDollarStripePrice = isProd()
     }
 
 export const createcheckoutsession: EndpointDefinition = {
-  opts: { method: 'POST', minInstances: 1, secrets: ['STRIPE_APIKEY'] },
+  opts: { method: 'POST', minInstances: 0, secrets: ['STRIPE_APIKEY'] },
   handler: async (req, res) => {
     const userId = req.query.userId?.toString()
 
@@ -92,7 +92,7 @@ export const createcheckoutsession: EndpointDefinition = {
 export const stripewebhook: EndpointDefinition = {
   opts: {
     method: 'POST',
-    minInstances: 1,
+    minInstances: 0,
     secrets: ['MAILGUN_KEY', 'STRIPE_APIKEY', 'STRIPE_WEBHOOKSECRET'],
   },
   handler: async (req, res) => {

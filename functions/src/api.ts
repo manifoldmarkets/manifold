@@ -111,7 +111,7 @@ export interface EndpointOptions extends HttpsOptions {
 
 const DEFAULT_OPTS = {
   method: 'POST',
-  minInstances: 1,
+  minInstances: 0,
   concurrency: 100,
   memory: '2GiB',
   cpu: 1,
