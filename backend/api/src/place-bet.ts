@@ -19,11 +19,7 @@ import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
-import {
-  SupabaseDirectClient,
-  SupabaseTransaction,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
@@ -49,36 +45,35 @@ export const placeBetMain = async (
   uid: string,
   isApi: boolean
 ) => {
-  const { amount, contractId, replyToCommentId, answerId } = body
-  const pg = createSupabaseDirectClient()
-
   const startTime = Date.now()
 
-  const contract = await getContract(pg, contractId)
-  if (!contract) throw new APIError(404, 'Contract not found.')
-  if (contract.mechanism === 'none' || contract.mechanism === 'qf')
-    throw new APIError(400, 'This is not a market')
-
-  const { closeTime, outcomeType, mechanism } = contract
-  if (closeTime && Date.now() > closeTime)
-    throw new APIError(403, 'Trading is closed.')
-
-  let answers: Answer[] | undefined
-  if (answerId) {
-    answers = await getAnswersForContract(pg, contractId)
-  }
-
-  const unfilledBets = await getUnfilledBets(
-    createSupabaseDirectClient(),
-    contractId,
-    // Fetch all limit orders if answers should sum to one.
-    'shouldAnswersSumToOne' in contract && contract.shouldAnswersSumToOne
-      ? undefined
-      : answerId
-  )
-  const unfilledBetUserIds = uniq(unfilledBets.map((bet) => bet.userId))
+  const { amount, contractId, replyToCommentId, answerId } = body
 
   const result = await runShortTrans(async (pgTrans) => {
+    const contract = await getContract(pgTrans, contractId)
+    if (!contract) throw new APIError(404, 'Contract not found.')
+    if (contract.mechanism === 'none' || contract.mechanism === 'qf')
+      throw new APIError(400, 'This is not a market')
+
+    const { closeTime, outcomeType, mechanism } = contract
+    if (closeTime && Date.now() > closeTime)
+      throw new APIError(403, 'Trading is closed.')
+
+    let answers: Answer[] | undefined
+    if (answerId) {
+      answers = await getAnswersForContract(pgTrans, contractId)
+    }
+
+    const unfilledBets = await getUnfilledBets(
+      pgTrans,
+      contractId,
+      // Fetch all limit orders if answers should sum to one.
+      'shouldAnswersSumToOne' in contract && contract.shouldAnswersSumToOne
+        ? undefined
+        : answerId
+    )
+    const unfilledBetUserIds = uniq(unfilledBets.map((bet) => bet.userId))
+
     const [user, balanceByUserId] = await Promise.all([
       validateBet(uid, amount, contract, pgTrans, isApi),
       getUserBalances(pgTrans, unfilledBetUserIds),
@@ -193,6 +188,7 @@ export const placeBetMain = async (
   })
 
   const {
+    contract,
     newBet,
     fullBets,
     allOrdersToCancel,
@@ -486,6 +482,7 @@ export const processNewBetResult = async (
   }
 
   return {
+    contract,
     newBet,
     betId: betRow.bet_id,
     makers,
