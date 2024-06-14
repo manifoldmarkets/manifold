@@ -8,7 +8,6 @@ import { log, metrics } from 'shared/utils'
 import { withMonitoringContext } from 'shared/monitoring/context'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
-import { transact } from './transact'
 import { updateMe } from './update-me'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
@@ -362,7 +361,6 @@ Object.entries(handlers).forEach(([path, handler]) => {
 
 app.get('/health', ...apiRoute(health))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
-app.post('/transact', ...apiRoute(transact))
 app.post('/editcomment', ...apiRoute(editcomment))
 
 app.post('/claimmanalink', ...apiRoute(claimmanalink))

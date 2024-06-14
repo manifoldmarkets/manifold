@@ -57,10 +57,6 @@ export function claimDestinySub(params: any) {
   return call(getApiUrl('claimdestinysub'), 'POST', params)
 }
 
-export function transact(params: any) {
-  return call(getApiUrl('transact'), 'POST', params)
-}
-
 export function createUser(params: any) {
   return call(getApiUrl('createuser'), 'POST', params)
 }
