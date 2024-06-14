@@ -1,7 +1,6 @@
-import * as admin from 'firebase-admin'
 import { type APIHandler } from './helpers/endpoint'
 import { removeUndefinedProps } from 'common/util/object'
-import { mapKeys } from 'lodash'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 
 export const saveTwitchCredentials: APIHandler<'save-twitch'> = async (
@@ -9,13 +8,16 @@ export const saveTwitchCredentials: APIHandler<'save-twitch'> = async (
   auth
 ) => {
   // partial update
-  const update = mapKeys(
-    removeUndefinedProps(props.twitchInfo),
-    (_value, key) => `twitchInfo.${key}`
+  const pg = createSupabaseDirectClient()
+  await pg.none(
+    `update private_users
+    set data = data || jsonb_build_object(
+      'twitchInfo',
+      data->'twitchInfo' || $1::jsonb
+    )
+    where id = $2`,
+    [removeUndefinedProps(props.twitchInfo), auth.uid]
   )
 
-  await firestore.doc(`private-users/${auth.uid}`).update(update)
   broadcastUpdatedPrivateUser(auth.uid)
 }
-
-const firestore = admin.firestore()

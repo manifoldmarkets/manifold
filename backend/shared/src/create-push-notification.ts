@@ -7,6 +7,8 @@ import { PrivateUser } from 'common/user'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updatePrivateUser } from './supabase/users'
+import { FieldVal } from './supabase/utils'
 
 type ExpoPushMessageWithNotification = ExpoPushMessage & {
   data: Notification
@@ -74,12 +76,9 @@ export const createPushNotification = async (
         log('Error generating push notification, ticket:', ticket)
         if (ticket.details?.error === 'DeviceNotRegistered') {
           // set private user pushToken to null
-          await firestore
-            .collection('private-users')
-            .doc(privateUser.id)
-            .update({
-              pushToken: admin.firestore.FieldValue.delete(),
-            })
+          await updatePrivateUser(pg, privateUser.id, {
+            pushToken: FieldVal.delete(),
+          })
         }
       }
     })

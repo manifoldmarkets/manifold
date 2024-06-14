@@ -158,6 +158,13 @@ export const FieldVal = {
 
   delete: () => (fieldName: string) => `- '${fieldName}'`,
 
+  arrayConcat:
+    (...values: string[]) =>
+    (fieldName: string) => {
+      const valueString = `'{${values.join(',')}}'::text[]`
+      return `|| jsonb_build_object('${fieldName}', data->'${fieldName} || ${valueString}))`
+    },
+
   arrayRemove:
     (...values: string[]) =>
     (fieldName: string) => {

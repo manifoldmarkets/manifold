@@ -23,7 +23,7 @@ import {
   ENV_CONFIG,
   GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
 } from 'common/envs/constants'
-import { convertUser } from 'common/supabase/users'
+import { convertPrivateUser, convertUser } from 'common/supabase/users'
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
@@ -285,14 +285,26 @@ export const getUsers = async (
   return res
 }
 
-export const getPrivateUser = (userId: string) => {
-  return getDoc<PrivateUser>('private-users', userId)
+export const getPrivateUser = async (
+  userId: string,
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) => {
+  return await pg.oneOrNone(
+    `select * from private_users where id = $1 limit 1`,
+    [userId],
+    convertPrivateUser
+  )
 }
 
-export const getAllPrivateUsers = async () => {
-  const firestore = admin.firestore()
-  const users = await firestore.collection('private-users').get()
-  return users.docs.map((doc) => doc.data() as PrivateUser)
+export const getPrivateUserByKey = async (
+  apiKey: string,
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) => {
+  return await pg.oneOrNone(
+    `select * from private_users where (data->'apiKey')::text = $1 limit 1`,
+    [apiKey],
+    convertPrivateUser
+  )
 }
 
 export const getPrivateUsersNotSent = async (

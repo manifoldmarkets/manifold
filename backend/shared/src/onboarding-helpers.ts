@@ -8,7 +8,7 @@ import {
   MARKET_VISIT_BONUS_TOTAL,
   NEXT_DAY_BONUS,
 } from 'common/economy'
-import { getUser, getUsers, isProd, log } from 'shared/utils'
+import { getPrivateUser, getUser, getUsers, isProd, log } from 'shared/utils'
 import { SignupBonusTxn } from 'common/txn'
 import {
   MANIFOLD_AVATAR_URL,
@@ -28,7 +28,7 @@ import { sendBonusWithInterestingMarketsEmail } from 'shared/emails'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { APIError } from 'common/api/utils'
 import { getForYouMarkets } from 'shared/weekly-markets-emails'
-import { updateUser } from './supabase/users'
+import { updatePrivateUser, updateUser } from './supabase/users'
 
 const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
 
@@ -87,28 +87,24 @@ const sendNextDayManaBonus = async (
 ) => {
   const pg = createSupabaseDirectClient()
 
-  const privateUser = await firestore.runTransaction(async (transaction) => {
-    const toDoc = firestore.doc(`private-users/${user.id}`)
-    const toUserSnap = await transaction.get(toDoc)
-    if (!toUserSnap.exists) return null
+  const { txn, privateUser } = await pg.tx(async (tx) => {
+    const privateUser = await getPrivateUser(user.id, tx)
+    if (!privateUser) throw new APIError(404, `private user not found`)
 
-    const privateUser = toUserSnap.data() as PrivateUser
     if (privateUser.manaBonusSent) {
       log(`User ${user.id} already received mana bonus`)
-      return null
+      return {}
     } else {
-      transaction.update(toDoc, {
+      updatePrivateUser(tx, user.id, {
         manaBonusSent: true,
         weeklyTrendingEmailSent: true, // not yet, but about to!
       })
     }
-    return privateUser
-  })
 
-  if (!privateUser) return
-
-  const signupBonusTxn: Omit<SignupBonusTxn, 'fromId' | 'id' | 'createdTime'> =
-    {
+    const signupBonusTxn: Omit<
+      SignupBonusTxn,
+      'fromId' | 'id' | 'createdTime'
+    > = {
       fromType: 'BANK',
       amount: NEXT_DAY_BONUS,
       category: 'SIGNUP_BONUS',
@@ -118,15 +114,9 @@ const sendNextDayManaBonus = async (
       description: 'Next day signup bonus',
     }
 
-  const txn = await pg
-    .tx((tx) => runTxnFromBank(tx, signupBonusTxn))
-    .catch((e) => {
-      log.error(
-        `User ${user.id} had initial signup bonus marked but may not have recieved mana! Must manually reconcile`
-      )
-      log.error(e && typeof e === 'object' && 'message' in e ? e.message : e)
-      return null
-    })
+    const txn = await runTxnFromBank(tx, signupBonusTxn)
+    return { txn, privateUser }
+  })
 
   if (!txn) return
 

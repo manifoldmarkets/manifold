@@ -1,5 +1,4 @@
 import * as functions from 'firebase-functions'
-import * as admin from 'firebase-admin'
 import { sum } from 'lodash'
 
 import { getUsersContractMetricsOrderedByProfit } from 'common/supabase/contract-metrics'
@@ -10,7 +9,6 @@ import {
   SupabaseClient,
 } from 'shared/supabase/init'
 import { getUser, getUsers, log } from 'shared/utils'
-import { PrivateUser } from 'common/user'
 import { secrets } from 'common/secrets'
 import { bulkInsert } from 'shared/supabase/utils'
 import { APIError } from 'common/api/utils'
@@ -18,8 +16,8 @@ import { APIError } from 'common/api/utils'
 import * as dayjs from 'dayjs'
 import { Row } from 'common/supabase/utils'
 import { ContractMetric } from 'common/contract-metric'
+import { convertPrivateUser } from 'common/supabase/users'
 
-const firestore = admin.firestore()
 const now = new Date()
 const time = now.getTime()
 
@@ -49,15 +47,22 @@ export const saveWeeklyContractMetricsInternal = async () => {
   const db = createSupabaseClient()
 
   // users who have disabled browser notifications for profit/loss updates won't be able to see their portfolio updates in the past
-  const users = await firestore
-    .collection('private-users')
-    .where(
-      'notificationPreferences.profit_loss_updates',
-      'array-contains',
+  const privateUsersQuery = await db
+    .from('private_users')
+    .select('id')
+    .contains(
+      `data->'notificationPreferences'->'profit_loss_updates'`,
       'browser'
     )
-    .get()
-  const privateUsers = users.docs.map((doc) => doc.data() as PrivateUser)
+
+  if (privateUsersQuery.error) {
+    throw new APIError(
+      500,
+      'Error getting private users: ',
+      privateUsersQuery.error
+    )
+  }
+  const privateUsers = privateUsersQuery.data
 
   const alreadyUpdatedQuery = await db
     .from('weekly_update')
@@ -119,15 +124,23 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
   const db = createSupabaseClient()
 
   // get all users who have opted in to weekly portfolio updates
-  const usersSnap = await firestore
-    .collection('private-users')
-    .where(
-      'notificationPreferences.profit_loss_updates',
-      'array-contains',
+  const privateUsersQuery = await db
+    .from('private_users')
+    .select()
+    .contains(
+      `data->'notificationPreferences'->'profit_loss_updates'`,
       'browser'
     )
-    .get()
-  const privateUsers = usersSnap.docs.map((doc) => doc.data() as PrivateUser)
+
+  if (privateUsersQuery.error) {
+    throw new APIError(
+      500,
+      'Error getting private users: ',
+      privateUsersQuery.error
+    )
+  }
+  const privateUsers = privateUsersQuery.data.map(convertPrivateUser)
+
   const userData = await getUsers(privateUsers.map((u) => u.id))
   const usernameById = Object.fromEntries(
     userData.map((u) => [u.id, u.username])
