@@ -11,7 +11,10 @@ import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../bet/yes-no-selector'
-import { ResolveConfirmationButton } from '../buttons/confirmation-button'
+import {
+  CancelAllConfirmationButton,
+  ResolveConfirmationButton,
+} from '../buttons/confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
@@ -32,7 +35,7 @@ import {
   ClosedProb,
   OpenProb,
 } from './answer-components'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdmin, useAdminOrMod } from 'web/hooks/use-admin'
 import { GradientContainer } from '../widgets/gradient-container'
 import { AmountInput } from '../widgets/amount-input'
 import { getAnswerColor } from '../charts/contract/choice'
@@ -419,12 +422,49 @@ export const IndependentAnswersResolvePanel = (props: {
 
   const isAdmin = useAdmin()
   const user = useUser()
+  const answers = useAnswersCpmm(contract.id) ?? contract.answers
+  const isAdminorMod = useAdminOrMod()
 
-  const { answers, addAnswersMode } = contract
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | undefined>(undefined)
+
+  const onCancelAll = async () => {
+    setIsSubmitting(true)
+    try {
+      for (const answer of answers) {
+        const resolutionProps = removeUndefinedProps({
+          contractId: contract.id,
+          outcome: 'CANCEL',
+          answerId: answer.id,
+        })
+
+        try {
+          const result = await api(
+            'market/:contractId/resolve',
+            resolutionProps as any
+          )
+          console.log('resolved', resolutionProps, 'result:', result)
+        } catch (e) {
+          if (e instanceof APIError) {
+            setError(e.toString())
+          } else {
+            console.error(e)
+            setError('Error resolving question')
+          }
+        }
+      }
+      console.log('All contracts canceled')
+    } catch (e) {
+      console.error(e)
+      setError('Error canceling all contracts')
+    }
+    setIsSubmitting(false)
+  }
+
   const sortedAnswers = sortBy(
     answers,
     (a) => (a.resolution ? -a.subsidyPool : -Infinity),
-    (a) => (addAnswersMode === 'ANYONE' ? -1 * a.prob : a.index)
+    (a) => a.index
   )
 
   return (
@@ -435,6 +475,16 @@ export const IndependentAnswersResolvePanel = (props: {
           isCreator={user?.id === contract.creatorId}
           onClose={onClose}
         />
+        {isAdminorMod && (
+          <Row className="justify-end">
+            <CancelAllConfirmationButton
+              onResolve={onCancelAll}
+              isSubmitting={isSubmitting}
+              marketTitle={contract.question}
+              color="red"
+            />
+          </Row>
+        )}
         <Col className="gap-2">
           {sortedAnswers.map((answer) => (
             <IndependentResolutionAnswerItem
@@ -448,6 +498,7 @@ export const IndependentAnswersResolvePanel = (props: {
         </Col>
         <ResolutionExplainer independentMulti />
       </Col>
+      {!!error && <div className="text-scarlet-500">{error}</div>}
     </GradientContainer>
   )
 }
@@ -470,7 +521,7 @@ function IndependentResolutionAnswerItem(props: {
   const addAnswersMode = contract.addAnswersMode ?? 'DISABLED'
 
   return (
-    <GradientContainer className={' shadow-none'}>
+    <GradientContainer className={'shadow-none'}>
       <Col>
         <AnswerBar
           color={color}
