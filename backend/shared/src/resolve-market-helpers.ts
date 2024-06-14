@@ -1,4 +1,4 @@
-import { mapValues, groupBy, sum, sumBy, chunk } from 'lodash'
+import { mapValues, groupBy, sum, sumBy } from 'lodash'
 import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -24,7 +24,10 @@ import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common//api/utils'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
-import { createSupabaseDirectClient } from './supabase/init'
+import {
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+} from './supabase/init'
 import { Answer } from 'common/answer'
 import {
   SPICE_PRODUCTION_ENABLED,
@@ -54,172 +57,177 @@ export const resolveMarketHelper = async (
 ) => {
   const pg = createSupabaseDirectClient()
 
-  // Fetch fresh contract & check if resolved within lock.
-  const fetch = await getContract(pg, unresolvedContract.id)
-  if (!fetch) {
-    throw new APIError(500, 'Contract not found')
-  }
-  unresolvedContract = fetch
-  if (unresolvedContract.isResolved) {
-    throw new APIError(403, 'Contract is already resolved')
-  }
-
-  const { closeTime, id: contractId, outcomeType } = unresolvedContract
-
-  const resolutionTime = Date.now()
-  const newCloseTime = closeTime
-    ? Math.min(closeTime, resolutionTime)
-    : closeTime
-
-  const { bets, resolutionProbability, payouts, payoutsWithoutLoans } =
-    await getDataAndPayoutInfo(
-      outcome,
-      unresolvedContract,
-      resolutions,
-      probabilityInt,
-      answerId
-    )
-
-  let updatedContractAttrs: Partial<Contract> | undefined =
-    removeUndefinedProps({
-      isResolved: true,
-      resolution: outcome,
-      resolutionValue: value,
-      resolutionTime,
-      closeTime: newCloseTime,
-      resolutionProbability,
-      resolutions,
-      resolverId: resolver.id,
-      subsidyPool: 0,
-      lastUpdatedTime: newCloseTime,
-    })
-  let updateAnswerAttrs: Partial<Answer> | undefined
-
-  if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
-    // Only resolve the contract if all other answers are resolved.
-    const allAnswersResolved = unresolvedContract.answers
-      .filter((a) => a.id !== answerId)
-      .every((a) => a.resolution)
-
-    const hasAnswerResolvedYes =
-      unresolvedContract.answers.some((a) => a.resolution === 'YES') ||
-      outcome === 'YES'
-    const marketCancelled = unresolvedContract.answers.every(
-      (a) => a.resolution === 'CANCEL'
-    )
-    const finalResolution = marketCancelled ? 'CANCEL' : 'MKT'
-    if (
-      allAnswersResolved &&
-      outcomeType !== 'NUMBER' &&
-      // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
-      (!unresolvedContract.specialLiquidityPerAnswer || hasAnswerResolvedYes)
-    )
-      updatedContractAttrs = {
-        ...updatedContractAttrs,
-        resolution: finalResolution,
+  const { contract, bets, payoutsWithoutLoans, updatedContractAttrs } =
+    await pg.tx(async (tx) => {
+      // Fetch fresh contract & check if resolved within lock.
+      const fetch = await getContract(tx, unresolvedContract.id)
+      if (!fetch) {
+        throw new APIError(500, 'Contract not found')
       }
-    else updatedContractAttrs = undefined
+      unresolvedContract = fetch
+      if (unresolvedContract.isResolved) {
+        throw new APIError(403, 'Contract is already resolved')
+      }
 
-    const finalProb =
-      resolutionProbability ??
-      (outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : undefined)
-    updateAnswerAttrs = removeUndefinedProps({
-      resolution: outcome,
-      resolutionTime,
-      resolutionProbability,
-      prob: finalProb,
-      resolverId: resolver.id,
-    }) as Partial<Answer>
-    // We have to update the denormalized answer data on the contract for the updateContractMetrics call
-    updatedContractAttrs = {
-      ...(updatedContractAttrs ?? {}),
-      answers: unresolvedContract.answers.map((a) =>
-        a.id === answerId
-          ? {
-              ...a,
-              ...updateAnswerAttrs,
-            }
-          : a
-      ),
-    } as Partial<CPMMMultiContract>
-  } else if (
-    unresolvedContract.mechanism === 'cpmm-multi-1' &&
-    updatedContractAttrs.isResolved
-  ) {
-    updateAnswerAttrs = removeUndefinedProps({
-      resolutionTime,
-      resolverId: resolver.id,
-    }) as Partial<Answer>
-    // We have to update the denormalized answer data on the contract for the updateContractMetrics call
-    updatedContractAttrs = {
-      ...(updatedContractAttrs ?? {}),
-      answers: unresolvedContract.answers.map((a) => ({
-        ...a,
-        ...updateAnswerAttrs,
-      })),
-    } as Partial<CPMMMultiContract>
-  }
+      const { closeTime, id: contractId, outcomeType } = unresolvedContract
 
-  const contract = {
-    ...unresolvedContract,
-    ...updatedContractAttrs,
-  } as Contract
+      const resolutionTime = Date.now()
+      const newCloseTime = closeTime
+        ? Math.min(closeTime, resolutionTime)
+        : closeTime
 
-  // handle exploit where users can get negative payouts
-  const negPayoutThreshold = contract.uniqueBettorCount < 100 ? 0 : -1000
+      const { bets, resolutionProbability, payouts, payoutsWithoutLoans } =
+        await getDataAndPayoutInfo(
+          tx,
+          outcome,
+          unresolvedContract,
+          resolutions,
+          probabilityInt,
+          answerId
+        )
 
-  const userPayouts = groupPayoutsByUser(payouts)
-  log('user payouts', { userPayouts })
+      let updatedContractAttrs: Partial<Contract> | undefined =
+        removeUndefinedProps({
+          isResolved: true,
+          resolution: outcome,
+          resolutionValue: value,
+          resolutionTime,
+          closeTime: newCloseTime,
+          resolutionProbability,
+          resolutions,
+          resolverId: resolver.id,
+          subsidyPool: 0,
+          lastUpdatedTime: newCloseTime,
+        })
+      let updateAnswerAttrs: Partial<Answer> | undefined
 
-  const negativePayouts = Object.values(userPayouts).filter(
-    (p) => p < negPayoutThreshold
-  )
+      if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
+        // Only resolve the contract if all other answers are resolved.
+        const allAnswersResolved = unresolvedContract.answers
+          .filter((a) => a.id !== answerId)
+          .every((a) => a.resolution)
 
-  log('negative payouts', { negativePayouts })
+        const hasAnswerResolvedYes =
+          unresolvedContract.answers.some((a) => a.resolution === 'YES') ||
+          outcome === 'YES'
+        const marketCancelled = unresolvedContract.answers.every(
+          (a) => a.resolution === 'CANCEL'
+        )
+        const finalResolution = marketCancelled ? 'CANCEL' : 'MKT'
+        if (
+          allAnswersResolved &&
+          outcomeType !== 'NUMBER' &&
+          // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
+          (!unresolvedContract.specialLiquidityPerAnswer ||
+            hasAnswerResolvedYes)
+        )
+          updatedContractAttrs = {
+            ...updatedContractAttrs,
+            resolution: finalResolution,
+          }
+        else updatedContractAttrs = undefined
 
-  if (
-    outcome === 'CANCEL' &&
-    !isAdminId(resolver.id) &&
-    !isModId(resolver.id) &&
-    negativePayouts.length > 0
-  ) {
-    throw new APIError(
-      403,
-      'Negative payouts too large for resolution. Contact admin or mod.'
-    )
-  }
+        const finalProb =
+          resolutionProbability ??
+          (outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : undefined)
+        updateAnswerAttrs = removeUndefinedProps({
+          resolution: outcome,
+          resolutionTime,
+          resolutionProbability,
+          prob: finalProb,
+          resolverId: resolver.id,
+        }) as Partial<Answer>
+        // We have to update the denormalized answer data on the contract for the updateContractMetrics call
+        updatedContractAttrs = {
+          ...(updatedContractAttrs ?? {}),
+          answers: unresolvedContract.answers.map((a) =>
+            a.id === answerId
+              ? {
+                  ...a,
+                  ...updateAnswerAttrs,
+                }
+              : a
+          ),
+        } as Partial<CPMMMultiContract>
+      } else if (
+        unresolvedContract.mechanism === 'cpmm-multi-1' &&
+        updatedContractAttrs.isResolved
+      ) {
+        updateAnswerAttrs = removeUndefinedProps({
+          resolutionTime,
+          resolverId: resolver.id,
+        }) as Partial<Answer>
+        // We have to update the denormalized answer data on the contract for the updateContractMetrics call
+        updatedContractAttrs = {
+          ...(updatedContractAttrs ?? {}),
+          answers: unresolvedContract.answers.map((a) => ({
+            ...a,
+            ...updateAnswerAttrs,
+          })),
+        } as Partial<CPMMMultiContract>
+      }
 
-  if (updatedContractAttrs) {
-    log('updating contract', { updatedContractAttrs })
-    await updateContract(pg, contractId, updatedContractAttrs)
-    log('contract resolved')
-  }
-  if (updateAnswerAttrs && answerId) {
-    const props = removeUndefinedProps(updateAnswerAttrs)
-    await updateAnswer(pg, answerId, props)
-  } else if (
-    updateAnswerAttrs &&
-    unresolvedContract.mechanism === 'cpmm-multi-1'
-  ) {
-    for (const answer of unresolvedContract.answers) {
-      const props = removeUndefinedProps(updateAnswerAttrs)
-      await updateAnswer(pg, answer.id, props)
-    }
-  }
-  log('processing payouts', { payouts })
-  await payUsersTransactions(
-    payouts,
-    contractId,
-    answerId,
-    !!contract.isSpicePayout
-  )
+      const contract = {
+        ...unresolvedContract,
+        ...updatedContractAttrs,
+      } as Contract
 
-  await updateContractMetricsForUsers(contract, bets)
-  // TODO: we may want to support clawing back trader bonuses on MC markets too
-  if (!answerId) {
-    await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
-  }
-  await revalidateStaticProps(contractPath(contract))
+      // handle exploit where users can get negative payouts
+      const negPayoutThreshold = contract.uniqueBettorCount < 100 ? 0 : -1000
+
+      const userPayouts = groupPayoutsByUser(payouts)
+      log('user payouts', { userPayouts })
+
+      const negativePayouts = Object.values(userPayouts).filter(
+        (p) => p < negPayoutThreshold
+      )
+
+      log('negative payouts', { negativePayouts })
+
+      if (
+        outcome === 'CANCEL' &&
+        !isAdminId(resolver.id) &&
+        !isModId(resolver.id) &&
+        negativePayouts.length > 0
+      ) {
+        throw new APIError(
+          403,
+          'Negative payouts too large for resolution. Contact admin or mod.'
+        )
+      }
+
+      if (updatedContractAttrs) {
+        log('updating contract', { updatedContractAttrs })
+        await updateContract(tx, contractId, updatedContractAttrs)
+        log('contract resolved')
+      }
+      if (updateAnswerAttrs && answerId) {
+        const props = removeUndefinedProps(updateAnswerAttrs)
+        await updateAnswer(tx, answerId, props)
+      } else if (
+        updateAnswerAttrs &&
+        unresolvedContract.mechanism === 'cpmm-multi-1'
+      ) {
+        for (const answer of unresolvedContract.answers) {
+          const props = removeUndefinedProps(updateAnswerAttrs)
+          await updateAnswer(tx, answer.id, props)
+        }
+      }
+      log('processing payouts', { payouts })
+      await payUsersTransactions(
+        tx,
+        payouts,
+        contractId,
+        answerId,
+        !!contract.isSpicePayout
+      )
+
+      // TODO: we may want to support clawing back trader bonuses on MC markets too
+      if (!answerId) {
+        await undoUniqueBettorRewardsIfCancelResolution(tx, contract, outcome)
+      }
+      return { contract, bets, payoutsWithoutLoans, updatedContractAttrs }
+    })
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
 
@@ -229,7 +237,7 @@ export const resolveMarketHelper = async (
   )
   await trackPublicEvent(resolver.id, 'resolve market', {
     resolution: outcome,
-    contractId,
+    contractId: contract.id,
   })
 
   await recordContractEdit(
@@ -237,6 +245,9 @@ export const resolveMarketHelper = async (
     resolver.id,
     Object.keys(updatedContractAttrs ?? {})
   )
+
+  await updateContractMetricsForUsers(contract, bets)
+  await revalidateStaticProps(contractPath(contract))
 
   await createContractResolvedNotifications(
     contract,
@@ -250,7 +261,7 @@ export const resolveMarketHelper = async (
       userIdToContractMetrics,
       userPayouts: userPayoutsWithoutLoans,
       creatorPayout: 0,
-      resolutionProbability,
+      resolutionProbability: contract.resolutionProbability,
       resolutions,
     }
   )
@@ -259,6 +270,7 @@ export const resolveMarketHelper = async (
 }
 
 export const getDataAndPayoutInfo = async (
+  pg: SupabaseTransaction,
   outcome: string | undefined,
   unresolvedContract: Contract,
   resolutions: { [key: string]: number } | undefined,
@@ -266,8 +278,6 @@ export const getDataAndPayoutInfo = async (
   answerId: string | undefined
 ) => {
   const { id: contractId, outcomeType } = unresolvedContract
-
-  const pg = createSupabaseDirectClient()
 
   // Filter out initial liquidity if set up with special liquidity per answer.
   const filterAnte =
@@ -351,11 +361,10 @@ export const getDataAndPayoutInfo = async (
   }
 }
 async function undoUniqueBettorRewardsIfCancelResolution(
+  pg: SupabaseTransaction,
   contract: Contract,
   outcome: string
 ) {
-  const pg = createSupabaseDirectClient()
-
   if (outcome === 'CANCEL') {
     const bonusTxnsOnThisContract = await pg.map<Txn>(
       `select * from txns where category = 'UNIQUE_BETTOR_BONUS'
@@ -406,6 +415,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
 }
 
 export const payUsersTransactions = async (
+  pg: SupabaseTransaction,
   payouts: {
     userId: string
     payout: number
@@ -415,77 +425,65 @@ export const payUsersTransactions = async (
   answerId: string | undefined,
   payoutSpice: boolean
 ) => {
-  const pg = createSupabaseDirectClient()
   const mergedPayouts = checkAndMergePayouts(payouts)
-  const payoutChunks = chunk(mergedPayouts, 250)
   const payoutStartTime = Date.now()
 
-  for (const payoutChunk of payoutChunks) {
-    const balanceUpdates: {
-      id: string
-      balance?: number
-      spiceBalance?: number
-      totalDeposits: number
-    }[] = []
-    const txns: TxnData[] = []
+  const balanceUpdates: {
+    id: string
+    balance?: number
+    spiceBalance?: number
+    totalDeposits: number
+  }[] = []
+  const txns: TxnData[] = []
 
-    payoutChunk.forEach(async ({ userId, payout, deposit }) => {
-      if (SPICE_PRODUCTION_ENABLED && payoutSpice) {
-        balanceUpdates.push({
-          id: userId,
-          spiceBalance: payout,
-          totalDeposits: deposit ?? 0,
-        })
-
-        txns.push({
-          category: 'PRODUCE_SPICE',
-          fromType: 'CONTRACT',
-          fromId: contractId,
-          toType: 'USER',
-          toId: userId,
-          amount: payout,
-          token: 'SPICE',
-          data: removeUndefinedProps({
-            deposit: deposit ?? 0,
-            payoutStartTime,
-            answerId,
-          }),
-          description: 'Contract payout for resolution',
-        })
-      } else {
-        balanceUpdates.push({
-          id: userId,
-          balance: payout,
-          totalDeposits: deposit ?? 0,
-        })
-
-        txns.push({
-          category: 'CONTRACT_RESOLUTION_PAYOUT',
-          fromType: 'CONTRACT',
-          fromId: contractId,
-          toType: 'USER',
-          toId: userId,
-          amount: payout,
-          token: 'M$',
-          data: removeUndefinedProps({
-            deposit: deposit ?? 0,
-            payoutStartTime,
-            answerId,
-          }),
-          description: 'Contract payout for resolution: ' + contractId,
-        })
-      }
-    })
-
-    await pg
-      .tx(async (tx) => {
-        await bulkIncrementBalances(tx, balanceUpdates)
-        await insertTxns(tx, txns)
+  for (const { userId, payout, deposit } of mergedPayouts) {
+    if (SPICE_PRODUCTION_ENABLED && payoutSpice) {
+      balanceUpdates.push({
+        id: userId,
+        spiceBalance: payout,
+        totalDeposits: deposit ?? 0,
       })
-      .catch((e) => {
-        // don't rethrow error without undoing previous payouts
-        log.error(e)
-        log.error('Error running payout chunk transaction', { payoutChunk })
+
+      txns.push({
+        category: 'PRODUCE_SPICE',
+        fromType: 'CONTRACT',
+        fromId: contractId,
+        toType: 'USER',
+        toId: userId,
+        amount: payout,
+        token: 'SPICE',
+        data: removeUndefinedProps({
+          deposit: deposit ?? 0,
+          payoutStartTime,
+          answerId,
+        }),
+        description: 'Contract payout for resolution',
       })
+    } else {
+      balanceUpdates.push({
+        id: userId,
+        balance: payout,
+        totalDeposits: deposit ?? 0,
+      })
+
+      txns.push({
+        category: 'CONTRACT_RESOLUTION_PAYOUT',
+        fromType: 'CONTRACT',
+        fromId: contractId,
+        toType: 'USER',
+        toId: userId,
+        amount: payout,
+        token: 'M$',
+        data: removeUndefinedProps({
+          deposit: deposit ?? 0,
+          payoutStartTime,
+          answerId,
+        }),
+        description: 'Contract payout for resolution: ' + contractId,
+      })
+    }
   }
+
+  await bulkIncrementBalances(pg, balanceUpdates)
+  await insertTxns(pg, txns)
 }
