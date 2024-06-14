@@ -76,14 +76,6 @@ export function useRealtimeMemberGroupIds(
   return rows?.map((row) => row.group_id) ?? undefined
 }
 
-export function useRealtimeGroupContractIds(groupId: string) {
-  const { rows } = useSubscription('group_contracts', {
-    k: 'group_id',
-    v: groupId,
-  })
-  return rows?.map((r) => r.contract_id)
-}
-
 export const useGroupsWithContract = (
   contract: Contract | undefined | null
 ) => {
