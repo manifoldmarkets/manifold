@@ -59,7 +59,11 @@ export const BinaryContractChart = (props: {
   const now = useMemo(() => Date.now(), [betPoints])
 
   const data = useMemo(() => {
-    return [...betPoints, { x: end ?? now, y: endP }]
+    return [
+      { x: start, y: contract.initialProbability },
+      ...betPoints,
+      { x: end ?? now, y: endP },
+    ]
   }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
@@ -129,7 +133,7 @@ export const MultiBinaryChart = (props: {
   const now = useMemo(() => Date.now(), [betPoints])
 
   const data = useMemo(() => {
-    return [...betPoints, { x: end ?? now, y: endP }]
+    return [{ x: start, y: 0.5 }, ...betPoints, { x: end ?? now, y: endP }]
   }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)

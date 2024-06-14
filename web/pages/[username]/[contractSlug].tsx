@@ -238,8 +238,7 @@ export function ContractPageContent(props: ContractParams) {
       const data = multiPointsString
         ? unserializeBase64Multi(multiPointsString)
         : []
-      const newData =
-        contract.mechanism === 'cpmm-multi-1' ? getMultiBetPoints(newBets) : []
+      const newData = getMultiBetPoints(newBets)
 
       return mergeWith(data, newData, (array1, array2) =>
         [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
