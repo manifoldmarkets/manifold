@@ -12,7 +12,7 @@ import {
 
 // how often metrics are written. GCP says don't write for a single time series
 // more than once per 5 seconds.
-export const METRICS_INTERVAL_MS = 5000
+export const METRICS_INTERVAL_MS = 60_000
 
 const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
