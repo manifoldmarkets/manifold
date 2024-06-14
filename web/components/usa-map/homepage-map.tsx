@@ -8,7 +8,7 @@ import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract-supabase'
+import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import {
   ElectoralCollegeVisual,
   sortByDemocraticDiff,

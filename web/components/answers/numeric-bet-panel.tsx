@@ -36,7 +36,7 @@ import { SizedContainer } from 'web/components/sized-container'
 import { getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from '../bet/fees'
 import { XIcon } from '@heroicons/react/solid'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract-supabase'
+import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import { getTierFromLiquidity } from 'common/tier'
 
 export const NumericBetPanel = (props: {

@@ -49,7 +49,7 @@ import { useBets, useSubscribeNewBets } from 'web/hooks/use-bets'
 import {
   useIsPrivateContractMember,
   useLiveContract,
-} from 'web/hooks/use-contract-supabase'
+} from 'web/hooks/use-contract'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'

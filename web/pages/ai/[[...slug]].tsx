@@ -30,7 +30,7 @@ import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract-supabase'
+import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 
 // In order to duplicate:
 // - duplicate this directory (endpoint/[[...slug]].tsx)

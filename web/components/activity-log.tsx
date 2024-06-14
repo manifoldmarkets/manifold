@@ -18,11 +18,11 @@ import { useBets, useSubscribeGlobalBets } from 'web/hooks/use-bets'
 import {
   useGlobalComments,
   useSubscribeGlobalComments,
-} from 'web/hooks/use-comments-supabase'
+} from 'web/hooks/use-comments'
 import {
   usePublicContracts,
   useLiveAllNewContracts,
-} from 'web/hooks/use-contract-supabase'
+} from 'web/hooks/use-contract'
 import {
   usePrivateUser,
   useShouldBlockDestiny,

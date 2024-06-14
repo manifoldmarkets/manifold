@@ -1,6 +1,6 @@
 import { ChatIcon, UserIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
-import { useNumContractComments } from 'web/hooks/use-comments-supabase'
+import { useNumContractComments } from 'web/hooks/use-comments'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 import { Row } from '../layout/row'
 import { Action } from './contract-table-action'
