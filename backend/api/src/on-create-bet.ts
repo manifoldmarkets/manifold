@@ -219,8 +219,7 @@ const debouncedContractUpdates = (contract: Contract) => {
         select
           (select sum(abs(amount)) from contract_bets where contract_id = $1) as volume,
           (select max(created_time) from contract_bets where contract_id = $1) as time,
-          (select count(distinct user_id) from contract_bets where contract_id = $1) as count,
-
+          (select count(distinct user_id)::numeric from contract_bets where contract_id = $1) as count,
           (select sum((data->'fees'->>'creatorFee')::numeric) from contract_bets where contract_id = $1) as creator_fee,
           (select sum((data->'fees'->>'platformFee')::numeric) from contract_bets where contract_id = $1) as platform_fee,
           (select sum((data->'fees'->>'liquidityFee')::numeric) from contract_bets where contract_id = $1) as liquidity_fee
