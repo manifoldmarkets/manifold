@@ -4,7 +4,6 @@ import { Contract } from 'common/contract'
 import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
 import {
-  difference,
   groupBy,
   keyBy,
   orderBy,
@@ -15,7 +14,7 @@ import {
   uniqBy,
 } from 'lodash'
 import { ReactNode, memo, useEffect, useState } from 'react'
-import { useSubscribeGlobalBets } from 'web/hooks/use-bets'
+import { useBets, useSubscribeGlobalBets } from 'web/hooks/use-bets'
 import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
 import {
   usePublicContracts,
@@ -99,6 +98,11 @@ export function ActivityLog(props: {
     if (topicSlugs) getRecentTopicalContent(topicSlugs)
   }, [topicSlugs])
 
+  const recentBets = useBets({
+    limit: count * 3,
+    filterRedemptions: true,
+    order: 'desc',
+  })
   const allRealtimeBets = useSubscribeGlobalBets({
     includeRedemptions: false,
   })
@@ -118,7 +122,11 @@ export function ActivityLog(props: {
       (topicSlugs?.some((s) => c.groupSlugs?.includes(s)) ?? true)
   )
   const bets = uniqBy(
-    (realtimeBets ?? []).concat(recentTopicalBets ?? []),
+    [
+      ...(realtimeBets ?? []),
+      ...(recentTopicalBets ?? []),
+      ...(recentBets ?? []),
+    ],
     'id'
   ).filter(
     (bet) =>
@@ -151,15 +159,11 @@ export function ActivityLog(props: {
       : true
   )
 
-  const [contracts, unlistedContracts] = partition(
+  const [contracts, _unlistedContracts] = partition(
     filterDefined(activeContracts ?? []).concat(newContracts ?? []),
     (c) => c.visibility === 'public'
   )
-
-  const ignoredContractIds = difference(
-    activeContractIds,
-    activeContracts?.map((c) => c.id) ?? []
-  ).concat(unlistedContracts.map((c) => c.id))
+  const contractsById = keyBy(contracts, 'id')
 
   const items = sortBy(
     pill === 'all'
@@ -174,9 +178,8 @@ export function ActivityLog(props: {
     .reverse()
     .filter((i) =>
       // filter out comments and bets on ignored/off-topic contracts
-      'contractId' in i ? !ignoredContractIds.includes(i.contractId) : true
+      'contractId' in i ? contractsById[i.contractId] : true
     )
-  const contractsById = keyBy(contracts, 'id')
 
   const startIndex =
     range(0, items.length - count).find((i) =>
