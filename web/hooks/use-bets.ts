@@ -4,12 +4,14 @@ import { useEffect } from 'react'
 import { Bet, BetFilter, LimitBet } from 'common/bet'
 import { db } from 'web/lib/supabase/db'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { applyBetsFilter, convertBet, getBets } from 'common/supabase/bets'
+import { applyBetsFilter, convertBet } from 'common/supabase/bets'
 import { Row } from 'common/supabase/utils'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 import { useApiSubscription } from './use-api-subscription'
 import { usePollUserBalances } from './use-user'
+import { api } from 'web/lib/firebase/api'
+import { APIParams } from 'common/api/schema'
 
 export function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
   if (!options) {
@@ -35,14 +37,14 @@ export function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
   return shouldBeFiltered
 }
 
-export function useBets(options?: BetFilter) {
+export function useBets(options?: APIParams<'bets'>) {
   const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
     undefined,
     `use-bets-${JSON.stringify(options)}`
   )
 
   useEffectCheckEquality(() => {
-    getBets(db, options).then((result) => setBets(result))
+    api('bets', options ?? {}).then((bets) => setBets(bets))
   }, [options])
 
   return bets
@@ -115,7 +117,7 @@ export const useSubscribeNewBets = (
   }
 
   useEffect(() => {
-    getBets(db, {
+    api('bets', {
       contractId,
       afterTime,
       filterRedemptions: !includeRedemptions,
@@ -191,7 +193,7 @@ export const useUnfilledBets = (
 
   useEffect(() => {
     if (enabled)
-      getBets(db, { contractId, isOpenLimitOrder: true }).then((bets) =>
+      api('bets', { contractId, kinds: 'open-limit' }).then((bets) =>
         addBets(bets as LimitBet[])
       )
   }, [enabled, contractId])
@@ -216,21 +218,4 @@ export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
     balances.map(({ id, balance }) => [id, balance])
   )
   return { unfilledBets, balanceByUserId }
-}
-
-export const useRecentBets = (contractId: string, limit: number) => {
-  const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
-    undefined,
-    `recent-bets-${contractId}-${limit}`
-  )
-
-  useEffect(() => {
-    getBets(db, {
-      contractId,
-      limit,
-      order: 'desc',
-    }).then((bets) => setBets(bets.reverse()))
-  }, [contractId, limit, setBets])
-
-  return bets
 }

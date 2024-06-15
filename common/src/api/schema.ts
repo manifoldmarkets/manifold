@@ -45,6 +45,7 @@ import {
   PortfolioMetrics,
 } from 'common/portfolio-metrics'
 import { ModReport } from '../mod-report'
+import { filter } from 'lodash'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -236,14 +237,21 @@ export const API = (_apiTypeCheck = {
       .object({
         userId: z.string().optional(),
         username: z.string().optional(),
-        contractId: z.string().optional(),
+        contractId: z.string().or(z.array(z.string())).optional(),
         contractSlug: z.string().optional(),
+        answerId: z.string().optional(),
         // market: z.string().optional(), // deprecated, synonym for `contractSlug`
         limit: z.coerce.number().gte(0).lte(1000).default(1000),
         before: z.string().optional(),
         after: z.string().optional(),
-        kinds: z.string().optional(),
+        beforeTime: z.coerce.number().optional(),
+        afterTime: z.coerce.number().optional(),
         order: z.enum(['asc', 'desc']).optional(),
+        kinds: z.enum(['open-limit']).optional(),
+        // undocumented fields. idk what a good api interface would be
+        filterRedemptions: z.coerce.boolean().optional(),
+        filterChallenges: z.coerce.boolean().optional(),
+        filterAntes: z.coerce.boolean().optional(),
       })
       .strict(),
   },

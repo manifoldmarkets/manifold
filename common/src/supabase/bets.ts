@@ -2,14 +2,8 @@ import { SupabaseClient, convertSQLtoTS } from 'common/supabase/utils'
 import type { PostgrestFilterBuilder } from '@supabase/postgrest-js'
 import { Row, Schema, millisToTs, run, selectJson, tsToMillis } from './utils'
 import { Bet, BetFilter } from 'common/bet'
-import { chunk, sortBy } from 'lodash'
+import { sortBy } from 'lodash'
 import { buildArray } from 'common/util/array'
-
-export const CONTRACT_BET_FILTER: BetFilter = {
-  filterRedemptions: true,
-  filterChallenges: false,
-  filterAntes: false,
-}
 
 export const convertBet = (row: Row<'contract_bets'>) =>
   convertSQLtoTS<'contract_bets', Bet>(row, {
@@ -17,12 +11,6 @@ export const convertBet = (row: Row<'contract_bets'>) =>
     created_time: tsToMillis as any,
     answer_id: (a) => (a != null ? a : undefined),
   })
-
-export async function getBet(db: SupabaseClient, id: string) {
-  const q = selectJson(db, 'contract_bets').eq('bet_id', id).single()
-  const { data } = await run(q)
-  return data.data
-}
 
 export async function getTotalBetCount(contractId: string, db: SupabaseClient) {
   const { count } = await run(
@@ -35,31 +23,6 @@ export async function getTotalBetCount(contractId: string, db: SupabaseClient) {
       .eq('is_ante', false)
   )
   return count as number
-}
-
-export const getBetRows = async (db: SupabaseClient, options?: BetFilter) => {
-  let q = db.from('contract_bets').select('*')
-  q = q.order('created_time', { ascending: options?.order === 'asc' })
-  q = applyBetsFilter(q, options)
-  const { data } = await run(q)
-  return data
-}
-
-export async function getBetsOnContracts(
-  db: SupabaseClient,
-  contractIds: string[],
-  options?: Omit<BetFilter, 'contractId'>
-) {
-  const chunks = chunk(contractIds, 100)
-  const rows = await Promise.all(
-    chunks.map(async (ids: string[]) => {
-      let q = db.from('contract_bets').select().in('contract_id', ids)
-      q = applyBetsFilter(q, options)
-      const { data } = await run(q)
-      return data
-    })
-  )
-  return rows.flat().map(convertBet)
 }
 
 export const getPublicBets = async (
@@ -125,8 +88,11 @@ export const applyBetsFilter = <
   q: T,
   options?: BetFilter
 ): T => {
-  if (options?.contractId) {
+  if (options?.contractId && typeof options.contractId === 'string') {
     q = q.eq('contract_id', options.contractId)
+  }
+  if (options?.contractId && Array.isArray(options.contractId)) {
+    q = q.in('contract_id', options.contractId)
   }
   if (options?.userId) {
     q = q.eq('user_id', options.userId)

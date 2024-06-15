@@ -71,8 +71,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { formatTime } from 'web/lib/util/time'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
-import { getBets } from 'common/supabase/bets'
-import { db } from 'web/lib/supabase/db'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
@@ -520,10 +518,9 @@ export function SimpleAnswerBars(props: {
   const [unfilledBets, setUnfilledBets] = useState<LimitBet[] | undefined>()
   useEffect(() => {
     if (isAdvancedTrader && shouldShowLimitOrderChart) {
-      getBets(db, {
-        contractId: contract.id,
-        isOpenLimitOrder: true,
-      }).then((bets) => setUnfilledBets(bets as LimitBet[]))
+      api('bets', { contractId: contract.id, kinds: 'open-limit' }).then(
+        (bets) => setUnfilledBets(bets as LimitBet[])
+      )
     }
   }, [contract.id, isAdvancedTrader, shouldShowLimitOrderChart])
 

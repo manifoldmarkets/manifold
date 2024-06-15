@@ -41,10 +41,9 @@ import { UserLink } from './widgets/user-link'
 import { track } from 'web/lib/service/analytics'
 import { getRecentCommentsOnContracts } from 'web/lib/supabase/comments'
 import { getRecentActiveContractsOnTopics } from 'web/lib/supabase/contracts'
-import { getBetsOnContracts } from 'common/supabase/bets'
-import { db } from 'web/lib/supabase/db'
 import { Bet } from 'common/bet'
 import { UserHovercard } from './user/user-hovercard'
+import { api } from 'web/lib/firebase/api'
 
 export function ActivityLog(props: {
   count: number
@@ -83,7 +82,8 @@ export function ActivityLog(props: {
       count
     )
     const recentContractIds = recentContracts.map((c) => c.id)
-    const recentBets = await getBetsOnContracts(db, recentContractIds, {
+    const recentBets = await api('bets', {
+      contractId: recentContractIds,
       limit: count * 3,
       filterRedemptions: true,
       order: 'desc',

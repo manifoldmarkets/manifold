@@ -89,7 +89,7 @@ export type fill = {
 }
 
 export type BetFilter = {
-  contractId?: string
+  contractId?: string | string[]
   userId?: string
   filterChallenges?: boolean
   filterRedemptions?: boolean
