@@ -121,15 +121,14 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     // { name: '🎾 Tennis', groupIds: ['1mvN9vIVIopcWiAsXhzp'] },
     // { name: '🏏 Cricket', groupIds: ['LcPYoqxSRdeQMms4lR3g'] },
   ],
-  '🍿 Media & Culture': [
-    // Movies, TV Shows, Music, Celebrities, Culture
+  '🍿 Media': [
+    // Movies, TV Shows, Music, Celebrities
     {
-      name: '🍿 Media & Culture',
+      name: '🍿 Media',
       groupIds: [
         'KSeNIu7AWgiBBM5FqVuB',
         'Xuc2UY8gGfjQqFXwxq5d',
         '4QIcUOfCSSha0JZHAg9X',
-        'eJZecx6r22G2NriYYXcC',
         'EUSEngFk1dGGBfaMeAmh',
       ],
     },
