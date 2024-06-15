@@ -344,26 +344,6 @@ export function OrderBookPanel(props: {
         />
       </Subtitle>
 
-      {!isPseudoNumeric && yesBets.length >= 2 && noBets.length >= 2 && (
-        <>
-          <h2 className="text-center text-sm">
-            Cumulative shares vs probability
-          </h2>
-          <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
-            {(w, h) => (
-              <DepthChart
-                contract={contract as any}
-                answer={answer}
-                yesBets={yesBets}
-                noBets={noBets}
-                width={w}
-                height={h}
-              />
-            )}
-          </SizedContainer>
-        </>
-      )}
-
       {showTitle && isCPMMMulti && answer && <div>{answer.text}</div>}
 
       <Row className="items-start justify-around gap-2">
@@ -400,6 +380,26 @@ export function OrderBookPanel(props: {
             </>
           )}
         </Button>
+      )}
+
+      {!isPseudoNumeric && yesBets.length >= 2 && noBets.length >= 2 && (
+        <>
+          <h2 className="text-center text-sm">
+            Cumulative shares vs probability
+          </h2>
+          <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
+            {(w, h) => (
+              <DepthChart
+                contract={contract as any}
+                answer={answer}
+                yesBets={yesBets}
+                noBets={noBets}
+                width={w}
+                height={h}
+              />
+            )}
+          </SizedContainer>
+        </>
       )}
     </Col>
   )
