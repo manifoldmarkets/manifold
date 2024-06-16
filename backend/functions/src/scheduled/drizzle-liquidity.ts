@@ -31,7 +31,7 @@ export const drizzleLiquidity = async () => {
   const pg = createSupabaseDirectClient()
 
   const data = await pg.manyOrNone<{ id: string }>(
-    `select id from contracts where subsidy_pool > 1e-7`
+    `select id from contracts where (data->'subsidyPool')::numeric > 1e-7`
   )
   const contractIds = shuffle(data.map((doc) => doc.id))
   console.log('found', contractIds.length, 'markets to drizzle')
