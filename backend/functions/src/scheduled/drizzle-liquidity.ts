@@ -23,7 +23,7 @@ import {
 } from 'shared/supabase/answers'
 import { runShortTrans } from 'shared/short-transaction'
 import { secrets } from 'common/secrets'
-import { getContract } from 'shared/utils'
+import { getContract, log } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
 import { bulkUpdateData } from 'shared/supabase/utils'
 
@@ -34,8 +34,7 @@ export const drizzleLiquidity = async () => {
     `select id from contracts where (data->'subsidyPool')::numeric > 1e-7`
   )
   const contractIds = shuffle(data.map((doc) => doc.id))
-  console.log('found', contractIds.length, 'markets to drizzle')
-  console.log()
+  log('found', contractIds.length, 'markets to drizzle')
 
   await mapAsync(contractIds, (cid) => drizzleMarket(cid), 10)
 
@@ -45,8 +44,7 @@ export const drizzleLiquidity = async () => {
     convertAnswer
   )
 
-  console.log('found', answers.length, 'answers to drizzle')
-  console.log()
+  log('found', answers.length, 'answers to drizzle')
 
   await mapAsync(answers, (answer) => drizzleAnswer(pg, answer.id), 10)
 }
@@ -114,7 +112,7 @@ const drizzleMarket = async (contractId: string) => {
       })
     }
 
-    console.log(
+    log(
       'added subsidy',
       formatMoneyWithDecimals(amount),
       'of',
@@ -122,7 +120,6 @@ const drizzleMarket = async (contractId: string) => {
       'pool to',
       slug
     )
-    console.log()
   })
 }
 
@@ -154,7 +151,7 @@ const drizzleAnswer = async (pg: SupabaseDirectClient, answerId: string) => {
       subsidyPool: subsidyPool - amount,
     })
 
-    console.log(
+    log(
       'added subsidy',
       newPool.YES - pool.YES,
       'YES and',
@@ -166,6 +163,5 @@ const drizzleAnswer = async (pg: SupabaseDirectClient, answerId: string) => {
       'pool to',
       answer.text
     )
-    console.log()
   })
 }

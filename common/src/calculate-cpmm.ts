@@ -572,14 +572,6 @@ export function addCpmmMultiLiquidityAnswersSumToOne(
     }
 
     const minSharesThrownAway = Math.min(...Object.values(yesSharesThrownAway))
-    console.log(
-      'amount remaining',
-      amountRemaining,
-      'yes shares thrown away',
-      yesSharesThrownAway,
-      'min',
-      minSharesThrownAway
-    )
     amountRemaining = minSharesThrownAway
   }
   return newPools
