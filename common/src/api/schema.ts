@@ -45,7 +45,6 @@ import {
   PortfolioMetrics,
 } from 'common/portfolio-metrics'
 import { ModReport } from '../mod-report'
-import { filter } from 'lodash'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
