@@ -1,6 +1,4 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import * as crypto from 'crypto'
-import { getIp } from 'shared/analytics'
 import { getPrivateUserSupabase, log } from 'shared/utils'
 import { getPhoneNumber } from 'shared/helpers/get-phone-number'
 import { updateUser } from 'shared/supabase/users'
@@ -34,14 +32,12 @@ export const registerGIDX: APIHandler<'register-gidx'> = async (
   if (!phoneNumberWithCode) {
     throw new APIError(400, 'User must have a phone number')
   }
-  const standardParams = getStandardParams(ip, gps)
   const body = {
     // TODO: add back in prod
     // MerchantCustomerID: auth.uid,,
     // EmailAddress: user.email,
     // MobilePhoneNumber: parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ?? phoneNumberWithCode,
-    ...standardParams,
-    ...rest,
+    // DeviceIpAddress: getIp(req),
     ...getGIDXStandardParams(),
     ...props,
   }
