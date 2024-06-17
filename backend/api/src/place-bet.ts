@@ -28,7 +28,11 @@ import { broadcastOrders } from 'shared/websockets/helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
-import { getAnswersForContract, updateAnswer } from 'shared/supabase/answers'
+import {
+  getAnswer,
+  getAnswersForContract,
+  updateAnswer,
+} from 'shared/supabase/answers'
 import { updateContract } from 'shared/supabase/contracts'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
@@ -39,7 +43,6 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   )
 }
 
-// Note: Reads the contract and bets outside of a transaction, so must be queued.
 export const placeBetMain = async (
   body: ValidatedAPIParams<'bet'>,
   uid: string,
@@ -55,13 +58,22 @@ export const placeBetMain = async (
     if (contract.mechanism === 'none' || contract.mechanism === 'qf')
       throw new APIError(400, 'This is not a market')
 
-    const { closeTime, outcomeType, mechanism } = contract
+    const { closeTime, mechanism } = contract
     if (closeTime && Date.now() > closeTime)
       throw new APIError(403, 'Trading is closed.')
 
     let answers: Answer[] | undefined
-    if (answerId) {
-      answers = await getAnswersForContract(pgTrans, contractId)
+    if (answerId && mechanism === 'cpmm-multi-1') {
+      if (contract.shouldAnswersSumToOne) {
+        answers = await getAnswersForContract(pgTrans, contractId)
+      } else {
+        // Only fetch the one answer if it's independent multi.
+        const answer = await getAnswer(pgTrans, answerId)
+        if (answer)
+          answers = contract.answers.map((a) =>
+            a.id === answerId ? answer : a
+          )
+      }
     }
 
     const unfilledBets = await getUnfilledBets(
@@ -79,112 +91,29 @@ export const placeBetMain = async (
       getUserBalances(pgTrans, unfilledBetUserIds),
     ])
 
-    const newBetResult = ((): BetInfo & {
-      makers?: maker[]
-      ordersToCancel?: LimitBet[]
-      otherBetResults?: {
-        answer: Answer
-        bet: CandidateBet<Bet>
-        cpmmState: CpmmState
-        makers: maker[]
-        ordersToCancel: LimitBet[]
-      }[]
-    } => {
-      if (
-        (outcomeType == 'BINARY' ||
-          outcomeType === 'PSEUDO_NUMERIC' ||
-          outcomeType === 'STONK') &&
-        mechanism == 'cpmm-1'
-      ) {
-        // eslint-disable-next-line prefer-const
-        let { outcome, limitProb, expiresAt } = body
-        if (expiresAt && expiresAt < Date.now())
-          throw new APIError(400, 'Bet cannot expire in the past.')
-
-        if (limitProb !== undefined && outcomeType === 'BINARY') {
-          const isRounded = floatingEqual(
-            Math.round(limitProb * 100),
-            limitProb * 100
-          )
-          if (!isRounded)
-            throw new APIError(
-              400,
-              'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
-            )
-
-          limitProb = Math.round(limitProb * 100) / 100
-        }
-
-        log(
-          `Checking for limit orders in placebet for user ${uid} on contract id ${contractId}.`
-        )
-        return getBinaryCpmmBetInfo(
-          contract,
-          outcome,
-          amount,
-          limitProb,
-          unfilledBets,
-          balanceByUserId,
-          expiresAt
-        )
-      } else if (
-        (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
-        mechanism == 'cpmm-multi-1'
-      ) {
-        const { shouldAnswersSumToOne } = contract
-        if (!body.answerId || !answers) {
-          throw new APIError(400, 'answerId must be specified for multi bets')
-        }
-
-        const { answerId, outcome, limitProb, expiresAt } = body
-        if (expiresAt && expiresAt < Date.now())
-          throw new APIError(403, 'Bet cannot expire in the past.')
-        const answer = answers.find((a) => a.id === answerId)
-        if (!answer) throw new APIError(404, 'Answer not found')
-        if ('resolution' in answer && answer.resolution)
-          throw new APIError(403, 'Answer is resolved and cannot be bet on')
-        if (shouldAnswersSumToOne && answers.length < 2)
-          throw new APIError(
-            403,
-            'Cannot bet until at least two answers are added.'
-          )
-
-        const roundedLimitProb = getRoundedLimitProb(limitProb)
-
-        return getNewMultiCpmmBetInfo(
-          contract,
-          answers,
-          answer,
-          outcome,
-          amount,
-          roundedLimitProb,
-          unfilledBets,
-          balanceByUserId,
-          expiresAt
-        )
-      } else {
-        throw new APIError(
-          400,
-          'Contract type/mechanism not supported (or is no longer)'
-        )
-      }
-    })()
+    const newBetResult = calculateBetResult(
+      body,
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId
+    )
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const betGroupId =
       mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
         ? crypto.randomBytes(12).toString('hex')
         : undefined
 
-    const result = await processNewBetResult(
+    return await executeNewBetResult(
+      pgTrans,
       newBetResult,
       contract,
       user,
       isApi,
-      pgTrans,
       replyToCommentId,
       betGroupId
     )
-    return result
   })
 
   const {
@@ -211,6 +140,97 @@ export const placeBetMain = async (
   return {
     result: { ...newBet, betId, betGroupId },
     continue: continuation,
+  }
+}
+
+const calculateBetResult = (
+  body: ValidatedAPIParams<'bet'>,
+  user: User,
+  contract: MarketContract,
+  answers: Answer[] | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: Record<string, number>
+) => {
+  const { amount, contractId } = body
+  const { outcomeType, mechanism } = contract
+
+  if (
+    (outcomeType == 'BINARY' ||
+      outcomeType === 'PSEUDO_NUMERIC' ||
+      outcomeType === 'STONK') &&
+    mechanism == 'cpmm-1'
+  ) {
+    // eslint-disable-next-line prefer-const
+    let { outcome, limitProb, expiresAt } = body
+    if (expiresAt && expiresAt < Date.now())
+      throw new APIError(400, 'Bet cannot expire in the past.')
+
+    if (limitProb !== undefined && outcomeType === 'BINARY') {
+      const isRounded = floatingEqual(
+        Math.round(limitProb * 100),
+        limitProb * 100
+      )
+      if (!isRounded)
+        throw new APIError(
+          400,
+          'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
+        )
+
+      limitProb = Math.round(limitProb * 100) / 100
+    }
+
+    log(
+      `Checking for limit orders in placebet for user ${user.id} on contract id ${contractId}.`
+    )
+    return getBinaryCpmmBetInfo(
+      contract,
+      outcome,
+      amount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId,
+      expiresAt
+    )
+  } else if (
+    (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
+    mechanism == 'cpmm-multi-1'
+  ) {
+    const { shouldAnswersSumToOne } = contract
+    if (!body.answerId || !answers) {
+      throw new APIError(400, 'answerId must be specified for multi bets')
+    }
+
+    const { answerId, outcome, limitProb, expiresAt } = body
+    if (expiresAt && expiresAt < Date.now())
+      throw new APIError(403, 'Bet cannot expire in the past.')
+    const answer = answers.find((a) => a.id === answerId)
+    if (!answer) throw new APIError(404, 'Answer not found')
+    if ('resolution' in answer && answer.resolution)
+      throw new APIError(403, 'Answer is resolved and cannot be bet on')
+    if (shouldAnswersSumToOne && answers.length < 2)
+      throw new APIError(
+        403,
+        'Cannot bet until at least two answers are added.'
+      )
+
+    const roundedLimitProb = getRoundedLimitProb(limitProb)
+
+    return getNewMultiCpmmBetInfo(
+      contract,
+      answers,
+      answer,
+      outcome,
+      amount,
+      roundedLimitProb,
+      unfilledBets,
+      balanceByUserId,
+      expiresAt
+    )
+  } else {
+    throw new APIError(
+      400,
+      'Contract type/mechanism not supported (or is no longer)'
+    )
   }
 }
 
@@ -270,12 +290,12 @@ export type NewBetResult = BetInfo & {
   }[]
 }
 
-export const processNewBetResult = async (
+export const executeNewBetResult = async (
+  pgTrans: SupabaseTransaction,
   newBetResult: NewBetResult,
   contract: MarketContract,
   user: User,
   isApi: boolean,
-  pgTrans: SupabaseTransaction,
   replyToCommentId?: string,
   betGroupId?: string
 ) => {

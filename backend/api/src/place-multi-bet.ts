@@ -6,7 +6,7 @@ import { onCreateBets } from 'api/on-create-bet'
 import {
   getRoundedLimitProb,
   getUnfilledBetsAndUserBalances,
-  processNewBetResult,
+  executeNewBetResult,
   validateBet,
 } from 'api/place-bet'
 import { getContract, log } from 'shared/utils'
@@ -89,12 +89,12 @@ export const placeMultiBetMain = async (
     const betGroupId = crypto.randomBytes(12).toString('hex')
     return await Promise.all(
       newBetResults.map((newBetResult) =>
-        processNewBetResult(
+        executeNewBetResult(
+          pgTrans,
           newBetResult,
           contract,
           user,
           isApi,
-          pgTrans,
           undefined,
           betGroupId
         )

@@ -127,3 +127,9 @@ export const SERIAL = new pgp.txMode.TransactionMode({
   readOnly: false,
   deferrable: false,
 })
+
+export const LAX = new pgp.txMode.TransactionMode({
+  tiLevel: pgp.txMode.isolationLevel.none,
+  readOnly: true,
+  deferrable: true,
+})

@@ -3,7 +3,7 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { onCreateBets } from 'api/on-create-bet'
 import {
   getUnfilledBetsAndUserBalances,
-  processNewBetResult,
+  executeNewBetResult,
 } from 'api/place-bet'
 import { getContract, getUser, log } from 'shared/utils'
 import { groupBy, mapValues, sum, sumBy } from 'lodash'
@@ -96,12 +96,12 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const bets = await Promise.all(
       betResults.map((newBetResult) =>
-        processNewBetResult(
+        executeNewBetResult(
+          pgTrans,
           newBetResult,
           contract,
           user,
           isApi,
-          pgTrans,
           undefined,
           betGroupId
         )
