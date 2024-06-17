@@ -12,6 +12,7 @@ import { useApiSubscription } from './use-api-subscription'
 import { usePollUserBalances } from './use-user'
 import { api } from 'web/lib/firebase/api'
 import { APIParams } from 'common/api/schema'
+import { useIsPageVisible } from './use-page-visible'
 
 export function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
   if (!options) {
@@ -116,13 +117,15 @@ export const useSubscribeNewBets = (
     })
   }
 
+  const isPageVisible = useIsPageVisible()
+
   useEffect(() => {
     api('bets', {
       contractId,
       afterTime,
       filterRedemptions: !includeRedemptions,
     }).then(addBets)
-  }, [contractId, afterTime])
+  }, [contractId, afterTime, isPageVisible])
 
   useApiSubscription({
     topics: [`contract/${contractId}/new-bet`],
@@ -191,12 +194,14 @@ export const useUnfilledBets = (
     })
   }
 
+  const isPageVisible = useIsPageVisible()
+
   useEffect(() => {
     if (enabled)
       api('bets', { contractId, kinds: 'open-limit' }).then((bets) =>
         addBets(bets as LimitBet[])
       )
-  }, [enabled, contractId])
+  }, [enabled, contractId, isPageVisible])
 
   useApiSubscription({
     enabled,
