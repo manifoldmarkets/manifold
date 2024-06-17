@@ -1,5 +1,5 @@
 import { Row, run, SupabaseClient } from './utils'
-import { User } from 'common/user'
+import { PrivateUser, User } from 'common/user'
 
 export async function getUserForStaticProps(
   db: SupabaseClient,
@@ -7,6 +7,21 @@ export async function getUserForStaticProps(
 ) {
   const { data } = await run(db.from('users').select().eq('username', username))
   return convertUser(data[0] ?? null)
+}
+
+// assumes logged in
+export async function getUserAndPrivateUserForStaticProps(
+  db: SupabaseClient,
+  userId: string
+) {
+  const [user, privateUser] = await Promise.all([
+    run(db.from('users').select().eq('id', userId)),
+    run(db.from('private_users').select().eq('id', userId)),
+  ])
+  return {
+    user: convertUser(user.data[0]),
+    privateUser: convertPrivateUser(privateUser.data[0]),
+  }
 }
 
 export function convertUser(row: Row<'users'>): User
@@ -23,4 +38,8 @@ export function convertUser(row: Row<'users'> | null): User | null {
     totalDeposits: row.total_deposits,
     resolvedProfitAdjustment: row.resolved_profit_adjustment,
   } as User
+}
+
+export function convertPrivateUser(row: Row<'private_users'>): PrivateUser {
+  return row.data as PrivateUser
 }

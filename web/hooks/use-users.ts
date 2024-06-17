@@ -4,7 +4,6 @@ import {
   getRecentlyActiveUsers,
   getTopUserCreators,
 } from 'web/lib/supabase/users'
-import { getPrivateUser } from 'web/lib/firebase/users'
 
 export const useDiscoverUsers = (
   userId: string | null | undefined,
@@ -32,12 +31,9 @@ export const useRecentlyActiveUsersAndPrivateUsers = (limit: number) => {
   >()
   const loadUsers = async () => {
     const users = await getRecentlyActiveUsers(limit)
-    const privateUsers = await Promise.all(
-      users.map(async (u) => getPrivateUser(u.id))
-    )
     const usersAndPrivates = users.map((user) => ({
       user,
-      privateUser: privateUsers.find((p) => p?.id === user.id),
+      privateUser: undefined,
     }))
     setUsersAndPrivates(usersAndPrivates)
   }

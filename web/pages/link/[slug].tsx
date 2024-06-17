@@ -19,29 +19,24 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { Page } from 'web/components/layout/page'
 import { formatMoney } from 'common/util/format'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { getUserById } from 'web/lib/supabase/users'
 
-export const getServerSideProps = redirectIfLoggedOut(
-  '/',
-  async (ctx, creds) => {
-    const slug = ctx.params?.slug
-    if (!slug || typeof slug !== 'string') {
-      return { notFound: true }
-    }
-    const adminDb = await initSupabaseAdmin()
-    const [auth, link, numClaims] = await Promise.all([
-      getUserAndPrivateUser(creds.uid),
-      getManalink(slug, adminDb),
-      getNumClaims(slug, adminDb),
-    ])
-    if (link == null) {
-      return { notFound: true }
-    }
-    return { props: { auth, link, numClaims } }
+export const getServerSideProps = redirectIfLoggedOut('/', async (ctx) => {
+  const slug = ctx.params?.slug
+  if (!slug || typeof slug !== 'string') {
+    return { notFound: true }
   }
-)
+  const adminDb = await initSupabaseAdmin()
+  const [link, numClaims] = await Promise.all([
+    getManalink(slug, adminDb),
+    getNumClaims(slug, adminDb),
+  ])
+  if (link == null) {
+    return { notFound: true }
+  }
+  return { props: { link, numClaims } }
+})
 
 export default function ClaimPage(props: {
   link: ManalinkInfo

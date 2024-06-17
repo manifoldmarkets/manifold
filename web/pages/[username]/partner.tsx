@@ -189,7 +189,7 @@ const PartnerDashboard = (props: {
           >
             PayPal info:
           </InfoTooltip>
-          <EditablePaymentInfo userId={currentUser.id} />
+          <EditablePaymentInfo />
         </Row>
       )}
     </Col>

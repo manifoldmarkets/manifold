@@ -5,7 +5,10 @@ import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
 import { Answer } from 'common/answer'
 
-type ContractChange = Partial<Contract> & { id: string }
+export function broadcastUpdatedPrivateUser(userId: string) {
+  // don't send private user info because it's private and anyone can listen
+  broadcast(`private-user/${userId}`, {})
+}
 
 export function broadcastNewBets(
   contractId: string,
@@ -65,7 +68,7 @@ export function broadcastNewSubsidy(
 
 export function broadcastUpdatedContract(
   visibility: Visibility,
-  contract: ContractChange
+  contract: Partial<Contract> & { id: string }
 ) {
   const payload = { contract }
   const topics = [`contract/${contract.id}`]

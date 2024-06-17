@@ -24,13 +24,23 @@ export async function getFullUserById(id: string) {
   return api('user/by-id/:id', { id })
 }
 
-export function getUserSafe(userId: string) {
-  return getFullUserById(userId).catch((e: unknown) => {
+export async function getUserSafe(userId: string) {
+  try {
+    return await getFullUserById(userId)
+  } catch (e) {
     if (e instanceof APIError && e.code === 404) {
       return null
     }
     throw e
-  })
+  }
+}
+
+export async function getPrivateUserSafe() {
+  try {
+    return await api('me/private')
+  } catch (e) {
+    return null
+  }
 }
 
 export async function searchUsers(prompt: string, limit: number) {

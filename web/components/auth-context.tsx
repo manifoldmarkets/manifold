@@ -2,12 +2,7 @@
 import { createContext, ReactNode, useEffect, useState } from 'react'
 import { pickBy } from 'lodash'
 import { onIdTokenChanged, User as FirebaseUser } from 'firebase/auth'
-import {
-  auth,
-  firebaseLogout,
-  getPrivateUser,
-  listenForPrivateUser,
-} from 'web/lib/firebase/users'
+import { auth, firebaseLogout } from 'web/lib/firebase/users'
 import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
@@ -28,9 +23,9 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { getSupabaseToken } from 'web/lib/firebase/api'
 import { updateSupabaseAuth } from 'web/lib/supabase/db'
-import { usePollUser } from 'web/hooks/use-user'
+import { usePollUser, useWebsocketPrivateUser } from 'web/hooks/use-user'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
-import { getUserSafe } from 'web/lib/supabase/users'
+import { getPrivateUserSafe, getUserSafe } from 'web/lib/supabase/users'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -162,7 +157,7 @@ export function AuthProvider(props: {
 
           const [user, privateUser, supabaseJwt] = await Promise.all([
             getUserSafe(fbUser.uid),
-            getPrivateUser(fbUser.uid),
+            getPrivateUserSafe(),
             getSupabaseToken().catch((e) => {
               console.error('Error getting supabase token', e)
               return null
@@ -211,21 +206,15 @@ export function AuthProvider(props: {
     }
   }, [uid])
 
-  useEffect(() => {
-    if (authLoaded && uid) {
-      const privateUserListener = listenForPrivateUser(uid, (privateUser) => {
-        setPrivateUser(privateUser ?? undefined)
-      })
-      return () => {
-        privateUserListener()
-      }
-    }
-  }, [authLoaded, uid])
-
   const listenUser = usePollUser(uid ?? undefined)
   useEffectCheckEquality(() => {
     if (authLoaded && listenUser) setUser(listenUser)
   }, [authLoaded, listenUser])
+
+  const listenPrivateUser = useWebsocketPrivateUser(uid ?? undefined)
+  useEffectCheckEquality(() => {
+    if (authLoaded && listenPrivateUser) setPrivateUser(listenPrivateUser)
+  }, [authLoaded, listenPrivateUser])
 
   const username = authUser?.user.username
   useEffect(() => {

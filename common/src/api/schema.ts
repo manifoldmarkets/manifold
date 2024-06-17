@@ -45,6 +45,7 @@ import {
   PortfolioMetrics,
 } from 'common/portfolio-metrics'
 import { ModReport } from '../mod-report'
+import { notification_preference } from 'common/user-notification-preferences'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -114,7 +115,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-
   bet: {
     method: 'POST',
     visibility: 'public',
@@ -666,6 +666,29 @@ export const API = (_apiTypeCheck = {
       username: z.string(), // just so you're sure
     }),
   },
+  'me/private': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({}),
+    returns: {} as PrivateUser,
+  },
+  'me/private/update': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    props: z
+      .object({
+        email: z.string().email().optional(),
+        apiKey: z.string().optional(),
+        pushToken: z.string().optional(),
+        rejectedPushNotificationsOn: z.number().optional(),
+        lastPromptedToEnablePushNotifications: z.number().optional(),
+        hasSeenAppBannerInNotificationsOn: z.number().optional(),
+        installedAppPlatforms: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
   'user/:username': {
     method: 'GET',
     visibility: 'public',
@@ -758,11 +781,29 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         twitchInfo: z.object({
-          twitchName: z.string(),
-          controlToken: z.string(),
+          twitchName: z.string().optional(),
+          controlToken: z.string().optional(),
+          botEnabled: z.boolean().optional(),
+          needsRelinking: z.boolean().optional(),
         }),
       })
       .strict(),
+  },
+  'set-push-token': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ pushToken: z.string() }).strict(),
+  },
+  'update-notif-settings': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      type: z.string() as z.ZodType<notification_preference>,
+      medium: z.enum(['email', 'browser', 'mobile']),
+      enabled: z.boolean(),
+    }),
   },
   headlines: {
     method: 'GET',

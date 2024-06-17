@@ -7,6 +7,8 @@ import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { useLiveUpdates } from './use-persistent-supabase-polling'
 import { convertUser } from 'common/supabase/users'
 import { run } from 'common/supabase/utils'
+import { useApiSubscription } from './use-api-subscription'
+import { getPrivateUserSafe } from 'web/lib/supabase/users'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -46,6 +48,32 @@ export const usePollUserBalances = (userIds: string[]) => {
     )
     return data
   })
+}
+
+export const useWebsocketPrivateUser = (userId: string | undefined) => {
+  const [privateUser, setPrivateUser] = useState<
+    PrivateUser | null | undefined
+  >()
+
+  useApiSubscription({
+    topics: [`private-user/${userId ?? '_'}`],
+    onBroadcast: () => {
+      getPrivateUserSafe().then((result) => {
+        if (result) {
+          setPrivateUser(result)
+        }
+      })
+    },
+  })
+
+  useEffect(() => {
+    if (userId) {
+      getPrivateUserSafe().then((result) => setPrivateUser(result))
+    } else {
+      setPrivateUser(null)
+    }
+  }, [userId])
+  return privateUser
 }
 
 export const isBlocked = (
