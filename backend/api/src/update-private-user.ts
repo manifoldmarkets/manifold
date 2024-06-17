@@ -2,6 +2,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import * as admin from 'firebase-admin'
 import { APIHandler } from './helpers/endpoint'
 import { mapValues } from 'lodash'
+import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 
 export const updatePrivateUser: APIHandler<'me/private/update'> = async (
   props,
@@ -17,6 +18,8 @@ export const updatePrivateUser: APIHandler<'me/private/update'> = async (
         )
       )
     )
+
+  broadcastUpdatedPrivateUser(auth.uid)
 }
 
 const firestore = admin.firestore()

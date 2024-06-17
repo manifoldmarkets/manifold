@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin'
 import { type APIHandler } from './helpers/endpoint'
 import { removeUndefinedProps } from 'common/util/object'
 import { mapKeys } from 'lodash'
+import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 
 export const saveTwitchCredentials: APIHandler<'save-twitch'> = async (
   props,
@@ -14,6 +15,7 @@ export const saveTwitchCredentials: APIHandler<'save-twitch'> = async (
   )
 
   await firestore.doc(`private-users/${auth.uid}`).update(update)
+  broadcastUpdatedPrivateUser(auth.uid)
 }
 
 const firestore = admin.firestore()

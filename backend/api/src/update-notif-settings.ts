@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { type APIHandler } from './helpers/endpoint'
+import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 
 export const updateNotifSettings: APIHandler<'update-notif-settings'> = async (
   { type, medium, enabled },
@@ -17,6 +18,8 @@ export const updateNotifSettings: APIHandler<'update-notif-settings'> = async (
         : FieldValue.arrayRemove(medium),
     })
   }
+
+  broadcastUpdatedPrivateUser(auth.uid)
 }
 
 const firestore = admin.firestore()
