@@ -13,18 +13,18 @@ import {
   hasIdentityError,
   locationBlockedCodes,
   locationTemporarilyBlockedCodes,
-  RegistrationReturnType,
   timeoutCodes,
   underageErrorCodes,
 } from 'common/reason-codes'
 import { intersection } from 'lodash'
+import Script from 'next/script'
 
 const body = {
-  MerchantCustomerID: '2',
+  MerchantCustomerID: '4',
   EmailAddress: 'gochanman@yahoo.com',
   MobilePhoneNumber: '4042818372',
   DeviceIpAddress: '149.40.50.57',
-  FirstName: 'Corey',
+  FirstName: 'Coreyy',
   LastName: 'Chandler',
   DateOfBirth: '09/28/1987',
   CitizenshipCountryCode: 'US',
@@ -32,14 +32,14 @@ const body = {
   City: 'Reading',
   StateCode: 'MA',
   PostalCode: '01867',
-}
-const DeviceGPS = {
-  Latitude: 42.329061,
-  Longitude: -71.152265,
-  Radius: 11.484,
-  Altitude: 0,
-  Speed: 0,
-  DateTime: new Date().toISOString(),
+  DeviceGPS: {
+    Latitude: 39.615342,
+    Longitude: -112.183449,
+    Radius: 11.484,
+    Altitude: 0,
+    Speed: 0,
+    DateTime: new Date().toISOString(),
+  },
 }
 
 const identificationTypeToCode = {
@@ -54,15 +54,9 @@ export const UserInfo = (props: { user: User }) => {
   // const [page, setPage] = useState(user.verifiedPhone ? 1 : 0)
   const [page, setPage] = useState(2)
   const [loading, setLoading] = useState(false)
-  const [location, setLocation] = usePersistentInMemoryState<{
-    Radius: number
-    Altitude: number
-    Latitude: number
-    Longitude: number
-    Speed: number
-  } | null>(DeviceGPS, 'gidx-registration-location')
   const [locationError, setLocationError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [gidxSession, setGidxSession] = useState<string | null>(null)
   const [userInfo, setUserInfo] = usePersistentInMemoryState<{
     FirstName?: string
     LastName?: string
@@ -70,6 +64,14 @@ export const UserInfo = (props: { user: User }) => {
     CitizenshipCountryCode: string
     IdentificationTypeCode?: number
     IdentificationNumber?: string
+    DeviceGPS?: {
+      Radius: number
+      Altitude: number
+      Latitude: number
+      Longitude: number
+      Speed: number
+      DateTime: string
+    }
   }>(
     {
       ...body,
@@ -91,12 +93,16 @@ export const UserInfo = (props: { user: User }) => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { coords } = position
-          setLocation({
-            Latitude: coords.latitude,
-            Longitude: coords.longitude,
-            Radius: coords.accuracy,
-            Altitude: coords.altitude ?? 0,
-            Speed: coords.speed ?? 0,
+          setUserInfo({
+            ...userInfo,
+            DeviceGPS: {
+              Latitude: coords.latitude,
+              Longitude: coords.longitude,
+              Radius: coords.accuracy,
+              Altitude: coords.altitude ?? 0,
+              Speed: coords.speed ?? 0,
+              DateTime: new Date().toISOString(),
+            },
           })
           setLoading(false)
           setPage(page + 1)
@@ -111,29 +117,58 @@ export const UserInfo = (props: { user: User }) => {
       setLoading(false)
     }
   }
-  const unfilled = Object.entries(userInfo ?? {}).filter(([_, value]) => !value)
-  const submit = async () => {
-    if (!location) {
-      setError('Location is required')
+  const unfilled = Object.entries(userInfo ?? {}).filter(
+    ([_, value]) => value === undefined
+  )
+  const getVerificationSession = async () => {
+    const res = await api('verification-session-gidx', { ...userInfo } as any)
+    if (res) {
+      const { SessionURL } = res
+      const decodedString = decodeURIComponent(SessionURL).replaceAll('+', ' ')
+      console.log('session url', decodedString)
+      const scriptSrc = decodedString.match(/src='(.*?)'/)?.[1]
+      console.log('decoded string', scriptSrc)
+      setGidxSession(scriptSrc ?? '')
+    }
+  }
+
+  const register = async () => {
+    setError(null)
+    if (!userInfo.DeviceGPS) {
+      setError('Location is required.')
       return
     }
-
     if (unfilled.length) {
       setError(`Missing fields: ${unfilled.map(([key]) => key).join(', ')}`)
       return
     }
     setLoading(true)
     const res = await api('register-gidx', {
-      ...location,
-      DateTime: new Date().toISOString(),
       ...userInfo,
     } as any).catch((e) => {
       if (e instanceof APIError) setError(e.message)
       else setError(e)
-      return { status: 'error', ReasonCodes: [] } as RegistrationReturnType
+      setLoading(false)
+      return null
     })
-    const { status, ReasonCodes: reasonCodes } = res
+    if (!res) return
+
+    const {
+      status,
+      ReasonCodes: reasonCodes,
+      IdentityConfidenceScore,
+      FraudConfidenceScore,
+    } = res
     setLoading(false)
+    if (
+      IdentityConfidenceScore !== undefined ||
+      FraudConfidenceScore !== undefined
+    ) {
+      setError(
+        `Confidence in identity or fraud too low. Add more information if you can.`
+      )
+      return
+    }
     const has = (code: string) => reasonCodes.includes(code)
     const hasAny = (codes: string[]) =>
       intersection(codes, reasonCodes).length > 0
@@ -217,6 +252,18 @@ export const UserInfo = (props: { user: User }) => {
 
   return (
     <Col className={'gap-3'}>
+      {window.location !== undefined && gidxSession && (
+        <>
+          <div data-gidx-script-loading="true">Loading...</div>
+          <Script
+            strategy={'lazyOnload'}
+            src={gidxSession}
+            data-tsevo-script-tag
+            data-gidx-session-id={gidxSession.split('sessionid=')[1]}
+            type="text/javascript"
+          ></Script>
+        </>
+      )}
       <span className={'text-primary-700 text-2xl'}>Identity Verification</span>
       <Col className={rowClass}>
         <span>First Name</span>
@@ -245,7 +292,11 @@ export const UserInfo = (props: { user: User }) => {
         <Input
           className={'w-40'}
           type={'date'}
-          value={userInfo.DateOfBirth}
+          value={
+            userInfo.DateOfBirth && userInfo.DateOfBirth.includes('/')
+              ? new Date(userInfo.DateOfBirth).toISOString().split('T')[0]
+              : userInfo.DateOfBirth
+          }
           onChange={(e) =>
             setUserInfo({ ...userInfo, DateOfBirth: e.target.value })
           }
@@ -282,7 +333,16 @@ export const UserInfo = (props: { user: User }) => {
         />
       </Col>
       {error && <span className={'text-error'}>{error}</span>}
-      {user.kycStatus === 'failed' && <Button></Button>}
+      {user.kycStatus === 'failed' && (
+        <Col className={'border-primary-100 w-fit gap-3 rounded border-4 p-4'}>
+          <span>
+            Having trouble? Clarify a few things verify your identity.
+          </span>
+          <Button className={'w-72'} onClick={getVerificationSession}>
+            Open Verification Session
+          </Button>
+        </Col>
+      )}
       <Row className={'mb-4 mt-4 w-full gap-16'}>
         <Button
           color={'gray-white'}
@@ -294,7 +354,7 @@ export const UserInfo = (props: { user: User }) => {
         <Button
           loading={loading}
           disabled={loading || unfilled.length > 0}
-          onClick={submit}
+          onClick={register}
         >
           Submit
         </Button>

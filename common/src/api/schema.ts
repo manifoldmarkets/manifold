@@ -46,6 +46,7 @@ import {
 } from 'common/portfolio-metrics'
 import { ModReport } from '../mod-report'
 import { RegistrationReturnType } from 'common/reason-codes'
+import { GIDXVerificationResponse, verificationParams } from 'common/gidx/gidx'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1238,32 +1239,15 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({
-      FirstName: z.string(),
-      LastName: z.string(),
-      DateOfBirth: z.string(),
-      CitizenshipCountryCode: z.string(),
-      Latitude: z.number(),
-      Longitude: z.number(),
-      Radius: z.number(),
-      Altitude: z.number(),
-      Speed: z.number(),
-      DateTime: z.string(),
-      // Must supply address or ID info
-      AddressLine1: z.string().optional(),
-      AddressLine2: z.string().optional(),
-      City: z.string().optional(),
-      StateCode: z.string().optional(),
-      PostalCode: z.string().optional(),
-      CountryCode: z.string().optional(),
-      IdentificationTypeCode: z.number().gte(1).lte(4).optional(),
-      IdentificationNumber: z.string().optional(),
-      // TODO: remove these in production
-      DeviceIpAddress: z.string(),
-      EmailAddress: z.string(),
-      MerchantCustomerID: z.string(),
-    }),
+    props: verificationParams,
     returns: {} as RegistrationReturnType,
+  },
+  'verification-session-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as GIDXVerificationResponse,
+    props: verificationParams,
   },
 } as const)
 

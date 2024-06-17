@@ -13,6 +13,7 @@ import {
   locationTemporarilyBlockedCodes,
 } from 'common/reason-codes'
 import { intersection } from 'lodash'
+import { getGIDXStandardParams } from 'shared/gidx/standard-params'
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
 
@@ -21,18 +22,7 @@ export const registerGIDX: APIHandler<'register-gidx'> = async (
   auth,
   req
 ) => {
-  const { Latitude, Longitude, Radius, Altitude, Speed, DateTime, ...rest } =
-    props
-  const gps = {
-    Latitude,
-    Longitude,
-    Radius,
-    Altitude,
-    Speed,
-    DateTime,
-  }
   const pg = createSupabaseDirectClient()
-  const ip = getIp(req)
   const user = await getPrivateUserSupabase(auth.uid)
   if (!user) {
     throw new APIError(404, 'Private user not found')
@@ -52,6 +42,8 @@ export const registerGIDX: APIHandler<'register-gidx'> = async (
     // MobilePhoneNumber: parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ?? phoneNumberWithCode,
     ...standardParams,
     ...rest,
+    ...getGIDXStandardParams(),
+    ...props,
   }
   log('Registration request:', body)
   const res = await fetch(ENDPOINT, {
@@ -78,7 +70,7 @@ export const registerGIDX: APIHandler<'register-gidx'> = async (
   }
 
   // User identity match is low confidence or attempt may be fraud
-  if (FraudConfidenceScore < 70 || IdentityConfidenceScore < 70) {
+  if (FraudConfidenceScore < 50 || IdentityConfidenceScore < 50) {
     log(
       'Registration failed, resulted in low confidence scores:',
       FraudConfidenceScore,
@@ -135,29 +127,6 @@ export const registerGIDX: APIHandler<'register-gidx'> = async (
     `Registration failed with unknown reason codes: ${ReasonCodes.join(', ')}`
   )
   return { status: 'error', ReasonCodes }
-}
-
-const getStandardParams = (ip: string, gps: GPSData) => {
-  return {
-    // TODO: before merging into main, switch from sandbox key to production key in prod
-    ApiKey: process.env.GIDX_API_KEY,
-    MerchantID: process.env.GIDX_MERCHANT_ID,
-    ProductTypeID: process.env.GIDX_PRODUCT_TYPE_ID,
-    DeviceTypeID: process.env.GIDX_DEVICE_TYPE_ID,
-    ActivityTypeID: process.env.GIDX_ACTIVITY_TYPE_ID,
-    MerchantSessionID: crypto.randomUUID(),
-    DeviceIpAddress: ip,
-    DeviceGPS: gps,
-  }
-}
-
-type GPSData = {
-  Latitude: number
-  Longitude: number
-  Radius: number
-  Altitude: number
-  Speed: number
-  DateTime: string
 }
 
 type GIDXRegistrationResponse = {
