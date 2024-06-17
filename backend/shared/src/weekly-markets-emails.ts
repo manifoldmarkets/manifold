@@ -6,7 +6,10 @@ import { PrivateUser } from 'common/user'
 import { getForYouSQL } from 'shared/supabase/search-contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertContract } from 'common/supabase/contracts'
-import { userIdsToAverageTopicConversionScores } from 'shared/topic-interests'
+import {
+  buildUserInterestsCache,
+  userIdsToAverageTopicConversionScores,
+} from 'shared/topic-interests'
 
 // Run every minute on Monday for 3 hours starting at 12pm PT.
 // Should scale until at least 1000 * 120 = 120k users signed up for emails (70k at writing)
@@ -27,6 +30,7 @@ export async function sendWeeklyMarketsEmails() {
   const CHUNK_SIZE = 50
   let i = 0
   const chunks = chunk(privateUsers, CHUNK_SIZE)
+  await buildUserInterestsCache(privateUsers.map((u) => u.id))
   for (const chunk of chunks) {
     await Promise.all(
       chunk.map(async (pu) =>

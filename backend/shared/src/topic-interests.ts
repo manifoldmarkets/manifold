@@ -14,6 +14,7 @@ import {
   where,
 } from 'shared/supabase/sql-builder'
 import { GROUP_SLUGS_TO_NOT_INTRODUCE_IN_FEED } from 'common/envs/constants'
+import { HOUR_MS } from 'common/util/time'
 
 export type TopicToInterestWeights = { [groupId: string]: number }
 export const userIdsToAverageTopicConversionScores: {
@@ -21,6 +22,7 @@ export const userIdsToAverageTopicConversionScores: {
 } = {}
 
 export const activeTopics: { [topicId: string]: number } = {}
+let lastRefreshTime = 0
 
 export const buildUserInterestsCache = async (userIds: string[]) => {
   log('Starting user topic interests cache build process')
@@ -38,7 +40,7 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
   if (Object.keys(activeTopics).length === 0) await refreshActiveTopics(pg)
   const topicIdsMeetingMinimumBar = Object.keys(activeTopics)
   // Refresh the cache, and use the old one in the meantime
-  refreshActiveTopics(pg)
+  if (lastRefreshTime < Date.now() - HOUR_MS) refreshActiveTopics(pg)
 
   const chunks = chunk(userIds, 1000)
   for (const userIds of chunks) {
@@ -124,6 +126,8 @@ export const minimumTopicsQualityBarClauses = [
 ]
 
 const refreshActiveTopics = async (pg: SupabaseDirectClient) => {
+  lastRefreshTime = Date.now()
+  log('refreshing active topics')
   await pg.map(renderSql(minimumTopicsQualityBarClauses), [], (r) => {
     activeTopics[r.id] = r.topic_score
   })
