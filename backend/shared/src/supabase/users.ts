@@ -4,6 +4,7 @@ import { WEEK_MS } from 'common/util/time'
 import { APIError } from 'common/api/utils'
 import { User } from 'common/user'
 import { DataUpdate, updateData } from './utils'
+import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
@@ -84,6 +85,7 @@ export const updatePrivateUser = async (
   update: DataUpdate<'private_users'>
 ) => {
   await updateData(db, 'private_users', 'id', { id, ...update })
+  broadcastUpdatedPrivateUser(id)
 }
 
 export const incrementBalance = async (
