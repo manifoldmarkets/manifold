@@ -334,9 +334,16 @@ export const HIDE_FROM_LEADERBOARD_USER_IDS = [
 
 export const HOUSE_BOT_USERNAME = 'acc'
 
-export function firestoreConsolePath(contractId: string) {
-  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fcontracts~2F${contractId}`
+export function supabaseUserConsolePath(userId: string) {
+  const tableId = ENV === 'DEV' ? 19247 : 25916
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}/?filter=id%3Aeq%3A${userId}`
 }
+
+export function supabasePrivateUserConsolePath(userId: string) {
+  const tableId = ENV === 'DEV' ? 2189688 : 153495548
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}/?filter=id%3Aeq%3A${userId}`
+}
+
 export function supabaseConsoleContractPath(contractId: string) {
   const tableId = ENV === 'DEV' ? 19254 : 25924
   return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}?filter=id%3Aeq%3A${contractId}`
