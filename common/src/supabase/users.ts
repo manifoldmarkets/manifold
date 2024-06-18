@@ -40,6 +40,9 @@ export function convertUser(row: Row<'users'> | null): User | null {
   } as User
 }
 
-export function convertPrivateUser(row: Row<'private_users'>): PrivateUser {
+export function convertPrivateUser(
+  row: Row<'private_users'> | null
+): PrivateUser | null {
+  if (!row) return null
   return row.data as PrivateUser
 }
