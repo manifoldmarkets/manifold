@@ -187,7 +187,6 @@ export const MOD_IDS = [
   'lkkqZxiWCpOgtJ9ztJcAKz4d9y33', // NathanpmYoung
   'fSrex43BDjeneNZ4ZLfxllSb8b42', // NcyRocks
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
-  'OEbsAczmbBc4Sl1bacYZNPJLLLc2', // SirCryptomind
   'YOILpFNyg0gGj79zBIBUpJigHQ83', // SneakySly
   'KHX2ThSFtLQlau58hrjtCX7OL2h2', // shankypanky (stefanie)
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
