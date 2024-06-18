@@ -1,4 +1,12 @@
-import { groupBy, isEqual, mapValues, sumBy, uniq } from 'lodash'
+import {
+  groupBy,
+  isEqual,
+  mapValues,
+  sortBy,
+  sumBy,
+  uniq,
+  uniqBy,
+} from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { CPMM_MIN_POOL_QTY, Contract, MarketContract } from 'common/contract'
 import { User } from 'common/user'
@@ -185,7 +193,10 @@ export const fetchContractBetDataAndValidate = async (
       // Only fetch the one answer if it's independent multi.
       const answer = await getAnswer(pgTrans, answerId)
       if (answer)
-        answers = contract.answers.map((a) => (a.id === answerId ? answer : a))
+        answers = sortBy(
+          uniqBy([answer, ...contract.answers], (a) => a.id),
+          (a) => a.index
+        )
     }
   } else if ('answerIds' in body) {
     answers = await getAnswersForContract(pgTrans, contractId)
