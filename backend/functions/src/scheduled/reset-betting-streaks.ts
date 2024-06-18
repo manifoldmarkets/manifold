@@ -10,9 +10,10 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { convertUser } from 'common/supabase/users'
+import { secrets } from 'common/secrets'
 
 export const resetBettingStreaksForUsers = functions
-  .runWith({ timeoutSeconds: 540, memory: '4GB' })
+  .runWith({ timeoutSeconds: 540, memory: '4GB', secrets })
   .pubsub.schedule(`0 ${BETTING_STREAK_RESET_HOUR} * * *`)
   .timeZone('Etc/UTC')
   .onRun(async () => {
