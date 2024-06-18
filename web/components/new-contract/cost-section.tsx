@@ -174,7 +174,7 @@ function Tier(props: {
             ? 'outline-purple-400'
             : 'outline-pink-500'
           : tier == 'play'
-          ? 'opacity-50 outline-transparent hover:outline-ink-500/50'
+          ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
           : tier == 'basic'
           ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
           : tier == 'plus'
