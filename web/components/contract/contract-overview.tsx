@@ -16,10 +16,7 @@ import {
   BountiedQuestionContract,
   BinaryOrPseudoNumericContract,
 } from 'common/contract'
-import {
-  MultiBinaryChart,
-  SizedBinaryChart,
-} from '../charts/contract/binary'
+import { MultiBinaryChart, SizedBinaryChart } from '../charts/contract/binary'
 import { ChoiceContractChart, getVersusColor } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import {

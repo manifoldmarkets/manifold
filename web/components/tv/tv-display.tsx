@@ -13,7 +13,10 @@ import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import { BinaryBetPanel, SimpleMultiOverview } from 'web/components/contract/contract-overview'
+import {
+  BinaryBetPanel,
+  SimpleMultiOverview,
+} from 'web/components/contract/contract-overview'
 import { PublicChat } from 'web/components/chat/public-chat'
 import { Tabs } from 'web/components/layout/tabs'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
