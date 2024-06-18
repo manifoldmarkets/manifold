@@ -716,15 +716,6 @@ or replace function creator_leaderboard (limit_n int) returns table (
 $$;
 
 create
-or replace function get_notifications (uid text, unseen_only boolean, max_num integer) returns setof user_notifications language sql stable parallel SAFE as $$
-select *
-from user_notifications as n
-where n.user_id = uid and (not unseen_only or not ((n.data->'isSeen')::boolean))
-order by ((n.data->'createdTime')::bigint) desc
-limit max_num
-$$;
-
-create
 or replace function get_user_manalink_claims (creator_id text) returns table (manalink_id text, claimant_id text, ts bigint) as $$
     select mc.manalink_id, (tx.data)->>'toId' as claimant_id, ((tx.data)->'createdTime')::bigint as ts
     from manalink_claims as mc

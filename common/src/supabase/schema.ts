@@ -455,6 +455,8 @@ export type Database = {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          tier: string | null
+          unique_bettor_count: number
           view_count: number | null
           visibility: string | null
         }
@@ -486,6 +488,8 @@ export type Database = {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          tier?: string | null
+          unique_bettor_count?: number
           view_count?: number | null
           visibility?: string | null
         }
@@ -517,6 +521,8 @@ export type Database = {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          tier?: string | null
+          unique_bettor_count?: number
           view_count?: number | null
           visibility?: string | null
         }
@@ -1403,45 +1409,6 @@ export type Database = {
         }
         Relationships: []
       }
-      txn_summary_stats: {
-        Row: {
-          category: string
-          created_time: string
-          end_time: string
-          from_type: string
-          id: number
-          quest_type: string | null
-          start_time: string
-          to_type: string
-          token: string
-          total_amount: number
-        }
-        Insert: {
-          category: string
-          created_time?: string
-          end_time: string
-          from_type: string
-          id?: never
-          quest_type?: string | null
-          start_time: string
-          to_type: string
-          token: string
-          total_amount: number
-        }
-        Update: {
-          category?: string
-          created_time?: string
-          end_time?: string
-          from_type?: string
-          id?: never
-          quest_type?: string | null
-          start_time?: string
-          to_type?: string
-          token?: string
-          total_amount?: number
-        }
-        Relationships: []
-      }
       mana_supply_stats: {
         Row: {
           amm_liquidity: number
@@ -1647,6 +1614,7 @@ export type Database = {
           comment_id: string
           contract_id: string
           created_time: string
+          mod_note: string | null
           report_id: number
           status: Database['public']['Enums']['status_type']
           user_id: string
@@ -1655,6 +1623,7 @@ export type Database = {
           comment_id: string
           contract_id: string
           created_time?: string
+          mod_note?: string | null
           report_id?: number
           status?: Database['public']['Enums']['status_type']
           user_id: string
@@ -1663,6 +1632,7 @@ export type Database = {
           comment_id?: string
           contract_id?: string
           created_time?: string
+          mod_note?: string | null
           report_id?: number
           status?: Database['public']['Enums']['status_type']
           user_id?: string
@@ -2369,6 +2339,45 @@ export type Database = {
         }
         Relationships: []
       }
+      txn_summary_stats: {
+        Row: {
+          category: string
+          created_time: string
+          end_time: string
+          from_type: string
+          id: number
+          quest_type: string | null
+          start_time: string
+          to_type: string
+          token: string
+          total_amount: number
+        }
+        Insert: {
+          category: string
+          created_time?: string
+          end_time: string
+          from_type: string
+          id?: never
+          quest_type?: string | null
+          start_time: string
+          to_type: string
+          token: string
+          total_amount: number
+        }
+        Update: {
+          category?: string
+          created_time?: string
+          end_time?: string
+          from_type?: string
+          id?: never
+          quest_type?: string | null
+          start_time?: string
+          to_type?: string
+          token?: string
+          total_amount?: number
+        }
+        Relationships: []
+      }
       txns: {
         Row: {
           amount: number
@@ -2380,7 +2389,7 @@ export type Database = {
           fs_updated_time: string | null
           id: string
           to_id: string
-          to_type: string | null
+          to_type: string
         }
         Insert: {
           amount: number
@@ -2392,7 +2401,7 @@ export type Database = {
           fs_updated_time?: string | null
           id?: string
           to_id: string
-          to_type?: string | null
+          to_type: string
         }
         Update: {
           amount?: number
@@ -2404,7 +2413,7 @@ export type Database = {
           fs_updated_time?: string | null
           id?: string
           to_id?: string
-          to_type?: string | null
+          to_type?: string
         }
         Relationships: []
       }
@@ -2458,10 +2467,10 @@ export type Database = {
           has_yes_shares: boolean | null
           id: number
           profit: number | null
+          profit_adjustment: number | null
           total_shares_no: number | null
           total_shares_yes: number | null
           user_id: string
-          profit_adjustment: number | null
         }
         Insert: {
           answer_id?: string | null
@@ -2473,10 +2482,10 @@ export type Database = {
           has_yes_shares?: boolean | null
           id?: never
           profit?: number | null
+          profit_adjustment?: number | null
           total_shares_no?: number | null
           total_shares_yes?: number | null
           user_id: string
-          profit_adjustment?: number | null
         }
         Update: {
           answer_id?: string | null
@@ -2488,10 +2497,10 @@ export type Database = {
           has_yes_shares?: boolean | null
           id?: never
           profit?: number | null
+          profit_adjustment?: number | null
           total_shares_no?: number | null
           total_shares_yes?: number | null
           user_id?: string
-          profit_adjustment?: number | null
         }
         Relationships: []
       }
@@ -2663,33 +2672,33 @@ export type Database = {
           id: number
           investment_value: number | null
           loan_total: number | null
+          profit: number | null
           spice_balance: number
           total_deposits: number | null
           ts: string | null
           user_id: string
-          profit: number | null
         }
         Insert: {
           balance?: number | null
           id?: never
           investment_value?: number | null
           loan_total?: number | null
+          profit?: number | null
           spice_balance?: number
           total_deposits?: number | null
           ts?: string | null
           user_id: string
-          profit?: number | null
         }
         Update: {
           balance?: number | null
           id?: never
           investment_value?: number | null
           loan_total?: number | null
+          profit?: number | null
           spice_balance?: number
           total_deposits?: number | null
           ts?: string | null
           user_id?: string
-          profit?: number | null
         }
         Relationships: []
       }
@@ -2699,33 +2708,33 @@ export type Database = {
           investment_value: number
           last_calculated: string
           loan_total: number | null
+          profit: number | null
           spice_balance: number
           total_deposits: number
           ts: string
           user_id: string
-          profit: number | null
         }
         Insert: {
           balance: number
           investment_value: number
           last_calculated: string
           loan_total?: number | null
+          profit?: number | null
           spice_balance?: number
           total_deposits: number
           ts: string
           user_id: string
-          profit?: number | null
         }
         Update: {
           balance?: number
           investment_value?: number
           last_calculated?: string
           loan_total?: number | null
+          profit?: number | null
           spice_balance?: number
           total_deposits?: number
           ts?: string
           user_id?: string
-          profit?: number | null
         }
         Relationships: []
       }
@@ -2873,7 +2882,7 @@ export type Database = {
       users: {
         Row: {
           balance: number
-          created_time: string | null
+          created_time: string
           data: Json
           id: string
           name: string
@@ -2885,7 +2894,7 @@ export type Database = {
         }
         Insert: {
           balance?: number
-          created_time?: string | null
+          created_time?: string
           data: Json
           id?: string
           name: string
@@ -2897,7 +2906,7 @@ export type Database = {
         }
         Update: {
           balance?: number
-          created_time?: string | null
+          created_time?: string
           data?: Json
           id?: string
           name?: string
@@ -3059,56 +3068,95 @@ export type Database = {
       contracts_rbac: {
         Row: {
           close_time: string | null
+          conversion_score: number | null
           created_time: string | null
           creator_id: string | null
           data: Json | null
+          deleted: boolean | null
+          description_fts: unknown | null
+          freshness_score: number | null
           fs_updated_time: string | null
+          group_slugs: string[] | null
           id: string | null
+          importance_score: number | null
+          is_politics: boolean | null
+          is_spice_payout: boolean | null
+          last_bet_time: string | null
+          last_comment_time: string | null
+          last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
           question: string | null
           question_fts: unknown | null
+          question_nostop_fts: unknown | null
           resolution: string | null
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          view_count: number | null
           visibility: string | null
         }
         Insert: {
           close_time?: string | null
+          conversion_score?: number | null
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          deleted?: boolean | null
+          description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string | null
+          group_slugs?: string[] | null
           id?: string | null
+          importance_score?: number | null
+          is_politics?: boolean | null
+          is_spice_payout?: boolean | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
           question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          view_count?: number | null
           visibility?: string | null
         }
         Update: {
           close_time?: string | null
+          conversion_score?: number | null
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          deleted?: boolean | null
+          description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string | null
+          group_slugs?: string[] | null
           id?: string | null
+          importance_score?: number | null
+          is_politics?: boolean | null
+          is_spice_payout?: boolean | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
           question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          view_count?: number | null
           visibility?: string | null
         }
         Relationships: []
@@ -3727,73 +3775,6 @@ export type Database = {
           data: Json
         }[]
       }
-      close_contract_embeddings_1: {
-        Args: {
-          input_contract_id: string
-          similarity_threshold: number
-          match_count: number
-        }
-        Returns: {
-          contract_id: string
-          similarity: number
-          data: Json
-        }[]
-      }
-      closest_contract_embeddings: {
-        Args: {
-          input_contract_id: string
-          similarity_threshold: number
-          match_count: number
-          is_admin?: boolean
-        }
-        Returns: {
-          contract_id: string
-          similarity: number
-          data: Json
-        }[]
-      }
-      convert_data_array_to_contract_table: {
-        Args: {
-          data_table: Json[]
-        }
-        Returns: {
-          close_time: string | null
-          conversion_score: number
-          created_time: string | null
-          creator_id: string | null
-          data: Json
-          deleted: boolean | null
-          description_fts: unknown | null
-          freshness_score: number | null
-          fs_updated_time: string
-          group_slugs: string[] | null
-          id: string
-          importance_score: number | null
-          is_politics: boolean | null
-          is_spice_payout: boolean | null
-          last_bet_time: string | null
-          last_comment_time: string | null
-          last_updated_time: string | null
-          mechanism: string | null
-          outcome_type: string | null
-          popularity_score: number | null
-          question: string | null
-          question_fts: unknown | null
-          question_nostop_fts: unknown | null
-          resolution: string | null
-          resolution_probability: number | null
-          resolution_time: string | null
-          slug: string | null
-          view_count: number | null
-          visibility: string | null
-        }[]
-      }
-      convert_data_to_contract: {
-        Args: {
-          data: Json
-        }
-        Returns: Record<string, unknown>
-      }
       count_recent_comments: {
         Args: {
           contract_id: string
@@ -4099,7 +4080,7 @@ export type Database = {
           deleted: boolean | null
           description_fts: unknown | null
           freshness_score: number | null
-          fs_updated_time: string
+          fs_updated_time: string | null
           group_slugs: string[] | null
           id: string
           importance_score: number | null
@@ -4118,21 +4099,10 @@ export type Database = {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          tier: string | null
+          unique_bettor_count: number
           view_count: number | null
           visibility: string | null
-        }[]
-      }
-      get_notifications: {
-        Args: {
-          uid: string
-          unseen_only: boolean
-          max_num: number
-        }
-        Returns: {
-          data: Json
-          fs_updated_time: string
-          notification_id: string
-          user_id: string
         }[]
       }
       get_open_limit_bets_with_contracts: {
@@ -4398,6 +4368,15 @@ export type Database = {
           group_id: string
           avg_conversion_score: number
           groups_count: number
+        }[]
+      }
+      get_user_topic_interests_2: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: {
+          group_id: string
+          score: number
         }[]
       }
       get_your_contract_ids:
@@ -4754,44 +4733,6 @@ export type Database = {
           total_members: number | null
         }[]
       }
-      search_users: {
-        Args: {
-          query: string
-          count: number
-        }
-        Returns: {
-          balance: number
-          created_time: string | null
-          data: Json
-          fs_updated_time: string
-          id: string
-          name: string
-          name_username_vector: unknown | null
-          resolved_profit_adjustment: number | null
-          spice_balance: number
-          total_deposits: number
-          username: string
-        }[]
-      }
-      search_users_2: {
-        Args: {
-          query: string
-          count: number
-        }
-        Returns: {
-          balance: number
-          created_time: string | null
-          data: Json
-          fs_updated_time: string
-          id: string
-          name: string
-          name_username_vector: unknown | null
-          resolved_profit_adjustment: number | null
-          spice_balance: number
-          total_deposits: number
-          username: string
-        }[]
-      }
       set_limit: {
         Args: {
           '': number
@@ -4957,7 +4898,6 @@ export type Database = {
     Enums: {
       status_type: 'new' | 'under review' | 'resolved' | 'needs admin'
     }
-
     CompositeTypes: {
       contract_ids: {
         contract_id: string
