@@ -69,6 +69,7 @@ import { Fees } from 'common/fees'
 import { APIError } from 'common/api/utils'
 import { updateUser } from 'shared/supabase/users'
 import { broadcastNewBets } from 'shared/websockets/helpers'
+import { getAnswersForContract } from 'shared/supabase/answers'
 
 export const onCreateBets = async (
   bets: Bet[],
@@ -119,7 +120,6 @@ export const onCreateBets = async (
     await updateUserContractMetrics(
       contract,
       uniqBy(usersToRefreshMetrics, 'id'),
-      bets,
       pg
     )
     log(`Contract metrics updated for ${usersToRefreshMetrics.length} users.`)
@@ -317,9 +317,13 @@ const notifyUsersOfLimitFills = async (
 const updateUserContractMetrics = async (
   contract: Contract,
   users: User[],
-  recentBets: Bet[],
   pg: SupabaseDirectClient
 ) => {
+  const answers =
+    contract.mechanism === 'cpmm-multi-1'
+      ? await getAnswersForContract(pg, contract.id)
+      : []
+
   const metrics = await Promise.all(
     users.map(async (user) => {
       const bets = await pg.map(
@@ -327,14 +331,8 @@ const updateUserContractMetrics = async (
         [contract.id, user.id],
         convertBet
       )
-      const recentBetsByUser = recentBets.filter(
-        (bet) => bet.userId === user.id
-      )
-      // Handle possible replication delay
-      bets.push(
-        ...recentBetsByUser.filter((bet) => !bets.find((b) => b.id === bet.id))
-      )
-      return calculateUserMetrics(contract, bets, user)
+
+      return calculateUserMetrics(contract, bets, user, answers)
     })
   )
 
