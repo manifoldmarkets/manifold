@@ -7,7 +7,7 @@ import { DEV_CONFIG } from 'common/envs/dev'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DocumentLibrary/DocumentRegistration'
-export const uploadDocumentGIDX: APIHandler<'upload-document-gidx'> = async (
+export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
   props,
   auth
 ) => {

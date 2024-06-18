@@ -15,7 +15,7 @@ import { getGIDXStandardParams } from 'shared/gidx/standard-params'
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
 
-export const registerGIDX: APIHandler<'register-gidx'> = async (
+export const register: APIHandler<'register-gidx'> = async (
   props,
   auth,
   req

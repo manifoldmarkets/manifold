@@ -167,9 +167,9 @@ import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
-import { registerGIDX } from 'api/gidx/register-gidx'
-import { verificationSessionGIDX } from 'api/gidx/get-verification-session-gidx'
-import { uploadDocumentGIDX } from 'api/gidx/upload-document-gidx'
+import { register } from 'api/gidx/register'
+import { getVerificationSession } from 'api/gidx/get-verification-session'
+import { uploadDocument } from 'api/gidx/upload-document'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -334,9 +334,9 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-contract-positions': searchContractPositions,
   'get-txn-summary-stats': getTxnSummaryStats,
   'get-mana-summary-stats': getManaSummaryStats,
-  'register-gidx': registerGIDX,
-  'verification-session-gidx': verificationSessionGIDX,
-  'upload-document-gidx': uploadDocumentGIDX,
+  'register-gidx': register,
+  'get-verification-session-gidx': getVerificationSession,
+  'upload-document-gidx': uploadDocument,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

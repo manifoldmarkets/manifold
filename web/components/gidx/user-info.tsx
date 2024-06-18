@@ -122,7 +122,9 @@ export const UserInfo = (props: { user: User }) => {
   )
 
   const getVerificationSession = async () => {
-    const res = await api('verification-session-gidx', { ...userInfo } as any)
+    const res = await api('get-verification-session-gidx', {
+      ...userInfo,
+    } as any)
     if (res) {
       const { SessionURL } = res
       const decodedString = decodeURIComponent(SessionURL).replaceAll('+', ' ')

@@ -4,8 +4,8 @@ import { getPhoneNumber } from 'shared/helpers/get-phone-number'
 import { getGIDXStandardParams } from 'shared/gidx/standard-params'
 import { GIDXVerificationResponse } from 'common/gidx/gidx'
 const ENDPOINT = 'https://api.gidx-service.in/v3.0/api/WebReg/CreateSession'
-export const verificationSessionGIDX: APIHandler<
-  'verification-session-gidx'
+export const getVerificationSession: APIHandler<
+  'get-verification-session-gidx'
 > = async (props, auth) => {
   const user = await getPrivateUserSupabase(auth.uid)
   if (!user) {

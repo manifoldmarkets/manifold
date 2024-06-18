@@ -1242,7 +1242,7 @@ export const API = (_apiTypeCheck = {
     props: verificationParams,
     returns: {} as RegistrationReturnType,
   },
-  'verification-session-gidx': {
+  'get-verification-session-gidx': {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
