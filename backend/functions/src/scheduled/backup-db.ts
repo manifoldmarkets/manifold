@@ -31,7 +31,7 @@ const backupDbCore = async (
   // or set to a list of collection IDs to export,
   // collectionIds: ['users', 'posts']
   // NOTE: Subcollections are not backed up by default
-  const collectionIds = ['private-users', 'stripe-transactions']
+  const collectionIds = ['stripe-transactions']
   return await client.exportDocuments({ name, outputUriPrefix, collectionIds })
 }
 

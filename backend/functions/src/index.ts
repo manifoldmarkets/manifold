@@ -2,10 +2,6 @@ import * as admin from 'firebase-admin'
 
 admin.initializeApp()
 
-// triggers
-export * from './triggers/log-writes' // Running the emulator? Comment this line out
-export * from './triggers/on-update-private-user'
-
 // scheduled functions
 export {
   sendWeeklyPortfolioUpdate,

@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import { partition } from 'lodash'
 import { Expo, ExpoPushMessage, ExpoPushSuccessTicket } from 'expo-server-sdk'
 
@@ -7,6 +6,8 @@ import { PrivateUser } from 'common/user'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updatePrivateUser } from './supabase/users'
+import { FieldVal } from './supabase/utils'
 
 type ExpoPushMessageWithNotification = ExpoPushMessage & {
   data: Notification
@@ -18,7 +19,6 @@ export const createPushNotification = async (
   title: string,
   body: string
 ) => {
-  const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   const expo = new Expo()
   const { sendToMobile } = getNotificationDestinationsForUser(
@@ -74,12 +74,9 @@ export const createPushNotification = async (
         log('Error generating push notification, ticket:', ticket)
         if (ticket.details?.error === 'DeviceNotRegistered') {
           // set private user pushToken to null
-          await firestore
-            .collection('private-users')
-            .doc(privateUser.id)
-            .update({
-              pushToken: admin.firestore.FieldValue.delete(),
-            })
+          await updatePrivateUser(pg, privateUser.id, {
+            pushToken: FieldVal.delete(),
+          })
         }
       }
     })

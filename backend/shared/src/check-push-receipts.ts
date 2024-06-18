@@ -1,12 +1,11 @@
 import { Expo } from 'expo-server-sdk'
-import * as admin from 'firebase-admin'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertPushTicket } from 'common/push-ticket'
 import { log } from 'shared/monitoring/log'
+import { updatePrivateUser } from './supabase/users'
 
 export const checkPushNotificationReceipts = async () => {
   const expo = new Expo()
-  const firestore = admin.firestore()
   // Later, after the Expo push notification service has delivered the
   // notifications to Apple or Google (usually quickly, but allow the service
   // up to 30 minutes when under load), a "receipt" for each notification is
@@ -58,12 +57,7 @@ export const checkPushNotificationReceipts = async () => {
               log(`The error code is ${error}`)
               if (error === 'DeviceNotRegistered') {
                 // set private user pushToken to null
-                await firestore
-                  .collection('private-users')
-                  .doc(ticket.userId)
-                  .update({
-                    pushToken: admin.firestore.FieldValue.delete(),
-                  })
+                await updatePrivateUser(pg, ticket.userId, { pushToken: null })
               }
             }
           }

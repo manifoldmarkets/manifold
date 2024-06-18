@@ -30,11 +30,6 @@ export type Column<T extends Selectable> = keyof Row<T> & string
 
 export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
 
-export type CollectionTableMapping = { [coll: string]: TableName }
-export const collectionTables: CollectionTableMapping = {
-  'private-users': 'private_users',
-}
-
 export function createClient(
   instanceId: string,
   key: string,

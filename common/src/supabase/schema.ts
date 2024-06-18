@@ -2006,21 +2006,21 @@ export type Database = {
       private_users: {
         Row: {
           data: Json
-          fs_updated_time: string
+          fs_updated_time: string | null
           id: string
           weekly_portfolio_email_sent: boolean | null
           weekly_trending_email_sent: boolean | null
         }
         Insert: {
           data: Json
-          fs_updated_time: string
+          fs_updated_time?: string | null
           id: string
           weekly_portfolio_email_sent?: boolean | null
           weekly_trending_email_sent?: boolean | null
         }
         Update: {
           data?: Json
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           id?: string
           weekly_portfolio_email_sent?: boolean | null
           weekly_trending_email_sent?: boolean | null

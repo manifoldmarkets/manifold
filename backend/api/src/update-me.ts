@@ -5,7 +5,6 @@ import { RESERVED_PATHS } from 'common/envs/constants'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
 import { cloneDeep } from 'lodash'
-import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, getUserByUsername, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
@@ -70,8 +69,6 @@ const updateUserDenormalizedFields = async (
 
   log('Updating denormalized user data on contracts...')
 
-  const bulkWriter = new SafeBulkWriter()
-
   const contractUpdate: Partial<Contract> = removeUndefinedProps({
     creatorName: update.name,
     creatorUsername: update.username,
@@ -101,6 +98,5 @@ const updateUserDenormalizedFields = async (
   )
   log(`Updated ${commentIds.length} comments.`)
 
-  await bulkWriter.flush()
   log('Done denormalizing!')
 }

@@ -28,7 +28,6 @@ import { generateImage } from 'shared/helpers/openai-utils'
 
 export const onCreateMarket = async (
   contract: Contract,
-  firestore: admin.firestore.Firestore,
   triggerEventId?: string
 ) => {
   const { creatorId, question, creatorUsername } = contract
