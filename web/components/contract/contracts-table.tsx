@@ -265,7 +265,7 @@ function ContractQuestion(props: {
             </Tooltip>
           </span>
         )}
-        {!!marketTier && (
+        {!!marketTier && marketTier !== 'play' && (
           <span>
             <TierTooltip
               placement={'top'}
