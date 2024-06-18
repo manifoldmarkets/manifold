@@ -1,6 +1,5 @@
 import { BinaryContract } from 'common/contract'
 import { useEffect, useState } from 'react'
-import { BinaryChart } from '../contract/contract-overview'
 import { DAY_MS } from 'common/util/time'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -8,6 +7,7 @@ import { getBetPoints } from 'common/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { maxBy, minBy } from 'lodash'
 import { buildArray } from 'common/util/array'
+import { SizedBinaryChart } from '../charts/contract/binary'
 
 // defaults to the previous day, unless you set a startDate
 export function FeedBinaryChart(props: {
@@ -48,7 +48,7 @@ export function FeedBinaryChart(props: {
 
   if (points && points.length > 0 && !!points[0]) {
     return (
-      <BinaryChart
+      <SizedBinaryChart
         betPoints={points}
         contract={contract}
         percentBounds={percentBounds}
