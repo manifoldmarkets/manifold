@@ -61,7 +61,7 @@ export const getStandardFixedPayouts = (
 }
 
 export const getMultiFixedPayouts = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  answers: Answer[],
   resolutions: { [answerId: string]: number },
   bets: Bet[],
   liquidities: LiquidityProvision[]
@@ -79,7 +79,7 @@ export const getMultiFixedPayouts = (
     .filter(({ payout }) => payout !== 0)
 
   const liquidityPayouts = getMultiLiquidityPoolPayouts(
-    contract,
+    answers,
     resolutions,
     liquidities
   )
@@ -142,11 +142,10 @@ export const getIndependentMultiLiquidityPoolPayouts = (
 }
 
 export const getMultiLiquidityPoolPayouts = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  answers: Answer[],
   resolutions: { [answerId: string]: number },
   liquidities: LiquidityProvision[]
 ) => {
-  const { answers } = contract
   const totalPayout = sumBy(answers, (answer) => {
     const weight = resolutions[answer.id] ?? 0
     const { poolYes, poolNo } = answer

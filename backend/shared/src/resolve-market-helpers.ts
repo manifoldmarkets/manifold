@@ -38,7 +38,11 @@ import { convertTxn } from 'common/supabase/txns'
 import { bulkIncrementBalances } from './supabase/users'
 import { convertBet } from 'common/supabase/bets'
 import { convertLiquidity } from 'common/supabase/liquidity'
-import { updateAnswer } from './supabase/answers'
+import {
+  getAnswer,
+  getAnswersForContract,
+  updateAnswer,
+} from './supabase/answers'
 import { updateContract } from './supabase/contracts'
 
 export type ResolutionParams = {
@@ -329,6 +333,14 @@ export const getDataAndPayoutInfo = async (
     : undefined
   const loanPayouts = getLoanPayouts(bets)
 
+  let answer: Answer | undefined
+  let answers: Answer[] | undefined
+  if (answerId) {
+    answer = (await getAnswer(pg, answerId)) ?? undefined
+  } else if (unresolvedContract.mechanism === 'cpmm-multi-1') {
+    answers = await getAnswersForContract(pg, contractId)
+  }
+
   const { payouts: traderPayouts, liquidityPayouts } = getPayouts(
     outcome,
     unresolvedContract,
@@ -336,7 +348,8 @@ export const getDataAndPayoutInfo = async (
     liquidities,
     resolutionProbs,
     resolutionProbability,
-    answerId
+    answer,
+    answers
   )
   const payoutsWithoutLoans = [
     ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
