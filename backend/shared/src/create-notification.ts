@@ -519,6 +519,10 @@ export const createBetFillNotification = async (
       ? (contract.answers as Answer[]).find((a) => a.id === bet.answerId)?.text
       : undefined
 
+  if (fillAmount < 1) {
+    return
+  }
+
   const notification: Notification = {
     id: idempotencyKey,
     userId: toUser.id,
