@@ -161,15 +161,19 @@ export const FieldVal = {
   arrayConcat:
     (...values: string[]) =>
     (fieldName: string) => {
-      const valueString = `'{${values.join(',')}}'::text[]`
-      return `|| jsonb_build_object('${fieldName}', data->'${fieldName} || ${valueString}))`
+      return pgp.as.format(`|| jsonb_build_object($1, data->$1 || $2:json)`, [
+        fieldName,
+        values,
+      ])
     },
 
   arrayRemove:
     (...values: string[]) =>
     (fieldName: string) => {
-      const valueString = `'{${values.join(',')}}'::text[]`
-      return `|| jsonb_build_object('${fieldName}', data->'${fieldName}' - ${valueString})`
+      return pgp.as.format(
+        `|| jsonb_build_object($1, (data->$1) - '{$2:raw}'::text[])`,
+        [fieldName, values.join(',')]
+      )
     },
 }
 
