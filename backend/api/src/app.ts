@@ -168,7 +168,8 @@ import { blockMarket, unblockMarket } from './block-market'
 import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
 import { registerGIDX } from 'api/gidx/register-gidx'
-import { verificationSessionGIDX } from 'api/gidx/get-verification-session'
+import { verificationSessionGIDX } from 'api/gidx/get-verification-session-gidx'
+import { uploadDocumentGIDX } from 'api/gidx/upload-document-gidx'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -335,6 +336,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-mana-summary-stats': getManaSummaryStats,
   'register-gidx': registerGIDX,
   'verification-session-gidx': verificationSessionGIDX,
+  'upload-document-gidx': uploadDocumentGIDX,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

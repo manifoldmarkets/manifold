@@ -18,6 +18,7 @@ import {
 } from 'common/reason-codes'
 import { intersection } from 'lodash'
 import Script from 'next/script'
+import { UploadDocuments } from 'web/components/gidx/upload-document'
 
 const body = {
   MerchantCustomerID: '4',
@@ -85,8 +86,6 @@ export const UserInfo = (props: { user: User }) => {
     'gidx-registration-user-info'
   )
 
-  const rowClass = 'gap-2 w-full sm:w-96'
-
   const requestLocationBrowser = () => {
     setLoading(true)
     if ('geolocation' in navigator) {
@@ -117,9 +116,11 @@ export const UserInfo = (props: { user: User }) => {
       setLoading(false)
     }
   }
+
   const unfilled = Object.entries(userInfo ?? {}).filter(
     ([_, value]) => value === undefined
   )
+
   const getVerificationSession = async () => {
     const res = await api('verification-session-gidx', { ...userInfo } as any)
     if (res) {
@@ -129,6 +130,7 @@ export const UserInfo = (props: { user: User }) => {
       const scriptSrc = decodedString.match(/src='(.*?)'/)?.[1]
       console.log('decoded string', scriptSrc)
       setGidxSession(scriptSrc ?? '')
+      setPage(page + 1)
     }
   }
 
@@ -225,139 +227,185 @@ export const UserInfo = (props: { user: User }) => {
       />
     )
   }
+
   if (page === 1) {
     return (
-      <Col className={'gap-3'}>
-        <span className={' text-primary-700 text-2xl'}>Location required</span>
-        <span>
-          You <strong>must</strong> allow location sharing to verify that you're
-          in a participating municipality.
+      <LocationPanel
+        requestLocation={requestLocationBrowser}
+        locationError={locationError}
+        loading={loading}
+        back={() => setPage(page - 1)}
+      />
+    )
+  }
+
+  if (page === 2) {
+    const rowClass = 'gap-2 w-full sm:w-96'
+    return (
+      <Col className={'gap-3 p-4'}>
+        <span className={'text-primary-700 text-2xl'}>
+          Identity Verification
         </span>
-        <Row className={'mb-4 mt-4 w-full gap-12'}>
-          <Button color={'gray-white'} onClick={() => null}>
-            Cancel
+        <Col className={rowClass}>
+          <span>First Name</span>
+          <Input
+            placeholder={'Your first name'}
+            value={userInfo.FirstName}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, FirstName: e.target.value })
+            }
+          />
+        </Col>
+        <Col className={rowClass}>
+          <span>Last Name</span>
+          <Input
+            placeholder={'Your last name'}
+            value={userInfo.LastName}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, LastName: e.target.value })
+            }
+          />
+        </Col>
+        <Col className={rowClass}>
+          <span>Date of Birth</span>
+          <Input
+            className={'w-40'}
+            type={'date'}
+            value={
+              userInfo.DateOfBirth && userInfo.DateOfBirth.includes('/')
+                ? new Date(userInfo.DateOfBirth).toISOString().split('T')[0]
+                : userInfo.DateOfBirth
+            }
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, DateOfBirth: e.target.value })
+            }
+          />
+        </Col>
+        <Col className={rowClass}>
+          <span>Citizenship Country</span>
+          <CountryCodeSelector
+            selectedCountry={userInfo.CitizenshipCountryCode}
+            setSelectedCountry={(val) =>
+              setUserInfo({ ...userInfo, CitizenshipCountryCode: val })
+            }
+          />
+        </Col>
+        {/* TODO: Add togle to allow user to input their address or their ID type & number*/}
+        <Col className={'w-fit gap-2'}>
+          <span>Identification Type</span>
+          <ChoicesToggleGroup
+            currentChoice={userInfo?.IdentificationTypeCode}
+            choicesMap={identificationTypeToCode}
+            setChoice={(val) =>
+              setUserInfo({
+                ...userInfo,
+                IdentificationTypeCode: val as number,
+              })
+            }
+          />
+        </Col>
+        <Col className={rowClass}>
+          <span>Identification Number</span>
+          <Input
+            placeholder={`Your ${idTypeName} number`}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, IdentificationNumber: e.target.value })
+            }
+          />
+        </Col>
+        {error && <span className={'text-error'}>{error}</span>}
+        {user.kycStatus === 'failed' && (
+          <Col
+            className={'border-primary-100 w-fit gap-3 rounded border-4 p-4'}
+          >
+            <span>
+              Having trouble? Clarify a few things verify to your identity.
+            </span>
+            <Button className={'w-72'} onClick={getVerificationSession}>
+              Open Verification Session
+            </Button>
+          </Col>
+        )}
+        <Row className={'mb-4 mt-4 w-full gap-16'}>
+          <Button
+            color={'gray-white'}
+            disabled={loading}
+            onClick={() => setPage(page - 1)}
+          >
+            Back
           </Button>
           <Button
             loading={loading}
-            disabled={loading}
-            onClick={requestLocationBrowser}
+            disabled={loading || unfilled.length > 0}
+            onClick={register}
           >
-            Share location
+            Submit
           </Button>
-          {locationError && <span>{locationError}</span>}
         </Row>
       </Col>
     )
   }
 
+  if (page === 3 && gidxSession && typeof window !== 'undefined') {
+    return (
+      <Col>
+        <div data-gidx-script-loading="true">Loading...</div>
+        <Script
+          strategy={'lazyOnload'}
+          src={gidxSession}
+          data-tsevo-script-tag
+          data-gidx-session-id={gidxSession.split('sessionid=')[1]}
+          type="text/javascript"
+        />
+        <Row className={'mb-4 mt-4 w-full gap-16'}>
+          <Button onClick={() => setPage(page - 1)}>Back</Button>
+          <Button onClick={() => setPage(page + 1)}>Next</Button>
+        </Row>
+      </Col>
+    )
+  }
+
+  if (page === 4) {
+    return (
+      <UploadDocuments
+        back={() => setPage(page - 1)}
+        next={() => setPage(page + 1)}
+      />
+    )
+  }
   return (
-    <Col className={'gap-3'}>
-      {window.location !== undefined && gidxSession && (
-        <>
-          <div data-gidx-script-loading="true">Loading...</div>
-          <Script
-            strategy={'lazyOnload'}
-            src={gidxSession}
-            data-tsevo-script-tag
-            data-gidx-session-id={gidxSession.split('sessionid=')[1]}
-            type="text/javascript"
-          ></Script>
-        </>
-      )}
-      <span className={'text-primary-700 text-2xl'}>Identity Verification</span>
-      <Col className={rowClass}>
-        <span>First Name</span>
-        <Input
-          placeholder={'Your first name'}
-          value={userInfo.FirstName}
-          type={'text'}
-          onChange={(e) =>
-            setUserInfo({ ...userInfo, FirstName: e.target.value })
-          }
-        />
-      </Col>
-      <Col className={rowClass}>
-        <span>Last Name</span>
-        <Input
-          placeholder={'Your last name'}
-          value={userInfo.LastName}
-          type={'text'}
-          onChange={(e) =>
-            setUserInfo({ ...userInfo, LastName: e.target.value })
-          }
-        />
-      </Col>
-      <Col className={rowClass}>
-        <span>Date of Birth</span>
-        <Input
-          className={'w-40'}
-          type={'date'}
-          value={
-            userInfo.DateOfBirth && userInfo.DateOfBirth.includes('/')
-              ? new Date(userInfo.DateOfBirth).toISOString().split('T')[0]
-              : userInfo.DateOfBirth
-          }
-          onChange={(e) =>
-            setUserInfo({ ...userInfo, DateOfBirth: e.target.value })
-          }
-        />
-      </Col>
-      <Col className={rowClass}>
-        <span>Citizenship Country</span>
-        <CountryCodeSelector
-          selectedCountry={userInfo.CitizenshipCountryCode}
-          setSelectedCountry={(val) =>
-            setUserInfo({ ...userInfo, CitizenshipCountryCode: val })
-          }
-        />
-      </Col>
-      {/* TODO: Add togle to allow user to input their address or their ID type & number*/}
-      <Col className={'w-fit gap-2'}>
-        <span>Identification Type</span>
-        <ChoicesToggleGroup
-          currentChoice={userInfo?.IdentificationTypeCode}
-          choicesMap={identificationTypeToCode}
-          setChoice={(val) =>
-            setUserInfo({ ...userInfo, IdentificationTypeCode: val as number })
-          }
-        />
-      </Col>
-      <Col className={rowClass}>
-        <span>Identification Number</span>
-        <Input
-          placeholder={`Your ${idTypeName} number`}
-          type={'text'}
-          onChange={(e) =>
-            setUserInfo({ ...userInfo, IdentificationNumber: e.target.value })
-          }
-        />
-      </Col>
-      {error && <span className={'text-error'}>{error}</span>}
-      {user.kycStatus === 'failed' && (
-        <Col className={'border-primary-100 w-fit gap-3 rounded border-4 p-4'}>
-          <span>
-            Having trouble? Clarify a few things verify your identity.
-          </span>
-          <Button className={'w-72'} onClick={getVerificationSession}>
-            Open Verification Session
-          </Button>
-        </Col>
-      )}
-      <Row className={'mb-4 mt-4 w-full gap-16'}>
-        <Button
-          color={'gray-white'}
-          disabled={loading}
-          onClick={() => setPage(page - 1)}
-        >
+    <Col>
+      Thank you!
+      <Button onClick={() => setPage(page - 1)}> Back </Button>
+    </Col>
+  )
+}
+
+const LocationPanel = (props: {
+  requestLocation: () => void
+  locationError: string | null
+  back: () => void
+  loading: boolean
+}) => {
+  const { back, requestLocation, locationError, loading } = props
+  return (
+    <Col className={'gap-3 p-4'}>
+      <span className={' text-primary-700 text-2xl'}>Location required</span>
+      <span>
+        You <strong>must</strong> allow location sharing to verify that you're
+        in a participating municipality.
+      </span>
+      <Row className={'mb-4 mt-4 w-full gap-12'}>
+        <Button color={'gray-white'} onClick={back}>
           Back
         </Button>
-        <Button
-          loading={loading}
-          disabled={loading || unfilled.length > 0}
-          onClick={register}
-        >
-          Submit
+        <Button loading={loading} disabled={loading} onClick={requestLocation}>
+          Share location
         </Button>
+        {locationError && <span>{locationError}</span>}
       </Row>
     </Col>
   )

@@ -1,19 +1,21 @@
 import { Col } from 'web/components/layout/col'
 import { Button } from 'web/components/buttons/button'
 import { api } from 'web/lib/firebase/api'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Input } from 'web/components/widgets/input'
 import { PhoneInput } from 'react-international-phone'
 import { toast } from 'react-hot-toast'
 import 'react-international-phone/style.css'
 import { Row } from 'web/components/layout/row'
 import { track } from 'web/lib/service/analytics'
+import { useUser } from 'web/hooks/use-user'
 
 export function RegistrationVerifyPhone(props: {
   cancel: () => void
   next: () => void
 }) {
   const { next, cancel } = props
+  const user = useUser()
   const requestOTP = async () => {
     setLoading(true)
     await toast
@@ -56,9 +58,12 @@ export function RegistrationVerifyPhone(props: {
   const [otp, setOtp] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [page, setPage] = useState(0)
+  useEffect(() => {
+    if (user?.verifiedPhone) next()
+  }, [user?.verifiedPhone])
 
   return (
-    <Col className="text-lg">
+    <Col className="p-4 text-lg">
       {page === 0 && (
         <Col className="gap-3">
           <span className={'text-primary-700 mb-3 mt-2 text-2xl'}>

@@ -34,6 +34,10 @@ export const db = initializeFirestore(app, opts)
 
 export const functions = getFunctions()
 export const storage = getStorage()
+export const privateStorage = getStorage(
+  app,
+  'gs://' + FIREBASE_CONFIG.privateBucket
+)
 
 declare global {
   /* eslint-disable-next-line no-var */

@@ -1249,6 +1249,17 @@ export const API = (_apiTypeCheck = {
     returns: {} as GIDXVerificationResponse,
     props: verificationParams,
   },
+  'upload-document-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as any,
+    props: z.object({
+      CategoryType: z.number().gte(1).lte(7),
+      fileName: z.string(),
+      fileUrl: z.string(),
+    }),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

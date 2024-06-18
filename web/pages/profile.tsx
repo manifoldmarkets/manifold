@@ -14,7 +14,7 @@ import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { useUser } from 'web/hooks/use-user'
 import { api, updateUser } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { uploadImage } from 'web/lib/firebase/storage'
+import { uploadPublicImage } from 'web/lib/firebase/storage'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
@@ -80,7 +80,7 @@ export default function ProfilePage(props: {
 
     setAvatarLoading(true)
 
-    await uploadImage(user.username, file)
+    await uploadPublicImage(user.username, file)
       .then(async (url) => {
         await updateUser({ avatarUrl: url })
         setAvatarUrl(url)
