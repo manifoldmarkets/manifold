@@ -15,10 +15,14 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
   const db = createSupabaseDirectClient()
 
   const updated = await db.one(
-    `update private_users set data = data
+    `update private_users set data = 
+      jsonb_set(
+        data, 
+        '{notificationPreferences,opt_out_all}', 
+        coalesce(data->'notificationPreferences'->'opt_out_all', '[]'::jsonb) - 'mobile'
+      )
       - 'rejectedPushNotificationsOn'
       - 'interestedInPushNotifications'
-      #- '{notificationPreferences,opt_out_all,mobile}'
       || jsonb_build_object('pushToken', $1)
     where id = $2
     returning *`,
