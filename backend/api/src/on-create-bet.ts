@@ -17,7 +17,6 @@ import {
   createFollowSuggestionNotification,
   createLimitBetCanceledNotification,
   createNewBettorNotification,
-  createUniqueBettorBonusNotification,
 } from 'shared/create-notification'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
@@ -52,7 +51,6 @@ import {
 import { Answer } from 'common/answer'
 import {
   removeNullOrUndefinedProps,
-  removeUndefinedProps,
 } from 'common/util/object'
 import {
   addHouseSubsidy,
