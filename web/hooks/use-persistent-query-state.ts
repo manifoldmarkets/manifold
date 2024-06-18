@@ -29,7 +29,7 @@ export const usePersistentQueriesState = <T extends UrlParams>(
   const setRouteQuery = debounce((newQuery: string) => {
     const { pathname } = router
     const q = newQuery ? '?' + encodeURI(newQuery) : ''
-    router.replace(pathname + q)
+    router.replace(pathname + q, undefined, { shallow: true })
   }, 200)
 
   const updateState = (update: Partial<T>) => {
