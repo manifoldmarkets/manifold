@@ -5,15 +5,12 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import {
   getRoundedLimitProb,
-  getUnfilledBetsAndUserBalances,
   executeNewBetResult,
-  validateBet,
+  fetchContractBetDataAndValidate,
 } from 'api/place-bet'
-import { getContract, log } from 'shared/utils'
+import { log } from 'shared/utils'
 import { runShortTrans } from 'shared/short-transaction'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { getAnswersForContract } from 'shared/supabase/answers'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -29,27 +26,26 @@ export const placeMultiBetMain = async (
   uid: string,
   isApi: boolean
 ) => {
-  const { amount, contractId } = body
-  const pg = createSupabaseDirectClient()
-  const contract = await getContract(pg, contractId)
-  if (!contract) throw new APIError(404, 'Contract not found.')
-
   const results = await runShortTrans(async (pgTrans) => {
-    const user = await validateBet(uid, amount, contract, pgTrans, isApi)
+    log(
+      `Inside main transaction for ${uid} placing a bet on ${body.contractId}.`
+    )
 
-    const { closeTime, mechanism } = contract
-    if (closeTime && Date.now() > closeTime)
-      throw new APIError(403, 'Trading is closed.')
+    const { user, contract, answers, unfilledBets, balanceByUserId } =
+      await fetchContractBetDataAndValidate(pgTrans, body, uid, isApi)
+
+    const { mechanism } = contract
 
     if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract)) {
       throw new APIError(400, 'Contract type/mechanism not supported')
     }
+    if (!answers) throw new APIError(404, 'Answers not found')
+
     const { shouldAnswersSumToOne } = contract
     const { answerIds, limitProb, expiresAt } = body
     if (expiresAt && expiresAt < Date.now())
       throw new APIError(403, 'Bet cannot expire in the past.')
 
-    const answers = await getAnswersForContract(pgTrans, contract.id)
     const betOnAnswers = answers.filter((a) => answerIds.includes(a.id))
     if (!betOnAnswers) throw new APIError(404, 'Answers not found')
     if ('resolution' in betOnAnswers && betOnAnswers.resolution)
@@ -61,27 +57,16 @@ export const placeMultiBetMain = async (
       )
 
     const roundedLimitProb = getRoundedLimitProb(limitProb)
-    const unfilledBetsAndBalances = await Promise.all(
-      answerIds.map(
-        async (answerId) =>
-          await getUnfilledBetsAndUserBalances(pgTrans, contractId, answerId)
-      )
-    )
-    const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)
-    let balancesByUserId: Record<string, number> = {}
-    unfilledBetsAndBalances.forEach((b) => {
-      balancesByUserId = { ...balancesByUserId, ...b.balanceByUserId }
-    })
 
     const newBetResults = getNewMultiCpmmBetsInfo(
       contract,
       answers,
       betOnAnswers,
       'YES',
-      amount,
+      body.amount,
       roundedLimitProb,
       unfilledBets,
-      balancesByUserId,
+      balanceByUserId,
       expiresAt
     )
 
@@ -103,6 +88,7 @@ export const placeMultiBetMain = async (
   })
 
   log(`Main transaction finished - auth ${uid}.`)
+  const contract = results[0].contract
 
   const continuation = async () => {
     const fullBets = results.flatMap((result) => result.fullBets)

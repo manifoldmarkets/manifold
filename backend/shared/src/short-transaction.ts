@@ -1,5 +1,5 @@
 import {
-  SERIAL,
+  SERIAL_MODE,
   SupabaseTransaction,
   createShortTimeoutDirectClient,
 } from './supabase/init'
@@ -9,5 +9,5 @@ export const runShortTrans = async <T>(
   callback: (trans: SupabaseTransaction) => Promise<T>
 ) => {
   const pg = createShortTimeoutDirectClient()
-  return await pg.tx({ mode: SERIAL }, callback)
+  return await pg.tx({ mode: SERIAL_MODE }, callback)
 }

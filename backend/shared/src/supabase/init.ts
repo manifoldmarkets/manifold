@@ -122,14 +122,8 @@ export const createShortTimeoutDirectClient = () => {
   return shortTimeoutPgpClient
 }
 
-export const SERIAL = new pgp.txMode.TransactionMode({
+export const SERIAL_MODE = new pgp.txMode.TransactionMode({
   tiLevel: pgp.txMode.isolationLevel.serializable,
   readOnly: false,
   deferrable: false,
-})
-
-export const LAX = new pgp.txMode.TransactionMode({
-  tiLevel: pgp.txMode.isolationLevel.none,
-  readOnly: true,
-  deferrable: true,
 })

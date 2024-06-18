@@ -19,12 +19,7 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { getContractSupabase, getUser, log } from 'shared/utils'
 import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
-import {
-  SERIAL,
-  SupabaseDirectClient,
-  SupabaseTransaction,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
 import { incrementBalance } from 'shared/supabase/users'
 import {
   bulkInsertBets,
@@ -42,6 +37,7 @@ import {
 import { getTierFromLiquidity } from 'common/tier'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
+import { runShortTrans } from 'shared/short-transaction'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -93,13 +89,11 @@ export const createAnswerCpmmMain = async (
     throw new APIError(403, 'Only the creator or an admin can create an answer')
   }
 
-  const pg = createSupabaseDirectClient()
-
   const answerCost = getTieredAnswerCost(
     getTierFromLiquidity(contract, contract.totalLiquidity)
   )
 
-  const { newAnswer, user } = await pg.tx({ mode: SERIAL }, async (pgTrans) => {
+  const { newAnswer, user } = await runShortTrans(async (pgTrans) => {
     const user = await getUser(creatorId, pgTrans)
     if (!user) throw new APIError(401, 'Your account was not found')
     if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
