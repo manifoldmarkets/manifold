@@ -77,7 +77,7 @@ const updateUserDenormalizedFields = async (
 
   const contractIds = await pg.map(
     `update contracts set data = data || $1 where creator_id = $2 returning id`,
-    [userId, JSON.stringify(contractUpdate)],
+    [JSON.stringify(contractUpdate), userId],
     (row) => row.id
   )
   log(`Updated ${contractIds} contracts.`)
