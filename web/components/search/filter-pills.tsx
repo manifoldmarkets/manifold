@@ -88,15 +88,17 @@ export function TierDropdownPill(props: {
       withinOverflowContainer
       items={[
         {
-          name: 'Plus',
+          name: 'Crystal',
           content: (
-            <Row className="items-center text-sm font-semibold text-blue-600 dark:text-blue-500">
-              <PlusTier />
-              Plus
+            <Row className="items-center text-sm">
+              <CrystalTier />
+              <div className="bg-gradient-to-r from-pink-700 to-pink-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-pink-300">
+                Crystal
+              </div>
             </Row>
           ),
-          onToggle: () => toggleTier('plus'),
-          checked: currentTiers[tiers.indexOf('plus')] == '1',
+          onToggle: () => toggleTier('crystal'),
+          checked: currentTiers[tiers.indexOf('crystal')] == '1',
         },
         {
           name: 'Premium',
@@ -110,17 +112,15 @@ export function TierDropdownPill(props: {
           checked: currentTiers[tiers.indexOf('premium')] == '1',
         },
         {
-          name: 'Crystal',
+          name: 'Plus',
           content: (
-            <Row className="items-center text-sm">
-              <CrystalTier />
-              <div className="bg-gradient-to-r from-pink-700 to-pink-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-pink-300">
-                Crystal
-              </div>
+            <Row className="items-center text-sm font-semibold text-blue-600 dark:text-blue-500">
+              <PlusTier />
+              Plus
             </Row>
           ),
-          onToggle: () => toggleTier('crystal'),
-          checked: currentTiers[tiers.indexOf('crystal')] == '1',
+          onToggle: () => toggleTier('plus'),
+          checked: currentTiers[tiers.indexOf('plus')] == '1',
         },
       ]}
       buttonContent={(open) => (
