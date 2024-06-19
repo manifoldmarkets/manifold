@@ -175,7 +175,7 @@ export const getPrivateUserByKey = async (
   pg: SupabaseDirectClient = createSupabaseDirectClient()
 ) => {
   return await pg.oneOrNone(
-    `select * from private_users where (data->'apiKey')::text = $1 limit 1`,
+    `select * from private_users where data->>'apiKey' = $1 limit 1`,
     [apiKey],
     convertPrivateUser
   )
