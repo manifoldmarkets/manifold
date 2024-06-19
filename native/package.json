@@ -29,10 +29,10 @@
     "@react-native-clipboard/clipboard": "^1.11.1",
     "@react-native-community/netinfo": "9.3.7",
     "@supabase/supabase-js": "2.43.5",
-    "expo": "~48.0.21",
+    "expo": "49",
     "expo-apple-authentication": "~6.0.1",
     "expo-auth-session": "~4.0.3",
-    "expo-constants": "~14.2.1",
+    "expo-constants": "~14.4.2",
     "expo-dev-client": "~2.2.1",
     "expo-file-system": "~15.2.2",
     "expo-font": "~11.1.1",
@@ -51,7 +51,7 @@
     "react-native-iap": "^12.4.2",
     "react-native-logs": "^5.0.1",
     "react-native-web": "~0.18.10",
-    "react-native-webview": "13.3.1",
+    "react-native-webview": "11.26.0",
     "zod": "3.23.8"
   },
   "devDependencies": {
