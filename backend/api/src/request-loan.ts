@@ -99,20 +99,22 @@ export const requestloan: APIHandler<'request-loan'> = async (_, auth) => {
     await payUserLoan(user.id, payout, tx)
     await createLoanIncomeNotification(user, payout)
 
-    const values = updates.map((update) =>
-      pgp.as.format(`($1, $2, $3)`, [
-        update.contractId,
-        update.betId,
-        update.loanTotal,
-      ])
-    )
+    const values = updates
+      .map((update) =>
+        pgp.as.format(`($1, $2, $3)`, [
+          update.contractId,
+          update.betId,
+          update.loanTotal,
+        ])
+      )
+      .join(',\n')
 
     await tx.none(
-      `update users u
+      `update contract_bets c
        set 
-        data = u.data || '{"loanAmount": $2}',
+        data = c.data || jsonb_build_object('loanAmount', v.loan_total)
       from (values ${values}) as v(contract_id, bet_id, loan_total)
-      where u.contract_id = v.contract_id and u.bet_id = v.bet_id`
+      where c.contract_id = v.contract_id and c.bet_id = v.bet_id`
     )
 
     log(`Paid out ${payout} to user ${user.id}.`)
