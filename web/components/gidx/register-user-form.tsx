@@ -65,6 +65,7 @@ const bottomRowClass = 'mb-4 mt-4 w-full gap-16'
 export const RegisterUserForm = (props: { user: User }) => {
   const user = usePollUser(props.user.id) ?? props.user
   const router = useRouter()
+  // TODO: After development, if user is verified, redirect to the final page
   // const [page, setPage] = useState(user.verifiedPhone ? 1 : 0)
   const [page, setPage] = useState(2)
   const [loading, setLoading] = useState(false)
