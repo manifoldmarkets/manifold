@@ -25,7 +25,9 @@ export const getVerificationSession: APIHandler<
     // MobilePhoneNumber: parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ?? phoneNumberWithCode,
     // DeviceIpAddress: getIp(req),
     CustomerIpAddress: props.DeviceIpAddress,
-    CallbackURL: 'https://api.manifold.markets/v1/gidx/verification-callback',
+    // CallbackURL: 'https://api.manifold.markets/v0/gidx/verification-callback',
+    CallbackURL:
+      'https://enabled-bream-sharply.ngrok-free.app/v0/callback-gidx',
     ...getGIDXStandardParams(),
     ...props,
   }

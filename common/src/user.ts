@@ -68,7 +68,7 @@ export type User = {
   purchasedMana?: boolean
   kycMatch?: boolean
   kycFlags?: string[]
-  kycStatus?: 'verified' | 'failed' | 'blocked'
+  kycStatus?: 'verified' | 'failed' | 'blocked' | 'pending'
 }
 
 export type PrivateUser = {

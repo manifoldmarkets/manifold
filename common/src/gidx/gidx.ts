@@ -34,3 +34,23 @@ export type GIDXVerificationResponse = {
   SessionURL: string
   SessionExpirationTime: string
 }
+
+export type DocumentRegistrationResponse = {
+  ResponseCode: number
+  ResponseMessage: string
+  MerchantCustomerID: string
+  Document: GIDXDocument
+}
+export type GIDXDocument = {
+  DocumentID: string
+  CategoryType: number
+  DocumentStatus: number
+  FileName: string
+  FileSize: number
+  DateTime: string
+  DocumentNotes: {
+    AuthorName: string
+    NoteText: string
+    DateTime: string
+  }[]
+}

@@ -4,6 +4,9 @@ import { isProd, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { DEV_CONFIG } from 'common/envs/dev'
+import { updateUser } from 'shared/supabase/users'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { DocumentRegistrationResponse } from 'common/gidx/gidx'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DocumentLibrary/DocumentRegistration'
@@ -46,7 +49,8 @@ export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
     Document.FileName
   )
   await deleteFileFromFirebase(fileUrl)
-
+  const pg = createSupabaseDirectClient()
+  await updateUser(pg, auth.uid, { kycStatus: 'pending' })
   return { status: 'success' }
 }
 
@@ -74,25 +78,6 @@ const deleteFileFromFirebase = async (fileUrl: string) => {
     log(`Successfully deleted file: ${filePath}`)
   } catch (error) {
     log.error('Error deleting the file:', { error })
-    throw error
-  }
-}
-
-type DocumentRegistrationResponse = {
-  ResponseCode: number
-  ResponseMessage: string
-  MerchantCustomerID: string
-  Document: {
-    DocumentID: string
-    CategoryType: number
-    DocumentStatus: number
-    FileName: string
-    FileSize: number
-    DateTime: string
-    DocumentNotes: {
-      AuthorName: string
-      NoteText: string
-      DateTime: string
-    }[]
+    throw new APIError(500, 'Error deleting identity file.')
   }
 }

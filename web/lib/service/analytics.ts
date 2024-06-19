@@ -163,7 +163,7 @@ function insertUserEvent(
         removeUndefinedProps({
           contractId,
           commentId: commentId ?? undefined,
-          kind,
+          kind: kind as any,
           feedType: feedReason,
           betGroupId: data?.betGroupId as string,
           betId: data?.betId as string,

@@ -1249,16 +1249,30 @@ export const API = (_apiTypeCheck = {
     returns: {} as GIDXVerificationResponse,
     props: verificationParams,
   },
+  'get-verification-status-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { status: string },
+    props: z.object({}),
+  },
   'upload-document-gidx': {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    returns: {} as any,
+    returns: {} as { status: string },
     props: z.object({
       CategoryType: z.number().gte(1).lte(7),
       fileName: z.string(),
       fileUrl: z.string(),
     }),
+  },
+  'callback-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as any,
+    props: z.object({}) as any,
   },
 } as const)
 
