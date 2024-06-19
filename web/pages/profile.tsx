@@ -16,9 +16,7 @@ import { useUser } from 'web/hooks/use-user'
 import { api, updateUser } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadPublicImage } from 'web/lib/firebase/storage'
-import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
-
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   const adminDb = await initSupabaseAdmin()
