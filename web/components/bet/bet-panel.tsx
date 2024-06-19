@@ -3,12 +3,7 @@ import { useEffect, useState } from 'react'
 import { sumBy } from 'lodash'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ChevronDownIcon,
-  XIcon,
-} from '@heroicons/react/outline'
+import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 
 import {
   CPMMBinaryContract,
@@ -870,7 +865,7 @@ const QuickLimitOrderButtons = (props: {
     >
       <Row className="items-center gap-2">
         <div className="text-ink-600">
-          Quick order <span className="">{formatMoney(amount / 1000)}k</span>{' '}
+          Quick order{' '}
           <InfoTooltip
             text={`Offer to buy ${formatMoney(
               amount
@@ -883,19 +878,19 @@ const QuickLimitOrderButtons = (props: {
           size="xs"
           color="gray-outline"
           loading={outcome === 'YES' && isSubmitting}
-          className="w-16 font-semibold"
+          className="w-24 font-semibold"
           onClick={() => submitBet('YES')}
         >
-          YES <ArrowUpIcon className="ml-0.5 h-4 w-4" />
+          {formatMoney(amount / 1000)}k YES
         </Button>
         <Button
           size="xs"
           color="gray-outline"
           loading={outcome === 'NO' && isSubmitting}
-          className="w-16 font-semibold"
+          className="w-24 whitespace-nowrap font-semibold"
           onClick={() => submitBet('NO')}
         >
-          NO <ArrowDownIcon className="ml-0.5 h-4 w-4" />
+          {formatMoney(amount / 1000)}k NO
         </Button>
       </Row>
       {error && <div className="text-red-500">{error}</div>}
