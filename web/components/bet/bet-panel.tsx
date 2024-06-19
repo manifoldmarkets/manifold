@@ -7,6 +7,7 @@ import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 
 import {
   CPMMBinaryContract,
+  CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
   isBinaryMulti,
@@ -55,6 +56,7 @@ import { getFeeTotal } from 'common/fees'
 import { FeeDisplay } from './fees'
 import { floatingEqual } from 'common/util/math'
 import { getTierFromLiquidity } from 'common/tier'
+import { DAY_MS } from 'common/util/time'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -92,6 +94,7 @@ export function BuyPanel(props: {
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
+  const isAdvancedTrader = useIsAdvancedTrader()
 
   const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
 
@@ -119,23 +122,31 @@ export function BuyPanel(props: {
   return (
     <Col>
       {!isPanelBodyVisible && (
-        <Row className={clsx('mb-2 w-full items-center gap-2')}>
-          <YesNoSelector
-            className="flex-1"
-            btnClassName="flex-1 px-2 sm:px-6"
-            selected={outcome}
-            highlight
-            onSelect={(choice) => {
-              onOutcomeChoice(choice)
-            }}
-            yesLabel={
-              isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
-            }
-            noLabel={
-              isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
-            }
-          />
-        </Row>
+        <Col>
+          <Row className={clsx('mb-2 w-full items-center gap-2')}>
+            <YesNoSelector
+              className="flex-1"
+              btnClassName="flex-1 px-2 sm:px-6"
+              selected={outcome}
+              highlight
+              onSelect={(choice) => {
+                onOutcomeChoice(choice)
+              }}
+              yesLabel={
+                isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
+              }
+              noLabel={
+                isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
+              }
+            />
+          </Row>
+          {isAdvancedTrader && contract.mechanism === 'cpmm-1' && (
+            <QuickLimitOrderButtons
+              className="self-center"
+              contract={contract}
+            />
+          )}
+        </Col>
       )}
       {isPanelBodyVisible && (
         <BuyPanelBody
@@ -784,5 +795,112 @@ export const QuickBetAmountsRow = (props: {
         }}
       />
     </Row>
+  )
+}
+
+const QuickLimitOrderButtons = (props: {
+  contract: CPMMContract // | CPMMMultiContract
+  className?: string
+}) => {
+  const { contract, className } = props
+  const { prob } = contract
+  const amount = 1_000
+
+  const user = useUser()
+  const [error, setError] = useState<string | undefined>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
+
+  async function submitBet(outcome: 'YES' | 'NO') {
+    if (!user) return
+
+    setError(undefined)
+    setIsSubmitting(true)
+    setOutcome(outcome)
+
+    // const answerId = multiProps?.answerToBuy.id
+    const expiresAt = Date.now() + DAY_MS
+
+    await api(
+      'bet',
+      removeUndefinedProps({
+        outcome,
+        amount,
+        contractId: contract.id,
+        limitProb: prob,
+        expiresAt,
+        // answerId,
+      })
+    )
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.message.toString())
+        } else {
+          console.error(e)
+          setError('Error placing bet')
+        }
+        setIsSubmitting(false)
+      })
+      .then((r) => {
+        console.log('placed bet. Result:', r)
+        setIsSubmitting(false)
+        toast.success(
+          `Placed ${formatMoney(amount)} bet at ${formatPercent(prob)}`
+        )
+      })
+
+    await track('bet', {
+      location: 'quick bet panel',
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      amount,
+      outcome,
+      limitProb: prob,
+      isLimitOrder: true,
+      // answerId: multiProps?.answerToBuy.id,
+    })
+  }
+
+  return (
+    <Col
+      className={clsx(
+        className,
+        'border-ink-200 my-2 gap-2 rounded-lg px-4 py-2'
+      )}
+    >
+      <div className="text-ink-600 mx-2">
+        Bet <span className="text-ink-1000">{formatMoney(amount)}</span> at{' '}
+        <span className="text-ink-1000">{formatPercent(prob)}</span>{' '}
+        <span className="text-ink-600 text-sm">expires 24h</span>{' '}
+        <InfoTooltip
+          text={`Offer to buy YES or NO at ${formatPercent(
+            prob
+          )}. If no one takes your bet, your offer will expire in 24 hours.`}
+        />
+      </div>
+      {error && <div className="text-red-500">{error}</div>}
+      <Row className="flex-1 items-center gap-3">
+        <Button
+          size="xs"
+          color="gray-outline"
+          loading={outcome === 'YES' && isSubmitting}
+          className="flex-1 font-semibold"
+          onClick={() => submitBet('YES')}
+        >
+          Quick YES
+        </Button>
+
+        <Button
+          size="xs"
+          color="gray-outline"
+          loading={outcome === 'NO' && isSubmitting}
+          className="flex-1 font-semibold"
+          onClick={() => submitBet('NO')}
+        >
+          Quick NO
+        </Button>
+      </Row>
+    </Col>
   )
 }
