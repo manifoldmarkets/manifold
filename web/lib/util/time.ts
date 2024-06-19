@@ -33,7 +33,7 @@ export const getCountdownString = (endDate: Date) => {
 
   const hoursStr = `${hours % 24}h`
   const minutesStr = `${minutes % 60}m`
-  const daysStr = `${days}d`
+  const daysStr = days > 0 ? `${days}d` : ''
 
   return `${isPast ? '-' : ''}${daysStr} ${hoursStr} ${minutesStr}`
 }
