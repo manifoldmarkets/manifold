@@ -21,7 +21,7 @@ export function getDonationsPageQuery(charityId: string) {
   return async (p: { limit: number; after?: { ts: number } }) => {
     let q = db
       .from('txns')
-      .select('from_id, created_time, amount')
+      .select(`from_id, created_time, amount, data->>token`)
       .eq('category', 'CHARITY')
       .eq('to_id', charityId)
       .order('created_time', { ascending: false } as any)
@@ -38,8 +38,8 @@ export function getDonationsPageQuery(charityId: string) {
     )
     const donations = txnData.map((t) => ({
       user: usersById[t.from_id!],
-      ts: tsToMillis(t.created_time!),
-      amount: t.amount!,
+      ts: tsToMillis(t.created_time),
+      amount: t.token == 'M$' ? t.amount / 100 : t.amount / 1000,
     }))
     return donations
   }

@@ -10,7 +10,7 @@ import {
   getDonationsByCharity,
   getMostRecentDonation,
 } from 'web/lib/supabase/txns'
-import { formatCents } from 'common/util/format'
+import { formatMoneyUSD } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import Link from 'next/link'
 import { SEO } from 'web/components/SEO'
@@ -127,7 +127,7 @@ export default function Charity(props: {
             stats={[
               {
                 name: 'Raised by Manifold users',
-                stat: formatCents(totalRaised),
+                stat: formatMoneyUSD(totalRaised),
               },
               {
                 name: 'Most recent donor',

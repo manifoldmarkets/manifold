@@ -5,7 +5,6 @@ import Router from 'next/router'
 
 import { Contract, tradingAllowed } from 'common/contract'
 import { SEO } from 'web/components/SEO'
-import { SignedInBinaryMobileBetting } from 'web/components/bet/bet-button'
 import { Button } from 'web/components/buttons/button'
 import { BinaryResolutionOrChance } from 'web/components/contract/contract-price'
 import { Col } from 'web/components/layout/col'
@@ -14,7 +13,10 @@ import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import { SimpleMultiOverview } from 'web/components/contract/contract-overview'
+import {
+  BinaryBetPanel,
+  SimpleMultiOverview,
+} from 'web/components/contract/contract-overview'
 import { PublicChat } from 'web/components/chat/public-chat'
 import { Tabs } from 'web/components/layout/tabs'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -49,7 +51,7 @@ export function TVDisplay(props: {
   const betPanel = (
     <>
       {tradingAllowed(contract) && isBinary && (
-        <SignedInBinaryMobileBetting contract={contract} user={user} />
+        <BinaryBetPanel contract={contract} user={user} />
       )}
       {tradingAllowed(contract) && isMulti && (
         <SimpleMultiOverview contract={contract} />

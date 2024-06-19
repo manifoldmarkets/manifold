@@ -45,8 +45,12 @@ import {
   PortfolioMetrics,
 } from 'common/portfolio-metrics'
 import { ModReport } from '../mod-report'
+
 import { RegistrationReturnType } from 'common/reason-codes'
 import { GIDXVerificationResponse, verificationParams } from 'common/gidx/gidx'
+
+import { notification_preference } from 'common/user-notification-preferences'
+
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -116,7 +120,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-
   bet: {
     method: 'POST',
     visibility: 'public',
@@ -231,14 +234,21 @@ export const API = (_apiTypeCheck = {
       .object({
         userId: z.string().optional(),
         username: z.string().optional(),
-        contractId: z.string().optional(),
+        contractId: z.string().or(z.array(z.string())).optional(),
         contractSlug: z.string().optional(),
+        answerId: z.string().optional(),
         // market: z.string().optional(), // deprecated, synonym for `contractSlug`
         limit: z.coerce.number().gte(0).lte(1000).default(1000),
         before: z.string().optional(),
         after: z.string().optional(),
-        kinds: z.string().optional(),
+        beforeTime: z.coerce.number().optional(),
+        afterTime: z.coerce.number().optional(),
         order: z.enum(['asc', 'desc']).optional(),
+        kinds: z.enum(['open-limit']).optional(),
+        // undocumented fields. idk what a good api interface would be
+        filterRedemptions: z.coerce.boolean().optional(),
+        filterChallenges: z.coerce.boolean().optional(),
+        filterAntes: z.coerce.boolean().optional(),
       })
       .strict(),
   },
@@ -654,6 +664,29 @@ export const API = (_apiTypeCheck = {
       username: z.string(), // just so you're sure
     }),
   },
+  'me/private': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({}),
+    returns: {} as PrivateUser,
+  },
+  'me/private/update': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    props: z
+      .object({
+        email: z.string().email().optional(),
+        apiKey: z.string().optional(),
+        pushToken: z.string().optional(),
+        rejectedPushNotificationsOn: z.number().optional(),
+        lastPromptedToEnablePushNotifications: z.number().optional(),
+        hasSeenAppBannerInNotificationsOn: z.number().optional(),
+        installedAppPlatforms: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
   'user/:username': {
     method: 'GET',
     visibility: 'public',
@@ -746,11 +779,29 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         twitchInfo: z.object({
-          twitchName: z.string(),
-          controlToken: z.string(),
+          twitchName: z.string().optional(),
+          controlToken: z.string().optional(),
+          botEnabled: z.boolean().optional(),
+          needsRelinking: z.boolean().optional(),
         }),
       })
       .strict(),
+  },
+  'set-push-token': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ pushToken: z.string() }).strict(),
+  },
+  'update-notif-settings': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      type: z.string() as z.ZodType<notification_preference>,
+      medium: z.enum(['email', 'browser', 'mobile']),
+      enabled: z.boolean(),
+    }),
   },
   headlines: {
     method: 'GET',

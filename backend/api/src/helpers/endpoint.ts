@@ -13,6 +13,8 @@ import {
   ValidatedAPIParams,
 } from 'common/api/schema'
 import { log } from 'shared/utils'
+import { getPrivateUserByKey } from 'shared/utils'
+
 
 export type Json = Record<string, unknown> | Json[]
 export type JsonHandler<T extends Json> = (
@@ -70,8 +72,6 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
 }
 
 export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
-  const firestore = admin.firestore()
-  const privateUsers = firestore.collection('private-users')
   switch (creds.kind) {
     case 'jwt': {
       if (typeof creds.data.user_id !== 'string') {
@@ -81,11 +81,10 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
     }
     case 'key': {
       const key = creds.data
-      const privateUserQ = await privateUsers.where('apiKey', '==', key).get()
-      if (privateUserQ.empty) {
+      const privateUser = await getPrivateUserByKey(key)
+      if (!privateUser) {
         throw new APIError(401, `No private user exists with API key ${key}.`)
       }
-      const privateUser = privateUserQ.docs[0].data() as PrivateUser
       return { uid: privateUser.id, creds: { privateUser, ...creds } }
     }
     default:

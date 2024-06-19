@@ -6,7 +6,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { getSeasonDates } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { Row } from '../layout/row'
-import { usePublicContracts } from 'web/hooks/use-contract-supabase'
+import { usePublicContracts } from 'web/hooks/use-contract'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -73,7 +73,12 @@ export const ManaEarnedBreakdown = (props: {
     mapValues(betsByContract, (bets, contractId) => {
       const contract = contractsById[contractId]
       return contract
-        ? calculateUserMetrics(contract, bets, user).find((cm) => !cm.answerId)
+        ? calculateUserMetrics(
+            contract,
+            bets,
+            user,
+            'answers' in contract ? contract.answers : []
+          ).find((cm) => !cm.answerId)
         : undefined
     })
 

@@ -12,7 +12,7 @@ import { ContractMinibar } from '../charts/minibar'
 import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
-import { useLiveContract } from 'web/hooks/use-contract-supabase'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { Col } from '../layout/col'
 import {
   actionColumn,
@@ -265,7 +265,7 @@ function ContractQuestion(props: {
             </Tooltip>
           </span>
         )}
-        {!!marketTier && (
+        {!!marketTier && marketTier !== 'play' && marketTier !== 'basic' && (
           <span>
             <TierTooltip
               placement={'top'}

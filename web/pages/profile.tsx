@@ -1,3 +1,4 @@
+import { getUserAndPrivateUserForStaticProps } from 'common/supabase/users'
 import { PrivateUser, User } from 'common/user'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
@@ -16,9 +17,16 @@ import { api, updateUser } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadPublicImage } from 'web/lib/firebase/storage'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
+  const adminDb = await initSupabaseAdmin()
+  return {
+    props: {
+      auth: await getUserAndPrivateUserForStaticProps(adminDb, creds.uid),
+    },
+  }
 })
 
 export function EditUserField(props: {

@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import { groupBy, partition, sumBy } from 'lodash'
 import { CPMMMultiContract, add_answers_mode } from 'common/contract'
 import { User } from 'common/user'
@@ -8,7 +7,6 @@ import { APIError, APIHandler } from './helpers/endpoint'
 import { getTieredAnswerCost } from 'common/economy'
 import { randomString } from 'common/util/random'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
-import { FieldValue } from 'firebase-admin/firestore'
 import {
   addCpmmMultiLiquidityAnswersSumToOne,
   getCpmmProbability,
@@ -21,12 +19,7 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { getContractSupabase, getUser, log } from 'shared/utils'
 import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
-import {
-  SERIAL,
-  SupabaseDirectClient,
-  SupabaseTransaction,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
 import { incrementBalance } from 'shared/supabase/users'
 import {
   bulkInsertBets,
@@ -37,15 +30,14 @@ import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import {
-  broadcastNewAnswer,
-  broadcastUpdatedAnswer,
-} from 'shared/websockets/helpers'
-import {
   getAnswersForContract,
   insertAnswer,
   updateAnswer,
 } from 'shared/supabase/answers'
 import { getTierFromLiquidity } from 'common/tier'
+import { updateContract } from 'shared/supabase/contracts'
+import { FieldVal } from 'shared/supabase/utils'
+import { runShortTrans } from 'shared/short-transaction'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -97,131 +89,107 @@ export const createAnswerCpmmMain = async (
     throw new APIError(403, 'Only the creator or an admin can create an answer')
   }
 
-  const pg = createSupabaseDirectClient()
-
   const answerCost = getTieredAnswerCost(
     getTierFromLiquidity(contract, contract.totalLiquidity)
   )
 
-  let needToDoSketchyFirebaseRevert = false // for updating contract liquidity
-  const { newAnswer, updatedAnswers, user } = await pg
-    .tx({ mode: SERIAL }, async (pgTrans) => {
-      const user = await getUser(creatorId, pgTrans)
-      if (!user) throw new APIError(401, 'Your account was not found')
-      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
+  const { newAnswer, user } = await runShortTrans(async (pgTrans) => {
+    const user = await getUser(creatorId, pgTrans)
+    if (!user) throw new APIError(401, 'Your account was not found')
+    if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-      if (user.balance < answerCost && !specialLiquidityPerAnswer)
-        throw new APIError(403, 'Insufficient balance, need M' + answerCost)
+    if (user.balance < answerCost && !specialLiquidityPerAnswer)
+      throw new APIError(403, 'Insufficient balance, need M' + answerCost)
 
-      if (!specialLiquidityPerAnswer) {
-        await incrementBalance(pgTrans, user.id, {
-          balance: -answerCost,
-          totalDeposits: -answerCost,
-        })
-      }
+    if (!specialLiquidityPerAnswer) {
+      await incrementBalance(pgTrans, user.id, {
+        balance: -answerCost,
+        totalDeposits: -answerCost,
+      })
+    }
 
-      const answers = await getAnswersForContract(pgTrans, contractId)
-      const unresolvedAnswers = answers.filter((a) => !a.resolution)
-      const maxAnswers = getMaximumAnswers(shouldAnswersSumToOne)
-      if (unresolvedAnswers.length >= maxAnswers) {
+    const answers = await getAnswersForContract(pgTrans, contractId)
+    const unresolvedAnswers = answers.filter((a) => !a.resolution)
+    const maxAnswers = getMaximumAnswers(shouldAnswersSumToOne)
+    if (unresolvedAnswers.length >= maxAnswers) {
+      throw new APIError(
+        403,
+        `Cannot add an answer: Maximum number (${maxAnswers}) of open answers reached.`
+      )
+    }
+
+    let poolYes = answerCost
+    let poolNo = answerCost
+    let totalLiquidity = answerCost
+    let prob = 0.5
+
+    if (specialLiquidityPerAnswer) {
+      if (shouldAnswersSumToOne)
         throw new APIError(
-          403,
-          `Cannot add an answer: Maximum number (${maxAnswers}) of open answers reached.`
+          500,
+          "Can't specify specialLiquidityPerAnswer and shouldAnswersSumToOne"
         )
-      }
+      prob = 0.02
+      poolYes = specialLiquidityPerAnswer
+      poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
+      totalLiquidity = specialLiquidityPerAnswer
+    }
 
-      let poolYes = answerCost
-      let poolNo = answerCost
-      let totalLiquidity = answerCost
-      let prob = 0.5
+    const id = randomString()
+    const n = answers.length
+    const createdTime = Date.now()
+    const newAnswer: Answer = removeUndefinedProps({
+      id,
+      index: n,
+      contractId,
+      createdTime,
+      userId: user.id,
+      text,
+      isOther: false,
+      poolYes,
+      poolNo,
+      prob,
+      totalLiquidity,
+      subsidyPool: 0,
+      probChanges: { day: 0, week: 0, month: 0 },
+      loverUserId,
+    })
 
-      if (specialLiquidityPerAnswer) {
-        if (shouldAnswersSumToOne)
-          throw new APIError(
-            500,
-            "Can't specify specialLiquidityPerAnswer and shouldAnswersSumToOne"
-          )
-        prob = 0.02
-        poolYes = specialLiquidityPerAnswer
-        poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
-        totalLiquidity = specialLiquidityPerAnswer
-      }
+    const updatedAnswers: Answer[] = []
+    if (shouldAnswersSumToOne) {
+      const updatedAnswers = await createAnswerAndSumAnswersToOne(
+        pgTrans,
+        user,
+        contract,
+        answers,
+        newAnswer,
+        answerCost
+      )
+      await convertOtherAnswerShares(pgTrans, updatedAnswers, newAnswer.id)
+    } else {
+      await insertAnswer(pgTrans, newAnswer)
+    }
 
-      const id = randomString()
-      const n = answers.length
-      const createdTime = Date.now()
-      const newAnswer: Answer = removeUndefinedProps({
-        id,
-        index: n,
-        contractId,
-        createdTime,
-        userId: user.id,
-        text,
-        isOther: false,
-        poolYes,
-        poolNo,
-        prob,
-        totalLiquidity,
-        subsidyPool: 0,
-        probChanges: { day: 0, week: 0, month: 0 },
-        loverUserId,
+    if (!specialLiquidityPerAnswer) {
+      await updateContract(pgTrans, contractId, {
+        totalLiquidity: FieldVal.increment(answerCost),
       })
 
-      const updatedAnswers: Answer[] = []
-      if (shouldAnswersSumToOne) {
-        const updatedAnswers = await createAnswerAndSumAnswersToOne(
-          pgTrans,
-          user,
-          contract,
-          answers,
-          newAnswer,
-          answerCost
-        )
-        await convertOtherAnswerShares(pgTrans, updatedAnswers, newAnswer.id)
-      } else {
-        await insertAnswer(pgTrans, newAnswer)
-      }
+      const lp = getCpmmInitialLiquidity(
+        user.id,
+        contract,
+        answerCost,
+        createdTime,
+        newAnswer.id
+      )
 
-      if (!specialLiquidityPerAnswer) {
-        await firestore.doc(`contracts/${contractId}`).update({
-          totalLiquidity: FieldValue.increment(answerCost),
-        })
-        needToDoSketchyFirebaseRevert = true
+      await insertLiquidity(pgTrans, lp)
+    }
 
-        const lp = getCpmmInitialLiquidity(
-          user.id,
-          contract,
-          answerCost,
-          createdTime,
-          newAnswer.id
-        )
-
-        await insertLiquidity(pgTrans, lp)
-      }
-
-      return { newAnswer, updatedAnswers, user }
-    })
-    // end of pgTrans
-    .catch(async (e) => {
-      if (needToDoSketchyFirebaseRevert) {
-        try {
-          await firestore.doc(`contracts/${contractId}`).update({
-            totalLiquidity: FieldValue.increment(-answerCost),
-          })
-        } catch (e) {
-          log.error(
-            `Failed to revert contract liquidity by ${answerCost}. Must manually reconcile!`
-          )
-          throw e
-        }
-      }
-      throw e
-    })
+    return { newAnswer, updatedAnswers, user }
+  })
 
   const continuation = async () => {
-    broadcastNewAnswer(contract, newAnswer)
-    updatedAnswers.forEach((a) => broadcastUpdatedAnswer(contract, a))
-
     await createNewAnswerOnContractNotification(
       newAnswer.id,
       user,
@@ -417,8 +385,6 @@ async function createAnswerAndSumAnswersToOne(
 
   return updatedAnswers
 }
-
-const firestore = admin.firestore()
 
 async function convertOtherAnswerShares(
   pgTrans: SupabaseDirectClient,

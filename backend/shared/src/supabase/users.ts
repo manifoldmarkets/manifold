@@ -3,7 +3,8 @@ import { SupabaseClient } from 'common/supabase/utils'
 import { WEEK_MS } from 'common/util/time'
 import { APIError } from 'common/api/utils'
 import { User } from 'common/user'
-import { updateData } from './utils'
+import { DataUpdate, updateData } from './utils'
+import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
@@ -76,6 +77,15 @@ export const updateUser = async (
   update: Partial<User>
 ) => {
   await updateData(db, 'users', 'id', { id, ...update })
+}
+
+export const updatePrivateUser = async (
+  db: SupabaseDirectClient,
+  id: string,
+  update: DataUpdate<'private_users'>
+) => {
+  await updateData(db, 'private_users', 'id', { id, ...update })
+  broadcastUpdatedPrivateUser(id)
 }
 
 export const incrementBalance = async (

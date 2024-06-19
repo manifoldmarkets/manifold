@@ -1,11 +1,12 @@
 import { SupabaseClient, SupabaseDirectClient } from 'shared/supabase/init'
-
 import { Contract } from 'common/contract'
-
 import { isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { APIError } from 'common/api/utils'
+import { broadcastUpdatedContract } from 'shared/websockets/helpers'
+import { updateData, DataUpdate } from './utils'
+import { mapValues } from 'lodash'
 
 // used for API to allow slug as param
 export const getContractIdFromSlug = async (
@@ -198,4 +199,22 @@ export const generateContractEmbeddings = async (
           `,
     [contract.id, embedding]
   )
+}
+
+export const updateContract = async (
+  pg: SupabaseDirectClient,
+  contractId: string,
+  update: DataUpdate<'contracts'>
+) => {
+  const fullUpdate = { ...update, id: contractId }
+  const newContract = convertContract(
+    await updateData(pg, 'contracts', 'id', fullUpdate)
+  )
+  const updatedValues = mapValues(
+    fullUpdate,
+    (_, k) => newContract[k as keyof Contract] ?? null
+  ) as any
+
+  broadcastUpdatedContract(newContract.visibility, updatedValues)
+  return newContract
 }

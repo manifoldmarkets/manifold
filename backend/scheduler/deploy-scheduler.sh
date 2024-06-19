@@ -28,6 +28,8 @@ GIT_REVISION=$(git rev-parse --short HEAD)
 TIMESTAMP=$(date +"%s")
 IMAGE_TAG="${TIMESTAMP}-${GIT_REVISION}"
 
+echo "Deploy start time: $(date "+%Y-%m-%d %I:%M:%S %p")"
+
 yarn build
 if [ "${INITIALIZE}" = false ]; then
   gcloud compute ssh ${SERVICE_NAME} \
@@ -59,6 +61,8 @@ else
     IMAGE_URL="${IMAGE_NAME}:${IMAGE_TAG}"
     gcloud builds submit . --tag ${IMAGE_URL} --project ${GCLOUD_PROJECT}
 fi
+
+echo "Current time: $(date "+%Y-%m-%d %I:%M:%S %p")"
 
 # If you augment the instance, be sure to increase --max-old-space-size in the Dockerfile
 if [ "${INITIALIZE}" = true ]; then

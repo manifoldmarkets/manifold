@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin'
-
 import { PrivateUser, User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
@@ -42,7 +41,6 @@ export const createuser: APIHandler<'createuser'> = async (
   req
 ) => {
   const { deviceToken: preDeviceToken, adminToken, visitedContractIds } = props
-  const firestore = admin.firestore()
   const firebaseUser = await admin.auth().getUser(auth.uid)
 
   const testUserAKAEmailPasswordUser =
@@ -166,7 +164,10 @@ export const createuser: APIHandler<'createuser'> = async (
     }
     await runTxnFromBank(tx, startingBonusTxn)
 
-    await firestore.collection('private-users').doc(auth.uid).set(privateUser)
+    await insert(tx, 'private_users', {
+      id: privateUser.id,
+      data: privateUser,
+    })
 
     return { user, privateUser }
   })

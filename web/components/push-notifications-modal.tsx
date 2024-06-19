@@ -10,6 +10,7 @@ import dayjs from 'dayjs'
 import { formatMoney } from 'common/util/format'
 import { PUSH_NOTIFICATION_BONUS } from 'common/economy'
 import { getIsNative } from 'web/lib/native/is-native'
+import { api } from 'web/lib/firebase/api'
 
 export function PushNotificationsModal(props: {
   privateUser: PrivateUser
@@ -60,7 +61,7 @@ export function PushNotificationsModal(props: {
     const shouldShowOurNotificationPrompt = totalNotifications >= 10
     const openTimer = setTimeout(() => {
       setOpen(shouldShowOurNotificationPrompt)
-      updatePrivateUser(privateUser.id, {
+      updatePrivateUser({
         lastPromptedToEnablePushNotifications: Date.now(),
       })
     }, 1000)
@@ -124,8 +125,10 @@ export function PushNotificationsModal(props: {
               size={'lg'}
               className={'mt-4 !font-medium'}
               onClick={() => {
-                updatePrivateUser(privateUser.id, {
-                  interestedInPushNotifications: false,
+                api('update-notif-settings', {
+                  type: 'opt_out_all',
+                  medium: 'mobile',
+                  enabled: true,
                 })
                 setOpen(false)
               }}
@@ -137,8 +140,10 @@ export function PushNotificationsModal(props: {
               size={'lg'}
               className={'mt-4'}
               onClick={() => {
-                updatePrivateUser(privateUser.id, {
-                  interestedInPushNotifications: true,
+                api('update-notif-settings', {
+                  type: 'opt_out_all',
+                  medium: 'mobile',
+                  enabled: false,
                 })
                 if (!!privateUser.rejectedPushNotificationsOn) {
                   setShowSettingsDescription(true)

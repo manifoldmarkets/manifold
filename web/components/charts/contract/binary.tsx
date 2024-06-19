@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { first, last } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
+import clsx from 'clsx'
+
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import { BinaryContract, CPMMMultiContract } from 'common/contract'
 import {
@@ -22,6 +24,10 @@ import {
 } from './single-value'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { getVersusColors } from './choice'
+import { HistoryPoint } from 'common/chart'
+import { Bet } from 'common/bet'
+import { SizedContainer } from 'web/components/sized-container'
+import { ChartAnnotations } from '../chart-annotations'
 
 export const BinaryContractChart = (props: {
   contract: BinaryContract
@@ -59,7 +65,11 @@ export const BinaryContractChart = (props: {
   const now = useMemo(() => Date.now(), [betPoints])
 
   const data = useMemo(() => {
-    return [...betPoints, { x: end ?? now, y: endP }]
+    return [
+      { x: start, y: contract.initialProbability },
+      ...betPoints,
+      { x: end ?? now, y: endP },
+    ]
   }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
@@ -97,6 +107,73 @@ export const BinaryContractChart = (props: {
   )
 }
 
+export function SizedBinaryChart(props: {
+  showZoomer?: boolean
+  zoomParams?: ZoomParams
+  showAnnotations?: boolean
+  betPoints: HistoryPoint<Partial<Bet>>[]
+  percentBounds?: { max: number; min: number }
+  contract: BinaryContract
+  className?: string
+  size?: 'sm' | 'md'
+  color?: string
+  hoveredAnnotation?: number | null
+  setHoveredAnnotation?: (id: number | null) => void
+  pointerMode?: PointerMode
+  chartAnnotations?: ChartAnnotation[]
+}) {
+  const {
+    showZoomer,
+    zoomParams,
+    showAnnotations,
+    betPoints,
+    contract,
+    percentBounds,
+    className,
+    size = 'md',
+    pointerMode,
+    setHoveredAnnotation,
+    hoveredAnnotation,
+    chartAnnotations,
+  } = props
+
+  return (
+    <>
+      <SizedContainer
+        className={clsx(
+          showZoomer ? 'mb-12' : '',
+          'w-full pb-3 pr-10',
+          size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
+          className
+        )}
+      >
+        {(w, h) => (
+          <BinaryContractChart
+            width={w}
+            height={h}
+            betPoints={betPoints}
+            showZoomer={showZoomer}
+            zoomParams={zoomParams}
+            percentBounds={percentBounds}
+            contract={contract}
+            hoveredAnnotation={hoveredAnnotation}
+            setHoveredAnnotation={setHoveredAnnotation}
+            pointerMode={pointerMode}
+            chartAnnotations={chartAnnotations}
+          />
+        )}
+      </SizedContainer>
+      {showAnnotations && chartAnnotations?.length ? (
+        <ChartAnnotations
+          annotations={chartAnnotations}
+          hoveredAnnotation={hoveredAnnotation}
+          setHoveredAnnotation={setHoveredAnnotation}
+        />
+      ) : null}
+    </>
+  )
+}
+
 export const MultiBinaryChart = (props: {
   contract: CPMMMultiContract
   betPoints: SingleContractPoint[]
@@ -129,7 +206,7 @@ export const MultiBinaryChart = (props: {
   const now = useMemo(() => Date.now(), [betPoints])
 
   const data = useMemo(() => {
-    return [...betPoints, { x: end ?? now, y: endP }]
+    return [{ x: start, y: 0.5 }, ...betPoints, { x: end ?? now, y: endP }]
   }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)

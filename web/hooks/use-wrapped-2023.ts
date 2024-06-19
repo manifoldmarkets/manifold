@@ -105,10 +105,9 @@ async function getMaxProfitContractMetric(userId: string) {
     .from('user_contract_metrics')
     .select('*')
     .eq('user_id', userId)
-    .gte('fs_updated_time', '2023-01-01T00:00:00Z')
-    .lt('fs_updated_time', '2024-01-01T00:00:00Z')
     .order('profit', { ascending: false })
     .limit(1)
+  // TODO: fix date range, if we need this
 
   if (error) {
     console.error(error)
@@ -122,10 +121,9 @@ async function getMinProfitMetric(userId: string) {
     .from('user_contract_metrics')
     .select('*')
     .eq('user_id', userId)
-    .gte('fs_updated_time', '2023-01-01T00:00:00Z')
-    .lt('fs_updated_time', '2024-01-01T00:00:00Z')
     .order('profit', { ascending: true })
     .limit(1)
+  // TODO: fix date range, if we need this
 
   if (error) {
     console.error(error)

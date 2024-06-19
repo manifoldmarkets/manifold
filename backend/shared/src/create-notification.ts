@@ -519,6 +519,10 @@ export const createBetFillNotification = async (
       ? (contract.answers as Answer[]).find((a) => a.id === bet.answerId)?.text
       : undefined
 
+  if (fillAmount < 1) {
+    return
+  }
+
   const notification: Notification = {
     id: idempotencyKey,
     userId: toUser.id,
@@ -897,6 +901,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
   const user = await getUser(user_id)
 
   const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
   let contractId
   if (content_type === 'contract') {
@@ -917,7 +922,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
     contractId = data[0].contract_id
   }
 
-  const contract = await getContract(contractId)
+  const contract = await getContract(pg, contractId)
 
   if (!creatorPrivateUser || !user || !contract) return
 
@@ -959,7 +964,6 @@ export const createLikeNotification = async (reaction: Reaction) => {
     sourceSlug: slug,
     sourceTitle: contract.question,
   }
-  const pg = createSupabaseDirectClient()
   return await insertNotificationToSupabase(notification, pg)
 }
 

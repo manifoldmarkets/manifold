@@ -98,7 +98,7 @@ export default function AboutPage() {
               />
               <LabCard
                 title="🗺️ Sitemap"
-                href="/sitemapp"
+                href="/sitemap"
                 description="I can't find something"
               />
             </div>

@@ -3,72 +3,16 @@ import { useEffect } from 'react'
 
 import { Bet, BetFilter, LimitBet } from 'common/bet'
 import { db } from 'web/lib/supabase/db'
-import { useEvent } from 'web/hooks/use-event'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import {
-  applyBetsFilter,
-  convertBet,
-  getBetRows,
-  getBets,
-} from 'common/supabase/bets'
-import { Filter } from 'common/supabase/realtime'
-import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { Row, tsToMillis } from 'common/supabase/utils'
+import { applyBetsFilter, convertBet } from 'common/supabase/bets'
+import { Row } from 'common/supabase/utils'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 import { useApiSubscription } from './use-api-subscription'
 import { usePollUserBalances } from './use-user'
-
-function getFilteredQuery(filteredParam: string, filterId?: string) {
-  if (filteredParam === 'contractId' && filterId) {
-    return { k: 'contract_id', v: filterId } as const
-  }
-  return undefined
-}
-
-export function useRealtimeBets(options?: BetFilter) {
-  let filteredParam
-  let filteredQuery: Filter<'contract_bets'> | undefined
-  if (options?.contractId) {
-    filteredParam = 'contractId'
-    filteredQuery = getFilteredQuery(filteredParam, options.contractId)
-  }
-  const { rows, dispatch } = useSubscription(
-    'contract_bets',
-    filteredQuery,
-    () => getBetRows(db, { ...options, order: options?.order ?? 'asc' })
-  )
-
-  const loadNewer = useEvent(async () => {
-    const retryLoadNewer = async (attemptNumber: number) => {
-      const newRows = await getBetRows(db, {
-        ...options,
-        afterTime: tsToMillis(
-          maxBy(rows ?? [], (r) => tsToMillis(r.created_time))?.created_time ??
-            new Date(Date.now() - 500).toISOString()
-        ),
-      })
-      if (newRows.length) {
-        for (const r of newRows) {
-          // really is an upsert
-          dispatch({ type: 'CHANGE', change: { eventType: 'INSERT', new: r } })
-        }
-      } else if (attemptNumber < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, 100 * attemptNumber))
-        retryLoadNewer(attemptNumber + 1)
-      }
-    }
-
-    const maxAttempts = 10
-    await retryLoadNewer(1)
-  })
-
-  const newBets = rows
-    ?.map(convertBet)
-    .filter((b) => !betShouldBeFiltered(b, options))
-
-  return { rows: newBets, loadNewer }
-}
+import { api } from 'web/lib/firebase/api'
+import { APIParams } from 'common/api/schema'
+import { useIsPageVisible } from './use-page-visible'
 
 export function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
   if (!options) {
@@ -94,14 +38,14 @@ export function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
   return shouldBeFiltered
 }
 
-export function useBets(options?: BetFilter) {
+export function useBets(options?: APIParams<'bets'>) {
   const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
     undefined,
     `use-bets-${JSON.stringify(options)}`
   )
 
   useEffectCheckEquality(() => {
-    getBets(db, options).then((result) => setBets(result))
+    api('bets', options ?? {}).then((bets) => setBets(bets))
   }, [options])
 
   return bets
@@ -173,16 +117,48 @@ export const useSubscribeNewBets = (
     })
   }
 
+  const isPageVisible = useIsPageVisible()
+
   useEffect(() => {
-    getBets(db, {
+    api('bets', {
       contractId,
       afterTime,
       filterRedemptions: !includeRedemptions,
     }).then(addBets)
-  }, [contractId, afterTime])
+  }, [contractId, afterTime, isPageVisible])
 
   useApiSubscription({
     topics: [`contract/${contractId}/new-bet`],
+    onBroadcast: (msg) => {
+      addBets(msg.data.bets as Bet[])
+    },
+  })
+
+  return newBets
+}
+
+export const useSubscribeGlobalBets = (params?: {
+  includeRedemptions?: boolean
+}) => {
+  const { includeRedemptions = false } = params ?? {}
+
+  const [newBets, setNewBets] = usePersistentInMemoryState<Bet[]>(
+    [],
+    'global-new-bets'
+  )
+
+  const addBets = (bets: Bet[]) => {
+    setNewBets((currentBets) => {
+      const uniqueBets = sortBy(
+        uniqBy([...currentBets, ...bets], 'id'),
+        'createdTime'
+      )
+      return uniqueBets.filter((b) => includeRedemptions || !b.isRedemption)
+    })
+  }
+
+  useApiSubscription({
+    topics: [`global/new-bet`],
     onBroadcast: (msg) => {
       addBets(msg.data.bets as Bet[])
     },
@@ -218,12 +194,14 @@ export const useUnfilledBets = (
     })
   }
 
+  const isPageVisible = useIsPageVisible()
+
   useEffect(() => {
     if (enabled)
-      getBets(db, { contractId, isOpenLimitOrder: true }).then((bets) =>
+      api('bets', { contractId, kinds: 'open-limit' }).then((bets) =>
         addBets(bets as LimitBet[])
       )
-  }, [enabled, contractId])
+  }, [enabled, contractId, isPageVisible])
 
   useApiSubscription({
     enabled,
@@ -245,21 +223,4 @@ export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
     balances.map(({ id, balance }) => [id, balance])
   )
   return { unfilledBets, balanceByUserId }
-}
-
-export const useRecentBets = (contractId: string, limit: number) => {
-  const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
-    undefined,
-    `recent-bets-${contractId}-${limit}`
-  )
-
-  useEffect(() => {
-    getBets(db, {
-      contractId,
-      limit,
-      order: 'desc',
-    }).then((bets) => setBets(bets.reverse()))
-  }, [contractId, limit, setBets])
-
-  return bets
 }

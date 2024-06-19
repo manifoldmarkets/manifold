@@ -31,10 +31,11 @@ import { STONK_INITIAL_PROB } from 'common/stonk'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import * as admin from 'firebase-admin'
-import { FieldValue, Transaction } from 'firebase-admin/firestore'
 import { getCloseDate } from 'shared/helpers/openai-utils'
-import { generateContractEmbeddings } from 'shared/supabase/contracts'
+import {
+  generateContractEmbeddings,
+  updateContract,
+} from 'shared/supabase/contracts'
 import {
   SupabaseDirectClient,
   SupabaseTransaction,
@@ -53,19 +54,18 @@ import { broadcastNewContract } from 'shared/websockets/helpers'
 import { z } from 'zod'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { bulkInsertAnswers } from 'shared/supabase/answers'
+import { FieldVal } from 'shared/supabase/utils'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
 }
-
-const firestore = admin.firestore()
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
   const market = await createMarketHelper(body, auth)
   return {
     result: toLiteMarket(market),
     continue: async () => {
-      await onCreateMarket(market, firestore)
+      await onCreateMarket(market)
     },
   }
 }
@@ -133,8 +133,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       )
     : null
 
-  const contractRef = firestore.collection('contracts').doc()
-
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
 
@@ -173,52 +171,51 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       console.log('answerLoverUserIds', answerLoverUserIds)
     }
 
-    const contract = await firestore.runTransaction(async (trans) => {
-      const slug = await getSlug(trans, question)
+    const slug = await getSlug(tx, question)
 
-      const contract = getNewContract(
-        removeUndefinedProps({
-          id: contractRef.id,
-          slug,
-          creator: user,
-          question,
-          outcomeType,
-          description:
-            typeof description !== 'string' && description
-              ? description
-              : anythingToRichText({
-                  raw: description,
-                  html: descriptionHtml,
-                  markdown: descriptionMarkdown,
-                  jsonString: descriptionJson,
-                  // default: use a single empty space as the description
-                }) ?? htmlToRichText(`<p> </p>`),
-          initialProb: initialProb ?? 50,
-          ante,
-          closeTime,
-          visibility,
-          isTwitchContract,
-          min: min ?? 0,
-          max: max ?? 0,
-          isLogScale: isLogScale ?? false,
-          answers: answers ?? [],
-          addAnswersMode,
-          shouldAnswersSumToOne,
-          loverUserId1,
-          loverUserId2,
-          matchCreatorId,
-          isLove,
-          answerLoverUserIds,
-          specialLiquidityPerAnswer,
-          isAutoBounty,
-          marketTier,
-        })
-      )
+    const contract = getNewContract(
+      removeUndefinedProps({
+        id: randomString(),
+        slug,
+        creator: user,
+        question,
+        outcomeType,
+        description:
+          typeof description !== 'string' && description
+            ? description
+            : anythingToRichText({
+                raw: description,
+                html: descriptionHtml,
+                markdown: descriptionMarkdown,
+                jsonString: descriptionJson,
+                // default: use a single empty space as the description
+              }) ?? htmlToRichText(`<p> </p>`),
+        initialProb: initialProb ?? 50,
+        ante,
+        closeTime,
+        visibility,
+        isTwitchContract,
+        min: min ?? 0,
+        max: max ?? 0,
+        isLogScale: isLogScale ?? false,
+        answers: answers ?? [],
+        addAnswersMode,
+        shouldAnswersSumToOne,
+        loverUserId1,
+        loverUserId2,
+        matchCreatorId,
+        isLove,
+        answerLoverUserIds,
+        specialLiquidityPerAnswer,
+        isAutoBounty,
+        marketTier,
+      })
+    )
 
-      trans.create(contractRef, contract)
-
-      return contract
-    })
+    await tx.none(`insert into contracts (id, data) values ($1, $2)`, [
+      contract.id,
+      JSON.stringify(contract),
+    ])
 
     await runCreateMarketTxn({
       contractId: contract.id,
@@ -249,15 +246,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     )
   }
 
-  await generateAntes(
-    pg,
-    userId,
-    contract,
-    outcomeType,
-    ante,
-    totalMarketCost,
-    contractRef
-  )
+  await generateAntes(pg, userId, contract, outcomeType, ante, totalMarketCost)
 
   await generateContractEmbeddings(contract, pg)
 
@@ -320,23 +309,17 @@ async function getCloseTimestamp(
       Date.now() + 7 * 24 * 60 * 60 * 1000
 }
 
-const getSlug = async (trans: Transaction, question: string) => {
+const getSlug = async (pg: SupabaseTransaction, question: string) => {
   const proposedSlug = slugify(question)
 
-  const preexistingContract = await getContractFromSlug(trans, proposedSlug)
+  const preexistingContract = await pg.oneOrNone(
+    `select 1 from contracts where slug = $1`,
+    [proposedSlug]
+  )
 
   return preexistingContract
     ? proposedSlug + '-' + randomString()
     : proposedSlug
-}
-
-async function getContractFromSlug(trans: Transaction, slug: string) {
-  const contractsRef = firestore.collection('contracts')
-  const query = contractsRef.where('slug', '==', slug)
-
-  const snap = await trans.get(query)
-
-  return snap.empty ? undefined : (snap.docs[0].data() as Contract)
 }
 
 function validateMarketBody(body: Body) {
@@ -603,8 +586,7 @@ async function generateAntes(
   contract: Contract,
   outcomeType: OutcomeType,
   ante: number,
-  totalMarketCost: number,
-  contractRef: FirebaseFirestore.DocumentReference
+  totalMarketCost: number
 ) {
   if (
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
@@ -664,9 +646,9 @@ async function generateAntes(
 
       await insertLiquidity(tx, newLiquidityProvision)
 
-      contractRef.update({
-        subsidyPool: FieldValue.increment(drizzledAmount),
-        totalLiquidity: FieldValue.increment(drizzledAmount),
+      await updateContract(tx, contract.id, {
+        subsidyPool: FieldVal.increment(drizzledAmount),
+        totalLiquidity: FieldVal.increment(drizzledAmount),
       })
     })
   }

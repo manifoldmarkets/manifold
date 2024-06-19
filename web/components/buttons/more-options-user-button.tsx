@@ -13,7 +13,10 @@ import { BlockUser } from 'web/components/profile/block-user'
 import { ReportUser } from 'web/components/profile/report-user'
 import { Title } from 'web/components/widgets/title'
 import { Row } from '../layout/row'
-import { PROJECT_ID } from 'common/envs/constants'
+import {
+  supabasePrivateUserConsolePath,
+  supabaseUserConsolePath,
+} from 'common/envs/constants'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 import {
   Referrals,
@@ -96,13 +99,13 @@ export function MoreOptionsUserButton(props: { user: User }) {
               <>
                 <a
                   className="text-primary-400 text-sm hover:underline"
-                  href={firestoreUserConsolePath(user.id)}
+                  href={supabaseUserConsolePath(user.id)}
                 >
-                  firestore user
+                  supabase user
                 </a>
                 <a
                   className="text-primary-400 text-sm hover:underline"
-                  href={firestorePrivateConsolePath(user.id)}
+                  href={supabasePrivateUserConsolePath(user.id)}
                 >
                   private user
                 </a>
@@ -170,12 +173,4 @@ export function MoreOptionsUserButton(props: { user: User }) {
       </Modal>
     </>
   )
-}
-
-function firestoreUserConsolePath(userId: string) {
-  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fusers~2F${userId}`
-}
-
-function firestorePrivateConsolePath(userId: string) {
-  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fprivate-users~2F${userId}`
 }

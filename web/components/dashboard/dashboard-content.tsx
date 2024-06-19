@@ -1,4 +1,4 @@
-import { useContracts } from 'web/hooks/use-contract-supabase'
+import { useContracts } from 'web/hooks/use-contract'
 import {
   DashboardNewsItemPlaceholder,
   MaybeDashboardNewsItem,

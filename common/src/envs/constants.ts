@@ -187,7 +187,6 @@ export const MOD_IDS = [
   'lkkqZxiWCpOgtJ9ztJcAKz4d9y33', // NathanpmYoung
   'fSrex43BDjeneNZ4ZLfxllSb8b42', // NcyRocks
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
-  'OEbsAczmbBc4Sl1bacYZNPJLLLc2', // SirCryptomind
   'YOILpFNyg0gGj79zBIBUpJigHQ83', // SneakySly
   'KHX2ThSFtLQlau58hrjtCX7OL2h2', // shankypanky (stefanie)
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
@@ -334,8 +333,19 @@ export const HIDE_FROM_LEADERBOARD_USER_IDS = [
 
 export const HOUSE_BOT_USERNAME = 'acc'
 
-export function firestoreConsolePath(contractId: string) {
-  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fcontracts~2F${contractId}`
+export function supabaseUserConsolePath(userId: string) {
+  const tableId = ENV === 'DEV' ? 19247 : 25916
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}/?filter=id%3Aeq%3A${userId}`
+}
+
+export function supabasePrivateUserConsolePath(userId: string) {
+  const tableId = ENV === 'DEV' ? 2189688 : 153495548
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}/?filter=id%3Aeq%3A${userId}`
+}
+
+export function supabaseConsoleContractPath(contractId: string) {
+  const tableId = ENV === 'DEV' ? 19254 : 25924
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}?filter=id%3Aeq%3A${contractId}`
 }
 
 export const GOOGLE_PLAY_APP_URL =

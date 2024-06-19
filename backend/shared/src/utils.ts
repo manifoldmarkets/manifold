@@ -4,14 +4,6 @@ import { Contract, contractPath } from 'common/contract'
 import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
 import * as admin from 'firebase-admin'
-import {
-  CollectionGroup,
-  CollectionReference,
-  DocumentData,
-  Query,
-  QueryDocumentSnapshot,
-  QuerySnapshot,
-} from 'firebase-admin/firestore'
 import { first, groupBy, mapValues, sumBy } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
 import { DAY_MS } from 'common/util/time'
@@ -23,10 +15,9 @@ import {
   ENV_CONFIG,
   GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
 } from 'common/envs/constants'
-import { convertUser } from 'common/supabase/users'
+import { convertPrivateUser, convertUser } from 'common/supabase/users'
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
-import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { log, Logger } from 'shared/monitoring/log'
 import { metrics } from 'shared/monitoring/metrics'
 
@@ -105,106 +96,6 @@ export async function revalidateContractStaticProps(contract: Contract) {
   ])
 }
 
-export type UpdateSpec = {
-  doc: admin.firestore.DocumentReference
-  fields: { [k: string]: unknown }
-}
-
-export const writeAsync = async (
-  db: admin.firestore.Firestore,
-  updates: UpdateSpec[],
-  operationType: 'update' | 'set' = 'update'
-) => {
-  const writer = new SafeBulkWriter(undefined, db)
-  for (const update of updates) {
-    const { doc, fields } = update
-    if (operationType === 'update') {
-      writer.update(doc, fields as any)
-    } else {
-      writer.set(doc, fields)
-    }
-  }
-  await writer.close()
-}
-
-export const loadPaginated = async <T extends DocumentData>(
-  q: Query<T> | CollectionReference<T>,
-  batchSize = 500
-) => {
-  const results: T[] = []
-  let prev: QuerySnapshot<T> | undefined
-  for (let i = 0; prev == undefined || prev.size > 0; i++) {
-    prev = await (prev == undefined
-      ? q.limit(batchSize)
-      : q.limit(batchSize).startAfter(prev.docs[prev.size - 1])
-    ).get()
-    results.push(...prev.docs.map((d) => d.data() as T))
-  }
-  return results
-}
-
-export const processPaginated = async <T extends DocumentData, U>(
-  q: Query<T>,
-  batchSize: number,
-  fn: (ts: QuerySnapshot<T>) => Promise<U>
-) => {
-  const results = []
-  let prev: QuerySnapshot<T> | undefined
-  let processed = 0
-  for (let i = 0; prev == null || prev.size > 0; i++) {
-    log(`Loading next page.`)
-    prev = await (prev == null
-      ? q.limit(batchSize)
-      : q.limit(batchSize).startAfter(prev.docs[prev.size - 1])
-    ).get()
-    log(`Loaded ${prev.size} documents.`)
-    processed += prev.size
-    results.push(await fn(prev))
-    log(`Processed ${prev.size} documents. Total: ${processed}`)
-  }
-  return results
-}
-
-export const processPartitioned = async <T extends DocumentData, U>(
-  group: CollectionGroup<T>,
-  partitions: number,
-  fn: (ts: QueryDocumentSnapshot<T>[]) => Promise<U>
-) => {
-  const logProgress = (i: number, msg: string) => {
-    log(`[${i + 1}/~${partitions}] ${msg}`)
-  }
-  const parts = group.getPartitions(partitions)
-  const results: U[] = []
-  let i = 0
-  let docsProcessed = 0
-  let currentlyProcessing: { i: number; n: number; job: Promise<U> } | undefined
-  for await (const part of parts) {
-    logProgress(i, 'Loading partition.')
-    const ts = await part.toQuery().get()
-    logProgress(i, `Loaded ${ts.size} documents.`)
-    if (currentlyProcessing != null) {
-      results.push(await currentlyProcessing.job)
-      docsProcessed += currentlyProcessing.n
-      logProgress(
-        currentlyProcessing.i,
-        `Processed ${currentlyProcessing.n} documents: Total: ${docsProcessed}`
-      )
-    }
-    logProgress(i, `Processing ${ts.size} documents.`)
-    currentlyProcessing = { i: i, n: ts.size, job: fn(ts.docs) }
-    i++
-  }
-  if (currentlyProcessing != null) {
-    results.push(await currentlyProcessing.job)
-    docsProcessed += currentlyProcessing.n
-    logProgress(
-      currentlyProcessing.i,
-      `Processed ${currentlyProcessing.n} documents: Total: ${docsProcessed}`
-    )
-  }
-  return results
-}
-
 // TODO: deprecate in favor of common/src/envs/is-prod.ts
 export const isProd = () => {
   // mqp: kind of hacky rn. the first clause is for cloud run API service,
@@ -216,28 +107,10 @@ export const isProd = () => {
   }
 }
 
-export const getDoc = async <T>(collection: string, doc: string) => {
-  const snap = await admin.firestore().collection(collection).doc(doc).get()
-
-  return snap.exists ? (snap.data() as T) : undefined
-}
-
-export const getValue = async <T>(ref: admin.firestore.DocumentReference) => {
-  const snap = await ref.get()
-
-  return snap.exists ? (snap.data() as T) : undefined
-}
-
-export const getValues = async <T>(query: admin.firestore.Query) => {
-  const snap = await query.get()
-  return snap.docs.map((doc) => doc.data() as T)
-}
-
-export const getContract = (contractId: string) => {
-  return getDoc<Contract>('contracts', contractId)
-}
-export const getContractSupabase = async (contractId: string) => {
-  const pg = createSupabaseDirectClient()
+export const getContract = async (
+  pg: SupabaseDirectClient,
+  contractId: string
+) => {
   const res = await pg.map(
     `select data, importance_score, conversion_score, view_count from contracts where id = $1
             limit 1`,
@@ -246,6 +119,12 @@ export const getContractSupabase = async (contractId: string) => {
   )
   return first(res)
 }
+
+export const getContractSupabase = async (contractId: string) => {
+  const pg = createSupabaseDirectClient()
+  return await getContract(pg, contractId)
+}
+
 export const getContractFromSlugSupabase = async (contractSlug: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
@@ -280,8 +159,15 @@ export const getUsers = async (
   return res
 }
 
-export const getPrivateUser = (userId: string) => {
-  return getDoc<PrivateUser>('private-users', userId)
+export const getPrivateUser = async (
+  userId: string,
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) => {
+  return await pg.oneOrNone(
+    `select * from private_users where id = $1 limit 1`,
+    [userId],
+    convertPrivateUser
+  )
 }
 export const getPrivateUserSupabase = (userId: string) => {
   const pg = createSupabaseDirectClient()
@@ -293,10 +179,15 @@ export const getPrivateUserSupabase = (userId: string) => {
   )
 }
 
-export const getAllPrivateUsers = async () => {
-  const firestore = admin.firestore()
-  const users = await firestore.collection('private-users').get()
-  return users.docs.map((doc) => doc.data() as PrivateUser)
+export const getPrivateUserByKey = async (
+  apiKey: string,
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) => {
+  return await pg.oneOrNone(
+    `select * from private_users where (data->'apiKey')::text = $1 limit 1`,
+    [apiKey],
+    convertPrivateUser
+  )
 }
 
 export const getPrivateUsersNotSent = async (

@@ -1,10 +1,9 @@
 import * as functions from 'firebase-functions'
-
 import { PollOption } from 'common/poll-option'
 import { secrets } from 'common/secrets'
-import * as admin from 'firebase-admin'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createPollClosedNotification } from 'shared/create-notification'
+import { updateContract } from 'shared/supabase/contracts'
 
 export const pollPollResolutions = functions
   .runWith({
@@ -44,7 +43,7 @@ export async function pollPollResolutionsFn() {
           : `It's a tie!`,
         poll.data
       )
-      return firestore.collection('contracts').doc(poll.data.id).update(update)
+      return updateContract(pg, poll.data.id, update)
     })
   )
 }
@@ -65,5 +64,3 @@ export function getMaxVoteIds(arr: PollOption[]): string[] {
 
   return result.maxVoteIds
 }
-
-const firestore = admin.firestore()

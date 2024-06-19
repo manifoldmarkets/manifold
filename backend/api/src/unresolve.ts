@@ -1,15 +1,16 @@
-import * as admin from 'firebase-admin'
 import {
   ContractOldResolutionPayoutTxn,
   ContractProduceSpiceTxn,
   ContractUndoOldResolutionPayoutTxn,
   ContractUndoProduceSpiceTxn,
 } from 'common/txn'
-import { chunk } from 'lodash'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
-import { log } from 'shared/utils'
+import { getContract, log } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -21,8 +22,8 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 import { assert } from 'common/util/assert'
 import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
 import { convertAnswer } from 'common/supabase/contracts'
-
-const firestore = admin.firestore()
+import { updateContract } from 'shared/supabase/contracts'
+import { FieldVal } from 'shared/supabase/utils'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
@@ -40,36 +41,36 @@ export const unresolve: APIHandler<'unresolve'> = async (
 const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
   const { contractId, answerId } = props
 
-  // Fetch fresh contract & verify within lock.
-  const contractSnap = await firestore
-    .collection('contracts')
-    .doc(contractId)
-    .get()
-  const contract = contractSnap.data() as Contract
-  if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
+  const result = await createSupabaseDirectClient().tx(async (tx) => {
+    const contract = await getContract(tx, contractId)
+    if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
 
-  await verifyUserCanUnresolve(contract, auth.uid, answerId)
+    await verifyUserCanUnresolve(tx, contract, auth.uid, answerId)
+
+    await undoResolution(tx, contract, auth.uid, answerId)
+
+    return {
+      result: { success: true as const },
+      continue: async () => {
+        await setAdjustProfitFromResolvedMarkets(contractId)
+      },
+    }
+  })
 
   await trackPublicEvent(auth.uid, 'unresolve market', {
     contractId,
   })
-  await undoResolution(contract, auth.uid, answerId)
 
-  return {
-    success: true,
-    continue: async () => {
-      await setAdjustProfitFromResolvedMarkets(contractId)
-    },
-  }
+  return result
 }
 
 const verifyUserCanUnresolve = async (
+  pg: SupabaseTransaction,
   contract: Contract,
   userId: string,
   answerId?: string
 ) => {
   const isMod = isModId(userId) || isAdminId(userId)
-  const pg = createSupabaseDirectClient()
 
   const { creatorId, mechanism } = contract
 
@@ -156,11 +157,11 @@ const verifyUserCanUnresolve = async (
 }
 
 const undoResolution = async (
+  pg: SupabaseTransaction,
   contract: Contract,
   userId: string,
   answerId?: string
 ) => {
-  const pg = createSupabaseDirectClient()
   const contractId = contract.id
   // spice payouts
   const maxSpicePayoutStartTime = await pg.oneOrNone(
@@ -172,7 +173,7 @@ const undoResolution = async (
     [contractId, answerId],
     (r) => r?.max as number | undefined
   )
-  const spiceTxns = await pg.map(
+  const spiceTxnsToRevert = await pg.map(
     `SELECT * FROM txns WHERE category = 'PRODUCE_SPICE'
       AND from_type = 'CONTRACT'
       AND from_id = $1
@@ -182,24 +183,23 @@ const undoResolution = async (
     (r) => r.data as ContractProduceSpiceTxn
   )
 
-  log('Reverting spice txns ' + spiceTxns.length)
+  log('Reverting spice txns ' + spiceTxnsToRevert.length)
   log('With max payout start time ' + maxSpicePayoutStartTime)
-  const chunkedTxns = chunk(spiceTxns, 250)
-  for (const chunk of chunkedTxns) {
-    const balanceUpdates: any[] = []
-    const txns: TxnData[] = []
+  const spiceBalanceUpdates: {
+    spiceBalance: number
+    totalDeposits: number
+    id: string
+  }[] = []
+  const spiceTxns: TxnData[] = []
 
-    for (const txnToRevert of chunk) {
-      const { balanceUpdate, txn } = getUndoContractPayoutSpice(txnToRevert)
-      balanceUpdates.push(balanceUpdate)
-      txns.push(txn)
-    }
-
-    await pg.tx(async (tx) => {
-      await bulkIncrementBalances(tx, balanceUpdates)
-      await insertTxns(tx, txns)
-    })
+  for (const txnToRevert of spiceTxnsToRevert) {
+    const { balanceUpdate, txn } = getUndoContractPayoutSpice(txnToRevert)
+    spiceBalanceUpdates.push(balanceUpdate)
+    spiceTxns.push(txn)
   }
+
+  await bulkIncrementBalances(pg, spiceBalanceUpdates)
+  await insertTxns(pg, spiceTxns)
 
   log('reverted txns')
 
@@ -225,39 +225,34 @@ const undoResolution = async (
 
   log('Reverting mana txns ' + manaTxns.length)
   log('With max payout start time ' + maxManaPayoutStartTime)
-  const chunkedManaTxns = chunk(manaTxns, 250)
-  for (const chunk of chunkedManaTxns) {
-    const balanceUpdates: {
-      balance: number
-      totalDeposits: number
-      id: string
-    }[] = []
-    const txns: TxnData[] = []
+  const balanceUpdates: {
+    balance: number
+    totalDeposits: number
+    id: string
+  }[] = []
+  const txns: TxnData[] = []
 
-    for (const txnToRevert of chunk) {
-      const { balanceUpdate, txn } = getUndoOldContractPayout(txnToRevert)
-      balanceUpdates.push(balanceUpdate)
-      txns.push(txn)
-    }
-
-    await pg.tx(async (tx) => {
-      await bulkIncrementBalances(tx, balanceUpdates)
-      await insertTxns(tx, txns)
-    })
+  for (const txnToRevert of manaTxns) {
+    const { balanceUpdate, txn } = getUndoOldContractPayout(txnToRevert)
+    balanceUpdates.push(balanceUpdate)
+    txns.push(txn)
   }
+
+  await bulkIncrementBalances(pg, balanceUpdates)
+  await insertTxns(pg, txns)
 
   log('reverted txns')
 
   if (contract.isResolved || contract.resolutionTime) {
     const updatedAttrs = {
       isResolved: false,
-      resolutionTime: admin.firestore.FieldValue.delete(),
-      resolution: admin.firestore.FieldValue.delete(),
-      resolutions: admin.firestore.FieldValue.delete(),
-      resolutionProbability: admin.firestore.FieldValue.delete(),
+      resolutionTime: FieldVal.delete(),
+      resolution: FieldVal.delete(),
+      resolutions: FieldVal.delete(),
+      resolutionProbability: FieldVal.delete(),
       closeTime: Date.now(),
     }
-    await firestore.doc(`contracts/${contractId}`).update(updatedAttrs)
+    await updateContract(pg, contractId, updatedAttrs)
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
@@ -270,7 +265,7 @@ const undoResolution = async (
       [contractId],
       convertAnswer
     )
-    newAnswers.forEach((ans) => broadcastUpdatedAnswer(contract, ans))
+    newAnswers.forEach(broadcastUpdatedAnswer)
   } else if (answerId) {
     const answer = await pg.one(
       `update answers
@@ -280,7 +275,7 @@ const undoResolution = async (
       [answerId],
       convertAnswer
     )
-    broadcastUpdatedAnswer(contract, answer)
+    broadcastUpdatedAnswer(answer)
   }
 
   log('updated contract')

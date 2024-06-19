@@ -10,16 +10,12 @@ import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/firebase/api'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
-import { WelcomeTopicSections } from 'web/components/home/welcome-topic-sections'
-import { useNewUserMemberTopicsAndContracts } from 'web/hooks/use-group-supabase'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { DAY_MS } from 'common/util/time'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
-import { useABTest } from 'web/hooks/use-ab-test'
 import { useEffect, useState } from 'react'
 
 export async function getStaticProps() {
@@ -63,21 +59,10 @@ export default function Home(props: { headlines: Headline[] }) {
 
 export function HomeContent(props: { user: User }) {
   const { user } = props
-  const welcomeABTest = useABTest('show welcome topics', ['show', 'hide'])
   const [prevShouldShowWelcome, _] = useState(user.shouldShowWelcome)
   const [reload, setReload] = useState(false)
-  const welcomeTopicsEnabled =
-    welcomeABTest === 'show' && (user?.createdTime ?? 0) > Date.now() - DAY_MS
-  const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(
-    user,
-    welcomeTopicsEnabled
-  )
   useEffect(() => {
-    if (
-      !welcomeTopicsEnabled &&
-      prevShouldShowWelcome &&
-      !user.shouldShowWelcome
-    ) {
+    if (prevShouldShowWelcome && !user.shouldShowWelcome) {
       setReload(true)
       setTimeout(() => {
         setReload(false)
@@ -85,9 +70,6 @@ export function HomeContent(props: { user: User }) {
     }
   }, [user.shouldShowWelcome])
 
-  if (welcomeTopicsEnabled && !memberTopicsWithContracts) {
-    return <LoadingIndicator />
-  }
   return (
     <Col className="w-full items-center self-center pb-4 sm:px-2">
       {user && (
@@ -99,12 +81,6 @@ export function HomeContent(props: { user: User }) {
 
       {user && (
         <Col className={clsx('w-full sm:px-2')}>
-          {welcomeTopicsEnabled && memberTopicsWithContracts && (
-            <WelcomeTopicSections
-              memberTopicsWithContracts={memberTopicsWithContracts}
-            />
-          )}
-
           <LiveGeneratedFeed userId={user.id} reload={reload} />
         </Col>
       )}

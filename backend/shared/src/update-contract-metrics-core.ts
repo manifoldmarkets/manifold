@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -11,11 +10,9 @@ import { computeElasticity } from 'common/calculate-metrics'
 import { hasChanges } from 'common/util/object'
 import { chunk, groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
-import { SafeBulkWriter } from 'shared/safe-bulk-writer'
-import { bulkUpdateAnswers } from './supabase/answers'
+import { bulkUpdateData } from './supabase/utils'
 
 export async function updateContractMetricsCore() {
-  const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
   const allContracts = await pg.map(
@@ -71,7 +68,8 @@ export async function updateContractMetricsCore() {
     const limits = await getUnfilledLimitOrders(pg, contractIds)
 
     log('Computing metric updates...')
-    const writer = new SafeBulkWriter()
+
+    const contractUpdates: ({ id: string } & Partial<Contract>)[] = []
 
     const answerUpdates: {
       id: string
@@ -140,18 +138,17 @@ export async function updateContractMetricsCore() {
       }
 
       if (hasChanges(contract, update)) {
-        const contractDoc = firestore.collection('contracts').doc(contract.id)
-        writer.update(contractDoc, update)
+        contractUpdates.push({ id: contract.id, ...update })
       }
     }
 
-    log('Committing writes...')
-    await writer.close()
+    await bulkUpdateData(pg, 'contracts', contractUpdates)
+
     i += contracts.length
     log(`Finished ${i}/${allContracts.length} contracts.`)
 
     log('Writing answer updates...')
-    await bulkUpdateAnswers(pg, answerUpdates)
+    await bulkUpdateData(pg, 'answers', answerUpdates)
 
     log('Done.')
   }

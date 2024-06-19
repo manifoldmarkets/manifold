@@ -9,8 +9,6 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { ALL_CONTRACT_TYPES } from './create-contract-types'
 import { CreateContractStateType } from './new-contract-panel'
-import { MINIMUM_BOUNTY, getAnte } from 'common/economy'
-import { formatMoney } from 'common/util/format'
 
 export function ChoosingContractForm(props: {
   outcomeType: CreateableOutcomeType | undefined
@@ -92,10 +90,7 @@ function OutcomeButton(props: {
       <Row className="grow gap-4">
         {visual}
         <Col className="w-full">
-          <Row className="w-full justify-between">
-            <div className="font-semibold sm:text-lg">{label}</div>
-            <AntePrice outcome={value} />
-          </Row>
+          <div className="font-semibold sm:text-lg">{label}</div>
           <Col className="sm:text-md text-sm">
             <span className="text-ink-700 mt-0.5 italic">{example}</span>
           </Col>
@@ -103,22 +98,4 @@ function OutcomeButton(props: {
       </Row>
     </button>
   )
-}
-
-function AntePrice(props: { outcome: CreateableOutcomeType }) {
-  const { outcome } = props
-
-  const ante = formatMoney(getAnte(outcome, 1))
-
-  if (outcome === 'BOUNTIED_QUESTION') {
-    return (
-      <div className="text-ink-500 text-xs">
-        {formatMoney(MINIMUM_BOUNTY)} minimum
-      </div>
-    )
-  }
-  if (outcome == 'MULTIPLE_CHOICE') {
-    return <div className="text-ink-500 text-xs">{ante} minimum</div>
-  }
-  return <div className="text-ink-500 text-xs">{ante}</div>
 }

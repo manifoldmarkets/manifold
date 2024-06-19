@@ -1,7 +1,6 @@
 import { mapValues, groupBy, sumBy } from 'lodash'
-import * as admin from 'firebase-admin'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
+import { CPMM_MIN_POOL_QTY } from 'common/contract'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { removeUndefinedProps } from 'common/util/object'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
@@ -9,11 +8,11 @@ import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { removeUserFromContractFollowers } from 'shared/follow-market'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { onCreateBets } from 'api/on-create-bet'
-import { getUser, log } from 'shared/utils'
+import { getContract, getUser, log } from 'shared/utils'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import { incrementBalance } from 'shared/supabase/users'
-import { runEvilTransaction } from 'shared/evil-transaction'
+import { runShortTrans } from 'shared/short-transaction'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -23,6 +22,8 @@ import {
   getAnswersForContract,
   updateAnswer,
 } from 'shared/supabase/answers'
+import { updateContract } from 'shared/supabase/contracts'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -40,13 +41,11 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   auth
 ) => {
   const { contractId, shares, outcome, answerId } = props
+  const pg = createSupabaseDirectClient()
+  const contract = await getContract(pg, contractId)
+  if (!contract) throw new APIError(404, 'Contract not found.')
 
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-  const contractSnap = await contractDoc.get()
-  if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
-  const contract = contractSnap.data() as Contract
-
-  const result = await runEvilTransaction(async (pgTrans, fbTrans) => {
+  const result = await runShortTrans(async (pgTrans) => {
     const user = await getUser(auth.uid, pgTrans)
     if (!user) throw new APIError(401, 'Your account was not found')
 
@@ -239,8 +238,9 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     allOrdersToCancel.push(...ordersToCancel)
 
     if (mechanism === 'cpmm-1') {
-      fbTrans.update(
-        contractDoc,
+      await updateContract(
+        pgTrans,
+        contractId,
         removeUndefinedProps({
           pool: newPool,
           p: newP,
@@ -323,16 +323,10 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   }
 
   const continuation = async () => {
-    await onCreateBets(
-      fullBets,
-      contract,
-      user,
-      allOrdersToCancel,
-      [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)],
-      answerId
-    )
+    await onCreateBets(fullBets, contract, user, allOrdersToCancel, [
+      ...makers,
+      ...otherResultsWithBet.flatMap((r) => r.makers),
+    ])
   }
   return { result: { ...newBet, betId }, continue: continuation }
 }
-
-const firestore = admin.firestore()

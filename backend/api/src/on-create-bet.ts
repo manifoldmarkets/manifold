@@ -4,7 +4,6 @@ import {
   revalidateContractStaticProps,
   getBettingStreakResetTimeBeforeNow,
   getUser,
-  getContract,
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -18,7 +17,6 @@ import {
   createFollowSuggestionNotification,
   createLimitBetCanceledNotification,
   createNewBettorNotification,
-  createUniqueBettorBonusNotification,
 } from 'shared/create-notification'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
@@ -29,11 +27,10 @@ import {
 } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
 import { maker } from 'api/place-bet'
-import { BOT_USERNAMES, PARTNER_USER_IDS } from 'common/envs/constants'
+import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
-import * as admin from 'firebase-admin'
 import { getCommentSafe } from 'shared/supabase/contract_comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
 import { updateData } from 'shared/supabase/utils'
@@ -41,23 +38,19 @@ import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
   MAX_TRADERS_FOR_BIG_BONUS,
-  MAX_TRADERS_FOR_BONUS,
-  SMALL_UNIQUE_BETTOR_BONUS_AMOUNT,
   SMALL_UNIQUE_BETTOR_LIQUIDITY,
-  UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_LIQUIDITY,
 } from 'common/economy'
-import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from 'common/txn'
+import { BettingStreakBonusTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
   getUniqueBettorIds,
   getUniqueBettorIdsForAnswer,
+  updateContract,
 } from 'shared/supabase/contracts'
 import { Answer } from 'common/answer'
 import {
   removeNullOrUndefinedProps,
-  removeUndefinedProps,
 } from 'common/util/object'
 import {
   addHouseSubsidy,
@@ -69,44 +62,18 @@ import { track } from 'shared/analytics'
 import { Fees } from 'common/fees'
 import { APIError } from 'common/api/utils'
 import { updateUser } from 'shared/supabase/users'
-import {
-  broadcastNewBets,
-  broadcastUpdatedAnswer,
-} from 'shared/websockets/helpers'
-import { getAnswer, getAnswersForContract } from 'shared/supabase/answers'
-
-const firestore = admin.firestore()
+import { broadcastNewBets } from 'shared/websockets/helpers'
+import { getAnswersForContract } from 'shared/supabase/answers'
 
 export const onCreateBets = async (
   bets: Bet[],
   contract: Contract,
   originalBettor: User,
   ordersToCancel: LimitBet[] | undefined,
-  makers: maker[] | undefined,
-  answerId: string | undefined
+  makers: maker[] | undefined
 ) => {
-  if (contract.mechanism === 'cpmm-multi-1') {
-    broadcastNewBets({ id: contract.id }, bets) // No changes to contract
-    const pg = createSupabaseDirectClient()
-    if (!contract.shouldAnswersSumToOne && answerId) {
-      const answer = await getAnswer(pg, answerId)
-      if (answer) broadcastUpdatedAnswer(contract, answer)
-    } else {
-      const answers = await getAnswersForContract(pg, contract.id)
-      answers.forEach((answer) => broadcastUpdatedAnswer(contract, answer))
-    }
-  } else if (contract.mechanism === 'cpmm-1') {
-    const newContract = (await getContract(contract.id)) as typeof contract
-    if (newContract) {
-      const updates = {
-        id: newContract.id,
-        prob: newContract.prob,
-        pool: newContract.pool,
-        p: newContract.p,
-      }
-      broadcastNewBets(updates, bets)
-    }
-  }
+  const pg = createSupabaseDirectClient()
+  broadcastNewBets(contract.id, contract.visibility, bets)
 
   if (ordersToCancel) {
     await Promise.all(
@@ -126,7 +93,6 @@ export const onCreateBets = async (
   if (!betUsers.find((u) => u.id == originalBettor.id))
     betUsers.push(originalBettor)
 
-  const pg = createSupabaseDirectClient()
   const usersToRefreshMetrics = betUsers.filter((user) =>
     uniq(
       bets.filter((b) => b.shares !== 0 && !b.isApi).map((bet) => bet.userId)
@@ -148,7 +114,6 @@ export const onCreateBets = async (
     await updateUserContractMetrics(
       contract,
       uniqBy(usersToRefreshMetrics, 'id'),
-      bets,
       pg
     )
     log(`Contract metrics updated for ${usersToRefreshMetrics.length} users.`)
@@ -248,8 +213,7 @@ const debouncedContractUpdates = (contract: Contract) => {
         select
           (select sum(abs(amount)) from contract_bets where contract_id = $1) as volume,
           (select max(created_time) from contract_bets where contract_id = $1) as time,
-          (select count(distinct user_id) from contract_bets where contract_id = $1) as count,
-
+          (select count(distinct user_id)::numeric from contract_bets where contract_id = $1) as count,
           (select sum((data->'fees'->>'creatorFee')::numeric) from contract_bets where contract_id = $1) as creator_fee,
           (select sum((data->'fees'->>'platformFee')::numeric) from contract_bets where contract_id = $1) as platform_fee,
           (select sum((data->'fees'->>'liquidityFee')::numeric) from contract_bets where contract_id = $1) as liquidity_fee
@@ -276,7 +240,9 @@ const debouncedContractUpdates = (contract: Contract) => {
       collectedFees,
     })
 
-    await firestore.doc(`contracts/${contract.id}`).update(
+    await updateContract(
+      pg,
+      contract.id,
       removeNullOrUndefinedProps({
         volume,
         lastBetTime: lastBetTime ? new Date(lastBetTime).valueOf() : undefined,
@@ -345,9 +311,13 @@ const notifyUsersOfLimitFills = async (
 const updateUserContractMetrics = async (
   contract: Contract,
   users: User[],
-  recentBets: Bet[],
   pg: SupabaseDirectClient
 ) => {
+  const answers =
+    contract.mechanism === 'cpmm-multi-1'
+      ? await getAnswersForContract(pg, contract.id)
+      : []
+
   const metrics = await Promise.all(
     users.map(async (user) => {
       const bets = await pg.map(
@@ -355,14 +325,8 @@ const updateUserContractMetrics = async (
         [contract.id, user.id],
         convertBet
       )
-      const recentBetsByUser = recentBets.filter(
-        (bet) => bet.userId === user.id
-      )
-      // Handle possible replication delay
-      bets.push(
-        ...recentBetsByUser.filter((bet) => !bets.find((b) => b.id === bet.id))
-      )
-      return calculateUserMetrics(contract, bets, user)
+
+      return calculateUserMetrics(contract, bets, user, answers)
     })
   )
 
@@ -503,153 +467,6 @@ const updateBettingStreak = async (
       result.bonusAmount,
       result.newBettingStreak,
       eventId
-    )
-  }
-}
-
-export const giveUniqueBettorBonus = async (
-  contract: Contract,
-  eventId: string,
-  bettor: User,
-  bet: Bet,
-  usersNonRedemptionBets?: Bet[]
-) => {
-  const { answerId, isRedemption, isApi } = bet
-  const pg = createSupabaseDirectClient()
-
-  const isBot = BOT_USERNAMES.includes(bettor.username)
-  const isUnlisted = contract.visibility === 'unlisted'
-  const unSubsidized =
-    contract.isSubsidized === undefined ? false : !contract.isSubsidized
-
-  const answer =
-    answerId && 'answers' in contract
-      ? (contract.answers as Answer[]).find((a) => a.id == answerId)
-      : undefined
-  const answerCreatorId = answer?.userId
-  const creatorId = answerCreatorId ?? contract.creatorId
-  const isCreator = bettor.id == creatorId
-  const isUnfilledLimitOrder =
-    bet.limitProb !== undefined && (!bet.fills || bet.fills.length === 0)
-
-  const isPartner =
-    PARTNER_USER_IDS.includes(contract.creatorId) &&
-    // Require the contract creator to also be the answer creator for real-money bonus.
-    creatorId === contract.creatorId
-
-  if (
-    isCreator ||
-    isBot ||
-    isUnlisted ||
-    isRedemption ||
-    unSubsidized ||
-    isUnfilledLimitOrder ||
-    isApi
-  )
-    return
-
-  const previousBet = await pg.oneOrNone(
-    `select bet_id from contract_bets
-        where contract_id = $1
-          and ($2 is null or answer_id = $2)
-          and user_id = $3
-          and created_time < $4
-          and is_redemption = false
-        limit 1`,
-    [contract.id, answerId, bettor.id, new Date(bet.createdTime).toISOString()]
-  )
-  // Check previous bet.
-  if (previousBet) return
-
-  // For bets with answerId (multiple choice), give a bonus for the first bet on each answer.
-  // NOTE: this may miscount unique bettors if they place multiple bets quickly b/c of replication delay.
-  const uniqueBettorIds = answerId
-    ? await getUniqueBettorIdsForAnswer(contract.id, answerId, pg)
-    : await getUniqueBettorIds(contract.id, pg)
-  if (!uniqueBettorIds.includes(bettor.id)) uniqueBettorIds.push(bettor.id)
-
-  // Check max bonus exceeded.
-  if (uniqueBettorIds.length > MAX_TRADERS_FOR_BONUS) return
-
-  // They may still have bet on this previously, use a transaction to be sure
-  // we haven't sent creator a bonus already
-  const uniqueBonusResult = await pg.tx(async (tx) => {
-    const previousTxn = await tx.oneOrNone(
-      `select * from txns where to_id = $1 
-       and category = 'UNIQUE_BETTOR_BONUS' 
-       and data->'data'->>'uniqueNewBettorId' = $2
-       and data->'data'->>'contractId' = $3
-       ${answerId ? `and data->'data'->>'answerId' = $4` : ''}
-       limit 1`,
-      [creatorId, bettor.id, contract.id, answerId]
-    )
-
-    if (previousTxn) return undefined
-
-    const bonusAmount =
-      uniqueBettorIds.length > MAX_TRADERS_FOR_BIG_BONUS
-        ? SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
-        : contract.mechanism === 'cpmm-multi-1'
-        ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
-        : UNIQUE_BETTOR_BONUS_AMOUNT
-
-    const bonusTxnData = removeUndefinedProps({
-      contractId: contract.id,
-      uniqueNewBettorId: bettor.id,
-      answerId,
-      isPartner,
-    })
-
-    const bonusTxn: Omit<
-      UniqueBettorBonusTxn,
-      'id' | 'createdTime' | 'fromId'
-    > = {
-      fromType: 'BANK',
-      toId: creatorId,
-      toType: 'USER',
-      amount: bonusAmount,
-      token: 'M$',
-      category: 'UNIQUE_BETTOR_BONUS',
-      data: bonusTxnData,
-    }
-
-    try {
-      const txn = await runTxnFromBank(tx, bonusTxn)
-      return { status: 'success', txn, amount: bonusAmount, data: bonusTxnData }
-    } catch (e) {
-      if (e instanceof APIError) {
-        return { status: 'error', message: e.message, txn: undefined }
-      } else {
-        log.error(e)
-        return { status: 'error', message: 'Unknown Error', txn: undefined }
-      }
-    }
-  })
-
-  if (!uniqueBonusResult) return
-  if (uniqueBonusResult.status != 'success' || !uniqueBonusResult.txn) {
-    log(
-      `No bonus for user: ${contract.creatorId} - status:`,
-      uniqueBonusResult.status
-    )
-    log('message:', uniqueBonusResult.message)
-  } else {
-    log(
-      `Bonus txn for user: ${contract.creatorId} completed:`,
-      uniqueBonusResult.txn?.id
-    )
-
-    await createUniqueBettorBonusNotification(
-      creatorId,
-      bettor,
-      uniqueBonusResult.txn.id,
-      contract,
-      uniqueBonusResult.txn.amount,
-      uniqueBettorIds,
-      eventId + '-unique-bettor-bonus',
-      bet,
-      usersNonRedemptionBets,
-      uniqueBonusResult.txn?.data?.isPartner
     )
   }
 }

@@ -13,19 +13,15 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { getCookie, setCookie } from 'web/lib/util/cookie'
 import { Input } from 'web/components/widgets/input'
 import { useRouter } from 'next/router'
-import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 const KEY = 'TEST_CREATE_USER_KEY'
 
 export default function TestUser() {
   const router = useRouter()
-  const user = useUser()
-  useEffect(() => {
-    if (!user) return
-    router.push('/home')
-  }, [user])
+  useRedirectIfSignedOut()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [createUserKey, setCreateUserKey] = useState('')
@@ -65,6 +61,7 @@ export default function TestUser() {
       .then((userCredential) => {
         setSubmitting(false)
         console.log('SUCCESS logging in firebase user', userCredential)
+        router.push('/home')
       })
       .catch((error) => {
         setSigningIn(false)

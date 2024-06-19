@@ -108,7 +108,6 @@ const getAnswers = (contract: MultiContract) => {
   return sortBy(validAnswers, (answer) => answer.index)
 }
 
-// new multi only
 export const getMultiBetPoints = (bets: Bet[]) => {
   return mapValues(groupBy(bets, 'answerId'), (bets) =>
     bets.map((bet) => ({ x: bet.createdTime, y: bet.probAfter }))

@@ -1,10 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import {
-  log,
-  getContractSupabase,
-  revalidateContractStaticProps,
-} from 'shared/utils'
-import * as admin from 'firebase-admin'
+import { log, revalidateContractStaticProps, getContract } from 'shared/utils'
 import { trackPublicEvent } from 'shared/analytics'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { removeUndefinedProps } from 'common/util/object'
@@ -14,8 +9,8 @@ import { anythingToRichText } from 'shared/tiptap'
 import { isEmpty } from 'lodash'
 import { isAdminId } from 'common/envs/constants'
 import { rerankContractMetricsManually } from 'shared/helpers/user-contract-metrics'
-import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateContract } from 'shared/supabase/contracts'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,
@@ -41,8 +36,8 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   } = fields
 
   const description = anythingToRichText({ raw, html, markdown, jsonString })
-
-  const contract = await getContractSupabase(contractId)
+  const pg = createSupabaseDirectClient()
+  const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
   if (contract.creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
   if (isSpicePayout !== undefined) {
@@ -73,7 +68,10 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     description,
     isSpicePayout,
   })
-  await firestore.doc(`contracts/${contractId}`).update(update)
+  await updateContract(pg, contractId, {
+    ...update,
+    coverImageUrl: update.coverImageUrl || undefined,
+  })
 
   log(`updated fields: ${Object.keys(fields).join(', ')}`)
 
@@ -91,11 +89,6 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   }
 
   const continuation = async () => {
-    broadcastUpdatedContract({
-      ...update,
-      coverImageUrl: contract.coverImageUrl || undefined,
-      id: contract.id,
-    })
     log(`Revalidating contract ${contract.id}.`)
     await revalidateContractStaticProps(contract)
     if (visibility) {
@@ -106,7 +99,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
       )
     }
     log(`Updating lastUpdatedTime for contract ${contract.id}.`)
-    await firestore.collection('contracts').doc(contract.id).update({
+    await updateContract(pg, contract.id, {
       lastUpdatedTime: Date.now(),
     })
 
@@ -121,8 +114,6 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     continue: continuation,
   }
 }
-
-const firestore = admin.firestore()
 
 async function updateContractSubcollectionsVisibility(
   contractId: string,

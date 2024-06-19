@@ -1,11 +1,13 @@
 import * as functions from 'firebase-functions'
-import * as admin from 'firebase-admin'
-
 import { Contract } from 'common/contract'
 import { getPrivateUser, getUser, isProd } from 'shared/utils'
 import { createMarketClosedNotification } from 'shared/create-notification'
 import { DAY_MS } from 'common/util/time'
 import { secrets } from 'common/secrets'
+import { convertContract } from 'common/supabase/contracts'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { FieldVal } from 'shared/supabase/utils'
+import { updateContract } from 'shared/supabase/contracts'
 
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
 export const marketCloseNotifications = functions
@@ -17,33 +19,27 @@ export const marketCloseNotifications = functions
       : console.log('Not prod, not sending emails')
   })
 
-const firestore = admin.firestore()
-
 export async function sendMarketCloseEmails() {
-  const contracts = await firestore.runTransaction(async (transaction) => {
-    const now = Date.now()
-    const snap = await transaction.get(
-      firestore
-        .collection('contracts')
-        .where('isResolved', '==', false)
-        .where('closeTime', '<', now)
+  const pg = createSupabaseDirectClient()
+  const contracts = await pg.tx(async (tx) => {
+    const contracts = await tx.map(
+      `select * from contracts where
+      is_resolved = false and close_time < now()
+      and outcome_type not in ('POLL', 'BOUNTIED_QUESTION')`,
+      [],
+      convertContract
     )
-    const contracts = snap.docs
-      .map((doc) => doc.data() as Contract)
-      .filter(
-        (c) => c.outcomeType !== 'POLL' && c.outcomeType !== 'BOUNTIED_QUESTION'
-      )
     console.log(`Found ${contracts.length} closed contracts`)
     const needsNotification = contracts.filter((contract) =>
       shouldSendFirstOrFollowUpCloseNotification(contract)
     )
     console.log(`Found ${needsNotification.length} notifications to send`)
 
-    needsNotification.map(async (contract) => {
-      transaction.update(firestore.collection('contracts').doc(contract.id), {
-        closeEmailsSent: admin.firestore.FieldValue.increment(1),
+    for (const contract of needsNotification) {
+      await updateContract(pg, contract.id, {
+        closeEmailsSent: FieldVal.increment(1),
       })
-    })
+    }
     return needsNotification
   })
 

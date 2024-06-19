@@ -12,7 +12,7 @@ import { User } from 'common/user'
 import {
   useCommentsOnContract,
   useNumContractComments,
-} from 'web/hooks/use-comments-supabase'
+} from 'web/hooks/use-comments'
 import { Button } from 'web/components/buttons/button'
 import { Row } from '../layout/row'
 

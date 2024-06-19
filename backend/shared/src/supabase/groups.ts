@@ -4,10 +4,10 @@ import {
 } from 'shared/supabase/init'
 import { APIError } from 'common//api/utils'
 import { getPrivateUser } from 'shared/utils'
-import * as admin from 'firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { convertTopic, TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
+import { updatePrivateUser } from './users'
+import { FieldVal } from './utils'
 
 export const getMemberGroupSlugs = async (
   userId: string,
@@ -81,9 +81,8 @@ export async function addUserToTopic(
 
     const privateUser = await getPrivateUser(userId)
     if (privateUser && privateUser.blockedGroupSlugs.includes(group.slug)) {
-      const firestore = admin.firestore()
-      await firestore.doc(`private-users/${userId}`).update({
-        blockedGroupSlugs: FieldValue.arrayRemove(group.slug),
+      await updatePrivateUser(tx, userId, {
+        blockedGroupSlugs: FieldVal.arrayRemove(group.slug),
       })
     }
 

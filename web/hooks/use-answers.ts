@@ -1,19 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Answer } from 'common/answer'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { getAnswersForContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { getAnswerBettorCount } from 'common/supabase/answers'
 import { useApiSubscription } from './use-api-subscription'
+import { useIsPageVisible } from './use-page-visible'
 
 export const useAnswersCpmm = (contractId: string) => {
-  const [answers, setAnswers] = useState<Answer[] | undefined>(undefined)
+  const [answers, setAnswers] = usePersistentInMemoryState<
+    Answer[] | undefined
+  >(undefined, 'answers-' + contractId)
+
+  const isPageVisible = useIsPageVisible()
 
   useEffect(() => {
     getAnswersForContracts(db, [contractId]).then((answers) =>
       setAnswers(answers[contractId])
     )
-  }, [contractId])
+  }, [contractId, isPageVisible])
 
   useApiSubscription({
     topics: [`contract/${contractId}/new-answer`],

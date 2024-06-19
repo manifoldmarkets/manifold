@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import { Request, Response } from 'express'
 import { getPrivateUser } from 'shared/utils'
 import { PrivateUser } from 'common/user'
@@ -6,6 +5,8 @@ import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
 import { notification_preference } from 'common/user-notification-preferences'
 import { getApiUrl } from 'common//api/utils'
 import { trackPublicEvent } from 'shared/analytics'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updatePrivateUser } from 'shared/supabase/users'
 
 export const unsubscribe = async (req: Request, res: Response) => {
   const id = req.query.id as string
@@ -54,7 +55,8 @@ export const unsubscribe = async (req: Request, res: Response) => {
     type: notificationSubscriptionType,
   })
 
-  await firestore.collection('private-users').doc(id).update(update)
+  const pg = createSupabaseDirectClient()
+  await updatePrivateUser(pg, id, update)
   const unsubscribeEndpoint = getApiUrl('unsubscribe')
 
   const optOutAllUrl = `${unsubscribeEndpoint}?id=${id}&type=${optOutAllType}`
@@ -397,5 +399,3 @@ export const unsubscribe = async (req: Request, res: Response) => {
     )
   }
 }
-
-const firestore = admin.firestore()

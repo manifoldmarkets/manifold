@@ -23,8 +23,8 @@ export const pinComment: APIHandler<'pin-comment'> = async (
   }
 
   const db = createSupabaseClient()
-
-  const contract = await getContract(contractId)
+  const pg = createSupabaseDirectClient()
+  const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
 
   const isContractCreator = contract.creatorId === auth.uid
@@ -39,7 +39,6 @@ export const pinComment: APIHandler<'pin-comment'> = async (
   const comment = await getComment(db, commentId)
 
   // update the comment
-  const pg = createSupabaseDirectClient()
   updateData(pg, 'contract_comments', 'comment_id', {
     comment_id: commentId,
     pinned: !comment.pinned,

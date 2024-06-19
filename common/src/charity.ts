@@ -16,34 +16,15 @@ type CharityTag = 'Featured' | 'New' // | 'Health' | 'Poverty' | 'X-Risk' | 'Ani
 export const charities: Charity[] = [
   {
     name: 'Balsa Research',
-    website: 'https://thezvi.substack.com/p/balsa-faq',
+    website: 'https://www.balsaresearch.com/',
     preview:
       'Balsa Research identifies the most important policy changes America should make, and makes them happen.',
-    photo:
-      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/dream%2Fq2ZgMOOn7c.png?alt=media&token=01921c11-b303-4fec-9736-93c6531ef14b',
-    description: `(By Zvi Mowshowitz)
+    photo: 'https://i.imgur.com/u4q3i60.png',
+    description: `Balsa Research, a nonprofit think tank founded by Zvi Mowshowitz, focuses on identifying low-hanging fruit in American federal policy where crucial bridging work is lacking.
 
-If we do not address the deep dysfunctions of our government and its policies, we put our democracy and entire civilization at risk. People whose lives are getting worse, who have no hope and cannot envision a future, inevitably turn to authoritarianism. A focus on telling people how terrible and fascist Donald Trump is did not work well in 2016 or 2020 and is not the best way to keep him out of the White House in 2024. It will not help us prosper and overcome political differences. Even if he is kept out in 2024, either we turn things around or things will keep getting worse. 
+The organization seeks to pinpoint changes that would result in significant wins, determine the ways in which those changes might be realized, and undertake the necessary work to enable others to capitalize on such opportunities.
 
-My new project, together with Moshe Looks and Alyssa Vance, is to chart paths forward to improve federal policy, and lay groundwork to implement those improvements. That means taking into account political feasibility. It means getting the proposals and messaging into the hands of candidates. It means commissioning academic studies quantifying costs and benefits and advance drafting of legislative language. 
-
-Consider the pandemic. Our government’s actions these past two years not only failed to make the pandemic better, they often actively made the pandemic worse while spending trillions. Our response to a potential next pandemic, monkeypox, was similarly botched. 
-
-Some of my most read posts point out clear cases where the government makes things worse, like car seat mandates so bad they serve as contraception, a law that makes it impossible to maintain modern ports in working order for basically no reason, and rules against container stacking that did major damage to our supply chains. 
-
-A few years ago I would have left such tasks to ‘the adults in the room.’ There are no such adults. Someone has to, and no one else will. If you tell me someone is already on the case and Doing the Thing, this means little. The situation is not ‘handled.’ Elites have lost all credibility.
-
-I also believe that almost all existing organizations nominally dedicated to such purposes face poor incentive structures due to how they are funded and garner attention, and are not testing the hypothesis that the problem could be solved. I will test that hypothesis. 
-
-There is far more hope for improvement than almost anyone realizes. Lobbying when done right is remarkably cheap and effective. Secret congress can be productive. Many marginal improvements are highly valuable, with no substantial downsides and compounding benefits. 
-
-Low-hanging improvement is often as simple as not restricting supply and not subsidizing demand. A sample: Reforming NEPA, the NRC, zoning and the FDA including a right to try for drugs, pandemic preparedness, repealing protectionist policies (Jones Act, Dredge Act, ‘made in America’, etc), ending qualified immunity and civil forfeiture, legalizing marijuana, avoiding 100%+ marginal tax rates, increasing high-skill immigration, fixing student loans, and NGDP level targeting by the Federal Reserve. The civil service and procurement urgently need reform. 
-
-Campaigns bleed tons of value all the time, leaving large room for improvement. Big mistakes made the difference in 2016, almost did in 2020 and are likely again in the future.
-
-We need your help - growing the team, engineering new software, analyzing policy space, finding experts, making connections, commissioning academic studies, drafting laws, writing up results, refining messaging, ultimately lobbying and working with campaigns, and of course raising money. 
-
-If you are interested in hearing more please get in touch at hello@balsaresearch.com and start the subject line with the most relevant category: policy (include what area if applicable), tech, media, networking, lobbying, campaigning or money, and then tell us about yourself and what interests you, or fill out this Google Doc.`,
+To achieve this, Balsa Research specializes in identifying not only potential changes but also the most pertinent questions to ask regarding current problems and the impact of proposed changes. The organization then commissions credible academic work to discover and quantify the answers to these questions, emphasizing the impact on relevant constituencies and stakeholders whenever possible. Balsa Research aims to eventually expand its approach to encompass a full stack of policy advocacy activities.`,
   },
   {
     name: '1Day Sooner',
@@ -76,7 +57,6 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     description: `Our lives have been transformed by global networks of trade, travel, and communication. Driven by new technologies, these networks enrich our lives, but also lead to new threats, including surveillance, polarization, and pandemics. 
 
 At Topos, we pioneer emerging mathematical sciences of connection and integration to steer humanity towards a better future.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Haskell Foundation',
@@ -84,7 +64,6 @@ At Topos, we pioneer emerging mathematical sciences of connection and integratio
     preview: 'Amplify Haskell’s impact on humanity.',
     photo: 'https://i.imgur.com/6akJg2p.png',
     description: `An independent, non-profit organization dedicated to broadening the adoption of Haskell, by supporting its ecosystem of tools, libraries, education, and research.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Long-Term Future Fund',
@@ -1030,7 +1009,6 @@ Eyestalk ablation - Some hatcheries still practice crushing or cutting off the e
 
 They are highly neglected. Shrimp Welfare Project is the first organization focusing exclusively on the welfare of these animals. This has been made possible, in part, thanks to organizations such as Charity Entrepreneurship and Rethink Priorities raising the issue of invertebrate suffering.     
     `,
-    tags: ['New'] as const,
   },
   {
     name: 'Foresight Institute',
@@ -1073,7 +1051,6 @@ As a result, while several state cruelty laws technically cover farms, factory f
 
 Strategic civil litigation offers a solution. Several little-known legal doctrines let plaintiffs sue in civil court for violation of a criminal law. At Legal Impact for Chickens, we focus on systematically developing, refining, and using those doctrines to fight factory-farm cruelty.
     `,
-    tags: ['New'] as const,
   },
   {
     name: 'Parker Institute for Cancer Immunotherapy',
@@ -1114,6 +1091,16 @@ FIRE therefore defends and promotes the value of free speech for all Americans i
       'Our mission is to warn the American people that circumcision is cruel, worthless, and destructive',
     description:
       'In a typical year we travel to more than 60 cities, holding protests and educating the public about the rights of all children to keep all parts of their genitals. We have reached hundreds of thousands of people directly on the streets of America, and millions more through traditional media coverage, our social media activities, and our billboard campaigns.',
+  },
+  {
+    name: 'Lightcone',
+    website: 'https://www.lightconeinfrastructure.com/',
+    tags: ['New'] as const,
+    photo: 'https://i.imgur.com/LpMXQ6W.png',
+    preview:
+      'This century is critical for humanity. We build tech, infrastructure, and community to navigate it.',
+    description:
+      'Lightcone develops LessWrong, a popular online forum and community dedicated to improving human reasoning and decision-making. They also run a campus, Lighthaven, which provides a space for people working on the hardest problems to come together and collaborate. The Lighthaven campus was directly responsible to Manifold running our festival, Manifest!',
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')

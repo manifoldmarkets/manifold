@@ -528,6 +528,8 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   })
 
   const hoveringId = props.hoveringId ?? ttParams?.ans
+  const hoveringData = hoveringId ? data[hoveringId] : null
+
   const getYValueByAnswerIdAndTime = (time: number, answerId: string) => {
     const selector = timeSelectors[answerId]
     if (!selector) return null
@@ -575,7 +577,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
                   py={py}
                   curve={curve}
                   className={clsx(
-                    ' stroke-canvas-0 transition-[stroke-width]',
+                    'stroke-canvas-0 transition-[stroke-width]',
                     hoveringId && hoveringId !== id
                       ? 'stroke-[0px] opacity-50'
                       : 'stroke-[4px]'
@@ -594,33 +596,32 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
                   )}
                   stroke={color}
                 />
+                <line />{' '}
+                {/* hack to make line appear if only two data points (no bets). idk why it works*/}
               </g>
             )
         )}
         {/* show hovering line on top */}
-        {hoveringId && hoveringId in data && (
-          <g key={`${hoveringId}-front`}>
+        {hoveringData && (
+          <>
             <LinePath
-              data={data[hoveringId].points}
+              data={hoveringData.points}
               px={px}
               py={py}
               curve={curve}
-              className={clsx(' transition-[stroke-width]', 'stroke-2')}
-              stroke={data[hoveringId].color}
+              className={'stroke-2'}
+              stroke={hoveringData.color}
             />
-          </g>
-        )}
-        {/* hover effect put last so it shows on top */}
-        {hoveringId && hoveringId in data && (
-          <AreaPath
-            data={data[hoveringId].points}
-            px={px}
-            py0={yScale(0)}
-            py1={py}
-            curve={curve}
-            fill={data[hoveringId].color}
-            opacity={0.5}
-          />
+            <AreaPath
+              data={hoveringData.points}
+              px={px}
+              py0={yScale(0)}
+              py1={py}
+              curve={curve}
+              fill={hoveringData.color}
+              opacity={0.5}
+            />
+          </>
         )}
         {ttParams && (
           <SliceMarker

@@ -1,6 +1,6 @@
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { useLiveContract } from 'web/hooks/use-contract-supabase'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { PolicyContractType } from 'web/public/data/policy-data'
 import { MobilePolicy, Policy } from './conditional-market'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'

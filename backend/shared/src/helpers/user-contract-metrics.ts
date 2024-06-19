@@ -7,12 +7,17 @@ import {
 import { Bet } from 'common/bet'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { bulkUpsert } from 'shared/supabase/utils'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  SupabaseDirectClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { ContractMetric } from 'common/contract-metric'
 import { Tables } from 'common/supabase/utils'
 import { getUsers, log } from 'shared/utils'
+import { getAnswersForContract } from 'shared/supabase/answers'
 
 export async function updateContractMetricsForUsers(
+  pg: SupabaseDirectClient,
   contract: Contract,
   allContractBets: Bet[]
 ) {
@@ -20,6 +25,7 @@ export async function updateContractMetricsForUsers(
   const metrics: ContractMetric[] = []
 
   const users = await getUsers(Object.keys(betsByUser))
+  const answers = await getAnswersForContract(pg, contract.id)
 
   for (const userId in betsByUser) {
     const userBets = betsByUser[userId]
@@ -27,7 +33,7 @@ export async function updateContractMetricsForUsers(
     if (!user) {
       log('User not found', userId)
     } else {
-      metrics.push(...calculateUserMetrics(contract, userBets, user))
+      metrics.push(...calculateUserMetrics(contract, userBets, user, answers))
     }
   }
 

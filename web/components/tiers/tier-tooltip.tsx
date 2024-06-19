@@ -33,29 +33,23 @@ export function TierTooltip(props: {
 
   if (mechanism !== 'cpmm-multi-1' && mechanism !== 'cpmm-1') return <></>
 
-  if (tier == 'basic') {
-    return <></>
-  }
   return (
     <Tooltip
       text={`${formatMoney(contract.totalLiquidity)} in liquidity subsidies`}
       placement={placement}
       noTap
-      className={clsx(
-        'flex flex-row items-center gap-0.5 font-semibold',
-        className
-      )}
+      className={clsx('flex flex-row items-center gap-0.5', className)}
     >
       <TierIcon tier={tier} className={iconClassName} />
       {!noTitle && (
         <div
           className={clsx(
             tier == 'plus'
-              ? 'text-blue-600 dark:text-blue-500'
+              ? 'font-semibold text-blue-600 dark:text-blue-500'
               : tier == 'premium'
-              ? 'text-purple-500 dark:text-purple-400'
+              ? 'font-semibold text-purple-500 dark:text-purple-400'
               : tier == 'crystal'
-              ? 'bg-gradient-to-r from-pink-700 to-pink-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-pink-300'
+              ? 'bg-gradient-to-r from-pink-700 to-pink-500 bg-clip-text font-semibold text-transparent dark:from-pink-400 dark:to-pink-300'
               : ''
           )}
         >

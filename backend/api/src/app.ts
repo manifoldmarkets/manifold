@@ -8,7 +8,6 @@ import { log, metrics } from 'shared/utils'
 import { withMonitoringContext } from 'shared/monitoring/context'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
-import { transact } from './transact'
 import { updateMe } from './update-me'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
@@ -23,7 +22,7 @@ import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
 import { getMe } from './get-me'
 import { saveTwitchCredentials } from './save-twitch-credentials'
-import { addLiquidity } from './add-subsidy'
+import { addLiquidity } from './add-liquidity'
 import { validateiap } from './validate-iap'
 import { markallnotifications } from './mark-all-notifications'
 import { updatememberrole } from './update-group-member-role'
@@ -172,6 +171,10 @@ import { getVerificationSession } from 'api/gidx/get-verification-session'
 import { uploadDocument } from 'api/gidx/upload-document'
 import { callbackGIDX } from 'api/gidx/callback'
 import { getVerificationStatus } from 'api/gidx/get-verification-status'
+import { getCurrentPrivateUser } from './get-current-private-user'
+import { updatePrivateUser } from './update-private-user'
+import { setPushToken } from './push-token'
+import { updateNotifSettings } from './update-notif-settings'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -278,6 +281,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   me: getMe,
   'me/update': updateMe,
   'me/delete': deleteMe,
+  'me/private': getCurrentPrivateUser,
+  'me/private/update': updatePrivateUser,
   'user/by-id/:id': getUser,
   'user/by-id/:id/lite': getDisplayUser,
   'user/:username': getUser,
@@ -289,6 +294,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-users': searchUsers,
   react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,
+  'set-push-token': setPushToken,
+  'update-notif-settings': updateNotifSettings,
   headlines: getHeadlines,
   'politics-headlines': getPoliticsHeadlines,
   'compatible-lovers': getCompatibleLovers,
@@ -370,7 +377,6 @@ Object.entries(handlers).forEach(([path, handler]) => {
 
 app.get('/health', ...apiRoute(health))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
-app.post('/transact', ...apiRoute(transact))
 app.post('/editcomment', ...apiRoute(editcomment))
 
 app.post('/claimmanalink', ...apiRoute(claimmanalink))

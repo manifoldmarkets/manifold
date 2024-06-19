@@ -13,13 +13,11 @@ import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { Contract } from 'web/lib/firebase/contracts'
 import { User } from 'web/lib/firebase/users'
 import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
-import { db } from 'web/lib/supabase/db'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import { Pagination } from 'web/components/widgets/pagination'
-import { getBets } from 'common/supabase/bets'
 import clsx from 'clsx'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -31,7 +29,7 @@ import { BetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { ProfitBadge } from 'web/components/profit-badge'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { getUserContractsMetricsWithContracts } from 'web/lib/firebase/api'
+import { api, getUserContractsMetricsWithContracts } from 'web/lib/firebase/api'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
@@ -485,7 +483,7 @@ function BetsTable(props: {
 
   const setNewExpandedId = async (id: string) => {
     if (!userBets[id]) {
-      getBets(db, {
+      api('bets', {
         contractId: id,
         userId: user.id,
         afterTime: hideBetsBefore,

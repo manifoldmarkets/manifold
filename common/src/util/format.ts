@@ -76,13 +76,6 @@ export function manaToUSD(mana: number) {
   })
 }
 
-export function formatCents(cents: number) {
-  return (cents / 100).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  })
-}
-
 export function formatPercentShort(zeroToOne: number) {
   return getPercent(zeroToOne).toFixed(0) + '%'
 }

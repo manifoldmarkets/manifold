@@ -50,7 +50,8 @@ export const getPayouts = (
     [outcome: string]: number
   },
   resolutionProbability?: number,
-  answerId?: string
+  answer?: Answer | null | undefined,
+  allAnswers?: Answer[]
 ): PayoutInfo => {
   if (contract.mechanism === 'cpmm-1') {
     const prob = getProbability(contract)
@@ -65,12 +66,8 @@ export const getPayouts = (
   if (
     contract.mechanism === 'cpmm-multi-1' &&
     !contract.shouldAnswersSumToOne &&
-    answerId
+    answer
   ) {
-    const answer = contract.answers.find((a) => a.id === answerId)
-    if (!answer) {
-      throw new Error('getPayouts: answer not found')
-    }
     return getIndependentMultiFixedPayouts(
       answer,
       outcome,
@@ -87,8 +84,11 @@ export const getPayouts = (
     if (!resolutions) {
       throw new Error('getPayouts: resolutions required for cpmm-multi-1')
     }
+    if (!allAnswers) {
+      throw new Error('getPayouts: answers required for cpmm-multi-1')
+    }
     // Includes equivalent of 'MKT' and 'YES/NO' resolutions.
-    return getMultiFixedPayouts(contract, resolutions, bets, liquidities)
+    return getMultiFixedPayouts(allAnswers, resolutions, bets, liquidities)
   }
   throw new Error('getPayouts not implemented')
 }

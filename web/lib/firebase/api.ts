@@ -23,7 +23,10 @@ export async function call(
 }
 
 // This is the preferred way of using the api going forward
-export async function api<P extends APIPath>(path: P, params: APIParams<P>) {
+export async function api<P extends APIPath>(
+  path: P,
+  params: APIParams<P> = {}
+) {
   // If the api is authed and the user is not loaded, wait for the user to load.
   if (API[path].authed && !auth.currentUser) {
     let i = 0
@@ -55,10 +58,6 @@ export function createAnswer(params: any) {
 
 export function claimDestinySub(params: any) {
   return call(getApiUrl('claimdestinysub'), 'POST', params)
-}
-
-export function transact(params: any) {
-  return call(getApiUrl('transact'), 'POST', params)
 }
 
 export function createUser(params: any) {

@@ -145,6 +145,7 @@ export type PollContract = Contract & Poll & NonBet
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
   | PseudoNumericContract
+  | CPMMStonkContract
 
 export type CPMM = {
   mechanism: 'cpmm-1'
