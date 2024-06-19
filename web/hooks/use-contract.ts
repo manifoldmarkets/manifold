@@ -13,6 +13,8 @@ import { difference, uniqBy } from 'lodash'
 import { useApiSubscription } from './use-api-subscription'
 import { useAnswersCpmm } from './use-answers'
 import { convertContract } from 'common/supabase/contracts'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { useIsPageVisible } from './use-page-visible'
 
 export const usePublicContracts = (
   contractIds: string[] | undefined,
@@ -109,7 +111,20 @@ export function useLiveAllNewContracts(limit: number) {
 }
 
 export function useLiveContract<C extends Contract = Contract>(initial: C) {
-  const [contract, setContract] = useState<C>(initial)
+  const [contract, setContract] = usePersistentInMemoryState<C>(
+    initial,
+    `contract-${initial.id}`
+  )
+
+  const isPageVisible = useIsPageVisible()
+
+  useEffect(() => {
+    if (isPageVisible) {
+      getContract(initial.id).then((result) => {
+        if (result) setContract(result as C)
+      })
+    }
+  }, [initial.id, isPageVisible])
 
   useApiSubscription({
     topics: [`contract/${initial.id}`],

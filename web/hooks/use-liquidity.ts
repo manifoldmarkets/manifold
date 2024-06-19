@@ -12,7 +12,9 @@ export const useLiquidity = (contractId: string) => {
   const isPageVisible = useIsPageVisible()
 
   useEffect(() => {
-    getLiquidtyDocs(contractId).then(setLiquidities)
+    if (isPageVisible) {
+      getLiquidtyDocs(contractId).then(setLiquidities)
+    }
   }, [contractId, isPageVisible])
 
   useApiSubscription({
