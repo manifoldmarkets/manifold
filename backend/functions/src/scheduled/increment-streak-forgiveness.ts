@@ -15,10 +15,10 @@ export const incrementStreakForgiveness = functions
 
 const incrementStreakForgivenessInternal = async () => {
   const pg = createSupabaseDirectClient()
-  pg.none(`
+  await pg.none(`
     update users set data = data || 
       jsonb_build_object('streakForgiveness', 
-        coalesce((data->>'streakForgiveness')::numeric, 0) + 1
+        coalesce((data->'streakForgiveness')::numeric, 0) + 1
       )
   `)
 }
