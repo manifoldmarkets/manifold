@@ -249,6 +249,7 @@ export const VERIFIED_USERNAMES = [
   'liron',
   'LarsDoucet',
   'PeterWildeford',
+  'SethWalder',
 ]
 
 export const BLESSED_BANNED_USER_IDS = [
