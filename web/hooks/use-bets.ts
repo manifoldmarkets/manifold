@@ -120,11 +120,13 @@ export const useSubscribeNewBets = (
   const isPageVisible = useIsPageVisible()
 
   useEffect(() => {
-    api('bets', {
-      contractId,
-      afterTime,
-      filterRedemptions: !includeRedemptions,
-    }).then(addBets)
+    if (isPageVisible) {
+      api('bets', {
+        contractId,
+        afterTime,
+        filterRedemptions: !includeRedemptions,
+      }).then(addBets)
+    }
   }, [contractId, afterTime, isPageVisible])
 
   useApiSubscription({

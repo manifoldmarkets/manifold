@@ -15,9 +15,11 @@ export const useAnswersCpmm = (contractId: string) => {
   const isPageVisible = useIsPageVisible()
 
   useEffect(() => {
-    getAnswersForContracts(db, [contractId]).then((answers) =>
-      setAnswers(answers[contractId])
-    )
+    if (isPageVisible) {
+      getAnswersForContracts(db, [contractId]).then((answers) =>
+        setAnswers(answers[contractId])
+      )
+    }
   }, [contractId, isPageVisible])
 
   useApiSubscription({
