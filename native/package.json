@@ -28,7 +28,8 @@
     "@react-native-async-storage/async-storage": "1.17.11",
     "@react-native-clipboard/clipboard": "^1.11.1",
     "@react-native-community/netinfo": "9.3.7",
-    "expo": "~48.0.18",
+    "@supabase/supabase-js": "2.43.5",
+    "expo": "~48.0.21",
     "expo-apple-authentication": "~6.0.1",
     "expo-auth-session": "~4.0.3",
     "expo-constants": "~14.2.1",
@@ -45,12 +46,13 @@
     "firebase": "^9.12.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-native": "0.71.8",
+    "react-native": "0.71.14",
     "react-native-gradle-plugin": "0.71.19",
     "react-native-iap": "^12.4.2",
     "react-native-logs": "^5.0.1",
     "react-native-web": "~0.18.10",
-    "react-native-webview": "13.3.1"
+    "react-native-webview": "13.3.1",
+    "zod": "3.23.8"
   },
   "devDependencies": {
     "@babel/core": "^7.19.3",
