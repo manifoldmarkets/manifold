@@ -23,7 +23,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { getSupabaseToken } from 'web/lib/firebase/api'
 import { updateSupabaseAuth } from 'web/lib/supabase/db'
-import { usePollUser, useWebsocketPrivateUser } from 'web/hooks/use-user'
+import { useWebsocketUser, useWebsocketPrivateUser } from 'web/hooks/use-user'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { getPrivateUserSafe, getUserSafe } from 'web/lib/supabase/users'
 
@@ -206,7 +206,7 @@ export function AuthProvider(props: {
     }
   }, [uid])
 
-  const listenUser = usePollUser(uid ?? undefined)
+  const listenUser = useWebsocketUser(uid ?? undefined)
   useEffectCheckEquality(() => {
     if (authLoaded && listenUser) setUser(listenUser)
   }, [authLoaded, listenUser])

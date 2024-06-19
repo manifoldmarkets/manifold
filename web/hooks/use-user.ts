@@ -1,14 +1,13 @@
 'use client'
-import { PrivateUser } from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import { useContext, useEffect, useState } from 'react'
 import { AuthContext } from 'web/components/auth-context'
 import { db } from 'web/lib/supabase/db'
 import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { useLiveUpdates } from './use-persistent-supabase-polling'
-import { convertUser } from 'common/supabase/users'
 import { run } from 'common/supabase/utils'
 import { useApiSubscription } from './use-api-subscription'
-import { getPrivateUserSafe } from 'web/lib/supabase/users'
+import { getFullUserById, getPrivateUserSafe } from 'web/lib/supabase/users'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -25,20 +24,37 @@ export const useIsAuthorized = () => {
   return authUser?.authLoaded || authUser === null ? !!authUser : undefined
 }
 
-export const usePollUser = (userId: string | undefined) => {
-  return useLiveUpdates(
-    async () => {
-      const { data } = await run(
-        db
-          .from('users')
-          .select()
-          .eq('id', userId ?? '_')
-      )
+export const useWebsocketUser = (userId: string | undefined) => {
+  const [user, setUser] = useState<User | null | undefined>()
 
-      return convertUser(data[0])
+  useApiSubscription({
+    topics: [`user/${userId ?? '_'}`],
+    onBroadcast: ({ data }) => {
+      console.log(data)
+      setUser((user) => {
+        if (!user) {
+          return user
+        } else {
+          return {
+            ...user,
+            ...(data.user as Partial<User>),
+          }
+        }
+      })
     },
-    { listen: !!userId, keys: [userId] }
-  )
+  })
+
+  useEffect(() => {
+    if (userId) {
+      getFullUserById(userId).then((result) => {
+        setUser(result)
+      })
+    } else {
+      setUser(null)
+    }
+  }, [userId])
+
+  return user
 }
 
 export const usePollUserBalances = (userIds: string[]) => {
