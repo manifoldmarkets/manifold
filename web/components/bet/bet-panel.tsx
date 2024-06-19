@@ -3,7 +3,12 @@ import { useEffect, useState } from 'react'
 import { sumBy } from 'lodash'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
-import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronDownIcon,
+  XIcon,
+} from '@heroicons/react/outline'
 
 import {
   CPMMBinaryContract,
@@ -141,10 +146,7 @@ export function BuyPanel(props: {
             />
           </Row>
           {isAdvancedTrader && contract.mechanism === 'cpmm-1' && (
-            <QuickLimitOrderButtons
-              className="self-center"
-              contract={contract}
-            />
+            <QuickLimitOrderButtons contract={contract} />
           )}
         </Col>
       )}
@@ -864,43 +866,39 @@ const QuickLimitOrderButtons = (props: {
 
   return (
     <Col
-      className={clsx(
-        className,
-        'border-ink-200 my-2 gap-2 rounded-lg px-4 py-2'
-      )}
+      className={clsx(className, 'border-ink-200 my-2 gap-2 rounded-lg py-2')}
     >
-      <div className="text-ink-600 mx-2">
-        Bet <span className="text-ink-1000">{formatMoney(amount)}</span> at{' '}
-        <span className="text-ink-1000">{formatPercent(prob)}</span>{' '}
-        <span className="text-ink-600 text-sm">expires 24h</span>{' '}
-        <InfoTooltip
-          text={`Offer to buy YES or NO at ${formatPercent(
-            prob
-          )}. If no one takes your bet, your offer will expire in 24 hours.`}
-        />
-      </div>
-      {error && <div className="text-red-500">{error}</div>}
-      <Row className="flex-1 items-center gap-3">
+      <Row className="items-center gap-2">
+        <div className="text-ink-600">
+          Quick bet <span className="">{formatMoney(amount / 1000)}k</span>{' '}
+          <InfoTooltip
+            text={`Offer to buy ${formatMoney(
+              amount
+            )} YES or NO at the current market price of ${formatPercent(
+              prob
+            )}. If no one takes your bet, your offer will expire in 24 hours.`}
+          />
+        </div>
         <Button
           size="xs"
           color="gray-outline"
           loading={outcome === 'YES' && isSubmitting}
-          className="flex-1 font-semibold"
+          className="w-16 font-semibold"
           onClick={() => submitBet('YES')}
         >
-          Quick YES
+          YES <ArrowUpIcon className="ml-0.5 h-4 w-4" />
         </Button>
-
         <Button
           size="xs"
           color="gray-outline"
           loading={outcome === 'NO' && isSubmitting}
-          className="flex-1 font-semibold"
+          className="w-16 font-semibold"
           onClick={() => submitBet('NO')}
         >
-          Quick NO
+          NO <ArrowDownIcon className="ml-0.5 h-4 w-4" />
         </Button>
       </Row>
+      {error && <div className="text-red-500">{error}</div>}
     </Col>
   )
 }
