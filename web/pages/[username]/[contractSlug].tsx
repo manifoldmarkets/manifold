@@ -45,7 +45,11 @@ import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-import { useBets, useSubscribeNewBets } from 'web/hooks/use-bets'
+import {
+  useBets,
+  useSubscribeNewBets,
+  useUnfilledBets,
+} from 'web/hooks/use-bets'
 import {
   useIsPrivateContractMember,
   useLiveContract,
@@ -66,7 +70,7 @@ import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 
-import { Bet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { getContractParams } from 'common/contract-params'
 import { getContractFromSlug } from 'common/supabase/contracts'
 
@@ -84,6 +88,7 @@ import { Title } from 'web/components/widgets/title'
 import { base64toPoints } from 'common/edge/og'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { YourOrders } from 'web/components/bet/order-book'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -651,25 +656,45 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
     filterAntes: true,
     order: 'asc',
   })
+
   const userBets = sortBy(
-    uniqBy([...(staticBets ?? []), ...yourNewBets], 'id'),
+    uniqBy([...yourNewBets, ...(staticBets ?? [])], 'id'),
     'createdTime'
   )
-
   const visibleUserBets = userBets.filter(
     (bet) => !bet.isRedemption && bet.amount !== 0
   )
 
-  if (visibleUserBets.length === 0) return null
+  const allLimitBets =
+    contract.mechanism === 'cpmm-1'
+      ? // eslint-disable-next-line react-hooks/rules-of-hooks
+        useUnfilledBets(contract.id, { enabled: true }) ?? []
+      : []
+  const userLimitBets = allLimitBets.filter(
+    (bet) => bet.userId === user?.id
+  ) as LimitBet[]
+
   return (
     <Col>
-      <div className="text-ink-700 text-lg">Your trades</div>
-      <ContractBetsTable
-        contract={contract}
-        bets={userBets}
-        isYourBets
-        truncate
-      />
+      {contract.mechanism === 'cpmm-1' && (
+        <YourOrders
+          contract={contract}
+          bets={userLimitBets}
+          deemphasizedHeader
+        />
+      )}
+
+      {visibleUserBets.length > 0 && (
+        <>
+          <div className="text-ink-700 text-lg">Your trades</div>
+          <ContractBetsTable
+            contract={contract}
+            bets={userBets}
+            isYourBets
+            truncate
+          />
+        </>
+      )}
     </Col>
   )
 }

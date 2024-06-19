@@ -38,6 +38,8 @@ import { UserHovercard } from '../user/user-hovercard'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Answer } from 'common/answer'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { getCountdownString } from 'web/lib/util/time'
+import { Tooltip } from '../widgets/tooltip'
 
 export function YourOrders(props: {
   contract:
@@ -47,15 +49,22 @@ export function YourOrders(props: {
     | CPMMMultiContract
     | CPMMNumericContract
   bets: LimitBet[]
+  deemphasizedHeader?: boolean
   className?: string
 }) {
-  const { contract, bets, className } = props
+  const { contract, bets, deemphasizedHeader, className } = props
   const user = useUser()
 
   const yourBets = sortBy(
     bets.filter((bet) => bet.userId === user?.id),
     (bet) => -1 * bet.limitProb,
-    (bet) => bet.createdTime
+    (bet) => -1 * bet.createdTime
+  )
+
+  const maxShownNotExpanded = 3
+  const [isExpanded, setIsExpanded] = usePersistentInMemoryState(
+    false,
+    `${contract.id}-your-orderbook-expanded`
   )
 
   if (yourBets.length === 0) return null
@@ -63,10 +72,38 @@ export function YourOrders(props: {
   return (
     <Col className={clsx(className, 'gap-2 overflow-x-auto')}>
       <Row className="items-center justify-between">
-        <Subtitle className="!my-0 mx-2">Your orders</Subtitle>
+        {deemphasizedHeader ? (
+          <div className="text-ink-700 text-lg">Your orders</div>
+        ) : (
+          <Subtitle className="!my-0 mx-2">Your orders</Subtitle>
+        )}
       </Row>
 
-      <OrderTable limitBets={yourBets} contract={contract} isYou />
+      <OrderTable
+        limitBets={yourBets.slice(
+          0,
+          isExpanded ? yourBets.length : maxShownNotExpanded
+        )}
+        contract={contract}
+        isYou
+      />
+
+      {yourBets.length > maxShownNotExpanded && (
+        <Button
+          className="w-full"
+          color="gray-white"
+          onClick={() => setIsExpanded((b) => !b)}
+        >
+          {isExpanded ? (
+            <ChevronUpIcon className="mr-1 h-4 w-4" />
+          ) : (
+            <ChevronDownIcon className="mr-1 h-4 w-4" />
+          )}
+          {isExpanded
+            ? 'Show fewer orders'
+            : `Show ${yourBets.length - maxShownNotExpanded} more orders`}
+        </Button>
+      )}
     </Col>
   )
 }
@@ -225,14 +262,19 @@ function OrderRow(props: {
           <Row className={'justify-between gap-1 sm:justify-start'}>
             <Col className={'sm:flex-row sm:gap-1'}>
               <span>
-                {bet.expiresAt
-                  ? new Date(bet.expiresAt).toLocaleDateString()
-                  : 'Never'}
-              </span>
-              <span>
-                {bet.expiresAt
-                  ? new Date(bet.expiresAt).toLocaleTimeString()
-                  : ''}
+                {bet.expiresAt ? (
+                  <Tooltip
+                    text={`${new Date(
+                      bet.expiresAt
+                    ).toLocaleDateString()} ${new Date(
+                      bet.expiresAt
+                    ).toLocaleTimeString()}`}
+                  >
+                    {getCountdownString(new Date(bet.expiresAt))}
+                  </Tooltip>
+                ) : (
+                  'Never'
+                )}
               </span>
             </Col>
             <div>

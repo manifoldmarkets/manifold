@@ -739,17 +739,11 @@ export const BuyPanelBody = (props: {
         )}
       </Col>
 
-      <YourOrders
-        className="mt-2 rounded-lg bg-indigo-200/10 py-4"
-        contract={contract}
-        bets={unfilledBetsMatchingAnswer}
-      />
-      {/* Stonks don't allow limit orders but users may have them from before the conversion */}
-      {isStonk && unfilledBets.length > 0 && (
+      {contract.mechanism === 'cpmm-multi-1' && (
         <YourOrders
-          className="mt-2 rounded-lg bg-indigo-200/10 px-4 py-4"
+          className="mt-2 rounded-lg bg-indigo-200/10 py-4"
           contract={contract}
-          bets={unfilledBets as LimitBet[]}
+          bets={unfilledBetsMatchingAnswer}
         />
       )}
       {isAdvancedTrader && (
@@ -842,7 +836,9 @@ const QuickLimitOrderButtons = (props: {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
         toast.success(
-          `Placed ${formatMoney(amount)} bet at ${formatPercent(prob)}`
+          `Placed order for ${formatMoney(
+            amount
+          )} ${outcome} at ${formatPercent(prob)}`
         )
       })
 
@@ -878,7 +874,7 @@ const QuickLimitOrderButtons = (props: {
           size="xs"
           color="gray-outline"
           loading={outcome === 'YES' && isSubmitting}
-          className="w-24 font-semibold"
+          className="w-24 whitespace-nowrap font-semibold"
           onClick={() => submitBet('YES')}
         >
           {formatMoney(amount / 1000)}k YES
