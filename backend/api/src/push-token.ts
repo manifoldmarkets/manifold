@@ -5,6 +5,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
+import { convertPrivateUser } from 'common/supabase/users'
 
 // for mobile or something?
 export const setPushToken: APIHandler<'set-push-token'> = async (
@@ -14,7 +15,7 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
   const { pushToken } = props
   const db = createSupabaseDirectClient()
 
-  const updated = await db.one(
+  const updatedRow = await db.one(
     `update private_users set data = 
       jsonb_set(
         data, 
@@ -30,12 +31,13 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
   )
   broadcastUpdatedPrivateUser(auth.uid)
 
+  const privateUser = convertPrivateUser(updatedRow)
   const txn = await payUserPushNotificationsBonus(
     auth.uid,
     PUSH_NOTIFICATION_BONUS
   )
   await createPushNotificationBonusNotification(
-    updated,
+    privateUser,
     txn.id,
     PUSH_NOTIFICATION_BONUS,
     'push_notification_bonus_' +
