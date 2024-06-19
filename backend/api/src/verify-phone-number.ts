@@ -1,11 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-
-import { getUser, log } from 'shared/utils'
-import * as admin from 'firebase-admin'
-
-import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
-
+import { getPrivateUser, getUser, log } from 'shared/utils'
 import { PHONE_VERIFICATION_BONUS, SUS_STARTING_BALANCE } from 'common/economy'
 import { SignupBonusTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
