@@ -28,7 +28,6 @@ import {
 } from 'common/util/format'
 import { computeCpmmBet } from 'common/new-bet'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { LimitBet } from 'common/bet'
 import { APIError, api } from 'web/lib/firebase/api'
 import { BuyAmountInput } from '../widgets/amount-input'
 
