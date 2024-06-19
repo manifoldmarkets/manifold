@@ -178,18 +178,13 @@ const getDesktopNav = (
     )
 
   return buildArray(
+    { name: 'Browse', href: '/browse', icon: SearchIcon },
     {
       name: 'US Politics',
       href: '/politics',
       icon: GiCapitol,
     },
-    // {
-    //   name: 'AI',
-    //   href: '/ai',
-    //   icon: PiRobotBold,
-    // },
     { name: 'News', href: '/news', icon: NewspaperIcon },
-    { name: 'Browse', href: '/browse', icon: SearchIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
