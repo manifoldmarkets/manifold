@@ -1,6 +1,6 @@
 import { Col } from 'web/components/layout/col'
 import { Input } from 'web/components/widgets/input'
-import { Button } from 'web/components/buttons/button'
+import { Button, buttonClass } from 'web/components/buttons/button'
 import { User } from 'common/user'
 import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
@@ -19,9 +19,19 @@ import {
 import { intersection } from 'lodash'
 import Script from 'next/script'
 import { UploadDocuments } from 'web/components/gidx/upload-document'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
+import clsx from 'clsx'
+import {
+  SPICE_TO_CHARITY_DOLLARS,
+  SPICE_TO_MANA_CONVERSION_RATE,
+} from 'common/envs/constants'
+import { usePollUser } from 'web/hooks/use-user'
 
 const body = {
-  MerchantCustomerID: '4',
+  MerchantCustomerID: '5',
   EmailAddress: 'gochanman@yahoo.com',
   MobilePhoneNumber: '4042818372',
   DeviceIpAddress: '149.40.50.57',
@@ -49,9 +59,12 @@ const identificationTypeToCode = {
   Passport: 3,
   'National Identity Card': 4,
 }
+const colClass = 'gap-3 p-4'
+const bottomRowClass = 'mb-4 mt-4 w-full gap-16'
 
-export const UserInfo = (props: { user: User }) => {
-  const { user } = props
+export const RegisterUserForm = (props: { user: User }) => {
+  const user = usePollUser(props.user.id) ?? props.user
+  const router = useRouter()
   // const [page, setPage] = useState(user.verifiedPhone ? 1 : 0)
   const [page, setPage] = useState(2)
   const [loading, setLoading] = useState(false)
@@ -214,14 +227,56 @@ export const UserInfo = (props: { user: User }) => {
       setError(
         'Registration failed, ask admin about codes: ' + reasonCodes.join(', ')
       )
+      return
     }
+    if (status !== 'success') {
+      setError('Registration failed, unknown error.')
+      return
+    }
+    // No errors
+    setPage(1000)
   }
 
   const idTypeName = Object.keys(identificationTypeToCode)[
     (userInfo?.IdentificationTypeCode ?? 1) - 1
   ]
-
   if (page === 0) {
+    return (
+      <Col className={colClass}>
+        <span className={'text-primary-700 text-2xl'}>
+          Identity Verification
+        </span>
+        <span>
+          <span>
+            To cash out prize points for cash, you must verify your identity.
+          </span>
+          <br />
+          <br />
+          You have{' '}
+          <CoinNumber
+            isSpice
+            amount={user.spiceBalance}
+            style={{
+              color: SPICE_COLOR,
+            }}
+            className={clsx('font-bold')}
+            isInline
+          />
+          , which is equal to{' '}
+          {user.spiceBalance / SPICE_TO_MANA_CONVERSION_RATE} Mana or{' '}
+          {user.spiceBalance / SPICE_TO_CHARITY_DOLLARS} dollars to charity.
+        </span>
+        <Row className={bottomRowClass}>
+          <Button color={'gray-white'} onClick={router.back}>
+            Back
+          </Button>
+          <Button onClick={() => setPage(page + 1)}>Start</Button>
+        </Row>
+      </Col>
+    )
+  }
+
+  if (page === 1) {
     return (
       <RegistrationVerifyPhone
         cancel={() => null}
@@ -230,25 +285,25 @@ export const UserInfo = (props: { user: User }) => {
     )
   }
 
-  if (page === 1) {
+  if (page === 2) {
     return (
       <LocationPanel
         requestLocation={requestLocationBrowser}
         locationError={locationError}
         loading={loading}
-        back={() => setPage(page - 1)}
+        back={() => (user.verifiedPhone ? setPage(0) : setPage(page - 1))}
       />
     )
   }
 
-  if (page === 2) {
-    const rowClass = 'gap-2 w-full sm:w-96'
+  if (page === 3) {
+    const sectionClass = 'gap-2 w-full sm:w-96'
     return (
-      <Col className={'gap-3 p-4'}>
+      <Col className={colClass}>
         <span className={'text-primary-700 text-2xl'}>
           Identity Verification
         </span>
-        <Col className={rowClass}>
+        <Col className={sectionClass}>
           <span>First Name</span>
           <Input
             placeholder={'Your first name'}
@@ -259,7 +314,7 @@ export const UserInfo = (props: { user: User }) => {
             }
           />
         </Col>
-        <Col className={rowClass}>
+        <Col className={sectionClass}>
           <span>Last Name</span>
           <Input
             placeholder={'Your last name'}
@@ -270,7 +325,7 @@ export const UserInfo = (props: { user: User }) => {
             }
           />
         </Col>
-        <Col className={rowClass}>
+        <Col className={sectionClass}>
           <span>Date of Birth</span>
           <Input
             className={'w-40'}
@@ -285,7 +340,7 @@ export const UserInfo = (props: { user: User }) => {
             }
           />
         </Col>
-        <Col className={rowClass}>
+        <Col className={sectionClass}>
           <span>Citizenship Country</span>
           <CountryCodeSelector
             selectedCountry={userInfo.CitizenshipCountryCode}
@@ -308,7 +363,7 @@ export const UserInfo = (props: { user: User }) => {
             }
           />
         </Col>
-        <Col className={rowClass}>
+        <Col className={sectionClass}>
           <span>Identification Number</span>
           <Input
             placeholder={`Your ${idTypeName} number`}
@@ -331,7 +386,7 @@ export const UserInfo = (props: { user: User }) => {
             </Button>
           </Col>
         )}
-        <Row className={'mb-4 mt-4 w-full gap-16'}>
+        <Row className={bottomRowClass}>
           <Button
             color={'gray-white'}
             disabled={loading}
@@ -351,9 +406,9 @@ export const UserInfo = (props: { user: User }) => {
     )
   }
 
-  if (page === 3 && gidxSession && typeof window !== 'undefined') {
+  if (page === 4 && gidxSession && typeof window !== 'undefined') {
     return (
-      <Col>
+      <Col className={colClass}>
         <div data-gidx-script-loading="true">Loading...</div>
         <Script
           strategy={'lazyOnload'}
@@ -362,15 +417,17 @@ export const UserInfo = (props: { user: User }) => {
           data-gidx-session-id={gidxSession.split('sessionid=')[1]}
           type="text/javascript"
         />
-        <Row className={'mb-4 mt-4 w-full gap-16'}>
-          <Button onClick={() => setPage(page - 1)}>Back</Button>
+        <Row className={bottomRowClass}>
+          <Button color={'gray-white'} onClick={() => setPage(page - 1)}>
+            Back
+          </Button>
           <Button onClick={() => setPage(page + 1)}>Next</Button>
         </Row>
       </Col>
     )
   }
 
-  if (page === 4) {
+  if (page === 5) {
     return (
       <UploadDocuments
         back={() => setPage(page - 1)}
@@ -378,10 +435,19 @@ export const UserInfo = (props: { user: User }) => {
       />
     )
   }
+
   return (
-    <Col>
-      Thank you!
-      <Button onClick={() => setPage(page - 1)}> Back </Button>
+    <Col className={colClass}>
+      <span className={'text-primary-700 text-2xl'}>
+        Identity Verification Complete
+      </span>
+      Thank you for verifying your identity! Now you can cash out prize points
+      for cash.
+      <Row className={bottomRowClass}>
+        <Link className={buttonClass('md', 'indigo')} href={'/home'}>
+          Done
+        </Link>
+      </Row>
     </Col>
   )
 }
@@ -394,13 +460,13 @@ const LocationPanel = (props: {
 }) => {
   const { back, requestLocation, locationError, loading } = props
   return (
-    <Col className={'gap-3 p-4'}>
+    <Col className={colClass}>
       <span className={' text-primary-700 text-2xl'}>Location required</span>
       <span>
-        You <strong>must</strong> allow location sharing to verify that you're
-        in a participating municipality.
+        You must allow location sharing to verify that you're in a participating
+        municipality.
       </span>
-      <Row className={'mb-4 mt-4 w-full gap-12'}>
+      <Row className={bottomRowClass}>
         <Button color={'gray-white'} onClick={back}>
           Back
         </Button>
