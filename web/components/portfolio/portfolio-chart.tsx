@@ -4,7 +4,7 @@ import { axisBottom, axisLeft, axisRight } from 'd3-axis'
 import { ScaleContinuousNumeric, ScaleTime, scaleLinear } from 'd3-scale'
 import { CurveFactory, curveStepAfter } from 'd3-shape'
 import { mapValues } from 'lodash'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import { dataAtTimeSelector, dataAtXSelector } from '../charts/generic-charts'
 import {
@@ -73,7 +73,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     setPortfolioHoveredGraph,
   } = props
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }

@@ -2,7 +2,7 @@ import { scaleLinear, scaleTime } from 'd3-scale'
 import { curveLinear } from 'd3-shape'
 import dayjs from 'dayjs'
 import { max, min } from 'lodash'
-import { useEffect, useMemo } from 'react'
+import { useLayoutEffect, useMemo } from 'react'
 import { SingleValueHistoryChart } from 'web/components/charts/generic-charts'
 import { Period } from 'common/period'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
@@ -162,7 +162,7 @@ export const PortfolioGraph = (props: {
     .range([height, 0])
 
   // reset axis scale if mode or duration change (since points change)
-  useEffect(() => {
+  useLayoutEffect(() => {
     zoomParams?.setXScale(xScale)
   }, [mode, duration, portfolioFocus])
 

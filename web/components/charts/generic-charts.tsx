@@ -12,8 +12,8 @@ import { last, mapValues, range } from 'lodash'
 import {
   ReactNode,
   useCallback,
-  useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useState,
 } from 'react'
@@ -413,7 +413,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     hoveredChartPosition,
   } = props
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }
@@ -747,7 +747,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     areaClassName,
   } = props
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }
@@ -951,7 +951,7 @@ export const SingleValueStackedHistoryChart = <P extends HistoryPoint>(props: {
     zoomParams,
   } = props
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }
