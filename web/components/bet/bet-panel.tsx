@@ -805,7 +805,7 @@ const QuickLimitOrderButtons = (props: {
   className?: string
 }) => {
   const { contract, className } = props
-  const { prob } = contract
+  const prob = Math.round(contract.prob * 100) / 100
   const amount = 1_000
 
   const user = useUser()
@@ -870,7 +870,7 @@ const QuickLimitOrderButtons = (props: {
     >
       <Row className="items-center gap-2">
         <div className="text-ink-600">
-          Quick bet <span className="">{formatMoney(amount / 1000)}k</span>{' '}
+          Quick order <span className="">{formatMoney(amount / 1000)}k</span>{' '}
           <InfoTooltip
             text={`Offer to buy ${formatMoney(
               amount
