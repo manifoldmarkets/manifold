@@ -1,10 +1,13 @@
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
-import { SupabaseClient } from 'common/supabase/utils'
+import { Row, SupabaseClient } from 'common/supabase/utils'
 import { WEEK_MS } from 'common/util/time'
 import { APIError } from 'common/api/utils'
 import { User } from 'common/user'
 import { DataUpdate, updateData } from './utils'
-import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
+import {
+  broadcastUpdatedUser,
+  broadcastUpdatedPrivateUser,
+} from 'shared/websockets/helpers'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
@@ -76,7 +79,9 @@ export const updateUser = async (
   id: string,
   update: Partial<User>
 ) => {
-  await updateData(db, 'users', 'id', { id, ...update })
+  const fullUpdate = { id, ...update }
+  await updateData(db, 'users', 'id', fullUpdate)
+  broadcastUpdatedUser(fullUpdate)
 }
 
 export const updatePrivateUser = async (
@@ -93,12 +98,13 @@ export const incrementBalance = async (
   id: string,
   deltas: { balance?: number; spiceBalance?: number; totalDeposits?: number }
 ) => {
-  await db.none(
+  const result = await db.one(
     `update users
     set balance = balance + $1,
         spice_balance = spice_balance + $2,
         total_deposits = total_deposits + $3
-    where id = $4`,
+    where id = $4
+    returning balance, spice_balance, total_deposits`,
     [
       deltas.balance ?? 0,
       deltas.spiceBalance ?? 0,
@@ -106,6 +112,13 @@ export const incrementBalance = async (
       id,
     ]
   )
+
+  broadcastUpdatedUser({
+    id,
+    balance: result.balance,
+    spiceBalance: result.spice_balance,
+    totalDeposits: result.total_deposits,
+  })
 }
 
 export const bulkIncrementBalances = async (
@@ -130,12 +143,25 @@ export const bulkIncrementBalances = async (
     )
     .join(',\n')
 
-  await db.none(`update users as u
+  const results = await db.many(`update users as u
     set 
         balance = u.balance + v.balance,
         spice_balance = u.spice_balance + v.spice_balance,
         total_deposits = u.total_deposits + v.total_deposits
     from (values ${values}) as v(id, balance, spice_balance, total_deposits)
     where u.id = v.id
+    returning u.id, u.balance, u.spice_balance, u.total_deposits
   `)
+
+  for (const row of results as Pick<
+    Row<'users'>,
+    'id' | 'balance' | 'spice_balance' | 'total_deposits'
+  >[]) {
+    broadcastUpdatedUser({
+      id: row.id,
+      balance: row.balance,
+      spiceBalance: row.spice_balance,
+      totalDeposits: row.total_deposits,
+    })
+  }
 }
