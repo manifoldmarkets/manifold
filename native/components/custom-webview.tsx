@@ -71,7 +71,6 @@ export const CustomWebview = (props: {
               onRefresh={() => {
                 webview.current?.reload()
                 setRefreshing(true)
-                setTimeout(() => setRefreshing(false), 500)
               }}
             />
           }
@@ -82,6 +81,7 @@ export const CustomWebview = (props: {
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)
+              setRefreshing(false)
             }}
             source={{ uri: urlToLoad }}
             ref={webview}
