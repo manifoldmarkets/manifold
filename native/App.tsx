@@ -11,7 +11,6 @@ import {
   StyleSheet,
   SafeAreaView,
   Dimensions,
-  View,
   Share,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
@@ -42,17 +41,12 @@ import { SplashAuth } from 'components/splash-auth'
 import { useIsConnected } from 'lib/use-is-connected'
 import { getLocation } from 'lib/location'
 
-// NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
-// this means no supabase jwt, placing bets, creating markets, etc.
-// const baseUri = 'http://192.168.1.154:3000/'
+// NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address. ie:
+// "cross-env NEXT_PUBLIC_API_URL=172.20.10.2:8088 \
+// const baseUri = 'http://192.168.1.229:3000/gidx/register'
+
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
-// NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address:
-// "cross-env NEXT_PUBLIC_API_URL=172.20.10.2:8088 \
-const baseUri = 'http://192.168.1.229:3000/gidx/register'
-
-// const baseUri =
-//   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
