@@ -66,7 +66,7 @@ export const BinaryContractChart = (props: {
 
   const data = useMemo(() => {
     return [
-      { x: start, y: contract.initialProbability },
+      { x: start, y: contract.initialProbability ?? 0.5 }, // binary markets before 3-16-2022 have no initialProbability
       ...betPoints,
       { x: end ?? now, y: endP },
     ]

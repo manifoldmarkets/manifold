@@ -403,6 +403,7 @@ export const PrivateChat = (props: {
         </div>
       </Col>
       <CommentInputTextArea
+        autoFocus
         editor={editor}
         user={user}
         submit={submitMessage}

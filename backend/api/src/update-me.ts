@@ -9,6 +9,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, getUserByUsername, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { updateUser } from 'shared/supabase/users'
+import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 
 export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
   const update = cloneDeep(props)
@@ -51,6 +52,9 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
       await updateUser(pg, auth.uid, { avatarUrl })
     }
 
+    broadcastUpdatedUser(
+      removeUndefinedProps({ id: auth.uid, name, username, avatarUrl })
+    )
     await updateUserDenormalizedFields(auth.uid, { name, username, avatarUrl })
   }
 

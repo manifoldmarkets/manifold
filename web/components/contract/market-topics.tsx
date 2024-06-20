@@ -70,7 +70,7 @@ const TopicLink = (props: { topic: Topic; contractId: string }) => {
         })
       }}
     >
-      #{removeEmojis(topic.name)}
+      {removeEmojis(topic.name)}
     </Link>
   )
 }

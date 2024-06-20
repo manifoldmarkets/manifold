@@ -124,7 +124,7 @@ export function TierDropdownPill(props: {
         },
       ]}
       buttonContent={(open) => (
-        <button
+        <div
           className={clsx(
             'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
             currentTiers.includes('1')
@@ -139,7 +139,7 @@ export function TierDropdownPill(props: {
               open ? 'rotate-180' : ''
             )}
           />
-        </button>
+        </div>
       )}
     />
   )

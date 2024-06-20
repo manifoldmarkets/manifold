@@ -30,6 +30,7 @@ export function CommentInput(props: {
   blocked?: boolean
   placeholder?: string
   commentTypes: CommentType[]
+  autoFocus: boolean
   onClearInput?: () => void
 }) {
   const {
@@ -39,6 +40,7 @@ export function CommentInput(props: {
     pageId,
     className,
     blocked,
+    autoFocus,
     placeholder = 'Write a comment...',
     commentTypes,
     onClearInput,
@@ -100,6 +102,7 @@ export function CommentInput(props: {
       <Avatar avatarUrl={user?.avatarUrl} username={user?.username} size="sm" />
       <CommentInputTextArea
         editor={editor}
+        autoFocus={autoFocus}
         replyTo={replyToUserInfo}
         user={user}
         submit={submitComment}
@@ -131,6 +134,7 @@ export function CommentInputTextArea(props: {
   submit?: (type: CommentType) => void
   isSubmitting: boolean
   submitOnEnter?: boolean
+  autoFocus: boolean
   hideToolbar?: boolean
   commentTypes?: CommentType[]
 }) {
@@ -141,6 +145,7 @@ export function CommentInputTextArea(props: {
     editor,
     submit,
     isSubmitting,
+    autoFocus,
     replyTo,
     commentTypes = ['comment'],
   } = props
@@ -189,6 +194,10 @@ export function CommentInputTextArea(props: {
         .run()
     }
   }, [replyTo, editor])
+
+  useEffect(() => {
+    if (editor && autoFocus) editor.commands.focus('end')
+  }, [editor, autoFocus])
 
   return (
     <TextEditor editor={editor} simple hideToolbar={hideToolbar}>

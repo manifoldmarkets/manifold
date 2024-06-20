@@ -245,6 +245,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
           pool: newPool,
           p: newP,
           volume: volume + Math.abs(newBet.amount),
+          prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
         })
       )
     } else if (newBet.answerId) {

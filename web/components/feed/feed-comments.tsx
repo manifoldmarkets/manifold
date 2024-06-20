@@ -188,16 +188,19 @@ export function FeedCommentThread(props: {
             '-mt-3 ml-4 h-7 w-4 rounded-bl-xl border-b-2 border-l-2'
           )}
         />
-        <ContractCommentInput
-          contract={contract}
-          parentCommentId={parentComment.id}
-          replyToUserInfo={replyToUserInfo}
-          clearReply={clearReply}
-          trackingLocation={trackingLocation}
-          className="w-full min-w-0 grow"
-          onSubmit={onSubmitReply}
-          commentTypes={['comment']}
-        />
+        {replyToUserInfo && (
+          <ContractCommentInput
+            contract={contract}
+            parentCommentId={parentComment.id}
+            replyToUserInfo={replyToUserInfo}
+            clearReply={clearReply}
+            trackingLocation={trackingLocation}
+            className="w-full min-w-0 grow"
+            onSubmit={onSubmitReply}
+            commentTypes={['comment']}
+            autoFocus
+          />
+        )}
       </div>
     </Col>
   )
@@ -850,6 +853,7 @@ function CommentStatus(props: {
 
 export function ContractCommentInput(props: {
   contract: Contract
+  autoFocus: boolean
   className?: string
   replyTo?: Answer | Bet
   replyToUserInfo?: ReplyToUserInfo
@@ -862,6 +866,7 @@ export function ContractCommentInput(props: {
 }) {
   const {
     contract,
+    autoFocus,
     replyTo,
     parentCommentId,
     className,
@@ -937,6 +942,7 @@ export function ContractCommentInput(props: {
       ) : null}
 
       <CommentInput
+        autoFocus={autoFocus}
         replyToUserInfo={replyToUserInfo}
         parentCommentId={parentCommentId}
         onSubmitComment={onSubmitComment}

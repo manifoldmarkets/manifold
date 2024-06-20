@@ -11,3 +11,5 @@ alter table private_users enable row level security;
 
 alter table private_users
 cluster on private_users_pkey;
+
+create index if not exists private_users_data_api_key on private_users ((data->>'apiKey'));

@@ -31,6 +31,7 @@ export function AmountInput(
     disabled?: boolean
     className?: string
     inputClassName?: string
+    inputStyle?: React.CSSProperties
     // Needed to focus the amount input
     inputRef?: React.MutableRefObject<any>
     quickAddMoreButton?: ReactNode
@@ -47,6 +48,7 @@ export function AmountInput(
     disabled,
     className,
     inputClassName,
+    inputStyle,
     inputRef,
     quickAddMoreButton,
     allowFloat,
@@ -91,6 +93,7 @@ export function AmountInput(
           <Input
             {...rest}
             className={clsx(label && 'pl-9', ' !text-lg', inputClassName)}
+            style={inputStyle}
             ref={inputRef}
             type={allowFloat ? 'number' : 'text'}
             inputMode={allowFloat ? 'decimal' : 'numeric'}

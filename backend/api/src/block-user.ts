@@ -1,4 +1,4 @@
-import { APIHandler } from './helpers/endpoint'
+import { APIError, APIHandler } from './helpers/endpoint'
 import { followUserInternal } from './follow-user'
 import { FieldVal } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -8,6 +8,8 @@ export const blockUser: APIHandler<'user/by-id/:id/block'> = async (
   { id },
   auth
 ) => {
+  if (auth.uid === id) throw new APIError(400, 'You cannot block yourself')
+
   const pg = createSupabaseDirectClient()
   await pg.tx(async (tx) => {
     await updatePrivateUser(tx, auth.uid, {

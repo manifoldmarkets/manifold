@@ -35,7 +35,6 @@ export const BrowseTopicPills = (props: {
                 : 'bg-ink-100 hover:bg-ink-200 text-ink-600 '
             )}
           >
-            <span className="text-ink-300">#</span>
             {removeEmojis(g.name)}
           </button>
         ))}

@@ -3,14 +3,15 @@
     "name": "Manifold",
     "slug": "manifold-markets",
     "owner": "iansp",
-    "sdkVersion": "48.0.0",
     "jsEngine": "hermes",
     "version": "2.0.46",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
-    "plugins": ["./plugins/withAndroidVerifiedLinksWorkaround",
-    [
+    "plugins": [
+      "./plugins/withAndroidVerifiedLinksWorkaround",
+      "expo-font",
+      [
       "expo-notifications",
       {
         "icon":"./assets/logo-96.png"
@@ -21,7 +22,6 @@
       "resizeMode": "cover",
       "backgroundColor": "#4337C9"
     },
-    "assetBundlePatterns": ["**/*"],
     "web": {
       "favicon": "./assets/favicon.png"
     },
@@ -34,7 +34,6 @@
       "url": "https://u.expo.dev/0ce454fc-3885-4eab-88b6-787b1691973b"
     },
     "android": {
-      "runtimeVersion": "48.0.0",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -70,10 +69,7 @@
         "applinks:manifold.markets",
         "webcredentials:manifold.markets"
       ],
-      "buildNumber": "1.0.41",
-      "runtimeVersion": {
-        "policy": "sdkVersion"
-      }
+      "buildNumber": "1.0.41"
     }
   }
 }

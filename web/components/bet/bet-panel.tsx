@@ -27,7 +27,6 @@ import {
 } from 'common/util/format'
 import { computeCpmmBet } from 'common/new-bet'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { LimitBet } from 'common/bet'
 import { APIError, api } from 'web/lib/firebase/api'
 import { BuyAmountInput } from '../widgets/amount-input'
 
@@ -55,6 +54,7 @@ import { getFeeTotal } from 'common/fees'
 import { FeeDisplay } from './fees'
 import { floatingEqual } from 'common/util/math'
 import { getTierFromLiquidity } from 'common/tier'
+import { QuickLimitOrderButtons } from './quick-limit-order-buttons'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -92,6 +92,7 @@ export function BuyPanel(props: {
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
+  const isAdvancedTrader = useIsAdvancedTrader()
 
   const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
 
@@ -119,23 +120,28 @@ export function BuyPanel(props: {
   return (
     <Col>
       {!isPanelBodyVisible && (
-        <Row className={clsx('mb-2 w-full items-center gap-2')}>
-          <YesNoSelector
-            className="flex-1"
-            btnClassName="flex-1 px-2 sm:px-6"
-            selected={outcome}
-            highlight
-            onSelect={(choice) => {
-              onOutcomeChoice(choice)
-            }}
-            yesLabel={
-              isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
-            }
-            noLabel={
-              isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
-            }
-          />
-        </Row>
+        <Col>
+          <Row className={clsx('mb-2 w-full items-center gap-2')}>
+            <YesNoSelector
+              className="flex-1"
+              btnClassName="flex-1 px-2 sm:px-6"
+              selected={outcome}
+              highlight
+              onSelect={(choice) => {
+                onOutcomeChoice(choice)
+              }}
+              yesLabel={
+                isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
+              }
+              noLabel={
+                isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
+              }
+            />
+          </Row>
+          {isAdvancedTrader && contract.mechanism === 'cpmm-1' && (
+            <QuickLimitOrderButtons contract={contract} />
+          )}
+        </Col>
       )}
       {isPanelBodyVisible && (
         <BuyPanelBody
@@ -731,17 +737,11 @@ export const BuyPanelBody = (props: {
         )}
       </Col>
 
-      <YourOrders
-        className="mt-2 rounded-lg bg-indigo-200/10 py-4"
-        contract={contract}
-        bets={unfilledBetsMatchingAnswer}
-      />
-      {/* Stonks don't allow limit orders but users may have them from before the conversion */}
-      {isStonk && unfilledBets.length > 0 && (
+      {contract.mechanism === 'cpmm-multi-1' && (
         <YourOrders
-          className="mt-2 rounded-lg bg-indigo-200/10 px-4 py-4"
+          className="mt-2 rounded-lg bg-indigo-200/10 py-4"
           contract={contract}
-          bets={unfilledBets as LimitBet[]}
+          bets={unfilledBetsMatchingAnswer}
         />
       )}
       {isAdvancedTrader && (

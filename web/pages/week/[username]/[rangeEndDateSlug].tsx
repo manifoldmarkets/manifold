@@ -14,7 +14,7 @@ import {
   WeeklyPortfolioUpdateOGCardProps,
 } from 'common/weekly-portfolio-update'
 import { chunk, sortBy, sum } from 'lodash'
-import { useEffect, useMemo } from 'react'
+import { useLayoutEffect, useMemo } from 'react'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ZoomParams } from 'web/components/charts/helpers'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -275,7 +275,7 @@ export const ProfitGraph = (props: {
   )
 
   // reset axis scale if mode or duration change (since points change)
-  useEffect(() => {
+  useLayoutEffect(() => {
     zoomParams?.setXScale(xScale)
   }, [duration])
 

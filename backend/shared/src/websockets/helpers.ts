@@ -10,6 +10,10 @@ export function broadcastUpdatedPrivateUser(userId: string) {
   broadcast(`private-user/${userId}`, {})
 }
 
+export function broadcastUpdatedUser(user: Partial<User> & { id: string }) {
+  broadcast(`user/${user.id}`, { user })
+}
+
 export function broadcastNewBets(
   contractId: string,
   visibility: Visibility,

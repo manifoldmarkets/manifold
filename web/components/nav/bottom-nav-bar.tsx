@@ -65,6 +65,7 @@ function getNavigation(user: User) {
 }
 
 const signedOutNavigation = () => [
+  { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
   {
     name: 'Politics',
     href: '/politics',
@@ -73,7 +74,6 @@ const signedOutNavigation = () => [
     // prefetch: false, // should we not prefetch this?
   },
   { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
-  { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
   {
     name: 'About',
     href: '/about',

@@ -7,7 +7,6 @@ export {
   sendWeeklyPortfolioUpdate,
   saveWeeklyContractMetrics,
 } from './scheduled/weekly-portfolio-updates'
-export * from './scheduled/backup-db'
 export * from './scheduled/market-close-notifications'
 export * from './scheduled/score-contracts'
 export * from './scheduled/reset-betting-streaks'

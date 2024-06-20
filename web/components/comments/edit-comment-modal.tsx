@@ -66,6 +66,7 @@ export const EditCommentModal = (props: {
       <Col className={'bg-canvas-50 rounded-md p-4'}>
         <Title>Edit Comment</Title>
         <CommentInputTextArea
+          autoFocus
           editor={editor}
           user={user}
           submit={submitComment}

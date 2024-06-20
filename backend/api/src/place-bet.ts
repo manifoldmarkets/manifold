@@ -531,6 +531,7 @@ export const executeNewBetResult = async (
           pool: newPool,
           p: newP,
           totalLiquidity: newTotalLiquidity,
+          prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
         })
       )
     }

@@ -186,6 +186,11 @@ export default function LimitOrderPanel(props: {
         expiresAt,
       })
     )
+      .then((r) => {
+        console.log('placed bet. Result:', r)
+        setIsSubmitting(false)
+        if (onBuySuccess) onBuySuccess()
+      })
       .catch((e) => {
         if (e instanceof APIError) {
           setError(e.message.toString())
@@ -194,11 +199,6 @@ export default function LimitOrderPanel(props: {
           setError('Error placing bet')
         }
         setIsSubmitting(false)
-      })
-      .then((r) => {
-        console.log('placed bet. Result:', r)
-        setIsSubmitting(false)
-        if (onBuySuccess) onBuySuccess()
       })
 
     await track('bet', {

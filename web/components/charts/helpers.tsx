@@ -14,7 +14,6 @@ import { clamp, sortBy } from 'lodash'
 import React, {
   ReactNode,
   SVGProps,
-  useCallback,
   useDeferredValue,
   useEffect,
   useId,
@@ -689,14 +688,16 @@ export const useZoom = (
 ): ZoomParams => {
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown>>()
-  const [xScale, setXScale] = useState<ScaleTime<number, number>>(scaleTime())
+  const xScaleRef = useRef<ScaleTime<number, number>>(scaleTime())
+
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>(
     scaleTime()
   )
 
-  const rescale = useCallback(
+  const rescale = useEvent(
     (scale: ScaleTime<number, number> | null, syncZoomer = true) => {
       onRescale?.(scale)
+      const xScale = xScaleRef.current
       const newXScale = scale ?? xScale
       setViewXScale(() => newXScale)
 
@@ -715,13 +716,17 @@ export const useZoom = (
         zoomRef.current?.transform as any,
         zoomIdentity.translate(translation, 0).scale(scaleFactor)
       )
-    },
-    [xScale]
+    }
   )
 
-  const rescaleBetween = (start: number | Date, end: number | Date) => {
-    if (xScale) rescale(xScale.copy().domain([start, end]))
-  }
+  const rescaleBetween = useEvent(
+    (start: number | Date, end: number | Date) => {
+      const xScale = xScaleRef.current
+      if (xScale) rescale(xScale.copy().domain([start, end]))
+    }
+  )
+
+  const xScale = xScaleRef.current
 
   return {
     svgRef,
@@ -731,7 +736,7 @@ export const useZoom = (
       zoomRef.current = z
     },
     setXScale: (scale) => {
-      setXScale(() => scale)
+      xScaleRef.current = scale
       setViewXScale(() => scale)
     },
     xScale: xScale ?? scaleTime(),

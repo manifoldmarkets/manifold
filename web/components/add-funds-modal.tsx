@@ -6,7 +6,6 @@ import { checkoutURL } from 'web/lib/service/stripe'
 import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { Tabs } from './layout/tabs'
 import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
 import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
 import Link from 'next/link'
@@ -20,7 +19,6 @@ import { AD_REDEEM_REWARD } from 'common/boost'
 import { Txn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { buildArray } from 'common/util/array'
 import { AmountInput } from './widgets/amount-input'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
@@ -41,7 +39,8 @@ export function AddFundsModal(props: {
       setOpen={setOpen}
       className="bg-canvas-0 text-ink-1000 rounded-md p-8"
     >
-      <Tabs
+      <BuyManaTab onClose={() => setOpen(false)} />
+      {/* <Tabs
         trackingName="buy modal tabs"
         className="[&_svg]:hidden" // hide carousel switcher
         tabs={buildArray(
@@ -59,7 +58,7 @@ export function AddFundsModal(props: {
             ),
           }
         )}
-      />
+      /> */}
     </Modal>
   )
 }
@@ -100,7 +99,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
 
   return (
     <>
-      <div className="my-4">
+      <div className="mb-4">
         Buy <ManaCoin /> mana to trade in your favorite questions.
       </div>
 

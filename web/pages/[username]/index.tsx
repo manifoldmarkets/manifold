@@ -48,7 +48,7 @@ import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { usePrivateUser, useUser, usePollUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -149,7 +149,7 @@ function UserProfile(props: {
   shouldIgnoreUser: boolean
 }) {
   const { rating, shouldIgnoreUser, reviewCount, averageRating } = props
-  const user = usePollUser(props.user.id) ?? props.user
+  const user = useWebsocketUser(props.user.id) ?? props.user
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()

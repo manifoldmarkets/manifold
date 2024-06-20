@@ -167,6 +167,7 @@ export const PublicChat = (props: {
           </Button>
         ) : (
           <CommentInputTextArea
+            autoFocus={false}
             editor={editor}
             user={user}
             submit={submitMessage}
