@@ -123,9 +123,7 @@ export const QuickLimitOrderButtons = (props: {
         </Button>
       </Row>
       {error && <div className="text-red-500">{error}</div>}
-      {buyModalOpen && (
-        <AddFundsModal open={true} setOpen={setBuyModalOpen} />
-      )}
+      {buyModalOpen && <AddFundsModal open={true} setOpen={setBuyModalOpen} />}
     </Col>
   )
 }
