@@ -41,5 +41,6 @@ module.exports = {
           : path.join(process.cwd(), `node_modules/${name}`),
     }),
     assetExts: [...defaultConfig.resolver.assetExts, 'cjs'],
+    sourceExts: [...defaultConfig.resolver.sourceExts, 'cjs'],
   },
 }

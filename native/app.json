@@ -3,7 +3,7 @@
     "name": "Manifold",
     "slug": "manifold-markets",
     "owner": "iansp",
-    "sdkVersion": "48.0.0",
+    "sdkVersion": "50.0.0",
     "jsEngine": "hermes",
     "version": "2.0.46",
     "orientation": "portrait",
@@ -34,7 +34,6 @@
       "url": "https://u.expo.dev/0ce454fc-3885-4eab-88b6-787b1691973b"
     },
     "android": {
-      "runtimeVersion": "48.0.0",
       "intentFilters": [
         {
           "action": "VIEW",
