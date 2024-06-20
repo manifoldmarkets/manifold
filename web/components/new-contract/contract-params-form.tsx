@@ -13,7 +13,6 @@ import {
   MAX_QUESTION_LENGTH,
   MULTI_NUMERIC_BUCKETS_MAX,
   NON_BETTING_OUTCOMES,
-  Visibility,
 } from 'common/contract'
 import { getAnte, MINIMUM_BOUNTY } from 'common/economy'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
@@ -99,10 +98,6 @@ export function ContractParamsForm(props: {
   const [initialValueString, setInitialValueString] = usePersistentLocalState(
     params?.initValue?.toString(),
     'new-init-value' + paramsKey
-  )
-  const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
-    'public' as Visibility,
-    `new-visibility` + paramsKey
   )
 
   // For multiple choice, init to 2 empty answers
@@ -355,7 +350,6 @@ export function ContractParamsForm(props: {
     setCloseDate(undefined)
     setCloseHoursMinutes(undefined)
     setSelectedGroups([])
-    setVisibility((params?.visibility as Visibility) ?? 'public')
     setAnswers(defaultAnswers)
     setMinString('')
     setMaxString('')
@@ -391,7 +385,7 @@ export function ContractParamsForm(props: {
         answers,
         addAnswersMode,
         shouldAnswersSumToOne,
-        visibility,
+        visibility: 'public',
         utcOffset: new Date().getTimezoneOffset(),
         totalBounty: bountyAmount,
         isAutoBounty:
