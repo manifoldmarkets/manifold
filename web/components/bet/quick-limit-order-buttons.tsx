@@ -14,6 +14,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { track } from 'web/lib/service/analytics'
+import { AddFundsModal } from '../add-funds-modal'
 
 export const QuickLimitOrderButtons = (props: {
   contract: CPMMContract // | CPMMMultiContract
@@ -27,9 +28,15 @@ export const QuickLimitOrderButtons = (props: {
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
+  const [buyModalOpen, setBuyModalOpen] = useState(false)
 
   async function submitBet(outcome: 'YES' | 'NO') {
     if (!user) return
+    if (user.balance < amount) {
+      setError('Insufficient balance')
+      setBuyModalOpen(true)
+      return
+    }
 
     setError(undefined)
     setIsSubmitting(true)
@@ -116,6 +123,9 @@ export const QuickLimitOrderButtons = (props: {
         </Button>
       </Row>
       {error && <div className="text-red-500">{error}</div>}
+      {buyModalOpen && (
+        <AddFundsModal open={true} setOpen={setBuyModalOpen} />
+      )}
     </Col>
   )
 }
