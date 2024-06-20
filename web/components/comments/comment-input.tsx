@@ -193,7 +193,6 @@ export function CommentInputTextArea(props: {
         .focus(undefined, { scrollIntoView: false })
         .run()
     }
-    console.log('focus')
   }, [replyTo, editor])
 
   useEffect(() => {
