@@ -57,7 +57,7 @@ import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
 import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
-import { formatMoney, getMoneyNumber } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
