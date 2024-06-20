@@ -165,7 +165,7 @@ export const AuthPage = (props: {
               style={styles.googleButton}
               onPress={async () => {
                 setLoading(true)
-                await promptAsync()
+                await promptAsync({ showInRecents: true })
                 setLoading(false)
               }}
             >
