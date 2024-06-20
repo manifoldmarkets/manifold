@@ -8,6 +8,7 @@ import { useLiveUpdates } from './use-persistent-supabase-polling'
 import { run } from 'common/supabase/utils'
 import { useApiSubscription } from './use-api-subscription'
 import { getFullUserById, getPrivateUserSafe } from 'web/lib/supabase/users'
+import { useIsPageVisible } from './use-page-visible'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -27,6 +28,8 @@ export const useIsAuthorized = () => {
 export const useWebsocketUser = (userId: string | undefined) => {
   const [user, setUser] = useState<User | null | undefined>()
 
+  const isPageVisible = useIsPageVisible()
+
   useApiSubscription({
     topics: [`user/${userId ?? '_'}`],
     onBroadcast: ({ data }) => {
@@ -45,6 +48,8 @@ export const useWebsocketUser = (userId: string | undefined) => {
   })
 
   useEffect(() => {
+    if (!isPageVisible) return
+
     if (userId) {
       getFullUserById(userId).then((result) => {
         setUser(result)
@@ -52,7 +57,7 @@ export const useWebsocketUser = (userId: string | undefined) => {
     } else {
       setUser(null)
     }
-  }, [userId])
+  }, [userId, isPageVisible])
 
   return user
 }
