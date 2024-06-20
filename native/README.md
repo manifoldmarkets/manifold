@@ -84,6 +84,9 @@ find icons [here](https://icons.expo.fyi/)
 ## Monitoring
 - [Sentry](https://sentry.io/organizations/manifold-markets/projects/react-native/?issuesType=new&project=4504040585494528)
 
+## Updating Expo
+- Check out the [helper guide](https://docs.expo.dev/bare/upgrade/?fromSdk=50&toSdk=51) 
+
 ### Problems with building android after deleting `android/`
 - `However we cannot choose between the following variants of project :react-native-iap: - amazonDebugRuntimeElements - playDebugRuntimeElements`
   - Add `missingDimensionStrategy 'store', 'play'` to `android/app/build.gradle` in the `defaultConfig` section

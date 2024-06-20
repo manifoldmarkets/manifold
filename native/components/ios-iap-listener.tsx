@@ -107,7 +107,7 @@ export const IosIapListener = (props: {
 
   useEffect(() => {
     console.log('iap connected', connected)
-    if (connected) {
+    if (connected && !products.length) {
       getProducts({
         skus: SKUS,
       }).catch((e) => {

@@ -51,12 +51,17 @@ export const setFirebaseUserViaJson = async (
   try {
     const clientAuth = getAuth(app) as FirebaseAuthInternal
     const persistenceManager = clientAuth.persistenceManager
+    if (!persistenceManager) {
+      console.warn('Persistence not found on Firebase, not setting user.')
+      return
+    }
     const persistence = persistenceManager.persistence
     await persistence._set(persistenceManager.fullUserKey, deserializedUser)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const fbUser = (await persistenceManager.getCurrentUser())!
     await fbUser?.getIdToken() // forces a refresh if necessary
     await updateCurrentUser(clientAuth, fbUser)
+    console.log('successfully set user via json', fbUser.displayName)
     return fbUser
   } catch (e) {
     if (typeof window !== 'undefined') {
