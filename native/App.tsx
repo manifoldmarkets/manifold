@@ -10,7 +10,6 @@ import {
   NativeEventEmitter,
   StyleSheet,
   SafeAreaView,
-  StatusBar as RNStatusBar,
   Dimensions,
   View,
   Share,
@@ -33,12 +32,7 @@ import {
   nativeToWebMessageType,
   webToNativeMessage,
 } from 'common/native-message'
-import {
-  handleWebviewKilled,
-  sharedWebViewProps,
-  handleWebviewError,
-  handleRenderError,
-} from 'components/web-view-utils'
+import { CustomWebview } from 'components/custom-webview'
 import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Constants from 'expo-constants'
@@ -438,12 +432,6 @@ const App = () => {
       overflow: 'hidden',
       backgroundColor: backgroundColor,
     },
-    webView: {
-      display: fullyLoaded ? 'flex' : 'none',
-      overflow: 'hidden',
-      marginTop: isIOS ? 0 : RNStatusBar.currentHeight ?? 0,
-      marginBottom: 0,
-    },
   })
 
   const handleExternalLink = (url: string) => {
@@ -482,34 +470,16 @@ const App = () => {
           style={theme === 'dark' ? 'light' : 'dark'}
           hidden={false}
         />
-
-        <View style={[styles.container, { position: 'relative' }]}>
-          <WebView
-            {...sharedWebViewProps}
-            style={styles.webView}
-            // Load start and end is for whole website loading, not navigations within manifold
-            onLoadEnd={() => {
-              log('WebView onLoadEnd for url:', urlToLoad)
-              setHasLoadedWebView(true)
-            }}
-            source={{ uri: urlToLoad }}
-            ref={webview}
-            onError={(e) => handleWebviewError(e, resetWebView)}
-            renderError={(e) => handleRenderError(e, width, height)}
-            onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
-            onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
-            onContentProcessDidTerminate={(e) =>
-              handleWebviewKilled(e, resetWebView)
-            }
-            onMessage={async (m) => {
-              try {
-                await handleMessageFromWebview(m)
-              } catch (e) {
-                log('Error in handleMessageFromWebview', e)
-              }
-            }}
-          />
-        </View>
+        <CustomWebview
+          urlToLoad={urlToLoad}
+          webview={webview}
+          resetWebView={resetWebView}
+          width={width}
+          height={height}
+          setHasLoadedWebView={setHasLoadedWebView}
+          handleMessageFromWebview={handleMessageFromWebview}
+          handleExternalLink={handleExternalLink}
+        />
       </SafeAreaView>
       {/*<ExportLogsButton />*/}
     </>
