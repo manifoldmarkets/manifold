@@ -822,15 +822,6 @@ const QuickLimitOrderButtons = (props: {
         // answerId,
       })
     )
-      .catch((e) => {
-        if (e instanceof APIError) {
-          setError(e.message.toString())
-        } else {
-          console.error(e)
-          setError('Error placing bet')
-        }
-        setIsSubmitting(false)
-      })
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
@@ -839,6 +830,15 @@ const QuickLimitOrderButtons = (props: {
             amount
           )} ${outcome} at ${formatPercent(prob)}`
         )
+      })
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.message.toString())
+        } else {
+          console.error(e)
+          setError('Error placing bet')
+        }
+        setIsSubmitting(false)
       })
 
     await track('bet', {
