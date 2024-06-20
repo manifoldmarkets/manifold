@@ -6,6 +6,7 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { convertPrivateUser } from 'common/supabase/users'
+import { getPrivateUser } from 'shared/utils'
 
 // for mobile or something?
 export const setPushToken: APIHandler<'set-push-token'> = async (
@@ -14,6 +15,11 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
 ) => {
   const { pushToken } = props
   const db = createSupabaseDirectClient()
+
+  const oldPrivateUser = await getPrivateUser(auth.uid, db)
+  if (!oldPrivateUser) {
+    throw new APIError(401, 'Account not found')
+  }
 
   const updatedRow = await db.one(
     `update private_users set data = 
@@ -30,23 +36,25 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
     [pushToken, auth.uid]
   )
   broadcastUpdatedPrivateUser(auth.uid)
+  const newPrivateUser = convertPrivateUser(updatedRow)
 
-  const privateUser = convertPrivateUser(updatedRow)
-  const txn = await payUserPushNotificationsBonus(
-    auth.uid,
-    PUSH_NOTIFICATION_BONUS
-  )
-  await createPushNotificationBonusNotification(
-    privateUser,
-    txn.id,
-    PUSH_NOTIFICATION_BONUS,
-    'push_notification_bonus_' +
-      new Date().toLocaleDateString('en-US', {
-        year: '2-digit',
-        month: '2-digit',
-        day: '2-digit',
-      })
-  )
+  if (oldPrivateUser.pushToken != newPrivateUser.pushToken) {
+    const txn = await payUserPushNotificationsBonus(
+      auth.uid,
+      PUSH_NOTIFICATION_BONUS
+    )
+    await createPushNotificationBonusNotification(
+      newPrivateUser,
+      txn.id,
+      PUSH_NOTIFICATION_BONUS,
+      'push_notification_bonus_' +
+        new Date().toLocaleDateString('en-US', {
+          year: '2-digit',
+          month: '2-digit',
+          day: '2-digit',
+        })
+    )
+  }
 }
 
 const payUserPushNotificationsBonus = async (
