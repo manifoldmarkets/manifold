@@ -163,6 +163,7 @@ const sharedWebViewProps: WebViewProps = {
   allowsFullscreenVideo: true,
   autoManageStatusBarEnabled: false,
   injectedJavaScript: PREVENT_ZOOM_SET_NATIVE,
+  cacheEnabled: true,
 }
 
 const handleWebviewKilled = (
