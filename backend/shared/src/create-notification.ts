@@ -1431,12 +1431,12 @@ export const createContractResolvedNotifications = async (
         profitRank && totalShareholders && betterThan > 0
           ? `, outperforming ${betterThan} other${betterThan > 1 ? 's' : ''}!`
           : '.'
-      const profit = Math.round(userPayout - userInvestment)
+      const profit = userPayout - userInvestment
       const profitPercent = Math.round((profit / userInvestment) * 100)
-      const profitString = ` You made M${getMoneyNumber(
+      const profitString = ` You made M${Math.round(
         profit
       )} (+${profitPercent}%)`
-      const lossString = ` You lost M${getMoneyNumber(-profit)}`
+      const lossString = ` You lost M${Math.round(-profit)}`
       await createPushNotification(
         notification,
         privateUser,
