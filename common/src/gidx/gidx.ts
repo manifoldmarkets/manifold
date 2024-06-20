@@ -54,3 +54,12 @@ export type GIDXDocument = {
     DateTime: string
   }[]
 }
+
+export type GPSData = {
+  Radius: number
+  Altitude: number
+  Latitude: number
+  Longitude: number
+  Speed: number
+  DateTime: string
+}

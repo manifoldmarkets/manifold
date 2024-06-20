@@ -18,11 +18,17 @@ We're using Expo to help with android and ios builds. You can find more informat
 3. **Android**:
    - `yarn android:dev` or `yarn android:prod` builds and installs the dev client on your device automatically
    - Scan the QR code with the app (it opens automatically after installing)
+4. **Locally hosted manifold**:
+   - Set the `NEXT_PUBLIC_API_URL` in dev.sh to your local ip address
+   - Run `dev.sh prod` or `dev.sh dev` to start the local server
+   - Change the `baseUri` in `App.tsx` to your local ip address
+   - Follow one of the Android or iOS steps to start the app on your device
+
 
 - **Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.
 - Want to see console logs? (Only works on android):
-   - `$ ngrok http 3000` in a separate terminal
-   - Change the `baseUri` in `App.tsx` to the ngrok url
+   - Set the `NEXT_PUBLIC_API_URL` in dev.sh to your local ip address
+   - Change the `baseUri` in `App.tsx` to your local ip address
    - `$ yarn android:prod` to start the app on your device
    - On your computer, navigate to `chrome://inspect/#devices` in chrome and click inspect on the app
 - Want to see app logs of a production build? (Only works on android):

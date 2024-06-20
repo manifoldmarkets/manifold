@@ -7,10 +7,10 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import { api } from 'web/lib/firebase/api'
-import { usePollUser } from 'web/hooks/use-user'
+import { useWebsocketUser } from 'web/hooks/use-user'
 
 export const VerifyMe = (props: { user: User | null | undefined }) => {
-  const user = usePollUser(props.user?.id)
+  const user = useWebsocketUser(props.user?.id)
 
   if (!user) return null
   if (user.kycStatus === 'verified') return null

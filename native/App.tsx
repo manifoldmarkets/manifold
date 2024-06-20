@@ -28,6 +28,7 @@ import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/notification'
 import {
+  MesageTypeMap,
   nativeToWebMessage,
   nativeToWebMessageType,
   webToNativeMessage,
@@ -45,13 +46,19 @@ import { NativeShareData } from 'common/native-share-data'
 import { clearData, getData, storeData } from 'lib/auth'
 import { SplashAuth } from 'components/splash-auth'
 import { useIsConnected } from 'lib/use-is-connected'
+import { getLocation } from 'lib/location'
 
 // NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
 // this means no supabase jwt, placing bets, creating markets, etc.
 // const baseUri = 'http://192.168.1.154:3000/'
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
-const nativeQuery = `?nativePlatform=${Platform.OS}`
+// NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address:
+// "cross-env NEXT_PUBLIC_API_URL=172.20.10.2:8088 \
+const baseUri = 'http://192.168.1.229:3000/gidx/register'
+
+// const baseUri =
+//   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
@@ -78,13 +85,7 @@ const App = () => {
     log('Got user from storage:', user.email)
     setFbUser(user)
     sendWebviewAuthInfo(user)
-    setFirebaseUserViaJson(user, app)
-      .catch((e) => {
-        log('Error setting user:', e)
-      })
-      .then(() => {
-        log('User set successfully')
-      })
+    await setFirebaseUserViaJson(user, app)
   }
 
   useEffect(() => {
@@ -95,19 +96,23 @@ const App = () => {
   const sendWebviewAuthInfo = (user: FirebaseUser) => {
     // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
     // Seems my iPhone 12 mini can regularly handle a shorter timeout
-    setTimeout(() => {
-      communicateWithWebview('nativeFbUser', user)
-    }, 100)
-    // My older android phone needs a bit longer
-    setTimeout(() => {
-      communicateWithWebview('nativeFbUser', user)
-    }, 500)
+    const timeouts = [100, 500, 1000, 3000]
+    timeouts.forEach((timeout) => {
+      setTimeout(() => {
+        communicateWithWebview('nativeFbUser', user)
+      }, timeout)
+    })
   }
 
   // Url management
-  const [urlToLoad, setUrlToLoad] = useState<string>(
-    baseUri + 'home' + nativeQuery
-  )
+  const [urlToLoad, setUrlToLoad] = useState<string>(() => {
+    const url = new URL(baseUri)
+    // url.pathname = 'home'
+    const params = new URLSearchParams()
+    params.set('nativePlatform', Platform.OS)
+    url.search = params.toString()
+    return url.toString()
+  })
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
     isIOS ? LinkingManager.default : null
@@ -118,17 +123,20 @@ const App = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>('light')
 
   const setEndpointWithNativeQuery = (endpoint?: string) => {
-    const newUrl =
-      baseUri +
-      (endpoint ?? 'home') +
-      nativeQuery +
-      `&rand=${Math.random().toString()}`
-    log('Setting new url:', newUrl)
-    setUrlToLoad(newUrl)
+    const url = new URL(baseUri)
+    url.pathname = endpoint ?? 'home'
+    setUrlWithNativeQuery(url.toString())
   }
 
-  const setUrlWithNativeQuery = (url: String) => {
-    const newUrl = url + nativeQuery + `&rand=${Math.random().toString()}`
+  const setUrlWithNativeQuery = (urlString: string) => {
+    const url = new URL(urlString)
+
+    const params = new URLSearchParams()
+    params.set('nativePlatform', Platform.OS)
+    params.set('rand', Math.random().toString())
+    url.search = params.toString()
+
+    const newUrl = url.toString()
     log('Setting new url:', newUrl)
     setUrlToLoad(newUrl)
   }
@@ -153,7 +161,7 @@ const App = () => {
     if (hasLoadedWebView && listeningToNative.current) {
       communicateWithWebview(
         'notification',
-        response.notification.request.content.data
+        response.notification.request.content.data as Notification
       )
       setLastLinkInMemory(getSourceUrl(notification))
     } else setEndpointWithNativeQuery(getSourceUrl(notification))
@@ -290,7 +298,6 @@ const App = () => {
       if (finalStatus !== 'granted') {
         communicateWithWebview('pushNotificationPermissionStatus', {
           status: finalStatus,
-          userId: fbUser?.uid,
         })
         return null
       }
@@ -318,12 +325,10 @@ const App = () => {
           if (token)
             communicateWithWebview('pushToken', {
               token,
-              userId: fbUser?.uid,
             })
         } else
           communicateWithWebview('pushNotificationPermissionStatus', {
             status,
-            userId: fbUser?.uid,
           })
       })
     } else if (type === 'copyToClipboard') {
@@ -335,7 +340,6 @@ const App = () => {
         if (token)
           communicateWithWebview('pushToken', {
             token,
-            userId: fbUser?.uid,
           })
       })
     } else if (type === 'signOut') {
@@ -374,6 +378,10 @@ const App = () => {
       log('Client started listening')
       listeningToNative.current = true
       if (fbUser) sendWebviewAuthInfo(fbUser)
+    } else if (type === 'locationRequested') {
+      log('Location requested from web')
+      const location = await getLocation()
+      communicateWithWebview('location', location)
     } else {
       log('Unhandled message from web type: ', type)
       log('Unhandled message from web data: ', data)
@@ -392,9 +400,9 @@ const App = () => {
     })
   }
 
-  const communicateWithWebview = (
-    type: nativeToWebMessageType,
-    data: object
+  const communicateWithWebview = <T extends nativeToWebMessageType>(
+    type: T,
+    data: MesageTypeMap[T]
   ) => {
     log(
       'Sending message to webview:',

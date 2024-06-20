@@ -28,7 +28,11 @@ import {
   SPICE_TO_CHARITY_DOLLARS,
   SPICE_TO_MANA_CONVERSION_RATE,
 } from 'common/envs/constants'
-import { usePollUser } from 'web/hooks/use-user'
+import { useWebsocketUser } from 'web/hooks/use-user'
+import { getIsNative } from 'web/lib/native/is-native'
+import { postMessageToNative } from 'web/lib/native/post-message'
+import { GPSData } from 'common/gidx/gidx'
+import { useNativeMessages } from 'web/hooks/use-native-messages'
 
 const body = {
   MerchantCustomerID: '5',
@@ -63,7 +67,7 @@ const colClass = 'gap-3 p-4'
 const bottomRowClass = 'mb-4 mt-4 w-full gap-16'
 
 export const RegisterUserForm = (props: { user: User }) => {
-  const user = usePollUser(props.user.id) ?? props.user
+  const user = useWebsocketUser(props.user.id) ?? props.user
   const router = useRouter()
   // TODO: After development, if user is verified, redirect to the final page
   // const [page, setPage] = useState(user.verifiedPhone ? 1 : 0)
@@ -72,6 +76,20 @@ export const RegisterUserForm = (props: { user: User }) => {
   const [locationError, setLocationError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [gidxSession, setGidxSession] = useState<string | null>(null)
+  useNativeMessages(['location'], (type, data) => {
+    console.log('Received location data from native', data)
+    if ('error' in data) {
+      setLocationError(data.error)
+      setLoading(false)
+    } else {
+      setUserInfo({
+        ...userInfo,
+        DeviceGPS: data,
+      })
+      setLoading(false)
+      setPage(page + 1)
+    }
+  })
   const [userInfo, setUserInfo] = usePersistentInMemoryState<{
     FirstName?: string
     LastName?: string
@@ -79,14 +97,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     CitizenshipCountryCode: string
     IdentificationTypeCode?: number
     IdentificationNumber?: string
-    DeviceGPS?: {
-      Radius: number
-      Altitude: number
-      Latitude: number
-      Longitude: number
-      Speed: number
-      DateTime: string
-    }
+    DeviceGPS?: GPSData
   }>(
     {
       ...body,
@@ -101,7 +112,13 @@ export const RegisterUserForm = (props: { user: User }) => {
   )
 
   const requestLocationBrowser = () => {
+    setLocationError(null)
     setLoading(true)
+    if (getIsNative()) {
+      console.log('requesting location from native')
+      postMessageToNative('locationRequested', {})
+      return
+    }
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -474,8 +491,15 @@ const LocationPanel = (props: {
         <Button loading={loading} disabled={loading} onClick={requestLocation}>
           Share location
         </Button>
-        {locationError && <span>{locationError}</span>}
       </Row>
+      {locationError && (
+        <span className={'text-error'}>
+          {locationError}
+          {getIsNative()
+            ? ' Please enable location sharing in your settings.'
+            : ''}
+        </span>
+      )}
     </Col>
   )
 }
