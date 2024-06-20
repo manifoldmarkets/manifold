@@ -119,6 +119,7 @@ export const SendMessageButton = (props: {
             <Title className={'!mb-2'}>Message {toUser.name}</Title>
           </Row>
           <CommentInputTextArea
+            autoFocus={true}
             editor={editor}
             user={currentUser}
             submit={sendMessage}
