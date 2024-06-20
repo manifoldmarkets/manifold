@@ -368,6 +368,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     <Col className={clsx(className, scrollToEnd && 'flex-col-reverse')}>
       <div ref={endOfMessagesRef} />
       <ContractCommentInput
+        autoFocus={false}
         replyTo={replyTo}
         className="mb-4 mr-px mt-px"
         contract={contract}

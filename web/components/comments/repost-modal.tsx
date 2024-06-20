@@ -143,6 +143,7 @@ export const RepostModal = (props: {
           </Col>
         ) : (
           <ContractCommentInput
+            autoFocus
             replyTo={bet}
             contract={contract}
             trackingLocation={'contract page'}
