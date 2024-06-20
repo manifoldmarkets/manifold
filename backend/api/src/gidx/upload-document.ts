@@ -6,7 +6,10 @@ import { PROD_CONFIG } from 'common/envs/prod'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { DocumentRegistrationResponse } from 'common/gidx/gidx'
+import {
+  DocumentRegistrationResponse,
+  GIDX_REGISTATION_ENABLED,
+} from 'common/gidx/gidx'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DocumentLibrary/DocumentRegistration'
@@ -14,6 +17,8 @@ export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
   props,
   auth
 ) => {
+  if (!GIDX_REGISTATION_ENABLED)
+    throw new APIError(400, 'GIDX registration is disabled')
   const { fileUrl, CategoryType, fileName } = props
 
   const form = new FormData()

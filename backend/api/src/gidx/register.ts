@@ -12,6 +12,7 @@ import {
 } from 'common/reason-codes'
 import { intersection } from 'lodash'
 import { getGIDXStandardParams } from 'shared/gidx/standard-params'
+import { GIDX_REGISTATION_ENABLED } from 'common/gidx/gidx'
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
 
@@ -20,6 +21,8 @@ export const register: APIHandler<'register-gidx'> = async (
   auth,
   req
 ) => {
+  if (!GIDX_REGISTATION_ENABLED)
+    throw new APIError(400, 'GIDX registration is disabled')
   const pg = createSupabaseDirectClient()
   const user = await getPrivateUserSupabase(auth.uid)
   if (!user) {

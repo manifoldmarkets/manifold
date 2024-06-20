@@ -8,10 +8,11 @@ import clsx from 'clsx'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import { api } from 'web/lib/firebase/api'
 import { useWebsocketUser } from 'web/hooks/use-user'
+import { GIDX_REGISTATION_ENABLED } from 'common/gidx/gidx'
 
 export const VerifyMe = (props: { user: User | null | undefined }) => {
   const user = useWebsocketUser(props.user?.id)
-
+  if (!GIDX_REGISTATION_ENABLED) return null
   if (!user) return null
   if (user.kycStatus === 'verified') return null
   if (user.kycStatus === 'pending') {

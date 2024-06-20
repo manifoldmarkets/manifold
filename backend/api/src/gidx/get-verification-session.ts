@@ -2,11 +2,16 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { getPrivateUserSupabase, log } from 'shared/utils'
 import { getPhoneNumber } from 'shared/helpers/get-phone-number'
 import { getGIDXStandardParams } from 'shared/gidx/standard-params'
-import { GIDXVerificationResponse } from 'common/gidx/gidx'
+import {
+  GIDX_REGISTATION_ENABLED,
+  GIDXVerificationResponse,
+} from 'common/gidx/gidx'
 const ENDPOINT = 'https://api.gidx-service.in/v3.0/api/WebReg/CreateSession'
 export const getVerificationSession: APIHandler<
   'get-verification-session-gidx'
 > = async (props, auth) => {
+  if (!GIDX_REGISTATION_ENABLED)
+    throw new APIError(400, 'GIDX registration is disabled')
   const user = await getPrivateUserSupabase(auth.uid)
   if (!user) {
     throw new APIError(404, 'Private user not found')

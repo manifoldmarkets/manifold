@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+export const GIDX_REGISTATION_ENABLED = false
+
 export const verificationParams = z.object({
   FirstName: z.string(),
   LastName: z.string(),
