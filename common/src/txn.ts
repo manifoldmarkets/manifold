@@ -50,6 +50,7 @@ type AnyTxnType =
   | AirDrop
   | ManifestAirDrop
   | ExtraPurchasedMana
+  | ManifoldTopUp
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -459,6 +460,13 @@ type ExtraPurchasedMana = {
   token: 'M$'
 }
 
+type ManifoldTopUp = {
+  category: 'MANIFOLD_TOP_UP'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
@@ -506,3 +514,4 @@ export type BotCommentFeeTxn = Txn & BotCommentFee
 export type AirDropTxn = Txn & AirDrop
 export type ManifestAirDropTxn = Txn & ManifestAirDrop
 export type ExtraPurchasedManaTxn = Txn & ExtraPurchasedMana
+export type ManifoldTopUpTxn = Txn & ManifoldTopUp
