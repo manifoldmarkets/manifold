@@ -1,5 +1,5 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
-const { getDefaultConfig } = require('expo/metro-config')
+const { getDefaultConfig } = require('@expo/metro-config')
 
 /**
  * Metro configuration for React Native
@@ -41,5 +41,6 @@ module.exports = {
           : path.join(process.cwd(), `node_modules/${name}`),
     }),
     assetExts: [...defaultConfig.resolver.assetExts, 'cjs'],
+    sourceExts: [...defaultConfig.resolver.sourceExts, 'cjs'],
   },
 }

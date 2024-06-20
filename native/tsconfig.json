@@ -4,6 +4,7 @@
     "strict": true,
     "baseUrl": "./",
     "paths": {
+      "@firebase/auth": ["./node_modules/@firebase/auth/dist/index.rn.d.ts"],
       "components/*": ["components/*"],
       "lib/*": ["lib/*"],
       "common/*": ["../common/src/*"]
