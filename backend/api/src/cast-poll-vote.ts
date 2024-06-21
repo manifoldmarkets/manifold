@@ -9,6 +9,7 @@ import {
   revalidateContractStaticProps,
 } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
+import { pollQueue } from 'shared/helpers/fn-queue'
 
 const schema = z
   .object({
@@ -19,7 +20,18 @@ const schema = z
 
 export const castpollvote = authEndpoint(async (req, auth) => {
   const { contractId, voteId } = validate(schema, req.body)
-  const user = await getUser(auth.uid)
+  return await pollQueue.enqueueFn(
+    () => castPollVoteMain(contractId, voteId, auth.uid),
+    [contractId]
+  )
+})
+
+const castPollVoteMain = async (
+  contractId: string,
+  voteId: string,
+  userId: string
+) => {
+  const user = await getUser(userId)
   if (!user) {
     throw new APIError(404, 'User not found')
   }
@@ -27,7 +39,7 @@ export const castpollvote = authEndpoint(async (req, auth) => {
     throw new APIError(403, 'You are banned and cannot vote')
   }
 
-  return createSupabaseDirectClient().tx(async (t) => {
+  return await createSupabaseDirectClient().tx(async (t) => {
     const contract = await getContract(t, contractId)
     if (!contract) {
       throw new APIError(404, 'Contract not found')
@@ -47,7 +59,7 @@ export const castpollvote = authEndpoint(async (req, auth) => {
 
     const idVoters = totalVoters.filter((v) => v.id == voteId)
 
-    if (totalVoters.some((v) => v.user_id === auth.uid)) {
+    if (totalVoters.some((v) => v.user_id === userId)) {
       throw new APIError(403, 'You have already voted on this poll')
     }
 
@@ -67,11 +79,11 @@ export const castpollvote = authEndpoint(async (req, auth) => {
       `insert into votes(id, contract_id, user_id)
         values ($1, $2, $3)
         returning id`,
-      [voteId, contractId, auth.uid]
+      [voteId, contractId, userId]
     )
 
     await createVotedOnPollNotification(
-      auth.uid,
+      userId,
       optionToUpdate?.text ?? '',
       contract
     )
@@ -83,4 +95,4 @@ export const castpollvote = authEndpoint(async (req, auth) => {
       },
     }
   })
-})
+}
