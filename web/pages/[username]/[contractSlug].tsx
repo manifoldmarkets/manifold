@@ -46,7 +46,7 @@ import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import {
-  useBets,
+  useBetsOnce,
   useSubscribeNewBets,
   useUnfilledBets,
 } from 'web/hooks/use-bets'
@@ -650,7 +650,7 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
   const { contract, yourNewBets } = props
   const user = useUser()
 
-  const staticBets = useBets({
+  const staticBets = useBetsOnce({
     contractId: contract.id,
     userId: !user ? 'loading' : user.id,
     filterAntes: true,

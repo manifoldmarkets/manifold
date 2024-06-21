@@ -2,7 +2,7 @@ import { UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { useState } from 'react'
-import { useBets } from 'web/hooks/use-bets'
+import { useBetsOnce } from 'web/hooks/use-bets'
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -136,7 +136,7 @@ function BetsModalContent(props: {
 }) {
   const { contract, answerDetails } = props
   const answer = answerDetails?.answer
-  const bets = useBets({
+  const bets = useBetsOnce({
     contractId: contract.id,
     answerId: answer?.id,
     filterAntes: true,

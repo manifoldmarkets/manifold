@@ -18,7 +18,7 @@ import { Bet } from 'common/bet'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { ProfitBadge } from '../profit-badge'
 import { ContractMetric } from 'common/contract-metric'
-import { useBets } from 'web/hooks/use-bets'
+import { useBetsOnce } from 'web/hooks/use-bets'
 import ShortToggle from '../widgets/short-toggle'
 import { useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
@@ -50,7 +50,7 @@ export const ManaEarnedBreakdown = (props: {
   } as { [key: string]: number }
 
   const { start, end } = getSeasonDates(season)
-  const loadingBets = useBets({
+  const loadingBets = useBetsOnce({
     userId: user.id,
     afterTime: start.getTime(),
     beforeTime: end.getTime(),
