@@ -3,7 +3,7 @@ import toast from 'react-hot-toast'
 import { useState } from 'react'
 
 import { APIError } from 'common/api/utils'
-import { CPMMContract } from 'common/contract'
+import { CPMMContract, MultiContract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS } from 'common/util/time'
@@ -15,13 +15,20 @@ import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { track } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
+import { Answer } from 'common/answer'
 
 export const QuickLimitOrderButtons = (props: {
-  contract: CPMMContract // | CPMMMultiContract
+  contract: CPMMContract | MultiContract
+  answer?: Answer
   className?: string
 }) => {
-  const { contract, className } = props
-  const prob = Math.round(contract.prob * 100) / 100
+  const { contract, answer, className } = props
+  if (!answer && contract.mechanism === 'cpmm-multi-1') {
+    throw new Error('Answer must be provided for multi contracts')
+  }
+
+  const unroundedProb = answer ? answer.prob : (contract as CPMMContract).prob
+  const prob = Math.round(unroundedProb * 100) / 100
   const amount = 1_000
 
   const user = useUser()
@@ -53,7 +60,7 @@ export const QuickLimitOrderButtons = (props: {
         contractId: contract.id,
         limitProb: prob,
         expiresAt,
-        // answerId,
+        answerId: answer?.id,
       })
     )
       .then((r) => {
@@ -75,17 +82,20 @@ export const QuickLimitOrderButtons = (props: {
         setIsSubmitting(false)
       })
 
-    await track('bet', {
-      location: 'quick bet panel',
-      outcomeType: contract.outcomeType,
-      slug: contract.slug,
-      contractId: contract.id,
-      amount,
-      outcome,
-      limitProb: prob,
-      isLimitOrder: true,
-      // answerId: multiProps?.answerToBuy.id,
-    })
+    await track(
+      'bet',
+      removeUndefinedProps({
+        location: 'quick bet panel',
+        outcomeType: contract.outcomeType,
+        slug: contract.slug,
+        contractId: contract.id,
+        amount,
+        outcome,
+        limitProb: prob,
+        isLimitOrder: true,
+        answerId: answer?.id,
+      })
+    )
   }
 
   return (

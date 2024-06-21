@@ -56,7 +56,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { TradesButton } from 'web/components/contract/trades-button'
 import toast from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { OrderBookButton } from '../bet/order-book'
+import { OrderBookButton, YourOrders } from '../bet/order-book'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { Tooltip } from '../widgets/tooltip'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
@@ -72,6 +72,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { formatTime } from 'web/lib/util/time'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { QuickLimitOrderButtons } from '../bet/quick-limit-order-buttons'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -514,15 +515,9 @@ export function SimpleAnswerBars(props: {
     SHOW_LIMIT_ORDER_CHARTS_KEY
   )
 
-  // fetch once since only for display
-  const [unfilledBets, setUnfilledBets] = useState<LimitBet[] | undefined>()
-  useEffect(() => {
-    if (isAdvancedTrader && shouldShowLimitOrderChart) {
-      api('bets', { contractId: contract.id, kinds: 'open-limit' }).then(
-        (bets) => setUnfilledBets(bets as LimitBet[])
-      )
-    }
-  }, [contract.id, isAdvancedTrader, shouldShowLimitOrderChart])
+  const unfilledBets = useUnfilledBets(contract.id, {
+    enabled: isAdvancedTrader,
+  })
 
   return (
     <Col className="mx-[2px] gap-2">
@@ -621,6 +616,9 @@ export function Answer(props: {
     () => sumBy(unfilledBets, (bet) => bet.orderAmount - bet.amount),
     [unfilledBets]
   )
+  const yourUnfilledBets = unfilledBets?.filter(
+    (bet) => bet.userId === user?.id
+  )
   const canEdit = canEditAnswer(answer, contract, user)
 
   const textColorClass = clsx(
@@ -706,61 +704,75 @@ export function Answer(props: {
       )}
 
       {expanded && (
-        <Row
-          className={'flex-wrap items-center justify-between gap-2 px-3 py-1'}
-        >
-          <Row className={'gap-2'}>
-            <AnswerAvatar answer={answer} isMobile={isMobile} /> {'·'}
-            <Tooltip text={formatTime(answer.createdTime)}>
-              <div className="text-ink-600">
-                {shortenedFromNow(answer.createdTime)}
-              </div>
-            </Tooltip>
-          </Row>
-          <Row className={'gap-2'}>
-            {canEdit && (
-              <Button
-                color={'gray-outline'}
-                size="2xs"
-                onClick={() =>
-                  'poolYes' in answer && !answer.isOther
-                    ? setEditingAnswer(answer)
-                    : null
-                }
-              >
-                <PencilIcon className="mr-1 h-4 w-4" />
-                Edit
-              </Button>
-            )}
+        <Col>
+          {(shouldShowLimitOrderChart ||
+            (yourUnfilledBets ?? []).length > 0) && (
+            <Col className="px-2">
+              <QuickLimitOrderButtons contract={contract} answer={answer} />
+              <YourOrders
+                contract={contract}
+                bets={yourUnfilledBets ?? []}
+                deemphasizedHeader
+              />
+            </Col>
+          )}
 
-            {unfilledBets?.length && limitOrderVolume ? (
-              <OrderBookButton
-                limitBets={unfilledBets}
-                contract={contract}
-                answer={answer as Answer}
-                label={
-                  <Tooltip
-                    text={`Limit orders: ${formatMoney(limitOrderVolume)}`}
-                    placement="top"
-                    noTap
-                    className="flex flex-row gap-1"
-                  >
-                    <ScaleIcon className="h-5 w-5" />
-                    {shortFormatNumber(limitOrderVolume)}
-                  </Tooltip>
-                }
-              />
-            ) : null}
-            {'poolYes' in answer && (
-              <TradesButton
-                contract={contract}
-                answer={answer}
-                color={'gray-outline'}
-              />
-            )}
-            {onCommentClick && <AddComment onClick={onCommentClick} />}
+          <Row
+            className={'flex-wrap items-center justify-between gap-2 px-3 py-1'}
+          >
+            <Row className={'gap-2'}>
+              <AnswerAvatar answer={answer} isMobile={isMobile} /> {'·'}
+              <Tooltip text={formatTime(answer.createdTime)}>
+                <div className="text-ink-600">
+                  {shortenedFromNow(answer.createdTime)}
+                </div>
+              </Tooltip>
+            </Row>
+            <Row className={'gap-2'}>
+              {canEdit && (
+                <Button
+                  color={'gray-outline'}
+                  size="2xs"
+                  onClick={() =>
+                    'poolYes' in answer && !answer.isOther
+                      ? setEditingAnswer(answer)
+                      : null
+                  }
+                >
+                  <PencilIcon className="mr-1 h-4 w-4" />
+                  Edit
+                </Button>
+              )}
+
+              {unfilledBets?.length && limitOrderVolume ? (
+                <OrderBookButton
+                  limitBets={unfilledBets}
+                  contract={contract}
+                  answer={answer as Answer}
+                  label={
+                    <Tooltip
+                      text={`Limit orders: ${formatMoney(limitOrderVolume)}`}
+                      placement="top"
+                      noTap
+                      className="flex flex-row gap-1"
+                    >
+                      <ScaleIcon className="h-5 w-5" />
+                      {shortFormatNumber(limitOrderVolume)}
+                    </Tooltip>
+                  }
+                />
+              ) : null}
+              {'poolYes' in answer && (
+                <TradesButton
+                  contract={contract}
+                  answer={answer}
+                  color={'gray-outline'}
+                />
+              )}
+              {onCommentClick && <AddComment onClick={onCommentClick} />}
+            </Row>
           </Row>
-        </Row>
+        </Col>
       )}
       {editingAnswer && user && (
         <EditAnswerModal
