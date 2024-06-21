@@ -81,7 +81,7 @@ export function LeavePrivateGroupModal() {
   )
 }
 
-export function FollowOrUnfolowTopicButton(props: {
+export function FollowOrUnfollowTopicButton(props: {
   group: LiteGroup
   isMember: boolean | undefined
   user: User | undefined | null
