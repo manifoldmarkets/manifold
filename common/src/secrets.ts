@@ -28,6 +28,11 @@ export const secrets = (
     'TWILIO_AUTH_TOKEN',
     'TWILIO_SID',
     'TWILIO_VERIFY_SID',
+    'GIDX_API_KEY',
+    'GIDX_MERCHANT_ID',
+    'GIDX_PRODUCT_TYPE_ID',
+    'GIDX_DEVICE_TYPE_ID',
+    'GIDX_ACTIVITY_TYPE_ID',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()

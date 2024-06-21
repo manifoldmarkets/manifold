@@ -72,6 +72,7 @@ import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { FaCrown } from 'react-icons/fa6'
 import { getUserForStaticProps } from 'common/supabase/users'
+import { VerifyMe } from 'web/components/gidx/verify-me'
 
 export const getStaticProps = async (props: {
   params: {
@@ -351,6 +352,7 @@ function UserProfile(props: {
                 stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
                 content: (
                   <>
+                    <VerifyMe user={currentUser} />
                     <VerifyPhoneNumberBanner user={currentUser} />
                     <PortfolioSummary className="mt-4" user={user} />
                   </>

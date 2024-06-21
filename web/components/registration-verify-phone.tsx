@@ -1,20 +1,21 @@
 import { Col } from 'web/components/layout/col'
 import { Button } from 'web/components/buttons/button'
 import { api } from 'web/lib/firebase/api'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Input } from 'web/components/widgets/input'
 import { PhoneInput } from 'react-international-phone'
 import { toast } from 'react-hot-toast'
 import 'react-international-phone/style.css'
-import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
-import { PHONE_VERIFICATION_BONUS } from 'common/economy'
-import { formatMoney } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { useUser } from 'web/hooks/use-user'
 
-export function VerifyPhone(props: { onClose: () => void }) {
-  const { onClose } = props
+export function RegistrationVerifyPhone(props: {
+  cancel: () => void
+  next: () => void
+}) {
+  const { next, cancel } = props
+  const user = useUser()
   const requestOTP = async () => {
     setLoading(true)
     await toast
@@ -35,6 +36,7 @@ export function VerifyPhone(props: { onClose: () => void }) {
 
   const verifyPhone = async () => {
     setLoading(true)
+
     await toast
       .promise(
         api('verify-phone-number', {
@@ -47,49 +49,36 @@ export function VerifyPhone(props: { onClose: () => void }) {
           error: (e) => e.message,
         }
       )
-      .then(() => onClose())
+      .then(next)
       .catch((e) => console.error(e))
       .finally(() => setLoading(false))
-
-    await track('verify phone')
+    track('verify phone')
   }
   const [loading, setLoading] = useState(false)
   const [otp, setOtp] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [page, setPage] = useState(0)
+  useEffect(() => {
+    if (user?.verifiedPhone) next()
+  }, [user?.verifiedPhone])
 
   return (
-    <Col className="text-lg">
+    <Col className="p-4 text-lg">
       {page === 0 && (
-        <Col className="items-center justify-center gap-2">
-          <span className={'mb-2 mt-2 text-center text-xl'}>
-            Verify your phone number to collect a{' '}
-            <CoinNumber
-              amount={PHONE_VERIFICATION_BONUS}
-              className={'font-bold'}
-              isInline
-            />{' '}
-            signup bonus.
-            <br />
-            <br />
-            <span className={'text-lg italic'}>
-              (We won't send you any other messages.)
-            </span>
+        <Col className="gap-3">
+          <span className={'text-primary-700 mb-3 mt-2 text-2xl'}>
+            Verify your phone number
           </span>
           <PhoneInput
             defaultCountry={'us'}
             value={phoneNumber}
             onChange={(phone) => setPhoneNumber(phone)}
             placeholder={'Phone Number'}
-            className={'mb-4'}
+            className={'ml-3'}
           />
-          <Row
-            className={
-              'mb-4 mt-4 w-full justify-between px-8 sm:mt-8 sm:justify-center sm:gap-8'
-            }
-          >
-            <Button color={'gray-white'} onClick={onClose}>
-              Skip
+          <Row className={' mb-4 mt-4 w-full gap-12'}>
+            <Button color={'gray-white'} onClick={cancel}>
+              Cancel
             </Button>
             <Button
               disabled={phoneNumber.length < 7 || loading}
@@ -102,22 +91,19 @@ export function VerifyPhone(props: { onClose: () => void }) {
         </Col>
       )}
       {page === 1 && (
-        <Col className="h-full items-center justify-between gap-2 sm:justify-start">
+        <Col className="h-full justify-between gap-2 sm:justify-start">
           <Col className={'gap-2'}>
-            <Title>Enter verification code</Title>
-
+            <span className={'text-primary-700 mb-3 mt-2 text-2xl'}>
+              Enter verification code
+            </span>
             <Input
-              className={'w-36 self-center'}
+              className={'ml-3 w-36'}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               placeholder="123456"
             />
           </Col>
-          <Row
-            className={
-              'mb-4 mt-4 w-full justify-between px-8 sm:mt-8 sm:justify-center sm:gap-8'
-            }
-          >
+          <Row className={' mb-4 mt-4 w-full gap-12'}>
             <Button color={'gray-white'} onClick={() => setPage(0)}>
               Back
             </Button>
@@ -126,7 +112,7 @@ export function VerifyPhone(props: { onClose: () => void }) {
               loading={loading}
               onClick={verifyPhone}
             >
-              Verify & claim {formatMoney(PHONE_VERIFICATION_BONUS)}
+              Verify
             </Button>
           </Row>
         </Col>

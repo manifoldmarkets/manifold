@@ -45,7 +45,12 @@ import {
   PortfolioMetrics,
 } from 'common/portfolio-metrics'
 import { ModReport } from '../mod-report'
+
+import { RegistrationReturnType } from 'common/reason-codes'
+import { GIDXVerificationResponse, verificationParams } from 'common/gidx/gidx'
+
 import { notification_preference } from 'common/user-notification-preferences'
+
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -196,13 +201,6 @@ export const API = (_apiTypeCheck = {
         phoneNumber: z.string(),
       })
       .strict(),
-  },
-  'phone-number': {
-    method: 'GET',
-    visibility: 'undocumented',
-    authed: true,
-    returns: {} as { number: string },
-    props: z.object({}).strict(),
   },
   'bet/cancel/:betId': {
     method: 'POST',
@@ -1287,6 +1285,45 @@ export const API = (_apiTypeCheck = {
         limitDays: z.coerce.number(),
       })
       .strict(),
+  },
+  'register-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: verificationParams,
+    returns: {} as RegistrationReturnType,
+  },
+  'get-verification-session-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as GIDXVerificationResponse,
+    props: verificationParams,
+  },
+  'get-verification-status-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { status: string },
+    props: z.object({}),
+  },
+  'upload-document-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { status: string },
+    props: z.object({
+      CategoryType: z.number().gte(1).lte(7),
+      fileName: z.string(),
+      fileUrl: z.string(),
+    }),
+  },
+  'callback-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as any,
+    props: z.object({}) as any,
   },
 } as const)
 

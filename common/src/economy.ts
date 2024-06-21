@@ -60,6 +60,7 @@ export const getTieredCost = (
 
 export const STARTING_BALANCE = 100
 export const PHONE_VERIFICATION_BONUS = 1000
+export const KYC_VERIFICATION_BONUS = 1000
 
 export const NEXT_DAY_BONUS = 100 // Paid on day following signup
 export const MARKET_VISIT_BONUS = 100 // Paid on first distinct 5 market visits

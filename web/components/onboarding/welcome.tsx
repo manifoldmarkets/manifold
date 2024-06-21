@@ -31,7 +31,7 @@ import { api, updateUser, followTopic, followUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 import { unfollowTopic } from 'web/lib/supabase/groups'
 import { PillButton } from 'web/components/buttons/pill-button'
-import { VerifyPhone } from 'web/components/verify-phone'
+import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
 
 const FORCE_SHOW_WELCOME_MODAL = false
 
@@ -82,7 +82,9 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
       user={user}
       goBack={() => handleSetPage(page - 1)}
     />,
-    user && !isVerified(user) && <VerifyPhone onClose={increasePage} />,
+    user && !isVerified(user) && (
+      <OnboardingVerifyPhone onClose={increasePage} />
+    ),
   ])
   const showBottomButtons = page < 2
 

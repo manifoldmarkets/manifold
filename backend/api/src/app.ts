@@ -151,7 +151,6 @@ import { getUserPortfolio } from './get-user-portfolio'
 import { createuser } from 'api/create-user'
 import { verifyPhoneNumber } from 'api/verify-phone-number'
 import { requestOTP } from 'api/request-phone-otp'
-import { getPhoneNumber } from 'api/get-phone-number'
 import { multiSell } from 'api/multi-sell'
 import { convertSpiceToMana } from './convert-sp-to-mana'
 import { donate } from './donate'
@@ -167,6 +166,11 @@ import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
+import { register } from 'api/gidx/register'
+import { getVerificationSession } from 'api/gidx/get-verification-session'
+import { uploadDocument } from 'api/gidx/upload-document'
+import { callbackGIDX } from 'api/gidx/callback'
+import { getVerificationStatus } from 'api/gidx/get-verification-status'
 import { getCurrentPrivateUser } from './get-current-private-user'
 import { updatePrivateUser } from './update-private-user'
 import { setPushToken } from './push-token'
@@ -331,7 +335,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   createuser: createuser,
   'verify-phone-number': verifyPhoneNumber,
   'request-otp': requestOTP,
-  'phone-number': getPhoneNumber,
   'multi-sell': multiSell,
   'get-feed': getFeed,
   'get-mana-supply': getManaSupply,
@@ -340,6 +343,11 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-contract-positions': searchContractPositions,
   'get-txn-summary-stats': getTxnSummaryStats,
   'get-mana-summary-stats': getManaSummaryStats,
+  'register-gidx': register,
+  'get-verification-session-gidx': getVerificationSession,
+  'get-verification-status-gidx': getVerificationStatus,
+  'upload-document-gidx': uploadDocument,
+  'callback-gidx': callbackGIDX,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

@@ -1,7 +1,7 @@
 import { Editor, Extension } from '@tiptap/core'
 import toast from 'react-hot-toast'
 import { useMutation } from 'web/hooks/use-mutation'
-import { uploadImage } from 'web/lib/firebase/storage'
+import { uploadPublicImage } from 'web/lib/firebase/storage'
 
 export const Upload = Extension.create({
   name: 'upload',
@@ -13,7 +13,7 @@ export const useUploadMutation = (editor: Editor | null) =>
   useMutation(
     (files: File[]) =>
       // TODO: Images should be uploaded under a particular username
-      Promise.all(files.map((file) => uploadImage('default', file))),
+      Promise.all(files.map((file) => uploadPublicImage('default', file))),
     {
       onSuccess(urls) {
         if (!editor || !urls.length) return

@@ -66,6 +66,9 @@ export type User = {
   isAdvancedTrader?: boolean
   verifiedPhone?: boolean
   purchasedMana?: boolean
+  kycMatch?: boolean
+  kycFlags?: string[]
+  kycStatus?: 'verified' | 'failed' | 'blocked' | 'pending'
 }
 
 export type PrivateUser = {

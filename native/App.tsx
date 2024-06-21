@@ -10,9 +10,7 @@ import {
   NativeEventEmitter,
   StyleSheet,
   SafeAreaView,
-  StatusBar as RNStatusBar,
   Dimensions,
-  View,
   Share,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
@@ -28,16 +26,12 @@ import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/notification'
 import {
+  MesageTypeMap,
   nativeToWebMessage,
   nativeToWebMessageType,
   webToNativeMessage,
 } from 'common/native-message'
-import {
-  handleWebviewKilled,
-  sharedWebViewProps,
-  handleWebviewError,
-  handleRenderError,
-} from 'components/web-view-utils'
+import { CustomWebview } from 'components/custom-webview'
 import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Constants from 'expo-constants'
@@ -45,13 +39,14 @@ import { NativeShareData } from 'common/native-share-data'
 import { clearData, getData, storeData } from 'lib/auth'
 import { SplashAuth } from 'components/splash-auth'
 import { useIsConnected } from 'lib/use-is-connected'
+import { getLocation } from 'lib/location'
 
-// NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
-// this means no supabase jwt, placing bets, creating markets, etc.
-// const baseUri = 'http://192.168.1.154:3000/'
+// NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address. ie:
+// "cross-env NEXT_PUBLIC_API_URL=172.20.10.2:8088 \
+// const baseUri = 'http://192.168.1.229:3000/gidx/register'
+
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
-const nativeQuery = `?nativePlatform=${Platform.OS}`
 const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
@@ -78,13 +73,7 @@ const App = () => {
     log('Got user from storage:', user.email)
     setFbUser(user)
     sendWebviewAuthInfo(user)
-    setFirebaseUserViaJson(user, app)
-      .catch((e) => {
-        log('Error setting user:', e)
-      })
-      .then(() => {
-        log('User set successfully')
-      })
+    await setFirebaseUserViaJson(user, app)
   }
 
   useEffect(() => {
@@ -95,19 +84,23 @@ const App = () => {
   const sendWebviewAuthInfo = (user: FirebaseUser) => {
     // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
     // Seems my iPhone 12 mini can regularly handle a shorter timeout
-    setTimeout(() => {
-      communicateWithWebview('nativeFbUser', user)
-    }, 100)
-    // My older android phone needs a bit longer
-    setTimeout(() => {
-      communicateWithWebview('nativeFbUser', user)
-    }, 500)
+    const timeouts = [100, 500, 1000, 3000]
+    timeouts.forEach((timeout) => {
+      setTimeout(() => {
+        communicateWithWebview('nativeFbUser', user)
+      }, timeout)
+    })
   }
 
   // Url management
-  const [urlToLoad, setUrlToLoad] = useState<string>(
-    baseUri + 'home' + nativeQuery
-  )
+  const [urlToLoad, setUrlToLoad] = useState<string>(() => {
+    const url = new URL(baseUri)
+    // url.pathname = 'home'
+    const params = new URLSearchParams()
+    params.set('nativePlatform', Platform.OS)
+    url.search = params.toString()
+    return url.toString()
+  })
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
     isIOS ? LinkingManager.default : null
@@ -118,17 +111,20 @@ const App = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>('light')
 
   const setEndpointWithNativeQuery = (endpoint?: string) => {
-    const newUrl =
-      baseUri +
-      (endpoint ?? 'home') +
-      nativeQuery +
-      `&rand=${Math.random().toString()}`
-    log('Setting new url:', newUrl)
-    setUrlToLoad(newUrl)
+    const url = new URL(baseUri)
+    url.pathname = endpoint ?? 'home'
+    setUrlWithNativeQuery(url.toString())
   }
 
-  const setUrlWithNativeQuery = (url: String) => {
-    const newUrl = url + nativeQuery + `&rand=${Math.random().toString()}`
+  const setUrlWithNativeQuery = (urlString: string) => {
+    const url = new URL(urlString)
+
+    const params = new URLSearchParams()
+    params.set('nativePlatform', Platform.OS)
+    params.set('rand', Math.random().toString())
+    url.search = params.toString()
+
+    const newUrl = url.toString()
     log('Setting new url:', newUrl)
     setUrlToLoad(newUrl)
   }
@@ -153,7 +149,7 @@ const App = () => {
     if (hasLoadedWebView && listeningToNative.current) {
       communicateWithWebview(
         'notification',
-        response.notification.request.content.data
+        response.notification.request.content.data as Notification
       )
       setLastLinkInMemory(getSourceUrl(notification))
     } else setEndpointWithNativeQuery(getSourceUrl(notification))
@@ -290,7 +286,6 @@ const App = () => {
       if (finalStatus !== 'granted') {
         communicateWithWebview('pushNotificationPermissionStatus', {
           status: finalStatus,
-          userId: fbUser?.uid,
         })
         return null
       }
@@ -318,12 +313,10 @@ const App = () => {
           if (token)
             communicateWithWebview('pushToken', {
               token,
-              userId: fbUser?.uid,
             })
         } else
           communicateWithWebview('pushNotificationPermissionStatus', {
             status,
-            userId: fbUser?.uid,
           })
       })
     } else if (type === 'copyToClipboard') {
@@ -335,7 +328,6 @@ const App = () => {
         if (token)
           communicateWithWebview('pushToken', {
             token,
-            userId: fbUser?.uid,
           })
       })
     } else if (type === 'signOut') {
@@ -374,6 +366,10 @@ const App = () => {
       log('Client started listening')
       listeningToNative.current = true
       if (fbUser) sendWebviewAuthInfo(fbUser)
+    } else if (type === 'locationRequested') {
+      log('Location requested from web')
+      const location = await getLocation()
+      communicateWithWebview('location', location)
     } else {
       log('Unhandled message from web type: ', type)
       log('Unhandled message from web data: ', data)
@@ -392,9 +388,9 @@ const App = () => {
     })
   }
 
-  const communicateWithWebview = (
-    type: nativeToWebMessageType,
-    data: object
+  const communicateWithWebview = <T extends nativeToWebMessageType>(
+    type: T,
+    data: MesageTypeMap[T]
   ) => {
     log(
       'Sending message to webview:',
@@ -429,12 +425,6 @@ const App = () => {
       justifyContent: 'center',
       overflow: 'hidden',
       backgroundColor: backgroundColor,
-    },
-    webView: {
-      display: fullyLoaded ? 'flex' : 'none',
-      overflow: 'hidden',
-      marginTop: isIOS ? 0 : RNStatusBar.currentHeight ?? 0,
-      marginBottom: 0,
     },
   })
 
@@ -474,34 +464,16 @@ const App = () => {
           style={theme === 'dark' ? 'light' : 'dark'}
           hidden={false}
         />
-
-        <View style={[styles.container, { position: 'relative' }]}>
-          <WebView
-            {...sharedWebViewProps}
-            style={styles.webView}
-            // Load start and end is for whole website loading, not navigations within manifold
-            onLoadEnd={() => {
-              log('WebView onLoadEnd for url:', urlToLoad)
-              setHasLoadedWebView(true)
-            }}
-            source={{ uri: urlToLoad }}
-            ref={webview}
-            onError={(e) => handleWebviewError(e, resetWebView)}
-            renderError={(e) => handleRenderError(e, width, height)}
-            onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
-            onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
-            onContentProcessDidTerminate={(e) =>
-              handleWebviewKilled(e, resetWebView)
-            }
-            onMessage={async (m) => {
-              try {
-                await handleMessageFromWebview(m)
-              } catch (e) {
-                log('Error in handleMessageFromWebview', e)
-              }
-            }}
-          />
-        </View>
+        <CustomWebview
+          urlToLoad={urlToLoad}
+          webview={webview}
+          resetWebView={resetWebView}
+          width={width}
+          height={height}
+          setHasLoadedWebView={setHasLoadedWebView}
+          handleMessageFromWebview={handleMessageFromWebview}
+          handleExternalLink={handleExternalLink}
+        />
       </SafeAreaView>
       {/*<ExportLogsButton />*/}
     </>

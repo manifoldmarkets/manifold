@@ -26,6 +26,7 @@ import { convertTxn } from 'common/supabase/txns'
 import { CoinNumber } from './widgets/manaCoinNumber'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -73,9 +74,12 @@ export function BuyManaTab(props: { onClose: () => void }) {
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const handleIapReceipt = async (type: string, data: any) => {
+  const handleIapReceipt = async <T extends nativeToWebMessageType>(
+    type: T,
+    data: MesageTypeMap[T]
+  ) => {
     if (type === 'iapReceipt') {
-      const { receipt } = data
+      const { receipt } = data as MesageTypeMap['iapReceipt']
       try {
         await validateIapReceipt({ receipt: receipt })
         console.log('iap receipt validated')

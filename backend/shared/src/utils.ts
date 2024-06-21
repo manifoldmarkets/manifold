@@ -169,6 +169,15 @@ export const getPrivateUser = async (
     convertPrivateUser
   )
 }
+export const getPrivateUserSupabase = (userId: string) => {
+  const pg = createSupabaseDirectClient()
+
+  return pg.oneOrNone(
+    `select data from private_users where id = $1`,
+    [userId],
+    (row) => row.data as PrivateUser
+  )
+}
 
 export const getPrivateUserByKey = async (
   apiKey: string,

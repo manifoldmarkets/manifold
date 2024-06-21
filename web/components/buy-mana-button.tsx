@@ -9,6 +9,7 @@ import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
 import { Button } from './buttons/button'
 import { Row } from './layout/row'
 import { Col } from './layout/col'
+import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 
 export function BuyManaButton(props: {
   amount: 10000 | 25000 | 100000 | 1000000
@@ -21,9 +22,12 @@ export function BuyManaButton(props: {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const handleIapReceipt = async (type: string, data: any) => {
+  const handleIapReceipt = async <T extends nativeToWebMessageType>(
+    type: T,
+    data: MesageTypeMap[T]
+  ) => {
     if (type === 'iapReceipt') {
-      const { receipt } = data
+      const { receipt } = data as MesageTypeMap['iapReceipt']
       try {
         await validateIapReceipt({ receipt: receipt })
         console.log('iap receipt validated')

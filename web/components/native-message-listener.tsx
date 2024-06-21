@@ -14,6 +14,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { auth } from 'web/lib/firebase/users'
 import { User as FirebaseUser } from 'firebase/auth'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 
 export const NativeMessageListener = () => {
   const router = useRouter()
@@ -32,48 +33,47 @@ export const NativeMessageListener = () => {
     }
   }, [privateUser, router.query])
 
-  const handleNativeMessage = useEvent(async (type: string, data: any) => {
-    if (type === 'setIsNative') {
-      setIsNative(true, data.platform)
-      if (privateUser) setInstalledAppPlatform(privateUser, data.platform)
-    } else if (type === 'nativeFbUser') {
-      console.log('received nativeFbUser')
-      const user = data as FirebaseUser
-      if (auth.currentUser?.email !== user.email)
-        await setFirebaseUserViaJson(user, app, true)
-    } else if (type === 'pushNotificationPermissionStatus') {
-      const { status } = data
-      await handlePushNotificationPermissionStatus(status)
-    } else if (type === 'pushToken') {
-      const { token } = data
-      await setPushToken(token)
-    } else if (type === 'notification') {
-      const notification = data as Notification
-      // TODO: mark the notification as seen
-      const sourceUrl = getSourceUrl(notification)
-      console.log('sourceUrl', sourceUrl)
-      try {
-        router.push(sourceUrl)
-      } catch (e) {
-        console.log(`Error navigating to notification route ${sourceUrl}`, e)
-      }
-    } else if (type === 'link') {
-      const url = data['url'] ?? data
-      const newRoute = url.startsWith('/') ? url : '/' + url
-      console.log('Received link from native, current route', router.asPath)
-      if (router.asPath === newRoute) return
-      console.log('Navigating to link from native:', newRoute)
-      try {
-        await router.push(newRoute)
-      } catch (e) {
-        console.log(`Error navigating to linked route`, e)
+  const handleNativeMessage = useEvent(
+    async (type: nativeToWebMessageType, data: MesageTypeMap[typeof type]) => {
+      if (type === 'nativeFbUser') {
+        console.log('received nativeFbUser')
+        const user = data as FirebaseUser
+        if (auth.currentUser?.email !== user.email)
+          await setFirebaseUserViaJson(user, app, true)
+      } else if (type === 'pushNotificationPermissionStatus') {
+        const { status } =
+          data as MesageTypeMap['pushNotificationPermissionStatus']
+        await handlePushNotificationPermissionStatus(status)
+      } else if (type === 'pushToken') {
+        const { token } = data as MesageTypeMap['pushToken']
+        await setPushToken(token)
+      } else if (type === 'notification') {
+        const notification = data as Notification
+        // TODO: mark the notification as seen
+        const sourceUrl = getSourceUrl(notification)
+        console.log('sourceUrl', sourceUrl)
+        try {
+          router.push(sourceUrl)
+        } catch (e) {
+          console.log(`Error navigating to notification route ${sourceUrl}`, e)
+        }
+      } else if (type === 'link') {
+        const { url } = data as MesageTypeMap['link']
+        const newRoute = url.startsWith('/') ? url : '/' + url
+        console.log('Received link from native, current route', router.asPath)
+        if (router.asPath === newRoute) return
+        console.log('Navigating to link from native:', newRoute)
+        try {
+          await router.push(newRoute)
+        } catch (e) {
+          console.log(`Error navigating to linked route`, e)
+        }
       }
     }
-  })
+  )
 
   useNativeMessages(
     [
-      'setIsNative',
       'nativeFbUser',
       'pushNotificationPermissionStatus',
       'pushToken',

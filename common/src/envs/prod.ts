@@ -39,6 +39,7 @@ type FirebaseConfig = {
   projectId: string
   region?: string
   storageBucket: string
+  privateBucket: string
   messagingSenderId: string
   appId: string
   measurementId: string
@@ -59,6 +60,7 @@ export const PROD_CONFIG: EnvConfig = {
     projectId: 'mantic-markets',
     region: 'us-central1',
     storageBucket: 'mantic-markets.appspot.com',
+    privateBucket: 'mantic-markets-private',
     messagingSenderId: '128925704902',
     appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
     measurementId: 'G-SSFK1Q138D',
