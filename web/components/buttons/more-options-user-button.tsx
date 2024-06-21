@@ -29,6 +29,7 @@ import { linkClass } from '../widgets/site-link'
 import { buildArray } from 'common/util/array'
 import { DeleteYourselfButton } from '../profile/delete-yourself'
 import { AccountSettings } from '../profile/settings'
+import { EditProfile } from './edit-profile'
 
 export function MoreOptionsUserButton(props: { user: User }) {
   const { user } = props
@@ -125,7 +126,11 @@ export function MoreOptionsUserButton(props: { user: User }) {
                 ? [
                     {
                       title: 'Edit Profile',
-                      content: <></>,
+                      content: (
+                        <EditProfile
+                          auth={{ user, privateUser: currentPrivateUser }}
+                        />
+                      ),
                     },
                     {
                       title: 'Account Settings',
