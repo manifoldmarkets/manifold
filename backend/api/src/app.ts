@@ -167,7 +167,6 @@ import { blockMarket, unblockMarket } from './block-market'
 import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
 import { register } from 'api/gidx/register'
-import { getVerificationSession } from 'api/gidx/get-verification-session'
 import { uploadDocument } from 'api/gidx/upload-document'
 import { callbackGIDX } from 'api/gidx/callback'
 import { getVerificationStatus } from 'api/gidx/get-verification-status'
@@ -344,7 +343,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-txn-summary-stats': getTxnSummaryStats,
   'get-mana-summary-stats': getManaSummaryStats,
   'register-gidx': register,
-  'get-verification-session-gidx': getVerificationSession,
   'get-verification-status-gidx': getVerificationStatus,
   'upload-document-gidx': uploadDocument,
   'callback-gidx': callbackGIDX,

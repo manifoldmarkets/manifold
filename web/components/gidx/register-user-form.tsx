@@ -17,7 +17,6 @@ import {
   underageErrorCodes,
 } from 'common/reason-codes'
 import { intersection } from 'lodash'
-import Script from 'next/script'
 import { UploadDocuments } from 'web/components/gidx/upload-document'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -35,7 +34,7 @@ import { GPSData } from 'common/gidx/gidx'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 
 const body = {
-  MerchantCustomerID: '5',
+  MerchantCustomerID: '6',
   EmailAddress: 'gochanman@yahoo.com',
   MobilePhoneNumber: '4042818372',
   DeviceIpAddress: '149.40.50.57',
@@ -43,6 +42,8 @@ const body = {
   LastName: 'Chandler',
   DateOfBirth: '09/28/1987',
   CitizenshipCountryCode: 'US',
+  IdentificationTypeCode: 2,
+  IdentificationNumber: '123456789',
   AddressLine1: '66 Forest Street',
   City: 'Reading',
   StateCode: 'MA',
@@ -70,12 +71,10 @@ export const RegisterUserForm = (props: { user: User }) => {
   const user = useWebsocketUser(props.user.id) ?? props.user
   const router = useRouter()
   // TODO: After development, if user is verified, redirect to the final page
-  // const [page, setPage] = useState(user.verifiedPhone ? 1 : 0)
-  const [page, setPage] = useState(2)
+  const [page, setPage] = useState(user.verifiedPhone ? 1 : 0)
   const [loading, setLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [gidxSession, setGidxSession] = useState<string | null>(null)
   useNativeMessages(['location'], (type, data) => {
     console.log('Received location data from native', data)
     if ('error' in data) {
@@ -101,6 +100,7 @@ export const RegisterUserForm = (props: { user: User }) => {
   }>(
     {
       ...body,
+      //IdentificationTypeCode: 2,
       // FirstName: user.name.split(' ')[0],
       // LastName: user.name.split(' ')[1],
       // DateOfBirth: new Date(Date.now() - 18 * YEAR_MS)
@@ -152,21 +152,6 @@ export const RegisterUserForm = (props: { user: User }) => {
     ([_, value]) => value === undefined
   )
 
-  const getVerificationSession = async () => {
-    const res = await api('get-verification-session-gidx', {
-      ...userInfo,
-    } as any)
-    if (res) {
-      const { SessionURL } = res
-      const decodedString = decodeURIComponent(SessionURL).replaceAll('+', ' ')
-      console.log('session url', decodedString)
-      const scriptSrc = decodedString.match(/src='(.*?)'/)?.[1]
-      console.log('decoded string', scriptSrc)
-      setGidxSession(scriptSrc ?? '')
-      setPage(page + 1)
-    }
-  }
-
   const register = async () => {
     setError(null)
     if (!userInfo.DeviceGPS) {
@@ -200,7 +185,7 @@ export const RegisterUserForm = (props: { user: User }) => {
       FraudConfidenceScore !== undefined
     ) {
       setError(
-        `Confidence in identity or fraud too low. Add more information if you can.`
+        `Confidence in identity or fraud too low. Double check your information.`
       )
       return
     }
@@ -258,6 +243,7 @@ export const RegisterUserForm = (props: { user: User }) => {
   const idTypeName = Object.keys(identificationTypeToCode)[
     (userInfo?.IdentificationTypeCode ?? 1) - 1
   ]
+
   if (page === 0) {
     return (
       <Col className={colClass}>
@@ -281,14 +267,20 @@ export const RegisterUserForm = (props: { user: User }) => {
             isInline
           />
           , which is equal to{' '}
-          {user.spiceBalance / SPICE_TO_MANA_CONVERSION_RATE} Mana or{' '}
-          {user.spiceBalance / SPICE_TO_CHARITY_DOLLARS} dollars to charity.
+          {user.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE} Mana or{' '}
+          {user.spiceBalance * SPICE_TO_CHARITY_DOLLARS} dollars to charity.
         </span>
         <Row className={bottomRowClass}>
           <Button color={'gray-white'} onClick={router.back}>
             Back
           </Button>
-          <Button onClick={() => setPage(page + 1)}>Start</Button>
+          <Button
+            color={'gold'}
+            disabled={user.spiceBalance === 0}
+            onClick={() => setPage(page + 1)}
+          >
+            Start verification
+          </Button>
         </Row>
       </Col>
     )
@@ -297,7 +289,7 @@ export const RegisterUserForm = (props: { user: User }) => {
   if (page === 1) {
     return (
       <RegistrationVerifyPhone
-        cancel={() => null}
+        cancel={() => setPage(page - 1)}
         next={() => setPage(page + 1)}
       />
     )
@@ -386,24 +378,13 @@ export const RegisterUserForm = (props: { user: User }) => {
           <Input
             placeholder={`Your ${idTypeName} number`}
             type={'text'}
+            value={userInfo.IdentificationNumber}
             onChange={(e) =>
               setUserInfo({ ...userInfo, IdentificationNumber: e.target.value })
             }
           />
         </Col>
         {error && <span className={'text-error'}>{error}</span>}
-        {user.kycStatus === 'failed' && (
-          <Col
-            className={'border-primary-100 w-fit gap-3 rounded border-4 p-4'}
-          >
-            <span>
-              Having trouble? Clarify a few things verify to your identity.
-            </span>
-            <Button className={'w-72'} onClick={getVerificationSession}>
-              Open Verification Session
-            </Button>
-          </Col>
-        )}
         <Row className={bottomRowClass}>
           <Button
             color={'gray-white'}
@@ -424,28 +405,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (page === 4 && gidxSession && typeof window !== 'undefined') {
-    return (
-      <Col className={colClass}>
-        <div data-gidx-script-loading="true">Loading...</div>
-        <Script
-          strategy={'lazyOnload'}
-          src={gidxSession}
-          data-tsevo-script-tag
-          data-gidx-session-id={gidxSession.split('sessionid=')[1]}
-          type="text/javascript"
-        />
-        <Row className={bottomRowClass}>
-          <Button color={'gray-white'} onClick={() => setPage(page - 1)}>
-            Back
-          </Button>
-          <Button onClick={() => setPage(page + 1)}>Next</Button>
-        </Row>
-      </Col>
-    )
-  }
-
-  if (page === 5) {
+  if (page === 4) {
     return (
       <UploadDocuments
         back={() => setPage(page - 1)}

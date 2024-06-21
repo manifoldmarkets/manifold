@@ -47,7 +47,7 @@ import {
 import { ModReport } from '../mod-report'
 
 import { RegistrationReturnType } from 'common/reason-codes'
-import { GIDXVerificationResponse, verificationParams } from 'common/gidx/gidx'
+import { verificationParams } from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
 
@@ -1293,13 +1293,6 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: verificationParams,
     returns: {} as RegistrationReturnType,
-  },
-  'get-verification-session-gidx': {
-    method: 'POST',
-    visibility: 'undocumented',
-    authed: true,
-    returns: {} as GIDXVerificationResponse,
-    props: verificationParams,
   },
   'get-verification-status-gidx': {
     method: 'POST',
