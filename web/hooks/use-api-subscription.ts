@@ -26,5 +26,5 @@ export function useApiSubscription(opts: SubscriptionOptions) {
         }
       }
     }
-  }, [opts.enabled])
+  }, [opts.enabled, JSON.stringify(opts.topics)])
 }
