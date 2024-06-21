@@ -61,116 +61,122 @@ export function MoreOptionsUserButton(props: { user: User }) {
           aria-hidden="true"
         />
       </Button>
-      <Modal open={isModalOpen} setOpen={setIsModalOpen}>
-        <Col className={'bg-canvas-0 text-ink-1000 rounded-md p-4 '}>
-          <div className="mb-2 flex flex-wrap justify-between">
-            <Title className={'!mb-0'}>{name}</Title>
-            {(isAdmin || isTrusted) && (
-              <Row className="gap-2">
-                <SuperBanControl userId={userId} />
-                <Button
-                  color={'red'}
-                  size="xs"
-                  onClick={() => {
-                    banUser({
-                      userId,
-                      unban: user.isBannedFromPosting ?? false,
-                    })
-                  }}
-                >
-                  {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
-                </Button>
-              </Row>
-            )}
-          </div>
-          <Row
-            className={
-              'text-ink-600 flex-wrap items-center gap-x-3 gap-y-1 px-1'
-            }
-          >
-            <span className={'text-sm'}>Joined {createdTime}</span>
-            <Link
-              href={`/${user.username}/calibration`}
-              className={clsx(linkClass, 'text-sm')}
+      <Modal
+        open={isModalOpen}
+        setOpen={setIsModalOpen}
+        
+      >
+        <div className="bg-canvas-0 text-ink-1000 max-h-[80vh]  overflow-y-auto rounded-md p-4">
+          <Col className="h-full">
+            <div className="mb-2 flex flex-wrap justify-between">
+              <Title className={'!mb-0'}>{name}</Title>
+              {(isAdmin || isTrusted) && (
+                <Row className="gap-2">
+                  <SuperBanControl userId={userId} />
+                  <Button
+                    color={'red'}
+                    size="xs"
+                    onClick={() => {
+                      banUser({
+                        userId,
+                        unban: user.isBannedFromPosting ?? false,
+                      })
+                    }}
+                  >
+                    {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
+                  </Button>
+                </Row>
+              )}
+            </div>
+            <Row
+              className={
+                'text-ink-600 flex-wrap items-center gap-x-3 gap-y-1 px-1'
+              }
             >
-              <ChartBarIcon className="mb-1 mr-1 inline h-4 w-4" />
-              Calibration
-            </Link>
-            {isAdmin && (
-              <>
-                <a
-                  className="text-primary-400 text-sm hover:underline"
-                  href={supabaseUserConsolePath(user.id)}
-                >
-                  supabase user
-                </a>
-                <a
-                  className="text-primary-400 text-sm hover:underline"
-                  href={supabasePrivateUserConsolePath(user.id)}
-                >
-                  private user
-                </a>
-                <SimpleCopyTextButton
-                  text={user.id}
-                  tooltip="Copy user id"
-                  className="!px-1 !py-px"
-                  eventTrackingName={'admin copy user id'}
-                />
-              </>
-            )}
-          </Row>
-          <UncontrolledTabs
-            className={'mb-4'}
-            tabs={buildArray([
-              isYou
-                ? [
-                    {
-                      title: 'Edit Profile',
-                      content: (
-                        <EditProfile
-                          auth={{ user, privateUser: currentPrivateUser }}
-                        />
-                      ),
-                    },
-                    {
-                      title: 'Account Settings',
-                      content: (
-                        <AccountSettings
-                          user={user}
-                          privateUser={currentPrivateUser}
-                        />
-                      ),
-                    },
-                  ]
-                : [
-                    {
-                      title: 'Block',
-                      content: (
-                        <BlockUser
-                          user={user}
-                          currentUser={currentPrivateUser}
-                          closeModal={() => setIsModalOpen(false)}
-                        />
-                      ),
-                    },
-                    {
-                      title: 'Report',
-                      content: (
-                        <ReportUser
-                          user={user}
-                          closeModal={() => setIsModalOpen(false)}
-                        />
-                      ),
-                    },
-                  ],
-              {
-                title: `${numReferrals} Referrals`,
-                content: <Referrals user={user} />,
-              },
-              // TODO: if isYou include a tab for users you've blocked?
-            ])}
-          />
-        </Col>
+              <span className={'text-sm'}>Joined {createdTime}</span>
+              <Link
+                href={`/${user.username}/calibration`}
+                className={clsx(linkClass, 'text-sm')}
+              >
+                <ChartBarIcon className="mb-1 mr-1 inline h-4 w-4" />
+                Calibration
+              </Link>
+              {isAdmin && (
+                <>
+                  <a
+                    className="text-primary-400 text-sm hover:underline"
+                    href={supabaseUserConsolePath(user.id)}
+                  >
+                    supabase user
+                  </a>
+                  <a
+                    className="text-primary-400 text-sm hover:underline"
+                    href={supabasePrivateUserConsolePath(user.id)}
+                  >
+                    private user
+                  </a>
+                  <SimpleCopyTextButton
+                    text={user.id}
+                    tooltip="Copy user id"
+                    className="!px-1 !py-px"
+                    eventTrackingName={'admin copy user id'}
+                  />
+                </>
+              )}
+            </Row>
+            <UncontrolledTabs
+              className={'mb-4'}
+              tabs={buildArray([
+                isYou
+                  ? [
+                      {
+                        title: 'Edit Profile',
+                        content: (
+                          <EditProfile
+                            auth={{ user, privateUser: currentPrivateUser }}
+                          />
+                        ),
+                      },
+                      {
+                        title: 'Account Settings',
+                        content: (
+                          <AccountSettings
+                            user={user}
+                            privateUser={currentPrivateUser}
+                          />
+                        ),
+                      },
+                    ]
+                  : [
+                      {
+                        title: 'Block',
+                        content: (
+                          <BlockUser
+                            user={user}
+                            currentUser={currentPrivateUser}
+                            closeModal={() => setIsModalOpen(false)}
+                          />
+                        ),
+                      },
+                      {
+                        title: 'Report',
+                        content: (
+                          <ReportUser
+                            user={user}
+                            closeModal={() => setIsModalOpen(false)}
+                          />
+                        ),
+                      },
+                    ],
+                {
+                  title: `${numReferrals} Referrals`,
+                  content: <Referrals user={user} />,
+                },
+                // TODO: if isYou include a tab for users you've blocked?
+              ])}
+            />
+          </Col>
+        </div>
       </Modal>
     </>
   )

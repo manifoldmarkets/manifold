@@ -1,34 +1,24 @@
-import { getUserAndPrivateUserForStaticProps } from 'common/supabase/users'
 import { PrivateUser, User } from 'common/user'
-import Link from 'next/link'
+
 import { ReactNode, useState } from 'react'
-import { SEO } from 'web/components/SEO'
-import { buttonClass } from 'web/components/buttons/button'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
-import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Title } from 'web/components/widgets/title'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { useUser } from 'web/hooks/use-user'
 import { api, updateUser } from 'web/lib/firebase/api'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadPublicImage } from 'web/lib/firebase/storage'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
 export function EditUserField(props: {
-  user: User
-  field: 'bio' | 'website' | 'twitterHandle' | 'discordHandle'
   label: ReactNode
+  field: string
+  value: string
+  setValue: (value: string) => void
 }) {
-  const { user, field, label } = props
-  const [value, setValue] = useState(user[field] ?? '')
-
-  async function updateField() {
-    await api('me/update', { [field]: value.trim() })
-  }
+  const { label, field, value, setValue } = props
 
   return (
     <Col>
@@ -38,7 +28,6 @@ export function EditUserField(props: {
           className="w-full"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          onBlur={updateField}
         />
       ) : (
         <Input
@@ -46,7 +35,6 @@ export function EditUserField(props: {
           className={'w-full sm:w-96'}
           value={value}
           onChange={(e) => setValue(e.target.value || '')}
-          onBlur={updateField}
         />
       )}
     </Col>
@@ -60,8 +48,10 @@ export const EditProfile = (props: {
   const user = useUser() ?? props.auth.user
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '')
   const [avatarLoading, setAvatarLoading] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const { updateUsername, updateDisplayName, userInfo, updateUserState } =
+  const { userInfo, updateUserState } =
     useEditableUserInfo(user)
   const {
     name,
@@ -72,11 +62,35 @@ export const EditProfile = (props: {
     errorName,
   } = userInfo
 
+  const [bio, setBio] = useState(user.bio || '')
+  const [website, setWebsite] = useState(user.website || '')
+  const [twitterHandle, setTwitterHandle] = useState(user.twitterHandle || '')
+  const [discordHandle, setDiscordHandle] = useState(user.discordHandle || '')
+
+  const handleSave = async () => {
+    const updates: { [key: string]: string } = {}
+
+    if (bio.trim() !== user.bio) updates.bio = bio.trim()
+    if (website.trim() !== user.website) updates.website = website.trim()
+    if (twitterHandle.trim() !== user.twitterHandle)
+      updates.twitterHandle = twitterHandle.trim()
+    if (discordHandle.trim() !== user.discordHandle)
+      updates.discordHandle = discordHandle.trim()
+    if (name.trim() !== user.name) updates.displayName = name.trim()
+    if (username.trim() !== user.username) updates.username = username.trim()
+
+    if (Object.keys(updates).length > 0) {
+      setLoading(true)
+      await api('me/update', updates)
+      setIsSaved(true)
+      setLoading(false)
+      setTimeout(() => setIsSaved(false), 2000)
+    }
+  }
+
   const fileHandler = async (event: any) => {
     const file = event.target.files[0]
-
     setAvatarLoading(true)
-
     await uploadPublicImage(user.username, file)
       .then(async (url) => {
         await updateUser({ avatarUrl: url })
@@ -88,8 +102,9 @@ export const EditProfile = (props: {
         setAvatarUrl(user.avatarUrl || '')
       })
   }
+
   return (
-    <Col className="bg-canvas-0 max-w-lg rounded p-6 shadow-md sm:mx-auto">
+    <Col className="bg-canvas-0 max-w-lg rounded px-3 shadow-md sm:mx-auto">
       <Col className="gap-4">
         <Row className="items-center gap-4">
           {avatarLoading ? (
@@ -116,10 +131,7 @@ export const EditProfile = (props: {
               type="text"
               placeholder="Display name"
               value={name}
-              onChange={(e) => {
-                updateUserState({ name: e.target.value || '' })
-              }}
-              onBlur={updateDisplayName}
+              onChange={(e) => updateUserState({ name: e.target.value || '' })}
             />
           </Row>
           {loadingName && (
@@ -139,10 +151,9 @@ export const EditProfile = (props: {
               type="text"
               placeholder="Username"
               value={username}
-              onChange={(e) => {
+              onChange={(e) =>
                 updateUserState({ username: e.target.value || '' })
-              }}
-              onBlur={updateUsername}
+              }
             />
           </Row>
           {loadingUsername && (
@@ -155,35 +166,45 @@ export const EditProfile = (props: {
             <span className="text-error text-sm">{errorUsername}</span>
           )}
         </Col>
-        {(
-          [
-            ['bio', 'Bio'],
-            ['website', 'Website URL'],
-            ['twitterHandle', 'Twitter'],
-            ['discordHandle', 'Discord'],
-          ] as const
-        ).map(([field, label]) => (
-          <EditUserField
-            key={field}
-            user={user}
-            field={field}
-            label={<label className="mb-1 block">{label}</label>}
-          />
-        ))}
+
+        <EditUserField
+          label={<label className="mb-1 block">Bio</label>}
+          field="bio"
+          value={bio}
+          setValue={setBio}
+        />
+        <EditUserField
+          label={<label className="mb-1 block">Website URL</label>}
+          field="website"
+          value={website}
+          setValue={setWebsite}
+        />
+        <EditUserField
+          label={<label className="mb-1 block">Twitter</label>}
+          field="twitterHandle"
+          value={twitterHandle}
+          setValue={setTwitterHandle}
+        />
+        <EditUserField
+          label={<label className="mb-1 block">Discord</label>}
+          field="discordHandle"
+          value={discordHandle}
+          setValue={setDiscordHandle}
+        />
+
         <div className={'mt-2'}>
           <label className="mb-1 block">Email</label>
           <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
         </div>
 
-        <Link href={`/${user.username}`} className={buttonClass('lg', 'green')}>
-          Save
-        </Link>
+        <Button onClick={handleSave} disabled={loading}>
+          {loading ? <LoadingIndicator /> : 'Save'}
+        </Button>
+        {isSaved && <span className="text-success text-sm">Saved!</span>}
       </Col>
     </Col>
   )
 }
 
-//To do: Add saved confirmation and remove link.
-//To do: Fix X (close modal) UI
 //To do: Add slug modifier for tabs
 //To do: Update sitemap and any other links to /profile to tabs
