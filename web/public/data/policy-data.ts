@@ -8,8 +8,8 @@ type PolicyDataType = {
 
 export type PolicyContractType = {
   title: string
-  bidenContract: Contract | null | undefined
-  trumpContract: Contract | null | undefined
+  bidenContract: Contract
+  trumpContract: Contract
 }
 
 export const PolicyData: PolicyDataType[] = [

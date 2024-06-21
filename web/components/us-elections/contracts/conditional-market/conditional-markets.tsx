@@ -1,23 +1,21 @@
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { useLiveContract } from 'web/hooks/use-contract'
 import { PolicyContractType } from 'web/public/data/policy-data'
 import { MobilePolicy, Policy } from './conditional-market'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import Image from 'next/image'
+import { useLiveContract } from 'web/hooks/use-contract'
 
 export function ConditionalMarkets(props: {
   rawPolicyContracts: PolicyContractType[]
 }) {
   const policyContracts = props.rawPolicyContracts.map((policy) => {
-    const bidenContract = policy.bidenContract
-      ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useLiveContract(policy.bidenContract)
-      : policy.bidenContract
-    const trumpContract = policy.trumpContract
-      ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useLiveContract(policy.trumpContract)
-      : policy.trumpContract
+    const bidenContract =
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      useLiveContract(policy.bidenContract) ?? policy.bidenContract
+    const trumpContract =
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      useLiveContract(policy.trumpContract) ?? policy.trumpContract
 
     return {
       title: policy.title,
@@ -62,20 +60,15 @@ export function ConditionalMarkets(props: {
         </Row>
         <div className="sm:bg-canvas-0 rounded-l-lg sm:pl-4">
           {policyContracts.map((policy, index) => (
-            <>
-              <MobilePolicy
-                key={policy.title}
-                policy={policy}
-                className={'sm:hidden'}
-              />
+            <Col key={policy.title}>
+              <MobilePolicy policy={policy} className={'sm:hidden'} />
               <Policy
-                key={policy.title}
                 policy={policy}
                 className={'hidden sm:flex'}
                 isFirst={index == 0}
                 isLast={index == policyContracts.length - 1}
               />
-            </>
+            </Col>
           ))}
         </div>
         <Row className=" w-full justify-end text-xs ">
