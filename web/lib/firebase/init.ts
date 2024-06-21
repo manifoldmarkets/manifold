@@ -9,5 +9,3 @@ export const privateStorage = getStorage(
   app,
   'gs://' + FIREBASE_CONFIG.privateBucket
 )
-
-
