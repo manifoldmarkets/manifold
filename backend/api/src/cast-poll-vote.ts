@@ -3,7 +3,11 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { PollOption } from 'common/poll-option'
 import { createVotedOnPollNotification } from 'shared/create-notification'
-import { getContract, getUser } from 'shared/utils'
+import {
+  getContract,
+  getUser,
+  revalidateContractStaticProps,
+} from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
 
 const schema = z
@@ -15,27 +19,27 @@ const schema = z
 
 export const castpollvote = authEndpoint(async (req, auth) => {
   const { contractId, voteId } = validate(schema, req.body)
-  const pg = createSupabaseDirectClient()
-  const contract = await getContract(pg, contractId)
-  if (!contract) {
-    throw new APIError(404, 'Contract not found')
-  }
-
-  if (contract.outcomeType !== 'POLL') {
-    throw new APIError(403, 'This contract is not a poll')
-  }
-
   const user = await getUser(auth.uid)
+  if (!user) {
+    throw new APIError(404, 'User not found')
+  }
   if (user?.isBannedFromPosting) {
     throw new APIError(403, 'You are banned and cannot vote')
   }
 
-  const options: PollOption[] = contract.options
+  return createSupabaseDirectClient().tx(async (t) => {
+    const contract = await getContract(t, contractId)
+    if (!contract) {
+      throw new APIError(404, 'Contract not found')
+    }
 
-  // Find the option to update
-  const optionToUpdate = options.find((o) => o.id === voteId)
+    if (contract.outcomeType !== 'POLL') {
+      throw new APIError(403, 'This contract is not a poll')
+    }
+    const options: PollOption[] = contract.options
+    // Find the option to update
+    const optionToUpdate = options.find((o) => o.id === voteId)
 
-  return pg.tx(async (t) => {
     const totalVoters = await t.manyOrNone(
       `select * from votes where contract_id = $1`,
       [contractId, voteId]
@@ -54,7 +58,7 @@ export const castpollvote = authEndpoint(async (req, auth) => {
 
     // Write the updated options back to the document
     await updateContract(t, contractId, {
-      options: options,
+      options,
       uniqueBettorCount: totalVoters.length + 1,
     })
 
@@ -71,6 +75,12 @@ export const castpollvote = authEndpoint(async (req, auth) => {
       optionToUpdate?.text ?? '',
       contract
     )
-    return { status: 'success', voteId: id }
+
+    return {
+      result: { status: 'success', voteId: id },
+      continue: async () => {
+        await revalidateContractStaticProps(contract)
+      },
+    }
   })
 })
