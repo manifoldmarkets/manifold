@@ -100,7 +100,7 @@ export const applyBetsFilter = <
   if (options?.afterTime) {
     q = q.gt('created_time', millisToTs(options.afterTime))
   }
-  if (options?.beforeTime) {
+  if (options?.beforeTime !== undefined) {
     q = q.lt('created_time', millisToTs(options.beforeTime))
   }
   if (options?.filterChallenges) {

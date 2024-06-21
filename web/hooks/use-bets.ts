@@ -26,7 +26,8 @@ export function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
     // if afterTime filter exists, and bet is before that time
     (options.afterTime && bet.createdTime <= options.afterTime) ||
     // if beforeTime filter exists, and bet is after that time
-    (options.beforeTime && bet.createdTime >= options.beforeTime) ||
+    (options.beforeTime !== undefined &&
+      bet.createdTime >= options.beforeTime) ||
     // if challenges filter is true, and bet is a challenge
     (options.filterChallenges && bet.isChallenge) ||
     // if ante filter is true, and bet is ante
@@ -38,7 +39,7 @@ export function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
   return shouldBeFiltered
 }
 
-export function useBets(options?: APIParams<'bets'>) {
+export function useBetsOnce(options?: APIParams<'bets'>) {
   const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
     undefined,
     `use-bets-${JSON.stringify(options)}`
@@ -128,6 +129,47 @@ export const useSubscribeNewBets = (
       }).then(addBets)
     }
   }, [contractId, afterTime, isPageVisible])
+
+  useApiSubscription({
+    topics: [`contract/${contractId}/new-bet`],
+    onBroadcast: (msg) => {
+      addBets(msg.data.bets as Bet[])
+    },
+  })
+
+  return newBets
+}
+
+export const useContractBets = (
+  contractId: string,
+  opts?: APIParams<'bets'>
+) => {
+  const options = {
+    contractId,
+    ...opts,
+  }
+  const [newBets, setNewBets] = usePersistentInMemoryState<Bet[]>(
+    [],
+    `${options?.contractId}-${options?.userId}-${options?.contractSlug}-${options?.username}-bets`
+  )
+
+  const addBets = (bets: Bet[]) => {
+    setNewBets((currentBets) => {
+      const uniqueBets = sortBy(
+        uniqBy([...currentBets, ...bets], 'id'),
+        'createdTime'
+      )
+      return uniqueBets.filter((b) => !betShouldBeFiltered(b, options))
+    })
+  }
+
+  const isPageVisible = useIsPageVisible()
+
+  useEffect(() => {
+    if (isPageVisible) {
+      api('bets', options).then(addBets)
+    }
+  }, [JSON.stringify(options), isPageVisible])
 
   useApiSubscription({
     topics: [`contract/${contractId}/new-bet`],

@@ -38,11 +38,12 @@ export const getBets: APIHandler<'bets'> = async (props) => {
 
   // mqp: this pagination approach is technically incorrect if multiple bets
   // have the exact same createdTime, but that's very unlikely
-  const beforeBetTime = !before
-    ? undefined
-    : await getBetTime(db, before).catch(() => {
-        throw new APIError(404, 'Bet specified in before parameter not found')
-      })
+  const beforeBetTime =
+    before === undefined
+      ? undefined
+      : await getBetTime(db, before).catch(() => {
+          throw new APIError(404, 'Bet specified in before parameter not found')
+        })
 
   const afterBetTime = !after
     ? undefined
@@ -55,7 +56,7 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     contractId,
     answerId,
     beforeTime:
-      beforeTime && beforeBetTime
+      beforeTime !== undefined && beforeBetTime !== undefined
         ? Math.min(beforeTime, beforeBetTime)
         : beforeTime ?? beforeBetTime,
     afterTime:
