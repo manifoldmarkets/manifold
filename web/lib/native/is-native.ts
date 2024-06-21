@@ -1,8 +1,8 @@
 import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/native-message'
 import { PrivateUser } from 'common/user'
 import { uniq } from 'lodash'
-import { updatePrivateUser } from 'web/lib/firebase/users'
 import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
+import { api } from '../firebase/api'
 
 export const getIsNative = () => {
   // TODO cache the result of this in memory
@@ -39,7 +39,7 @@ export const setInstalledAppPlatform = (
   platform: string
 ) => {
   if (privateUser.installedAppPlatforms?.includes(platform)) return
-  updatePrivateUser({
+  api('me/private/update', {
     installedAppPlatforms: uniq([
       ...(privateUser.installedAppPlatforms ?? []),
       platform,

@@ -17,7 +17,7 @@ import {
   ParentNotificationHeader,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-helpers'
-import { markAllNotifications } from 'web/lib/firebase/api'
+import { api, markAllNotifications } from 'web/lib/firebase/api'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
@@ -32,7 +32,6 @@ import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser, useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { XIcon } from '@heroicons/react/outline'
-import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -85,7 +84,7 @@ function NotificationsAppBanner() {
       <button
         onClick={() => {
           track('close app banner')
-          updatePrivateUser({
+          api('me/private/update', {
             hasSeenAppBannerInNotificationsOn: Date.now(),
           })
         }}

@@ -27,10 +27,6 @@ export type { User }
 
 export const auth = getAuth(app)
 
-export async function updatePrivateUser(update: Partial<PrivateUser>) {
-  await api('me/private/update', update)
-}
-
 export const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'
 const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'
 
