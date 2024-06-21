@@ -15,7 +15,6 @@ import {
 import { log } from 'shared/utils'
 import { getPrivateUserByKey } from 'shared/utils'
 
-
 export type Json = Record<string, unknown> | Json[]
 export type JsonHandler<T extends Json> = (
   req: Request,
@@ -169,7 +168,7 @@ export const typedEndpoint = <N extends APIPath>(
     try {
       authUser = await lookupUser(await parseCredentials(req))
     } catch (e) {
-      if (authRequired) next(e)
+      if (authRequired) return next(e)
     }
 
     const props = {
