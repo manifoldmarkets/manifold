@@ -16,16 +16,14 @@ export default function ContractSharePanel(props: {
   const { isResolved } = contract
   return (
     <div className={className}>
-      {!isResolved &&
-        !isClosed &&
-        (isCreator ? (
-          <>
-            {showResolver && <Spacer h={4} />}
-            <CreatorShareBoostPanel contract={contract} />
-          </>
-        ) : (
-          <NonCreatorSharePanel contract={contract} />
-        ))}
+      {!isResolved && !isClosed ? (
+        <>
+          {showResolver && <Spacer h={4} />}
+          <CreatorShareBoostPanel contract={contract} />
+        </>
+      ) : (
+        <NonCreatorSharePanel contract={contract} />
+      )}
     </div>
   )
 }

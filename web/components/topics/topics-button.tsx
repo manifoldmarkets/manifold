@@ -12,7 +12,7 @@ import { TopicOptions } from 'web/components/topics/topic-options'
 import { BookmarkIcon } from '@heroicons/react/outline'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
-export function FollowOrUnfolowTopicButton(props: {
+export function FollowOrUnfollowTopicButton(props: {
   group: LiteGroup
   isMember: boolean | undefined
   user: User | undefined | null
