@@ -51,7 +51,6 @@ import { GIDXVerificationResponse, verificationParams } from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
 
-
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -411,7 +410,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string(),
-        amount: z.number().int().gt(0).finite(),
+        amount: z.number().gt(0).finite(),
       })
       .strict(),
   },
@@ -423,7 +422,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string(),
-        amount: z.number().gt(0).int().finite(),
+        amount: z.number().gt(0).finite(),
       })
       .strict(),
   },
@@ -436,7 +435,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         commentId: z.string(),
-        amount: z.number().gt(0).int().finite(),
+        amount: z.number().gt(0).finite(),
       })
       .strict(),
   },
