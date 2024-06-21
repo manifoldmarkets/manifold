@@ -69,6 +69,8 @@ export function YourOrders(props: {
 
   if (yourBets.length === 0) return null
 
+  const moreOrders = yourBets.length - maxShownNotExpanded
+
   return (
     <Col className={clsx(className, 'gap-2 overflow-x-auto')}>
       <Row className="items-center justify-between">
@@ -101,7 +103,7 @@ export function YourOrders(props: {
           )}
           {isExpanded
             ? 'Show fewer orders'
-            : `Show ${yourBets.length - maxShownNotExpanded} more orders`}
+            : `Show ${moreOrders} more order${moreOrders === 1 ? '' : 's'}`}
         </Button>
       )}
     </Col>

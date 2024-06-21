@@ -705,18 +705,6 @@ export function Answer(props: {
 
       {expanded && (
         <Col>
-          {(shouldShowLimitOrderChart ||
-            (yourUnfilledBets ?? []).length > 0) && (
-            <Col className="px-2">
-              <QuickLimitOrderButtons contract={contract} answer={answer} />
-              <YourOrders
-                contract={contract}
-                bets={yourUnfilledBets ?? []}
-                deemphasizedHeader
-              />
-            </Col>
-          )}
-
           <Row
             className={'flex-wrap items-center justify-between gap-2 px-3 py-1'}
           >
@@ -772,6 +760,18 @@ export function Answer(props: {
               {onCommentClick && <AddComment onClick={onCommentClick} />}
             </Row>
           </Row>
+
+          {(shouldShowLimitOrderChart ||
+            (yourUnfilledBets ?? []).length > 0) && (
+            <Col className="px-2">
+              <QuickLimitOrderButtons contract={contract} answer={answer} />
+              <YourOrders
+                contract={contract}
+                bets={yourUnfilledBets ?? []}
+                deemphasizedHeader
+              />
+            </Col>
+          )}
         </Col>
       )}
       {editingAnswer && user && (
