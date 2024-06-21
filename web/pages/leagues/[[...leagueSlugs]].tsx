@@ -167,7 +167,7 @@ export default function Leagues() {
         url={url}
       />
 
-      <Col className="mx-auto w-full max-w-xl gap-2 pt-2 sm:pt-0">
+      <Col className="mx-auto w-full max-w-xl gap-2 px-1 pt-2 sm:pt-0">
         <Col className="sm:mt-2 lg:mt-0">
           <Row className="mb-2 items-center gap-4">
             <Title className="!mb-0 hidden sm:block">Leagues</Title>
