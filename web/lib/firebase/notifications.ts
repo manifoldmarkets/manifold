@@ -1,6 +1,5 @@
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { api } from './api'
-import { updatePrivateUser } from './users'
 
 export const setPushToken = async (pushToken: string) => {
   try {
@@ -24,7 +23,7 @@ export const handlePushNotificationPermissionStatus = async (
 
 export const setPushTokenRequestDenied = async () => {
   console.log('push token denied')
-  await updatePrivateUser({
+  await api('me/private/update', {
     rejectedPushNotificationsOn: Date.now(),
     interestedInPushNotifications: false,
   })

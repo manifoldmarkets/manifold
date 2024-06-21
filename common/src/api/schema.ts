@@ -681,8 +681,10 @@ export const API = (_apiTypeCheck = {
         pushToken: z.string().optional(),
         rejectedPushNotificationsOn: z.number().optional(),
         lastPromptedToEnablePushNotifications: z.number().optional(),
+        interestedInPushNotifications: z.boolean().optional(),
         hasSeenAppBannerInNotificationsOn: z.number().optional(),
         installedAppPlatforms: z.array(z.string()).optional(),
+        paymentInfo: z.string().optional(),
       })
       .strict(),
   },

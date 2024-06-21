@@ -2,7 +2,6 @@ import { RefreshIcon } from '@heroicons/react/solid'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { AiOutlineCopy } from 'react-icons/ai'
-import { updatePrivateUser } from 'web/lib/firebase/users'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
@@ -32,9 +31,7 @@ export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
     e?.preventDefault()
 
     if (!privateUser.twitchInfo) return
-    await updatePrivateUser({
-      twitchInfo: { ...privateUser.twitchInfo, needsRelinking: true },
-    })
+    await api('save-twitch', { twitchInfo: { needsRelinking: true } })
   }
 
   return (

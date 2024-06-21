@@ -1,10 +1,8 @@
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-
 import { PrivateUser, User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { updatePrivateUser } from 'web/lib/firebase/users'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import dayjs from 'dayjs'
 import { formatMoney } from 'common/util/format'
@@ -61,7 +59,7 @@ export function PushNotificationsModal(props: {
     const shouldShowOurNotificationPrompt = totalNotifications >= 10
     const openTimer = setTimeout(() => {
       setOpen(shouldShowOurNotificationPrompt)
-      updatePrivateUser({
+      api('me/private/update', {
         lastPromptedToEnablePushNotifications: Date.now(),
       })
     }, 1000)
