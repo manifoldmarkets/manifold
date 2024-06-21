@@ -8,7 +8,8 @@ export const getLocation = async () => {
     return { error: 'Permission to access location was denied' }
   }
 
-  let location = await Location.getCurrentPositionAsync({})
+  let location = await Location.getLastKnownPositionAsync({})
+  if (!location) location = await Location.getCurrentPositionAsync({})
 
   return {
     Latitude: location.coords.latitude,
