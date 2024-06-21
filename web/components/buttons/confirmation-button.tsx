@@ -147,3 +147,48 @@ export function ResolveConfirmationButton(props: {
     </ConfirmationButton>
   )
 }
+
+export function CancelAllConfirmationButton(props: {
+  onResolve: () => void
+  isSubmitting: boolean
+  openModalButtonClass?: string
+  marketTitle: string
+
+  color: ColorType
+  disabled?: boolean
+}) {
+  const {
+    onResolve,
+    isSubmitting,
+    openModalButtonClass,
+    color,
+    marketTitle,
+    disabled,
+  } = props
+  return (
+    <ConfirmationButton
+      openModalBtn={{
+        className: clsx('border-none self-start', openModalButtonClass),
+        label: 'Cancel All',
+        color: color,
+        disabled: isSubmitting || disabled,
+        size: 'xl',
+      }}
+      cancelBtn={{
+        label: 'Back',
+      }}
+      submitBtn={{
+        label: `Resolve all to N/A`,
+        color: color,
+        isSubmitting,
+      }}
+      onSubmit={onResolve}
+    >
+      <p>
+        Are you sure you want to resolve all answers on "{marketTitle}" to N/A?
+        This can take a while.
+        <br />
+      </p>
+    </ConfirmationButton>
+  )
+}
