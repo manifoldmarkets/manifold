@@ -29,6 +29,12 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
       }
       const authToken = process.env.TWILIO_AUTH_TOKEN
       const client = new twilio(process.env.TWILIO_SID, authToken)
+      const lookup = await client.lookups.v2
+        .phoneNumbers(phoneNumber)
+        .fetch({ fields: 'line_type_intelligence' })
+      if (lookup.lineTypeIntelligence.type !== 'mobile') {
+        throw new APIError(400, 'Only mobile carriers allowed')
+      }
       const verification = await client.verify.v2
         .services(process.env.TWILIO_VERIFY_SID)
         .verificationChecks.create({ to: phoneNumber, code: otpCode })

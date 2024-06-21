@@ -25,9 +25,11 @@ export const requestOTP: APIHandler<'request-otp'> = rateLimitByUser(
       const newVerification = await client.verify.v2
         .services(process.env.TWILIO_VERIFY_SID)
         .verifications.create({ to: phoneNumber, channel: 'sms' })
+      if (newVerification.lookup.carrier.type !== 'mobile') {
+        throw new APIError(400, 'Only mobile carriers allowed')
+      }
       log(newVerification.status, { phoneNumber })
     } catch (e) {
-      log(e)
       throw new APIError(400, e as string)
     }
 
