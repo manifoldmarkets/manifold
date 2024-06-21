@@ -23,9 +23,6 @@ export function ReportsIcon(props: { className?: string }) {
 
   useEffect(() => {
     fetchNewReportsCount()
-    const intervalId = setInterval(fetchNewReportsCount, 10000)
-
-    return () => clearInterval(intervalId)
   }, [])
 
   return (
