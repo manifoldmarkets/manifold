@@ -28,7 +28,7 @@ import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
 import { buildArray } from 'common/util/array'
 import { DeleteYourselfButton } from '../profile/delete-yourself'
-import { Settings } from '../profile/settings'
+import { AccountSettings } from '../profile/settings'
 
 export function MoreOptionsUserButton(props: { user: User }) {
   const { user } = props
@@ -121,28 +121,19 @@ export function MoreOptionsUserButton(props: { user: User }) {
           <UncontrolledTabs
             className={'mb-4'}
             tabs={buildArray([
-              {
-                title: `${numReferrals} Referrals`,
-                content: <Referrals user={user} />,
-              },
-              // TODO: if isYou include a tab for users you've blocked?
               isYou
                 ? [
                     {
-                      title: 'Settings',
+                      title: 'Edit Profile',
+                      content: <></>,
+                    },
+                    {
+                      title: 'Account Settings',
                       content: (
-                        <Settings
+                        <AccountSettings
                           user={user}
                           privateUser={currentPrivateUser}
                         />
-                      ),
-                    },
-                    {
-                      title: 'Delete Account',
-                      content: (
-                        <div className="flex min-h-[200px] items-center justify-center p-4">
-                          <DeleteYourselfButton username={user.username} />
-                        </div>
                       ),
                     },
                   ]
@@ -167,6 +158,11 @@ export function MoreOptionsUserButton(props: { user: User }) {
                       ),
                     },
                   ],
+              {
+                title: `${numReferrals} Referrals`,
+                content: <Referrals user={user} />,
+              },
+              // TODO: if isYou include a tab for users you've blocked?
             ])}
           />
         </Col>
