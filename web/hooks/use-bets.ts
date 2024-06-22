@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { Bet, BetFilter, LimitBet } from 'common/bet'
 import { db } from 'web/lib/supabase/db'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { applyBetsFilter, convertBet } from 'common/supabase/bets'
+import { applyBetsFilter, convertBet, getBets } from 'common/supabase/bets'
 import { Row } from 'common/supabase/utils'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
@@ -142,15 +142,17 @@ export const useSubscribeNewBets = (
 
 export const useContractBets = (
   contractId: string,
-  opts?: APIParams<'bets'>
+  opts?: APIParams<'bets'> & { disabled?: boolean }
 ) => {
-  const options = {
+  const { disabled = false, ...apiOptions } = {
     contractId,
     ...opts,
   }
+  const optionsKey = JSON.stringify(apiOptions)
+
   const [newBets, setNewBets] = usePersistentInMemoryState<Bet[]>(
     [],
-    `${options?.contractId}-${options?.userId}-${options?.contractSlug}-${options?.username}-bets`
+    `${optionsKey}-bets`
   )
 
   const addBets = (bets: Bet[]) => {
@@ -159,23 +161,26 @@ export const useContractBets = (
         uniqBy([...currentBets, ...bets], 'id'),
         'createdTime'
       )
-      return uniqueBets.filter((b) => !betShouldBeFiltered(b, options))
+      return uniqueBets.filter((b) => !betShouldBeFiltered(b, apiOptions))
     })
   }
 
   const isPageVisible = useIsPageVisible()
 
   useEffect(() => {
-    if (isPageVisible) {
-      api('bets', options).then(addBets)
+    if (isPageVisible && !disabled) {
+      getBets(db, apiOptions).then(addBets)
+      // The following limits to 1000 bets...
+      // api('bets', apiOptions).then(addBets)
     }
-  }, [JSON.stringify(options), isPageVisible])
+  }, [optionsKey, disabled, isPageVisible])
 
   useApiSubscription({
     topics: [`contract/${contractId}/new-bet`],
     onBroadcast: (msg) => {
       addBets(msg.data.bets as Bet[])
     },
+    enabled: !disabled,
   })
 
   return newBets
