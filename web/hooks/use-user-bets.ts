@@ -10,6 +10,6 @@ export const useUserContractBets = (
     removeUndefinedProps({
       userId,
       disabled: !userId,
-    }),
+    })
   )
 }
