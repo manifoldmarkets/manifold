@@ -709,7 +709,17 @@ export const getRoundedLimitProb = (limitProb: number | undefined) => {
 }
 
 const getMakerIdsFromBetResult = (result: NewBetResult) => {
-  const { makers = [], otherBetResults = [] } = result
-  const allMakers = [...makers, ...otherBetResults.flatMap((r) => r.makers)]
-  return uniq(allMakers.map((m) => m.bet.userId))
+  const { makers = [], otherBetResults = [], ordersToCancel = [] } = result
+
+  const makerUserIds = [
+    ...makers,
+    ...otherBetResults.flatMap((r) => r.makers),
+  ].map((m) => m.bet.userId)
+
+  const cancelledUserIds = [
+    ...ordersToCancel,
+    ...otherBetResults.flatMap((r) => r.ordersToCancel),
+  ].map((o) => o.userId)
+
+  return uniq([...makerUserIds, ...cancelledUserIds])
 }
