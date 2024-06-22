@@ -23,10 +23,25 @@ import { calculateGroupImportanceScore } from 'shared/group-importance-score'
 import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
 import { sendStreakExpirationNotification } from 'replicator/jobs/streak-expiration-notice'
 import { expireLimitOrders } from 'shared/expire-limit-orders'
+import { denormalizeAnswers } from './denormalize-answers'
+import { incrementStreakForgiveness } from './increment-streak-forgiveness'
+import { sendMarketCloseEmails } from './send-market-close-emails'
+import { pollPollResolutions } from './poll-poll-resolutions'
+import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
+import { scoreContracts } from './score-contracts'
+import { updateLeagueRanks } from './update-league-ranks'
+import { updateLeague } from './update-league'
+import { updateContractViewEmbeddings } from './update-contract-view-embeddings'
 
 export function createJobs() {
   return [
     // Hourly jobs:
+    createJob(
+      'send-market-close-emails',
+      '0 0 * * * *', // every hour
+      sendMarketCloseEmails,
+      9
+    ),
     createJob(
       'update-contract-metrics',
       '0 */21 * * * *', // every 21 minutes - (on the 3rd minute of every hour)
@@ -42,6 +57,12 @@ export function createJobs() {
       'group-importance-score',
       '0 6 * * * *', // on the 6th minute of every hour
       () => calculateGroupImportanceScore()
+    ),
+    createJob(
+      'update-league',
+      '0 */15 * * * *', // every 15 minutes
+      updateLeague,
+      9
     ),
     createJob(
       'update-group-metrics',
@@ -74,6 +95,23 @@ export function createJobs() {
       '0 */10 * * * *', // every 10 minutes
       expireLimitOrders
     ),
+    createJob(
+      'score-contracts',
+      `0 */${IMPORTANCE_MINUTE_INTERVAL} * * * *`, // every 2 minutes
+      scoreContracts,
+      IMPORTANCE_MINUTE_INTERVAL * 60
+    ),
+    createJob(
+      'denormalize-answers',
+      '0 */1 * * * *', // every minute
+      denormalizeAnswers
+    ),
+    createJob(
+      'poll-poll-resolutions',
+      '0 */1 * * * *', // every minute
+      pollPollResolutions
+    ),
+
     // Daily jobs:
     createJob(
       'truncate-incoming-writes',
@@ -129,6 +167,23 @@ export function createJobs() {
       'send-streak-notifications',
       '0 30 18 * * *', // 6:30pm PST daily ( 9:30pm EST )
       sendStreakExpirationNotification
+    ),
+
+    // Monthly jobs:
+    createJob(
+      'increment-streak-forgiveness',
+      '0 0 0 1 * *', // 1st day of the month at 12am PST
+      incrementStreakForgiveness
+    ),
+    createJob(
+      'update-league-ranks',
+      '0 0 0 * * *', // every day at midnight
+      updateLeagueRanks
+    ),
+    createJob(
+      'update-contract-view-embeddings',
+      '0 0 0 1 * * ', // 1st day of the month
+      updateContractViewEmbeddings
     ),
   ]
 }
