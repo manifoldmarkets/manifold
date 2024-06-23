@@ -107,7 +107,7 @@ export function ActivityLog(props: {
     order: 'desc',
   })
   const allRealtimeBets = useSubscribeGlobalBets({
-    includeRedemptions: false,
+    filterRedemptions: true,
   })
   const realtimeBets = sortBy(allRealtimeBets, 'createdTime')
     .reverse()
