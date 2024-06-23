@@ -181,26 +181,16 @@ export const fetchContractBetDataAndValidate = async (
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
     throw new APIError(400, 'This is not a market')
 
-  const { closeTime, mechanism } = contract
+  const { closeTime } = contract
   if (closeTime && Date.now() > closeTime)
     throw new APIError(403, 'Trading is closed.')
 
-  let answers: Answer[] | undefined
-  if (answerId && mechanism === 'cpmm-multi-1') {
-    if (contract.shouldAnswersSumToOne) {
-      answers = await getAnswersForContract(pgTrans, contractId)
-    } else {
-      // Only fetch the one answer if it's independent multi.
-      const answer = await getAnswer(pgTrans, answerId)
-      if (answer)
-        answers = sortBy(
-          uniqBy([answer, ...contract.answers], (a) => a.id),
-          (a) => a.index
-        )
-    }
-  } else if ('answerIds' in body) {
-    answers = await getAnswersForContract(pgTrans, contractId)
-  }
+  const answersPromise = getAnswersForBet(
+    pgTrans,
+    contract,
+    answerId,
+    'answerIds' in body ? body.answerIds : undefined
+  )
 
   const unfilledBets = await getUnfilledBets(
     pgTrans,
@@ -217,6 +207,8 @@ export const fetchContractBetDataAndValidate = async (
     getUserBalances(pgTrans, unfilledBetUserIds),
   ])
 
+  const answers = await answersPromise
+
   return {
     user,
     contract,
@@ -225,6 +217,33 @@ export const fetchContractBetDataAndValidate = async (
     balanceByUserId,
     unfilledBetUserIds,
   }
+}
+
+const getAnswersForBet = async (
+  pgTrans: SupabaseDirectClient,
+  contract: Contract,
+  answerId: string | undefined,
+  answerIds: string[] | undefined
+) => {
+  const { mechanism } = contract
+  const contractId = contract.id
+
+  if (answerId && mechanism === 'cpmm-multi-1') {
+    if (contract.shouldAnswersSumToOne) {
+      return await getAnswersForContract(pgTrans, contractId)
+    } else {
+      // Only fetch the one answer if it's independent multi.
+      const answer = await getAnswer(pgTrans, answerId)
+      if (answer)
+        return sortBy(
+          uniqBy([answer, ...contract.answers], (a) => a.id),
+          (a) => a.index
+        )
+    }
+  } else if (answerIds) {
+    return await getAnswersForContract(pgTrans, contractId)
+  }
+  return undefined
 }
 
 const calculateBetResult = (
