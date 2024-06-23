@@ -1,13 +1,9 @@
-import { maxBy, orderBy, uniq, uniqBy, sortBy } from 'lodash'
+import { uniq, uniqBy, sortBy } from 'lodash'
 import { useEffect } from 'react'
 
 import { Bet, BetFilter, LimitBet } from 'common/bet'
-import { db } from 'web/lib/supabase/db'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { applyBetsFilter, convertBet, getBets } from 'common/supabase/bets'
-import { Row } from 'common/supabase/utils'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 import { useApiSubscription } from './use-api-subscription'
 import { usePollUserBalances } from './use-user'
 import { api } from 'web/lib/firebase/api'
@@ -52,99 +48,11 @@ export function useBetsOnce(options?: APIParams<'bets'>) {
   return bets
 }
 
-export function useRealtimeBetsPolling(
-  options: Omit<BetFilter, 'isOpenLimitOrder'>,
-  ms: number,
-  key: string
-) {
-  let allRowsQ = db.from('contract_bets').select('*')
-  allRowsQ = allRowsQ.order('created_time', {
-    ascending: options?.order === 'asc',
-  })
-  allRowsQ = applyBetsFilter(allRowsQ, options)
-
-  const newRowsOnlyQ = (rows: Row<'contract_bets'>[] | undefined) => {
-    // You can't use allRowsQ here because it keeps tacking on another gt clause
-    const { afterTime, ...rest } = options
-    const latestCreatedTime = maxBy(rows, 'created_time')?.created_time
-    let q = db
-      .from('contract_bets')
-      .select('*')
-      .gt(
-        'created_time',
-        latestCreatedTime ?? new Date(afterTime ?? 0).toISOString()
-      )
-    q = applyBetsFilter(q, rest)
-    return q
-  }
-
-  const results = usePersistentSupabasePolling(
-    'contract_bets',
-    allRowsQ,
-    newRowsOnlyQ,
-    key,
-    {
-      ms,
-      deps: [options.contractId, ms],
-      shouldUseLocalStorage: false,
-    }
-  )
-  return results
-    ? orderBy(results.map(convertBet), 'createdTime', 'desc')
-    : undefined
-}
-
-export const useSubscribeNewBets = (
-  contractId: string,
-  params?: { afterTime?: number; includeRedemptions?: boolean }
-) => {
-  const { afterTime = Date.now(), includeRedemptions = false } = params ?? {}
-
-  const [newBets, setNewBets] = usePersistentInMemoryState<Bet[]>(
-    [],
-    `${contractId}-new-bets`
-  )
-
-  const addBets = (bets: Bet[]) => {
-    setNewBets((currentBets) => {
-      const uniqueBets = sortBy(
-        uniqBy([...currentBets, ...bets], 'id'),
-        'createdTime'
-      )
-      return uniqueBets.filter(
-        (b) =>
-          b.createdTime > afterTime && (includeRedemptions || !b.isRedemption)
-      )
-    })
-  }
-
-  const isPageVisible = useIsPageVisible()
-
-  useEffect(() => {
-    if (isPageVisible) {
-      api('bets', {
-        contractId,
-        afterTime,
-        filterRedemptions: !includeRedemptions,
-      }).then(addBets)
-    }
-  }, [contractId, afterTime, isPageVisible])
-
-  useApiSubscription({
-    topics: [`contract/${contractId}/new-bet`],
-    onBroadcast: (msg) => {
-      addBets(msg.data.bets as Bet[])
-    },
-  })
-
-  return newBets
-}
-
 export const useContractBets = (
   contractId: string,
-  opts?: APIParams<'bets'> & { disabled?: boolean }
+  opts?: APIParams<'bets'> & { enabled?: boolean }
 ) => {
-  const { disabled = false, ...apiOptions } = {
+  const { enabled = true, ...apiOptions } = {
     contractId,
     ...opts,
   }
@@ -168,29 +76,23 @@ export const useContractBets = (
   const isPageVisible = useIsPageVisible()
 
   useEffect(() => {
-    if (isPageVisible && !disabled) {
-      getBets(db, apiOptions).then(addBets)
-      // The following limits to 1000 bets...
-      // api('bets', apiOptions).then(addBets)
+    if (isPageVisible && enabled) {
+      api('bets', apiOptions).then(addBets)
     }
-  }, [optionsKey, disabled, isPageVisible])
+  }, [optionsKey, enabled, isPageVisible])
 
   useApiSubscription({
     topics: [`contract/${contractId}/new-bet`],
     onBroadcast: (msg) => {
       addBets(msg.data.bets as Bet[])
     },
-    enabled: !disabled,
+    enabled,
   })
 
   return newBets
 }
 
-export const useSubscribeGlobalBets = (params?: {
-  includeRedemptions?: boolean
-}) => {
-  const { includeRedemptions = false } = params ?? {}
-
+export const useSubscribeGlobalBets = (options?: BetFilter) => {
   const [newBets, setNewBets] = usePersistentInMemoryState<Bet[]>(
     [],
     'global-new-bets'
@@ -202,7 +104,7 @@ export const useSubscribeGlobalBets = (params?: {
         uniqBy([...currentBets, ...bets], 'id'),
         'createdTime'
       )
-      return uniqueBets.filter((b) => includeRedemptions || !b.isRedemption)
+      return uniqueBets.filter((b) => !betShouldBeFiltered(b, options))
     })
   }
 

@@ -47,7 +47,7 @@ import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import {
   useBetsOnce,
-  useSubscribeNewBets,
+  useContractBets,
   useUnfilledBets,
 } from 'web/hooks/use-bets'
 import {
@@ -170,7 +170,6 @@ export function ContractPageContent(props: ContractParams) {
     dashboards,
     pinnedComments,
     betReplies,
-    lastBetTime,
   } = props
 
   const contract = useLiveContract(props.contract)
@@ -218,9 +217,9 @@ export function ContractPageContent(props: ContractParams) {
 
   const isNumber = contract.outcomeType === 'NUMBER'
 
-  const newBets = useSubscribeNewBets(contract.id, {
-    afterTime: lastBetTime ?? 0,
-    includeRedemptions: true,
+  const newBets = useContractBets(contract.id, {
+    afterTime: props.lastBetTime ?? 0,
+    includeZeroShareRedemptions: true,
   })
 
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
