@@ -101,6 +101,8 @@ export type BetFilter = {
   limit?: number
   commentRepliesOnly?: boolean
   answerId?: string
+  includeZeroShareRedemptions?: boolean
+  visibility?: Visibility
 }
 
 export const calculateMultiBets = (

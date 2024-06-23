@@ -237,7 +237,7 @@ export const API = (_apiTypeCheck = {
         contractSlug: z.string().optional(),
         answerId: z.string().optional(),
         // market: z.string().optional(), // deprecated, synonym for `contractSlug`
-        limit: z.coerce.number().gte(0).lte(1000).default(1000),
+        limit: z.coerce.number().gte(0).lte(10000).default(10000),
         before: z.string().optional(),
         after: z.string().optional(),
         beforeTime: z.coerce.number().optional(),
@@ -248,6 +248,7 @@ export const API = (_apiTypeCheck = {
         filterRedemptions: z.coerce.boolean().optional(),
         filterChallenges: z.coerce.boolean().optional(),
         filterAntes: z.coerce.boolean().optional(),
+        includeZeroShareRedemptions: z.coerce.boolean().optional(),
       })
       .strict(),
   },
