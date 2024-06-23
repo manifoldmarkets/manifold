@@ -1,17 +1,13 @@
 import { BetFilter } from 'common/bet'
-import { getBets as getBetsSupabase, getPublicBets } from 'common/supabase/bets'
 import { run, tsToMillis, type SupabaseClient } from 'common/supabase/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
 import { getUserIdFromUsername } from 'shared/supabase/users'
-
-async function getBetTime(db: SupabaseClient, id: string) {
-  const { data } = await run(
-    db.from('contract_bets').select('created_time').eq('bet_id', id).single()
-  )
-  return tsToMillis(data.created_time)
-}
+import { getBetsWithFilter } from 'shared/supabase/bets'
 
 export const getBets: APIHandler<'bets'> = async (props) => {
   const {
@@ -28,8 +24,8 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     filterAntes,
     filterChallenges,
     filterRedemptions,
+    includeZeroShareRedemptions,
   } = props
-
   const db = createSupabaseClient()
 
   const userId = props.userId ?? (await getUserIdFromUsername(db, username))
@@ -69,11 +65,17 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     filterAntes,
     filterChallenges,
     filterRedemptions,
+    includeZeroShareRedemptions,
+    visibility: contractId ? undefined : 'public',
   }
 
-  const bets = contractId
-    ? await getBetsSupabase(db, opts)
-    : await getPublicBets(db, opts)
+  const pg = createSupabaseDirectClient()
+  return await getBetsWithFilter(pg, opts)
+}
 
-  return bets
+async function getBetTime(db: SupabaseClient, id: string) {
+  const { data } = await run(
+    db.from('contract_bets').select('created_time').eq('bet_id', id).single()
+  )
+  return tsToMillis(data.created_time)
 }
