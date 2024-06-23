@@ -50,6 +50,11 @@ export const getBetsWithFilter = async (
   } = options
 
   const conditions = buildArray(
+    visibility && [
+      join('contracts on contracts.id = contract_bets.contract_id'),
+      where('contracts.visibility = ${visibility}', { visibility }),
+    ],
+
     contractId &&
       (Array.isArray(contractId)
         ? where('contract_id = ANY(${contractId})', { contractId })
@@ -58,19 +63,22 @@ export const getBetsWithFilter = async (
     userId && where('user_id = ${userId}', { userId }),
 
     isOpenLimitOrder &&
-      where(`data->>'isFilled' = 'false' and data->>'isCancelled' = 'false'`),
+      where(
+        `contract_bets.data->>'isFilled' = 'false' and contract_bets.data->>'isCancelled' = 'false'`
+      ),
 
     afterTime !== undefined &&
-      where('created_time > ${afterTime}', {
+      where('contract_bets.created_time > ${afterTime}', {
         afterTime: millisToTs(afterTime),
       }),
 
     beforeTime !== undefined &&
-      where('created_time < ${beforeTime}', {
+      where('contract_bets.created_time < ${beforeTime}', {
         beforeTime: millisToTs(beforeTime),
       }),
 
-    commentRepliesOnly && where(`data->>'replyToCommentId' is not null`),
+    commentRepliesOnly &&
+      where(`contract_bets.data->>'replyToCommentId' is not null`),
 
     answerId !== undefined && where('answer_id = ${answerId}', { answerId }),
 
@@ -82,22 +90,18 @@ export const getBetsWithFilter = async (
 
     !includeZeroShareRedemptions &&
       where(
-        `(shares != 0 or is_redemption = false or (data->'loanAmount')::numeric != 0)`
-      ),
-
-    visibility && [
-      join('contracts on contracts.contract_id = contract_bets.contract_id'),
-      where('contracts.visibility = ${visibility}', { visibility }),
-    ]
+        `(shares != 0 or is_redemption = false or (contract_bets.data->'loanAmount')::numeric != 0)`
+      )
   )
 
   const query = renderSql(
-    select('*'),
+    select('contract_bets.*'),
     from('contract_bets'),
     ...conditions,
-    order && orderBy(`created_time ${order.toUpperCase()}`),
+    order && orderBy(`contract_bets.created_time ${order.toUpperCase()}`),
     limitValue && limit(limitValue)
   )
+  // console.log('getBetsWithFilter query:\n', query)
 
   return await pg.map(query, {}, convertBet)
 }
