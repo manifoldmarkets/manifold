@@ -1,89 +1,33 @@
-import { track } from 'web/lib/service/analytics'
 import { PencilAltIcon } from '@heroicons/react/solid'
+import Router from 'next/router'
 import clsx from 'clsx'
 
+import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/firebase/api'
-import { Headline } from 'common/news'
-import { HeadlineTabs } from 'web/components/dashboard/header'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { useSaveScroll } from 'web/hooks/use-save-scroll'
-import Router from 'next/router'
-import { Col } from 'web/components/layout/col'
-import { User } from 'common/user'
-import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
-import { useEffect, useState } from 'react'
+import { track } from 'web/lib/service/analytics'
+import { GroupPageContent } from '../browse/[[...slug]]'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
-export async function getStaticProps() {
-  try {
-    const headlines = await api('headlines', {})
-    return {
-      props: {
-        headlines,
-        revalidate: 30 * 60, // 30 minutes
-      },
-    }
-  } catch (err) {
-    return { props: { headlines: [] }, revalidate: 60 }
-  }
-}
-
-export default function Home(props: { headlines: Headline[] }) {
-  useRedirectIfSignedOut()
+export default function Home() {
   const user = useUser()
   useSaveReferral(user)
-  useSaveScroll('home')
-
-  const { headlines } = props
-  return (
-    <Page
-      trackPageView={'home'}
-      trackPageProps={{ kind: 'desktop' }}
-      className=" !mt-0"
-      banner={null}
-    >
-      <HeadlineTabs
-        endpoint={'news'}
-        headlines={headlines}
-        currentSlug={'home'}
-        hideEmoji
-      />
-      {!user ? <LoadingIndicator /> : <HomeContent user={user} />}
-    </Page>
-  )
-}
-
-export function HomeContent(props: { user: User }) {
-  const { user } = props
-  const [prevShouldShowWelcome, _] = useState(user.shouldShowWelcome)
-  const [reload, setReload] = useState(false)
-  useEffect(() => {
-    if (prevShouldShowWelcome && !user.shouldShowWelcome) {
-      setReload(true)
-      setTimeout(() => {
-        setReload(false)
-      }, 200)
-    }
-  }, [user.shouldShowWelcome])
 
   return (
-    <Col className="w-full items-center self-center pb-4 sm:px-2">
+    <Page trackPageView={'home'} className="!mt-0">
+      <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       {user && (
         <DailyStats
-          className="bg-canvas-50 z-50 mb-1 w-full px-2 pb-2 pt-1 sm:sticky sm:top-9"
+          className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
           user={user}
         />
       )}
-
-      {user && (
-        <Col className={clsx('w-full sm:px-2')}>
-          <LiveGeneratedFeed userId={user.id} reload={reload} />
-        </Col>
-      )}
+      <GroupPageContent
+        slug={''}
+        staticTopicParams={undefined}
+        collapseOptions
+      />
       <button
         type="button"
         className={clsx(
@@ -98,6 +42,6 @@ export function HomeContent(props: { user: User }) {
       >
         <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
       </button>
-    </Col>
+    </Page>
   )
 }

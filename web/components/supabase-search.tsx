@@ -1,5 +1,5 @@
 'use client'
-import { SparklesIcon, XIcon } from '@heroicons/react/outline'
+import { ChevronDownIcon, SparklesIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { LiteGroup } from 'common/group'
@@ -19,7 +19,7 @@ import { Input } from './widgets/input'
 import { FullUser } from 'common/api/user-types'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
-import { IconButton } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { searchContracts, searchGroups } from 'web/lib/firebase/api'
 import { searchUsers } from 'web/lib/supabase/users'
@@ -183,8 +183,6 @@ export function SupabaseSearch(props: {
   hideActions?: boolean
   headerClassName?: string
   isWholePage?: boolean
-  menuButton?: ReactNode
-  rowBelowFilters?: ReactNode
   // used to determine if search params should be updated in the URL
   useUrlParams?: boolean
   autoFocus?: boolean
@@ -199,6 +197,7 @@ export function SupabaseSearch(props: {
   hideAvatars?: boolean
   shownTopics?: LiteGroup[]
   setTopicSlug?: (slug: string) => void
+  collapseOptions?: boolean
 }) {
   const {
     defaultSort,
@@ -215,8 +214,6 @@ export function SupabaseSearch(props: {
     useUrlParams,
     autoFocus,
     hideContractFilters,
-    menuButton,
-    rowBelowFilters,
     setTopics: setTopicResults,
     topicSlug = '',
     contractsOnly,
@@ -225,6 +222,7 @@ export function SupabaseSearch(props: {
     hideAvatars,
     shownTopics,
     setTopicSlug,
+    collapseOptions,
   } = props
 
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
@@ -260,7 +258,9 @@ export function SupabaseSearch(props: {
 
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
-  const showSearchTypes = !hideSearchTypes && !contractsOnly
+  const [expandOptions, setExpandOptions] = useState(!collapseOptions)
+  const showSearchTypes = expandOptions && !hideSearchTypes && !contractsOnly
+  const showContractFilters = expandOptions && !hideContractFilters
 
   const queryUsers = useEvent(async (query: string) =>
     searchUsers(query, USERS_PER_PAGE)
@@ -357,46 +357,56 @@ export function SupabaseSearch(props: {
         )}
       >
         {!hideSearch && (
-          <Row>
-            <Col className={'w-full'}>
-              <Row className={'relative'}>
-                <Input
-                  type="text"
-                  inputMode="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onBlur={trackCallback('search', { query: query })}
-                  placeholder={
-                    searchType === 'Users'
-                      ? 'Search users'
-                      : searchType === 'Questions' || topicSlug || contractsOnly
-                      ? 'Search questions'
-                      : 'Search questions, users, and topics'
-                  }
-                  className="w-full"
-                  autoFocus={autoFocus}
-                />
-                {query !== '' && (
-                  <IconButton
-                    className={'absolute right-2 top-1/2 -translate-y-1/2'}
-                    size={'2xs'}
-                    onClick={() => {
-                      onChange({ [QUERY_KEY]: '' })
-                    }}
-                  >
-                    {loading ? (
-                      <LoadingIndicator size="sm" />
-                    ) : (
-                      <XIcon className={'h-5 w-5 rounded-full'} />
-                    )}
-                  </IconButton>
+          <Row className="w-full">
+            <Row className="relative w-full">
+              <Input
+                type="text"
+                inputMode="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onBlur={trackCallback('search', { query: query })}
+                placeholder={
+                  searchType === 'Users'
+                    ? 'Search users'
+                    : searchType === 'Questions' || topicSlug || contractsOnly
+                    ? 'Search questions'
+                    : 'Search questions, users, and topics'
+                }
+                className="w-full"
+                autoFocus={autoFocus}
+              />
+              {query !== '' && (
+                <IconButton
+                  className={'absolute right-2 top-1/2 -translate-y-1/2'}
+                  size={'2xs'}
+                  onClick={() => {
+                    onChange({ [QUERY_KEY]: '' })
+                  }}
+                >
+                  {loading ? (
+                    <LoadingIndicator size="sm" />
+                  ) : (
+                    <XIcon className={'h-5 w-5 rounded-full'} />
+                  )}
+                </IconButton>
+              )}
+            </Row>
+
+            <Button
+              className="ml-2"
+              color="none"
+              onClick={() => setExpandOptions(!expandOptions)}
+            >
+              <ChevronDownIcon
+                className={clsx(
+                  'h-4 w-4',
+                  expandOptions ? 'rotate-180 transform' : ''
                 )}
-              </Row>
-            </Col>
-            {menuButton}
+              />
+            </Button>
           </Row>
         )}
-        {!hideContractFilters && (
+        {showContractFilters && (
           <ContractFilters
             params={searchParams}
             updateParams={onChange}
@@ -406,7 +416,8 @@ export function SupabaseSearch(props: {
           />
         )}
       </Col>
-      {showSearchTypes ? (
+
+      {showSearchTypes && (
         <Col>
           {showTopics && (
             <>
@@ -474,9 +485,10 @@ export function SupabaseSearch(props: {
             </Row>
           )}
         </Col>
-      ) : (
-        rowBelowFilters
       )}
+
+      {!expandOptions && <div className="mt-2" />}
+
       {!contracts ? (
         <LoadingResults />
       ) : contracts.length === 0 ? (
