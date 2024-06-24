@@ -258,7 +258,10 @@ export function SupabaseSearch(props: {
 
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
-  const [expandOptions, setExpandOptions] = useState(!collapseOptions)
+  const [expandOptions, setExpandOptions] = usePersistentLocalState(
+    !collapseOptions,
+    `${persistPrefix}-expand-search-options`
+  )
   const showSearchTypes = expandOptions && !hideSearchTypes && !contractsOnly
   const showContractFilters = expandOptions && !hideContractFilters
 
