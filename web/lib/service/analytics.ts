@@ -127,7 +127,7 @@ function insertUserEvent(
     }
   } else if (
     (name === 'click market card feed' ||
-      name === 'click market card welcome topic section' ||
+      name === 'click browse contract' ||
       name === 'bet' ||
       name === 'copy market link' ||
       name === 'comment' ||
@@ -138,7 +138,9 @@ function insertUserEvent(
     const feedReason = data?.feedReason as string
     const isCardClick = name.includes('click market card')
     const kind =
-      name === 'copy market link'
+      name === 'click browse contract'
+        ? 'browse click'
+        : name === 'copy market link'
         ? 'page share'
         : name === 'like' && feedReason
         ? 'card like'

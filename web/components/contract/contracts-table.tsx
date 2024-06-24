@@ -86,7 +86,10 @@ function ContractRow(props: {
       href={contractPath(contract)}
       onClick={(e) => {
         if (!onClick) {
-          track('click browse contract', { slug: contract.slug })
+          track('click browse contract', {
+            slug: contract.slug,
+            contractId: contract.id,
+          })
           return
         }
         onClick()
