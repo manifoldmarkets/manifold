@@ -9,7 +9,7 @@ export const getChartAnnotations = async (
       .from('chart_annotations')
       .select(`*`)
       .eq('contract_id', contractId)
-      .order('event_time')
+      .order('event_time', { ascending: false })
   )
   return data
 }
