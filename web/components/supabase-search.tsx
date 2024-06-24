@@ -397,12 +397,13 @@ export function SupabaseSearch(props: {
 
             <Button
               className="ml-2"
-              color="none"
+              color="gray-white"
+              size="lg"
               onClick={() => setExpandOptions(!expandOptions)}
             >
               <ChevronDownIcon
                 className={clsx(
-                  'h-4 w-4',
+                  'h-6 w-6',
                   expandOptions ? 'rotate-180 transform' : ''
                 )}
               />

@@ -135,13 +135,13 @@ export default function LandingPage(props: {
                   About
                 </Button>
               </Link>
-              <Link href="/browse">
+              <Link href="/home">
                 <Button
                   color="gray-white"
                   size="xs"
                   className="hidden whitespace-nowrap lg:flex"
                 >
-                  Browse
+                  Home
                 </Button>
               </Link>
               <Link href="/politics" className="hidden lg:flex">

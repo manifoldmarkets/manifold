@@ -8,7 +8,6 @@ import {
   StarIcon,
   QuestionMarkCircleIcon,
   NewspaperIcon,
-  SearchIcon,
   LightningBoltIcon,
   LoginIcon,
   TemplateIcon,
@@ -179,7 +178,7 @@ const getDesktopNav = (
     )
 
   return buildArray(
-    { name: 'Browse', href: '/browse', icon: SearchIcon },
+    { name: 'Home', href: '/home', icon: HomeIcon },
     {
       name: 'US Politics',
       href: '/politics',
