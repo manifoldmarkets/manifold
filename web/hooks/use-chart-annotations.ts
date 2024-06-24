@@ -19,7 +19,7 @@ export const useChartAnnotations = (contractId: string) => {
   )
 
   return {
-    chartAnnotations: orderBy(annotations, (a) => a.event_time, 'desc'),
+    chartAnnotations: orderBy(annotations, (a) => a.event_time, 'asc'),
     status,
   }
 }
