@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export const MAX_SHOWN = 18
-export const MAX_SHOWN_MOBILE = 10
+export const MAX_SHOWN_MOBILE = 9
 
 export function UserResults(props: { userResults: FullUser[] }) {
   const { userResults } = props
