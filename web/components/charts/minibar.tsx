@@ -27,8 +27,8 @@ export const MiniBar = (props: {
   options: Array<{ prob: number; color: string }>
 }) => {
   return (
-    <span>
-      <div className="my-0.5 grid h-5 w-[3ch]">
+    <span className="inline-flex align-top">
+      <div className="grid h-5 w-[3ch]">
         {props.options.map((option, i) => (
           <span
             key={i}

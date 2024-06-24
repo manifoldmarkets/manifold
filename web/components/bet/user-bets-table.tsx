@@ -19,7 +19,6 @@ import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import { Pagination } from 'web/components/widgets/pagination'
 import clsx from 'clsx'
-import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserLink } from 'web/components/widgets/user-link'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { OrderTable } from 'web/components/bet/order-book'
@@ -41,6 +40,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import { IconButton } from 'web/components/buttons/button'
 import { ChevronUpIcon } from '@heroicons/react/solid'
 import { OutcomeLabel } from 'web/components/outcome-label'
+import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 
 type BetSort =
   | 'newest'
@@ -52,6 +52,7 @@ type BetSort =
   | 'probChangeDay'
   | 'profitPercent'
   | 'dayPercent'
+  | 'weekPercent'
 
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
@@ -325,6 +326,8 @@ function BetsTable(props: {
     day: (c) => -(metricsByContractId[c.id].from?.day.profit ?? 0),
     dayPercent: (c) =>
       -(metricsByContractId[c.id].from?.day.profitPercent ?? 0),
+    weekPercent: (c) =>
+      -(metricsByContractId[c.id].from?.week.profitPercent ?? 0),
     week: (c) => -(metricsByContractId[c.id].from?.week.profit ?? 0),
     closeTime: (c) =>
       // This is in fact the intuitive sort direction.
@@ -341,36 +344,10 @@ function BetsTable(props: {
 
   const dataColumns = buildArray([
     {
-      header: { sort: 'probChangeDay', label: 'Prob' },
-      span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => {
-        let change: string | undefined
-        if (c.mechanism === 'cpmm-1') {
-          const probChange = Math.round(
-            (c as CPMMContract).probChanges.day * 100
-          )
-          change =
-            probChange !== 0
-              ? (probChange > 0 ? '+' : '') +
-                probChange +
-                (c.outcomeType === 'BINARY' ? '' : '%')
-              : ''
-        }
-        return (
-          <Row className={'justify-left relative items-center'}>
-            <ContractStatusLabel className={'font-bold'} contract={c} />
-            {change != undefined && (
-              <span className={'text-ink-500 ml-1 text-xs'}>{change}</span>
-            )}
-          </Row>
-        )
-      },
-    },
-    {
       header: { sort: 'newest', label: 'Time' },
       span: isMobile ? 2 : 1,
       renderCell: (c: Contract) => (
-        <Row className={'justify-end'}>
+        <Row className={'justify-start'}>
           <RelativeTimestamp
             time={metricsByContractId[c.id].lastBetTime}
             shortened
@@ -403,9 +380,21 @@ function BetsTable(props: {
     {
       header: { sort: 'value', label: 'Value' },
       span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => (
-        <NumberCell num={metricsByContractId[c.id].payout} />
-      ),
+      renderCell: (c: Contract) => {
+        const maxOutcome = metricsByContractId[c.id].maxSharesOutcome
+        return (
+          <Row className="items-start justify-end gap-1">
+            {maxOutcome && c.outcomeType === 'BINARY' && (
+              <OutcomeLabel
+                contract={c}
+                outcome={maxOutcome}
+                truncate={'short'}
+              />
+            )}
+            <NumberCell num={metricsByContractId[c.id].payout} />
+          </Row>
+        )
+      },
     },
     {
       header: { sort: 'profit', label: 'Profit' },
@@ -434,8 +423,8 @@ function BetsTable(props: {
       },
     },
     {
-      header: { sort: 'day', label: '1d Profit' },
-      span: isMobile ? 4 : 2,
+      header: { sort: 'day', label: '1d' },
+      span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => (
         <NumberCell
           num={metricsByContractId[c.id].from?.day.profit ?? 0}
@@ -461,6 +450,40 @@ function BetsTable(props: {
               round={true}
               grayColor={
                 formatMoney(cm.from?.day.profit ?? 0) === formatMoney(0)
+              }
+            />
+          </span>
+        )
+      },
+    },
+    {
+      header: { sort: 'week', label: '1w' },
+      span: isMobile ? 3 : 2,
+      renderCell: (c: Contract) => (
+        <NumberCell
+          num={metricsByContractId[c.id].from?.week.profit ?? 0}
+          change={true}
+        />
+      ),
+    },
+    !isMobile && {
+      header: { sort: 'weekPercent', label: '%' },
+      span: 1,
+      renderCell: (c: Contract) => {
+        const cm = metricsByContractId[c.id]
+        const profitPercent = cm.from?.week.profitPercent ?? 0
+        // Gives ~infinite returns
+        if ((cm.from?.week.invested ?? 0) < 0.01) return <div />
+        return (
+          <span
+            className={'flex-inline -mr-3 flex justify-end md:-mr-2 lg:mr-0'}
+          >
+            <ProfitBadge
+              className={'!px-1'}
+              profitPercent={profitPercent}
+              round={true}
+              grayColor={
+                formatMoney(cm.from?.week.profit ?? 0) === formatMoney(0)
               }
             />
           </span>
@@ -499,6 +522,15 @@ function BetsTable(props: {
         ? oldIds.filter((oldId) => oldId !== id)
         : [...oldIds, id]
     )
+  }
+
+  const getChange = (c: CPMMContract): string | undefined => {
+    const probChange = Math.round((c as CPMMContract).probChanges.day * 100)
+    return probChange !== 0
+      ? (probChange > 0 ? '+' : '') +
+          probChange +
+          (c.outcomeType === 'BINARY' ? '' : '%')
+      : ''
   }
 
   return (
@@ -546,7 +578,6 @@ function BetsTable(props: {
               contract.mechanism === 'cpmm-1'
                 ? signedInUser
                 : undefined
-            const maxOutcome = metricsByContractId[contract.id].maxSharesOutcome
             return (
               <Row
                 key={contract.id + 'bets-table-row'}
@@ -567,7 +598,29 @@ function BetsTable(props: {
                           )}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {contract.question}
+                          <span>
+                            <ContractStatusLabel
+                              className={'font-bold'}
+                              contract={contract}
+                            />
+                            {contract.mechanism === 'cpmm-1' && (
+                              <span className={'text-ink-500 ml-1 text-xs'}>
+                                {getChange(contract)}
+                              </span>
+                            )}{' '}
+                            {contract.question}
+                            <UserHovercard userId={contract.creatorId}>
+                              <UserLink
+                                noLink={true}
+                                className={'text-ink-600 ml-2 w-fit text-sm'}
+                                user={{
+                                  id: contract.creatorId,
+                                  name: contract.creatorName,
+                                  username: contract.creatorUsername,
+                                }}
+                              />
+                            </UserHovercard>
+                          </span>
                         </Link>
                         <IconButton
                           size={'2xs'}
@@ -579,25 +632,6 @@ function BetsTable(props: {
                             <ChevronUpIcon className="h-4 rotate-180" />
                           )}
                         </IconButton>
-                      </Row>
-                      <Row className={'items-center gap-2'}>
-                        {maxOutcome && contract.outcomeType === 'BINARY' && (
-                          <OutcomeLabel
-                            contract={contract}
-                            outcome={maxOutcome}
-                            truncate={'short'}
-                          />
-                        )}
-                        <UserHovercard userId={contract.creatorId}>
-                          <UserLink
-                            className={'text-ink-600 w-fit text-sm'}
-                            user={{
-                              id: contract.creatorId,
-                              name: contract.creatorName,
-                              username: contract.creatorUsername,
-                            }}
-                          />
-                        </UserHovercard>
                       </Row>
                     </Col>
                   </Row>
@@ -686,7 +720,7 @@ const NumberCell = (props: { num: number; change?: boolean }) => {
           <span className="text-scarlet-500">{formattedNum}</span>
         )
       ) : (
-        <span>{formatMoney(num)}</span>
+        <span>{formattedNum}</span>
       )}
     </Row>
   )
