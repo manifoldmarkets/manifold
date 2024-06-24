@@ -163,7 +163,8 @@ export function GroupPageContent(props: {
   const topicsByImportance = combineGroupsByImportance(
     trendingTopics ?? [],
     userTrendingTopics ?? []
-  )
+  ).filter(t => !EXCLUDED_TOPIC_SLUGS.includes(t.slug))
+
   const topicFromRouter = useTopicFromRouter(topicSlug)
   const [topicsFromRouter, setTopicsFromRouter] = usePersistentInMemoryState<
     Group[]
@@ -206,10 +207,9 @@ export function GroupPageContent(props: {
       headerClassName={'pt-0 px-2 bg-canvas-50'}
       setTopics={setTopicResults}
       topicSlug={topicSlug}
-      defaultFilter={
-        // !topicSlug || NON_GROUP_SLUGS.includes(topicSlug) ? 'open' : 'all'
-        'all'
-      }
+      defaultFilter="open"
+      defaultSort="score"
+      defaultForYou="1"
       shownTopics={shownTopics}
       setTopicSlug={(slug) => {
         setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
@@ -317,6 +317,8 @@ export function GroupPageContent(props: {
     </div>
   )
 }
+
+const EXCLUDED_TOPIC_SLUGS = ['politics-default', '2024-us-presidential-election']
 
 const combineGroupsByImportance = (
   resultGroups: Group[],

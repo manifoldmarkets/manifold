@@ -35,6 +35,7 @@ import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
 import { BinaryDigit, TierParamsType } from 'common/tier'
+import { useUser } from 'web/hooks/use-user'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -177,6 +178,7 @@ export function SupabaseSearch(props: {
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
+  defaultForYou?: '1' | '0'
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
@@ -204,6 +206,7 @@ export function SupabaseSearch(props: {
     defaultFilter,
     defaultContractType,
     defaultSearchType,
+    defaultForYou,
     additionalFilter,
     onContractClick,
     hideActions,
@@ -225,11 +228,14 @@ export function SupabaseSearch(props: {
     collapseOptions,
   } = props
 
+  const user = useUser()
+
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
     defaultContractType,
     defaultSearchType,
+    defaultForYou,
     useUrlParams,
     persistPrefix,
   })
@@ -442,28 +448,30 @@ export function SupabaseSearch(props: {
                 topics={shownTopics}
                 currentTopicSlug={topicSlug}
                 forYouPill={
-                  <button
-                    key={'pill-for-you'}
-                    onClick={() => {
-                      if (topicSlug) {
-                        setTopicSlug(topicSlug)
-                      } else {
-                        onChange({
-                          [FOR_YOU_KEY]: forYou ? '0' : '1',
-                        })
-                      }
-                    }}
-                    className={clsx(
-                      'bg-ink-100 hover:bg-ink-200 text-ink-600 rounded p-1',
-                      forYou && !topicSlug
-                        ? 'bg-primary-400 hover:bg-primary-300 text-white'
-                        : ''
-                    )}
-                  >
-                    <span>
-                      <SparklesIcon className="inline h-4 w-4" /> For you
-                    </span>
-                  </button>
+                  user ? (
+                    <button
+                      key={'pill-for-you'}
+                      onClick={() => {
+                        if (topicSlug) {
+                          setTopicSlug(topicSlug)
+                        } else {
+                          onChange({
+                            [FOR_YOU_KEY]: forYou ? '0' : '1',
+                          })
+                        }
+                      }}
+                      className={clsx(
+                        'bg-ink-100 hover:bg-ink-200 text-ink-600 rounded p-1',
+                        forYou && !topicSlug
+                          ? 'bg-primary-400 hover:bg-primary-300 text-white'
+                          : ''
+                      )}
+                    >
+                      <span>
+                        <SparklesIcon className="inline h-4 w-4" /> For you
+                      </span>
+                    </button>
+                  ) : null
                 }
                 onClick={(newSlug: string) => {
                   setTopicSlug(newSlug)
