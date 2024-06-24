@@ -3,6 +3,7 @@ import { runCancelBountyTxn } from 'shared/txn/run-bounty-txn'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { getContractSupabase } from 'shared/utils'
+import { isAdminId } from 'common/envs/constants'
 
 const bodySchema = z
   .object({
@@ -23,7 +24,10 @@ export const cancelbounty = authEndpoint(async (req, auth) => {
   )
     throw new APIError(403, 'This is contract not a bounty')
 
-  if (contract?.creatorId !== auth.uid)
+  if (
+    !contract.creatorId ||
+    (contract.creatorId !== auth.uid && !isAdminId(auth.uid))
+  )
     throw new APIError(403, 'You are not allowed to cancel this bounty')
 
   if (contract.bountyLeft <= 0)
@@ -34,7 +38,7 @@ export const cancelbounty = authEndpoint(async (req, auth) => {
       category: 'BOUNTY_CANCELED',
       fromId: contractId,
       fromType: 'CONTRACT',
-      toId: auth.uid,
+      toId: contract.creatorId,
       toType: 'USER',
       token: 'M$',
       amount: contract.bountyLeft,
