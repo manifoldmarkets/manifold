@@ -1150,6 +1150,7 @@ export const API = (_apiTypeCheck = {
         'promoted click',
         'card like',
         'page share',
+        'browse click',
       ]),
       commentId: z.string().optional(),
       feedReasons: z.array(z.string()).optional(),
