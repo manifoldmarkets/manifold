@@ -1,12 +1,12 @@
 import { usePrivateUser } from 'web/hooks/use-user'
-import { Button } from 'web/components/buttons/button'
+import { Button, buttonClass } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import clsx from 'clsx'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
-import { ChartBarIcon } from '@heroicons/react/solid'
+import { ChartBarIcon, PencilIcon } from '@heroicons/react/solid'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { BlockUser } from 'web/components/profile/block-user'
@@ -95,8 +95,25 @@ export function MoreOptionsUserButton(props: { user: User }) {
               <ChartBarIcon className="mb-1 mr-1 inline h-4 w-4" />
               Calibration
             </Link>
+
+            {isYou && (
+              <>
+                <Link
+                  href="/profile"
+                  className={clsx(
+                    buttonClass('2xs', 'gray-white'),
+                    '-mx-1 gap-0.5 !px-1 !py-0.5'
+                  )}
+                >
+                  <PencilIcon className="mb-0.5 h-4 w-4" />
+                  <span className="text-sm">Edit profile</span>
+                </Link>
+              </>
+            )}
+
             {isAdmin && (
               <>
+                <div className="ml-auto" />
                 <a
                   className="text-primary-400 text-sm hover:underline"
                   href={supabaseUserConsolePath(user.id)}
