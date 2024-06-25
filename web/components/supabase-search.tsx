@@ -730,7 +730,7 @@ const useSearchQueryState = (props: {
   const [lastSort, setLastSort, localStateReady] =
     usePersistentLocalState<Sort>(
       defaultSort ?? 'score',
-      `${persistPrefix}-last-search-sort`
+      `${persistPrefix}-last-search-sort-2`
     )
 
   const defaults = {
@@ -749,9 +749,9 @@ const useSearchQueryState = (props: {
 
   useEffect(() => {
     if (localStateReady) setLastSort(state.s)
-  }, [state.s, ready])
+  }, [state.s, localStateReady])
 
-  return [state, setState, localStateReady] as const
+  return [state, setState, ready] as const
 }
 
 const useShim = <T extends Record<string, string | undefined>>(
