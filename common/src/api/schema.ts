@@ -1307,6 +1307,19 @@ export const API = (_apiTypeCheck = {
     },
     props: z.object({}),
   },
+  'get-verification-documents-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      status: string
+      documents: GIDXDocument[]
+      utilityDocuments: GIDXDocument[]
+      idDocuments: GIDXDocument[]
+      rejectedDocuments: GIDXDocument[]
+    },
+    props: z.object({}),
+  },
   'upload-document-gidx': {
     method: 'POST',
     visibility: 'undocumented',

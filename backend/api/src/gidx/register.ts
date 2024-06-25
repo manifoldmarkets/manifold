@@ -17,9 +17,11 @@ import {
 import { intersection } from 'lodash'
 import { getGIDXStandardParams } from 'shared/gidx/helpers'
 import {
+  GIDX_DOCUMENTS_REQUIRED,
   GIDX_REGISTATION_ENABLED,
   GIDXRegistrationResponse,
 } from 'common/gidx/gidx'
+import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
@@ -70,7 +72,8 @@ export const register: APIHandler<'register-gidx'> = async (
     auth.uid,
     ReasonCodes,
     FraudConfidenceScore,
-    IdentityConfidenceScore
+    IdentityConfidenceScore,
+    false
   )
   return {
     status,
@@ -82,7 +85,8 @@ export const processUserReasonCodes = async (
   userId: string,
   ReasonCodes: string[],
   FraudConfidenceScore: number,
-  IdentityConfidenceScore: number
+  IdentityConfidenceScore: number,
+  queryForDocuments: boolean
 ): Promise<RegistrationReturnType> => {
   const pg = createSupabaseDirectClient()
 
@@ -185,9 +189,52 @@ export const processUserReasonCodes = async (
   // User is not blocked and ID is verified
   if (ReasonCodes.includes('ID-VERIFIED')) {
     log('Registration passed with allowed codes:', ReasonCodes)
-    await updateUser(pg, userId, {
-      kycStatus: 'await-documents',
-    })
+    // New user, no documents yet
+    if (!queryForDocuments) {
+      await updateUser(pg, userId, {
+        kycStatus: 'await-documents',
+      })
+      return { status: 'success' }
+    }
+
+    const {
+      documents,
+      unrejectedUtilityDocuments,
+      unrejectedIdDocuments,
+      acceptedDocuments,
+      rejectedDocuments,
+    } = await getIdentityVerificationDocuments(userId)
+    const acceptedUtilityDocuments = unrejectedUtilityDocuments.filter(
+      (doc) => doc.DocumentStatus === 3
+    )
+    const acceptedIdDocuments = unrejectedIdDocuments.filter(
+      (doc) => doc.DocumentStatus === 3
+    )
+    const pendingDocuments = documents.filter((doc) => doc.DocumentStatus !== 3)
+    if (
+      acceptedDocuments.length >= GIDX_DOCUMENTS_REQUIRED &&
+      acceptedUtilityDocuments.length > 0 &&
+      acceptedIdDocuments.length > 0
+    ) {
+      // They passed the reason codes and have the required documents
+      await updateUser(pg, userId, {
+        kycStatus: 'verified',
+      })
+    } else if (
+      acceptedDocuments.length < GIDX_DOCUMENTS_REQUIRED &&
+      pendingDocuments.length > 0
+    ) {
+      await updateUser(pg, userId, {
+        kycStatus: 'pending',
+      })
+    } else if (
+      rejectedDocuments.length > 0 ||
+      acceptedDocuments.length < GIDX_DOCUMENTS_REQUIRED
+    ) {
+      await updateUser(pg, userId, {
+        kycStatus: 'await-documents',
+      })
+    }
     return { status: 'success' }
   }
 

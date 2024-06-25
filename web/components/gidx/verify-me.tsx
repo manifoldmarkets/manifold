@@ -17,8 +17,16 @@ import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { toast } from 'react-hot-toast'
 
-export const VerifyMe = (props: { user: User | null | undefined }) => {
-  const user = useWebsocketUser(props.user?.id)
+export const VerifyMe = (props: { user: User }) => {
+  const user = useWebsocketUser(props.user?.id) || props.user
+
+  const [show, setShow] = useState(
+    GIDX_REGISTATION_ENABLED &&
+      user.kycStatus !== 'verified' &&
+      user.kycStatus !== 'block' &&
+      user.kycStatus !== 'temporary-block'
+  )
+
   const [documents, setDocuments] = useState<GIDXDocument[] | null>(null)
   const [loading, setLoading] = useState(false)
   const getStatus = async () => {
@@ -31,14 +39,7 @@ export const VerifyMe = (props: { user: User | null | undefined }) => {
     // TODO: if they need to re-register, show them a link to do so
     if (message) toast.error(message)
   }
-  if (
-    !GIDX_REGISTATION_ENABLED ||
-    !user ||
-    user.kycStatus === 'verified' ||
-    user.kycStatus === 'block' ||
-    user.kycStatus === 'temporary-block'
-  )
-    return null
+  if (!show || !user) return null
   if (user.kycStatus === 'pending') {
     return (
       <Col
@@ -80,6 +81,27 @@ export const VerifyMe = (props: { user: User | null | undefined }) => {
             ))}
           </Col>
         )}
+      </Col>
+    )
+  }
+
+  if (user.kycStatus === 'verified') {
+    return (
+      <Col
+        className={
+          'm-2 justify-between gap-2 rounded-sm bg-teal-100 p-2 px-3 dark:bg-teal-700'
+        }
+      >
+        <Col className={'w-full items-center justify-between sm:flex-row'}>
+          <span>
+            <span className={'text-lg'}>🎉</span> Congrats, you've been
+            verified! <span className={'text-lg'}>🎉</span>
+          </span>
+
+          <Button color={'gray-white'} onClick={() => setShow(false)}>
+            Close
+          </Button>
+        </Col>
       </Col>
     )
   }

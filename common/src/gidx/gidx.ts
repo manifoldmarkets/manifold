@@ -44,11 +44,13 @@ export type GIDXDocument = {
   FileName: string
   FileSize: number
   DateTime: string
-  DocumentNotes: {
-    AuthorName: string
-    NoteText: string
-    DateTime: string
-  }[]
+  DocumentNotes: DocumentNote[]
+}
+
+export type DocumentNote = {
+  AuthorName: string
+  NoteText: string
+  DateTime: string
 }
 
 export type GPSData = {
