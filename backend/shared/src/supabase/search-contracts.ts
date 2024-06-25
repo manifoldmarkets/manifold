@@ -256,8 +256,6 @@ function getSearchContractWhereSQL(args: {
   contractType: string
   creatorId?: string
   uid?: string
-  groupId?: string
-  hasGroupAccess?: boolean
   hideStonks?: boolean
   hideLove?: boolean
   isPrizeMarket?: boolean
@@ -269,8 +267,6 @@ function getSearchContractWhereSQL(args: {
     contractType,
     creatorId,
     uid,
-    groupId,
-    hasGroupAccess,
     hideStonks,
     hideLove,
     isPrizeMarket,
@@ -302,12 +298,7 @@ function getSearchContractWhereSQL(args: {
     : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
-  const visibilitySQL = getContractPrivacyWhereSQLFilter(
-    uid,
-    creatorId,
-    groupId,
-    hasGroupAccess
-  )
+  const visibilitySQL = getContractPrivacyWhereSQLFilter(uid, creatorId)
 
   const deletedFilter = `deleted = false`
 

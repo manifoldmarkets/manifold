@@ -26,8 +26,6 @@ export const getusercontractmetricswithcontracts = MaybeAuthedEndpoint(
     const visibilitySQL = getContractPrivacyWhereSQLFilter(
       auth?.uid,
       undefined,
-      undefined,
-      undefined,
       'c.id'
     )
     const pg = createSupabaseDirectClient()
