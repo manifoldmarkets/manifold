@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import {
   getContract,
   getContracts,
-  getIsPrivateContractMember,
   getPublicContractIdsInTopics,
   getPublicContractsByIds,
   getRecentPublicContractRows,
@@ -43,18 +42,6 @@ export const usePublicContracts = (
   }, [contractIds, topicSlugs, ignoreSlugs])
 
   return contracts
-}
-
-export function useIsPrivateContractMember(userId: string, contractId: string) {
-  const [isPrivateContractMember, setIsPrivateContractMember] = useState<
-    boolean | undefined | null
-  >(undefined)
-  useEffect(() => {
-    getIsPrivateContractMember(userId, contractId).then((result) => {
-      setIsPrivateContractMember(result)
-    })
-  }, [userId, contractId])
-  return isPrivateContractMember
 }
 
 export const useContracts = (
