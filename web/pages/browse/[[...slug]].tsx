@@ -163,7 +163,7 @@ export function GroupPageContent(props: {
   const topicsByImportance = combineGroupsByImportance(
     trendingTopics ?? [],
     userTrendingTopics ?? []
-  ).filter(t => !EXCLUDED_TOPIC_SLUGS.includes(t.slug))
+  ).filter((t) => !EXCLUDED_TOPIC_SLUGS.includes(t.slug))
 
   const topicFromRouter = useTopicFromRouter(topicSlug)
   const [topicsFromRouter, setTopicsFromRouter] = usePersistentInMemoryState<
@@ -318,7 +318,10 @@ export function GroupPageContent(props: {
   )
 }
 
-const EXCLUDED_TOPIC_SLUGS = ['politics-default', '2024-us-presidential-election']
+const EXCLUDED_TOPIC_SLUGS = [
+  'politics-default',
+  '2024-us-presidential-election',
+]
 
 const combineGroupsByImportance = (
   resultGroups: Group[],
