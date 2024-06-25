@@ -9,14 +9,38 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { GroupPageContent } from '../browse/[[...slug]]'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { api } from 'web/lib/firebase/api'
+import { Headline } from 'common/news'
+import { HeadlineTabs } from 'web/components/dashboard/header'
 
-export default function Home() {
+export async function getStaticProps() {
+  try {
+    const headlines = await api('headlines', {})
+    return {
+      props: {
+        headlines,
+        revalidate: 30 * 60, // 30 minutes
+      },
+    }
+  } catch (err) {
+    return { props: { headlines: [] }, revalidate: 60 }
+  }
+}
+
+export default function Home(props: { headlines: Headline[] }) {
   const user = useUser()
   useSaveReferral(user)
+  const { headlines } = props
 
   return (
     <Page trackPageView={'home'} className="!mt-0">
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
+      <HeadlineTabs
+        endpoint={'news'}
+        headlines={headlines}
+        currentSlug={'home'}
+        hideEmoji
+      />
       {user && (
         <DailyStats
           className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
