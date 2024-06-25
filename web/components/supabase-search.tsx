@@ -268,8 +268,10 @@ export function SupabaseSearch(props: {
     !collapseOptions,
     `${persistPrefix}-expand-search-options`
   )
-  const showSearchTypes = expandOptions && !hideSearchTypes && !contractsOnly
-  const showContractFilters = expandOptions && !hideContractFilters
+  const expandedOrHasQuery = expandOptions || !!query
+  const showSearchTypes =
+    expandedOrHasQuery && !hideSearchTypes && !contractsOnly
+  const showContractFilters = expandedOrHasQuery && !hideContractFilters
 
   const queryUsers = useEvent(async (query: string) =>
     searchUsers(query, USERS_PER_PAGE)
@@ -499,7 +501,7 @@ export function SupabaseSearch(props: {
         </Col>
       )}
 
-      {!expandOptions && <div className="mt-2" />}
+      {!expandedOrHasQuery && <div className="mt-2" />}
 
       {!contracts ? (
         <LoadingResults />
