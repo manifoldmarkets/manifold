@@ -25,6 +25,7 @@ export const otherErrorCodes: string[] = [
 export const locationTemporarilyBlockedCodes = [
   'DFP-HR-CONN', // Device Fingerprint High Risk Connection
   'LL-BLOCK', // location blocked
+  'LL-ALERT-DIST', // Large distance between id location attempts
 ]
 
 export const locationBlockedCodes = [
@@ -63,7 +64,6 @@ export const allowedFlaggedCodes: string[] = [
   'DFP-VPRP', // Device Fingerprint VPN, Proxy, or Relay Provider
   'DFP-VPRP-ANON', // Device Fingerprint Anon proxy
   'DFP-VPRP-CORP', // Device Fingerprint Corporate proxy
-  'LL-ALERT-DIST', // Large distance between id location attempts
 ]
 
 export const allowedCodes: string[] = [
@@ -75,7 +75,5 @@ export const allowedCodes: string[] = [
 
 export type RegistrationReturnType = {
   status: string
-  ReasonCodes: string[]
-  FraudConfidenceScore?: number
-  IdentityConfidenceScore?: number
+  message?: string
 }

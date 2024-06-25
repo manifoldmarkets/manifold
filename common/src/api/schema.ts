@@ -47,7 +47,7 @@ import {
 import { ModReport } from '../mod-report'
 
 import { RegistrationReturnType } from 'common/reason-codes'
-import { verificationParams } from 'common/gidx/gidx'
+import { GIDXDocument, verificationParams } from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
 
@@ -1300,7 +1300,11 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    returns: {} as { status: string },
+    returns: {} as {
+      status: string
+      documents?: GIDXDocument[]
+      message?: string
+    },
     props: z.object({}),
   },
   'upload-document-gidx': {
@@ -1318,8 +1322,11 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
-    returns: {} as any,
-    props: z.object({}) as any,
+    returns: {} as { Accepted: boolean },
+    props: z.object({
+      MerchantCustomerID: z.string(),
+      NotificationType: z.string(),
+    }),
   },
 } as const)
 

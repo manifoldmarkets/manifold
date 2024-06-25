@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getGIDXStandardParams } from 'shared/gidx/standard-params'
+import { getGIDXStandardParams } from 'shared/gidx/helpers'
 import { isProd, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { PROD_CONFIG } from 'common/envs/prod'

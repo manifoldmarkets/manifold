@@ -175,7 +175,7 @@ export const getPrivateUserSupabase = (userId: string) => {
   return pg.oneOrNone(
     `select data from private_users where id = $1`,
     [userId],
-    (row) => row.data as PrivateUser
+    (row) => (row ? (row.data as PrivateUser) : null)
   )
 }
 

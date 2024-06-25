@@ -11,16 +11,7 @@ import { uploadPrivateImage } from 'web/lib/firebase/storage'
 import { last } from 'lodash'
 import { Select } from 'web/components/widgets/select'
 import clsx from 'clsx'
-
-const identificationTypeToCode = {
-  'Drivers License': 2,
-  Passport: 3,
-  'Military Id': 4,
-  'Government Photo Id': 5,
-  'Student Photo Id': 6,
-  'Utility Bill': 7,
-  Other: 1,
-}
+import { idNameToCategoryType } from 'common/gidx/gidx'
 
 export const UploadDocuments = (props: {
   back: () => void
@@ -88,7 +79,7 @@ export const UploadDocuments = (props: {
           value={CategoryType}
           onChange={(e) => setCategoryType(Number(e.target.value))}
         >
-          {Object.entries(identificationTypeToCode).map(([type, number]) => (
+          {Object.entries(idNameToCategoryType).map(([type, number]) => (
             <option key={number + type} value={number}>
               {type}
             </option>
