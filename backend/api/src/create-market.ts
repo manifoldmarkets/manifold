@@ -150,6 +150,9 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     utcOffset
   )
 
+  if (closeTime && closeTime < Date.now())
+    throw new APIError(400, 'Question must close in the future')
+
   const pg = createSupabaseDirectClient()
 
   const totalMarketCost = marketTier
