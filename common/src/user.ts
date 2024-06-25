@@ -74,7 +74,6 @@ export type User = {
     | 'temporary-block'
     | 'verified'
     | 'pending'
-    | 'await-more-documents'
     | 'await-documents'
 }
 

@@ -4,12 +4,14 @@ import { isProd, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { DEV_CONFIG } from 'common/envs/dev'
-import { updateUser } from 'shared/supabase/users'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   DocumentRegistrationResponse,
+  GIDX_DOCUMENTS_REQUIRED,
   GIDX_REGISTATION_ENABLED,
 } from 'common/gidx/gidx'
+import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateUser } from 'shared/supabase/users'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DocumentLibrary/DocumentRegistration'
@@ -54,8 +56,20 @@ export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
     Document.FileName
   )
   await deleteFileFromFirebase(fileUrl)
+  const { documents, unrejectedIdDocuments, unrejectedUtilityDocuments } =
+    await getIdentityVerificationDocuments(auth.uid)
+
   const pg = createSupabaseDirectClient()
-  await updateUser(pg, auth.uid, { kycStatus: 'pending' })
+  if (
+    documents.length >= GIDX_DOCUMENTS_REQUIRED &&
+    unrejectedUtilityDocuments.length > 0 &&
+    unrejectedIdDocuments.length > 0
+  ) {
+    // They passed the reason codes and have the required documents
+    await updateUser(pg, auth.uid, {
+      kycStatus: 'pending',
+    })
+  }
   return { status: 'success' }
 }
 

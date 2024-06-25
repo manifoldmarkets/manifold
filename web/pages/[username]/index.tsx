@@ -352,7 +352,7 @@ function UserProfile(props: {
                 stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
                 content: (
                   <>
-                    <VerifyMe user={currentUser} />
+                    {currentUser && <VerifyMe user={currentUser} />}
                     <VerifyPhoneNumberBanner user={currentUser} />
                     <PortfolioSummary className="mt-4" user={user} />
                   </>

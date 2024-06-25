@@ -28,7 +28,7 @@ import { useNativeMessages } from 'web/hooks/use-native-messages'
 
 const body = {
   ...exampleCustomers[2],
-  MerchantCustomerID: '11',
+  // MerchantCustomerID: '11',
 }
 //   {
 //   EmailAddress: 'gochanman@yahoo.com',
@@ -68,7 +68,7 @@ export const RegisterUserForm = (props: { user: User }) => {
   const router = useRouter()
   // TODO: After development, if user is verified, redirect to the final page
   const [page, setPage] = useState(
-    user.kycStatus === 'verified'
+    user.kycStatus === 'verified' || user.kycStatus === 'pending'
       ? 1000
       : user.kycStatus === 'await-documents'
       ? 4
@@ -389,6 +389,21 @@ export const RegisterUserForm = (props: { user: User }) => {
           <Link className={buttonClass('md', 'indigo')} href={'/home'}>
             Done
           </Link>
+        </Row>
+      </Col>
+    )
+  }
+
+  if (user.kycStatus === 'await-documents') {
+    return (
+      <Col className={colClass}>
+        <span className={'text-primary-700 text-2xl'}>Document errors</span>
+        <span>
+          There was an error with one or more of your documents. Please upload
+          new documents.
+        </span>
+        <Row className={bottomRowClass}>
+          <Button onClick={() => setPage(4)}>Upload documents</Button>
         </Row>
       </Col>
     )
