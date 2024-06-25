@@ -1,7 +1,6 @@
 import { Dialog, Transition } from '@headlessui/react'
 import {
   GlobeAltIcon,
-  HomeIcon,
   NewspaperIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
@@ -37,9 +36,9 @@ const touchItemClass = 'bg-primary-100'
 function getNavigation(user: User) {
   return [
     {
-      name: 'Home',
+      name: 'Browse',
       href: '/home',
-      icon: HomeIcon,
+      icon: SearchIcon,
     },
     {
       name: 'Explore',
