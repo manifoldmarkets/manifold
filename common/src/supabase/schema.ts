@@ -3494,13 +3494,6 @@ export type Database = {
         }
         Returns: number
       }
-      can_access_private_contract: {
-        Args: {
-          this_contract_id: string
-          this_member_id: string
-        }
-        Returns: boolean
-      }
       can_access_private_messages: {
         Args: {
           channel_id: number
@@ -3512,13 +3505,6 @@ export type Database = {
         Args: {
           this_post_id: string
           this_member_id: string
-        }
-        Returns: boolean
-      }
-      check_group_accessibility: {
-        Args: {
-          this_group_id: string
-          this_user_id: string
         }
         Returns: boolean
       }
@@ -4243,13 +4229,6 @@ export type Database = {
         Args: {
           this_group_id: string
           this_user_id: string
-        }
-        Returns: boolean
-      }
-      is_private_contract_member: {
-        Args: {
-          this_contract_id: string
-          this_member_id: string
         }
         Returns: boolean
       }
