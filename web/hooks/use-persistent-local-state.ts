@@ -28,5 +28,6 @@ export const usePersistentLocalState = <T>(initialValue: T, key: string) => {
     }
   }, [key])
 
-  return [state, saveState] as const
+  const ready = isClient && !!safeLocalStorage
+  return [state, saveState, ready] as const
 }

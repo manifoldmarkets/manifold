@@ -8,10 +8,10 @@ import {
   StarIcon,
   QuestionMarkCircleIcon,
   NewspaperIcon,
-  SearchIcon,
   LightningBoltIcon,
   LoginIcon,
   TemplateIcon,
+  GlobeAltIcon,
 } from '@heroicons/react/outline'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { GiCapitol } from 'react-icons/gi'
@@ -138,9 +138,9 @@ const getDesktopNav = (
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
       {
-        name: 'Browse',
-        href: '/browse?fy=1&f=open',
-        icon: SearchIcon,
+        name: 'Explore',
+        href: '/explore',
+        icon: GlobeAltIcon,
       },
       {
         name: 'Notifications',
@@ -178,7 +178,7 @@ const getDesktopNav = (
     )
 
   return buildArray(
-    { name: 'Browse', href: '/browse', icon: SearchIcon },
+    { name: 'Home', href: '/home', icon: HomeIcon },
     {
       name: 'US Politics',
       href: '/politics',

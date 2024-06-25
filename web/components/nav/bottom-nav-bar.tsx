@@ -1,5 +1,6 @@
 import { Dialog, Transition } from '@headlessui/react'
 import {
+  GlobeAltIcon,
   HomeIcon,
   NewspaperIcon,
   QuestionMarkCircleIcon,
@@ -10,7 +11,6 @@ import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Fragment, useState } from 'react'
-import { BiSearchAlt2 } from 'react-icons/bi'
 import { User } from 'common/user'
 import { usePathname } from 'next/navigation'
 import { GiCapitol } from 'react-icons/gi'
@@ -42,9 +42,9 @@ function getNavigation(user: User) {
       icon: HomeIcon,
     },
     {
-      name: 'Browse',
-      href: '/browse?fy=1&f=open',
-      icon: BiSearchAlt2,
+      name: 'Explore',
+      href: '/explore',
+      icon: GlobeAltIcon,
     },
     // {
     //   name: 'Politics',
