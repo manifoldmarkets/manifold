@@ -50,10 +50,7 @@ import {
   useContractBets,
   useUnfilledBets,
 } from 'web/hooks/use-bets'
-import {
-  useIsPrivateContractMember,
-  useLiveContract,
-} from 'web/hooks/use-contract'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
@@ -623,22 +620,6 @@ export function ContractPageContent(props: ContractParams) {
 
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>
-  )
-}
-
-function PrivateContractAdminTag(props: { contract: Contract; user: User }) {
-  const { contract, user } = props
-  const isPrivateContractMember = useIsPrivateContractMember(
-    user.id,
-    contract.id
-  )
-  if (isPrivateContractMember) return <></>
-  return (
-    <Row className="sticky top-0 z-50 justify-end">
-      <div className="rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500">
-        ADMIN
-      </div>
-    </Row>
   )
 }
 
