@@ -727,10 +727,11 @@ const useSearchQueryState = (props: {
     defaultMarketTier = '00000',
   } = props
 
-  const [lastSort, setLastSort] = usePersistentLocalState<Sort>(
-    defaultSort ?? 'score',
-    `${persistPrefix}-last-search-sort`
-  )
+  const [lastSort, setLastSort, localStateReady] =
+    usePersistentLocalState<Sort>(
+      defaultSort ?? 'score',
+      `${persistPrefix}-last-search-sort`
+    )
 
   const defaults = {
     [QUERY_KEY]: '',
@@ -747,10 +748,10 @@ const useSearchQueryState = (props: {
   const [state, setState, ready] = useHook(defaults, persistPrefix)
 
   useEffect(() => {
-    setLastSort(state.s)
-  }, [state.s])
+    if (localStateReady) setLastSort(state.s)
+  }, [state.s, ready])
 
-  return [state, setState, ready] as const
+  return [state, setState, localStateReady] as const
 }
 
 const useShim = <T extends Record<string, string | undefined>>(
