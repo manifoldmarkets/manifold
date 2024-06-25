@@ -55,27 +55,25 @@ begin
 end
 $$;
 
-create or replace trigger contract_bet_populate before insert
+create
+or replace trigger contract_bet_populate before insert
 or
 update on contract_bets for each row
 execute function contract_bet_populate_cols ();
 
-create or replace function contract_bet_set_updated_time()
-    returns trigger
-    language plpgsql
-as $$
+create
+or replace function contract_bet_set_updated_time () returns trigger language plpgsql as $$
 begin
     new.updated_time = now();
     return new;
 end;
 $$;
 
-create or replace trigger contract_bet_update
-    after update
-    on contract_bets
-    for each row
-execute function contract_bet_set_updated_time();
-
+create
+or replace trigger contract_bet_update
+after
+update on contract_bets for each row
+execute function contract_bet_set_updated_time ();
 
 /* serves bets API pagination */
 create index if not exists contract_bets_bet_id on contract_bets (bet_id);
@@ -110,15 +108,3 @@ drop policy if exists "Enable read access for non private bets" on public.contra
 create policy "Enable read access for non private bets" on public.contract_bets for
 select
   using ((visibility <> 'private'::text));
-
-create or replace view
-  public.contract_bets_rbac as
-select
-  *
-from
-  contract_bets
-where
-  (visibility <> 'private')
-  or (
-    can_access_private_contract (contract_id, firebase_uid ())
-  )

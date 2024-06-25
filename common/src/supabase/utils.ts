@@ -64,7 +64,6 @@ type JsonTypes = {
   users: User
   user_contract_metrics: ContractMetric
   contracts: Contract
-  cotracts_rbac: Contract
   answers: Answer
   contract_bets: Bet
   public_contract_bets: Bet
