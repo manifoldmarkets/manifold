@@ -31,7 +31,7 @@ runScript(async ({ pg }) => {
       continue
     }
     await resolveMarketHelper(contract, sinclair, creator, {
-      outcome: 'CANCELLED',
+      outcome: 'CANCEL',
     })
     await setAdjustProfitFromResolvedMarkets(contract.id)
   }
@@ -69,25 +69,25 @@ runScript(async ({ pg }) => {
 
   console.log('deleting all private groups')
   // copied from scripts/delete-group.ts
-  const groups = pg.many(
+  const groupIds = pg.many(
     `select id from groups where visibility = 'private'`,
     (data: any) => data.id as string
   )
   console.log('removing groups from posts')
   await pg.none(
     'update old_posts set group_id = null where group_id in ($1:list)',
-    [groups]
+    [groupIds]
   )
 
   console.log('removing groups from contracts')
   await pg.none(`delete from group_contracts where group_id in ($1:list)`, [
-    groups,
+    groupIds,
   ])
 
   console.log('removing groups members')
   await pg.none(`delete from group_members where group_id in ($1:list)`, [
-    groups,
+    groupIds,
   ])
   console.log('deleting groups')
-  await pg.none(`delete from groups where id in ($1:list)`, [groups])
+  await pg.none(`delete from groups where id in ($1:list)`, [groupIds])
 })
