@@ -90,7 +90,6 @@ export function FeedCommentThread(props: {
   showReplies?: boolean
   childrenBountyTotal?: number
   className?: string
-  onSubmitReply?: () => void
   bets?: Bet[]
 }) {
   const {
@@ -104,7 +103,6 @@ export function FeedCommentThread(props: {
     showReplies,
     childrenBountyTotal,
     className,
-    onSubmitReply,
     bets,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
@@ -196,7 +194,6 @@ export function FeedCommentThread(props: {
             clearReply={clearReply}
             trackingLocation={trackingLocation}
             className="w-full min-w-0 grow"
-            onSubmit={onSubmitReply}
             commentTypes={['comment']}
             autoFocus
           />
