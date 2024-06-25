@@ -143,8 +143,6 @@ export const isContractNonPredictive = (contract: Contract) => {
 export const getContractPrivacyWhereSQLFilter = (
   uid: string | undefined,
   creatorId?: string,
-  groupId?: string,
-  hasGroupAccess?: boolean,
   contractIdString = 'id'
 ) => {
   const otherVisibilitySQL = `
@@ -155,8 +153,7 @@ export const getContractPrivacyWhereSQLFilter = (
      OR exists(
          select 1 from contract_bets where contract_id = ${contractIdString} and user_id = '${uid}')
      ))`
-  return (groupId && hasGroupAccess) ||
-    (!!creatorId && !!uid && creatorId === uid)
+  return !!creatorId && !!uid && creatorId === uid
     ? ''
     : `(visibility = 'public' ${uid ? otherVisibilitySQL : ''})`
 }
