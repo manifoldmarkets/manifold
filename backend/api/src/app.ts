@@ -37,7 +37,6 @@ import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
 import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
-import { creategroupinvite } from './create-group-invite'
 import { followtopic } from './follow-topic'
 import { editcomment } from 'api/edit-comment'
 import {
@@ -405,7 +404,6 @@ app.post(
   express.raw({ type: '*/*' }),
   stripewebhook
 )
-app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
 app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))

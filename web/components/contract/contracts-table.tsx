@@ -317,9 +317,6 @@ export function VisibilityIcon(props: {
     className
   )
 
-  if (contract.visibility === 'private')
-    return <LockClosedIcon className={iconClassName} />
-
   if (contract.visibility === 'unlisted')
     return <EyeOffIcon className={iconClassName} />
 

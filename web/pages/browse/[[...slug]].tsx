@@ -59,7 +59,7 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
   const slug = first(props.params.slug)
   const topic = slug ? await getGroupFromSlug(slug) : null
 
-  if (!topic || topic.privacyStatus === 'private') {
+  if (!topic) {
     return {
       props: {
         slug: slug ?? null,

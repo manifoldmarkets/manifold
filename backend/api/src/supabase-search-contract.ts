@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { type APIHandler } from './helpers/endpoint'
 import {
-  hasGroupAccess,
   getSearchContractSQL,
   getForYouSQL,
   SearchTypes,
@@ -90,7 +89,6 @@ const search = async (
       convertContract
     )
   } else {
-    const groupAccess = await hasGroupAccess(groupId, userId)
     const searchTypes: SearchTypes[] = [
       'prefix',
       'without-stopwords',
@@ -117,7 +115,6 @@ const search = async (
           creatorId,
           uid: userId,
           isForYou,
-          groupAccess,
           searchType,
           isPolitics,
           isPrizeMarket,

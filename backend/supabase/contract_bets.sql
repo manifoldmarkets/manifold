@@ -102,9 +102,3 @@ create index concurrently if not exists contract_bets_user_updated_time on contr
 
 alter table contract_bets
 cluster on contract_bets_created_time;
-
-drop policy if exists "Enable read access for non private bets" on public.contract_bets;
-
-create policy "Enable read access for non private bets" on public.contract_bets for
-select
-  using ((visibility <> 'private'::text));

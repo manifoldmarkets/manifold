@@ -90,15 +90,8 @@ export async function addUserToTopic(
     const isModRequest = isModId(myId)
 
     if (userId === myId) {
-      if (group.privacy_status === 'private') {
-        throw new APIError(403, 'You can not add yourself to a private group!')
-      }
-    } else {
       if (!requester) {
-        if (
-          !isAdminRequest &&
-          !(isModRequest && group.privacy_status !== 'private')
-        ) {
+        if (!isAdminRequest && !isModRequest) {
           throw new APIError(
             403,
             'User does not have permission to add members'

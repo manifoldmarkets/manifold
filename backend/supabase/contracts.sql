@@ -137,3 +137,10 @@ create trigger contract_populate before insert
 or
 update on contracts for each row
 execute function contract_populate_cols ();
+
+-- ALTER TABLE public.contracts ENABLE ROW LEVEL SECURITY;
+drop policy if exists "public read" on public.contracts;
+
+create policy "public read" on public.contracts for
+select
+  using (true);

@@ -12,7 +12,6 @@ import { getAddContractToGroupPermission } from 'web/components/topics/topic-opt
 import { User } from 'common/user'
 
 export type AddContractToGroupPermissionType =
-  | 'private' // user can add a private contract (only new, only belongs in group)
   | 'new' // user can add a new contract
   | 'any' // user can add a new or existing contract
   | 'none' // user cannot add any contract
