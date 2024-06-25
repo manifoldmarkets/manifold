@@ -6,7 +6,7 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { APIResponse } from 'common/api/schema'
 import { uniqBy } from 'lodash'
 import { ScoredFeedRepost } from 'web/components/feed/scored-feed-repost-item'
@@ -98,10 +98,9 @@ export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
         const adIndex = i / AD_PERIOD - 1
         const ad = ads[adIndex]
         return (
-          <>
+          <Fragment key={contract.id + comment?.id}>
             {i % AD_PERIOD === 0 && i !== 0 && ad && (
               <FeedCard
-                key={ad.contract.id + comment?.id}
                 contract={ad.contract}
                 repost={undefined}
                 comment={undefined}
@@ -112,7 +111,6 @@ export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
               />
             )}
             <FeedCard
-              key={contract.id + comment?.id}
               contract={contract}
               repost={repost}
               comment={comment}
@@ -120,7 +118,7 @@ export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
               user={user}
               reason={idsToReason[contract.id]}
             />
-          </>
+          </Fragment>
         )
       })}
       <div className="relative">

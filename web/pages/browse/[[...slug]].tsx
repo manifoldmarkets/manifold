@@ -115,7 +115,9 @@ export default function BrowseGroupPage(props: {
         description={`Browse ${staticTopicParams?.name ?? 'all'} questions`}
         url={`/browse${staticTopicParams ? `/${staticTopicParams.slug}` : ''}`}
       />
-      <GroupPageContent slug={slug} staticTopicParams={staticTopicParams} />
+      <Page trackPageView={'questions page'}>
+        <GroupPageContent slug={slug} staticTopicParams={staticTopicParams} />
+      </Page>
     </>
   )
 }
@@ -123,8 +125,9 @@ export default function BrowseGroupPage(props: {
 export function GroupPageContent(props: {
   staticTopicParams?: TopicParams
   slug: string | null
+  collapseOptions?: boolean
 }) {
-  const { staticTopicParams } = props
+  const { staticTopicParams, collapseOptions } = props
   const slug = props.slug ?? undefined
   const user = useUser()
   const isMobile = useIsMobile()
@@ -160,7 +163,8 @@ export function GroupPageContent(props: {
   const topicsByImportance = combineGroupsByImportance(
     trendingTopics ?? [],
     userTrendingTopics ?? []
-  )
+  ).filter(t => !EXCLUDED_TOPIC_SLUGS.includes(t.slug))
+
   const topicFromRouter = useTopicFromRouter(topicSlug)
   const [topicsFromRouter, setTopicsFromRouter] = usePersistentInMemoryState<
     Group[]
@@ -200,123 +204,121 @@ export function GroupPageContent(props: {
       }}
       useUrlParams
       isWholePage
-      headerClassName={'pt-0 px-2 mt-2 bg-canvas-50'}
+      headerClassName={'pt-0 px-2 bg-canvas-50'}
       setTopics={setTopicResults}
       topicSlug={topicSlug}
-      defaultFilter={
-        // !topicSlug || NON_GROUP_SLUGS.includes(topicSlug) ? 'open' : 'all'
-        'all'
-      }
+      defaultFilter="open"
+      defaultSort="score"
+      defaultForYou="1"
       shownTopics={shownTopics}
       setTopicSlug={(slug) => {
         setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
       }}
+      collapseOptions={collapseOptions}
     />
   )
 
   return (
-    <>
-      <Page trackPageView={'questions page'}>
-        <div>
-          <QuestionsTopicTitle
-            currentTopic={currentTopic}
-            topicSlug={topicSlug}
-            user={user}
-            setTopicSlug={setTopicSlugClearQuery}
-          />
-          <div className="flex md:contents">
-            <Col className={clsx('relative col-span-8 mx-auto w-full')}>
-              {!currentTopic && searchComponent}
-              {currentTopic && (
-                <QueryUncontrolledTabs
-                  className={'px-1'}
-                  renderAllTabs={false}
-                  tabs={buildArray(
-                    {
-                      content: searchComponent,
-                      title: 'Browse',
-                    },
-                    currentTopic && [
-                      {
-                        title: 'Leaderboards',
-                        content: (
-                          <Col className={''}>
-                            <div className="text-ink-500 mb-4 mt-2 text-sm">
-                              Updates every 15 minutes
-                            </div>
-                            <Col className="gap-2 ">
-                              <GroupLeaderboard
-                                topic={currentTopic}
-                                type={'trader'}
-                                cachedTopUsers={
-                                  staticTopicIsCurrent
-                                    ? staticTopicParams?.topTraders
-                                    : undefined
-                                }
-                              />
-                              <GroupLeaderboard
-                                topic={currentTopic}
-                                type={'creator'}
-                                cachedTopUsers={
-                                  staticTopicIsCurrent
-                                    ? staticTopicParams?.topCreators
-                                    : undefined
-                                }
-                                noFormatting={true}
-                              />
-                            </Col>
-                          </Col>
-                        ),
-                      },
-                      {
-                        title: 'About',
-                        content: (
-                          <Col className="w-full">
-                            {currentTopic.bannerUrl && (
-                              <div className="relative h-[200px]">
-                                <Image
-                                  fill
-                                  src={currentTopic.bannerUrl}
-                                  sizes="100vw"
-                                  className="object-cover"
-                                  alt=""
-                                />
-                              </div>
-                            )}
-                            <div className="text-ink-500 mb-4 mt-2 text-sm">
-                              {currentTopic.privacyStatus} topic created
-                              {currentTopic.creatorId === user?.id && ' by you'}
-                              <RelativeTimestamp
-                                time={currentTopic.createdTime}
-                                className="!text-ink-500"
-                              />{' '}
-                              • {currentTopic.totalMembers ?? 0} followers
-                              {currentTopic.postIds?.length
-                                ? ` • ${currentTopic.postIds.length} posts`
-                                : undefined}
-                            </div>
+    <div>
+      <QuestionsTopicTitle
+        currentTopic={currentTopic}
+        topicSlug={topicSlug}
+        user={user}
+        setTopicSlug={setTopicSlugClearQuery}
+      />
+      <div className="flex md:contents">
+        <Col className={clsx('relative col-span-8 mx-auto w-full')}>
+          {!currentTopic && searchComponent}
+          {currentTopic && (
+            <QueryUncontrolledTabs
+              className={'px-1'}
+              renderAllTabs={false}
+              tabs={buildArray(
+                {
+                  content: searchComponent,
+                  title: 'Browse',
+                },
+                currentTopic && [
+                  {
+                    title: 'Leaderboards',
+                    content: (
+                      <Col className={''}>
+                        <div className="text-ink-500 mb-4 mt-2 text-sm">
+                          Updates every 15 minutes
+                        </div>
+                        <Col className="gap-2 ">
+                          <GroupLeaderboard
+                            topic={currentTopic}
+                            type={'trader'}
+                            cachedTopUsers={
+                              staticTopicIsCurrent
+                                ? staticTopicParams?.topTraders
+                                : undefined
+                            }
+                          />
+                          <GroupLeaderboard
+                            topic={currentTopic}
+                            type={'creator'}
+                            cachedTopUsers={
+                              staticTopicIsCurrent
+                                ? staticTopicParams?.topCreators
+                                : undefined
+                            }
+                            noFormatting={true}
+                          />
+                        </Col>
+                      </Col>
+                    ),
+                  },
+                  {
+                    title: 'About',
+                    content: (
+                      <Col className="w-full">
+                        {currentTopic.bannerUrl && (
+                          <div className="relative h-[200px]">
+                            <Image
+                              fill
+                              src={currentTopic.bannerUrl}
+                              sizes="100vw"
+                              className="object-cover"
+                              alt=""
+                            />
+                          </div>
+                        )}
+                        <div className="text-ink-500 mb-4 mt-2 text-sm">
+                          {currentTopic.privacyStatus} topic created
+                          {currentTopic.creatorId === user?.id && ' by you'}
+                          <RelativeTimestamp
+                            time={currentTopic.createdTime}
+                            className="!text-ink-500"
+                          />{' '}
+                          • {currentTopic.totalMembers ?? 0} followers
+                          {currentTopic.postIds?.length
+                            ? ` • ${currentTopic.postIds.length} posts`
+                            : undefined}
+                        </div>
 
-                            {currentTopic.about && (
-                              <Content
-                                size="lg"
-                                className="p-4 sm:p-6"
-                                content={currentTopic.about}
-                              />
-                            )}
-                          </Col>
-                        ),
-                      },
-                    ]
-                  )}
-                />
+                        {currentTopic.about && (
+                          <Content
+                            size="lg"
+                            className="p-4 sm:p-6"
+                            content={currentTopic.about}
+                          />
+                        )}
+                      </Col>
+                    ),
+                  },
+                ]
               )}
-            </Col>
-          </div>
-        </div>
-      </Page>
-    </>
+            />
+          )}
+        </Col>
+      </div>
+    </div>
   )
 }
+
+const EXCLUDED_TOPIC_SLUGS = ['politics-default', '2024-us-presidential-election']
 
 const combineGroupsByImportance = (
   resultGroups: Group[],

@@ -219,23 +219,27 @@ export const PortfolioValueSection = memo(
         setPortfolioFocus={onSetPortfolioFocus}
         portfolioHoveredGraph={portfolioHoveredGraph}
         setPortfolioHoveredGraph={setPortfolioHoveredGraph}
-        graphElement={(width, height) => (
-          <PortfolioGraph
-            mode={graphMode}
-            duration={currentTimePeriod}
-            portfolioHistory={portfolioHistory}
-            width={width}
-            height={height}
-            zoomParams={zoomParams}
-            hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
-            firstProfit={firstProfit}
-            updateGraphValues={updateGraphValues}
-            portfolioFocus={portfolioFocus}
-            setPortfolioFocus={onSetPortfolioFocus}
-            portfolioHoveredGraph={portfolioHoveredGraph}
-            setPortfolioHoveredGraph={setPortfolioHoveredGraph}
-          />
-        )}
+        graphElement={
+          portfolioHistory.length < 2
+            ? undefined
+            : (width, height) => (
+                <PortfolioGraph
+                  mode={graphMode}
+                  duration={currentTimePeriod}
+                  portfolioHistory={portfolioHistory}
+                  width={width}
+                  height={height}
+                  zoomParams={zoomParams}
+                  hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
+                  firstProfit={firstProfit}
+                  updateGraphValues={updateGraphValues}
+                  portfolioFocus={portfolioFocus}
+                  setPortfolioFocus={onSetPortfolioFocus}
+                  portfolioHoveredGraph={portfolioHoveredGraph}
+                  setPortfolioHoveredGraph={setPortfolioHoveredGraph}
+                />
+              )
+        }
         onlyShowProfit={onlyShowProfit}
         placement={isMobile && !onlyShowProfit ? 'bottom' : undefined}
         className={clsx(graphContainerClassName, !isMobile && 'mb-4')}
@@ -254,7 +258,7 @@ function PortfolioValueSkeleton(props: {
   graphMode: GraphMode
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
-  graphElement: (width: number, height: number) => ReactNode
+  graphElement: ((width: number, height: number) => ReactNode) | undefined
   hideSwitcher?: boolean
   className?: string
   switcherColor?: ColorType
@@ -472,19 +476,21 @@ function PortfolioValueSkeleton(props: {
             </>
           )}
         </div>
-        <SizedContainer
-          className={clsx(
-            className,
-            'mt-2',
-            size == 'sm' ? 'h-[80px] sm:h-[100px]' : 'h-[125px] sm:h-[200px]'
-          )}
-          style={{
-            paddingRight: Y_AXIS_MARGIN,
-          }}
-        >
-          {graphElement}
-        </SizedContainer>
-        {!hideSwitcher && (
+        {graphElement && (
+          <SizedContainer
+            className={clsx(
+              className,
+              'mt-2',
+              size == 'sm' ? 'h-[80px] sm:h-[100px]' : 'h-[125px] sm:h-[200px]'
+            )}
+            style={{
+              paddingRight: Y_AXIS_MARGIN,
+            }}
+          >
+            {graphElement}
+          </SizedContainer>
+        )}
+        {!hideSwitcher && graphElement && (
           <TimeRangePicker
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setCurrentTimePeriod}
