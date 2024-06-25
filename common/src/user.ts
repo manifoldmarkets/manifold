@@ -64,11 +64,18 @@ export type User = {
   fromPolitics?: boolean
   signupBonusPaid?: number
   isAdvancedTrader?: boolean
-  verifiedPhone?: boolean
   purchasedMana?: boolean
-  kycMatch?: boolean
+  verifiedPhone?: boolean
   kycFlags?: string[]
-  kycStatus?: 'verified' | 'failed' | 'blocked' | 'pending'
+  kycLastAttempt?: number
+  kycStatus?:
+    | 'fail'
+    | 'block'
+    | 'temporary-block'
+    | 'verified'
+    | 'pending'
+    | 'await-more-documents'
+    | 'await-documents'
 }
 
 export type PrivateUser = {

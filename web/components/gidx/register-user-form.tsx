@@ -9,14 +9,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { useState } from 'react'
 import { api, APIError } from 'web/lib/firebase/api'
 import { RegistrationVerifyPhone } from 'web/components/registration-verify-phone'
-import {
-  hasIdentityError,
-  locationBlockedCodes,
-  locationTemporarilyBlockedCodes,
-  timeoutCodes,
-  underageErrorCodes,
-} from 'common/reason-codes'
-import { intersection } from 'lodash'
+
 import { UploadDocuments } from 'web/components/gidx/upload-document'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -30,33 +23,36 @@ import {
 import { useWebsocketUser } from 'web/hooks/use-user'
 import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { GPSData } from 'common/gidx/gidx'
+import { exampleCustomers, GPSData } from 'common/gidx/gidx'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 
 const body = {
-  MerchantCustomerID: '6',
-  EmailAddress: 'gochanman@yahoo.com',
-  MobilePhoneNumber: '4042818372',
-  DeviceIpAddress: '149.40.50.57',
-  FirstName: 'Coreyy',
-  LastName: 'Chandler',
-  DateOfBirth: '09/28/1987',
-  CitizenshipCountryCode: 'US',
-  IdentificationTypeCode: 2,
-  IdentificationNumber: '123456789',
-  AddressLine1: '66 Forest Street',
-  City: 'Reading',
-  StateCode: 'MA',
-  PostalCode: '01867',
-  DeviceGPS: {
-    Latitude: 39.615342,
-    Longitude: -112.183449,
-    Radius: 11.484,
-    Altitude: 0,
-    Speed: 0,
-    DateTime: new Date().toISOString(),
-  },
+  ...exampleCustomers[2],
+  MerchantCustomerID: '11',
 }
+//   {
+//   EmailAddress: 'gochanman@yahoo.com',
+//   MobilePhoneNumber: '4042818372',
+//   DeviceIpAddress: '149.40.50.57',
+//   FirstName: 'Coreyy',
+//   LastName: 'Chandler',
+//   DateOfBirth: '09/28/1987',
+//   CitizenshipCountryCode: 'US',
+//   IdentificationTypeCode: 2,
+//   IdentificationNumber: '123456789',
+//   AddressLine1: '66 Forest Street',
+//   City: 'Reading',
+//   StateCode: 'MA',
+//   PostalCode: '01867',
+//   DeviceGPS: {
+//     Latitude: 39.615342,
+//     Longitude: -112.183449,
+//     Radius: 11.484,
+//     Altitude: 0,
+//     Speed: 0,
+//     DateTime: new Date().toISOString(),
+//   },
+// }
 
 const identificationTypeToCode = {
   'Social Security': 1,
@@ -71,7 +67,15 @@ export const RegisterUserForm = (props: { user: User }) => {
   const user = useWebsocketUser(props.user.id) ?? props.user
   const router = useRouter()
   // TODO: After development, if user is verified, redirect to the final page
-  const [page, setPage] = useState(user.verifiedPhone ? 1 : 0)
+  const [page, setPage] = useState(
+    user.kycStatus === 'verified'
+      ? 1000
+      : user.kycStatus === 'await-documents'
+      ? 4
+      : user.verifiedPhone
+      ? 1
+      : 0
+  )
   const [loading, setLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -125,14 +129,14 @@ export const RegisterUserForm = (props: { user: User }) => {
           const { coords } = position
           setUserInfo({
             ...userInfo,
-            DeviceGPS: {
-              Latitude: coords.latitude,
-              Longitude: coords.longitude,
-              Radius: coords.accuracy,
-              Altitude: coords.altitude ?? 0,
-              Speed: coords.speed ?? 0,
-              DateTime: new Date().toISOString(),
-            },
+            // DeviceGPS: {
+            //   Latitude: coords.latitude,
+            //   Longitude: coords.longitude,
+            //   Radius: coords.accuracy,
+            //   Altitude: coords.altitude ?? 0,
+            //   Speed: coords.speed ?? 0,
+            //   DateTime: new Date().toISOString(),
+            // },
           })
           setLoading(false)
           setPage(page + 1)
@@ -164,6 +168,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     }
     setLoading(true)
     const res = await api('register-gidx', {
+      MerchantCustomerID: user.id,
       ...userInfo,
     } as any).catch((e) => {
       if (e instanceof APIError) setError(e.message)
@@ -173,71 +178,15 @@ export const RegisterUserForm = (props: { user: User }) => {
     })
     if (!res) return
 
-    const {
-      status,
-      ReasonCodes: reasonCodes,
-      IdentityConfidenceScore,
-      FraudConfidenceScore,
-    } = res
+    const { status, message } = res
     setLoading(false)
-    if (
-      IdentityConfidenceScore !== undefined ||
-      FraudConfidenceScore !== undefined
-    ) {
-      setError(
-        `Confidence in identity or fraud too low. Double check your information.`
-      )
-      return
-    }
-    const has = (code: string) => reasonCodes.includes(code)
-    const hasAny = (codes: string[]) =>
-      intersection(codes, reasonCodes).length > 0
-    if (hasAny(timeoutCodes)) {
-      setError('Registration timed out, please try again.')
-      return
-    }
-    if (hasAny(locationTemporarilyBlockedCodes)) {
-      setError(
-        'Registration failed, location blocked. Try again in an allowed location.'
-      )
-      return
-    }
-    if (has('LL-FAIL')) {
-      setError(
-        'Registration failed, location error. Check your location information.'
-      )
-      return
-    }
-    if (hasIdentityError(reasonCodes)) {
-      setError(
-        'Registration failed, identity error. Check your identifying information.'
-      )
-      return
-    }
-    if (hasAny(locationBlockedCodes)) {
-      setError('Registration failed, location blocked or high risk.')
-      return
-    }
-    if (hasAny(underageErrorCodes)) {
-      setError('Registration failed, you must be 18+, (19+ in some states).')
-      return
-    }
-    if (has('ID-EX')) {
-      setError('Registration failed, ID exists already. Contact admins.')
-      return
-    }
-    if (status === 'error') {
-      setError(
-        'Registration failed, ask admin about codes: ' + reasonCodes.join(', ')
-      )
-      return
-    }
-    if (status !== 'success') {
-      setError('Registration failed, unknown error.')
+
+    if (message && status === 'error') {
+      setError(message)
       return
     }
     // No errors
-    setPage(1000)
+    setPage(page + 1)
   }
 
   const idTypeName = Object.keys(identificationTypeToCode)[
@@ -408,9 +357,40 @@ export const RegisterUserForm = (props: { user: User }) => {
   if (page === 4) {
     return (
       <UploadDocuments
-        back={() => setPage(page - 1)}
+        back={() =>
+          user.kycStatus === 'await-documents'
+            ? router.back()
+            : setPage(page - 1)
+        }
         next={() => setPage(page + 1)}
       />
+    )
+  }
+  if (user.kycStatus === 'pending') {
+    return (
+      <Col className={colClass}>
+        <span className={'text-primary-700 text-2xl'}>
+          Verification pending
+        </span>
+        Thank you for submitting your identification information! Your identity
+        verification is pending. Check back later to see if you're verified.
+        <Row className={bottomRowClass}>
+          <Button
+            color={'indigo-outline'}
+            loading={loading}
+            onClick={async () => {
+              setLoading(true)
+              await api('get-verification-status-gidx', {})
+              setLoading(false)
+            }}
+          >
+            Refresh status
+          </Button>
+          <Link className={buttonClass('md', 'indigo')} href={'/home'}>
+            Done
+          </Link>
+        </Row>
+      </Col>
     )
   }
 
