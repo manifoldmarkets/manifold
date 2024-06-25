@@ -185,14 +185,6 @@ export function deleteTV(id: string) {
   }>
 }
 
-export function createGroupInvite(params: {
-  groupId: string
-  maxUses?: number
-  duration?: string
-}) {
-  return call(getApiUrl('creategroupinvite'), 'POST', params)
-}
-
 export function joinGroupThroughInvite(params: { inviteId: string }) {
   return call(getApiUrl('joingroupthroughinvite'), 'POST', params)
 }

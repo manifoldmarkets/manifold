@@ -12,35 +12,10 @@ import { filterDefined } from 'common/util/array'
 import { Group, groupPath, Topic } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { removeEmojis } from 'common/topics'
-import { TopicTag } from 'web/components/topics/topic-tag'
 import { Tooltip } from '../widgets/tooltip'
 import { SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { Row } from '../layout/row'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-
-type TopicRowProps = {
-  contract: Contract
-  dashboards: { slug: string; title: string }[]
-  topics: Topic[]
-  isSpiceMarket: boolean
-}
-
-export function MarketTopics(props: TopicRowProps) {
-  const { contract, topics } = props
-  if (contract.visibility === 'private') {
-    return <PrivateMarketGroups topic={topics[0]} />
-  } else {
-    return <PublicMarketTopics {...props} />
-  }
-}
-
-function PrivateMarketGroups(props: { topic?: Topic }) {
-  const { topic } = props
-  if (topic) {
-    return <TopicTag location={'market page'} topic={topic} isPrivate />
-  }
-  return null
-}
 
 const DashboardLink = (props: {
   dashboard: { slug: string; title: string }
@@ -75,7 +50,14 @@ const TopicLink = (props: { topic: Topic; contractId: string }) => {
   )
 }
 
-export function PublicMarketTopics(props: TopicRowProps) {
+type TopicRowProps = {
+  contract: Contract
+  dashboards: { slug: string; title: string }[]
+  topics: Topic[]
+  isSpiceMarket: boolean
+}
+
+export function MarketTopics(props: TopicRowProps) {
   const [open, setOpen] = useState(false)
   const { contract, topics, dashboards, isSpiceMarket } = props
   const user = useUser()

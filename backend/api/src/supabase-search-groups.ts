@@ -60,12 +60,7 @@ function getSearchGroupSQL(props: {
   return renderSql(
     select(fieldSet ?? '*'),
     from('groups'),
-    where(
-      memberGroupsOnly
-        ? `is_group_member(id, $1) or is_admin($1)`
-        : `privacy_status != 'private' or is_group_member(id, $1) or is_admin($1)`,
-      [uid]
-    ),
+    memberGroupsOnly && where(`is_group_member(id, $1) or is_admin($1)`, [uid]),
 
     addingToContract &&
       where(

@@ -114,8 +114,7 @@ export async function getContractParams(
     : {}
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
-  const ogPoints =
-    !isMulti && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
+  const ogPoints = !isMulti ? binAvg(allBetPoints) : []
   const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
 
   if (

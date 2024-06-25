@@ -126,17 +126,12 @@ export function getAddContractToGroupPermission(
   userRole: GroupRole | null | undefined,
   isCreator?: boolean
 ): AddContractToGroupPermissionType {
-  if (
-    privacyStatus != 'private' &&
-    (userRole === 'admin' || userRole === 'moderator' || isCreator)
-  ) {
+  if (userRole === 'admin' || userRole === 'moderator' || isCreator) {
     return 'any'
   }
   if (privacyStatus == 'public') {
     return 'new'
   }
-  if (privacyStatus == 'private') {
-    return 'private'
-  }
+
   return 'none'
 }

@@ -40,11 +40,6 @@ export function AddMarketToGroupModal(props: {
             </div>
           </Col>
         )}
-        {addPermission == 'private' && (
-          <Col className="w-full">
-            <NewContractFromGroup group={group} user={user} />
-          </Col>
-        )}
         {addPermission == 'new' && (
           <Col className="w-full">
             <NewContractFromGroup group={group} user={user} />
@@ -95,7 +90,6 @@ export function NewContractFromGroup(props: { group: Group; user: User }) {
           q: '',
           description: '',
           closeTime: Date.now() + 7 * DAY_MS,
-          visibility: group.privacyStatus === 'private' ? 'private' : 'public',
           groupIds: [group.id],
         } as NewQuestionParams
       }

@@ -158,18 +158,6 @@ export async function getForYouSQL(items: {
   return forYou
 }
 
-export const hasGroupAccess = async (groupId?: string, uid?: string) => {
-  const pg = createSupabaseDirectClient()
-  if (!groupId) return undefined
-  return await pg
-    .one('select * from check_group_accessibility($1,$2)', [
-      groupId,
-      uid ?? null,
-    ])
-    .then((r: any) => {
-      return r.check_group_accessibility
-    })
-}
 export type SearchTypes =
   | 'without-stopwords'
   | 'with-stopwords'
@@ -187,7 +175,6 @@ export function getSearchContractSQL(args: {
   groupId?: string
   creatorId?: string
   uid?: string
-  groupAccess?: boolean
   isForYou?: boolean
   searchType: SearchTypes
   isPolitics?: boolean

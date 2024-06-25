@@ -508,16 +508,6 @@ async function getGroupCheckPermissions(
   const membership = membershipQuery.data?.[0]
 
   if (
-    (group.privacy_status == 'private' && visibility != 'private') ||
-    (group.privacy_status != 'private' && visibility == 'private')
-  ) {
-    throw new APIError(
-      403,
-      `Both "${group.name}" and market must be of the same private visibility.`
-    )
-  }
-
-  if (
     !canUserAddGroupToMarket({
       userId,
       group,

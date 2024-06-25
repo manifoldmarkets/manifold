@@ -7,7 +7,6 @@ import clsx from 'clsx'
 import { PrivacyStatusType } from 'common/group'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Tooltip } from '../widgets/tooltip'
 
 export function PrivacyStatusView(props: {
   viewStatus: PrivacyStatusType
@@ -40,18 +39,6 @@ export function PrivacyStatusView(props: {
             {icon}
             {status}
           </Row>
-          {viewStatus == 'private' && (
-            <Tooltip
-              text={
-                'This feature is still under active development. Please use at your own discretion'
-              }
-              placement={'top-end'}
-            >
-              <div className="rounded bg-yellow-200 bg-opacity-60 px-1 text-sm font-semibold text-yellow-800 ">
-                BETA
-              </div>
-            </Tooltip>
-          )}
         </Row>
       )}
       <p className="text-ink-700 text-sm">{descriptor}</p>

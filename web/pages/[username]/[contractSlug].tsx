@@ -97,7 +97,7 @@ export async function getStaticProps(ctx: {
   const adminDb = await initSupabaseAdmin()
   const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
 
-  if (!contract || contract.visibility === 'private') {
+  if (!contract) {
     return {
       notFound: true,
     }
@@ -323,9 +323,6 @@ export function ContractPageContent(props: ContractParams) {
 
   return (
     <>
-      {contract.visibility == 'private' && isAdmin && user && (
-        <PrivateContractAdminTag contract={contract} user={user} />
-      )}
       {contract.visibility !== 'public' && (
         <Head>
           <meta name="robots" content="noindex, nofollow" />
