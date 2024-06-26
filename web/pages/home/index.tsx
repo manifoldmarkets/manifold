@@ -12,6 +12,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { api } from 'web/lib/firebase/api'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
+import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 
 export async function getStaticProps() {
   try {
@@ -68,6 +69,9 @@ export default function Home(props: { headlines: Headline[] }) {
           <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
         </button>
       )}
+
+      {/* Preload feed */}
+      {user && <LiveGeneratedFeed userId={user.id} reload={false} hidden />}
     </Page>
   )
 }

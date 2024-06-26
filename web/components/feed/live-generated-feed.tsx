@@ -29,8 +29,12 @@ const defaultValue: APIResponse<'get-feed'> & { offset: number } = {
   offset: 0,
 }
 
-export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
-  const { userId, reload } = props
+export function LiveGeneratedFeed(props: {
+  userId: string
+  reload: boolean
+  hidden?: boolean
+}) {
+  const { userId, reload, hidden } = props
   const user = useUser()
 
   const limit = 5
@@ -82,6 +86,8 @@ export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
     }, 50)
   }, [data])
   const { contracts, reposts, ads, comments, bets, idsToReason } = feedData
+
+  if (hidden) return null
 
   if (
     (data === undefined && contracts.length === 0) ||
