@@ -43,8 +43,8 @@ const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
 
 export const SORTS = [
-  { label: 'Popular', value: 'score' },
-  { label: 'Fresh', value: 'freshness-score' },
+  { label: 'Best', value: 'score' },
+  { label: 'Hot', value: 'freshness-score' },
   { label: 'Liquidity', value: 'liquidity' },
   { label: 'Subsidy', value: 'subsidy' },
   { label: 'New', value: 'newest' },
@@ -413,8 +413,8 @@ export function SupabaseSearch(props: {
               toggleClassName=""
               currentChoice={sort}
               choicesMap={{
-                Fresh: 'freshness-score',
-                Popular: 'score',
+                Best: 'score',
+                Hot: 'freshness-score',
               }}
               setChoice={(val) => onChange({ [SORT_KEY]: val as Sort })}
             />

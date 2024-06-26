@@ -208,7 +208,7 @@ export function GroupPageContent(props: {
       setTopics={setTopicResults}
       topicSlug={topicSlug}
       defaultFilter="open"
-      defaultSort="freshness-score"
+      defaultSort="score"
       defaultForYou="1"
       shownTopics={shownTopics}
       setTopicSlug={(slug) => {
