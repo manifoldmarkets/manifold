@@ -17,7 +17,7 @@ FROM (
     FROM 
         contracts c
     LEFT JOIN 
-        contract_bets cb ON c.id = cb.contract_id AND cb.created_time > now() - interval '1 day'
+        contract_bets cb ON c.id = cb.contract_id AND cb.created_time > now() - interval '1 day' AND cb.is_redemption = false
     GROUP BY 
         c.id
 ) subquery
