@@ -4,7 +4,6 @@ import { Button, buttonClass } from 'web/components/buttons/button'
 import { User } from 'common/user'
 import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
-import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useState } from 'react'
 import { api, APIError } from 'web/lib/firebase/api'
@@ -54,12 +53,6 @@ const body = {
 //   },
 // }
 
-const identificationTypeToCode = {
-  'Social Security': 1,
-  'Driver License': 2,
-  Passport: 3,
-  'National Identity Card': 4,
-}
 const colClass = 'gap-3 p-4'
 const bottomRowClass = 'mb-4 mt-4 w-full gap-16'
 
@@ -93,13 +86,17 @@ export const RegisterUserForm = (props: { user: User }) => {
       setPage(page + 1)
     }
   })
+
   const [userInfo, setUserInfo] = usePersistentInMemoryState<{
     FirstName?: string
     LastName?: string
     DateOfBirth?: string
     CitizenshipCountryCode: string
-    IdentificationTypeCode?: number
-    IdentificationNumber?: string
+    AddressLine1?: string
+    AddressLine2?: string
+    City?: string
+    StateCode?: string
+    PostalCode?: string
     DeviceGPS?: GPSData
   }>(
     {
@@ -151,9 +148,10 @@ export const RegisterUserForm = (props: { user: User }) => {
       setLoading(false)
     }
   }
-
+  const optionalKeys = ['AddressLine2', 'StateCode']
   const unfilled = Object.entries(userInfo ?? {}).filter(
-    ([_, value]) => value === undefined
+    ([key, value]) =>
+      !optionalKeys.includes(key) && (value === undefined || value === '')
   )
 
   const register = async () => {
@@ -188,10 +186,6 @@ export const RegisterUserForm = (props: { user: User }) => {
     // No errors
     setPage(page + 1)
   }
-
-  const idTypeName = Object.keys(identificationTypeToCode)[
-    (userInfo?.IdentificationTypeCode ?? 1) - 1
-  ]
 
   if (page === 0) {
     return (
@@ -308,31 +302,64 @@ export const RegisterUserForm = (props: { user: User }) => {
             }
           />
         </Col>
-        {/* TODO: Add togle to allow user to input their address or their ID type & number*/}
-        <Col className={'w-fit gap-2'}>
-          <span>Identification Type</span>
-          <ChoicesToggleGroup
-            currentChoice={userInfo?.IdentificationTypeCode}
-            choicesMap={identificationTypeToCode}
-            setChoice={(val) =>
-              setUserInfo({
-                ...userInfo,
-                IdentificationTypeCode: val as number,
-              })
+        <Col className={sectionClass}>
+          <span>Address Line 1</span>
+          <Input
+            placeholder={'Your address'}
+            value={userInfo.AddressLine1}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, AddressLine1: e.target.value })
             }
           />
         </Col>
         <Col className={sectionClass}>
-          <span>Identification Number</span>
+          <span>Address Line 2</span>
           <Input
-            placeholder={`Your ${idTypeName} number`}
+            placeholder={'Suite, apartment, etc. (optional)'}
+            value={userInfo.AddressLine2}
             type={'text'}
-            value={userInfo.IdentificationNumber}
             onChange={(e) =>
-              setUserInfo({ ...userInfo, IdentificationNumber: e.target.value })
+              setUserInfo({ ...userInfo, AddressLine2: e.target.value })
             }
           />
         </Col>
+        <Row className={'gap-2 sm:gap-8'}>
+          <Col className={'w-1/2 sm:w-44'}>
+            <span>City</span>
+            <Input
+              placeholder={'Your city'}
+              value={userInfo.City}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, City: e.target.value })
+              }
+            />
+          </Col>
+          <Col className={'w-1/2 pr-2 sm:w-44 sm:pr-0'}>
+            <span>State</span>
+            <Input
+              placeholder={'Your state'}
+              value={userInfo.StateCode}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, StateCode: e.target.value })
+              }
+            />
+          </Col>
+        </Row>
+        <Col className={'w-1/2 sm:w-44'}>
+          <span>Postal Code</span>
+          <Input
+            placeholder={'Your postal code'}
+            value={userInfo.PostalCode}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, PostalCode: e.target.value })
+            }
+          />
+        </Col>
+
         {error && <span className={'text-error'}>{error}</span>}
         <Row className={bottomRowClass}>
           <Button
@@ -366,6 +393,7 @@ export const RegisterUserForm = (props: { user: User }) => {
       />
     )
   }
+
   if (user.kycStatus === 'pending') {
     return (
       <Col className={colClass}>
