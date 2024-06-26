@@ -83,6 +83,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   collectedFees: Fees
   uniqueBettorCount: number
+  uniqueBettorCountDay: number
 
   unlistedById?: string
   featuredLabel?: string
