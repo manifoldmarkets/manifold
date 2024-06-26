@@ -15,13 +15,12 @@ import { Input } from 'web/components/widgets/input'
 import { useRouter } from 'next/router'
 import { firebaseLogout } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 const KEY = 'TEST_CREATE_USER_KEY'
 
 export default function TestUser() {
   const router = useRouter()
-  useRedirectIfSignedOut()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [createUserKey, setCreateUserKey] = useState('')
