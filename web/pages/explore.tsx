@@ -5,6 +5,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { Col } from 'web/components/layout/col'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
+import { DailyStats } from 'web/components/home/daily-stats'
 
 export default function Explore() {
   useRedirectIfSignedOut()
@@ -18,6 +19,13 @@ export default function Explore() {
       className=" !mt-0"
       banner={null}
     >
+      {user && (
+        <DailyStats
+          className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
+          user={user}
+        />
+      )}
+
       {!user ? (
         <LoadingIndicator />
       ) : (
