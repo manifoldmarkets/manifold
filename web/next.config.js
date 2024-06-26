@@ -25,7 +25,6 @@ module.exports = {
         '*.svg': { loaders: ['@svgr/webpack'], as: '*.js' },
       },
     },
-    fallbackNodePolyfills: false,
   },
   images: {
     dangerouslyAllowSVG: true,
