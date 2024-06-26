@@ -36,6 +36,8 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
 import { BinaryDigit, TierParamsType } from 'common/tier'
 import { useUser } from 'web/hooks/use-user'
+import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -229,6 +231,7 @@ export function SupabaseSearch(props: {
   } = props
 
   const user = useUser()
+  const isMobile = useIsMobile()
 
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
@@ -381,6 +384,8 @@ export function SupabaseSearch(props: {
                     ? 'Search users'
                     : searchType === 'Questions' || topicSlug || contractsOnly
                     ? 'Search questions'
+                    : isMobile
+                    ? 'Search'
                     : 'Search questions, users, and topics'
                 }
                 className="w-full"
@@ -402,6 +407,17 @@ export function SupabaseSearch(props: {
                 </IconButton>
               )}
             </Row>
+
+            <ChoicesToggleGroup
+              className="ml-2"
+              toggleClassName=""
+              currentChoice={sort}
+              choicesMap={{
+                Fresh: 'freshness-score',
+                Popular: 'score',
+              }}
+              setChoice={(val) => onChange({ [SORT_KEY]: val as Sort })}
+            />
 
             <Button
               className="ml-2"
