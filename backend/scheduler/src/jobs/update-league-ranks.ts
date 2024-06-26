@@ -1,22 +1,9 @@
-import * as functions from 'firebase-functions'
-
 import { log, revalidateStaticProps } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { bulkUpdate } from 'shared/supabase/utils'
-import { secrets } from 'common/secrets'
 import { SEASONS } from 'common/leagues'
 
-export const updateLeagueRanks = functions
-  .runWith({
-    secrets,
-  })
-  .pubsub.schedule('0 0 * * *')
-  .timeZone('America/Los_Angeles')
-  .onRun(async () => {
-    await updateLeagueRanksCore()
-  })
-
-export async function updateLeagueRanksCore() {
+export async function updateLeagueRanks() {
   const pg = createSupabaseDirectClient()
 
   const season = SEASONS[SEASONS.length - 1]
