@@ -291,7 +291,7 @@ export const getDataAndPayoutInfo = async (
 
   const liquidities = await pg.map<LiquidityProvision>(
     `select * from contract_liquidity where contract_id = $1 ${
-      filterAnte ? 'and answer_id = $2' : ''
+      filterAnte ? `and data->>'answerId' = $2` : ''
     }`,
     [contractId, answerId],
     convertLiquidity
