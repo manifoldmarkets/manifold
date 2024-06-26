@@ -1,7 +1,5 @@
-import * as functions from 'firebase-functions'
 import { groupBy, sum, uniq, zipObject } from 'lodash'
-
-import { isProd, log, revalidateStaticProps } from 'shared/utils'
+import { log, revalidateStaticProps } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import {
@@ -9,22 +7,10 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { bulkUpdate } from 'shared/supabase/utils'
-import { secrets } from 'common/secrets'
 import { CURRENT_SEASON, getSeasonDates } from 'common/leagues'
 import { getProfitMetrics } from 'common/calculate'
 
-export const updateLeague = functions
-  .runWith({
-    memory: isProd() ? '4GB' : '256MB',
-    timeoutSeconds: 540,
-    secrets,
-  })
-  .pubsub.schedule('every 15 minutes')
-  .onRun(async () => {
-    await updateLeagueCore()
-  })
-
-export async function updateLeagueCore() {
+export async function updateLeague() {
   const pg = createSupabaseDirectClient()
 
   const season = CURRENT_SEASON
@@ -164,11 +150,10 @@ export async function updateLeagueCore() {
   }
 
   const amountByUserId = groupBy(
-    [
-      ...userProfit,
-      ...txnData,
-      ...creatorFees,
-    ].map((u) => ({ ...u, amount: +u.amount })),
+    [...userProfit, ...txnData, ...creatorFees].map((u) => ({
+      ...u,
+      amount: +u.amount,
+    })),
     'user_id'
   )
 

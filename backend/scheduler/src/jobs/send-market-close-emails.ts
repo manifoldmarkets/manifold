@@ -1,25 +1,20 @@
-import * as functions from 'firebase-functions'
 import { Contract } from 'common/contract'
 import { getPrivateUser, getUser, isProd } from 'shared/utils'
 import { createMarketClosedNotification } from 'shared/create-notification'
 import { DAY_MS } from 'common/util/time'
-import { secrets } from 'common/secrets'
 import { convertContract } from 'common/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
 
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
-export const marketCloseNotifications = functions
-  .runWith({ secrets, memory: '4GB', timeoutSeconds: 540 })
-  .pubsub.schedule('every 1 hours')
-  .onRun(async () => {
-    isProd()
-      ? await sendMarketCloseEmails()
-      : console.log('Not prod, not sending emails')
-  })
 
 export async function sendMarketCloseEmails() {
+  if (isProd()) {
+    console.log('Not prod, not sending emails')
+    return
+  }
+
   const pg = createSupabaseDirectClient()
   const contracts = await pg.tx(async (tx) => {
     const contracts = await tx.map(

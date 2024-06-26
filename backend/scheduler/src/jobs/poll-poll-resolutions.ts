@@ -1,21 +1,9 @@
-import * as functions from 'firebase-functions'
 import { PollOption } from 'common/poll-option'
-import { secrets } from 'common/secrets'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createPollClosedNotification } from 'shared/create-notification'
 import { updateContract } from 'shared/supabase/contracts'
 
-export const pollPollResolutions = functions
-  .runWith({
-    timeoutSeconds: 60,
-    secrets,
-  })
-  .pubsub.schedule('*/1 * * * *') // runs every minute
-  .onRun(async () => {
-    await pollPollResolutionsFn()
-  })
-
-export async function pollPollResolutionsFn() {
+export async function pollPollResolutions() {
   const pg = createSupabaseDirectClient()
   const closedPolls = await pg.manyOrNone(
     `select data from contracts where outcome_type = 'POLL' and close_time < now() and resolution_time is null`
