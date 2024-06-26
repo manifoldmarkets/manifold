@@ -1,4 +1,4 @@
-import { ChatIcon, UserIcon } from '@heroicons/react/solid'
+import { ChatIcon, UserIcon, ArrowNarrowUpIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
 import { useNumContractComments } from 'web/hooks/use-comments'
 import { shortenNumber } from 'web/lib/util/formatNumber'
@@ -14,8 +14,10 @@ export type ColumnFormat = {
 
 export const traderColumn = {
   header: 'Traders',
-  content: (contract: Contract) =>
-    contract.outcomeType == 'BOUNTIED_QUESTION' ? (
+  content: (contract: Contract) => {
+    const { outcomeType, uniqueBettorCount, uniqueBettorCountDay } = contract
+
+    return outcomeType == 'BOUNTIED_QUESTION' ? (
       <div className="text-ink-700 h-min align-top">
         <BountiedContractComments contractId={contract.id} />
       </div>
@@ -23,11 +25,20 @@ export const traderColumn = {
       <div className="text-ink-700 h-min align-top">
         <Row className="align-center h-full shrink-0 items-center gap-0.5">
           <UserIcon className="text-ink-400 h-4 w-4" />
-          {shortenNumber(contract.uniqueBettorCount ?? 0)}
+          {shortenNumber(uniqueBettorCount ?? 0)}
+          {uniqueBettorCountDay > 0 && (
+            <ArrowNarrowUpIcon className="-mr-1 h-4 w-4 text-teal-500" />
+          )}
+          {uniqueBettorCountDay > 0 && (
+            <span className="text-sm text-teal-500">
+              {uniqueBettorCountDay}
+            </span>
+          )}
         </Row>
       </div>
-    ),
-  width: 'w-16',
+    )
+  },
+  width: 'w-[100px]',
 }
 
 export const probColumn = {
