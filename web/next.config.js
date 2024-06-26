@@ -1,7 +1,11 @@
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+})
+
 const API_DOCS_URL = 'https://docs.manifold.markets/api'
 
 /** @type {import('next').NextConfig} */
-module.exports = {
+module.exports = withBundleAnalyzer({
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
   optimizeFonts: false,
@@ -213,4 +217,4 @@ module.exports = {
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },
-}
+})
