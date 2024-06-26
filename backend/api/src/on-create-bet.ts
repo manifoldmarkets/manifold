@@ -49,9 +49,7 @@ import {
   updateContract,
 } from 'shared/supabase/contracts'
 import { Answer } from 'common/answer'
-import {
-  removeNullOrUndefinedProps,
-} from 'common/util/object'
+import { removeNullOrUndefinedProps } from 'common/util/object'
 import {
   addHouseSubsidy,
   addHouseSubsidyToAnswer,
@@ -400,7 +398,6 @@ const updateBettingStreak = async (
     // Otherwise, add 1 to their betting streak
     await updateUser(tx, bettor.id, {
       currentBettingStreak: newBettingStreak,
-      lastBetTime: bet.createdTime,
     })
 
     if (!isVerified(bettor)) {
