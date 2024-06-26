@@ -22,17 +22,23 @@ export const traderColumn = {
         <BountiedContractComments contractId={contract.id} />
       </div>
     ) : (
-      <div className="text-ink-700 h-min align-top">
-        <Row className="align-center h-full shrink-0 items-center gap-0.5">
+      <div className="text-ink-700 ml-1 h-min w-[75px] align-top">
+        <Row className="align-center h-full shrink-0 items-center justify-end gap-0.5">
           <UserIcon className="text-ink-400 h-4 w-4" />
           {shortenNumber(uniqueBettorCount ?? 0)}
-          {uniqueBettorCountDay > 0 && (
-            <ArrowNarrowUpIcon className="-mr-1 h-4 w-4 text-teal-500" />
-          )}
-          {uniqueBettorCountDay > 0 && (
-            <span className="text-sm text-teal-500">
-              {uniqueBettorCountDay}
+          {uniqueBettorCount === uniqueBettorCountDay ? (
+            <span className="text-ink-0 ml-1 rounded-md bg-teal-500/70 px-1 py-0.5 text-xs">
+              new
             </span>
+          ) : (
+            uniqueBettorCountDay > 0 && (
+              <>
+                <ArrowNarrowUpIcon className="-mr-1 h-4 w-4 text-teal-500" />
+                <span className="text-sm text-teal-500">
+                  {uniqueBettorCountDay}
+                </span>
+              </>
+            )
           )}
         </Row>
       </div>
