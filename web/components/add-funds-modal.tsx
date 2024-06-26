@@ -33,6 +33,8 @@ export function AddFundsModal(props: {
   setOpen(open: boolean): void
 }) {
   const { open, setOpen } = props
+  // TODO: check if they're registered already in gidx & get their status
+  // const res = useAPIGetter('get-monitor-status-gidx', {})
 
   return (
     <Modal

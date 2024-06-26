@@ -1,6 +1,8 @@
 import * as crypto from 'crypto'
 import { APIError } from 'common/api/utils'
 import { GIDXCustomerProfile } from 'common/gidx/gidx'
+import { getPrivateUserSupabase } from 'shared/utils'
+import { getPhoneNumber } from 'shared/helpers/get-phone-number'
 
 export const getGIDXStandardParams = () => ({
   // TODO: before merging into main, switch from sandbox key to production key in prod
@@ -27,4 +29,19 @@ export const getGIDXCustomerProfile = async (userId: string) => {
     throw new APIError(400, 'GIDX verification session failed')
   }
   return (await res.json()) as GIDXCustomerProfile
+}
+
+export const getUserRegistrationRequirements = async (userId: string) => {
+  const user = await getPrivateUserSupabase(userId)
+  if (!user) {
+    throw new APIError(404, 'Private user not found')
+  }
+  if (!user.email) {
+    throw new APIError(400, 'User must have an email address')
+  }
+  const phoneNumberWithCode = await getPhoneNumber(userId)
+  if (!phoneNumberWithCode) {
+    throw new APIError(400, 'User must have a phone number')
+  }
+  return { user, phoneNumberWithCode }
 }

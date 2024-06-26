@@ -1,19 +1,21 @@
 import { z } from 'zod'
 
-export const GIDX_REGISTATION_ENABLED = false
+export const GIDX_REGISTATION_ENABLED = true
 export const GIDX_DOCUMENTS_REQUIRED = 2
+
+export const GPSProps = z.object({
+  Latitude: z.number(),
+  Longitude: z.number(),
+  Radius: z.number(),
+  Altitude: z.number(),
+  Speed: z.number(),
+  DateTime: z.string(),
+})
 
 export const verificationParams = z.object({
   FirstName: z.string(),
   LastName: z.string(),
-  DeviceGPS: z.object({
-    Latitude: z.number(),
-    Longitude: z.number(),
-    Radius: z.number(),
-    Altitude: z.number(),
-    Speed: z.number(),
-    DateTime: z.string(),
-  }),
+  DeviceGPS: GPSProps,
   DateOfBirth: z.string(),
   CitizenshipCountryCode: z.string(),
   // Must supply address or ID info
@@ -129,6 +131,18 @@ type LocationDetailType = {
   ComplianceLocationServiceStatus: string
   IdentifierType: string
   IdentifierUsed: string
+}
+
+export type GIDXMonitorResponse = {
+  MerchantCustomerID: string
+  ReasonCodes: string[]
+  WatchChecks: WatchCheckType[]
+  ProfileVerificationStatus: string
+  IdentityConfidenceScore: number
+  FraudConfidenceScore: number
+  LocationDetail: LocationDetailType
+  ResponseCode: number
+  ResponseMessage: string
 }
 
 export const ID_ERROR_MSG =

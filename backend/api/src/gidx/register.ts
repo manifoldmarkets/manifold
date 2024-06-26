@@ -1,6 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getPrivateUserSupabase, log } from 'shared/utils'
-import { getPhoneNumber } from 'shared/helpers/get-phone-number'
+import { log } from 'shared/utils'
 import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
@@ -15,7 +14,10 @@ import {
   underageErrorCodes,
 } from 'common/reason-codes'
 import { intersection } from 'lodash'
-import { getGIDXStandardParams } from 'shared/gidx/helpers'
+import {
+  getGIDXStandardParams,
+  getUserRegistrationRequirements,
+} from 'shared/gidx/helpers'
 import {
   GIDX_REGISTATION_ENABLED,
   GIDXRegistrationResponse,
@@ -33,17 +35,7 @@ export const register: APIHandler<'register-gidx'> = async (
 ) => {
   if (!GIDX_REGISTATION_ENABLED)
     throw new APIError(400, 'GIDX registration is disabled')
-  const user = await getPrivateUserSupabase(auth.uid)
-  if (!user) {
-    throw new APIError(404, 'Private user not found')
-  }
-  if (!user.email) {
-    throw new APIError(400, 'User must have an email address')
-  }
-  const phoneNumberWithCode = await getPhoneNumber(auth.uid)
-  if (!phoneNumberWithCode) {
-    throw new APIError(400, 'Please verify your phone number first')
-  }
+  await getUserRegistrationRequirements(auth.uid)
   const body = {
     // TODO: add back in prod
     // MerchantCustomerID: auth.uid,

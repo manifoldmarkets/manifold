@@ -173,6 +173,7 @@ import { updatePrivateUser } from './update-private-user'
 import { setPushToken } from './push-token'
 import { updateNotifSettings } from './update-notif-settings'
 import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
+import { getMonitorStatus } from 'api/gidx/get-monitor-status'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -346,6 +347,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'upload-document-gidx': uploadDocument,
   'callback-gidx': callbackGIDX,
   'get-verification-documents-gidx': getVerificationDocuments,
+  'get-monitor-status-gidx': getMonitorStatus,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

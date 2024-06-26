@@ -1,7 +1,8 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getPrivateUserSupabase } from 'shared/utils'
-import { getPhoneNumber } from 'shared/helpers/get-phone-number'
-import { getGIDXCustomerProfile } from 'shared/gidx/helpers'
+import {
+  getGIDXCustomerProfile,
+  getUserRegistrationRequirements,
+} from 'shared/gidx/helpers'
 import { GIDX_REGISTATION_ENABLED, GIDXCustomerProfile } from 'common/gidx/gidx'
 import { processUserReasonCodes } from 'api/gidx/register'
 import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
@@ -20,17 +21,7 @@ export const getVerificationStatusInternal = async (
   userId: string,
   customerProfile: GIDXCustomerProfile
 ) => {
-  const user = await getPrivateUserSupabase(userId)
-  if (!user) {
-    throw new APIError(404, 'Private user not found')
-  }
-  if (!user.email) {
-    throw new APIError(400, 'User must have an email address')
-  }
-  const phoneNumberWithCode = await getPhoneNumber(userId)
-  if (!phoneNumberWithCode) {
-    throw new APIError(400, 'User must have a phone number')
-  }
+  await getUserRegistrationRequirements(userId)
   const {
     ReasonCodes,
     ResponseMessage,
