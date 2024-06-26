@@ -22,7 +22,7 @@ import {
 import { useWebsocketUser } from 'web/hooks/use-user'
 import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { exampleCustomers, GPSData } from 'common/gidx/gidx'
+import { exampleCustomers, GPSData, ID_ERROR_MSG } from 'common/gidx/gidx'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 
 const body = {
@@ -153,6 +153,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     ([key, value]) =>
       !optionalKeys.includes(key) && (value === undefined || value === '')
   )
+  console.log('unfilled', unfilled)
 
   const register = async () => {
     setError(null)
@@ -362,7 +363,21 @@ export const RegisterUserForm = (props: { user: User }) => {
           />
         </Col>
 
-        {error && <span className={'text-error'}>{error}</span>}
+        {error && (
+          <span className={'text-error'}>
+            {error}
+            {error === ID_ERROR_MSG ? (
+              <Button
+                onClick={() => setPage(page + 1)}
+                color={'indigo-outline'}
+              >
+                Upload documents instead
+              </Button>
+            ) : (
+              ''
+            )}
+          </span>
+        )}
         <Row className={bottomRowClass}>
           <Button
             color={'gray-white'}
@@ -396,7 +411,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (user.kycStatus === 'pending') {
+  if (user.kycStatus === 'pending' || user.kycStatus === 'fail') {
     return (
       <Col className={colClass}>
         <span className={'text-primary-700 text-2xl'}>

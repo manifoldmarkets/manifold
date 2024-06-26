@@ -78,6 +78,8 @@ export type GIDXCustomerProfile = {
   ProfileVerificationStatus: string
   FraudConfidenceScore: number
   IdentityConfidenceScore: number
+  ResponseCode: number
+  ResponseMessage: string
   // There are many more at https://www.tsevo.com/Docs/CustomerIdentity
 }
 
@@ -129,10 +131,13 @@ type LocationDetailType = {
   IdentifierUsed: string
 }
 
+export const ID_ERROR_MSG =
+  'Registration failed, identity error. Check your identifying information.'
+
 export const exampleCustomers = [
   {
     EmailAddress: 'mradamgibbs@gmail.com',
-    MobilePhoneNumber: '',
+    MobilePhoneNumber: '5785785789',
     DeviceIpAddress: '194.207.197.157',
     FirstName: 'Adam',
     LastName: 'Gibbs',
