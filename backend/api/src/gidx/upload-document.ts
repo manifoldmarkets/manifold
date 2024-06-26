@@ -97,6 +97,5 @@ const deleteFileFromFirebase = async (fileUrl: string) => {
     log(`Successfully deleted file: ${filePath}`)
   } catch (error) {
     log.error('Error deleting the file:', { error })
-    throw new APIError(500, 'Error deleting identity file.')
   }
 }
