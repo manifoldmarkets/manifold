@@ -6,7 +6,6 @@ import { PROD_CONFIG } from 'common/envs/prod'
 import { DEV_CONFIG } from 'common/envs/dev'
 import {
   DocumentRegistrationResponse,
-  GIDX_DOCUMENTS_REQUIRED,
   GIDX_REGISTATION_ENABLED,
 } from 'common/gidx/gidx'
 import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
@@ -56,15 +55,10 @@ export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
     Document.FileName
   )
   await deleteFileFromFirebase(fileUrl)
-  const { documents, unrejectedIdDocuments, unrejectedUtilityDocuments } =
-    await getIdentityVerificationDocuments(auth.uid)
+  const { isPending } = await getIdentityVerificationDocuments(auth.uid)
 
   const pg = createSupabaseDirectClient()
-  if (
-    documents.length >= GIDX_DOCUMENTS_REQUIRED &&
-    unrejectedUtilityDocuments.length > 0 &&
-    unrejectedIdDocuments.length > 0
-  ) {
+  if (isPending) {
     // They passed the reason codes and have the required documents
     await updateUser(pg, auth.uid, {
       kycStatus: 'pending',
