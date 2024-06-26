@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const GIDX_REGISTATION_ENABLED = true
+export const GIDX_REGISTATION_ENABLED = false
 export const GIDX_DOCUMENTS_REQUIRED = 2
 
 export const GPSProps = z.object({
