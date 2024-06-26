@@ -156,15 +156,17 @@ export const RegisterUserForm = (props: { user: User }) => {
 
   const register = async () => {
     setError(null)
+    setLoading(true)
     if (!userInfo.DeviceGPS) {
+      setLoading(false)
       setError('Location is required.')
       return
     }
     if (unfilled.length) {
+      setLoading(false)
       setError(`Missing fields: ${unfilled.map(([key]) => key).join(', ')}`)
       return
     }
-    setLoading(true)
     const res = await api('register-gidx', {
       MerchantCustomerID: user.id,
       ...userInfo,
