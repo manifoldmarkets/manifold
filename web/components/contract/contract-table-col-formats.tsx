@@ -27,13 +27,11 @@ export const traderColumn = {
           <UserIcon className="text-ink-400 h-4 w-4" />
           {shortenNumber(uniqueBettorCount ?? 0)}
           {uniqueBettorCount === uniqueBettorCountDay ? (
-            <div className="ml-1 rounded-md border border-teal-500 px-1 py-0.5 text-xs text-teal-500">
-              new
-            </div>
+            <div className="ml-1 text-xs text-teal-500">new</div>
           ) : (
             uniqueBettorCountDay > 0 && (
               <>
-                <ArrowNarrowUpIcon className="-mr-1 h-4 w-4 text-teal-500" />
+                <ArrowNarrowUpIcon className="-mr-[3px] h-4 w-4 text-teal-500" />
                 <span className="text-sm text-teal-500">
                   {uniqueBettorCountDay}
                 </span>
