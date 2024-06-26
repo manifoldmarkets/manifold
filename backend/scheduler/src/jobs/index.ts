@@ -182,7 +182,7 @@ export function createJobs() {
     ),
     createJob(
       'update-contract-view-embeddings',
-      '0 0 0 1 * * ', // 1st day of the month
+      '0 0 0 1 * *', // 1st day of the month
       updateContractViewEmbeddings
     ),
   ]
