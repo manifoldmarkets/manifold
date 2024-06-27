@@ -19,7 +19,6 @@ import { Group } from 'common/group'
 import {
   getSubtopics,
   GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW,
-  removeEmojis,
   TOPICS_TO_SUBTOPICS,
 } from 'common/topics'
 import { intersection, orderBy, uniq, uniqBy } from 'lodash'
@@ -32,6 +31,7 @@ import { randomString } from 'common/util/random'
 import { unfollowTopic } from 'web/lib/supabase/groups'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
+import { removeEmojis } from 'common/util/string'
 
 const FORCE_SHOW_WELCOME_MODAL = false
 

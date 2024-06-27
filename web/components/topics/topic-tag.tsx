@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { groupPath } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import { removeEmojis } from 'common/topics'
+import { removeEmojis } from 'common/util/string'
 
 export function TopicTag(props: {
   topic: { slug: string; name: string }

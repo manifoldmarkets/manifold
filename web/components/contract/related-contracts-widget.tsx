@@ -20,7 +20,7 @@ import {
 import { Topic } from 'common/group'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 import { linkClass } from 'web/components/widgets/site-link'
-import { removeEmojis } from 'common/topics'
+import { removeEmojis } from 'common/util/string'
 import { UserHovercard } from '../user/user-hovercard'
 
 export const SidebarRelatedContractsList = memo(function (props: {
