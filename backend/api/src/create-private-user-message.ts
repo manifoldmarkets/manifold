@@ -59,30 +59,21 @@ export const createPrivateUserMessageMain = async (
   channelId: number,
   content: JSONContent,
   pg: SupabaseDirectClient,
-  visibility: ChatVisibility,
-  overrideCreatorId?: string
+  visibility: ChatVisibility
 ) => {
-  if (!overrideCreatorId) {
-    // Normally, users can only submit messages to channels that they are members of
-    const authorized = await pg.oneOrNone(
-      `select 1
+  // Normally, users can only submit messages to channels that they are members of
+  const authorized = await pg.oneOrNone(
+    `select 1
        from private_user_message_channel_members
        where channel_id = $1
          and user_id = $2`,
-      [channelId, creator.id]
-    )
-    if (!authorized)
-      throw new APIError(403, 'You are not authorized to post to this channel')
-  }
+    [channelId, creator.id]
+  )
+  if (!authorized)
+    throw new APIError(403, 'You are not authorized to post to this channel')
 
   await notifyOtherUserInChannelIfInactive(channelId, creator, pg)
-  await insertPrivateMessage(
-    content,
-    channelId,
-    overrideCreatorId ?? creator.id,
-    visibility,
-    pg
-  )
+  await insertPrivateMessage(content, channelId, creator.id, visibility, pg)
 
   const privateMessage = {
     content: content as Json,

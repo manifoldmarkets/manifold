@@ -6,7 +6,6 @@ import {
   CommentNotificationData,
   ContractResolutionData,
   LeagueChangeData,
-  love_notification_source_types,
   Notification,
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
@@ -411,9 +410,7 @@ export const createNewAnswerOnContractNotification = async (
       createdTime: Date.now(),
       isSeen: false,
       sourceId,
-      sourceType: sourceContract.isLove
-        ? (`love_${sourceType}` as love_notification_source_types)
-        : sourceType,
+      sourceType,
       sourceUpdateType,
       sourceContractId: sourceContract.id,
       sourceUserName: sourceUser.name,
