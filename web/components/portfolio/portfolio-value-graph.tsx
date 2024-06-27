@@ -21,9 +21,7 @@ import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 
 export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice'
-export const BALANCE_COLOR = '#4f46e5'
-export const INVESTMENT_COLOR = '#818cf8'
-// export const SPICE_COLOR = '#0ea5e9'
+export const MANA_COLOR = '#4f46e5'
 export const SPICE_COLOR = '#f59e0b'
 
 export const PortfolioTooltip = (props: { date: Date }) => {
@@ -167,80 +165,58 @@ export const PortfolioGraph = (props: {
   }, [mode, duration, portfolioFocus])
 
   if (mode == 'portfolio') {
-    if (portfolioFocus == 'all') {
-      return (
-        <PortfolioChart
-          data={{
-            spice: { points: spicePoints, color: SPICE_COLOR },
-            balance: { points: balancePoints, color: BALANCE_COLOR },
-            investment: { points: investmentPoints, color: INVESTMENT_COLOR },
-          }}
-          w={width}
-          h={height}
-          xScale={xScale}
-          yScale={yScale}
-          yKind="Ṁ"
-          updateGraphValues={updateGraphValues}
-          setPortfolioFocus={setPortfolioFocus}
-          portfolioHoveredGraph={portfolioHoveredGraph}
-          setPortfolioHoveredGraph={setPortfolioHoveredGraph}
-        />
-      )
-    } else {
-      return (
-        <SingleValueHistoryChart
-          w={width}
-          h={height}
-          xScale={xScale}
-          yScale={portfolioFocus == 'spice' ? spiceYScale : yScale}
-          zoomParams={zoomParams}
-          yKind={
-            portfolioFocus === 'spice' && mode == 'portfolio' ? 'spice' : 'Ṁ'
-          }
-          data={
-            portfolioFocus == 'balance'
-              ? balancePoints
-              : portfolioFocus == 'investment'
-              ? investmentPoints
-              : spicePoints.map((d) => ({
-                  ...d,
-                  y: d.y / SPICE_TO_MANA_CONVERSION_RATE,
-                }))
-          }
-          Tooltip={(props) => (
-            // eslint-disable-next-line react/prop-types
-            <PortfolioTooltip date={xScale.invert(props.x)} />
-          )}
-          onMouseOver={(p) => {
-            portfolioFocus == 'balance'
-              ? updateGraphValues({ balance: p ? p.y : null })
-              : portfolioFocus == 'investment'
-              ? updateGraphValues({ invested: p ? p.y : null })
-              : updateGraphValues({
-                  spice: p ? p.y : null,
-                })
-          }}
-          onMouseLeave={() => {
-            updateGraphValues(emptyGraphValues)
-          }}
-          curve={curveLinear}
-          negativeThreshold={negativeThreshold}
-          hideXAxis={hideXAxis}
-          color={
-            portfolioFocus == 'balance'
-              ? BALANCE_COLOR
-              : portfolioFocus == 'investment'
-              ? INVESTMENT_COLOR
-              : SPICE_COLOR
-          }
-          onGraphClick={() => {
-            setPortfolioFocus('all')
-          }}
-          areaClassName="hover:opacity-100 opacity-[0.85] transition-opacity"
-        />
-      )
-    }
+    return (
+      <SingleValueHistoryChart
+        w={width}
+        h={height}
+        xScale={xScale}
+        yScale={portfolioFocus == 'spice' ? spiceYScale : yScale}
+        zoomParams={zoomParams}
+        yKind={
+          portfolioFocus === 'spice' && mode == 'portfolio' ? 'spice' : 'Ṁ'
+        }
+        data={
+          portfolioFocus == 'all'
+            ? networthPoints
+            : portfolioFocus == 'balance'
+            ? balancePoints
+            : portfolioFocus == 'investment'
+            ? investmentPoints
+            : spicePoints.map((d) => ({
+                ...d,
+                y: d.y / SPICE_TO_MANA_CONVERSION_RATE,
+              }))
+        }
+        Tooltip={(props) => (
+          // eslint-disable-next-line react/prop-types
+          <PortfolioTooltip date={xScale.invert(props.x)} />
+        )}
+        onMouseOver={(p) => {
+          portfolioFocus == 'all'
+            ? updateGraphValues({ net: p ? p.y : null })
+            : portfolioFocus == 'balance'
+            ? updateGraphValues({ balance: p ? p.y : null })
+            : portfolioFocus == 'investment'
+            ? updateGraphValues({ invested: p ? p.y : null })
+            : updateGraphValues({
+                spice: p ? p.y : null,
+              })
+        }}
+        onMouseLeave={() => {
+          updateGraphValues(emptyGraphValues)
+        }}
+        curve={curveLinear}
+        negativeThreshold={negativeThreshold}
+        hideXAxis={hideXAxis}
+        color={portfolioFocus == 'spice' ? SPICE_COLOR : MANA_COLOR}
+        onGraphClick={() => {
+          setPortfolioFocus('all')
+        }}
+        areaClassName="hover:opacity-50 opacity-[0.2] transition-opacity"
+      />
+    )
   }
+  // }
   return (
     <SingleValueHistoryChart
       w={width}

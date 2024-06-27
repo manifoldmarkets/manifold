@@ -158,7 +158,7 @@ export const AreaWithTopStroke = <P,>(props: {
         py1={py1}
         curve={curve}
         fill={color}
-        className={clsx('opacity-20', className)}
+        className={clsx(' opacity-20', className)}
         onClick={onClick}
       />
       <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />

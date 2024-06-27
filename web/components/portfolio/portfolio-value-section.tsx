@@ -1,11 +1,17 @@
 'use client'
 import clsx from 'clsx'
+import {
+  SPICE_NAME,
+  SPICE_TO_MANA_CONVERSION_RATE,
+} from 'common/envs/constants'
+import { Period, periodDurations } from 'common/period'
+import { LivePortfolioMetrics } from 'common/portfolio-metrics'
 import { last } from 'lodash'
 import { ReactNode, memo, useState } from 'react'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { SizedContainer } from 'web/components/sized-container'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Period, periodDurations } from 'common/period'
+import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { User } from 'web/lib/firebase/users'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
@@ -13,26 +19,19 @@ import { Y_AXIS_MARGIN, useZoom } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 import { ColorType } from '../widgets/choices-toggle-group'
 import { CoinNumber } from '../widgets/manaCoinNumber'
+import { PortfolioGraphNumber } from './portfolio-graph-number'
 import { PortfolioTab } from './portfolio-tabs'
 import {
-  BALANCE_COLOR,
   GraphMode,
-  INVESTMENT_COLOR,
+  MANA_COLOR,
   PortfolioGraph,
   PortfolioMode,
   SPICE_COLOR,
 } from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
-import {
-  SPICE_NAME,
-  SPICE_TO_MANA_CONVERSION_RATE,
-} from 'common/envs/constants'
-import { RedeemSpiceButton } from '../profile/redeem-spice-button'
-import { PortfolioGraphNumber } from './portfolio-graph-number'
-import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
-import { LivePortfolioMetrics } from 'common/portfolio-metrics'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
@@ -360,8 +359,8 @@ function PortfolioValueSkeleton(props: {
                     className={clsx(
                       'cursor-pointer select-none transition-opacity',
                       portfolioFocus == 'all'
-                        ? 'opacity-100'
-                        : 'opacity-50 hover:opacity-[85%]'
+                        ? 'text-primary-700 dark:text-primary-600 opacity-100'
+                        : 'text-ink-1000 opacity-50 hover:opacity-[85%]'
                     )}
                     onClick={() => togglePortfolioFocus('all')}
                   >
@@ -371,7 +370,7 @@ function PortfolioValueSkeleton(props: {
                         portfolioValues?.net
                       )}
                       className={clsx(
-                        'text-ink-1000 text-3xl font-bold transition-all sm:text-4xl'
+                        'text-3xl font-bold transition-all sm:text-4xl'
                       )}
                       isInline
                       coinClassName="top-[0.25rem] sm:top-[0.1rem]"
@@ -395,7 +394,11 @@ function PortfolioValueSkeleton(props: {
                         graphValues.balance,
                         portfolioValues?.balance
                       )}
-                      color={BALANCE_COLOR}
+                      className={clsx(
+                        portfolioFocus == 'balance'
+                          ? 'bg-indigo-700 text-white'
+                          : 'bg-canvas-50 text-ink-800'
+                      )}
                       onClick={() => togglePortfolioFocus('balance')}
                     />
                     <PortfolioGraphNumber
@@ -408,7 +411,11 @@ function PortfolioValueSkeleton(props: {
                         graphValues.invested,
                         portfolioValues?.invested
                       )}
-                      color={INVESTMENT_COLOR}
+                      className={clsx(
+                        portfolioFocus == 'investment'
+                          ? 'bg-indigo-700 text-white'
+                          : 'bg-canvas-50 text-ink-800'
+                      )}
                       onClick={() => togglePortfolioFocus('investment')}
                     />
 
@@ -422,7 +429,11 @@ function PortfolioValueSkeleton(props: {
                         graphValues.spice,
                         user.spiceBalance
                       )}
-                      color={SPICE_COLOR}
+                      className={clsx(
+                        portfolioFocus == 'spice'
+                          ? ' bg-amber-600 text-white'
+                          : 'bg-canvas-50 text-ink-700'
+                      )}
                       onClick={() => togglePortfolioFocus('spice')}
                       isSpice
                     />
