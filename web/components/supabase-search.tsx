@@ -770,7 +770,7 @@ const useSearchQueryState = (props: {
         isFirstRun.current = false
         setState({ s: lastSort })
       } else {
-        setLastSort(lastSort)
+        setLastSort(state.s)
       }
     }
   }, [state.s, localStateReady])
