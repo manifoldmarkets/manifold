@@ -22,8 +22,6 @@ export const SPICE_TO_CHARITY_DOLLARS = (1 / 1000) * (1 - CHARITY_FEE) // prize 
 export const SPICE_NAME = 'Prize Point'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
 
-export const DASHBOARD_ENABLED = ENV === 'DEV'
-
 export const ENV_CONFIG = CONFIGS[ENV]
 
 export function isAdminId(id: string) {
