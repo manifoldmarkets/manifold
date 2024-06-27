@@ -1,4 +1,3 @@
-import * as dayjs from 'dayjs'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
@@ -6,7 +5,7 @@ import {
   MARKET_VISIT_BONUS_TOTAL,
   NEXT_DAY_BONUS,
 } from 'common/economy'
-import { getPrivateUser, getUser, getUsers, isProd, log } from 'shared/utils'
+import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { SignupBonusTxn } from 'common/txn'
 import {
   MANIFOLD_AVATAR_URL,
@@ -22,61 +21,64 @@ import {
 } from 'common/user-notification-preferences'
 import { Notification } from 'common/notification'
 import * as crypto from 'crypto'
-import { sendBonusWithInterestingMarketsEmail } from 'shared/emails'
+import {
+  sendBonusWithInterestingMarketsEmail,
+  sendUnactivatedNewUserEmail,
+} from 'shared/emails'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { APIError } from 'common/api/utils'
 import { getForYouMarkets } from 'shared/weekly-markets-emails'
 import { updatePrivateUser, updateUser } from './supabase/users'
-
-const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
+import { convertUser } from 'common/supabase/users'
 
 /*
 D1 send mana bonus email
-[deprecated] D2 send creator guide email
 */
 export async function sendOnboardingNotificationsInternal() {
   if (!isProd()) return
-  const { recentUserIds } = await getRecentNonLoverUserIds()
+  const pg = createSupabaseDirectClient()
+
+  const recentUsers = await pg.map(
+    `select * from users
+          where
+              -- adding padding in case the scheduler went down
+              created_time < now() - interval '23 hours' and
+              created_time > now() - interval '1 week' and
+              (data->>'fromLove' is null or data->>'fromLove' = 'false')
+              `,
+    [],
+    convertUser
+  )
 
   log(
     'Non love users created older than 1 day, younger than 1 week:' +
-      recentUserIds.length
+      recentUsers.length
+  )
+  const verifiedUsers = recentUsers.filter(isVerified)
+
+  await Promise.all(verifiedUsers.map(sendNextDayManaBonus))
+  const unactivatedUsers = recentUsers.filter((user) => !user.lastBetTime)
+  const templateId = 'didnt-bet-new-user-survey'
+  const unactivatedUsersSentEmailAlready = await pg.map(
+    `select distinct users.id from users
+            join sent_emails on users.id = sent_emails.user_id
+            where users.id = any($1)
+            and sent_emails.email_template_id = $2`,
+    [unactivatedUsers.map((user) => user.id), templateId],
+    (row) => row.id
   )
 
-  await sendBonusNotifications(recentUserIds)
-}
-
-const getRecentNonLoverUserIds = async () => {
-  const pg = createSupabaseDirectClient()
-
-  const userDetails = await pg.map(
-    `select id, (data->'createdTime') as created_time from users
-          where
-              millis_to_ts(((data->'createdTime')::bigint)) < now() - interval '23 hours' and
-              millis_to_ts(((data->'createdTime')::bigint)) > now() - interval '1 week'and
-              (data->>'verifiedPhone')::boolean = true and
-              (data->>'fromLove' is null or data->>'fromLove' = 'false')
-              `,
-    // + `and username like '%manifoldtestnewuser%'`,
-    [],
-    (r) => ({
-      id: r.id,
-      createdTime: r.created_time,
-    })
+  await Promise.all(
+    unactivatedUsers
+      .filter((user) => !unactivatedUsersSentEmailAlready.includes(user.id))
+      .map(async (user) => {
+        await sendUnactivatedNewUserEmail(user, templateId)
+        await pg.none(
+          `insert into sent_emails (user_id, email_template_id) values ($1, $2)`,
+          [user.id, templateId]
+        )
+      })
   )
-
-  const recentUserIds = userDetails.map((u) => u.id) as string[]
-
-  const userIdsToReceiveCreatorGuideEmail = userDetails
-    .filter(
-      (u) =>
-        dayjs().diff(dayjs(u.createdTime), 'day') >= 2 &&
-        dayjs().diff(dayjs(u.createdTime), 'day') < 3 &&
-        u.createdTime > LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL
-    )
-    .map((u) => u.id) as string[]
-
-  return { recentUserIds, userIdsToReceiveCreatorGuideEmail }
 }
 
 const sendNextDayManaBonus = async (user: User) => {
@@ -90,7 +92,7 @@ const sendNextDayManaBonus = async (user: User) => {
       log(`User ${user.id} already received mana bonus`)
       return {}
     } else {
-      updatePrivateUser(tx, user.id, {
+      await updatePrivateUser(tx, user.id, {
         manaBonusSent: true,
         weeklyTrendingEmailSent: true, // not yet, but about to!
       })
@@ -171,11 +173,6 @@ export const sendOnboardingMarketVisitBonus = async (userId: string) => {
     log(`Sent mana bonus to user ${userId}`)
     return txn
   })
-}
-
-const sendBonusNotifications = async (userIds: string[]) => {
-  const users = await getUsers(userIds)
-  await Promise.all(users.map((user) => sendNextDayManaBonus(user)))
 }
 
 const createSignupBonusNotification = async (
