@@ -125,7 +125,9 @@ export const getTopicReposts = async (
               )
              and posts.user_id not in (select follow_id from user_follows where user_id = $3)
              and group_score > 0.45
-             and contract_comments.likes > 0
+             and case when contract_comments.user_id = 'hDq0cvn68jbAUVd6aWIU9aSv9ZA2' 
+                 then contract_comments.likes > 1
+                 else contract_comments.likes > 0 end
              and contracts.close_time > now()
              and posts.created_time > now() - interval '1 week'
              and coalesce((contract_comments.data->'hidden')::boolean, false) = false
