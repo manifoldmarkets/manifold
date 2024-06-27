@@ -1,7 +1,7 @@
 import { HistoryPoint, ValueKind } from 'common/chart'
 import { formatMoneyNumber } from 'common/util/format'
-import { axisBottom, axisLeft, axisRight } from 'd3-axis'
-import { ScaleContinuousNumeric, ScaleTime, scaleLinear } from 'd3-scale'
+import { axisBottom, axisRight } from 'd3-axis'
+import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
 import { CurveFactory, curveStepAfter } from 'd3-shape'
 import { mapValues } from 'lodash'
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
@@ -66,7 +66,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     pointerMode = 'zoom',
     hoveredAnnotation,
     setHoveredAnnotation,
-    yKind,
     updateGraphValues,
     setPortfolioFocus,
     portfolioHoveredGraph,
@@ -90,20 +89,14 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py = useCallback((p: P) => yScale(p.y), [yScale])
 
-  const { xAxis, yAxis, yLeftAxis } = useMemo(() => {
+  const { xAxis, yAxis } = useMemo(() => {
     const nTicks = h < 200 ? 3 : 5
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis = axisRight<number>(yScale)
       .ticks(nTicks)
       .tickFormat((n) => formatMoneyNumber(n))
 
-    const yLeftScale = scaleLinear()
-      .domain(yScale.domain().map((d) => d / SPICE_TO_MANA_CONVERSION_RATE))
-      .range([h, 0])
-    const yLeftAxis = axisLeft<number>(yLeftScale)
-      .ticks(nTicks)
-      .tickFormat((n) => formatMoneyNumber(n))
-    return { xAxis, yAxis, yLeftAxis }
+    return { xAxis, yAxis }
   }, [w, h, xScale, yScale])
 
   const timeSelectors = mapValues(data, (data) =>
@@ -149,7 +142,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     )
   }, [data, xScale])
 
-  const getMarkerPosition = useEvent((mouseX: number, mouseY: number) => {
+  const getMarkerPosition = useEvent((mouseX: number) => {
     const ps = stackedData.map((data) => selectors[data.id](mouseX))
     const unstackedPs = Object.entries(data).map(([id]) => {
       return unstackedSelectors[id](mouseX)
@@ -185,8 +178,8 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     }
   })
 
-  const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
-    setTTParams(getMarkerPosition(mouseX, mouseY))
+  const onMouseOver = useEvent((mouseX: number, _mouseY: number) => {
+    setTTParams(getMarkerPosition(mouseX))
   })
 
   const onMouseLeave = useEvent(() => {
@@ -208,7 +201,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
         h={h}
         xAxis={xAxis}
         yAxis={yAxis}
-        yLeftAxis={yLeftAxis}
         ttParams={ttParams}
         zoomParams={zoomParams}
         onMouseOver={onMouseOver}

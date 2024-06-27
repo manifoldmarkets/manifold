@@ -125,9 +125,8 @@ export default function BrowseGroupPage(props: {
 export function GroupPageContent(props: {
   staticTopicParams?: TopicParams
   slug: string | null
-  collapseOptions?: boolean
 }) {
-  const { staticTopicParams, collapseOptions } = props
+  const { staticTopicParams } = props
   const slug = props.slug ?? undefined
   const user = useUser()
   const isMobile = useIsMobile()
@@ -214,7 +213,6 @@ export function GroupPageContent(props: {
       setTopicSlug={(slug) => {
         setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
       }}
-      collapseOptions={collapseOptions}
     />
   )
 

@@ -49,11 +49,7 @@ export default function Home(props: { headlines: Headline[] }) {
         className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
         user={user}
       />
-      <GroupPageContent
-        slug={''}
-        staticTopicParams={undefined}
-        collapseOptions
-      />
+      <GroupPageContent slug={''} staticTopicParams={undefined} />
       {user && (
         <button
           type="button"

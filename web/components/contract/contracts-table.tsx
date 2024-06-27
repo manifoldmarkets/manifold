@@ -1,7 +1,7 @@
 import { EyeOffIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
-import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatMoney, formatPercentShort } from 'common/util/format'
@@ -23,7 +23,6 @@ import {
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { Tooltip } from '../widgets/tooltip'
-import { sortAnswers } from 'common/answer'
 import { removeEmojis } from 'common/util/string'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { track } from 'web/lib/service/analytics'
@@ -276,25 +275,6 @@ function ContractQuestion(props: {
         {removeEmojis(contract.question)}
       </span>
     </Row>
-  )
-}
-
-function ContractAnswers(props: { contract: CPMMMultiContract }) {
-  const { contract } = props
-
-  return (
-    <div className="text-ink-500 my-1 grid w-full grid-cols-2 gap-x-4 pl-8 pr-4 text-sm sm:pl-10 sm:pr-48">
-      {sortAnswers(contract, contract.answers)
-        .slice(0, 4)
-        .map((ans) => (
-          <div key={ans.id} className="flex gap-2">
-            <span className="truncate">{ans.text}</span>
-            <span className={'font-semibold'}>
-              {formatPercentShort(ans.prob)}
-            </span>
-          </div>
-        ))}
-    </div>
   )
 }
 
