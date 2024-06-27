@@ -116,7 +116,6 @@ export function canUserAddGroupToMarket(props: {
   group: GroupResponse
   contract?: Contract
   membership?: GroupMember
-  isLove?: boolean
 }) {
   const { userId, group, contract, membership } = props
 
