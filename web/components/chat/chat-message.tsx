@@ -13,7 +13,6 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import Link from 'next/link'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { DotsHorizontalIcon, ReplyIcon } from '@heroicons/react/solid'
-import { manifoldLoveUserId } from 'common/love/constants'
 import { UserHovercard } from '../user/user-hovercard'
 import { DisplayUser } from 'common/api/user-types'
 
@@ -128,10 +127,7 @@ export const SystemChatMessageItem = memo(
     const chat = last(chats)
     const [showUsers, setShowUsers] = useState(false)
     if (!chat) return null
-    const hideAvatar =
-      chat.visibility === 'system_status' &&
-      chat.userId === manifoldLoveUserId &&
-      chats.length === 1
+    const hideAvatar = chat.visibility === 'system_status' && chats.length === 1
     const totalUsers = otherUsers?.length || 1
     return (
       <Row className={clsx('flex-row-reverse items-center gap-1')}>
