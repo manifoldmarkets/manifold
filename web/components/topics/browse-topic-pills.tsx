@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { LiteGroup } from 'common/group'
-import { ReactNode, useState } from 'react'
+import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
