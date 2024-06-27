@@ -23,10 +23,12 @@ import {
   DEFAULT_SORT,
   DEFAULT_SORTS,
   FILTERS,
+  FOR_YOU_KEY,
   Filter,
   POLL_SORTS,
   PREDICTION_MARKET_PROB_SORTS,
   PREDICTION_MARKET_SORTS,
+  QUERY_KEY,
   SORTS,
   SearchParams,
   Sort,
@@ -37,13 +39,15 @@ import { AdditionalFilterPill, FilterPill } from './filter-pills'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { TierDropdownPill } from './filter-pills'
+import { useUser } from 'web/hooks/use-user'
 
 export function ContractFilters(props: {
   className?: string
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
+  topicSlug?: string
 }) {
-  const { className, params, updateParams } = props
+  const { className, params, updateParams, topicSlug } = props
 
   const {
     s: sort,
@@ -128,6 +132,9 @@ export function ContractFilters(props: {
     !DEFAULT_CONTRACT_TYPES.some((ct) => ct == contractType) &&
     contractType !== DEFAULT_CONTRACT_TYPE
 
+  const forYou = params[FOR_YOU_KEY] === '1'
+  const user = useUser()
+
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
       <Carousel labelsParentClassName="-ml-1.5 gap-1 items-center">
@@ -157,6 +164,19 @@ export function ContractFilters(props: {
           >
             {contractTypeLabel}
           </AdditionalFilterPill>
+        )}
+        {user && !topicSlug && (
+          <FilterPill
+            selected={forYou}
+            onSelect={() => {
+              updateParams({
+                [FOR_YOU_KEY]: forYou ? '0' : '1',
+              })
+            }}
+            type="sort"
+          >
+            For You
+          </FilterPill>
         )}
         {sortItems.map((sortValue) => (
           <FilterPill
@@ -276,6 +296,7 @@ function FilterModal(props: {
       : contractType === 'ALL' || contractType === 'BINARY'
       ? PREDICTION_MARKET_PROB_SORTS
       : PREDICTION_MARKET_SORTS
+
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS, 'text-ink-600 text-sm')}>

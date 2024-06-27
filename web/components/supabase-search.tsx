@@ -141,7 +141,7 @@ export type SearchParams = {
   [MARKET_TIER_KEY]: TierParamsType
 }
 
-const QUERY_KEY = 'q'
+export const QUERY_KEY = 'q'
 export const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
@@ -413,6 +413,7 @@ export function SupabaseSearch(props: {
             className={
               searchType && searchType !== 'Questions' ? 'invisible' : ''
             }
+            topicSlug={topicSlug}
           />
         )}
       </Col>
@@ -437,32 +438,6 @@ export function SupabaseSearch(props: {
                 className={'relative w-full px-2 pb-4'}
                 topics={shownTopics}
                 currentTopicSlug={topicSlug}
-                forYouPill={
-                  user ? (
-                    <button
-                      key={'pill-for-you'}
-                      onClick={() => {
-                        if (topicSlug) {
-                          setTopicSlug(topicSlug)
-                        } else {
-                          onChange({
-                            [FOR_YOU_KEY]: forYou ? '0' : '1',
-                          })
-                        }
-                      }}
-                      className={clsx(
-                        'bg-ink-100 hover:bg-ink-200 text-ink-600 rounded p-1',
-                        forYou && !topicSlug
-                          ? 'bg-primary-400 hover:bg-primary-300 text-white'
-                          : ''
-                      )}
-                    >
-                      <span>
-                        <SparklesIcon className="inline h-4 w-4" /> For you
-                      </span>
-                    </button>
-                  ) : null
-                }
                 onClick={(newSlug: string) => {
                   setTopicSlug(newSlug)
                 }}

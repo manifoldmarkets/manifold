@@ -11,7 +11,7 @@ export const BrowseTopicPills = (props: {
   topics: LiteGroup[]
   currentTopicSlug?: string
   className?: string
-  forYouPill: ReactNode
+  forYouPill?: ReactNode
   onClick: (slug: string) => void
 }) => {
   const { topics, forYouPill, className, currentTopicSlug, onClick } = props
@@ -23,7 +23,7 @@ export const BrowseTopicPills = (props: {
   return (
     <Col className={className}>
       <Row className={clsx('flex-wrap gap-1 text-sm')}>
-        {forYouPill}
+        {forYouPill ?? null}
         {shownTopics.map((g) => (
           <button
             key={'pill-' + g.slug}
