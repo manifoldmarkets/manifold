@@ -158,6 +158,22 @@ export function ContractFilters(props: {
             {contractTypeLabel}
           </AdditionalFilterPill>
         )}
+        {sortItems.map((sortValue) => (
+          <FilterPill
+            key={sortValue}
+            selected={sortValue === sort}
+            onSelect={() => {
+              if (sort === sortValue) {
+                selectSort(DEFAULT_SORT)
+              } else {
+                selectSort(sortValue as Sort)
+              }
+            }}
+            type="sort"
+          >
+            {getLabelFromValue(SORTS, sortValue)}
+          </FilterPill>
+        ))}
         <FilterPill
           selected={isPrizeMarketString === '1'}
           onSelect={togglePrizeMarket}
@@ -194,22 +210,6 @@ export function ContractFilters(props: {
               {getLabelFromValue(FILTERS, filterValue)}
             </FilterPill>
           ))}
-        {sortItems.map((sortValue) => (
-          <FilterPill
-            key={sortValue}
-            selected={sortValue === sort}
-            onSelect={() => {
-              if (sort === sortValue) {
-                selectSort(DEFAULT_SORT)
-              } else {
-                selectSort(sortValue as Sort)
-              }
-            }}
-            type="sort"
-          >
-            {getLabelFromValue(SORTS, sortValue)}
-          </FilterPill>
-        ))}
         {DEFAULT_CONTRACT_TYPES.map((contractValue) => (
           <FilterPill
             key={contractValue}
