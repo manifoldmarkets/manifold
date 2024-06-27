@@ -135,7 +135,7 @@ export default function LandingPage(props: {
                   About
                 </Button>
               </Link>
-              <Link href="/home">
+              <Link href="/browse">
                 <Button
                   color="gray-white"
                   size="xs"
