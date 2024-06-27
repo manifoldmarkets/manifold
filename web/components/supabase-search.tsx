@@ -763,8 +763,16 @@ const useSearchQueryState = (props: {
   const useHook = useUrlParams ? usePersistentQueriesState : useShim
   const [state, setState, ready] = useHook(defaults, persistPrefix)
 
+  const isFirstRun = useRef(true)
   useEffect(() => {
-    if (localStateReady) setLastSort(state.s)
+    if (localStateReady) {
+      if (isFirstRun.current) {
+        isFirstRun.current = false
+        setState({ s: lastSort })
+      } else {
+        setLastSort(lastSort)
+      }
+    }
   }, [state.s, localStateReady])
 
   return [state, setState, ready] as const
