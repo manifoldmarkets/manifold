@@ -11,10 +11,9 @@ export const BrowseTopicPills = (props: {
   topics: LiteGroup[]
   currentTopicSlug?: string
   className?: string
-  forYouPill?: ReactNode
   onClick: (slug: string) => void
 }) => {
-  const { topics, forYouPill, className, currentTopicSlug, onClick } = props
+  const { topics, className, currentTopicSlug, onClick } = props
   const [showMore, setShowMore] = useState<boolean>(false)
   const isMobile = useIsMobile()
   const MAX_INIT_TOPICS = isMobile ? MAX_SHOWN_MOBILE : MAX_SHOWN
@@ -23,7 +22,6 @@ export const BrowseTopicPills = (props: {
   return (
     <Col className={className}>
       <Row className={clsx('flex-wrap gap-1 text-sm')}>
-        {forYouPill ?? null}
         {shownTopics.map((g) => (
           <button
             key={'pill-' + g.slug}
