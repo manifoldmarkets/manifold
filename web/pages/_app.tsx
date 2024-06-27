@@ -31,7 +31,11 @@ const mainFont = Figtree({
 })
 
 function firstLine(msg: string) {
-  return msg.replace(/\r?\n.*/s, '')
+  const newlineIndex = msg.indexOf('\n')
+  if (newlineIndex === -1) {
+    return msg
+  }
+  return msg.substring(0, newlineIndex)
 }
 
 // It can be very hard to see client logs on native, so send them manually

@@ -275,14 +275,14 @@ interface DistrictInfo {
 }
 
 function extractDistrictInfo(input: string): DistrictInfo {
-  const regex = /^(?<state>[A-Z]{2})-(?<number>\d{2})/
-  const match = input.match(regex)
+  const parts = input.split(' ')[0].split('-')
+  const state = parts[0].trim()
+  const number = parts[1].slice(0, 2).trim()
 
-  if (!match || !match.groups) {
+  if (state.length !== 2 || isNaN(Number(number))) {
     throw new Error('Invalid input format')
   }
 
-  const { state, number } = match.groups
   return {
     state,
     number,
