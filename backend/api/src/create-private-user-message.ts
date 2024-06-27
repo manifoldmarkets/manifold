@@ -22,7 +22,6 @@ import { sendNewMessageEmail } from 'shared/emails'
 import { HOUR_MS } from 'common/util/time'
 import { JSONContent } from '@tiptap/core'
 import { ChatVisibility } from 'common/chat-message'
-import { manifoldLoveUserId } from 'common/love/constants'
 import { track } from 'shared/analytics'
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -74,9 +73,8 @@ export const createPrivateUserMessageMain = async (
     )
     if (!authorized)
       throw new APIError(403, 'You are not authorized to post to this channel')
-  } else if (overrideCreatorId !== manifoldLoveUserId) {
-    throw new APIError(403, 'Only manifold love can post to arbitrary channels')
   }
+
   await notifyOtherUserInChannelIfInactive(channelId, creator, pg)
   await insertPrivateMessage(
     content,

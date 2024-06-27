@@ -23,7 +23,6 @@ import {
 } from 'common/contract'
 import { getAnte, getTieredCost } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
-import { manifoldLoveUserId } from 'common/love/constants'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
@@ -119,10 +118,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   //   )
   // }
 
-  if (loverUserId1 || loverUserId2) {
-    if (auth.uid !== manifoldLoveUserId) {
-      throw new Error('Only Manifold Love account can create love contracts.')
-    }
+  if (loverUserId1 || loverUserId2 || isLove) {
+    throw new Error('No more love contracts can be created')
   }
 
   const groups = groupIds
