@@ -1,4 +1,4 @@
-import { Contract } from 'web/lib/firebase/contracts'
+import { Contract } from 'common/contract'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'

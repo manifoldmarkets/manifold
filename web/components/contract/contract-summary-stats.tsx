@@ -2,13 +2,13 @@ import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
-import { Contract } from '../../lib/firebase/contracts'
 import { shortenNumber } from '../../lib/util/formatNumber'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
 import { CreatorFeesDisplay } from './creator-fees-display'
+import { Contract } from 'common/contract'
 
 export function ContractSummaryStats(props: {
   contract: Contract

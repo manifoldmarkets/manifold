@@ -1,4 +1,4 @@
-import { Contract } from 'web/lib/firebase/contracts'
+import { Contract } from 'common/contract'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
