@@ -5,7 +5,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { MAX_SHOWN, MAX_SHOWN_MOBILE } from '../search/user-results'
-import { removeEmojis } from 'common/topics'
+import { removeEmojis } from 'common/util/string'
 
 export const BrowseTopicPills = (props: {
   topics: LiteGroup[]
