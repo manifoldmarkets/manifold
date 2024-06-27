@@ -51,11 +51,14 @@ export const probColumn = {
     <div className="font-semibold">
       <ContractStatusLabel
         contract={contract}
+        showProbChange={
+          contract.uniqueBettorCountDay !== contract.uniqueBettorCount
+        }
         className="block w-[3ch] text-right"
       />
     </div>
   ),
-  width: 'w-16',
+  width: 'w-[70px]',
 }
 
 export const actionColumn = {

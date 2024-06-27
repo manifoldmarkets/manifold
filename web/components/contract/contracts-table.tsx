@@ -1,4 +1,8 @@
-import { EyeOffIcon } from '@heroicons/react/solid'
+import {
+  ArrowNarrowDownIcon,
+  ArrowNarrowUpIcon,
+  EyeOffIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
@@ -147,10 +151,11 @@ export function isClosed(contract: Contract) {
 
 export function ContractStatusLabel(props: {
   contract: Contract
+  showProbChange?: boolean
   chanceLabel?: boolean
   className?: string
 }) {
-  const { contract, chanceLabel, className } = props
+  const { contract, showProbChange, chanceLabel, className } = props
   const probTextColor = getTextColor(contract)
   const { outcomeType } = contract
 
@@ -164,8 +169,29 @@ export function ContractStatusLabel(props: {
           />
         </span>
       ) : (
-        <span className={clsx(probTextColor, className)}>
+        <span className={clsx(probTextColor, 'whitespace-nowrap', className)}>
           {formatPercentShort(getDisplayProbability(contract))}
+          {showProbChange &&
+            Math.round(contract.probChanges.day * 100) !== 0 && (
+              <Row className="mb-0.5 inline-flex items-center align-middle">
+                {contract.probChanges.day > 0 && (
+                  <ArrowNarrowUpIcon className="mr-[-1px] inline h-4 w-4 text-teal-500" />
+                )}
+                {contract.probChanges.day < 0 && (
+                  <ArrowNarrowDownIcon className="text-scarlet-500 mr-[-1px] inline h-4 w-4" />
+                )}
+                <span
+                  className={clsx(
+                    'text-sm font-normal ',
+                    contract.probChanges.day > 0
+                      ? 'text-teal-500'
+                      : 'text-scarlet-500'
+                  )}
+                >
+                  {Math.abs(Math.round((contract.probChanges.day ?? 0) * 100))}
+                </span>
+              </Row>
+            )}
           {chanceLabel && <span className="text-sm font-normal"> chance</span>}
         </span>
       )
