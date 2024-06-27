@@ -28,7 +28,7 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from './contract'
-import { floatingEqual } from './util/math'
+import { floatingEqual, floatingGreaterEqual } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer } from './answer'
 import { DAY_MS } from 'common/util/time'
@@ -173,11 +173,11 @@ function getCpmmInvested(yourBets: Bet[]) {
     const spent = totalSpent[outcome] ?? 0
     const position = totalShares[outcome] ?? 0
 
-    if (amount >= 0) {
+    if (floatingGreaterEqual(amount, 0)) {
       totalShares[outcome] = position + shares
       totalSpent[outcome] = spent + amount
-    } else if (amount < 0) {
-      const averagePrice = position === 0 ? 0 : spent / position
+    } else {
+      const averagePrice = floatingEqual(position, 0) ? 0 : spent / position
       totalShares[outcome] = position + shares
       totalSpent[outcome] = spent + averagePrice * shares
     }
