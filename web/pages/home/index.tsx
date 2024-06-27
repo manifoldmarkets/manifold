@@ -13,6 +13,7 @@ import { api } from 'web/lib/firebase/api'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 export async function getStaticProps() {
   try {
@@ -31,6 +32,8 @@ export async function getStaticProps() {
 export default function Home(props: { headlines: Headline[] }) {
   const user = useUser()
   useSaveReferral(user)
+  useRedirectIfSignedOut()
+
   const { headlines } = props
 
   return (
@@ -42,12 +45,10 @@ export default function Home(props: { headlines: Headline[] }) {
         currentSlug={'home'}
         hideEmoji
       />
-      {user && (
-        <DailyStats
-          className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
-          user={user}
-        />
-      )}
+      <DailyStats
+        className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
+        user={user}
+      />
       <GroupPageContent
         slug={''}
         staticTopicParams={undefined}
