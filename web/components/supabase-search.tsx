@@ -1,5 +1,5 @@
 'use client'
-import { SparklesIcon, XIcon } from '@heroicons/react/outline'
+import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { LiteGroup } from 'common/group'
