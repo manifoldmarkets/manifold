@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Modal } from './layout/modal'
-import { superBanUser } from 'web/lib/firebase/super-ban-user'
+import { superBanUser } from 'web/lib/supabase/super-ban-user'
 import { Col } from './layout/col'
 import { Button } from './buttons/button'
 
