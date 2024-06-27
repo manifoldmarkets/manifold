@@ -38,6 +38,7 @@ import { BinaryDigit, TierParamsType } from 'common/tier'
 import { useUser } from 'web/hooks/use-user'
 import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { Spacer } from './layout/spacer'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -117,15 +118,15 @@ export const CONTRACT_TYPES = [
 ] as const
 
 export const DEFAULT_SORT = 'score'
-export const DEFAULT_SORTS = ['freshness-score', 'close-date', 'newest']
+export const DEFAULT_SORTS = ['score', 'freshness-score']
 export const DEFAULT_BOUNTY_SORTS = ['bounty-amount', 'newest']
 export const DEFAULT_POLL_SORTS = ['newest']
 
-export const DEFAULT_FILTERS = ['open', 'closed', 'resolved']
+export const DEFAULT_FILTERS = []
 export const DEFAULT_FILTER = 'all'
 
 export const DEFAULT_CONTRACT_TYPE = 'ALL'
-export const DEFAULT_CONTRACT_TYPES = ['BINARY', 'MULTIPLE_CHOICE', 'POLL']
+export const DEFAULT_CONTRACT_TYPES = []
 
 export type ContractTypeType = (typeof CONTRACT_TYPES)[number]['value']
 type SearchType = 'Users' | 'Questions' | undefined
@@ -267,14 +268,8 @@ export function SupabaseSearch(props: {
 
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
-  const [expandOptions, setExpandOptions] = usePersistentLocalState(
-    !collapseOptions,
-    `${persistPrefix}-expand-search-options`
-  )
-  const expandedOrHasQuery = expandOptions || !!query
-  const showSearchTypes =
-    expandedOrHasQuery && !hideSearchTypes && !contractsOnly
-  const showContractFilters = expandedOrHasQuery && !hideContractFilters
+  const showSearchTypes = !!query && !hideSearchTypes && !contractsOnly
+  const showContractFilters = !hideContractFilters
 
   const queryUsers = useEvent(async (query: string) =>
     searchUsers(query, USERS_PER_PAGE)
@@ -359,7 +354,12 @@ export function SupabaseSearch(props: {
 
   const showUsers =
     userResults && userResults.length > 0 && query !== '' && !topicSlug
-  const showTopics = shownTopics && shownTopics.length > 0 && !!setTopicSlug
+  const showTopics =
+    shownTopics &&
+    shownTopics.length > 0 &&
+    !!setTopicSlug &&
+    query &&
+    query.length > 0
 
   return (
     <Col className="w-full">
@@ -371,67 +371,40 @@ export function SupabaseSearch(props: {
         )}
       >
         {!hideSearch && (
-          <Row className="w-full">
-            <Row className="relative w-full">
-              <Input
-                type="text"
-                inputMode="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onBlur={trackCallback('search', { query: query })}
-                placeholder={
-                  searchType === 'Users'
-                    ? 'Search users'
-                    : searchType === 'Questions' || topicSlug || contractsOnly
-                    ? 'Search questions'
-                    : isMobile
-                    ? 'Search'
-                    : 'Search questions, users, and topics'
-                }
-                className="w-full"
-                autoFocus={autoFocus}
-              />
-              {query !== '' && (
-                <IconButton
-                  className={'absolute right-2 top-1/2 -translate-y-1/2'}
-                  size={'2xs'}
-                  onClick={() => {
-                    onChange({ [QUERY_KEY]: '' })
-                  }}
-                >
-                  {loading ? (
-                    <LoadingIndicator size="sm" />
-                  ) : (
-                    <XIcon className={'h-5 w-5 rounded-full'} />
-                  )}
-                </IconButton>
-              )}
-            </Row>
-
-            <ChoicesToggleGroup
-              className="ml-2"
-              toggleClassName=""
-              currentChoice={sort}
-              choicesMap={{
-                Best: 'score',
-                Hot: 'freshness-score',
-              }}
-              setChoice={(val) => onChange({ [SORT_KEY]: val as Sort })}
+          <Row className="relative w-full">
+            <Input
+              type="text"
+              inputMode="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onBlur={trackCallback('search', { query: query })}
+              placeholder={
+                searchType === 'Users'
+                  ? 'Search users'
+                  : searchType === 'Questions' || topicSlug || contractsOnly
+                  ? 'Search questions'
+                  : isMobile
+                  ? 'Search'
+                  : 'Search questions, users, and topics'
+              }
+              className="w-full"
+              autoFocus={autoFocus}
             />
-
-            <Button
-              className="ml-2"
-              color="gray-white"
-              size="lg"
-              onClick={() => setExpandOptions(!expandOptions)}
-            >
-              <ChevronDownIcon
-                className={clsx(
-                  'h-6 w-6',
-                  expandOptions ? 'rotate-180 transform' : ''
+            {query !== '' && (
+              <IconButton
+                className={'absolute right-2 top-1/2 -translate-y-1/2'}
+                size={'2xs'}
+                onClick={() => {
+                  onChange({ [QUERY_KEY]: '' })
+                }}
+              >
+                {loading ? (
+                  <LoadingIndicator size="sm" />
+                ) : (
+                  <XIcon className={'h-5 w-5 rounded-full'} />
                 )}
-              />
-            </Button>
+              </IconButton>
+            )}
           </Row>
         )}
         {showContractFilters && (
@@ -444,7 +417,7 @@ export function SupabaseSearch(props: {
           />
         )}
       </Col>
-
+      <Spacer h={2} />
       {showSearchTypes && (
         <Col>
           {showTopics && (
@@ -516,8 +489,6 @@ export function SupabaseSearch(props: {
           )}
         </Col>
       )}
-
-      {!expandedOrHasQuery && <div className="mt-2" />}
 
       {!contracts ? (
         <LoadingResults />
