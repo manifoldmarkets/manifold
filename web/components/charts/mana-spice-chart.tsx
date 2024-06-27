@@ -22,7 +22,6 @@ export const ManaSpiceChart = <X, TT extends { x: number; y: number }>(props: {
   h: number
   xAxis: Axis<X>
   yAxis: Axis<number>
-  yLeftAxis: Axis<number>
   ttParams?: TT | undefined
   zoomParams?: ZoomParams
   onMouseOver?: (mouseX: number, mouseY: number) => void
@@ -47,7 +46,6 @@ export const ManaSpiceChart = <X, TT extends { x: number; y: number }>(props: {
     h,
     xAxis,
     yAxis,
-    yLeftAxis,
     ttParams,
     zoomParams,
     onMouseOver,

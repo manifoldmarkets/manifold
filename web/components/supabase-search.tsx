@@ -201,7 +201,6 @@ export function SupabaseSearch(props: {
   hideAvatars?: boolean
   shownTopics?: LiteGroup[]
   setTopicSlug?: (slug: string) => void
-  collapseOptions?: boolean
 }) {
   const {
     defaultSort,
@@ -227,7 +226,6 @@ export function SupabaseSearch(props: {
     hideAvatars,
     shownTopics,
     setTopicSlug,
-    collapseOptions,
   } = props
 
   const user = useUser()

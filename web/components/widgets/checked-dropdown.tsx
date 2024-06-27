@@ -19,8 +19,6 @@ export default function CheckedDropdownMenu(props: {
   className?: string
   menuItemsClass?: string
   buttonDisabled?: boolean
-  selectedItemName?: string
-  closeOnClick?: boolean
   withinOverflowContainer?: boolean
   buttonContent: (open: boolean) => ReactNode
   checkboxClassName?: string
@@ -32,8 +30,6 @@ export default function CheckedDropdownMenu(props: {
     buttonClass,
     className,
     buttonDisabled,
-    selectedItemName,
-    closeOnClick,
     withinOverflowContainer,
     buttonContent,
     checkboxClassName,
@@ -46,7 +42,7 @@ export default function CheckedDropdownMenu(props: {
   })
   return (
     <Popover className={clsx('relative inline-block text-left', className)}>
-      {({ open, close }) => (
+      {({ open }) => (
         <>
           <Popover.Button
             ref={setReferenceElement}
@@ -87,7 +83,7 @@ export default function CheckedDropdownMenu(props: {
                             checkboxClassName
                           )}
                           checked={item.checked}
-                          onChange={(e) => item.onToggle()}
+                          onChange={() => item.onToggle()}
                         />
                       </div>
                       {item.content}
