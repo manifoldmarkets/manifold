@@ -43,7 +43,7 @@ import { getRecentCommentsOnContracts } from 'web/lib/supabase/comments'
 import { getRecentActiveContractsOnTopics } from 'web/lib/supabase/contracts'
 import { Bet } from 'common/bet'
 import { UserHovercard } from './user/user-hovercard'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export function ActivityLog(props: {
   count: number

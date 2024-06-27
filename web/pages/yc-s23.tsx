@@ -11,7 +11,7 @@ import { Row } from 'web/components/layout/row'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { searchContracts } from 'web/lib/firebase/api'
+import { searchContracts } from 'web/lib/api/api'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 
 export async function getStaticProps() {

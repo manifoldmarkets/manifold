@@ -6,7 +6,7 @@ import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useState } from 'react'
-import { api, APIError } from 'web/lib/firebase/api'
+import { api, APIError } from 'web/lib/api/api'
 import { RegistrationVerifyPhone } from 'web/components/registration-verify-phone'
 
 import { UploadDocuments } from 'web/components/gidx/upload-document'

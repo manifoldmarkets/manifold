@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { MAX_ANSWER_LENGTH } from 'common/answer'

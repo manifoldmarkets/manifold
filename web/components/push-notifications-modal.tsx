@@ -8,7 +8,7 @@ import dayjs from 'dayjs'
 import { formatMoney } from 'common/util/format'
 import { PUSH_NOTIFICATION_BONUS } from 'common/economy'
 import { getIsNative } from 'web/lib/native/is-native'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export function PushNotificationsModal(props: {
   privateUser: PrivateUser

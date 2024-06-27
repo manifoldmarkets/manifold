@@ -14,7 +14,7 @@ import { uploadPublicImage } from 'web/lib/firebase/storage'
 import { FileUploadButton } from '../buttons/file-upload-button'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { TbCameraPlus } from 'react-icons/tb'
-import { updateMarket } from 'web/lib/firebase/api'
+import { updateMarket } from 'web/lib/api/api'
 
 export function ChangeBannerButton(props: {
   contract?: Contract

@@ -2,7 +2,7 @@ import { Contract } from 'common/contract'
 import { Group, GroupRole, LiteGroup, Topic } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { api, getUserIsGroupMember } from 'web/lib/firebase/api'
+import { api, getUserIsGroupMember } from 'web/lib/api/api'
 import { db } from 'web/lib/supabase/db'
 import {
   getGroup,

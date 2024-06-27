@@ -14,7 +14,7 @@ import { Title } from '../widgets/title'
 import { PrivateUser, User } from 'common/user'
 import { useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { DeleteYourselfButton } from './delete-yourself'
 
 export const AccountSettings = (props: {

@@ -9,7 +9,7 @@ import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { capitalize } from 'lodash'
 import { ReportProps } from 'common/report'
-import { report as reportContent } from 'web/lib/firebase/api'
+import { report as reportContent } from 'web/lib/api/api'
 
 export function ReportButton(props: { report: ReportProps }) {
   const { report } = props

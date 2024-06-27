@@ -1,5 +1,5 @@
 import { ReactionContentTypes } from 'common/reaction'
-import { api } from './api'
+import { api } from '../api/api'
 
 export const unLike = async (
   contentId: string,

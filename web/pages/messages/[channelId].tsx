@@ -18,7 +18,7 @@ import {
   leavePrivateMessageChannel,
   sendUserPrivateMessage,
   updatePrivateMessageChannel,
-} from 'web/lib/firebase/api'
+} from 'web/lib/api/api'
 import {
   ChatMessageItem,
   SystemChatMessageItem,

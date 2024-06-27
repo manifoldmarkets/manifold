@@ -17,7 +17,7 @@ import { ContractComment } from 'common/comment'
 import { Content } from 'web/components/widgets/editor'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Row } from '../layout/row'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import { UserHovercard } from '../user/user-hovercard'
 

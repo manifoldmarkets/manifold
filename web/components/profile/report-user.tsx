@@ -6,7 +6,7 @@ import { Checkbox } from 'web/components/widgets/checkbox'
 import { Button } from 'web/components/buttons/button'
 import Textarea from 'react-expanding-textarea'
 import { toast } from 'react-hot-toast'
-import { report } from 'web/lib/firebase/api'
+import { report } from 'web/lib/api/api'
 
 export const ReportUser = (props: { user: User; closeModal: () => void }) => {
   const { user, closeModal } = props

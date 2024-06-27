@@ -1,6 +1,6 @@
 import { Col } from 'web/components/layout/col'
 import { Button } from 'web/components/buttons/button'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { useEffect, useState } from 'react'
 import { Input } from 'web/components/widgets/input'
 import { PhoneInput } from 'react-international-phone'

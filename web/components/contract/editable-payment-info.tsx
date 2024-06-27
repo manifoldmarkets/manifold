@@ -3,7 +3,7 @@ import { CheckIcon, XIcon, PencilIcon } from '@heroicons/react/solid'
 import { IconButton } from '../buttons/button'
 import { Input } from '../widgets/input'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export const EditablePaymentInfo = () => {
   const [isEditing, setEditing] = useState(false)

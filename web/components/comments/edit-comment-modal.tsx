@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react'
 import { User } from 'common/user'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { getApiUrl } from 'common/api/utils'
-import { call } from 'web/lib/firebase/api'
+import { call } from 'web/lib/api/api'
 import { Title } from 'web/components/widgets/title'
 import { JSONContent } from '@tiptap/core'
 
