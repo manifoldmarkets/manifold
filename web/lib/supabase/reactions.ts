@@ -25,7 +25,6 @@ export const like = async (
   })
 }
 
-
 export async function getLikedContracts(userId: string) {
   // TODO: The best way to do this would be to join the matching table via contentId and type
 
