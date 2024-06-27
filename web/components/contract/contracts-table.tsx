@@ -25,7 +25,6 @@ import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { Tooltip } from '../widgets/tooltip'
 import { sortAnswers } from 'common/answer'
 import { removeEmojis } from 'common/util/string'
-import { useABTest } from 'web/hooks/use-ab-test'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { track } from 'web/lib/service/analytics'
 import { TierTooltip } from '../tiers/tier-tooltip'
@@ -79,7 +78,6 @@ function ContractRow(props: {
 }) {
   const contract = useLiveContract(props.contract)
 
-  const answersABTest = useABTest('show answers in browse', ['show', 'hide'])
   const { columns, hideAvatar, highlighted, faded, onClick } = props
   return (
     <Link
@@ -120,11 +118,6 @@ function ContractRow(props: {
           ))}
         </Row>
       </div>
-      {answersABTest === 'show' &&
-        contract.outcomeType == 'MULTIPLE_CHOICE' &&
-        contract.mechanism == 'cpmm-multi-1' && (
-          <ContractAnswers contract={contract} />
-        )}
     </Link>
   )
 }
