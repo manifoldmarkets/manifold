@@ -7,7 +7,7 @@ import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { registerDiscordId } from 'web/lib/firebase/api'
+import { registerDiscordId } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 const SUCCESS_MESSAGE =
   'Success! You can now bet with our discord bot using emoji reactions. You can close this page.'

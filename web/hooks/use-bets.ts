@@ -6,7 +6,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useApiSubscription } from './use-api-subscription'
 import { usePollUserBalances } from './use-user'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { APIParams } from 'common/api/schema'
 import { useIsPageVisible } from './use-page-visible'
 

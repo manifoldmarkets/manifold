@@ -2,7 +2,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-import { claimManalink } from 'web/lib/firebase/api'
+import { claimManalink } from 'web/lib/api/api'
 import {
   ManalinkInfo,
   getManalink,

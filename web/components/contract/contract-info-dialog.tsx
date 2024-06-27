@@ -20,7 +20,7 @@ import {
   api,
   updateMarket,
   updateUserDisinterestEmbedding,
-} from 'web/lib/firebase/api'
+} from 'web/lib/api/api'
 import { formatTime } from 'web/lib/util/time'
 import { Button } from '../buttons/button'
 import { CopyLinkOrShareButton } from '../buttons/copy-link-button'

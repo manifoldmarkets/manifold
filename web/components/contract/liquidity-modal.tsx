@@ -5,7 +5,7 @@ import {
 } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useState } from 'react'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Button } from '../buttons/button'

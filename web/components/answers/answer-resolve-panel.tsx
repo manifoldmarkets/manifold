@@ -8,7 +8,7 @@ import {
   canCancelContract,
 } from 'common/contract'
 import { Col } from '../layout/col'
-import { APIError, api } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/api/api'
 import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../bet/yes-no-selector'
 import { ResolveConfirmationButton } from '../buttons/confirmation-button'

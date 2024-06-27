@@ -17,7 +17,7 @@ import {
   ParentNotificationHeader,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-helpers'
-import { api, markAllNotifications } from 'web/lib/firebase/api'
+import { api, markAllNotifications } from 'web/lib/api/api'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'

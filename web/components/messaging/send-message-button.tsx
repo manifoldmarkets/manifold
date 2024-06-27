@@ -15,7 +15,7 @@ import { Col } from 'web/components/layout/col'
 import {
   createPrivateMessageChannelWithUsers,
   sendUserPrivateMessage,
-} from 'web/lib/firebase/api'
+} from 'web/lib/api/api'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'

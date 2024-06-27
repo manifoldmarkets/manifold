@@ -1,5 +1,5 @@
 import { DashboardLinkItem, DashboardQuestionItem } from 'common/dashboard'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import Custom404 from '../404'
 import { fetchLinkPreviews } from 'common/link-preview'
 import { DashboardPage } from 'web/components/dashboard/dashboard-page'

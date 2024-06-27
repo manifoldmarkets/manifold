@@ -13,7 +13,7 @@ import {
   historyStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { supabaseSearchDashboards } from 'web/lib/firebase/api'
+import { supabaseSearchDashboards } from 'web/lib/api/api'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from '../widgets/input'

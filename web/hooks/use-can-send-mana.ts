@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { canSendMana } from 'common/can-send-mana'
 import { User } from 'common/user'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export const useCanSendMana = (user: User) => {
   const [canSend, setCanSend] = useState({

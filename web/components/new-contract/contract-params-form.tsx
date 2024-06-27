@@ -36,7 +36,7 @@ import {
   api,
   getSimilarGroupsToContract,
   searchContracts,
-} from 'web/lib/firebase/api'
+} from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { getGroup, getGroupFromSlug } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'

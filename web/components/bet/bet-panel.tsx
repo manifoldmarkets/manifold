@@ -27,7 +27,7 @@ import {
 } from 'common/util/format'
 import { computeCpmmBet } from 'common/new-bet'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { APIError, api } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/api/api'
 import { BuyAmountInput } from '../widgets/amount-input'
 
 import { useFocus } from 'web/hooks/use-focus'

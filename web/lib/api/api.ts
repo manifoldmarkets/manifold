@@ -1,4 +1,4 @@
-import { auth } from './users'
+import { auth } from '../firebase/users'
 import { getApiUrl } from 'common/api/utils'
 import { JSONContent } from '@tiptap/core'
 import { Group, PrivacyStatusType } from 'common/group'

@@ -1,4 +1,4 @@
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { DashboardLinkItem, DashboardQuestionItem } from 'common/dashboard'
 import { fetchLinkPreviews } from 'common/link-preview'
 import { getContracts } from 'web/lib/supabase/contracts'

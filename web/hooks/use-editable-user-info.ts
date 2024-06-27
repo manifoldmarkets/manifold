@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { APIError } from 'common/api/utils'
 import { User } from 'common/user'
-import { updateUser } from 'web/lib/firebase/api'
+import { updateUser } from 'web/lib/api/api'
 
 type UserInfoState = {
   name: string

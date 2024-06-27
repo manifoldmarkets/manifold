@@ -1,7 +1,7 @@
 import { db } from './db'
 import { run, selectFrom } from 'common/supabase/utils'
 import { type User } from 'common/user'
-import { APIError, api } from '../firebase/api'
+import { APIError, api } from '../api/api'
 import { DAY_MS, WEEK_MS } from 'common/util/time'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 export type { DisplayUser } from 'common/api/user-types'

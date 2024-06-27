@@ -7,7 +7,7 @@ import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
 import { Input } from '../widgets/input'
 import { Title } from '../widgets/title'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export function DeleteYourselfButton(props: { username: string }) {
   const { username } = props
