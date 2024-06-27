@@ -27,31 +27,7 @@ import { useNativeMessages } from 'web/hooks/use-native-messages'
 
 const body = {
   ...exampleCustomers[2],
-  // MerchantCustomerID: '11',
 }
-//   {
-//   EmailAddress: 'gochanman@yahoo.com',
-//   MobilePhoneNumber: '4042818372',
-//   DeviceIpAddress: '149.40.50.57',
-//   FirstName: 'Coreyy',
-//   LastName: 'Chandler',
-//   DateOfBirth: '09/28/1987',
-//   CitizenshipCountryCode: 'US',
-//   IdentificationTypeCode: 2,
-//   IdentificationNumber: '123456789',
-//   AddressLine1: '66 Forest Street',
-//   City: 'Reading',
-//   StateCode: 'MA',
-//   PostalCode: '01867',
-//   DeviceGPS: {
-//     Latitude: 39.615342,
-//     Longitude: -112.183449,
-//     Radius: 11.484,
-//     Altitude: 0,
-//     Speed: 0,
-//     DateTime: new Date().toISOString(),
-//   },
-// }
 
 const colClass = 'gap-3 p-4'
 const bottomRowClass = 'mb-4 mt-4 w-full gap-16'
@@ -59,7 +35,6 @@ const bottomRowClass = 'mb-4 mt-4 w-full gap-16'
 export const RegisterUserForm = (props: { user: User }) => {
   const user = useWebsocketUser(props.user.id) ?? props.user
   const router = useRouter()
-  // TODO: After development, if user is verified, redirect to the final page
   const [page, setPage] = useState(
     user.kycStatus === 'verified' || user.kycStatus === 'pending'
       ? 1000

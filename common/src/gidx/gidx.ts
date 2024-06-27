@@ -213,9 +213,6 @@ export const exampleCustomers = [
     StateCode: 'VT',
     PostalCode: '05495',
     DeviceGPS: {
-      // utah (blocked):
-      // Latitude: 40.7608,
-      // Longitude: -111.891,
       Latitude: 44.064107,
       Longitude: -72.545022,
       Radius: 11.484,
