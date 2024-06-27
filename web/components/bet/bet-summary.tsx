@@ -2,7 +2,7 @@ import clsx from 'clsx'
 
 import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
-import { Contract } from 'web/lib/firebase/contracts'
+import { Contract } from 'common/contract'
 import { Row } from '../layout/row'
 import { YesLabel, NoLabel } from '../outcome-label'
 import { getContractBetMetrics, getProbability } from 'common/calculate'
