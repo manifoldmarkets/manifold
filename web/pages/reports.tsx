@@ -23,7 +23,7 @@ const updateModReport = async (
   }
 }
 
-const ReportsPage = () => {
+export default function ReportsPage() {
   const isAdminOrMod = useAdminOrMod()
   const {
     reports: modReports,
@@ -143,5 +143,3 @@ const ReportsPage = () => {
     </Page>
   )
 }
-
-export default ReportsPage
