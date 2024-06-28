@@ -53,6 +53,7 @@ export async function getElectionsPageProps() {
     // 'who-will-be-the-democratic-nominee-9d4a78f63ce1',
     // 'who-would-win-the-us-presidential-e-e43c62c31980',
     // 'who-would-win-the-us-presidential-e-2f4e0b318013',
+    'who-would-win-the-presidential-elec',
   ]
   const contractsPromises = specialContractSlugs.map(async (slug) =>
     getContract(slug)
@@ -67,7 +68,7 @@ export async function getElectionsPageProps() {
     republicanVPContract,
     houseContract,
     // democraticVPContract,
-    // democraticElectability,
+    democraticElectability,
     // republicanElectability,
   ] = await Promise.all(contractsPromises)
 
@@ -108,7 +109,7 @@ export async function getElectionsPageProps() {
     newHampshireContract,
     republicanVPContract,
     // democraticVPContract,
-    // democraticElectability,
+    democraticElectability,
     // republicanElectability,
     linkPreviews,
     newsDashboards,
