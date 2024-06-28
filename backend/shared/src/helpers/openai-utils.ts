@@ -7,7 +7,7 @@ export const generateEmbeddings = async (question: string) => {
   let response
   try {
     response = await openai.embeddings.create({
-      model: 'text-embedding-ada-002',
+      model: 'text-embedding-3-small',
       input: question,
     })
   } catch (e: any) {
