@@ -4,15 +4,12 @@
   "workspaces": [
     "common",
     "backend/api",
+    "backend/discord-bot",
     "backend/functions",
     "backend/scheduler",
-    "backend/replicator",
     "backend/scripts",
     "backend/shared",
-    "web",
-    "love",
-    "backend/discord-bot",
-    "politics"
+    "web"
   ],
   "scripts": {
     "verify": "yarn --cwd=common verify:dir; yarn --cwd=web verify:dir; yarn --cwd=backend/functions verify:dir; yarn --cwd=backend/shared verify:dir",

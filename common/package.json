@@ -8,7 +8,9 @@
     "alias": "tsc-alias",
     "verify": "yarn --cwd=.. verify",
     "verify:dir": "npx eslint . --max-warnings 0",
-    "test": "jest"
+    "test": "jest",
+    "regen-types": "supabase gen types typescript --project-id pxidrgkatumlvfqaxcll --schema public > ./src/supabase/schema.ts && npx prettier --write ./src/supabase/schema.ts",
+    "regen-types-dev": "supabase gen types typescript --project-id mfodonznyfxllcezufgr --schema public > ./src/supabase/schema.ts && npx prettier --write ./src/supabase/schema.ts"
   },
   "sideEffects": false,
   "dependencies": {
