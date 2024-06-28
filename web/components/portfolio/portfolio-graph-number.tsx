@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { PortfolioMode } from './portfolio-value-graph'
-import { PortfolioHoveredGraphType } from './portfolio-value-section'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { Col } from '../layout/col'
 

@@ -26,10 +26,8 @@ import { PortfolioGraphNumber } from './portfolio-graph-number'
 import { PortfolioTab } from './portfolio-tabs'
 import {
   GraphMode,
-  MANA_COLOR,
   PortfolioGraph,
   PortfolioMode,
-  SPICE_COLOR,
 } from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
 

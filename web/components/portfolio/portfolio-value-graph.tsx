@@ -1,17 +1,14 @@
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { curveLinear } from 'd3-shape'
 import dayjs from 'dayjs'
-import { max, min } from 'lodash'
 import { useLayoutEffect, useMemo } from 'react'
 import { SingleValueHistoryChart } from 'web/components/charts/generic-charts'
 import { Period } from 'common/period'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { ZoomParams } from '../charts/helpers'
 import { Col } from '../layout/col'
-import { PortfolioChart } from './portfolio-chart'
 import {
   GraphValueType,
-  PortfolioHoveredGraphType,
   emptyGraphValues,
 } from './portfolio-value-section'
 import { findMinMax } from 'web/lib/util/minMax'
