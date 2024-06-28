@@ -98,7 +98,9 @@ export const getBetsWithFilter = async (
     select('contract_bets.*'),
     from('contract_bets'),
     ...conditions,
-    order && orderBy(`contract_bets.created_time ${order.toUpperCase()}`),
+    orderBy(
+      `contract_bets.created_time ${order ? order.toLowerCase() : 'desc'}`
+    ),
     limitValue && limit(limitValue)
   )
   // console.log('getBetsWithFilter query:\n', query)
