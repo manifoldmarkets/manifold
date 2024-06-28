@@ -35,7 +35,6 @@ import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
 import { BinaryDigit, TierParamsType } from 'common/tier'
-import { useUser } from 'web/hooks/use-user'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Spacer } from './layout/spacer'
 
@@ -228,7 +227,6 @@ export function SupabaseSearch(props: {
     setTopicSlug,
   } = props
 
-  const user = useUser()
   const isMobile = useIsMobile()
 
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({

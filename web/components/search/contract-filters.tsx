@@ -140,6 +140,56 @@ export function ContractFilters(props: {
         <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
           <FaSliders className="h-4 w-4" />
         </IconButton>
+        {sortItems.map((sortValue) => (
+          <FilterPill
+            key={sortValue}
+            selected={sortValue === sort}
+            onSelect={() => {
+              if (sort === sortValue) {
+                selectSort(DEFAULT_SORT)
+              } else {
+                selectSort(sortValue as Sort)
+              }
+            }}
+            type="sort"
+          >
+            {getLabelFromValue(SORTS, sortValue)}
+          </FilterPill>
+        ))}
+        {user && !topicSlug && (
+          <FilterPill
+            selected={forYou}
+            onSelect={() => {
+              updateParams({
+                [FOR_YOU_KEY]: forYou ? '0' : '1',
+              })
+            }}
+            type="sort"
+          >
+            For You
+          </FilterPill>
+        )}
+        {isPrizeMarketString === '1' && (
+          <FilterPill
+            selected={isPrizeMarketString === '1'}
+            onSelect={togglePrizeMarket}
+            type="spice"
+            className="gap-1"
+          >
+            <div className="flex w-4 items-center">
+              <SpiceCoin
+                className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
+              />
+            </div>
+            Prize
+          </FilterPill>
+        )}
+        {!hideFilter && currentTiers !== '00000' && (
+          <TierDropdownPill
+            toggleTier={toggleTier}
+            currentTiers={currentTiers}
+          />
+        )}
         {nonDefaultFilter && (
           <AdditionalFilterPill
             type="filter"
@@ -163,54 +213,6 @@ export function ContractFilters(props: {
           >
             {contractTypeLabel}
           </AdditionalFilterPill>
-        )}
-        {user && !topicSlug && (
-          <FilterPill
-            selected={forYou}
-            onSelect={() => {
-              updateParams({
-                [FOR_YOU_KEY]: forYou ? '0' : '1',
-              })
-            }}
-            type="sort"
-          >
-            For You
-          </FilterPill>
-        )}
-        {sortItems.map((sortValue) => (
-          <FilterPill
-            key={sortValue}
-            selected={sortValue === sort}
-            onSelect={() => {
-              if (sort === sortValue) {
-                selectSort(DEFAULT_SORT)
-              } else {
-                selectSort(sortValue as Sort)
-              }
-            }}
-            type="sort"
-          >
-            {getLabelFromValue(SORTS, sortValue)}
-          </FilterPill>
-        ))}
-        <FilterPill
-          selected={isPrizeMarketString === '1'}
-          onSelect={togglePrizeMarket}
-          type="spice"
-          className="gap-1"
-        >
-          <div className="flex w-4 items-center">
-            <SpiceCoin
-              className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
-            />
-          </div>
-          Prize
-        </FilterPill>
-        {!hideFilter && (
-          <TierDropdownPill
-            toggleTier={toggleTier}
-            currentTiers={currentTiers}
-          />
         )}
         {!hideFilter &&
           DEFAULT_FILTERS.map((filterValue) => (
