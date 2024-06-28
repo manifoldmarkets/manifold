@@ -116,7 +116,7 @@ export const CONTRACT_TYPES = [
 ] as const
 
 export const DEFAULT_SORT = 'score'
-export const DEFAULT_SORTS = ['score', 'freshness-score']
+export const DEFAULT_SORTS = ['freshness-score']
 export const DEFAULT_BOUNTY_SORTS = ['bounty-amount', 'newest']
 export const DEFAULT_POLL_SORTS = ['newest']
 
@@ -125,6 +125,8 @@ export const DEFAULT_FILTER = 'all'
 
 export const DEFAULT_CONTRACT_TYPE = 'ALL'
 export const DEFAULT_CONTRACT_TYPES = []
+
+export const DEFAULT_TIER = '00000'
 
 export type ContractTypeType = (typeof CONTRACT_TYPES)[number]['value']
 type SearchType = 'Users' | 'Questions' | undefined
@@ -681,7 +683,7 @@ const useSearchQueryState = (props: {
     useUrlParams,
     defaultPrizeMarket = '0',
     defaultForYou = '0',
-    defaultMarketTier = '00000',
+    defaultMarketTier = DEFAULT_TIER,
   } = props
 
   const [lastSort, setLastSort, localStateReady] =

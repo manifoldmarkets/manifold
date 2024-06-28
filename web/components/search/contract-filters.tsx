@@ -22,6 +22,7 @@ import {
   DEFAULT_POLL_SORTS,
   DEFAULT_SORT,
   DEFAULT_SORTS,
+  DEFAULT_TIER,
   FILTERS,
   FOR_YOU_KEY,
   Filter,
@@ -39,6 +40,11 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { TierDropdownPill } from './filter-pills'
 import { useUser } from 'web/hooks/use-user'
+import {
+  CrystalTier,
+  PlusTier,
+  PremiumTier,
+} from 'web/public/custom-components/tiers'
 
 export function ContractFilters(props: {
   className?: string
@@ -96,15 +102,6 @@ export function ContractFilters(props: {
     })
   }
 
-  const toggleTier = (tier: MarketTierType) => {
-    const tierIndex = tiers.indexOf(tier)
-    if (tierIndex >= 0 && tierIndex < currentTiers.length) {
-      const tiersArray = currentTiers.split('')
-      tiersArray[tierIndex] = tiersArray[tierIndex] === '0' ? '1' : '0'
-      updateParams({ mt: tiersArray.join('') as TierParamsType })
-    }
-  }
-
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -133,6 +130,15 @@ export function ContractFilters(props: {
 
   const forYou = params[FOR_YOU_KEY] === '1'
   const user = useUser()
+
+  const toggleTier = (tier: MarketTierType) => {
+    const tierIndex = tiers.indexOf(tier)
+    if (tierIndex >= 0 && tierIndex < currentTiers.length) {
+      const tiersArray = currentTiers.split('')
+      tiersArray[tierIndex] = tiersArray[tierIndex] === '0' ? '1' : '0'
+      updateParams({ mt: tiersArray.join('') as TierParamsType })
+    }
+  }
 
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
@@ -184,11 +190,29 @@ export function ContractFilters(props: {
             Prize
           </FilterPill>
         )}
-        {!hideFilter && currentTiers !== '00000' && (
-          <TierDropdownPill
-            toggleTier={toggleTier}
-            currentTiers={currentTiers}
-          />
+        {!hideFilter && currentTiers !== DEFAULT_TIER && (
+          <AdditionalFilterPill
+            type="filter"
+            onXClick={() =>
+              updateParams({ mt: DEFAULT_TIER as TierParamsType })
+            }
+          >
+            <Row className="items-center py-[3px]">
+              {currentTiers.split('').map((tier, index) => {
+                if (tier === '1') {
+                  if (tiers[index] == 'plus') {
+                    return <PlusTier key={index} />
+                  }
+                  if (tiers[index] == 'premium') {
+                    return <PremiumTier key={index} />
+                  }
+                  if (tiers[index] == 'crystal') {
+                    return <CrystalTier key={index} />
+                  }
+                }
+              })}
+            </Row>
+          </AdditionalFilterPill>
         )}
         {nonDefaultFilter && (
           <AdditionalFilterPill
@@ -256,6 +280,7 @@ export function ContractFilters(props: {
         selectSort={selectSort}
         selectContractType={selectContractType}
         togglePrizeMarket={togglePrizeMarket}
+        toggleTier={toggleTier}
         hideFilter={hideFilter}
       />
     </Col>
@@ -270,6 +295,7 @@ function FilterModal(props: {
   selectSort: (selection: Sort) => void
   selectContractType: (selection: ContractTypeType) => void
   togglePrizeMarket: () => void
+  toggleTier: (tier: MarketTierType) => void
   hideFilter: boolean
 }) {
   const {
@@ -280,6 +306,7 @@ function FilterModal(props: {
     selectContractType,
     selectSort,
     togglePrizeMarket,
+    toggleTier,
     hideFilter,
   } = props
   const {
@@ -287,6 +314,7 @@ function FilterModal(props: {
     f: filter,
     ct: contractType,
     p: isPrizeMarketString,
+    mt: currentTiers,
   } = params
 
   const sortItems =
@@ -320,6 +348,10 @@ function FilterModal(props: {
                   Prize
                 </Row>
               </FilterPill>
+              <TierDropdownPill
+                toggleTier={toggleTier}
+                currentTiers={currentTiers}
+              />
               {!hideFilter &&
                 FILTERS.map(({ label: filterLabel, value: filterValue }) => (
                   <FilterPill

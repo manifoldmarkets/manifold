@@ -208,7 +208,7 @@ export function GroupPageContent(props: {
       topicSlug={topicSlug}
       defaultFilter="open"
       defaultSort="score"
-      defaultForYou="1"
+      defaultForYou="0"
       shownTopics={shownTopics}
       setTopicSlug={(slug) => {
         setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
