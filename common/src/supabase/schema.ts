@@ -924,39 +924,6 @@ export type Database = {
         }
         Relationships: []
       }
-      incoming_writes: {
-        Row: {
-          data: Json | null
-          doc_id: string
-          event_id: string | null
-          id: number
-          parent_id: string | null
-          table_id: string
-          ts: string
-          write_kind: string
-        }
-        Insert: {
-          data?: Json | null
-          doc_id: string
-          event_id?: string | null
-          id?: never
-          parent_id?: string | null
-          table_id: string
-          ts: string
-          write_kind: string
-        }
-        Update: {
-          data?: Json | null
-          doc_id?: string
-          event_id?: string | null
-          id?: never
-          parent_id?: string | null
-          table_id?: string
-          ts?: string
-          write_kind?: string
-        }
-        Relationships: []
-      }
       league_chats: {
         Row: {
           channel_id: string
@@ -2182,6 +2149,27 @@ export type Database = {
         }
         Relationships: []
       }
+      sent_emails: {
+        Row: {
+          created_time: string
+          email_template_id: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_time?: string
+          email_template_id: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          created_time?: string
+          email_template_id?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
       stats: {
         Row: {
           daily_values: number[] | null
@@ -2194,30 +2182,6 @@ export type Database = {
         Update: {
           daily_values?: number[] | null
           title?: string
-        }
-        Relationships: []
-      }
-      tombstones: {
-        Row: {
-          doc_id: string
-          fs_deleted_at: string
-          id: number
-          parent_id: string | null
-          table_id: string
-        }
-        Insert: {
-          doc_id: string
-          fs_deleted_at: string
-          id?: never
-          parent_id?: string | null
-          table_id: string
-        }
-        Update: {
-          doc_id?: string
-          fs_deleted_at?: string
-          id?: never
-          parent_id?: string | null
-          table_id?: string
         }
         Relationships: []
       }
@@ -3705,12 +3669,6 @@ export type Database = {
           total: number
         }[]
       }
-      get_document_table_spec: {
-        Args: {
-          table_id: string
-        }
-        Returns: Database['public']['CompositeTypes']['table_spec']
-      }
       get_donations_by_charity: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -4297,12 +4255,6 @@ export type Database = {
           n: number
         }[]
       }
-      replicate_writes_process_one: {
-        Args: {
-          r: unknown
-        }
-        Returns: boolean
-      }
       sample_resolved_bets: {
         Args: {
           trader_threshold: number
@@ -4671,10 +4623,6 @@ export type Database = {
         gender: string | null
         city: string | null
         data: Json | null
-      }
-      table_spec: {
-        parent_id_col_name: string | null
-        id_col_name: string | null
       }
     }
   }
