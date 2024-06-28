@@ -315,7 +315,7 @@ function BetsTable(props: {
     [
       { sort: 'newest', label: 'Time', enabled: true },
       { sort: 'value', label: 'Value', enabled: true },
-      { sort: 'position', label: 'Position', enabled: true },
+      { sort: 'position', label: 'Position', enabled: false },
       { sort: 'profit', label: 'Profit', enabled: true },
       { sort: 'day', label: '1d', enabled: true },
       { sort: 'week', label: '1w', enabled: true },
