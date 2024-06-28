@@ -146,8 +146,6 @@ export const PortfolioGraph = (props: {
       }
     }
   }, [duration, portfolioFocus, mode])
-  console.log(minValue, maxValue)
-
   const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
   const yScale = scaleLinear(
@@ -216,7 +214,6 @@ export const PortfolioGraph = (props: {
       />
     )
   }
-  // }
   return (
     <SingleValueHistoryChart
       w={width}
