@@ -6,7 +6,11 @@ import { getContractBetNullMetrics } from 'common/calculate'
 import { contractPath, CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { buildArray } from 'common/util/array'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import {
+  formatMoney,
+  maybePluralize,
+  shortFormatNumber,
+} from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import { Input } from 'web/components/widgets/input'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
@@ -642,7 +646,7 @@ function BetsTable(props: {
             )
           )}
           {isMobile && (
-            <div className="absolute bottom-1 right-0">
+            <div className="absolute bottom-1.5 right-0">
               <DropdownMenu
                 menuWidth="w-32"
                 items={[
@@ -799,7 +803,16 @@ function BetsTable(props: {
       />
       <Modal setOpen={setModalOpen} open={modalOpen}>
         <div className={MODAL_CLASS}>
-          <span className="mb-4 text-lg font-bold">Select 5 columns</span>
+          <span className="mb-4 text-lg font-bold">
+            {columns.filter((c) => c.enabled).length === 5
+              ? 'Unselect a column to select another'
+              : `Select ${
+                  5 - columns.filter((c) => c.enabled).length
+                } more ${maybePluralize(
+                  'column',
+                  5 - columns.filter((c) => c.enabled).length
+                )} (max 5)`}
+          </span>
           {columns.map((col) => (
             <div key={col.sort}>
               <div className="mb-2 flex items-center">
@@ -807,7 +820,7 @@ function BetsTable(props: {
                   type="checkbox"
                   disabled={
                     !col.enabled &&
-                    sum(columns.filter((c) => c.enabled)) > MAX_SHOWN_MOBILE
+                    columns.filter((c) => c.enabled).length >= MAX_SHOWN_MOBILE
                   }
                   checked={col.enabled}
                   onChange={() => handleColumnToggle(col.sort)}
