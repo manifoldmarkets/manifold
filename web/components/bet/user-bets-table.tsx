@@ -35,13 +35,16 @@ import { linkClass } from '../widgets/site-link'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
-import { IconButton } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { ChevronUpIcon } from '@heroicons/react/solid'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserLink } from 'web/components/widgets/user-link'
 import { UserHovercard } from 'web/components/user/user-hovercard'
 import { Avatar } from 'web/components/widgets/avatar'
+import DropdownMenu from '../comments/dropdown-menu'
+import { BsThreeDotsVertical } from 'react-icons/bs'
+import { MODAL_CLASS, Modal } from '../layout/modal'
 
 type BetSort =
   | 'newest'
@@ -300,6 +303,39 @@ function BetsTable(props: {
     setPage(0)
   }
 
+  type ColumnHeader = {
+    sort: BetSort
+    label: string
+    enabled: boolean
+    altSort?: BetSort
+    placeholder?: boolean
+  }
+
+  const [columns, setColumns] = usePersistentLocalState<ColumnHeader[]>(
+    [
+      { sort: 'newest', label: 'Time', enabled: true },
+      { sort: 'value', label: 'Value', enabled: true },
+      { sort: 'position', label: 'Position', enabled: true },
+      { sort: 'profit', label: 'Profit', enabled: true },
+      { sort: 'day', label: '1d', enabled: true },
+      { sort: 'week', label: '1w', enabled: true },
+      { sort: 'closeTime', label: 'Close', enabled: true },
+    ],
+    'user-bet-table-columns'
+  )
+  const isEnabled = (sort: BetSort) =>
+    !isMobile || columns.find((col) => col.sort === sort)?.enabled
+
+  const handleColumnToggle = (sort: BetSort) => {
+    setColumns((prevConfigs) =>
+      prevConfigs.map((config) =>
+        config.sort === sort ? { ...config, enabled: !config.enabled } : config
+      )
+    )
+  }
+
+  const [modalOpen, setModalOpen] = useState(false)
+
   // Most of these are descending sorts by default.
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     position: (c) => -sum(Object.values(metricsByContractId[c.id].totalShares)),
@@ -340,18 +376,13 @@ function BetsTable(props: {
   const isMobile = useIsMobile(600)
 
   const dataColumns: {
-    header: {
-      sort: BetSort
-      label: string
-      altSort?: BetSort
-      placeholder?: boolean
-    }
+    header: ColumnHeader
     span: number
     renderCell: (c: Contract) => ReactNode
     headerBuddy?: ReactNode
   }[] = buildArray([
     {
-      header: { sort: 'newest', label: 'Time' },
+      header: columns[0],
       span: isMobile ? 2 : 1,
       renderCell: (c: Contract) => (
         <Row className={'justify-start'}>
@@ -364,7 +395,7 @@ function BetsTable(props: {
       ),
     },
     {
-      header: { sort: 'value', label: 'Value' },
+      header: columns[1],
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => {
         const maxOutcome = metricsByContractId[c.id].maxSharesOutcome
@@ -386,15 +417,15 @@ function BetsTable(props: {
       },
     },
 
-    !isMobile && {
-      header: { sort: 'position', label: 'Position' },
+    {
+      header: columns[2],
       span: 3,
       renderCell: (c: Contract) => {
         const maxOutcome = metricsByContractId[c.id].maxSharesOutcome
         const showOutcome = maxOutcome && c.outcomeType === 'BINARY'
         return (
           <Row className={clsx('justify-end gap-1')}>
-            {showOutcome && (
+            {showOutcome && isMobile && !isEnabled('value') && (
               <OutcomeLabel
                 contract={c}
                 outcome={maxOutcome}
@@ -409,9 +440,10 @@ function BetsTable(props: {
           </Row>
         )
       },
+      headerBuddy: isMobile && <div className="-mr-2" />,
     },
     {
-      header: { sort: 'profit', altSort: 'profitPercent', label: 'Profit' },
+      header: { ...columns[3], altSort: 'profitPercent' },
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => {
         const cm = metricsByContractId[c.id]
@@ -458,8 +490,13 @@ function BetsTable(props: {
         </button>
       ),
     },
-    !isMobile && {
-      header: { sort: 'profitPercent', label: '', placeholder: true },
+    {
+      header: {
+        sort: 'profitPercent',
+        label: '',
+        placeholder: true,
+        enabled: true,
+      },
       span: 1,
       renderCell: (c: Contract) => {
         const cm = metricsByContractId[c.id]
@@ -476,7 +513,7 @@ function BetsTable(props: {
       },
     },
     {
-      header: { sort: 'day', label: '1d' },
+      header: columns[4],
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => (
         <NumberCell
@@ -486,7 +523,7 @@ function BetsTable(props: {
       ),
     },
     {
-      header: { sort: 'week', label: '1w' },
+      header: columns[5],
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => (
         <NumberCell
@@ -495,9 +532,9 @@ function BetsTable(props: {
         />
       ),
     },
-    !isMobile && {
-      header: { sort: 'closeTime', label: 'Close' },
-      span: 2,
+    {
+      header: columns[6],
+      span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => {
         const closeTime = c.resolutionTime ?? c.closeTime
         const date = new Date(closeTime ?? Infinity)
@@ -558,17 +595,21 @@ function BetsTable(props: {
           (c.outcomeType === 'BINARY' ? '' : '%')
       : ''
   }
+  const MAX_SHOWN_MOBILE = 5
+  const columnsToDisplay = dataColumns
+    .filter((c) => isEnabled(c.header.sort))
+    .slice(0, isMobile ? MAX_SHOWN_MOBILE : 10)
 
   return (
     <Col className="mb-4 flex-1 gap-4">
       <Col className={'w-full'}>
         <div
           className={clsx(
-            'grid-cols-15 bg-canvas-50 sticky z-10 grid w-full py-2 pr-1',
+            'grid-cols-15 bg-canvas-50 relative sticky z-10 grid w-full py-2 pr-1',
             isMobile ? 'top-12' : 'top-0' // Sets it below sticky user profile header on mobile
           )}
         >
-          {dataColumns.map((col) =>
+          {columnsToDisplay.map((col) =>
             col.header.placeholder ? (
               <span key={col.header.label} />
             ) : (
@@ -599,6 +640,20 @@ function BetsTable(props: {
                 {col.headerBuddy ? col.headerBuddy : null}
               </span>
             )
+          )}
+          {isMobile && (
+            <div className="absolute bottom-1 right-0">
+              <DropdownMenu
+                menuWidth="w-32"
+                items={[
+                  {
+                    name: 'Edit Columns',
+                    onClick: () => setModalOpen(true),
+                  },
+                ]}
+                icon={<BsThreeDotsVertical className="h-4" />}
+              />
+            </div>
           )}
         </div>
         {contracts
@@ -681,7 +736,7 @@ function BetsTable(props: {
                     className={'grid-cols-15 grid w-full'}
                     onClick={() => setNewExpandedId(contract.id)}
                   >
-                    {dataColumns.map((c) => (
+                    {columnsToDisplay.map((c) => (
                       <div
                         className={clsx(getColSpan(c.span))}
                         key={c.header.sort + contract.id + 'row'}
@@ -742,6 +797,28 @@ function BetsTable(props: {
         totalItems={contracts.length}
         setPage={setPage}
       />
+      <Modal setOpen={setModalOpen} open={modalOpen}>
+        <div className={MODAL_CLASS}>
+          <span className="mb-4 text-lg font-bold">Select 5 columns</span>
+          {columns.map((col) => (
+            <div key={col.sort}>
+              <div className="mb-2 flex items-center">
+                <input
+                  type="checkbox"
+                  disabled={
+                    !col.enabled &&
+                    sum(columns.filter((c) => c.enabled)) > MAX_SHOWN_MOBILE
+                  }
+                  checked={col.enabled}
+                  onChange={() => handleColumnToggle(col.sort)}
+                />
+                <label className="ml-2">{col.label}</label>
+              </div>
+            </div>
+          ))}
+          <Button onClick={() => setModalOpen(false)}>Done</Button>
+        </div>
+      </Modal>
     </Col>
   )
 }
