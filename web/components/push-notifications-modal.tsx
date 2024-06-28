@@ -1,6 +1,6 @@
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { PrivateUser, User } from 'common/user'
+import { PrivateUser, User, isVerified } from 'common/user'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { postMessageToNative } from 'web/lib/native/post-message'
@@ -73,17 +73,23 @@ export function PushNotificationsModal(props: {
   useEffect(() => {
     postMessageToNative('tryToGetPushTokenWithoutPrompt', {})
   }, [showSettingsDescription])
+  const verified = isVerified(user)
 
   if (!getIsNative()) return <div />
 
   return (
-    <Modal open={isOpen} setOpen={setOpen}>
+    <Modal open={true} setOpen={setOpen}>
       <Col className="bg-canvas-0 text-ink-1000 w-full justify-start gap-3 rounded-md px-8 py-6">
         <span className="text-primary-700 mb-2 text-2xl font-semibold">
-          Enable push notifications, earn{' '}
-          <span className={'text-teal-500'}>
-            {formatMoney(PUSH_NOTIFICATION_BONUS)}
-          </span>
+          Enable push notifications
+          {verified && (
+            <>
+              , earn{' '}
+              <span className={'text-teal-500'}>
+                {formatMoney(PUSH_NOTIFICATION_BONUS)}
+              </span>
+            </>
+          )}
         </span>
         {!showSettingsDescription && (
           <span className={'text-ink-700'}>
@@ -98,12 +104,14 @@ export function PushNotificationsModal(props: {
               <span>3. Search & tap Manifold</span>
               <span>2. Tap Notifications</span>
               <span>4. Tap Allow Notifications</span>
-              <span>
-                5. We'll send you{' '}
-                <span className={'font-semibold text-teal-500'}>
-                  {formatMoney(PUSH_NOTIFICATION_BONUS)}!
+              {verified && (
+                <span>
+                  5. We'll send you{' '}
+                  <span className={'font-semibold text-teal-500'}>
+                    {formatMoney(PUSH_NOTIFICATION_BONUS)}!
+                  </span>
                 </span>
-              </span>
+              )}
             </Col>
             <Button
               size={'xl'}
@@ -152,10 +160,16 @@ export function PushNotificationsModal(props: {
               }}
             >
               <span>
-                Enable notifications for{' '}
-                <span className={'ml-1 text-teal-400'}>
-                  {formatMoney(PUSH_NOTIFICATION_BONUS)}
-                </span>
+                Enable notifications
+                {verified && (
+                  <>
+                    {' '}
+                    for{' '}
+                    <span className={'ml-1 text-teal-400'}>
+                      {formatMoney(PUSH_NOTIFICATION_BONUS)}
+                    </span>
+                  </>
+                )}
               </span>
             </Button>
           </Col>
