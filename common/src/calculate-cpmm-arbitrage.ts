@@ -377,6 +377,7 @@ function calculateCpmmMultiArbitrageBetYes(
     collectedFees
   )
   if (!result) {
+    console.log('no result', result)
     throw new Error('Invariant failed in calculateCpmmMultiArbitrageBetYes')
   }
 
@@ -472,11 +473,14 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   // Identity: No shares in all other answers is equal to noShares * (n-2) mana + yes shares in answerToBuy (quantity: noShares)
   const redeemedAmount = noShares * (answers.length - 2)
   const netNoAmount = totalNoAmount - redeemedAmount
-  const yesBetAmount = betAmount - netNoAmount
-
+  let yesBetAmount = betAmount - netNoAmount
+  if (floatingEqual(yesBetAmount, 0)) {
+    yesBetAmount = 0
+  }
   if (yesBetAmount < 0) {
     return undefined
   }
+
   for (const noBetResult of noBetResults) {
     const redemptionFill = {
       matchedBetId: null,
@@ -655,11 +659,14 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
     }
   })
 
-  const noBetAmount = betAmount - totalYesAmount
-
+  let noBetAmount = betAmount - totalYesAmount
+  if (floatingEqual(noBetAmount, 0)) {
+    noBetAmount = 0
+  }
   if (noBetAmount < 0) {
     return undefined
   }
+
   for (const yesBetResult of yesBetResults) {
     const redemptionFill = {
       matchedBetId: null,

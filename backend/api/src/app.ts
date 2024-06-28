@@ -27,7 +27,6 @@ import { validateiap } from './validate-iap'
 import { markallnotifications } from './mark-all-notifications'
 import { updatememberrole } from './update-group-member-role'
 import { updategroupprivacy } from './update-group-privacy'
-import { addgroupmember } from './add-group-member'
 import { registerdiscordid } from './register-discord-id'
 import { getuserisgroupmember } from './get-user-is-group-member'
 import { completequest } from './complete-quest'
@@ -174,6 +173,7 @@ import { updatePrivateUser } from './update-private-user'
 import { setPushToken } from './push-token'
 import { updateNotifSettings } from './update-notif-settings'
 import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
+import { getMonitorStatus } from 'api/gidx/get-monitor-status'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -347,6 +347,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'upload-document-gidx': uploadDocument,
   'callback-gidx': callbackGIDX,
   'get-verification-documents-gidx': getVerificationDocuments,
+  'get-monitor-status-gidx': getMonitorStatus,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -386,7 +387,6 @@ app.post('/markallnotifications', ...apiRoute(markallnotifications))
 app.post('/updatememberrole', ...apiRoute(updatememberrole))
 app.post('/updategroupprivacy', ...apiRoute(updategroupprivacy))
 app.post('/registerdiscordid', ...apiRoute(registerdiscordid))
-app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/completequest', ...apiRoute(completequest))
 app.post(

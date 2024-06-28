@@ -9,7 +9,6 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { trackPublicEvent } from 'shared/analytics'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { GroupMember } from 'common/group-member'
-import { manifoldLoveRelationshipsGroupId } from 'common/love/constants'
 import { updateContract } from './supabase/contracts'
 
 export async function addGroupToContract(
@@ -117,9 +116,8 @@ export function canUserAddGroupToMarket(props: {
   group: GroupResponse
   contract?: Contract
   membership?: GroupMember
-  isLove?: boolean
 }) {
-  const { userId, group, contract, membership, isLove } = props
+  const { userId, group, contract, membership } = props
 
   const isMarketCreator = !contract || contract.creatorId === userId
   const isManifoldAdmin = isAdminId(userId)
@@ -128,8 +126,6 @@ export function canUserAddGroupToMarket(props: {
   const isMember = membership != undefined
   const isAdminOrMod =
     membership?.role === 'admin' || membership?.role === 'moderator'
-
-  if (isLove && group.id === manifoldLoveRelationshipsGroupId) return true
 
   return (
     isManifoldAdmin ||

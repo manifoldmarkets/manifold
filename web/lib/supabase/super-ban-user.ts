@@ -1,4 +1,4 @@
-import { api, banUser } from 'web/lib/firebase/api'
+import { api, banUser } from 'web/lib/api/api'
 
 async function superBanUser(userId: string) {
   let marketsStatus = "could not be unlisted nor N/A'd due to an unknown error"

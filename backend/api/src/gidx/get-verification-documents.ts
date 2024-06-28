@@ -1,7 +1,11 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { log } from 'shared/utils'
 import { getGIDXStandardParams } from 'shared/gidx/helpers'
-import { GIDX_REGISTATION_ENABLED, GIDXDocument } from 'common/gidx/gidx'
+import {
+  GIDX_DOCUMENTS_REQUIRED,
+  GIDX_REGISTATION_ENABLED,
+  GIDXDocument,
+} from 'common/gidx/gidx'
 
 export const getVerificationDocuments: APIHandler<
   'get-verification-documents-gidx'
@@ -50,7 +54,7 @@ export const getIdentityVerificationDocuments = async (userId: string) => {
   )
   const { Documents: documents } = data
 
-  const isRejected = (doc: GIDXDocument) =>
+  const docRejected = (doc: GIDXDocument) =>
     doc.DocumentStatus === 3 &&
     doc.DocumentNotes.length > 0 &&
     !doc.DocumentNotes.some((n) => n.NoteText == acceptDocText)
@@ -61,21 +65,49 @@ export const getIdentityVerificationDocuments = async (userId: string) => {
       doc.DocumentNotes.length > 0 &&
       doc.DocumentNotes.some((n) => n.NoteText == acceptDocText)
   )
-  const rejectedDocuments = documents.filter(isRejected)
+  const rejectedDocuments = documents.filter(docRejected)
   const unrejectedUtilityDocuments = documents.filter(
     (doc) =>
-      (doc.CategoryType === 7 || doc.CategoryType === 1) && !isRejected(doc)
+      (doc.CategoryType === 7 || doc.CategoryType === 1) && !docRejected(doc)
   )
   const unrejectedIdDocuments = documents.filter(
-    (doc) => doc.CategoryType != 7 && doc.CategoryType != 1 && !isRejected(doc)
+    (doc) => doc.CategoryType != 7 && doc.CategoryType != 1 && !docRejected(doc)
   )
+
+  const acceptedUtilityDocuments = unrejectedUtilityDocuments.filter(
+    (doc) => doc.DocumentStatus === 3
+  )
+  const acceptedIdDocuments = unrejectedIdDocuments.filter(
+    (doc) => doc.DocumentStatus === 3
+  )
+  const pendingDocuments = documents.filter((doc) => doc.DocumentStatus !== 3)
+
+  const isVerified =
+    acceptedDocuments.length >= GIDX_DOCUMENTS_REQUIRED &&
+    acceptedUtilityDocuments.length > 0 &&
+    acceptedIdDocuments.length > 0
+
+  const isPending =
+    !isVerified &&
+    acceptedDocuments.length + pendingDocuments.length >=
+      GIDX_DOCUMENTS_REQUIRED &&
+    unrejectedUtilityDocuments.length > 0 &&
+    unrejectedIdDocuments.length > 0
+
+  const isRejected =
+    !isVerified &&
+    !isPending &&
+    (rejectedDocuments.length > 0 ||
+      acceptedDocuments.length < GIDX_DOCUMENTS_REQUIRED)
 
   return {
     documents,
     rejectedDocuments,
-    acceptedDocuments,
     unrejectedUtilityDocuments,
     unrejectedIdDocuments,
+    isPending,
+    isVerified,
+    isRejected,
   }
 }
 

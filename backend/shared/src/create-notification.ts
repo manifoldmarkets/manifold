@@ -6,7 +6,6 @@ import {
   CommentNotificationData,
   ContractResolutionData,
   LeagueChangeData,
-  love_notification_source_types,
   Notification,
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
@@ -72,7 +71,6 @@ import { richTextToString } from 'common/util/parse'
 import { league_user_info } from 'common/leagues'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 import { getUserFollowerIds } from 'shared/supabase/users'
-import { isManifoldLoveContract } from 'common/love/constants'
 import { buildArray, filterDefined } from 'common/util/array'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
@@ -412,9 +410,7 @@ export const createNewAnswerOnContractNotification = async (
       createdTime: Date.now(),
       isSeen: false,
       sourceId,
-      sourceType: isManifoldLoveContract(sourceContract)
-        ? (`love_${sourceType}` as love_notification_source_types)
-        : sourceType,
+      sourceType,
       sourceUpdateType,
       sourceContractId: sourceContract.id,
       sourceUserName: sourceUser.name,

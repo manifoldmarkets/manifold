@@ -16,7 +16,7 @@ import { Select } from '../widgets/select'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkRow } from '../buttons/copy-link-button'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export function CreateLinksButton(props: {
   user: User

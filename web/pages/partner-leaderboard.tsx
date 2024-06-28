@@ -1,5 +1,5 @@
 import { APIResponse } from 'common/api/schema'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { PARTNER_USER_IDS } from 'common/envs/constants'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'

@@ -1,7 +1,7 @@
 import { CheckIcon, XIcon, PencilIcon } from '@heroicons/react/solid'
 import { Contract, MAX_QUESTION_LENGTH } from 'common/contract'
 import { useState } from 'react'
-import { updateMarket } from 'web/lib/firebase/api'
+import { updateMarket } from 'web/lib/api/api'
 import { IconButton } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Linkify } from '../widgets/linkify'

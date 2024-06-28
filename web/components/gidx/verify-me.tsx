@@ -6,7 +6,7 @@ import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { Button, buttonClass } from 'web/components/buttons/button'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { useWebsocketUser } from 'web/hooks/use-user'
 import {
   GIDX_REGISTATION_ENABLED,

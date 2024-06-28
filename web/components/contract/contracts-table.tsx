@@ -1,7 +1,11 @@
-import { EyeOffIcon } from '@heroicons/react/solid'
+import {
+  ArrowNarrowDownIcon,
+  ArrowNarrowUpIcon,
+  EyeOffIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
-import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatMoney, formatPercentShort } from 'common/util/format'
@@ -23,9 +27,7 @@ import {
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { Tooltip } from '../widgets/tooltip'
-import { sortAnswers } from 'common/answer'
 import { removeEmojis } from 'common/util/string'
-import { useABTest } from 'web/hooks/use-ab-test'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { track } from 'web/lib/service/analytics'
 import { TierTooltip } from '../tiers/tier-tooltip'
@@ -79,7 +81,6 @@ function ContractRow(props: {
 }) {
   const contract = useLiveContract(props.contract)
 
-  const answersABTest = useABTest('show answers in browse', ['show', 'hide'])
   const { columns, hideAvatar, highlighted, faded, onClick } = props
   return (
     <Link
@@ -120,11 +121,6 @@ function ContractRow(props: {
           ))}
         </Row>
       </div>
-      {answersABTest === 'show' &&
-        contract.outcomeType == 'MULTIPLE_CHOICE' &&
-        contract.mechanism == 'cpmm-multi-1' && (
-          <ContractAnswers contract={contract} />
-        )}
     </Link>
   )
 }
@@ -155,10 +151,11 @@ export function isClosed(contract: Contract) {
 
 export function ContractStatusLabel(props: {
   contract: Contract
+  showProbChange?: boolean
   chanceLabel?: boolean
   className?: string
 }) {
-  const { contract, chanceLabel, className } = props
+  const { contract, showProbChange, chanceLabel, className } = props
   const probTextColor = getTextColor(contract)
   const { outcomeType } = contract
 
@@ -172,8 +169,22 @@ export function ContractStatusLabel(props: {
           />
         </span>
       ) : (
-        <span className={clsx(probTextColor, className)}>
+        <span className={clsx(probTextColor, 'whitespace-nowrap', className)}>
           {formatPercentShort(getDisplayProbability(contract))}
+          {showProbChange &&
+            Math.round(contract.probChanges.day * 100) !== 0 && (
+              <Row className="text-ink-700 mb-0.5 inline-flex items-center align-middle">
+                {contract.probChanges.day > 0 && (
+                  <ArrowNarrowUpIcon className="mr-[-1px] h-4 w-4 text-teal-500" />
+                )}
+                {contract.probChanges.day < 0 && (
+                  <ArrowNarrowDownIcon className="text-scarlet-500 mr-[-1px] h-4 w-4" />
+                )}
+                <span className={clsx('text-sm font-normal')}>
+                  {Math.abs(Math.round((contract.probChanges.day ?? 0) * 100))}
+                </span>
+              </Row>
+            )}
           {chanceLabel && <span className="text-sm font-normal"> chance</span>}
         </span>
       )
@@ -283,25 +294,6 @@ function ContractQuestion(props: {
         {removeEmojis(contract.question)}
       </span>
     </Row>
-  )
-}
-
-function ContractAnswers(props: { contract: CPMMMultiContract }) {
-  const { contract } = props
-
-  return (
-    <div className="text-ink-500 my-1 grid w-full grid-cols-2 gap-x-4 pl-8 pr-4 text-sm sm:pl-10 sm:pr-48">
-      {sortAnswers(contract, contract.answers)
-        .slice(0, 4)
-        .map((ans) => (
-          <div key={ans.id} className="flex gap-2">
-            <span className="truncate">{ans.text}</span>
-            <span className={'font-semibold'}>
-              {formatPercentShort(ans.prob)}
-            </span>
-          </div>
-        ))}
-    </div>
   )
 }
 

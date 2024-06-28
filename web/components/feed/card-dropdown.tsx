@@ -10,7 +10,7 @@ import {
   PlusCircleIcon,
 } from '@heroicons/react/solid'
 import { onFollowClick } from '../buttons/follow-button'
-import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
+import { updateUserDisinterestEmbedding } from 'web/lib/api/api'
 import { Contract } from 'common/contract'
 import toast from 'react-hot-toast'
 import { TiVolume, TiVolumeMute } from 'react-icons/ti'

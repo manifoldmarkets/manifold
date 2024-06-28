@@ -1,20 +1,19 @@
 import clsx from 'clsx'
 import { LiteGroup } from 'common/group'
-import { ReactNode, useState } from 'react'
+import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { MAX_SHOWN, MAX_SHOWN_MOBILE } from '../search/user-results'
-import { removeEmojis } from 'common/topics'
+import { removeEmojis } from 'common/util/string'
 
 export const BrowseTopicPills = (props: {
   topics: LiteGroup[]
   currentTopicSlug?: string
   className?: string
-  forYouPill: ReactNode
   onClick: (slug: string) => void
 }) => {
-  const { topics, forYouPill, className, currentTopicSlug, onClick } = props
+  const { topics, className, currentTopicSlug, onClick } = props
   const [showMore, setShowMore] = useState<boolean>(false)
   const isMobile = useIsMobile()
   const MAX_INIT_TOPICS = isMobile ? MAX_SHOWN_MOBILE : MAX_SHOWN
@@ -23,7 +22,6 @@ export const BrowseTopicPills = (props: {
   return (
     <Col className={className}>
       <Row className={clsx('flex-wrap gap-1 text-sm')}>
-        {forYouPill}
         {shownTopics.map((g) => (
           <button
             key={'pill-' + g.slug}

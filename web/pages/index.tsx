@@ -27,7 +27,7 @@ import { useABTest } from 'web/hooks/use-ab-test'
 import { Typewriter } from 'web/components/home/typewriter'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
-import { removeEmojis } from 'common/topics'
+import { removeEmojis } from 'common/util/string'
 import { filterDefined } from 'common/util/array'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
@@ -135,7 +135,7 @@ export default function LandingPage(props: {
                   About
                 </Button>
               </Link>
-              <Link href="/home">
+              <Link href="/browse">
                 <Button
                   color="gray-white"
                   size="xs"

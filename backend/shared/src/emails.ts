@@ -11,7 +11,7 @@ import { PrivateUser, User } from 'common/user'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
-import { contractUrl, getUser, log } from 'shared/utils'
+import { contractUrl, getPrivateUser, getUser, log } from 'shared/utils'
 import { getContractOGProps } from 'common/contract-seo'
 import {
   notification_reason_types,
@@ -22,7 +22,10 @@ import { getNotificationDestinationsForUser } from 'common/user-notification-pre
 import { buildOgUrl } from 'common/util/og'
 import { removeUndefinedProps } from 'common/util/object'
 import { getLoveOgImageUrl } from 'common/love/og-image'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { getLoverRow } from 'common/love/lover'
 import { HOUR_MS } from 'common/util/time'
 
@@ -269,6 +272,35 @@ export const sendCreatorGuideEmail = async (
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
+    }
+  )
+}
+
+export const sendUnactivatedNewUserEmail = async (
+  user: User,
+  templateId: string
+) => {
+  const pg = createSupabaseDirectClient()
+  const privateUser = await getPrivateUser(user.id, pg)
+  if (!privateUser || !privateUser.email) return
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
+    privateUser,
+    'onboarding_flow'
+  )
+  if (!sendToEmail) return
+  return await sendTemplateEmail(
+    privateUser.email,
+    `Help improve Manifold + win $100 Amazon gift card`,
+    templateId,
+    {
+      name: firstName,
+      unsubscribeUrl,
+    },
+    {
+      from: 'Ian from Manifold <ian@manifold.markets>',
     }
   )
 }

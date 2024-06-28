@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { deleteMarket } from 'web/lib/firebase/api'
+import { deleteMarket } from 'web/lib/api/api'
 import { Button } from './button'
 
 export const DeleteMarketButton = (props: {

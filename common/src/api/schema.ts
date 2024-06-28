@@ -47,7 +47,12 @@ import {
 import { ModReport } from '../mod-report'
 
 import { RegistrationReturnType } from 'common/reason-codes'
-import { GIDXDocument, verificationParams } from 'common/gidx/gidx'
+import {
+  GIDXDocument,
+  GIDXMonitorResponse,
+  GPSProps,
+  verificationParams,
+} from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
 
@@ -1306,6 +1311,18 @@ export const API = (_apiTypeCheck = {
       message?: string
     },
     props: z.object({}),
+  },
+  'get-monitor-status-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      status: string
+      data: GIDXMonitorResponse
+    },
+    props: z.object({
+      DeviceGPS: GPSProps,
+    }),
   },
   'get-verification-documents-gidx': {
     method: 'POST',

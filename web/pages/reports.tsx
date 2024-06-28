@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useModReports } from 'web/hooks/use-mod-reports'
 import ModReportItem from 'web/components/mod-report-item'
 import { Title } from 'web/components/widgets/title'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 const updateModReport = async (
   reportId: number,
@@ -23,7 +23,7 @@ const updateModReport = async (
   }
 }
 
-const ReportsPage = () => {
+export default function ReportsPage() {
   const isAdminOrMod = useAdminOrMod()
   const {
     reports: modReports,
@@ -143,5 +143,3 @@ const ReportsPage = () => {
     </Page>
   )
 }
-
-export default ReportsPage

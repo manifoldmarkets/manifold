@@ -11,7 +11,7 @@ import { AddLiquidityPanel } from './liquidity-modal'
 import { getAnte, getTieredCost } from 'common/economy'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { TierIcon, getPresentedTierName } from '../tiers/tier-tooltip'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { AddFundsModal } from '../add-funds-modal'
@@ -121,21 +121,18 @@ function UpgradeTierContent(props: {
   const totalOptions = tiers.length - 1 - currentTierIndex
 
   const [error, setError] = useState<string | undefined>(undefined)
-  const [isSuccess, setIsSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   const submit = async () => {
     if (!amount) return
 
     setIsLoading(true)
-    setIsSuccess(false)
 
     try {
       await api('market/:contractId/add-liquidity', {
         amount,
         contractId,
       })
-      setIsSuccess(true)
       setError(undefined)
       track('upgrade market', { amount, contractId, slug })
       setOpen(false)

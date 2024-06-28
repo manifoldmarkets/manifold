@@ -8,7 +8,7 @@ import { Button } from '../buttons/button'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
-import { updateMarket } from 'web/lib/firebase/api'
+import { updateMarket } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 
 export function ContractDescription(props: { contract: Contract }) {

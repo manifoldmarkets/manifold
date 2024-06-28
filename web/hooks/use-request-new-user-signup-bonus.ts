@@ -1,6 +1,6 @@
 import { useUser } from 'web/hooks/use-user'
 import { useEffect } from 'react'
-import { call } from 'web/lib/firebase/api'
+import { call } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import { getApiUrl } from 'common/api/utils'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'

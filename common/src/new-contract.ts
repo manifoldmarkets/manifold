@@ -136,6 +136,7 @@ export function getNewContract(props: {
     freshnessScore: 0,
     conversionScore: DEFAULT_CONVERSION_SCORE,
     uniqueBettorCount: 0,
+    uniqueBettorCountDay: 0,
     viewCount: 0,
     lastUpdatedTime: createdTime,
 

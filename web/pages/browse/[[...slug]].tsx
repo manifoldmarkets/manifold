@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { type DisplayUser } from 'common/api/user-types'
 import { DESTINY_GROUP_SLUG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Group, LiteGroup } from 'common/group'
-import { removeEmojis } from 'common/topics'
+import { removeEmojis } from 'common/util/string'
 import { BETTORS } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
@@ -125,9 +125,8 @@ export default function BrowseGroupPage(props: {
 export function GroupPageContent(props: {
   staticTopicParams?: TopicParams
   slug: string | null
-  collapseOptions?: boolean
 }) {
-  const { staticTopicParams, collapseOptions } = props
+  const { staticTopicParams } = props
   const slug = props.slug ?? undefined
   const user = useUser()
   const isMobile = useIsMobile()
@@ -208,13 +207,12 @@ export function GroupPageContent(props: {
       setTopics={setTopicResults}
       topicSlug={topicSlug}
       defaultFilter="open"
-      defaultSort="freshness-score"
-      defaultForYou="1"
+      defaultSort="score"
+      defaultForYou="0"
       shownTopics={shownTopics}
       setTopicSlug={(slug) => {
         setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
       }}
-      collapseOptions={collapseOptions}
     />
   )
 

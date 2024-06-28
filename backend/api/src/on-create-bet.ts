@@ -49,9 +49,7 @@ import {
   updateContract,
 } from 'shared/supabase/contracts'
 import { Answer } from 'common/answer'
-import {
-  removeNullOrUndefinedProps,
-} from 'common/util/object'
+import { removeNullOrUndefinedProps } from 'common/util/object'
 import {
   addHouseSubsidy,
   addHouseSubsidyToAnswer,
@@ -214,6 +212,7 @@ const debouncedContractUpdates = (contract: Contract) => {
           (select sum(abs(amount)) from contract_bets where contract_id = $1) as volume,
           (select max(created_time) from contract_bets where contract_id = $1) as time,
           (select count(distinct user_id)::numeric from contract_bets where contract_id = $1) as count,
+          (select count(distinct user_id)::numeric from contract_bets where contract_id = $1 and created_time > now() - interval '1 day' and is_redemption = false) as count_day,
           (select sum((data->'fees'->>'creatorFee')::numeric) from contract_bets where contract_id = $1) as creator_fee,
           (select sum((data->'fees'->>'platformFee')::numeric) from contract_bets where contract_id = $1) as platform_fee,
           (select sum((data->'fees'->>'liquidityFee')::numeric) from contract_bets where contract_id = $1) as liquidity_fee
@@ -224,6 +223,7 @@ const debouncedContractUpdates = (contract: Contract) => {
       volume,
       time: lastBetTime,
       count,
+      count_day,
       creator_fee,
       platform_fee,
       liquidity_fee,
@@ -237,6 +237,7 @@ const debouncedContractUpdates = (contract: Contract) => {
       volume,
       lastBetTime,
       count,
+      count_day,
       collectedFees,
     })
 
@@ -248,6 +249,7 @@ const debouncedContractUpdates = (contract: Contract) => {
         lastBetTime: lastBetTime ? new Date(lastBetTime).valueOf() : undefined,
         lastUpdatedTime: Date.now(),
         uniqueBettorCount: uniqueBettorCount !== count ? count : undefined,
+        uniqueBettorCountDay: count_day,
         collectedFees,
       })
     )
@@ -396,7 +398,6 @@ const updateBettingStreak = async (
     // Otherwise, add 1 to their betting streak
     await updateUser(tx, bettor.id, {
       currentBettingStreak: newBettingStreak,
-      lastBetTime: bet.createdTime,
     })
 
     if (!isVerified(bettor)) {

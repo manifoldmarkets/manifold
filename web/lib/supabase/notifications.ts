@@ -1,5 +1,5 @@
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { api } from './api'
+import { api } from '../api/api'
 
 export const setPushToken = async (pushToken: string) => {
   try {

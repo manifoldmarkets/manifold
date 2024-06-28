@@ -1,6 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getPrivateUserSupabase, log } from 'shared/utils'
-import { getPhoneNumber } from 'shared/helpers/get-phone-number'
+import { log } from 'shared/utils'
 import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
@@ -15,11 +14,14 @@ import {
   underageErrorCodes,
 } from 'common/reason-codes'
 import { intersection } from 'lodash'
-import { getGIDXStandardParams } from 'shared/gidx/helpers'
 import {
-  GIDX_DOCUMENTS_REQUIRED,
+  getGIDXStandardParams,
+  getUserRegistrationRequirements,
+} from 'shared/gidx/helpers'
+import {
   GIDX_REGISTATION_ENABLED,
   GIDXRegistrationResponse,
+  ID_ERROR_MSG,
 } from 'common/gidx/gidx'
 import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
 
@@ -33,17 +35,7 @@ export const register: APIHandler<'register-gidx'> = async (
 ) => {
   if (!GIDX_REGISTATION_ENABLED)
     throw new APIError(400, 'GIDX registration is disabled')
-  const user = await getPrivateUserSupabase(auth.uid)
-  if (!user) {
-    throw new APIError(404, 'Private user not found')
-  }
-  if (!user.email) {
-    throw new APIError(400, 'User must have an email address')
-  }
-  const phoneNumberWithCode = await getPhoneNumber(auth.uid)
-  if (!phoneNumberWithCode) {
-    throw new APIError(400, 'Please verify your phone number first')
-  }
+  await getUserRegistrationRequirements(auth.uid)
   const body = {
     // TODO: add back in prod
     // MerchantCustomerID: auth.uid,
@@ -114,11 +106,16 @@ export const processUserReasonCodes = async (
   // User identity not found/verified
   if (hasIdentityError(ReasonCodes)) {
     log('Registration failed, resulted in identity errors:', ReasonCodes)
+    const { isPending } = await getIdentityVerificationDocuments(userId)
+    if (isPending) {
+      await updateUser(pg, userId, { kycStatus: 'pending' })
+      return { status: 'success' }
+    }
+
     await updateUser(pg, userId, { kycStatus: 'fail' })
     return {
       status: 'error',
-      message:
-        'Registration failed, identity error. Check your identifying information.',
+      message: ID_ERROR_MSG,
     }
   }
 
@@ -141,7 +138,7 @@ export const processUserReasonCodes = async (
     return {
       status: 'error',
       message:
-        'Registration failed, location blocked. Try again in 24 hours in an allowed location.',
+        'Registration failed, location blocked. Try again in 3 hours in an allowed location.',
     }
   }
 
@@ -197,40 +194,19 @@ export const processUserReasonCodes = async (
       return { status: 'success' }
     }
 
-    const {
-      documents,
-      unrejectedUtilityDocuments,
-      unrejectedIdDocuments,
-      acceptedDocuments,
-      rejectedDocuments,
-    } = await getIdentityVerificationDocuments(userId)
-    const acceptedUtilityDocuments = unrejectedUtilityDocuments.filter(
-      (doc) => doc.DocumentStatus === 3
-    )
-    const acceptedIdDocuments = unrejectedIdDocuments.filter(
-      (doc) => doc.DocumentStatus === 3
-    )
-    const pendingDocuments = documents.filter((doc) => doc.DocumentStatus !== 3)
-    if (
-      acceptedDocuments.length >= GIDX_DOCUMENTS_REQUIRED &&
-      acceptedUtilityDocuments.length > 0 &&
-      acceptedIdDocuments.length > 0
-    ) {
+    const { isPending, isVerified, isRejected } =
+      await getIdentityVerificationDocuments(userId)
+
+    if (isVerified) {
       // They passed the reason codes and have the required documents
       await updateUser(pg, userId, {
         kycStatus: 'verified',
       })
-    } else if (
-      acceptedDocuments.length < GIDX_DOCUMENTS_REQUIRED &&
-      pendingDocuments.length > 0
-    ) {
+    } else if (isPending) {
       await updateUser(pg, userId, {
         kycStatus: 'pending',
       })
-    } else if (
-      rejectedDocuments.length > 0 ||
-      acceptedDocuments.length < GIDX_DOCUMENTS_REQUIRED
-    ) {
+    } else if (isRejected) {
       await updateUser(pg, userId, {
         kycStatus: 'await-documents',
       })

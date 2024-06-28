@@ -1,4 +1,4 @@
-import { ChatIcon, UserIcon } from '@heroicons/react/solid'
+import { ChatIcon, UserIcon, ArrowNarrowUpIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
 import { useNumContractComments } from 'web/hooks/use-comments'
 import { shortenNumber } from 'web/lib/util/formatNumber'
@@ -14,20 +14,33 @@ export type ColumnFormat = {
 
 export const traderColumn = {
   header: 'Traders',
-  content: (contract: Contract) =>
-    contract.outcomeType == 'BOUNTIED_QUESTION' ? (
+  content: (contract: Contract) => {
+    const { outcomeType, uniqueBettorCount, uniqueBettorCountDay } = contract
+
+    return outcomeType == 'BOUNTIED_QUESTION' ? (
       <div className="text-ink-700 h-min align-top">
         <BountiedContractComments contractId={contract.id} />
       </div>
     ) : (
-      <div className="text-ink-700 h-min align-top">
-        <Row className="align-center h-full shrink-0 items-center gap-0.5">
+      <div className="text-ink-700 ml-1 h-min w-[85px] align-top">
+        <Row className="align-center text-ink-700 h-full shrink-0 items-center justify-end gap-0.5">
           <UserIcon className="text-ink-400 h-4 w-4" />
-          {shortenNumber(contract.uniqueBettorCount ?? 0)}
+          {shortenNumber(uniqueBettorCount ?? 0)}
+          {uniqueBettorCount === uniqueBettorCountDay ? (
+            <div className="text-ink-700 ml-1 text-xs">new</div>
+          ) : (
+            uniqueBettorCountDay > 0 && (
+              <>
+                <ArrowNarrowUpIcon className="text-ink-600 -mr-[3px] h-4 w-4" />
+                <span className="text-sm">{uniqueBettorCountDay}</span>
+              </>
+            )
+          )}
         </Row>
       </div>
-    ),
-  width: 'w-16',
+    )
+  },
+  width: 'w-[110px]',
 }
 
 export const probColumn = {
@@ -36,11 +49,14 @@ export const probColumn = {
     <div className="font-semibold">
       <ContractStatusLabel
         contract={contract}
+        showProbChange={
+          contract.uniqueBettorCountDay !== contract.uniqueBettorCount
+        }
         className="block w-[3ch] text-right"
       />
     </div>
   ),
-  width: 'w-16',
+  width: 'w-[75px]',
 }
 
 export const actionColumn = {

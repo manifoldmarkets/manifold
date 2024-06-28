@@ -6,12 +6,12 @@ import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { Row } from 'web/components/layout/row'
-import { Contract } from 'web/lib/firebase/contracts'
+import { Contract } from 'common/contract'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { followContract, unfollowContract } from 'common/supabase/contracts'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export const FollowMarketButton = (props: {
   contract: Contract

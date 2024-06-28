@@ -9,9 +9,11 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { GroupPageContent } from '../browse/[[...slug]]'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
+import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 export async function getStaticProps() {
   try {
@@ -30,6 +32,8 @@ export async function getStaticProps() {
 export default function Home(props: { headlines: Headline[] }) {
   const user = useUser()
   useSaveReferral(user)
+  useRedirectIfSignedOut()
+
   const { headlines } = props
 
   return (
@@ -41,17 +45,11 @@ export default function Home(props: { headlines: Headline[] }) {
         currentSlug={'home'}
         hideEmoji
       />
-      {user && (
-        <DailyStats
-          className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
-          user={user}
-        />
-      )}
-      <GroupPageContent
-        slug={''}
-        staticTopicParams={undefined}
-        collapseOptions
+      <DailyStats
+        className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
+        user={user}
       />
+      <GroupPageContent slug={''} staticTopicParams={undefined} />
       {user && (
         <button
           type="button"
@@ -68,6 +66,9 @@ export default function Home(props: { headlines: Headline[] }) {
           <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
         </button>
       )}
+
+      {/* Preload feed */}
+      {user && <LiveGeneratedFeed userId={user.id} reload={false} hidden />}
     </Page>
   )
 }

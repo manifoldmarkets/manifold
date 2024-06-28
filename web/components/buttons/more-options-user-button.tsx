@@ -22,7 +22,7 @@ import {
   Referrals,
   useReferralCount,
 } from 'web/components/buttons/referrals-button'
-import { banUser } from 'web/lib/firebase/api'
+import { banUser } from 'web/lib/api/api'
 import SuperBanControl from '../SuperBanControl'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'

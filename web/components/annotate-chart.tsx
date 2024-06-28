@@ -4,10 +4,7 @@ import clsx from 'clsx'
 import { Input } from 'web/components/widgets/input'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import {
-  createChartAnnotation,
-  deleteChartAnnotation,
-} from 'web/lib/firebase/api'
+import { createChartAnnotation, deleteChartAnnotation } from 'web/lib/api/api'
 import { Row } from './layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'

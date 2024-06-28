@@ -3,17 +3,19 @@ import { z } from 'zod'
 export const GIDX_REGISTATION_ENABLED = false
 export const GIDX_DOCUMENTS_REQUIRED = 2
 
+export const GPSProps = z.object({
+  Latitude: z.number(),
+  Longitude: z.number(),
+  Radius: z.number(),
+  Altitude: z.number(),
+  Speed: z.number(),
+  DateTime: z.string(),
+})
+
 export const verificationParams = z.object({
   FirstName: z.string(),
   LastName: z.string(),
-  DeviceGPS: z.object({
-    Latitude: z.number(),
-    Longitude: z.number(),
-    Radius: z.number(),
-    Altitude: z.number(),
-    Speed: z.number(),
-    DateTime: z.string(),
-  }),
+  DeviceGPS: GPSProps,
   DateOfBirth: z.string(),
   CitizenshipCountryCode: z.string(),
   // Must supply address or ID info
@@ -78,6 +80,8 @@ export type GIDXCustomerProfile = {
   ProfileVerificationStatus: string
   FraudConfidenceScore: number
   IdentityConfidenceScore: number
+  ResponseCode: number
+  ResponseMessage: string
   // There are many more at https://www.tsevo.com/Docs/CustomerIdentity
 }
 
@@ -129,10 +133,25 @@ type LocationDetailType = {
   IdentifierUsed: string
 }
 
+export type GIDXMonitorResponse = {
+  MerchantCustomerID: string
+  ReasonCodes: string[]
+  WatchChecks: WatchCheckType[]
+  ProfileVerificationStatus: string
+  IdentityConfidenceScore: number
+  FraudConfidenceScore: number
+  LocationDetail: LocationDetailType
+  ResponseCode: number
+  ResponseMessage: string
+}
+
+export const ID_ERROR_MSG =
+  'Registration failed, identity error. Check your identifying information.'
+
 export const exampleCustomers = [
   {
     EmailAddress: 'mradamgibbs@gmail.com',
-    MobilePhoneNumber: '',
+    MobilePhoneNumber: '5785785789',
     DeviceIpAddress: '194.207.197.157',
     FirstName: 'Adam',
     LastName: 'Gibbs',
@@ -194,9 +213,6 @@ export const exampleCustomers = [
     StateCode: 'VT',
     PostalCode: '05495',
     DeviceGPS: {
-      // utah (blocked):
-      // Latitude: 40.7608,
-      // Longitude: -111.891,
       Latitude: 44.064107,
       Longitude: -72.545022,
       Radius: 11.484,

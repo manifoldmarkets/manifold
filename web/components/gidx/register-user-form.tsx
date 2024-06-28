@@ -4,10 +4,9 @@ import { Button, buttonClass } from 'web/components/buttons/button'
 import { User } from 'common/user'
 import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
-import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useState } from 'react'
-import { api, APIError } from 'web/lib/firebase/api'
+import { api, APIError } from 'web/lib/api/api'
 import { RegistrationVerifyPhone } from 'web/components/registration-verify-phone'
 
 import { UploadDocuments } from 'web/components/gidx/upload-document'
@@ -23,50 +22,19 @@ import {
 import { useWebsocketUser } from 'web/hooks/use-user'
 import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { exampleCustomers, GPSData } from 'common/gidx/gidx'
+import { exampleCustomers, GPSData, ID_ERROR_MSG } from 'common/gidx/gidx'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 
 const body = {
   ...exampleCustomers[2],
-  // MerchantCustomerID: '11',
 }
-//   {
-//   EmailAddress: 'gochanman@yahoo.com',
-//   MobilePhoneNumber: '4042818372',
-//   DeviceIpAddress: '149.40.50.57',
-//   FirstName: 'Coreyy',
-//   LastName: 'Chandler',
-//   DateOfBirth: '09/28/1987',
-//   CitizenshipCountryCode: 'US',
-//   IdentificationTypeCode: 2,
-//   IdentificationNumber: '123456789',
-//   AddressLine1: '66 Forest Street',
-//   City: 'Reading',
-//   StateCode: 'MA',
-//   PostalCode: '01867',
-//   DeviceGPS: {
-//     Latitude: 39.615342,
-//     Longitude: -112.183449,
-//     Radius: 11.484,
-//     Altitude: 0,
-//     Speed: 0,
-//     DateTime: new Date().toISOString(),
-//   },
-// }
 
-const identificationTypeToCode = {
-  'Social Security': 1,
-  'Driver License': 2,
-  Passport: 3,
-  'National Identity Card': 4,
-}
 const colClass = 'gap-3 p-4'
 const bottomRowClass = 'mb-4 mt-4 w-full gap-16'
 
 export const RegisterUserForm = (props: { user: User }) => {
   const user = useWebsocketUser(props.user.id) ?? props.user
   const router = useRouter()
-  // TODO: After development, if user is verified, redirect to the final page
   const [page, setPage] = useState(
     user.kycStatus === 'verified' || user.kycStatus === 'pending'
       ? 1000
@@ -93,13 +61,17 @@ export const RegisterUserForm = (props: { user: User }) => {
       setPage(page + 1)
     }
   })
+
   const [userInfo, setUserInfo] = usePersistentInMemoryState<{
     FirstName?: string
     LastName?: string
     DateOfBirth?: string
     CitizenshipCountryCode: string
-    IdentificationTypeCode?: number
-    IdentificationNumber?: string
+    AddressLine1?: string
+    AddressLine2?: string
+    City?: string
+    StateCode?: string
+    PostalCode?: string
     DeviceGPS?: GPSData
   }>(
     {
@@ -151,22 +123,26 @@ export const RegisterUserForm = (props: { user: User }) => {
       setLoading(false)
     }
   }
-
+  const optionalKeys = ['AddressLine2', 'StateCode']
   const unfilled = Object.entries(userInfo ?? {}).filter(
-    ([_, value]) => value === undefined
+    ([key, value]) =>
+      !optionalKeys.includes(key) && (value === undefined || value === '')
   )
+  console.log('unfilled', unfilled)
 
   const register = async () => {
     setError(null)
+    setLoading(true)
     if (!userInfo.DeviceGPS) {
+      setLoading(false)
       setError('Location is required.')
       return
     }
     if (unfilled.length) {
+      setLoading(false)
       setError(`Missing fields: ${unfilled.map(([key]) => key).join(', ')}`)
       return
     }
-    setLoading(true)
     const res = await api('register-gidx', {
       MerchantCustomerID: user.id,
       ...userInfo,
@@ -188,10 +164,6 @@ export const RegisterUserForm = (props: { user: User }) => {
     // No errors
     setPage(page + 1)
   }
-
-  const idTypeName = Object.keys(identificationTypeToCode)[
-    (userInfo?.IdentificationTypeCode ?? 1) - 1
-  ]
 
   if (page === 0) {
     return (
@@ -308,32 +280,79 @@ export const RegisterUserForm = (props: { user: User }) => {
             }
           />
         </Col>
-        {/* TODO: Add togle to allow user to input their address or their ID type & number*/}
-        <Col className={'w-fit gap-2'}>
-          <span>Identification Type</span>
-          <ChoicesToggleGroup
-            currentChoice={userInfo?.IdentificationTypeCode}
-            choicesMap={identificationTypeToCode}
-            setChoice={(val) =>
-              setUserInfo({
-                ...userInfo,
-                IdentificationTypeCode: val as number,
-              })
+        <Col className={sectionClass}>
+          <span>Address Line 1</span>
+          <Input
+            placeholder={'Your address'}
+            value={userInfo.AddressLine1}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, AddressLine1: e.target.value })
             }
           />
         </Col>
         <Col className={sectionClass}>
-          <span>Identification Number</span>
+          <span>Address Line 2</span>
           <Input
-            placeholder={`Your ${idTypeName} number`}
+            placeholder={'Suite, apartment, etc. (optional)'}
+            value={userInfo.AddressLine2}
             type={'text'}
-            value={userInfo.IdentificationNumber}
             onChange={(e) =>
-              setUserInfo({ ...userInfo, IdentificationNumber: e.target.value })
+              setUserInfo({ ...userInfo, AddressLine2: e.target.value })
             }
           />
         </Col>
-        {error && <span className={'text-error'}>{error}</span>}
+        <Row className={'gap-2 sm:gap-8'}>
+          <Col className={'w-1/2 sm:w-44'}>
+            <span>City</span>
+            <Input
+              placeholder={'Your city'}
+              value={userInfo.City}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, City: e.target.value })
+              }
+            />
+          </Col>
+          <Col className={'w-1/2 pr-2 sm:w-44 sm:pr-0'}>
+            <span>State</span>
+            <Input
+              placeholder={'Your state'}
+              value={userInfo.StateCode}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, StateCode: e.target.value })
+              }
+            />
+          </Col>
+        </Row>
+        <Col className={'w-1/2 sm:w-44'}>
+          <span>Postal Code</span>
+          <Input
+            placeholder={'Your postal code'}
+            value={userInfo.PostalCode}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, PostalCode: e.target.value })
+            }
+          />
+        </Col>
+
+        {error && (
+          <span className={'text-error'}>
+            {error}
+            {error === ID_ERROR_MSG ? (
+              <Button
+                onClick={() => setPage(page + 1)}
+                color={'indigo-outline'}
+              >
+                Upload documents instead
+              </Button>
+            ) : (
+              ''
+            )}
+          </span>
+        )}
         <Row className={bottomRowClass}>
           <Button
             color={'gray-white'}
@@ -366,7 +385,8 @@ export const RegisterUserForm = (props: { user: User }) => {
       />
     )
   }
-  if (user.kycStatus === 'pending') {
+
+  if (user.kycStatus === 'pending' || user.kycStatus === 'fail') {
     return (
       <Col className={colClass}>
         <span className={'text-primary-700 text-2xl'}>

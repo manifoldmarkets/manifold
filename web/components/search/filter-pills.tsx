@@ -22,7 +22,7 @@ export function FilterPill(props: {
   return (
     <button
       className={clsx(
-        'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 py-0.5 text-sm outline-none transition-colors',
+        'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
         type === 'spice'
           ? selected
             ? 'bg-amber-500 text-white hover:bg-amber-600'
@@ -58,7 +58,7 @@ export function AdditionalFilterPill(props: {
   return (
     <Row
       className={clsx(
-        'relative select-none items-center gap-1 whitespace-nowrap rounded-full py-0.5 pl-2 pr-1 text-sm outline-none transition-colors',
+        'relative h-6 select-none items-center gap-1 whitespace-nowrap rounded-full pl-2 pr-1 text-sm outline-none transition-colors',
         type === 'filter'
           ? 'bg-sky-500 text-white'
           : type === 'sort'

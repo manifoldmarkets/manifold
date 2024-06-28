@@ -14,7 +14,7 @@ import DropdownMenu, {
 } from 'web/components/comments/dropdown-menu'
 import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export const TopicDropdown = (props: {
   setCurrentTopic: (topicSlug: string) => void

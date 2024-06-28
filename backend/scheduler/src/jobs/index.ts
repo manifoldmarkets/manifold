@@ -37,8 +37,7 @@ export function createJobs() {
     createJob(
       'send-market-close-emails',
       '0 0 * * * *', // every hour
-      sendMarketCloseEmails,
-      9
+      sendMarketCloseEmails
     ),
     createJob(
       'update-contract-metrics',
@@ -59,8 +58,7 @@ export function createJobs() {
     createJob(
       'update-league',
       '0 */15 * * * *', // every 15 minutes
-      updateLeague,
-      9
+      updateLeague
     ),
     createJob(
       'update-group-metrics',
@@ -96,8 +94,7 @@ export function createJobs() {
     createJob(
       'score-contracts',
       `0 */${IMPORTANCE_MINUTE_INTERVAL} * * * *`, // every 2 minutes
-      scoreContracts,
-      IMPORTANCE_MINUTE_INTERVAL * 60
+      scoreContracts
     ),
     createJob(
       'denormalize-answers',
@@ -169,7 +166,7 @@ export function createJobs() {
     ),
     createJob(
       'update-contract-view-embeddings',
-      '0 0 0 1 * * ', // 1st day of the month
+      '0 0 0 1 * *', // 1st day of the month
       updateContractViewEmbeddings
     ),
   ]

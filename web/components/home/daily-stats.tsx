@@ -8,7 +8,10 @@ import { DailyProfit } from './daily-profit'
 export const dailyStatsClass =
   'bg-canvas-0 rounded-lg px-3 py-1 shadow min-w-[60px]'
 
-export function DailyStats(props: { user: User; className?: string }) {
+export function DailyStats(props: {
+  user: User | null | undefined
+  className?: string
+}) {
   const { user, className } = props
   return (
     <Row className={clsx('items-center gap-3', className)}>

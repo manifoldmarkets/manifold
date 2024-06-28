@@ -1,19 +1,13 @@
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { curveLinear } from 'd3-shape'
 import dayjs from 'dayjs'
-import { max, min } from 'lodash'
 import { useLayoutEffect, useMemo } from 'react'
 import { SingleValueHistoryChart } from 'web/components/charts/generic-charts'
 import { Period } from 'common/period'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { ZoomParams } from '../charts/helpers'
 import { Col } from '../layout/col'
-import { PortfolioChart } from './portfolio-chart'
-import {
-  GraphValueType,
-  PortfolioHoveredGraphType,
-  emptyGraphValues,
-} from './portfolio-value-section'
+import { GraphValueType, emptyGraphValues } from './portfolio-value-section'
 import { findMinMax } from 'web/lib/util/minMax'
 import { HistoryPoint } from 'common/chart'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
@@ -21,9 +15,7 @@ import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 
 export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice'
-export const BALANCE_COLOR = '#4f46e5'
-export const INVESTMENT_COLOR = '#818cf8'
-// export const SPICE_COLOR = '#0ea5e9'
+export const MANA_COLOR = '#4f46e5'
 export const SPICE_COLOR = '#f59e0b'
 
 export const PortfolioTooltip = (props: { date: Date }) => {
@@ -51,8 +43,6 @@ export const PortfolioGraph = (props: {
   updateGraphValues: (newGraphValues: GraphValueType) => void
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
-  portfolioHoveredGraph: PortfolioHoveredGraphType
-  setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
 }) => {
   const {
     mode,
@@ -67,8 +57,6 @@ export const PortfolioGraph = (props: {
     updateGraphValues,
     portfolioFocus,
     setPortfolioFocus,
-    portfolioHoveredGraph,
-    setPortfolioHoveredGraph,
   } = props
 
   const {
@@ -93,6 +81,9 @@ export const PortfolioGraph = (props: {
       const { min: investmentYMin, max: investmentYMax } =
         findMinMax(investmentYPoints)
 
+      const networthXPoints = networthPoints.map((d) => d.x)!
+      const { min: networthXMin, max: networthXMax } =
+        findMinMax(networthXPoints)
       const networthYPoints = networthPoints.map((d) => d.y)!
       const { min: networthYMin, max: networthYMax } =
         findMinMax(networthYPoints)
@@ -105,7 +96,7 @@ export const PortfolioGraph = (props: {
 
       const minDate =
         portfolioFocus == 'all'
-          ? min([balanceXMin, investmentXMin])!
+          ? networthXMin
           : portfolioFocus == 'balance'
           ? balanceXMin
           : portfolioFocus == 'investment'
@@ -113,7 +104,7 @@ export const PortfolioGraph = (props: {
           : spiceXMin
       const maxDate =
         portfolioFocus == 'all'
-          ? max([balanceXMax, investmentXMax])!
+          ? networthXMax
           : portfolioFocus == 'balance'
           ? balanceXMax
           : portfolioFocus == 'investment'
@@ -121,7 +112,7 @@ export const PortfolioGraph = (props: {
           : spiceXMax
       const minValue =
         portfolioFocus == 'all'
-          ? min([balanceYMin, networthYMin, spiceYMinInMana])!
+          ? networthYMin
           : portfolioFocus == 'balance'
           ? balanceYMin
           : portfolioFocus == 'investment'
@@ -129,7 +120,7 @@ export const PortfolioGraph = (props: {
           : spiceYMinInMana
       const maxValue =
         portfolioFocus == 'all'
-          ? max([networthYMax, balanceYMax + spiceYMaxInMana])!
+          ? networthYMax
           : portfolioFocus == 'balance'
           ? balanceYMax
           : portfolioFocus == 'investment'
@@ -149,7 +140,6 @@ export const PortfolioGraph = (props: {
       }
     }
   }, [duration, portfolioFocus, mode])
-
   const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
   const yScale = scaleLinear(
@@ -167,79 +157,56 @@ export const PortfolioGraph = (props: {
   }, [mode, duration, portfolioFocus])
 
   if (mode == 'portfolio') {
-    if (portfolioFocus == 'all') {
-      return (
-        <PortfolioChart
-          data={{
-            spice: { points: spicePoints, color: SPICE_COLOR },
-            balance: { points: balancePoints, color: BALANCE_COLOR },
-            investment: { points: investmentPoints, color: INVESTMENT_COLOR },
-          }}
-          w={width}
-          h={height}
-          xScale={xScale}
-          yScale={yScale}
-          yKind="Ṁ"
-          updateGraphValues={updateGraphValues}
-          setPortfolioFocus={setPortfolioFocus}
-          portfolioHoveredGraph={portfolioHoveredGraph}
-          setPortfolioHoveredGraph={setPortfolioHoveredGraph}
-        />
-      )
-    } else {
-      return (
-        <SingleValueHistoryChart
-          w={width}
-          h={height}
-          xScale={xScale}
-          yScale={portfolioFocus == 'spice' ? spiceYScale : yScale}
-          zoomParams={zoomParams}
-          yKind={
-            portfolioFocus === 'spice' && mode == 'portfolio' ? 'spice' : 'Ṁ'
-          }
-          data={
-            portfolioFocus == 'balance'
-              ? balancePoints
-              : portfolioFocus == 'investment'
-              ? investmentPoints
-              : spicePoints.map((d) => ({
-                  ...d,
-                  y: d.y / SPICE_TO_MANA_CONVERSION_RATE,
-                }))
-          }
-          Tooltip={(props) => (
-            // eslint-disable-next-line react/prop-types
-            <PortfolioTooltip date={xScale.invert(props.x)} />
-          )}
-          onMouseOver={(p) => {
-            portfolioFocus == 'balance'
-              ? updateGraphValues({ balance: p ? p.y : null })
-              : portfolioFocus == 'investment'
-              ? updateGraphValues({ invested: p ? p.y : null })
-              : updateGraphValues({
-                  spice: p ? p.y : null,
-                })
-          }}
-          onMouseLeave={() => {
-            updateGraphValues(emptyGraphValues)
-          }}
-          curve={curveLinear}
-          negativeThreshold={negativeThreshold}
-          hideXAxis={hideXAxis}
-          color={
-            portfolioFocus == 'balance'
-              ? BALANCE_COLOR
-              : portfolioFocus == 'investment'
-              ? INVESTMENT_COLOR
-              : SPICE_COLOR
-          }
-          onGraphClick={() => {
-            setPortfolioFocus('all')
-          }}
-          areaClassName="hover:opacity-100 opacity-[0.85] transition-opacity"
-        />
-      )
-    }
+    return (
+      <SingleValueHistoryChart
+        w={width}
+        h={height}
+        xScale={xScale}
+        yScale={portfolioFocus == 'spice' ? spiceYScale : yScale}
+        zoomParams={zoomParams}
+        yKind={
+          portfolioFocus === 'spice' && mode == 'portfolio' ? 'spice' : 'Ṁ'
+        }
+        data={
+          portfolioFocus == 'all'
+            ? networthPoints
+            : portfolioFocus == 'balance'
+            ? balancePoints
+            : portfolioFocus == 'investment'
+            ? investmentPoints
+            : spicePoints.map((d) => ({
+                ...d,
+                y: d.y / SPICE_TO_MANA_CONVERSION_RATE,
+              }))
+        }
+        Tooltip={(props) => (
+          // eslint-disable-next-line react/prop-types
+          <PortfolioTooltip date={xScale.invert(props.x)} />
+        )}
+        onMouseOver={(p) => {
+          portfolioFocus == 'all'
+            ? updateGraphValues({ net: p ? p.y : null })
+            : portfolioFocus == 'balance'
+            ? updateGraphValues({ balance: p ? p.y : null })
+            : portfolioFocus == 'investment'
+            ? updateGraphValues({ invested: p ? p.y : null })
+            : updateGraphValues({
+                spice: p ? p.y : null,
+              })
+        }}
+        onMouseLeave={() => {
+          updateGraphValues(emptyGraphValues)
+        }}
+        curve={curveLinear}
+        negativeThreshold={negativeThreshold}
+        hideXAxis={hideXAxis}
+        color={portfolioFocus == 'spice' ? SPICE_COLOR : MANA_COLOR}
+        onGraphClick={() => {
+          setPortfolioFocus('all')
+        }}
+        areaClassName="hover:opacity-50 opacity-[0.2] transition-opacity"
+      />
+    )
   }
   return (
     <SingleValueHistoryChart

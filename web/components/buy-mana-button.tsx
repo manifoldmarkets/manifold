@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { useUser } from 'web/hooks/use-user'
-import { validateIapReceipt } from 'web/lib/firebase/api'
+import { validateIapReceipt } from 'web/lib/api/api'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { checkoutURL } from 'web/lib/service/stripe'
