@@ -98,8 +98,7 @@ export function createJobs() {
     createJob(
       'score-contracts',
       `0 */${IMPORTANCE_MINUTE_INTERVAL} * * * *`, // every 2 minutes
-      scoreContracts,
-      IMPORTANCE_MINUTE_INTERVAL * 60
+      scoreContracts
     ),
     createJob(
       'denormalize-answers',
