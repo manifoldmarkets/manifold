@@ -16,7 +16,7 @@ export function PushNotificationsModal(props: {
   totalNotifications: number
 }) {
   const { privateUser, user, totalNotifications } = props
-  const [isOpen, setOpen] = useState(false)
+  const [open, setOpen] = useState(false)
   const [showSettingsDescription, setShowSettingsDescription] = useState(false)
   const showSystemNotificationsPrompt = () => {
     postMessageToNative('promptEnablePushNotifications', {})
@@ -78,7 +78,7 @@ export function PushNotificationsModal(props: {
   if (!getIsNative()) return <div />
 
   return (
-    <Modal open={true} setOpen={setOpen}>
+    <Modal open={open} setOpen={setOpen}>
       <Col className="bg-canvas-0 text-ink-1000 w-full justify-start gap-3 rounded-md px-8 py-6">
         <span className="text-primary-700 mb-2 text-2xl font-semibold">
           Enable push notifications
