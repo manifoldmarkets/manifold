@@ -7,10 +7,7 @@ import { Period } from 'common/period'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { ZoomParams } from '../charts/helpers'
 import { Col } from '../layout/col'
-import {
-  GraphValueType,
-  emptyGraphValues,
-} from './portfolio-value-section'
+import { GraphValueType, emptyGraphValues } from './portfolio-value-section'
 import { findMinMax } from 'web/lib/util/minMax'
 import { HistoryPoint } from 'common/chart'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
