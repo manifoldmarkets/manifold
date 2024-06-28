@@ -3,9 +3,7 @@ import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 import { updateGroupMetricsCore } from 'shared/update-group-metrics-core'
-import { cleanOldTombstones } from './clean-old-tombstones'
 import { cleanOldNotifications } from './clean-old-notifications'
-import { truncateIncomingWrites } from './truncate-incoming-writes'
 import { updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
 import { autoAwardBounty } from './auto-award-bounty'
@@ -111,18 +109,7 @@ export function createJobs() {
       '0 */1 * * * *', // every minute
       pollPollResolutions
     ),
-
     // Daily jobs:
-    createJob(
-      'truncate-incoming-writes',
-      '0 0 2 * * *', // 2am daily
-      truncateIncomingWrites
-    ),
-    createJob(
-      'clean-old-tombstones',
-      '0 0 2 * * *', // 2am daily
-      cleanOldTombstones
-    ),
     createJob(
       'clean-old-notifications',
       '0 30 2 * * *', // 230 AM daily
