@@ -26,9 +26,11 @@ export function PortfolioGraphNumber(props: {
     <div
       className={clsx(
         'group cursor-pointer select-none rounded px-2 py-1 transition-colors',
-        portfolioFocus !== 'all' &&
-          portfolioFocus !== numberType &&
-          'opacity-50 hover:opacity-[0.85]',
+        portfolioFocus !== 'all' && portfolioFocus !== numberType
+          ? 'opacity-50 hover:opacity-[0.75]'
+          : portfolioFocus == numberType
+          ? 'opacity-100'
+          : 'opacity-[0.75] hover:opacity-100',
         className
       )}
       onClick={onClick}

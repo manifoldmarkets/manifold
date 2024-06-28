@@ -379,7 +379,7 @@ function PortfolioValueSkeleton(props: {
                       className={clsx(
                         portfolioFocus == 'balance'
                           ? 'bg-indigo-700 text-white'
-                          : 'bg-canvas-50 text-ink-800'
+                          : 'bg-canvas-50 text-ink-1000'
                       )}
                       onClick={() => togglePortfolioFocus('balance')}
                     />
@@ -394,7 +394,7 @@ function PortfolioValueSkeleton(props: {
                       className={clsx(
                         portfolioFocus == 'investment'
                           ? 'bg-indigo-700 text-white'
-                          : 'bg-canvas-50 text-ink-800'
+                          : 'bg-canvas-50 text-ink-1000'
                       )}
                       onClick={() => togglePortfolioFocus('investment')}
                     />
@@ -410,7 +410,7 @@ function PortfolioValueSkeleton(props: {
                       className={clsx(
                         portfolioFocus == 'spice'
                           ? ' bg-amber-600 text-white'
-                          : 'bg-canvas-50 text-ink-700'
+                          : 'bg-canvas-50 text-ink-1000'
                       )}
                       onClick={() => togglePortfolioFocus('spice')}
                       isSpice
