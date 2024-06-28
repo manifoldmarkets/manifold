@@ -105,8 +105,6 @@ export const PortfolioValueSection = memo(
         return updatedValues
       })
     }
-    const [portfolioHoveredGraph, setPortfolioHoveredGraph] =
-      useState<PortfolioHoveredGraphType>(undefined)
 
     const first = portfolioHistory?.[0]
     const firstProfit = first
@@ -136,7 +134,6 @@ export const PortfolioValueSection = memo(
 
     function onSetPortfolioFocus(mode: PortfolioMode) {
       setPortfolioFocus(mode)
-      setPortfolioHoveredGraph(undefined)
       updateGraphValues(emptyGraphValues)
     }
 
@@ -181,7 +178,6 @@ export const PortfolioValueSection = memo(
           portfolioFocus={portfolioFocus}
           setPortfolioFocus={onSetPortfolioFocus}
           graphValues={graphValues}
-          setPortfolioHoveredGraph={setPortfolioHoveredGraph}
         />
       )
     }
@@ -216,29 +212,21 @@ export const PortfolioValueSection = memo(
         switcherColor={graphMode === 'profit' ? 'green' : 'indigo'}
         portfolioFocus={portfolioFocus}
         setPortfolioFocus={onSetPortfolioFocus}
-        portfolioHoveredGraph={portfolioHoveredGraph}
-        setPortfolioHoveredGraph={setPortfolioHoveredGraph}
-        graphElement={
-          portfolioHistory.length < 2
-            ? undefined
-            : (width, height) => (
-                <PortfolioGraph
-                  mode={graphMode}
-                  duration={currentTimePeriod}
-                  portfolioHistory={portfolioHistory}
-                  width={width}
-                  height={height}
-                  zoomParams={zoomParams}
-                  hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
-                  firstProfit={firstProfit}
-                  updateGraphValues={updateGraphValues}
-                  portfolioFocus={portfolioFocus}
-                  setPortfolioFocus={onSetPortfolioFocus}
-                  portfolioHoveredGraph={portfolioHoveredGraph}
-                  setPortfolioHoveredGraph={setPortfolioHoveredGraph}
-                />
-              )
-        }
+        graphElement={(width, height) => (
+          <PortfolioGraph
+            mode={graphMode}
+            duration={currentTimePeriod}
+            portfolioHistory={portfolioHistory}
+            width={width}
+            height={height}
+            zoomParams={zoomParams}
+            hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
+            firstProfit={firstProfit}
+            updateGraphValues={updateGraphValues}
+            portfolioFocus={portfolioFocus}
+            setPortfolioFocus={onSetPortfolioFocus}
+          />
+        )}
         onlyShowProfit={onlyShowProfit}
         placement={isMobile && !onlyShowProfit ? 'bottom' : undefined}
         className={clsx(graphContainerClassName, !isMobile && 'mb-4')}
@@ -274,8 +262,6 @@ function PortfolioValueSkeleton(props: {
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
   user: User
-  portfolioHoveredGraph?: PortfolioHoveredGraphType
-  setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
 }) {
   const {
     graphMode,
@@ -297,8 +283,6 @@ function PortfolioValueSkeleton(props: {
     setPortfolioFocus,
     portfolio,
     user,
-    portfolioHoveredGraph,
-    setPortfolioHoveredGraph,
   } = props
   const profitLabel = onlyShowProfit
     ? {
@@ -388,8 +372,6 @@ function PortfolioValueSkeleton(props: {
                       numberType={'balance'}
                       descriptor="balance"
                       portfolioFocus={portfolioFocus}
-                      portfolioHoveredGraph={portfolioHoveredGraph}
-                      setPortfolioHoveredGraph={setPortfolioHoveredGraph}
                       displayedAmount={displayAmounts(
                         graphValues.balance,
                         portfolioValues?.balance
@@ -405,8 +387,6 @@ function PortfolioValueSkeleton(props: {
                       numberType={'investment'}
                       descriptor="invested"
                       portfolioFocus={portfolioFocus}
-                      portfolioHoveredGraph={portfolioHoveredGraph}
-                      setPortfolioHoveredGraph={setPortfolioHoveredGraph}
                       displayedAmount={displayAmounts(
                         graphValues.invested,
                         portfolioValues?.invested
@@ -423,8 +403,6 @@ function PortfolioValueSkeleton(props: {
                       numberType={'spice'}
                       descriptor={SPICE_NAME.toLowerCase() + 's'}
                       portfolioFocus={portfolioFocus}
-                      portfolioHoveredGraph={portfolioHoveredGraph}
-                      setPortfolioHoveredGraph={setPortfolioHoveredGraph}
                       displayedAmount={displayAmounts(
                         graphValues.spice,
                         user.spiceBalance

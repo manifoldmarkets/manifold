@@ -8,8 +8,6 @@ export function PortfolioGraphNumber(props: {
   numberType: 'balance' | 'investment' | 'spice'
   descriptor: string
   portfolioFocus: PortfolioMode
-  portfolioHoveredGraph: PortfolioHoveredGraphType
-  setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
   displayedAmount: number | undefined
   onClick: () => void
   className?: string
@@ -19,8 +17,6 @@ export function PortfolioGraphNumber(props: {
     portfolioFocus,
     numberType,
     descriptor,
-    portfolioHoveredGraph,
-    setPortfolioHoveredGraph,
     displayedAmount,
     onClick,
     className,
@@ -36,12 +32,6 @@ export function PortfolioGraphNumber(props: {
         className
       )}
       onClick={onClick}
-      onMouseEnter={() => {
-        if (portfolioFocus == 'all') {
-          setPortfolioHoveredGraph(numberType)
-        }
-      }}
-      onMouseLeave={() => setPortfolioHoveredGraph(undefined)}
     >
       <Col>
         <CoinNumber

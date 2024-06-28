@@ -49,8 +49,6 @@ export const PortfolioGraph = (props: {
   updateGraphValues: (newGraphValues: GraphValueType) => void
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
-  portfolioHoveredGraph: PortfolioHoveredGraphType
-  setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
 }) => {
   const {
     mode,
@@ -65,8 +63,6 @@ export const PortfolioGraph = (props: {
     updateGraphValues,
     portfolioFocus,
     setPortfolioFocus,
-    portfolioHoveredGraph,
-    setPortfolioHoveredGraph,
   } = props
 
   const {
@@ -91,6 +87,9 @@ export const PortfolioGraph = (props: {
       const { min: investmentYMin, max: investmentYMax } =
         findMinMax(investmentYPoints)
 
+      const networthXPoints = networthPoints.map((d) => d.x)!
+      const { min: networthXMin, max: networthXMax } =
+        findMinMax(networthXPoints)
       const networthYPoints = networthPoints.map((d) => d.y)!
       const { min: networthYMin, max: networthYMax } =
         findMinMax(networthYPoints)
@@ -103,7 +102,7 @@ export const PortfolioGraph = (props: {
 
       const minDate =
         portfolioFocus == 'all'
-          ? min([balanceXMin, investmentXMin])!
+          ? networthXMin
           : portfolioFocus == 'balance'
           ? balanceXMin
           : portfolioFocus == 'investment'
@@ -111,7 +110,7 @@ export const PortfolioGraph = (props: {
           : spiceXMin
       const maxDate =
         portfolioFocus == 'all'
-          ? max([balanceXMax, investmentXMax])!
+          ? networthXMax
           : portfolioFocus == 'balance'
           ? balanceXMax
           : portfolioFocus == 'investment'
@@ -119,7 +118,7 @@ export const PortfolioGraph = (props: {
           : spiceXMax
       const minValue =
         portfolioFocus == 'all'
-          ? min([balanceYMin, networthYMin, spiceYMinInMana])!
+          ? networthYMin
           : portfolioFocus == 'balance'
           ? balanceYMin
           : portfolioFocus == 'investment'
@@ -127,7 +126,7 @@ export const PortfolioGraph = (props: {
           : spiceYMinInMana
       const maxValue =
         portfolioFocus == 'all'
-          ? max([networthYMax, balanceYMax + spiceYMaxInMana])!
+          ? networthYMax
           : portfolioFocus == 'balance'
           ? balanceYMax
           : portfolioFocus == 'investment'
@@ -147,6 +146,7 @@ export const PortfolioGraph = (props: {
       }
     }
   }, [duration, portfolioFocus, mode])
+  console.log(minValue, maxValue)
 
   const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
