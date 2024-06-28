@@ -22,19 +22,17 @@ export const traderColumn = {
         <BountiedContractComments contractId={contract.id} />
       </div>
     ) : (
-      <div className="text-ink-700 ml-1 h-min w-[75px] align-top">
-        <Row className="align-center h-full shrink-0 items-center justify-end gap-0.5">
+      <div className="text-ink-700 ml-1 h-min w-[85px] align-top">
+        <Row className="align-center text-ink-700 h-full shrink-0 items-center justify-end gap-0.5">
           <UserIcon className="text-ink-400 h-4 w-4" />
           {shortenNumber(uniqueBettorCount ?? 0)}
           {uniqueBettorCount === uniqueBettorCountDay ? (
-            <div className="ml-1 text-xs text-teal-500">new</div>
+            <div className="text-ink-700 ml-1 text-xs">new</div>
           ) : (
             uniqueBettorCountDay > 0 && (
               <>
-                <ArrowNarrowUpIcon className="-mr-[3px] h-4 w-4 text-teal-500" />
-                <span className="text-sm text-teal-500">
-                  {uniqueBettorCountDay}
-                </span>
+                <ArrowNarrowUpIcon className="text-ink-600 -mr-[3px] h-4 w-4" />
+                <span className="text-sm">{uniqueBettorCountDay}</span>
               </>
             )
           )}
@@ -42,7 +40,7 @@ export const traderColumn = {
       </div>
     )
   },
-  width: 'w-[100px]',
+  width: 'w-[110px]',
 }
 
 export const probColumn = {
@@ -58,7 +56,7 @@ export const probColumn = {
       />
     </div>
   ),
-  width: 'w-[70px]',
+  width: 'w-[75px]',
 }
 
 export const actionColumn = {

@@ -173,21 +173,14 @@ export function ContractStatusLabel(props: {
           {formatPercentShort(getDisplayProbability(contract))}
           {showProbChange &&
             Math.round(contract.probChanges.day * 100) !== 0 && (
-              <Row className="mb-0.5 inline-flex items-center align-middle">
+              <Row className="text-ink-700 mb-0.5 inline-flex items-center align-middle">
                 {contract.probChanges.day > 0 && (
-                  <ArrowNarrowUpIcon className="mr-[-1px] inline h-4 w-4 text-teal-500" />
+                  <ArrowNarrowUpIcon className="mr-[-1px] h-4 w-4 text-teal-500" />
                 )}
                 {contract.probChanges.day < 0 && (
-                  <ArrowNarrowDownIcon className="text-scarlet-500 mr-[-1px] inline h-4 w-4" />
+                  <ArrowNarrowDownIcon className="text-scarlet-500 mr-[-1px] h-4 w-4" />
                 )}
-                <span
-                  className={clsx(
-                    'text-sm font-normal ',
-                    contract.probChanges.day > 0
-                      ? 'text-teal-500'
-                      : 'text-scarlet-500'
-                  )}
-                >
+                <span className={clsx('text-sm font-normal')}>
                   {Math.abs(Math.round((contract.probChanges.day ?? 0) * 100))}
                 </span>
               </Row>
