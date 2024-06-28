@@ -39,8 +39,7 @@ export function createJobs() {
     createJob(
       'send-market-close-emails',
       '0 0 * * * *', // every hour
-      sendMarketCloseEmails,
-      9
+      sendMarketCloseEmails
     ),
     createJob(
       'update-contract-metrics',
@@ -61,8 +60,7 @@ export function createJobs() {
     createJob(
       'update-league',
       '0 */15 * * * *', // every 15 minutes
-      updateLeague,
-      9
+      updateLeague
     ),
     createJob(
       'update-group-metrics',
