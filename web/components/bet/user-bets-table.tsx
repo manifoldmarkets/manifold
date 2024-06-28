@@ -19,7 +19,6 @@ import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import { Pagination } from 'web/components/widgets/pagination'
 import clsx from 'clsx'
-import { UserLink } from 'web/components/widgets/user-link'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { OrderTable } from 'web/components/bet/order-book'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -36,11 +35,13 @@ import { linkClass } from '../widgets/site-link'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
-import { UserHovercard } from '../user/user-hovercard'
 import { IconButton } from 'web/components/buttons/button'
 import { ChevronUpIcon } from '@heroicons/react/solid'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
+import { UserLink } from 'web/components/widgets/user-link'
+import { UserHovercard } from 'web/components/user/user-hovercard'
+import { Avatar } from 'web/components/widgets/avatar'
 
 type BetSort =
   | 'newest'
@@ -51,8 +52,7 @@ type BetSort =
   | 'week'
   | 'probChangeDay'
   | 'profitPercent'
-  | 'dayPercent'
-  | 'weekPercent'
+  | 'position'
 
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
@@ -302,6 +302,7 @@ function BetsTable(props: {
 
   // Most of these are descending sorts by default.
   const SORTS: Record<BetSort, (c: Contract) => number> = {
+    position: (c) => -sum(Object.values(metricsByContractId[c.id].totalShares)),
     profit: (c) => -metricsByContractId[c.id].profit,
     profitPercent: (c) => -metricsByContractId[c.id].profitPercent,
     value: (c) =>
@@ -324,10 +325,6 @@ function BetsTable(props: {
       return 0
     },
     day: (c) => -(metricsByContractId[c.id].from?.day.profit ?? 0),
-    dayPercent: (c) =>
-      -(metricsByContractId[c.id].from?.day.profitPercent ?? 0),
-    weekPercent: (c) =>
-      -(metricsByContractId[c.id].from?.week.profitPercent ?? 0),
     week: (c) => -(metricsByContractId[c.id].from?.week.profit ?? 0),
     closeTime: (c) =>
       // This is in fact the intuitive sort direction.
@@ -342,7 +339,17 @@ function BetsTable(props: {
   const currentSlice = page * rowsPerSection
   const isMobile = useIsMobile(600)
 
-  const dataColumns = buildArray([
+  const dataColumns: {
+    header: {
+      sort: BetSort
+      label: string
+      altSort?: BetSort
+      placeholder?: boolean
+    }
+    span: number
+    renderCell: (c: Contract) => ReactNode
+    headerBuddy?: ReactNode
+  }[] = buildArray([
     {
       header: { sort: 'newest', label: 'Time' },
       span: isMobile ? 2 : 1,
@@ -351,67 +358,113 @@ function BetsTable(props: {
           <RelativeTimestamp
             time={metricsByContractId[c.id].lastBetTime}
             shortened
-            className="text-ink-500"
+            className="text-ink-500 -ml-1"
           />
         </Row>
       ),
-    },
-    !isMobile && {
-      header: { sort: 'closeTime', label: 'Close' },
-      span: 3,
-      renderCell: (c: Contract) => {
-        const closeTime = c.resolutionTime ?? c.closeTime
-        const date = new Date(closeTime ?? Infinity)
-        const isThisYear = new Date().getFullYear() === date.getFullYear()
-        const dateString = date.toLocaleDateString('en-US', {
-          month: '2-digit',
-          day: '2-digit',
-          year: isThisYear ? undefined : '2-digit',
-        })
-        return (
-          <Row className={'justify-end'}>
-            <span className={'text-ink-500'}>
-              {closeTime ? dateString : 'N/A'}
-            </span>
-          </Row>
-        )
-      },
     },
     {
       header: { sort: 'value', label: 'Value' },
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => {
         const maxOutcome = metricsByContractId[c.id].maxSharesOutcome
+        const showOutcome = maxOutcome && c.outcomeType === 'BINARY'
         return (
-          <Row className="items-start justify-end gap-1">
-            {maxOutcome && c.outcomeType === 'BINARY' && (
+          <Row className={clsx('justify-end gap-1')}>
+            {showOutcome && isMobile && (
               <OutcomeLabel
                 contract={c}
                 outcome={maxOutcome}
                 truncate={'short'}
               />
             )}
-            <NumberCell num={metricsByContractId[c.id].payout} />
+            <Col className={'sm:min-w-[50px]'}>
+              <NumberCell num={metricsByContractId[c.id].payout} />
+            </Col>
+          </Row>
+        )
+      },
+    },
+
+    !isMobile && {
+      header: { sort: 'position', label: 'Position' },
+      span: 3,
+      renderCell: (c: Contract) => {
+        const maxOutcome = metricsByContractId[c.id].maxSharesOutcome
+        const showOutcome = maxOutcome && c.outcomeType === 'BINARY'
+        return (
+          <Row className={clsx('justify-end gap-1')}>
+            {showOutcome && (
+              <OutcomeLabel
+                contract={c}
+                outcome={maxOutcome}
+                truncate={'short'}
+              />
+            )}
+            <Col className={'sm:min-w-[50px]'}>
+              <NumberCell
+                num={sum(Object.values(metricsByContractId[c.id].totalShares))}
+              />
+            </Col>
           </Row>
         )
       },
     },
     {
-      header: { sort: 'profit', label: 'Profit' },
+      header: { sort: 'profit', altSort: 'profitPercent', label: 'Profit' },
       span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => (
-        <NumberCell num={metricsByContractId[c.id].profit} change={true} />
+      renderCell: (c: Contract) => {
+        const cm = metricsByContractId[c.id]
+        return (
+          <Row className={'justify-end gap-1'}>
+            <NumberCell num={cm.profit} change={true} />
+          </Row>
+        )
+      },
+      headerBuddy: (
+        <button
+          className={'z-10'}
+          onClick={() => {
+            sort.field === 'profitPercent'
+              ? onSetSort('profit')
+              : onSetSort('profitPercent')
+          }}
+        >
+          <div
+            className={
+              'text-ink-400 absolute -right-14 top-0 ml-1 hidden sm:inline-block'
+            }
+          >
+            <span
+              className={clsx(
+                'hover:bg-ink-100 rounded-md border px-1',
+                sort.field === 'profit' ? ' text-ink-1000  ' : ''
+              )}
+            >
+              {ENV_CONFIG.moneyMoniker}
+            </span>
+
+            <span
+              className={clsx(
+                'hover:bg-ink-100 rounded-md border px-1',
+                sort.field === 'profitPercent'
+                  ? ' text-ink-1000 font-semibold '
+                  : ''
+              )}
+            >
+              %
+            </span>
+          </div>
+        </button>
       ),
     },
     !isMobile && {
-      header: { sort: 'profitPercent', label: '%' },
+      header: { sort: 'profitPercent', label: '', placeholder: true },
       span: 1,
       renderCell: (c: Contract) => {
         const cm = metricsByContractId[c.id]
         return (
-          <span
-            className={'flex-inline -mr-3 flex justify-end md:-mr-2 lg:mr-0'}
-          >
+          <span className={'flex-inline flex justify-end '}>
             <ProfitBadge
               className={'!px-1'}
               profitPercent={cm.profitPercent}
@@ -432,30 +485,6 @@ function BetsTable(props: {
         />
       ),
     },
-    !isMobile && {
-      header: { sort: 'dayPercent', label: '%' },
-      span: 1,
-      renderCell: (c: Contract) => {
-        const cm = metricsByContractId[c.id]
-        const profitPercent = cm.from?.day.profitPercent ?? 0
-        // Gives ~infinite returns
-        if ((cm.from?.day.invested ?? 0) < 0.01) return <div />
-        return (
-          <span
-            className={'flex-inline -mr-3 flex justify-end md:-mr-2 lg:mr-0'}
-          >
-            <ProfitBadge
-              className={'!px-1'}
-              profitPercent={profitPercent}
-              round={true}
-              grayColor={
-                formatMoney(cm.from?.day.profit ?? 0) === formatMoney(0)
-              }
-            />
-          </span>
-        )
-      },
-    },
     {
       header: { sort: 'week', label: '1w' },
       span: isMobile ? 3 : 2,
@@ -467,26 +496,23 @@ function BetsTable(props: {
       ),
     },
     !isMobile && {
-      header: { sort: 'weekPercent', label: '%' },
-      span: 1,
+      header: { sort: 'closeTime', label: 'Close' },
+      span: 2,
       renderCell: (c: Contract) => {
-        const cm = metricsByContractId[c.id]
-        const profitPercent = cm.from?.week.profitPercent ?? 0
-        // Gives ~infinite returns
-        if ((cm.from?.week.invested ?? 0) < 0.01) return <div />
+        const closeTime = c.resolutionTime ?? c.closeTime
+        const date = new Date(closeTime ?? Infinity)
+        const isThisYear = new Date().getFullYear() === date.getFullYear()
+        const dateString = date.toLocaleDateString('en-US', {
+          month: '2-digit',
+          day: '2-digit',
+          year: isThisYear ? undefined : '2-digit',
+        })
         return (
-          <span
-            className={'flex-inline -mr-3 flex justify-end md:-mr-2 lg:mr-0'}
-          >
-            <ProfitBadge
-              className={'!px-1'}
-              profitPercent={profitPercent}
-              round={true}
-              grayColor={
-                formatMoney(cm.from?.week.profit ?? 0) === formatMoney(0)
-              }
-            />
-          </span>
+          <Row className={'justify-end'}>
+            <span className={'text-ink-500'}>
+              {closeTime ? dateString : 'N/A'}
+            </span>
+          </Row>
         )
       },
     },
@@ -542,26 +568,38 @@ function BetsTable(props: {
             isMobile ? 'top-12' : 'top-0' // Sets it below sticky user profile header on mobile
           )}
         >
-          {dataColumns.map((c) => (
-            <span
-              key={c.header.sort}
-              className={clsx(
-                getColSpan(c.span),
-                'flex justify-end first:justify-start'
-              )}
-            >
-              <Header
-                onClick={() => onSetSort(c.header.sort as BetSort)}
-                up={
-                  sort.field === c.header.sort
-                    ? sort.direction === 'asc'
-                    : undefined
-                }
+          {dataColumns.map((col) =>
+            col.header.placeholder ? (
+              <span key={col.header.label} />
+            ) : (
+              <span
+                key={col.header.sort}
+                className={clsx(
+                  getColSpan(col.span),
+                  'relative flex justify-end first:justify-start'
+                )}
               >
-                {c.header.label}
-              </Header>
-            </span>
-          ))}
+                <Header
+                  onClick={() =>
+                    onSetSort(
+                      (col.header.altSort && sort.field === col.header.altSort
+                        ? col.header.altSort
+                        : col.header.sort) as BetSort
+                    )
+                  }
+                  up={
+                    sort.field === col.header.sort ||
+                    sort.field === col.header.altSort
+                      ? sort.direction === 'asc'
+                      : undefined
+                  }
+                >
+                  {col.header.label}
+                </Header>
+                {col.headerBuddy ? col.headerBuddy : null}
+              </span>
+            )
+          )}
         </div>
         {contracts
           .slice(currentSlice, currentSlice + rowsPerSection)
@@ -585,59 +623,62 @@ function BetsTable(props: {
                   'border-ink-200 hover:bg-canvas-50 cursor-pointer border-b py-2'
                 }
               >
-                <Col className={'w-full'}>
+                <Col className={'w-full gap-3 sm:gap-2'}>
                   {/* Contract title*/}
-                  <Row className={'-mb-2'}>
-                    <Col className={'w-full'}>
-                      <Row className={'justify-between'}>
-                        <Link
-                          href={contractPath(contract)}
-                          className={clsx(
-                            linkClass,
-                            'line-clamp-2 pr-2 sm:pr-1'
-                          )}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <span>
-                            <ContractStatusLabel
-                              className={'font-bold'}
-                              contract={contract}
-                            />
-                            {contract.mechanism === 'cpmm-1' && (
-                              <span className={'text-ink-500 ml-1 text-xs'}>
-                                {getChange(contract)}
-                              </span>
-                            )}{' '}
-                            {contract.question}
-                            <UserHovercard userId={contract.creatorId}>
-                              <UserLink
-                                noLink={true}
-                                className={'text-ink-600 ml-2 w-fit text-sm'}
-                                user={{
-                                  id: contract.creatorId,
-                                  name: contract.creatorName,
-                                  username: contract.creatorUsername,
-                                }}
-                              />
-                            </UserHovercard>
-                          </span>
-                        </Link>
-                        <IconButton
-                          size={'2xs'}
-                          onClick={() => setNewExpandedId(contract.id)}
-                        >
-                          {expandedIds.includes(contract.id) ? (
-                            <ChevronUpIcon className="h-4" />
-                          ) : (
-                            <ChevronUpIcon className="h-4 rotate-180" />
-                          )}
-                        </IconButton>
-                      </Row>
-                    </Col>
+                  <Row className={'justify-between'}>
+                    <Link
+                      href={contractPath(contract)}
+                      className={clsx(linkClass, 'line-clamp-2 pr-2 sm:pr-1')}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span>{contract.question}</span>
+                    </Link>
+                    <IconButton
+                      size={'2xs'}
+                      onClick={() => setNewExpandedId(contract.id)}
+                    >
+                      {expandedIds.includes(contract.id) ? (
+                        <ChevronUpIcon className="h-4" />
+                      ) : (
+                        <ChevronUpIcon className="h-4 rotate-180" />
+                      )}
+                    </IconButton>
+                  </Row>
+                  <Row className={'items-center gap-1'}>
+                    <span className={'min-w-[40px]'}>
+                      <ContractStatusLabel
+                        className={'font-bold'}
+                        contract={contract}
+                      />
+                      {contract.mechanism === 'cpmm-1' && (
+                        <span className={'text-ink-500 ml-0.5 text-xs'}>
+                          {getChange(contract)}
+                        </span>
+                      )}
+                    </span>
+                    <UserHovercard
+                      className={'ml-2'}
+                      userId={contract.creatorId}
+                    >
+                      <Avatar
+                        avatarUrl={contract.creatorAvatarUrl}
+                        size={'2xs'}
+                        className={'mr-1 self-center'}
+                      />
+                      <UserLink
+                        noLink={true}
+                        className={'text-ink-600 w-fit text-sm'}
+                        user={{
+                          id: contract.creatorId,
+                          name: contract.creatorName,
+                          username: contract.creatorUsername,
+                        }}
+                      />
+                    </UserHovercard>
                   </Row>
                   {/* Contract Metrics details*/}
                   <div
-                    className={'grid-cols-15 mt-1 grid w-full pt-2'}
+                    className={'grid-cols-15 grid w-full'}
                     onClick={() => setNewExpandedId(contract.id)}
                   >
                     {dataColumns.map((c) => (
@@ -649,7 +690,7 @@ function BetsTable(props: {
                       </div>
                     ))}
                   </div>
-                  <Row>
+                  <Col className={'-mt-2 w-full'}>
                     {expandedIds.includes(contract.id) &&
                       (bets === undefined ? (
                         <Col className={'w-full items-center justify-center'}>
@@ -670,7 +711,7 @@ function BetsTable(props: {
                           {contract.mechanism === 'cpmm-1' &&
                             limitBets.length > 0 && (
                               <div className="max-w-md">
-                                <div className="bg-canvas-50 mt-4 px-4 py-2">
+                                <div className="bg-canvas-50 mt-4 p-2">
                                   Limit orders
                                 </div>
                                 <OrderTable
@@ -688,7 +729,7 @@ function BetsTable(props: {
                           />
                         </Col>
                       ))}
-                  </Row>
+                  </Col>
                 </Col>
               </Row>
             )
