@@ -9,6 +9,9 @@ import {
 } from 'web/public/custom-components/tiers'
 import { Row } from '../layout/row'
 import CheckedDropdownMenu from '../widgets/checked-dropdown'
+import { FILTERS, Filter } from '../supabase-search'
+import DropdownMenu from '../comments/dropdown-menu'
+import { getLabelFromValue } from './search-dropdown-helpers'
 
 export function FilterPill(props: {
   selected: boolean
@@ -141,6 +144,45 @@ export function TierDropdownPill(props: {
           />
         </div>
       )}
+    />
+  )
+}
+
+export function FilterDropdownPill(props: {
+  selectFilter: (selection: Filter) => void
+  currentFilter: Filter
+}) {
+  const { selectFilter, currentFilter } = props
+  const currentFilterLabel = getLabelFromValue(FILTERS, currentFilter)
+  return (
+    <DropdownMenu
+      withinOverflowContainer
+      items={FILTERS.map((filter) => {
+        return {
+          name: filter.label,
+          onClick: () => selectFilter(filter.value),
+        }
+      })}
+      menuItemsClass={clsx()}
+      buttonContent={(open) => (
+        <div
+          className={clsx(
+            'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
+
+            'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30 dark:bg-sky-500/20 dark:hover:bg-sky-500/30'
+          )}
+        >
+          {currentFilterLabel}
+          <ChevronDownIcon
+            className={clsx(
+              'h-4 w-4 transition-transform',
+              open ? 'rotate-180' : ''
+            )}
+          />
+        </div>
+      )}
+      selectedItemName={currentFilterLabel}
+      closeOnClick
     />
   )
 }
