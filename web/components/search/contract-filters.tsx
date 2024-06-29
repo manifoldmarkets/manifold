@@ -35,7 +35,11 @@ import {
   bountySorts,
   predictionMarketSorts,
 } from '../supabase-search'
-import { AdditionalFilterPill, FilterPill } from './filter-pills'
+import {
+  AdditionalFilterPill,
+  FilterDropdownPill,
+  FilterPill,
+} from './filter-pills'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { TierDropdownPill } from './filter-pills'
@@ -120,8 +124,6 @@ export function ContractFilters(props: {
 
   const [openFilterModal, setOpenFilterModal] = useState(false)
 
-  const nonDefaultFilter =
-    !DEFAULT_FILTERS.some((s) => s == filter) && filter !== DEFAULT_FILTER
   const nonDefaultSort =
     !DEFAULT_SORTS.some((s) => s == sort) && sort !== DEFAULT_SORT
   const nonDefaultContractType =
@@ -175,6 +177,10 @@ export function ContractFilters(props: {
             For You
           </FilterPill>
         )}
+        <FilterDropdownPill
+          selectFilter={selectFilter}
+          currentFilter={filter}
+        />
         {isPrizeMarketString === '1' && (
           <FilterPill
             selected={isPrizeMarketString === '1'}
@@ -212,14 +218,6 @@ export function ContractFilters(props: {
                 }
               })}
             </Row>
-          </AdditionalFilterPill>
-        )}
-        {nonDefaultFilter && (
-          <AdditionalFilterPill
-            type="filter"
-            onXClick={() => selectFilter(DEFAULT_FILTER)}
-          >
-            {filterLabel}
           </AdditionalFilterPill>
         )}
         {nonDefaultSort && (
