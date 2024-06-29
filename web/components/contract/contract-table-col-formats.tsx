@@ -15,7 +15,7 @@ export type ColumnFormat = {
 export const traderColumn = {
   header: 'Traders',
   content: (contract: Contract) => {
-    const { outcomeType, uniqueBettorCount, uniqueBettorCountDay } = contract
+    const { outcomeType, uniqueBettorCount } = contract
 
     return outcomeType == 'BOUNTIED_QUESTION' ? (
       <div className="text-ink-700 h-min align-top">
@@ -26,16 +26,6 @@ export const traderColumn = {
         <Row className="align-center text-ink-700 h-full shrink-0 items-center justify-end gap-0.5">
           <UserIcon className="text-ink-400 h-4 w-4" />
           {shortenNumber(uniqueBettorCount ?? 0)}
-          {uniqueBettorCount === uniqueBettorCountDay ? (
-            <div className="text-ink-700 ml-1 text-xs">new</div>
-          ) : (
-            uniqueBettorCountDay > 0 && (
-              <>
-                <ArrowNarrowUpIcon className="text-ink-600 -mr-[3px] h-4 w-4" />
-                <span className="text-sm">{uniqueBettorCountDay}</span>
-              </>
-            )
-          )}
         </Row>
       </div>
     )
