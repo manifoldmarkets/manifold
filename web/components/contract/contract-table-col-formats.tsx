@@ -1,4 +1,4 @@
-import { ChatIcon, UserIcon, ArrowNarrowUpIcon } from '@heroicons/react/solid'
+import { ChatIcon, UserIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
 import { useNumContractComments } from 'web/hooks/use-comments'
 import { shortenNumber } from 'web/lib/util/formatNumber'
