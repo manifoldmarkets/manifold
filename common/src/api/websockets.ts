@@ -68,5 +68,3 @@ export type CommentUpdatePayload = {
   comment_id: string
   likes: number
 }
-
-export type { CommentUpdatePayload }

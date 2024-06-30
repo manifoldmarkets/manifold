@@ -13,7 +13,7 @@ export type SubscriptionOptions = {
   onBroadcast: (msg: ServerMessage<'broadcast'>) => void
   onError?: (err: Error) => void
   enabled?: boolean
-  onCommentUpdate?: (msg: ServerMessage<'comment_update'>) => void
+  onCommentUpdate?: (msg: ServerMessage<'broadcast'>) => void
 }
 
 export function useApiSubscription(opts: SubscriptionOptions) {

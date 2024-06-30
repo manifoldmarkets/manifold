@@ -24,9 +24,9 @@ export const useLikesOnContent = (
         .eq('content_id', contentId)
     ).then(({ data }) => setLikes(data))
     
-    const handleNewLike = (msg: ServerMessage<'new-like'>) => {
-      if (msg.data && msg.data.comment_id === contentId) {
-        setLikes(msg.data.likes)
+    const handleNewLike = (msg: ServerMessage<'broadcast'>) => {
+      if (msg.data && (msg.data as any).comment_id === contentId) {
+        setLikes((msg.data as any).likes)
       }
     }
     
@@ -37,7 +37,7 @@ export const useLikesOnContent = (
     
     return () => {
       if (subscription) {
-        subscription.unsubscribe()
+        (subscription as any).unsubscribe()
       }
     }
   }, [contentType, contentId])
