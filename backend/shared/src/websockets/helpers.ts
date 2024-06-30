@@ -3,6 +3,11 @@ import { Bet, LimitBet } from 'common/bet'
 import { Contract, Visibility } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
+
+export function broadcastCommentUpdate(commentId: string, payload: { comment_id: string, likes: number }) {
+  // Implementation of the function
+}
+import { User } from 'common/user'
 import { Answer } from 'common/answer'
 
 export function broadcastUpdatedPrivateUser(userId: string) {
