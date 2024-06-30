@@ -12,7 +12,6 @@ export function broadcastNewLike(commentId: string, payload: { comment_id: strin
   broadcast(`contract/${commentId}/new-like`, payload)
 }
 
-import { User } from 'common/user'
 import { Answer } from 'common/answer'
 
 export function broadcastUpdatedPrivateUser(userId: string) {

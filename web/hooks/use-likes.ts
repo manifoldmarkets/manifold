@@ -36,7 +36,7 @@ export const useLikesOnContent = (
     })
     
     return () => {
-      if (subscription && typeof subscription.unsubscribe === 'function') {
+      if (subscription && 'unsubscribe' in subscription && typeof subscription.unsubscribe === 'function') {
         subscription.unsubscribe()
       }
     }
