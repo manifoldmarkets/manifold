@@ -24,15 +24,15 @@ export const useLikesOnContent = (
         .eq('content_id', contentId)
     ).then(({ data }) => setLikes(data))
     
-    const handleCommentUpdate = (msg: ServerMessage<'comment_update'>) => {
+    const handleNewLike = (msg: ServerMessage<'new-like'>) => {
       if (msg.data && msg.data.comment_id === contentId) {
         setLikes(msg.data.likes)
       }
     }
     
     const subscription = useApiSubscription({
-      topics: [`comment:${contentId}`],
-      onBroadcast: handleCommentUpdate,
+      topics: [`contract/${contentId}/updated-comment`],
+      onBroadcast: handleNewLike,
     })
     
     return () => {
