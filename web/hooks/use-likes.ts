@@ -31,7 +31,7 @@ export const useLikesOnContent = (
     }
     
     const subscription = useApiSubscription({
-      topics: [`contract/${contentId}/updated-comment`],
+      topics: [`contract/${contentId}/new-like`],
       onBroadcast: handleNewLike,
     })
     

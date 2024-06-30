@@ -7,6 +7,11 @@ import { User } from 'common/user'
 export function broadcastCommentUpdate(commentId: string, payload: { comment_id: string, likes: number }) {
   // Implementation of the function
 }
+
+export function broadcastNewLike(commentId: string, payload: { comment_id: string, likes: number }) {
+  broadcast(`contract/${commentId}/new-like`, payload)
+}
+
 import { User } from 'common/user'
 import { Answer } from 'common/answer'
 

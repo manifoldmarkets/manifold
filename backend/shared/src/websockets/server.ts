@@ -10,7 +10,7 @@ import {
   CLIENT_MESSAGE_SCHEMA,
   CommentUpdatePayload,
 } from 'common/api/websockets'
-import { broadcastCommentUpdate } from './helpers' // Update the import
+import { broadcastCommentUpdate, broadcastNewLike } from './helpers' // Update the import
 
 const SWITCHBOARD = new Switchboard()
 

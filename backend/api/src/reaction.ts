@@ -110,8 +110,8 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
           .update({ likes: count ?? 0 })
           .eq('comment_id', contentId)
         
-        // Broadcast the updated comment
-        broadcastCommentUpdate(contentId, { comment_id: contentId, likes: count ?? 0 })
+        // Broadcast the new like
+        broadcastNewLike(contentId, { comment_id: contentId, likes: count ?? 0 })
       }
     },
   }
