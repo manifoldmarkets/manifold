@@ -21,15 +21,18 @@ export function useApiSubscription(opts: SubscriptionOptions) {
     const ws = client
     if (ws != null) {
       if (opts.enabled ?? true) {
-        ws.subscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+        const subscription = ws.subscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
         if (opts.onCommentUpdate) {
           ws.subscribe(['comment_update'], opts.onCommentUpdate).catch(opts.onError)
         }
         return () => {
-          ws.unsubscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
-          if (opts.onCommentUpdate) {
-            ws.unsubscribe(['comment_update'], opts.onCommentUpdate).catch(opts.onError)
+          subscription.unsubscribe = () => {
+            ws.unsubscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+            if (opts.onCommentUpdate) {
+              ws.unsubscribe(['comment_update'], opts.onCommentUpdate).catch(opts.onError)
+            }
           }
+          return subscription
         }
       }
     }
