@@ -63,3 +63,10 @@ export type ServerMessage<T extends ServerMessageType = ServerMessageType> =
   z.infer<(typeof SERVER_MESSAGE_SCHEMAS)[T]>
 
 export type BroadcastPayload = ServerMessage<'broadcast'>['data']
+
+export type CommentUpdatePayload = {
+  comment_id: string
+  likes: number
+}
+
+export { CommentUpdatePayload }

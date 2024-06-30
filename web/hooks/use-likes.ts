@@ -3,6 +3,8 @@ import { db } from 'web/lib/supabase/db'
 import { useEffect } from 'react'
 import { run } from 'common/supabase/utils'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { ServerMessage } from 'common/api/websockets' // Add this line
+import { useApiSubscription } from './use-api-subscription' // Add this line
 
 export const useLikesOnContent = (
   contentType: ReactionContentTypes,
