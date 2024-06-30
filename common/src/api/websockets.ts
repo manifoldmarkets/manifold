@@ -69,4 +69,4 @@ export type CommentUpdatePayload = {
   likes: number
 }
 
-export { CommentUpdatePayload }
+export type { CommentUpdatePayload }

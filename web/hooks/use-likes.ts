@@ -25,7 +25,7 @@ export const useLikesOnContent = (
     ).then(({ data }) => setLikes(data))
     
     const handleCommentUpdate = (msg: ServerMessage<'comment_update'>) => {
-      if (msg.data.comment_id === contentId) {
+      if (msg.data && msg.data.comment_id === contentId) {
         setLikes(msg.data.likes)
       }
     }
@@ -36,7 +36,9 @@ export const useLikesOnContent = (
     })
     
     return () => {
-      subscription.unsubscribe()
+      if (subscription) {
+        subscription.unsubscribe()
+      }
     }
   }, [contentType, contentId])
 
