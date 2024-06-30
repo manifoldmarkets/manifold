@@ -21,6 +21,21 @@ export const useLikesOnContent = (
         .eq('content_type', contentType)
         .eq('content_id', contentId)
     ).then(({ data }) => setLikes(data))
+    
+    const handleCommentUpdate = (msg: ServerMessage<'comment_update'>) => {
+      if (msg.data.comment_id === contentId) {
+        setLikes(msg.data.likes)
+      }
+    }
+    
+    const subscription = useApiSubscription({
+      topics: [`comment:${contentId}`],
+      onBroadcast: handleCommentUpdate,
+    })
+    
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [contentType, contentId])
 
   return likes

@@ -8,6 +8,7 @@ import {
   ClientMessage,
   ServerMessage,
   CLIENT_MESSAGE_SCHEMA,
+  CommentUpdatePayload, // Add this line
 } from 'common/api/websockets'
 
 const SWITCHBOARD = new Switchboard()
@@ -106,6 +107,10 @@ export function broadcastMulti(topics: string[], data: BroadcastPayload) {
     }
     metrics.inc('ws/broadcasts_sent', { topic })
   }
+}
+
+export function broadcastCommentUpdate(commentId: string, data: CommentUpdatePayload) {
+  return broadcast(`comment:${commentId}`, data)
 }
 
 export function broadcast(topic: string, data: BroadcastPayload) {

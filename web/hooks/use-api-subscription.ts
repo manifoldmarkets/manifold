@@ -13,6 +13,7 @@ export type SubscriptionOptions = {
   onBroadcast: (msg: ServerMessage<'broadcast'>) => void
   onError?: (err: Error) => void
   enabled?: boolean
+  onCommentUpdate?: (msg: ServerMessage<'comment_update'>) => void // Add this line
 }
 
 export function useApiSubscription(opts: SubscriptionOptions) {
@@ -21,8 +22,14 @@ export function useApiSubscription(opts: SubscriptionOptions) {
     if (ws != null) {
       if (opts.enabled ?? true) {
         ws.subscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+        if (opts.onCommentUpdate) {
+          ws.subscribe(['comment_update'], opts.onCommentUpdate).catch(opts.onError)
+        }
         return () => {
           ws.unsubscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+          if (opts.onCommentUpdate) {
+            ws.unsubscribe(['comment_update'], opts.onCommentUpdate).catch(opts.onError)
+          }
         }
       }
     }

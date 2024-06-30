@@ -109,6 +109,17 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
           .from('contract_comments')
           .update({ likes: count ?? 0 })
           .eq('comment_id', contentId)
+        
+        // Broadcast the updated comment
+        const updatedComment = await db
+          .from('contract_comments')
+          .select()
+          .eq('comment_id', contentId)
+          .single()
+        
+        if (updatedComment.data) {
+          broadcast(`comment:${contentId}`, { type: 'comment_update', data: updatedComment.data })
+        }
       }
     },
   }
