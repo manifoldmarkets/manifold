@@ -1,6 +1,4 @@
-import {
-  EyeOffIcon,
-} from '@heroicons/react/solid'
+import { EyeOffIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
