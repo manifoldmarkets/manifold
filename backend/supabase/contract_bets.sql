@@ -101,5 +101,7 @@ create index if not exists contract_bets_user_outstanding_limit_orders on contra
 
 create index concurrently if not exists contract_bets_user_updated_time on contract_bets (user_id, updated_time desc);
 
+create index if not exists contract_bets_created_time_only on contract_bets (created_time desc);
+
 alter table contract_bets
 cluster on contract_bets_created_time;
