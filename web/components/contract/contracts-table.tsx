@@ -1,6 +1,4 @@
 import {
-  ArrowNarrowDownIcon,
-  ArrowNarrowUpIcon,
   EyeOffIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
