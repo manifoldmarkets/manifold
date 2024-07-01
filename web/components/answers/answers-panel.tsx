@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import {
   ArrowRightIcon,
   ChevronDownIcon,
@@ -6,8 +6,8 @@ import {
   PlusCircleIcon,
   ScaleIcon,
   SearchIcon,
-  subscribeToTopic,
 } from '@heroicons/react/outline'
+import { subscribeToTopic } from 'web/lib/api/websockets'
 import { groupBy, sumBy } from 'lodash'
 import clsx from 'clsx'
 import {
@@ -158,7 +158,7 @@ export function AnswersPanel(props: {
     if (!answers.length || !query) return []
 
     return sortedAnswers.filter(
-      (answer) =>
+      (answer: Answer) =>
         selectedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
     )
   }, [sortedAnswers, query])
@@ -172,7 +172,7 @@ export function AnswersPanel(props: {
     : showAll
     ? sortedAnswers
     : sortedAnswers
-        .filter((answer) => {
+        .filter((answer: Answer) => {
           if (selectedAnswerIds.includes(answer.id)) {
             return true
           }
@@ -191,7 +191,7 @@ export function AnswersPanel(props: {
   useEffect(() => {
     if (!selectedAnswerIds.length)
       setDefaultAnswerIdsToGraph?.(
-        answersToShow.map((a) => a.id).slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
+        answersToShow.map((a: Answer) => a.id).slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
       )
   }, [selectedAnswerIds.length, answersToShow.length])
 
@@ -294,7 +294,7 @@ export function AnswersPanel(props: {
         <div className="text-ink-500 p-4 text-center">No answers yet</div>
       ) : (
         <Col className="mx-[2px] mt-1 gap-2">
-          {answersToShow.map((answer) => (
+          {answersToShow.map((answer: Answer) => (
             <Answer
               className={
                 selectedAnswerIds.length &&
@@ -863,7 +863,7 @@ export function LimitOrderBarChart({
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {Object.entries(limitOrdersByProb).map(([limitProb, bets]) => {
         const numericLimitProb = Number(limitProb)
-        const volume = sumBy(bets, (bet) => bet.orderAmount - bet.amount)
+        const volume = sumBy(bets as Bet[], (bet: Bet) => bet.orderAmount - bet.amount)
 
         const logVolume = Math.log(volume)
         const logMaxOfVolume = Math.log(40000)
