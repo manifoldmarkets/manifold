@@ -43,10 +43,11 @@ export const probColumn = {
           contract.uniqueBettorCountDay !== contract.uniqueBettorCount
         }
         className="block w-[3ch] text-right"
+        width={'w-[65px]'}
       />
     </div>
   ),
-  width: 'w-[75px]',
+  width: 'w-[80px]',
 }
 
 export const actionColumn = {
