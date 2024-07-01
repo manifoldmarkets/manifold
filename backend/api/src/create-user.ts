@@ -169,7 +169,14 @@ export const createuser: APIHandler<'createuser'> = async (
       data: privateUser,
     })
 
-    return { user, privateUser }
+    return {
+      user: {
+        ...user,
+        // The client doesn't receive the update via websocket above, so returning the balance here
+        balance: STARTING_BALANCE,
+      },
+      privateUser,
+    }
   })
 
   log('created user ', { username: user.username, firebaseId: auth.uid })
