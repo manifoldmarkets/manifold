@@ -91,9 +91,7 @@ export const PortfolioValueSection = memo(
         Object.keys(newGraphValues).forEach((key) => {
           const value = newGraphValues[key as keyof GraphValueType]
           if (value === undefined) {
-            // Explicitly set to undefined or delete the key
-            updatedValues[key as keyof GraphValueType] = undefined // If you want to keep the key with value undefined
-            // delete updatedValues[key as keyof GraphValueType];     // If you want to remove the key entirely
+            updatedValues[key as keyof GraphValueType] = undefined
           } else {
             updatedValues[key as keyof GraphValueType] = value as NonNullable<
               GraphValueType[keyof GraphValueType]
@@ -200,6 +198,11 @@ export const PortfolioValueSection = memo(
       spice: spiceBalance,
     }
 
+    // Add the latest portfolio data as the final point
+    const updatedPortfolioHistory = portfolio
+      ? [...portfolioHistory, portfolio]
+      : portfolioHistory
+
     return (
       <PortfolioValueSkeleton
         hideAddFundsButton={hideAddFundsButton}
@@ -214,7 +217,7 @@ export const PortfolioValueSection = memo(
           <PortfolioGraph
             mode={graphMode}
             duration={currentTimePeriod}
-            portfolioHistory={portfolioHistory}
+            portfolioHistory={updatedPortfolioHistory}
             width={width}
             height={height}
             zoomParams={zoomParams}
@@ -232,13 +235,12 @@ export const PortfolioValueSection = memo(
         portfolioValues={portfolioValues}
         graphValues={graphValues}
         setGraphMode={setGraphMode}
-        portfolio={undefined}
+        portfolio={portfolio}
         user={user}
       />
     )
   }
 )
-
 function PortfolioValueSkeleton(props: {
   graphMode: GraphMode
   currentTimePeriod: Period
