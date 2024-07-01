@@ -8,6 +8,7 @@ import { Answer } from 'common/answer'
 import { computeInvestmentValue } from 'common/calculate-metrics'
 import { getPortfolioHistory } from 'shared/supabase/portfolio-metrics'
 import { DAY_MS } from 'common/util/time'
+import { LivePortfolioMetrics } from 'common/portfolio-metrics'
 
 export const getUserPortfolioInternal = async (userId: string) => {
   const user = await getUser(userId)
@@ -124,5 +125,5 @@ export const getUserPortfolioInternal = async (userId: string) => {
     dailyProfit:
       investmentValue + balance + spiceBalance - totalDeposits - dayAgoProfit,
     timestamp: Date.now(),
-  }
+  } as LivePortfolioMetrics
 }
