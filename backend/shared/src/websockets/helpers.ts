@@ -90,8 +90,12 @@ export function broadcastNewAnswer(answer: Answer) {
 }
 
 export function broadcastUpdatedAnswer(answer: Answer) {
-  const payload = { answer }
-  const topics = [`contract/${answer.contractId}/updated-answer`]
+  broadcastUpdatedAnswers([answer])
+}
+
+export function broadcastUpdatedAnswers(answers: Answer[]) {
+  const payload = { answers }
+  const topics = [`contract/${answers[0].contractId}/updated-answers`]
   // TODO: broadcast to global
   broadcastMulti(topics, payload)
 }

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   ArrowRightIcon,
   ChevronDownIcon,
@@ -121,6 +122,23 @@ export function AnswersPanel(props: {
   const answers = liveAnswers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
     .map((a) => ({
+    useEffect(() => {
+      const handleUpdatedAnswers = (updatedAnswers: Answer[]) => {
+        // Update the state with the new answers
+        const newAnswers = answers.map(answer => {
+          const updatedAnswer = updatedAnswers.find(a => a.id === answer.id)
+          return updatedAnswer ? updatedAnswer : answer
+        })
+        setAnswers(newAnswers)
+      }
+
+      const topic = `contract/${contract.id}/updated-answers`
+      const unsubscribe = subscribeToTopic(topic, handleUpdatedAnswers)
+
+      return () => {
+        unsubscribe()
+      }
+    }, [answers, contract.id])
       ...a,
       prob: getAnswerProbability(contract, a.id),
     }))
