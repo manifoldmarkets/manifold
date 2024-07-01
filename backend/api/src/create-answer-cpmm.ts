@@ -371,7 +371,7 @@ async function createAnswerAndSumAnswersToOne(
     })
     updatedAnswers.push(updated)
 
-    await updateMakers(makers, betRow.bet_id, pgTrans)
+    await updateMakers(makers, betRow.bet_id, contract, pgTrans)
     await cancelLimitOrders(
       pgTrans,
       ordersToCancel.map((b) => b.id)

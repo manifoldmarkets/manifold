@@ -6,7 +6,12 @@ import {
   getUser,
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
-import { Contract } from 'common/contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+  Contract,
+} from 'common/contract'
 import { isVerified, User } from 'common/user'
 import { groupBy, keyBy, sumBy, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
@@ -65,7 +70,7 @@ import { getAnswersForContract } from 'shared/supabase/answers'
 
 export const onCreateBets = async (
   bets: Bet[],
-  contract: Contract,
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   originalBettor: User,
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined

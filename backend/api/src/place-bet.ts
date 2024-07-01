@@ -492,7 +492,7 @@ export const executeNewBetResult = async (
   log(`Inserted bet for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
-    await updateMakers(makers, betRow.bet_id, pgTrans)
+    await updateMakers(makers, betRow.bet_id, contract, pgTrans)
   }
   if (ordersToCancel) {
     await cancelLimitOrders(
@@ -582,7 +582,7 @@ export const executeNewBetResult = async (
             removeUndefinedProps({ poolYes, poolNo, prob })
           )
         }
-        await updateMakers(makers, betRow.bet_id, pgTrans)
+        await updateMakers(makers, betRow.bet_id, contract, pgTrans)
         await cancelLimitOrders(
           pgTrans,
           ordersToCancel.map((o) => o.id)
@@ -594,14 +594,8 @@ export const executeNewBetResult = async (
 
     log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
 
-    const userIds = uniq([
-      user.id,
-      ...(makers?.map((maker) => maker.bet.userId) ?? []),
-    ])
-    log('Redeeming shares for users:', userIds)
-    await Promise.all(
-      userIds.map((userId) => redeemShares(pgTrans, userId, contract))
-    )
+    log('Redeeming shares for bettor', user.username, user.id)
+    await redeemShares(pgTrans, user.id, contract)
     log('Share redemption transaction finished.')
   }
 
@@ -659,6 +653,7 @@ export type maker = {
 export const updateMakers = async (
   makers: maker[],
   takerBetId: string,
+  contract: MarketContract,
   pgTrans: SupabaseTransaction
 ) => {
   const updatedLimitBets: LimitBet[] = []
@@ -710,6 +705,13 @@ export const updateMakers = async (
       id: userId,
       balance: -spent,
     }))
+  )
+
+  log('Redeeming shares for makers', Object.keys(spentByUser))
+  await Promise.all(
+    Object.keys(spentByUser).map((userId) =>
+      redeemShares(pgTrans, userId, contract)
+    )
   )
 
   // TODO: figure out LOGGING
