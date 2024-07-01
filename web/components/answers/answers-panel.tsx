@@ -6,6 +6,7 @@ import {
   PlusCircleIcon,
   ScaleIcon,
   SearchIcon,
+  subscribeToTopic,
 } from '@heroicons/react/outline'
 import { groupBy, sumBy } from 'lodash'
 import clsx from 'clsx'
@@ -46,7 +47,6 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
-import { useEffect, useMemo, useState } from 'react'
 import { api, editAnswerCpmm, updateMarket } from 'web/lib/api/api'
 import { Modal } from 'web/components/layout/modal'
 import { Input } from 'web/components/widgets/input'
