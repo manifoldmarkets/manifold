@@ -119,29 +119,33 @@ export function AnswersPanel(props: {
   const liveAnswers = useAnswersCpmm(contract.id) ?? contract.answers
   contract.answers = liveAnswers
 
-  const answers = liveAnswers
-    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({
-    useEffect(() => {
-      const handleUpdatedAnswers = (updatedAnswers: Answer[]) => {
-        // Update the state with the new answers
-        const newAnswers = answers.map(answer => {
-          const updatedAnswer = updatedAnswers.find(a => a.id === answer.id)
-          return updatedAnswer ? updatedAnswer : answer
-        })
-        setAnswers(newAnswers)
-      }
+  const [answersState, setAnswersState] = useState(
+    liveAnswers.filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
+  )
 
-      const topic = `contract/${contract.id}/updated-answers`
-      const unsubscribe = subscribeToTopic(topic, handleUpdatedAnswers)
+  useEffect(() => {
+    const handleUpdatedAnswers = (updatedAnswers: Answer[]) => {
+      // Update the state with the new answers
+      const newAnswers = answersState.map(answer => {
+        const updatedAnswer = updatedAnswers.find(a => a.id === answer.id)
+        return updatedAnswer ? updatedAnswer : answer
+      })
+      setAnswersState(newAnswers)
+    }
 
-      return () => {
-        unsubscribe()
-      }
-    }, [answers, contract.id])
-      ...a,
-      prob: getAnswerProbability(contract, a.id),
-    }))
+    const topic = `contract/${contract.id}/updated-answers`
+    const unsubscribe = subscribeToTopic(topic, handleUpdatedAnswers)
+
+    return () => {
+      unsubscribe()
+    }
+  }, [answersState, contract.id])
+
+  const answers = answersState.map((a) => ({
+    ...a,
+    prob: getAnswerProbability(contract, a.id),
+  }))
+
   const [showAll, setShowAll] = useState(
     (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
       answers.length <= 5
