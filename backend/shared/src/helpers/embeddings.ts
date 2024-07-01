@@ -6,6 +6,8 @@ import { log } from 'shared/utils'
 import { getMostlyActiveUserIds } from 'shared/supabase/users'
 import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
 
+export const TOPIC_SIMILARITY_THRESHOLD = 0.5
+
 function magnitude(vector: number[]): number {
   const vectorSum = sum(vector.map((val) => val * val))
   return Math.sqrt(vectorSum)

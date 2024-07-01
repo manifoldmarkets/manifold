@@ -1,52 +1,58 @@
-import { initAdmin } from 'shared/init-admin'
-initAdmin()
-
-import { run } from 'common/supabase/utils'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
+import { runScript } from './run-script'
+import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
+import { chunk } from 'lodash'
+if (require.main === module) {
+  runScript(async ({ pg }) => {
+    const contracts = await pg.map(
+      `select id, question from contracts
+              where visibility = 'public'
+            `,
+      [],
+      (r) => ({ id: r.id, question: r.question })
+    )
 
-async function main() {
-  const db = createSupabaseClient()
-  const pg = createSupabaseDirectClient()
+    console.log('Got', contracts.length, 'markets to process')
 
-  const result = await run(db.from('contract_embeddings').select('contract_id'))
+    const chunks = chunk(contracts, 100)
+    let processed = 0
+    for (const contracts of chunks) {
+      await Promise.all(
+        contracts.map(async (contract) => {
+          const { question, id } = contract
+          const embedding = await generateEmbeddings(question)
+          if (!embedding || embedding.length < 1500) {
+            console.log('No embeddings for', question)
+            return
+          }
 
-  const contractIds = new Set(result.data.map((row: any) => row.contract_id))
-  console.log('Got', contractIds.size, 'markets with preexisting embeddings')
-
-  const { data: contracts } = await run(
-    db.from('contracts').select('id, data')
-    // doesn't work if too many contracts
-    // .not('id', 'in', '(' + [...contractIds].join(',') + ')')
-  ).catch((err) => (console.error(err), { data: [] }))
-
-  console.log('Got', contracts.length, 'markets to process')
-
-  for (const contract of contracts) {
-    const { id, data } = contract
-    if (contractIds.has(id)) continue
-
-    const { question } = data as { question: string }
-    const embedding = await generateEmbeddings(question)
-    if (!embedding || embedding.length < 1500) {
-      console.log('No embeddings for', question)
-      continue
+          await pg
+            .none(
+              'insert into contract_embeddings (contract_id, embedding) values ($1, $2) on conflict (contract_id) do update set embedding = $2',
+              [id, embedding]
+            )
+            .catch((err) => console.error(err))
+        })
+      )
+      processed += contracts.length
+      console.log('Processed', processed, 'contracts')
     }
 
-    console.log('Generated embeddings for', id, ':', question)
-
-    await pg
-      .none(
-        'insert into contract_embeddings (contract_id, embedding) values ($1, $2) on conflict (contract_id) do nothing',
-        [id, embedding]
+    const groupIds = await pg.map(
+      `select id from groups`,
+      [],
+      (r) => r.id as string
+    )
+    const groupChunks = chunk(groupIds, 100)
+    let groupProcessed = 0
+    for (const groupIds of groupChunks) {
+      await Promise.all(
+        groupIds.map(async (groupId) => {
+          await upsertGroupEmbedding(pg, groupId)
+        })
       )
-      .catch((err) => console.error(err))
-  }
-}
-
-if (require.main === module) {
-  main().then(() => process.exit())
+      groupProcessed += groupIds.length
+      console.log('Processed', groupProcessed, 'groups')
+    }
+  })
 }
