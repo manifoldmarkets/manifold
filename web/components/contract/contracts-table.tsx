@@ -154,15 +154,16 @@ export function ContractStatusLabel(props: {
   showProbChange?: boolean
   chanceLabel?: boolean
   className?: string
+  width?: string
 }) {
-  const { contract, showProbChange, chanceLabel, className } = props
+  const { contract, showProbChange, chanceLabel, className, width } = props
   const probTextColor = getTextColor(contract)
   const { outcomeType } = contract
 
   switch (outcomeType) {
     case 'BINARY': {
       return contract.resolution ? (
-        <span className={className}>
+        <span className={clsx(className, width)}>
           <BinaryContractOutcomeLabel
             contract={contract}
             resolution={contract.resolution}
@@ -174,16 +175,17 @@ export function ContractStatusLabel(props: {
           {showProbChange &&
             contract.probChanges &&
             Math.round(contract.probChanges.day * 100) !== 0 && (
-              <Row className="text-ink-700 mb-0.5 inline-flex items-center align-middle">
-                {contract.probChanges.day > 0 && (
-                  <ArrowNarrowUpIcon className="mr-[-1px] h-4 w-4 text-teal-500" />
+              <Row
+                className={clsx(
+                  'text-ink-700 mb-0.5 ml-[3px] inline-flex items-center rounded-full px-1 align-middle text-xs',
+                  contract.probChanges.day > 0
+                    ? 'bg-teal-600/10 text-teal-600'
+                    : 'text-scarlet-500 bg-scarlet-500/10'
                 )}
-                {contract.probChanges.day < 0 && (
-                  <ArrowNarrowDownIcon className="text-scarlet-500 mr-[-1px] h-4 w-4" />
-                )}
-                <span className={clsx('text-sm font-normal')}>
-                  {Math.abs(Math.round((contract.probChanges.day ?? 0) * 100))}
-                </span>
+              >
+                {contract.probChanges.day > 0 ? '+' : '-'}
+                {Math.abs(Math.round((contract.probChanges.day ?? 0) * 100))}
+                <span className="font-thin">%</span>
               </Row>
             )}
           {chanceLabel && <span className="text-sm font-normal"> chance</span>}
@@ -211,7 +213,7 @@ export function ContractStatusLabel(props: {
       return <span className={clsx(probTextColor, className)}>{val}</span>
     }
     case 'MULTIPLE_CHOICE': {
-      return <ContractMinibar contract={contract} />
+      return <ContractMinibar width={width} contract={contract} />
     }
     case 'QUADRATIC_FUNDING': {
       return <span>RAD</span>
