@@ -156,7 +156,8 @@ export const placeBetMain = async (
 
   const continuation = async () => {
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
-    broadcastUpdatedAnswers(contract.answers)
+    const updatedAnswers = fullBets.map(bet => contract.answers.find(answer => answer.id === bet.answerId)).filter(Boolean)
+    broadcastUpdatedAnswers(updatedAnswers)
   }
 
   const time = Date.now() - startTime

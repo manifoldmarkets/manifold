@@ -139,7 +139,7 @@ export function AnswersPanel(props: {
     return () => {
       unsubscribe()
     }
-  }, [answersState, contract.id])
+  }, [contract.id])
 
   const answers = answersState.map((a) => ({
     ...a,
