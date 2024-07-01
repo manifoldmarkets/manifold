@@ -87,3 +87,4 @@ export const BETTING_STREAK_RESET_HOUR = 7
 
 export const MANACHAN_TWEET_COST = 2500
 export const PUSH_NOTIFICATION_BONUS = 1000
+export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
