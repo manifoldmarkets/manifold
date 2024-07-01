@@ -14,6 +14,7 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
+import { BURN_MANA_USER_ID } from 'common/economy'
 
 export const managram: APIHandler<'managram'> = async (props, auth) => {
   const { amount, toIds, message, token, groupId: passedGroupId } = props
@@ -98,11 +99,13 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
           [balanceField]: -total,
           totalDeposits: -total,
         },
-        toIds.map((toId) => ({
-          id: toId,
-          [balanceField]: amount,
-          totalDeposits: amount,
-        }))
+        toIds
+          .filter((id) => id !== BURN_MANA_USER_ID)
+          .map((toId) => ({
+            id: toId,
+            [balanceField]: amount,
+            totalDeposits: amount,
+          }))
       )
     )
 
