@@ -156,6 +156,7 @@ export const placeBetMain = async (
 
   const continuation = async () => {
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
+    broadcastUpdatedAnswers(contract.answers)
   }
 
   const time = Date.now() - startTime

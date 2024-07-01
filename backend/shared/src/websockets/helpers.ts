@@ -90,6 +90,9 @@ export function broadcastNewAnswer(answer: Answer) {
 }
 
 export function broadcastUpdatedAnswer(answer: Answer) {
+  const payload = { answer }
+  const topics = [`contract/${answer.contractId}/updated-answer`]
+  broadcastMulti(topics, payload)
   broadcastUpdatedAnswers([answer])
 }
 
