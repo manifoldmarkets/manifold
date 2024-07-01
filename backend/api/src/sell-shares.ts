@@ -1,6 +1,6 @@
 import { mapValues, groupBy, sumBy } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { CPMM_MIN_POOL_QTY } from 'common/contract'
+import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { removeUndefinedProps } from 'common/util/object'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
@@ -228,7 +228,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     const betRow = await insertBet(candidateBet, pgTrans)
     fullBets.push(convertBet(betRow))
 
-    await updateMakers(makers, betRow.bet_id, pgTrans)
+    await updateMakers(makers, betRow.bet_id, contract, pgTrans)
 
     await cancelLimitOrders(
       pgTrans,
@@ -285,7 +285,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
         answer.id,
         removeUndefinedProps({ poolYes, poolNo, prob })
       )
-      await updateMakers(makers, betRow.bet_id, pgTrans)
+      await updateMakers(makers, betRow.bet_id, contract, pgTrans)
       await cancelLimitOrders(
         pgTrans,
         ordersToCancel.map((o) => o.id)
@@ -324,10 +324,13 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   }
 
   const continuation = async () => {
-    await onCreateBets(fullBets, contract, user, allOrdersToCancel, [
-      ...makers,
-      ...otherResultsWithBet.flatMap((r) => r.makers),
-    ])
+    await onCreateBets(
+      fullBets,
+      contract as MarketContract,
+      user,
+      allOrdersToCancel,
+      [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)]
+    )
   }
   return { result: { ...newBet, betId }, continue: continuation }
 }

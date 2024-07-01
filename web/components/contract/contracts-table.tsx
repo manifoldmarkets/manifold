@@ -172,6 +172,7 @@ export function ContractStatusLabel(props: {
         <span className={clsx(probTextColor, 'whitespace-nowrap', className)}>
           {formatPercentShort(getDisplayProbability(contract))}
           {showProbChange &&
+            contract.probChanges &&
             Math.round(contract.probChanges.day * 100) !== 0 && (
               <Row className="text-ink-700 mb-0.5 inline-flex items-center align-middle">
                 {contract.probChanges.day > 0 && (
