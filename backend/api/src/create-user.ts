@@ -170,11 +170,7 @@ export const createuser: APIHandler<'createuser'> = async (
     })
 
     return {
-      user: {
-        ...user,
-        // The client doesn't receive the update via websocket above, so returning the balance here
-        balance: STARTING_BALANCE,
-      },
+      user,
       privateUser,
     }
   })

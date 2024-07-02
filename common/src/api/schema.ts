@@ -714,7 +714,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: DEFAULT_CACHE_STRATEGY,
+    // Do not add a caching strategy here. New users need up-to-date data.
     returns: {} as FullUser,
     props: z.object({ id: z.string() }).strict(),
   },

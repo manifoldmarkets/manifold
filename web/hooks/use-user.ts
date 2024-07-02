@@ -33,27 +33,31 @@ export const useWebsocketUser = (userId: string | undefined) => {
   useApiSubscription({
     topics: [`user/${userId ?? '_'}`],
     onBroadcast: ({ data }) => {
-      console.log(data)
-      setUser((user) => {
-        if (!user) {
-          return user
+      const { user } = data
+      console.log('ws update', user)
+      setUser((prevUser) => {
+        if (!prevUser) {
+          return prevUser
         } else {
           return {
-            ...user,
-            ...(data.user as Partial<User>),
+            ...prevUser,
+            ...(user as Partial<User>),
           }
         }
       })
     },
   })
 
+  const refreshUser = async (id: string) => {
+    const result = await getFullUserById(id)
+    setUser(result)
+  }
+
   useEffect(() => {
     if (!isPageVisible) return
 
     if (userId) {
-      getFullUserById(userId).then((result) => {
-        setUser(result)
-      })
+      refreshUser(userId)
     } else {
       setUser(null)
     }

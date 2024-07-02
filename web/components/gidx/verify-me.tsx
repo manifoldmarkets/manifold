@@ -7,7 +7,7 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import { api } from 'web/lib/api/api'
-import { useWebsocketUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import {
   GIDX_REGISTATION_ENABLED,
   GIDXDocument,
@@ -18,7 +18,7 @@ import { Row } from 'web/components/layout/row'
 import { toast } from 'react-hot-toast'
 
 export const VerifyMe = (props: { user: User }) => {
-  const user = useWebsocketUser(props.user?.id) || props.user
+  const user = useUser() ?? props.user
 
   const [show, setShow] = useState(
     GIDX_REGISTATION_ENABLED &&
