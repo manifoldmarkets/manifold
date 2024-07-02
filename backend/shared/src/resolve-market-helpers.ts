@@ -42,6 +42,7 @@ import {
   getAnswer,
   getAnswersForContract,
   updateAnswer,
+  updateAnswers,
 } from './supabase/answers'
 import { updateContract } from './supabase/contracts'
 
@@ -212,10 +213,13 @@ export const resolveMarketHelper = async (
         updateAnswerAttrs &&
         unresolvedContract.mechanism === 'cpmm-multi-1'
       ) {
-        for (const answer of unresolvedContract.answers) {
-          const props = removeUndefinedProps(updateAnswerAttrs)
-          await updateAnswer(tx, answer.id, props)
-        }
+        const answerUpdates = unresolvedContract.answers.map((a) =>
+          removeUndefinedProps({
+            id: a.id,
+            ...updateAnswerAttrs,
+          })
+        )
+        await updateAnswers(tx, contractId, answerUpdates)
       }
       log('processing payouts', { payouts })
       await payUsersTransactions(
