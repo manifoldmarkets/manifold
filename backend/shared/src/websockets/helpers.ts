@@ -89,9 +89,14 @@ export function broadcastNewAnswer(answer: Answer) {
   broadcastMulti(topics, payload)
 }
 
-export function broadcastUpdatedAnswer(answer: Answer) {
-  const payload = { answer }
-  const topics = [`contract/${answer.contractId}/updated-answer`]
+export function broadcastUpdatedAnswers(
+  contractId: string,
+  answers: (Partial<Answer> & { id: string })[]
+) {
+  if (answers.length === 0) return
+
+  const payload = { answers }
+  const topics = [`contract/${contractId}/updated-answers`]
   // TODO: broadcast to global
   broadcastMulti(topics, payload)
 }
