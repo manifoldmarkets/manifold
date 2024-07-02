@@ -2,19 +2,13 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import { groupBy } from 'lodash'
 import { Answer } from 'common/answer'
-import {
-  bulkInsert,
-  updateData,
-  insert,
-  DataUpdate,
-  bulkUpdateData,
-} from './utils'
+import { bulkInsert, updateData, insert, DataUpdate } from './utils'
 import { randomString } from 'common/util/random'
 import { removeUndefinedProps } from 'common/util/object'
-import { DataFor, millisToTs } from 'common/supabase/utils'
+import { millisToTs } from 'common/supabase/utils'
 import {
   broadcastNewAnswer,
-  broadcastUpdatedAnswers,
+  broadcastUpdatedAnswer,
 } from 'shared/websockets/helpers'
 
 export const getAnswer = async (pg: SupabaseDirectClient, id: string) => {
@@ -71,22 +65,13 @@ export const bulkInsertAnswers = async (
 
 export const updateAnswer = async (
   pg: SupabaseDirectClient,
-  answerId: string,
+  id: string,
   update: DataUpdate<'answers'>
 ) => {
-  const row = await updateData(pg, 'answers', 'id', { ...update, id: answerId })
+  const row = await updateData(pg, 'answers', 'id', { ...update, id })
   const answer = convertAnswer(row)
-  broadcastUpdatedAnswers(answer.contractId, [answer])
+  broadcastUpdatedAnswer(answer)
   return answer
-}
-
-export const updateAnswers = async (
-  pg: SupabaseDirectClient,
-  contractId: string,
-  updates: (Partial<DataFor<'answers'>> & { id: string })[]
-) => {
-  await bulkUpdateData<'answers'>(pg, 'answers', updates)
-  broadcastUpdatedAnswers(contractId, updates)
 }
 
 export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({

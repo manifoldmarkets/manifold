@@ -30,19 +30,13 @@ export const useAnswersCpmm = (contractId: string) => {
   })
 
   useApiSubscription({
-    topics: [`contract/${contractId}/updated-answers`],
+    topics: [`contract/${contractId}/updated-answer`],
     onBroadcast: ({ data }) => {
-      const newAnswerUpdates = data.answers as (Partial<Answer> & {
-        id: string
-      })[]
+      const newAnswer = data.answer as Answer
       setAnswers((answers) =>
-        (answers ?? []).map((answer) => {
-          const update = newAnswerUpdates.find(
-            (newAnswer) => newAnswer.id === answer.id
-          )
-          if (!update) return answer
-          return { ...answer, ...update }
-        })
+        (answers ?? []).map((answer) =>
+          answer.id === newAnswer.id ? newAnswer : answer
+        )
       )
     },
   })
