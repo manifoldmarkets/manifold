@@ -51,8 +51,7 @@ export const EditProfile = (props: {
   const [isSaved, setIsSaved] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const { userInfo, updateUserState } =
-    useEditableUserInfo(user)
+  const { userInfo, updateUserState } = useEditableUserInfo(user)
   const {
     name,
     username,
@@ -200,11 +199,7 @@ export const EditProfile = (props: {
         <Button onClick={handleSave} disabled={loading}>
           {loading ? <LoadingIndicator /> : 'Save'}
         </Button>
-        {isSaved && <span className="text-success text-sm">Saved!</span>}
       </Col>
     </Col>
   )
 }
-
-//To do: Add slug modifier for tabs
-//To do: Update sitemap and any other links to /profile to tabs

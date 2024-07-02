@@ -1,14 +1,14 @@
 import { usePrivateUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import clsx from 'clsx'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import { ChartBarIcon } from '@heroicons/react/solid'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-import { UncontrolledTabs } from 'web/components/layout/tabs'
+import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { BlockUser } from 'web/components/profile/block-user'
 import { ReportUser } from 'web/components/profile/report-user'
 import { Title } from 'web/components/widgets/title'
@@ -27,9 +27,9 @@ import SuperBanControl from '../SuperBanControl'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
 import { buildArray } from 'common/util/array'
-import { DeleteYourselfButton } from '../profile/delete-yourself'
 import { AccountSettings } from '../profile/settings'
 import { EditProfile } from './edit-profile'
+import { useRouter } from 'next/router'
 
 export function MoreOptionsUserButton(props: { user: User }) {
   const { user } = props
@@ -39,6 +39,14 @@ export function MoreOptionsUserButton(props: { user: User }) {
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
   const numReferrals = useReferralCount(user)
+  const router = useRouter()
+
+  useEffect(() => {
+    const tab = router.query.tab
+    if (tab && tab.toString().toLowerCase() === 'edit+profile') {
+      setIsModalOpen(true)
+    }
+  }, [router.query])
 
   if (!currentPrivateUser) return <div />
 
@@ -61,11 +69,7 @@ export function MoreOptionsUserButton(props: { user: User }) {
           aria-hidden="true"
         />
       </Button>
-      <Modal
-        open={isModalOpen}
-        setOpen={setIsModalOpen}
-        
-      >
+      <Modal open={isModalOpen} setOpen={setIsModalOpen}>
         <div className="bg-canvas-0 text-ink-1000 max-h-[80vh]  overflow-y-auto rounded-md p-4">
           <Col className="h-full">
             <div className="mb-2 flex flex-wrap justify-between">
@@ -124,7 +128,7 @@ export function MoreOptionsUserButton(props: { user: User }) {
                 </>
               )}
             </Row>
-            <UncontrolledTabs
+            <QueryUncontrolledTabs
               className={'mb-4'}
               tabs={buildArray([
                 isYou
