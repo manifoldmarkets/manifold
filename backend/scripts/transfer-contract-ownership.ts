@@ -1,19 +1,14 @@
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 import { runScript } from './run-script'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
-// Define types for command-line arguments
 interface Args {
   slugs: string[]
   toUserId: string
 }
 
-// Define types for the fetched data
 interface User {
   id: string
   username: string
@@ -26,10 +21,8 @@ interface Contract {
   data: any
 }
 
-// Initialize Supabase client
 const supabaseClient = createSupabaseClient()
 
-// Parse command-line arguments
 const argv = yargs(hideBin(process.argv))
   .option('slugs', {
     alias: 's',
@@ -45,13 +38,12 @@ const argv = yargs(hideBin(process.argv))
   })
   .parseSync() as Args
 
-const BATCH_SIZE = 10 // Adjust batch size as needed
+const BATCH_SIZE = 20
 
 if (require.main === module) {
   runScript(async () => {
     const { slugs: slugsToTransfer, toUserId } = argv
 
-    // Fetch the new user details
     const { data: toUserData, error: userError } = await supabaseClient
       .from('users')
       .select('id, username, name, created_time')
@@ -70,7 +62,6 @@ if (require.main === module) {
 
     const toUser: User = toUserData as unknown as User
 
-    // Fetch contract IDs and their current descriptions to transfer based on slugs
     const { data: contractsData, error: contractsError } = await supabaseClient
       .from('contracts')
       .select('id, data')
@@ -93,7 +84,6 @@ if (require.main === module) {
       `Transferring ${contractsToTransfer.length} contracts to ${toUser.name}`
     )
 
-    // Process contracts in batches using upsert
     for (let i = 0; i < contractsToTransfer.length; i += BATCH_SIZE) {
       const batch = contractsToTransfer.slice(i, i + BATCH_SIZE)
 
@@ -109,14 +99,13 @@ if (require.main === module) {
         return {
           id,
           creator_id: toUser.id,
-
           created_time: toUser.created_time,
           data: {
             ...data,
             description: updatedDescription,
-            creatorUsername: toUser.username, // Update creatorUsername in data
-            creatorName: toUser.name, // Update creatorName in data
-            creatorAvatarUrl: data.creatorAvatarUrl, // Keep existing avatar_url from the contract data
+            creatorUsername: toUser.username,
+            creatorName: toUser.name,
+            creatorAvatarUrl: data.creatorAvatarUrl,
           },
         }
       })
