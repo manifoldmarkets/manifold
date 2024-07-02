@@ -32,13 +32,12 @@ import { insertLiquidity } from 'shared/supabase/liquidity'
 import {
   getAnswersForContract,
   insertAnswer,
-  updateAnswers,
+  updateAnswer,
 } from 'shared/supabase/answers'
 import { getTierFromLiquidity } from 'common/tier'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { runShortTrans } from 'shared/short-transaction'
-import { LimitBet } from 'common/bet'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -158,7 +157,7 @@ export const createAnswerCpmmMain = async (
 
     const updatedAnswers: Answer[] = []
     if (shouldAnswersSumToOne) {
-      await createAnswerAndSumAnswersToOne(
+      const updatedAnswers = await createAnswerAndSumAnswersToOne(
         pgTrans,
         user,
         contract,
@@ -166,7 +165,6 @@ export const createAnswerCpmmMain = async (
         newAnswer,
         answerCost
       )
-      const updatedAnswers = await getAnswersForContract(pgTrans, contract.id)
       await convertOtherAnswerShares(pgTrans, updatedAnswers, newAnswer.id)
     } else {
       await insertAnswer(pgTrans, newAnswer)
@@ -318,11 +316,9 @@ async function createAnswerAndSumAnswersToOne(
     ),
   })
 
-  const answerUpdates: (Partial<Answer> & { id: string })[] = []
-  answerUpdates.push({
-    id: otherAnswer.id,
-    ...updatedOtherAnswerProps,
-  })
+  await insertAnswer(pgTrans, newAnswer)
+
+  await updateAnswer(pgTrans, otherAnswer.id, updatedOtherAnswerProps)
 
   const poolsByAnswer = Object.fromEntries(
     betResults.map((r) => [
@@ -346,7 +342,7 @@ async function createAnswerAndSumAnswersToOne(
     extraMana
   )
 
-  const allOrdersToCancel: LimitBet[] = []
+  const updatedAnswers: Answer[] = []
   for (const result of betResults) {
     const { answer, bet, makers, ordersToCancel } = result
 
@@ -368,25 +364,26 @@ async function createAnswerAndSumAnswersToOne(
       poolNo,
       prob,
     })
-    answerUpdates.push({
-      id: answer.id,
+    const updated = await updateAnswer(pgTrans, answer.id, {
       poolYes,
       poolNo,
       prob,
     })
+    updatedAnswers.push(updated)
 
     await updateMakers(makers, betRow.bet_id, contract, pgTrans)
-    allOrdersToCancel.push(...ordersToCancel)
+    await cancelLimitOrders(
+      pgTrans,
+      ordersToCancel.map((b) => b.id)
+    )
   }
 
-  await insertAnswer(pgTrans, newAnswer)
-  await updateAnswers(pgTrans, contract.id, answerUpdates)
-
-  allOrdersToCancel.push(...unfilledBetsOnOther)
   await cancelLimitOrders(
     pgTrans,
-    allOrdersToCancel.map((b) => b.id)
+    unfilledBetsOnOther.map((b) => b.id)
   )
+
+  return updatedAnswers
 }
 
 async function convertOtherAnswerShares(

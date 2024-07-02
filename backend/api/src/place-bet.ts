@@ -43,7 +43,7 @@ import { redeemShares } from './redeem-shares'
 import {
   getAnswer,
   getAnswersForContract,
-  updateAnswers,
+  updateAnswer,
 } from 'shared/supabase/answers'
 import { updateContract } from 'shared/supabase/contracts'
 
@@ -402,8 +402,8 @@ export const executeNewBetResult = async (
   replyToCommentId?: string,
   betGroupId?: string
 ) => {
-  const allOrdersToCancel: LimitBet[] = []
-  const fullBets: Bet[] = []
+  const allOrdersToCancel = []
+  const fullBets = [] as Bet[]
 
   const {
     newBet,
@@ -495,6 +495,10 @@ export const executeNewBetResult = async (
     await updateMakers(makers, betRow.bet_id, contract, pgTrans)
   }
   if (ordersToCancel) {
+    await cancelLimitOrders(
+      pgTrans,
+      ordersToCancel.map((o) => o.id)
+    )
     allOrdersToCancel.push(...ordersToCancel)
   }
 
@@ -522,25 +526,21 @@ export const executeNewBetResult = async (
     )
   }
 
-  const answerUpdates: {
-    id: string
-    poolYes: number
-    poolNo: number
-    prob: number
-  }[] = []
-
   if (newBet.amount !== 0) {
     if (newBet.answerId) {
       // Multi-cpmm-1 contract
       if (newPool) {
         const { YES: poolYes, NO: poolNo } = newPool
         const prob = getCpmmProbability(newPool, 0.5)
-        answerUpdates.push({
-          id: newBet.answerId,
-          poolYes,
-          poolNo,
-          prob,
-        })
+        await updateAnswer(
+          pgTrans,
+          newBet.answerId,
+          removeUndefinedProps({
+            poolYes,
+            poolNo,
+            prob,
+          })
+        )
       }
     } else {
       await updateContract(
@@ -574,27 +574,23 @@ export const executeNewBetResult = async (
           })
           const betRow = await insertBet(candidateBet, pgTrans)
           fullBets.push(convertBet(betRow))
-
-          await updateMakers(makers, betRow.bet_id, contract, pgTrans)
-
           const { YES: poolYes, NO: poolNo } = cpmmState.pool
           const prob = getCpmmProbability(cpmmState.pool, 0.5)
-          answerUpdates.push({
-            id: answer.id,
-            poolYes,
-            poolNo,
-            prob,
-          })
+          await updateAnswer(
+            pgTrans,
+            answer.id,
+            removeUndefinedProps({ poolYes, poolNo, prob })
+          )
         }
+        await updateMakers(makers, betRow.bet_id, contract, pgTrans)
+        await cancelLimitOrders(
+          pgTrans,
+          ordersToCancel.map((o) => o.id)
+        )
+
         allOrdersToCancel.push(...ordersToCancel)
       }
     }
-
-    await updateAnswers(pgTrans, contract.id, answerUpdates)
-    await cancelLimitOrders(
-      pgTrans,
-      allOrdersToCancel.map((o) => o.id)
-    )
 
     log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
 
