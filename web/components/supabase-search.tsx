@@ -309,6 +309,7 @@ export function SupabaseSearch(props: {
       prizeMarketState,
       forYou,
       marketTiers,
+      topicFilter,
     ]
   )
 
