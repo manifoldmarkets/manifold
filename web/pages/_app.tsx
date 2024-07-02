@@ -14,6 +14,7 @@ import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { useThemeManager } from 'web/hooks/use-theme'
 import Welcome from 'web/components/onboarding/welcome'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -183,7 +184,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
 
       <Script
         async
-        src="https://www.googletagmanager.com/gtag/js?id=GTM-MLMPXHJ6"
+        src={`https://www.googletagmanager.com/gtag/js?id=${ENV_CONFIG.googleAnalyticsId}`}
       />
       <Script
         id="gaw"
@@ -192,7 +193,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'GTM-MLMPXHJ6');`,
+  gtag('config', '${ENV_CONFIG.googleAnalyticsId}');`,
         }}
       />
     </>

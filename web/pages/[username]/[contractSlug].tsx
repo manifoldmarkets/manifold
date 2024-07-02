@@ -85,6 +85,7 @@ import { base64toPoints } from 'common/edge/og'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { YourOrders } from 'web/components/bet/order-book'
+import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -199,6 +200,7 @@ export function ContractPageContent(props: ContractParams) {
   }, [contract.resolution, contract.id, topContractMetrics.length])
 
   useSaveCampaign()
+  useGoogleAnalytics()
   useTracking(
     'view market',
     {
