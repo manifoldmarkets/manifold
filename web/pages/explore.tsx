@@ -13,12 +13,7 @@ export default function Explore() {
   useSaveScroll('explore')
 
   return (
-    <Page
-      trackPageView={'home'}
-      trackPageProps={{ kind: 'desktop' }}
-      className=" !mt-0"
-      banner={null}
-    >
+    <Page trackPageView={'explore'} className=" !mt-0" banner={null}>
       {user && (
         <DailyStats
           className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
