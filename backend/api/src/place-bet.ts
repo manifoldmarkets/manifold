@@ -590,7 +590,6 @@ export const executeNewBetResult = async (
       }
     }
 
-    console.log('place bet update answers', answerUpdates)
     await updateAnswers(pgTrans, contract.id, answerUpdates)
     await cancelLimitOrders(
       pgTrans,
