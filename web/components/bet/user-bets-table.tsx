@@ -337,7 +337,7 @@ function BetsTable(props: {
       )
     )
   }
-
+  const enabledColumnsCount = columns.filter((c) => c.enabled).length
   const [modalOpen, setModalOpen] = useState(false)
 
   // Most of these are descending sorts by default.
@@ -429,13 +429,14 @@ function BetsTable(props: {
         const showOutcome = maxOutcome && c.outcomeType === 'BINARY'
         return (
           <Row className={clsx('justify-end gap-1')}>
-            {showOutcome && isMobile && !isEnabled('value') && (
-              <OutcomeLabel
-                contract={c}
-                outcome={maxOutcome}
-                truncate={'short'}
-              />
-            )}
+            {showOutcome &&
+              ((isMobile && !isEnabled('value')) || !isMobile) && (
+                <OutcomeLabel
+                  contract={c}
+                  outcome={maxOutcome}
+                  truncate={'short'}
+                />
+              )}
             <Col className={'sm:min-w-[50px]'}>
               <NumberCell
                 num={sum(Object.values(metricsByContractId[c.id].totalShares))}
@@ -804,13 +805,15 @@ function BetsTable(props: {
       <Modal setOpen={setModalOpen} open={modalOpen}>
         <div className={MODAL_CLASS}>
           <span className="mb-4 text-lg font-bold">
-            {columns.filter((c) => c.enabled).length === 5
-              ? 'Unselect a column to select another'
+            {enabledColumnsCount >= MAX_SHOWN_MOBILE
+              ? `Unselect ${
+                  MAX_SHOWN_MOBILE + 1 - enabledColumnsCount
+                } column to select another`
               : `Select ${
-                  5 - columns.filter((c) => c.enabled).length
+                  MAX_SHOWN_MOBILE - enabledColumnsCount
                 } more ${maybePluralize(
                   'column',
-                  5 - columns.filter((c) => c.enabled).length
+                  MAX_SHOWN_MOBILE - enabledColumnsCount
                 )} (max 5)`}
           </span>
           {columns.map((col) => (
