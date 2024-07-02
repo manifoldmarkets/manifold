@@ -14,6 +14,7 @@ create table if not exists
     is_api boolean,
     is_redemption boolean,
     is_challenge boolean,
+    loan_amount numeric,
     visibility text,
     data jsonb not null,
     updated_time timestamptz not null default now(),
@@ -50,6 +51,7 @@ begin
         new.visibility := ((new.data) ->> 'visibility')::text;
         new.answer_id := ((new.data) ->> 'answerId')::text;
         new.is_api := ((new.data) ->> 'isApi')::boolean;
+        new.loan_amount := ((new.data) ->> 'loanAmount')::numeric;
     end if;
     return new;
 end

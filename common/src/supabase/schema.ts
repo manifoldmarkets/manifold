@@ -232,6 +232,7 @@ export type Database = {
           updated_time: string
           user_id: string
           visibility: string | null
+          loan_amount: number | null
         }
         Insert: {
           amount?: number | null
@@ -251,6 +252,7 @@ export type Database = {
           updated_time?: string
           user_id: string
           visibility?: string | null
+          loan_amount?: number | null
         }
         Update: {
           amount?: number | null
@@ -270,6 +272,7 @@ export type Database = {
           updated_time?: string
           user_id?: string
           visibility?: string | null
+          loan_amount?: number | null
         }
         Relationships: []
       }
