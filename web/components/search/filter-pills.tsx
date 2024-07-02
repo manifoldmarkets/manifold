@@ -9,9 +9,17 @@ import {
 } from 'web/public/custom-components/tiers'
 import { Row } from '../layout/row'
 import CheckedDropdownMenu from '../widgets/checked-dropdown'
-import { FILTERS, Filter } from '../supabase-search'
+import {
+  FILTERS,
+  FOR_YOU_KEY,
+  Filter,
+  SearchParams,
+  TOPIC_FILTER_KEY,
+} from '../supabase-search'
 import DropdownMenu from '../comments/dropdown-menu'
 import { getLabelFromValue } from './search-dropdown-helpers'
+import { LiteGroup } from 'common/group'
+import { User } from 'common/user'
 
 export function FilterPill(props: {
   selected: boolean
@@ -182,6 +190,75 @@ export function FilterDropdownPill(props: {
         </div>
       )}
       selectedItemName={currentFilterLabel}
+      closeOnClick
+    />
+  )
+}
+
+export function TopicDropdownPill(props: {
+  initialTopics: LiteGroup[]
+  currentTopicFilter?: string
+  user: User | null | undefined
+  forYou: boolean
+  updateParams: (params: Partial<SearchParams>) => void
+}) {
+  const { initialTopics, currentTopicFilter, user, forYou, updateParams } =
+    props
+  const currentTopicLabel = forYou
+    ? 'For You'
+    : initialTopics.find((topic) => topic.slug == currentTopicFilter)?.name
+
+  const selectTopicFilter = (selection: string) => {
+    if (selection === currentTopicFilter) {
+      return
+    }
+
+    updateParams({
+      [TOPIC_FILTER_KEY]: selection,
+      [FOR_YOU_KEY]: '0',
+    })
+  }
+
+  const forYouItem = user
+    ? {
+        name: 'For You',
+        onClick: () =>
+          updateParams({
+            [FOR_YOU_KEY]: forYou ? '0' : '1',
+          }),
+      }
+    : null
+
+  const items = [
+    ...(forYouItem ? [forYouItem] : []), // Include forYouItem only if it is not null
+    ...initialTopics.map((topic) => ({
+      name: topic.name,
+      onClick: () => selectTopicFilter(topic.slug),
+    })),
+  ].slice(0, 9)
+
+  return (
+    <DropdownMenu
+      withinOverflowContainer
+      items={items}
+      buttonContent={(open) => (
+        <div
+          className={clsx(
+            'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
+
+            'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30 dark:bg-sky-500/20 dark:hover:bg-sky-500/30'
+          )}
+        >
+          {currentTopicLabel}
+          <ChevronDownIcon
+            className={clsx(
+              'h-4 w-4 transition-transform',
+              open ? 'rotate-180' : ''
+            )}
+          />
+        </div>
+      )}
+      selectedItemName={currentTopicLabel}
       closeOnClick
     />
   )

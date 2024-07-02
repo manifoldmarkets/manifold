@@ -182,7 +182,8 @@ export function GroupPageContent(props: {
     LiteGroup[] | undefined
   >(undefined, `search-topic-results`)
 
-  const shownTopics = q && topicResults?.length ? topicResults : allTopics
+  const shownTopics = q && topicResults?.length ? topicResults : undefined
+  const initialTopics = topicsByImportance
 
   const currentTopic = allTopics.find((t) => t.slug === topicSlug)
   const staticTopicIsCurrent = staticTopicParams?.slug === currentTopic?.slug
@@ -210,6 +211,7 @@ export function GroupPageContent(props: {
       defaultSort="score"
       defaultForYou="0"
       shownTopics={shownTopics}
+      initialTopics={initialTopics}
       setTopicSlug={(slug) => {
         setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
       }}

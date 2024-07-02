@@ -140,6 +140,7 @@ export type SearchParams = {
   [PRIZE_MARKET_KEY]: BinaryDigit
   [FOR_YOU_KEY]: BinaryDigit
   [MARKET_TIER_KEY]: TierParamsType
+  [TOPIC_FILTER_KEY]: string | undefined
 }
 
 export const QUERY_KEY = 'q'
@@ -150,6 +151,7 @@ export const SEARCH_TYPE_KEY = 't'
 export const PRIZE_MARKET_KEY = 'p'
 export const FOR_YOU_KEY = 'fy'
 export const MARKET_TIER_KEY = 'mt'
+export const TOPIC_FILTER_KEY = 'tf'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
@@ -172,6 +174,7 @@ export type SearchState = {
     isPrizeMarket: '1' | '0'
     forYou: '1' | '0'
     marketTier: TierParamsType
+    topicFilter: string | undefined
   }
 }
 
@@ -201,6 +204,7 @@ export function SupabaseSearch(props: {
   hideSearchTypes?: boolean
   hideAvatars?: boolean
   shownTopics?: LiteGroup[]
+  initialTopics?: LiteGroup[]
   setTopicSlug?: (slug: string) => void
 }) {
   const {
@@ -226,6 +230,7 @@ export function SupabaseSearch(props: {
     hideSearchTypes,
     hideAvatars,
     shownTopics,
+    initialTopics,
     setTopicSlug,
   } = props
 
@@ -250,6 +255,7 @@ export function SupabaseSearch(props: {
   const prizeMarketState = searchParams[PRIZE_MARKET_KEY]
   const forYou = searchParams[FOR_YOU_KEY] === '1'
   const marketTiers = searchParams[MARKET_TIER_KEY]
+  const topicFilter = searchParams[TOPIC_FILTER_KEY]
 
   const [userResults, setUserResults] = usePersistentInMemoryState<
     FullUser[] | undefined
@@ -259,7 +265,13 @@ export function SupabaseSearch(props: {
     useContractSearch(persistPrefix, searchParams, topicSlug, additionalFilter)
 
   const onChange = (changes: Partial<SearchParams>) => {
-    setSearchParams(changes)
+    const updatedParams = { ...changes }
+
+    if (changes[FOR_YOU_KEY] === '1' || topicSlug != '') {
+      updatedParams[TOPIC_FILTER_KEY] = undefined
+    }
+
+    setSearchParams(updatedParams)
     if (isWholePage) window.scrollTo(0, 0)
   }
 
@@ -329,6 +341,7 @@ export function SupabaseSearch(props: {
             onChange({
               [FILTER_KEY]: 'all',
               [CONTRACT_TYPE_KEY]: 'ALL',
+              [TOPIC_FILTER_KEY]: '',
               p: '0',
             })
           }
@@ -412,6 +425,7 @@ export function SupabaseSearch(props: {
               searchType && searchType !== 'Questions' ? 'invisible' : ''
             }
             topicSlug={topicSlug}
+            initialTopics={initialTopics}
           />
         )}
       </Col>
@@ -567,6 +581,7 @@ const useContractSearch = (
       p: isPrizeMarketString,
       fy: forYou,
       mt: marketTier,
+      tf: topicFilter,
     } = searchParams
     // if fresh query and the search params haven't changed (like user clicked back) do nothing
     if (
@@ -579,7 +594,8 @@ const useContractSearch = (
       topicSlug !== 'recent' &&
       isPrizeMarketString == state.lastSearchParams?.isPrizeMarket &&
       forYou == state.lastSearchParams?.forYou &&
-      marketTier == state.lastSearchParams?.marketTier
+      marketTier == state.lastSearchParams?.marketTier &&
+      topicFilter == state.lastSearchParams?.topicFilter
     ) {
       return state.shouldLoadMore
     }
@@ -602,7 +618,7 @@ const useContractSearch = (
         contractType,
         offset: freshQuery ? 0 : state.contracts?.length ?? 0,
         limit: CONTRACTS_PER_SEARCH_PAGE,
-        topicSlug: topicSlug !== '' ? topicSlug : undefined,
+        topicSlug: topicSlug !== '' ? topicSlug : topicFilter,
         creatorId: additionalFilter?.creatorId,
         isPolitics: additionalFilter?.isPolitics,
         isPrizeMarket: isPrizeMarketString,
@@ -629,6 +645,7 @@ const useContractSearch = (
             isPrizeMarket: isPrizeMarketString,
             forYou,
             marketTier,
+            topicFilter,
           },
         })
         clearTimeout(timeoutId)
@@ -673,6 +690,7 @@ const useSearchQueryState = (props: {
   defaultForYou?: '1' | '0'
   useUrlParams?: boolean
   defaultMarketTier?: TierParamsType
+  defaultTopicFilter?: string
 }) => {
   const {
     persistPrefix,
@@ -684,6 +702,7 @@ const useSearchQueryState = (props: {
     defaultPrizeMarket = '0',
     defaultForYou = '0',
     defaultMarketTier = DEFAULT_TIER,
+    defaultTopicFilter,
   } = props
 
   const [lastSort, setLastSort, localStateReady] =
@@ -701,6 +720,7 @@ const useSearchQueryState = (props: {
     [PRIZE_MARKET_KEY]: defaultPrizeMarket,
     [FOR_YOU_KEY]: defaultForYou,
     [MARKET_TIER_KEY]: defaultMarketTier,
+    [TOPIC_FILTER_KEY]: defaultTopicFilter,
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : useShim
