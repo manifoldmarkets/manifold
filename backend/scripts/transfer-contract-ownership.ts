@@ -1,4 +1,4 @@
-import { createSupabaseClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 
 import { runScript } from './run-script'
 import yargs from 'yargs'
@@ -21,7 +21,7 @@ interface Contract {
   data: any
 }
 
-const supabaseClient = createSupabaseClient()
+const supabaseDirectClient = createSupabaseDirectClient()
 
 const argv = yargs(hideBin(process.argv))
   .option('slugs', {
@@ -44,81 +44,74 @@ if (require.main === module) {
   runScript(async () => {
     const { slugs: slugsToTransfer, toUserId } = argv
 
-    const { data: toUserData, error: userError } = await supabaseClient
-      .from('users')
-      .select('id, username, name, created_time')
-      .eq('id', toUserId)
-      .single()
+    try {
+      const toUserData = await supabaseDirectClient.oneOrNone<User>(
+        'SELECT id, username, name, created_time FROM users WHERE id = $1',
+        [toUserId]
+      )
 
-    if (userError) {
-      console.error('Error fetching user:', userError)
-      return
-    }
-
-    if (!toUserData) {
-      console.error('User not found')
-      return
-    }
-
-    const toUser: User = toUserData as unknown as User
-
-    const { data: contractsData, error: contractsError } = await supabaseClient
-      .from('contracts')
-      .select('id, data')
-      .in('slug', slugsToTransfer)
-
-    if (contractsError) {
-      console.error('Error fetching contracts:', contractsError)
-      return
-    }
-
-    if (!contractsData) {
-      console.error('No contracts found')
-      return
-    }
-
-    const contractsToTransfer: Contract[] =
-      contractsData as unknown as Contract[]
-
-    console.log(
-      `Transferring ${contractsToTransfer.length} contracts to ${toUser.name}`
-    )
-
-    for (let i = 0; i < contractsToTransfer.length; i += BATCH_SIZE) {
-      const batch = contractsToTransfer.slice(i, i + BATCH_SIZE)
-
-      const updates = batch.map(({ id, data }) => {
-        const description = data.description || ''
-        const creatorUsername = data.creatorUsername || 'Unknown creator'
-        const creatorName = data.creatorName || 'Unknown name'
-
-        const updatedDescription = `${
-          description ? description : ''
-        }\n\nThis market was created by ${creatorUsername} (${creatorName}) and has changed ownership.`
-
-        return {
-          id,
-          creator_id: toUser.id,
-          created_time: toUser.created_time,
-          data: {
-            ...data,
-            description: updatedDescription,
-            creatorUsername: toUser.username,
-            creatorName: toUser.name,
-            creatorAvatarUrl: data.creatorAvatarUrl,
-          },
-        }
-      })
-
-      const { error: upsertError } = await supabaseClient
-        .from('contracts')
-        .upsert(updates)
-
-      if (upsertError) {
-        console.error('Error performing bulk upsert:', upsertError)
+      if (!toUserData) {
+        console.error('User not found')
+        return
       }
-    }
 
-    console.log('done.')
+      const toUser: User = toUserData
+
+      const contractsData = await supabaseDirectClient.any<Contract>(
+        'SELECT id, data FROM contracts WHERE slug IN ($1:csv)',
+        [slugsToTransfer]
+      )
+
+      if (contractsData.length === 0) {
+        console.error('No contracts found')
+        return
+      }
+
+      const contractsToTransfer: Contract[] = contractsData
+
+      console.log(
+        `Transferring ${contractsToTransfer.length} contracts to ${toUser.name}`
+      )
+
+      for (let i = 0; i < contractsToTransfer.length; i += BATCH_SIZE) {
+        const batch = contractsToTransfer.slice(i, i + BATCH_SIZE)
+
+        const updates = batch.map(({ id, data }) => {
+          const description = data.description || ''
+          const creatorUsername = data.creatorUsername || 'Unknown creator'
+          const creatorName = data.creatorName || 'Unknown name'
+
+          const updatedDescription = `${
+            description ? description : ''
+          }\n\nThis market was created by ${creatorUsername} (${creatorName}) and has changed ownership.`
+
+          return {
+            id,
+            creator_id: toUser.id,
+            created_time: toUser.created_time,
+            data: {
+              ...data,
+              description: updatedDescription,
+              creatorUsername: toUser.username,
+              creatorName: toUser.name,
+              creatorAvatarUrl: data.creatorAvatarUrl,
+            },
+          }
+        })
+
+        const upsertQuery =
+          pgp.helpers.update(
+            updates,
+            ['creator_id', 'created_time', 'data'],
+            'contracts'
+          ) + ' WHERE v.id = t.id'
+
+        await supabaseDirectClient.none(upsertQuery)
+      }
+
+      console.log('done.')
+    } catch (error) {
+      console.error('Error transferring contracts:', error)
+    }
   })
 }
