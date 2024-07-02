@@ -10,7 +10,7 @@ import { LoadingCards } from 'web/components/contract/feed-contract-card'
 export default function Explore() {
   useRedirectIfSignedOut()
   const user = useUser()
-  useSaveScroll('explore')
+  useSaveScroll('explore', true)
 
   return (
     <Page trackPageView={'explore'} className=" !mt-0" banner={null}>
