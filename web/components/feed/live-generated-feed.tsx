@@ -1,5 +1,4 @@
 import { Col } from 'web/components/layout/col'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -93,7 +92,7 @@ export function LiveGeneratedFeed(props: {
     (data === undefined && contracts.length === 0) ||
     (contracts.length === 0 && loading)
   )
-    return <LoadingIndicator />
+    return <LoadingCards />
 
   return (
     <Col className={clsx('relative w-full gap-4')}>
@@ -128,7 +127,7 @@ export function LiveGeneratedFeed(props: {
         )
       })}
       <div className="relative">
-        {loading && <LoadingIndicator />}
+        {loading && <LoadingCards rows={1} />}
         <VisibilityObserver
           className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
           onVisibilityUpdated={(visible) => {
@@ -145,10 +144,7 @@ export function LiveGeneratedFeed(props: {
           <div>You've reached the end of the feed.</div>
           <div>You are free.</div>
           <br />
-          <Link
-            href="/browse?s=newest&f=open"
-            className="text-primary-700 hover:underline"
-          >
+          <Link href="/home" className="text-primary-700 hover:underline">
             Browse new questions
           </Link>
           <Link href="/create" className="text-primary-700 hover:underline">
@@ -156,6 +152,33 @@ export function LiveGeneratedFeed(props: {
           </Link>
         </div>
       )}
+    </Col>
+  )
+}
+
+const LoadingCards = (props: { rows?: number }) => {
+  const { rows = 3 } = props
+  return (
+    <Col className="w-full">
+      {[...Array(rows)].map((r) => (
+        <Col
+          key={'loading-' + r}
+          className="bg-canvas-0 border-canvas-0 mb-4 gap-2 rounded-xl border p-4 drop-shadow-md"
+        >
+          <Row className="mb-2 items-center gap-2">
+            <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200" />
+            <div className="h-4 w-1/4 animate-pulse rounded bg-gray-200" />
+          </Row>
+          <div className="mb-2 h-4 w-3/4 animate-pulse rounded bg-gray-200" />
+          <div className="mb-4 h-4 w-1/2 animate-pulse rounded bg-gray-200" />
+          <Row className="justify-between">
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+          </Row>
+        </Col>
+      ))}
     </Col>
   )
 }
