@@ -103,6 +103,30 @@ export function USElectionsPage(props: ElectionsPageProps) {
         className="-mt-4"
       />
 
+      <Col className="gap-2">
+        <Row className="items-center gap-2">
+          <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+          <div className="text-ink-600  ">Presidential Nomination</div>
+          <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+        </Row>
+        <Row className="gap-4">
+          <PoliticsCard
+            contract={democratCandidateContract as MultiContract}
+            maxAnswers={3}
+            customTitle="Democratic"
+            className="w-1/2"
+            viewType="SMALL CANDIDATE"
+          />
+          <PoliticsCard
+            contract={republicanCandidateContract as MultiContract}
+            maxAnswers={3}
+            customTitle="Republican"
+            className="w-1/2"
+            viewType="SMALL CANDIDATE"
+          />
+        </Row>
+      </Col>
+
       {trending}
 
       <HomepageMap
@@ -168,29 +192,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
       </Col>
 
       <Col className="hidden gap-6 sm:flex sm:gap-8">
-        <Col className="gap-2">
-          <Row className="items-center gap-2">
-            <div className="bg-ink-600 flex h-[1px] grow flex-row" />
-            <div className="text-ink-600  ">Presidential Nomination</div>
-            <div className="bg-ink-600 flex h-[1px] grow flex-row" />
-          </Row>
-          <Row className="gap-4">
-            <PoliticsCard
-              contract={democratCandidateContract as MultiContract}
-              maxAnswers={3}
-              customTitle="Democratic"
-              className="w-1/2"
-              viewType="SMALL CANDIDATE"
-            />
-            <PoliticsCard
-              contract={republicanCandidateContract as MultiContract}
-              maxAnswers={3}
-              customTitle="Republican"
-              className="w-1/2"
-              viewType="SMALL CANDIDATE"
-            />
-          </Row>
-        </Col>
         {/* <Col className="gap-2">
           <Row className="items-center gap-2">
             <div className="bg-ink-600 flex h-[1px] grow flex-row" />
