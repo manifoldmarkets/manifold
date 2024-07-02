@@ -9,7 +9,8 @@ import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { useUser } from 'web/hooks/use-user'
-import { api, updateUser } from 'web/lib/firebase/api'
+import { api, updateUser } from 'web/lib/api/api'
+
 import { uploadPublicImage } from 'web/lib/firebase/storage'
 
 export function EditUserField(props: {
