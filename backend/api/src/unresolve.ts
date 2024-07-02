@@ -20,7 +20,7 @@ import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract
 import { bulkIncrementBalances } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { assert } from 'common/util/assert'
-import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
+import { broadcastUpdatedAnswers } from 'shared/websockets/helpers'
 import { convertAnswer } from 'common/supabase/contracts'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
@@ -265,7 +265,7 @@ const undoResolution = async (
       [contractId],
       convertAnswer
     )
-    newAnswers.forEach(broadcastUpdatedAnswer)
+    broadcastUpdatedAnswers(contractId, newAnswers)
   } else if (answerId) {
     const answer = await pg.one(
       `update answers
@@ -275,7 +275,7 @@ const undoResolution = async (
       [answerId],
       convertAnswer
     )
-    broadcastUpdatedAnswer(answer)
+    broadcastUpdatedAnswers(contractId, [answer])
   }
 
   log('updated contract')
