@@ -140,7 +140,7 @@ export type SearchParams = {
   [PRIZE_MARKET_KEY]: BinaryDigit
   [FOR_YOU_KEY]: BinaryDigit
   [MARKET_TIER_KEY]: TierParamsType
-  [TOPIC_FILTER_KEY]: string | undefined
+  [TOPIC_FILTER_KEY]: string
 }
 
 export const QUERY_KEY = 'q'
@@ -174,7 +174,7 @@ export type SearchState = {
     isPrizeMarket: '1' | '0'
     forYou: '1' | '0'
     marketTier: TierParamsType
-    topicFilter: string | undefined
+    topicFilter: string
   }
 }
 
@@ -268,7 +268,7 @@ export function SupabaseSearch(props: {
     const updatedParams = { ...changes }
 
     if (changes[FOR_YOU_KEY] === '1' || topicSlug != '') {
-      updatedParams[TOPIC_FILTER_KEY] = undefined
+      updatedParams[TOPIC_FILTER_KEY] = ''
     }
 
     setSearchParams(updatedParams)
@@ -618,7 +618,12 @@ const useContractSearch = (
         contractType,
         offset: freshQuery ? 0 : state.contracts?.length ?? 0,
         limit: CONTRACTS_PER_SEARCH_PAGE,
-        topicSlug: topicSlug !== '' ? topicSlug : topicFilter,
+        topicSlug:
+          topicSlug !== ''
+            ? topicSlug
+            : topicFilter !== ''
+            ? topicFilter
+            : undefined,
         creatorId: additionalFilter?.creatorId,
         isPolitics: additionalFilter?.isPolitics,
         isPrizeMarket: isPrizeMarketString,
@@ -702,7 +707,7 @@ const useSearchQueryState = (props: {
     defaultPrizeMarket = '0',
     defaultForYou = '0',
     defaultMarketTier = DEFAULT_TIER,
-    defaultTopicFilter,
+    defaultTopicFilter = '',
   } = props
 
   const [lastSort, setLastSort, localStateReady] =

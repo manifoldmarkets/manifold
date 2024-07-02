@@ -204,9 +204,13 @@ export function TopicDropdownPill(props: {
 }) {
   const { initialTopics, currentTopicFilter, user, forYou, updateParams } =
     props
+
+  const currentTopicInInitialTopicsName = initialTopics.find(
+    (topic) => topic.slug == currentTopicFilter
+  )?.name
   const currentTopicLabel = forYou
     ? 'For You'
-    : initialTopics.find((topic) => topic.slug == currentTopicFilter)?.name
+    : currentTopicInInitialTopicsName ?? 'No Topic'
 
   const selectTopicFilter = (selection: string) => {
     if (selection === currentTopicFilter) {

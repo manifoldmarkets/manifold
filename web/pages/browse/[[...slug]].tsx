@@ -154,6 +154,7 @@ export function GroupPageContent(props: {
   const setTopicSlugClearQuery = (slug: string) => {
     queryParams.delete('q')
     queryParams.delete('t')
+    queryParams.delete('tf')
     const queryStr = queryParams.toString()
     const q = queryStr ? `?${queryStr}` : ''
     router.push(`/browse/${slug}${q}`, undefined, { shallow: true })
@@ -209,7 +210,7 @@ export function GroupPageContent(props: {
       topicSlug={topicSlug}
       defaultFilter="open"
       defaultSort="score"
-      defaultForYou="0"
+      defaultForYou="1"
       shownTopics={shownTopics}
       initialTopics={initialTopics}
       setTopicSlug={(slug) => {
