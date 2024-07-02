@@ -69,14 +69,17 @@ export const EditProfile = (props: {
   const handleSave = async () => {
     const updates: { [key: string]: string } = {}
 
-    if (bio.trim() !== user.bio) updates.bio = bio.trim()
-    if (website.trim() !== user.website) updates.website = website.trim()
-    if (twitterHandle.trim() !== user.twitterHandle)
+    if (bio.trim() !== (user.bio || '').trim()) updates.bio = bio.trim()
+    if (website.trim() !== (user.website || '').trim())
+      updates.website = website.trim()
+    if (twitterHandle.trim() !== (user.twitterHandle || '').trim())
       updates.twitterHandle = twitterHandle.trim()
-    if (discordHandle.trim() !== user.discordHandle)
+    if (discordHandle.trim() !== (user.discordHandle || '').trim())
       updates.discordHandle = discordHandle.trim()
-    if (name.trim() !== user.name) updates.displayName = name.trim()
-    if (username.trim() !== user.username) updates.username = username.trim()
+    if (name.trim() !== (user.name || '').trim())
+      updates.displayName = name.trim()
+    if (username.trim() !== (user.username || '').trim())
+      updates.username = username.trim()
 
     if (Object.keys(updates).length > 0) {
       setLoading(true)
