@@ -482,3 +482,30 @@ export function CategoryTags(props: {
     </Row>
   )
 }
+
+export const LoadingCards = (props: { rows?: number }) => {
+  const { rows = 3 } = props
+  return (
+    <Col className="w-full">
+      {[...Array(rows)].map((r) => (
+        <Col
+          key={'loading-' + r}
+          className="bg-canvas-0 border-canvas-0 mb-4 gap-2 rounded-xl border p-4 drop-shadow-md"
+        >
+          <Row className="mb-2 items-center gap-2">
+            <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200" />
+            <div className="h-4 w-1/4 animate-pulse rounded bg-gray-200" />
+          </Row>
+          <div className="mb-2 h-4 w-3/4 animate-pulse rounded bg-gray-200" />
+          <div className="mb-4 h-4 w-1/2 animate-pulse rounded bg-gray-200" />
+          <Row className="justify-between">
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+          </Row>
+        </Col>
+      ))}
+    </Col>
+  )
+}

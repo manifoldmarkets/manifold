@@ -1,11 +1,11 @@
 import { Page } from 'web/components/layout/page'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { Col } from 'web/components/layout/col'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 import { DailyStats } from 'web/components/home/daily-stats'
+import { LoadingCards } from 'web/components/contract/feed-contract-card'
 
 export default function Explore() {
   useRedirectIfSignedOut()
@@ -27,7 +27,7 @@ export default function Explore() {
       )}
 
       {!user ? (
-        <LoadingIndicator />
+        <LoadingCards />
       ) : (
         <Col className="mt-2 w-full items-center self-center pb-4 sm:px-4">
           {user && <LiveGeneratedFeed userId={user.id} reload={false} />}
