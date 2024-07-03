@@ -1,85 +1,16 @@
-import clsx from 'clsx'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { track, withTracking } from 'web/lib/service/analytics'
+import { track } from 'web/lib/service/analytics'
 import { unfollowTopic } from 'web/lib/supabase/groups'
 import { Button, SizeType } from '../buttons/button'
-import { ConfirmationButton } from '../buttons/confirmation-button'
-import { Subtitle } from '../widgets/subtitle'
-import { followTopic } from 'web/lib/firebase/api'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { followTopic } from 'web/lib/api/api'
 import { Group, LiteGroup } from 'common/group'
 import { TopicOptions } from 'web/components/topics/topic-options'
 import { BookmarkIcon } from '@heroicons/react/outline'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
-
-function LeavePrivateTopicButton(props: {
-  group: LiteGroup
-  user: User | undefined | null
-  setIsMember: (isMember: boolean) => void
-  isMobile?: boolean
-  disabled?: boolean
-  className?: string
-  size?: SizeType
-}) {
-  const { group, size, user, setIsMember, isMobile, disabled, className } =
-    props
-  const leavePrivateGroup = user
-    ? withTracking(() => {
-        unfollowTopic(group.id, user.id)
-          .then(() => setIsMember(false))
-          .catch(() => {
-            toast.error('Failed to unfollow group')
-          })
-      }, 'leave group')
-    : firebaseLogin
-
-  return (
-    <>
-      <ConfirmationButton
-        openModalBtn={{
-          className: clsx(
-            isMobile
-              ? 'bg-inherit hover:bg-inherit inline-flex items-center justify-center disabled:cursor-not-allowed shadow-none px-1'
-              : '',
-            className
-          ),
-          color: isMobile ? 'none' : 'indigo',
-          disabled: disabled,
-          label: isMobile ? '' : ' Leave',
-          size: size ?? 'xs',
-        }}
-        cancelBtn={{
-          label: 'Cancel',
-        }}
-        submitBtn={{
-          label: 'Leave group',
-          color: 'red',
-        }}
-        onSubmit={() => {
-          leavePrivateGroup()
-        }}
-      >
-        <LeavePrivateGroupModal />
-      </ConfirmationButton>
-    </>
-  )
-}
-
-export function LeavePrivateGroupModal() {
-  return (
-    <>
-      <Subtitle className="!mt-0">Are you sure?</Subtitle>
-      <p className="text-sm">
-        You can't rejoin this group unless invited back. You also won't be able
-        to access any questions you have shares in.
-      </p>
-    </>
-  )
-}
 
 export function FollowOrUnfolowTopicButton(props: {
   group: LiteGroup
@@ -89,25 +20,12 @@ export function FollowOrUnfolowTopicButton(props: {
   label?: string
 }) {
   const { group, size, user, label } = props
-  const isMobile = useIsMobile()
 
   // Handle both non-live and live updating isMember state
   const [isMember, setIsMember] = useState(props.isMember)
   useEffect(() => {
     setIsMember(props.isMember)
   }, [props.isMember])
-
-  if (group.privacyStatus === 'private') {
-    return (
-      <LeavePrivateTopicButton
-        group={group}
-        setIsMember={setIsMember}
-        user={user}
-        isMobile={isMobile}
-        size={size}
-      />
-    )
-  }
 
   const unfollow = user
     ? () => {

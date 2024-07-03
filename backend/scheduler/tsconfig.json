@@ -9,20 +9,14 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2022",
+    "incremental": true,
+    "isolatedModules": true,
     "paths": {
       "common/*": ["../../common/src/*", "../../../common/lib/*"],
-      "shared/*": ["../shared/src/*", "../../shared/lib/*"],
-      "replicator/*": ["./src/*"]
+      "shared/*": ["../shared/src/*", "../../shared/lib/*"]
     }
   },
-  "references": [
-    {
-      "path": "../../common"
-    },
-    {
-      "path": "../shared"
-    }
-  ],
+  "references": [{ "path": "../../common" }, { "path": "../shared" }],
   "compileOnSave": true,
   "include": ["src/**/*.ts"],
   "ts-node": {

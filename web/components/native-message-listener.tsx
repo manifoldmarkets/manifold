@@ -4,7 +4,7 @@ import { getSourceUrl, Notification } from 'common/notification'
 import {
   handlePushNotificationPermissionStatus,
   setPushToken,
-} from 'web/lib/firebase/notifications'
+} from 'web/lib/supabase/notifications'
 import { useRouter } from 'next/router'
 import { setInstalledAppPlatform, setIsNative } from 'web/lib/native/is-native'
 import { useNativeMessages } from 'web/hooks/use-native-messages'

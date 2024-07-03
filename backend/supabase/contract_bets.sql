@@ -14,6 +14,7 @@ create table if not exists
     is_api boolean,
     is_redemption boolean,
     is_challenge boolean,
+    loan_amount numeric,
     visibility text,
     data jsonb not null,
     updated_time timestamptz not null default now(),
@@ -50,38 +51,38 @@ begin
         new.visibility := ((new.data) ->> 'visibility')::text;
         new.answer_id := ((new.data) ->> 'answerId')::text;
         new.is_api := ((new.data) ->> 'isApi')::boolean;
+        new.loan_amount := ((new.data) ->> 'loanAmount')::numeric;
     end if;
     return new;
 end
 $$;
 
-create or replace trigger contract_bet_populate before insert
+create
+or replace trigger contract_bet_populate before insert
 or
 update on contract_bets for each row
 execute function contract_bet_populate_cols ();
 
-create or replace function contract_bet_set_updated_time()
-    returns trigger
-    language plpgsql
-as $$
+create
+or replace function contract_bet_set_updated_time () returns trigger language plpgsql as $$
 begin
     new.updated_time = now();
     return new;
 end;
 $$;
 
-create or replace trigger contract_bet_update
-    after update
-    on contract_bets
-    for each row
-execute function contract_bet_set_updated_time();
-
+create
+or replace trigger contract_bet_update
+after
+update on contract_bets for each row
+execute function contract_bet_set_updated_time ();
 
 /* serves bets API pagination */
 create index if not exists contract_bets_bet_id on contract_bets (bet_id);
 
 /* serving update contract metrics */
-create index if not exists contract_bets_historical_probs on contract_bets (created_time) include (contract_id, answer_id, prob_before, prob_after);
+create index contract_bets_historical_probs on contract_bets (contract_id, answer_id, created_time desc)
+    include (prob_before, prob_after);
 
 /* serving e.g. the contract page recent bets and the "bets by contract" API */
 create index if not exists contract_bets_created_time on contract_bets (contract_id, created_time desc);
@@ -102,23 +103,7 @@ create index if not exists contract_bets_user_outstanding_limit_orders on contra
 
 create index concurrently if not exists contract_bets_user_updated_time on contract_bets (user_id, updated_time desc);
 
+create index if not exists contract_bets_created_time_only on contract_bets (created_time desc);
+
 alter table contract_bets
 cluster on contract_bets_created_time;
-
-drop policy if exists "Enable read access for non private bets" on public.contract_bets;
-
-create policy "Enable read access for non private bets" on public.contract_bets for
-select
-  using ((visibility <> 'private'::text));
-
-create or replace view
-  public.contract_bets_rbac as
-select
-  *
-from
-  contract_bets
-where
-  (visibility <> 'private')
-  or (
-    can_access_private_contract (contract_id, firebase_uid ())
-  )

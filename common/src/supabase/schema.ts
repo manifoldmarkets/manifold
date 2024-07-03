@@ -232,6 +232,7 @@ export type Database = {
           updated_time: string
           user_id: string
           visibility: string | null
+          loan_amount: number | null
         }
         Insert: {
           amount?: number | null
@@ -251,6 +252,7 @@ export type Database = {
           updated_time?: string
           user_id: string
           visibility?: string | null
+          loan_amount?: number | null
         }
         Update: {
           amount?: number | null
@@ -270,6 +272,7 @@ export type Database = {
           updated_time?: string
           user_id?: string
           visibility?: string | null
+          loan_amount?: number | null
         }
         Relationships: []
       }
@@ -610,13 +613,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'public_dashboard_groups_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
           }
         ]
       }
@@ -772,13 +768,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'group_contracts_group_id_fke'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
           }
         ]
       }
@@ -811,13 +800,6 @@ export type Database = {
             columns: ['group_id']
             isOneToOne: true
             referencedRelation: 'groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'public_group_embeddings_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: true
-            referencedRelation: 'groups_rbac'
             referencedColumns: ['id']
           }
         ]
@@ -870,13 +852,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'public_group_invites_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
           }
         ]
       }
@@ -912,13 +887,6 @@ export type Database = {
             columns: ['group_id']
             isOneToOne: false
             referencedRelation: 'groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'public_group_members_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'groups_rbac'
             referencedColumns: ['id']
           }
         ]
@@ -956,39 +924,6 @@ export type Database = {
           privacy_status?: string | null
           slug?: string
           total_members?: number | null
-        }
-        Relationships: []
-      }
-      incoming_writes: {
-        Row: {
-          data: Json | null
-          doc_id: string
-          event_id: string | null
-          id: number
-          parent_id: string | null
-          table_id: string
-          ts: string
-          write_kind: string
-        }
-        Insert: {
-          data?: Json | null
-          doc_id: string
-          event_id?: string | null
-          id?: never
-          parent_id?: string | null
-          table_id: string
-          ts: string
-          write_kind: string
-        }
-        Update: {
-          data?: Json | null
-          doc_id?: string
-          event_id?: string | null
-          id?: never
-          parent_id?: string | null
-          table_id?: string
-          ts?: string
-          write_kind?: string
         }
         Relationships: []
       }
@@ -1569,13 +1504,6 @@ export type Database = {
             foreignKeyName: 'market_ads_market_id_fkey'
             columns: ['market_id']
             isOneToOne: false
-            referencedRelation: 'contracts_rbac'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            isOneToOne: false
             referencedRelation: 'contracts_view'
             referencedColumns: ['id']
           },
@@ -1758,13 +1686,6 @@ export type Database = {
             columns: ['group_id']
             isOneToOne: false
             referencedRelation: 'groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'public_old_posts_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'groups_rbac'
             referencedColumns: ['id']
           }
         ]
@@ -2231,6 +2152,27 @@ export type Database = {
         }
         Relationships: []
       }
+      sent_emails: {
+        Row: {
+          created_time: string
+          email_template_id: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_time?: string
+          email_template_id: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          created_time?: string
+          email_template_id?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
       stats: {
         Row: {
           daily_values: number[] | null
@@ -2243,30 +2185,6 @@ export type Database = {
         Update: {
           daily_values?: number[] | null
           title?: string
-        }
-        Relationships: []
-      }
-      tombstones: {
-        Row: {
-          doc_id: string
-          fs_deleted_at: string
-          id: number
-          parent_id: string | null
-          table_id: string
-        }
-        Insert: {
-          doc_id: string
-          fs_deleted_at: string
-          id?: never
-          parent_id?: string | null
-          table_id: string
-        }
-        Update: {
-          doc_id?: string
-          fs_deleted_at?: string
-          id?: never
-          parent_id?: string | null
-          table_id?: string
         }
         Relationships: []
       }
@@ -2997,167 +2915,11 @@ export type Database = {
       }
     }
     Views: {
-      contract_bets_rbac: {
-        Row: {
-          amount: number | null
-          answer_id: string | null
-          bet_id: string | null
-          contract_id: string | null
-          created_time: string | null
-          data: Json | null
-          is_ante: boolean | null
-          is_api: boolean | null
-          is_challenge: boolean | null
-          is_redemption: boolean | null
-          outcome: string | null
-          prob_after: number | null
-          prob_before: number | null
-          shares: number | null
-          updated_time: string | null
-          user_id: string | null
-          visibility: string | null
-        }
-        Insert: {
-          amount?: number | null
-          answer_id?: string | null
-          bet_id?: string | null
-          contract_id?: string | null
-          created_time?: string | null
-          data?: Json | null
-          is_ante?: boolean | null
-          is_api?: boolean | null
-          is_challenge?: boolean | null
-          is_redemption?: boolean | null
-          outcome?: string | null
-          prob_after?: number | null
-          prob_before?: number | null
-          shares?: number | null
-          updated_time?: string | null
-          user_id?: string | null
-          visibility?: string | null
-        }
-        Update: {
-          amount?: number | null
-          answer_id?: string | null
-          bet_id?: string | null
-          contract_id?: string | null
-          created_time?: string | null
-          data?: Json | null
-          is_ante?: boolean | null
-          is_api?: boolean | null
-          is_challenge?: boolean | null
-          is_redemption?: boolean | null
-          outcome?: string | null
-          prob_after?: number | null
-          prob_before?: number | null
-          shares?: number | null
-          updated_time?: string | null
-          user_id?: string | null
-          visibility?: string | null
-        }
-        Relationships: []
-      }
       contract_distance: {
         Row: {
           distance: number | null
           id1: string | null
           id2: string | null
-        }
-        Relationships: []
-      }
-      contracts_rbac: {
-        Row: {
-          close_time: string | null
-          conversion_score: number | null
-          created_time: string | null
-          creator_id: string | null
-          data: Json | null
-          deleted: boolean | null
-          description_fts: unknown | null
-          freshness_score: number | null
-          fs_updated_time: string | null
-          group_slugs: string[] | null
-          id: string | null
-          importance_score: number | null
-          is_politics: boolean | null
-          is_spice_payout: boolean | null
-          last_bet_time: string | null
-          last_comment_time: string | null
-          last_updated_time: string | null
-          mechanism: string | null
-          outcome_type: string | null
-          popularity_score: number | null
-          question: string | null
-          question_fts: unknown | null
-          question_nostop_fts: unknown | null
-          resolution: string | null
-          resolution_probability: number | null
-          resolution_time: string | null
-          slug: string | null
-          view_count: number | null
-          visibility: string | null
-        }
-        Insert: {
-          close_time?: string | null
-          conversion_score?: number | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time?: string | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          is_spice_payout?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          view_count?: number | null
-          visibility?: string | null
-        }
-        Update: {
-          close_time?: string | null
-          conversion_score?: number | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time?: string | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          is_spice_payout?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          view_count?: number | null
-          visibility?: string | null
         }
         Relationships: []
       }
@@ -3205,42 +2967,6 @@ export type Database = {
           role: string | null
           total_members: number | null
           username: string | null
-        }
-        Relationships: []
-      }
-      groups_rbac: {
-        Row: {
-          creator_id: string | null
-          data: Json | null
-          id: string | null
-          importance_score: number | null
-          name: string | null
-          name_fts: unknown | null
-          privacy_status: string | null
-          slug: string | null
-          total_members: number | null
-        }
-        Insert: {
-          creator_id?: string | null
-          data?: Json | null
-          id?: string | null
-          importance_score?: number | null
-          name?: string | null
-          name_fts?: unknown | null
-          privacy_status?: string | null
-          slug?: string | null
-          total_members?: number | null
-        }
-        Update: {
-          creator_id?: string | null
-          data?: Json | null
-          id?: string | null
-          importance_score?: number | null
-          name?: string | null
-          name_fts?: unknown | null
-          privacy_status?: string | null
-          slug?: string | null
-          total_members?: number | null
         }
         Relationships: []
       }
@@ -3735,13 +3461,6 @@ export type Database = {
         }
         Returns: number
       }
-      can_access_private_contract: {
-        Args: {
-          this_contract_id: string
-          this_member_id: string
-        }
-        Returns: boolean
-      }
       can_access_private_messages: {
         Args: {
           channel_id: number
@@ -3753,13 +3472,6 @@ export type Database = {
         Args: {
           this_post_id: string
           this_member_id: string
-        }
-        Returns: boolean
-      }
-      check_group_accessibility: {
-        Args: {
-          this_group_id: string
-          this_user_id: string
         }
         Returns: boolean
       }
@@ -3959,12 +3671,6 @@ export type Database = {
         Returns: {
           total: number
         }[]
-      }
-      get_document_table_spec: {
-        Args: {
-          table_id: string
-        }
-        Returns: Database['public']['CompositeTypes']['table_spec']
       }
       get_donations_by_charity: {
         Args: Record<PropertyKey, never>
@@ -4487,20 +4193,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_private_contract_member: {
-        Args: {
-          this_contract_id: string
-          this_member_id: string
-        }
-        Returns: boolean
-      }
       is_valid_contract: {
-        Args: {
-          ct: unknown
-        }
-        Returns: boolean
-      }
-      is_valid_contract_2: {
         Args: {
           ct: unknown
         }
@@ -4564,12 +4257,6 @@ export type Database = {
           contract_id: string
           n: number
         }[]
-      }
-      replicate_writes_process_one: {
-        Args: {
-          r: unknown
-        }
-        Returns: boolean
       }
       sample_resolved_bets: {
         Args: {
@@ -4939,10 +4626,6 @@ export type Database = {
         gender: string | null
         city: string | null
         data: Json | null
-      }
-      table_spec: {
-        parent_id_col_name: string | null
-        id_col_name: string | null
       }
     }
   }

@@ -167,7 +167,14 @@ export default function Leagues() {
         url={url}
       />
 
-      <Col className="mx-auto w-full max-w-xl gap-2 pt-2 sm:pt-0">
+      <Col className="mx-auto w-full max-w-xl gap-2 px-1 pt-2 sm:pt-0">
+        <Col className="mb-1 rounded border border-indigo-200 bg-indigo-100 px-4 py-2 shadow-sm dark:border-indigo-800 dark:bg-indigo-900">
+          <div className="font-semibold">Update July 2nd</div>
+          <div>
+            Mana earned now counts only trading profits & creator earnings.
+            (Streak, quest, and boost bonuses are removed.) Happy trading!
+          </div>
+        </Col>
         <Col className="sm:mt-2 lg:mt-0">
           <Row className="mb-2 items-center gap-4">
             <Title className="!mb-0 hidden sm:block">Leagues</Title>

@@ -14,6 +14,7 @@ import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { useThemeManager } from 'web/hooks/use-theme'
 import Welcome from 'web/components/onboarding/welcome'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -31,7 +32,11 @@ const mainFont = Figtree({
 })
 
 function firstLine(msg: string) {
-  return msg.replace(/\r?\n.*/s, '')
+  const newlineIndex = msg.indexOf('\n')
+  if (newlineIndex === -1) {
+    return msg
+  }
+  return msg.substring(0, newlineIndex)
 }
 
 // It can be very hard to see client logs on native, so send them manually
@@ -179,7 +184,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
 
       <Script
         async
-        src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D"
+        src={`https://www.googletagmanager.com/gtag/js?id=${ENV_CONFIG.googleAnalyticsId}`}
       />
       <Script
         id="gaw"
@@ -188,8 +193,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
-  gtag('config', 'G-SSFK1Q138D');`,
+  gtag('config', '${ENV_CONFIG.googleAnalyticsId}');`,
         }}
       />
     </>

@@ -245,7 +245,7 @@ export type ElectionsPageProps = {
   houseContract: Contract | null
   // democraticVPContract: Contract | null
   // republicanElectability: Contract | null
-  // democraticElectability: Contract | null
+  democraticElectability: Contract | null
   linkPreviews: LinkPreviews
   newsDashboards: NewsDashboardPageProps[]
   headlines: Headline[]

@@ -1,17 +1,17 @@
 import {
   CashIcon,
   DeviceMobileIcon,
-  HomeIcon,
   LogoutIcon,
   MoonIcon,
   SunIcon,
   StarIcon,
   QuestionMarkCircleIcon,
   NewspaperIcon,
-  SearchIcon,
   LightningBoltIcon,
   LoginIcon,
   TemplateIcon,
+  GlobeAltIcon,
+  SearchIcon,
 } from '@heroicons/react/outline'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { GiCapitol } from 'react-icons/gi'
@@ -136,11 +136,11 @@ const getDesktopNav = (
 ) => {
   if (loggedIn)
     return buildArray(
-      { name: 'Home', href: '/home', icon: HomeIcon },
+      { name: 'Browse', href: '/home', icon: SearchIcon },
       {
-        name: 'Browse',
-        href: '/browse?fy=1&f=open',
-        icon: SearchIcon,
+        name: 'Explore',
+        href: '/explore',
+        icon: GlobeAltIcon,
       },
       {
         name: 'Notifications',

@@ -40,7 +40,7 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
 import { track } from 'web/lib/service/analytics'
@@ -90,7 +90,6 @@ export function FeedCommentThread(props: {
   showReplies?: boolean
   childrenBountyTotal?: number
   className?: string
-  onSubmitReply?: () => void
   bets?: Bet[]
 }) {
   const {
@@ -104,7 +103,6 @@ export function FeedCommentThread(props: {
     showReplies,
     childrenBountyTotal,
     className,
-    onSubmitReply,
     bets,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
@@ -196,7 +194,6 @@ export function FeedCommentThread(props: {
             clearReply={clearReply}
             trackingLocation={trackingLocation}
             className="w-full min-w-0 grow"
-            onSubmit={onSubmitReply}
             commentTypes={['comment']}
             autoFocus
           />

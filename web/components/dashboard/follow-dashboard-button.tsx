@@ -1,7 +1,7 @@
 import { FaBookmark, FaRegBookmark } from 'react-icons/fa6'
 import { useUserFollowsDashboard } from 'web/hooks/use-dashboard-follows'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { followDashboard } from 'web/lib/firebase/api'
+import { followDashboard } from 'web/lib/api/api'
 import { Tooltip } from '../widgets/tooltip'
 import { Button } from '../buttons/button'
 

@@ -7,7 +7,7 @@ import { Group } from 'common/group'
 const bodySchema = z
   .object({
     groupId: z.string(),
-    privacy: z.enum(['public', 'curated', 'private']),
+    privacy: z.enum(['public', 'curated']),
   })
   .strict()
 
@@ -43,13 +43,6 @@ export const updategroupprivacy = authEndpoint(async (req, auth) => {
       403,
       'You do not have permission to change group privacy'
     )
-
-  if (group.privacy_status == 'private')
-    throw new APIError(403, 'Private groups must remain private')
-
-  if (privacy == 'private') {
-    throw new APIError(403, 'You can not retroactively make a group private')
-  }
 
   if (privacy == group.privacy_status) {
     throw new APIError(403, 'Group privacy is already set to this!')

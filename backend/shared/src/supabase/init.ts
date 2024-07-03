@@ -1,6 +1,6 @@
 import * as pgPromise from 'pg-promise'
 import { createClient } from 'common/supabase/utils'
-export { SupabaseClient } from 'common/supabase/utils'
+export { type SupabaseClient } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { metrics, log, isProd } from '../utils'

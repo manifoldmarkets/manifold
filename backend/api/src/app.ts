@@ -27,7 +27,6 @@ import { validateiap } from './validate-iap'
 import { markallnotifications } from './mark-all-notifications'
 import { updatememberrole } from './update-group-member-role'
 import { updategroupprivacy } from './update-group-privacy'
-import { addgroupmember } from './add-group-member'
 import { registerdiscordid } from './register-discord-id'
 import { getuserisgroupmember } from './get-user-is-group-member'
 import { completequest } from './complete-quest'
@@ -37,7 +36,6 @@ import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
 import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
-import { creategroupinvite } from './create-group-invite'
 import { followtopic } from './follow-topic'
 import { editcomment } from 'api/edit-comment'
 import {
@@ -167,7 +165,6 @@ import { blockMarket, unblockMarket } from './block-market'
 import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
 import { register } from 'api/gidx/register'
-import { getVerificationSession } from 'api/gidx/get-verification-session'
 import { uploadDocument } from 'api/gidx/upload-document'
 import { callbackGIDX } from 'api/gidx/callback'
 import { getVerificationStatus } from 'api/gidx/get-verification-status'
@@ -175,6 +172,8 @@ import { getCurrentPrivateUser } from './get-current-private-user'
 import { updatePrivateUser } from './update-private-user'
 import { setPushToken } from './push-token'
 import { updateNotifSettings } from './update-notif-settings'
+import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
+import { getMonitorStatus } from 'api/gidx/get-monitor-status'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -344,10 +343,11 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-txn-summary-stats': getTxnSummaryStats,
   'get-mana-summary-stats': getManaSummaryStats,
   'register-gidx': register,
-  'get-verification-session-gidx': getVerificationSession,
   'get-verification-status-gidx': getVerificationStatus,
   'upload-document-gidx': uploadDocument,
   'callback-gidx': callbackGIDX,
+  'get-verification-documents-gidx': getVerificationDocuments,
+  'get-monitor-status-gidx': getMonitorStatus,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -387,7 +387,6 @@ app.post('/markallnotifications', ...apiRoute(markallnotifications))
 app.post('/updatememberrole', ...apiRoute(updatememberrole))
 app.post('/updategroupprivacy', ...apiRoute(updategroupprivacy))
 app.post('/registerdiscordid', ...apiRoute(registerdiscordid))
-app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/completequest', ...apiRoute(completequest))
 app.post(
@@ -407,7 +406,6 @@ app.post(
   express.raw({ type: '*/*' }),
   stripewebhook
 )
-app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
 app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))

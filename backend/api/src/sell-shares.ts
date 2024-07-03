@@ -1,6 +1,6 @@
 import { mapValues, groupBy, sumBy } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { CPMM_MIN_POOL_QTY } from 'common/contract'
+import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { removeUndefinedProps } from 'common/util/object'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
@@ -20,10 +20,11 @@ import { FLAT_TRADE_FEE } from 'common/fees'
 import {
   getAnswer,
   getAnswersForContract,
-  updateAnswer,
+  updateAnswers,
 } from 'shared/supabase/answers'
 import { updateContract } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { Bet, LimitBet } from 'common/bet'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -193,8 +194,14 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     }
     const betGroupId = crypto.randomBytes(12).toString('hex')
 
-    const allOrdersToCancel = []
-    const fullBets = []
+    const allOrdersToCancel: LimitBet[] = []
+    const fullBets: Bet[] = []
+    const answerUpdates: {
+      id: string
+      poolYes: number
+      poolNo: number
+      prob: number
+    }[] = []
 
     const isApi = auth.creds.kind === 'key'
     const apiFee = isApi ? FLAT_TRADE_FEE : 0
@@ -228,12 +235,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     const betRow = await insertBet(candidateBet, pgTrans)
     fullBets.push(convertBet(betRow))
 
-    await updateMakers(makers, betRow.bet_id, pgTrans)
-
-    await cancelLimitOrders(
-      pgTrans,
-      ordersToCancel.map((o) => o.id)
-    )
+    await updateMakers(makers, betRow.bet_id, contract, pgTrans)
 
     allOrdersToCancel.push(...ordersToCancel)
 
@@ -252,15 +254,12 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       const prob = getCpmmProbability(newPool, 0.5)
       const { YES: poolYes, NO: poolNo } = newPool
 
-      await updateAnswer(
-        pgTrans,
-        newBet.answerId,
-        removeUndefinedProps({
-          poolYes,
-          poolNo,
-          prob,
-        })
-      )
+      answerUpdates.push({
+        id: newBet.answerId,
+        poolYes,
+        poolNo,
+        prob,
+      })
     }
 
     for (const {
@@ -278,20 +277,26 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       }
       const betRow = await insertBet(candidateBet, pgTrans)
       fullBets.push(convertBet(betRow))
+
+      await updateMakers(makers, betRow.bet_id, contract, pgTrans)
+
       const { YES: poolYes, NO: poolNo } = cpmmState.pool
       const prob = getCpmmProbability(cpmmState.pool, 0.5)
-      await updateAnswer(
-        pgTrans,
-        answer.id,
-        removeUndefinedProps({ poolYes, poolNo, prob })
-      )
-      await updateMakers(makers, betRow.bet_id, pgTrans)
-      await cancelLimitOrders(
-        pgTrans,
-        ordersToCancel.map((o) => o.id)
-      )
+      answerUpdates.push({
+        id: answer.id,
+        poolYes,
+        poolNo,
+        prob,
+      })
+
       allOrdersToCancel.push(...ordersToCancel)
     }
+
+    await updateAnswers(pgTrans, contract.id, answerUpdates)
+    await cancelLimitOrders(
+      pgTrans,
+      allOrdersToCancel.map((o) => o.id)
+    )
 
     return {
       newBet,
@@ -324,10 +329,13 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   }
 
   const continuation = async () => {
-    await onCreateBets(fullBets, contract, user, allOrdersToCancel, [
-      ...makers,
-      ...otherResultsWithBet.flatMap((r) => r.makers),
-    ])
+    await onCreateBets(
+      fullBets,
+      contract as MarketContract,
+      user,
+      allOrdersToCancel,
+      [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)]
+    )
   }
   return { result: { ...newBet, betId }, continue: continuation }
 }

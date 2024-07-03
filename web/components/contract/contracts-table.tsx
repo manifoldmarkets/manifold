@@ -1,7 +1,7 @@
-import { LockClosedIcon, EyeOffIcon } from '@heroicons/react/solid'
+import { EyeOffIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
-import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatMoney, formatPercentShort } from 'common/util/format'
@@ -23,9 +23,7 @@ import {
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { Tooltip } from '../widgets/tooltip'
-import { sortAnswers } from 'common/answer'
 import { removeEmojis } from 'common/util/string'
-import { useABTest } from 'web/hooks/use-ab-test'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { track } from 'web/lib/service/analytics'
 import { TierTooltip } from '../tiers/tier-tooltip'
@@ -79,14 +77,16 @@ function ContractRow(props: {
 }) {
   const contract = useLiveContract(props.contract)
 
-  const answersABTest = useABTest('show answers in browse', ['show', 'hide'])
   const { columns, hideAvatar, highlighted, faded, onClick } = props
   return (
     <Link
       href={contractPath(contract)}
       onClick={(e) => {
         if (!onClick) {
-          track('click browse contract', { slug: contract.slug })
+          track('click browse contract', {
+            slug: contract.slug,
+            contractId: contract.id,
+          })
           return
         }
         onClick()
@@ -117,11 +117,6 @@ function ContractRow(props: {
           ))}
         </Row>
       </div>
-      {answersABTest === 'show' &&
-        contract.outcomeType == 'MULTIPLE_CHOICE' &&
-        contract.mechanism == 'cpmm-multi-1' && (
-          <ContractAnswers contract={contract} />
-        )}
     </Link>
   )
 }
@@ -152,25 +147,43 @@ export function isClosed(contract: Contract) {
 
 export function ContractStatusLabel(props: {
   contract: Contract
+  showProbChange?: boolean
   chanceLabel?: boolean
   className?: string
+  width?: string
 }) {
-  const { contract, chanceLabel, className } = props
+  const { contract, showProbChange, chanceLabel, className, width } = props
   const probTextColor = getTextColor(contract)
   const { outcomeType } = contract
 
   switch (outcomeType) {
     case 'BINARY': {
       return contract.resolution ? (
-        <span className={className}>
+        <span className={clsx(className, width)}>
           <BinaryContractOutcomeLabel
             contract={contract}
             resolution={contract.resolution}
           />
         </span>
       ) : (
-        <span className={clsx(probTextColor, className)}>
+        <span className={clsx(probTextColor, 'whitespace-nowrap', className)}>
           {formatPercentShort(getDisplayProbability(contract))}
+          {showProbChange &&
+            contract.probChanges &&
+            Math.round(contract.probChanges.day * 100) !== 0 && (
+              <Row
+                className={clsx(
+                  'text-ink-700 mb-0.5 ml-[3px] inline-flex items-center rounded-full px-1 align-middle text-xs',
+                  contract.probChanges.day > 0
+                    ? 'bg-teal-600/10 text-teal-600'
+                    : 'text-scarlet-500 bg-scarlet-500/10'
+                )}
+              >
+                {contract.probChanges.day > 0 ? '+' : '-'}
+                {Math.abs(Math.round((contract.probChanges.day ?? 0) * 100))}
+                <span className="font-thin">%</span>
+              </Row>
+            )}
           {chanceLabel && <span className="text-sm font-normal"> chance</span>}
         </span>
       )
@@ -196,7 +209,7 @@ export function ContractStatusLabel(props: {
       return <span className={clsx(probTextColor, className)}>{val}</span>
     }
     case 'MULTIPLE_CHOICE': {
-      return <ContractMinibar contract={contract} />
+      return <ContractMinibar width={width} contract={contract} />
     }
     case 'QUADRATIC_FUNDING': {
       return <span>RAD</span>
@@ -283,25 +296,6 @@ function ContractQuestion(props: {
   )
 }
 
-function ContractAnswers(props: { contract: CPMMMultiContract }) {
-  const { contract } = props
-
-  return (
-    <div className="text-ink-500 my-1 grid w-full grid-cols-2 gap-x-4 pl-8 pr-4 text-sm sm:pl-10 sm:pr-48">
-      {sortAnswers(contract, contract.answers)
-        .slice(0, 4)
-        .map((ans) => (
-          <div key={ans.id} className="flex gap-2">
-            <span className="truncate">{ans.text}</span>
-            <span className={'font-semibold'}>
-              {formatPercentShort(ans.prob)}
-            </span>
-          </div>
-        ))}
-    </div>
-  )
-}
-
 export function VisibilityIcon(props: {
   contract: Contract
   isLarge?: boolean
@@ -313,9 +307,6 @@ export function VisibilityIcon(props: {
     'inline',
     className
   )
-
-  if (contract.visibility === 'private')
-    return <LockClosedIcon className={iconClassName} />
 
   if (contract.visibility === 'unlisted')
     return <EyeOffIcon className={iconClassName} />

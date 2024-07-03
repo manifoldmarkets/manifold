@@ -47,10 +47,14 @@ import {
 import { ModReport } from '../mod-report'
 
 import { RegistrationReturnType } from 'common/reason-codes'
-import { GIDXVerificationResponse, verificationParams } from 'common/gidx/gidx'
+import {
+  GIDXDocument,
+  GIDXMonitorResponse,
+  GPSProps,
+  verificationParams,
+} from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
-
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -238,7 +242,7 @@ export const API = (_apiTypeCheck = {
         contractSlug: z.string().optional(),
         answerId: z.string().optional(),
         // market: z.string().optional(), // deprecated, synonym for `contractSlug`
-        limit: z.coerce.number().gte(0).lte(1000).default(1000),
+        limit: z.coerce.number().gte(0).lte(10000).default(10000),
         before: z.string().optional(),
         after: z.string().optional(),
         beforeTime: z.coerce.number().optional(),
@@ -249,6 +253,7 @@ export const API = (_apiTypeCheck = {
         filterRedemptions: z.coerce.boolean().optional(),
         filterChallenges: z.coerce.boolean().optional(),
         filterAntes: z.coerce.boolean().optional(),
+        includeZeroShareRedemptions: z.coerce.boolean().optional(),
       })
       .strict(),
   },
@@ -411,7 +416,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string(),
-        amount: z.number().int().gt(0).finite(),
+        amount: z.number().gt(0).finite(),
       })
       .strict(),
   },
@@ -423,7 +428,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string(),
-        amount: z.number().gt(0).int().finite(),
+        amount: z.number().gt(0).finite(),
       })
       .strict(),
   },
@@ -436,7 +441,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         commentId: z.string(),
-        amount: z.number().gt(0).int().finite(),
+        amount: z.number().gt(0).finite(),
       })
       .strict(),
   },
@@ -682,8 +687,10 @@ export const API = (_apiTypeCheck = {
         pushToken: z.string().optional(),
         rejectedPushNotificationsOn: z.number().optional(),
         lastPromptedToEnablePushNotifications: z.number().optional(),
+        interestedInPushNotifications: z.boolean().optional(),
         hasSeenAppBannerInNotificationsOn: z.number().optional(),
         installedAppPlatforms: z.array(z.string()).optional(),
+        paymentInfo: z.string().optional(),
       })
       .strict(),
   },
@@ -707,7 +714,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: DEFAULT_CACHE_STRATEGY,
+    // Do not add a caching strategy here. New users need up-to-date data.
     returns: {} as FullUser,
     props: z.object({ id: z.string() }).strict(),
   },
@@ -1148,6 +1155,7 @@ export const API = (_apiTypeCheck = {
         'promoted click',
         'card like',
         'page share',
+        'browse click',
       ]),
       commentId: z.string().optional(),
       feedReasons: z.array(z.string()).optional(),
@@ -1293,18 +1301,40 @@ export const API = (_apiTypeCheck = {
     props: verificationParams,
     returns: {} as RegistrationReturnType,
   },
-  'get-verification-session-gidx': {
-    method: 'POST',
-    visibility: 'undocumented',
-    authed: true,
-    returns: {} as GIDXVerificationResponse,
-    props: verificationParams,
-  },
   'get-verification-status-gidx': {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    returns: {} as { status: string },
+    returns: {} as {
+      status: string
+      documents?: GIDXDocument[]
+      message?: string
+    },
+    props: z.object({}),
+  },
+  'get-monitor-status-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      status: string
+      data: GIDXMonitorResponse
+    },
+    props: z.object({
+      DeviceGPS: GPSProps,
+    }),
+  },
+  'get-verification-documents-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      status: string
+      documents: GIDXDocument[]
+      utilityDocuments: GIDXDocument[]
+      idDocuments: GIDXDocument[]
+      rejectedDocuments: GIDXDocument[]
+    },
     props: z.object({}),
   },
   'upload-document-gidx': {
@@ -1322,8 +1352,11 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
-    returns: {} as any,
-    props: z.object({}) as any,
+    returns: {} as { Accepted: boolean },
+    props: z.object({
+      MerchantCustomerID: z.string(),
+      NotificationType: z.string(),
+    }),
   },
 } as const)
 

@@ -9,7 +9,7 @@ export function ProfitBadge(props: {
   const { profitPercent, grayColor, round, className } = props
   if (!profitPercent) return null
   const colors = grayColor
-    ? 'bg-ink-200 text-ink-500'
+    ? 'bg-ink-100 text-ink-500'
     : profitPercent > 0
     ? 'bg-teal-100 text-teal-700'
     : 'bg-scarlet-100 text-scarlet-700'

@@ -10,6 +10,7 @@ export const convertBet = (row: Row<'contract_bets'>) =>
     updated_time: false,
     created_time: tsToMillis as any,
     answer_id: (a) => (a != null ? a : undefined),
+    loan_amount: false,
   })
 
 export async function getTotalBetCount(contractId: string, db: SupabaseClient) {
@@ -100,7 +101,7 @@ export const applyBetsFilter = <
   if (options?.afterTime) {
     q = q.gt('created_time', millisToTs(options.afterTime))
   }
-  if (options?.beforeTime) {
+  if (options?.beforeTime !== undefined) {
     q = q.lt('created_time', millisToTs(options.beforeTime))
   }
   if (options?.filterChallenges) {

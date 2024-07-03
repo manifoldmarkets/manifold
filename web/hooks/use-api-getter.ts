@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 
 import { APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { APIError, api } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/api/api'
 import { useEvent } from './use-event'
 
 const promiseCache: Record<string, Promise<any> | undefined> = {}

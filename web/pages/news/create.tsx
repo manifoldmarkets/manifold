@@ -14,7 +14,7 @@ import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
 import { Title } from 'web/components/widgets/title'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { createDashboard } from 'web/lib/firebase/api'
+import { createDashboard } from 'web/lib/api/api'
 
 export default function CreateDashboard() {
   const [title, setTitle] = usePersistentLocalState(

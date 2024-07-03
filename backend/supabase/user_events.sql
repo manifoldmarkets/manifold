@@ -27,3 +27,5 @@ drop policy if exists "user can insert" on user_events;
 create policy "user can insert" on user_events for insert
     with
     check (true);
+
+create index if not exists user_events_ts on user_events (ts desc);

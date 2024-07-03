@@ -77,7 +77,7 @@ export function CommentInput(props: {
 
     try {
       await onSubmitComment?.(editor, type)
-      editor.commands.clearContent(true)
+      if (!editor.isDestroyed) editor.commands.clearContent(true)
       // force clear save, because it can fail if editor unrenders
       safeLocalStorage?.removeItem(`text ${key}`)
       onClearInput?.()

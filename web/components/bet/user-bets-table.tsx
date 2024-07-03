@@ -6,11 +6,15 @@ import { getContractBetNullMetrics } from 'common/calculate'
 import { contractPath, CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { buildArray } from 'common/util/array'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import {
+  formatMoney,
+  maybePluralize,
+  shortFormatNumber,
+} from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import { Input } from 'web/components/widgets/input'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { Contract } from 'web/lib/firebase/contracts'
+import { Contract } from 'common/contract'
 import { User } from 'web/lib/firebase/users'
 import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { Col } from '../layout/col'
@@ -19,8 +23,6 @@ import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import { Pagination } from 'web/components/widgets/pagination'
 import clsx from 'clsx'
-import { ContractStatusLabel } from 'web/components/contract/contracts-table'
-import { UserLink } from 'web/components/widgets/user-link'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { OrderTable } from 'web/components/bet/order-book'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -29,7 +31,7 @@ import { BetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { ProfitBadge } from 'web/components/profit-badge'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { api, getUserContractsMetricsWithContracts } from 'web/lib/firebase/api'
+import { api, getUserContractsMetricsWithContracts } from 'web/lib/api/api'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
@@ -37,10 +39,16 @@ import { linkClass } from '../widgets/site-link'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
-import { UserHovercard } from '../user/user-hovercard'
-import { IconButton } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { ChevronUpIcon } from '@heroicons/react/solid'
 import { OutcomeLabel } from 'web/components/outcome-label'
+import { ContractStatusLabel } from 'web/components/contract/contracts-table'
+import { UserLink } from 'web/components/widgets/user-link'
+import { UserHovercard } from 'web/components/user/user-hovercard'
+import { Avatar } from 'web/components/widgets/avatar'
+import DropdownMenu from '../comments/dropdown-menu'
+import { BsThreeDotsVertical } from 'react-icons/bs'
+import { MODAL_CLASS, Modal } from '../layout/modal'
 
 type BetSort =
   | 'newest'
@@ -51,7 +59,7 @@ type BetSort =
   | 'week'
   | 'probChangeDay'
   | 'profitPercent'
-  | 'dayPercent'
+  | 'position'
 
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
@@ -299,8 +307,42 @@ function BetsTable(props: {
     setPage(0)
   }
 
+  type ColumnHeader = {
+    sort: BetSort
+    label: string
+    enabled: boolean
+    altSort?: BetSort
+    placeholder?: boolean
+  }
+
+  const [columns, setColumns] = usePersistentLocalState<ColumnHeader[]>(
+    [
+      { sort: 'newest', label: 'Time', enabled: true },
+      { sort: 'value', label: 'Value', enabled: true },
+      { sort: 'position', label: 'Position', enabled: false },
+      { sort: 'profit', label: 'Profit', enabled: true },
+      { sort: 'day', label: '1d', enabled: true },
+      { sort: 'week', label: '1w', enabled: true },
+      { sort: 'closeTime', label: 'Close', enabled: true },
+    ],
+    'user-bet-table-columns'
+  )
+  const isEnabled = (sort: BetSort) =>
+    !isMobile || columns.find((col) => col.sort === sort)?.enabled
+
+  const handleColumnToggle = (sort: BetSort) => {
+    setColumns((prevConfigs) =>
+      prevConfigs.map((config) =>
+        config.sort === sort ? { ...config, enabled: !config.enabled } : config
+      )
+    )
+  }
+  const enabledColumnsCount = columns.filter((c) => c.enabled).length
+  const [modalOpen, setModalOpen] = useState(false)
+
   // Most of these are descending sorts by default.
   const SORTS: Record<BetSort, (c: Contract) => number> = {
+    position: (c) => -sum(Object.values(metricsByContractId[c.id].totalShares)),
     profit: (c) => -metricsByContractId[c.id].profit,
     profitPercent: (c) => -metricsByContractId[c.id].profitPercent,
     value: (c) =>
@@ -323,8 +365,6 @@ function BetsTable(props: {
       return 0
     },
     day: (c) => -(metricsByContractId[c.id].from?.day.profit ?? 0),
-    dayPercent: (c) =>
-      -(metricsByContractId[c.id].from?.day.profitPercent ?? 0),
     week: (c) => -(metricsByContractId[c.id].from?.week.profit ?? 0),
     closeTime: (c) =>
       // This is in fact the intuitive sort direction.
@@ -339,49 +379,167 @@ function BetsTable(props: {
   const currentSlice = page * rowsPerSection
   const isMobile = useIsMobile(600)
 
-  const dataColumns = buildArray([
+  const dataColumns: {
+    header: ColumnHeader
+    span: number
+    renderCell: (c: Contract) => ReactNode
+    headerBuddy?: ReactNode
+  }[] = buildArray([
     {
-      header: { sort: 'probChangeDay', label: 'Prob' },
-      span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => {
-        let change: string | undefined
-        if (c.mechanism === 'cpmm-1') {
-          const probChange = Math.round(
-            (c as CPMMContract).probChanges.day * 100
-          )
-          change =
-            probChange !== 0
-              ? (probChange > 0 ? '+' : '') +
-                probChange +
-                (c.outcomeType === 'BINARY' ? '' : '%')
-              : ''
-        }
-        return (
-          <Row className={'justify-left relative items-center'}>
-            <ContractStatusLabel className={'font-bold'} contract={c} />
-            {change != undefined && (
-              <span className={'text-ink-500 ml-1 text-xs'}>{change}</span>
-            )}
-          </Row>
-        )
-      },
-    },
-    {
-      header: { sort: 'newest', label: 'Time' },
+      header: columns[0],
       span: isMobile ? 2 : 1,
       renderCell: (c: Contract) => (
-        <Row className={'justify-end'}>
+        <Row className={'justify-start'}>
           <RelativeTimestamp
             time={metricsByContractId[c.id].lastBetTime}
             shortened
-            className="text-ink-500"
+            className="text-ink-500 -ml-1"
           />
         </Row>
       ),
     },
-    !isMobile && {
-      header: { sort: 'closeTime', label: 'Close' },
+    {
+      header: columns[1],
+      span: isMobile ? 3 : 2,
+      renderCell: (c: Contract) => {
+        const maxOutcome = metricsByContractId[c.id].maxSharesOutcome
+        const showOutcome = maxOutcome && c.outcomeType === 'BINARY'
+        return (
+          <Row className={clsx('justify-end gap-1')}>
+            {showOutcome && isMobile && (
+              <OutcomeLabel
+                contract={c}
+                outcome={maxOutcome}
+                truncate={'short'}
+              />
+            )}
+            <Col className={'sm:min-w-[50px]'}>
+              <NumberCell num={metricsByContractId[c.id].payout} />
+            </Col>
+          </Row>
+        )
+      },
+    },
+
+    {
+      header: columns[2],
       span: 3,
+      renderCell: (c: Contract) => {
+        const maxOutcome = metricsByContractId[c.id].maxSharesOutcome
+        const showOutcome = maxOutcome && c.outcomeType === 'BINARY'
+        return (
+          <Row className={clsx('justify-end gap-1')}>
+            {showOutcome &&
+              ((isMobile && !isEnabled('value')) || !isMobile) && (
+                <OutcomeLabel
+                  contract={c}
+                  outcome={maxOutcome}
+                  truncate={'short'}
+                />
+              )}
+            <Col className={'sm:min-w-[50px]'}>
+              <NumberCell
+                num={sum(Object.values(metricsByContractId[c.id].totalShares))}
+              />
+            </Col>
+          </Row>
+        )
+      },
+      headerBuddy: isMobile && <div className="-mr-2" />,
+    },
+    {
+      header: { ...columns[3], altSort: 'profitPercent' },
+      span: isMobile ? 3 : 2,
+      renderCell: (c: Contract) => {
+        const cm = metricsByContractId[c.id]
+        return (
+          <Row className={'justify-end gap-1'}>
+            <NumberCell num={cm.profit} change={true} />
+          </Row>
+        )
+      },
+      headerBuddy: (
+        <button
+          className={'z-10'}
+          onClick={() => {
+            sort.field === 'profitPercent'
+              ? onSetSort('profit')
+              : onSetSort('profitPercent')
+          }}
+        >
+          <div
+            className={
+              'text-ink-400 absolute -right-14 top-0 ml-1 hidden sm:inline-block'
+            }
+          >
+            <span
+              className={clsx(
+                'hover:bg-ink-100 rounded-md border px-1',
+                sort.field === 'profit' ? ' text-ink-1000  ' : ''
+              )}
+            >
+              {ENV_CONFIG.moneyMoniker}
+            </span>
+
+            <span
+              className={clsx(
+                'hover:bg-ink-100 rounded-md border px-1',
+                sort.field === 'profitPercent'
+                  ? ' text-ink-1000 font-semibold '
+                  : ''
+              )}
+            >
+              %
+            </span>
+          </div>
+        </button>
+      ),
+    },
+    {
+      header: {
+        sort: 'profitPercent',
+        label: '',
+        placeholder: true,
+        enabled: true,
+      },
+      span: 1,
+      renderCell: (c: Contract) => {
+        const cm = metricsByContractId[c.id]
+        return (
+          <span className={'flex-inline flex justify-end '}>
+            <ProfitBadge
+              className={'!px-1'}
+              profitPercent={cm.profitPercent}
+              round={true}
+              grayColor={formatMoney(cm.profit ?? 0) === formatMoney(0)}
+            />
+          </span>
+        )
+      },
+    },
+    {
+      header: columns[4],
+      span: isMobile ? 3 : 2,
+      renderCell: (c: Contract) => (
+        <NumberCell
+          num={metricsByContractId[c.id].from?.day.profit ?? 0}
+          change={true}
+        />
+      ),
+    },
+    {
+      header: columns[5],
+      span: isMobile ? 3 : 2,
+      renderCell: (c: Contract) => (
+        <NumberCell
+          num={metricsByContractId[c.id].from?.week.profit ?? 0}
+          change={true}
+        />
+      ),
+    },
+    {
+      header: columns[6],
+      span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => {
         const closeTime = c.resolutionTime ?? c.closeTime
         const date = new Date(closeTime ?? Infinity)
@@ -397,73 +555,6 @@ function BetsTable(props: {
               {closeTime ? dateString : 'N/A'}
             </span>
           </Row>
-        )
-      },
-    },
-    {
-      header: { sort: 'value', label: 'Value' },
-      span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => (
-        <NumberCell num={metricsByContractId[c.id].payout} />
-      ),
-    },
-    {
-      header: { sort: 'profit', label: 'Profit' },
-      span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => (
-        <NumberCell num={metricsByContractId[c.id].profit} change={true} />
-      ),
-    },
-    !isMobile && {
-      header: { sort: 'profitPercent', label: '%' },
-      span: 1,
-      renderCell: (c: Contract) => {
-        const cm = metricsByContractId[c.id]
-        return (
-          <span
-            className={'flex-inline -mr-3 flex justify-end md:-mr-2 lg:mr-0'}
-          >
-            <ProfitBadge
-              className={'!px-1'}
-              profitPercent={cm.profitPercent}
-              round={true}
-              grayColor={formatMoney(cm.profit ?? 0) === formatMoney(0)}
-            />
-          </span>
-        )
-      },
-    },
-    {
-      header: { sort: 'day', label: '1d Profit' },
-      span: isMobile ? 4 : 2,
-      renderCell: (c: Contract) => (
-        <NumberCell
-          num={metricsByContractId[c.id].from?.day.profit ?? 0}
-          change={true}
-        />
-      ),
-    },
-    !isMobile && {
-      header: { sort: 'dayPercent', label: '%' },
-      span: 1,
-      renderCell: (c: Contract) => {
-        const cm = metricsByContractId[c.id]
-        const profitPercent = cm.from?.day.profitPercent ?? 0
-        // Gives ~infinite returns
-        if ((cm.from?.day.invested ?? 0) < 0.01) return <div />
-        return (
-          <span
-            className={'flex-inline -mr-3 flex justify-end md:-mr-2 lg:mr-0'}
-          >
-            <ProfitBadge
-              className={'!px-1'}
-              profitPercent={profitPercent}
-              round={true}
-              grayColor={
-                formatMoney(cm.from?.day.profit ?? 0) === formatMoney(0)
-              }
-            />
-          </span>
         )
       },
     },
@@ -501,35 +592,74 @@ function BetsTable(props: {
     )
   }
 
+  const getChange = (c: CPMMContract): string | undefined => {
+    const probChange = Math.round((c as CPMMContract).probChanges.day * 100)
+    return probChange !== 0
+      ? (probChange > 0 ? '+' : '') +
+          probChange +
+          (c.outcomeType === 'BINARY' ? '' : '%')
+      : ''
+  }
+  const MAX_SHOWN_MOBILE = 5
+  const columnsToDisplay = dataColumns
+    .filter((c) => isEnabled(c.header.sort))
+    .slice(0, isMobile ? MAX_SHOWN_MOBILE : 10)
+
   return (
     <Col className="mb-4 flex-1 gap-4">
       <Col className={'w-full'}>
         <div
           className={clsx(
-            'grid-cols-15 bg-canvas-50 sticky z-10 grid w-full py-2 pr-1',
+            'grid-cols-15 bg-canvas-50 relative sticky z-10 grid w-full py-2 pr-1',
             isMobile ? 'top-12' : 'top-0' // Sets it below sticky user profile header on mobile
           )}
         >
-          {dataColumns.map((c) => (
-            <span
-              key={c.header.sort}
-              className={clsx(
-                getColSpan(c.span),
-                'flex justify-end first:justify-start'
-              )}
-            >
-              <Header
-                onClick={() => onSetSort(c.header.sort as BetSort)}
-                up={
-                  sort.field === c.header.sort
-                    ? sort.direction === 'asc'
-                    : undefined
-                }
+          {columnsToDisplay.map((col) =>
+            col.header.placeholder ? (
+              <span key={col.header.label} />
+            ) : (
+              <span
+                key={col.header.sort}
+                className={clsx(
+                  getColSpan(col.span),
+                  'relative flex justify-end first:justify-start'
+                )}
               >
-                {c.header.label}
-              </Header>
-            </span>
-          ))}
+                <Header
+                  onClick={() =>
+                    onSetSort(
+                      (col.header.altSort && sort.field === col.header.altSort
+                        ? col.header.altSort
+                        : col.header.sort) as BetSort
+                    )
+                  }
+                  up={
+                    sort.field === col.header.sort ||
+                    sort.field === col.header.altSort
+                      ? sort.direction === 'asc'
+                      : undefined
+                  }
+                >
+                  {col.header.label}
+                </Header>
+                {col.headerBuddy ? col.headerBuddy : null}
+              </span>
+            )
+          )}
+          {isMobile && (
+            <div className="absolute bottom-1.5 right-0">
+              <DropdownMenu
+                menuWidth="w-32"
+                items={[
+                  {
+                    name: 'Edit Columns',
+                    onClick: () => setModalOpen(true),
+                  },
+                ]}
+                icon={<BsThreeDotsVertical className="h-4" />}
+              />
+            </div>
+          )}
         </div>
         {contracts
           .slice(currentSlice, currentSlice + rowsPerSection)
@@ -546,7 +676,6 @@ function BetsTable(props: {
               contract.mechanism === 'cpmm-1'
                 ? signedInUser
                 : undefined
-            const maxOutcome = metricsByContractId[contract.id].maxSharesOutcome
             return (
               <Row
                 key={contract.id + 'bets-table-row'}
@@ -554,59 +683,65 @@ function BetsTable(props: {
                   'border-ink-200 hover:bg-canvas-50 cursor-pointer border-b py-2'
                 }
               >
-                <Col className={'w-full'}>
+                <Col className={'w-full gap-3 sm:gap-2'}>
                   {/* Contract title*/}
-                  <Row className={'-mb-2'}>
-                    <Col className={'w-full'}>
-                      <Row className={'justify-between'}>
-                        <Link
-                          href={contractPath(contract)}
-                          className={clsx(
-                            linkClass,
-                            'line-clamp-2 pr-2 sm:pr-1'
-                          )}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {contract.question}
-                        </Link>
-                        <IconButton
-                          size={'2xs'}
-                          onClick={() => setNewExpandedId(contract.id)}
-                        >
-                          {expandedIds.includes(contract.id) ? (
-                            <ChevronUpIcon className="h-4" />
-                          ) : (
-                            <ChevronUpIcon className="h-4 rotate-180" />
-                          )}
-                        </IconButton>
-                      </Row>
-                      <Row className={'items-center gap-2'}>
-                        {maxOutcome && contract.outcomeType === 'BINARY' && (
-                          <OutcomeLabel
-                            contract={contract}
-                            outcome={maxOutcome}
-                            truncate={'short'}
-                          />
-                        )}
-                        <UserHovercard userId={contract.creatorId}>
-                          <UserLink
-                            className={'text-ink-600 w-fit text-sm'}
-                            user={{
-                              id: contract.creatorId,
-                              name: contract.creatorName,
-                              username: contract.creatorUsername,
-                            }}
-                          />
-                        </UserHovercard>
-                      </Row>
-                    </Col>
+                  <Row className={'justify-between'}>
+                    <Link
+                      href={contractPath(contract)}
+                      className={clsx(linkClass, 'line-clamp-2 pr-2 sm:pr-1')}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span>{contract.question}</span>
+                    </Link>
+                    <IconButton
+                      size={'2xs'}
+                      onClick={() => setNewExpandedId(contract.id)}
+                    >
+                      {expandedIds.includes(contract.id) ? (
+                        <ChevronUpIcon className="h-4" />
+                      ) : (
+                        <ChevronUpIcon className="h-4 rotate-180" />
+                      )}
+                    </IconButton>
+                  </Row>
+                  <Row className={'items-center gap-1'}>
+                    <span className={'min-w-[40px]'}>
+                      <ContractStatusLabel
+                        className={'font-bold'}
+                        contract={contract}
+                      />
+                      {contract.mechanism === 'cpmm-1' && (
+                        <span className={'text-ink-500 ml-0.5 text-xs'}>
+                          {getChange(contract)}
+                        </span>
+                      )}
+                    </span>
+                    <UserHovercard
+                      className={'ml-2'}
+                      userId={contract.creatorId}
+                    >
+                      <Avatar
+                        avatarUrl={contract.creatorAvatarUrl}
+                        size={'2xs'}
+                        className={'mr-1 self-center'}
+                      />
+                      <UserLink
+                        noLink={true}
+                        className={'text-ink-600 w-fit text-sm'}
+                        user={{
+                          id: contract.creatorId,
+                          name: contract.creatorName,
+                          username: contract.creatorUsername,
+                        }}
+                      />
+                    </UserHovercard>
                   </Row>
                   {/* Contract Metrics details*/}
                   <div
-                    className={'grid-cols-15 mt-1 grid w-full pt-2'}
+                    className={'grid-cols-15 grid w-full'}
                     onClick={() => setNewExpandedId(contract.id)}
                   >
-                    {dataColumns.map((c) => (
+                    {columnsToDisplay.map((c) => (
                       <div
                         className={clsx(getColSpan(c.span))}
                         key={c.header.sort + contract.id + 'row'}
@@ -615,7 +750,7 @@ function BetsTable(props: {
                       </div>
                     ))}
                   </div>
-                  <Row>
+                  <Col className={'-mt-2 w-full'}>
                     {expandedIds.includes(contract.id) &&
                       (bets === undefined ? (
                         <Col className={'w-full items-center justify-center'}>
@@ -636,7 +771,7 @@ function BetsTable(props: {
                           {contract.mechanism === 'cpmm-1' &&
                             limitBets.length > 0 && (
                               <div className="max-w-md">
-                                <div className="bg-canvas-50 mt-4 px-4 py-2">
+                                <div className="bg-canvas-50 mt-4 p-2">
                                   Limit orders
                                 </div>
                                 <OrderTable
@@ -654,7 +789,7 @@ function BetsTable(props: {
                           />
                         </Col>
                       ))}
-                  </Row>
+                  </Col>
                 </Col>
               </Row>
             )
@@ -667,6 +802,39 @@ function BetsTable(props: {
         totalItems={contracts.length}
         setPage={setPage}
       />
+      <Modal setOpen={setModalOpen} open={modalOpen}>
+        <div className={MODAL_CLASS}>
+          <span className="mb-4 text-lg font-bold">
+            {enabledColumnsCount >= MAX_SHOWN_MOBILE
+              ? `Unselect ${
+                  MAX_SHOWN_MOBILE + 1 - enabledColumnsCount
+                } column to select another`
+              : `Select ${
+                  MAX_SHOWN_MOBILE - enabledColumnsCount
+                } more ${maybePluralize(
+                  'column',
+                  MAX_SHOWN_MOBILE - enabledColumnsCount
+                )} (max 5)`}
+          </span>
+          {columns.map((col) => (
+            <div key={col.sort}>
+              <div className="mb-2 flex items-center">
+                <input
+                  type="checkbox"
+                  disabled={
+                    !col.enabled &&
+                    columns.filter((c) => c.enabled).length >= MAX_SHOWN_MOBILE
+                  }
+                  checked={col.enabled}
+                  onChange={() => handleColumnToggle(col.sort)}
+                />
+                <label className="ml-2">{col.label}</label>
+              </div>
+            </div>
+          ))}
+          <Button onClick={() => setModalOpen(false)}>Done</Button>
+        </div>
+      </Modal>
     </Col>
   )
 }
@@ -686,7 +854,7 @@ const NumberCell = (props: { num: number; change?: boolean }) => {
           <span className="text-scarlet-500">{formattedNum}</span>
         )
       ) : (
-        <span>{formatMoney(num)}</span>
+        <span>{formattedNum}</span>
       )}
     </Row>
   )

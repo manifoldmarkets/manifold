@@ -15,13 +15,15 @@ import { Input } from 'web/components/widgets/input'
 import { useRouter } from 'next/router'
 import { firebaseLogout } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { useUser } from 'web/hooks/use-user'
+import { isAdminId } from 'common/envs/constants'
 
 const KEY = 'TEST_CREATE_USER_KEY'
 
 export default function TestUser() {
   const router = useRouter()
-  useRedirectIfSignedOut()
+  const user = useUser()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [createUserKey, setCreateUserKey] = useState('')
@@ -74,14 +76,22 @@ export default function TestUser() {
   return (
     <Col className={'text-ink-600 items-center justify-items-center gap-1'}>
       <Title>Test New User Creation</Title>
-      <Button
-        color={'red-outline'}
-        onClick={() => {
-          withTracking(firebaseLogout, 'sign out')()
-        }}
-      >
-        Signout
-      </Button>
+      <Row className={'gap-2'}>
+        <Button
+          color={!user || !isAdminId(user.id) ? 'gray-white' : 'indigo'}
+          onClick={() => {
+            withTracking(firebaseLogout, 'sign out')()
+          }}
+        >
+          Signout
+        </Button>
+        <Button
+          color={!user || isAdminId(user.id) ? 'gray-white' : 'indigo'}
+          onClick={() => router.push('/home')}
+        >
+          Go home
+        </Button>
+      </Row>
       <Row className={'text-ink-600 text-sm'}>
         Set TEST_CREATE_USER_KEY to{' '}
         <a

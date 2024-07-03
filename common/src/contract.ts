@@ -83,6 +83,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   collectedFees: Fees
   uniqueBettorCount: number
+  uniqueBettorCountDay: number
 
   unlistedById?: string
   featuredLabel?: string
@@ -383,7 +384,7 @@ export const CPMM_MIN_POOL_QTY = 0.01
 export const MULTI_NUMERIC_BUCKETS_MAX = 50
 export const MULTI_NUMERIC_CREATION_ENABLED = true
 
-export type Visibility = 'public' | 'unlisted' | 'private'
+export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public', 'unlisted'] as const
 
 export const SORTS = [

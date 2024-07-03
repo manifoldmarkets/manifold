@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { ModReport, ReportStatus } from 'common/mod-report'
 import { keyBy, mapValues } from 'lodash'
 

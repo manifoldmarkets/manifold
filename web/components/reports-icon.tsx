@@ -2,7 +2,7 @@
 import { FlagIcon } from '@heroicons/react/outline'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { ModReport } from 'common/mod-report'
 
 export function ReportsIcon(props: { className?: string }) {
@@ -23,9 +23,6 @@ export function ReportsIcon(props: { className?: string }) {
 
   useEffect(() => {
     fetchNewReportsCount()
-    const intervalId = setInterval(fetchNewReportsCount, 10000)
-
-    return () => clearInterval(intervalId)
   }, [])
 
   return (

@@ -14,7 +14,7 @@ import {
   uniqBy,
 } from 'lodash'
 import { ReactNode, memo, useEffect, useState } from 'react'
-import { useBets, useSubscribeGlobalBets } from 'web/hooks/use-bets'
+import { useBetsOnce, useSubscribeGlobalBets } from 'web/hooks/use-bets'
 import {
   useGlobalComments,
   useSubscribeGlobalComments,
@@ -43,7 +43,7 @@ import { getRecentCommentsOnContracts } from 'web/lib/supabase/comments'
 import { getRecentActiveContractsOnTopics } from 'web/lib/supabase/contracts'
 import { Bet } from 'common/bet'
 import { UserHovercard } from './user/user-hovercard'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export function ActivityLog(props: {
   count: number
@@ -101,13 +101,13 @@ export function ActivityLog(props: {
     if (topicSlugs) getRecentTopicalContent(topicSlugs)
   }, [topicSlugs])
 
-  const recentBets = useBets({
+  const recentBets = useBetsOnce({
     limit: count * 3,
     filterRedemptions: true,
     order: 'desc',
   })
   const allRealtimeBets = useSubscribeGlobalBets({
-    includeRedemptions: false,
+    filterRedemptions: true,
   })
   const realtimeBets = sortBy(allRealtimeBets, 'createdTime')
     .reverse()

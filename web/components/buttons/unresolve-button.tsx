@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Modal } from '../layout/modal'
 import { Button } from './button'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { Row } from '../layout/row'
 import { Input } from '../widgets/input'
 

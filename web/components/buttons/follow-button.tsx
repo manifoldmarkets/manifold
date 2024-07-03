@@ -1,6 +1,6 @@
 import { useIsFollowing } from 'web/hooks/use-follows'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { followUser, unfollowUser } from 'web/lib/firebase/api'
+import { followUser, unfollowUser } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { Button } from './button'
 import clsx from 'clsx'

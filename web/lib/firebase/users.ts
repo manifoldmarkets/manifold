@@ -16,7 +16,7 @@ import {
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from '../util/local'
-import { api, referUser } from './api'
+import { referUser } from '../api/api'
 import { app } from './init'
 import { removeUndefinedProps } from 'common/util/object'
 import { postMessageToNative } from 'web/lib/native/post-message'
@@ -26,10 +26,6 @@ dayjs.extend(utc)
 export type { User }
 
 export const auth = getAuth(app)
-
-export async function updatePrivateUser(update: Partial<PrivateUser>) {
-  await api('me/private/update', update)
-}
 
 export const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'
 const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'

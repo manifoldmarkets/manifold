@@ -55,25 +55,6 @@ select EXISTS (
 ) $$;
 
 create
-    or replace function check_group_accessibility (this_group_id text, this_user_id text) returns boolean as $$
-declare
-    is_accessible boolean;
-begin
-    select
-        case
-            when g.privacy_status in ('public', 'curated') then true
-            when g.privacy_status = 'private' then is_group_member(this_group_id, this_user_id)
-            else false
-            end
-    into is_accessible
-    from groups g
-    where g.id = this_group_id;
-
-    return is_accessible;
-end;
-$$ language plpgsql immutable parallel safe;
-
-create
     or replace function get_group_contracts (this_group_id text) returns table (data JSON) immutable parallel safe language sql as $$
 select contracts.data from
     contracts join group_contracts on group_contracts.contract_id = contracts.id
@@ -125,18 +106,11 @@ create index if not exists total_members on public.groups (total_members desc);
 create index if not exists privacy_status_idx on public.groups using btree (privacy_status);
 
 
-drop policy if exists "Enable read access for admin" on public.groups;
+drop policy if exists "public read" on public.groups;
 
-create policy "Enable read access for admin" on public.groups for
+create policy "public" on public.groups for
     select
-    to service_role using (true);
-
-drop policy if exists "Enable read access for all if group is public/curated" on public.groups;
-
-create policy "Enable read access for all if group is public/curated" on public.groups for
-    select
-    using ((privacy_status <> 'private'));
-
+    using (true);
 
 create
     or replace function group_populate_cols () returns trigger language plpgsql as $$ begin

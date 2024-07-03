@@ -7,7 +7,10 @@ create or replace view
     where
       resolution_time is null
       and visibility = 'public'
-      and ((close_time > now() + interval '10 minutes') or close_time is null)
+      and (
+        (close_time > now() + interval '10 minutes')
+        or close_time is null
+      )
   );
 
 create or replace view
@@ -29,7 +32,10 @@ create or replace view
     where
       resolution_time is null --    row level security prevents the 'private' contracts from being returned
       and visibility != 'unlisted'
-      and ((close_time > now() + interval '10 minutes') or close_time is null)
+      and (
+        (close_time > now() + interval '10 minutes')
+        or close_time is null
+      )
   );
 
 create or replace view
@@ -49,7 +55,7 @@ create or replace view
     select
       ce1.contract_id as id1,
       ce2.contract_id as id2,
-      ce1.embedding <=> ce2.embedding as distance
+      ce1.embedding <= > ce2.embedding as distance
     from
       contract_embeddings ce1
       cross join contract_embeddings ce2
@@ -62,7 +68,7 @@ create or replace view
     select
       user_id,
       contract_id,
-      user_embeddings.interest_embedding <=> contract_embeddings.embedding as distance
+      user_embeddings.interest_embedding <= > contract_embeddings.embedding as distance
     from
       user_embeddings
       cross join contract_embeddings
@@ -88,7 +94,7 @@ create view
     from
       (
         group_members gm
-        join groups_rbac gp on gp.id = gm.group_id
+        join groups gp on gp.id = gm.group_id
       )
       join users on users.id = gm.member_id
   );
@@ -115,47 +121,6 @@ create or replace view
         ) user_groups on users.id = user_groups.member_id
       )
   );
-
-create or replace view
-  contracts_rbac as
-select
-  *
-from
-  contracts
-where
-  contracts.visibility = 'public'
-  or contracts.visibility = 'unlisted'
-  or (
-    contracts.visibility = 'private'
-    and (
-      can_access_private_contract (contracts.id, firebase_uid ())
-    )
-  );
-
-create or replace view
-  groups_rbac as
-select
-  *
-from
-  groups
-where
-  groups.privacy_status <> 'private'
-  or (
-    (
-      exists (
-        select
-          1
-        from
-          group_members
-        where
-          (
-            (group_members.group_id = groups.id)
-            and (group_members.member_id = firebase_uid ())
-          )
-      )
-    )
-  )
-  or (is_admin (firebase_uid ()));
 
 create view
   user_referrals as

@@ -1,6 +1,6 @@
 import { Col } from 'web/components/layout/col'
 import { Button } from 'web/components/buttons/button'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { useEffect, useState } from 'react'
 import { Input } from 'web/components/widgets/input'
 import { PhoneInput } from 'react-international-phone'
@@ -78,7 +78,7 @@ export function RegistrationVerifyPhone(props: {
           />
           <Row className={' mb-4 mt-4 w-full gap-12'}>
             <Button color={'gray-white'} onClick={cancel}>
-              Cancel
+              Back
             </Button>
             <Button
               disabled={phoneNumber.length < 7 || loading}
@@ -97,7 +97,7 @@ export function RegistrationVerifyPhone(props: {
               Enter verification code
             </span>
             <Input
-              className={'ml-3 w-36'}
+              className={'ml-3 w-36 text-base'}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               placeholder="123456"

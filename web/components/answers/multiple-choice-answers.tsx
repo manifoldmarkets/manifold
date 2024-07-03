@@ -1,5 +1,4 @@
 import { XIcon } from '@heroicons/react/solid'
-
 import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -35,31 +34,51 @@ export function MultipleChoiceAnswers(props: {
   }
 
   const removeAnswer = (i: number) => {
-    const newAnswers = answers.slice(0, i).concat(answers.slice(i + 1))
-    setAnswers(newAnswers)
+    if (canRemoveAnswers) {
+      const newAnswers = answers.slice(0, i).concat(answers.slice(i + 1))
+      setAnswers(newAnswers)
+    }
   }
 
   const addAnswer = () => setAnswer(answers.length, '')
 
+  const focusAnswer = (i: number) => {
+    const input = document.getElementById(`answer-input-${i}`)
+    input?.focus()
+  }
+  const focusPrevAnswer = (i: number) => focusAnswer(i == 0 ? 0 : i - 1)
+  const focusNextAnswer = (i: number) => {
+    if (i == answers.length - 1) {
+      addAnswer()
+      setTimeout(() => focusAnswer(i + 1), 0) // focus after react removes the answer
+    } else {
+      focusAnswer(i + 1)
+    }
+  }
+
   const hasOther = shouldAnswersSumToOne && addAnswersMode !== 'DISABLED'
   const numAnswers = answers.length + (hasOther ? 1 : 0)
+
+  const canRemoveAnswers =
+    !shouldAnswersSumToOne ||
+    numAnswers > 2 ||
+    (numAnswers > 1 && addAnswersMode !== 'DISABLED')
 
   return (
     <Col className="gap-2">
       {answers.slice(0, answers.length).map((answer, i) => (
         <Row className="items-center gap-2 align-middle" key={i}>
           {i + 1}.{' '}
-          <ExpandingInput
+          <AnswerInput
+            id={`answer-input-${i}`}
             value={answer}
             onChange={(e) => setAnswer(i, e.target.value)}
-            className="ml-2 w-full"
+            onUp={() => focusPrevAnswer(i)}
+            onDown={() => focusNextAnswer(i)}
+            onDelete={() => removeAnswer(i)}
             placeholder={placeholder ?? `Option ${i + 1}`}
-            rows={1}
-            maxLength={MAX_ANSWER_LENGTH}
           />
-          {(!shouldAnswersSumToOne ||
-            numAnswers > 2 ||
-            (numAnswers > 1 && addAnswersMode !== 'DISABLED')) && (
+          {canRemoveAnswers && (
             <button
               onClick={() => removeAnswer(i)}
               type="button"
@@ -73,14 +92,7 @@ export function MultipleChoiceAnswers(props: {
 
       {hasOther && (
         <Row className="items-center gap-2">
-          {answers.length + 1}.{' '}
-          <ExpandingInput
-            disabled={true}
-            value={'Other'}
-            className="ml-2 w-full"
-            rows={1}
-            maxLength={MAX_ANSWER_LENGTH}
-          />
+          {answers.length + 1}. <AnswerInput disabled value={'Other'} />
           <div className="mx-1.5">
             <InfoTooltip
               text={
@@ -158,6 +170,54 @@ export function MultipleChoiceAnswers(props: {
         </>
       )}
     </Col>
+  )
+}
+
+const AnswerInput = (props: {
+  id?: string
+  disabled?: boolean
+  value?: string
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  onUp?: () => void
+  onDown?: () => void
+  onDelete?: () => void
+  placeholder?: string
+}) => {
+  const { id, disabled, value, onChange, onUp, onDown, onDelete, placeholder } =
+    props
+
+  return (
+    <ExpandingInput
+      id={id}
+      className="ml-2 w-full"
+      disabled={disabled}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      onKeyDown={(e) => {
+        if (e.key == 'ArrowUp' && !e.shiftKey && !e.altKey) {
+          e.preventDefault()
+          e.stopPropagation()
+          onUp?.()
+        }
+        if (e.key == 'ArrowDown' && !e.shiftKey && !e.altKey) {
+          e.preventDefault()
+          e.stopPropagation()
+          onDown?.()
+        }
+        if (e.key == 'Enter' && !e.shiftKey && !e.altKey) {
+          e.preventDefault()
+          e.stopPropagation()
+          onDown?.()
+        }
+        if (e.key == 'Backspace' && value === '' && !e.shiftKey && !e.altKey) {
+          onDelete?.()
+          onUp?.()
+        }
+      }}
+      rows={1}
+      maxLength={MAX_ANSWER_LENGTH}
+    />
   )
 }
 

@@ -89,7 +89,7 @@ select ucm.contract_id,
   ucm.data as metrics,
     c.data as contract
 from user_contract_metrics as ucm
-    join contracts_rbac as c on c.id = ucm.contract_id
+    join contracts as c on c.id = ucm.contract_id
 where ucm.user_id = uid
   and ucm.data->'lastBetTime' is not null
   and ucm.answer_id is null

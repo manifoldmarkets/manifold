@@ -1,15 +1,16 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getGIDXStandardParams } from 'shared/gidx/standard-params'
+import { getGIDXStandardParams } from 'shared/gidx/helpers'
 import { isProd, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { DEV_CONFIG } from 'common/envs/dev'
-import { updateUser } from 'shared/supabase/users'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   DocumentRegistrationResponse,
   GIDX_REGISTATION_ENABLED,
 } from 'common/gidx/gidx'
+import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateUser } from 'shared/supabase/users'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DocumentLibrary/DocumentRegistration'
@@ -54,8 +55,15 @@ export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
     Document.FileName
   )
   await deleteFileFromFirebase(fileUrl)
+  const { isPending } = await getIdentityVerificationDocuments(auth.uid)
+
   const pg = createSupabaseDirectClient()
-  await updateUser(pg, auth.uid, { kycStatus: 'pending' })
+  if (isPending) {
+    // They passed the reason codes and have the required documents
+    await updateUser(pg, auth.uid, {
+      kycStatus: 'pending',
+    })
+  }
   return { status: 'success' }
 }
 
@@ -83,6 +91,5 @@ const deleteFileFromFirebase = async (fileUrl: string) => {
     log(`Successfully deleted file: ${filePath}`)
   } catch (error) {
     log.error('Error deleting the file:', { error })
-    throw new APIError(500, 'Error deleting identity file.')
   }
 }

@@ -46,13 +46,6 @@ export const addOrRemoveTopicFromContract: APIHandler<
   const group = groupQuery.data
   const contract = convertContract(contractQuery.data)
 
-  if (contract.visibility == 'private') {
-    throw new APIError(403, `tags of private contracts can't be changed`)
-  }
-  if (group.privacy_status == 'private') {
-    throw new APIError(403, `private groups can't be tagged or untagged`)
-  }
-
   if (
     !remove &&
     (contract.groupLinks?.length ?? 0) > MAX_GROUPS_PER_MARKET &&

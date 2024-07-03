@@ -1,12 +1,14 @@
 import { Col } from 'web/components/layout/col'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import {
+  FeedContractCard,
+  LoadingCards,
+} from 'web/components/contract/feed-contract-card'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { APIResponse } from 'common/api/schema'
 import { uniqBy } from 'lodash'
 import { ScoredFeedRepost } from 'web/components/feed/scored-feed-repost-item'
@@ -29,8 +31,12 @@ const defaultValue: APIResponse<'get-feed'> & { offset: number } = {
   offset: 0,
 }
 
-export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
-  const { userId, reload } = props
+export function LiveGeneratedFeed(props: {
+  userId: string
+  reload: boolean
+  hidden?: boolean
+}) {
+  const { userId, reload, hidden } = props
   const user = useUser()
 
   const limit = 5
@@ -83,11 +89,13 @@ export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
   }, [data])
   const { contracts, reposts, ads, comments, bets, idsToReason } = feedData
 
+  if (hidden) return null
+
   if (
     (data === undefined && contracts.length === 0) ||
     (contracts.length === 0 && loading)
   )
-    return <LoadingIndicator />
+    return <LoadingCards />
 
   return (
     <Col className={clsx('relative w-full gap-4')}>
@@ -98,10 +106,9 @@ export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
         const adIndex = i / AD_PERIOD - 1
         const ad = ads[adIndex]
         return (
-          <>
+          <Fragment key={contract.id + comment?.id}>
             {i % AD_PERIOD === 0 && i !== 0 && ad && (
               <FeedCard
-                key={ad.contract.id + comment?.id}
                 contract={ad.contract}
                 repost={undefined}
                 comment={undefined}
@@ -112,7 +119,6 @@ export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
               />
             )}
             <FeedCard
-              key={contract.id + comment?.id}
               contract={contract}
               repost={repost}
               comment={comment}
@@ -120,11 +126,11 @@ export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
               user={user}
               reason={idsToReason[contract.id]}
             />
-          </>
+          </Fragment>
         )
       })}
       <div className="relative">
-        {loading && <LoadingIndicator />}
+        {loading && <LoadingCards rows={1} />}
         <VisibilityObserver
           className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
           onVisibilityUpdated={(visible) => {
@@ -141,10 +147,7 @@ export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
           <div>You've reached the end of the feed.</div>
           <div>You are free.</div>
           <br />
-          <Link
-            href="/browse?s=newest&f=open"
-            className="text-primary-700 hover:underline"
-          >
+          <Link href="/home" className="text-primary-700 hover:underline">
             Browse new questions
           </Link>
           <Link href="/create" className="text-primary-700 hover:underline">

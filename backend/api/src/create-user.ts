@@ -169,7 +169,10 @@ export const createuser: APIHandler<'createuser'> = async (
       data: privateUser,
     })
 
-    return { user, privateUser }
+    return {
+      user,
+      privateUser,
+    }
   })
 
   log('created user ', { username: user.username, firebaseId: auth.uid })

@@ -6,13 +6,13 @@ import { Col } from 'web/components/layout/col'
 import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import {
+  unLike,
   getLikedContracts,
   getLikedContractsCount,
 } from 'web/lib/supabase/reactions'
 import { Input } from 'web/components/widgets/input'
 import { withTracking } from 'web/lib/service/analytics'
 import { XIcon } from '@heroicons/react/outline'
-import { unLike } from 'web/lib/firebase/reactions'
 
 type SearchLikedContent = Awaited<ReturnType<typeof getLikedContracts>>[number]
 

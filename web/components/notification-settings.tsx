@@ -38,7 +38,7 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 const emailsEnabled: Array<notification_preference> = [
   'all_comments_on_watched_markets',

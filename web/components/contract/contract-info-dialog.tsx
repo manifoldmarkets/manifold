@@ -20,7 +20,7 @@ import {
   api,
   updateMarket,
   updateUserDisinterestEmbedding,
-} from 'web/lib/firebase/api'
+} from 'web/lib/api/api'
 import { formatTime } from 'web/lib/util/time'
 import { Button } from '../buttons/button'
 import { CopyLinkOrShareButton } from '../buttons/copy-link-button'
@@ -337,7 +337,7 @@ export const Stats = (props: {
           </>
         )}
 
-        {!hideAdvanced && contract.visibility != 'private' && (
+        {!hideAdvanced && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
               🔎 Publicly listed{' '}

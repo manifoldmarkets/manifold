@@ -1,6 +1,6 @@
 import { Dialog, Transition } from '@headlessui/react'
 import {
-  HomeIcon,
+  GlobeAltIcon,
   NewspaperIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
@@ -10,7 +10,6 @@ import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Fragment, useState } from 'react'
-import { BiSearchAlt2 } from 'react-icons/bi'
 import { User } from 'common/user'
 import { usePathname } from 'next/navigation'
 import { GiCapitol } from 'react-icons/gi'
@@ -37,14 +36,14 @@ const touchItemClass = 'bg-primary-100'
 function getNavigation(user: User) {
   return [
     {
-      name: 'Home',
+      name: 'Browse',
       href: '/home',
-      icon: HomeIcon,
+      icon: SearchIcon,
     },
     {
-      name: 'Browse',
-      href: '/browse?fy=1&f=open',
-      icon: BiSearchAlt2,
+      name: 'Explore',
+      href: '/explore',
+      icon: GlobeAltIcon,
     },
     // {
     //   name: 'Politics',

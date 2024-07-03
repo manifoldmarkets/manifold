@@ -2,14 +2,17 @@ import { getAnswerProbability } from 'common/calculate'
 import { MultiContract } from 'common/contract'
 import { getAnswerColor } from './contract/choice'
 import { sortAnswers } from 'common/answer'
+import clsx from 'clsx'
 
 /** Sparklineish stacked bar chart. Values sum to 1 */
 export const MiniStackedBar = (props: {
   options: Array<{ prob: number; color: string }>
+  width?: string
 }) => {
+  const { options, width = 'w-[3ch' } = props
   return (
-    <div className="my-0.5 inline-flex h-5 w-[3ch]">
-      {props.options.map((option, i) => (
+    <div className={clsx('my-0.5 inline-flex h-5', width)}>
+      {options.map((option, i) => (
         <span
           key={i}
           style={{
@@ -25,11 +28,13 @@ export const MiniStackedBar = (props: {
 /** Sparklineish bar chart. Values are between 0-1 */
 export const MiniBar = (props: {
   options: Array<{ prob: number; color: string }>
+  width?: string
 }) => {
+  const { options, width = 'w-[3ch]' } = props
   return (
-    <span>
-      <div className="my-0.5 grid h-5 w-[3ch]">
-        {props.options.map((option, i) => (
+    <span className="inline-flex align-top">
+      <div className={clsx('grid h-5', width)}>
+        {options.map((option, i) => (
           <span
             key={i}
             style={{
@@ -43,8 +48,11 @@ export const MiniBar = (props: {
   )
 }
 
-export const ContractMinibar = (props: { contract: MultiContract }) => {
-  const { contract } = props
+export const ContractMinibar = (props: {
+  contract: MultiContract
+  width?: string
+}) => {
+  const { contract, width } = props
   const answers = sortAnswers(contract, contract.answers)
 
   const sumsToOne =
@@ -60,8 +68,8 @@ export const ContractMinibar = (props: { contract: MultiContract }) => {
   }))
 
   if (sumsToOne) {
-    return <MiniStackedBar options={options} />
+    return <MiniStackedBar width={width} options={options} />
   } else {
-    return <MiniBar options={options} />
+    return <MiniBar width={width} options={options} />
   }
 }

@@ -3,13 +3,11 @@ import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 import { updateGroupMetricsCore } from 'shared/update-group-metrics-core'
-import { cleanOldTombstones } from './clean-old-tombstones'
 import { cleanOldNotifications } from './clean-old-notifications'
-import { truncateIncomingWrites } from './truncate-incoming-writes'
 import { updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
 import { autoAwardBounty } from './auto-award-bounty'
-import { resetPgStats } from 'replicator/jobs/reset-pg-stats'
+import { resetPgStats } from './reset-pg-stats'
 import { MINUTE_MS } from 'common/util/time'
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
 import {
@@ -18,15 +16,29 @@ import {
 } from 'shared/update-creator-metrics-core'
 import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
 import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
-import { resetWeeklyEmailsFlags } from 'replicator/jobs/reset-weekly-emails-flags'
+import { resetWeeklyEmailsFlags } from './reset-weekly-emails-flags'
 import { calculateGroupImportanceScore } from 'shared/group-importance-score'
 import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
-import { sendStreakExpirationNotification } from 'replicator/jobs/streak-expiration-notice'
+import { sendStreakExpirationNotification } from './streak-expiration-notice'
 import { expireLimitOrders } from 'shared/expire-limit-orders'
+import { denormalizeAnswers } from './denormalize-answers'
+import { incrementStreakForgiveness } from './increment-streak-forgiveness'
+import { sendMarketCloseEmails } from './send-market-close-emails'
+import { pollPollResolutions } from './poll-poll-resolutions'
+import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
+import { scoreContracts } from './score-contracts'
+import { updateLeagueRanks } from './update-league-ranks'
+import { updateLeague } from './update-league'
+import { updateContractViewEmbeddings } from './update-contract-view-embeddings'
 
 export function createJobs() {
   return [
     // Hourly jobs:
+    createJob(
+      'send-market-close-emails',
+      '0 0 * * * *', // every hour
+      sendMarketCloseEmails
+    ),
     createJob(
       'update-contract-metrics',
       '0 */21 * * * *', // every 21 minutes - (on the 3rd minute of every hour)
@@ -42,6 +54,11 @@ export function createJobs() {
       'group-importance-score',
       '0 6 * * * *', // on the 6th minute of every hour
       () => calculateGroupImportanceScore()
+    ),
+    createJob(
+      'update-league',
+      '0 */15 * * * *', // every 15 minutes
+      updateLeague
     ),
     createJob(
       'update-group-metrics',
@@ -74,17 +91,22 @@ export function createJobs() {
       '0 */10 * * * *', // every 10 minutes
       expireLimitOrders
     ),
+    createJob(
+      'score-contracts',
+      `0 */${IMPORTANCE_MINUTE_INTERVAL} * * * *`, // every 2 minutes
+      scoreContracts
+    ),
+    createJob(
+      'denormalize-answers',
+      '0 */1 * * * *', // every minute
+      denormalizeAnswers
+    ),
+    createJob(
+      'poll-poll-resolutions',
+      '0 */1 * * * *', // every minute
+      pollPollResolutions
+    ),
     // Daily jobs:
-    createJob(
-      'truncate-incoming-writes',
-      '0 0 2 * * *', // 2am daily
-      truncateIncomingWrites
-    ),
-    createJob(
-      'clean-old-tombstones',
-      '0 0 2 * * *', // 2am daily
-      cleanOldTombstones
-    ),
     createJob(
       'clean-old-notifications',
       '0 30 2 * * *', // 230 AM daily
@@ -129,6 +151,23 @@ export function createJobs() {
       'send-streak-notifications',
       '0 30 18 * * *', // 6:30pm PST daily ( 9:30pm EST )
       sendStreakExpirationNotification
+    ),
+
+    // Monthly jobs:
+    createJob(
+      'increment-streak-forgiveness',
+      '0 0 0 1 * *', // 1st day of the month at 12am PST
+      incrementStreakForgiveness
+    ),
+    createJob(
+      'update-league-ranks',
+      '0 0 0 * * *', // every day at midnight
+      updateLeagueRanks
+    ),
+    createJob(
+      'update-contract-view-embeddings',
+      '0 0 0 1 * *', // 1st day of the month
+      updateContractViewEmbeddings
     ),
   ]
 }

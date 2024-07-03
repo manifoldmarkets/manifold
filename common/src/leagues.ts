@@ -2,7 +2,9 @@ import { Row } from './supabase/utils'
 
 export type season = (typeof SEASONS)[number]
 
-export const SEASONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const
+export const SEASONS = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+] as const
 export const CURRENT_SEASON = SEASONS[SEASONS.length - 1]
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
@@ -21,6 +23,7 @@ const SEASON_END_TIMES = [
   new Date('2024-04-01T21:43:18-08:00'),
   new Date('2024-05-01T16:32:08-07:00'),
   new Date('2024-06-01T11:10:19-07:00'),
+  new Date('2024-07-01T18:41:35-07:00'),
 ]
 
 export type League = {
@@ -121,7 +124,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 10, promotion: 2, doublePromotion: 0 }
   }
   if (division === 6) {
-    return { demotion: 18, promotion: 0, doublePromotion: 0 }
+    return { demotion: 19, promotion: 0, doublePromotion: 0 }
   }
   throw new Error(`Invalid division: ${division}`)
 }
@@ -130,6 +133,11 @@ export const getDemotionAndPromotionCountBySeason = (
   season: number,
   division: number
 ) => {
+  if (season === 14) {
+    if (division === 6) {
+      return { demotion: 18, promotion: 0, doublePromotion: 0 }
+    }
+  }
   if (season === 13) {
     if (division === 5) {
       return { demotion: 10, promotion: 2, doublePromotion: 0 }

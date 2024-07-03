@@ -9,7 +9,7 @@ import { getNativePlatform } from 'web/lib/native/is-native'
 import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
 import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
 import Link from 'next/link'
-import { APIError, api, validateIapReceipt } from 'web/lib/firebase/api'
+import { APIError, api, validateIapReceipt } from 'web/lib/api/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
@@ -33,6 +33,8 @@ export function AddFundsModal(props: {
   setOpen(open: boolean): void
 }) {
   const { open, setOpen } = props
+  // TODO: check if they're registered already in gidx & get their status
+  // const res = useAPIGetter('get-monitor-status-gidx', {})
 
   return (
     <Modal

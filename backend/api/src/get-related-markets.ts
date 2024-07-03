@@ -15,6 +15,7 @@ import {
 } from 'common/supabase/groups'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { mapValues, orderBy } from 'lodash'
+import { TOPIC_SIMILARITY_THRESHOLD } from 'shared/helpers/embeddings'
 
 export const getrelatedmarketscache: APIHandler<
   'get-related-markets-cache'
@@ -47,9 +48,9 @@ const getRelatedMarkets = async (
       select * from close_contract_embeddings(
         input_contract_id := $1,
         match_count := $2,
-        similarity_threshold := 0.7
+        similarity_threshold := $3
         )`,
-      [contractId, embeddingsLimit],
+      [contractId, embeddingsLimit, TOPIC_SIMILARITY_THRESHOLD],
       (row) => row.data as Contract
     ),
     pg.map(

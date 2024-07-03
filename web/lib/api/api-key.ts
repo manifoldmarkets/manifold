@@ -1,4 +1,4 @@
-import { api } from '../firebase/api'
+import { api } from './api'
 
 export const generateNewApiKey = async () => {
   const newApiKey = crypto.randomUUID()

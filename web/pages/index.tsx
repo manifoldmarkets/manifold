@@ -27,8 +27,9 @@ import { useABTest } from 'web/hooks/use-ab-test'
 import { Typewriter } from 'web/components/home/typewriter'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
-import { removeEmojis } from 'common/topics'
+import { removeEmojis } from 'common/util/string'
 import { filterDefined } from 'common/util/array'
+import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
@@ -107,6 +108,7 @@ export default function LandingPage(props: {
   useSaveReferral(user)
   useSaveCampaign()
   useRedirectIfSignedIn()
+  useGoogleAnalytics()
 
   const [selectedTopicSlug, setSelectedTopicSlug] = useState<string>()
   const [isModalOpen, setIsModalOpen] = useState(false)

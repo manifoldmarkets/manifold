@@ -33,7 +33,6 @@ export function DashboardSetTopics(props: {
             location={'create page'}
             key={group.id}
             topic={group}
-            isPrivate={group.privacyStatus === 'private'}
             className="bg-ink-100"
           >
             <button

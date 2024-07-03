@@ -22,7 +22,9 @@ import {
   DEFAULT_POLL_SORTS,
   DEFAULT_SORT,
   DEFAULT_SORTS,
+  DEFAULT_TIER,
   FILTERS,
+  FOR_YOU_KEY,
   Filter,
   POLL_SORTS,
   PREDICTION_MARKET_PROB_SORTS,
@@ -33,17 +35,28 @@ import {
   bountySorts,
   predictionMarketSorts,
 } from '../supabase-search'
-import { AdditionalFilterPill, FilterPill } from './filter-pills'
+import {
+  AdditionalFilterPill,
+  FilterDropdownPill,
+  FilterPill,
+} from './filter-pills'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { TierDropdownPill } from './filter-pills'
+import { useUser } from 'web/hooks/use-user'
+import {
+  CrystalTier,
+  PlusTier,
+  PremiumTier,
+} from 'web/public/custom-components/tiers'
 
 export function ContractFilters(props: {
   className?: string
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
+  topicSlug?: string
 }) {
-  const { className, params, updateParams } = props
+  const { className, params, updateParams, topicSlug } = props
 
   const {
     s: sort,
@@ -93,15 +106,6 @@ export function ContractFilters(props: {
     })
   }
 
-  const toggleTier = (tier: MarketTierType) => {
-    const tierIndex = tiers.indexOf(tier)
-    if (tierIndex >= 0 && tierIndex < currentTiers.length) {
-      const tiersArray = currentTiers.split('')
-      tiersArray[tierIndex] = tiersArray[tierIndex] === '0' ? '1' : '0'
-      updateParams({ mt: tiersArray.join('') as TierParamsType })
-    }
-  }
-
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -120,13 +124,23 @@ export function ContractFilters(props: {
 
   const [openFilterModal, setOpenFilterModal] = useState(false)
 
-  const nonDefaultFilter =
-    !DEFAULT_FILTERS.some((s) => s == filter) && filter !== DEFAULT_FILTER
   const nonDefaultSort =
     !DEFAULT_SORTS.some((s) => s == sort) && sort !== DEFAULT_SORT
   const nonDefaultContractType =
     !DEFAULT_CONTRACT_TYPES.some((ct) => ct == contractType) &&
     contractType !== DEFAULT_CONTRACT_TYPE
+
+  const forYou = params[FOR_YOU_KEY] === '1'
+  const user = useUser()
+
+  const toggleTier = (tier: MarketTierType) => {
+    const tierIndex = tiers.indexOf(tier)
+    if (tierIndex >= 0 && tierIndex < currentTiers.length) {
+      const tiersArray = currentTiers.split('')
+      tiersArray[tierIndex] = tiersArray[tierIndex] === '0' ? '1' : '0'
+      updateParams({ mt: tiersArray.join('') as TierParamsType })
+    }
+  }
 
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
@@ -134,12 +148,76 @@ export function ContractFilters(props: {
         <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
           <FaSliders className="h-4 w-4" />
         </IconButton>
-        {nonDefaultFilter && (
+        {sortItems.map((sortValue) => (
+          <FilterPill
+            key={sortValue}
+            selected={sortValue === sort}
+            onSelect={() => {
+              if (sort === sortValue) {
+                selectSort(DEFAULT_SORT)
+              } else {
+                selectSort(sortValue as Sort)
+              }
+            }}
+            type="sort"
+          >
+            {getLabelFromValue(SORTS, sortValue)}
+          </FilterPill>
+        ))}
+        {user && !topicSlug && (
+          <FilterPill
+            selected={forYou}
+            onSelect={() => {
+              updateParams({
+                [FOR_YOU_KEY]: forYou ? '0' : '1',
+              })
+            }}
+            type="sort"
+          >
+            For You
+          </FilterPill>
+        )}
+        <FilterDropdownPill
+          selectFilter={selectFilter}
+          currentFilter={filter}
+        />
+        {isPrizeMarketString === '1' && (
+          <FilterPill
+            selected={isPrizeMarketString === '1'}
+            onSelect={togglePrizeMarket}
+            type="spice"
+            className="gap-1"
+          >
+            <div className="flex w-4 items-center">
+              <SpiceCoin
+                className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
+              />
+            </div>
+            Prize
+          </FilterPill>
+        )}
+        {!hideFilter && currentTiers !== DEFAULT_TIER && (
           <AdditionalFilterPill
             type="filter"
-            onXClick={() => selectFilter(DEFAULT_FILTER)}
+            onXClick={() =>
+              updateParams({ mt: DEFAULT_TIER as TierParamsType })
+            }
           >
-            {filterLabel}
+            <Row className="items-center py-[3px]">
+              {currentTiers.split('').map((tier, index) => {
+                if (tier === '1') {
+                  if (tiers[index] == 'plus') {
+                    return <PlusTier key={index} />
+                  }
+                  if (tiers[index] == 'premium') {
+                    return <PremiumTier key={index} />
+                  }
+                  if (tiers[index] == 'crystal') {
+                    return <CrystalTier key={index} />
+                  }
+                }
+              })}
+            </Row>
           </AdditionalFilterPill>
         )}
         {nonDefaultSort && (
@@ -158,25 +236,6 @@ export function ContractFilters(props: {
             {contractTypeLabel}
           </AdditionalFilterPill>
         )}
-        <FilterPill
-          selected={isPrizeMarketString === '1'}
-          onSelect={togglePrizeMarket}
-          type="spice"
-          className="gap-1"
-        >
-          <div className="flex w-4 items-center">
-            <SpiceCoin
-              className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
-            />
-          </div>
-          Prize
-        </FilterPill>
-        {!hideFilter && (
-          <TierDropdownPill
-            toggleTier={toggleTier}
-            currentTiers={currentTiers}
-          />
-        )}
         {!hideFilter &&
           DEFAULT_FILTERS.map((filterValue) => (
             <FilterPill
@@ -194,22 +253,6 @@ export function ContractFilters(props: {
               {getLabelFromValue(FILTERS, filterValue)}
             </FilterPill>
           ))}
-        {sortItems.map((sortValue) => (
-          <FilterPill
-            key={sortValue}
-            selected={sortValue === sort}
-            onSelect={() => {
-              if (sort === sortValue) {
-                selectSort(DEFAULT_SORT)
-              } else {
-                selectSort(sortValue as Sort)
-              }
-            }}
-            type="sort"
-          >
-            {getLabelFromValue(SORTS, sortValue)}
-          </FilterPill>
-        ))}
         {DEFAULT_CONTRACT_TYPES.map((contractValue) => (
           <FilterPill
             key={contractValue}
@@ -235,6 +278,7 @@ export function ContractFilters(props: {
         selectSort={selectSort}
         selectContractType={selectContractType}
         togglePrizeMarket={togglePrizeMarket}
+        toggleTier={toggleTier}
         hideFilter={hideFilter}
       />
     </Col>
@@ -249,6 +293,7 @@ function FilterModal(props: {
   selectSort: (selection: Sort) => void
   selectContractType: (selection: ContractTypeType) => void
   togglePrizeMarket: () => void
+  toggleTier: (tier: MarketTierType) => void
   hideFilter: boolean
 }) {
   const {
@@ -259,6 +304,7 @@ function FilterModal(props: {
     selectContractType,
     selectSort,
     togglePrizeMarket,
+    toggleTier,
     hideFilter,
   } = props
   const {
@@ -266,6 +312,7 @@ function FilterModal(props: {
     f: filter,
     ct: contractType,
     p: isPrizeMarketString,
+    mt: currentTiers,
   } = params
 
   const sortItems =
@@ -276,6 +323,7 @@ function FilterModal(props: {
       : contractType === 'ALL' || contractType === 'BINARY'
       ? PREDICTION_MARKET_PROB_SORTS
       : PREDICTION_MARKET_SORTS
+
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS, 'text-ink-600 text-sm')}>
@@ -298,6 +346,10 @@ function FilterModal(props: {
                   Prize
                 </Row>
               </FilterPill>
+              <TierDropdownPill
+                toggleTier={toggleTier}
+                currentTiers={currentTiers}
+              />
               {!hideFilter &&
                 FILTERS.map(({ label: filterLabel, value: filterValue }) => (
                   <FilterPill

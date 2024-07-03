@@ -8,7 +8,7 @@ import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
 import { getGroups } from 'web/lib/supabase/groups'
-import { searchGroups } from 'web/lib/firebase/api'
+import { searchGroups } from 'web/lib/api/api'
 import { PRIVACY_STATUS_ITEMS } from './topic-privacy-modal'
 import { uniqBy } from 'lodash'
 

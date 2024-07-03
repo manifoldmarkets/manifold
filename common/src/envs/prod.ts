@@ -8,6 +8,7 @@ export type EnvConfig = {
   supabaseAnonKey: string
   twitchBotEndpoint: string
   apiEndpoint: string
+  googleAnalyticsId: string
 
   // IDs for v2 cloud functions -- find these by deploying a cloud function and
   // examining the URL, https://[name]-[cloudRunId]-[cloudRunRegion].a.run.app
@@ -53,7 +54,7 @@ export const PROD_CONFIG: EnvConfig = {
   supabaseInstanceId: 'pxidrgkatumlvfqaxcll',
   supabaseAnonKey:
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4aWRyZ2thdHVtbHZmcWF4Y2xsIiwicm9sZSI6ImFub24iLCJpYXQiOjE2Njg5OTUzOTgsImV4cCI6MTk4NDU3MTM5OH0.d_yYtASLzAoIIGdXUBIgRAGLBnNow7JG2SoaNMQ8ySg',
-
+  googleAnalyticsId: 'GTM-MLMPXHJ6',
   firebaseConfig: {
     apiKey: 'AIzaSyDp3J57vLeAZCzxLD-vcPaGIkAmBoGOSYw',
     authDomain: 'mantic-markets.firebaseapp.com',

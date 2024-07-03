@@ -6,7 +6,8 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { convertPrivateUser } from 'common/supabase/users'
-import { getPrivateUser } from 'shared/utils'
+import { getPrivateUser, getUser } from 'shared/utils'
+import { isVerified } from 'common/user'
 
 // for mobile or something?
 export const setPushToken: APIHandler<'set-push-token'> = async (
@@ -18,6 +19,10 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
 
   const oldPrivateUser = await getPrivateUser(auth.uid, db)
   if (!oldPrivateUser) {
+    throw new APIError(401, 'Account not found')
+  }
+  const user = await getUser(auth.uid)
+  if (!user) {
     throw new APIError(401, 'Account not found')
   }
 
@@ -38,7 +43,10 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
   broadcastUpdatedPrivateUser(auth.uid)
   const newPrivateUser = convertPrivateUser(updatedRow)
 
-  if (oldPrivateUser.pushToken != newPrivateUser.pushToken) {
+  if (
+    oldPrivateUser.pushToken != newPrivateUser.pushToken &&
+    isVerified(user)
+  ) {
     const txn = await payUserPushNotificationsBonus(
       auth.uid,
       PUSH_NOTIFICATION_BONUS

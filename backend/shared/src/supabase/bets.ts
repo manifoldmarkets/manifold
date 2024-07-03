@@ -1,4 +1,4 @@
-import { Bet, LimitBet } from 'common/bet'
+import { Bet, BetFilter, LimitBet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
@@ -6,6 +6,16 @@ import { removeUndefinedProps } from 'common/util/object'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { bulkInsert, insert } from 'shared/supabase/utils'
 import { broadcastOrders } from 'shared/websockets/helpers'
+import {
+  from,
+  join,
+  limit,
+  orderBy,
+  renderSql,
+  select,
+  where,
+} from './sql-builder'
+import { buildArray } from 'common/util/array'
 
 export const getBetsDirect = async (
   pg: SupabaseDirectClient,
@@ -17,6 +27,87 @@ export const getBetsDirect = async (
     convertBet
   )
 }
+
+export const getBetsWithFilter = async (
+  pg: SupabaseDirectClient,
+  options: BetFilter
+) => {
+  const {
+    contractId,
+    userId,
+    filterChallenges,
+    filterRedemptions,
+    filterAntes,
+    isOpenLimitOrder,
+    afterTime,
+    beforeTime,
+    commentRepliesOnly,
+    answerId,
+    includeZeroShareRedemptions,
+    order,
+    limit: limitValue,
+    visibility,
+  } = options
+
+  const conditions = buildArray(
+    visibility && [
+      join('contracts on contracts.id = contract_bets.contract_id'),
+      where('contracts.visibility = ${visibility}', { visibility }),
+    ],
+
+    contractId &&
+      (Array.isArray(contractId)
+        ? where('contract_id = ANY(${contractId})', { contractId })
+        : where('contract_id = ${contractId}', { contractId })),
+
+    userId && where('user_id = ${userId}', { userId }),
+
+    isOpenLimitOrder &&
+      where(
+        `contract_bets.data->>'isFilled' = 'false' and contract_bets.data->>'isCancelled' = 'false'`
+      ),
+
+    afterTime !== undefined &&
+      where('contract_bets.created_time > ${afterTime}', {
+        afterTime: millisToTs(afterTime),
+      }),
+
+    beforeTime !== undefined &&
+      where('contract_bets.created_time < ${beforeTime}', {
+        beforeTime: millisToTs(beforeTime),
+      }),
+
+    commentRepliesOnly &&
+      where(`contract_bets.data->>'replyToCommentId' is not null`),
+
+    answerId !== undefined && where('answer_id = ${answerId}', { answerId }),
+
+    filterChallenges && where('is_challenge = false'),
+
+    filterRedemptions && where('is_redemption = false'),
+
+    filterAntes && where('is_ante = false'),
+
+    !includeZeroShareRedemptions &&
+      where(
+        `(shares != 0 or is_redemption = false or (contract_bets.data->'loanAmount')::numeric != 0)`
+      )
+  )
+
+  const query = renderSql(
+    select('contract_bets.*'),
+    from('contract_bets'),
+    ...conditions,
+    orderBy(
+      `contract_bets.created_time ${order ? order.toLowerCase() : 'desc'}`
+    ),
+    limitValue && limit(limitValue)
+  )
+  // console.log('getBetsWithFilter query:\n', query)
+
+  return await pg.map(query, {}, convertBet)
+}
+
 export const getBetsRepliedToComment = async (
   pg: SupabaseDirectClient,
   comment: ContractComment,

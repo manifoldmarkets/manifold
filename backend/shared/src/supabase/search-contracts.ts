@@ -158,18 +158,6 @@ export async function getForYouSQL(items: {
   return forYou
 }
 
-export const hasGroupAccess = async (groupId?: string, uid?: string) => {
-  const pg = createSupabaseDirectClient()
-  if (!groupId) return undefined
-  return await pg
-    .one('select * from check_group_accessibility($1,$2)', [
-      groupId,
-      uid ?? null,
-    ])
-    .then((r: any) => {
-      return r.check_group_accessibility
-    })
-}
 export type SearchTypes =
   | 'without-stopwords'
   | 'with-stopwords'
@@ -187,7 +175,6 @@ export function getSearchContractSQL(args: {
   groupId?: string
   creatorId?: string
   uid?: string
-  groupAccess?: boolean
   isForYou?: boolean
   searchType: SearchTypes
   isPolitics?: boolean
@@ -269,8 +256,6 @@ function getSearchContractWhereSQL(args: {
   contractType: string
   creatorId?: string
   uid?: string
-  groupId?: string
-  hasGroupAccess?: boolean
   hideStonks?: boolean
   hideLove?: boolean
   isPrizeMarket?: boolean
@@ -282,8 +267,6 @@ function getSearchContractWhereSQL(args: {
     contractType,
     creatorId,
     uid,
-    groupId,
-    hasGroupAccess,
     hideStonks,
     hideLove,
     isPrizeMarket,
@@ -315,12 +298,7 @@ function getSearchContractWhereSQL(args: {
     : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
-  const visibilitySQL = getContractPrivacyWhereSQLFilter(
-    uid,
-    creatorId,
-    groupId,
-    hasGroupAccess
-  )
+  const visibilitySQL = getContractPrivacyWhereSQLFilter(uid, creatorId)
 
   const deletedFilter = `deleted = false`
 

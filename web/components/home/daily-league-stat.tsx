@@ -8,9 +8,9 @@ import { dailyStatsClass } from 'web/components/home/daily-stats'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 
-export const DailyLeagueStat = (props: { user: User }) => {
+export const DailyLeagueStat = (props: { user: User | null | undefined }) => {
   const { user } = props
-  const info = useLeagueInfo(user.id)
+  const info = useLeagueInfo(user?.id)
 
   if (!info || info.division === undefined) {
     return null

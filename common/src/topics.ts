@@ -2,6 +2,7 @@ import {
   HIDE_FROM_NEW_USER_SLUGS,
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
 } from 'common/envs/constants'
+import { removeEmojis } from './util/string'
 
 type TopicInfo = { name: string; groupIds: string[] }
 
@@ -184,10 +185,6 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
   ...HIDE_FROM_NEW_USER_SLUGS,
 ]
-
-export const removeEmojis = (input: string) =>
-  // eslint-disable-next-line no-control-regex
-  input.replace(/[^\x00-\x7F]/g, '').trim()
 
 export const getSubtopics = (topic: string) =>
   TOPICS_TO_SUBTOPICS[topic].map(

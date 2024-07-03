@@ -1,12 +1,12 @@
 import { usePrivateUser } from 'web/hooks/use-user'
-import { Button } from 'web/components/buttons/button'
+import { Button, buttonClass } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import clsx from 'clsx'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
-import { ChartBarIcon } from '@heroicons/react/solid'
+import { ChartBarIcon, PencilIcon } from '@heroicons/react/solid'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { BlockUser } from 'web/components/profile/block-user'
@@ -22,7 +22,7 @@ import {
   Referrals,
   useReferralCount,
 } from 'web/components/buttons/referrals-button'
-import { banUser } from 'web/lib/firebase/api'
+import { banUser } from 'web/lib/api/api'
 import SuperBanControl from '../SuperBanControl'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'

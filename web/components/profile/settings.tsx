@@ -2,7 +2,6 @@ import { RefreshIcon } from '@heroicons/react/solid'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { AiOutlineCopy } from 'react-icons/ai'
-import { updatePrivateUser } from 'web/lib/firebase/users'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
@@ -15,7 +14,7 @@ import { Title } from '../widgets/title'
 import { PrivateUser, User } from 'common/user'
 import { useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { DeleteYourselfButton } from './delete-yourself'
 
 export const AccountSettings = (props: {
@@ -36,9 +35,7 @@ export const AccountSettings = (props: {
     e?.preventDefault()
 
     if (!privateUser.twitchInfo) return
-    await updatePrivateUser({
-      twitchInfo: { ...privateUser.twitchInfo, needsRelinking: true },
-    })
+    await api('save-twitch', { twitchInfo: { needsRelinking: true } })
   }
 
   return (

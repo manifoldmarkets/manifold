@@ -5,7 +5,7 @@ import { User } from 'common/user'
 import { memo, useEffect, useState } from 'react'
 import { useLikesOnContent } from 'web/hooks/use-likes'
 import useLongTouch from 'web/hooks/use-long-touch'
-import { like, unLike } from 'web/lib/firebase/reactions'
+import { like, unLike } from 'web/lib/supabase/reactions'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import {

@@ -95,7 +95,7 @@ const App = () => {
   // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(() => {
     const url = new URL(baseUri)
-    // url.pathname = 'home'
+    url.pathname = 'home'
     const params = new URLSearchParams()
     params.set('nativePlatform', Platform.OS)
     url.search = params.toString()

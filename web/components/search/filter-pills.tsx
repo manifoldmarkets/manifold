@@ -9,6 +9,9 @@ import {
 } from 'web/public/custom-components/tiers'
 import { Row } from '../layout/row'
 import CheckedDropdownMenu from '../widgets/checked-dropdown'
+import { FILTERS, Filter } from '../supabase-search'
+import DropdownMenu from '../comments/dropdown-menu'
+import { getLabelFromValue } from './search-dropdown-helpers'
 
 export function FilterPill(props: {
   selected: boolean
@@ -22,7 +25,7 @@ export function FilterPill(props: {
   return (
     <button
       className={clsx(
-        'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 py-0.5 text-sm outline-none transition-colors',
+        'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
         type === 'spice'
           ? selected
             ? 'bg-amber-500 text-white hover:bg-amber-600'
@@ -58,7 +61,7 @@ export function AdditionalFilterPill(props: {
   return (
     <Row
       className={clsx(
-        'relative select-none items-center gap-1 whitespace-nowrap rounded-full py-0.5 pl-2 pr-1 text-sm outline-none transition-colors',
+        'relative h-6 select-none items-center gap-1 whitespace-nowrap rounded-full pl-2 pr-1 text-sm outline-none transition-colors',
         type === 'filter'
           ? 'bg-sky-500 text-white'
           : type === 'sort'
@@ -141,6 +144,45 @@ export function TierDropdownPill(props: {
           />
         </div>
       )}
+    />
+  )
+}
+
+export function FilterDropdownPill(props: {
+  selectFilter: (selection: Filter) => void
+  currentFilter: Filter
+}) {
+  const { selectFilter, currentFilter } = props
+  const currentFilterLabel = getLabelFromValue(FILTERS, currentFilter)
+  return (
+    <DropdownMenu
+      withinOverflowContainer
+      items={FILTERS.map((filter) => {
+        return {
+          name: filter.label,
+          onClick: () => selectFilter(filter.value),
+        }
+      })}
+      menuItemsClass={clsx()}
+      buttonContent={(open) => (
+        <div
+          className={clsx(
+            'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
+
+            'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30 dark:bg-sky-500/20 dark:hover:bg-sky-500/30'
+          )}
+        >
+          {currentFilterLabel}
+          <ChevronDownIcon
+            className={clsx(
+              'h-4 w-4 transition-transform',
+              open ? 'rotate-180' : ''
+            )}
+          />
+        </div>
+      )}
+      selectedItemName={currentFilterLabel}
+      closeOnClick
     />
   )
 }

@@ -59,9 +59,6 @@ export const probToColor = (
     console.log(data, probDemocratic, probRepublican, probOther)
   }
   if (data && data.otherParty) {
-    const otherAnswer = contract?.answers.find(
-      (answer) => answer.text == 'Other'
-    )
     if (data.otherParty == 'Democratic Party') {
       probDemocratic += probOther
     }

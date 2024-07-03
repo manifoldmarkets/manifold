@@ -36,7 +36,7 @@ import {
   api,
   getSimilarGroupsToContract,
   searchContracts,
-} from 'web/lib/firebase/api'
+} from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { getGroup, getGroupFromSlug } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -142,9 +142,7 @@ export function ContractParamsForm(props: {
     if (params?.groupIds) {
       const getAndSetGroups = async (groupIds: string[]) => {
         const groups = await Promise.all(groupIds.map((id) => getGroup(id)))
-        setSelectedGroups(
-          filterDefined(groups).filter((g) => g.privacyStatus !== 'private')
-        )
+        setSelectedGroups(filterDefined(groups))
       }
       getAndSetGroups(params.groupIds)
     }
@@ -153,9 +151,7 @@ export function ContractParamsForm(props: {
         const groups = await Promise.all(
           groupSlugs.map((s) => getGroupFromSlug(s))
         )
-        setSelectedGroups(
-          filterDefined(groups).filter((g) => g.privacyStatus !== 'private')
-        )
+        setSelectedGroups(filterDefined(groups))
       }
       getAndSetGroupsViaSlugs(params.groupSlugs)
     }

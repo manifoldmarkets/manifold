@@ -1,58 +1,62 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getPrivateUserSupabase, log } from 'shared/utils'
-import { getPhoneNumber } from 'shared/helpers/get-phone-number'
-import { getGIDXStandardParams } from 'shared/gidx/standard-params'
-import { GIDX_REGISTATION_ENABLED, GIDXDocument } from 'common/gidx/gidx'
-// TODO this endpoint returns a 404, the endpoint doesn't exist...
-const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/DocumentLibrary/CustomerDocument'
+import {
+  getGIDXCustomerProfile,
+  getUserRegistrationRequirements,
+} from 'shared/gidx/helpers'
+import { GIDX_REGISTATION_ENABLED, GIDXCustomerProfile } from 'common/gidx/gidx'
+import { processUserReasonCodes } from 'api/gidx/register'
+import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const getVerificationStatus: APIHandler<
   'get-verification-status-gidx'
 > = async (_, auth) => {
   if (!GIDX_REGISTATION_ENABLED)
     throw new APIError(400, 'GIDX registration is disabled')
-  const user = await getPrivateUserSupabase(auth.uid)
-  if (!user) {
-    throw new APIError(404, 'Private user not found')
-  }
-  if (!user.email) {
-    throw new APIError(400, 'User must have an email address')
-  }
-  const phoneNumberWithCode = await getPhoneNumber(auth.uid)
-  if (!phoneNumberWithCode) {
-    throw new APIError(400, 'User must have a phone number')
-  }
-  // TODO: Handle more than just check on their document upload. Let them know if they've failed, blocked, not yet started, etc.
+  const customerProfile = await getGIDXCustomerProfile(auth.uid)
+  return await getVerificationStatusInternal(auth.uid, customerProfile)
+}
 
-  const body = {
-    MerchantCustomerID: auth.uid,
-    ...getGIDXStandardParams(),
+export const getVerificationStatusInternal = async (
+  userId: string,
+  customerProfile: GIDXCustomerProfile
+) => {
+  await getUserRegistrationRequirements(userId)
+  const {
+    ReasonCodes,
+    ResponseMessage,
+    ResponseCode,
+    FraudConfidenceScore,
+    IdentityConfidenceScore,
+  } = customerProfile
+  if (ResponseCode === 501 && ResponseMessage.includes('not found')) {
+    const pg = createSupabaseDirectClient()
+    // TODO: broadcast this user update when we have that functionality
+    await pg.none(`update users set data = data - 'kycStatus' where id = $1`, [
+      userId,
+    ])
+    return {
+      status: 'error',
+      message: 'User not found in GIDX',
+    }
   }
-  const queryParams = new URLSearchParams(body as any).toString()
-  const urlWithParams = `${ENDPOINT}?${queryParams}`
-
-  const res = await fetch(urlWithParams)
-  if (!res.ok) {
-    throw new APIError(400, 'GIDX verification session failed')
-  }
-
-  const data = (await res.json()) as {
-    ResponseCode: number
-    ResponseMessage: string
-    MerchantCustomerID: string
-    DocumentCount: number
-    Documents: GIDXDocument[]
-  }
-  log(
-    'Registration response:',
-    data.ResponseMessage,
-    'docs',
-    data.DocumentCount,
-    'userId',
-    data.MerchantCustomerID
+  const { status, message } = await processUserReasonCodes(
+    userId,
+    ReasonCodes,
+    FraudConfidenceScore,
+    IdentityConfidenceScore,
+    true
   )
+  if (status === 'error') {
+    return {
+      status: 'error',
+      message,
+    }
+  }
+  const { documents } = await getIdentityVerificationDocuments(userId)
+
   return {
     status: 'success',
+    documents,
   }
 }

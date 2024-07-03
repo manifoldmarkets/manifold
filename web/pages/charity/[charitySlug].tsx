@@ -11,7 +11,7 @@ import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 import { usePagination } from 'web/hooks/use-pagination'
 import { Linkify } from 'web/components/widgets/linkify'
-import { APIError, api } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/api/api'
 import { charities, Charity } from 'common/charity'
 import Custom404 from '../404'
 import {

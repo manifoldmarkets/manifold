@@ -108,25 +108,12 @@ export async function listGroupsBySlug(groupSlugs: string[]) {
   return []
 }
 
-export async function getMemberPrivateGroups(userId: string) {
-  const { data } = await run(
-    db
-      .from('group_role')
-      .select('*')
-      .eq('privacy_status', 'private')
-      .eq('member_id', userId)
-  )
-
-  return data ?? []
-}
-
 export async function getYourNonPrivateNonModeratorGroups(userId: string) {
   const { data } = await run(
     db
       .from('group_role')
       .select('*')
       .eq('member_id', userId)
-      .neq('privacy_status', 'private')
       .neq('role', 'moderator')
       .neq('role', 'admin')
       .order('createdtime', { ascending: false })

@@ -31,7 +31,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
     republicanVPContract,
     houseContract,
     // democraticVPContract,
-    // democraticElectability,
+    democraticElectability,
     // republicanElectability,
     trendingDashboard,
     partyGraphData,
@@ -42,8 +42,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
     !electionCandidateContract ||
     !republicanCandidateContract ||
     !democratCandidateContract ||
-    !houseContract
-    //  || !democraticElectability ||
+    !houseContract ||
+    !democraticElectability
     // !republicanElectability
   ) {
     return <Custom404 />
@@ -103,6 +103,30 @@ export function USElectionsPage(props: ElectionsPageProps) {
         className="-mt-4"
       />
 
+      <Col className="gap-2">
+        <Row className="items-center gap-2">
+          <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+          <div className="text-ink-600  ">Presidential Nomination</div>
+          <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+        </Row>
+        <Row className="gap-4">
+          <PoliticsCard
+            contract={democratCandidateContract as MultiContract}
+            maxAnswers={3}
+            customTitle="Democratic"
+            className="w-1/2"
+            viewType="SMALL CANDIDATE"
+          />
+          <PoliticsCard
+            contract={republicanCandidateContract as MultiContract}
+            maxAnswers={3}
+            customTitle="Republican"
+            className="w-1/2"
+            viewType="SMALL CANDIDATE"
+          />
+        </Row>
+      </Col>
+
       {trending}
 
       <HomepageMap
@@ -139,6 +163,13 @@ export function USElectionsPage(props: ElectionsPageProps) {
       </PoliticsCard>
 
       <PoliticsCard
+        contract={democraticElectability as MultiContract}
+        viewType="CANDIDATE"
+        customTitle={'Who would win if they were the Democratic nominee?'}
+        excludeAnswers={['Joe Biden', '[Any Democrat Except Biden or Harris]']}
+      />
+
+      <PoliticsCard
         customTitle="Republican vice presidential nomination"
         contract={republicanVPContract as MultiContract}
         viewType="CANDIDATE"
@@ -161,29 +192,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
       </Col>
 
       <Col className="hidden gap-6 sm:flex sm:gap-8">
-        <Col className="gap-2">
-          <Row className="items-center gap-2">
-            <div className="bg-ink-600 flex h-[1px] grow flex-row" />
-            <div className="text-ink-600  ">Presidential Nomination</div>
-            <div className="bg-ink-600 flex h-[1px] grow flex-row" />
-          </Row>
-          <Row className="gap-4">
-            <PoliticsCard
-              contract={democratCandidateContract as MultiContract}
-              maxAnswers={3}
-              customTitle="Democratic"
-              className="w-1/2"
-              viewType="SMALL CANDIDATE"
-            />
-            <PoliticsCard
-              contract={republicanCandidateContract as MultiContract}
-              maxAnswers={3}
-              customTitle="Republican"
-              className="w-1/2"
-              viewType="SMALL CANDIDATE"
-            />
-          </Row>
-        </Col>
         {/* <Col className="gap-2">
           <Row className="items-center gap-2">
             <div className="bg-ink-600 flex h-[1px] grow flex-row" />
@@ -209,20 +217,12 @@ export function USElectionsPage(props: ElectionsPageProps) {
         </Col> */}
       </Col>
 
-      {/* <Col className="gap-6 sm:hidden sm:gap-8">
-        <PoliticsCard
-          contract={democraticElectability as MultiContract}
-          viewType="CANDIDATE"
-          customTitle={'Who would win if they were the Democratic nominee?'}
-          excludeAnswers={['Joe Biden']}
-        />
-        <PoliticsCard
+      {/* <PoliticsCard
           contract={republicanElectability as MultiContract}
           viewType="CANDIDATE"
           customTitle={'Who would win if they were the Republican nominee?'}
           excludeAnswers={['Donald Trump']}
-        />
-      </Col> */}
+        /> */}
       {/* <Col className="hidden gap-6 sm:flex sm:gap-8">
         <Col className="gap-2">
           <Row className="items-center gap-2">

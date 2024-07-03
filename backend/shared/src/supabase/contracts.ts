@@ -143,10 +143,7 @@ export const isContractNonPredictive = (contract: Contract) => {
 export const getContractPrivacyWhereSQLFilter = (
   uid: string | undefined,
   creatorId?: string,
-  groupId?: string,
-  hasGroupAccess?: boolean,
-  contractIdString = 'id',
-  includePrivateMarkets = false
+  contractIdString = 'id'
 ) => {
   const otherVisibilitySQL = `
   OR (visibility = 'unlisted' 
@@ -155,16 +152,8 @@ export const getContractPrivacyWhereSQLFilter = (
      OR ${isAdminId(uid ?? '_')}
      OR exists(
          select 1 from contract_bets where contract_id = ${contractIdString} and user_id = '${uid}')
-     )) 
-     ${
-       // Included when viewing your own contract metrics or your own markets
-       includePrivateMarkets || creatorId === uid
-         ? `OR (visibility = 'private' AND can_access_private_contract(${contractIdString},'${uid}'))`
-         : ''
-     }
-  `
-  return (groupId && hasGroupAccess) ||
-    (!!creatorId && !!uid && creatorId === uid)
+     ))`
+  return !!creatorId && !!uid && creatorId === uid
     ? ''
     : `(visibility = 'public' ${uid ? otherVisibilitySQL : ''})`
 }

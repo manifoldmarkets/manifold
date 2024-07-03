@@ -28,7 +28,7 @@ import { formatMoney } from 'common/util/format'
 import { REFERRAL_AMOUNT, STARTING_BALANCE } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export default function TwitchLandingPage() {
   const user = useUser()

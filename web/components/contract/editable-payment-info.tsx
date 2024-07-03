@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { CheckIcon, XIcon, PencilIcon } from '@heroicons/react/solid'
 import { IconButton } from '../buttons/button'
-import { updatePrivateUser } from 'web/lib/firebase/users'
 import { Input } from '../widgets/input'
 import { usePrivateUser } from 'web/hooks/use-user'
+import { api } from 'web/lib/api/api'
 
 export const EditablePaymentInfo = () => {
   const [isEditing, setEditing] = useState(false)
@@ -19,7 +19,7 @@ export const EditablePaymentInfo = () => {
   }
 
   const onSave = async (newPaymentInfo: string) => {
-    await updatePrivateUser({
+    await api('me/private/update', {
       paymentInfo: newPaymentInfo,
     })
     setEditing(false)

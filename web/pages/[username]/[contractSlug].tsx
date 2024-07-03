@@ -15,7 +15,6 @@ import {
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
-import { User } from 'common/user'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
@@ -46,14 +45,11 @@ import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import {
-  useBets,
-  useSubscribeNewBets,
+  useBetsOnce,
+  useContractBets,
   useUnfilledBets,
 } from 'web/hooks/use-bets'
-import {
-  useIsPrivateContractMember,
-  useLiveContract,
-} from 'web/hooks/use-contract'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
@@ -63,7 +59,7 @@ import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Contract } from 'web/lib/firebase/contracts'
+import { Contract } from 'common/contract'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
@@ -89,6 +85,7 @@ import { base64toPoints } from 'common/edge/og'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { YourOrders } from 'web/components/bet/order-book'
+import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -97,7 +94,7 @@ export async function getStaticProps(ctx: {
   const adminDb = await initSupabaseAdmin()
   const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
 
-  if (!contract || contract.visibility === 'private') {
+  if (!contract) {
     return {
       notFound: true,
     }
@@ -170,7 +167,6 @@ export function ContractPageContent(props: ContractParams) {
     dashboards,
     pinnedComments,
     betReplies,
-    lastBetTime,
   } = props
 
   const contract = useLiveContract(props.contract)
@@ -204,6 +200,7 @@ export function ContractPageContent(props: ContractParams) {
   }, [contract.resolution, contract.id, topContractMetrics.length])
 
   useSaveCampaign()
+  useGoogleAnalytics()
   useTracking(
     'view market',
     {
@@ -218,9 +215,9 @@ export function ContractPageContent(props: ContractParams) {
 
   const isNumber = contract.outcomeType === 'NUMBER'
 
-  const newBets = useSubscribeNewBets(contract.id, {
-    afterTime: lastBetTime ?? 0,
-    includeRedemptions: true,
+  const newBets = useContractBets(contract.id, {
+    afterTime: props.lastBetTime ?? 0,
+    includeZeroShareRedemptions: true,
   })
 
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
@@ -324,9 +321,6 @@ export function ContractPageContent(props: ContractParams) {
 
   return (
     <>
-      {contract.visibility == 'private' && isAdmin && user && (
-        <PrivateContractAdminTag contract={contract} user={user} />
-      )}
       {contract.visibility !== 'public' && (
         <Head>
           <meta name="robots" content="noindex, nofollow" />
@@ -630,27 +624,11 @@ export function ContractPageContent(props: ContractParams) {
   )
 }
 
-function PrivateContractAdminTag(props: { contract: Contract; user: User }) {
-  const { contract, user } = props
-  const isPrivateContractMember = useIsPrivateContractMember(
-    user.id,
-    contract.id
-  )
-  if (isPrivateContractMember) return <></>
-  return (
-    <Row className="sticky top-0 z-50 justify-end">
-      <div className="rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500">
-        ADMIN
-      </div>
-    </Row>
-  )
-}
-
 function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
   const { contract, yourNewBets } = props
   const user = useUser()
 
-  const staticBets = useBets({
+  const staticBets = useBetsOnce({
     contractId: contract.id,
     userId: !user ? 'loading' : user.id,
     filterAntes: true,

@@ -1,14 +1,15 @@
-import { useRealtimeBetsPolling } from './use-bets'
+import { useContractBets } from './use-bets'
+import { removeUndefinedProps } from 'common/util/object'
 
 export const useUserContractBets = (
   userId: string | undefined,
   contractId: string
 ) => {
-  const bets = useRealtimeBetsPolling(
-    { contractId, userId },
-    userId ? 5_000 : Infinity,
-    `user-bets-${userId}-${contractId}`
+  return useContractBets(
+    contractId,
+    removeUndefinedProps({
+      userId,
+      enabled: !!userId,
+    })
   )
-
-  return bets
 }

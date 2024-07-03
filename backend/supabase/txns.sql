@@ -63,7 +63,7 @@ or replace function get_donations_by_charity () returns table (
 ) as $$
     select to_id as charity_id,
       count(distinct from_id) as num_supporters,
-      sum(case when (data->'token')::text = 'M$'
+      sum(case when data->>'token' = 'M$'
         then amount / 100
         else amount / 1000 end
       ) as total

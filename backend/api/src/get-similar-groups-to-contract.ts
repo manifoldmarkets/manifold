@@ -6,6 +6,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertGroup } from 'common/supabase/groups'
 import { orderBy, uniqBy } from 'lodash'
 import { log } from 'shared/utils'
+import { TOPIC_SIMILARITY_THRESHOLD } from 'shared/helpers/embeddings'
 
 const bodySchema = z
   .object({
@@ -22,6 +23,7 @@ const GROUPS_SLUGS_TO_IGNORE = [
   'spam',
   'test',
   'sf-bay-rationalists',
+  'conditional-markets',
 ]
 export const getsimilargroupstocontract = authEndpoint(async (req) => {
   const { question } = bodySchema.parse(req.body)
@@ -31,16 +33,17 @@ export const getsimilargroupstocontract = authEndpoint(async (req) => {
   log('Finding similar groups to' + question)
   const groups = await pg.map(
     `
-      select *, (embedding <=> ($1)::vector) as distance from groups
+      select groups.*, (embedding <=> ($1)::vector) as distance from groups
           join group_embeddings on groups.id = group_embeddings.group_id
-            where (embedding <=> ($1)::vector) < 0.1
-            and importance_score > 0.15
+            where (embedding <=> ($1)::vector) < $2
+            and importance_score > 0.1
+            and (total_members > 10 or importance_score > 0.3)
             and privacy_status = 'public'
-            and slug not in ($2:list)
-      order by POW(1-(embedding <=> ($1)::vector) - 0.8, 2) * importance_score desc
-            limit 3
+            and slug not in ($3:list)
+            order by POW(1-(embedding <=> ($1)::vector), 2) * importance_score desc
+            limit 5
     `,
-    [embedding, GROUPS_SLUGS_TO_IGNORE],
+    [embedding, TOPIC_SIMILARITY_THRESHOLD, GROUPS_SLUGS_TO_IGNORE],
     (group) => {
       log('group: ' + group.name + ' distance: ' + group.distance)
       return convertGroup(group)
