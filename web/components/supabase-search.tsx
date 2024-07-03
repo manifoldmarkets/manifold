@@ -29,7 +29,7 @@ import {
   traderColumn,
 } from './contract/contract-table-col-formats'
 import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
-import { ContractFilters } from './search/contract-filters'
+import { BestHotToggle, ContractFilters } from './search/contract-filters'
 import { UserResults } from './search/user-results'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { LoadingIndicator } from './widgets/loading-indicator'
@@ -423,32 +423,7 @@ export function SupabaseSearch(props: {
                   )}
                 </IconButton>
               )}
-              {isHomePage && (
-                <Row className="h-8 gap-1 rounded text-sm">
-                  <button
-                    className={clsx(
-                      'flex h-full items-center rounded px-3 transition-colors',
-                      sort == 'score'
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-ink-500 bg-ink-200'
-                    )}
-                    onClick={() => onChange({ s: 'score' })}
-                  >
-                    Best
-                  </button>
-                  <button
-                    className={clsx(
-                      'flex h-full items-center rounded px-3 transition-colors',
-                      sort == 'freshness-score'
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-ink-500 bg-ink-200'
-                    )}
-                    onClick={() => onChange({ s: 'freshness-score' })}
-                  >
-                    Hot
-                  </button>
-                </Row>
-              )}
+              {isHomePage && <BestHotToggle sort={sort} onChange={onChange} />}
             </Row>
           </Row>
         )}
