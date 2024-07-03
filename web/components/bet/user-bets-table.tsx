@@ -43,8 +43,6 @@ import { Button, IconButton } from 'web/components/buttons/button'
 import { ChevronUpIcon } from '@heroicons/react/solid'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
-import { UserLink } from 'web/components/widgets/user-link'
-import { UserHovercard } from 'web/components/user/user-hovercard'
 import { Avatar } from 'web/components/widgets/avatar'
 import DropdownMenu from '../comments/dropdown-menu'
 import { BsThreeDotsVertical } from 'react-icons/bs'
@@ -688,10 +686,26 @@ function BetsTable(props: {
                   <Row className={'justify-between'}>
                     <Link
                       href={contractPath(contract)}
-                      className={clsx(linkClass, 'line-clamp-2 pr-2 sm:pr-1')}
+                      className={clsx(
+                        linkClass,
+                        'line-clamp-2 flex items-center pr-2 sm:pr-1'
+                      )}
                       onClick={(e) => e.stopPropagation()}
                     >
+                      <span className="mr-2 inline-flex items-center">
+                        <Avatar
+                          avatarUrl={contract.creatorAvatarUrl}
+                          size={'2xs'}
+                          className={''}
+                        />
+                      </span>
                       <span>{contract.question}</span>
+                      <span className={'ml-2 flex min-w-[40px] items-center'}>
+                        <ContractStatusLabel
+                          className={'font-semibold'}
+                          contract={contract}
+                        />
+                      </span>
                     </Link>
                     <IconButton
                       size={'2xs'}
@@ -704,38 +718,7 @@ function BetsTable(props: {
                       )}
                     </IconButton>
                   </Row>
-                  <Row className={'items-center gap-1'}>
-                    <span className={'min-w-[40px]'}>
-                      <ContractStatusLabel
-                        className={'font-bold'}
-                        contract={contract}
-                      />
-                      {contract.mechanism === 'cpmm-1' && (
-                        <span className={'text-ink-500 ml-0.5 text-xs'}>
-                          {getChange(contract)}
-                        </span>
-                      )}
-                    </span>
-                    <UserHovercard
-                      className={'ml-2'}
-                      userId={contract.creatorId}
-                    >
-                      <Avatar
-                        avatarUrl={contract.creatorAvatarUrl}
-                        size={'2xs'}
-                        className={'mr-1 self-center'}
-                      />
-                      <UserLink
-                        noLink={true}
-                        className={'text-ink-600 w-fit text-sm'}
-                        user={{
-                          id: contract.creatorId,
-                          name: contract.creatorName,
-                          username: contract.creatorUsername,
-                        }}
-                      />
-                    </UserHovercard>
-                  </Row>
+
                   {/* Contract Metrics details*/}
                   <div
                     className={'grid-cols-15 grid w-full'}
