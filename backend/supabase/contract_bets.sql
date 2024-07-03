@@ -101,6 +101,15 @@ create index if not exists contract_bets_user_outstanding_limit_orders on contra
   ((data -> 'isCancelled')::boolean)
 );
 
+/* Open contract limit orders */
+create index contract_bets_contract_limit_orders on contract_bets (
+  contract_id,
+  ((data->'isFilled')::boolean),
+  ((data->'isCancelled')::boolean),
+  is_redemption,
+  created_time desc
+);
+
 create index concurrently if not exists contract_bets_user_updated_time on contract_bets (user_id, updated_time desc);
 
 create index if not exists contract_bets_created_time_only on contract_bets (created_time desc);

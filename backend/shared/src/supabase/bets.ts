@@ -64,7 +64,7 @@ export const getBetsWithFilter = async (
 
     isOpenLimitOrder &&
       where(
-        `contract_bets.data->>'isFilled' = 'false' and contract_bets.data->>'isCancelled' = 'false'`
+        `(contract_bets.data->'isFilled')::boolean = false and (contract_bets.data->'isCancelled')::boolean = false`
       ),
 
     afterTime !== undefined &&
