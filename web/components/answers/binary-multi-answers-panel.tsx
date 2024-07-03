@@ -32,7 +32,6 @@ export function BinaryMultiAnswersPanel(props: {
       <>
         {answers.map((answer, i) => (
           <AnswerComponent
-            shouldShowLimitOrderChart={false}
             key={answer.id}
             user={null}
             answer={answer}
