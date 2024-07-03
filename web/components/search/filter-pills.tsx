@@ -210,7 +210,7 @@ export function TopicDropdownPill(props: {
   )?.name
   const currentTopicLabel = forYou
     ? 'For You'
-    : currentTopicInInitialTopicsName ?? 'No Topic'
+    : currentTopicInInitialTopicsName ?? 'All Topics'
 
   const selectTopicFilter = (selection: string) => {
     if (selection === currentTopicFilter) {
@@ -228,18 +228,26 @@ export function TopicDropdownPill(props: {
         name: 'For You',
         onClick: () =>
           updateParams({
-            [FOR_YOU_KEY]: forYou ? '0' : '1',
+            [FOR_YOU_KEY]: '1',
           }),
       }
     : null
 
   const items = [
     ...(forYouItem ? [forYouItem] : []), // Include forYouItem only if it is not null
+    {
+      name: 'All Topics',
+      onClick: () =>
+        updateParams({
+          [FOR_YOU_KEY]: '0',
+          [TOPIC_FILTER_KEY]: '',
+        }),
+    },
     ...initialTopics.map((topic) => ({
       name: topic.name,
       onClick: () => selectTopicFilter(topic.slug),
     })),
-  ].slice(0, 9)
+  ]
 
   return (
     <DropdownMenu
@@ -264,6 +272,7 @@ export function TopicDropdownPill(props: {
       )}
       selectedItemName={currentTopicLabel}
       closeOnClick
+      menuItemsClass="max-h-64 overflow-y-auto"
     />
   )
 }
