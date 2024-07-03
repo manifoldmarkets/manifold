@@ -154,6 +154,7 @@ export function GroupPageContent(props: {
   const setTopicSlugClearQuery = (slug: string) => {
     queryParams.delete('q')
     queryParams.delete('t')
+    queryParams.delete('tf')
     const queryStr = queryParams.toString()
     const q = queryStr ? `?${queryStr}` : ''
     router.push(`/browse/${slug}${q}`, undefined, { shallow: true })
@@ -182,7 +183,8 @@ export function GroupPageContent(props: {
     LiteGroup[] | undefined
   >(undefined, `search-topic-results`)
 
-  const shownTopics = q && topicResults?.length ? topicResults : allTopics
+  const shownTopics = q && topicResults?.length ? topicResults : undefined
+  const initialTopics = topicsByImportance
 
   const currentTopic = allTopics.find((t) => t.slug === topicSlug)
   const staticTopicIsCurrent = staticTopicParams?.slug === currentTopic?.slug
@@ -208,8 +210,9 @@ export function GroupPageContent(props: {
       topicSlug={topicSlug}
       defaultFilter="open"
       defaultSort="score"
-      defaultForYou="0"
+      defaultForYou="1"
       shownTopics={shownTopics}
+      initialTopics={initialTopics}
       setTopicSlug={(slug) => {
         setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
       }}

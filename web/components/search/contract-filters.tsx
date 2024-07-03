@@ -32,6 +32,7 @@ import {
   SORTS,
   SearchParams,
   Sort,
+  TOPIC_FILTER_KEY,
   bountySorts,
   predictionMarketSorts,
 } from '../supabase-search'
@@ -39,6 +40,7 @@ import {
   AdditionalFilterPill,
   FilterDropdownPill,
   FilterPill,
+  TopicDropdownPill,
 } from './filter-pills'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
@@ -49,14 +51,16 @@ import {
   PlusTier,
   PremiumTier,
 } from 'web/public/custom-components/tiers'
+import { LiteGroup } from 'common/group'
 
 export function ContractFilters(props: {
   className?: string
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
   topicSlug?: string
+  initialTopics?: LiteGroup[]
 }) {
-  const { className, params, updateParams, topicSlug } = props
+  const { className, params, updateParams, topicSlug, initialTopics } = props
 
   const {
     s: sort,
@@ -64,6 +68,7 @@ export function ContractFilters(props: {
     ct: contractType,
     p: isPrizeMarketString,
     mt: currentTiers,
+    tf: topicFilter,
   } = params
 
   const selectFilter = (selection: Filter) => {
@@ -164,18 +169,14 @@ export function ContractFilters(props: {
             {getLabelFromValue(SORTS, sortValue)}
           </FilterPill>
         ))}
-        {user && !topicSlug && (
-          <FilterPill
-            selected={forYou}
-            onSelect={() => {
-              updateParams({
-                [FOR_YOU_KEY]: forYou ? '0' : '1',
-              })
-            }}
-            type="sort"
-          >
-            For You
-          </FilterPill>
+        {initialTopics && !topicSlug && (
+          <TopicDropdownPill
+            initialTopics={initialTopics}
+            currentTopicFilter={topicFilter}
+            user={user}
+            forYou={forYou}
+            updateParams={updateParams}
+          />
         )}
         <FilterDropdownPill
           selectFilter={selectFilter}
