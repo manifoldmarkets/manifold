@@ -515,10 +515,6 @@ export function SimpleAnswerBars(props: {
     SHOW_LIMIT_ORDER_CHARTS_KEY
   )
 
-  const unfilledBets = useUnfilledBets(contract.id, {
-    enabled: isAdvancedTrader,
-  })
-
   return (
     <Col className="mx-[2px] gap-2">
       {showNoAnswers ? (
@@ -536,9 +532,6 @@ export function SimpleAnswerBars(props: {
               shouldShowLimitOrderChart={
                 isAdvancedTrader && shouldShowLimitOrderChart
               }
-              unfilledBets={unfilledBets?.filter(
-                (b) => b.answerId === answer.id
-              )}
               feedReason={feedReason}
             />
           ))}
