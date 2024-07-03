@@ -124,7 +124,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 10, promotion: 2, doublePromotion: 0 }
   }
   if (division === 6) {
-    return { demotion: 18, promotion: 0, doublePromotion: 0 }
+    return { demotion: 19, promotion: 0, doublePromotion: 0 }
   }
   throw new Error(`Invalid division: ${division}`)
 }
@@ -133,6 +133,11 @@ export const getDemotionAndPromotionCountBySeason = (
   season: number,
   division: number
 ) => {
+  if (season === 14) {
+    if (division === 6) {
+      return { demotion: 18, promotion: 0, doublePromotion: 0 }
+    }
+  }
   if (season === 13) {
     if (division === 5) {
       return { demotion: 10, promotion: 2, doublePromotion: 0 }
