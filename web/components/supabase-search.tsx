@@ -19,7 +19,7 @@ import { Input } from './widgets/input'
 import { FullUser } from 'common/api/user-types'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
-import { IconButton } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { searchContracts, searchGroups } from 'web/lib/api/api'
 import { searchUsers } from 'web/lib/supabase/users'
@@ -403,7 +403,7 @@ export function SupabaseSearch(props: {
             />
             {query !== '' && (
               <IconButton
-                className={'absolute right-2 top-1/2 -translate-y-1/2'}
+                className="absolute right-2 top-1/2 -translate-y-1/2"
                 size={'2xs'}
                 onClick={() => {
                   onChange({ [QUERY_KEY]: '' })
@@ -415,6 +415,32 @@ export function SupabaseSearch(props: {
                   <XIcon className={'h-5 w-5 rounded-full'} />
                 )}
               </IconButton>
+            )}
+            {persistPrefix === 'search' && (
+              <Row className="bg-ink-200 ml-1 rounded p-1">
+                <button
+                  className={clsx(
+                    'flex h-full items-center rounded px-2',
+                    sort == 'score'
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-ink-500'
+                  )}
+                  onClick={() => onChange({ s: 'score' })}
+                >
+                  Best
+                </button>
+                <button
+                  className={clsx(
+                    'flex h-full items-center rounded px-2',
+                    sort == 'freshness-score'
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-ink-500'
+                  )}
+                  onClick={() => onChange({ s: 'freshness-score' })}
+                >
+                  Hot
+                </button>
+              </Row>
             )}
           </Row>
         )}
