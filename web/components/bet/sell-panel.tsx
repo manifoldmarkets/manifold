@@ -147,10 +147,16 @@ export function SellPanel(props: {
         if (onSellSuccess) onSellSuccess()
       })
       .catch((e: unknown) => {
+        console.error(e)
         if (e instanceof APIError) {
-          toast.error(e.message)
+          const message = e.message.toString()
+          toast.error(
+            message.includes('could not serialize access')
+              ? 'Error placing bet'
+              : message
+          )
         } else {
-          console.error(e)
+          setError('Error placing bet')
         }
         setIsSubmitting(false)
       })
@@ -310,7 +316,7 @@ export function SellPanel(props: {
         userOptedOutOfWarning={user.optOutBetWarnings}
         isSubmitting={isSubmitting}
         onSubmit={betDisabled ? undefined : submitSell}
-        disabled={!!betDisabled}
+        disabled={betDisabled}
         size="xl"
         color="indigo"
         actionLabel={
