@@ -34,35 +34,6 @@ export async function updateLeague() {
   log(`Loaded ${userIds.length} user ids.`)
 
   log('Loading txns...')
-  const txnCategoriesCountedAsManaEarned = [
-    'BETTING_STREAK_BONUS',
-    'AD_REDEEM',
-    'MARKET_BOOST_REDEEM',
-    'QUEST_REWARD',
-    'REFERRAL',
-  ]
-  const txnData = await pg.manyOrNone<{
-    user_id: string
-    category: string
-    amount: number
-  }>(
-    `select
-      user_id,
-      category,
-      sum(amount) as amount
-    from txns
-    join
-      leagues on leagues.user_id = txns.to_id
-    where
-      leagues.season = $1
-      and txns.created_time > millis_to_ts($2)
-      and txns.created_time < millis_to_ts($3)
-      and txns.category in ($4:csv)
-    group by user_id, category
-    `,
-    [season, seasonStart, seasonEnd, txnCategoriesCountedAsManaEarned]
-  )
-
   // Earned fees from bets in your markets during the season.
   const creatorFees = await pg.manyOrNone<{
     user_id: string
@@ -83,12 +54,7 @@ export async function updateLeague() {
     [season, seasonStart, seasonEnd]
   )
 
-  console.log(
-    'Loaded txns per user',
-    txnData.length,
-    'creator fees',
-    creatorFees.length
-  )
+  console.log('creator fees', creatorFees.length)
 
   log('Loading bets...')
   const betData = await pg.manyOrNone<{ data: Bet }>(
@@ -150,7 +116,7 @@ export async function updateLeague() {
   }
 
   const amountByUserId = groupBy(
-    [...userProfit, ...txnData, ...creatorFees].map((u) => ({
+    [...userProfit, ...creatorFees].map((u) => ({
       ...u,
       amount: +u.amount,
     })),
