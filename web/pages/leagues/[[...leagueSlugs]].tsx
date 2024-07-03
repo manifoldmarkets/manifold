@@ -168,7 +168,7 @@ export default function Leagues() {
       />
 
       <Col className="mx-auto w-full max-w-xl gap-2 px-1 pt-2 sm:pt-0">
-        <Col className="mb-1 rounded border border-indigo-200 bg-indigo-100 px-4 py-2 shadow-sm">
+        <Col className="mb-1 rounded border border-indigo-200 bg-indigo-100 px-4 py-2 shadow-sm dark:border-indigo-800 dark:bg-indigo-900">
           <div className="font-semibold">Update July 2nd</div>
           <div>
             Mana earned now counts only trading profits & creator earnings.
