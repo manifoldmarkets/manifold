@@ -254,6 +254,7 @@ export const API = (_apiTypeCheck = {
         filterChallenges: z.coerce.boolean().optional(),
         filterAntes: z.coerce.boolean().optional(),
         includeZeroShareRedemptions: z.coerce.boolean().optional(),
+        additionalBetsWithIds: z.array(z.string()).max(1000).optional(),
       })
       .strict(),
   },

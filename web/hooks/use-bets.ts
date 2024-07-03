@@ -148,10 +148,14 @@ export const useUnfilledBets = (
   const isPageVisible = useIsPageVisible()
 
   useEffect(() => {
-    if (enabled)
-      api('bets', { contractId, kinds: 'open-limit' }).then((bets) =>
-        addBets(bets as LimitBet[])
-      )
+    if (enabled) {
+      const additionalBetsWithIds = (bets ?? []).map((b) => b.id)
+      api('bets', {
+        contractId,
+        kinds: 'open-limit',
+        additionalBetsWithIds,
+      }).then((bets) => addBets(bets as LimitBet[]))
+    }
   }, [enabled, contractId, isPageVisible])
 
   useApiSubscription({
