@@ -32,7 +32,6 @@ import {
   SORTS,
   SearchParams,
   Sort,
-  TOPIC_FILTER_KEY,
   bountySorts,
   predictionMarketSorts,
 } from '../supabase-search'
