@@ -56,10 +56,12 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { TradesButton } from 'web/components/contract/trades-button'
 import toast from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { OrderBookButton } from '../bet/order-book'
+import { OrderBookButton, YourOrders } from '../bet/order-book'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { Tooltip } from '../widgets/tooltip'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { useIsClient } from 'web/hooks/use-is-client'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
 import { CirclePicker } from 'react-color'
@@ -70,6 +72,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { formatTime } from 'web/lib/util/time'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { QuickLimitOrderButtons } from '../bet/quick-limit-order-buttons'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -178,6 +181,11 @@ export function AnswersPanel(props: {
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   const isAdvancedTrader = useIsAdvancedTrader()
+  const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
+    usePersistentLocalState<boolean>(true, SHOW_LIMIT_ORDER_CHARTS_KEY)
+  const unfilledBets = useUnfilledBets(contract.id, {
+    enabled: isAdvancedTrader && shouldShowLimitOrderChart,
+  })
 
   const moreCount = answers.length - answersToShow.length
   // Note: Hide answers if there is just one "Other" answer.
@@ -287,9 +295,15 @@ export function AnswersPanel(props: {
               onClick={() => {
                 onAnswerClick?.(answer)
               }}
+              unfilledBets={unfilledBets?.filter(
+                (b) => b.answerId === answer.id
+              )}
               expanded={selectedAnswerIds?.includes(answer.id)}
               color={getAnswerColor(answer, answersArray)}
               userBets={userBetsByAnswer[answer.id]}
+              shouldShowLimitOrderChart={
+                isAdvancedTrader && shouldShowLimitOrderChart
+              }
             />
           ))}
 
@@ -309,6 +323,25 @@ export function AnswersPanel(props: {
               </Button>
             ))}
         </Col>
+      )}
+      {isAdvancedTrader && (
+        <Row className="mt-2 items-center gap-2 self-end">
+          <input
+            id="limitOrderChart"
+            type="checkbox"
+            className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
+            checked={shouldShowLimitOrderChart}
+            onChange={() =>
+              setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
+            }
+          />
+          <label
+            htmlFor="limitOrderChart"
+            className="text-ink-500 text-sm font-medium"
+          >
+            Show limit orders
+          </label>
+        </Row>
       )}
     </Col>
   )
@@ -477,6 +510,10 @@ export function SimpleAnswerBars(props: {
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
   const isAdvancedTrader = useIsAdvancedTrader()
+  const [shouldShowLimitOrderChart] = usePersistentLocalState<boolean>(
+    true,
+    SHOW_LIMIT_ORDER_CHARTS_KEY
+  )
 
   const unfilledBets = useUnfilledBets(contract.id, {
     enabled: isAdvancedTrader,
@@ -496,6 +533,9 @@ export function SimpleAnswerBars(props: {
               contract={contract}
               color={getAnswerColor(answer, answersArray)}
               barColor={barColor}
+              shouldShowLimitOrderChart={
+                isAdvancedTrader && shouldShowLimitOrderChart
+              }
               unfilledBets={unfilledBets?.filter(
                 (b) => b.answerId === answer.id
               )}
@@ -531,6 +571,7 @@ export function Answer(props: {
   userBets?: Bet[]
   expanded?: boolean
   barColor?: string
+  shouldShowLimitOrderChart: boolean
   feedReason?: string
   className?: string
 }) {
@@ -547,6 +588,7 @@ export function Answer(props: {
     user,
     barColor,
     feedReason,
+    shouldShowLimitOrderChart,
     className,
   } = props
 
@@ -568,12 +610,15 @@ export function Answer(props: {
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
   const isMobile = useIsMobile()
+  const isClient = useIsClient()
 
   const limitOrderVolume = useMemo(
     () => sumBy(unfilledBets, (bet) => bet.orderAmount - bet.amount),
     [unfilledBets]
   )
-
+  const yourUnfilledBets = unfilledBets?.filter(
+    (bet) => bet.userId === user?.id
+  )
   const canEdit = canEditAnswer(answer, contract, user)
 
   const textColorClass = clsx(
@@ -636,6 +681,16 @@ export function Answer(props: {
               feedReason={feedReason}
             />
           </Row>
+        }
+        renderBackgroundLayer={
+          shouldShowLimitOrderChart &&
+          isClient && (
+            <LimitOrderBarChart
+              limitOrders={unfilledBets}
+              prob={prob}
+              activeColor={color}
+            />
+          )
         }
       />
       {!resolution && hasBets && user && (
@@ -705,6 +760,18 @@ export function Answer(props: {
               {onCommentClick && <AddComment onClick={onCommentClick} />}
             </Row>
           </Row>
+
+          {(shouldShowLimitOrderChart ||
+            (yourUnfilledBets ?? []).length > 0) && (
+            <Col className="px-2">
+              <QuickLimitOrderButtons contract={contract} answer={answer} />
+              <YourOrders
+                contract={contract}
+                bets={yourUnfilledBets ?? []}
+                deemphasizedHeader
+              />
+            </Col>
+          )}
         </Col>
       )}
       {editingAnswer && user && (
