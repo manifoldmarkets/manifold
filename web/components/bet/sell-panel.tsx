@@ -267,7 +267,9 @@ export function SellPanel(props: {
         {!isStonk && (
           <Row className="text-ink-500 items-center justify-between gap-2">
             Sale value
-            <span className="text-ink-700">{formatMoney(saleValue)}</span>
+            <span className="text-ink-700">
+              {formatMoney(saleValue + totalFees)}
+            </span>
           </Row>
         )}
         {!isLoadPaid && (
@@ -279,12 +281,12 @@ export function SellPanel(props: {
           </Row>
         )}
         <Row className="text-ink-500 items-center justify-between gap-2">
-          Profit
-          <span className="text-ink-700">{formatMoney(profit)}</span>
-        </Row>
-        <Row className="text-ink-500 items-center justify-between gap-2">
           Fees
           <FeeDisplay totalFees={totalFees} amount={buyAmount} />
+        </Row>
+        <Row className="text-ink-500 items-center justify-between gap-2">
+          Profit
+          <span className="text-ink-700">{formatMoney(profit)}</span>
         </Row>
         <Row className="items-center justify-between">
           <div className="text-ink-500">
