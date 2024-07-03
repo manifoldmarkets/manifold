@@ -10,11 +10,11 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2022",
+    "incremental": true,
+    "isolatedModules": true,
     "paths": {
       "common/*": ["./src/*", "../lib/*"]
     }
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }

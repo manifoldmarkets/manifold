@@ -18,11 +18,11 @@ import {
 import { convertPrivateUser, convertUser } from 'common/supabase/users'
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
-import { log, Logger } from 'shared/monitoring/log'
+import { log } from 'shared/monitoring/log'
 import { metrics } from 'shared/monitoring/metrics'
 
 export { metrics }
-export { log, Logger }
+export { log }
 
 export const logMemory = () => {
   const used = process.memoryUsage()
