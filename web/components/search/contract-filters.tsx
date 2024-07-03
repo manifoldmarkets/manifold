@@ -124,7 +124,7 @@ export function ContractFilters(props: {
       ? DEFAULT_BOUNTY_SORTS
       : contractType == 'POLL'
       ? DEFAULT_POLL_SORTS
-      : DEFAULT_SORTS
+      : []
 
   const [openFilterModal, setOpenFilterModal] = useState(false)
 

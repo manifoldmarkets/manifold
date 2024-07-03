@@ -19,7 +19,7 @@ import { Input } from './widgets/input'
 import { FullUser } from 'common/api/user-types'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
-import { IconButton } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { searchContracts, searchGroups } from 'web/lib/api/api'
 import { searchUsers } from 'web/lib/supabase/users'
@@ -372,6 +372,10 @@ export function SupabaseSearch(props: {
     query &&
     query.length > 0
 
+  const isHomePage = persistPrefix === 'search'
+  const hasQuery = query !== ''
+  const inputPaddingRight = `${(isHomePage ? 106 : 0) + (hasQuery ? 40 : 0)}px`
+
   return (
     <Col className="w-full">
       <Col
@@ -398,24 +402,54 @@ export function SupabaseSearch(props: {
                   ? 'Search'
                   : 'Search questions, users, and topics'
               }
-              className="w-full"
+              className={clsx('w-full')}
+              style={{
+                paddingRight: inputPaddingRight,
+              }}
               autoFocus={autoFocus}
             />
-            {query !== '' && (
-              <IconButton
-                className={'absolute right-2 top-1/2 -translate-y-1/2'}
-                size={'2xs'}
-                onClick={() => {
-                  onChange({ [QUERY_KEY]: '' })
-                }}
-              >
-                {loading ? (
-                  <LoadingIndicator size="sm" />
-                ) : (
-                  <XIcon className={'h-5 w-5 rounded-full'} />
-                )}
-              </IconButton>
-            )}
+            <Row className="absolute right-2 top-1/2 -translate-y-1/2">
+              {hasQuery && (
+                <IconButton
+                  size={'2xs'}
+                  onClick={() => {
+                    onChange({ [QUERY_KEY]: '' })
+                  }}
+                >
+                  {loading ? (
+                    <LoadingIndicator size="sm" />
+                  ) : (
+                    <XIcon className={'h-5 w-5 rounded-full'} />
+                  )}
+                </IconButton>
+              )}
+              {isHomePage && (
+                <Row className="h-8 gap-1 rounded text-sm">
+                  <button
+                    className={clsx(
+                      'flex h-full items-center rounded px-3 transition-colors',
+                      sort == 'score'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-ink-500 bg-ink-200'
+                    )}
+                    onClick={() => onChange({ s: 'score' })}
+                  >
+                    Best
+                  </button>
+                  <button
+                    className={clsx(
+                      'flex h-full items-center rounded px-3 transition-colors',
+                      sort == 'freshness-score'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-ink-500 bg-ink-200'
+                    )}
+                    onClick={() => onChange({ s: 'freshness-score' })}
+                  >
+                    Hot
+                  </button>
+                </Row>
+              )}
+            </Row>
           </Row>
         )}
         {showContractFilters && (
