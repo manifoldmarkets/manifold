@@ -38,17 +38,9 @@ export function FilterPill(props: {
           ? selected
             ? 'bg-amber-500 text-white hover:bg-amber-600'
             : 'text-ink-600 hover:bg-sky-amber/30 bg-amber-500/10 dark:bg-amber-500/20 dark:hover:bg-amber-500/30'
-          : type === 'filter'
-          ? selected
-            ? 'bg-sky-500 text-white hover:bg-sky-600'
-            : 'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30 dark:bg-sky-500/20 dark:hover:bg-sky-500/30'
-          : type === 'sort'
-          ? selected
-            ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-            : 'bg-primary-500/10 hover:bg-primary-500/30 text-ink-600 dark:bg-primary-500/20 dark:hover:bg-primary-500/30 '
           : selected
-          ? 'bg-purple-500 text-white hover:bg-purple-600 focus-visible:bg-purple-600'
-          : 'text-ink-600 bg-purple-500/10 hover:bg-purple-500/30 dark:bg-purple-500/20 dark:hover:bg-purple-500/30',
+          ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+          : 'bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400',
         className
       )}
       onClick={onSelect}
@@ -70,11 +62,7 @@ export function AdditionalFilterPill(props: {
     <Row
       className={clsx(
         'relative h-6 select-none items-center gap-1 whitespace-nowrap rounded-full pl-2 pr-1 text-sm outline-none transition-colors',
-        type === 'filter'
-          ? 'bg-sky-500 text-white'
-          : type === 'sort'
-          ? 'bg-primary-500 text-white'
-          : 'bg-purple-500 text-white',
+        'bg-primary-500 text-white',
         className
       )}
     >
@@ -139,11 +127,27 @@ export function TierDropdownPill(props: {
           className={clsx(
             'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
             currentTiers.includes('1')
-              ? 'bg-sky-500 text-white hover:bg-sky-600'
-              : 'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30 dark:bg-sky-500/20 dark:hover:bg-sky-500/30'
+              ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+              : 'bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
           )}
         >
-          Tier{' '}
+          <Row className="h-5 items-center">
+            {currentTiers === '00000'
+              ? 'Tiers'
+              : currentTiers.split('').map((tier, index) => {
+                  if (tier === '1') {
+                    if (tiers[index] == 'plus') {
+                      return <PlusTier key={index} />
+                    }
+                    if (tiers[index] == 'premium') {
+                      return <PremiumTier key={index} />
+                    }
+                    if (tiers[index] == 'crystal') {
+                      return <CrystalTier key={index} />
+                    }
+                  }
+                })}
+          </Row>
           <ChevronDownIcon
             className={clsx(
               'h-4 w-4 transition-transform',
@@ -177,7 +181,7 @@ export function FilterDropdownPill(props: {
           className={clsx(
             'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
 
-            'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30 dark:bg-sky-500/20 dark:hover:bg-sky-500/30'
+            'bg-ink-200 hover:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
           )}
         >
           {currentFilterLabel}
@@ -258,7 +262,7 @@ export function TopicDropdownPill(props: {
           className={clsx(
             'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
 
-            'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30 dark:bg-sky-500/20 dark:hover:bg-sky-500/30'
+            'bg-ink-200 hover:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
           )}
         >
           {currentTopicLabel}

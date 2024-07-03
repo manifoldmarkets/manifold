@@ -424,3 +424,57 @@ function FilterModal(props: {
     </Modal>
   )
 }
+
+function ToggleButton(props: {
+  onClick: () => void
+  selected: boolean
+  children: React.ReactNode
+}) {
+  const { onClick, selected, children } = props
+  return (
+    <button
+      className={clsx(
+        'flex h-full items-center rounded px-3 transition-colors',
+        selected
+          ? 'bg-indigo-600 text-white'
+          : 'dark:bg-ink-300 dark:text-ink-600 text-ink-500 bg-ink-200 hover:bg-ink-300 dark:hover:bg-ink-400'
+      )}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
+export function BestHotToggle(props: {
+  sort: Sort
+  onChange: (params: Partial<SearchParams>) => void
+}) {
+  const { sort, onChange } = props
+
+  return (
+    <Row className="h-8 gap-1 rounded text-sm">
+      <ToggleButton
+        onClick={() => {
+          if (sort === 'score') {
+            onChange({ s: 'freshness-score' })
+          }
+          onChange({ s: 'score' })
+        }}
+        selected={sort == 'score'}
+      >
+        Best
+      </ToggleButton>
+      <ToggleButton
+        onClick={() => {
+          if (sort === 'freshness-score') {
+            onChange({ s: 'score' })
+          }
+          onChange({ s: 'freshness-score' })
+        }}
+        selected={sort == 'freshness-score'}
+      >
+        Hot
+      </ToggleButton>
+    </Row>
+  )
+}
