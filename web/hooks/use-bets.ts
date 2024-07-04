@@ -149,8 +149,9 @@ export const useUnfilledBets = (
 
   useEffect(() => {
     if (enabled)
-      api('bets', { contractId, kinds: 'open-limit' }).then((bets) =>
-        addBets(bets as LimitBet[])
+      api('bets', { contractId, kinds: 'open-limit', order: 'asc' }).then(
+        // Reset bets instead of adding to existing, since we want to exclude those recently filled/cancelled.
+        (bets) => setBets(bets as LimitBet[])
       )
   }, [enabled, contractId, isPageVisible])
 
