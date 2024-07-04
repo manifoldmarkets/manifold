@@ -116,6 +116,10 @@ export const placeBetMain = async (
       unfilledBets,
       balanceByUserId
     )
+    const { newBet } = newBetResult
+    if (!newBet.amount && !newBet.orderAmount && !newBet.shares) {
+      throw new APIError(400, 'Betting allowed only between 1-99%.')
+    }
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
 
     const actualMakerIds = getMakerIdsFromBetResult(newBetResult)
