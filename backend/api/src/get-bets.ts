@@ -1,4 +1,3 @@
-import { keyBy } from 'lodash'
 import { BetFilter } from 'common/bet'
 import { run, tsToMillis, type SupabaseClient } from 'common/supabase/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
@@ -8,7 +7,7 @@ import {
 } from 'shared/supabase/init'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
 import { getUserIdFromUsername } from 'shared/supabase/users'
-import { getBetsDirect, getBetsWithFilter } from 'shared/supabase/bets'
+import { getBetsWithFilter } from 'shared/supabase/bets'
 
 export const getBets: APIHandler<'bets'> = async (props) => {
   const {
@@ -26,7 +25,6 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     filterChallenges,
     filterRedemptions,
     includeZeroShareRedemptions,
-    additionalBetsWithIds,
   } = props
   const db = createSupabaseClient()
 
@@ -72,17 +70,7 @@ export const getBets: APIHandler<'bets'> = async (props) => {
   }
 
   const pg = createSupabaseDirectClient()
-  const [betsFromFilter, additionalBets] = await Promise.all([
-    getBetsWithFilter(pg, opts),
-    additionalBetsWithIds ? getBetsDirect(pg, additionalBetsWithIds) : [],
-  ])
-
-  const betsById = keyBy(betsFromFilter, 'id')
-  const bets = [
-    ...betsFromFilter,
-    ...additionalBets.filter((b) => !betsById[b.id]),
-  ]
-  return bets
+  return await getBetsWithFilter(pg, opts)
 }
 
 async function getBetTime(db: SupabaseClient, id: string) {
