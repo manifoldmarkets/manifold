@@ -67,8 +67,17 @@ export function createSupabaseClient() {
   return createClient(instanceId, key, { auth: { autoRefreshToken: false } })
 }
 
+type TimeoutTask = <T>(
+  timeoutInMs: number,
+  queryMethod: (t: ITask<{}>) => Promise<T>
+) => Promise<T>
+
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
-let pgpDirect: IDatabase<{}, IClient> | null = null
+let pgpDirect:
+  | (IDatabase<{}, IClient> & {
+      timeout: TimeoutTask
+    })
+  | null = null
 export function createSupabaseDirectClient(
   instanceId?: string,
   password?: string
@@ -91,6 +100,7 @@ export function createSupabaseDirectClient(
     port: 5432,
     user: `postgres`,
     password: password,
+    // ian: query_timeout doesn't cancel long-running queries, it just stops waiting for them
     query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
     max: 20,
   })
@@ -105,7 +115,47 @@ export function createSupabaseDirectClient(
     metrics.set('pg/pool_connections', pool.expiredCount, { state: 'expired' })
     metrics.set('pg/pool_connections', pool.totalCount, { state: 'total' })
   }, METRICS_INTERVAL_MS)
-  return (pgpDirect = client)
+
+  const timeout: TimeoutTask = async <T>(
+    timeoutInMs: number,
+    queryMethod: (t: ITask<{}>) => Promise<T>
+  ) => {
+    let pid: number | undefined
+    const task = client.task(async (t) => {
+      const pidResult = await t.one('SELECT pg_backend_pid() AS pid')
+      pid = pidResult.pid
+      log('Query PID:', pid)
+
+      return queryMethod(t)
+    })
+
+    const cancelAfterTimeout = new Promise<never>((_, reject) => {
+      setTimeout(async () => {
+        if (pid) {
+          try {
+            log('Cancelling query:', pid)
+            const cancelled = await pgpDirect!.one(
+              'select pg_cancel_backend($1)',
+              [pid],
+              (data) => data.pg_cancel_backend
+            )
+            log('Cancelled:', cancelled)
+          } catch (error) {
+            log('Error cancelling query:', error)
+          }
+        }
+        reject(new Error(`Query timed out after ${timeoutInMs}ms`))
+      }, timeoutInMs)
+    })
+
+    return Promise.race([task, cancelAfterTimeout])
+  }
+
+  pgpDirect = {
+    ...client,
+    timeout,
+  }
+  return pgpDirect
 }
 
 let shortTimeoutPgpClient: IDatabase<{}, IClient> | null = null
