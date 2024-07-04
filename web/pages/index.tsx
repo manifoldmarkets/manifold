@@ -146,13 +146,13 @@ export default function LandingPage(props: {
                   Browse
                 </Button>
               </Link>
-              <Link href="/politics" className="hidden lg:flex">
+              <Link href="/election" className="hidden lg:flex">
                 <Button
                   color="gray-white"
                   size="xs"
                   className="whitespace-nowrap"
                 >
-                  US Politics
+                  US Election
                 </Button>
               </Link>
               <Button

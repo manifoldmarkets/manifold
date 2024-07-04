@@ -63,7 +63,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
             <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-indigo-500" />
           </div>
           <Link
-            href="/politics/politicsheadline"
+            href="/election/politicsheadline"
             className="hover:text-primary-700 hover:underline"
           >
             Trending

@@ -148,15 +148,10 @@ const getDesktopNav = (
         icon: NotificationsIcon,
       },
       {
-        name: 'US Politics',
-        href: '/politics',
+        name: 'US Election',
+        href: '/election',
         icon: GiCapitol,
       },
-      // {
-      //   name: 'AI',
-      //   href: '/ai',
-      //   icon: PiRobotBold,
-      // },
       // {
       //   name: 'TV',
       //   href: '/tv',
@@ -180,8 +175,8 @@ const getDesktopNav = (
   return buildArray(
     { name: 'Browse', href: '/browse', icon: SearchIcon },
     {
-      name: 'US Politics',
-      href: '/politics',
+      name: 'US Election',
+      href: '/election',
       icon: GiCapitol,
     },
     { name: 'News', href: '/news', icon: NewspaperIcon },
@@ -200,8 +195,8 @@ const getMobileNav = (
   return buildArray<NavItem>(
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     {
-      name: 'US Politics',
-      href: '/politics',
+      name: 'US Election',
+      href: '/election',
       icon: GiCapitol,
     },
     {

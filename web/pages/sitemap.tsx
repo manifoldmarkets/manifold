@@ -122,7 +122,7 @@ export default function AboutPage() {
             <LabCard title="️🔖 Dashboards" href="/dashboard" />
             <LabCard title="⚡️ Site activity" href="/live" />
             <LabCard title="🤖 AI" href="/ai" />
-            <LabCard title="🇺🇸 US elections" href="/politics" />
+            <LabCard title="🇺🇸 US elections" href="/election" />
             {/* <LabCard title="️🧪 Lab" href="/lab" /> */}
           </div>
         </div>
