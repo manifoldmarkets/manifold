@@ -1,24 +1,18 @@
 import { MultiContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
-import { useUser } from 'web/hooks/use-user'
 import Custom404 from 'web/pages/404'
 import { Row } from './layout/row'
 import { HomepageMap } from './usa-map/homepage-map'
 import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
 import { ConditionalMarkets } from './us-elections/contracts/conditional-market/conditional-markets'
-import { CopyLinkOrShareButton } from './buttons/copy-link-button'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { referralQuery } from 'common/util/share'
 import { SizedContainer } from './sized-container'
 import clsx from 'clsx'
 import { ChoiceMiniGraph } from './us-elections/contracts/choice-mini-graph'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 
 export function USElectionsPage(props: ElectionsPageProps) {
-  const user = useUser()
-
   const {
     rawPresidencyStateContracts,
     rawSenateStateContracts,
@@ -83,14 +77,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
       <Col>
         <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
           Manifold 2024 Election Forecast
-          <CopyLinkOrShareButton
-            url={`https://${ENV_CONFIG.domain}/politics${
-              user?.username ? referralQuery(user.username) : ''
-            }`}
-            eventTrackingName="copy politics share link"
-            tooltip="Share"
-            className="hidden sm:inline"
-          />
         </div>
         <div className="text-canvas-500 text-md mt-2 flex font-normal">
           Live prediction market odds on the US election
