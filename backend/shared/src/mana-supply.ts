@@ -3,14 +3,17 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 export const getManaSupply = async () => {
   const pg = createSupabaseDirectClient()
   const userPortfolio = await pg.one(
-    `select sum(balance + spice_balance + investment_value) as total_value,
-      sum(balance)              as balance,
-      sum(spice_balance)        as spice_balance,
-      sum(investment_value)     as investment_value,
-      sum(loan_total)           as loan_total
-    from user_portfolio_history_latest
-    where
-         (balance + spice_balance + investment_value) > 0.0`,
+    `
+      select
+          sum(u.balance + u.spice_balance + coalesce(uphl.investment_value, 0)) as total_value,
+          sum(u.balance) as balance,
+          sum(u.spice_balance) as spice_balance,
+          sum(coalesce(uphl.investment_value, 0)) as investment_value,
+          sum(coalesce(uphl.loan_total, 0)) as loan_total
+      from users u
+      left join user_portfolio_history_latest uphl on u.id = uphl.user_id
+      where (u.balance + u.spice_balance + coalesce(uphl.investment_value, 0)) > 0.0
+          `,
     [],
     (r: any) => ({
       totalValue: Number(r.total_value),
