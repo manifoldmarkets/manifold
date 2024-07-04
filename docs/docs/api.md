@@ -687,6 +687,7 @@ Parameters:
   - An unfilled limit order bet can be cancelled using the cancel API.
 
 - `expiresAt`: When the limit order should be automatically canceled.
+- `dryRun`: Optional. If true, the bet will not be placed and the API will return a simulated result.
 
 [Requires Auth](#authentication).
 

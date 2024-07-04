@@ -140,6 +140,7 @@ export const API = (_apiTypeCheck = {
         outcome: z.enum(['YES', 'NO']).default('YES'),
         //Multi
         answerId: z.string().optional(),
+        dryRun: z.boolean().optional(),
       })
       .strict(),
   },

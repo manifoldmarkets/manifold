@@ -62,7 +62,7 @@ export const placeBetMain = async (
 ) => {
   const startTime = Date.now()
 
-  const { contractId, replyToCommentId } = body
+  const { contractId, replyToCommentId, dryRun } = body
 
   // Fetch data outside transaction first.
   const {
@@ -87,6 +87,15 @@ export const placeBetMain = async (
     unfilledBets,
     balanceByUserId
   )
+  if (dryRun) {
+    return {
+      result: {
+        ...simulatedResult.newBet,
+        betId: 'dry-run',
+      },
+      continue: () => Promise.resolve(),
+    }
+  }
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
 
   const result = await runShortTrans(async (pgTrans) => {
