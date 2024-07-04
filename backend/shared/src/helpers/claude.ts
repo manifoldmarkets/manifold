@@ -7,7 +7,7 @@ export const promptClaude = async (
   options: { system?: string } = {}
 ) => {
   const { system } = options
-  const apiKey = process.env.ANTHROPIC_API_KEY2
+  const apiKey = process.env.ANTHROPIC_API_KEY3
 
   if (!apiKey) {
     throw new Error('Missing ANTHROPIC_API_KEY2')
@@ -34,5 +34,9 @@ export const promptClaude = async (
       ],
     })
   )
-  return msg
+  const message = msg.content[0]
+  if ('text' in message) {
+    return message.text
+  }
+  return ''
 }

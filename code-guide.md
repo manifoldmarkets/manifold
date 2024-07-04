@@ -120,6 +120,198 @@ export const usePersistentInMemoryState = <T>(initialValue: T, key: string) => {
 }
 ```
 
+We prefer using lodash functions instead of reimplementing them with for loops:
+
+```ts
+import { keyBy, uniq } from 'lodash'
+
+const betsByUserId = keyBy(bets, 'userId')
+const betIds = uniq(bets, (b) => b.id)
+```
+
+When organizing imports, we put the external libraries at the top, followed by a new line, and then our internal imports.
+
+```ts
+import { useState } from 'react'
+import { keyBy } from 'lodash'
+
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useUser } from 'web/hooks/use-user'
+```
+
+For live updates, we use websockets. In `use-api-subscription.ts`, we have this hook:
+
+```ts
+export function useApiSubscription(opts: SubscriptionOptions) {
+  useEffect(() => {
+    const ws = client
+    if (ws != null) {
+      if (opts.enabled ?? true) {
+        ws.subscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+        return () => {
+          ws.unsubscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+        }
+      }
+    }
+  }, [opts.enabled, JSON.stringify(opts.topics)])
+}
+```
+
+In `use-bets`, we have this hook to get live updates with useApiSubscription:
+
+```ts
+export const useContractBets = (
+  contractId: string,
+  opts?: APIParams<'bets'> & { enabled?: boolean }
+) => {
+  const { enabled = true, ...apiOptions } = {
+    contractId,
+    ...opts,
+  }
+  const optionsKey = JSON.stringify(apiOptions)
+
+  const [newBets, setNewBets] = usePersistentInMemoryState<Bet[]>(
+    [],
+    `${optionsKey}-bets`
+  )
+
+  const addBets = (bets: Bet[]) => {
+    setNewBets((currentBets) => {
+      const uniqueBets = sortBy(
+        uniqBy([...currentBets, ...bets], 'id'),
+        'createdTime'
+      )
+      return uniqueBets.filter((b) => !betShouldBeFiltered(b, apiOptions))
+    })
+  }
+
+  const isPageVisible = useIsPageVisible()
+
+  useEffect(() => {
+    if (isPageVisible && enabled) {
+      api('bets', apiOptions).then(addBets)
+    }
+  }, [optionsKey, enabled, isPageVisible])
+
+  useApiSubscription({
+    topics: [`contract/${contractId}/new-bet`],
+    onBroadcast: (msg) => {
+      addBets(msg.data.bets as Bet[])
+    },
+    enabled,
+  })
+
+  return newBets
+}
+```
+
+Here are all the topics we broadcast, from `backend/shared/src/websockets/helpers.ts`
+
+```ts
+import { broadcast, broadcastMulti } from './server'
+import { Bet, LimitBet } from 'common/bet'
+import { Contract, Visibility } from 'common/contract'
+import { ContractComment } from 'common/comment'
+import { User } from 'common/user'
+import { Answer } from 'common/answer'
+
+export function broadcastUpdatedPrivateUser(userId: string) {
+  // don't send private user info because it's private and anyone can listen
+  broadcast(`private-user/${userId}`, {})
+}
+
+export function broadcastUpdatedUser(user: Partial<User> & { id: string }) {
+  broadcast(`user/${user.id}`, { user })
+}
+
+export function broadcastNewBets(
+  contractId: string,
+  visibility: Visibility,
+  bets: Bet[]
+) {
+  const payload = { bets }
+  broadcastMulti([`contract/${contractId}/new-bet`], payload)
+
+  if (visibility === 'public') {
+    broadcastMulti(['global', 'global/new-bet'], payload)
+  }
+
+  const newOrders = bets.filter((b) => b.limitProb && !b.isFilled) as LimitBet[]
+  broadcastOrders(newOrders)
+}
+
+export function broadcastOrders(bets: LimitBet[]) {
+  if (bets.length === 0) return
+  const { contractId } = bets[0]
+  broadcast(`contract/${contractId}/orders`, { bets })
+}
+
+export function broadcastNewComment(
+  contractId: string,
+  visibility: Visibility,
+  creator: User,
+  comment: ContractComment
+) {
+  const payload = { creator, comment }
+  const topics = [`contract/${contractId}/new-comment`]
+  if (visibility === 'public') {
+    topics.push('global', 'global/new-comment')
+  }
+  broadcastMulti(topics, payload)
+}
+
+export function broadcastNewContract(contract: Contract, creator: User) {
+  const payload = { contract, creator }
+  if (contract.visibility === 'public') {
+    broadcastMulti(['global', 'global/new-contract'], payload)
+  }
+}
+
+export function broadcastNewSubsidy(
+  contractId: string,
+  visibility: Visibility,
+  amount: number
+) {
+  const payload = { amount }
+  const topics = [`contract/${contractId}/new-subsidy`]
+  if (visibility === 'public') {
+    topics.push('global', 'global/new-subsidy')
+  }
+  broadcastMulti(topics, payload)
+}
+
+export function broadcastUpdatedContract(
+  visibility: Visibility,
+  contract: Partial<Contract> & { id: string }
+) {
+  const payload = { contract }
+  const topics = [`contract/${contract.id}`]
+  if (visibility === 'public') {
+    topics.push('global', 'global/updated-contract')
+  }
+  broadcastMulti(topics, payload)
+}
+
+export function broadcastNewAnswer(answer: Answer) {
+  const payload = { answer }
+  const topics = [`contract/${answer.contractId}/new-answer`]
+  // TODO: broadcast to global. we don't do this rn cuz too lazy get contract visibility to filter out unlisted
+  broadcastMulti(topics, payload)
+}
+
+export function broadcastUpdatedAnswers(
+  contractId: string,
+  answers: (Partial<Answer> & { id: string })[]
+) {
+  if (answers.length === 0) return
+
+  const payload = { answers }
+  const topics = [`contract/${contractId}/updated-answers`]
+  // TODO: broadcast to global
+  broadcastMulti(topics, payload)
+}
+```
+
 Here's our API schema. Each key-value pair in the below object corresponds to an endpoint.
 
 E.g. 'comment' can be accessed at `api.manifold.markets/v0/comment`. If 'visibility' is 'public', then you need the '/v0', otherwise, you should omit the version. However, you probably don't need the url, you can use our library function `api('comment', props)`, or `useAPIGetter('comment', props)`

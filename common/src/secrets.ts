@@ -10,6 +10,7 @@ export const secrets = (
   [
     'API_SECRET',
     'ANTHROPIC_API_KEY2',
+    'ANTHROPIC_API_KEY3',
     'DREAM_KEY',
     'MAILGUN_KEY',
     'OPENAI_API_KEY',
