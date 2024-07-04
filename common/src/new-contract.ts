@@ -49,13 +49,6 @@ export function getNewContract(props: {
   addAnswersMode: add_answers_mode | undefined
   shouldAnswersSumToOne: boolean | undefined
 
-  // Manifold.love
-  loverUserId1: string | undefined
-  loverUserId2: string | undefined
-  matchCreatorId: string | undefined
-  isLove: boolean | undefined
-  answerLoverUserIds: string[] | undefined
-
   specialLiquidityPerAnswer: number | undefined
 
   isAutoBounty: boolean | undefined
@@ -79,13 +72,8 @@ export function getNewContract(props: {
     answers,
     addAnswersMode,
     shouldAnswersSumToOne,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     coverImageUrl,
     specialLiquidityPerAnswer,
-    answerLoverUserIds,
     isAutoBounty,
     marketTier,
   } = props
@@ -103,8 +91,7 @@ export function getNewContract(props: {
         addAnswersMode ?? 'DISABLED',
         shouldAnswersSumToOne ?? true,
         ante,
-        specialLiquidityPerAnswer,
-        answerLoverUserIds
+        specialLiquidityPerAnswer
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
@@ -154,10 +141,6 @@ export function getNewContract(props: {
     },
 
     isTwitchContract,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     marketTier,
   })
   if (visibility === 'unlisted') {
@@ -241,8 +224,7 @@ const getMultipleChoiceProps = (
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
   ante: number,
-  specialLiquidityPerAnswer?: number,
-  answerLoverUserIds?: string[]
+  specialLiquidityPerAnswer?: number
 ) => {
   const isBinaryMulti =
     addAnswersMode === 'DISABLED' &&
@@ -260,7 +242,6 @@ const getMultipleChoiceProps = (
     ante,
     answersWithOther,
     specialLiquidityPerAnswer,
-    answerLoverUserIds,
     isBinaryMulti ? VERSUS_COLORS : undefined
   )
   const system: CPMMMulti = {
@@ -316,7 +297,6 @@ function createAnswers(
   ante: number,
   answers: string[],
   specialLiquidityPerAnswer?: number,
-  answerLoverUserIds?: string[],
   colors?: string[]
 ) {
   const ids = answers.map(() => randomString())
@@ -362,7 +342,6 @@ function createAnswers(
       userId,
       text,
       createdTime: now,
-      loverUserId: answerLoverUserIds?.[i],
       color: colors?.[i],
 
       poolYes,

@@ -91,10 +91,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     shouldAnswersSumToOne,
     totalBounty,
     isAutoBounty,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     visibility,
     specialLiquidityPerAnswer,
     marketTier,
@@ -117,10 +113,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   //     'You must verify your phone number to create a market.'
   //   )
   // }
-
-  if (loverUserId1 || loverUserId2 || isLove) {
-    throw new Error('No more love contracts can be created')
-  }
 
   const groups = groupIds
     ? await Promise.all(
@@ -165,12 +157,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     if (totalMarketCost > user.balance)
       throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
 
-    let answerLoverUserIds: string[] = []
-    if (isLove && answers) {
-      answerLoverUserIds = await getLoveAnswerUserIds(answers)
-      console.log('answerLoverUserIds', answerLoverUserIds)
-    }
-
     const slug = await getSlug(tx, question)
 
     const contract = getNewContract(
@@ -201,11 +187,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         answers: answers ?? [],
         addAnswersMode,
         shouldAnswersSumToOne,
-        loverUserId1,
-        loverUserId2,
-        matchCreatorId,
-        isLove,
-        answerLoverUserIds,
         specialLiquidityPerAnswer,
         isAutoBounty,
         marketTier,
@@ -236,7 +217,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   })
 
   if (answers && contract.mechanism === 'cpmm-multi-1')
-    await createAnswers(pg, contract)
+    await bulkInsertAnswers(pg, contract.answers)
 
   if (groups) {
     await Promise.all(
@@ -335,10 +316,6 @@ function validateMarketBody(body: Body) {
     visibility = 'public',
     isTwitchContract,
     utcOffset,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     marketTier,
   } = body
 
@@ -419,7 +396,7 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'MULTIPLE_CHOICE') {
     ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
       validateMarketType(outcomeType, createMultiSchema, body))
-    if (answers.length < 2 && addAnswersMode === 'DISABLED' && !isLove)
+    if (answers.length < 2 && addAnswersMode === 'DISABLED')
       throw new APIError(
         400,
         'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
@@ -460,10 +437,6 @@ function validateMarketBody(body: Body) {
     shouldAnswersSumToOne,
     totalBounty,
     isAutoBounty,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     specialLiquidityPerAnswer,
     marketTier,
   }
@@ -519,52 +492,6 @@ async function getGroupCheckPermissions(
   }
 
   return group
-}
-
-async function createAnswers(
-  pg: SupabaseDirectClient,
-  contract: CPMMMultiContract | CPMMNumericContract
-) {
-  const { isLove } = contract
-  let { answers } = contract
-
-  if (isLove) {
-    // Add loverUserId to the answer.
-    answers = await Promise.all(
-      answers.map(async (a) => {
-        // Parse username from answer text.
-        const matches = a.text.match(/@(\w+)/)
-        const loverUsername = matches ? matches[1] : null
-        if (!loverUsername) return a
-        const loverUserId = (await getUserByUsername(loverUsername))?.id
-        if (!loverUserId) return a
-        return {
-          ...a,
-          loverUserId,
-        }
-      })
-    )
-  }
-
-  await bulkInsertAnswers(pg, answers)
-}
-
-async function getLoveAnswerUserIds(answers: string[]) {
-  // Get the loverUserId from the answer text.
-  return await Promise.all(
-    answers.map(async (answerText) => {
-      // Parse username from answer text.
-      const matches = answerText.match(/@(\w+)/)
-      console.log('matches', matches)
-      const loverUsername = matches ? matches[1] : null
-      if (!loverUsername)
-        throw new APIError(500, 'No lover username found ' + answerText)
-      const user = await getUserByUsername(loverUsername)
-      if (!user)
-        throw new APIError(500, 'No user found with username ' + answerText)
-      return user.id
-    })
-  )
 }
 
 async function generateAntes(

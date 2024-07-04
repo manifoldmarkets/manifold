@@ -97,9 +97,13 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   marketTier?: MarketTierType
 
   // Manifold.love
-  loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
-  loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
-  matchCreatorId?: string // The user id of the person who proposed the match.
+  /** @deprecated The user id's of the pair of lovers referenced in the question */
+  loverUserId1?: string
+  /** @deprecated The user id's of the pair of lovers referenced in the question */
+  loverUserId2?: string
+  /** @deprecated The user id of the person who proposed the match. */
+  matchCreatorId?: string
+  /** @deprecated */
   isLove?: boolean
 
   /** @deprecated - no more auto-subsidization */

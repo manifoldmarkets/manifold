@@ -113,10 +113,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     lastUpdatedTime,
     lastBetTime,
     lastCommentTime,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     marketTier,
   } = contract
 
@@ -167,12 +163,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     lastCommentTime,
     ...numericValues,
     marketTier,
-
-    // Manifold love props.
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
   })
 }
 
@@ -314,10 +304,6 @@ export const createMarketProps = z
     visibility: z.enum(VISIBILITIES).default('public'),
     isTwitchContract: z.boolean().optional(),
     utcOffset: z.number().optional(),
-    loverUserId1: z.string().optional(),
-    loverUserId2: z.string().optional(),
-    matchCreatorId: z.string().optional(),
-    isLove: z.boolean().optional(),
     marketTier: z.enum(tiers).optional(),
   })
   .and(
