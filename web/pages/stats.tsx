@@ -7,7 +7,7 @@ import { Title } from 'web/components/widgets/title'
 import { getStats } from 'web/lib/supabase/stats'
 import { Stats } from 'common/stats'
 import { PLURAL_BETS } from 'common/user'
-import { capitalize, last } from 'lodash'
+import { capitalize, orderBy, sumBy } from 'lodash'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
 import { SEO } from 'web/components/SEO'
@@ -114,7 +114,24 @@ export function CustomAnalytics(props: {
 
   const { manaSupplyOverTime, fromBankSummary, toBankSummary } = props
 
-  const manaSupply = last(manaSupplyOverTime)!
+  const currentSupply = manaSupplyOverTime[manaSupplyOverTime.length - 1]
+  const yesterdaySupply = manaSupplyOverTime[manaSupplyOverTime.length - 2]
+  const differenceInSupplySinceYesterday =
+    currentSupply.total_value - yesterdaySupply.total_value
+  const latestRecordingTime = orderBy(fromBankSummary, 'start_time', 'desc')[0]
+    .start_time
+  const fromBankSum = sumBy(
+    fromBankSummary.filter((txn) => txn.start_time === latestRecordingTime),
+    'total_amount'
+  )
+  const toBankSum = sumBy(
+    toBankSummary.filter((txn) => txn.start_time === latestRecordingTime),
+    'total_amount'
+  )
+  const netBankTransactions = fromBankSum - toBankSum
+  const unaccountedDifference =
+    differenceInSupplySinceYesterday - netBankTransactions
+
   const startDate = props.stats.startDate[0]
 
   const dailyDividedByWeekly = dailyActiveUsers.map(
@@ -212,19 +229,19 @@ export function CustomAnalytics(props: {
         <Row className="justify-between">
           <div className="text-ink-700">Balances</div>
           <div className="text-ink-700 font-semibold">
-            {formatMoney(manaSupply.balance)}
+            {formatMoney(currentSupply.balance)}
           </div>
         </Row>
         <Row className="justify-between">
           <div className="text-ink-700">Prize point balances</div>
           <div className="text-ink-700 font-semibold">
-            ₽{formatWithCommas(manaSupply.spice_balance)}
+            ₽{formatWithCommas(currentSupply.spice_balance)}
           </div>
         </Row>
         <Row className="justify-between">
           <div className="text-ink-700">Investment</div>
           <div className="text-ink-700 font-semibold">
-            {formatMoney(manaSupply.investment_value)}
+            {formatMoney(currentSupply.investment_value)}
           </div>
         </Row>
         {/* <Row className="justify-between">
@@ -236,13 +253,19 @@ export function CustomAnalytics(props: {
         <Row className="justify-between">
           <div className="text-ink-700">AMM liquidity</div>
           <div className="text-ink-700 font-semibold">
-            {formatMoney(manaSupply.amm_liquidity)}
+            {formatMoney(currentSupply.amm_liquidity)}
           </div>
         </Row>
         <Row className="mt-6 justify-between">
+          <div className="text-ink-700">Unaccounted for since yesterday</div>
+          <div className="text-ink-700 font-semibold">
+            {formatMoney(unaccountedDifference)}
+          </div>
+        </Row>
+        <Row className="mt-2 justify-between">
           <div className="text-ink-700">Total</div>
           <div className="text-ink-700 font-semibold">
-            {formatMoney(manaSupply.total_value)}
+            {formatMoney(currentSupply.total_value)}
           </div>
         </Row>
       </Col>

@@ -10,9 +10,7 @@ export const getManaSupply = async () => {
       sum(loan_total)           as loan_total
     from user_portfolio_history_latest
     where
-      user_id not in ('pyBueUg9y3hrDIUtrus5uAkPHCr1', 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', 'tRZZ6ihugZQLXPf6aPRneGpWLmz1', 'ttl8PytdL4P9oD0fNneqvwgOZhy1')
-      and (balance + spice_balance + investment_value) > 0.0
-  `,
+         (balance + spice_balance + investment_value) > 0.0`,
     [],
     (r: any) => ({
       totalValue: Number(r.total_value),
