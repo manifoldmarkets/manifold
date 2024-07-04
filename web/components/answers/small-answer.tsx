@@ -9,7 +9,7 @@ import { floatingEqual } from 'common/util/math'
 import { sumBy } from 'lodash'
 import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
-import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
+import { getAnswerColor } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
@@ -40,8 +40,6 @@ export function SmallAnswerBars(props: {
 
   const moreCount = answers.length - displayedAnswers.length
 
-  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
-
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
@@ -58,7 +56,7 @@ export function SmallAnswerBars(props: {
               key={answer.id}
               answer={answer}
               contract={contract}
-              color={getAnswerColor(answer, answersArray)}
+              color={getAnswerColor(answer)}
               barColor={barColor}
             />
           ))}

@@ -61,10 +61,7 @@ export const ContractMinibar = (props: {
   const answersToShow = sumsToOne ? answers : answers.slice(0, 3)
   const options = answersToShow.map((a) => ({
     prob: getAnswerProbability(contract, a.id),
-    color: getAnswerColor(
-      a,
-      answers.map((answer) => answer.text)
-    ),
+    color: getAnswerColor(a),
   }))
 
   if (sumsToOne) {

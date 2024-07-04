@@ -10,7 +10,7 @@ import {
   canEditAnswer,
 } from './answers-panel'
 import { BuyPanelBody } from 'web/components/bet/bet-panel'
-import { VERSUS_COLORS, getVersusColor } from '../charts/contract/choice'
+import { getAnswerColor } from '../charts/contract/choice'
 import { useUser } from 'web/hooks/use-user'
 import { PencilIcon } from '@heroicons/react/solid'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
@@ -22,22 +22,19 @@ export function BinaryMultiAnswersPanel(props: {
   const { feedReason, contract } = props
   const answers = useAnswersCpmm(contract.id) ?? contract.answers
 
-  const [colorLeft, colorRight] = answers.map(
-    (a, i) => a.color ?? VERSUS_COLORS[i]
-  )
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   if (contract.isResolved) {
     return (
       <>
-        {answers.map((answer, i) => (
+        {answers.map((answer) => (
           <AnswerComponent
             shouldShowLimitOrderChart={false}
             key={answer.id}
             user={null}
             answer={answer}
             contract={contract as MultiContract}
-            color={i === 0 ? colorLeft : colorRight}
+            color={getAnswerColor(answer)}
             feedReason={feedReason}
           />
         ))}
@@ -55,7 +52,7 @@ export function BinaryMultiAnswersPanel(props: {
               setOutcome={setOutcome}
               key={answer.id}
               answer={answer}
-              color={i === 0 ? colorLeft : colorRight}
+              color={getAnswerColor(answer)}
             />
           ))}
         </div>
@@ -112,7 +109,7 @@ function BinaryMultiChoiceBetPanel(props: {
   const { answer, contract, closePanel, outcome, setOutcome } = props
 
   const [editing, setEditing] = useState(false)
-  const color = getVersusColor(answer)
+  const color = getAnswerColor(answer)
   const user = useUser()
   const canEdit = canEditAnswer(answer, contract, user)
 

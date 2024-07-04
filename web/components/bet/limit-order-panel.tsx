@@ -15,6 +15,7 @@ import {
   isBinaryMulti,
   MAX_CPMM_PROB,
   MIN_CPMM_PROB,
+  MultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -37,7 +38,7 @@ import { APIError } from 'common/api/utils'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { api } from 'web/lib/api/api'
 import clsx from 'clsx'
-import { getVersusColors } from '../charts/contract/choice'
+import { getAnswerColor } from '../charts/contract/choice'
 import { Fees, getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from './fees'
 
@@ -68,7 +69,7 @@ export default function LimitOrderPanel(props: {
   } = props
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCColors = isBinaryMC
-    ? getVersusColors((contract as any).answers)
+    ? (contract as MultiContract).answers.map(getAnswerColor)
     : undefined
 
   const binaryMCOutcome =

@@ -232,6 +232,8 @@ const getStonkCpmmProps = (initialProb: number, ante: number) => {
   return system
 }
 
+export const VERSUS_COLORS = ['#4e46dc', '#e9a23b']
+
 const getMultipleChoiceProps = (
   contractId: string,
   userId: string,
@@ -242,6 +244,11 @@ const getMultipleChoiceProps = (
   specialLiquidityPerAnswer?: number,
   answerLoverUserIds?: string[]
 ) => {
+  const isBinaryMulti =
+    addAnswersMode === 'DISABLED' &&
+    answers.length === 2 &&
+    shouldAnswersSumToOne
+
   const answersWithOther = answers.concat(
     !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
   )
@@ -253,7 +260,8 @@ const getMultipleChoiceProps = (
     ante,
     answersWithOther,
     specialLiquidityPerAnswer,
-    answerLoverUserIds
+    answerLoverUserIds,
+    isBinaryMulti ? VERSUS_COLORS : undefined
   )
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
@@ -268,6 +276,7 @@ const getMultipleChoiceProps = (
 
   return system
 }
+
 const getNumberProps = (
   contractId: string,
   userId: string,
@@ -307,7 +316,8 @@ function createAnswers(
   ante: number,
   answers: string[],
   specialLiquidityPerAnswer?: number,
-  answerLoverUserIds?: string[]
+  answerLoverUserIds?: string[],
+  colors?: string[]
 ) {
   const ids = answers.map(() => randomString())
 
@@ -353,6 +363,7 @@ function createAnswers(
       text,
       createdTime: now,
       loverUserId: answerLoverUserIds?.[i],
+      color: colors?.[i],
 
       poolYes,
       poolNo,

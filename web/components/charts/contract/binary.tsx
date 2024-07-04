@@ -23,7 +23,7 @@ import {
   SingleContractPoint,
 } from './single-value'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import { getVersusColors } from './choice'
+import { getAnswerColor } from './choice'
 import { HistoryPoint } from 'common/chart'
 import { Bet } from 'common/bet'
 import { SizedContainer } from 'web/components/sized-container'
@@ -201,7 +201,7 @@ export const MultiBinaryChart = (props: {
     mainBinaryMCAnswer.id
   )
 
-  const [bottom, top] = getVersusColors(contract.answers)
+  const [bottom, top] = contract.answers.map(getAnswerColor)
 
   const now = useMemo(() => Date.now(), [betPoints])
 

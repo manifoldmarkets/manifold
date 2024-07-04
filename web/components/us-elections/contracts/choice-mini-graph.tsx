@@ -45,7 +45,6 @@ export const ChoiceMiniGraph = (props: {
   const now = useMemo(() => Date.now(), [multiPoints])
 
   const data = useMemo(() => {
-    const answerOrder = answers.map((a) => a.text)
     const ret = {} as Record<
       string,
       { points: HistoryPoint<never>[]; color: string }
@@ -67,7 +66,7 @@ export const ChoiceMiniGraph = (props: {
           y: getAnswerProbability(contract, a.id),
         })
       }
-      const color = getAnswerColor(a, answerOrder)
+      const color = getAnswerColor(a)
       ret[a.id] = { points, color }
     })
 

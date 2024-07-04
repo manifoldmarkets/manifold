@@ -40,12 +40,7 @@ export const useChartPositions = (contract: Contract) => {
               (bet) => bet.createdTime >= time[0] && bet.createdTime < time[1]
             )
             const a = answers.find((a) => a.id === answerId)
-            const color = a
-              ? getAnswerColor(
-                  a,
-                  answers.map((a) => a.text)
-                )
-              : undefined
+            const color = a ? getAnswerColor(a) : undefined
             const firstBet = first(bets)
             const lastBet = last(bets)
             if (!firstBet || !lastBet) return undefined

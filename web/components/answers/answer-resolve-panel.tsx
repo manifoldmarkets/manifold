@@ -342,10 +342,7 @@ export function ResolutionAnswerItem(props: {
   const chosenShare =
     chosenProb && totalChosenProb ? chosenProb / totalChosenProb : 0
 
-  const color = getAnswerColor(
-    answer,
-    contract.answers.map((a) => a.id)
-  )
+  const color = getAnswerColor(answer)
 
   return (
     <AnswerBar
@@ -441,7 +438,7 @@ export const IndependentAnswersResolvePanel = (props: {
               key={answer.id}
               contract={contract}
               answer={answer}
-              color={getAnswerColor(answer, [])}
+              color={getAnswerColor(answer)}
               isAdmin={isAdmin}
             />
           ))}

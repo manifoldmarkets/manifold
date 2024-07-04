@@ -14,6 +14,7 @@ import {
   MAX_STONK_PROB,
   MIN_CPMM_PROB,
   MIN_STONK_PROB,
+  MultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -49,12 +50,12 @@ import LimitOrderPanel from './limit-order-panel'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { useUser } from 'web/hooks/use-user'
-import { getVersusColors } from '../charts/contract/choice'
 import { getFeeTotal } from 'common/fees'
 import { FeeDisplay } from './fees'
 import { floatingEqual } from 'common/util/math'
 import { getTierFromLiquidity } from 'common/tier'
 import { QuickLimitOrderButtons } from './quick-limit-order-buttons'
+import { getAnswerColor } from '../charts/contract/choice'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -222,7 +223,7 @@ export const BuyPanelBody = (props: {
 
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCColors = isBinaryMC
-    ? getVersusColors((contract as any).answers)
+    ? (contract as MultiContract).answers.map(getAnswerColor)
     : undefined
 
   const binaryMCOutcomeLabel =

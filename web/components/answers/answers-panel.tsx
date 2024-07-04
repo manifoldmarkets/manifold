@@ -30,7 +30,7 @@ import { Row } from 'web/components/layout/row'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
-import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
+import { getAnswerColor } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import {
   AddComment,
@@ -174,8 +174,6 @@ export function AnswersPanel(props: {
 
   const user = useUser()
 
-  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
-
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
@@ -296,7 +294,7 @@ export function AnswersPanel(props: {
                 (b) => b.answerId === answer.id
               )}
               expanded={selectedAnswerIds?.includes(answer.id)}
-              color={getAnswerColor(answer, answersArray)}
+              color={getAnswerColor(answer)}
               userBets={userBetsByAnswer[answer.id]}
               shouldShowLimitOrderChart={isAdvancedTrader}
             />
@@ -480,8 +478,6 @@ export function SimpleAnswerBars(props: {
 
   const moreCount = answers.length - displayedAnswers.length
 
-  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
-
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
@@ -503,7 +499,7 @@ export function SimpleAnswerBars(props: {
               key={answer.id}
               answer={answer}
               contract={contract}
-              color={getAnswerColor(answer, answersArray)}
+              color={getAnswerColor(answer)}
               barColor={barColor}
               shouldShowLimitOrderChart={
                 isAdvancedTrader && shouldShowLimitOrderChart

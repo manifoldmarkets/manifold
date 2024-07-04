@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/solid'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { Contract, MultiContract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { CommentView } from 'common/events'
 import { buildArray } from 'common/util/array'
 import { formatMoney, formatPercent } from 'common/util/format'
@@ -931,11 +931,7 @@ export function ContractCommentInput(props: {
           clearReply={clearReply}
         />
       ) : replyTo ? (
-        <CommentOnAnswer
-          answer={replyTo}
-          contract={contract as any}
-          clear={clearReply}
-        />
+        <CommentOnAnswer answer={replyTo} clear={clearReply} />
       ) : null}
 
       <CommentInput
@@ -1168,10 +1164,7 @@ export function CommentReplyHeader(props: {
   }
   if (answerOutcome && 'answers' in contract) {
     const answer = contract.answers.find((a) => a.id === answerOutcome)
-    if (answer)
-      return (
-        <CommentOnAnswer answer={answer} contract={contract as MultiContract} />
-      )
+    if (answer) return <CommentOnAnswer answer={answer} />
   }
 
   return null

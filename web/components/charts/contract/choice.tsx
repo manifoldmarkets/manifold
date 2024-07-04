@@ -70,21 +70,12 @@ const CHOICE_ANSWER_COLORS = [
   '#DBD56E',
 ]
 
-export const VERSUS_COLORS = ['#4e46dc', '#e9a23b']
-
 export const CHOICE_OTHER_COLOR = '#C2C3DB'
 
 export const nthColor = (index: number) =>
   CHOICE_ANSWER_COLORS[index % CHOICE_ANSWER_COLORS.length]
 
-export const getVersusColor = (answer: Answer) => {
-  return answer.color ?? VERSUS_COLORS[answer.index]
-}
-
-export const getVersusColors = (answers: Answer[]) =>
-  answers.map(getVersusColor)
-
-export function getAnswerColor(answer: Answer, answerIdOrder: string[]) {
+export function getAnswerColor(answer: Answer) {
   const index = answer.index
 
   if (answer.text === 'Democratic Party') return '#adc4e3'
@@ -94,9 +85,6 @@ export function getAnswerColor(answer: Answer, answerIdOrder: string[]) {
     ? CHOICE_OTHER_COLOR
     : 'color' in answer && answer.color
     ? answer.color
-    : answerIdOrder.length === 2 &&
-      answerIdOrder.every((name) => name != 'Other')
-    ? VERSUS_COLORS[index]
     : nthColor(index)
 }
 
@@ -160,7 +148,6 @@ export const ChoiceContractChart = (props: {
   const now = useMemo(() => Date.now(), [multiPoints])
 
   const data = useMemo(() => {
-    const answerOrder = answers.map((a) => a.text)
     const ret = {} as Record<
       string,
       { points: HistoryPoint<never>[]; color: string }
@@ -185,7 +172,7 @@ export const ChoiceContractChart = (props: {
           })
         }
 
-        const color = getAnswerColor(a, answerOrder)
+        const color = getAnswerColor(a)
         ret[a.id] = { points: [...startingPoints, ...additionalPoints], color }
       },
       [multiPoints]
