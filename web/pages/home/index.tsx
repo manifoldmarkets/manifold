@@ -43,6 +43,7 @@ export default function Home(props: { headlines: Headline[] }) {
         headlines={headlines}
         currentSlug={'home'}
         hideEmoji
+        notSticky
       />
       <DailyStats
         className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
