@@ -169,7 +169,12 @@ export const placeBetMain = async (
 
 export const fetchContractBetDataAndValidate = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
-  body: ValidatedAPIParams<'bet'> | ValidatedAPIParams<'multi-bet'>,
+  body: {
+    contractId: string
+    amount: number | undefined
+    answerId?: string
+    answerIds?: string[]
+  },
   uid: string,
   isApi: boolean
 ) => {
@@ -618,14 +623,15 @@ export const executeNewBetResult = async (
 export const validateBet = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
   uid: string,
-  amount: number,
+  amount: number | undefined,
   contract: Contract,
   isApi: boolean
 ) => {
   const user = await getUser(uid, pgTrans)
   if (!user) throw new APIError(404, 'User not found.')
 
-  if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
+  if (amount !== undefined && user.balance < amount)
+    throw new APIError(403, 'Insufficient balance.')
   if (
     (user.isBannedFromPosting || user.userDeleted) &&
     !BLESSED_BANNED_USER_IDS.includes(uid)
@@ -733,7 +739,7 @@ export const getRoundedLimitProb = (limitProb: number | undefined) => {
   return Math.round(limitProb * 100) / 100
 }
 
-const getMakerIdsFromBetResult = (result: NewBetResult) => {
+export const getMakerIdsFromBetResult = (result: NewBetResult) => {
   const { makers = [], otherBetResults = [], ordersToCancel = [] } = result
 
   const makerUserIds = [

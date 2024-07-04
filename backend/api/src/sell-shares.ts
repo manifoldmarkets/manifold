@@ -1,14 +1,19 @@
-import { mapValues, groupBy, sumBy } from 'lodash'
+import { mapValues, groupBy, sumBy, isEqual } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { removeUndefinedProps } from 'common/util/object'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
-import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
+import {
+  fetchContractBetDataAndValidate,
+  getMakerIdsFromBetResult,
+  getUserBalances,
+  updateMakers,
+} from './place-bet'
 import { removeUserFromContractFollowers } from 'shared/follow-market'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { onCreateBets } from 'api/on-create-bet'
-import { getContract, getUser, log } from 'shared/utils'
+import { log } from 'shared/utils'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import { incrementBalance } from 'shared/supabase/users'
@@ -17,14 +22,15 @@ import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
-import {
-  getAnswer,
-  getAnswersForContract,
-  updateAnswers,
-} from 'shared/supabase/answers'
+import { updateAnswers } from 'shared/supabase/answers'
 import { updateContract } from 'shared/supabase/contracts'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
 import { Bet, LimitBet } from 'common/bet'
+import { Answer } from 'common/answer'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -42,88 +48,67 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   auth
 ) => {
   const { contractId, shares, outcome, answerId } = props
-  const pg = createSupabaseDirectClient()
-  const contract = await getContract(pg, contractId)
-  if (!contract) throw new APIError(404, 'Contract not found.')
+  const userId = auth.uid
+  const isApi = auth.creds.kind === 'key'
+
+  const {
+    user,
+    contract,
+    answers,
+    balanceByUserId,
+    unfilledBets,
+    userBets,
+    unfilledBetUserIds,
+  } = await fetchSellSharesDataAndValidate(
+    createSupabaseDirectClient(),
+    contractId,
+    answerId,
+    userId,
+    isApi
+  )
+  const simulatedResult = calculateSellResult(
+    contract,
+    answers,
+    unfilledBets,
+    balanceByUserId,
+    answerId,
+    outcome,
+    shares,
+    userBets
+  )
+  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
+
+  const { mechanism, volume } = contract
 
   const result = await runShortTrans(async (pgTrans) => {
-    const user = await getUser(auth.uid, pgTrans)
-    if (!user) throw new APIError(401, 'Your account was not found')
-
     log(
-      `Checking for limit orders and bets in sellshares for user ${auth.uid} on contract id ${contractId}.`
+      `Inside main transaction sellshares for user ${userId} on contract id ${contractId}.`
     )
 
-    const isIndependentMulti =
-      contract.mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne
-
-    const [userBets, { unfilledBets, balanceByUserId }] = await Promise.all([
-      pgTrans.map(
-        `select * from contract_bets where user_id = $1 
-        and contract_id = $2
-        ${answerId ? 'and answer_id = $3' : ''}`,
-        [auth.uid, contract.id, answerId],
-        convertBet
-      ),
-      getUnfilledBetsAndUserBalances(
-        pgTrans,
-        contractId,
-        answerId && isIndependentMulti ? answerId : undefined
-      ),
+    // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
+    const balanceByUserId = await getUserBalances(pgTrans, [
+      userId,
+      ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
     ])
+    user.balance = balanceByUserId[userId]
 
-    const { closeTime, mechanism, volume } = contract
-
-    if (mechanism !== 'cpmm-1' && mechanism !== 'cpmm-multi-1')
-      throw new APIError(
-        403,
-        'You can only sell shares on cpmm-1 or cpmm-multi-1 contracts'
-      )
-    if (closeTime && Date.now() > closeTime)
-      throw new APIError(403, 'Trading is closed.')
-
-    const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
-    const betsByOutcome = groupBy(userBets, (bet) => bet.outcome)
-    const sharesByOutcome = mapValues(betsByOutcome, (bets) =>
-      sumBy(bets, (b) => b.shares)
-    )
-
-    let chosenOutcome: 'YES' | 'NO'
-    if (outcome != null) {
-      chosenOutcome = outcome
-    } else {
-      const nonzeroShares = Object.entries(sharesByOutcome).filter(
-        ([_k, v]) => !floatingEqual(0, v)
-      )
-      if (nonzeroShares.length == 0) {
-        throw new APIError(403, "You don't own any shares in this market.")
+    for (const userId of unfilledBetUserIds) {
+      if (!(userId in balanceByUserId)) {
+        // Assume other makers have infinite balance since they are not involved in this bet.
+        balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
       }
-      if (nonzeroShares.length > 1) {
-        throw new APIError(
-          400,
-          `You own multiple kinds of shares, but did not specify which to sell.`
-        )
-      }
-      chosenOutcome = nonzeroShares[0][0] as 'YES' | 'NO'
     }
 
-    const maxShares = sharesByOutcome[chosenOutcome]
-    const sharesToSell = shares ?? maxShares
-
-    if (!maxShares)
-      throw new APIError(
-        403,
-        `You don't have any ${chosenOutcome} shares to sell.`
-      )
-
-    if (!floatingLesserEqual(sharesToSell, maxShares))
-      throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
-
-    const soldShares = Math.min(sharesToSell, maxShares)
-    const saleFrac = soldShares / maxShares
-    let loanPaid = saleFrac * loanAmount
-    if (!isFinite(loanPaid)) loanPaid = 0
-
+    const newBetResult = calculateSellResult(
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId,
+      answerId,
+      outcome,
+      shares,
+      userBets
+    )
     const {
       newBet,
       newPool,
@@ -131,59 +116,22 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       makers,
       ordersToCancel,
       otherResultsWithBet,
-    } = await (async () => {
-      if (
-        mechanism === 'cpmm-1' ||
-        (mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne)
-      ) {
-        let answer
-        if (answerId) {
-          answer = await getAnswer(pgTrans, answerId)
-          if (!answer) {
-            throw new APIError(404, 'Answer not found')
-          }
-          if ('resolution' in answer && answer.resolution) {
-            throw new APIError(403, 'Answer is resolved and cannot be bet on')
-          }
-        }
-        return {
-          otherResultsWithBet: [],
-          ...getCpmmSellBetInfo(
-            soldShares,
-            chosenOutcome,
-            contract,
-            unfilledBets,
-            balanceByUserId,
-            loanPaid,
-            answer
-          ),
-        }
-      } else {
-        const answers = await getAnswersForContract(pgTrans, contractId)
-        const answer = answers.find((a) => a.id === answerId)
-        if (!answer) throw new APIError(404, 'Answer not found')
-        if (answers.length < 2)
-          throw new APIError(
-            403,
-            'Cannot bet until at least two answers are added.'
-          )
+      soldAllShares,
+    } = newBetResult
 
-        return {
-          newP: 0.5,
-          ...getCpmmMultiSellBetInfo(
-            contract,
-            answers,
-            answer,
-            soldShares,
-            chosenOutcome,
-            undefined,
-            unfilledBets,
-            balanceByUserId,
-            loanPaid
-          ),
-        }
-      }
-    })()
+    const actualMakerIds = getMakerIdsFromBetResult(newBetResult)
+    log(
+      'simulated makerIds',
+      simulatedMakerIds,
+      'actualMakerIds',
+      actualMakerIds
+    )
+    if (!isEqual(simulatedMakerIds, actualMakerIds)) {
+      throw new APIError(
+        503,
+        'Please try betting again. (Matched limit orders changed from simulated values.)'
+      )
+    }
 
     if (
       !newP ||
@@ -192,6 +140,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     ) {
       throw new APIError(403, 'Sale too large for current liquidity pool.')
     }
+
     const betGroupId = crypto.randomBytes(12).toString('hex')
 
     const allOrdersToCancel: LimitBet[] = []
@@ -203,7 +152,6 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       prob: number
     }[] = []
 
-    const isApi = auth.creds.kind === 'key'
     const apiFee = isApi ? FLAT_TRADE_FEE : 0
     await incrementBalance(pgTrans, user.id, {
       balance: -newBet.amount + (newBet.loanAmount ?? 0) - apiFee,
@@ -304,11 +252,10 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       fullBets,
       betId: betRow.bet_id,
       makers,
-      maxShares,
-      soldShares,
       contract,
       otherResultsWithBet,
       allOrdersToCancel,
+      soldAllShares,
     }
   })
 
@@ -316,15 +263,13 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     newBet,
     betId,
     makers,
-    maxShares,
-    soldShares,
+    soldAllShares,
     otherResultsWithBet,
     fullBets,
     allOrdersToCancel,
-    user,
   } = result
 
-  if (contract.mechanism === 'cpmm-1' && floatingEqual(maxShares, soldShares)) {
+  if (contract.mechanism === 'cpmm-1' && soldAllShares) {
     await removeUserFromContractFollowers(contractId, auth.uid)
   }
 
@@ -338,4 +283,168 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     )
   }
   return { result: { ...newBet, betId }, continue: continuation }
+}
+
+const fetchSellSharesDataAndValidate = async (
+  pgTrans: SupabaseTransaction | SupabaseDirectClient,
+  contractId: string,
+  answerId: string | undefined,
+  userId: string,
+  isApi: boolean
+) => {
+  const userBetsPromise = pgTrans.map(
+    `select * from contract_bets where user_id = $1 
+        and contract_id = $2
+        ${answerId ? 'and answer_id = $3' : ''}`,
+    [userId, contractId, answerId],
+    convertBet
+  )
+  const {
+    user,
+    contract,
+    answers,
+    balanceByUserId,
+    unfilledBets,
+    unfilledBetUserIds,
+  } = await fetchContractBetDataAndValidate(
+    pgTrans,
+    {
+      contractId,
+      amount: undefined,
+      answerId,
+    },
+    userId,
+    isApi
+  )
+  const userBets = await userBetsPromise
+
+  const { mechanism } = contract
+
+  if (mechanism !== 'cpmm-1' && mechanism !== 'cpmm-multi-1')
+    throw new APIError(
+      403,
+      'You can only sell shares on cpmm-1 or cpmm-multi-1 contracts'
+    )
+
+  return {
+    user,
+    contract,
+    answers,
+    balanceByUserId,
+    unfilledBets,
+    unfilledBetUserIds,
+    userBets,
+  }
+}
+
+const calculateSellResult = (
+  contract: MarketContract,
+  answers: Answer[] | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: Record<string, number>,
+  answerId: string | undefined,
+  outcome: 'YES' | 'NO' | undefined,
+  shares: number | undefined,
+  userBets: Bet[]
+) => {
+  const { mechanism } = contract
+
+  const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+  const betsByOutcome = groupBy(userBets, (bet) => bet.outcome)
+  const sharesByOutcome = mapValues(betsByOutcome, (bets) =>
+    sumBy(bets, (b) => b.shares)
+  )
+
+  let chosenOutcome: 'YES' | 'NO'
+  if (outcome != null) {
+    chosenOutcome = outcome
+  } else {
+    const nonzeroShares = Object.entries(sharesByOutcome).filter(
+      ([_k, v]) => !floatingEqual(0, v)
+    )
+    if (nonzeroShares.length == 0) {
+      throw new APIError(403, "You don't own any shares in this market.")
+    }
+    if (nonzeroShares.length > 1) {
+      throw new APIError(
+        400,
+        `You own multiple kinds of shares, but did not specify which to sell.`
+      )
+    }
+    chosenOutcome = nonzeroShares[0][0] as 'YES' | 'NO'
+  }
+
+  const maxShares = sharesByOutcome[chosenOutcome]
+  const sharesToSell = shares ?? maxShares
+
+  if (!maxShares)
+    throw new APIError(
+      403,
+      `You don't have any ${chosenOutcome} shares to sell.`
+    )
+
+  if (!floatingLesserEqual(sharesToSell, maxShares))
+    throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
+
+  const soldShares = Math.min(sharesToSell, maxShares)
+  const saleFrac = soldShares / maxShares
+  let loanPaid = saleFrac * loanAmount
+  if (!isFinite(loanPaid)) loanPaid = 0
+
+  const soldAllShares = floatingEqual(soldShares, maxShares)
+
+  let answer
+  if (
+    mechanism === 'cpmm-1' ||
+    (mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne)
+  ) {
+    if (answerId) {
+      answer = answers?.find((a) => a.id === answerId)
+      if (!answer) {
+        throw new APIError(400, 'Could not find answer ' + answerId)
+      }
+      if ('resolution' in answer && answer.resolution) {
+        throw new APIError(403, 'Answer is resolved and cannot be bet on')
+      }
+    }
+    return {
+      otherResultsWithBet: [],
+      soldAllShares,
+      ...getCpmmSellBetInfo(
+        soldShares,
+        chosenOutcome,
+        contract,
+        unfilledBets,
+        balanceByUserId,
+        loanPaid,
+        answer
+      ),
+    }
+  } else {
+    if (!answers) throw new APIError(404, 'Should have fetched answers...')
+
+    const answer = answers.find((a) => a.id === answerId)
+    if (!answer) throw new APIError(404, 'Answer not found')
+    if (answers.length < 2)
+      throw new APIError(
+        403,
+        'Cannot bet until at least two answers are added.'
+      )
+
+    return {
+      newP: 0.5,
+      soldAllShares,
+      ...getCpmmMultiSellBetInfo(
+        contract,
+        answers,
+        answer,
+        soldShares,
+        chosenOutcome,
+        undefined,
+        unfilledBets,
+        balanceByUserId,
+        loanPaid
+      ),
+    }
+  }
 }
