@@ -9,6 +9,7 @@ import { zip } from 'lodash'
 export const secrets = (
   [
     'API_SECRET',
+    'ANTHROPIC_API_KEY2',
     'DREAM_KEY',
     'MAILGUN_KEY',
     'OPENAI_API_KEY',

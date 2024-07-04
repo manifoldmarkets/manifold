@@ -10,6 +10,7 @@
   "sideEffects": false,
   "dependencies": {
     "@amplitude/node": "1.10.2",
+    "@anthropic-ai/sdk": "0.24.3",
     "@google-cloud/monitoring": "4.0.0",
     "@google-cloud/secret-manager": "4.2.1",
     "@stdlib/math-base-special-betaincinv": "0.2.1",
