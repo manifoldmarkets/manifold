@@ -20,28 +20,23 @@ if (require.main === module) {
 }
 
 const manicode = async (userPrompt: string) => {
-  const codeFiles = getOnlyCodeFiles()
-  console.log('Number of code files', codeFiles.length)
-
-  // Read the content of code-guide.md
-  const codeGuidePath = path.join(__dirname, '..', '..', 'code-guide.md')
-  const codeGuide = fs.readFileSync(codeGuidePath, 'utf8')
-
-  const system = `${codeGuide}
-    Here are all code files in our project:
-    ${codeFiles.join('\n')}`
-
   // First prompt to Claude: Ask which files to read
   const fileSelectionPrompt = `
-    The user has a coding question for you.
+    The user has a coding assignment for you.
 
     Can you answer the below prompt with:
     1. A description of what the user wants done.
     2. Your best summary of what strategy you will employ to implement it in code.
-    3. A list of which files (up to 20) would be most relevant to read or write to for providing an accurate response? Please list only the file paths, one per line. You will later respond in a second prompt with edits to make to these files (or what new files to create), so choose the files wisely.
+    3. A list of which files (up to 20) would be most relevant to read or write to for providing an accurate response. Please list only the file paths, one per line. You will later respond in a second prompt with edits to make to these files (or what new files to create), so choose the files wisely.
 
     User's request: ${userPrompt}
     `
+
+  const system = getSystemPrompt()
+  
+  // Save the system prompt to a file
+  // const systemPromptFilePath = path.join(__dirname, 'system-prompt.md')
+  // fs.writeFileSync(systemPromptFilePath, system, 'utf8')
 
   const fileSelectionResponse = await promptClaudeWithProgress(
     fileSelectionPrompt,
@@ -138,6 +133,37 @@ async function promptClaudeWithProgress(prompt: string, options: any) {
   }
 }
 
+function getSystemPrompt() {
+  const codeFiles = getOnlyCodeFiles()
+  console.log('Number of code files', codeFiles.length)
+
+  const manifoldInfoPath = path.join(__dirname, '..', '..', 'manifold-info.md')
+  const manifoldInfo = fs.readFileSync(manifoldInfoPath, 'utf8')
+
+  const codeGuidePath = path.join(__dirname, '..', '..', 'code-guide.md')
+  const codeGuide = fs.readFileSync(codeGuidePath, 'utf8')
+
+  const apiSchemaFile = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'common', 'src', 'api', 'schema.ts'),
+    'utf8'
+  )
+
+  const apiGuide = `
+  Here's our API schema. Each key-value pair in the below object corresponds to an endpoint.
+
+E.g. 'comment' can be accessed at \`api.manifold.markets/v0/comment\`. If 'visibility' is 'public', then you need the '/v0', otherwise, you should omit the version. However, you probably don't need the url, you can use our library function \`api('comment', props)\`, or \`useAPIGetter('comment', props)\`
+  ${apiSchemaFile}`
+
+  return `${manifoldInfo}
+
+  ${codeGuide}
+
+    ${apiGuide}
+
+    Here are all the code files in our project:
+    ${codeFiles.join('\n')}`
+}
+
 // Function to load file names of every file in the project
 function loadAllProjectFiles(projectRoot: string): string[] {
   const allFiles: string[] = []
@@ -155,7 +181,7 @@ function loadAllProjectFiles(projectRoot: string): string[] {
             allFiles.push(filePath)
           }
         } catch (error: any) {
-          console.warn(`Skipping ${filePath}: ${error.message}`)
+          // do nothing
         }
       })
     } catch (error: any) {
