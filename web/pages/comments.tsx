@@ -21,7 +21,7 @@ export default function CommentsPage() {
         className={'p-2'}
         tabs={[
           {
-            title: `Claude's favorites`,
+            title: `GPT4-o's favorites`,
             content: <Comments justLikes={false} key={'claude'} />,
           },
           {
