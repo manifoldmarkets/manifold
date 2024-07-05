@@ -312,6 +312,16 @@ export function broadcastUpdatedAnswers(
 }
 ```
 
+We have our scripts in the directory `backend/scripts`.
+
+We have a helper called `runScript` that automatically fetches any secret keys and loads them into process.env.
+
+We recommend running scripts via `ts-node`.
+
+```sh
+ts-node manicode.ts "Generate a page called cowp, which has cows that make noises!"
+```
+
 Here's our API schema. Each key-value pair in the below object corresponds to an endpoint.
 
 E.g. 'comment' can be accessed at `api.manifold.markets/v0/comment`. If 'visibility' is 'public', then you need the '/v0', otherwise, you should omit the version. However, you probably don't need the url, you can use our library function `api('comment', props)`, or `useAPIGetter('comment', props)`

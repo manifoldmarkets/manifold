@@ -5,28 +5,34 @@ import { runScript } from 'run-script'
 import { promptClaude } from 'shared/helpers/claude'
 import { filterDefined } from 'common/util/array'
 
-if (require.main === module)
+if (require.main === module) {
   runScript(async () => {
-    const codeFiles = getOnlyCodeFiles()
-    console.log('Number of code files', codeFiles.length)
+    const userPrompt = process.argv[2]
+    // E.g.:
+    // I want to create a new page which shows off what's happening on manifold right now. Can you use our websocket api to get recent bets on markets and illustrate what's happening in a compelling and useful way?
+    if (!userPrompt) {
+      console.log('Please provide a prompt on what code to change.')
+      return
+    }
 
-    // Read the content of code-guide.md
-    const codeGuidePath = path.join(__dirname, '..', '..', 'code-guide.md')
-    const codeGuide = fs.readFileSync(codeGuidePath, 'utf8')
+    await manicode(userPrompt)
+  })
+}
 
-    const system = `${codeGuide}
+const manicode = async (userPrompt: string) => {
+  const codeFiles = getOnlyCodeFiles()
+  console.log('Number of code files', codeFiles.length)
+
+  // Read the content of code-guide.md
+  const codeGuidePath = path.join(__dirname, '..', '..', 'code-guide.md')
+  const codeGuide = fs.readFileSync(codeGuidePath, 'utf8')
+
+  const system = `${codeGuide}
     Here are all code files in our project:
     ${codeFiles.join('\n')}`
 
-    const userPrompt =
-      process.argv[2] ||
-      `
-    I want to create a new page which shows off what's happening on manifold right now. Can you use our websocket api to get recent bets on markets and illustrate what's happening in a compelling and useful way?
-    Tell me what file to create and what code to put in it.
-    `
-
-    // First prompt to Claude: Ask which files to read
-    const fileSelectionPrompt = `
+  // First prompt to Claude: Ask which files to read
+  const fileSelectionPrompt = `
     The user has a coding question for you.
 
     Can you answer the below prompt with:
@@ -37,27 +43,29 @@ if (require.main === module)
     User's request: ${userPrompt}
     `
 
-    const fileSelectionResponse = await promptClaude(fileSelectionPrompt, {
+  const fileSelectionResponse = await promptClaudeWithProgress(
+    fileSelectionPrompt,
+    {
       system,
+    }
+  )
+  console.log(fileSelectionResponse)
+  const filesToRead = fileSelectionResponse.trim().split('\n')
+
+  // Read the content of selected files
+  const fileContents = filterDefined(
+    filesToRead.map((file) => {
+      const filePath = path.join(__dirname, '..', '..', file)
+      try {
+        return `File: ${file}\n\n${fs.readFileSync(filePath, 'utf8')}`
+      } catch (error) {
+        return undefined
+      }
     })
-    const filesToRead = fileSelectionResponse.trim().split('\n')
+  ).join('\n\n')
 
-    // Read the content of selected files
-    const fileContents = filterDefined(
-      filesToRead.map((file) => {
-        const filePath = path.join(__dirname, '..', '..', file)
-        try {
-          return `File: ${file}\n\n${fs.readFileSync(filePath, 'utf8')}`
-        } catch (error) {
-          return undefined
-        }
-      })
-    ).join('\n\n')
-
-    console.log('got files to read', fileContents.length, 'chars')
-
-    // Second prompt to Claude: Answer the user's question
-    const finalPrompt = `
+  // Second prompt to Claude: Answer the user's question
+  const finalPrompt = `
     The user has a coding question for you.
 
     Can you answer the below prompt with:
@@ -89,33 +97,46 @@ if (require.main === module)
     User: ${userPrompt}
     `
 
-    const finalResponse = await promptClaude(finalPrompt, { system })
+  const finalResponse = await promptClaudeWithProgress(finalPrompt, { system })
 
-    console.log("Claude's response:")
-    console.log(finalResponse)
+  console.log(finalResponse)
 
-    // Parse the response and write files
-    const fileRegex = /File: (.+?)\n([\s\S]+?)(?=\n\nFile:|$)/g
-    let match
+  // Parse the response and write files
+  const fileRegex = /File: (.+?)\n([\s\S]+?)(?=\n\nFile:|$)/g
+  let match
 
-    while ((match = fileRegex.exec(finalResponse)) !== null) {
-      const [, filePath, fileContent] = match
-      const fullPath = path.join(__dirname, '..', '..', filePath.trim())
+  while ((match = fileRegex.exec(finalResponse)) !== null) {
+    const [, filePath, fileContent] = match
+    const fullPath = path.join(__dirname, '..', '..', filePath.trim())
 
-      try {
-        // Ensure the directory exists
-        fs.mkdirSync(path.dirname(fullPath), { recursive: true })
+    try {
+      // Ensure the directory exists
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true })
 
-        // Write the file content, creating the file if it doesn't exist
-        fs.writeFileSync(fullPath, fileContent.trim(), { flag: 'w' })
-        console.log(
-          `Successfully wrote to ${filePath} (created if it didn't exist)`
-        )
-      } catch (error) {
-        console.error(`Error writing to ${filePath}:`, error)
-      }
+      // Write the file content, creating the file if it doesn't exist
+      fs.writeFileSync(fullPath, fileContent.trim(), { flag: 'w' })
+      console.log(
+        `Successfully wrote to ${filePath} (created if it didn't exist)`
+      )
+    } catch (error) {
+      console.error(`Error writing to ${filePath}:`, error)
     }
-  })
+  }
+}
+
+async function promptClaudeWithProgress(prompt: string, options: any) {
+  process.stdout.write('Thinking')
+  const progressInterval = setInterval(() => {
+    process.stdout.write('.')
+  }, 500)
+
+  try {
+    const response = await promptClaude(prompt, options)
+    return response
+  } finally {
+    clearInterval(progressInterval)
+  }
+}
 
 // Function to load file names of every file in the project
 function loadAllProjectFiles(projectRoot: string): string[] {
@@ -156,10 +177,13 @@ function getOnlyCodeFiles() {
     'twitch-bot',
     'discord-bot',
   ]
+  const includedFiles = ['manicode.ts', 'backfill-unique-bettors-day.ts']
   const allProjectFiles = loadAllProjectFiles(projectRoot)
     .filter((file) => codeDirs.some((dir) => file.includes(dir)))
     .filter(
-      (file) => !excludedDirs.some((dir) => file.includes('/' + dir + '/'))
+      (file) =>
+        !excludedDirs.some((dir) => file.includes('/' + dir + '/')) ||
+        includedFiles.some((name) => file.endsWith(name))
     )
     .filter((file) => file.endsWith('.ts') || file.endsWith('.tsx'))
     .filter((file) => !file.endsWith('.d.ts'))
