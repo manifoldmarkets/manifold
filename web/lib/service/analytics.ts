@@ -172,6 +172,11 @@ function insertUserEvent(
         })
       )
     }
+  } else if (name === 'view good comment' && contractId && commentId) {
+    return api('record-comment-view', {
+      contractId,
+      commentId,
+    })
   }
   return run(
     db.from('user_events').insert({

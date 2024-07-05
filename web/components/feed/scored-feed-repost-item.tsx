@@ -181,7 +181,7 @@ export const ScoredFeedRepost = memo(function (props: {
   )
 })
 
-const BottomActionRow = (props: {
+export const BottomActionRow = (props: {
   contract: Contract
   comment: ContractComment
   user: User | null | undefined

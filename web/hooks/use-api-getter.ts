@@ -10,7 +10,8 @@ const promiseCache: Record<string, Promise<any> | undefined> = {}
 export const useAPIGetter = <P extends APIPath>(
   path: P,
   props: APIParams<P> | undefined,
-  ingoreDependencies?: string[]
+  ingoreDependencies?: string[],
+  overrideKey?: string
 ) => {
   const propsString = JSON.stringify(props)
   const propsStringToTriggerRefresh = JSON.stringify(
@@ -19,7 +20,7 @@ export const useAPIGetter = <P extends APIPath>(
 
   const [data, setData] = usePersistentInMemoryState<
     APIResponse<P> | undefined
-  >(undefined, `${path}`)
+  >(undefined, `${overrideKey ?? path}`)
 
   const key = `${path}-${propsString}-error`
   const [error, setError] = usePersistentInMemoryState<APIError | undefined>(
