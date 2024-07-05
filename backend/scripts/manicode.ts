@@ -66,8 +66,17 @@ const manicode = async (userPrompt: string) => {
     Can you answer the below prompt with:
     1. A description of what the user wants done.
     2. Your best summary of what strategy you will employ to implement it in code (keep it simple!).
-    3. Please end your message with a list of files and their entire contents that you want changed. You can create new files or modify existing files. You must provide the full contents of the files you want changed, because we are replacing the files with your response. Do not write anything like the props are unchanged or the helper fuctions are unchanged.
-    For the files, please put one line for the filepath and then put the contents.
+    3. Please end your message with a list of files and the specific edits you want to make.
+     For creating new files or replacing an existing file, provide the file path and then the contents on a new line, ending with a new line and the single word "END".
+     For editing exsiting files, provide:
+       - The file path
+       - The lines to be replaced (exactly as they appear in the file)
+       - The keyword "REPLACED BY" on a new line
+       - The new lines to insert
+       - The keyword "END" on a new line after the new lines
+    
+    You should only provide one edit per listed file. If you want to make more edits to a file, repeat the file path again along with the replacement instructions.
+
 
     Here is an example response:
     <example>
@@ -75,14 +84,37 @@ const manicode = async (userPrompt: string) => {
     2. We should [... insert answer]
     3. Files to modify:
 
+    File: web/components/new-component.tsx
+
+    export const NewComponent = () => 'Hello world!'
+    
+    END
+
+    File: web/components/example.tsx
+
+    console.log('Old line 1');
+
+    console.log('Old line 2');
+    REPLACED BY
+    console.log('New line 1');
+
+    console.log('New line 2');
+    console.log('New line 3');
+    END
+
     File: web/pages/live-activity.tsx
 
     console.log('Hello world 1!')
+    REPLACED BY
     console.log('Hello world 2!')
+    END
 
-    File: web/pages/home.tsx
+    File: web/pages/live-activity.tsx
 
-    console.log('Hello home!')
+    console.log('Hello world 3!')
+    REPLACED BY
+    console.log('Hello world 4!')
+    END
     </example>
 
     Ok, here are the contents of some relevant files:
@@ -97,23 +129,37 @@ const manicode = async (userPrompt: string) => {
 
   console.log(finalResponse)
 
-  // Parse the response and write files
-  const fileRegex = /File: (.+?)\n([\s\S]+?)(?=\n\nFile:|$)/g
+  // Parse the response and apply edits
+  const editRegex = /File: (.+?)\n([\s\S]+?)(?:\nREPLACED BY\n([\s\S]+?))?(?=\nEND\n|$)/g
   let match
 
-  while ((match = fileRegex.exec(finalResponse)) !== null) {
-    const [, filePath, fileContent] = match
+  while ((match = editRegex.exec(finalResponse)) !== null) {
+    const [, filePath, oldContent, newContent] = match
     const fullPath = path.join(__dirname, '..', '..', filePath.trim())
 
     try {
       // Ensure the directory exists
       fs.mkdirSync(path.dirname(fullPath), { recursive: true })
 
-      // Write the file content, creating the file if it doesn't exist
-      fs.writeFileSync(fullPath, fileContent.trim(), { flag: 'w' })
-      console.log(`Successfully wrote to ${filePath}`)
+      if (newContent) {
+        // This is an edit to an existing file
+        let fileContent = fs.existsSync(fullPath) ? fs.readFileSync(fullPath, 'utf8') : ''
+
+        // Replace the old content with the new content
+        const trimmedOldContent = oldContent.trim()
+        const trimmedNewContent = newContent.trim()
+        fileContent = fileContent.replace(trimmedOldContent, trimmedNewContent)
+
+        // Write the updated content back to the file
+        fs.writeFileSync(fullPath, fileContent, 'utf8')
+        console.log(`Successfully applied edit to ${filePath}`)
+      } else {
+        // This is a new file
+        fs.writeFileSync(fullPath, oldContent.trim(), 'utf8')
+        console.log(`Successfully set file ${filePath}`)
+      }
     } catch (error) {
-      console.error(`Error writing to ${filePath}:`, error)
+      console.error(`Error applying edit to ${filePath}:`, error)
     }
   }
 }

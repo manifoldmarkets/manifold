@@ -1,12 +1,48 @@
 Hello this is a short guide to coding on Manifold! It was written to provide context to Claude, so he can know how to code for us.
 
-Here's an example component in our style:
+Our code is all Typescript and split into a few packages. At the top level, there are 3 code directories:
+- common
+- web
+- backend
+
+Common has lots of type definitions for our data structures, like Contract and User. It also contains many useful utility functions. We try not to add package dependencies to common.
+
+Code that lives in common can be imported into either web or backend. However, code within backend should not be imported into web, and code within web should not be imported into backend.
+
+Web contains our front end code in React and Next.js. We use tailwind for styling.
+
+Web can be broken down into
+- pages
+- components
+- hooks
+- lib
+
+Pages define the routes and what is visible on each.
+Components have reusable react components organized by which feature uses them (e.g. bet subdirectory contains components for betting), or by their function (e.g. buttons subdirectory contains a variety of buttons).
+Hooks contain react hooks used across components. We often define several related hooks in one file. For example, use-bets.ts has `useBetsOnce`, `useContractBets`, `useSubscribeGlobalBets`, and a few others.
+Lib has common utility functions specific to the client as well as the service layer to communicate with our api, and authentication.
+
+The backend is further split into:
+- shared
+- api
+- scheduler
+- scripts
+
+Shared has common utility and database functions used across the other directories.
+Api defines all the endpoints of our server.
+Scheduler is an independent sever that runs our chron jobs (tasks that execute on a time interval).
+Scripts contains one-off bits of code that we run for a specific purpose.
+
+Each can import from shared and api. Scheduler and scripts should not be referenced, except internally. None of these should import from web.
+
+Here's an example component from web in our style:
 
 ```ts
 import clsx from 'clsx'
+import Link from 'next/link'
+
 import { isAdminId, isModId } from 'common/envs/constants'
 import { type Headline } from 'common/news'
-import Link from 'next/link'
 import { EditNewsButton } from 'web/components/news/edit-news-button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { useUser } from 'web/hooks/use-user'
@@ -52,6 +88,8 @@ export function HeadlineTabs(props: {
   )
 }
 ```
+
+We prefer to have many smaller components that each represent one logical unit, rather than one very large component that does everything. Then we compose and reuse the components.
 
 It's best to export the main component at the top of the file. We also try to name the component the same as the file name (headline-tabs.tsx) so that it's easy to find.
 
@@ -317,7 +355,7 @@ Example from `backend/scripts/manicode.ts`
 import { runScript } from 'run-script'
 
 if (require.main === module) {
-  runScript(async () => {
+  runScript(async ({ pg }) => {
     const userPrompt = process.argv[2]
     // E.g.:
     // I want to create a new page which shows off what's happening on manifold right now. Can you use our websocket api to get recent bets on markets and illustrate what's happening in a compelling and useful way?
@@ -326,7 +364,7 @@ if (require.main === module) {
       return
     }
 
-    await manicode(userPrompt)
+    await manicode(pg, userPrompt)
   })
 }
 ```
@@ -387,3 +425,57 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   ...
 }
 ```
+
+We have two ways to access our postgres database.
+
+```ts
+const pg = createSupabaseDirectClient()
+```
+
+and
+
+```ts
+const db = createSupabaseClient()
+```
+
+The first (createSupabaseDirectClient) lets us specify sql strings to run directly on our database, using the pg-promise library. The client (code in web) does not have permission to do this.
+
+Example using the direct client:
+```
+export const getUniqueBettorIds = async (
+  contractId: string,
+  pg: SupabaseDirectClient
+) => {
+  const res = await pg.manyOrNone(
+    `
+      select
+          distinct user_id
+      from contract_bets
+        where contract_id = $1`,
+    [contractId]
+  )
+  return res.map((r) => r.user_id as string)
+}
+```
+
+We are deprecating the latter approach (createSupabaseClient), so avoid using it entirely for new code. It uses postgREST, a rest api that is turned into sql. The client can also use this to connect directly to our database. The recommended path is to instead create an endpoint on our server, and have that use the supabase direct client to return data to the client.
+
+Example using supabase client:
+```
+export const getContractIdFromSlug = async (
+  db: SupabaseClient,
+  slug?: string
+) => {
+  if (!slug) return undefined
+
+  const { data, error } = await db
+    .from('contracts')
+    .select('id')
+    .eq('slug', slug)
+    .single()
+
+  if (error) throw new APIError(404, `Contract with slug ${slug} not found`)
+  return data.id
+}
+```
+
