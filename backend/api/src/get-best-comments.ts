@@ -64,33 +64,6 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
       .filter(([_, score]) => score > 0.5)
       .map(([groupId, _]) => groupId)
 
-    const tastyCommentIds = [
-      'qlqkhe9ubxh',
-      'bs8bosj4upc',
-      'berl2gp0359',
-      'k8dq25hmxl',
-      '275vda80j8n',
-      '0wv0naxye9om',
-      'bdw790uowdt',
-      'dnvvl1l36sa',
-      '3hn3hdokb1o',
-      '1ofGWIzbxMzEDBmkwTMj',
-      '0cd09bnhr68',
-      '3uzylixbmq8',
-    ]
-    const likedComments = await pg.map(
-      `
-          select contracts.question, cc.data as comment
-          from contract_comments cc
-                   join contracts on cc.contract_id = contracts.id
-          where cc.comment_id in ($1:list)
-      `,
-      [tastyCommentIds],
-      (row) => ({
-        question: row.question,
-        comment: convertContractComment(row.comment),
-      })
-    )
     recentComments = await pg.map(
       `
           select distinct on (cc.created_time) cc.data, c.question
@@ -99,7 +72,6 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
                    join group_contracts gc on c.id = gc.contract_id
           where cc.created_time >= now() - interval '1 month'
             and gc.group_id in (select unnest(array [$1]))
-            and cc.comment_id not in ($2:list)
             and cc.data ->> 'replyToCommentId' is null
             and cc.data ->> 'betId' is null
             and cc.data ->> 'answerOutcome' is null
@@ -108,15 +80,14 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
             and ($3 is null or c.id not in ($3:list))
             and cc.comment_id not in (select comment_id
                                       from user_comment_view_events
-                                      where user_id = $4)
+                                      where user_id = $2)
           order by cc.created_time desc
           limit 100;
       `,
       [
         interestedTopics,
-        likedComments.map((c) => c.comment.id),
-        ignoreContractIds?.length ? ignoreContractIds : null,
         userId,
+        ignoreContractIds?.length ? ignoreContractIds : null,
       ],
       (row) => ({
         comment: convertContractComment(row.data),
@@ -139,25 +110,10 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
     }
 
     const content = `
-      Hello Claude, I am a user of Manifold. Manifold is a prediction market platform where
+      I am a user of Manifold. Manifold is a prediction market platform where
       users place bets on on current events, politics, tech, sports, AI, and more.
-      I'm going to give you a sample of comments on questions that I liked. They may include some
-      comments that you can safely ignore, like: 'This resolves NO, the event has happened' for example.
-      Next, I'll give you some other comments with their questions attached that I would like
-      to rank in order of quality. Here are the comments I liked:
-      ${likedComments
-        .map(
-          (c) =>
-            `\n----\n
-            Question: ${c.question}\n
-            Comment: ${parseJsonContentToText(c.comment.content)} 
-            \n----`
-        )
-        .join('\n')}
-      \n\n
-      Now here are some other comments that I would like you to rank in order of quality.
-      Evaluate quality based on their informativeness relevant to the question, cogent analysis, and whatever
-      else you might think is important based on my previous likes, (it could be humor!). 
+      I have some comments that I would like you to rank in order of descending quality.
+      Evaluate quality based on their informativeness relevant to the question, cogent analysis, and optionally humor. 
       Please ignore short, meme-y comments like:
       "Buy low, sell high", "Buy my bags", "what were y'all thinking?", just a link without any commentary, etc. 
       Also ignore nuts-and-bolds comments like:
@@ -181,9 +137,8 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
           \n----\n`
         )
         .join('\n')}
-      Please pick no more than 2-3 comments per unique question title, evaluate quality
-      based on their informativeness relevant to the question, cogent analysis, and whatever
-      else you might think is important based on my previous likes, (it could be humor!). 
+      Please pick no more than 2-3 comments per unique question title, and evaluate
+      quality based on their informativeness relevant to the question, cogent analysis, and optionally humor. 
       Remember, ignore short or meme-y comments like:
       "Buy low, sell high", "I'm holding onto my YES bags", "what were people/you all thinking?", etc. 
       Also ignore nuts-and-bolds comments like:
