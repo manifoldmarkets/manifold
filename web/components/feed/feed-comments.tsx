@@ -70,9 +70,10 @@ import { BiRepost } from 'react-icons/bi'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { RepostModal } from 'web/components/comments/repost-modal'
 import { TiPin } from 'react-icons/ti'
-import Router from 'next/router'
 import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import Link from 'next/link'
+import { PiPushPinBold } from 'react-icons/pi'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -283,13 +284,6 @@ export const FeedComment = memo(function FeedComment(props: {
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
   const isBetParent = !!bets?.length
-  const handleContextClick = () => {
-    const commentId = comment.id
-
-    const currentUrl = window.location.href
-    const newUrl = currentUrl.split('#')[0] + `#${commentId}`
-    Router.push(newUrl)
-  }
 
   useEffect(() => {
     if (highlighted && ref.current) {
@@ -358,31 +352,17 @@ export const FeedComment = memo(function FeedComment(props: {
               : 'bg-canvas-50'
           )}
         >
-          <Row className="items-center justify-between">
-            <FeedCommentHeader
-              comment={comment}
-              updateComment={updateComment}
-              contract={contract}
-              inTimeline={inTimeline}
-              isParent={isParent}
-            />
-
-            {isPinned && <TiPin className="text-ink-500 text-lg" />}
-          </Row>
+          <FeedCommentHeader
+            comment={comment}
+            updateComment={updateComment}
+            contract={contract}
+            inTimeline={inTimeline}
+            isParent={isParent}
+            isPinned={isPinned}
+          />
 
           <HideableContent comment={comment} />
-          <Row className="flex-wrap items-start">
-            {isPinned && (
-              <div className="self-end">
-                <a
-                  className="ml-1 text-xs text-gray-400 hover:text-indigo-400 hover:underline"
-                  href={`#${comment.id}`}
-                  onClick={handleContextClick}
-                >
-                  View original context
-                </a>
-              </div>
-            )}
+          <Row>
             {children}
             <CommentActions
               onReplyClick={onReplyClick}
@@ -486,6 +466,15 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       isPinned={isPinned}
       showParentLine={seeReplies && numReplies > 0}
     >
+      {isPinned && (
+        <Link
+          className="self-center text-xs text-gray-400 hover:text-indigo-400 hover:underline"
+          href={`#${comment.id}`}
+        >
+          View original context
+        </Link>
+      )}
+
       <div ref={ref} />
 
       <ReplyToggle
@@ -617,7 +606,7 @@ export function DotMenu(props: {
           },
           (isMod || isContractCreator) && {
             name: comment.pinned ? 'Unpin' : 'Pin',
-            icon: '📌',
+            icon: <PiPushPinBold className="text-primary-500 h-5 w-5" />,
             onClick: async () => {
               const commentPath = `contracts/${contract.id}/comments/${comment.id}`
               const wasPinned = comment.pinned
@@ -962,8 +951,9 @@ export function FeedCommentHeader(props: {
   updateComment?: (comment: Partial<ContractComment>) => void
   inTimeline?: boolean
   isParent?: boolean
+  isPinned?: boolean
 }) {
-  const { comment, updateComment, contract, inTimeline } = props
+  const { comment, updateComment, contract, inTimeline, isPinned } = props
   const {
     userUsername,
     userName,
@@ -988,92 +978,87 @@ export function FeedCommentHeader(props: {
   const commenterIsBettor = commenterAndBettorMatch(comment)
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
   return (
-    <Col className={clsx('text-ink-600 text-sm ')}>
+    <Col className={clsx('text-ink-600 text-sm')}>
       <Row className="justify-between">
-        <Row className=" gap-1">
-          <span>
-            <UserHovercard userId={userId}>
-              <UserLink
-                user={{
-                  id: userId,
-                  name: userName,
-                  username: userUsername,
-                }}
-                marketCreator={inTimeline ? false : marketCreator}
-                className={'font-semibold'}
+        <Row className="gap-1">
+          <UserHovercard userId={userId}>
+            <UserLink
+              user={{
+                id: userId,
+                name: userName,
+                username: userUsername,
+              }}
+              marketCreator={inTimeline ? false : marketCreator}
+              className={'font-semibold'}
+            />
+          </UserHovercard>
+          {!commenterIsBettor || !isReplyToBet ? null : isLimitBet ? (
+            <span className={'ml-1'}>
+              {betAmount === betOrderAmount ? 'filled' : 'opened'} a{' '}
+              <span className="text-ink-1000">
+                {formatMoney(betOrderAmount)}
+              </span>{' '}
+              <OutcomeLabel
+                outcome={betOutcome ? betOutcome : ''}
+                answerId={betAnswerId}
+                contract={contract}
+                truncate="short"
+              />{' '}
+              at {formatPercent(betLimitProb)} order
+            </span>
+          ) : (
+            <span>
+              {bought} <span className="text-ink-1000">{money}</span>{' '}
+              <OutcomeLabel
+                outcome={betOutcome ? betOutcome : ''}
+                answerId={betAnswerId}
+                contract={contract}
+                truncate="short"
               />
-            </UserHovercard>
-            {!commenterIsBettor || !isReplyToBet ? null : isLimitBet ? (
-              <span className={'ml-1'}>
-                {betAmount === betOrderAmount ? 'filled' : 'opened'} a{' '}
-                <span className="text-ink-1000">
-                  {formatMoney(betOrderAmount)}
-                </span>{' '}
-                <OutcomeLabel
-                  outcome={betOutcome ? betOutcome : ''}
-                  answerId={betAnswerId}
-                  contract={contract}
-                  truncate="short"
-                />{' '}
-                at {formatPercent(betLimitProb)} order
-              </span>
-            ) : (
-              <>
-                {' '}
-                {bought} <span className="text-ink-1000">{money}</span>{' '}
-                <OutcomeLabel
-                  outcome={betOutcome ? betOutcome : ''}
-                  answerId={betAnswerId}
-                  contract={contract}
-                  truncate="short"
-                />
-              </>
-            )}
-            {isRepost && !inTimeline && (
-              <span className="ml-1">
-                <Tooltip text={'Reposted to followers'}>
-                  <BiRepost className=" inline h-4 w-4" />
-                  {commenterIsBettor ? '' : ' reposted'}
-                </Tooltip>
-              </span>
-            )}
-            {/* Hide my status if replying to a bet, it's too much clutter*/}
-            {!isReplyToBet && !inTimeline && (
-              <span className="text-ink-500 ml-1">
-                <CommentStatus contract={contract} comment={comment} />
-                {bought} {money}
-                {shouldDisplayOutcome && (
-                  <>
-                    {' '}
-                    of{' '}
-                    <OutcomeLabel
-                      outcome={betOutcome ? betOutcome : ''}
-                      answerId={betAnswerId}
-                      contract={contract}
-                      truncate="short"
-                    />
-                  </>
-                )}
-              </span>
-            )}
-            {editedTime ? (
-              <CommentEditHistoryButton comment={comment} />
-            ) : (
-              <CopyLinkDateTimeComponent
-                prefix={contract.creatorUsername}
-                slug={contract.slug}
-                createdTime={editedTime ? editedTime : createdTime}
-                elementId={comment.id}
-                size={'sm'}
-                linkClassName="text-ink-500"
-              />
-            )}
-            {!inTimeline && isApi && (
-              <InfoTooltip text="Placed via API" className="mx-1">
-                🤖
-              </InfoTooltip>
-            )}
-          </span>
+            </span>
+          )}
+          {isRepost && !inTimeline && (
+            <span>
+              <Tooltip text={'Reposted to followers'}>
+                <BiRepost className=" inline h-4 w-4" />
+                {commenterIsBettor ? '' : ' reposted'}
+              </Tooltip>
+            </span>
+          )}
+          {/* Hide my status if replying to a bet, it's too much clutter*/}
+          {!isReplyToBet && !inTimeline && (
+            <span className="text-ink-500">
+              <CommentStatus contract={contract} comment={comment} />
+              {bought} {money}
+              {shouldDisplayOutcome && (
+                <>
+                  {' '}
+                  of{' '}
+                  <OutcomeLabel
+                    outcome={betOutcome ? betOutcome : ''}
+                    answerId={betAnswerId}
+                    contract={contract}
+                    truncate="short"
+                  />
+                </>
+              )}
+            </span>
+          )}
+          {editedTime ? (
+            <CommentEditHistoryButton comment={comment} />
+          ) : (
+            <CopyLinkDateTimeComponent
+              prefix={contract.creatorUsername}
+              slug={contract.slug}
+              createdTime={editedTime ? editedTime : createdTime}
+              elementId={comment.id}
+              size={'sm'}
+              linkClassName="text-ink-500"
+            />
+          )}
+          {!inTimeline && isApi && (
+            <InfoTooltip text="Placed via API">🤖</InfoTooltip>
+          )}
           {!inTimeline && updateComment && (
             <DotMenu
               updateComment={updateComment}
@@ -1082,11 +1067,14 @@ export function FeedCommentHeader(props: {
             />
           )}
         </Row>
-        {bountyAwarded && bountyAwarded > 0 && (
-          <span className="select-none text-teal-600">
-            +{formatMoney(bountyAwarded)}
-          </span>
-        )}
+        <Row className="gap-1">
+          {bountyAwarded && bountyAwarded > 0 && (
+            <span className="select-none text-teal-600">
+              +{formatMoney(bountyAwarded)}
+            </span>
+          )}
+          {isPinned && <TiPin className="text-primary-500 inline h-4 w-4" />}
+        </Row>
       </Row>
     </Col>
   )

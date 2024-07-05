@@ -509,7 +509,7 @@ const PinnedComment = (props: {
       bets={bets}
       seeReplies={seeReplies}
       numReplies={numReplies}
-      isPinned={true}
+      isPinned
     />
   )
 }
