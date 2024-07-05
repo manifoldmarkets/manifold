@@ -21,8 +21,14 @@ export function SmallCandidatePanel(props: {
   contract: MultiContract
   maxAnswers?: number
   excludeAnswers?: string[]
+  panelClassName?: string
 }) {
-  const { contract, maxAnswers = Infinity, excludeAnswers } = props
+  const {
+    contract,
+    maxAnswers = Infinity,
+    excludeAnswers,
+    panelClassName,
+  } = props
   const { resolutions, outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -65,7 +71,7 @@ export function SmallCandidatePanel(props: {
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   return (
-    <Col className="mx-[2px] gap-2">
+    <Col className={clsx('mx-[2px] gap-2', panelClassName)}>
       {showNoAnswers ? (
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (

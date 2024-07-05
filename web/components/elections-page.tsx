@@ -11,6 +11,7 @@ import { SizedContainer } from './sized-container'
 import clsx from 'clsx'
 import { ChoiceMiniGraph } from './us-elections/contracts/choice-mini-graph'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
+import { Carousel } from './widgets/carousel'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const {
@@ -95,7 +96,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
           <div className="text-ink-600  ">Presidential Nomination</div>
           <div className="bg-ink-600 flex h-[1px] grow flex-row" />
         </Row>
-        <Row className="gap-4">
+        <Row className="hidden gap-4 sm:inline-flex">
           <PoliticsCard
             contract={democratCandidateContract as MultiContract}
             maxAnswers={3}
@@ -111,6 +112,22 @@ export function USElectionsPage(props: ElectionsPageProps) {
             viewType="SMALL CANDIDATE"
           />
         </Row>
+        <Carousel className=" gap-4 sm:hidden">
+          <PoliticsCard
+            contract={democratCandidateContract as MultiContract}
+            maxAnswers={3}
+            customTitle="Democratic"
+            panelClassName="w-[18rem]"
+            viewType="SMALL CANDIDATE"
+          />
+          <PoliticsCard
+            contract={republicanCandidateContract as MultiContract}
+            maxAnswers={3}
+            customTitle="Republican"
+            panelClassName="w-[18rem]"
+            viewType="SMALL CANDIDATE"
+          />
+        </Carousel>
       </Col>
 
       {trending}

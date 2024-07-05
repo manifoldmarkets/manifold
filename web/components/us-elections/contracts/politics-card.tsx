@@ -24,6 +24,7 @@ export function PoliticsCard(props: {
   maxAnswers?: number
   viewType: 'PARTY' | 'CANDIDATE' | 'STATE' | 'SMALL CANDIDATE'
   excludeAnswers?: string[]
+  panelClassName?: string
 }) {
   const {
     promotedData,
@@ -35,6 +36,7 @@ export function PoliticsCard(props: {
     viewType,
     children,
     excludeAnswers,
+    panelClassName,
   } = props
 
   const contract = useLiveContractWithAnswers(props.contract)
@@ -143,6 +145,7 @@ export function PoliticsCard(props: {
           contract={contract}
           maxAnswers={maxAnswers ?? 6}
           excludeAnswers={excludeAnswers}
+          panelClassName={panelClassName}
         />
       </ClickFrame>
     )
