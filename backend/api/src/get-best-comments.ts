@@ -1,5 +1,4 @@
 import { APIHandler } from 'api/helpers/endpoint'
-import Anthropic from '@anthropic-ai/sdk'
 import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
@@ -8,7 +7,8 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertContractComment } from 'common/supabase/comments'
 import { parseJsonContentToText } from 'common/util/parse'
 import { getContractsDirect } from 'shared/supabase/contracts'
-import { first, uniq } from 'lodash'
+import { uniq } from 'lodash'
+import { promptGPT4 } from 'shared/helpers/openai-utils'
 
 export const getBestComments: APIHandler<'get-best-comments'> = async (
   props,
@@ -17,9 +17,6 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
   const { limit, offset, ignoreContractIds, justLikes } = props
   const userId = auth.uid
   const pg = createSupabaseDirectClient()
-  const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  })
 
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
@@ -163,8 +160,11 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
       else you might think is important based on my previous likes, (it could be humor!). 
       Please ignore short, meme-y comments like:
       "Buy low, sell high", "Buy my bags", "what were y'all thinking?", just a link without any commentary, etc. 
-      Also ignore nuts-and-bolts comments like:
-      'Add this to the list', 'This resolves YES', 'What do you mean by (x) in your title?', etc.
+      Also ignore nuts-and-bolds comments like:
+      "Add [such and such answer] @user", "This resolves [yes/no/n/a, because etc]",
+      "How does [betting/other shares] work?",
+      "What do you mean by [x/y/z] in your title?",
+      and any solo web links without additional commentary, etc.
       \n
       ${Object.entries(groupedComments)
         .map(
@@ -186,26 +186,41 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
       else you might think is important based on my previous likes, (it could be humor!). 
       Remember, ignore short or meme-y comments like:
       "Buy low, sell high", "I'm holding onto my YES bags", "what were people/you all thinking?", etc. 
-      Also ignore housekeeping comments like:
-      "Add this to the list", "This resolves YES", "How does betting/other shares work?",
-      a link without any additional information, etc.
+      Also ignore nuts-and-bolds comments like:
+      "Add [such and such answer] @user", "This resolves [yes/no/n/a, because etc]",
+      "How does [betting/other shares] work?",
+      "What do you mean by [x/y/z] in your title?",
+      and any solo web links without additional commentary, etc.
       Now, you don't have to respond with ${limit} if there aren't ${limit} good comments,
       what are the highest quality ~${limit} comment IDs separated by commas, in order
       of descending quality? (ie don't say here are my top comments, just give me the IDs)
       `
-    const msg = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20240620',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content }],
-    })
-    const msgContent = first(msg.content)
-    commentIds =
-      msgContent && msgContent.type === 'text'
-        ? msgContent.text
-            .split(',')
-            .map((s) => s.trim())
-            .map((s) => s.replace(',', ''))
-        : []
+    // anthropic:
+    // const anthropic = new Anthropic({
+    //   apiKey: process.env.ANTHROPIC_API_KEY,
+    // })
+    // const msg = await anthropic.messages.create({
+    //   model: 'claude-3-5-sonnet-20240620',
+    //   max_tokens: 1024,
+    //   messages: [{ role: 'user', content }],
+    // })
+    // const msgContent = first(msg.content)
+    // commentIds =
+    //   msgContent && msgContent.type === 'text'
+    //     ? msgContent.text
+    //       .split(',')
+    //       .map((s) => s.trim())
+    //       .map((s) => s.replace(',', ''))
+    //     : []
+
+    // openai:
+    const msgContent = await promptGPT4(content)
+    commentIds = msgContent
+      ? msgContent
+          .split(',')
+          .map((s) => s.trim())
+          .map((s) => s.replace(',', ''))
+      : []
   }
   const comments = recentComments
     .filter((c) => commentIds.includes(c.comment.id))

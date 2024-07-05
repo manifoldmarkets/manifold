@@ -17,9 +17,9 @@ import { removeUndefinedProps } from 'common/util/object'
 import { Content } from 'web/components/widgets/editor'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { BottomActionRow } from 'web/components/feed/scored-feed-repost-item'
-// const DEBUG_FEED_CARDS =
-//   typeof window != 'undefined' &&
-//   window.location.toString().includes('localhost:3000')
+const DEBUG_FEED_CARDS =
+  typeof window != 'undefined' &&
+  window.location.toString().includes('localhost:3000')
 export const GoodComment = memo(function (props: {
   contract: Contract
   comment: ContractComment
@@ -33,11 +33,11 @@ export const GoodComment = memo(function (props: {
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
   const { ref } = useIsVisible(
     () => {
-      // !DEBUG_FEED_CARDS &&
-      track('view good comment', {
-        contractId: contract.id,
-        commentId: comment.id,
-      })
+      !DEBUG_FEED_CARDS &&
+        track('view good comment', {
+          contractId: contract.id,
+          commentId: comment.id,
+        })
     },
     true,
     true
