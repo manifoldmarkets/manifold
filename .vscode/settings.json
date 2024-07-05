@@ -7,7 +7,6 @@
     "**/package-lock.json": true,
     "**/yarn.lock": true
   },
-  "files.autoSave": "onWindowChange",
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -36,4 +35,3 @@
   ],
   "prettier.ignorePath": "web/.prettierignore"
 }
-
