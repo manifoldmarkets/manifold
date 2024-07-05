@@ -7,10 +7,10 @@ export const promptClaude = async (
   options: { system?: string } = {}
 ) => {
   const { system } = options
-  const apiKey = process.env.ANTHROPIC_API_KEY3
+  const apiKey = process.env.ANTHROPIC_API_KEY4
 
   if (!apiKey) {
-    throw new Error('Missing ANTHROPIC_API_KEY2')
+    throw new Error('Missing ANTHROPIC_API_KEY4')
   }
 
   const anthropic = new Anthropic({ apiKey })

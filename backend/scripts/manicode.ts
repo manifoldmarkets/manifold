@@ -26,14 +26,14 @@ const manicode = async (userPrompt: string) => {
 
     Can you answer the below prompt with:
     1. A description of what the user wants done.
-    2. Your best summary of what strategy you will employ to implement it in code.
+    2. Your best summary of what strategy you will employ to implement it in code (keep it simple!).
     3. A list of which files (up to 20) would be most relevant to read or write to for providing an accurate response. Please list only the file paths, one per line. You will later respond in a second prompt with edits to make to these files (or what new files to create), so choose the files wisely.
 
     User's request: ${userPrompt}
     `
 
   const system = getSystemPrompt()
-  
+
   // Save the system prompt to a file
   // const systemPromptFilePath = path.join(__dirname, 'system-prompt.md')
   // fs.writeFileSync(systemPromptFilePath, system, 'utf8')
@@ -65,9 +65,10 @@ const manicode = async (userPrompt: string) => {
 
     Can you answer the below prompt with:
     1. A description of what the user wants done.
-    2. Your best summary of what strategy you will employ to implement it in code.
-    3. Please end your message with a list of files and their entire contents that you want changed. You can create new files or modify existing files.
+    2. Your best summary of what strategy you will employ to implement it in code (keep it simple!).
+    3. Please end your message with a list of files and their entire contents that you want changed. You can create new files or modify existing files. You must provide the full contents of the files you want changed, because we are replacing the files with your response. Do not write anything like the props are unchanged or the helper fuctions are unchanged.
     For the files, please put one line for the filepath and then put the contents.
+
     Here is an example response:
     <example>
     1. The user wants [...insert answer]
@@ -110,9 +111,7 @@ const manicode = async (userPrompt: string) => {
 
       // Write the file content, creating the file if it doesn't exist
       fs.writeFileSync(fullPath, fileContent.trim(), { flag: 'w' })
-      console.log(
-        `Successfully wrote to ${filePath} (created if it didn't exist)`
-      )
+      console.log(`Successfully wrote to ${filePath}`)
     } catch (error) {
       console.error(`Error writing to ${filePath}:`, error)
     }
@@ -127,6 +126,7 @@ async function promptClaudeWithProgress(prompt: string, options: any) {
 
   try {
     const response = await promptClaude(prompt, options)
+    console.log()
     return response
   } finally {
     clearInterval(progressInterval)
@@ -135,7 +135,6 @@ async function promptClaudeWithProgress(prompt: string, options: any) {
 
 function getSystemPrompt() {
   const codeFiles = getOnlyCodeFiles()
-  console.log('Number of code files', codeFiles.length)
 
   const manifoldInfoPath = path.join(__dirname, '..', '..', 'manifold-info.md')
   const manifoldInfo = fs.readFileSync(manifoldInfoPath, 'utf8')

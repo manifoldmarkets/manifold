@@ -309,7 +309,27 @@ export function broadcastUpdatedAnswers(
 
 We have our scripts in the directory `backend/scripts`.
 
-We have a helper called `runScript` that automatically fetches any secret keys and loads them into process.env.
+To write a script, run it inside the helper function called `runScript` that automatically fetches any secret keys and loads them into process.env.
+
+Example from `backend/scripts/manicode.ts`
+
+```ts
+import { runScript } from 'run-script'
+
+if (require.main === module) {
+  runScript(async () => {
+    const userPrompt = process.argv[2]
+    // E.g.:
+    // I want to create a new page which shows off what's happening on manifold right now. Can you use our websocket api to get recent bets on markets and illustrate what's happening in a compelling and useful way?
+    if (!userPrompt) {
+      console.log('Please provide a prompt on what code to change.')
+      return
+    }
+
+    await manicode(userPrompt)
+  })
+}
+```
 
 We recommend running scripts via `ts-node`. Example:
 
@@ -320,6 +340,7 @@ ts-node manicode.ts "Generate a page called cowp, which has cows that make noise
 Our backend is mostly a set of endpoints. We create new endpoints by adding to the schema in `common/src/api/schema.ts`.
 
 E.g. Here is the bet schema:
+
 ```ts
   bet: {
     method: 'POST',
