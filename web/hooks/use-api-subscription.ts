@@ -18,12 +18,10 @@ export type SubscriptionOptions = {
 export function useApiSubscription(opts: SubscriptionOptions) {
   useEffect(() => {
     const ws = client
-    if (ws != null) {
-      if (opts.enabled ?? true) {
-        ws.subscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
-        return () => {
-          ws.unsubscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
-        }
+    if (ws != null && (opts.enabled ?? true)) {
+      ws.subscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+      return () => {
+        ws.unsubscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
       }
     }
   }, [opts.enabled, JSON.stringify(opts.topics)])
