@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
+import * as readline from 'readline'
 
 import { runScript } from 'run-script'
 import { promptClaude } from 'shared/helpers/claude'
@@ -19,7 +20,7 @@ if (require.main === module) {
   })
 }
 
-const manicode = async (userPrompt: string) => {
+const manicode = async (firstPrompt: string) => {
   // First prompt to Claude: Ask which files to read
   const fileSelectionPrompt = `
     The user has a coding assignment for you.
@@ -29,7 +30,7 @@ const manicode = async (userPrompt: string) => {
     2. Your best summary of what strategy you will employ to implement it in code (keep it simple!).
     3. A list of which files (up to 20) would be most relevant to read or write to for providing an accurate response. Please list only the file paths, one per line. You will later respond in a second prompt with edits to make to these files (or what new files to create), so choose the files wisely.
 
-    User's request: ${userPrompt}
+    User's request: ${firstPrompt}
     `
 
   const system = getSystemPrompt()
@@ -44,23 +45,12 @@ const manicode = async (userPrompt: string) => {
       system,
     }
   )
-  console.log(fileSelectionResponse)
-  const filesToRead = fileSelectionResponse.trim().split('\n')
 
-  // Read the content of selected files
-  const fileContents = filterDefined(
-    filesToRead.map((file) => {
-      const filePath = path.join(__dirname, '..', '..', file)
-      try {
-        return `File: ${file}\n\n${fs.readFileSync(filePath, 'utf8')}`
-      } catch (error) {
-        return undefined
-      }
-    })
-  ).join('\n\n')
+  console.log(fileSelectionResponse)
+  const fileContents = loadListedFiles(fileSelectionResponse)
 
   // Second prompt to Claude: Answer the user's question
-  const finalPrompt = `
+  const secondPrompt = `
     The user has a coding question for you.
 
     Can you answer the below prompt with:
@@ -122,18 +112,104 @@ const manicode = async (userPrompt: string) => {
     ${fileContents}
 
 
-    User: ${userPrompt}
+    User: ${firstPrompt}
     `
 
-  const finalResponse = await promptClaudeWithProgress(finalPrompt, { system })
+  const secondResponse = await promptClaudeWithProgress(secondPrompt, {
+    system,
+  })
 
-  console.log(finalResponse)
+  console.log(secondResponse)
+  applyEdits(secondResponse)
 
-  // Parse the response and apply edits
-  const editRegex = /File: (.+?)\n([\s\S]+?)(?:\nREPLACED BY\n([\s\S]+?))?(?=\nEND\n|$)/g
+  interface ConversationEntry {
+    role: 'user' | 'assistant'
+    content: string
+  }
+
+  const conversationHistory: ConversationEntry[] = [
+    { role: 'user', content: firstPrompt },
+    { role: 'assistant', content: fileSelectionResponse },
+    { role: 'assistant', content: secondResponse },
+  ]
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  })
+
+  await new Promise<void>((resolve) => {
+    function promptUser() {
+      rl.question(
+        'Enter your prompt (or type "exit" to quit): ',
+        async (userInput: string) => {
+          if (userInput.toLowerCase() === 'exit') {
+            rl.close()
+            resolve()
+            return
+          }
+
+          conversationHistory.push({ role: 'user', content: userInput })
+
+          const fullPrompt = conversationHistory
+            .map(({ role, content }) => {
+              const label =
+                role === 'user' ? 'The user said:' : 'The assistant said:'
+              return `${label}\n\n${content}`
+            })
+            .join('\n\n')
+
+          try {
+            const claudeResponse = await promptClaudeWithProgress(fullPrompt, {
+              system,
+            })
+            console.log('Claude:', claudeResponse)
+
+            conversationHistory.push({
+              role: 'assistant',
+              content: claudeResponse,
+            })
+
+            applyEdits(claudeResponse)
+
+            // Continue the loop
+            promptUser()
+          } catch (error) {
+            console.error('Error:', error)
+            promptUser()
+          }
+        }
+      )
+    }
+
+    promptUser()
+  })
+
+  console.log('Manicode session ended.')
+}
+
+function loadListedFiles(instructions: string) {
+  const filesToRead = instructions.trim().split('\n')
+
+  // Read the content of selected files
+  return filterDefined(
+    filesToRead.map((file) => {
+      const filePath = path.join(__dirname, '..', '..', file)
+      try {
+        return `File: ${file}\n\n${fs.readFileSync(filePath, 'utf8')}`
+      } catch (error) {
+        return undefined
+      }
+    })
+  ).join('\n\n')
+}
+
+function applyEdits(instructions: string) {
+  const editRegex =
+    /File: (.+?)\n([\s\S]+?)(?:\nREPLACED BY\n([\s\S]+?))?(?=\nEND\n|$)/g
   let match
 
-  while ((match = editRegex.exec(finalResponse)) !== null) {
+  while ((match = editRegex.exec(instructions)) !== null) {
     const [, filePath, oldContent, newContent] = match
     const fullPath = path.join(__dirname, '..', '..', filePath.trim())
 
@@ -143,7 +219,9 @@ const manicode = async (userPrompt: string) => {
 
       if (newContent) {
         // This is an edit to an existing file
-        let fileContent = fs.existsSync(fullPath) ? fs.readFileSync(fullPath, 'utf8') : ''
+        let fileContent = fs.existsSync(fullPath)
+          ? fs.readFileSync(fullPath, 'utf8')
+          : ''
 
         // Replace the old content with the new content
         const trimmedOldContent = oldContent.trim()
