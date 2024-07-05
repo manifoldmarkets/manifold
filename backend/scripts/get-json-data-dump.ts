@@ -33,7 +33,7 @@ if (require.main === module)
     const comments = await pg.map(
       `
       select cc.data from contract_comments cc
-      join contracts on contract_comments.contract_id = contracts.id
+      join contracts on cc.contract_id = contracts.id
       where contracts.visibility = 'public'
       order by cc.created_time
       `,
