@@ -174,6 +174,8 @@ import { setPushToken } from './push-token'
 import { updateNotifSettings } from './update-notif-settings'
 import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { getMonitorStatus } from 'api/gidx/get-monitor-status'
+import { getBestComments } from 'api/get-best-comments'
+import { recordCommentView } from 'api/record-comment-view'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -348,6 +350,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'callback-gidx': callbackGIDX,
   'get-verification-documents-gidx': getVerificationDocuments,
   'get-monitor-status-gidx': getMonitorStatus,
+  'get-best-comments': getBestComments,
+  'record-comment-view': recordCommentView,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

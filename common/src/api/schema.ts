@@ -1140,6 +1140,16 @@ export const API = (_apiTypeCheck = {
     }),
     returns: {} as { status: 'success' },
   },
+  'record-comment-view': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({
+      contractId: z.string(),
+      commentId: z.string(),
+    }),
+    returns: {} as { status: 'success' },
+  },
   'record-contract-interaction': {
     method: 'POST',
     visibility: 'public',
@@ -1357,6 +1367,18 @@ export const API = (_apiTypeCheck = {
     props: z.object({
       MerchantCustomerID: z.string(),
       NotificationType: z.string(),
+    }),
+  },
+  'get-best-comments': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { comments: ContractComment[]; contracts: Contract[] },
+    props: z.object({
+      limit: z.coerce.number().gte(0).lte(100).default(20),
+      offset: z.coerce.number().gte(0).default(0),
+      ignoreContractIds: z.array(z.string()).optional(),
+      justLikes: z.coerce.number().optional(),
     }),
   },
 } as const)
