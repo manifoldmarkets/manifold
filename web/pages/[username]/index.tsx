@@ -82,7 +82,10 @@ export const getStaticProps = async (props: {
   const { username } = props.params
 
   const user = await getUserForStaticProps(db, username)
-
+  const { data } = user
+    ? await db.from('contracts').select('id').eq('creator_id', user.id).limit(1)
+    : { data: null }
+  const hasCreatedQuestion = data?.length
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
   const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user, db) : false
@@ -95,6 +98,7 @@ export const getStaticProps = async (props: {
       reviewCount: count,
       averageRating: averageRating,
       shouldIgnoreUser,
+      hasCreatedQuestion,
     }),
     revalidate: 60,
   }
@@ -111,6 +115,7 @@ export default function UserPage(props: {
   reviewCount?: number
   averageRating?: number
   shouldIgnoreUser: boolean
+  hasCreatedQuestion: boolean
 }) {
   const isAdmin = useAdmin()
   const { user, ...profileProps } = props
@@ -147,8 +152,15 @@ function UserProfile(props: {
   reviewCount?: number
   averageRating?: number
   shouldIgnoreUser: boolean
+  hasCreatedQuestion: boolean
 }) {
-  const { rating, shouldIgnoreUser, reviewCount, averageRating } = props
+  const {
+    rating,
+    hasCreatedQuestion,
+    shouldIgnoreUser,
+    reviewCount,
+    averageRating,
+  } = props
   const user = useWebsocketUser(props.user.id) ?? props.user
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -381,8 +393,7 @@ function UserProfile(props: {
                   </>
                 ),
               },
-              (user.creatorTraders.allTime > 0 ||
-                (user.freeQuestionsCreated ?? 0) > 0) && {
+              hasCreatedQuestion && {
                 title: 'Questions',
                 prerender: true,
                 stackedTabIcon: <ScaleIcon className="h-5" />,
