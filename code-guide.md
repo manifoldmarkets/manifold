@@ -35,6 +35,8 @@ Scripts contains one-off bits of code that we run for a specific purpose.
 
 Each can import from shared and api. Scheduler and scripts should not be referenced, except internally. None of these should import from web.
 
+---
+
 Here's an example component from web in our style:
 
 ```ts
@@ -89,6 +91,8 @@ export function HeadlineTabs(props: {
 }
 ```
 
+---
+
 We prefer to have many smaller components that each represent one logical unit, rather than one very large component that does everything. Then we compose and reuse the components.
 
 It's best to export the main component at the top of the file. We also try to name the component the same as the file name (headline-tabs.tsx) so that it's easy to find.
@@ -116,6 +120,8 @@ export async function getStaticProps() {
 export default function Home(props: { headlines: Headline[] }) { ... }
 ```
 
+---
+
 If we are calling the API on the client, prefer using the `useAPIGetter` hook:
 
 ```ts
@@ -132,6 +138,8 @@ export const YourTopicsSection = (props: {
 ```
 
 This stores the result in memory, and allows you to call refresh() to get an updated version.
+
+---
 
 We frequently use `usePersistentInMemoryState` or `usePersistentLocalState` as an alternative to `useState`. These cache data. Most of the time you want in memory caching so that navigating back to a page will preserve the same state and appear to load instantly.
 
@@ -160,14 +168,7 @@ export const usePersistentInMemoryState = <T>(initialValue: T, key: string) => {
 }
 ```
 
-We prefer using lodash functions instead of reimplementing them with for loops:
-
-```ts
-import { keyBy, uniq } from 'lodash'
-
-const betsByUserId = keyBy(bets, 'userId')
-const betIds = uniq(bets, (b) => b.id)
-```
+---
 
 When organizing imports, we put the external libraries at the top, followed by a new line, and then our internal imports.
 
@@ -244,6 +245,8 @@ export const useContractBets = (
   return newBets
 }
 ```
+
+---
 
 Here are all the topics we broadcast, from `backend/shared/src/websockets/helpers.ts`
 
@@ -345,6 +348,8 @@ export function broadcastUpdatedAnswers(
 }
 ```
 
+---
+
 We have our scripts in the directory `backend/scripts`.
 
 To write a script, run it inside the helper function called `runScript` that automatically fetches any secret keys and loads them into process.env.
@@ -374,6 +379,8 @@ We recommend running scripts via `ts-node`. Example:
 ```sh
 ts-node manicode.ts "Generate a page called cowp, which has cows that make noises!"
 ```
+
+---
 
 Our backend is mostly a set of endpoints. We create new endpoints by adding to the schema in `common/src/api/schema.ts`.
 
@@ -426,6 +433,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
 }
 ```
 
+---
+
 We have two ways to access our postgres database.
 
 ```ts
@@ -441,7 +450,7 @@ const db = createSupabaseClient()
 The first (createSupabaseDirectClient) lets us specify sql strings to run directly on our database, using the pg-promise library. The client (code in web) does not have permission to do this.
 
 Example using the direct client:
-```
+```ts
 export const getUniqueBettorIds = async (
   contractId: string,
   pg: SupabaseDirectClient
@@ -461,7 +470,7 @@ export const getUniqueBettorIds = async (
 We are deprecating the latter approach (createSupabaseClient), so avoid using it entirely for new code. It uses postgREST, a rest api that is turned into sql. The client can also use this to connect directly to our database. The recommended path is to instead create an endpoint on our server, and have that use the supabase direct client to return data to the client.
 
 Example using supabase client:
-```
+```ts
 export const getContractIdFromSlug = async (
   db: SupabaseClient,
   slug?: string
@@ -479,3 +488,67 @@ export const getContractIdFromSlug = async (
 }
 ```
 
+### Misc coding tips
+
+We have many useful hooks that should be reused rather than rewriting them again. For example, to get the live global bets, you should use
+
+```ts
+import { useSubscribeGlobalBets } from 'web/hooks/use-bets'
+
+...
+
+const bets = useSubscribeGlobalBets()
+```
+
+---
+
+We prefer using lodash functions instead of reimplementing them with for loops:
+
+```ts
+import { keyBy, uniq } from 'lodash'
+
+const betsByUserId = keyBy(bets, 'userId')
+const betIds = uniq(bets, (b) => b.id)
+```
+
+---
+
+Because we target es5, we can't iterate through a Set in a for loop, for example:
+```ts
+const betIds = []
+const betIdSet = new Set(array)
+for (const id of betIdSet) { // Is a compilation error, since a Set is not iterable without a polyfill.
+  ...
+}
+```
+
+Instead, you should just avoid using sets here. Consider using lodash's uniq function instead:
+```ts
+const betIds = uniq([])
+for (const id of betIds) {
+  ...
+}
+```
+
+---
+
+If you don't provide the type, it will default to unknown, and cause a type error
+
+```ts
+try {
+  await getUserDataDump(identifier)
+}
+} catch (error) {
+  console.error('Error:', error.message) // Type error accessing ".message" since error is unknown type.
+}
+```
+
+You can fix it by either adding a type annotation, or checking if a field is in the object (`'message' in error`) or by using instanceof:
+
+```ts
+try {
+  await getUserDataDump(identifier)
+} catch (error) {
+  console.error('Error:', error instanceof Error ? error.message : String(error))
+}
+```

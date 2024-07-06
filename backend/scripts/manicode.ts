@@ -51,69 +51,57 @@ const manicode = async (firstPrompt: string) => {
 
   // Second prompt to Claude: Answer the user's question
   const secondPrompt = `
-    The user has a coding question for you.
+  The user has a coding question for you.
 
-    Can you answer the below prompt with:
-    1. A description of what the user wants done.
-    2. Your best summary of what strategy you will employ to implement it in code (keep it simple!).
-    3. Please end your message with a list of files and the specific edits you want to make.
-     For creating new files or replacing an existing file, provide the file path and then the contents on a new line, ending with a new line and the single word "END".
-     For editing exsiting files, provide:
-       - The file path
-       - The lines to be replaced (exactly as they appear in the file)
-       - The keyword "REPLACED BY" on a new line
-       - The new lines to insert
-       - The keyword "END" on a new line after the new lines
-    
-    You should only provide one edit per listed file. If you want to make more edits to a file, repeat the file path again along with the replacement instructions.
+  Can you answer the below prompt with:
+  1. A description of what the user wants done.
+  2. Your best summary of what strategy you will employ to implement it in code (keep it simple!).
+  3. Please end your message with a list of files and the specific edits you want to make.
+   For creating new files or editing existing files, provide the file contents wrapped in XML tags with the file path as an attribute, like this:
+   <file path="web/components/example.tsx">
+   // File contents here
+   </file>
 
+  You can make multiple changes to a file by making clear which parts of the file stay the same and which should be edited. Feel free to use code comments to say something like "// The rest of the file is unchanged".
 
-    Here is an example response:
-    <example>
-    1. The user wants [...insert answer]
-    2. We should [... insert answer]
-    3. Files to modify:
+  Here is an example response:
+  <example>
+  1. The user wants [...insert answer]
+  2. We should [... insert answer]
+  3. Files to modify:
 
-    File: web/components/new-component.tsx
+  <file path="web/components/new-component.tsx">
+  export const NewComponent = () => 'Hello world!'
+  </file>
 
-    export const NewComponent = () => 'Hello world!'
-    
-    END
+  <file path="web/components/example.tsx">
+  import React from 'react';
 
-    File: web/components/example.tsx
-
-    console.log('Old line 1');
-
-    console.log('Old line 2');
-    REPLACED BY
+  const ExampleComponent = () => {
     console.log('New line 1');
-
     console.log('New line 2');
     console.log('New line 3');
-    END
+    return <div>Example</div>;
+  };
 
-    File: web/pages/live-activity.tsx
+  export default ExampleComponent;
+  </file>
 
-    console.log('Hello world 1!')
-    REPLACED BY
-    console.log('Hello world 2!')
-    END
+  <file path="web/pages/live-activity.tsx">
+  // Other imports stay the same.
+  import { uniq } from 'lodash'
 
-    File: web/pages/live-activity.tsx
+  console.log(uniq(['a']))
+  </file>
+  </example>
 
-    console.log('Hello world 3!')
-    REPLACED BY
-    console.log('Hello world 4!')
-    END
-    </example>
+  Ok, here are the contents of some relevant files:
 
-    Ok, here are the contents of some relevant files:
-
-    ${fileContents}
+  ${fileContents}
 
 
-    User: ${firstPrompt}
-    `
+  User: ${firstPrompt}
+  `
 
   const secondResponse = await promptClaudeWithProgress(secondPrompt, {
     system,
@@ -143,7 +131,7 @@ const manicode = async (firstPrompt: string) => {
       rl.question(
         'Enter your prompt (or type "exit" to quit): ',
         async (userInput: string) => {
-          if (userInput.toLowerCase() === 'exit') {
+          if (userInput.trim().toLowerCase() === 'exit') {
             rl.close()
             resolve()
             return
@@ -196,7 +184,10 @@ function loadListedFiles(instructions: string) {
     filesToRead.map((file) => {
       const filePath = path.join(__dirname, '..', '..', file)
       try {
-        return `File: ${file}\n\n${fs.readFileSync(filePath, 'utf8')}`
+        return `<file path="${file}">\n\n${fs.readFileSync(
+          filePath,
+          'utf8'
+        )}\n\n</file>`
       } catch (error) {
         return undefined
       }
@@ -211,26 +202,16 @@ Given the following instructions, list the full file paths of all files being ed
 
 Example input:
 
-File: web/components/new-component.tsx
-
+<file path="web/components/new-component.tsx">
 export const NewComponent = () => 'Hello world!'
+</file>
 
-END
-
-
-File: web/components/example.tsx
-
-console.log('Old line 1');
-
-console.log('Old line 2');
-REPLACED BY
+<file path="web/components/example.tsx">
 console.log('New line 1');
 
 console.log('New line 2');
 console.log('New line 3');
-END
-
-
+</file>
 
 Example output:
 web/components/new-component.tsx
@@ -248,29 +229,35 @@ File paths:
   const filesToEdit = fileListResponse.trim().split('\n')
   console.log('haiku fileListResponse', fileListResponse)
 
-  for (const filePath of filesToEdit) {
-    if (!filePath || !filePath.includes('/')) continue
+  await Promise.all(
+    filesToEdit.map(async (filePath) => {
+      if (!filePath || !filePath.includes('/')) return
 
-    const fullPath = path.join(__dirname, '..', '..', filePath.trim())
-    let originalContent = ''
+      const fullPath = path.join(__dirname, '..', '..', filePath.trim())
+      let originalContent = ''
 
-    try {
-      const stats = fs.statSync(fullPath)
-      if (stats.isFile()) {
-        originalContent = fs.readFileSync(fullPath, 'utf8')
-      } else if (stats.isDirectory()) {
-        console.log(`Skipping directory: ${filePath}`)
-        continue
+      try {
+        const stats = fs.statSync(fullPath)
+        if (stats.isFile()) {
+          originalContent = fs.readFileSync(fullPath, 'utf8')
+        } else if (stats.isDirectory()) {
+          console.log(`Skipping directory: ${filePath}`)
+          return
+        }
+      } catch (error) {
+        // File doesn't exist, which is fine for new files
       }
-    } catch (error) {
-      // File doesn't exist, which is fine for new files
-    }
 
-    const editPrompt = `
-Given the following original file content and edit instructions, provide the complete updated content for the specified file. If it's a new file, just provide the new content. Please only output the exact contents of the one file. Do not include any other words.
+      const editPrompt = `
+Given the following original file content and edit instructions, provide the complete updated content for the specified file. Please output the updated contents in a file tag with that path:
+<file path="${filePath}">
+// updated contents
+</file>
 
-Original file (${filePath}):
+Original:
+<file path="${filePath}">
 ${originalContent}
+</file>
 
 Edit instructions:
 ${instructions}
@@ -278,19 +265,36 @@ ${instructions}
 Updated file content:
 `
 
-    const updatedContent = await promptClaude(editPrompt, {
-      model: models.sonnet,
-    })
-    console.log('haiku updatedContent', fullPath, 'reponse:', updatedContent)
+      const updatedContent = await promptClaude(editPrompt, {
+        model: models.sonnet,
+      })
 
-    try {
-      fs.mkdirSync(path.dirname(fullPath), { recursive: true })
-      fs.writeFileSync(fullPath, updatedContent.trim(), 'utf8')
-      console.log(`Successfully updated ${filePath}`)
-    } catch (error) {
-      console.error(`Error updating ${filePath}:`, error)
-    }
-  }
+      try {
+        const match = updatedContent.match(
+          /<file\s+path=["']([^"']+)["']>\s*([\s\S]*?)\s*<\/file>/i
+        )
+        if (match) {
+          const [, matchedPath, fileContent] = match
+          if (matchedPath.trim() === filePath.trim()) {
+            fs.mkdirSync(path.dirname(fullPath), { recursive: true })
+            fs.writeFileSync(fullPath, fileContent.trim(), 'utf8')
+            console.log(`Successfully updated ${filePath}`)
+          } else {
+            console.error(
+              `Error: File path mismatch. Expected ${filePath}, got ${matchedPath}`
+            )
+          }
+        } else {
+          console.error(
+            `Error: Could not parse updated content for ${filePath}`
+          )
+          console.log('Received content:', updatedContent)
+        }
+      } catch (error) {
+        console.error(`Error updating ${filePath}:`, error)
+      }
+    })
+  )
 }
 
 async function promptClaudeWithProgress(prompt: string, options: any) {
