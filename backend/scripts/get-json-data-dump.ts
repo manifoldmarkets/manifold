@@ -11,39 +11,6 @@ if (require.main === module)
       .toISOString()
       .replace(/[^0-9]/g, '')
       .slice(0, -9)
-    console.log(filenameSuffix)
-
-    console.log(`Exporting contracts to JSON file...`)
-    const contracts = await pg.map(
-      `
-      select data from contracts
-      where visibility = 'public'
-      order by created_time
-      `,
-      [],
-      (row) => row.data as Contract
-    )
-
-    console.log(`Downloaded ${contracts.length} contracts`)
-
-    await writeJson(`manifold-contracts-${filenameSuffix}.json`, contracts)
-
-    console.log(`Exporting comments to JSON file...`)
-
-    const comments = await pg.map(
-      `
-      select cc.data from contract_comments cc
-      join contracts on cc.contract_id = contracts.id
-      where contracts.visibility = 'public'
-      order by cc.created_time
-      `,
-      [],
-      (row) => row.data as Comment
-    )
-
-    console.log(`Downloaded ${comments.length} comments`)
-
-    await writeJson(`manifold-comments-${filenameSuffix}.json`, contracts)
 
     console.log(`Exporting bets to JSON file...`)
 
@@ -113,4 +80,59 @@ if (require.main === module)
 
     console.log(`Total bets exported: ${totalBets}`)
     console.log(`Bets saved to ${betFilename}`)
+
+    console.log(`Exporting contracts to JSON file...`)
+    const contracts = await pg.map(
+      `
+      select data from contracts
+      where visibility = 'public'
+      order by created_time
+      `,
+      [],
+      (row) => row.data as Contract
+    )
+
+    console.log(`Downloaded ${contracts.length} contracts`)
+
+    await writeJson(`manifold-contracts-${filenameSuffix}.json`, contracts)
+
+    console.log(`Exporting comments to JSON file...`)
+
+    const comments = await pg.map(
+      `
+      select cc.data from contract_comments cc
+      join contracts on cc.contract_id = contracts.id
+      where contracts.visibility = 'public'
+      order by cc.created_time
+      `,
+      [],
+      (row) => row.data as Comment
+    )
+
+    console.log(`Downloaded ${comments.length} comments`)
+
+    const filename = `manifold-comments-${filenameSuffix}.json`
+    const writeStream = fs.createWriteStream(filename)
+
+    writeStream.write('[\n')
+
+    for (let i = 0; i < comments.length; i++) {
+      const commentJson = JSON.stringify(comments[i])
+      writeStream.write(commentJson)
+      if (i < comments.length - 1) {
+        writeStream.write(',\n')
+      }
+    }
+
+    writeStream.write('\n]')
+
+    writeStream.end(() => {
+      console.log(`Comments written to ${filename}`)
+    })
+
+    // Wait for the stream to finish writing
+    await new Promise<void>((resolve, reject) => {
+      writeStream.on('finish', () => resolve())
+      writeStream.on('error', (error) => reject(error))
+    })
   })
