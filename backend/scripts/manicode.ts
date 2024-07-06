@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as readline from 'readline'
 
 import { runScript } from 'run-script'
-import { promptClaude } from 'shared/helpers/claude'
+import { models, promptClaude } from 'shared/helpers/claude'
 import { filterDefined } from 'common/util/array'
 
 if (require.main === module) {
@@ -120,7 +120,7 @@ const manicode = async (firstPrompt: string) => {
   })
 
   console.log(secondResponse)
-  applyEdits(secondResponse)
+  await applyEdits(secondResponse)
 
   interface ConversationEntry {
     role: 'user' | 'assistant'
@@ -170,7 +170,7 @@ const manicode = async (firstPrompt: string) => {
               content: claudeResponse,
             })
 
-            applyEdits(claudeResponse)
+            await applyEdits(claudeResponse)
 
             // Continue the loop
             promptUser()
@@ -204,40 +204,91 @@ function loadListedFiles(instructions: string) {
   ).join('\n\n')
 }
 
-function applyEdits(instructions: string) {
-  const editRegex =
-    /File: (.+?)\n([\s\S]+?)(?:\nREPLACED BY\n([\s\S]+?))?(?=\nEND\n|$)/g
-  let match
+async function applyEdits(instructions: string) {
+  // Ask Claude Haiku which files are being edited or created
+  const fileListPrompt = `
+Given the following instructions, list the full file paths of all files being edited or created, one per line. Include both new files and existing files that are being modified.
 
-  while ((match = editRegex.exec(instructions)) !== null) {
-    const [, filePath, oldContent, newContent] = match
+Example input:
+
+File: web/components/new-component.tsx
+
+export const NewComponent = () => 'Hello world!'
+
+END
+
+
+File: web/components/example.tsx
+
+console.log('Old line 1');
+
+console.log('Old line 2');
+REPLACED BY
+console.log('New line 1');
+
+console.log('New line 2');
+console.log('New line 3');
+END
+
+
+
+Example output:
+web/components/new-component.tsx
+web/components/example.tsx
+
+Instructions:
+${instructions}
+
+File paths:
+`
+
+  const fileListResponse = await promptClaude(fileListPrompt, {
+    model: models.sonnet,
+  })
+  const filesToEdit = fileListResponse.trim().split('\n')
+  console.log('haiku fileListResponse', fileListResponse)
+
+  for (const filePath of filesToEdit) {
+    if (!filePath || !filePath.includes('/')) continue
+
     const fullPath = path.join(__dirname, '..', '..', filePath.trim())
+    let originalContent = ''
 
     try {
-      // Ensure the directory exists
-      fs.mkdirSync(path.dirname(fullPath), { recursive: true })
-
-      if (newContent) {
-        // This is an edit to an existing file
-        let fileContent = fs.existsSync(fullPath)
-          ? fs.readFileSync(fullPath, 'utf8')
-          : ''
-
-        // Replace the old content with the new content
-        const trimmedOldContent = oldContent.trim()
-        const trimmedNewContent = newContent.trim()
-        fileContent = fileContent.replace(trimmedOldContent, trimmedNewContent)
-
-        // Write the updated content back to the file
-        fs.writeFileSync(fullPath, fileContent, 'utf8')
-        console.log(`Successfully applied edit to ${filePath}`)
-      } else {
-        // This is a new file
-        fs.writeFileSync(fullPath, oldContent.trim(), 'utf8')
-        console.log(`Successfully set file ${filePath}`)
+      const stats = fs.statSync(fullPath)
+      if (stats.isFile()) {
+        originalContent = fs.readFileSync(fullPath, 'utf8')
+      } else if (stats.isDirectory()) {
+        console.log(`Skipping directory: ${filePath}`)
+        continue
       }
     } catch (error) {
-      console.error(`Error applying edit to ${filePath}:`, error)
+      // File doesn't exist, which is fine for new files
+    }
+
+    const editPrompt = `
+Given the following original file content and edit instructions, provide the complete updated content for the specified file. If it's a new file, just provide the new content. Please only output the exact contents of the one file. Do not include any other words.
+
+Original file (${filePath}):
+${originalContent}
+
+Edit instructions:
+${instructions}
+
+Updated file content:
+`
+
+    const updatedContent = await promptClaude(editPrompt, {
+      model: models.sonnet,
+    })
+    console.log('haiku updatedContent', fullPath, 'reponse:', updatedContent)
+
+    try {
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true })
+      fs.writeFileSync(fullPath, updatedContent.trim(), 'utf8')
+      console.log(`Successfully updated ${filePath}`)
+    } catch (error) {
+      console.error(`Error updating ${filePath}:`, error)
     }
   }
 }
