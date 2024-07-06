@@ -24,7 +24,8 @@ import {
 } from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { randomString } from 'common/util/random'
-import { generateImage } from 'shared/helpers/openai-utils'
+import { generateImage as generateMarketBanner } from 'shared/helpers/stability-utils'
+import { MarketTierType } from 'common/tier'
 
 export const onCreateMarket = async (
   contract: Contract,
@@ -90,22 +91,35 @@ export const onCreateMarket = async (
     )
   }
 
-  await uploadAndSetCoverImage(pg, question, contract.id, creatorUsername)
+  let answerList: string[] = []
+  if ('answers' in contract) {
+    answerList = contract.answers.map((a) => a.text)
+  }
+
+  await uploadAndSetCoverImage(pg, question, desc, answerList, contract.id, creatorUsername, contract.marketTier ?? 'basic')
 }
 
 const uploadAndSetCoverImage = async (
   pg: SupabaseDirectClient,
   question: string,
+  desc: JSONContent,
+  answerList: string[],
   contractId: string,
-  creatorUsername: string
+  creatorUsername: string,
+  marketTier: MarketTierType
 ) => {
-  const dalleImage = await generateImage(question)
-  if (!dalleImage) return
-  console.log('generated dalle image: ' + dalleImage)
+  const description = richTextToString(desc) as string
+  const formattedAnswers = "Possible answers:" + answerList.join(', ') + "\n\n"
+  const questionDescription = `Question: ${question}\n\nAdditional detail: ${description.slice(500)}\n\n${answerList.length != 0 ? formattedAnswers : ''}`
+  const highTier: boolean = ['plus', 'premium', 'crystal'].includes(marketTier)
 
-  // Upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
+  const bannerImage = await generateMarketBanner(questionDescription, highTier)
+  if (!bannerImage) return
+
+  console.log('generated cover image: ' + bannerImage)
+
   const coverImageUrl = await uploadToStorage(
-    dalleImage,
+    bannerImage,
     creatorUsername
   ).catch((err) => {
     console.error('Failed to load image', err)
@@ -116,11 +130,8 @@ const uploadAndSetCoverImage = async (
   await updateContract(pg, contractId, { coverImageUrl })
 }
 
-export const uploadToStorage = async (imgUrl: string, username: string) => {
-  const response = await fetch(imgUrl)
-
-  const arrayBuffer = await response.arrayBuffer()
-  const inputBuffer = Buffer.from(arrayBuffer)
+export const uploadToStorage = async (img: ArrayBuffer, username: string) => {
+  const inputBuffer = Buffer.from(img)
 
   const buffer = await sharp(inputBuffer)
     .toFormat('jpeg', { quality: 60 })
