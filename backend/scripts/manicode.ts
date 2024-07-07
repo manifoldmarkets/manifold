@@ -52,70 +52,98 @@ const manicode = async (firstPrompt: string) => {
 
   // Second prompt to Claude: Answer the user's question
   const secondPrompt = `
-The user has a coding question for you.
+The user has a coding question for you. Please provide a detailed response following this structure:
 
-Can you answer the below prompt with:
-1. A description of what the user wants done.
-2. Your best summary of what strategy you will employ to implement it in code (keep it simple!).
-3. Please list the files and the specific edits you want to make.
-  For creating new files or editing existing files, provide the file contents wrapped in XML tags with the file path as an attribute, like this:
-  <file path="web/components/example.tsx">
-  // File contents here
-  </file>
-For existing files, when making changes, use the following format to specify line replacements:
-  <replace>
-  old_line_1
-  old_line_2
-  ...
-  </replace>
-  <with>
-  new_line_1
-  new_line_2
-  ...
-  </with>
-You can include multiple replace-with blocks in a single file if needed. To delete lines, use an empty <with></with> block.
-4. Please create one Node.js script that loads the files listed in step 3, applies the edits described, and saves the changes. The script should use the line replacement strategy described above.
-Wrap the script in <script> tags. Additionally, note that there is a base path you need to prepend to the file path to access the file. The base path is "${path.join(
+1. User Request: Briefly restate what the user wants to accomplish.
+
+2. Implementation Strategy: Outline your approach to implement the requested changes.
+
+3. File Modifications: List all files that need to be modified or created. For each file, provide the following details:
+
+   a) File path
+   b) Whether it's a new file or an existing file to be modified
+   c) Specific changes to be made, using the format below:
+
+   For new files:
+   <file path="path/to/new/file.tsx">
+   // Entire file contents here
+   </file>
+
+   For existing files:
+   <file path="path/to/existing/file.tsx">
+   <replace>
+   // Existing code to be replaced (include enough context for accurate matching)
+   </replace>
+   <with>
+   // New code to replace the above
+   </with>
+   // You can include multiple replace-with blocks if needed
+   </file>
+
+4. Edit Script: Create a Node.js script that applies the changes described in step 3. The script should load the files, apply the edits, and save the changes. Wrap the script in <script> tags.
+
+IMPORTANT REMINDERS:
+- Always add necessary import statements when introducing new functions, components, or dependencies.
+- Use <replace> and <with> blocks to add or modify import statements at the top of relevant files.
+- To delete lines, use an empty <with></with> block.
+- Ensure that you're providing enough context in the <replace> blocks for accurate matching.
+- When writing the edit script, use the base path "${path.join(
     __dirname,
     '..',
     '..'
-  )}".
+  )}" to access the files.
 
-Here is an example response:
+Example response:
 <example>
-1. The user wants to add a new import and console log statement to the app.ts file, and create a new component file.
-2. We should modify the app.ts file to add the new import and console log, and create a new file for the component.
-3. Files to modify:
+1. User Request: Add a new NewComponent and use it in the Home page.
 
-<file path="backend/api/src/app.ts">
-<replace>
-import * as express from 'express'
-import { ErrorRequestHandler, RequestHandler } from 'express'
-</replace>
-<with>
-import * as express from 'express'
-import { ErrorRequestHandler, RequestHandler } from 'express'
-import { uniq } from 'lodash'
-</with>
+2. Implementation Strategy:
+   - Create a new file for NewComponent
+   - Modify the Home page to import and use NewComponent
+   - Ensure all necessary imports are added
 
+3. File Modifications:
+
+<file path="web/components/NewComponent.tsx">
+import React from 'react'
+
+export const NewComponent: React.FC = () => {
+  return <div>This is a new component</div>
+}
+</file>
+
+<file path="web/pages/Home.tsx">
 <replace>
-if (a === b) {
-  // Existing code
+import React from 'react'
+import { SomeExistingComponent } from '../components/SomeExistingComponent'
+
+const Home: React.FC = () => {
+  return (
+    <div>
+      <h1>Welcome to the Home page</h1>
+      <SomeExistingComponent />
+    </div>
+  )
 }
 </replace>
 <with>
-if (a === b) {
-  console.log(uniq(['a']))
-  // Existing code
+import React from 'react'
+import { SomeExistingComponent } from '../components/SomeExistingComponent'
+import { NewComponent } from '../components/NewComponent'
+
+const Home: React.FC = () => {
+  return (
+    <div>
+      <h1>Welcome to the Home page</h1>
+      <SomeExistingComponent />
+      <NewComponent />
+    </div>
+  )
 }
 </with>
 </file>
 
-<file path="web/components/new-component.tsx">
-export const NewComponent = () => 'Hello world!'
-</file>
-
-4. Here's a Node.js script to apply these changes:
+4. Edit Script:
 <script>
 const fs = require('fs')
 const path = require('path')
@@ -123,7 +151,7 @@ const path = require('path')
 const basePath = '${path.join(__dirname, '..', '..')}'
 
 function applyChanges(filePath, changes) {
-  let content = fs.readFileSync(filePath, 'utf8')
+  let content = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : ''
   const lines = content.split('\n')
 
   changes.forEach(({ replace, with: replacement }) => {
@@ -141,38 +169,52 @@ function applyChanges(filePath, changes) {
   fs.writeFileSync(filePath, lines.join('\n'))
 }
 
-// Update app.ts
-const appPath = path.join(basePath, 'backend/api/src/app.ts')
-const appChanges = [
+// Create NewComponent.tsx
+const newComponentPath = path.join(basePath, 'web/components/NewComponent.tsx')
+const newComponentContent = \`import React from 'react'
+
+export const NewComponent: React.FC = () => {
+  return <div>This is a new component</div>
+}\`
+fs.writeFileSync(newComponentPath, newComponentContent)
+console.log('Created NewComponent.tsx successfully')
+
+// Update Home.tsx
+const homePath = path.join(basePath, 'web/pages/Home.tsx')
+const homeChanges = [
   {
-    replace: \`import * as express from 'express'
-import { ErrorRequestHandler, RequestHandler } from 'express'\`,
-    with: \`import * as express from 'express'
-import { ErrorRequestHandler, RequestHandler } from 'express'
-import { uniq } from 'lodash'\`
-  },
-  {
-    replace: \`if (a === b) {
-  // Existing code
+    replace: \`import React from 'react'
+import { SomeExistingComponent } from '../components/SomeExistingComponent'
+
+const Home: React.FC = () => {
+  return (
+    <div>
+      <h1>Welcome to the Home page</h1>
+      <SomeExistingComponent />
+    </div>
+  )
 }\`,
-    with: \`if (a === b) {
-  console.log(uniq(['a']))
-  // Existing code
+    with: \`import React from 'react'
+import { SomeExistingComponent } from '../components/SomeExistingComponent'
+import { NewComponent } from '../components/NewComponent'
+
+const Home: React.FC = () => {
+  return (
+    <div>
+      <h1>Welcome to the Home page</h1>
+      <SomeExistingComponent />
+      <NewComponent />
+    </div>
+  )
 }\`
   }
 ]
-applyChanges(appPath, appChanges)
-console.log('Changes applied successfully to app.ts')
-
-// Create new-component.tsx
-const newComponentPath = path.join(basePath, 'web/components/new-component.tsx')
-const newComponentContent = \`export const NewComponent = () => 'Hello world!'\`
-fs.writeFileSync(newComponentPath, newComponentContent)
-console.log('Created new-component.tsx successfully')
+applyChanges(homePath, homeChanges)
+console.log('Updated Home.tsx successfully')
 </script>
 </example>
 
-Ok, here are the contents of some relevant files:
+Now, please provide your response based on the following file contents and user request:
 
 ${fileContents}
 
