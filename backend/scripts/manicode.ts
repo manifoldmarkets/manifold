@@ -1,7 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as readline from 'readline'
-import { execSync } from 'child_process'
 
 import { runScript } from 'run-script'
 import { promptClaude } from 'shared/helpers/claude'
@@ -80,18 +79,11 @@ The user has a coding question for you. Please provide a detailed response follo
    // You can include multiple replace-with blocks if needed
    </file>
 
-4. Edit Script: Create a Node.js script that applies the changes described in step 3. The script should load the files, apply the edits, and save the changes. Wrap the script in <script> tags.
-
 IMPORTANT REMINDERS:
 - Always add necessary import statements when introducing new functions, components, or dependencies.
 - Use <replace> and <with> blocks to add or modify import statements at the top of relevant files.
 - To delete lines, use an empty <with></with> block.
 - Ensure that you're providing enough context in the <replace> blocks for accurate matching.
-- When writing the edit script, use the base path "${path.join(
-    __dirname,
-    '..',
-    '..'
-  )}" to access the files.
 
 Example response:
 <example>
@@ -142,76 +134,6 @@ const Home: React.FC = () => {
 }
 </with>
 </file>
-
-4. Edit Script:
-<script>
-const fs = require('fs')
-const path = require('path')
-
-const basePath = '${path.join(__dirname, '..', '..')}'
-
-function applyChanges(filePath, changes) {
-  let content = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : ''
-  const lines = content.split('\n')
-
-  changes.forEach(({ replace, with: replacement }) => {
-    const replaceLines = replace.split('\n')
-    const withLines = replacement.split('\n')
-
-    for (let i = 0; i <= lines.length - replaceLines.length; i++) {
-      if (lines.slice(i, i + replaceLines.length).join('\n') === replaceLines.join('\n')) {
-        lines.splice(i, replaceLines.length, ...withLines)
-        break
-      }
-    }
-  })
-
-  fs.writeFileSync(filePath, lines.join('\n'))
-}
-
-// Create NewComponent.tsx
-const newComponentPath = path.join(basePath, 'web/components/NewComponent.tsx')
-const newComponentContent = \`import React from 'react'
-
-export const NewComponent: React.FC = () => {
-  return <div>This is a new component</div>
-}\`
-fs.writeFileSync(newComponentPath, newComponentContent)
-console.log('Created NewComponent.tsx successfully')
-
-// Update Home.tsx
-const homePath = path.join(basePath, 'web/pages/Home.tsx')
-const homeChanges = [
-  {
-    replace: \`import React from 'react'
-import { SomeExistingComponent } from '../components/SomeExistingComponent'
-
-const Home = () => {
-  return (
-    <div>
-      <h1>Welcome to the Home page</h1>
-      <SomeExistingComponent />
-    </div>
-  )
-}\`,
-    with: \`import React from 'react'
-import { SomeExistingComponent } from '../components/SomeExistingComponent'
-import { NewComponent } from '../components/NewComponent'
-
-const Home = () => {
-  return (
-    <div>
-      <h1>Welcome to the Home page</h1>
-      <SomeExistingComponent />
-      <NewComponent />
-    </div>
-  )
-}\`
-  }
-]
-applyChanges(homePath, homeChanges)
-console.log('Updated Home.tsx successfully')
-</script>
 </example>
 
 Now, please provide your response based on the following file contents and user request:`
@@ -229,8 +151,8 @@ User: ${firstPrompt}
 
   console.log(secondResponse)
 
-  // Extract the script from the response
-  extractAndExecuteScript(secondResponse)
+  // Apply the changes using our own function
+  applyChanges(secondResponse)
 
   interface ConversationEntry {
     role: 'user' | 'assistant'
@@ -272,12 +194,11 @@ User: ${firstPrompt}
             }
             New user message: ${userInput}
 
-            Based on the conversation above, which files do you need to read to answer the user's question? Please list the file paths, one per line.
+            Based on the conversation above, which files do you need to read to answer the user's question? Please list the file paths, one per line. It's recommended you include all files you have edited so far.
           `
           // Get updated system prompt (includes updated list of files)
           const system = getSystemPrompt()
 
-          console.log('fileSelectionPrompt', fileSelectionPrompt)
           const filesToReadResponse = await promptClaudeWithProgress(
             fileSelectionPrompt,
             { system }
@@ -307,13 +228,13 @@ User: ${firstPrompt}
               content: claudeResponse,
             })
 
-            // Extract and execute the script from the response
-            extractAndExecuteScript(claudeResponse)
+            // Apply the changes using our own function
+            applyChanges(claudeResponse)
 
             // Continue the loop
-            promptUser()
           } catch (error) {
             console.error('Error:', error)
+          } finally {
             promptUser()
           }
         }
@@ -443,22 +364,47 @@ function getOnlyCodeFiles() {
   return allProjectFiles
 }
 
-function extractAndExecuteScript(response: string) {
-  const scriptMatch = response.match(/<script>([\s\S]*?)<\/script>/)
-  if (scriptMatch) {
-    const script = scriptMatch[1]
-    const tempScriptPath = path.join(__dirname, 'temp-edit-script.js')
-    fs.writeFileSync(tempScriptPath, script)
+function applyChanges(response: string) {
+  const fileRegex = /<file path="([^"]+)">([\s\S]*?)<\/file>/g
+  let match
 
-    try {
-      execSync(`node "${tempScriptPath}"`, { stdio: 'inherit' })
-      console.log('Successfully applied edits')
-    } catch (error) {
-      console.error('Error executing edit script:', error)
-    } finally {
-      fs.unlinkSync(tempScriptPath)
+  while ((match = fileRegex.exec(response)) !== null) {
+    const [, filePath, fileContent] = match
+    const fullPath = path.join(__dirname, '..', '..', filePath)
+
+    if (fileContent.includes('<replace>')) {
+      // Edit existing file
+      const currentContent = fs.existsSync(fullPath)
+        ? fs.readFileSync(fullPath, 'utf8')
+        : ''
+      const lines = currentContent.split('\n')
+
+      const replaceRegex =
+        /<replace>([\s\S]*?)<\/replace>\s*<with>([\s\S]*?)<\/with>/g
+      let replaceMatch
+
+      while ((replaceMatch = replaceRegex.exec(fileContent)) !== null) {
+        const [, replaceContent, withContent] = replaceMatch
+        const replaceLines = replaceContent.trim().split('\n')
+        const withLines = withContent.trim().split('\n')
+
+        for (let i = 0; i <= lines.length - replaceLines.length; i++) {
+          if (
+            lines.slice(i, i + replaceLines.length).join('\n') ===
+            replaceLines.join('\n')
+          ) {
+            lines.splice(i, replaceLines.length, ...withLines)
+            break
+          }
+        }
+      }
+
+      fs.writeFileSync(fullPath, lines.join('\n'))
+      console.log(`Updated file: ${filePath}`)
+    } else {
+      // Replace whole file
+      fs.writeFileSync(fullPath, fileContent.trim())
+      console.log(`Set file: ${filePath}`)
     }
-  } else {
-    console.error('No script found in the response')
   }
 }
