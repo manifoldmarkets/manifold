@@ -186,7 +186,7 @@ const homeChanges = [
     replace: \`import React from 'react'
 import { SomeExistingComponent } from '../components/SomeExistingComponent'
 
-const Home: React.FC = () => {
+const Home = () => {
   return (
     <div>
       <h1>Welcome to the Home page</h1>
@@ -198,7 +198,7 @@ const Home: React.FC = () => {
 import { SomeExistingComponent } from '../components/SomeExistingComponent'
 import { NewComponent } from '../components/NewComponent'
 
-const Home: React.FC = () => {
+const Home = () => {
   return (
     <div>
       <h1>Welcome to the Home page</h1>
@@ -214,41 +214,23 @@ console.log('Updated Home.tsx successfully')
 </script>
 </example>
 
-Now, please provide your response based on the following file contents and user request:
+Now, please provide your response based on the following file contents and user request:`
+
+  const fullPrompt = `${secondPrompt}
 
 ${fileContents}
-
 
 User: ${firstPrompt}
 `
 
-  const secondResponse = await promptClaudeWithProgress(secondPrompt, {
+  const secondResponse = await promptClaudeWithProgress(fullPrompt, {
     system,
   })
 
   console.log(secondResponse)
 
   // Extract the script from the response
-  const scriptMatch = secondResponse.match(/<script>([\s\S]*?)<\/script>/)
-  if (scriptMatch) {
-    const script = scriptMatch[1]
-    // Save the script to a temporary file
-    const tempScriptPath = path.join(__dirname, 'temp-edit-script.js')
-    fs.writeFileSync(tempScriptPath, script)
-
-    // Execute the script
-    try {
-      execSync(`node "${tempScriptPath}"`, { stdio: 'inherit' })
-      console.log('Successfully applied edits')
-    } catch (error) {
-      console.error('Error executing edit script:', error)
-    } finally {
-      // Clean up the temporary script file
-      fs.unlinkSync(tempScriptPath)
-    }
-  } else {
-    console.error('No script found in the response')
-  }
+  extractAndExecuteScript(secondResponse)
 
   interface ConversationEntry {
     role: 'user' | 'assistant'
@@ -257,7 +239,6 @@ User: ${firstPrompt}
 
   const conversationHistory: ConversationEntry[] = [
     { role: 'user', content: firstPrompt },
-    { role: 'assistant', content: fileSelectionResponse },
     { role: 'assistant', content: secondResponse },
   ]
 
@@ -279,6 +260,32 @@ User: ${firstPrompt}
 
           conversationHistory.push({ role: 'user', content: userInput })
 
+          // First Claude call: Ask which files to read
+          const fileSelectionPrompt = `
+            Previous user message: ${
+              conversationHistory[conversationHistory.length - 3]?.content ||
+              'N/A'
+            }
+            Previous assistant message: ${
+              conversationHistory[conversationHistory.length - 2]?.content ||
+              'N/A'
+            }
+            New user message: ${userInput}
+
+            Based on the conversation above, which files do you need to read to answer the user's question? Please list the file paths, one per line.
+          `
+          // Get updated system prompt (includes updated list of files)
+          const system = getSystemPrompt()
+
+          console.log('fileSelectionPrompt', fileSelectionPrompt)
+          const filesToReadResponse = await promptClaudeWithProgress(
+            fileSelectionPrompt,
+            { system }
+          )
+          console.log(filesToReadResponse)
+          const fileContents = loadListedFiles(filesToReadResponse)
+
+          // Second Claude call: Answer the user's question
           const fullPrompt = conversationHistory
             .map(({ role, content }) => {
               const label =
@@ -287,8 +294,10 @@ User: ${firstPrompt}
             })
             .join('\n\n')
 
+          const finalPrompt = `${fullPrompt}\n\nRelevant file contents:\n\n${fileContents}`
+
           try {
-            const claudeResponse = await promptClaudeWithProgress(fullPrompt, {
+            const claudeResponse = await promptClaudeWithProgress(finalPrompt, {
               system,
             })
             console.log('Claude:', claudeResponse)
@@ -299,25 +308,7 @@ User: ${firstPrompt}
             })
 
             // Extract and execute the script from the response
-            const scriptMatch = claudeResponse.match(
-              /<script>([\s\S]*?)<\/script>/
-            )
-            if (scriptMatch) {
-              const script = scriptMatch[1]
-              const tempScriptPath = path.join(__dirname, 'temp-edit-script.js')
-              fs.writeFileSync(tempScriptPath, script)
-
-              try {
-                execSync(`node "${tempScriptPath}"`, { stdio: 'inherit' })
-                console.log('Successfully applied edits')
-              } catch (error) {
-                console.error('Error executing edit script:', error)
-              } finally {
-                fs.unlinkSync(tempScriptPath)
-              }
-            } else {
-              console.error('No script found in the response')
-            }
+            extractAndExecuteScript(claudeResponse)
 
             // Continue the loop
             promptUser()
@@ -450,4 +441,24 @@ function getOnlyCodeFiles() {
     .filter((file) => !file.endsWith('.d.ts'))
     .map((file) => file.replace(projectRoot + '/', ''))
   return allProjectFiles
+}
+
+function extractAndExecuteScript(response: string) {
+  const scriptMatch = response.match(/<script>([\s\S]*?)<\/script>/)
+  if (scriptMatch) {
+    const script = scriptMatch[1]
+    const tempScriptPath = path.join(__dirname, 'temp-edit-script.js')
+    fs.writeFileSync(tempScriptPath, script)
+
+    try {
+      execSync(`node "${tempScriptPath}"`, { stdio: 'inherit' })
+      console.log('Successfully applied edits')
+    } catch (error) {
+      console.error('Error executing edit script:', error)
+    } finally {
+      fs.unlinkSync(tempScriptPath)
+    }
+  } else {
+    console.error('No script found in the response')
+  }
 }
