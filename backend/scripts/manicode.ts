@@ -1,9 +1,10 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as readline from 'readline'
+import { execSync } from 'child_process'
 
 import { runScript } from 'run-script'
-import { models, promptClaude } from 'shared/helpers/claude'
+import { promptClaude } from 'shared/helpers/claude'
 import { filterDefined } from 'common/util/array'
 
 if (require.main === module) {
@@ -51,64 +52,161 @@ const manicode = async (firstPrompt: string) => {
 
   // Second prompt to Claude: Answer the user's question
   const secondPrompt = `
-  The user has a coding question for you.
+The user has a coding question for you.
 
-  Can you answer the below prompt with:
-  1. A description of what the user wants done.
-  2. Your best summary of what strategy you will employ to implement it in code (keep it simple!).
-  3. Please end your message with a list of files and the specific edits you want to make.
-   For creating new files or editing existing files, provide the file contents wrapped in XML tags with the file path as an attribute, like this:
-   <file path="web/components/example.tsx">
-   // File contents here
-   </file>
-
-  You can make multiple changes to a file by making clear which parts of the file stay the same and which should be edited. Feel free to use code comments to say something like "// The rest of the file is unchanged".
-
-  Here is an example response:
-  <example>
-  1. The user wants [...insert answer]
-  2. We should [... insert answer]
-  3. Files to modify:
-
-  <file path="web/components/new-component.tsx">
-  export const NewComponent = () => 'Hello world!'
-  </file>
-
+Can you answer the below prompt with:
+1. A description of what the user wants done.
+2. Your best summary of what strategy you will employ to implement it in code (keep it simple!).
+3. Please list the files and the specific edits you want to make.
+  For creating new files or editing existing files, provide the file contents wrapped in XML tags with the file path as an attribute, like this:
   <file path="web/components/example.tsx">
-  import React from 'react';
-
-  const ExampleComponent = () => {
-    console.log('New line 1');
-    console.log('New line 2');
-    console.log('New line 3');
-    return <div>Example</div>;
-  };
-
-  export default ExampleComponent;
+  // File contents here
   </file>
+For existing files, when making changes, use the following format to specify line replacements:
+  <replace>
+  old_line_1
+  old_line_2
+  ...
+  </replace>
+  <with>
+  new_line_1
+  new_line_2
+  ...
+  </with>
+You can include multiple replace-with blocks in a single file if needed. To delete lines, use an empty <with></with> block.
+4. Please create one Node.js script that loads the files listed in step 3, applies the edits described, and saves the changes. The script should use the line replacement strategy described above.
+Wrap the script in <script> tags. Additionally, note that there is a base path you need to prepend to the file path to access the file. The base path is "${path.join(
+    __dirname,
+    '..',
+    '..'
+  )}".
 
-  <file path="web/pages/live-activity.tsx">
-  // Other imports stay the same.
-  import { uniq } from 'lodash'
+Here is an example response:
+<example>
+1. The user wants to add a new import and console log statement to the app.ts file, and create a new component file.
+2. We should modify the app.ts file to add the new import and console log, and create a new file for the component.
+3. Files to modify:
 
+<file path="backend/api/src/app.ts">
+<replace>
+import * as express from 'express'
+import { ErrorRequestHandler, RequestHandler } from 'express'
+</replace>
+<with>
+import * as express from 'express'
+import { ErrorRequestHandler, RequestHandler } from 'express'
+import { uniq } from 'lodash'
+</with>
+
+<replace>
+if (a === b) {
+  // Existing code
+}
+</replace>
+<with>
+if (a === b) {
   console.log(uniq(['a']))
-  </file>
-  </example>
+  // Existing code
+}
+</with>
+</file>
 
-  Ok, here are the contents of some relevant files:
+<file path="web/components/new-component.tsx">
+export const NewComponent = () => 'Hello world!'
+</file>
 
-  ${fileContents}
+4. Here's a Node.js script to apply these changes:
+<script>
+const fs = require('fs')
+const path = require('path')
+
+const basePath = '${path.join(__dirname, '..', '..')}'
+
+function applyChanges(filePath, changes) {
+  let content = fs.readFileSync(filePath, 'utf8')
+  const lines = content.split('\n')
+
+  changes.forEach(({ replace, with: replacement }) => {
+    const replaceLines = replace.split('\n')
+    const withLines = replacement.split('\n')
+
+    for (let i = 0; i <= lines.length - replaceLines.length; i++) {
+      if (lines.slice(i, i + replaceLines.length).join('\n') === replaceLines.join('\n')) {
+        lines.splice(i, replaceLines.length, ...withLines)
+        break
+      }
+    }
+  })
+
+  fs.writeFileSync(filePath, lines.join('\n'))
+}
+
+// Update app.ts
+const appPath = path.join(basePath, 'backend/api/src/app.ts')
+const appChanges = [
+  {
+    replace: \`import * as express from 'express'
+import { ErrorRequestHandler, RequestHandler } from 'express'\`,
+    with: \`import * as express from 'express'
+import { ErrorRequestHandler, RequestHandler } from 'express'
+import { uniq } from 'lodash'\`
+  },
+  {
+    replace: \`if (a === b) {
+  // Existing code
+}\`,
+    with: \`if (a === b) {
+  console.log(uniq(['a']))
+  // Existing code
+}\`
+  }
+]
+applyChanges(appPath, appChanges)
+console.log('Changes applied successfully to app.ts')
+
+// Create new-component.tsx
+const newComponentPath = path.join(basePath, 'web/components/new-component.tsx')
+const newComponentContent = \`export const NewComponent = () => 'Hello world!'\`
+fs.writeFileSync(newComponentPath, newComponentContent)
+console.log('Created new-component.tsx successfully')
+</script>
+</example>
+
+Ok, here are the contents of some relevant files:
+
+${fileContents}
 
 
-  User: ${firstPrompt}
-  `
+User: ${firstPrompt}
+`
 
   const secondResponse = await promptClaudeWithProgress(secondPrompt, {
     system,
   })
 
   console.log(secondResponse)
-  await applyEdits(secondResponse)
+
+  // Extract the script from the response
+  const scriptMatch = secondResponse.match(/<script>([\s\S]*?)<\/script>/)
+  if (scriptMatch) {
+    const script = scriptMatch[1]
+    // Save the script to a temporary file
+    const tempScriptPath = path.join(__dirname, 'temp-edit-script.js')
+    fs.writeFileSync(tempScriptPath, script)
+
+    // Execute the script
+    try {
+      execSync(`node "${tempScriptPath}"`, { stdio: 'inherit' })
+      console.log('Successfully applied edits')
+    } catch (error) {
+      console.error('Error executing edit script:', error)
+    } finally {
+      // Clean up the temporary script file
+      fs.unlinkSync(tempScriptPath)
+    }
+  } else {
+    console.error('No script found in the response')
+  }
 
   interface ConversationEntry {
     role: 'user' | 'assistant'
@@ -158,7 +256,26 @@ const manicode = async (firstPrompt: string) => {
               content: claudeResponse,
             })
 
-            await applyEdits(claudeResponse)
+            // Extract and execute the script from the response
+            const scriptMatch = claudeResponse.match(
+              /<script>([\s\S]*?)<\/script>/
+            )
+            if (scriptMatch) {
+              const script = scriptMatch[1]
+              const tempScriptPath = path.join(__dirname, 'temp-edit-script.js')
+              fs.writeFileSync(tempScriptPath, script)
+
+              try {
+                execSync(`node "${tempScriptPath}"`, { stdio: 'inherit' })
+                console.log('Successfully applied edits')
+              } catch (error) {
+                console.error('Error executing edit script:', error)
+              } finally {
+                fs.unlinkSync(tempScriptPath)
+              }
+            } else {
+              console.error('No script found in the response')
+            }
 
             // Continue the loop
             promptUser()
@@ -193,108 +310,6 @@ function loadListedFiles(instructions: string) {
       }
     })
   ).join('\n\n')
-}
-
-async function applyEdits(instructions: string) {
-  // Ask Claude Haiku which files are being edited or created
-  const fileListPrompt = `
-Given the following instructions, list the full file paths of all files being edited or created, one per line. Include both new files and existing files that are being modified.
-
-Example input:
-
-<file path="web/components/new-component.tsx">
-export const NewComponent = () => 'Hello world!'
-</file>
-
-<file path="web/components/example.tsx">
-console.log('New line 1');
-
-console.log('New line 2');
-console.log('New line 3');
-</file>
-
-Example output:
-web/components/new-component.tsx
-web/components/example.tsx
-
-Instructions:
-${instructions}
-
-File paths:
-`
-
-  const fileListResponse = await promptClaude(fileListPrompt, {
-    model: models.sonnet,
-  })
-  const filesToEdit = fileListResponse.trim().split('\n')
-  console.log('haiku fileListResponse', fileListResponse)
-
-  await Promise.all(
-    filesToEdit.map(async (filePath) => {
-      if (!filePath || !filePath.includes('/')) return
-
-      const fullPath = path.join(__dirname, '..', '..', filePath.trim())
-      let originalContent = ''
-
-      try {
-        const stats = fs.statSync(fullPath)
-        if (stats.isFile()) {
-          originalContent = fs.readFileSync(fullPath, 'utf8')
-        } else if (stats.isDirectory()) {
-          console.log(`Skipping directory: ${filePath}`)
-          return
-        }
-      } catch (error) {
-        // File doesn't exist, which is fine for new files
-      }
-
-      const editPrompt = `
-Given the following original file content and edit instructions, provide the complete updated content for the specified file. Please output the updated contents in a file tag with that path:
-<file path="${filePath}">
-// updated contents
-</file>
-
-Original:
-<file path="${filePath}">
-${originalContent}
-</file>
-
-Edit instructions:
-${instructions}
-
-Updated file content:
-`
-
-      const updatedContent = await promptClaude(editPrompt, {
-        model: models.sonnet,
-      })
-
-      try {
-        const match = updatedContent.match(
-          /<file\s+path=["']([^"']+)["']>\s*([\s\S]*?)\s*<\/file>/i
-        )
-        if (match) {
-          const [, matchedPath, fileContent] = match
-          if (matchedPath.trim() === filePath.trim()) {
-            fs.mkdirSync(path.dirname(fullPath), { recursive: true })
-            fs.writeFileSync(fullPath, fileContent.trim(), 'utf8')
-            console.log(`Successfully updated ${filePath}`)
-          } else {
-            console.error(
-              `Error: File path mismatch. Expected ${filePath}, got ${matchedPath}`
-            )
-          }
-        } else {
-          console.error(
-            `Error: Could not parse updated content for ${filePath}`
-          )
-          console.log('Received content:', updatedContent)
-        }
-      } catch (error) {
-        console.error(`Error updating ${filePath}:`, error)
-      }
-    })
-  )
 }
 
 async function promptClaudeWithProgress(prompt: string, options: any) {
