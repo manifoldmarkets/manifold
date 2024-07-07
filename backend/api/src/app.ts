@@ -107,6 +107,7 @@ import { getMarket } from './get-market'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
+import { getContract } from './get-contract'
 import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { searchUsers } from './supabase-search-users'
 import {
@@ -242,6 +243,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
   bets: getBets,
+  'get-contract': getContract,
   comment: createComment,
   'hide-comment': hideComment,
   'pin-comment': pinComment,

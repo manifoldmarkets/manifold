@@ -95,6 +95,15 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+'get-contract': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as Contract,
+    props: z.object({
+      contractId: z.string(),
+    }).strict(),
+  },
   'hide-comment': {
     method: 'POST',
     visibility: 'public',
