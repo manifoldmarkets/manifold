@@ -70,7 +70,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { formatTime } from 'web/lib/util/time'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { QuickLimitOrderButtons } from '../bet/quick-limit-order-buttons'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
@@ -114,10 +113,7 @@ export function AnswersPanel(props: {
 
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
-  const liveAnswers = useAnswersCpmm(contract.id) ?? contract.answers
-  contract.answers = liveAnswers
-
-  const answers = liveAnswers
+  const answers = contract.answers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
     .map((a) => ({
       ...a,
