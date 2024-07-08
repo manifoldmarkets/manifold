@@ -6,7 +6,15 @@ import { removeUndefinedProps } from 'common/util/object'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { bulkInsert, insert } from 'shared/supabase/utils'
 import { broadcastOrders } from 'shared/websockets/helpers'
-import { from, limit, orderBy, renderSql, select, where } from './sql-builder'
+import {
+  from,
+  join,
+  limit,
+  orderBy,
+  renderSql,
+  select,
+  where,
+} from './sql-builder'
 import { buildArray } from 'common/util/array'
 import { APIParams } from 'common/api/schema'
 
@@ -42,6 +50,11 @@ export const getBetsWithFilter = async (
   } = options
 
   const conditions = buildArray(
+    !contractId && [
+      join('contracts on contracts.id = contract_bets.contract_id'),
+      where('contracts.visibility = ${visibility}', { visibility: 'public' }),
+    ],
+
     contractId &&
       (Array.isArray(contractId)
         ? where('contract_id = ANY(${contractId})', { contractId })
