@@ -6,19 +6,17 @@ import { runScript } from 'run-script'
 import { promptClaude } from 'shared/helpers/claude'
 import { filterDefined } from 'common/util/array'
 
-if (require.main === module) {
-  runScript(async () => {
-    const userPrompt = process.argv[2]
-    // E.g.:
-    // I want to create a new page which shows off what's happening on manifold right now. Can you use our websocket api to get recent bets on markets and illustrate what's happening in a compelling and useful way?
-    if (!userPrompt) {
-      console.log('Please provide a prompt on what code to change.')
-      return
-    }
+runScript(async () => {
+  const userPrompt = process.argv[2]
+  // E.g.:
+  // I want to create a new page which shows off what's happening on manifold right now. Can you use our websocket api to get recent bets on markets and illustrate what's happening in a compelling and useful way?
+  if (!userPrompt) {
+    console.log('Please provide a prompt on what code to change.')
+    return
+  }
 
-    await manicode(userPrompt)
-  })
-}
+  await manicode(userPrompt)
+})
 
 const manicode = async (firstPrompt: string) => {
   // First prompt to Claude: Ask which files to read

@@ -359,19 +359,17 @@ Example from `backend/scripts/manicode.ts`
 ```ts
 import { runScript } from 'run-script'
 
-if (require.main === module) {
-  runScript(async ({ pg }) => {
-    const userPrompt = process.argv[2]
-    // E.g.:
-    // I want to create a new page which shows off what's happening on manifold right now. Can you use our websocket api to get recent bets on markets and illustrate what's happening in a compelling and useful way?
-    if (!userPrompt) {
-      console.log('Please provide a prompt on what code to change.')
-      return
-    }
+runScript(async ({ pg }) => {
+  const userPrompt = process.argv[2]
+  // E.g.:
+  // I want to create a new page which shows off what's happening on manifold right now. Can you use our websocket api to get recent bets on markets and illustrate what's happening in a compelling and useful way?
+  if (!userPrompt) {
+    console.log('Please provide a prompt on what code to change.')
+    return
+  }
 
-    await manicode(pg, userPrompt)
-  })
-}
+  await manicode(pg, userPrompt)
+})
 ```
 
 We recommend running scripts via `ts-node`. Example:
