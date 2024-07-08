@@ -212,7 +212,7 @@ export function TopicDropdownPill(props: {
   const currentTopicInInitialTopicsName = initialTopics.find(
     (topic) => topic.slug == currentTopicFilter
   )?.name
-const currentTopicLabel = forYou
+  const currentTopicLabel = forYou
     ? 'Your topics'
     : currentTopicInInitialTopicsName ?? 'All Topics'
 
@@ -227,7 +227,7 @@ const currentTopicLabel = forYou
     })
   }
 
-const forYouItem = user
+  const forYouItem = user
     ? {
         name: 'Your topics',
         onClick: () =>
