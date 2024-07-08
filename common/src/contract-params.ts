@@ -10,7 +10,7 @@ import {
   ContractParams,
 } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
-import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
+import { getBetPoints, getTotalBetCount } from 'common/supabase/bets'
 import {
   getRecentTopLevelCommentsAndReplies,
   getPinnedComments,
@@ -66,7 +66,7 @@ export async function getContractParams(
         : getTotalBetCount(contract.id, db)
       : 0,
     hasMechanism
-      ? getBets(db, {
+      ? unauthedApi('bets', {
           contractId: contract.id,
           limit: 1,
           order: 'desc',
@@ -94,7 +94,7 @@ export async function getContractParams(
     }),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
-      ? getBets(db, {
+      ? unauthedApi('bets', {
           contractId: contract.id,
           commentRepliesOnly: true,
         })

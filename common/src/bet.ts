@@ -88,23 +88,6 @@ export type fill = {
   isSale?: boolean
 }
 
-export type BetFilter = {
-  contractId?: string | string[]
-  userId?: string
-  filterChallenges?: boolean
-  filterRedemptions?: boolean
-  filterAntes?: boolean
-  isOpenLimitOrder?: boolean
-  afterTime?: number
-  beforeTime?: number
-  order?: 'desc' | 'asc'
-  limit?: number
-  commentRepliesOnly?: boolean
-  answerId?: string
-  includeZeroShareRedemptions?: boolean
-  visibility?: Visibility
-}
-
 export const calculateMultiBets = (
   betPoints: {
     x: number
