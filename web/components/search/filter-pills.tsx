@@ -212,8 +212,8 @@ export function TopicDropdownPill(props: {
   const currentTopicInInitialTopicsName = initialTopics.find(
     (topic) => topic.slug == currentTopicFilter
   )?.name
-  const currentTopicLabel = forYou
-    ? 'For You'
+const currentTopicLabel = forYou
+    ? 'Your topics'
     : currentTopicInInitialTopicsName ?? 'All Topics'
 
   const selectTopicFilter = (selection: string) => {
@@ -227,9 +227,9 @@ export function TopicDropdownPill(props: {
     })
   }
 
-  const forYouItem = user
+const forYouItem = user
     ? {
-        name: 'For You',
+        name: 'Your topics',
         onClick: () =>
           updateParams({
             [FOR_YOU_KEY]: '1',
