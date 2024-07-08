@@ -76,8 +76,7 @@ export const EditProfile = (props: {
       updates.twitterHandle = twitterHandle.trim()
     if (discordHandle.trim() !== (user.discordHandle || '').trim())
       updates.discordHandle = discordHandle.trim()
-    if (name.trim() !== (user.name || '').trim())
-      updates.displayName = name.trim()
+    if (name.trim() !== (user.name || '').trim()) updates.name = name.trim()
     if (username.trim() !== (user.username || '').trim())
       updates.username = username.trim()
 
