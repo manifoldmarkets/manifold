@@ -84,7 +84,7 @@ export const NumericSellPanel = (props: {
 
   const sellShares = async () => {
     setIsSubmitting(true)
-    toast
+    await toast
       .promise(
         api(
           'multi-sell',

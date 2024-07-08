@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Answer } from 'common/answer'
-import { unserializeBase64Multi } from 'common/chart'
+import { HistoryPoint, MultiPoints, unserializeBase64Multi } from 'common/chart'
 import {
   ContractParams,
   MaybeAuthedContractParams,
@@ -49,7 +49,7 @@ import {
   useContractBets,
   useUnfilledBets,
 } from 'web/hooks/use-bets'
-import { useLiveContract } from 'web/hooks/use-contract'
+import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
@@ -169,7 +169,7 @@ export function ContractPageContent(props: ContractParams) {
     betReplies,
   } = props
 
-  const contract = useLiveContract(props.contract)
+  const contract = useLiveContractWithAnswers(props.contract)
   if (!contract.viewCount) {
     contract.viewCount = props.contract.viewCount
   }
@@ -218,6 +218,7 @@ export function ContractPageContent(props: ContractParams) {
   const newBets = useContractBets(contract.id, {
     afterTime: props.lastBetTime ?? 0,
     includeZeroShareRedemptions: true,
+    filterRedemptions: !isNumber,
   })
 
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
@@ -244,14 +245,14 @@ export function ContractPageContent(props: ContractParams) {
 
       return mergeWith(data, newData, (array1, array2) =>
         [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
-      )
+      ) as MultiPoints
     } else {
       const points = pointsString ? base64toPoints(pointsString) : []
       const newPoints = newBetsWithoutRedemptions.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,
       }))
-      return [...points, ...newPoints]
+      return [...points, ...newPoints] as HistoryPoint<Partial<Bet>>[]
     }
   }, [pointsString, newBets.length])
 
@@ -459,7 +460,7 @@ export function ContractPageContent(props: ContractParams) {
               </div>
               <ContractOverview
                 contract={contract}
-                betPoints={betPoints as any}
+                betPoints={betPoints}
                 showResolver={showResolver}
                 resolutionRating={
                   userHasReviewed ? (
