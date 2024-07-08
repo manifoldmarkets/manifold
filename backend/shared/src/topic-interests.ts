@@ -15,6 +15,7 @@ import {
 } from 'shared/supabase/sql-builder'
 import { GROUP_SLUGS_TO_NOT_INTRODUCE_IN_FEED } from 'common/envs/constants'
 import { HOUR_MS } from 'common/util/time'
+import { buildArray } from 'common/util/array'
 
 export type TopicToInterestWeights = { [groupId: string]: number }
 export const userIdsToAverageTopicConversionScores: {
@@ -99,21 +100,22 @@ const getFollowedTopics = async (pg: SupabaseDirectClient, userId: string) => {
   )
 }
 
-export const minimumContractsQualityBarWhereClauses = [
-  where(`contracts.close_time > now()`),
-  where(`contracts.outcome_type != 'STONK'`),
-  where(`contracts.outcome_type != 'BOUNTIED_QUESTION'`),
-  where(`(contracts.data->>'marketTier') != 'play'`), // filtering by liquidity takes too long
-  where(`contracts.visibility = 'public'`),
-  where(`contracts.unique_bettor_count > 1`),
-]
+export const minimumContractsQualityBarWhereClauses = (adQuery: boolean) =>
+  buildArray(
+    where(`contracts.close_time > now()`),
+    where(`contracts.outcome_type != 'STONK'`),
+    where(`contracts.outcome_type != 'BOUNTIED_QUESTION'`),
+    !adQuery && where(`(contracts.data->>'marketTier') != 'play'`), // filtering by liquidity takes too long
+    where(`contracts.visibility = 'public'`),
+    !adQuery && where(`contracts.unique_bettor_count > 1`)
+  )
 
 const contractsMeetingMinimumBar = renderSql(
   select('1'),
   from('contracts'),
   where('group_contracts.contract_id = contracts.id'),
   where(`coalesce(contracts.data->'isRanked', 'true')::boolean = true`),
-  ...minimumContractsQualityBarWhereClauses
+  ...minimumContractsQualityBarWhereClauses(false)
 )
 
 export const minimumTopicsQualityBarClauses = [
