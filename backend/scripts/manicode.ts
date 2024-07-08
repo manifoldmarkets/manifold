@@ -51,6 +51,11 @@ const manicode = async (firstPrompt: string) => {
 
   // Second prompt to Claude: Answer the user's question
   const secondPrompt = `
+<user_request>
+${firstPrompt}
+</user_request>
+
+<instructions>
 The user has a coding question for you. Please provide a detailed response following this structure:
 
 1. User Request: Briefly restate what the user wants to accomplish.
@@ -78,14 +83,15 @@ The user has a coding question for you. Please provide a detailed response follo
    </with>
    // You can include multiple replace-with blocks if needed
    </file>
+</instructions>
 
-IMPORTANT REMINDERS:
+<important_reminders>
 - Always add necessary import statements when introducing new functions, components, or dependencies.
 - Use <replace> and <with> blocks to add or modify import statements at the top of relevant files.
 - To delete lines, use an empty <with></with> block.
 - Ensure that you're providing enough context in the <replace> blocks for accurate matching.
+</important_reminders>
 
-Example response:
 <example>
 1. User Request: Add a new NewComponent and use it in the Home page.
 
@@ -191,10 +197,15 @@ User: ${firstPrompt}
             })
             .join('\n\n')
           // First Claude call: Ask which files to read
-          const fileSelectionPrompt = `${fullPrompt}
+          const fileSelectionPrompt = `
+<conversation_history>
+${fullPrompt}
+</conversation_history>
 
-            Based on the conversation above, which files do you need to read to answer the user's question? Please list the file paths, one per line. It's recommended you include all files you have edited so far.
-          `
+<instructions>
+Based on the conversation above, which files do you need to read to answer the user's question? Please list the file paths, one per line. It's recommended you include all files you have edited so far.
+</instructions>
+`
           // Get updated system prompt (includes updated list of files)
           const system = getSystemPrompt()
 
@@ -314,23 +325,35 @@ function getSystemPrompt() {
   )
 
   const apiGuide = `
-  Here's our API schema. Each key-value pair in the below object corresponds to an endpoint.
+<api_guide>
+Here's our API schema. Each key-value pair in the below object corresponds to an endpoint.
 
 E.g. 'comment' can be accessed at \`api.manifold.markets/v0/comment\`. If 'visibility' is 'public', then you need the '/v0', otherwise, you should omit the version. However, you probably don't need the url, you can use our library function \`api('comment', props)\`, or \`useAPIGetter('comment', props)\`
-  ${apiSchemaFile}`
+${apiSchemaFile}
+</api_guide>
+`
 
-  return `${manifoldInfo}
+  return `
+<manifold_info>
+${manifoldInfo}
+</manifold_info>
 
-  ${codeGuide}
+<code_guide>
+${codeGuide}
+</code_guide>
 
-    ${apiGuide}
+${apiGuide}
 
-    Here are all the code files in our project:
-    ${codeFiles.join('\n')}
+<project_files>
+Here are all the code files in our project:
+${codeFiles.join('\n')}
+</project_files>
 
-    IMPORTANT: Always end your response with the following marker:
-    [END_OF_RESPONSE]
-    If your response is cut off due to length limitations, do not include the marker and wait for a follow-up prompt to continue.`
+<important_instruction>
+Always end your response with the following marker:
+[END_OF_RESPONSE]
+If your response is cut off due to length limitations, do not include the marker and wait for a follow-up prompt to continue.
+</important_instruction>`
 }
 
 // Function to load file names of every file in the project
