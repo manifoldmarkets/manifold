@@ -72,7 +72,12 @@ if (require.main === module) {
                  data = jsonb_set(
                    jsonb_set(
                      jsonb_set(
-                       data, 
+                       jsonb_set(
+                         data, 
+                         '{creatorId}', 
+                         to_jsonb($1::text), 
+                         true
+                       ), 
                        '{creatorUsername}', 
                        to_jsonb($2::text), 
                        true
