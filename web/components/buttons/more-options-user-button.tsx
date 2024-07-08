@@ -7,6 +7,7 @@ import { User } from 'common/user'
 import clsx from 'clsx'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import { ChartBarIcon, PencilIcon } from '@heroicons/react/solid'
+import { CogIcon } from '@heroicons/react/outline'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { BlockUser } from 'web/components/profile/block-user'
@@ -64,10 +65,17 @@ export function MoreOptionsUserButton(props: { user: User }) {
         className="rounded-none px-6"
         onClick={() => setIsModalOpen(true)}
       >
-        <DotsHorizontalIcon
-          className={clsx('h-5 w-5 flex-shrink-0')}
-          aria-hidden="true"
-        />
+        {isYou ? (
+          <CogIcon
+            className={clsx('h-5 w-5 flex-shrink-0')}
+            aria-hidden="true"
+          />
+        ) : (
+          <DotsHorizontalIcon
+            className={clsx('h-5 w-5 flex-shrink-0')}
+            aria-hidden="true"
+          />
+        )}
       </Button>
       <Modal open={isModalOpen} setOpen={setIsModalOpen}>
         <div className="bg-canvas-0 text-ink-1000 max-h-[80vh]  overflow-y-auto rounded-md p-4">
