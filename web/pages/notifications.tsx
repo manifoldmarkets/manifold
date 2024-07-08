@@ -31,7 +31,7 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser, useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { ViewListIcon, XIcon } from '@heroicons/react/outline'
+import { XIcon } from '@heroicons/react/outline'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -39,7 +39,6 @@ import { track } from 'web/lib/service/analytics'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import dayjs from 'dayjs'
-import { isBetChange } from 'common/balance-change'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()

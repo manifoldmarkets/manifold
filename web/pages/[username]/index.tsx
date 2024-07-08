@@ -3,7 +3,6 @@ import {
   ChatAlt2Icon,
   ScaleIcon,
   PresentationChartLineIcon,
-  ViewListIcon,
   ChevronDownIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
