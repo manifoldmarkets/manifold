@@ -29,7 +29,7 @@ import {
   traderColumn,
 } from './contract/contract-table-col-formats'
 import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
-import { BestHotToggle, ContractFilters } from './search/contract-filters'
+import { ContractFilters } from './search/contract-filters'
 import { UserResults } from './search/user-results'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { LoadingIndicator } from './widgets/loading-indicator'
