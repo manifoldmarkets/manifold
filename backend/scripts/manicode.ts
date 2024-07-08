@@ -216,7 +216,6 @@ Based on the conversation above, which files do you need to read to answer the u
           console.log(filesToReadResponse)
           const fileContents = loadListedFiles(filesToReadResponse)
 
-
           const finalPrompt = `${fullPrompt}\n\nRelevant file contents:\n\n${fileContents}`
 
           try {
@@ -403,13 +402,16 @@ function getOnlyCodeFiles() {
         !excludedDirs.some((dir) => file.includes('/' + dir + '/')) ||
         includedFiles.some((name) => file.endsWith(name))
     )
-    .filter((file) => file.endsWith('.ts') || file.endsWith('.tsx'))
+    .filter(
+      (file) =>
+        file.endsWith('.ts') || file.endsWith('.tsx') || file.endsWith('.sql')
+    )
     .filter((file) => !file.endsWith('.d.ts'))
     .map((file) => file.replace(projectRoot + '/', ''))
   return allProjectFiles
 }
 
-function applyChanges(response: string) {
+async function applyChanges(response: string) {
   const fileRegex = /<file path="([^"]+)">([\s\S]*?)<\/file>/g
   let match
 
@@ -437,8 +439,10 @@ function applyChanges(response: string) {
         let replaced = false
         for (let i = 0; i <= lines.length - replaceLines.length; i++) {
           if (
-            lines.slice(i, i + replaceLines.length).join('\n').trim() ===
-            replaceLines.join('\n').trim()
+            lines
+              .slice(i, i + replaceLines.length)
+              .join('\n')
+              .trim() === replaceLines.join('\n').trim()
           ) {
             lines.splice(i, replaceLines.length, ...withLines)
             replaced = true
@@ -448,9 +452,54 @@ function applyChanges(response: string) {
         }
 
         if (!replaced) {
-          console.log(`Warning: Could not find match for replacement in file: ${filePath}`)
-          console.log('Replacement content:')
-          console.log(replaceContent)
+          console.log(
+            `Couldn't find simple match for replacement in file: ${filePath}. Attempting to expand...`
+          )
+
+          // Prompt Claude for an expanded replacement
+          const expandedReplacement = await promptClaudeForExpansion(
+            filePath,
+            currentContent,
+            replaceContent,
+            withContent
+          )
+
+          if (expandedReplacement) {
+            const expandedReplaceLines = expandedReplacement.replaceContent
+              .trim()
+              .split('\n')
+            const expandedWithLines = expandedReplacement.withContent
+              .trim()
+              .split('\n')
+
+            for (
+              let i = 0;
+              i <= lines.length - expandedReplaceLines.length;
+              i++
+            ) {
+              if (
+                lines
+                  .slice(i, i + expandedReplaceLines.length)
+                  .join('\n')
+                  .trim() === expandedReplaceLines.join('\n').trim()
+              ) {
+                lines.splice(
+                  i,
+                  expandedReplaceLines.length,
+                  ...expandedWithLines
+                )
+                replaced = true
+                replacementMade = true
+                break
+              }
+            }
+
+            if (replaced) {
+              console.log('Successfully applied expanded replacement.')
+            } else {
+              console.log('Warning: Could not apply expanded replacement.')
+            }
+          }
         }
       }
 
@@ -466,4 +515,64 @@ function applyChanges(response: string) {
       console.log(`Set file: ${filePath}`)
     }
   }
+}
+
+async function promptClaudeForExpansion(
+  filePath: string,
+  currentContent: string,
+  replaceContent: string,
+  withContent: string
+) {
+  const prompt = `
+I'm trying to apply a code replacement, but the replacement content doesn't match exactly. Can you help expand the replacement to match the existing code?
+
+File: ${filePath}
+
+Current file content:
+\`\`\`
+${currentContent}
+\`\`\`
+
+Replacement content to find:
+\`\`\`
+${replaceContent}
+\`\`\`
+
+Content to replace with:
+\`\`\`
+${withContent}
+\`\`\`
+
+Please provide an expanded version of the replacement content that matches the existing code, and the corresponding expanded version of the content to replace with. Use the following format:
+
+<expanded_replace>
+// Expanded replacement content here
+</expanded_replace>
+
+<expanded_with>
+// Expanded content to replace with here
+</expanded_with>
+
+If you can't find a suitable expansion, please respond with "No expansion possible."
+`
+
+  const expandedResponse = await promptClaudeWithProgress(prompt, {
+    system: getSystemPrompt(),
+  })
+
+  const expandedReplaceMatch = expandedResponse.match(
+    /<expanded_replace>([\s\S]*?)<\/expanded_replace>/
+  )
+  const expandedWithMatch = expandedResponse.match(
+    /<expanded_with>([\s\S]*?)<\/expanded_with>/
+  )
+
+  if (expandedReplaceMatch && expandedWithMatch) {
+    return {
+      replaceContent: expandedReplaceMatch[1].trim(),
+      withContent: expandedWithMatch[1].trim(),
+    }
+  }
+
+  return null
 }
