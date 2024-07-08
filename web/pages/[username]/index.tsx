@@ -61,7 +61,6 @@ import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { shouldIgnoreUserPage } from 'common/user'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
 import { isBetChange } from 'common/balance-change'
-import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { buildArray } from 'common/util/array'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
@@ -164,16 +163,6 @@ function UserProfile(props: {
   const router = useRouter()
   const currentUser = useUser()
 
-  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
-    userId: user.id,
-    after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
-  })
-  // TODO: paginate
-
-  const balanceChanges = newBalanceChanges ?? []
-  const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
-  const balanceChangesKey = 'balance-changes'
-
   useSaveReferral(currentUser, {
     defaultReferrerUsername: user?.username,
   })
@@ -217,6 +206,14 @@ function UserProfile(props: {
         })
     }
   }, [currentUser?.id, user?.id])
+
+  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
+    userId: user.id,
+    after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
+  })
+
+  const balanceChanges = newBalanceChanges ?? []
+  const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
 
   return (
     <Page
@@ -415,17 +412,6 @@ function UserProfile(props: {
                     <UserCommentsList user={user} />
                   </Col>
                 ),
-              },
-              {
-                title: 'Balance log',
-                stackedTabIcon: <ViewListIcon className="h-5" />,
-                content: (
-                  <BalanceChangeTable
-                    user={user}
-                    balanceChanges={balanceChanges}
-                  />
-                ),
-                queryString: balanceChangesKey,
               },
               {
                 title: 'Payments',
