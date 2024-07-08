@@ -28,7 +28,7 @@ import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
 import { buildArray } from 'common/util/array'
 import { AccountSettings } from '../profile/settings'
-import { EditProfile } from './edit-profile'
+import { EditProfile } from '../profile/edit-profile'
 import { useRouter } from 'next/router'
 
 export function MoreOptionsUserButton(props: { user: User }) {
