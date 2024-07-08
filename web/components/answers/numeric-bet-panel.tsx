@@ -281,7 +281,7 @@ export const NumericBetPanel = (props: {
           </Row>
           <Col className={'mb-2 gap-2'}>
             <SizedContainer
-              className={clsx('h-[150px] w-full pb-3 pl-2 pr-10 sm:h-[200px]')}
+              className={clsx('h-[150px] w-full pb-3 pr-6 sm:h-[200px]')}
             >
               {(w, h) => (
                 <MultiNumericDistributionChart
@@ -297,7 +297,7 @@ export const NumericBetPanel = (props: {
             <RangeSlider
               step={step}
               color={'indigo'}
-              className={'mr-8 h-4 items-end'}
+              className={'-ml-1 mr-4 h-4 items-end'}
               highValue={range[1]}
               lowValue={range[0]}
               setValues={onChangeRange}

@@ -113,8 +113,8 @@ export function RangeSlider(props: {
   return (
     <RxSlider.Root
       className={clsx(
-        className,
-        'relative flex h-7 touch-none select-none items-center'
+        'relative flex h-7 touch-none select-none items-center',
+        className
       )}
       value={[lowValue, highValue]}
       step={step ?? 1}
