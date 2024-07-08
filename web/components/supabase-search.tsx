@@ -373,7 +373,6 @@ export function SupabaseSearch(props: {
     query.length > 0
 
   const hasQuery = query !== ''
-  const inputPaddingRight = `(hasQuery ? 40 : 0)}px`
 
   return (
     <Col className="w-full">
@@ -403,7 +402,7 @@ export function SupabaseSearch(props: {
               }
               className={clsx('w-full')}
               style={{
-                paddingRight: inputPaddingRight,
+                paddingRight: hasQuery ? '40px' : '0px',
               }}
               autoFocus={autoFocus}
             />
