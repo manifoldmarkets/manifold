@@ -31,11 +31,15 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser, useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { XIcon } from '@heroicons/react/outline'
+import { ViewListIcon, XIcon } from '@heroicons/react/outline'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { track } from 'web/lib/service/analytics'
+import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import dayjs from 'dayjs'
+import { isBetChange } from 'common/balance-change'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -112,6 +116,13 @@ function NotificationsContent(props: {
     groupedNewMarketNotifications?.filter((n) => !n.isSeen).length ?? 0
   )
 
+  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
+    userId: user.id,
+    after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
+  })
+
+  const balanceChanges = newBalanceChanges ?? []
+
   return (
     <div className="relative mt-2 h-full w-full">
       {privateUser && (
@@ -162,6 +173,16 @@ function NotificationsContent(props: {
                   groupedNotifications={groupedMentionNotifications}
                 />
               ),
+            },
+            {
+              title: 'Balance log',
+              content: (
+                <BalanceChangeTable
+                  user={user}
+                  balanceChanges={balanceChanges}
+                />
+              ),
+              queryString: 'balance-changes',
             },
             {
               title: 'Mana',
