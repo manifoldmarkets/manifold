@@ -382,25 +382,39 @@ function applyChanges(response: string) {
       const replaceRegex =
         /<replace>([\s\S]*?)<\/replace>\s*<with>([\s\S]*?)<\/with>/g
       let replaceMatch
+      let replacementMade = false
 
       while ((replaceMatch = replaceRegex.exec(fileContent)) !== null) {
         const [, replaceContent, withContent] = replaceMatch
         const replaceLines = replaceContent.trim().split('\n')
         const withLines = withContent.trim().split('\n')
 
+        let replaced = false
         for (let i = 0; i <= lines.length - replaceLines.length; i++) {
           if (
-            lines.slice(i, i + replaceLines.length).join('\n') ===
-            replaceLines.join('\n')
+            lines.slice(i, i + replaceLines.length).join('\n').trim() ===
+            replaceLines.join('\n').trim()
           ) {
             lines.splice(i, replaceLines.length, ...withLines)
+            replaced = true
+            replacementMade = true
             break
           }
         }
+
+        if (!replaced) {
+          console.log(`Warning: Could not find match for replacement in file: ${filePath}`)
+          console.log('Replacement content:')
+          console.log(replaceContent)
+        }
       }
 
-      fs.writeFileSync(fullPath, lines.join('\n'))
-      console.log(`Updated file: ${filePath}`)
+      if (replacementMade) {
+        fs.writeFileSync(fullPath, lines.join('\n'))
+        console.log(`Updated file: ${filePath}`)
+      } else {
+        console.log(`No changes made to file: ${filePath}`)
+      }
     } else {
       // Replace whole file
       fs.writeFileSync(fullPath, fileContent.trim())
