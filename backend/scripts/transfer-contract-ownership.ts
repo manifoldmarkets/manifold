@@ -15,6 +15,9 @@ const argv = yargs(hideBin(process.argv))
     type: 'array',
     description: 'List of slugs to transfer',
     demandOption: true,
+    coerce: (arg) => {
+      return Array.isArray(arg) ? arg : arg.split(',')
+    },
   })
   .option('toUserId', {
     alias: 'u',
