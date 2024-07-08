@@ -6,7 +6,6 @@ import {
   ViewListIcon,
   ChevronDownIcon,
 } from '@heroicons/react/outline'
-import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { removeUndefinedProps } from 'common/util/object'
@@ -63,7 +62,6 @@ import { shouldIgnoreUserPage } from 'common/user'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
 import { isBetChange } from 'common/balance-change'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
-import { buttonClass } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { buildArray } from 'common/util/array'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
