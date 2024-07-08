@@ -1,6 +1,7 @@
 Hello this is a short guide to coding on Manifold! It was written to provide context to Claude, so he can know how to code for us.
 
 Our code is all Typescript and split into a few packages. At the top level, there are 3 code directories:
+
 - common
 - web
 - backend
@@ -12,6 +13,7 @@ Code that lives in common can be imported into either web or backend. However, c
 Web contains our front end code in React and Next.js. We use tailwind for styling.
 
 Web can be broken down into
+
 - pages
 - components
 - hooks
@@ -23,6 +25,7 @@ Hooks contain react hooks used across components. We often define several relate
 Lib has common utility functions specific to the client as well as the service layer to communicate with our api, and authentication.
 
 The backend is further split into:
+
 - shared
 - api
 - scheduler
@@ -448,6 +451,7 @@ const db = createSupabaseClient()
 The first (createSupabaseDirectClient) lets us specify sql strings to run directly on our database, using the pg-promise library. The client (code in web) does not have permission to do this.
 
 Example using the direct client:
+
 ```ts
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -468,6 +472,7 @@ export const getUniqueBettorIds = async (
 We are deprecating the latter approach (createSupabaseClient), so avoid using it entirely for new code. It uses postgREST, a rest api that is turned into sql. The client can also use this to connect directly to our database. The recommended path is to instead create an endpoint on our server, and have that use the supabase direct client to return data to the client.
 
 Example using supabase client:
+
 ```ts
 export const getContractIdFromSlug = async (
   db: SupabaseClient,
@@ -512,6 +517,7 @@ const betIds = uniq(bets, (b) => b.id)
 ---
 
 Because we target es5, we can't iterate through a Set in a for loop, for example:
+
 ```ts
 const betIds = []
 const betIdSet = new Set(array)
@@ -521,6 +527,7 @@ for (const id of betIdSet) { // Is a compilation error, since a Set is not itera
 ```
 
 Instead, you should just avoid using sets here. Consider using lodash's uniq function instead:
+
 ```ts
 const betIds = uniq([])
 for (const id of betIds) {
@@ -547,6 +554,9 @@ You can fix it by either adding a type annotation, or checking if a field is in 
 try {
   await getUserDataDump(identifier)
 } catch (error) {
-  console.error('Error:', error instanceof Error ? error.message : String(error))
+  console.error(
+    'Error:',
+    error instanceof Error ? error.message : String(error)
+  )
 }
 ```
