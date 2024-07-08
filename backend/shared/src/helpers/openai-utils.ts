@@ -101,3 +101,21 @@ export const promptGPT4 = async (prompt: string) => {
   console.log('GPT4 returned message:', message)
   return message
 }
+
+export const promptGPT3 = async (prompt: string) => {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+  const result = await openai.chat.completions
+    .create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'system', content: prompt }],
+      max_tokens: 4096,
+    })
+    .catch((err) => (console.log(err), undefined))
+
+  if (!result) return undefined
+
+  const message = result.choices[0].message.content
+  console.log('GPT3 returned message:', message)
+  return message
+}
