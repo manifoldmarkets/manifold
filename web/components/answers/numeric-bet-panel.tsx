@@ -43,15 +43,13 @@ export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
   labels?: {
     lower: string
-    about: string
     higher: string
   }
-  mode?: 'less than' | 'more than' | 'about right'
+  mode?: 'less than' | 'more than'
 }) => {
   const {
     labels = {
       lower: 'Lower',
-      about: 'About right',
       higher: 'Higher',
     },
   } = props
@@ -65,9 +63,9 @@ export const NumericBetPanel = (props: {
     maximum,
   ])
   const [debouncedAmount, setDebouncedAmount] = useState(betAmount)
-  const [mode, setMode] = useState<
-    'less than' | 'more than' | 'about right' | undefined
-  >(props.mode)
+  const [mode, setMode] = useState<'less than' | 'more than' | undefined>(
+    props.mode
+  )
   useEffect(() => {
     if (props.mode) changeMode(props.mode)
   }, [props.mode])
@@ -91,9 +89,7 @@ export const NumericBetPanel = (props: {
     : `${range[0]} ≤ val < ${range[1]}`
 
   const modeColor =
-    mode === 'less than' || mode === 'more than' || mode === 'about right'
-      ? 'purple'
-      : 'gray-outline'
+    mode === 'less than' || mode === 'more than' ? 'purple' : 'gray-outline'
 
   const roundToEpsilon = (num: number) => Number(num.toFixed(2))
   const shouldIncludeAnswer = (a: Answer) => {
@@ -166,18 +162,11 @@ export const NumericBetPanel = (props: {
     debounceRange(range)
   }
 
-  const changeMode = (newMode: 'less than' | 'more than' | 'about right') => {
+  const changeMode = (newMode: 'less than' | 'more than') => {
     const newExpectedValue = getExpectedValue(contract)
     setExpectedValue(newExpectedValue)
     const midPointBucket = getRangeContainingValue(newExpectedValue, contract)
-    if (newMode === 'about right') {
-      const quarterRange = (maximum - minimum) / 4
-      const quarterAbove = Math.min(newExpectedValue + quarterRange, maximum)
-      const quarterBelow = Math.max(newExpectedValue - quarterRange, minimum)
-      const start = getRangeContainingValue(quarterBelow, contract)
-      const end = getRangeContainingValue(quarterAbove, contract)
-      setRange([start[0], end[1]])
-    } else if (newMode === 'less than') {
+    if (newMode === 'less than') {
       setRange([minimum, midPointBucket[1]])
     } else if (newMode === 'more than') {
       setRange([midPointBucket[0], maximum])
@@ -327,14 +316,6 @@ export const NumericBetPanel = (props: {
             className={'grow'}
           >
             {capitalize(labels.lower)}
-          </Button>
-          <Button
-            color={'blue'}
-            size={'xl'}
-            className={'grow'}
-            onClick={() => changeMode('about right')}
-          >
-            {capitalize(labels.about)}
           </Button>
           <Button
             color={'green'}
