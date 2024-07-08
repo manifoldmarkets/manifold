@@ -264,9 +264,36 @@ async function promptClaudeWithProgress(prompt: string, options: any) {
   }, 500)
 
   try {
-    const response = await promptClaude(prompt, options)
+    let fullResponse = ''
+    let isComplete = false
+    const originalPrompt = prompt
+
+    while (!isComplete) {
+      const response = await promptClaude(prompt, options)
+      fullResponse += response
+
+      if (fullResponse.includes('[END_OF_RESPONSE]')) {
+        isComplete = true
+        fullResponse = fullResponse.replace('[END_OF_RESPONSE]', '').trim()
+      } else {
+        console.log('Didnot complete resposne last response', response)
+        // If the response is incomplete, ask for continuation
+        prompt = `Please continue your previous response. Remember to end with [END_OF_RESPONSE] when you've completed your full answer.
+
+<original_prompt>
+${originalPrompt}
+</original_prompt>
+
+<previous_incomplete_response>
+${fullResponse}
+</previous_incomplete_response>
+
+Continue from here:`
+      }
+    }
+
     console.log()
-    return response
+    return fullResponse
   } finally {
     clearInterval(progressInterval)
   }
@@ -299,7 +326,11 @@ E.g. 'comment' can be accessed at \`api.manifold.markets/v0/comment\`. If 'visib
     ${apiGuide}
 
     Here are all the code files in our project:
-    ${codeFiles.join('\n')}`
+    ${codeFiles.join('\n')}
+
+    IMPORTANT: Always end your response with the following marker:
+    [END_OF_RESPONSE]
+    If your response is cut off due to length limitations, do not include the marker and wait for a follow-up prompt to continue.`
 }
 
 // Function to load file names of every file in the project
