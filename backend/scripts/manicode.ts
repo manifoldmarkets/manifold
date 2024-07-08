@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as readline from 'readline'
+import { model_types } from 'shared/helpers/claude'
 
 import { runScript } from 'run-script'
 import { promptClaude } from 'shared/helpers/claude'
@@ -176,9 +177,10 @@ User: ${firstPrompt}
   await new Promise<void>((resolve) => {
     function promptUser() {
       rl.question(
-        'Enter your prompt (or type "exit" to quit): ',
+        'Enter your prompt (or type "quit" or "q"): ',
         async (userInput: string) => {
-          if (userInput.trim().toLowerCase() === 'exit') {
+          const exitWords = ['exit', 'quit', 'q']
+          if (exitWords.includes(userInput.trim().toLowerCase())) {
             rl.close()
             resolve()
             return
@@ -265,7 +267,10 @@ function loadListedFiles(instructions: string) {
   ).join('\n\n')
 }
 
-async function promptClaudeWithProgress(prompt: string, options: any) {
+async function promptClaudeWithProgress(
+  prompt: string,
+  options: { system?: string; model?: model_types } = {}
+) {
   process.stdout.write('Thinking')
   const progressInterval = setInterval(() => {
     process.stdout.write('.')
@@ -417,6 +422,13 @@ async function applyChanges(response: string) {
     const [, filePath, fileContent] = match
     const fullPath = path.join(__dirname, '..', '..', filePath)
 
+    // Create directory if it doesn't exist
+    const directory = path.dirname(fullPath)
+    if (!fs.existsSync(directory)) {
+      fs.mkdirSync(directory, { recursive: true })
+      console.log(`Created directory: ${directory}`)
+    }
+
     if (fileContent.includes('<replace>')) {
       // Edit existing file
       const currentContent = fs.existsSync(fullPath)
@@ -508,9 +520,9 @@ async function applyChanges(response: string) {
         console.log(`No changes made to file: ${filePath}`)
       }
     } else {
-      // Replace whole file
+      // Replace whole file or create new file
       fs.writeFileSync(fullPath, fileContent.trim())
-      console.log(`Set file: ${filePath}`)
+      console.log(`Created/Updated file: ${filePath}`)
     }
   }
 }

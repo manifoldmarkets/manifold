@@ -7,11 +7,11 @@ export const models = {
   haiku: 'claude-3-haiku-20240307' as const,
 }
 
-type models = (typeof models)[keyof typeof models]
+export type model_types = (typeof models)[keyof typeof models]
 
 export const promptClaude = async (
   prompt: string,
-  options: { system?: string; model?: models } = {}
+  options: { system?: string; model?: model_types } = {}
 ) => {
   const { model = models.sonnet, system } = options
 
