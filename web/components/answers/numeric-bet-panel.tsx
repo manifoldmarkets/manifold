@@ -91,12 +91,8 @@ export const NumericBetPanel = (props: {
     : `${range[0]} ≤ val < ${range[1]}`
 
   const modeColor =
-    mode === 'less than'
-      ? 'red'
-      : mode === 'more than'
-      ? 'green'
-      : mode === 'about right'
-      ? 'blue'
+    mode === 'less than' || mode === 'more than' || mode === 'about right'
+      ? 'purple'
       : 'gray-outline'
 
   const roundToEpsilon = (num: number) => Number(num.toFixed(2))
@@ -353,11 +349,7 @@ export const NumericBetPanel = (props: {
         <Col
           className={clsx(
             'mt-2 gap-4 rounded-md px-3 py-2',
-            mode === 'less than'
-              ? 'bg-scarlet-50'
-              : mode === 'more than'
-              ? 'bg-teal-50'
-              : 'bg-blue-50 dark:bg-blue-900/30'
+            'bg-purple-50 dark:bg-purple-900/30'
           )}
         >
           <Row className={'justify-between'}>
