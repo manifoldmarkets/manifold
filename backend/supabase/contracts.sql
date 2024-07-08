@@ -62,19 +62,9 @@ create index if not exists description_fts on contracts using gin (description_f
 
 create index if not exists contracts_importance_score on contracts (importance_score desc);
 
-create index if not exists contracts_conversion_score on contracts (conversion_score desc);
-
 create index if not exists contracts_freshness_score on contracts (freshness_score desc);
 
 create index if not exists question_nostop_fts on contracts using gin (question_nostop_fts);
-
-create index if not exists idx_lover_user_id1 on contracts ((data ->> 'loverUserId1'))
-where
-  data ->> 'loverUserId1' is not null;
-
-create index if not exists idx_lover_user_id2 on contracts ((data ->> 'loverUserId2'))
-where
-  data ->> 'loverUserId2' is not null;
 
 create index concurrently if not exists contracts_politics on contracts (is_politics);
 

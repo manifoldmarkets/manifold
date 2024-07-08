@@ -192,27 +192,6 @@ export type Database = {
         }
         Relationships: []
       }
-      contract_answers: {
-        Row: {
-          answer_id: string
-          contract_id: string
-          data: Json
-          fs_updated_time: string
-        }
-        Insert: {
-          answer_id: string
-          contract_id: string
-          data: Json
-          fs_updated_time: string
-        }
-        Update: {
-          answer_id?: string
-          contract_id?: string
-          data?: Json
-          fs_updated_time?: string
-        }
-        Relationships: []
-      }
       contract_bets: {
         Row: {
           amount: number | null
@@ -225,6 +204,7 @@ export type Database = {
           is_api: boolean | null
           is_challenge: boolean | null
           is_redemption: boolean | null
+          loan_amount: number | null
           outcome: string | null
           prob_after: number | null
           prob_before: number | null
@@ -232,7 +212,6 @@ export type Database = {
           updated_time: string
           user_id: string
           visibility: string | null
-          loan_amount: number | null
         }
         Insert: {
           amount?: number | null
@@ -245,6 +224,7 @@ export type Database = {
           is_api?: boolean | null
           is_challenge?: boolean | null
           is_redemption?: boolean | null
+          loan_amount?: number | null
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
@@ -252,7 +232,6 @@ export type Database = {
           updated_time?: string
           user_id: string
           visibility?: string | null
-          loan_amount?: number | null
         }
         Update: {
           amount?: number | null
@@ -265,6 +244,7 @@ export type Database = {
           is_api?: boolean | null
           is_challenge?: boolean | null
           is_redemption?: boolean | null
+          loan_amount?: number | null
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
@@ -272,7 +252,6 @@ export type Database = {
           updated_time?: string
           user_id?: string
           visibility?: string | null
-          loan_amount?: number | null
         }
         Relationships: []
       }
@@ -2332,6 +2311,30 @@ export type Database = {
           id?: string
           to_id?: string
           to_type?: string
+        }
+        Relationships: []
+      }
+      user_comment_view_events: {
+        Row: {
+          comment_id: string
+          contract_id: string
+          created_time: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          contract_id: string
+          created_time?: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          contract_id?: string
+          created_time?: string
+          id?: never
+          user_id?: string
         }
         Relationships: []
       }
