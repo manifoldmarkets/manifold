@@ -15,10 +15,10 @@ export const promptClaude = async (
 ) => {
   const { model = models.sonnet, system } = options
 
-  const apiKey = process.env.ANTHROPIC_API_KEY3
+  const apiKey = process.env.ANTHROPIC_API_KEY
 
   if (!apiKey) {
-    throw new Error('Missing ANTHROPIC_API_KEY3')
+    throw new Error('Missing ANTHROPIC_API_KEY')
   }
 
   const anthropic = new Anthropic({ apiKey })
