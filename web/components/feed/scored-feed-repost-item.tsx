@@ -135,7 +135,6 @@ export const ScoredFeedRepost = memo(function (props: {
                     content={comment.content}
                     defaultCollapse={true}
                     stateKey={'collapse-repost-' + repost.id + contract.id}
-                    collapseLines={12}
                     showMorePlacement={'bottom'}
                   />
                 </Col>
