@@ -1,27 +1,13 @@
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
-
 import { runScript } from './run-script'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
+import { getContractFromSlugSupabase, getUser } from 'shared/utils'
 
 interface Args {
   slugs: string[]
   toUserId: string
 }
-
-interface User {
-  id: string
-  username: string
-  name: string
-  created_time: string
-}
-
-interface Contract {
-  id: string
-  data: any
-}
-
-const supabaseDirectClient = createSupabaseDirectClient()
 
 const argv = yargs(hideBin(process.argv))
   .option('slugs', {
@@ -41,33 +27,34 @@ const argv = yargs(hideBin(process.argv))
 const BATCH_SIZE = 20
 
 if (require.main === module) {
-  runScript(async () => {
+  runScript(async ({ pg }) => {
     const { slugs: slugsToTransfer, toUserId } = argv
 
     try {
-      const toUserData = await supabaseDirectClient.oneOrNone<User>(
-        'SELECT id, username, name, created_time FROM users WHERE id = $1',
-        [toUserId]
-      )
+      const toUser = await getUser(toUserId, pg)
 
-      if (!toUserData) {
+      if (!toUser) {
         console.error('User not found')
         return
       }
 
-      const toUser: User = toUserData
+      const contractsToTransfer = (
+        await Promise.all(
+          slugsToTransfer.map((slug) => getContractFromSlugSupabase(slug))
+        )
+      ).filter((contract) => contract !== null)
 
-      const contractsData = await supabaseDirectClient.any<Contract>(
-        'SELECT id, data FROM contracts WHERE slug IN ($1:csv)',
-        [slugsToTransfer]
-      )
-
-      if (contractsData.length === 0) {
+      if (contractsToTransfer.length === 0) {
         console.error('No contracts found')
         return
       }
 
-      const contractsToTransfer: Contract[] = contractsData
+      if (contractsToTransfer.length !== slugsToTransfer.length) {
+        console.error(
+          'Some contracts could not be found. Please check the slugs.'
+        )
+        return
+      }
 
       console.log(
         `Transferring ${contractsToTransfer.length} contracts to ${toUser.name}`
@@ -76,37 +63,32 @@ if (require.main === module) {
       for (let i = 0; i < contractsToTransfer.length; i += BATCH_SIZE) {
         const batch = contractsToTransfer.slice(i, i + BATCH_SIZE)
 
-        const updates = batch.map(({ id, data }) => {
-          const description = data.description || ''
-          const creatorUsername = data.creatorUsername || 'Unknown creator'
-          const creatorName = data.creatorName || 'Unknown name'
+        for (const contract of batch) {
+          const { id } = contract!
 
-          const updatedDescription = `${
-            description ? description : ''
-          }\n\nThis market was created by ${creatorUsername} (${creatorName}) and has changed ownership.`
-
-          return {
-            id,
-            creator_id: toUser.id,
-            created_time: toUser.created_time,
-            data: {
-              ...data,
-              description: updatedDescription,
-              creatorUsername: toUser.username,
-              creatorName: toUser.name,
-              creatorAvatarUrl: data.creatorAvatarUrl,
-            },
-          }
-        })
-
-        const upsertQuery =
-          pgp.helpers.update(
-            updates,
-            ['creator_id', 'created_time', 'data'],
-            'contracts'
-          ) + ' WHERE v.id = t.id'
-
-        await supabaseDirectClient.none(upsertQuery)
+          await pg.none(
+            `UPDATE contracts 
+             SET creator_id = $1, 
+                 data = jsonb_set(
+                   jsonb_set(
+                     jsonb_set(
+                       data, 
+                       '{creatorUsername}', 
+                       to_jsonb($2::text), 
+                       true
+                     ), 
+                     '{creatorName}', 
+                     to_jsonb($3::text), 
+                     true
+                   ),
+                   '{creatorAvatarUrl}',
+                   to_jsonb($4::text),
+                   true
+                 )
+             WHERE id = $5`,
+            [toUser.id, toUser.username, toUser.name, toUser.avatarUrl, id]
+          )
+        }
       }
 
       console.log('done.')
