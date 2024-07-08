@@ -76,6 +76,13 @@ type APIGenericSchema = {
   cache?: string
 }
 
+// Zod doesn't handle z.coerce.boolean() properly for GET requests
+const coerceBoolean = z
+  .union([z.boolean(), z.literal('true'), z.literal('false')])
+  .transform(
+    (value) => value === true || value === 'true'
+  ) as z.ZodType<boolean>
+
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
 export const API = (_apiTypeCheck = {
   comment: {
@@ -95,14 +102,16 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-'get-contract': {
+  'get-contract': {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
     returns: {} as Contract,
-    props: z.object({
-      contractId: z.string(),
-    }).strict(),
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
   },
   'hide-comment': {
     method: 'POST',
@@ -129,7 +138,7 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(1000).default(1000),
         page: z.coerce.number().gte(0).default(0),
         userId: z.string().optional(),
-        isPolitics: z.coerce.boolean().optional(),
+        isPolitics: coerceBoolean.optional(),
       })
       .strict(),
   },
@@ -260,10 +269,11 @@ export const API = (_apiTypeCheck = {
         order: z.enum(['asc', 'desc']).optional(),
         kinds: z.enum(['open-limit']).optional(),
         // undocumented fields. idk what a good api interface would be
-        filterRedemptions: z.coerce.boolean().optional(),
-        filterChallenges: z.coerce.boolean().optional(),
-        filterAntes: z.coerce.boolean().optional(),
-        includeZeroShareRedemptions: z.coerce.boolean().optional(),
+        filterRedemptions: coerceBoolean.optional(),
+        filterChallenges: coerceBoolean.optional(),
+        filterAntes: coerceBoolean.optional(),
+        includeZeroShareRedemptions: coerceBoolean.optional(),
+        commentRepliesOnly: coerceBoolean.optional(),
       })
       .strict(),
   },
@@ -366,7 +376,7 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as LiteMarket | FullMarket,
     cache: DEFAULT_CACHE_STRATEGY,
-    props: z.object({ id: z.string(), lite: z.boolean().optional() }),
+    props: z.object({ id: z.string(), lite: coerceBoolean.optional() }),
   },
   // deprecated. use /market/:id?lite=true instead
   'market/:id/lite': {
@@ -383,7 +393,7 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as LiteMarket | FullMarket,
     cache: DEFAULT_CACHE_STRATEGY,
-    props: z.object({ slug: z.string(), lite: z.boolean().optional() }),
+    props: z.object({ slug: z.string(), lite: coerceBoolean.optional() }),
   },
   market: {
     method: 'POST',

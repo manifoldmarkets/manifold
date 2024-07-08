@@ -1,4 +1,3 @@
-import { BetFilter } from 'common/bet'
 import { run, tsToMillis, type SupabaseClient } from 'common/supabase/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import {
@@ -47,7 +46,7 @@ export const getBets: APIHandler<'bets'> = async (props) => {
         throw new APIError(404, 'Bet specified in after parameter not found')
       })
 
-  const opts: BetFilter = {
+  const opts = {
     userId,
     contractId,
     answerId,
@@ -61,12 +60,11 @@ export const getBets: APIHandler<'bets'> = async (props) => {
         : afterTime ?? afterBetTime,
     limit,
     order,
-    isOpenLimitOrder: kinds === 'open-limit',
+    kinds,
     filterAntes,
     filterChallenges,
     filterRedemptions,
     includeZeroShareRedemptions,
-    visibility: contractId ? undefined : 'public',
   }
 
   const pg = createSupabaseDirectClient()
