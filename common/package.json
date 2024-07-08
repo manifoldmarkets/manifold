@@ -32,6 +32,7 @@
     "@types/lodash": "4.14.178",
     "@types/string-similarity": "4.0.0",
     "jest": "29.3.1",
+    "supabase": "1.178.2",
     "ts-jest": "29.0.3"
   }
 }
