@@ -525,7 +525,8 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const [olderBets, setOlderBets] = useState<Bet[]>([])
 
   const [page, setPage] = useState(0)
-  const ITEMS_PER_PAGE = 50
+  const isNumber = outcomeType === 'NUMBER'
+  const ITEMS_PER_PAGE = 50 * (isNumber ? contract.answers.length : 1)
   const bets = [...props.bets, ...olderBets]
 
   const oldestBet = minBy(bets, (b) => b.createdTime)
@@ -540,7 +541,6 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
       l.amount > 0
   )
-  const isNumber = outcomeType === 'NUMBER'
   const betsByBetGroupId = isNumber
     ? groupBy(bets, (bet) => bet.betGroupId ?? bet.id)
     : {}
