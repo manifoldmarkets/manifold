@@ -26,7 +26,7 @@ export function FilterPill(props: {
   onSelect: () => void
   className?: string
   children: ReactNode
-  type: 'filter' | 'sort' | 'contractType' | 'spice'
+  type?: 'spice'
 }) {
   const { children, selected, onSelect, className, type } = props
 

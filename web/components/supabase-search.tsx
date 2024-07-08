@@ -372,9 +372,8 @@ export function SupabaseSearch(props: {
     query &&
     query.length > 0
 
-  const isHomePage = persistPrefix === 'search'
   const hasQuery = query !== ''
-  const inputPaddingRight = `${(isHomePage ? 106 : 0) + (hasQuery ? 40 : 0)}px`
+  const inputPaddingRight = `(hasQuery ? 40 : 0)}px`
 
   return (
     <Col className="w-full">
@@ -423,7 +422,6 @@ export function SupabaseSearch(props: {
                   )}
                 </IconButton>
               )}
-              {isHomePage && <BestHotToggle sort={sort} onChange={onChange} />}
             </Row>
           </Row>
         )}
@@ -436,6 +434,7 @@ export function SupabaseSearch(props: {
             }
             topicSlug={topicSlug}
             initialTopics={initialTopics}
+            isHomePage={persistPrefix === 'search'}
           />
         )}
       </Col>
