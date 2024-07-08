@@ -182,17 +182,16 @@ User: ${firstPrompt}
 
           conversationHistory.push({ role: 'user', content: userInput })
 
+          // Second Claude call: Answer the user's question
+          const fullPrompt = conversationHistory
+            .map(({ role, content }) => {
+              const label =
+                role === 'user' ? 'The user said:' : 'The assistant said:'
+              return `${label}\n\n${content}`
+            })
+            .join('\n\n')
           // First Claude call: Ask which files to read
-          const fileSelectionPrompt = `
-            Previous user message: ${
-              conversationHistory[conversationHistory.length - 3]?.content ||
-              'N/A'
-            }
-            Previous assistant message: ${
-              conversationHistory[conversationHistory.length - 2]?.content ||
-              'N/A'
-            }
-            New user message: ${userInput}
+          const fileSelectionPrompt = `${fullPrompt}
 
             Based on the conversation above, which files do you need to read to answer the user's question? Please list the file paths, one per line. It's recommended you include all files you have edited so far.
           `
@@ -206,14 +205,6 @@ User: ${firstPrompt}
           console.log(filesToReadResponse)
           const fileContents = loadListedFiles(filesToReadResponse)
 
-          // Second Claude call: Answer the user's question
-          const fullPrompt = conversationHistory
-            .map(({ role, content }) => {
-              const label =
-                role === 'user' ? 'The user said:' : 'The assistant said:'
-              return `${label}\n\n${content}`
-            })
-            .join('\n\n')
 
           const finalPrompt = `${fullPrompt}\n\nRelevant file contents:\n\n${fileContents}`
 
