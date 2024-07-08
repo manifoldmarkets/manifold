@@ -105,7 +105,12 @@ export default function AboutPage() {
               title="⚙️ Notification & email settings"
               href="/notifications?tab=settings"
             />
-            <LabCard title="✏️ Edit profile" href="/profile" />
+            {user && (
+              <LabCard
+                title="✏️ Edit profile"
+                href={`/${user?.username ?? ''}?tab=edit+profile`}
+              />
+            )}
             {user && (!isNative || (isNative && platform !== 'ios')) && (
               <LabCard title="💰 Get mana" href="/add-funds" />
             )}

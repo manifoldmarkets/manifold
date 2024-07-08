@@ -516,21 +516,6 @@ function ProfilePublicStats(props: {
 
       <ShareButton user={user} currentUser={currentUser} />
 
-      {isCurrentUser && (
-        <>
-          <Link
-            href="/profile"
-            className={clsx(
-              buttonClass('2xs', 'gray-white'),
-              '-mx-1 gap-0.5 !px-1 !py-0.5'
-            )}
-          >
-            <PencilIcon className="mb-0.5 h-4 w-4" />
-            <span className="text-sm">Edit profile</span>
-          </Link>
-        </>
-      )}
-
       <FollowsDialog
         user={user}
         defaultTab={followsTab}
