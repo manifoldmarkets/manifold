@@ -9,10 +9,10 @@ export const models = {
 
 export type model_types = (typeof models)[keyof typeof models]
 
-export const promptClaude = async (
+export const promptClaudeStream = async function* (
   prompt: string,
   options: { system?: string; model?: model_types } = {}
-) => {
+): AsyncGenerator<string, void, unknown> {
   const { model = models.sonnet, system } = options
 
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -23,7 +23,7 @@ export const promptClaude = async (
 
   const anthropic = new Anthropic({ apiKey })
 
-  const msg = await anthropic.messages.create(
+  const stream = anthropic.messages.stream(
     removeUndefinedProps({
       model,
       max_tokens: 4096,
@@ -32,19 +32,26 @@ export const promptClaude = async (
       messages: [
         {
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: prompt,
-            },
-          ],
+          content: prompt,
         },
       ],
     })
   )
-  const message = msg.content[0]
-  if ('text' in message) {
-    return message.text
+
+  for await (const chunk of stream) {
+    if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+      yield chunk.delta.text
+    }
   }
-  return ''
+}
+
+export const promptClaude = async (
+  prompt: string,
+  options: { system?: string; model?: model_types } = {}
+) => {
+  let fullResponse = ''
+  for await (const chunk of promptClaudeStream(prompt, options)) {
+    fullResponse += chunk
+  }
+  return fullResponse
 }

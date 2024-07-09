@@ -4,7 +4,7 @@ import * as readline from 'readline'
 import { model_types } from 'shared/helpers/claude'
 
 import { runScript } from 'run-script'
-import { promptClaude } from 'shared/helpers/claude'
+import { promptClaudeStream } from 'shared/helpers/claude'
 import { filterDefined } from 'common/util/array'
 
 runScript(async () => {
@@ -89,6 +89,7 @@ The user has a coding question for you. Please provide a detailed response follo
 - Use <replace> and <with> blocks to add or modify import statements at the top of relevant files.
 - To delete lines, use an empty <with></with> block.
 - Ensure that you're providing enough context in the <replace> blocks for accurate matching.
+- Every <replace> block should have a corresponding <with> block.
 </important_reminders>
 
 <example>
@@ -157,7 +158,7 @@ User: ${firstPrompt}
   console.log(secondResponse)
 
   // Apply the changes using our own function
-  applyChanges(secondResponse)
+  await applyChanges(secondResponse)
 
   interface ConversationEntry {
     role: 'user' | 'assistant'
@@ -230,7 +231,7 @@ Based on the conversation above, which files do you need to read to answer the u
             })
 
             // Apply the changes using our own function
-            applyChanges(claudeResponse)
+            await applyChanges(claudeResponse)
 
             // Continue the loop
           } catch (error) {
@@ -271,45 +272,44 @@ async function promptClaudeWithProgress(
   prompt: string,
   options: { system?: string; model?: model_types } = {}
 ) {
-  process.stdout.write('Thinking')
-  const progressInterval = setInterval(() => {
-    process.stdout.write('.')
-  }, 500)
+  let fullResponse = ''
+  let isComplete = false
+  const originalPrompt = prompt
 
-  try {
-    let fullResponse = ''
-    let isComplete = false
-    const originalPrompt = prompt
+  // Start the "Thinking" animation
+  const thinkingAnimation = setInterval(() => {
+    process.stdout.write('\rThinking   ')
+    setTimeout(() => process.stdout.write('\rThinking.  '), 500)
+    setTimeout(() => process.stdout.write('\rThinking.. '), 1000)
+    setTimeout(() => process.stdout.write('\rThinking...'), 1500)
+  }, 2000)
 
-    while (!isComplete) {
-      const response = await promptClaude(prompt, options)
-      fullResponse += response
+  while (!isComplete) {
+    const stream = promptClaudeStream(prompt, options)
 
-      if (fullResponse.includes('[END_OF_RESPONSE]')) {
-        isComplete = true
-        fullResponse = fullResponse.replace('[END_OF_RESPONSE]', '').trim()
-      } else {
-        console.log('Didnot complete resposne last response', response)
-        // If the response is incomplete, ask for continuation
-        prompt = `Please continue your previous response. Remember to end with [END_OF_RESPONSE] when you've completed your full answer.
+    for await (const chunk of stream) {
+      fullResponse += chunk
+    }
+
+    if (fullResponse.includes('[END_OF_RESPONSE]')) {
+      isComplete = true
+      fullResponse = fullResponse.replace('[END_OF_RESPONSE]', '').trim()
+    } else {
+      prompt = `Please continue your previous response. Remember to end with [END_OF_RESPONSE] when you've completed your full answer.
 
 <original_prompt>
 ${originalPrompt}
 </original_prompt>
 
-<previous_incomplete_response>
-${fullResponse}
-</previous_incomplete_response>
-
-Continue from here:`
-      }
+Continue from the very next character of your response:
+${fullResponse}`
     }
-
-    console.log()
-    return fullResponse
-  } finally {
-    clearInterval(progressInterval)
   }
+
+  clearInterval(thinkingAnimation)
+  process.stdout.write('\r           \r') // Clear the "Thinking" text
+
+  return fullResponse
 }
 
 function getSystemPrompt() {
@@ -508,6 +508,11 @@ async function applyChanges(response: string) {
               console.log('Successfully applied expanded replacement.')
             } else {
               console.log('Warning: Could not apply expanded replacement.')
+              console.log('Original replacement content', replaceContent)
+              console.log(
+                'Expanded replacement content',
+                expandedReplacement.replaceContent
+              )
             }
           }
         }
