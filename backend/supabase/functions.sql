@@ -51,37 +51,54 @@ select ct.resolution_time is null
   and ct.visibility = 'public'
   and ((ct.close_time > now() + interval '10 minutes') or ct.close_time is null) $$ language sql;
 
-create
-or replace function search_contracts_by_group_slugs_1 (p_group_slugs text[], lim int, start int) returns jsonb[] stable parallel safe language sql as $$
-select array_agg(data)
-from (
-    select data
-    from contracts
-    where contracts.group_slugs && p_group_slugs
-      and is_valid_contract(contracts)
-    order by importance_score desc,
-     slug offset start
-    limit lim
-  ) as search_contracts $$;
+create or replace function get_related_contracts_by_group (p_contract_id text, lim int, start int)
+    returns table (data jsonb)
+    stable parallel safe language sql as $$
+select distinct on (other_contracts.importance_score, other_contracts.slug) other_contracts.data
+from contracts
+         join group_contracts on contracts.id = group_contracts.contract_id
+         join contracts as other_contracts on other_contracts.id in (
+    select gc.contract_id
+    from group_contracts gc
+    where gc.group_id in (
+        select group_id
+        from group_contracts
+        where contract_id = p_contract_id
+    )
+)
+where contracts.id = p_contract_id
+  and is_valid_contract(other_contracts)
+  and other_contracts.id != p_contract_id
+order by other_contracts.importance_score desc, other_contracts.slug
+offset start limit lim
+$$;
 
-create
-or replace function search_contracts_by_group_slugs_for_creator_1 (
-  creator_id text,
-  p_group_slugs text[],
-  lim int,
-  start int
-) returns jsonb[] stable parallel safe language sql as $$
-select array_agg(data)
-from (
-    select data
-    from contracts
-    where contracts.group_slugs && p_group_slugs
-      and is_valid_contract(contracts)
-      and contracts.creator_id = $1
-    order by importance_score desc,
-      slug offset start
-    limit lim
-  ) as search_contracts $$;
+create or replace function get_related_contracts_by_group_and_creator (
+    p_contract_id text,
+    lim int,
+    start int
+)
+    returns table (data jsonb)
+    stable parallel safe language sql as $$
+select distinct on (other_contracts.importance_score, other_contracts.slug) other_contracts.data
+from contracts
+         join group_contracts on contracts.id = group_contracts.contract_id
+         join contracts as other_contracts on other_contracts.id in (
+    select gc.contract_id
+    from group_contracts gc
+    where gc.group_id in (
+        select group_id
+        from group_contracts
+        where contract_id = p_contract_id
+    )
+)
+where contracts.id = p_contract_id
+  and is_valid_contract(other_contracts)
+  and other_contracts.id != p_contract_id
+  and other_contracts.creator_id = contracts.creator_id
+order by other_contracts.importance_score desc, other_contracts.slug
+offset start limit lim
+$$;
 
 create
 or replace function get_contract_metrics_with_contracts (uid text, count int, start int) returns table (contract_id text, metrics jsonb, contract jsonb) stable parallel safe language sql as $$
