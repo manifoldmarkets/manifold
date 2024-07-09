@@ -397,7 +397,7 @@ const getUnresolvedOrRecentlyResolvedBets = async (
 ) => {
   const bets = await pg.map(
     `
-    select cb.amount, cb.shares, cb.outcome, cb.data->'loanAmount' as "loanAmount", cb.user_id, cb.answer_id, cb.contract_id, cb.data->'createdTime' as "createdTime", cb.is_redemption
+    select cb.amount, cb.shares, cb.outcome, cb.loan_amount, cb.user_id, cb.answer_id, cb.contract_id, cb.data->'createdTime' as "createdTime", cb.is_redemption
     from contract_bets as cb
     join contracts as c on cb.contract_id = c.id
     left join answers as a on cb.answer_id = a.id

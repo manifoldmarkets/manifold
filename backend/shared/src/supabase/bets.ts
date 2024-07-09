@@ -89,9 +89,7 @@ export const getBetsWithFilter = async (
     filterAntes && where('is_ante = false'),
 
     !includeZeroShareRedemptions &&
-      where(
-        `(shares != 0 or is_redemption = false or (contract_bets.data->'loanAmount')::numeric != 0)`
-      )
+      where(`(shares != 0 or is_redemption = false or loan_amount != 0)`)
   )
 
   const query = renderSql(
