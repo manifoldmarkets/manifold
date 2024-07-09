@@ -25,7 +25,11 @@ export function calculateCpmmMultiArbitrageBet(
   collectedFees: Fees
 ) {
   const limitProb =
-    initialLimitProb ?? outcome === 'YES' ? MAX_CPMM_PROB : MIN_CPMM_PROB
+    initialLimitProb !== undefined
+      ? initialLimitProb
+      : outcome === 'YES'
+      ? MAX_CPMM_PROB
+      : MIN_CPMM_PROB
   const result =
     outcome === 'YES'
       ? calculateCpmmMultiArbitrageBetYes(
