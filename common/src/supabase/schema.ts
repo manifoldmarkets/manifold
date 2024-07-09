@@ -2287,6 +2287,7 @@ export type Database = {
           id: string
           to_id: string
           to_type: string
+          token: string
         }
         Insert: {
           amount: number
@@ -2299,6 +2300,7 @@ export type Database = {
           id?: string
           to_id: string
           to_type: string
+          token?: string
         }
         Update: {
           amount?: number
@@ -2311,6 +2313,7 @@ export type Database = {
           id?: string
           to_id?: string
           to_type?: string
+          token?: string
         }
         Relationships: []
       }

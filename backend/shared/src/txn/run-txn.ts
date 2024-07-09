@@ -1,12 +1,11 @@
 import { Txn } from 'common/txn'
 import { isAdminId } from 'common/envs/constants'
-import { bulkInsert } from 'shared/supabase/utils'
+import { bulkInsert, insert } from 'shared/supabase/utils'
 import { APIError } from 'common/api/utils'
 import { SupabaseTransaction } from 'shared/supabase/init'
-import { Row } from 'common/supabase/utils'
 import { convertTxn } from 'common/supabase/txns'
 import { removeUndefinedProps } from 'common/util/object'
-import { getUser, log } from 'shared/utils'
+import { getUser } from 'shared/utils'
 import { incrementBalance } from 'shared/supabase/users'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
@@ -124,26 +123,16 @@ export async function insertTxn(
   pgTransaction: SupabaseTransaction,
   txn: TxnData
 ) {
-  const row = await pgTransaction
-    .one<Row<'txns'>>(
-      `insert into txns 
-      (data, amount, from_id, to_id, from_type, to_type, category) 
-      values ($1, $2, $3, $4, $5, $6, $7) 
-      returning *`,
-      [
-        JSON.stringify(removeUndefinedProps(txn)),
-        txn.amount,
-        txn.fromId,
-        txn.toId,
-        txn.fromType,
-        txn.toType,
-        txn.category,
-      ]
-    )
-    .catch((e) => {
-      logFailedToRecordTxn(txn)
-      throw e
-    })
+  const row = await insert(pgTransaction, 'txns', {
+    data: JSON.stringify(removeUndefinedProps(txn)),
+    amount: txn.amount,
+    token: txn.token,
+    from_id: txn.fromId,
+    to_id: txn.toId,
+    from_type: txn.fromType,
+    to_type: txn.toType,
+    category: txn.category,
+  })
 
   return convertTxn(row)
 }
@@ -159,23 +148,12 @@ export async function insertTxns(
     txns.map((txn) => ({
       data: JSON.stringify(removeUndefinedProps(txn)),
       amount: txn.amount,
+      token: txn.token,
       from_id: txn.fromId,
       to_id: txn.toId,
       from_type: txn.fromType,
       to_type: txn.toType,
       category: txn.category,
     }))
-  ).catch((e) => {
-    for (const txn of txns) {
-      logFailedToRecordTxn(txn)
-    }
-    throw e
-  })
-}
-
-export function logFailedToRecordTxn(txn: TxnData) {
-  log.error(
-    `Failed to record ${txn.category} txn: send ${txn.amount} from ${txn.fromType} ${txn.fromId} to ${txn.toType} ${txn.toId}`,
-    txn
   )
 }

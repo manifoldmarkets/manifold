@@ -67,7 +67,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   toType: SourceType
 
   amount: number
-  token: 'M$' | 'SHARE' | 'SPICE'
+  token: 'M$' | 'SHARE' | 'SPICE' // if you add a new type, update the check in txn table schema
 
   category: AnyTxnType['category']
 

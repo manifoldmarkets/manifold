@@ -8,6 +8,7 @@ create table if not exists
     to_id text not null,
     to_type text not null,
     amount numeric not null,
+    token text not null default 'M$',
     category text not null,
     fs_updated_time timestamp
   );
@@ -29,6 +30,7 @@ begin
     new.to_id := (new.data ->> 'toId');
     new.to_type := (new.data ->> 'toType');
     new.amount := (new.data ->> 'amount')::numeric;
+    new.token := (new.data ->> 'token');
     new.category := (new.data ->> 'category');
     end if;
     return new;
@@ -63,7 +65,7 @@ or replace function get_donations_by_charity () returns table (
 ) as $$
     select to_id as charity_id,
       count(distinct from_id) as num_supporters,
-      sum(case when data->>'token' = 'M$'
+      sum(case when token = 'M$'
         then amount / 100
         else amount / 1000 end
       ) as total
