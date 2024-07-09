@@ -498,7 +498,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
   answers: Answer[],
   answersToBuy: Answer[],
   outcome: 'YES' | 'NO',
-  initialBetAmount: number,
+  betAmount: number,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
@@ -512,24 +512,21 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       answers,
       answersToBuy[0],
       outcome,
-      initialBetAmount,
+      betAmount,
       limitProb,
       unfilledBets,
       balanceByUserId,
       contract.collectedFees
     )
-    if (newBetResult.takers.length === 0 && !limitProb) {
-      throw new APIError(400, 'Betting allowed only between 1-99%.')
-    }
     newBetResults.push(...([newBetResult] as ArbitrageBetArray))
     if (otherBetResults.length > 0)
       otherBetsResults.push(...(otherBetResults as ArbitrageBetArray))
   } else {
-    // NOTE: only accepts YES bets atm
+    // TODO: only accepts YES bets atm
     const multiRes = calculateCpmmMultiArbitrageYesBets(
       answers,
       answersToBuy,
-      initialBetAmount,
+      betAmount,
       limitProb,
       unfilledBets,
       balanceByUserId,
@@ -542,33 +539,28 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
   return newBetResults.map((newBetResult, i) => {
     const { takers, cpmmState, answer: updatedAnswer, totalFees } = newBetResult
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
-    const takerAmount = sumBy(takers, 'amount')
-    const takerShares = sumBy(takers, 'shares')
+    const amount = sumBy(takers, 'amount')
+    const shares = sumBy(takers, 'shares')
     const answer = answers.find((a) => a.id === updatedAnswer.id) as Answer
-    const multiBuyTakerAmount = sumBy(
+    const multiBuyAmount = sumBy(
       newBetResults.flatMap((r) => r.takers),
       'amount'
     )
-    const betAmount = limitProb
-      ? initialBetAmount
-      : isMultiBuy
-      ? multiBuyTakerAmount
-      : takerAmount
 
     const newBet: CandidateBet = removeUndefinedProps({
-      orderAmount: betAmount,
-      amount: takerAmount,
-      shares: takerShares,
-      isFilled: isMultiBuy
-        ? floatingEqual(multiBuyTakerAmount, betAmount)
-        : floatingEqual(takerAmount, betAmount),
-      fills: takers,
       contractId: contract.id,
       outcome,
+      orderAmount: betAmount,
       limitProb,
       isCancelled: false,
+      amount,
       loanAmount: 0,
+      shares,
       answerId: answer.id,
+      fills: takers,
+      isFilled: isMultiBuy
+        ? floatingEqual(multiBuyAmount, betAmount)
+        : floatingEqual(amount, betAmount),
       probBefore: answer.prob,
       probAfter,
       createdTime: now,

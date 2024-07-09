@@ -10,7 +10,6 @@ import { computeFills } from './new-bet'
 import { floatingEqual } from './util/math'
 import { Fees, getFeesSplit, getTakerFee, noFees, sumAllFees } from './fees'
 import { addObjects } from './util/object'
-import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 
 const DEBUG = false
 export type ArbitrageBetArray = ReturnType<typeof combineBetsOnSameAnswers>
@@ -19,13 +18,11 @@ export function calculateCpmmMultiArbitrageBet(
   answerToBuy: Answer,
   outcome: 'YES' | 'NO',
   betAmount: number,
-  initialLimitProb: number | undefined,
+  limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
   collectedFees: Fees
 ) {
-  const limitProb =
-    initialLimitProb ?? outcome === 'YES' ? MAX_CPMM_PROB : MIN_CPMM_PROB
   const result =
     outcome === 'YES'
       ? calculateCpmmMultiArbitrageBetYes(
