@@ -17,3 +17,7 @@ drop index group_members_created_time_idx;
 drop index group_name;
 
 drop index group_creator_id;
+
+drop index user_portfolio_history_user_latest;
+
+drop index user_view_events_user_id_created_time;
