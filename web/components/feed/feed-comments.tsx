@@ -952,8 +952,10 @@ export function FeedCommentHeader(props: {
   inTimeline?: boolean
   isParent?: boolean
   isPinned?: boolean
+  className?: string
 }) {
-  const { comment, updateComment, contract, inTimeline, isPinned } = props
+  const { comment, updateComment, contract, inTimeline, isPinned, className } =
+    props
   const {
     userUsername,
     userName,
@@ -978,7 +980,7 @@ export function FeedCommentHeader(props: {
   const commenterIsBettor = commenterAndBettorMatch(comment)
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
   return (
-    <Col className={clsx('text-ink-600 text-sm')}>
+    <Col className={clsx('text-ink-600 text-sm', className)}>
       <Row className="justify-between">
         <Row className="gap-1">
           <UserHovercard userId={userId}>
