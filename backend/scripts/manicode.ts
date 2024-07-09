@@ -177,7 +177,7 @@ User: ${firstPrompt}
   await new Promise<void>((resolve) => {
     function promptUser() {
       rl.question(
-        'Enter your prompt (or type "quit" or "q"): ',
+        'Enter your prompt (or type "quit" or "q"):\n>',
         async (userInput: string) => {
           const exitWords = ['exit', 'quit', 'q']
           if (exitWords.includes(userInput.trim().toLowerCase())) {
