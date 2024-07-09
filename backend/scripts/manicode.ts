@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as readline from 'readline'
 import { model_types } from 'shared/helpers/claude'
+import * as ts from 'typescript'
 
 import { runScript } from 'run-script'
 import { promptClaudeStream, promptClaude } from 'shared/helpers/claude'
@@ -365,8 +366,10 @@ async function processFileBlock(filePath: string, fileContent: string) {
     }
   } else {
     // Replace whole file or create new file
-    fs.writeFileSync(fullPath, fileContent.trim())
-    console.log(`Created/Updated file: ${filePath}`)
+    const dir = path.dirname(fullPath);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(fullPath, fileContent.trim());
+    console.log(`Created/Updated file: ${filePath}`);
   }
 }
 
@@ -412,6 +415,15 @@ function applyReplacement(
 
 function getSystemPrompt() {
   const codeFiles = getOnlyCodeFiles()
+  const exportedTokens = getExportedTokensForFiles(codeFiles)
+  const filesWithExports = codeFiles
+    .map((filePath) => {
+      const tokens = exportedTokens[filePath]
+      return tokens && tokens.length > 0
+        ? `${filePath}: ${tokens.join(', ')}`
+        : filePath
+    })
+    .join('\n')
 
   const manifoldInfoPath = path.join(__dirname, '..', '..', 'manifold-info.md')
   const manifoldInfo = fs.readFileSync(manifoldInfoPath, 'utf8')
@@ -445,8 +457,8 @@ ${codeGuide}
 ${apiGuide}
 
 <project_files>
-Here are all the code files in our project:
-${codeFiles.join('\n')}
+Here are all the code files in our project. If the file has exported tokens, they are listed in the same line in a comma-separated list.
+${filesWithExports}
 </project_files>
 
 <important_instruction>
@@ -566,4 +578,76 @@ If you can't find a suitable expansion, please respond with "No expansion possib
   }
 
   return null
+}
+
+function getExportedTokensForFiles(
+  filePaths: string[]
+): Record<string, string[]> {
+  const result: Record<string, string[]> = {}
+  const fullFilePaths = filePaths.map((filePath) =>
+    path.join(__dirname, '..', '..', filePath)
+  )
+  const program = ts.createProgram(fullFilePaths, {})
+
+  for (let i = 0; i < filePaths.length; i++) {
+    const filePath = filePaths[i]
+    const fullFilePath = fullFilePaths[i]
+    const sourceFile = program.getSourceFile(fullFilePath)
+    if (sourceFile) {
+      try {
+        const exportedTokens = getExportedTokens(sourceFile)
+        result[filePath] = exportedTokens
+      } catch (error) {
+        console.error(`Error processing file ${fullFilePath}:`, error)
+        result[filePath] = []
+      }
+    } else {
+      // console.error(`Could not find source file: ${fullFilePath}`)
+      result[filePath] = []
+    }
+  }
+
+  return result
+}
+
+function getExportedTokens(sourceFile: ts.SourceFile): string[] {
+  const exportedTokens: string[] = []
+
+  function visit(node: ts.Node) {
+    if (ts.isExportDeclaration(node)) {
+      if (node.exportClause && ts.isNamedExports(node.exportClause)) {
+        node.exportClause.elements.forEach((element) => {
+          exportedTokens.push(element.name.text)
+        })
+      }
+    } else if (
+      ts.isFunctionDeclaration(node) ||
+      ts.isClassDeclaration(node) ||
+      ts.isVariableStatement(node)
+    ) {
+      if (
+        node.modifiers?.some(
+          (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+        )
+      ) {
+        if (ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node)) {
+          if (node.name) {
+            exportedTokens.push(node.name.text)
+          }
+        } else if (ts.isVariableStatement(node)) {
+          node.declarationList.declarations.forEach((declaration) => {
+            if (ts.isIdentifier(declaration.name)) {
+              exportedTokens.push(declaration.name.text)
+            }
+          })
+        }
+      }
+    }
+
+    ts.forEachChild(node, visit)
+  }
+
+  visit(sourceFile)
+
+  return exportedTokens
 }
