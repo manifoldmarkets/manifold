@@ -72,26 +72,27 @@ The user has a coding question for you. Please provide a detailed response follo
 
    For existing files:
    <file path="path/to/existing/file.tsx">
-   <replace>
+   <old>
    // Existing code to be replaced (include enough context for accurate matching)
-   </replace>
-   <with>
+   </old>
+   <new>
    // New code to replace the above
-   </with>
-  <replace>
+   </new>
+  <old>
    // Existing code to be replaced (include enough context for accurate matching)
-   </replace>
-   <with>
-   // You can include multiple replace-with blocks if needed
-   </with>
+   </old>
+   <new>
+   // You can include multiple old-new blocks if needed
+   </new>
+</file>
 </instructions>
 
 <important_reminders>
 - Always add necessary import statements when introducing new functions, components, or dependencies.
-- Use <replace> and <with> blocks to add or modify import statements at the top of relevant files.
-- Ensure that you're providing enough context in the <replace> blocks for accurate matching.
-- Every <replace> block should have a corresponding <with> block.
-- Make sure the replace content really does match a substring of file content. Don't add an extra word like 'export' that doesn't exist in the file.
+- Use <old> and <new> blocks to add or modify import statements at the top of relevant files.
+- Ensure that you're providing enough context in the <old> blocks for accurate matching.
+- Every <old> block should have a corresponding <new> block.
+- Make sure the old content really does match a substring of file content. Don't add an extra word like 'export' that doesn't exist in the file.
 - It's preferable to make many short edits in a file over one long edit.
 </important_reminders>
 
@@ -114,7 +115,7 @@ export const NewComponent: React.FC = () => {
 </file>
 
 <file path="web/pages/Home.tsx">
-<replace>
+<old>
 import React from 'react'
 import { SomeExistingComponent } from '../components/SomeExistingComponent'
 
@@ -126,8 +127,8 @@ const Home: React.FC = () => {
     </div>
   )
 }
-</replace>
-<with>
+</old>
+<new>
 import React from 'react'
 import { SomeExistingComponent } from '../components/SomeExistingComponent'
 import { NewComponent } from '../components/NewComponent'
@@ -141,7 +142,7 @@ const Home: React.FC = () => {
     </div>
   )
 }
-</with>
+</new>
 </file>
 </example>
 
@@ -273,20 +274,13 @@ async function promptClaudeAndApplyFileChanges(
   let isComplete = false
   const originalPrompt = prompt
 
-  // Start the "Thinking" animation
-  const thinkingAnimation = setInterval(() => {
-    process.stdout.write('\rThinking   ')
-    setTimeout(() => process.stdout.write('\rThinking.  '), 500)
-    setTimeout(() => process.stdout.write('\rThinking.. '), 1000)
-    setTimeout(() => process.stdout.write('\rThinking...'), 1500)
-  }, 2000)
-
   while (!isComplete) {
     const stream = promptClaudeStream(prompt, options)
 
     for await (const chunk of stream) {
       fullResponse += chunk
       currentFileBlock += chunk
+      process.stdout.write(chunk)
 
       if (currentFileBlock.includes('</file>')) {
         const fileMatch = /<file path="([^"]+)">([\s\S]*?)<\/file>/.exec(
@@ -296,7 +290,6 @@ async function promptClaudeAndApplyFileChanges(
           const [, filePath, fileContent] = fileMatch
           await processFileBlock(filePath, fileContent)
 
-          process.stdout.write(currentFileBlock)
           currentFileBlock = ''
         }
       }
@@ -317,9 +310,6 @@ ${fullResponse}`
     }
   }
 
-  clearInterval(thinkingAnimation)
-  process.stdout.write('\r           \r') // Clear the "Thinking" text
-
   console.log(currentFileBlock.replace('[END_OF_RESPONSE]', ''))
 
   return fullResponse
@@ -331,18 +321,18 @@ async function processFileBlock(filePath: string, fileContent: string) {
     ? fs.readFileSync(fullPath, 'utf8')
     : ''
 
-  if (fileContent.includes('<replace>')) {
+  if (fileContent.includes('<old>')) {
     const replaceRegex =
-      /<replace>([\s\S]*?)<\/replace>\s*<with>([\s\S]*?)<\/with>/g
+      /<old>([\s\S]*?)<\/old>\s*<new>([\s\S]*?)<\/new>/g
     let replaceMatch
     let updatedContent = currentContent
 
     while ((replaceMatch = replaceRegex.exec(fileContent)) !== null) {
-      const [, replaceContent, withContent] = replaceMatch
+      const [, oldContent, newContent] = replaceMatch
       const replaced = applyReplacement(
         updatedContent,
-        replaceContent,
-        withContent
+        oldContent,
+        newContent
       )
 
       if (replaced) {
@@ -354,14 +344,14 @@ async function processFileBlock(filePath: string, fileContent: string) {
         const expandedReplacement = await promptClaudeForExpansion(
           filePath,
           updatedContent,
-          replaceContent,
-          withContent
+          oldContent,
+          newContent
         )
         if (expandedReplacement) {
           const expandedReplaced = applyReplacement(
             updatedContent,
-            expandedReplacement.replaceContent,
-            expandedReplacement.withContent
+            expandedReplacement.oldContent,
+            expandedReplacement.newContent
           )
           if (expandedReplaced) {
             updatedContent = expandedReplaced
@@ -369,10 +359,10 @@ async function processFileBlock(filePath: string, fileContent: string) {
           } else {
             console.log('Warning: Could not apply expanded replacement.')
             console.log(
-              'Original replace:',
-              replaceContent,
+              'Original old:',
+              oldContent,
               'expandedReplacement:',
-              expandedReplacement.replaceContent
+              expandedReplacement.oldContent
             )
           }
         }
@@ -394,36 +384,36 @@ async function processFileBlock(filePath: string, fileContent: string) {
 
 function applyReplacement(
   content: string,
-  replaceContent: string,
-  withContent: string
+  oldContent: string,
+  newContent: string
 ): string | null {
   const lines = content.split('\n')
-  const replaceLines = replaceContent.trim().split('\n')
-  const withLines = withContent.trim().split('\n')
+  const oldLines = oldContent.trim().split('\n')
+  const newLines = newContent.trim().split('\n')
 
-  for (let i = 0; i <= lines.length - replaceLines.length; i++) {
-    const contentSlice = lines.slice(i, i + replaceLines.length)
+  for (let i = 0; i <= lines.length - oldLines.length; i++) {
+    const contentSlice = lines.slice(i, i + oldLines.length)
     if (
       contentSlice.map((line) => line.trim()).join('\n') ===
-      replaceLines.map((line) => line.trim()).join('\n')
+      oldLines.map((line) => line.trim()).join('\n')
     ) {
       // Check if there's an indentation mismatch
       const contentIndent = contentSlice[0].match(/^\s*/)?.[0] || ''
-      const replaceIndent = replaceLines[0].match(/^\s*/)?.[0] || ''
+      const oldIndent = oldLines[0].match(/^\s*/)?.[0] || ''
 
-      if (contentIndent !== replaceIndent) {
+      if (contentIndent !== oldIndent) {
         // Adjust indentation only if there's a mismatch
-        const indentDiff = contentIndent.length - replaceIndent.length
-        const updatedWithLines = withLines.map((line) => {
+        const indentDiff = contentIndent.length - oldIndent.length
+        const updatedNewLines = newLines.map((line) => {
           const trimmed = line.trim()
           if (!trimmed) return line // Preserve empty lines
           const currentIndent = line.match(/^\s*/)?.[0] || ''
           return ' '.repeat(currentIndent.length + indentDiff) + trimmed
         })
-        lines.splice(i, replaceLines.length, ...updatedWithLines)
+        lines.splice(i, oldLines.length, ...updatedNewLines)
       } else {
         // No indentation adjustment needed
-        lines.splice(i, replaceLines.length, ...withLines)
+        lines.splice(i, oldLines.length, ...newLines)
       }
       return lines.join('\n')
     }
@@ -537,8 +527,8 @@ function getOnlyCodeFiles() {
 async function promptClaudeForExpansion(
   filePath: string,
   currentContent: string,
-  replaceContent: string,
-  withContent: string
+  oldContent: string,
+  newContent: string
 ) {
   const prompt = `
 I'm trying to apply a code replacement, but the replacement content doesn't match exactly. Can you help expand the replacement to match the existing code?
@@ -550,25 +540,25 @@ Current file content:
 ${currentContent}
 \`\`\`
 
-Replacement content to find:
+Old content to find:
 \`\`\`
-${replaceContent}
-\`\`\`
-
-Content to replace with:
-\`\`\`
-${withContent}
+${oldContent}
 \`\`\`
 
-Please provide an expanded version of the replacement content that matches the existing code, and the corresponding expanded version of the content to replace with. Use the following format:
+New content to replace with:
+\`\`\`
+${newContent}
+\`\`\`
 
-<replace>
-// Expanded replacement content here
-</replace>
+Please provide an expanded version of the old content that matches the existing code, and the corresponding expanded version of the new content to replace with. Use the following format:
 
-<with>
-// Expanded content to replace with here
-</with>
+<old>
+// Expanded old content here
+</old>
+
+<new>
+// Expanded new content here
+</new>
 
 If you can't find a suitable expansion, please respond with "No expansion possible."
 `
@@ -577,15 +567,15 @@ If you can't find a suitable expansion, please respond with "No expansion possib
     system: getSystemPrompt(),
   })
 
-  const expandedReplaceMatch = expandedResponse.match(
-    /<replace>([\s\S]*?)<\/replace>/
+  const expandedOldMatch = expandedResponse.match(
+    /<old>([\s\S]*?)<\/old>/
   )
-  const expandedWithMatch = expandedResponse.match(/<with>([\s\S]*?)<\/with>/)
+  const expandedNewMatch = expandedResponse.match(/<new>([\s\S]*?)<\/new>/)
 
-  if (expandedReplaceMatch && expandedWithMatch) {
+  if (expandedOldMatch && expandedNewMatch) {
     return {
-      replaceContent: expandedReplaceMatch[1].trim(),
-      withContent: expandedWithMatch[1].trim(),
+      oldContent: expandedOldMatch[1].trim(),
+      newContent: expandedNewMatch[1].trim(),
     }
   }
 
