@@ -714,7 +714,7 @@ export function Answer(props: {
           {(shouldShowLimitOrderChart ||
             (yourUnfilledBets ?? []).length > 0) && (
             <Col className="px-2">
-              <QuickLimitOrderButtons contract={contract} answer={answer} />
+              {/* <QuickLimitOrderButtons contract={contract} answer={answer} /> */}
               <YourOrders
                 contract={contract}
                 bets={yourUnfilledBets ?? []}
