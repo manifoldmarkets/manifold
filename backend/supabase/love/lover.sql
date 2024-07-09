@@ -50,7 +50,9 @@ alter table lovers enable row level security;
 
 drop policy if exists "public read" on lovers;
 
-create policy "public read" on lovers using (true);
+create policy "public read" on lovers for
+select
+  using (true);
 
 drop policy if exists "self update" on lovers;
 
