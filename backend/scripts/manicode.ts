@@ -59,8 +59,8 @@ The user has a coding question for you. Please provide a detailed response follo
 
 2. Implementation Strategy: Outline your approach to implement the requested changes.
 
-3. File Modifications: List all files that need to be modified or created. For each file, provide the following details:
-
+3. File Modifications: List all files that need to be modified or created, and they will be changed according to your instruction.
+  For each file, provide the following details:
    a) File path
    b) Whether it's a new file or an existing file to be modified
    c) Specific changes to be made, using the format below:
@@ -217,25 +217,20 @@ Based on the conversation above, which files do you need to read to answer the u
 
           const finalPrompt = `${fullPrompt}\n\nRelevant file contents:\n\n${fileContents}`
 
-          try {
-            const claudeResponse = await promptClaudeAndApplyFileChanges(
-              finalPrompt,
-              {
-                system,
-              }
-            )
+          const claudeResponse = await promptClaudeAndApplyFileChanges(
+            finalPrompt,
+            {
+              system,
+            }
+          )
 
-            conversationHistory.push({
-              role: 'assistant',
-              content: claudeResponse,
-            })
+          conversationHistory.push({
+            role: 'assistant',
+            content: claudeResponse,
+          })
 
-            // Continue the loop
-          } catch (error) {
-            console.error('Error:', error)
-          } finally {
-            promptUser()
-          }
+          // Continue the loop
+          promptUser()
         }
       )
     }
@@ -310,8 +305,6 @@ ${fullResponse}`
     }
   }
 
-  console.log(currentFileBlock.replace('[END_OF_RESPONSE]', ''))
-
   return fullResponse
 }
 
@@ -322,18 +315,13 @@ async function processFileBlock(filePath: string, fileContent: string) {
     : ''
 
   if (fileContent.includes('<old>')) {
-    const replaceRegex =
-      /<old>([\s\S]*?)<\/old>\s*<new>([\s\S]*?)<\/new>/g
+    const replaceRegex = /<old>([\s\S]*?)<\/old>\s*<new>([\s\S]*?)<\/new>/g
     let replaceMatch
     let updatedContent = currentContent
 
     while ((replaceMatch = replaceRegex.exec(fileContent)) !== null) {
       const [, oldContent, newContent] = replaceMatch
-      const replaced = applyReplacement(
-        updatedContent,
-        oldContent,
-        newContent
-      )
+      const replaced = applyReplacement(updatedContent, oldContent, newContent)
 
       if (replaced) {
         updatedContent = replaced
@@ -567,9 +555,7 @@ If you can't find a suitable expansion, please respond with "No expansion possib
     system: getSystemPrompt(),
   })
 
-  const expandedOldMatch = expandedResponse.match(
-    /<old>([\s\S]*?)<\/old>/
-  )
+  const expandedOldMatch = expandedResponse.match(/<old>([\s\S]*?)<\/old>/)
   const expandedNewMatch = expandedResponse.match(/<new>([\s\S]*?)<\/new>/)
 
   if (expandedOldMatch && expandedNewMatch) {
