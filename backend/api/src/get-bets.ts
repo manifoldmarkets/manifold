@@ -25,6 +25,9 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     filterRedemptions,
     includeZeroShareRedemptions,
   } = props
+  if (limit === 0) {
+    return []
+  }
   const db = createSupabaseClient()
 
   const userId = props.userId ?? (await getUserIdFromUsername(db, username))
