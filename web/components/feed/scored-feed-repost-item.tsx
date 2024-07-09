@@ -71,6 +71,16 @@ export const ScoredFeedRepost = memo(function (props: {
           router.push(`${contractPath(contract)}#${comment.id}`)
         }}
       >
+        <RepostLabel
+          showTopLevelRow={showTopLevelRow}
+          creatorRepostedTheirComment={creatorRepostedTheirComment}
+          bet={bet}
+          comment={comment}
+          contract={contract}
+          hide={hide}
+          commenterIsBettor={commenterIsBettor}
+          repost={repost}
+        />
         <Col className={'w-full gap-2'}>
           <Col className={'w-full pl-1 pr-2  transition-colors'}>
             <Row className="w-full items-center justify-between">
@@ -92,16 +102,6 @@ export const ScoredFeedRepost = memo(function (props: {
                   />
                 </div>
               </Row>
-              <RepostTopRight
-                showTopLevelRow={showTopLevelRow}
-                creatorRepostedTheirComment={creatorRepostedTheirComment}
-                bet={bet}
-                comment={comment}
-                contract={contract}
-                hide={hide}
-                commenterIsBettor={commenterIsBettor}
-                repost={repost}
-              />
             </Row>
             <CollapsibleContent
               mediaSize={'md'}
@@ -147,7 +147,7 @@ export const ScoredFeedRepost = memo(function (props: {
   )
 })
 
-function RepostTopRight(props: {
+function RepostLabel(props: {
   showTopLevelRow: boolean
   creatorRepostedTheirComment: boolean
   bet?: Bet
@@ -169,7 +169,7 @@ function RepostTopRight(props: {
   } = props
   if (showTopLevelRow && creatorRepostedTheirComment)
     return (
-      <Row className="justify-between pr-2">
+      <Row className="grow-x bg-canvas-100/50 -mx-4 -mt-4 mb-3 rounded-t-lg px-4 pb-1 pt-2">
         {bet && (
           <CommentReplyHeaderWithBet
             comment={comment}
@@ -189,9 +189,13 @@ function RepostTopRight(props: {
 
   if (showTopLevelRow && !creatorRepostedTheirComment) {
     return (
-      <Col>
-        <Row className={'mb-1 justify-end gap-1 pr-2'}>
-          <CardReason repost={repost} reason={'reposted'} />
+      <Col className="grow-x bg-canvas-100/50 -mx-4 -mt-4 mb-3 rounded-t-lg px-4 pb-1 pt-2">
+        <Row className={'mb-1 w-full justify-between gap-1'}>
+          <CardReason
+            repost={repost}
+            reason={'reposted'}
+            className="text-ink-600"
+          />
           <FeedDropdown
             contract={contract}
             itemCreatorId={repost.user_id}
