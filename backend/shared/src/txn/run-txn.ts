@@ -123,17 +123,7 @@ export async function insertTxn(
   pgTransaction: SupabaseTransaction,
   txn: TxnData
 ) {
-  const row = await insert(pgTransaction, 'txns', {
-    data: JSON.stringify(removeUndefinedProps(txn)),
-    amount: txn.amount,
-    token: txn.token,
-    from_id: txn.fromId,
-    to_id: txn.toId,
-    from_type: txn.fromType,
-    to_type: txn.toType,
-    category: txn.category,
-  })
-
+  const row = await insert(pgTransaction, 'txns', txnDataToRow(txn))
   return convertTxn(row)
 }
 
@@ -142,18 +132,21 @@ export async function insertTxns(
   pgTransaction: SupabaseTransaction,
   txns: TxnData[]
 ) {
-  await bulkInsert(
-    pgTransaction,
-    'txns',
-    txns.map((txn) => ({
-      data: JSON.stringify(removeUndefinedProps(txn)),
-      amount: txn.amount,
-      token: txn.token,
-      from_id: txn.fromId,
-      to_id: txn.toId,
-      from_type: txn.fromType,
-      to_type: txn.toType,
-      category: txn.category,
-    }))
-  )
+  await bulkInsert(pgTransaction, 'txns', txns.map(txnDataToRow))
+}
+
+const txnDataToRow = (data: TxnData) => {
+  return {
+    data: JSON.stringify(
+      // data is nested an extra level for legacy reasons
+      removeUndefinedProps({ data: data.data, description: data.description })
+    ),
+    amount: data.amount,
+    token: data.token,
+    from_id: data.fromId,
+    to_id: data.toId,
+    from_type: data.fromType,
+    to_type: data.toType,
+    category: data.category,
+  } as const
 }

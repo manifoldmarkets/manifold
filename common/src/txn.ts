@@ -71,11 +71,11 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
 
   category: AnyTxnType['category']
 
-  // Any extra data
-  data?: { [key: string]: any }
-
-  // Human-readable description
+  /** Human-readable description. In data->>'description' in the db */
   description?: string
+
+  /** Any extra data. For legacy reasons, in data->'data' in the db */
+  data?: { [key: string]: any }
 } & T
 
 type LootBoxPurchase = {

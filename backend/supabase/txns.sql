@@ -10,7 +10,6 @@ create table if not exists
     amount numeric not null,
     token text not null default 'M$',
     category text not null,
-    fs_updated_time timestamp
   );
 
 alter table txns enable row level security;
@@ -20,27 +19,6 @@ drop policy if exists "public read" on txns;
 create policy "public read" on txns for
 select
   using (true);
-
-create
-or replace function txns_populate_cols () returns trigger language plpgsql as $$
-begin
-    if new.data is not null then
-    new.from_id := (new.data ->> 'fromId');
-    new.from_type := (new.data ->> 'fromType');
-    new.to_id := (new.data ->> 'toId');
-    new.to_type := (new.data ->> 'toType');
-    new.amount := (new.data ->> 'amount')::numeric;
-    new.token := (new.data ->> 'token');
-    new.category := (new.data ->> 'category');
-    end if;
-    return new;
-end
-$$;
-
-create trigger txns_populate before insert
-or
-update on txns for each row
-execute function txns_populate_cols ();
 
 create
 or replace function get_daily_claimed_boosts (user_id text) returns table (total numeric) as $$

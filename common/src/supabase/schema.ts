@@ -2283,7 +2283,6 @@ export type Database = {
           data: Json
           from_id: string
           from_type: string
-          fs_updated_time: string | null
           id: string
           to_id: string
           to_type: string
@@ -2296,7 +2295,6 @@ export type Database = {
           data: Json
           from_id: string
           from_type: string
-          fs_updated_time?: string | null
           id?: string
           to_id: string
           to_type: string
@@ -2309,7 +2307,6 @@ export type Database = {
           data?: Json
           from_id?: string
           from_type?: string
-          fs_updated_time?: string | null
           id?: string
           to_id?: string
           to_type?: string
