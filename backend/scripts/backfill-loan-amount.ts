@@ -33,7 +33,7 @@ if (require.main === module) {
        where loan_amount is null
        and data->>'loanAmount' is not null
        order by created_time
-       limit 1000`,
+       limit 5000`,
             [converted],
             (row) => row.bet_id as string
           )
