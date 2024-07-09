@@ -1,4 +1,4 @@
-name: Reformat main
+name: Reformat web
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -7,6 +7,9 @@ concurrency:
 on:
   push:
     branches: [main]
+    paths:
+      - 'web/**'
+      - 'common/**'
 
 env:
   FORCE_COLOR: 3
@@ -16,7 +19,7 @@ env:
 # why, but the default token didn't work, even when i gave it max permissions
 
 jobs:
-  prettify:
+  prettify-main:
     name: Auto-prettify
     runs-on: ubuntu-latest
     permissions:
