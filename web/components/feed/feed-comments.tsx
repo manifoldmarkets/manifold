@@ -314,7 +314,6 @@ export const FeedComment = memo(function FeedComment(props: {
               username={userUsername}
               size={isParent ? 'sm' : '2xs'}
               avatarUrl={userAvatarUrl}
-              className={clsx(marketCreator && 'shadow shadow-amber-300')}
             />
           </UserHovercard>
 

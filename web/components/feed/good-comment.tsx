@@ -76,7 +76,6 @@ export const GoodComment = memo(function (props: {
                     username={userUsername}
                     size={'sm'}
                     avatarUrl={userAvatarUrl}
-                    className={clsx(marketCreator && 'shadow shadow-amber-300')}
                   />
                 </UserHovercard>
                 <Col>

@@ -90,7 +90,6 @@ export const ScoredFeedRepost = memo(function (props: {
                     username={userUsername}
                     size={'xs'}
                     avatarUrl={userAvatarUrl}
-                    className={clsx(marketCreator && 'shadow shadow-amber-300')}
                   />
                 </UserHovercard>
                 <div className="min-w-0 flex-1 overflow-hidden">
