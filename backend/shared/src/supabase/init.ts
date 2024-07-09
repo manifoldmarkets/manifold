@@ -9,6 +9,8 @@ import { IClient } from 'pg-promise/typescript/pg-subset'
 import { HOUR_MS } from 'common/util/time'
 import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
 import { getMonitoringContext } from 'shared/monitoring/context'
+import { firestore } from 'firebase-admin'
+import Query = firestore.Query
 
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
@@ -121,6 +123,8 @@ export function createSupabaseDirectClient(
     queryMethod: (t: ITask<{}>) => Promise<T>
   ) => {
     let pid: number | undefined
+    let timeoutId: NodeJS.Timeout | undefined
+
     const task = client.task(async (t) => {
       const pidResult = await t.one('SELECT pg_backend_pid() AS pid')
       pid = pidResult.pid
@@ -130,7 +134,8 @@ export function createSupabaseDirectClient(
     })
 
     const cancelAfterTimeout = new Promise<never>((_, reject) => {
-      setTimeout(async () => {
+      log(`Starting timeout: ${timeoutInMs / 1000} seconds`)
+      timeoutId = setTimeout(async () => {
         if (pid) {
           try {
             log('Cancelling query:', pid)
@@ -148,7 +153,14 @@ export function createSupabaseDirectClient(
       }, timeoutInMs)
     })
 
-    return Promise.race([task, cancelAfterTimeout])
+    try {
+      const res = await Promise.race([task, cancelAfterTimeout])
+      clearTimeout(timeoutId)
+      return res
+    } catch (error) {
+      clearTimeout(timeoutId)
+      throw error
+    }
   }
 
   pgpDirect = {
