@@ -5,6 +5,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { MINUTE_MS } from 'common/util/time'
 
+const MAX_RETRIES = 5
 if (require.main === module) {
   const argv = yargs(hideBin(process.argv))
     .option('timeout', {
@@ -19,7 +20,6 @@ if (require.main === module) {
 
   runScript(async () => {
     let retries = 0
-    const maxRetries = 1
     let converted = 0
     const runBackfill = async () => {
       const pg = createSupabaseDirectClient()
@@ -55,15 +55,15 @@ if (require.main === module) {
       }
     }
 
-    while (retries < maxRetries) {
+    while (retries < MAX_RETRIES) {
       try {
         await runBackfill()
         break // If successful, exit the retry loop
       } catch (error) {
         retries++
         log(`Attempt ${retries} failed`)
-        if (retries >= maxRetries) {
-          log(`Max retries (${maxRetries}) reached. Script failed.`)
+        if (retries >= MAX_RETRIES) {
+          log(`Max retries (${MAX_RETRIES}) reached. Script failed.`)
           throw error
         }
         log(`Retrying in a 5 seconds...`)
