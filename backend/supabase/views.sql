@@ -1,19 +1,4 @@
 create or replace view
-  public_open_contracts as (
-    select
-      *
-    from
-      contracts
-    where
-      resolution_time is null
-      and visibility = 'public'
-      and (
-        (close_time > now() + interval '10 minutes')
-        or close_time is null
-      )
-  );
-
-create or replace view
   public_contracts as (
     select
       *
@@ -21,57 +6,6 @@ create or replace view
       contracts
     where
       visibility = 'public'
-  );
-
-create or replace view
-  listed_open_contracts as (
-    select
-      *
-    from
-      contracts
-    where
-      resolution_time is null --    row level security prevents the 'private' contracts from being returned
-      and visibility != 'unlisted'
-      and (
-        (close_time > now() + interval '10 minutes')
-        or close_time is null
-      )
-  );
-
-create or replace view
-  trending_contracts as (
-    select
-      *
-    from
-      listed_open_contracts
-    where
-      listed_open_contracts.importance_score > 0
-    order by
-      importance_score desc
-  );
-
-create or replace view
-  contract_distance as (
-    select
-      ce1.contract_id as id1,
-      ce2.contract_id as id2,
-      ce1.embedding <= > ce2.embedding as distance
-    from
-      contract_embeddings ce1
-      cross join contract_embeddings ce2
-    order by
-      distance
-  );
-
-create or replace view
-  user_contract_distance as (
-    select
-      user_id,
-      contract_id,
-      user_embeddings.interest_embedding <= > contract_embeddings.embedding as distance
-    from
-      user_embeddings
-      cross join contract_embeddings
   );
 
 drop view if exists group_role;

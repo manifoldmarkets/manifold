@@ -8,7 +8,6 @@ create table if not exists
     max_uses int null,
     message text null,
     data jsonb null,
-    fs_updated_time timestamp null
   );
 
 create index if not exists manalinks_creator_id on manalinks (creator_id);

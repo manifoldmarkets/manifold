@@ -1,38 +1,33 @@
-
 create table if not exists
-    group_contracts (
-                        group_id text not null,
-                        contract_id text not null,
-                        data jsonb,
-                        fs_updated_time timestamp,
-                        primary key (group_id, contract_id)
-);
+  group_contracts (
+    group_id text not null,
+    contract_id text not null,
+    data jsonb,
+    primary key (group_id, contract_id)
+  );
 
 alter table group_contracts enable row level security;
 
 drop policy if exists "public read" on group_contracts;
 
 create policy "public read" on group_contracts for
-    select
-    using (true);
+select
+  using (true);
 
 create index if not exists group_contracts_contract_id on group_contracts (contract_id);
 
 alter table group_contracts
-    cluster on group_contracts_pkey;
+cluster on group_contracts_pkey;
 
 create type group_with_score_and_bet_flag as (
-   id text,
-   data jsonb,
-   importance_score numeric,
-   has_bet boolean
+  id text,
+  data jsonb,
+  importance_score numeric,
+  has_bet boolean
 );
 
-create or replace function get_groups_and_scores_from_user_seen_markets(uid text)
-    returns setof group_with_score_and_bet_flag
-    language sql
-as
-$$
+create
+or replace function get_groups_and_scores_from_user_seen_markets (uid text) returns setof group_with_score_and_bet_flag language sql as $$
 select (g.id, g.data, g.importance_score, false)::group_with_score_and_bet_flag
 from
     groups g

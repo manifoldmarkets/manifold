@@ -29,7 +29,6 @@ create table if not exists
         add_creator_name_to_description (data)
       )
     ) stored,
-    fs_updated_time timestamp,
     deleted boolean default false,
     group_slugs text[],
     last_updated_time timestamptz,
