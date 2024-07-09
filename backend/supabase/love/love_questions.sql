@@ -9,12 +9,6 @@ create table if not exists
     multiple_choice_options jsonb -- {0: "strongly disagree", 1: "disagree"}
   );
 
-create index if not exists love_questions_creator_id_idx on love_questions (creator_id);
-
-create index if not exists love_questions_importance_score on love_questions (importance_score desc);
-
-create index if not exists love_questions_created_time on love_questions (created_time desc);
-
 alter table love_questions enable row level security;
 
 drop policy if exists "public read" on love_questions;

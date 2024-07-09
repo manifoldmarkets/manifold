@@ -25,8 +25,6 @@ create index if not exists user_referrals_idx on users ((data ->> 'referredByUse
 where
   data ->> 'referredByUserId' is not null;
 
-create index if not exists users_betting_streak_idx on users (((data -> 'currentBettingStreak')::int));
-
 create index if not exists users_created_time on users (created_time desc);
 
 alter table users enable row level security;

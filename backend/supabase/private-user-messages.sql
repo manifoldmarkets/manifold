@@ -28,8 +28,6 @@ create table if not exists
 
 create index if not exists pumcm_members_idx on private_user_message_channel_members (channel_id, user_id);
 
-create index idx_pumc_last_updated_time on private_user_message_channels (last_updated_time);
-
 alter table private_user_message_channel_members enable row level security;
 
 -- SECURITY
