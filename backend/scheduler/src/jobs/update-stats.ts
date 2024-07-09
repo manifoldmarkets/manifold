@@ -220,7 +220,6 @@ export const updateStatsCore = async () => {
     .valueOf()
 
   log('Fetching data for stats update...')
-  await calculateManaStats(startOfDayAgo, 1)
   const [
     dailyBets,
     dailyContracts,
@@ -228,6 +227,7 @@ export const updateStatsCore = async () => {
     dailyNewUsers,
     dailyManaSales,
     feedConversionScores,
+    _,
   ] = await Promise.all([
     getDailyBets(pg, start, numberOfDays),
     getDailyContracts(pg, start, numberOfDays),
@@ -235,6 +235,7 @@ export const updateStatsCore = async () => {
     getDailyNewUsers(pg, start, numberOfDays),
     getSales(pg, start, numberOfDays),
     getFeedConversionScores(pg, start, numberOfDays),
+    calculateManaStats(startOfDayAgo, 1),
   ])
   logMemory()
 
