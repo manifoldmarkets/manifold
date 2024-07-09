@@ -497,8 +497,6 @@ function ProfilePublicStats(props: {
         </Link>
       )}
 
-      <ShareButton user={user} currentUser={currentUser} />
-
       <FollowsDialog
         user={user}
         defaultTab={followsTab}
