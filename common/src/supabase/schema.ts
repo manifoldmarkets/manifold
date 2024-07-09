@@ -369,21 +369,18 @@ export type Database = {
       contract_follows: {
         Row: {
           contract_id: string
-          data: Json
+          created_time: string
           follow_id: string
-          fs_updated_time: string
         }
         Insert: {
           contract_id: string
-          data: Json
+          created_time?: string
           follow_id: string
-          fs_updated_time: string
         }
         Update: {
           contract_id?: string
-          data?: Json
+          created_time?: string
           follow_id?: string
-          fs_updated_time?: string
         }
         Relationships: []
       }
