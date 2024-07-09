@@ -4,7 +4,7 @@ import * as readline from 'readline'
 import { model_types } from 'shared/helpers/claude'
 
 import { runScript } from 'run-script'
-import { promptClaudeStream } from 'shared/helpers/claude'
+import { promptClaudeStream, promptClaude } from 'shared/helpers/claude'
 import { filterDefined } from 'common/util/array'
 
 runScript(async () => {
@@ -38,14 +38,12 @@ const manicode = async (firstPrompt: string) => {
   // const systemPromptFilePath = path.join(__dirname, 'system-prompt.md')
   // fs.writeFileSync(systemPromptFilePath, system, 'utf8')
 
-  const fileSelectionResponse = await promptClaudeWithProgress(
+  const fileSelectionResponse = await promptClaudeAndApplyFileChanges(
     fileSelectionPrompt,
     {
       system,
     }
   )
-
-  console.log(fileSelectionResponse)
   const fileContents = loadListedFiles(fileSelectionResponse)
 
   // Second prompt to Claude: Answer the user's question
@@ -80,16 +78,21 @@ The user has a coding question for you. Please provide a detailed response follo
    <with>
    // New code to replace the above
    </with>
+  <replace>
+   // Existing code to be replaced (include enough context for accurate matching)
+   </replace>
+   <with>
    // You can include multiple replace-with blocks if needed
-   </file>
+   </with>
 </instructions>
 
 <important_reminders>
 - Always add necessary import statements when introducing new functions, components, or dependencies.
 - Use <replace> and <with> blocks to add or modify import statements at the top of relevant files.
-- To delete lines, use an empty <with></with> block.
 - Ensure that you're providing enough context in the <replace> blocks for accurate matching.
 - Every <replace> block should have a corresponding <with> block.
+- Make sure the replace content really does match a substring of file content. Don't add an extra word like 'export' that doesn't exist in the file.
+- It's preferable to make many short edits in a file over one long edit.
 </important_reminders>
 
 <example>
@@ -151,14 +154,9 @@ ${fileContents}
 User: ${firstPrompt}
 `
 
-  const secondResponse = await promptClaudeWithProgress(fullPrompt, {
+  const secondResponse = await promptClaudeAndApplyFileChanges(fullPrompt, {
     system,
   })
-
-  console.log(secondResponse)
-
-  // Apply the changes using our own function
-  await applyChanges(secondResponse)
 
   interface ConversationEntry {
     role: 'user' | 'assistant'
@@ -210,28 +208,26 @@ Based on the conversation above, which files do you need to read to answer the u
           // Get updated system prompt (includes updated list of files)
           const system = getSystemPrompt()
 
-          const filesToReadResponse = await promptClaudeWithProgress(
+          const filesToReadResponse = await promptClaudeAndApplyFileChanges(
             fileSelectionPrompt,
             { system }
           )
-          console.log(filesToReadResponse)
           const fileContents = loadListedFiles(filesToReadResponse)
 
           const finalPrompt = `${fullPrompt}\n\nRelevant file contents:\n\n${fileContents}`
 
           try {
-            const claudeResponse = await promptClaudeWithProgress(finalPrompt, {
-              system,
-            })
-            console.log('Claude:', claudeResponse)
+            const claudeResponse = await promptClaudeAndApplyFileChanges(
+              finalPrompt,
+              {
+                system,
+              }
+            )
 
             conversationHistory.push({
               role: 'assistant',
               content: claudeResponse,
             })
-
-            // Apply the changes using our own function
-            await applyChanges(claudeResponse)
 
             // Continue the loop
           } catch (error) {
@@ -268,11 +264,12 @@ function loadListedFiles(instructions: string) {
   ).join('\n\n')
 }
 
-async function promptClaudeWithProgress(
+async function promptClaudeAndApplyFileChanges(
   prompt: string,
   options: { system?: string; model?: model_types } = {}
 ) {
   let fullResponse = ''
+  let currentFileBlock = ''
   let isComplete = false
   const originalPrompt = prompt
 
@@ -289,6 +286,20 @@ async function promptClaudeWithProgress(
 
     for await (const chunk of stream) {
       fullResponse += chunk
+      currentFileBlock += chunk
+
+      if (currentFileBlock.includes('</file>')) {
+        const fileMatch = /<file path="([^"]+)">([\s\S]*?)<\/file>/.exec(
+          currentFileBlock
+        )
+        if (fileMatch) {
+          const [, filePath, fileContent] = fileMatch
+          await processFileBlock(filePath, fileContent)
+
+          process.stdout.write(currentFileBlock)
+          currentFileBlock = ''
+        }
+      }
     }
 
     if (fullResponse.includes('[END_OF_RESPONSE]')) {
@@ -309,7 +320,116 @@ ${fullResponse}`
   clearInterval(thinkingAnimation)
   process.stdout.write('\r           \r') // Clear the "Thinking" text
 
+  console.log(currentFileBlock.replace('[END_OF_RESPONSE]', ''))
+
   return fullResponse
+}
+
+async function processFileBlock(filePath: string, fileContent: string) {
+  const fullPath = path.join(__dirname, '..', '..', filePath)
+  const currentContent = fs.existsSync(fullPath)
+    ? fs.readFileSync(fullPath, 'utf8')
+    : ''
+
+  if (fileContent.includes('<replace>')) {
+    const replaceRegex =
+      /<replace>([\s\S]*?)<\/replace>\s*<with>([\s\S]*?)<\/with>/g
+    let replaceMatch
+    let updatedContent = currentContent
+
+    while ((replaceMatch = replaceRegex.exec(fileContent)) !== null) {
+      const [, replaceContent, withContent] = replaceMatch
+      const replaced = applyReplacement(
+        updatedContent,
+        replaceContent,
+        withContent
+      )
+
+      if (replaced) {
+        updatedContent = replaced
+      } else {
+        console.log(
+          `Couldn't find simple match for replacement in file: ${filePath}. Attempting to expand...`
+        )
+        const expandedReplacement = await promptClaudeForExpansion(
+          filePath,
+          updatedContent,
+          replaceContent,
+          withContent
+        )
+        if (expandedReplacement) {
+          const expandedReplaced = applyReplacement(
+            updatedContent,
+            expandedReplacement.replaceContent,
+            expandedReplacement.withContent
+          )
+          if (expandedReplaced) {
+            updatedContent = expandedReplaced
+            console.log('Successfully applied expanded replacement.')
+          } else {
+            console.log('Warning: Could not apply expanded replacement.')
+            console.log(
+              'Original replace:',
+              replaceContent,
+              'expandedReplacement:',
+              expandedReplacement.replaceContent
+            )
+          }
+        }
+      }
+    }
+
+    if (updatedContent !== currentContent) {
+      fs.writeFileSync(fullPath, updatedContent)
+      console.log(`Updated file: ${filePath}`)
+    } else {
+      console.log(`No changes made to file: ${filePath}`)
+    }
+  } else {
+    // Replace whole file or create new file
+    fs.writeFileSync(fullPath, fileContent.trim())
+    console.log(`Created/Updated file: ${filePath}`)
+  }
+}
+
+function applyReplacement(
+  content: string,
+  replaceContent: string,
+  withContent: string
+): string | null {
+  const lines = content.split('\n')
+  const replaceLines = replaceContent.trim().split('\n')
+  const withLines = withContent.trim().split('\n')
+
+  for (let i = 0; i <= lines.length - replaceLines.length; i++) {
+    const contentSlice = lines.slice(i, i + replaceLines.length)
+    if (
+      contentSlice.map((line) => line.trim()).join('\n') ===
+      replaceLines.map((line) => line.trim()).join('\n')
+    ) {
+      // Check if there's an indentation mismatch
+      const contentIndent = contentSlice[0].match(/^\s*/)?.[0] || ''
+      const replaceIndent = replaceLines[0].match(/^\s*/)?.[0] || ''
+
+      if (contentIndent !== replaceIndent) {
+        // Adjust indentation only if there's a mismatch
+        const indentDiff = contentIndent.length - replaceIndent.length
+        const updatedWithLines = withLines.map((line) => {
+          const trimmed = line.trim()
+          if (!trimmed) return line // Preserve empty lines
+          const currentIndent = line.match(/^\s*/)?.[0] || ''
+          return ' '.repeat(currentIndent.length + indentDiff) + trimmed
+        })
+        lines.splice(i, replaceLines.length, ...updatedWithLines)
+      } else {
+        // No indentation adjustment needed
+        lines.splice(i, replaceLines.length, ...withLines)
+      }
+      return lines.join('\n')
+    }
+  }
+
+  return null
 }
 
 function getSystemPrompt() {
@@ -414,124 +534,6 @@ function getOnlyCodeFiles() {
   return allProjectFiles
 }
 
-async function applyChanges(response: string) {
-  const fileRegex = /<file path="([^"]+)">([\s\S]*?)<\/file>/g
-  let match
-
-  while ((match = fileRegex.exec(response)) !== null) {
-    const [, filePath, fileContent] = match
-    const fullPath = path.join(__dirname, '..', '..', filePath)
-
-    // Create directory if it doesn't exist
-    const directory = path.dirname(fullPath)
-    if (!fs.existsSync(directory)) {
-      fs.mkdirSync(directory, { recursive: true })
-      console.log(`Created directory: ${directory}`)
-    }
-
-    if (fileContent.includes('<replace>')) {
-      // Edit existing file
-      const currentContent = fs.existsSync(fullPath)
-        ? fs.readFileSync(fullPath, 'utf8')
-        : ''
-      const lines = currentContent.split('\n')
-
-      const replaceRegex =
-        /<replace>([\s\S]*?)<\/replace>\s*<with>([\s\S]*?)<\/with>/g
-      let replaceMatch
-      let replacementMade = false
-
-      while ((replaceMatch = replaceRegex.exec(fileContent)) !== null) {
-        const [, replaceContent, withContent] = replaceMatch
-        const replaceLines = replaceContent.trim().split('\n')
-        const withLines = withContent.trim().split('\n')
-
-        let replaced = false
-        for (let i = 0; i <= lines.length - replaceLines.length; i++) {
-          if (
-            lines
-              .slice(i, i + replaceLines.length)
-              .join('\n')
-              .trim() === replaceLines.join('\n').trim()
-          ) {
-            lines.splice(i, replaceLines.length, ...withLines)
-            replaced = true
-            replacementMade = true
-            break
-          }
-        }
-
-        if (!replaced) {
-          console.log(
-            `Couldn't find simple match for replacement in file: ${filePath}. Attempting to expand...`
-          )
-
-          // Prompt Claude for an expanded replacement
-          const expandedReplacement = await promptClaudeForExpansion(
-            filePath,
-            currentContent,
-            replaceContent,
-            withContent
-          )
-
-          if (expandedReplacement) {
-            const expandedReplaceLines = expandedReplacement.replaceContent
-              .trim()
-              .split('\n')
-            const expandedWithLines = expandedReplacement.withContent
-              .trim()
-              .split('\n')
-
-            for (
-              let i = 0;
-              i <= lines.length - expandedReplaceLines.length;
-              i++
-            ) {
-              if (
-                lines
-                  .slice(i, i + expandedReplaceLines.length)
-                  .join('\n')
-                  .trim() === expandedReplaceLines.join('\n').trim()
-              ) {
-                lines.splice(
-                  i,
-                  expandedReplaceLines.length,
-                  ...expandedWithLines
-                )
-                replaced = true
-                replacementMade = true
-                break
-              }
-            }
-
-            if (replaced) {
-              console.log('Successfully applied expanded replacement.')
-            } else {
-              console.log('Warning: Could not apply expanded replacement.')
-              console.log('Original replacement content', replaceContent)
-              console.log(
-                'Expanded replacement content',
-                expandedReplacement.replaceContent
-              )
-            }
-          }
-        }
-      }
-
-      if (replacementMade) {
-        fs.writeFileSync(fullPath, lines.join('\n'))
-        console.log(`Updated file: ${filePath}`)
-      } else {
-        console.log(`No changes made to file: ${filePath}`)
-      }
-    } else {
-      // Replace whole file or create new file
-      fs.writeFileSync(fullPath, fileContent.trim())
-      console.log(`Created/Updated file: ${filePath}`)
-    }
-  }
-}
-
 async function promptClaudeForExpansion(
   filePath: string,
   currentContent: string,
@@ -560,27 +562,25 @@ ${withContent}
 
 Please provide an expanded version of the replacement content that matches the existing code, and the corresponding expanded version of the content to replace with. Use the following format:
 
-<expanded_replace>
+<replace>
 // Expanded replacement content here
-</expanded_replace>
+</replace>
 
-<expanded_with>
+<with>
 // Expanded content to replace with here
-</expanded_with>
+</with>
 
 If you can't find a suitable expansion, please respond with "No expansion possible."
 `
 
-  const expandedResponse = await promptClaudeWithProgress(prompt, {
+  const expandedResponse = await promptClaude(prompt, {
     system: getSystemPrompt(),
   })
 
   const expandedReplaceMatch = expandedResponse.match(
-    /<expanded_replace>([\s\S]*?)<\/expanded_replace>/
+    /<replace>([\s\S]*?)<\/replace>/
   )
-  const expandedWithMatch = expandedResponse.match(
-    /<expanded_with>([\s\S]*?)<\/expanded_with>/
-  )
+  const expandedWithMatch = expandedResponse.match(/<with>([\s\S]*?)<\/with>/)
 
   if (expandedReplaceMatch && expandedWithMatch) {
     return {
