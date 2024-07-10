@@ -54,7 +54,6 @@ import { getFeeTotal } from 'common/fees'
 import { FeeDisplay } from './fees'
 import { floatingEqual } from 'common/util/math'
 import { getTierFromLiquidity } from 'common/tier'
-import { QuickLimitOrderButtons } from './quick-limit-order-buttons'
 import { getAnswerColor } from '../charts/contract/choice'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
@@ -139,9 +138,6 @@ export function BuyPanel(props: {
               }
             />
           </Row>
-          {isAdvancedTrader && contract.mechanism === 'cpmm-1' && (
-            <QuickLimitOrderButtons contract={contract} />
-          )}
         </Col>
       )}
       {isPanelBodyVisible && (
