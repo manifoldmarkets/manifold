@@ -61,40 +61,31 @@ The user has a coding question for you. Please provide a detailed response follo
 2. Implementation Strategy: Outline your approach to implement the requested changes.
 
 3. File Modifications: List all files that need to be modified or created, and they will be changed according to your instruction.
-  For each file, provide the following details:
-   a) File path
-   b) Whether it's a new file or an existing file to be modified
-   c) Specific changes to be made, using the format below:
+For each file, provide one file block with the file path as an xml attribute and the updated file contents:
+<file path="path/to/new/file.tsx">
+// Entire file contents here
+</file>
 
-   For new files:
-   <file path="path/to/new/file.tsx">
-   // Entire file contents here
-   </file>
+To modify an existing file, use comments to indicate where existing code should be preserved:
+<file path="path/to/existing/file.tsx">
+// ... existing imports...
 
-   For existing files:
-   <file path="path/to/existing/file.tsx">
-   <old>
-   // Existing code to be replaced (include enough context for accurate matching)
-   </old>
-   <new>
-   // New code to replace the above
-   </new>
-  <old>
-   // Existing code to be replaced (include enough context for accurate matching)
-   </old>
-   <new>
-   // You can include multiple old-new blocks if needed
-   </new>
+// ... existing code ...
+
+function getDesktopNav() {
+  console.log('Hello from the desktop nav')
+
+  // ... rest of the function
+}
+
+// ... rest of the file
 </file>
 </instructions>
 
 <important_reminders>
-- Always add necessary import statements when introducing new functions, components, or dependencies.
-- Use <old> and <new> blocks to add or modify import statements at the top of relevant files.
-- Ensure that you're providing enough context in the <old> blocks for accurate matching.
-- Every <old> block should have a corresponding <new> block.
-- Make sure the old content really does match a substring of file content. Don't add an extra word like 'export' that doesn't exist in the file.
-- It's preferable to make many short edits in a file over one long edit.
+- Always include imports: either reproduce the full list of imports, or add new imports with comments like " ... existing imports" and "// ... rest of imports". If the imports are not changed then include a comment: "// ... existing imports"
+- Use comments like "// ... existing code ..." or " ... rest of the file" to indicate where existing code should be preserved.
+- Ensure that you're providing enough context around the changes for accurate matching.
 </important_reminders>
 
 <example>
@@ -116,25 +107,11 @@ export const NewComponent: React.FC = () => {
 </file>
 
 <file path="web/pages/Home.tsx">
-<old>
-import React from 'react'
-import { SomeExistingComponent } from '../components/SomeExistingComponent'
-
-const Home: React.FC = () => {
-  return (
-    <div>
-      <h1>Welcome to the Home page</h1>
-      <SomeExistingComponent />
-    </div>
-  )
-}
-</old>
-<new>
-import React from 'react'
-import { SomeExistingComponent } from '../components/SomeExistingComponent'
+// ... existing imports ...
 import { NewComponent } from '../components/NewComponent'
 
 const Home: React.FC = () => {
+  // ... existing code ...
   return (
     <div>
       <h1>Welcome to the Home page</h1>
@@ -143,7 +120,8 @@ const Home: React.FC = () => {
     </div>
   )
 }
-</new>
+
+// ... rest of the file
 </file>
 </example>
 
@@ -269,6 +247,7 @@ async function promptClaudeAndApplyFileChanges(
   let currentFileBlock = ''
   let isComplete = false
   const originalPrompt = prompt
+  const fileProcessingPromises: Promise<void>[] = []
 
   while (!isComplete) {
     const stream = promptClaudeStream(prompt, options)
@@ -284,11 +263,53 @@ async function promptClaudeAndApplyFileChanges(
         )
         if (fileMatch) {
           const [, filePath, fileContent] = fileMatch
-          await processFileBlock(filePath, fileContent)
+          fileProcessingPromises.push(processFileBlock(filePath, fileContent))
 
           currentFileBlock = ''
         }
       }
+    }
+
+    if (fullResponse.includes('[END_OF_RESPONSE]')) {
+      isComplete = true
+      fullResponse = fullResponse.replace('[END_OF_RESPONSE]', '').trim()
+    } else {
+      prompt = `Please continue your previous response. Remember to end with [END_OF_RESPONSE] when you've completed your full answer.
+
+<original_prompt>
+${originalPrompt}
+</original_prompt>
+
+Continue from the very next character of your response:
+${fullResponse}`
+    }
+  }
+
+  await Promise.all(fileProcessingPromises)
+
+  return fullResponse
+}
+
+async function promptClaudeWithContinuation(
+  prompt: string,
+  options: { system?: string; model?: model_types } = {}
+) {
+  let fullResponse = ''
+  let isComplete = false
+  const originalPrompt = prompt
+
+  // Add the instruction to end with [END_OF_RESPONSE] to the system prompt
+  if (options.system) {
+    options.system += '\n\nAlways end your response with "[END_OF_RESPONSE]".'
+  } else {
+    options.system = 'Always end your response with "[END_OF_RESPONSE]".'
+  }
+
+  while (!isComplete) {
+    const stream = promptClaudeStream(prompt, options)
+
+    for await (const chunk of stream) {
+      fullResponse += chunk
     }
 
     if (fullResponse.includes('[END_OF_RESPONSE]')) {
@@ -315,13 +336,12 @@ async function processFileBlock(filePath: string, fileContent: string) {
     ? fs.readFileSync(fullPath, 'utf8')
     : ''
 
-  if (fileContent.includes('<old>')) {
-    const replaceRegex = /<old>([\s\S]*?)<\/old>\s*<new>([\s\S]*?)<\/new>/g
-    let replaceMatch
+  if (currentContent) {
+    // File exists, generate diff
+    const diffBlocks = await generateDiffBlocks(currentContent, fileContent)
     let updatedContent = currentContent
 
-    while ((replaceMatch = replaceRegex.exec(fileContent)) !== null) {
-      const [, oldContent, newContent] = replaceMatch
+    for (const { oldContent, newContent } of diffBlocks) {
       const replaced = applyReplacement(updatedContent, oldContent, newContent)
 
       if (replaced) {
@@ -365,14 +385,268 @@ async function processFileBlock(filePath: string, fileContent: string) {
       console.log(`No changes made to file: ${filePath}`)
     }
   } else {
-    // Replace whole file or create new file
-    const dir = path.dirname(fullPath);
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(fullPath, fileContent.trim());
-    console.log(`Created/Updated file: ${filePath}`);
+    // New file, create it
+    const dir = path.dirname(fullPath)
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(fullPath, fileContent.trim())
+    console.log(`Created new file: ${filePath}`)
   }
 }
 
+async function generateDiffBlocks(currentContent: string, newContent: string) {
+  const prompt = `
+I have two versions of a file, and I need to generate <old> and <new> blocks to represent the exact line-by-line differences.
+
+Old file content:
+\`\`\`
+${currentContent}
+\`\`\`
+
+Proposed new file content:
+\`\`\`
+${newContent}
+\`\`\`
+
+Please provide the differences as a series of <old> and <new> blocks. Each block should represent a continuous section of code that needs to be changed. If there are multiple changes, provide multiple pairs of blocks.
+
+IMPORTANT INSTRUCTIONS:
+1. The <old> blocks MUST match the existing file content EXACTLY, character for character. Do not add any comments or placeholders like "// ... existing code ...".
+2. Ensure that you're providing enough context in the <old> blocks to match exactly one location in the file.
+3. The <old> blocks should be as small as possible. Consider matching only a few lines around the change!
+4. The <new> blocks should contain the updated code that replaces the content in the corresponding <old> block. Do not add any comments or placeholders like "// ... existing code ...".
+5. Create separate <old> and <new> blocks for each distinct change in the file.
+
+<example_prompt>
+Current file content:
+\`\`\`
+import React from 'react'
+import { Button } from './Button'
+import { Input } from './Input'
+
+export function LoginForm() {
+  return (
+    <form>
+      <Input type="email" placeholder="Email" />
+      <Input type="password" placeholder="Password" />
+      <Button>Log In</Button>
+    </form>
+  )
+}
+
+export default LoginForm
+\`\`\`
+
+New file content:
+\`\`\`
+// ... existing imports ...
+import { useForm } from 'react-hook-form'
+
+function LoginForm() {
+  const { register, handleSubmit } = useForm()
+
+  const onSubmit = (data) => {
+    console.log(data)
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Input type="email" placeholder="Email" {...register('email')} />
+      <Input type="password" placeholder="Password" {...register('password')} />
+      <Button type="submit">Log In</Button>
+    </form>
+  )
+\`\`\`
+</example_prompt>
+
+<example_response>
+<old>
+import { Input } from './Input'
+</old>
+<new>
+import { Input } from './Input'
+import { useForm } from 'react-hook-form'
+</new>
+
+<old>
+function LoginForm() {
+  return (
+    <form>
+      <Input type="email" placeholder="Email" />
+      <Input type="password" placeholder="Password" />
+      <Button>Log In</Button>
+    </form>
+  )
+}
+</old>
+<new>
+function LoginForm() {
+  const { register, handleSubmit } = useForm()
+
+  const onSubmit = (data) => {
+    console.log(data)
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Input type="email" placeholder="Email" {...register('email')} />
+      <Input type="password" placeholder="Password" {...register('password')} />
+      <Button type="submit">Log In</Button>
+    </form>
+  )
+}
+</new>
+</example_response>
+
+<example_prompt>
+Current file content:
+\`\`\`
+import React from 'react'
+import { SearchIcon } from '@heroicons/react/solid'
+import {
+  GlobeAltIcon,
+  UserIcon,
+  LightningBoltIcon,
+  UserAddIcon,
+  BellIcon,
+} from '@heroicons/react/outline'
+import { buildArray } from '../utils/buildArray'
+
+const getDesktopNav = (
+  loggedIn: boolean,
+  openDownloadApp: () => void,
+  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
+) => {
+  if (loggedIn)
+    return buildArray(
+      { name: 'Browse', href: '/home', icon: SearchIcon },
+      {
+        name: 'Explore',
+        href: '/explore',
+        icon: GlobeAltIcon,
+      },
+      {
+        name: 'Live Activity',
+        href: '/live-activity',
+        icon: LightningBoltIcon,
+      },
+      {
+        name: 'Notifications',
+        href: '/notifications',
+        icon: BellIcon,
+      },
+      {
+        name: 'Profile',
+        href: '/profile',
+        icon: UserIcon,
+      }
+    )
+
+  return buildArray(
+    { name: 'Browse', href: '/home', icon: SearchIcon },
+    { name: 'Sign Up', href: '/sign-up', icon: UserAddIcon }
+  )
+}
+
+const getMobileNav = () => {
+  return buildArray(
+    { name: 'Browse', href: '/home', icon: SearchIcon },
+    { name: 'Sign Up', href: '/sign-up', icon: UserAddIcon }
+  )
+}
+
+\`\`\`
+
+New file content:
+\`\`\`
+// ... existing imports ...
+import { SearchIcon } from '@heroicons/react/solid'
+import {
+  GlobeAltIcon,
+  UserIcon,
+  LightningBoltIcon,
+  UserAddIcon,
+  NotificationsIcon,
+} from '@heroicons/react/outline'
+
+// ... rest of the imports
+
+const getDesktopNav = (
+  loggedIn: boolean,
+  openDownloadApp: () => void,
+  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
+) => {
+  if (loggedIn)
+    return buildArray(
+      { name: 'Browse', href: '/home', icon: SearchIcon },
+      {
+        name: 'Explore',
+        href: '/explore',
+        icon: GlobeAltIcon,
+      },
+      {
+        name: 'Live Activity',
+        href: '/live-activity',
+        icon: LightningBoltIcon,
+      },
+      {
+        name: 'Notifications',
+        href: '/notifications',
+        icon: NotificationsIcon,
+      },
+
+      // ... rest of the items
+    )
+
+  // ... rest of the function
+}
+
+// ... rest of the file
+\`\`\`
+</example_prompt>
+
+<example_response>
+<old>
+import { SearchIcon } from '@heroicons/react/solid'
+import {
+  GlobeAltIcon,
+  UserIcon,
+  LightningBoltIcon,
+  UserAddIcon,
+  BellIcon,
+} from '@heroicons/react/outline'
+</old>
+<new>
+import { SearchIcon } from '@heroicons/react/solid'
+import {
+  GlobeAltIcon,
+  UserIcon,
+  LightningBoltIcon,
+  UserAddIcon,
+  NotificationsIcon,
+} from '@heroicons/react/outline'
+</new>
+
+<old>
+      {
+        name: 'Notifications',
+        href: '/notifications',
+        icon: BellIcon,
+      },
+</old>
+<new>
+      {
+        name: 'Notifications',
+        href: '/notifications',
+        icon: NotificationsIcon,
+      },
+</new>
+</example_response>
+
+Notice that your responses should not include any comments like "// ... existing code ...". It should only include the actual code that should be string replaced.
+
+That is because we are using a very simple string replacement system to update the old file to apply the new proposed code.
+
+<string_replacement_script>
 function applyReplacement(
   content: string,
   oldContent: string,
@@ -389,8 +663,8 @@ function applyReplacement(
       oldLines.map((line) => line.trim()).join('\n')
     ) {
       // Check if there's an indentation mismatch
-      const contentIndent = contentSlice[0].match(/^\s*/)?.[0] || ''
-      const oldIndent = oldLines[0].match(/^\s*/)?.[0] || ''
+      const contentIndent = contentSlice[0].match(/^\\s*/)?.[0] || ''
+      const oldIndent = oldLines[0].match(/^\\s*/)?.[0] || ''
 
       if (contentIndent !== oldIndent) {
         // Adjust indentation only if there's a mismatch
@@ -398,7 +672,7 @@ function applyReplacement(
         const updatedNewLines = newLines.map((line) => {
           const trimmed = line.trim()
           if (!trimmed) return line // Preserve empty lines
-          const currentIndent = line.match(/^\s*/)?.[0] || ''
+          const currentIndent = line.match(/^\\s*/)?.[0] || ''
           return ' '.repeat(currentIndent.length + indentDiff) + trimmed
         })
         lines.splice(i, oldLines.length, ...updatedNewLines)
@@ -407,6 +681,70 @@ function applyReplacement(
         lines.splice(i, oldLines.length, ...newLines)
       }
       return lines.join('\n')
+    }
+  }
+
+  return null
+}
+</string_replacement_script>
+
+Please provide only the diff blocks now:
+`
+
+  const diffResponse = await promptClaudeWithContinuation(prompt)
+
+  const diffBlocks = []
+  const regex = /<old>([\s\S]*?)<\/old>\s*<new>([\s\S]*?)<\/new>/g
+  let match
+
+  while ((match = regex.exec(diffResponse)) !== null) {
+    diffBlocks.push({
+      oldContent: match[1].trim(),
+      newContent: match[2].trim(),
+    })
+  }
+
+  return diffBlocks
+}
+
+function applyReplacement(
+  content: string,
+  oldContent: string,
+  newContent: string
+): string | null {
+  const trimmedOldContent = oldContent.trim()
+  const trimmedNewContent = newContent.trim()
+
+  // First, try an exact match
+  if (content.includes(trimmedOldContent)) {
+    console.log('worked with exact match')
+    return content.replace(trimmedOldContent, trimmedNewContent)
+  }
+
+  // If exact match fails, try matching with flexible whitespace
+  const oldLines = trimmedOldContent
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+  const contentLines = content.split('\n')
+
+  for (let i = 0; i <= contentLines.length - oldLines.length; i++) {
+    const potentialMatch = contentLines.slice(i, i + oldLines.length)
+    if (
+      potentialMatch.every((line, index) =>
+        line.trim().includes(oldLines[index])
+      )
+    ) {
+      // Found a match with flexible whitespace
+      const matchedContent = potentialMatch.join('\n')
+      const leadingWhitespace = potentialMatch[0].match(/^\s*/)?.[0] || ''
+      const indentedNewContent = trimmedNewContent
+        .split('\n')
+        .map((line) => leadingWhitespace + line)
+        .join('\n')
+
+      console.log('worked with flexible whitespace')
+      return content.replace(matchedContent, indentedNewContent)
     }
   }
 
@@ -460,6 +798,29 @@ ${apiGuide}
 Here are all the code files in our project. If the file has exported tokens, they are listed in the same line in a comma-separated list.
 ${filesWithExports}
 </project_files>
+
+<editing_instructions>
+To edit any files, please use the following schema.
+For each file, provide one file block with the file path as an xml attribute and the updated file contents:
+<file path="path/to/new/file.tsx">
+// Entire file contents here
+</file>
+
+To modify an existing file, use comments to indicate where existing code should be preserved:
+<file path="path/to/existing/file.tsx">
+// ... existing imports...
+
+// ... existing code ...
+
+function getDesktopNav() {
+  console.log('Hello from the desktop nav')
+
+  // ... rest of the function
+}
+
+// ... rest of the file
+</file>
+</editing_instructions>
 
 <important_instruction>
 Always end your response with the following marker:
