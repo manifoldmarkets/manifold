@@ -8,6 +8,19 @@ export const blockGroup: APIHandler<'group/:slug/block'> = async (
   auth
 ) => {
   const pg = createSupabaseDirectClient()
+  const group = await pg.oneOrNone(
+    `select id from groups where slug = $1`,
+    slug
+  )
+  if (group.id) {
+    await pg.none(
+      `delete
+       from group_members
+       where member_id = $1
+         and group_id = $2`,
+      [auth.uid, group.id]
+    )
+  }
   await updatePrivateUser(pg, auth.uid, {
     blockedGroupSlugs: FieldVal.arrayConcat(slug),
   })
