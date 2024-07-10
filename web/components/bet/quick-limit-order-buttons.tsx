@@ -29,7 +29,7 @@ export const QuickLimitOrderButtons = (props: {
 
   const unroundedProb = answer ? answer.prob : (contract as CPMMContract).prob
   const prob = Math.round(unroundedProb * 100) / 100
-  const amount = 1_000
+  const amount = 100
 
   const user = useUser()
   const [error, setError] = useState<string | undefined>()
@@ -120,7 +120,7 @@ export const QuickLimitOrderButtons = (props: {
           className="w-24 whitespace-nowrap font-semibold"
           onClick={() => submitBet('YES')}
         >
-          {formatMoney(amount / 1000)}k YES
+          {formatMoney(amount)} YES
         </Button>
         <Button
           size="xs"
@@ -129,7 +129,7 @@ export const QuickLimitOrderButtons = (props: {
           className="w-24 whitespace-nowrap font-semibold"
           onClick={() => submitBet('NO')}
         >
-          {formatMoney(amount / 1000)}k NO
+          {formatMoney(amount)} NO
         </Button>
       </Row>
       {error && <div className="text-red-500">{error}</div>}
