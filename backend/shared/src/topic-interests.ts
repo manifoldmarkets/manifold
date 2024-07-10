@@ -48,8 +48,9 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
     await Promise.all([
       ...userIds.map(async (userId) => {
         userIdsToAverageTopicConversionScores[userId] = {}
-        const [followedTopics, _] = await Promise.all([
+        const [followedTopics, blockedTopics, _] = await Promise.all([
           getFollowedTopics(pg, userId),
+          getBlockedTopics(pg, userId),
           pg.map(
             `
               select distinct uti.*
@@ -81,6 +82,16 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
             )
           }
         }
+        for (const groupId of blockedTopics) {
+          const groupScore =
+            userIdsToAverageTopicConversionScores[userId][groupId]
+          if (groupScore === undefined) {
+            userIdsToAverageTopicConversionScores[userId][groupId] = 0
+          } else {
+            userIdsToAverageTopicConversionScores[userId][groupId] =
+              groupScore ** 2 // assumes score is less than 1
+          }
+        }
       }),
     ])
 
@@ -97,6 +108,23 @@ const getFollowedTopics = async (pg: SupabaseDirectClient, userId: string) => {
     `select group_id from group_members where member_id = $1`,
     [userId],
     (row) => row.group_id as string
+  )
+}
+
+const getBlockedTopics = async (pg: SupabaseDirectClient, userId: string) => {
+  return await pg.map(
+    `
+        with user_blocked_slugs as (
+            select pu.id,jsonb_array_elements_text(pu.data->'blockedGroupSlugs') as slug
+            from private_users pu
+            where pu.id = $1
+        )
+        select distinct g.id as blocked_group_ids
+        from user_blocked_slugs ubs
+        join groups g on g.slug = ubs.slug;
+`,
+    [userId],
+    (row) => (row ? row.blocked_group_ids : [])
   )
 }
 
