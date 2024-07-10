@@ -39,6 +39,7 @@ import {
   AnswerStatus,
   BetButtons,
   AnswerPosition,
+  MultiSeller,
 } from './answer-components'
 import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
@@ -47,7 +48,11 @@ import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { useEffect, useMemo, useState } from 'react'
 import { api, editAnswerCpmm, updateMarket } from 'web/lib/api/api'
-import { Modal } from 'web/components/layout/modal'
+import {
+  MODAL_CLASS,
+  Modal,
+  SCROLLABLE_MODAL_CLASS,
+} from 'web/components/layout/modal'
 import { Input } from 'web/components/widgets/input'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
@@ -288,7 +293,7 @@ export function AnswersPanel(props: {
               unfilledBets={unfilledBets?.filter(
                 (b) => b.answerId === answer.id
               )}
-              expanded={selectedAnswerIds?.includes(answer.id)}
+              selected={selectedAnswerIds?.includes(answer.id)}
               color={getAnswerColor(answer)}
               userBets={userBetsByAnswer[answer.id]}
               shouldShowLimitOrderChart={isAdvancedTrader}
@@ -355,7 +360,7 @@ export const EditAnswerModal = (props: {
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className={'bg-canvas-50 gap-2 rounded-md p-4'}>
+      <Col className={' gap-2 rounded-md p-4'}>
         <span className={'font-semibold'}>Title</span>
         <Row className={'gap-1'}>
           <Input
@@ -529,7 +534,7 @@ export function Answer(props: {
   onHover?: (hovering: boolean) => void
   onClick?: () => void
   userBets?: Bet[]
-  expanded?: boolean
+  selected?: boolean
   barColor?: string
   shouldShowLimitOrderChart: boolean
   feedReason?: string
@@ -544,7 +549,7 @@ export function Answer(props: {
     onClick,
     color,
     userBets,
-    expanded,
+    selected,
     user,
     barColor,
     feedReason,
@@ -583,8 +588,18 @@ export function Answer(props: {
   const textColorClass = clsx(
     resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   )
+
+  const showSellButton =
+    !resolution &&
+    hasBets &&
+    user &&
+    (!contract.closeTime || contract.closeTime > Date.now()) &&
+    !answer.resolutionTime
+
+  const userHasLimitOrders =
+    shouldShowLimitOrderChart && (yourUnfilledBets ?? []).length > 0
   return (
-    <Col className={'bg-canvas-50 w-full rounded'}>
+    <Col className={'full rounded'}>
       <AnswerBar
         color={color}
         prob={prob}
@@ -594,7 +609,10 @@ export function Answer(props: {
         className={clsx('group cursor-pointer', className)}
         barColor={barColor}
         label={
-          <Row className={'items-center gap-1'}>
+          <Row className={'items-center gap-2'}>
+            {contract.addAnswersMode == 'ANYONE' && (
+              <AnswerAvatar answer={answer} />
+            )}
             <AnswerStatus contract={contract} answer={answer} />
             {isOther ? (
               <span className={textColorClass}>
@@ -618,21 +636,6 @@ export function Answer(props: {
         }
         end={
           <Row className={'items-center gap-1'}>
-            {onClick && (
-              <div
-                className={
-                  'text-ink-500 group-hover:text-primary-700 mr-2 rounded transition-colors'
-                }
-              >
-                <ChevronDownIcon
-                  className={clsx(
-                    'h-5 w-5',
-                    expanded ? 'rotate-180' : 'rotate-0'
-                  )}
-                />
-              </div>
-            )}
-
             <BetButtons
               contract={contract}
               answer={answer}
@@ -642,46 +645,31 @@ export function Answer(props: {
           </Row>
         }
       />
-      {!resolution && hasBets && user && (
-        <AnswerPosition
-          contract={contract}
-          answer={answer as Answer}
-          userBets={userBets}
-          className="mx-3 self-end"
-          user={user}
-        />
-      )}
 
-      {expanded && (
-        <Col>
-          <Row
-            className={'flex-wrap items-center justify-between gap-2 px-3 py-1'}
-          >
-            <Row className={'gap-2'}>
-              <AnswerAvatar answer={answer} isMobile={isMobile} /> {'·'}
-              <Tooltip text={formatTime(answer.createdTime)}>
-                <div className="text-ink-600">
-                  {shortenedFromNow(answer.createdTime)}
-                </div>
-              </Tooltip>
-            </Row>
-            <Row className={'gap-2'}>
-              {canEdit && (
-                <Button
-                  color={'gray-outline'}
-                  size="2xs"
-                  onClick={() =>
-                    'poolYes' in answer && !answer.isOther
-                      ? setEditingAnswer(answer)
-                      : null
-                  }
-                >
-                  <PencilIcon className="mr-1 h-4 w-4" />
-                  Edit
-                </Button>
-              )}
+      <Col>
+        <Row
+          className={
+            'select-none flex-wrap items-center justify-between gap-2 px-3 py-0.5 text-xs'
+          }
+        >
+          <Row className="grow-x text-ink-300 dark:text-ink-500/80 items-center gap-1">
+            {'poolYes' in answer && (
+              <TradesButton
+                contract={contract}
+                answer={answer}
+                color={'gray-outline'}
+                size="sm"
+                className="hover:text-ink-400 dark:hover:text-ink-600 transition-colors"
+              />
+            )}
+            {'·'}
+            <Tooltip text={formatTime(answer.createdTime)} placement="bottom">
+              <div>{shortenedFromNow(answer.createdTime)}</div>
+            </Tooltip>
 
-              {unfilledBets?.length && limitOrderVolume ? (
+            {unfilledBets?.length && limitOrderVolume ? (
+              <>
+                {'·'}
                 <OrderBookButton
                   limitBets={unfilledBets}
                   contract={contract}
@@ -691,37 +679,38 @@ export function Answer(props: {
                       text={`Limit orders: ${formatMoney(limitOrderVolume)}`}
                       placement="top"
                       noTap
-                      className="flex flex-row gap-1"
+                      className="hover:text-ink-400 dark:hover:text-ink-600 flex flex-row items-center gap-0.5 transition-colors"
                     >
-                      <ScaleIcon className="h-5 w-5" />
+                      <ScaleIcon className="h-3 w-3" />
                       {shortFormatNumber(limitOrderVolume)}
                     </Tooltip>
                   }
                 />
-              ) : null}
-              {'poolYes' in answer && (
-                <TradesButton
-                  contract={contract}
-                  answer={answer}
-                  color={'gray-outline'}
-                />
-              )}
-              {onCommentClick && <AddComment onClick={onCommentClick} />}
-            </Row>
+              </>
+            ) : null}
           </Row>
-
-          {(shouldShowLimitOrderChart ||
-            (yourUnfilledBets ?? []).length > 0) && (
-            <Col className="px-2">
-              <YourOrders
+          <Row className="text-ink-600 gap-1 ">
+            {userHasLimitOrders && (
+              <AnswerOrdersButton
                 contract={contract}
-                bets={yourUnfilledBets ?? []}
-                deemphasizedHeader
+                yourUnfilledBets={yourUnfilledBets}
+                buttonClassName="font-bold"
               />
-            </Col>
-          )}
-        </Col>
-      )}
+            )}
+            {userHasLimitOrders && showSellButton && <>{'·'}</>}
+            {showSellButton && (
+              <MultiSeller
+                answer={answer}
+                contract={contract}
+                userBets={userBets}
+                user={user}
+                className="text-primary-600 font-bold"
+              />
+            )}
+          </Row>
+        </Row>
+      </Col>
+
       {editingAnswer && user && (
         <EditAnswerModal
           open={!!editingAnswer}
@@ -733,6 +722,31 @@ export function Answer(props: {
         />
       )}
     </Col>
+  )
+}
+
+function AnswerOrdersButton(props: {
+  contract: MultiContract
+  yourUnfilledBets?: LimitBet[]
+  buttonClassName?: string
+}) {
+  const { contract, yourUnfilledBets, buttonClassName } = props
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button className={buttonClassName} onClick={() => setOpen(true)}>
+        Your Orders
+      </button>
+      <Modal open={open} setOpen={setOpen}>
+        <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
+          <YourOrders
+            contract={contract}
+            bets={yourUnfilledBets ?? []}
+            deemphasizedHeader
+          />
+        </Col>
+      </Modal>
+    </>
   )
 }
 
@@ -752,20 +766,14 @@ export function canEditAnswer(
   )
 }
 
-const AnswerAvatar = (props: { answer: Answer; isMobile: boolean }) => {
-  const { answer, isMobile } = props
+const AnswerAvatar = (props: { answer: Answer; className?: string }) => {
+  const { answer, className } = props
   const answerCreator = useDisplayUserByIdOrAnswer(answer)
   if (!answerCreator) return <LoadingIndicator size={'sm'} />
   return (
     <UserHovercard userId={answerCreator.id}>
-      <Row className={'items-center self-start'}>
-        <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />
-        <UserLink
-          user={answerCreator}
-          noLink={false}
-          className="ml-1 text-sm"
-          short={isMobile}
-        />
+      <Row className={clsx('-ml-1 items-center self-start', className)}>
+        <Avatar avatarUrl={answerCreator.avatarUrl} size={'2xs'} />
       </Row>
     </UserHovercard>
   )

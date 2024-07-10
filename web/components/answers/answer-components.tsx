@@ -296,8 +296,9 @@ export const MultiSeller = (props: {
   contract: CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   user: User
+  className?: string
 }) => {
-  const { answer, contract, userBets, user } = props
+  const { answer, contract, userBets, user, className } = props
   const [open, setOpen] = useState(false)
   const sharesSum = sumBy(userBets, (bet) =>
     bet.outcome === 'YES' ? bet.shares : -bet.shares
@@ -317,7 +318,10 @@ export const MultiSeller = (props: {
         />
       )}
       <button
-        className={'hover:text-ink-700 decoration-2 hover:underline'}
+        className={clsx(
+          'hover:text-ink-700 decoration-2 hover:underline',
+          className
+        )}
         onClick={() => setOpen(true)}
       >
         Sell

@@ -312,17 +312,12 @@ export function OrderBookButton(props: {
 
   return (
     <>
-      <Button
-        onClick={() => setOpen(true)}
-        disabled={limitBets.length === 0}
-        size="xs"
-        color={'gray-outline'}
-      >
+      <button onClick={() => setOpen(true)} disabled={limitBets.length === 0}>
         {label ||
           `${limitBets.length === 0 ? 'Currently' : 'View'} ${
             limitBets.length
           } order${limitBets.length === 1 ? '' : 's'}`}
-      </Button>
+      </button>
 
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="bg-canvas-0">
