@@ -8,7 +8,7 @@ Our code is all Typescript and split into a few packages. At the top level, ther
 
 Common has lots of type definitions for our data structures, like Contract and User. It also contains many useful utility functions. We try not to add package dependencies to common.
 
-Code that lives in common can be imported into either web or backend. However, code within backend should not be imported into web, and code within web should not be imported into backend.
+These three directories should be completely isolated in their imports, i.e. they should not import files from each other, except web and backend are allowed to import from common. Common cannot import from web or backend, and web and backend cannot import from each other.
 
 Web contains our front end code in React and Next.js. We use tailwind for styling.
 

@@ -80,7 +80,7 @@ export const calculateManaStats = async (
     )
   }
   const now = new Date().toISOString()
-  const ms = await getManaSupply()
+  const ms = await getManaSupply(true)
   await pg.none(
     `insert into mana_supply_stats (start_time, end_time, total_value, balance, spice_balance, investment_value, loan_total, amm_liquidity)
             values ($1, $2, $3, $4, $5, $6, $7, $8)`,

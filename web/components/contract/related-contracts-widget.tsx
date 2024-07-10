@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { memo, useState } from 'react'
+import { memo, useState, useMemo } from 'react'
+import { useABTest } from 'web/hooks/use-ab-test'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -32,18 +33,32 @@ export const SidebarRelatedContractsList = memo(function (props: {
 }) {
   const { contracts, loadMore, contractsByTopicSlug, topics, className } = props
   const MAX_CONTRACTS_PER_GROUP = 2
-  const displayedGroupContractIds = Object.values(contractsByTopicSlug ?? {})
-    .map((contracts) =>
-      contracts.slice(0, MAX_CONTRACTS_PER_GROUP).map((c) => c.id)
-    )
-    .flat()
-  const relatedContractsByTopic =
-    topics &&
-    contractsByTopicSlug &&
-    topics.filter((t) => (contractsByTopicSlug[t.slug]?.length ?? 0) > 0)
 
-  return (
-    <Col className={clsx(className, 'flex-1')}>
+  const variant = useABTest('sidebar-related-contracts', [
+    'grouped',
+    'non-grouped',
+  ])
+
+  const displayedGroupContractIds = useMemo(
+    () =>
+      Object.values(contractsByTopicSlug ?? {})
+        .map((contracts) =>
+          contracts.slice(0, MAX_CONTRACTS_PER_GROUP).map((c) => c.id)
+        )
+        .flat(),
+    [contractsByTopicSlug]
+  )
+
+  const relatedContractsByTopic = useMemo(
+    () =>
+      topics &&
+      contractsByTopicSlug &&
+      topics.filter((t) => (contractsByTopicSlug[t.slug]?.length ?? 0) > 0),
+    [topics, contractsByTopicSlug]
+  )
+
+  const renderGroupedContracts = () => (
+    <>
       {relatedContractsByTopic?.map((topic) => (
         <Col key={'related-topics-' + topic.id} className={'my-2'}>
           <h2 className={clsx('text-ink-600 mb-2 text-lg')}>
@@ -62,7 +77,10 @@ export const SidebarRelatedContractsList = memo(function (props: {
                   key={contract.id}
                   contract={contract}
                   onContractClick={(c) =>
-                    track('click related market', { contractId: c.id })
+                    track('click related market', {
+                      contractId: c.id,
+                      variant: 'grouped',
+                    })
                   }
                   twoLines
                 />
@@ -79,12 +97,42 @@ export const SidebarRelatedContractsList = memo(function (props: {
               contract={contract}
               key={contract.id}
               onContractClick={(c) =>
-                track('click related market', { contractId: c.id })
+                track('click related market', {
+                  contractId: c.id,
+                  variant: 'grouped',
+                })
               }
             />
           ))}
       </Col>
+    </>
+  )
 
+  const renderNonGroupedContracts = () => (
+    <>
+      <h2 className="text-ink-600 mb-2 text-xl">Related questions</h2>
+      <Col className="divide-ink-300 divide-y-[0.5px]">
+        {contracts.map((contract) => (
+          <SidebarRelatedContractCard
+            contract={contract}
+            key={contract.id}
+            onContractClick={(c) =>
+              track('click related market', {
+                contractId: c.id,
+                variant: 'non-grouped',
+              })
+            }
+          />
+        ))}
+      </Col>
+    </>
+  )
+
+  return (
+    <Col className={clsx(className, 'flex-1')}>
+      {variant === 'grouped'
+        ? renderGroupedContracts()
+        : renderNonGroupedContracts()}
       {contracts.length > 0 && loadMore && (
         <LoadMoreUntilNotVisible loadMore={loadMore} />
       )}

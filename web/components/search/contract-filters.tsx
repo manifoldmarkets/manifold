@@ -150,9 +150,6 @@ export function ContractFilters(props: {
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
       <Carousel labelsParentClassName="-ml-1.5 gap-1 items-center">
-        <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
-          <FaSliders className="h-4 w-4" />
-        </IconButton>
         <Row className="bg-ink-200 dark:bg-ink-300 items-center rounded-full">
           <button
             key="score"
@@ -305,6 +302,9 @@ export function ContractFilters(props: {
             {getLabelFromValue(CONTRACT_TYPES, contractValue)}
           </FilterPill>
         ))}
+        <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
+          <FaSliders className="h-4 w-4" />
+        </IconButton>
       </Carousel>
       <FilterModal
         open={openFilterModal}

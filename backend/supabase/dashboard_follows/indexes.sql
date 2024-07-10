@@ -1,1 +1,0 @@
-CREATE INDEX idx_dashboard_follows_follower_dashboard ON dashboard_follows(follower_id, dashboard_id);

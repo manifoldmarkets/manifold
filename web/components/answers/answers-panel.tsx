@@ -70,7 +70,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { formatTime } from 'web/lib/util/time'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
-import { QuickLimitOrderButtons } from '../bet/quick-limit-order-buttons'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -714,7 +713,6 @@ export function Answer(props: {
           {(shouldShowLimitOrderChart ||
             (yourUnfilledBets ?? []).length > 0) && (
             <Col className="px-2">
-              <QuickLimitOrderButtons contract={contract} answer={answer} />
               <YourOrders
                 contract={contract}
                 bets={yourUnfilledBets ?? []}
