@@ -101,6 +101,17 @@ export const ScoredFeedRepost = memo(function (props: {
                   />
                 </div>
               </Row>
+              {(commenterIsBettor || !bet) && !showTopLevelRow && (
+                <Row className={' justify-end gap-2'}>
+                  <FeedDropdown
+                    contract={contract}
+                    itemCreatorId={repost.user_id}
+                    interesting={true}
+                    toggleInteresting={hide}
+                    importanceScore={props.contract.importanceScore}
+                  />
+                </Row>
+              )}
             </Row>
             <CollapsibleContent
               mediaSize={'md'}
@@ -110,17 +121,6 @@ export const ScoredFeedRepost = memo(function (props: {
               showMorePlacement={'bottom'}
             />
           </Col>
-          {(commenterIsBettor || !bet) && !showTopLevelRow && (
-            <Row className={' justify-end gap-2'}>
-              <FeedDropdown
-                contract={contract}
-                itemCreatorId={repost.user_id}
-                interesting={true}
-                toggleInteresting={hide}
-                importanceScore={props.contract.importanceScore}
-              />
-            </Row>
-          )}
           <Col
             onMouseEnter={() => setHoveringChildContract(true)}
             onMouseLeave={() => setHoveringChildContract(false)}
