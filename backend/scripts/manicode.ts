@@ -84,7 +84,7 @@ function getDesktopNav() {
 
 <important_reminders>
 - Always include imports: either reproduce the full list of imports, or add new imports with comments like " ... existing imports" and "// ... rest of imports". If the imports are not changed then include a comment: "// ... existing imports"
-- Use comments like "// ... existing code ..." or " ... rest of the file" to indicate where existing code should be preserved.
+- Use may comments like "// ... existing code ..." or " ... rest of the file" to indicate where existing code should be preserved, however it is good to provide a few other lines of context around the changes.
 - Ensure that you're providing enough context around the changes for accurate matching.
 </important_reminders>
 
@@ -108,6 +108,7 @@ export const NewComponent: React.FC = () => {
 
 <file path="web/pages/Home.tsx">
 // ... existing imports ...
+import { AnotherComponentUsedForContext } from '../components/AnotherComponentUsedForContext'
 import { NewComponent } from '../components/NewComponent'
 
 const Home: React.FC = () => {
@@ -392,25 +393,22 @@ async function processFileBlock(filePath: string, fileContent: string) {
 
 async function generateDiffBlocks(currentContent: string, newContent: string) {
   const prompt = `
-I have two versions of a file, and I need to generate <old> and <new> blocks to represent the exact line-by-line differences.
+I have a new version of a file, and I want to change the old file into the new file. I need to generate <old> and <new> blocks to represent the exact line-by-line differences so I can string replace the old content to the new content. If there are multiple changes, provide multiple pairs of blocks.
 
-Old file content:
-\`\`\`
-${currentContent}
-\`\`\`
+The new file may use shorthand such as "// ... existing code ..." or " ... rest of the file" to indicate unchanged code. However, we do not want to include these in your <old> or <new> blocks, because we want to replace the exact lines of code that are being changed.
 
-New file content:
-\`\`\`
-${newContent}
-\`\`\`
+Please structure your response in a few steps:
 
-Please provide the differences as a series of <old> and <new> blocks. Each block should represent a continuous section of code that needs to be changed. If there are multiple changes, provide multiple pairs of blocks.
+1. Describe what code changes are being made. What's being inserted? What's being deleted?
+2. Split the changes into logical groups. Describe the sets of lines or logical chunks of code that are being changed. For example, modifying the import section, modifying a function, etc.
+3. Describe what lines of context from the old file you will use for each edit, so that string replacement of the old and new blocks will work correctly. Do not use any comments like "// ... existing code ..." or " ... rest of the file" as part of this context, because these comments don't exist in the old file, so string replacement won't work to make the edit.
+4. Finally, please provide the <old> and <new> blocks for each chunk of line changes. Find the smallest possible blocks that match the changes.
 
 IMPORTANT INSTRUCTIONS:
-1. The <old> blocks MUST match the existing file content EXACTLY, character for character. Do not add any comments or placeholders like "// ... existing code ...".
+1. The <old> blocks MUST match a portion of the old file content EXACTLY, character for character. Do not include any comments or placeholders like "// ... existing code ...". Instead, provide the exact lines of code that are being changed.
 2. Ensure that you're providing enough context in the <old> blocks to match exactly one location in the file.
 3. The <old> blocks should have as few lines as possible. Consider matching only a few lines around the change! Do not include dozens of lines of imports for no reason.
-4. The <new> blocks should contain the updated code that replaces the content in the corresponding <old> block. Do not add any comments or placeholders like "// ... existing code ...".
+4. The <new> blocks should contain the updated code that replaces the content in the corresponding <old> block. Do not include any comments or placeholders like "// ... existing code ...".
 5. Create separate <old> and <new> blocks for each distinct change in the file.
 
 <example_prompt>
@@ -456,6 +454,19 @@ function LoginForm() {
 </example_prompt>
 
 <example_response>
+1. The user is adding a new import and changing the form to use react-hook-form.
+2. The import section is being modified, and the LoginForm component is being modified.
+3.
+
+- The inserted import can be after the line:
+
+\`\`\`
+import { Input } from './Input'
+\`\`\`
+
+- The LoginForm change can replace the whole function.
+
+4. Here are my changes:
 <old>
 import { Input } from './Input'
 </old>
@@ -602,6 +613,25 @@ const getDesktopNav = (
 </example_prompt>
 
 <example_response>
+1. The user is changing the icon for the notification nav item.
+2. There is a new import for the BellIcon, and then the icon is changed within the getDesktopNav function.
+3.
+
+- The import can be updated after the line:
+\`\`\`
+import { SearchIcon } from '@heroicons/react/solid'
+\`\`\`
+
+- The icon change can be made by replacing the item in the list:
+\`\`\`
+      {
+        name: 'Notifications',
+        href: '/notifications',
+        icon: BellIcon,
+      },
+\`\`\`
+
+4. Here are my changes:
 <old>
 import { SearchIcon } from '@heroicons/react/solid'
 import {
@@ -663,7 +693,19 @@ function applyReplacement(
 \`\`\`
 </important_instruction>
 
-Please provide only the diff blocks now:
+Now, here is the prompt.
+
+Old file content:
+\`\`\`
+${currentContent}
+\`\`\`
+
+New file content:
+\`\`\`
+${newContent}
+\`\`\`
+
+Your Response:
 `
 
   const diffResponse = await promptClaudeWithContinuation(prompt)
