@@ -257,22 +257,19 @@ async function promptClaudeAndApplyFileChanges(
       currentFileBlock += chunk
       process.stdout.write(chunk)
 
-      if (currentFileBlock.includes('</file>')) {
-        const fileMatch = /<file path="([^"]+)">([\s\S]*?)<\/file>/.exec(
-          currentFileBlock
-        )
-        if (fileMatch) {
-          const [, filePath, fileContent] = fileMatch
-          fileProcessingPromises.push(processFileBlock(filePath, fileContent))
-
-          currentFileBlock = ''
-        }
+      const fileRegex = /<file path="([^"]+)">([\s\S]*?)<\/file>/g
+      let fileMatch
+      while ((fileMatch = fileRegex.exec(currentFileBlock)) !== null) {
+        const [, filePath, fileContent] = fileMatch
+        fileProcessingPromises.push(processFileBlock(filePath, fileContent))
       }
+
+      currentFileBlock = currentFileBlock.replace(fileRegex, '')
     }
 
     if (fullResponse.includes('[END_OF_RESPONSE]')) {
       isComplete = true
-      fullResponse = fullResponse.replace('[END_OF_RESPONSE]', '').trim()
+      fullResponse = fullResponse.replace('[END_OF_RESPONSE]', '')
     } else {
       prompt = `Please continue your previous response. Remember to end with [END_OF_RESPONSE] when you've completed your full answer.
 
@@ -314,7 +311,7 @@ async function promptClaudeWithContinuation(
 
     if (fullResponse.includes('[END_OF_RESPONSE]')) {
       isComplete = true
-      fullResponse = fullResponse.replace('[END_OF_RESPONSE]', '').trim()
+      fullResponse = fullResponse.replace('[END_OF_RESPONSE]', '')
     } else {
       prompt = `Please continue your previous response. Remember to end with [END_OF_RESPONSE] when you've completed your full answer.
 
@@ -322,7 +319,7 @@ async function promptClaudeWithContinuation(
 ${originalPrompt}
 </original_prompt>
 
-Continue from the very next character of your response:
+Continue from the very next character of your response (the next char could even be '\n'):
 ${fullResponse}`
     }
   }
@@ -402,7 +399,7 @@ Old file content:
 ${currentContent}
 \`\`\`
 
-Proposed new file content:
+New file content:
 \`\`\`
 ${newContent}
 \`\`\`
@@ -412,12 +409,12 @@ Please provide the differences as a series of <old> and <new> blocks. Each block
 IMPORTANT INSTRUCTIONS:
 1. The <old> blocks MUST match the existing file content EXACTLY, character for character. Do not add any comments or placeholders like "// ... existing code ...".
 2. Ensure that you're providing enough context in the <old> blocks to match exactly one location in the file.
-3. The <old> blocks should be as small as possible. Consider matching only a few lines around the change!
+3. The <old> blocks should have as few lines as possible. Consider matching only a few lines around the change! Do not include dozens of lines of imports for no reason.
 4. The <new> blocks should contain the updated code that replaces the content in the corresponding <old> block. Do not add any comments or placeholders like "// ... existing code ...".
 5. Create separate <old> and <new> blocks for each distinct change in the file.
 
 <example_prompt>
-Current file content:
+Old file content:
 \`\`\`
 import React from 'react'
 import { Button } from './Button'
@@ -498,7 +495,7 @@ function LoginForm() {
 </example_response>
 
 <example_prompt>
-Current file content:
+Old file content:
 \`\`\`
 import React from 'react'
 import { SearchIcon } from '@heroicons/react/solid'
@@ -642,51 +639,29 @@ import {
 </new>
 </example_response>
 
+<important_instruction>
 Notice that your responses should not include any comments like "// ... existing code ...". It should only include the actual code that should be string replaced.
 
-That is because we are using a very simple string replacement system to update the old file to apply the new proposed code.
+That is because we are using a very simple string replacement system to update the old code to the new code:
 
-<string_replacement_script>
+\`\`\`
 function applyReplacement(
   content: string,
   oldContent: string,
   newContent: string
 ): string | null {
-  const lines = content.split('\n')
-  const oldLines = oldContent.trim().split('\n')
-  const newLines = newContent.trim().split('\n')
+  const trimmedOldContent = oldContent.trim()
+  const trimmedNewContent = newContent.trim()
 
-  for (let i = 0; i <= lines.length - oldLines.length; i++) {
-    const contentSlice = lines.slice(i, i + oldLines.length)
-    if (
-      contentSlice.map((line) => line.trim()).join('\n') ===
-      oldLines.map((line) => line.trim()).join('\n')
-    ) {
-      // Check if there's an indentation mismatch
-      const contentIndent = contentSlice[0].match(/^\\s*/)?.[0] || ''
-      const oldIndent = oldLines[0].match(/^\\s*/)?.[0] || ''
-
-      if (contentIndent !== oldIndent) {
-        // Adjust indentation only if there's a mismatch
-        const indentDiff = contentIndent.length - oldIndent.length
-        const updatedNewLines = newLines.map((line) => {
-          const trimmed = line.trim()
-          if (!trimmed) return line // Preserve empty lines
-          const currentIndent = line.match(/^\\s*/)?.[0] || ''
-          return ' '.repeat(currentIndent.length + indentDiff) + trimmed
-        })
-        lines.splice(i, oldLines.length, ...updatedNewLines)
-      } else {
-        // No indentation adjustment needed
-        lines.splice(i, oldLines.length, ...newLines)
-      }
-      return lines.join('\n')
-    }
+  if (content.includes(trimmedOldContent)) {
+    // Old content must match a substring of content exactly.
+    return content.replace(trimmedOldContent, trimmedNewContent)
   }
 
   return null
 }
-</string_replacement_script>
+\`\`\`
+</important_instruction>
 
 Please provide only the diff blocks now:
 `
