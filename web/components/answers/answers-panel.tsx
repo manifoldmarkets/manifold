@@ -289,7 +289,6 @@ export function AnswersPanel(props: {
               unfilledBets={unfilledBets?.filter(
                 (b) => b.answerId === answer.id
               )}
-              expanded={selectedAnswerIds?.includes(answer.id)}
               color={getAnswerColor(answer)}
               userBets={userBetsByAnswer[answer.id]}
               shouldShowLimitOrderChart={isAdvancedTrader}
@@ -530,7 +529,6 @@ export function Answer(props: {
   onHover?: (hovering: boolean) => void
   onClick?: () => void
   userBets?: Bet[]
-  expanded?: boolean
   barColor?: string
   shouldShowLimitOrderChart: boolean
   feedReason?: string
@@ -545,7 +543,6 @@ export function Answer(props: {
     onClick,
     color,
     userBets,
-    expanded,
     user,
     barColor,
     feedReason,
@@ -585,7 +582,7 @@ export function Answer(props: {
     resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   )
   return (
-    <Col className={'bg-canvas-50 w-full rounded'}>
+    <Col className={'w-full rounded'}>
       <AnswerBar
         color={color}
         prob={prob}
@@ -595,8 +592,15 @@ export function Answer(props: {
         className={clsx('group cursor-pointer', className)}
         barColor={barColor}
         label={
-          <Row className={'items-center gap-1'}>
-            <AnswerStatus contract={contract} answer={answer} />
+          <Row className={'items-center gap-2'}>
+            <Col className="grow-y">
+              <Row className="items-center gap-2">
+                {contract.addAnswersMode == 'ANYONE' && (
+                  <AnswerAvatar answer={answer} className="-ml-1" />
+                )}
+                <AnswerStatus contract={contract} answer={answer} />
+              </Row>
+            </Col>
             {isOther ? (
               <span className={textColorClass}>
                 Other{' '}
@@ -619,21 +623,6 @@ export function Answer(props: {
         }
         end={
           <Row className={'items-center gap-1'}>
-            {onClick && (
-              <div
-                className={
-                  'text-ink-500 group-hover:text-primary-700 mr-2 rounded transition-colors'
-                }
-              >
-                <ChevronDownIcon
-                  className={clsx(
-                    'h-5 w-5',
-                    expanded ? 'rotate-180' : 'rotate-0'
-                  )}
-                />
-              </div>
-            )}
-
             <BetButtons
               contract={contract}
               answer={answer}
@@ -652,78 +641,73 @@ export function Answer(props: {
           user={user}
         />
       )}
-
-      {expanded && (
-        <Col>
-          <Row
-            className={'flex-wrap items-center justify-between gap-2 px-3 py-1'}
-          >
-            <Row className={'gap-2'}>
-              <AnswerAvatar answer={answer} isMobile={isMobile} /> {'·'}
-              <Tooltip text={formatTime(answer.createdTime)}>
-                <div className="text-ink-600">
-                  {shortenedFromNow(answer.createdTime)}
-                </div>
-              </Tooltip>
-            </Row>
-            <Row className={'gap-2'}>
-              {canEdit && (
-                <Button
-                  color={'gray-outline'}
-                  size="2xs"
-                  onClick={() =>
-                    'poolYes' in answer && !answer.isOther
-                      ? setEditingAnswer(answer)
-                      : null
-                  }
-                >
-                  <PencilIcon className="mr-1 h-4 w-4" />
-                  Edit
-                </Button>
-              )}
-
-              {unfilledBets?.length && limitOrderVolume ? (
-                <OrderBookButton
-                  limitBets={unfilledBets}
-                  contract={contract}
-                  answer={answer as Answer}
-                  label={
-                    <Tooltip
-                      text={`Limit orders: ${formatMoney(limitOrderVolume)}`}
-                      placement="top"
-                      noTap
-                      className="flex flex-row gap-1"
-                    >
-                      <ScaleIcon className="h-5 w-5" />
-                      {shortFormatNumber(limitOrderVolume)}
-                    </Tooltip>
-                  }
-                />
-              ) : null}
-              {'poolYes' in answer && (
-                <TradesButton
-                  contract={contract}
-                  answer={answer}
-                  color={'gray-outline'}
-                />
-              )}
-              {onCommentClick && <AddComment onClick={onCommentClick} />}
-            </Row>
+      <Col>
+        <Row
+          className={'flex-wrap items-center justify-between gap-2 px-3 py-1'}
+        >
+          <Row className={'gap-2'}>
+            <Tooltip text={formatTime(answer.createdTime)}>
+              <div className="text-ink-600">
+                {shortenedFromNow(answer.createdTime)}
+              </div>
+            </Tooltip>
           </Row>
+          <Row className={'gap-2'}>
+            {canEdit && (
+              <Button
+                color={'gray-outline'}
+                size="2xs"
+                onClick={() =>
+                  'poolYes' in answer && !answer.isOther
+                    ? setEditingAnswer(answer)
+                    : null
+                }
+              >
+                <PencilIcon className="mr-1 h-4 w-4" />
+                Edit
+              </Button>
+            )}
 
-          {(shouldShowLimitOrderChart ||
-            (yourUnfilledBets ?? []).length > 0) && (
-            <Col className="px-2">
-              {/* <QuickLimitOrderButtons contract={contract} answer={answer} /> */}
-              <YourOrders
+            {unfilledBets?.length && limitOrderVolume ? (
+              <OrderBookButton
+                limitBets={unfilledBets}
                 contract={contract}
-                bets={yourUnfilledBets ?? []}
-                deemphasizedHeader
+                answer={answer as Answer}
+                label={
+                  <Tooltip
+                    text={`Limit orders: ${formatMoney(limitOrderVolume)}`}
+                    placement="top"
+                    noTap
+                    className="flex flex-row gap-1"
+                  >
+                    <ScaleIcon className="h-5 w-5" />
+                    {shortFormatNumber(limitOrderVolume)}
+                  </Tooltip>
+                }
               />
-            </Col>
-          )}
-        </Col>
-      )}
+            ) : null}
+            {'poolYes' in answer && (
+              <TradesButton
+                contract={contract}
+                answer={answer}
+                color={'gray-outline'}
+              />
+            )}
+            {onCommentClick && <AddComment onClick={onCommentClick} />}
+          </Row>
+        </Row>
+
+        {(shouldShowLimitOrderChart || (yourUnfilledBets ?? []).length > 0) && (
+          <Col className="px-2">
+            <YourOrders
+              contract={contract}
+              bets={yourUnfilledBets ?? []}
+              deemphasizedHeader
+            />
+          </Col>
+        )}
+      </Col>
+      
       {editingAnswer && user && (
         <EditAnswerModal
           open={!!editingAnswer}
@@ -754,20 +738,14 @@ export function canEditAnswer(
   )
 }
 
-const AnswerAvatar = (props: { answer: Answer; isMobile: boolean }) => {
-  const { answer, isMobile } = props
+const AnswerAvatar = (props: { answer: Answer; className?: string }) => {
+  const { answer, className } = props
   const answerCreator = useDisplayUserByIdOrAnswer(answer)
   if (!answerCreator) return <LoadingIndicator size={'sm'} />
   return (
     <UserHovercard userId={answerCreator.id}>
-      <Row className={'items-center self-start'}>
-        <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />
-        <UserLink
-          user={answerCreator}
-          noLink={false}
-          className="ml-1 text-sm"
-          short={isMobile}
-        />
+      <Row className={clsx('items-center self-start', className)}>
+        <Avatar avatarUrl={answerCreator.avatarUrl} size={'2xs'} />
       </Row>
     </UserHovercard>
   )
