@@ -1,3 +1,7 @@
 # Supabase
 .branches
 .temp
+.env
+
+# regen-schema
+**/dump.sql
