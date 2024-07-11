@@ -458,20 +458,15 @@ export function MultiSellerProfit(props: {
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(contract.id)
 
-  const unfilledBets = answerId
-    ? allUnfilledBets.filter((b) => b.answerId === answerId)
-    : allUnfilledBets
+  const unfilledBets = allUnfilledBets.filter((b) => b.answerId === answerId)
 
   let saleValue: number
-
-  console.log(answer.text, userBets)
-  if (sharesSum <= 0) return null
 
   if (isMultiSumsToOne) {
     ;({ saleValue } = getSaleResultMultiSumsToOne(
       contract,
       answerId,
-      sharesSum,
+      Math.abs(sharesSum),
       sharesOutcome,
       unfilledBets,
       balanceByUserId
@@ -479,7 +474,7 @@ export function MultiSellerProfit(props: {
   } else {
     ;({ saleValue } = getSaleResult(
       contract,
-      sharesSum,
+      Math.abs(sharesSum),
       sharesOutcome,
       unfilledBets,
       balanceByUserId,
@@ -488,8 +483,6 @@ export function MultiSellerProfit(props: {
   }
 
   const invested = getInvested(contract, userBets)
-
-  // console.log(saleValue, invested)
 
   return <>{formatMoney(saleValue - invested)}</>
 }
