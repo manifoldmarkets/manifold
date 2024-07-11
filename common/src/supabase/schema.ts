@@ -3133,23 +3133,10 @@ export type Database = {
         }
         Returns: number
       }
-      calculate_user_profit_for_2023: {
-        Args: {
-          user_id_input: string
-        }
-        Returns: number
-      }
       can_access_private_messages: {
         Args: {
           channel_id: number
           user_id: string
-        }
-        Returns: boolean
-      }
-      can_access_private_post: {
-        Args: {
-          this_post_id: string
-          this_member_id: string
         }
         Returns: boolean
       }
@@ -3177,13 +3164,6 @@ export type Database = {
           contract_id: string
           comment_count: number
         }[]
-      }
-      count_users_above_similarity: {
-        Args: {
-          nid: number
-          similarity: number
-        }
-        Returns: number
       }
       creator_leaderboard: {
         Args: {
@@ -3223,35 +3203,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
       }
-      get_contract_metrics_for_contract: {
-        Args: {
-          contractid: string
-        }
-        Returns: {
-          user_id: string
-          contract_metrics: Json
-        }[]
-      }
-      get_contract_metrics_grouped_by_user: {
-        Args: {
-          uids: string[]
-          period: string
-        }
-        Returns: {
-          user_id: string
-          contract_metrics: Json[]
-        }[]
-      }
-      get_contract_metrics_grouped_by_user_ids: {
-        Args: {
-          uids: string[]
-          period: string
-        }
-        Returns: {
-          user_id: string
-          contract_metrics: Json[]
-        }[]
-      }
       get_contract_metrics_with_contracts:
         | {
             Args: {
@@ -3276,12 +3227,6 @@ export type Database = {
               contract: Json
             }[]
           }
-      get_contract_page_views: {
-        Args: {
-          contract_id: string
-        }
-        Returns: number
-      }
       get_contract_voters: {
         Args: {
           this_contract_id: string
@@ -3329,19 +3274,6 @@ export type Database = {
         }
         Returns: number
       }
-      get_cpmm_resolved_prob:
-        | {
-            Args: {
-              c: unknown
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              data: Json
-            }
-            Returns: number
-          }
       get_daily_claimed_boosts: {
         Args: {
           user_id: string
@@ -3358,24 +3290,6 @@ export type Database = {
           total: number
         }[]
       }
-      get_engaged_users: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          user_id: string
-          username: string
-          name: string
-        }[]
-      }
-      get_exact_match_minus_last_word_query: {
-        Args: {
-          p_query: string
-        }
-        Returns: string
-      }
-      get_fr_questions_with_answer_count: {
-        Args: Record<PropertyKey, never>
-        Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
-      }
       get_group_contracts: {
         Args: {
           this_group_id: string
@@ -3389,18 +3303,6 @@ export type Database = {
           uid: string
         }
         Returns: Database['public']['CompositeTypes']['group_with_score_and_bet_flag'][]
-      }
-      get_groups_from_user_seen_markets: {
-        Args: {
-          uid: string
-        }
-        Returns: Database['public']['CompositeTypes']['group_with_bet_flag'][]
-      }
-      get_last_week_long_link: {
-        Args: {
-          this_group_id: string
-        }
-        Returns: string
       }
       get_love_question_answers_and_lovers: {
         Args: {
@@ -3418,16 +3320,6 @@ export type Database = {
           ad_funds: number
           ad_cost_per_view: number
           market_data: Json
-        }[]
-      }
-      get_monthly_bet_count_and_amount: {
-        Args: {
-          user_id_input: string
-        }
-        Returns: {
-          month: string
-          bet_count: number
-          total_amount: number
         }[]
       }
       get_non_empty_private_message_channel_ids:
@@ -3511,17 +3403,6 @@ export type Database = {
           contract: Json
         }[]
       }
-      get_open_limit_bets_with_contracts_rls: {
-        Args: {
-          uid: string
-          count: number
-        }
-        Returns: {
-          contract_id: string
-          bets: Json[]
-          contract: Json
-        }[]
-      }
       get_option_voters: {
         Args: {
           this_contract_id: string
@@ -3531,18 +3412,6 @@ export type Database = {
           data: Json
         }[]
       }
-      get_prefix_match_query: {
-        Args: {
-          p_query: string
-        }
-        Returns: string
-      }
-      get_profit: {
-        Args: {
-          portfolio: Json
-        }
-        Returns: number
-      }
       get_rating: {
         Args: {
           user_id: string
@@ -3550,15 +3419,6 @@ export type Database = {
         Returns: {
           count: number
           rating: number
-        }[]
-      }
-      get_rating_info: {
-        Args: {
-          p_vendor_id: string
-        }
-        Returns: {
-          avg_rating: number
-          count: number
         }[]
       }
       get_recently_active_contracts_in_group_slugs: {
@@ -3583,17 +3443,6 @@ export type Database = {
           importance_score: number
         }[]
       }
-      get_recently_active_contracts_in_group_slugs_2: {
-        Args: {
-          group_slugs: string[]
-          ignore_slugs: string[]
-          max: number
-        }
-        Returns: {
-          data: Json
-          importance_score: number
-        }[]
-      }
       get_related_contracts: {
         Args: {
           cid: string
@@ -3602,39 +3451,25 @@ export type Database = {
         }
         Returns: Json[]
       }
-      get_reply_chain_comments_for_comment_ids: {
+      get_related_contracts_by_group: {
         Args: {
-          comment_ids: string[]
+          p_contract_id: string
+          lim: number
+          start: number
         }
         Returns: {
-          id: string
-          contract_id: string
           data: Json
         }[]
       }
-      get_reply_chain_comments_matching_contracts: {
+      get_related_contracts_by_group_and_creator: {
         Args: {
-          contract_ids: string[]
-          past_time_ms: number
+          p_contract_id: string
+          lim: number
+          start: number
         }
         Returns: {
-          id: string
-          contract_id: string
           data: Json
         }[]
-      }
-      get_sigmoid_rating: {
-        Args: {
-          user_id: string
-        }
-        Returns: {
-          count: number
-          rating: number
-        }[]
-      }
-      get_time: {
-        Args: Record<PropertyKey, never>
-        Returns: number
       }
       get_top_market_ads: {
         Args: {
@@ -3677,18 +3512,6 @@ export type Database = {
           contract: Json
         }[]
       }
-      get_user_bets_from_resolved_contracts_rbac: {
-        Args: {
-          uid: string
-          count: number
-          start: number
-        }
-        Returns: {
-          contract_id: string
-          bets: Json[]
-          contract: Json
-        }[]
-      }
       get_user_group_id_for_current_user: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -3701,56 +3524,6 @@ export type Database = {
           manalink_id: string
           claimant_id: string
           ts: number
-        }[]
-      }
-      get_user_portfolio_at_2023_end: {
-        Args: {
-          p_user_id: string
-        }
-        Returns: {
-          user_id: string
-          ts: string
-          investment_value: number
-          balance: number
-          total_deposits: number
-          loan_total: number
-          id: number
-        }[]
-      }
-      get_user_portfolio_at_2023_start: {
-        Args: {
-          p_user_id: string
-        }
-        Returns: {
-          user_id: string
-          ts: string
-          investment_value: number
-          balance: number
-          total_deposits: number
-          loan_total: number
-          id: number
-        }[]
-      }
-      get_user_topic_interests: {
-        Args: {
-          p_user_id: string
-          limit_rows: number
-        }
-        Returns: {
-          group_id: string
-          avg_conversion_score: number
-          groups_count: number
-        }[]
-      }
-      get_user_topic_interests_1: {
-        Args: {
-          p_user_id: string
-          limit_rows: number
-        }
-        Returns: {
-          group_id: string
-          avg_conversion_score: number
-          groups_count: number
         }[]
       }
       get_user_topic_interests_2: {
@@ -3856,23 +3629,10 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_group_admin: {
-        Args: {
-          this_group_id: string
-          this_user_id: string
-        }
-        Returns: boolean
-      }
       is_group_member: {
         Args: {
           this_group_id: string
           this_user_id: string
-        }
-        Returns: boolean
-      }
-      is_valid_contract: {
-        Args: {
-          ct: unknown
         }
         Returns: boolean
       }
@@ -3945,40 +3705,7 @@ export type Database = {
           is_yes: boolean
         }[]
       }
-      save_user_topic_2: {
-        Args: {
-          p_user_id: string
-          p_topics: string[]
-        }
-        Returns: undefined
-      }
-      save_user_topics: {
-        Args: {
-          p_user_id: string
-          p_topics: string[]
-        }
-        Returns: undefined
-      }
-      save_user_topics_2: {
-        Args: {
-          p_user_id: string
-          p_topics: string[]
-        }
-        Returns: undefined
-      }
       save_user_topics_blank: {
-        Args: {
-          p_user_id: string
-        }
-        Returns: undefined
-      }
-      save_user_topics_blank_2: {
-        Args: {
-          p_user_id: string
-        }
-        Returns: undefined
-      }
-      save_user_topics_blank2: {
         Args: {
           p_user_id: string
         }
@@ -3993,108 +3720,6 @@ export type Database = {
         Returns: {
           contract_id: string
           similarity: number
-        }[]
-      }
-      search_contract_embeddings_1: {
-        Args: {
-          query_embedding: string
-          similarity_threshold: number
-          match_count: number
-        }
-        Returns: {
-          contract_id: string
-          similarity: number
-        }[]
-      }
-      search_contracts_by_group_slugs: {
-        Args: {
-          group_slugs: string[]
-          lim: number
-          start: number
-        }
-        Returns: Json[]
-      }
-      search_contracts_by_group_slugs_1: {
-        Args: {
-          p_group_slugs: string[]
-          lim: number
-          start: number
-        }
-        Returns: Json[]
-      }
-      search_contracts_by_group_slugs_for_creator: {
-        Args: {
-          creator_id: string
-          group_slugs: string[]
-          lim: number
-          start: number
-        }
-        Returns: Json[]
-      }
-      search_contracts_by_group_slugs_for_creator_1: {
-        Args: {
-          creator_id: string
-          p_group_slugs: string[]
-          lim: number
-          start: number
-        }
-        Returns: Json[]
-      }
-      search_contracts_combined: {
-        Args: {
-          term: string
-          contract_filter: string
-          contract_sort: string
-          offset_n: number
-          limit_n: number
-          fuzzy?: boolean
-          groupid?: string
-        }
-        Returns: {
-          data: Json
-        }[]
-      }
-      search_contracts_test: {
-        Args: {
-          term: string
-          contract_filter: string
-          contract_sort: string
-          offset_n: number
-          limit_n: number
-          fuzzy?: boolean
-          group_id?: string
-          creator_id?: string
-        }
-        Returns: string
-      }
-      search_group_embeddings: {
-        Args: {
-          query_embedding: string
-          similarity_threshold: number
-          max_count: number
-          name_similarity_threshold: number
-        }
-        Returns: {
-          name: string
-          group_id: string
-          similarity: number
-        }[]
-      }
-      search_groups: {
-        Args: {
-          query: string
-          count: number
-        }
-        Returns: {
-          creator_id: string | null
-          data: Json
-          id: string
-          importance_score: number | null
-          name: string
-          name_fts: unknown | null
-          privacy_status: string | null
-          slug: string
-          total_members: number | null
         }[]
       }
       set_limit: {
@@ -4128,19 +3753,6 @@ export type Database = {
         }
         Returns: string
       }
-      test_search_contracts: {
-        Args: {
-          term: string
-          contract_filter: string
-          contract_sort: string
-          offset_n: number
-          limit_n: number
-          fuzzy?: boolean
-          group_id?: string
-          creator_id?: string
-        }
-        Returns: string
-      }
       to_jsonb: {
         Args: {
           '': Json
@@ -4158,37 +3770,6 @@ export type Database = {
           n: number
         }[]
       }
-      top_news:
-        | {
-            Args: {
-              uid: string
-            }
-            Returns: {
-              title: string
-              description: string
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              similarity: number
-            }
-            Returns: {
-              title: string
-              description: string
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              similarity: number
-              n: number
-            }
-            Returns: {
-              title: string
-              description: string
-            }[]
-          }
       ts_to_millis:
         | {
             Args: {
@@ -4202,26 +3783,6 @@ export type Database = {
             }
             Returns: number
           }
-      user_top_news: {
-        Args: {
-          uid: string
-          similarity: number
-          n: number
-        }
-        Returns: {
-          id: number
-          created_time: string
-          title: string
-          url: string
-          published_time: string
-          author: string
-          description: string
-          image_url: string
-          source_id: string
-          source_name: string
-          contract_ids: string[]
-        }[]
-      }
       vector_avg: {
         Args: {
           '': number[]
