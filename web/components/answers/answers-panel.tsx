@@ -611,6 +611,49 @@ export function Answer(props: {
   const [tradesModalOpen, setTradesModalOpen] = useState(false)
   const [limitBetModalOpen, setLimitBetModalOpen] = useState(false)
 
+  const hasLimitOrders = unfilledBets?.length && limitOrderVolume
+
+  const dropdownItems = [
+    ...(canEdit && 'poolYes' in answer && !answer.isOther
+      ? [
+          {
+            icon: <PencilIcon className=" h-4 w-4" />,
+            name: 'Edit',
+            onClick: () => setEditingAnswer(answer),
+          },
+        ]
+      : []),
+    ...(onCommentClick
+      ? [
+          {
+            icon: <ChatIcon className=" h-4 w-4" />,
+            name: 'Comment',
+            onClick: onCommentClick,
+          },
+        ]
+      : []),
+    {
+      icon: <UserIcon className="h-4 w-4" />,
+      name: 'Trades',
+      buttonContent: (
+        <Row>
+          See <TradesNumber contract={contract} answer={answer} shorten />{' '}
+          traders
+        </Row>
+      ),
+      onClick: () => setTradesModalOpen(true),
+    },
+    ...(hasLimitOrders
+      ? [
+          {
+            icon: <ScaleIcon className="h-4 w-4" />,
+            name: getOrderBookButtonLabel(unfilledBets),
+            onClick: () => setLimitBetModalOpen(true),
+          },
+        ]
+      : []),
+  ]
+
   return (
     <Col className={'full rounded'}>
       <AnswerBar
@@ -657,51 +700,7 @@ export function Answer(props: {
             />
             <DropdownMenu
               icon={<DotsVerticalIcon className="h-5 w-5" aria-hidden />}
-              items={[
-                ...(canEdit && 'poolYes' in answer && !answer.isOther
-                  ? [
-                      {
-                        icon: <PencilIcon className=" h-4 w-4" />,
-                        name: 'Edit',
-                        onClick: () => setEditingAnswer(answer),
-                      },
-                    ]
-                  : []),
-                ...(onCommentClick
-                  ? [
-                      {
-                        icon: <ChatIcon className=" h-4 w-4" />,
-                        name: 'Comment',
-                        onClick: onCommentClick,
-                      },
-                    ]
-                  : []),
-                {
-                  icon: <UserIcon className="h-4 w-4" />,
-                  name: 'Trades',
-                  buttonContent: (
-                    <Row>
-                      See{' '}
-                      <TradesNumber
-                        contract={contract}
-                        answer={answer}
-                        shorten
-                      />{' '}
-                      traders
-                    </Row>
-                  ),
-                  onClick: () => setTradesModalOpen(true),
-                },
-                ...(unfilledBets?.length && limitOrderVolume
-                  ? [
-                      {
-                        icon: <ScaleIcon className="h-4 w-4" />,
-                        name: getOrderBookButtonLabel(unfilledBets),
-                        onClick: () => setLimitBetModalOpen(true),
-                      },
-                    ]
-                  : []),
-              ]}
+              items={dropdownItems}
               withinOverflowContainer
               menuItemsClass="!z-50"
               className="!z-50"
@@ -755,17 +754,23 @@ export function Answer(props: {
         setModalOpen={setTradesModalOpen}
         answer={answer}
       />
-      <Modal open={limitBetModalOpen} setOpen={setLimitBetModalOpen} size="md">
-        <Col className="bg-canvas-0">
-          <OrderBookPanel
-            limitBets={unfilledBets}
-            contract={contract}
-            answer={answer}
-            showTitle
-            expanded
-          />
-        </Col>
-      </Modal>
+      {hasLimitOrders && (
+        <Modal
+          open={limitBetModalOpen}
+          setOpen={setLimitBetModalOpen}
+          size="md"
+        >
+          <Col className="bg-canvas-0">
+            <OrderBookPanel
+              limitBets={unfilledBets}
+              contract={contract}
+              answer={answer}
+              showTitle
+              expanded
+            />
+          </Col>
+        </Modal>
+      )}
     </Col>
   )
 }
