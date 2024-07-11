@@ -296,12 +296,15 @@ export const MultiSeller = (props: {
   contract: CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   user: User
+  className?: string
+  showPosition?: boolean
 }) => {
-  const { answer, contract, userBets, user } = props
+  const { answer, contract, userBets, user, className, showPosition } = props
   const [open, setOpen] = useState(false)
   const sharesSum = sumBy(userBets, (bet) =>
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
+  const sharesOutcome = sharesSum > 0 ? 'YES' : 'NO'
 
   return (
     <>
@@ -311,17 +314,52 @@ export const MultiSeller = (props: {
           user={user}
           userBets={userBets}
           shares={Math.abs(sharesSum)}
-          sharesOutcome={sharesSum > 0 ? 'YES' : 'NO'}
+          sharesOutcome={sharesOutcome}
           setOpen={setOpen}
           answerId={answer.id}
         />
       )}
       <button
-        className={'hover:text-ink-700 decoration-2 hover:underline'}
+        className={clsx(
+          'hover:text-ink-700 decoration-2 hover:underline',
+          className
+        )}
         onClick={() => setOpen(true)}
       >
         Sell
+        {showPosition && (
+          <>
+            {' '}
+            <MultiSellPosition contract={contract} userBets={userBets} />
+          </>
+        )}
       </button>
+    </>
+  )
+}
+
+export function MultiSellPosition(props: {
+  contract: CPMMMultiContract | CPMMNumericContract
+  userBets: Bet[]
+}) {
+  const { contract, userBets } = props
+  const { totalShares } = getContractBetMetrics(contract, userBets)
+  const yesWinnings = totalShares.YES ?? 0
+  const noWinnings = totalShares.NO ?? 0
+  const position = yesWinnings - noWinnings
+  return (
+    <>
+      {position > 1e-7 ? (
+        <>
+          <span className="font-bold">{formatMoney(position)}</span> YES
+        </>
+      ) : position < -1e-7 ? (
+        <>
+          <span className="font-bold">{formatMoney(-position)}</span> NO
+        </>
+      ) : (
+        <></>
+      )}
     </>
   )
 }
