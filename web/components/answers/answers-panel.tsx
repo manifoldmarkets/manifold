@@ -362,7 +362,7 @@ export const EditAnswerModal = (props: {
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className={' gap-2 rounded-md p-4'}>
+      <Col className={clsx('gap-2', MODAL_CLASS)}>
         <span className={'font-semibold'}>Title</span>
         <Row className={'gap-1'}>
           <Input
