@@ -10,6 +10,7 @@ import {
   tradingAllowed,
 } from 'common/contract'
 import {
+  formatLargeNumber,
   formatMoney,
   formatPercent,
 } from 'common/util/format'
@@ -44,6 +45,7 @@ import { track } from 'web/lib/service/analytics'
 import { UserHovercard } from '../user/user-hovercard'
 import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { Fees } from 'common/fees'
 import { MultiSellCurrentPrice } from '../bet/sell-panel'
 
 export const AnswerBar = (props: {
