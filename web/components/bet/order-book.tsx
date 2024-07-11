@@ -313,10 +313,7 @@ export function OrderBookButton(props: {
   return (
     <>
       <button onClick={() => setOpen(true)} disabled={limitBets.length === 0}>
-        {label ||
-          `${limitBets.length === 0 ? 'Currently' : 'View'} ${
-            limitBets.length
-          } order${limitBets.length === 1 ? '' : 's'}`}
+        {label || getOrderBookButtonLabel(limitBets)}
       </button>
 
       <Modal open={open} setOpen={setOpen} size="md">
@@ -332,6 +329,12 @@ export function OrderBookButton(props: {
       </Modal>
     </>
   )
+}
+
+export function getOrderBookButtonLabel(limitBets: LimitBet[]) {
+  return `${limitBets.length === 0 ? 'Currently' : 'View'} ${
+    limitBets.length
+  } order${limitBets.length === 1 ? '' : 's'}`
 }
 
 export function OrderBookPanel(props: {
