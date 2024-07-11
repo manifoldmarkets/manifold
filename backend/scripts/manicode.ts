@@ -402,7 +402,7 @@ Please structure your response in a few steps:
 1. Describe what code changes are being made. What's being inserted? What's being deleted?
 2. Split the changes into logical groups. Describe the sets of lines or logical chunks of code that are being changed. For example, modifying the import section, modifying a function, etc.
 3. Describe what lines of context from the old file you will use for each edit, so that string replacement of the old and new blocks will work correctly. Do not use any comments like "// ... existing code ..." or " ... rest of the file" as part of this context, because these comments don't exist in the old file, so string replacement won't work to make the edit.
-4. Finally, please provide the <old> and <new> blocks for each chunk of line changes. Find the smallest possible blocks that match the changes.
+4. Finally, please provide a <file> block containing the <old> and <new> blocks for each chunk of line changes. Find the smallest possible blocks that match the changes.
 
 IMPORTANT INSTRUCTIONS:
 1. The <old> blocks MUST match a portion of the old file content EXACTLY, character for character. Do not include any comments or placeholders like "// ... existing code ...". Instead, provide the exact lines of code that are being changed.
@@ -467,6 +467,7 @@ import { Input } from './Input'
 - The LoginForm change can replace the whole function.
 
 4. Here are my changes:
+<file>
 <old>
 import { Input } from './Input'
 </old>
@@ -503,6 +504,7 @@ function LoginForm() {
   )
 }
 </new>
+</file>
 </example_response>
 
 <example_prompt>
@@ -632,6 +634,7 @@ import { SearchIcon } from '@heroicons/react/solid'
 \`\`\`
 
 4. Here are my changes:
+<file>
 <old>
 import { SearchIcon } from '@heroicons/react/solid'
 import {
@@ -667,6 +670,7 @@ import {
         icon: NotificationsIcon,
       },
 </new>
+</file>
 </example_response>
 
 <important_instruction>
@@ -711,14 +715,20 @@ Your Response:
   const diffResponse = await promptClaudeWithContinuation(prompt)
 
   const diffBlocks = []
-  const regex = /<old>([\s\S]*?)<\/old>\s*<new>([\s\S]*?)<\/new>/g
-  let match
+  const fileRegex = /<file>([\s\S]*?)<\/file>/
+  const fileMatch = diffResponse.match(fileRegex)
 
-  while ((match = regex.exec(diffResponse)) !== null) {
-    diffBlocks.push({
-      oldContent: match[1].trim(),
-      newContent: match[2].trim(),
-    })
+  if (fileMatch) {
+    const fileContent = fileMatch[1]
+    const blockRegex = /<old>([\s\S]*?)<\/old>\s*<new>([\s\S]*?)<\/new>/g
+    let blockMatch
+
+    while ((blockMatch = blockRegex.exec(fileContent)) !== null) {
+      diffBlocks.push({
+        oldContent: blockMatch[1].trim(),
+        newContent: blockMatch[2].trim(),
+      })
+    }
   }
 
   return diffBlocks
