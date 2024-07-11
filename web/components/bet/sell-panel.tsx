@@ -448,6 +448,8 @@ export function MultiSellCurrentPrice(props: {
 
   let saleValue: number
 
+  if (sharesSum <= 0) return null
+
   if (isMultiSumsToOne) {
     ;({ saleValue } = getSaleResultMultiSumsToOne(
       contract,
