@@ -163,8 +163,10 @@ function getCpmmInvested(yourBets: Bet[]) {
   const totalShares: { [outcome: string]: number } = {}
   const totalSpent: { [outcome: string]: number } = {}
 
-  const sortedBets = sortBy(yourBets, 'createdTime')
-  const sharePurchases = sortedBets.map((bet) => [bet]).flat()
+  const sharePurchases = sortBy(yourBets, [
+    'createdTime',
+    (bet) => (bet.isRedemption ? 1 : 0),
+  ])
 
   for (const purchase of sharePurchases) {
     const { outcome, shares, amount } = purchase
