@@ -423,7 +423,23 @@ export const getSaleResultMultiSumsToOne = (
   }
 }
 
-export function MultiSellCurrentPrice(props: {
+export function MultiSellerPosition(props: {
+  contract: CPMMMultiContract | CPMMNumericContract
+  userBets: Bet[]
+}) {
+  const { contract, userBets } = props
+  const { totalShares } = getContractBetMetrics(contract, userBets)
+  const yesWinnings = totalShares.YES ?? 0
+  const noWinnings = totalShares.NO ?? 0
+  const position = yesWinnings - noWinnings
+
+  if (position > 1e-7) {
+    return <>YES</>
+  }
+  return <>NO</>
+}
+
+export function MultiSellerProfit(props: {
   contract: CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   answer: Answer
@@ -448,6 +464,7 @@ export function MultiSellCurrentPrice(props: {
 
   let saleValue: number
 
+  console.log(answer.text, userBets)
   if (sharesSum <= 0) return null
 
   if (isMultiSumsToOne) {
@@ -470,17 +487,9 @@ export function MultiSellCurrentPrice(props: {
     ))
   }
 
-  const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
-  const netProceeds = saleValue - loanAmount
+  const invested = getInvested(contract, userBets)
 
-  const { totalShares } = getContractBetMetrics(contract, userBets)
-  const yesWinnings = totalShares.YES ?? 0
-  const noWinnings = totalShares.NO ?? 0
-  const position = yesWinnings - noWinnings
-  return (
-    <>
-      <span className="font-bold">{formatMoney(netProceeds)}</span>{' '}
-      {position > 1e-7 ? <>YES</> : position < -1e-7 ? <>NO</> : <></>}
-    </>
-  )
+  // console.log(saleValue, invested)
+
+  return <>{formatMoney(saleValue - invested)}</>
 }

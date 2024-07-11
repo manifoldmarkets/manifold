@@ -42,7 +42,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { Fees } from 'common/fees'
-import { MultiSellCurrentPrice } from '../bet/sell-panel'
+import { MultiSellerPosition, MultiSellerProfit } from '../bet/sell-panel'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -328,15 +328,20 @@ export const MultiSeller = (props: {
         )}
         onClick={() => setOpen(true)}
       >
-        Sell
+        <span className="font-bold">Sell</span>
         {showPosition && (
           <>
             {' '}
-            <MultiSellCurrentPrice
+            <span className="font-bold">
+              <MultiSellerPosition contract={contract} userBets={userBets} />
+            </span>{' '}
+            (
+            <MultiSellerProfit
               contract={contract}
               userBets={userBets}
               answer={answer}
-            />
+            />{' '}
+            profit)
           </>
         )}
       </button>
