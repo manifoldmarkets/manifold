@@ -754,7 +754,7 @@ export function Answer(props: {
         setModalOpen={setTradesModalOpen}
         answer={answer}
       />
-      {hasLimitOrders && (
+      {!!hasLimitOrders && (
         <Modal
           open={limitBetModalOpen}
           setOpen={setLimitBetModalOpen}
