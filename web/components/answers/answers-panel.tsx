@@ -362,7 +362,7 @@ export const EditAnswerModal = (props: {
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className={clsx('gap-2', MODAL_CLASS)}>
+      <Col className={clsx('bg-canvas-50 gap-2 rounded-md p-4')}>
         <span className={'font-semibold'}>Title</span>
         <Row className={'gap-1'}>
           <Input
@@ -682,15 +682,17 @@ export function Answer(props: {
         >
           <Row className="grow-x text-ink-300 dark:text-ink-500/80 items-center gap-1">
             {'poolYes' in answer && (
-              <TradesButton
-                contract={contract}
-                answer={answer}
-                color={'gray-outline'}
-                size="sm"
-                className="hover:text-ink-400 dark:hover:text-ink-600 transition-colors"
-              />
+              <>
+                <TradesButton
+                  contract={contract}
+                  answer={answer}
+                  color={'gray-outline'}
+                  size="sm"
+                  className="hover:text-ink-400 dark:hover:text-ink-600 transition-colors"
+                />
+                {'·'}
+              </>
             )}
-            {'·'}
             <Tooltip text={formatTime(answer.createdTime)} placement="bottom">
               <div>{shortenedFromNow(answer.createdTime)}</div>
             </Tooltip>
@@ -717,12 +719,12 @@ export function Answer(props: {
               </>
             ) : null}
           </Row>
-          <Row className="text-ink-600 gap-1 ">
+          <Row className="text-ink-600 gap-1">
             {userHasLimitOrders && (
               <AnswerOrdersButton
                 contract={contract}
                 yourUnfilledBets={yourUnfilledBets}
-                buttonClassName="font-bold"
+                buttonClassName="hover:text-ink-700 hover:underline transition-all"
               />
             )}
             {userHasLimitOrders && showSellButton && <>{'·'}</>}
@@ -732,7 +734,8 @@ export function Answer(props: {
                 contract={contract}
                 userBets={userBets}
                 user={user}
-                className="text-primary-600 font-bold"
+                className="text-primary-600 hover:text-primary-700 transition-all"
+                showPosition
               />
             )}
           </Row>
