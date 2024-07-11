@@ -577,23 +577,6 @@ or replace function public.creator_rank (uid text) returns integer language sql 
 $function$;
 
 create
-or replace function public.get_groups_and_scores_from_user_seen_markets (uid text) returns setof group_with_score_and_bet_flag language sql as $function$
-select (g.id, g.data, g.importance_score, false)::group_with_score_and_bet_flag
-from
-    groups g
-        join group_contracts gc on g.id = gc.group_id
-        join user_contract_views ucv on gc.contract_id = ucv.contract_id
-  where ucv.user_id = uid and ucv.page_views > 0
-union
-select (g.id, g.data, g.importance_score, true)::group_with_score_and_bet_flag
-from
-    groups g
-        join group_contracts gc on g.id = gc.group_id
-        join contract_bets cb on gc.contract_id = cb.contract_id
-where cb.user_id = uid
-$function$;
-
-create
 or replace function public.creator_leaderboard (limit_n integer) returns table (
   user_id text,
   total_traders integer,
@@ -743,6 +726,28 @@ from (
          join contracts on contracts.id = bets.contract_id
 where (politics is false or is_politics = politics)
 limit count $function$;
+
+create
+or replace function public.get_groups_and_scores_from_user_seen_markets (uid text) returns table (
+  id text,
+  data jsonb,
+  importance_score numeric,
+  has_bet boolean
+) language sql as $function$
+select (g.id, g.data, g.importance_score, false)
+from
+    groups g
+        join group_contracts gc on g.id = gc.group_id
+        join user_contract_views ucv on gc.contract_id = ucv.contract_id
+  where ucv.user_id = uid and ucv.page_views > 0
+union
+select (g.id, g.data, g.importance_score, true)
+from
+    groups g
+        join group_contracts gc on g.id = gc.group_id
+        join contract_bets cb on gc.contract_id = cb.contract_id
+where cb.user_id = uid
+$function$;
 
 create
 or replace function public.get_noob_questions () returns setof contracts language sql as $function$with newbs as (

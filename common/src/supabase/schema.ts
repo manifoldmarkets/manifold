@@ -3302,7 +3302,12 @@ export type Database = {
         Args: {
           uid: string
         }
-        Returns: Database['public']['CompositeTypes']['group_with_score_and_bet_flag'][]
+        Returns: {
+          id: string
+          data: Json
+          importance_score: number
+          has_bet: boolean
+        }[]
       }
       get_love_question_answers_and_lovers: {
         Args: {
@@ -3824,35 +3829,15 @@ export type Database = {
       status_type: 'new' | 'under review' | 'resolved' | 'needs admin'
     }
     CompositeTypes: {
-      contract_ids: {
-        contract_id: string
-      }
-      contract_score: {
-        contract_id: string
-      }
-      group_with_bet_flag: {
-        id: string
-        data: Json
-        has_bet: boolean
-      }
-      group_with_score_and_bet_flag: {
-        id: string
-        data: Json
-        importance_score: number
-        has_bet: boolean
-      }
-      jsonb_data: {
-        data: Json
-      }
       love_question_with_count_type: {
-        id: number
-        creator_id: string
-        created_time: string
-        question: string
-        importance_score: number
-        answer_type: string
-        multiple_choice_options: Json
-        answer_count: number
+        id: number | null
+        creator_id: string | null
+        created_time: string | null
+        question: string | null
+        importance_score: number | null
+        answer_type: string | null
+        multiple_choice_options: Json | null
+        answer_count: number | null
       }
       other_lover_answers_type: {
         question_id: number | null
