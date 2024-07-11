@@ -5,11 +5,11 @@ help:
 regen-types: regen-types-prod
 
 regen-types-prod:
-	supabase gen types typescript --project-id pxidrgkatumlvfqaxcll --schema public > ../../common/src/supabase/schema.ts
+	npx supabase gen types typescript --project-id pxidrgkatumlvfqaxcll --schema public > ../../common/src/supabase/schema.ts
 	cd ../../common && npx prettier --write ./src/supabase/schema.ts
 
 regen-types-dev:
-	supabase gen types typescript --project-id mfodonznyfxllcezufgr --schema public > ../../common/src/supabase/schema.ts
+	npx supabase gen types typescript --project-id mfodonznyfxllcezufgr --schema public > ../../common/src/supabase/schema.ts
 	cd ../../common && npx prettier --write ./src/supabase/schema.ts
 
 use-prod:

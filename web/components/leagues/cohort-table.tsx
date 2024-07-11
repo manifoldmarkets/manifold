@@ -78,7 +78,7 @@ export const CohortTable = (props: {
             <th className={clsx('px-2 pb-1 text-right sm:pr-10')}>
               <InfoTooltip
                 text={
-                  'Includes both realized and unrealized profits from bets placed this month plus quest rewards and unique trader bonuses.'
+                  'Includes both realized and unrealized profits from bets placed this month plus creator earnings.'
                 }
               >
                 Mana earned{' '}
