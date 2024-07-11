@@ -35,12 +35,10 @@ import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { getAnswerColor } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import {
-  AddComment,
   AnswerBar,
   CreatorAndAnswerLabel,
   AnswerStatus,
   BetButtons,
-  AnswerPosition,
   MultiSeller,
 } from './answer-components'
 import { floatingEqual } from 'common/util/math'
@@ -59,7 +57,6 @@ import { Input } from 'web/components/widgets/input'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
 import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
 import { TradesButton } from 'web/components/contract/trades-button'
 import toast from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
