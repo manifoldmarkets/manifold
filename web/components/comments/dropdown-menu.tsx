@@ -7,7 +7,6 @@ import { createPortal } from 'react-dom'
 
 export type DropdownItem = {
   name: string
-  buttonContent?: ReactNode
   icon?: ReactNode
   onClick: () => void | Promise<void>
 }
@@ -111,7 +110,7 @@ export default function DropdownMenu(props: {
                         )}
                       >
                         {item.icon && <div className="w-5">{item.icon}</div>}
-                        {item.buttonContent ?? item.name}
+                        {item.name}
                       </button>
                     </div>
                   ))}

@@ -9,7 +9,11 @@ import {
   resolution,
   tradingAllowed,
 } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatPercent,
+} from 'common/util/format'
 import { ReactNode, useState } from 'react'
 import { Button } from '../buttons/button'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -331,14 +335,38 @@ export const MultiSeller = (props: {
         {showPosition && (
           <>
             {' '}
-            <MultiSellCurrentPrice
-              contract={contract}
-              userBets={userBets}
-              answer={answer}
-            />
+            <MultiSellPosition contract={contract} userBets={userBets} />
           </>
         )}
       </button>
+    </>
+  )
+}
+
+export function MultiSellPosition(props: {
+  contract: CPMMMultiContract | CPMMNumericContract
+  userBets: Bet[]
+}) {
+  const { contract, userBets } = props
+  const { totalShares } = getContractBetMetrics(contract, userBets)
+  const yesWinnings = totalShares.YES ?? 0
+  const noWinnings = totalShares.NO ?? 0
+  const position = yesWinnings - noWinnings
+  return (
+    <>
+      {position > 1e-7 ? (
+        <>
+          <span className="font-bold">{formatLargeNumber(position)}</span> YES
+          shares
+        </>
+      ) : position < -1e-7 ? (
+        <>
+          <span className="font-bold">{formatLargeNumber(-position)}</span> NO
+          shares
+        </>
+      ) : (
+        <></>
+      )}
     </>
   )
 }
