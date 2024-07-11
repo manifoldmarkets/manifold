@@ -1,6 +1,8 @@
 import {
   ArrowRightIcon,
+  ChatIcon,
   ChevronDownIcon,
+  DotsVerticalIcon,
   PencilIcon,
   PlusCircleIcon,
   ScaleIcon,
@@ -642,6 +644,32 @@ export function Answer(props: {
               fillColor={barColor}
               feedReason={feedReason}
             />
+            <DropdownMenu
+              icon={<DotsVerticalIcon className="h-5 w-5" aria-hidden />}
+              items={[
+                ...(canEdit && 'poolYes' in answer && !answer.isOther
+                  ? [
+                      {
+                        icon: <PencilIcon className=" h-4 w-4" />,
+                        name: 'Edit',
+                        onClick: () => setEditingAnswer(answer),
+                      },
+                    ]
+                  : []),
+                ...(onCommentClick
+                  ? [
+                      {
+                        icon: <ChatIcon className=" h-4 w-4" />,
+                        name: 'Comment',
+                        onClick: onCommentClick,
+                      },
+                    ]
+                  : []),
+              ]}
+              withinOverflowContainer
+              menuItemsClass="!z-50"
+              className="!z-50"
+            />
           </Row>
         }
       />
@@ -677,7 +705,7 @@ export function Answer(props: {
                   label={
                     <Tooltip
                       text={`Limit orders: ${formatMoney(limitOrderVolume)}`}
-                      placement="top"
+                      placement="bottom"
                       noTap
                       className="hover:text-ink-400 dark:hover:text-ink-600 flex flex-row items-center gap-0.5 transition-colors"
                     >
