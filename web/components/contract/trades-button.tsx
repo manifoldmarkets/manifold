@@ -21,7 +21,6 @@ import { Button, ColorType } from 'web/components/buttons/button'
 import { UserHovercard } from '../user/user-hovercard'
 import { useBountyAwardCount } from 'web/hooks/use-bounties'
 import { FaUser } from 'react-icons/fa6'
-import { shortenNumber } from 'web/lib/util/formatNumber'
 
 export function TradesButton(props: {
   contract: Contract
@@ -34,8 +33,21 @@ export function TradesButton(props: {
 
   const [modalOpen, setModalOpen] = useState<boolean>(false)
 
+  const { uniqueBettorCount: uniqueTraders } = contract
+  const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
+    contract.id,
+    answer?.id
+  )
+  const uniqueBountyRewardCount = useBountyAwardCount(contract)
+
   const isPoll = contract.outcomeType === 'POLL'
   const isBounty = contract.outcomeType === 'BOUNTIED_QUESTION'
+
+  const tradesNumber = isBounty
+    ? uniqueBountyRewardCount
+    : answer
+    ? uniqueAnswerBettorCount
+    : uniqueTraders || ''
 
   const tooltipText = isPoll ? 'Voters' : isBounty ? 'Rewards given' : 'Traders'
 
@@ -57,7 +69,7 @@ export function TradesButton(props: {
           <Tooltip text={tooltipText} placement="top" noTap>
             <Row className="relative items-center gap-1.5 text-sm">
               <UserIcon className="h-5 w-5" />
-              <TradesNumber contract={contract} answer={answer} />
+              {tradesNumber}
             </Row>
           </Tooltip>
         </Button>
@@ -75,89 +87,38 @@ export function TradesButton(props: {
           <Tooltip text={tooltipText} placement="bottom" noTap>
             <Row className="relative items-center gap-0.5">
               <FaUser className=" h-2.5 w-2.5" />
-              <TradesNumber contract={contract} answer={answer} />
+              {tradesNumber}
             </Row>
           </Tooltip>
         </button>
       )}
-      <TradesModal
-        contract={contract}
-        modalOpen={modalOpen}
-        setModalOpen={setModalOpen}
-        answer={answer}
-      />
+      <Modal
+        open={modalOpen}
+        setOpen={setModalOpen}
+        className={clsx(MODAL_CLASS)}
+        size={'lg'}
+      >
+        {modalOpen && (
+          <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
+            {isPoll ? (
+              <VotesModalContent contract={contract} />
+            ) : (
+              <BetsModalContent
+                contract={contract}
+                answerDetails={
+                  answer
+                    ? {
+                        answer,
+                        totalPositions: uniqueAnswerBettorCount,
+                      }
+                    : undefined
+                }
+              />
+            )}
+          </div>
+        )}
+      </Modal>
     </>
-  )
-}
-
-export function TradesNumber(props: {
-  contract: Contract
-  answer?: Answer
-  shorten?: boolean
-}) {
-  const { contract, answer, shorten } = props
-
-  const isBounty = contract.outcomeType === 'BOUNTIED_QUESTION'
-
-  const { uniqueBettorCount: uniqueTraders } = contract
-  const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
-    contract.id,
-    answer?.id
-  )
-  const uniqueBountyRewardCount = useBountyAwardCount(contract)
-  const tradesNumber = isBounty
-    ? uniqueBountyRewardCount
-    : answer
-    ? uniqueAnswerBettorCount
-    : uniqueTraders || ''
-  if (shorten) {
-    return <>{shortenNumber(+tradesNumber)}</>
-  }
-  return <>{tradesNumber}</>
-}
-
-export function TradesModal(props: {
-  contract: Contract
-  modalOpen: boolean
-  answer?: Answer
-  setModalOpen: (open: boolean) => void
-}) {
-  const { contract, modalOpen, setModalOpen, answer } = props
-
-  const isPoll = contract.outcomeType === 'POLL'
-
-  const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
-    contract.id,
-    answer?.id
-  )
-
-  return (
-    <Modal
-      open={modalOpen}
-      setOpen={setModalOpen}
-      className={clsx(MODAL_CLASS)}
-      size={'lg'}
-    >
-      {modalOpen && (
-        <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
-          {isPoll ? (
-            <VotesModalContent contract={contract} />
-          ) : (
-            <BetsModalContent
-              contract={contract}
-              answerDetails={
-                answer
-                  ? {
-                      answer,
-                      totalPositions: uniqueAnswerBettorCount,
-                    }
-                  : undefined
-              }
-            />
-          )}
-        </div>
-      )}
-    </Modal>
   )
 }
 
