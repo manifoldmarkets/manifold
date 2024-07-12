@@ -24,15 +24,16 @@ import {
   answerToRange,
   getMultiNumericAnswerMidpoints,
 } from 'common/multi-numeric'
+import { Pagination } from '../widgets/pagination'
 
 export function ContractBetsTable(props: {
   contract: Contract
   bets: Bet[]
   isYourBets: boolean
   hideRedemptionAndLoanMessages?: boolean
-  truncate?: boolean
+  paginate?: boolean
 }) {
-  const { contract, isYourBets, hideRedemptionAndLoanMessages, truncate } =
+  const { contract, isYourBets, hideRedemptionAndLoanMessages, paginate } =
     props
   const { isResolved, mechanism, outcomeType } = contract
 
@@ -67,10 +68,8 @@ export function ContractBetsTable(props: {
     'desc'
   )
 
-  const [truncated, setTruncated] = useState(truncate ?? false)
-  const truncatedBetCount = 3
-  const moreBetsCount =
-    (isMultiNumber ? groupedBets.length : normalBets.length) - truncatedBetCount
+  const [page, setPage] = useState(0)
+  const betsPerPage = 5
 
   return (
     <div className="overflow-x-auto">
@@ -121,42 +120,35 @@ export function ContractBetsTable(props: {
         </thead>
         <tbody>
           {isMultiNumber
-            ? groupedBets
-                .slice(0, truncated ? truncatedBetCount : undefined)
-                .map((bets) => (
-                  <MultiNumberBetRow
-                    key={bets[0].id}
-                    bets={bets}
-                    contract={contract as CPMMNumericContract}
-                    isYourBet={isYourBets}
-                  />
-                ))
-            : (truncated
-                ? normalBets.slice(0, truncatedBetCount)
+            ? (paginate
+                ? groupedBets.slice(
+                    page * betsPerPage,
+                    (page + 1) * betsPerPage
+                  )
+                : groupedBets
+              ).map((bets) => (
+                <MultiNumberBetRow
+                  key={bets[0].id}
+                  bets={bets}
+                  contract={contract as CPMMNumericContract}
+                  isYourBet={isYourBets}
+                />
+              ))
+            : (paginate
+                ? normalBets.slice(page * betsPerPage, (page + 1) * betsPerPage)
                 : normalBets
               ).map((bet) => (
                 <BetRow key={bet.id} bet={bet} contract={contract} />
               ))}
         </tbody>
       </Table>
-
-      {truncate && moreBetsCount > 0 && (
-        <Button
-          className="w-full"
-          color="gray-white"
-          onClick={() => setTruncated((b) => !b)}
-        >
-          {truncated ? (
-            <>
-              <ChevronDownIcon className="mr-1 h-4 w-4" />{' '}
-              {`Show ${moreBetsCount} more trades`}
-            </>
-          ) : (
-            <>
-              <ChevronUpIcon className="mr-1 h-4 w-4" /> {`Show fewer trades`}
-            </>
-          )}
-        </Button>
+      {paginate && (
+        <Pagination
+          page={page}
+          setPage={setPage}
+          pageSize={betsPerPage}
+          totalItems={isMultiNumber ? groupedBets.length : normalBets.length}
+        />
       )}
     </div>
   )
