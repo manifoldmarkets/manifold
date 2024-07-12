@@ -142,12 +142,14 @@ export function ContractBetsTable(props: {
               ))}
         </tbody>
       </Table>
-      <Pagination
-        page={page}
-        setPage={setPage}
-        pageSize={betsPerPage}
-        totalItems={isMultiNumber ? groupedBets.length : normalBets.length}
-      />
+      {paginate && (
+        <Pagination
+          page={page}
+          setPage={setPage}
+          pageSize={betsPerPage}
+          totalItems={isMultiNumber ? groupedBets.length : normalBets.length}
+        />
+      )}
     </div>
   )
 }

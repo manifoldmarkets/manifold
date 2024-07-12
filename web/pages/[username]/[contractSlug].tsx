@@ -654,7 +654,7 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
   ) as LimitBet[]
 
   return (
-    <Col className="bg-canvas-50 rounded p-4 pb-0">
+    <Col className="bg-canvas-50 rounded px-3 py-4 pb-0">
       {contract.mechanism === 'cpmm-1' && (
         <YourOrders
           contract={contract}
@@ -665,7 +665,7 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
 
       {visibleUserBets.length > 0 && (
         <>
-          <div className="text-ink-700 font-semibold">Your trades</div>
+          <div className="pl-2 font-semibold">Your trades</div>
           <ContractBetsTable
             contract={contract}
             bets={userBets}
