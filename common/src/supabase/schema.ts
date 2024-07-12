@@ -634,13 +634,6 @@ export type Database = {
             foreignKeyName: 'dashboards_creator_id_fkey'
             columns: ['creator_id']
             isOneToOne: false
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
-            isOneToOne: false
             referencedRelation: 'user_referrals'
             referencedColumns: ['id']
           },
@@ -1465,13 +1458,6 @@ export type Database = {
             foreignKeyName: 'market_ads_market_id_fkey'
             columns: ['market_id']
             isOneToOne: false
-            referencedRelation: 'contracts_view'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            isOneToOne: false
             referencedRelation: 'public_contracts'
             referencedColumns: ['id']
           }
@@ -1981,13 +1967,6 @@ export type Database = {
             foreignKeyName: 'reports_content_owner_id_fkey'
             columns: ['content_owner_id']
             isOneToOne: false
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            isOneToOne: false
             referencedRelation: 'user_referrals'
             referencedColumns: ['id']
           },
@@ -2003,13 +1982,6 @@ export type Database = {
             columns: ['content_owner_id']
             isOneToOne: false
             referencedRelation: 'users'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_groups'
             referencedColumns: ['id']
           },
           {
@@ -2839,13 +2811,6 @@ export type Database = {
             foreignKeyName: 'weekly_update_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
             referencedRelation: 'user_referrals'
             referencedColumns: ['id']
           },
@@ -2867,36 +2832,6 @@ export type Database = {
       }
     }
     Views: {
-      contracts_view: {
-        Row: {
-          close_time: number | null
-          created_time: number | null
-          creator_id: string | null
-          id: string | null
-          is_resolved: boolean | null
-          outcome_type: string | null
-          visibility: string | null
-        }
-        Insert: {
-          close_time?: never
-          created_time?: never
-          creator_id?: never
-          id?: string | null
-          is_resolved?: never
-          outcome_type?: never
-          visibility?: never
-        }
-        Update: {
-          close_time?: never
-          created_time?: never
-          creator_id?: never
-          id?: string | null
-          is_resolved?: never
-          outcome_type?: never
-          visibility?: never
-        }
-        Relationships: []
-      }
       group_role: {
         Row: {
           avatar_url: string | null
@@ -2911,66 +2846,6 @@ export type Database = {
           role: string | null
           total_members: number | null
           username: string | null
-        }
-        Relationships: []
-      }
-      public_contract_bets: {
-        Row: {
-          amount: number | null
-          answer_id: string | null
-          bet_id: string | null
-          contract_id: string | null
-          created_time: string | null
-          data: Json | null
-          is_ante: boolean | null
-          is_api: boolean | null
-          is_challenge: boolean | null
-          is_redemption: boolean | null
-          outcome: string | null
-          prob_after: number | null
-          prob_before: number | null
-          shares: number | null
-          updated_time: string | null
-          user_id: string | null
-          visibility: string | null
-        }
-        Insert: {
-          amount?: number | null
-          answer_id?: string | null
-          bet_id?: string | null
-          contract_id?: string | null
-          created_time?: string | null
-          data?: Json | null
-          is_ante?: boolean | null
-          is_api?: boolean | null
-          is_challenge?: boolean | null
-          is_redemption?: boolean | null
-          outcome?: string | null
-          prob_after?: number | null
-          prob_before?: number | null
-          shares?: number | null
-          updated_time?: string | null
-          user_id?: string | null
-          visibility?: string | null
-        }
-        Update: {
-          amount?: number | null
-          answer_id?: string | null
-          bet_id?: string | null
-          contract_id?: string | null
-          created_time?: string | null
-          data?: Json | null
-          is_ante?: boolean | null
-          is_api?: boolean | null
-          is_challenge?: boolean | null
-          is_redemption?: boolean | null
-          outcome?: string | null
-          prob_after?: number | null
-          prob_before?: number | null
-          shares?: number | null
-          updated_time?: string | null
-          user_id?: string | null
-          visibility?: string | null
         }
         Relationships: []
       }
@@ -3070,16 +2945,6 @@ export type Database = {
           unique_bettor_count?: number | null
           view_count?: number | null
           visibility?: string | null
-        }
-        Relationships: []
-      }
-      user_groups: {
-        Row: {
-          avatarurl: string | null
-          groups: string[] | null
-          id: string | null
-          name: string | null
-          username: string | null
         }
         Relationships: []
       }
@@ -3302,7 +3167,12 @@ export type Database = {
         Args: {
           uid: string
         }
-        Returns: Database['public']['CompositeTypes']['group_with_score_and_bet_flag'][]
+        Returns: {
+          id: string
+          data: Json
+          importance_score: number
+          has_bet: boolean
+        }[]
       }
       get_love_question_answers_and_lovers: {
         Args: {
@@ -3824,35 +3694,15 @@ export type Database = {
       status_type: 'new' | 'under review' | 'resolved' | 'needs admin'
     }
     CompositeTypes: {
-      contract_ids: {
-        contract_id: string
-      }
-      contract_score: {
-        contract_id: string
-      }
-      group_with_bet_flag: {
-        id: string
-        data: Json
-        has_bet: boolean
-      }
-      group_with_score_and_bet_flag: {
-        id: string
-        data: Json
-        importance_score: number
-        has_bet: boolean
-      }
-      jsonb_data: {
-        data: Json
-      }
       love_question_with_count_type: {
-        id: number
-        creator_id: string
-        created_time: string
-        question: string
-        importance_score: number
-        answer_type: string
-        multiple_choice_options: Json
-        answer_count: number
+        id: number | null
+        creator_id: string | null
+        created_time: string | null
+        question: string | null
+        importance_score: number | null
+        answer_type: string | null
+        multiple_choice_options: Json | null
+        answer_count: number | null
       }
       other_lover_answers_type: {
         question_id: number | null
