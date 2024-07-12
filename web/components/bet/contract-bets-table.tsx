@@ -1,4 +1,3 @@
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import {
   Contract,
   CPMMNumericContract,
@@ -19,7 +18,6 @@ import { BinaryOutcomeLabel, OutcomeLabel } from 'web/components/outcome-label'
 import { getStonkDisplayShares } from 'common/stonk'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatTimeShort } from 'web/lib/util/time'
-import { Button } from '../buttons/button'
 import {
   answerToRange,
   getMultiNumericAnswerMidpoints,
