@@ -76,7 +76,7 @@ export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
     pk: ['group_id', 'contract_id'],
   },
   private_user_message_channel_members: {
-    pk: ['id'],
+    pk: ['channel_id'],
     ts: (r) => Date.parse(r.created_time),
   },
   private_user_messages: {

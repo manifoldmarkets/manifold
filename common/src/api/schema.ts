@@ -55,6 +55,7 @@ import {
 } from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
+import { PrivateMessageChannel } from 'common/supabase/private-messages'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1244,6 +1245,56 @@ export const API = (_apiTypeCheck = {
       period: z.enum(PERIODS),
     }),
     returns: {} as PortfolioMetrics[],
+  },
+  'get-channel-memberships': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.string().optional(),
+      createdTime: z.string().optional(),
+      limit: z.coerce.number(),
+    }),
+    returns: [] as PrivateMessageChannel[],
+  },
+  'get-channel-members': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelIds: z.array(z.coerce.number()),
+      limit: z.coerce.number(),
+    }),
+    returns: [] as { user_id: string; channel_id: number }[],
+  },
+  'get-channel-messages': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.coerce.number(),
+      limit: z.coerce.number(),
+      id: z.coerce.number().optional(),
+      createdTime: z.string().optional(),
+    }),
+    returns: [] as Row<'private_user_messages'>[],
+  },
+  'get-channel-seen-time': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.coerce.number(),
+    }),
+    returns: {} as { created_time: string },
+  },
+  'set-channel-seen-time': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.coerce.number(),
+    }),
   },
   'get-feed': {
     method: 'GET',

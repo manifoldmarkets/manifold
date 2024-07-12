@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { MANIFOLD_LOVE_LOGO, User } from 'common/user'
+import { User } from 'common/user'
 import { parseJsonContentToText } from 'common/util/parse'
 import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
@@ -18,8 +18,8 @@ import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
-import { Row as rowFor } from 'common/supabase/utils'
 import { BannedBadge } from 'web/components/widgets/user-link'
+import { PrivateMessageChannel } from 'common/supabase/private-messages'
 
 export default function MessagesPage() {
   return (
@@ -33,11 +33,10 @@ export function MessagesContent() {
   useRedirectIfSignedOut()
   const currentUser = useUser()
   const isAuthed = useIsAuthorized()
-  const channels = useNonEmptyPrivateMessageChannels(currentUser?.id, isAuthed)
+  const channels = useNonEmptyPrivateMessageChannels(currentUser?.id)
 
   const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
     currentUser?.id,
-    isAuthed,
     channels
   )
 
@@ -56,13 +55,13 @@ export function MessagesContent() {
         {currentUser &&
           isAuthed &&
           channels.map((channel) => {
-            const userIds = channelIdsToUserIds?.[channel.id]?.map(
+            const userIds = channelIdsToUserIds?.[channel.channel_id]?.map(
               (m) => m.user_id
             )
             if (!userIds) return null
             return (
               <MessageChannelRow
-                key={channel.id}
+                key={channel.channel_id}
                 otherUserIds={userIds}
                 currentUser={currentUser}
                 channel={channel}
@@ -76,28 +75,13 @@ export function MessagesContent() {
 export const MessageChannelRow = (props: {
   otherUserIds: string[]
   currentUser: User
-  channel: rowFor<'private_user_message_channels'>
+  channel: PrivateMessageChannel
 }) => {
   const { otherUserIds, currentUser, channel } = props
-  const channelId = channel.id
-  const otherUsers = channel.title
-    ? [
-        {
-          id: 'manifold',
-          name: 'Manifold',
-          avatarUrl: MANIFOLD_LOVE_LOGO,
-        } as User,
-      ]
-    : // eslint-disable-next-line react-hooks/rules-of-hooks
-      useUsersInStore(otherUserIds, `${channelId}`, 100)
+  const channelId = channel.channel_id
+  const otherUsers = useUsersInStore(otherUserIds, `${channelId}`, 100)
 
-  const messages = useRealtimePrivateMessagesPolling(
-    channelId,
-    true,
-    2000,
-    1,
-    true
-  )
+  const messages = useRealtimePrivateMessagesPolling(channelId, 60000, 1)
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0
@@ -120,19 +104,14 @@ export const MessageChannelRow = (props: {
         <Col className={'w-full'}>
           <Row className={'items-center justify-between'}>
             <span className={'font-semibold'}>
-              {channel.title ? (
-                <span className={'font-semibold'}>{channel.title}</span>
-              ) : (
-                otherUsers && (
-                  <span>
-                    {otherUsers
-                      .map((user) => user.name.split(' ')[0].trim())
-                      .slice(0, 2)
-                      .join(', ')}
-                    {otherUsers.length > 2 &&
-                      ` & ${otherUsers.length - 2} more`}
-                  </span>
-                )
+              {otherUsers && (
+                <span>
+                  {otherUsers
+                    .map((user) => user.name.split(' ')[0].trim())
+                    .slice(0, 2)
+                    .join(', ')}
+                  {otherUsers.length > 2 && ` & ${otherUsers.length - 2} more`}
+                </span>
               )}
               {isBanned && <BannedBadge />}
             </span>

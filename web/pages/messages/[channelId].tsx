@@ -1,13 +1,12 @@
 import { Page } from 'web/components/layout/page'
 import { useRouter } from 'next/router'
 import {
-  useMessagesCount,
   useOtherUserIdsInPrivateMessageChannelIds,
   usePrivateMessageChannel,
   useRealtimePrivateMessagesPolling,
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
-import { MANIFOLD_LOVE_LOGO, User } from 'common/user'
+import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -15,6 +14,7 @@ import { uniq } from 'lodash'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { useTextEditor } from 'web/components/widgets/editor'
 import {
+  api,
   leavePrivateMessageChannel,
   sendUserPrivateMessage,
   updatePrivateMessageChannel,
@@ -26,8 +26,6 @@ import {
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { DAY_MS, YEAR_MS } from 'common/util/time'
-import { Row as rowFor, run } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { BackButton } from 'web/components/contract/back-button'
 import { Row } from 'web/components/layout/row'
@@ -45,7 +43,6 @@ import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
 import { buildArray, filterDefined } from 'common/util/array'
 import { GiSpeakerOff } from 'react-icons/gi'
 import toast from 'react-hot-toast'
-import { Avatar } from 'web/components/widgets/avatar'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { ReplyToUserInfo } from 'web/components/feed/feed-comments'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -53,6 +50,7 @@ import {
   useGroupedMessages,
   usePaginatedScrollingMessages,
 } from 'web/lib/supabase/chat-messages'
+import { PrivateMessageChannel } from 'common/supabase/private-messages'
 
 export default function PrivateMessagesPage() {
   return (
@@ -77,7 +75,7 @@ export function PrivateMessagesContent() {
 
   return (
     <>
-      {user && loaded && accessToChannel?.id == parseInt(channelId) ? (
+      {user && loaded && accessToChannel?.channel_id == parseInt(channelId) ? (
         <PrivateChat channel={accessToChannel} user={user} />
       ) : (
         <LoadingIndicator />
@@ -88,29 +86,25 @@ export function PrivateMessagesContent() {
 
 export const PrivateChat = (props: {
   user: User
-  channel: rowFor<'private_user_message_channels'>
+  channel: PrivateMessageChannel
 }) => {
   const { user, channel } = props
-  const channelId = channel.id
+  const channelId = channel.channel_id
   const isSafari =
     /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
     getNativePlatform().platform === 'ios'
   const isMobile = useIsMobile()
 
-  const totalMessagesToLoad = 500
+  const totalMessagesToLoad = 100
   const realtimeMessages = useRealtimePrivateMessagesPolling(
     channelId,
-    true,
     100,
     totalMessagesToLoad
   )
 
-  const totalMessages = useMessagesCount(true, channelId)
-
   const [showUsers, setShowUsers] = useState(false)
   const channelMemberships = useOtherUserIdsInPrivateMessageChannelIds(
     user.id,
-    true,
     [channel]
   )
   const maxUsersToGet = 100
@@ -130,9 +124,8 @@ export const PrivateChat = (props: {
   )
 
   const usersThatLeft = filterDefined(
-    channelMemberships?.[channelId]
-      ?.filter((membership) => membership.status === 'left')
-      .map((membership) => membership.user_id) ?? []
+    channelMemberships?.[channelId].map((membership) => membership.user_id) ??
+      []
   )
 
   // Note: we may have messages from users not in the channel, e.g. a system message from manifold
@@ -152,9 +145,6 @@ export const PrivateChat = (props: {
   const { topVisibleRef, showMessages, messages, innerDiv, outerDiv } =
     usePaginatedScrollingMessages(realtimeMessages, 200, user?.id)
 
-  const notShowingMessages = realtimeMessages
-    ? Math.max(0, totalMessages - messages.length)
-    : 0
   const editor = useTextEditor({
     key: `private-message-${channelId}-${user.id}`,
     size: 'sm',
@@ -162,7 +152,7 @@ export const PrivateChat = (props: {
   })
 
   useEffect(() => {
-    setAsSeen(user, channelId)
+    setAsSeen(channelId)
   }, [messages.length])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -204,33 +194,24 @@ export const PrivateChat = (props: {
         }
       >
         <BackButton className="self-stretch" />
-        {channel.title ? (
-          <Avatar noLink={true} avatarUrl={MANIFOLD_LOVE_LOGO} size={'md'} />
-        ) : (
-          <MultipleOrSingleAvatars
-            size="sm"
-            spacing={0.5}
-            startLeft={1}
-            avatars={members ?? []}
+        <MultipleOrSingleAvatars
+          size="sm"
+          spacing={0.5}
+          startLeft={1}
+          avatars={members ?? []}
+          onClick={() => setShowUsers(true)}
+        />
+        {members && (
+          <span
+            className={'ml-1 cursor-pointer hover:underline'}
             onClick={() => setShowUsers(true)}
-          />
-        )}
-        {channel.title ? (
-          <span className={'ml-1 font-semibold'}>{channel.title}</span>
-        ) : (
-          members && (
-            <span
-              className={'ml-1 cursor-pointer hover:underline'}
-              onClick={() => setShowUsers(true)}
-            >
-              {members
-                .map((user) => user.name.split(' ')[0].trim())
-                .slice(0, 2)
-                .join(', ')}
-              {members.length > 2 && ` & ${members.length - 2} more`}
-              {usersThatLeft.length > 0 && ` (${usersThatLeft.length} left)`}
-            </span>
-          )
+          >
+            {members
+              .map((user) => user.name.split(' ')[0].trim())
+              .slice(0, 2)
+              .join(', ')}
+            {members.length > 2 && ` & ${members.length - 2} more`}
+          </span>
         )}
         {members?.length == 1 && members[0].isBannedFromPosting && (
           <BannedBadge />
@@ -240,7 +221,7 @@ export const PrivateChat = (props: {
           menuWidth={'w-44'}
           icon={<DotsVerticalIcon className="h-5 w-5" />}
           items={buildArray(
-            !channel.title && {
+            {
               icon: <FaUserFriends className={'h-5 w-5'} />,
               name: 'See members',
               onClick: () => {
@@ -300,18 +281,6 @@ export const PrivateChat = (props: {
                   className={'w-full items-center justify-start gap-2'}
                 >
                   <UserAvatarAndBadge user={user} />
-                  {channelMemberships?.[channelId].map(
-                    (membership) =>
-                      membership.user_id === user.id &&
-                      membership.status === 'left' && (
-                        <span
-                          key={membership.user_id + 'status'}
-                          className={'text-ink-500 text-sm'}
-                        >
-                          (Left)
-                        </span>
-                      )
-                  )}
                 </Row>
               ))}
             </Col>
@@ -338,11 +307,6 @@ export const PrivateChat = (props: {
               <LoadingIndicator />
             ) : (
               <>
-                {notShowingMessages ? (
-                  <Row className=" text-ink-500 items-center justify-center p-2 text-xs italic">
-                    Not showing {notShowingMessages} older messages
-                  </Row>
-                ) : null}
                 <div
                   className={'absolute h-1 '}
                   ref={topVisibleRef}
@@ -415,11 +379,6 @@ export const PrivateChat = (props: {
   )
 }
 
-const setAsSeen = async (user: User, privatechannelId: number) => {
-  return run(
-    db.from('private_user_seen_message_channels').insert({
-      user_id: user.id,
-      channel_id: privatechannelId,
-    })
-  )
+const setAsSeen = async (channelId: number) => {
+  return api('set-channel-seen-time', { channelId })
 }
