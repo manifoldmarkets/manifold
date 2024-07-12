@@ -102,11 +102,12 @@ export async function getTopUserCreators(
   return data
 }
 
-export const getTotalContractsCreated = async (userId: string) => {
+export const getTotalPublicContractsCreated = async (userId: string) => {
   const { count } = await run(
     db
-      .from('public_contracts')
+      .from('contracts')
       .select('*', { head: true, count: 'exact' })
+      .eq('visibility', 'public')
       .eq('creator_id', userId)
   )
   return count
@@ -126,8 +127,9 @@ export const getContractsCreatedProgress = async (
 
   const { count } = await run(
     db
-      .from('public_contracts')
+      .from('contracts')
       .select('*', { head: true, count: 'exact' })
+      .eq('visibility', 'public')
       .eq('creator_id', userId)
       .gte('created_time', startIsoString)
       .lt('created_time', endIsoString)
