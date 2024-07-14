@@ -525,6 +525,84 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_stats: {
+        Row: {
+          activation: number | null
+          active_d1_to_d3: number | null
+          avg_user_actions: number | null
+          bet_amount: number | null
+          bet_count: number | null
+          comment_count: number | null
+          contract_count: number | null
+          d1: number | null
+          d1_bet_3_day_average: number | null
+          d1_bet_average: number | null
+          dau: number | null
+          engaged_users: number | null
+          feed_conversion: number | null
+          m1: number | null
+          mau: number | null
+          nd1: number | null
+          nw1: number | null
+          sales: number | null
+          signups: number | null
+          signups_real: number | null
+          start_date: string
+          w1: number | null
+          wau: number | null
+        }
+        Insert: {
+          activation?: number | null
+          active_d1_to_d3?: number | null
+          avg_user_actions?: number | null
+          bet_amount?: number | null
+          bet_count?: number | null
+          comment_count?: number | null
+          contract_count?: number | null
+          d1?: number | null
+          d1_bet_3_day_average?: number | null
+          d1_bet_average?: number | null
+          dau?: number | null
+          engaged_users?: number | null
+          feed_conversion?: number | null
+          m1?: number | null
+          mau?: number | null
+          nd1?: number | null
+          nw1?: number | null
+          sales?: number | null
+          signups?: number | null
+          signups_real?: number | null
+          start_date: string
+          w1?: number | null
+          wau?: number | null
+        }
+        Update: {
+          activation?: number | null
+          active_d1_to_d3?: number | null
+          avg_user_actions?: number | null
+          bet_amount?: number | null
+          bet_count?: number | null
+          comment_count?: number | null
+          contract_count?: number | null
+          d1?: number | null
+          d1_bet_3_day_average?: number | null
+          d1_bet_average?: number | null
+          dau?: number | null
+          engaged_users?: number | null
+          feed_conversion?: number | null
+          m1?: number | null
+          mau?: number | null
+          nd1?: number | null
+          nw1?: number | null
+          sales?: number | null
+          signups?: number | null
+          signups_real?: number | null
+          start_date?: string
+          w1?: number | null
+          wau?: number | null
+        }
+        Relationships: []
+      }
       dashboard_follows: {
         Row: {
           created_time: string | null
@@ -3110,17 +3188,6 @@ export type Database = {
           contracts: Json
         }[]
       }
-      get_contracts_in_group_slugs: {
-        Args: {
-          contract_ids: string[]
-          group_slugs: string[]
-          ignore_slugs: string[]
-        }
-        Returns: {
-          data: Json
-          importance_score: number
-        }[]
-      }
       get_contracts_in_group_slugs_1: {
         Args: {
           contract_ids: string[]
@@ -3289,17 +3356,6 @@ export type Database = {
         Returns: {
           count: number
           rating: number
-        }[]
-      }
-      get_recently_active_contracts_in_group_slugs: {
-        Args: {
-          group_slugs: string[]
-          ignore_slugs: string[]
-          max: number
-        }
-        Returns: {
-          data: Json
-          importance_score: number
         }[]
       }
       get_recently_active_contracts_in_group_slugs_1: {

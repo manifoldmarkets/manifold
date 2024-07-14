@@ -132,16 +132,14 @@ export function getCurrentUtcTime(): Date {
 
 export const MINUTES_ALLOWED_TO_REFER = 60
 
+// note this is not exactly same as the function for stats page
 export const isUserLikelySpammer = (
   user: Pick<User, 'bio' | 'freeQuestionsCreated'>,
-  hasBet: boolean,
-  hasCreatedDashboard?: boolean
+  hasBet: boolean
 ) => {
   return (
     !hasBet &&
-    ((user.bio ?? '').length > 10 ||
-      (user.freeQuestionsCreated ?? 0) > 0 ||
-      (hasCreatedDashboard ?? false))
+    ((user.bio ?? '').length > 10 || (user.freeQuestionsCreated ?? 0) > 0)
   )
 }
 
