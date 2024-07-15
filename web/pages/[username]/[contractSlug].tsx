@@ -653,6 +653,13 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
     (bet) => bet.userId === user?.id
   ) as LimitBet[]
 
+  if (
+    (userLimitBets.length === 0 || contract.mechanism != 'cpmm-1') &&
+    visibleUserBets.length === 0
+  ) {
+    return null
+  }
+
   return (
     <Col className="bg-canvas-50 rounded px-3 py-4 pb-0">
       {contract.mechanism === 'cpmm-1' && (
