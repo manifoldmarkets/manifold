@@ -10,11 +10,10 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Title } from 'web/components/widgets/title'
 import {
   useHasUnseenPrivateMessage,
-  useNonEmptyPrivateMessageChannels,
-  useOtherUserIdsInPrivateMessageChannelIds,
   useRealtimePrivateMessagesPolling,
+  useSortedPrivateMessageMemberships,
 } from 'web/hooks/use-private-messages'
-import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
@@ -32,12 +31,8 @@ export default function MessagesPage() {
 export function MessagesContent() {
   useRedirectIfSignedOut()
   const currentUser = useUser()
-  const isAuthed = useIsAuthorized()
-  const channels = useNonEmptyPrivateMessageChannels(currentUser?.id)
-
-  const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
-    currentUser?.id,
-    channels
+  const { channels, memberIdsByChannelId } = useSortedPrivateMessageMemberships(
+    currentUser?.id
   )
 
   return (
@@ -47,16 +42,15 @@ export function MessagesContent() {
         <NewMessageButton />
       </Row>
       <Col className={'w-full overflow-hidden'}>
-        {currentUser && isAuthed && channels.length === 0 && (
+        {currentUser && channels && channels.length === 0 && (
           <div className={'text-ink-500 dark:text-ink-600 mt-4 text-center'}>
             You have no messages, yet.
           </div>
         )}
         {currentUser &&
-          isAuthed &&
-          channels.map((channel) => {
-            const userIds = channelIdsToUserIds?.[channel.channel_id]?.map(
-              (m) => m.user_id
+          channels?.map((channel) => {
+            const userIds = memberIdsByChannelId?.[channel.channel_id]?.map(
+              (m) => m
             )
             if (!userIds) return null
             return (
@@ -81,7 +75,7 @@ export const MessageChannelRow = (props: {
   const channelId = channel.channel_id
   const otherUsers = useUsersInStore(otherUserIds, `${channelId}`, 100)
 
-  const messages = useRealtimePrivateMessagesPolling(channelId, 60000, 1)
+  const messages = useRealtimePrivateMessagesPolling(channelId, 10000, 1)
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0

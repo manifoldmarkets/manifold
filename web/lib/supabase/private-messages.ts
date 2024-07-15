@@ -5,7 +5,7 @@ import { api } from 'web/lib/api/api'
 // NOTE: must be authorized (useIsAuthorized) to use this function
 export const getSortedChatMessageChannels = async (
   limit: number,
-  channelId?: string
+  channelId?: number
 ) => {
   return await api('get-channel-memberships', { limit, channelId })
 }
@@ -13,17 +13,6 @@ export const getSortedChatMessageChannels = async (
 export type PrivateMessageMembership = {
   user_id: string
   channel_id: number
-}
-
-// NOTE: must be authorized (useIsAuthorized) to use this function
-export const getOtherUserIdsInPrivateMessageChannelIds = async (
-  channelIds: number[],
-  limit: number
-) => {
-  return await api('get-channel-members', {
-    channelIds,
-    limit,
-  })
 }
 
 // NOTE: must be authorized (useIsAuthorized) to use this function

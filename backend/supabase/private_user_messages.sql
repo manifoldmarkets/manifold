@@ -12,17 +12,6 @@ create table if not exists
 -- Policies
 alter table private_user_messages enable row level security;
 
-drop policy if exists "private read" on private_user_messages;
-
-create policy "private read" on private_user_messages for
-select
-  using (
-    (
-      (firebase_uid () is not null)
-      and can_access_private_messages (channel_id, firebase_uid ())
-    )
-  );
-
 -- Indexes
 drop index if exists private_user_messages_pkey;
 

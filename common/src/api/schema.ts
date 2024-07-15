@@ -1251,21 +1251,15 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: z.object({
-      channelId: z.string().optional(),
+      channelId: z.coerce.number().optional(),
       createdTime: z.string().optional(),
+      lastUpdatedTime: z.string().optional(),
       limit: z.coerce.number(),
     }),
-    returns: [] as PrivateMessageChannel[],
-  },
-  'get-channel-members': {
-    method: 'GET',
-    visibility: 'undocumented',
-    authed: true,
-    props: z.object({
-      channelIds: z.array(z.coerce.number()),
-      limit: z.coerce.number(),
-    }),
-    returns: [] as { user_id: string; channel_id: number }[],
+    returns: {
+      channels: [] as PrivateMessageChannel[],
+      memberIdsByChannelId: {} as { [channelId: string]: string[] },
+    },
   },
   'get-channel-messages': {
     method: 'GET',
@@ -1275,7 +1269,6 @@ export const API = (_apiTypeCheck = {
       channelId: z.coerce.number(),
       limit: z.coerce.number(),
       id: z.coerce.number().optional(),
-      createdTime: z.string().optional(),
     }),
     returns: [] as Row<'private_user_messages'>[],
   },

@@ -1,9 +1,8 @@
 import { Page } from 'web/components/layout/page'
 import { useRouter } from 'next/router'
 import {
-  useOtherUserIdsInPrivateMessageChannelIds,
-  usePrivateMessageChannel,
   useRealtimePrivateMessagesPolling,
+  useSortedPrivateMessageMemberships,
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
@@ -11,7 +10,7 @@ import { useEffect, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { uniq } from 'lodash'
-import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { useTextEditor } from 'web/components/widgets/editor'
 import {
   api,
@@ -53,30 +52,44 @@ import {
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 
 export default function PrivateMessagesPage() {
+  const router = useRouter()
+  const { channelId: channelIdString } = router.query as { channelId: string }
+  const channelId = router.isReady ? parseInt(channelIdString) : undefined
+  const user = useUser()
   return (
     <Page trackPageView={'private messages page'}>
-      <PrivateMessagesContent />
+      {router.isReady && channelId && user ? (
+        <PrivateMessagesContent user={user} channelId={channelId} />
+      ) : (
+        <LoadingIndicator />
+      )}
     </Page>
   )
 }
 
-export function PrivateMessagesContent() {
+export function PrivateMessagesContent(props: {
+  user: User
+  channelId: number
+}) {
   useRedirectIfSignedOut()
-  const router = useRouter()
-  const user = useUser()
-  const isAuthed = useIsAuthorized()
-  const { channelId } = router.query as { channelId: string }
-  const accessToChannel = usePrivateMessageChannel(
-    user?.id,
-    isAuthed,
+
+  const { channelId, user } = props
+  const channelMembership = useSortedPrivateMessageMemberships(
+    user.id,
+    1,
     channelId
   )
-  const loaded = isAuthed && accessToChannel !== undefined && channelId
+  const { channels, memberIdsByChannelId } = channelMembership
+  const thisChannel = channels?.find((c) => c.channel_id == channelId)
+  const loaded = channels !== undefined && channelId
+  const memberIds = thisChannel
+    ? memberIdsByChannelId?.[thisChannel.channel_id]
+    : undefined
 
   return (
     <>
-      {user && loaded && accessToChannel?.channel_id == parseInt(channelId) ? (
-        <PrivateChat channel={accessToChannel} user={user} />
+      {user && loaded && thisChannel && memberIds ? (
+        <PrivateChat channel={thisChannel} user={user} memberIds={memberIds} />
       ) : (
         <LoadingIndicator />
       )}
@@ -87,8 +100,9 @@ export function PrivateMessagesContent() {
 export const PrivateChat = (props: {
   user: User
   channel: PrivateMessageChannel
+  memberIds: string[]
 }) => {
-  const { user, channel } = props
+  const { user, channel, memberIds } = props
   const channelId = channel.channel_id
   const isSafari =
     /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
@@ -103,42 +117,22 @@ export const PrivateChat = (props: {
   )
 
   const [showUsers, setShowUsers] = useState(false)
-  const channelMemberships = useOtherUserIdsInPrivateMessageChannelIds(
-    user.id,
-    [channel]
-  )
   const maxUsersToGet = 100
   const messageUserIds = uniq(
     (realtimeMessages ?? [])
       .filter((message) => message.userId !== user.id)
       .map((message) => message.userId)
   )
-  const membershipUserIds =
-    channelMemberships?.[channelId]?.map((m) => m.user_id) ?? []
-
-  // Prioritize getting users that have messages in the channel
-  const otherUserIds = messageUserIds.concat(
-    membershipUserIds
-      .filter((userId) => !messageUserIds.includes(userId))
-      .slice(0, maxUsersToGet - messageUserIds.length)
-  )
-
-  const usersThatLeft = filterDefined(
-    channelMemberships?.[channelId].map((membership) => membership.user_id) ??
-      []
-  )
 
   // Note: we may have messages from users not in the channel, e.g. a system message from manifold
   const otherUsers = useUsersInStore(
-    otherUserIds,
+    uniq(messageUserIds.concat(memberIds)),
     `${channelId}`,
     maxUsersToGet
   )
-  const remainingUsers = filterDefined(
-    otherUsers?.filter((user) => !usersThatLeft.includes(user.id)) ?? []
-  )
+
   const members = filterDefined(
-    otherUsers?.filter((user) => membershipUserIds.includes(user.id)) ?? []
+    otherUsers?.filter((user) => memberIds.includes(user.id)) ?? []
   )
   const router = useRouter()
 
@@ -344,14 +338,11 @@ export const PrivateChat = (props: {
                         groupedMessages[i - 1]?.[0].userId !==
                         firstMessage.userId
                       }
-                      onReplyClick={
-                        remainingUsers.length > 1
-                          ? (chat) =>
-                              setReplyToUserInfo({
-                                id: chat.userId,
-                                username: otherUser?.username ?? '',
-                              })
-                          : undefined
+                      onReplyClick={(chat) =>
+                        setReplyToUserInfo({
+                          id: chat.userId,
+                          username: otherUser?.username ?? '',
+                        })
                       }
                     />
                   )
