@@ -158,6 +158,7 @@ export const BOT_USERNAMES = [
   'brontobot',
   'OracleBot',
   'spacedroplet',
+  'PV_bot'
 ]
 
 export const MOD_IDS = [
