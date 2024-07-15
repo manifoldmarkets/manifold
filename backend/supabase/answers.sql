@@ -16,7 +16,8 @@ create table if not exists
     text_fts tsvector generated always as (to_tsvector('english'::regconfig, text)) stored,
     prob_change_day numeric default 0,
     prob_change_week numeric default 0,
-    prob_change_month numeric default 0
+    prob_change_month numeric default 0,
+    resolution_time timestamp with time zone
   );
 
 -- Triggers
@@ -45,6 +46,8 @@ begin
         new.prob_change_day := ((new.data) -> 'probChanges'->>'day')::numeric;
         new.prob_change_week := ((new.data) -> 'probChanges'->>'week')::numeric;
         new.prob_change_month := ((new.data) -> 'probChanges'->>'month')::numeric;
+        new.resolution_time :=
+        case when new.data ? 'resolutionTime' then millis_to_ts(((new.data) ->> 'resolutionTime')::bigint) end;
     end if;
     return new;
 end

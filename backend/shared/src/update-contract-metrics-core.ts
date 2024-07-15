@@ -3,7 +3,6 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { log } from 'shared/utils'
-import { Answer } from 'common/answer'
 import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
 import { Contract, CPMM } from 'common/contract'
 import { computeElasticity } from 'common/calculate-metrics'
@@ -11,6 +10,7 @@ import { hasChanges } from 'common/util/object'
 import { chunk, groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { bulkUpdateData } from './supabase/utils'
+import { convertAnswer } from 'common/supabase/contracts'
 
 export async function updateContractMetricsCore() {
   const pg = createSupabaseDirectClient()
@@ -29,11 +29,11 @@ export async function updateContractMetricsCore() {
   for (const contracts of chunks) {
     const contractIds = contracts.map((c) => c.id)
     const answers = await pg.map(
-      `select data
+      `select *
        from answers
        where contract_id = any ($1)`,
       [contractIds],
-      (r) => r.data as Answer
+      convertAnswer
     )
     log(`Loaded ${answers.length} answers.`)
 

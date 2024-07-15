@@ -404,7 +404,7 @@ const getUnresolvedOrRecentlyResolvedBets = async (
     where
       cb.user_id in ($1:list)
       and (c.resolution_time is null or c.resolution_time > $2)
-      and (a is null or millis_to_ts(coalesce(((a.data->'resolutionTime')::bigint),ts_to_millis(now()))) > $2)
+      and (a is null or a.resolution_time > $2)
     order by cb.created_time`,
     [userIds, new Date(since).toISOString()],
     convertBet

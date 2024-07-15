@@ -105,7 +105,7 @@ export const setAdjustProfitFromResolvedMarkets = async (
           and contracts.mechanism!='cpmm-multi-1')
           or
           -- get ucm's for resolved multi market answers
-          (answers.data->'resolutionTime' is not null
+          ( answers.resolution_time is not null
             and ucm.answer_id is not null
             and ucm.profit_adjustment is not null)
         )
