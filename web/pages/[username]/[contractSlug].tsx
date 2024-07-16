@@ -478,7 +478,7 @@ export function ContractPageContent(props: ContractParams) {
 
               {!tradingAllowed(contract) && (
                 <UserBetsSummary
-                  className="border-ink-200 !mb-2 mt-2 "
+                  className="border-ink-200 !mb-2 "
                   contract={contract}
                 />
               )}
@@ -632,7 +632,6 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
   const staticBets = useBetsOnce({
     contractId: contract.id,
     userId: !user ? 'loading' : user.id,
-    filterAntes: true,
     order: 'asc',
   })
 
@@ -653,8 +652,15 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
     (bet) => bet.userId === user?.id
   ) as LimitBet[]
 
+  if (
+    (userLimitBets.length === 0 || contract.mechanism != 'cpmm-1') &&
+    visibleUserBets.length === 0
+  ) {
+    return null
+  }
+
   return (
-    <Col>
+    <Col className="bg-canvas-50 rounded px-3 py-4 pb-0">
       {contract.mechanism === 'cpmm-1' && (
         <YourOrders
           contract={contract}
@@ -665,12 +671,12 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
 
       {visibleUserBets.length > 0 && (
         <>
-          <div className="text-ink-700 text-lg">Your trades</div>
+          <div className="pl-2 font-semibold">Your trades</div>
           <ContractBetsTable
             contract={contract}
             bets={userBets}
             isYourBets
-            truncate
+            paginate
           />
         </>
       )}

@@ -84,7 +84,7 @@ export async function calculateImportanceScore(
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
     select(
-      'where importance_score > $1 or freshness_score > $1 or resolution_time is null'
+      'where importance_score > $1 or freshness_score > $1 or c.resolution_time is null'
     ),
     [MIN_IMPORTANCE_SCORE],
     convertRow

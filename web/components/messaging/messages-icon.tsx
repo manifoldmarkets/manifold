@@ -1,5 +1,5 @@
 import { Row } from 'web/components/layout/row'
-import { useIsAuthorized, usePrivateUser } from 'web/hooks/use-user'
+import { usePrivateUser } from 'web/hooks/use-user'
 import { PrivateUser } from 'common/user'
 import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
 import { BiEnvelope, BiSolidEnvelope } from 'react-icons/bi'
@@ -8,15 +8,13 @@ import clsx from 'clsx'
 export function UnseenMessagesBubble(props: { className?: string }) {
   const { className } = props
   const privateUser = usePrivateUser()
-  const isAuthed = useIsAuthorized()
 
-  if (!privateUser || !isAuthed) {
+  if (!privateUser) {
     return null
   }
   return (
     <InternalUnseenMessagesBubble
       bubbleClassName={clsx('-mr-4', className)}
-      isAuthed={isAuthed}
       privateUser={privateUser}
     />
   )
@@ -29,13 +27,11 @@ export function PrivateMessagesIcon(props: {
 }) {
   const { solid, className, bubbleClassName } = props
   const privateUser = usePrivateUser()
-  const isAuthed = useIsAuthorized()
   const Icon = solid ? BiSolidEnvelope : BiEnvelope
   return (
     <Row className="relative justify-center">
-      {privateUser && isAuthed && (
+      {privateUser && (
         <InternalUnseenMessagesBubble
-          isAuthed={isAuthed}
           bubbleClassName={clsx('-mt-2', bubbleClassName)}
           privateUser={privateUser}
         />
@@ -48,17 +44,12 @@ export function PrivateMessagesIcon(props: {
 // Note: must be authorized to use this component
 function InternalUnseenMessagesBubble(props: {
   privateUser: PrivateUser
-  isAuthed: boolean
   bubbleClassName?: string
   className?: string
 }) {
-  const { privateUser, isAuthed, className, bubbleClassName } = props
-  if (!isAuthed) console.error('must be authorized to use this component')
+  const { privateUser, className, bubbleClassName } = props
 
-  const { unseenMessages } = useUnseenPrivateMessageChannels(
-    privateUser.id,
-    true
-  )
+  const unseenMessages = useUnseenPrivateMessageChannels(privateUser.id)
 
   if (
     unseenMessages.length === 0 ||

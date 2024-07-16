@@ -8,7 +8,7 @@ import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   getCreatorRank,
-  getTotalContractsCreated,
+  getTotalPublicContractsCreated,
 } from 'web/lib/supabase/users'
 import { db } from 'web/lib/supabase/db'
 import { SupabaseSearch } from 'web/components/supabase-search'
@@ -31,7 +31,7 @@ export function UserContractsList(props: {
   const [unresolvedMarkets, setUnresolvedMarkets] = useState<number>(0)
 
   useEffect(() => {
-    getTotalContractsCreated(creator.id).then(setMarketsCreated)
+    getTotalPublicContractsCreated(creator.id).then(setMarketsCreated)
     getCreatorRank(creator.id).then(setCreatorRank)
     getUnresolvedContractsCount(creator.id, db).then((count) =>
       setUnresolvedMarkets(count)

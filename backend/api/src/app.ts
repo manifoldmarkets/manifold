@@ -177,6 +177,13 @@ import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { getMonitorStatus } from 'api/gidx/get-monitor-status'
 import { getBestComments } from 'api/get-best-comments'
 import { recordCommentView } from 'api/record-comment-view'
+import {
+  getChannelMemberships,
+  getChannelMessages,
+  getLastSeenChannelTime,
+  setChannelLastSeenTime,
+} from 'api/get-private-messages'
+import { getNotifications } from 'api/get-notifications'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -186,6 +193,13 @@ function cacheController(policy?: string): RequestHandler {
     next()
   }
 }
+const ignoredEndpoints = [
+  '/get-channel-messages',
+  '/v0/user/by-id/',
+  '/get-channel-memberships',
+  '/v0/get-mod-reports',
+  '/get-channel-seen-time',
+]
 
 const requestMonitoring: RequestHandler = (req, _res, next) => {
   const traceContext = req.get('X-Cloud-Trace-Context')
@@ -195,7 +209,13 @@ const requestMonitoring: RequestHandler = (req, _res, next) => {
   const context = { endpoint: req.path, traceId }
   withMonitoringContext(context, () => {
     const startTs = hrtime.bigint()
-    log(`${req.method} ${req.url}`)
+    const isLocalhost = req.get('host')?.includes('localhost')
+    if (
+      !isLocalhost ||
+      (isLocalhost && !ignoredEndpoints.some((e) => req.path.startsWith(e)))
+    ) {
+      log(`${req.method} ${req.url}`)
+    }
     metrics.inc('http/request_count', { endpoint: req.path })
     next()
     const endTs = hrtime.bigint()
@@ -243,6 +263,11 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
   bets: getBets,
+  'get-notifications': getNotifications,
+  'get-channel-memberships': getChannelMemberships,
+  'get-channel-messages': getChannelMessages,
+  'get-channel-seen-time': getLastSeenChannelTime,
+  'set-channel-seen-time': setChannelLastSeenTime,
   'get-contract': getContract,
   comment: createComment,
   'hide-comment': hideComment,

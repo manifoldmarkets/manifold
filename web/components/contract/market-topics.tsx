@@ -16,6 +16,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { Row } from '../layout/row'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import clsx from 'clsx'
 
 const DashboardLink = (props: {
   dashboard: { slug: string; title: string }
@@ -97,7 +98,10 @@ export function MarketTopics(props: TopicRowProps) {
               e.stopPropagation()
               setOpen(true)
             }}
-            className="hover:bg-ink-400/20 text-ink-500 -ml-2 flex items-center rounded-md px-2 text-xs sm:invisible sm:text-sm sm:group-hover:visible"
+            className={clsx(
+              'hover:bg-ink-400/20 text-ink-500 -ml-2 flex items-center rounded-md text-xs sm:text-sm',
+              topics.length ? 'px-1' : 'px-2'
+            )}
           >
             {topics.length ? (
               <PencilIcon className="h-4 w-4" />

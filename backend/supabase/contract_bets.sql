@@ -12,9 +12,7 @@ create table if not exists
     outcome text,
     prob_before numeric,
     prob_after numeric,
-    is_ante boolean,
     is_redemption boolean,
-    is_challenge boolean,
     visibility text,
     is_api boolean,
     answer_id text,
@@ -49,9 +47,7 @@ begin
         new.outcome := ((new.data) ->> 'outcome');
         new.prob_before := ((new.data) ->> 'probBefore')::numeric;
         new.prob_after := ((new.data) ->> 'probAfter')::numeric;
-        new.is_ante := ((new.data) -> 'isAnte')::boolean;
         new.is_redemption := ((new.data) -> 'isRedemption')::boolean;
-        new.is_challenge := ((new.data) -> 'isChallenge')::boolean;
         new.visibility := ((new.data) ->> 'visibility')::text;
         new.answer_id := ((new.data) ->> 'answerId')::text;
         new.is_api := ((new.data) ->> 'isApi')::boolean;
@@ -94,6 +90,10 @@ create index contract_bets_bet_id on public.contract_bets using btree (bet_id);
 drop index if exists contract_bets_contract_user_id;
 
 create index contract_bets_contract_user_id on public.contract_bets using btree (contract_id, user_id, created_time desc);
+
+drop index if exists contract_bets_user_id_contract_id;
+
+create index contract_bets_user_id_contract_id on public.contract_bets using btree (user_id,contract_id, created_time desc);
 
 drop index if exists contract_bets_created_time;
 

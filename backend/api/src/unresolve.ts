@@ -105,7 +105,7 @@ const verifyUserCanUnresolve = async (
     }
 
     const answerResolutionTime = await pg.oneOrNone(
-      `select data->'resolutionTime' as resolution_time
+      `select ts_to_millis(resolution_time)
          from answers
          where id= $1
          limit 1`,
@@ -258,9 +258,15 @@ const undoResolution = async (
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
     // remove resolutionTime and resolverId from all answers in the contract
-    const newAnswers = await pg.map(
+    await pg.none(
       `update answers
       set data = data - 'resolutionTime' - 'resolverId'
+      where contract_id = $1`,
+      [contractId]
+    )
+    const newAnswers = await pg.map(
+      `update answers
+      set resolution_time = null
       where contract_id = $1
       returning *`,
       [contractId],
