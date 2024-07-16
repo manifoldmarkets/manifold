@@ -32,6 +32,7 @@ import { unfollowTopic } from 'web/lib/supabase/groups'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
 import { removeEmojis } from 'common/util/string'
+import { useHiddenTopics } from 'web/hooks/use-hidden-topics'
 
 const FORCE_SHOW_WELCOME_MODAL = false
 
@@ -426,6 +427,63 @@ function TopicsPage(props: {
     </PillButton>
   )
 
+  const { hideSports, setHideSports, setHidePolitics, hidePolitics } =
+    useHiddenTopics()
+  const politicsGroupIds = getSubtopics('🗳️ Politics')
+    .filter(([_, __, groupId]) => !!groupId)
+    .flatMap(([_, __, groupIds]) => groupIds)
+
+  const sportsGroupIds = getSubtopics('🏟️ Sports')
+    .filter(([_, __, groupId]) => !!groupId)
+    .flatMap(([_, __, groupIds]) => groupIds)
+
+  const selectedPoliticsIds = politicsGroupIds.filter((g) =>
+    selectedTopics.includes(g)
+  )
+  const selectedSportsIds = sportsGroupIds.filter((g) =>
+    selectedTopics.includes(g)
+  )
+
+  useEffect(() => {
+    if (selectedPoliticsIds.length > 0 && hidePolitics) {
+      toggleHideTopics('politics')
+    }
+    if (selectedSportsIds.length > 0 && hideSports) {
+      toggleHideTopics('sports')
+    }
+  }, [selectedTopics])
+
+  const toggleHideTopics = async (type: 'politics' | 'sports') => {
+    const [wasOn, setOn, selectedIds, topicName] =
+      type === 'politics'
+        ? [hidePolitics, setHidePolitics, selectedPoliticsIds, 'Hide politics']
+        : [hideSports, setHideSports, selectedSportsIds, 'Hide sports']
+
+    setOn(!wasOn)
+    track('onboarding select topic', { name: topicName })
+    if (selectedIds.length > 0 && !wasOn) {
+      selectedIds.forEach((g) => selectTopic(g))
+    }
+  }
+
+  const noPoliticsPillButton = (
+    <PillButton
+      selected={hidePolitics}
+      onSelect={() => toggleHideTopics('politics')}
+    >
+      🚫 No politics, please
+    </PillButton>
+  )
+
+  const noSportsPillButton = (
+    <PillButton
+      selected={hideSports}
+      onSelect={() => toggleHideTopics('sports')}
+    >
+      🚫 No sports, please
+    </PillButton>
+  )
+
   return (
     <Col>
       <div className="text-primary-700 mb-6 text-center text-2xl font-normal">
@@ -459,6 +517,8 @@ function TopicsPage(props: {
                 .map(([subtopicWithEmoji, subtopic, groupIds]) => {
                   return pillButton(subtopicWithEmoji, subtopic, groupIds)
                 })}
+              {topic === '🗳️ Politics' && noPoliticsPillButton}
+              {topic === '🏟️ Sports' && noSportsPillButton}
             </Row>
           </Col>
         ))}

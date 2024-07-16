@@ -186,6 +186,20 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   ...HIDE_FROM_NEW_USER_SLUGS,
 ]
 
+export const POLITICS_IDS = [
+  '2wNGnksxJzypXZtiTLNL', // geopolitics
+  'AjxQR8JMpNyDqtiqoA96', // us politics
+  'rr3rBJMwh9PW8hwrgR4J', // presidential elections
+  'aavkiDd6uZggfL3geuV2', // uk politics
+  'OxcXOuxXvwsXtC0Dx5sr', // russia ukraine war
+  'cea99c1c-afb9-49b2-adfa-9be739adce10', // israel-hamas
+  ' 345309ab-caa0-4c2d-8dae-7f55d25e789a', //'democratic-party',
+  'cEzcLXuitr6o4VPI01Q1', //'donald-trump'
+  'EWgcYV1JYWP19dE3BZCb', //'magaland'
+  'UCnpxVUdLOZYgoMsDlHD', //'politics-default',
+  'pYwsGvORZFlcq7QrkI6n', //'the-life-of-biden',
+]
+
 export const getSubtopics = (topic: string) =>
   TOPICS_TO_SUBTOPICS[topic].map(
     (subtopic) =>

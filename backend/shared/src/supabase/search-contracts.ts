@@ -177,7 +177,6 @@ export function getSearchContractSQL(args: {
   uid?: string
   isForYou?: boolean
   searchType: SearchTypes
-  isPolitics?: boolean
   isPrizeMarket?: boolean
   marketTier: TierParamsType
 }) {
@@ -189,7 +188,6 @@ export function getSearchContractSQL(args: {
     groupId,
     creatorId,
     searchType,
-    isPolitics,
     marketTier,
   } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
@@ -227,7 +225,6 @@ export function getSearchContractSQL(args: {
       ),
 
     whereSql,
-    isPolitics && where('is_politics = true'),
     term.length && [
       searchType === 'prefix' &&
         where(

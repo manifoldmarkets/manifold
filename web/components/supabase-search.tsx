@@ -37,6 +37,7 @@ import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
 import { BinaryDigit, TierParamsType } from 'common/tier'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Spacer } from './layout/spacer'
+import { useHiddenTopics } from 'web/hooks/use-hidden-topics'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -158,7 +159,6 @@ export type SupabaseAdditionalFilter = {
   excludeContractIds?: string[]
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
-  isPolitics?: boolean
 }
 
 export type SearchState = {
@@ -257,6 +257,9 @@ export function SupabaseSearch(props: {
   const marketTiers = searchParams[MARKET_TIER_KEY]
   const topicFilter = searchParams[TOPIC_FILTER_KEY]
 
+  const { hideSports, setHideSports, hidePolitics, setHidePolitics } =
+    useHiddenTopics()
+
   const [userResults, setUserResults] = usePersistentInMemoryState<
     FullUser[] | undefined
   >(undefined, `${persistPrefix}-queried-user-results`)
@@ -310,6 +313,8 @@ export function SupabaseSearch(props: {
       forYou,
       marketTiers,
       topicFilter,
+      hideSports,
+      hidePolitics,
     ]
   )
 
@@ -434,6 +439,10 @@ export function SupabaseSearch(props: {
             topicSlug={topicSlug}
             initialTopics={initialTopics}
             isHomePage={persistPrefix === 'search'}
+            hideSports={hideSports}
+            setHideSports={setHideSports}
+            hidePolitics={hidePolitics}
+            setHidePolitics={setHidePolitics}
           />
         )}
       </Col>
@@ -633,7 +642,6 @@ const useContractSearch = (
             ? topicFilter
             : undefined,
         creatorId: additionalFilter?.creatorId,
-        isPolitics: additionalFilter?.isPolitics,
         isPrizeMarket: isPrizeMarketString,
         marketTier,
         forYou,

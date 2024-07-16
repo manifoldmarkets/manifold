@@ -52,7 +52,6 @@ export const searchProps = z
     topicSlug: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
     forYou: z.union([z.literal('1'), z.literal('0')]).default('0'),
     creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
-    isPolitics: z.coerce.boolean().optional(),
     isPrizeMarket: z
       .union([
         z.literal('true'),
@@ -65,5 +64,7 @@ export const searchProps = z
       .string()
       .regex(/^[01]{5}$/)
       .default('00000'),
+    hideSports: z.union([z.literal('1'), z.literal('0')]).default('0'),
+    hidePolitics: z.union([z.literal('1'), z.literal('0')]).default('0'),
   })
   .strict()
