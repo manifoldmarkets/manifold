@@ -41,16 +41,7 @@ if (require.main === module)
       totalBets += bets.length
 
       const trimmedBets = bets.map((bet) => {
-        const {
-          isRedemption,
-          isAnte,
-          visibility,
-          isChallenge,
-          userAvatarUrl,
-          userName,
-          userUsername,
-          ...trimmedBet
-        } = bet as Bet & {
+        const { ...trimmedBet } = bet as Bet & {
           userAvatarUrl: string
           userName: string
           userUsername: string

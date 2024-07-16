@@ -15,7 +15,6 @@ supabase status: columns exist for
   probAfter: number
   isAnte: boolean
   isRedemption: boolean
-  isChallenge: boolean
   visibility: text
 
 any changes to the type of these columns in firestore will require modifying
@@ -45,7 +44,6 @@ export type Bet = {
 
   isAnte: boolean
   isRedemption: boolean
-  isChallenge: boolean
   visibility: Visibility
   /** @deprecated */
   challengeSlug?: string

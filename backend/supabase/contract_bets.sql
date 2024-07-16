@@ -14,7 +14,6 @@ create table if not exists
     prob_after numeric,
     is_ante boolean,
     is_redemption boolean,
-    is_challenge boolean,
     visibility text,
     is_api boolean,
     answer_id text,
@@ -51,7 +50,6 @@ begin
         new.prob_after := ((new.data) ->> 'probAfter')::numeric;
         new.is_ante := ((new.data) -> 'isAnte')::boolean;
         new.is_redemption := ((new.data) -> 'isRedemption')::boolean;
-        new.is_challenge := ((new.data) -> 'isChallenge')::boolean;
         new.visibility := ((new.data) ->> 'visibility')::text;
         new.answer_id := ((new.data) ->> 'answerId')::text;
         new.is_api := ((new.data) ->> 'isApi')::boolean;

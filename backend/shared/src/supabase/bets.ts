@@ -36,7 +36,6 @@ export const getBetsWithFilter = async (
   const {
     contractId,
     userId,
-    filterChallenges,
     filterRedemptions,
     filterAntes,
     afterTime,
@@ -81,8 +80,6 @@ export const getBetsWithFilter = async (
       where(`contract_bets.data->>'replyToCommentId' is not null`),
 
     answerId !== undefined && where('answer_id = ${answerId}', { answerId }),
-
-    filterChallenges && where('is_challenge = false'),
 
     filterRedemptions && where('is_redemption = false'),
 

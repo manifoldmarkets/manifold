@@ -6,10 +6,7 @@ import { noFees } from './fees'
 import { CandidateBet } from './new-bet'
 import { removeUndefinedProps } from './util/object'
 
-type RedeemableBet = Pick<
-  Bet,
-  'outcome' | 'shares' | 'loanAmount'
->
+type RedeemableBet = Pick<Bet, 'outcome' | 'shares' | 'loanAmount'>
 
 export const getBinaryRedeemableAmount = (bets: RedeemableBet[]) => {
   const [yesBets, noBets] = partition(bets, (b) => b.outcome === 'YES')
@@ -45,7 +42,6 @@ export const getRedemptionBets = (
     fees: noFees,
     isAnte: false,
     isRedemption: true,
-    isChallenge: false,
     visibility: contract.visibility,
     answerId,
   })
@@ -61,7 +57,6 @@ export const getRedemptionBets = (
     fees: noFees,
     isAnte: false,
     isRedemption: true,
-    isChallenge: false,
     visibility: contract.visibility,
     answerId,
   })

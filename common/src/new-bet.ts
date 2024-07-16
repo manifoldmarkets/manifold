@@ -371,7 +371,6 @@ export const getBinaryCpmmBetInfo = (
     fees,
     isAnte: false,
     isRedemption: false,
-    isChallenge: false,
     visibility: contract.visibility,
     expiresAt,
   })
@@ -457,7 +456,6 @@ export const getNewMultiCpmmBetInfo = (
     fees,
     isAnte: false,
     isRedemption: false,
-    isChallenge: false,
     visibility: contract.visibility,
     expiresAt,
   })
@@ -575,7 +573,6 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       fees: totalFees,
       isAnte: false,
       isRedemption: false,
-      isChallenge: false,
       visibility: contract.visibility,
       expiresAt,
     })
@@ -609,7 +606,6 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
         fees: totalFees,
         isAnte: false,
         isRedemption: true,
-        isChallenge: false,
         visibility: contract.visibility,
       })
       return {
@@ -665,7 +661,6 @@ export const getBetDownToOneMultiBetInfo = (
       fees: totalFees,
       isAnte: false,
       isRedemption: true,
-      isChallenge: false,
       visibility: contract.visibility,
     })
     return {

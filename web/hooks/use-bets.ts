@@ -24,8 +24,6 @@ export function betShouldBeFiltered(bet: Bet, options?: APIParams<'bets'>) {
     // if beforeTime filter exists, and bet is after that time
     (options.beforeTime !== undefined &&
       bet.createdTime >= options.beforeTime) ||
-    // if challenges filter is true, and bet is a challenge
-    (options.filterChallenges && bet.isChallenge) ||
     // if ante filter is true, and bet is ante
     (options.filterAntes && bet.isAnte) ||
     // if redemption filter is true, and bet is redemption

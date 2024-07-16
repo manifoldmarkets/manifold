@@ -433,7 +433,6 @@ async function convertOtherAnswerShares(
         fees: noFees,
         isAnte: false,
         isRedemption: true,
-        isChallenge: false,
         visibility: bets[0].visibility,
         isApi: false,
       }
@@ -468,7 +467,6 @@ async function convertOtherAnswerShares(
         fees: noFees,
         isAnte: false,
         isRedemption: true,
-        isChallenge: false,
         visibility: bets[0].visibility,
         isApi: false,
       }
@@ -496,7 +494,6 @@ async function convertOtherAnswerShares(
           fees: noFees,
           isAnte: false,
           isRedemption: true,
-          isChallenge: false,
           visibility: bets[0].visibility,
           isApi: false,
         }
