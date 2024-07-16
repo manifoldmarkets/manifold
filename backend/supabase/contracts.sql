@@ -37,7 +37,8 @@ create table if not exists
     view_count bigint default 0,
     is_spice_payout boolean default false,
     unique_bettor_count bigint default 0 not null,
-    tier text
+    tier text,
+    daily_score numeric default 0 not null
   );
 
 -- Triggers
@@ -127,7 +128,7 @@ create index contracts_creator_id on public.contracts using btree (creator_id, c
 
 drop index if exists contracts_daily_score;
 
-create index contracts_daily_score on public.contracts using btree ((((data ->> 'dailyScore'::text))::numeric) desc);
+create index contracts_daily_score on public.contracts using btree (daily_score desc);
 
 drop index if exists contracts_elasticity;
 

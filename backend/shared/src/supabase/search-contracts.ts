@@ -345,7 +345,7 @@ export const sortFields: SortFields = {
     order: 'DESC',
   },
   'daily-score': {
-    sql: "(data->>'dailyScore')::numeric",
+    sql: 'daily_score',
     sortCallback: (c: Contract) => c.dailyScore,
     order: 'DESC',
   },

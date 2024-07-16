@@ -861,15 +861,6 @@ union
 select contract_id
 from your_followed_contracts $function$;
 
-create
-or replace function public.get_your_daily_changed_contracts (uid text, n integer, start integer) returns table (data jsonb, daily_score real) language sql stable parallel SAFE as $function$
-select data,
-  coalesce((data->>'dailyScore')::real, 0.0) as daily_score
-from get_your_contract_ids(uid)
-  left join contracts on contracts.id = contract_id
-where contracts.outcome_type = 'BINARY'
-order by daily_score desc
-limit n offset start $function$;
 
 create
 or replace function public.get_your_recent_contracts (uid text, n integer, start integer) returns table (data jsonb, max_ts bigint) language sql stable parallel SAFE as $function$
