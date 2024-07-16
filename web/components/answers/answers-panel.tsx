@@ -175,6 +175,10 @@ export function AnswersPanel(props: {
     selectedAnswerIds.includes(a.id)
   )
 
+  const [highlightedAnswer, setHighlightedAnswer] = useState<
+    string | undefined
+  >(undefined)
+
   useEffectCheckEquality(() => {
     if (!selectedAnswerIds.length)
       setDefaultAnswerIdsToGraph?.(answersToShow.map((a) => a.id))
@@ -231,8 +235,8 @@ export function AnswersPanel(props: {
         setText={setQuery}
         isSearchOpen={isSearchOpen}
         setIsSearchOpen={setIsSearchOpen}
-        onCreateAnswer={() => {
-          setSort('new')
+        onCreateAnswer={(newAnswer: string) => {
+          // setSort('new')
         }}
       >
         <Row className={'mb-1 items-center gap-4'}>
@@ -283,7 +287,7 @@ export function AnswersPanel(props: {
             )
             .map((selectedAnswer) => (
               <Answer
-                className="border-primary-500 rounded border"
+                className={clsx('border-primary-500 rounded border')}
                 key={selectedAnswer.id}
                 user={user}
                 answer={selectedAnswer}

@@ -20,7 +20,7 @@ export function CreateAnswerCpmmPanel(props: {
   close?: () => void
   placeholder?: string
   autoFocus?: boolean
-  onCreateAnswer?: () => void
+  onCreateAnswer?: (newAnswer: string) => void
 }) {
   const {
     contract,
@@ -48,7 +48,7 @@ export function CreateAnswerCpmmPanel(props: {
         })
       } catch (e) {}
       if (onCreateAnswer) {
-        onCreateAnswer()
+        onCreateAnswer(text)
       }
       setText('')
       setIsSubmitting(false)
@@ -110,7 +110,7 @@ export function SearchCreateAnswerPanel(props: {
   children?: React.ReactNode
   isSearchOpen?: boolean
   setIsSearchOpen?: (isSearchOpen: boolean) => void
-  onCreateAnswer?: () => void
+  onCreateAnswer?: (newAnswer: string) => void
 }) {
   const {
     contract,
