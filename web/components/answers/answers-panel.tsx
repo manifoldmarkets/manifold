@@ -57,10 +57,19 @@ import { Input } from 'web/components/widgets/input'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
 import { Avatar } from 'web/components/widgets/avatar'
-import { TradesButton } from 'web/components/contract/trades-button'
+import {
+  TradesButton,
+  TradesModal,
+  TradesNumber,
+} from 'web/components/contract/trades-button'
 import toast from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { OrderBookButton, YourOrders } from '../bet/order-book'
+import {
+  OrderBookButton,
+  OrderBookPanel,
+  YourOrders,
+  getOrderBookButtonLabel,
+} from '../bet/order-book'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { Tooltip } from '../widgets/tooltip'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
@@ -74,6 +83,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { formatTime } from 'web/lib/util/time'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { UserIcon } from '@heroicons/react/solid'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -573,12 +583,7 @@ export function Answer(props: {
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
-  const isMobile = useIsMobile()
 
-  const limitOrderVolume = useMemo(
-    () => sumBy(unfilledBets, (bet) => bet.orderAmount - bet.amount),
-    [unfilledBets]
-  )
   const yourUnfilledBets = unfilledBets?.filter(
     (bet) => bet.userId === user?.id
   )
@@ -597,6 +602,58 @@ export function Answer(props: {
 
   const userHasLimitOrders =
     shouldShowLimitOrderChart && (yourUnfilledBets ?? []).length > 0
+
+  const limitOrderVolume = useMemo(
+    () => sumBy(unfilledBets, (bet) => bet.orderAmount - bet.amount),
+    [unfilledBets]
+  )
+
+  const [tradesModalOpen, setTradesModalOpen] = useState(false)
+  const [limitBetModalOpen, setLimitBetModalOpen] = useState(false)
+
+  const hasLimitOrders = unfilledBets?.length && limitOrderVolume
+
+  const dropdownItems = [
+    ...(canEdit && 'poolYes' in answer && !answer.isOther
+      ? [
+          {
+            icon: <PencilIcon className=" h-4 w-4" />,
+            name: 'Edit',
+            onClick: () => setEditingAnswer(answer),
+          },
+        ]
+      : []),
+    ...(onCommentClick
+      ? [
+          {
+            icon: <ChatIcon className=" h-4 w-4" />,
+            name: 'Comment',
+            onClick: onCommentClick,
+          },
+        ]
+      : []),
+    {
+      icon: <UserIcon className="h-4 w-4" />,
+      name: 'Trades',
+      buttonContent: (
+        <Row>
+          See <TradesNumber contract={contract} answer={answer} shorten />{' '}
+          traders
+        </Row>
+      ),
+      onClick: () => setTradesModalOpen(true),
+    },
+    ...(hasLimitOrders
+      ? [
+          {
+            icon: <ScaleIcon className="h-4 w-4" />,
+            name: getOrderBookButtonLabel(unfilledBets),
+            onClick: () => setLimitBetModalOpen(true),
+          },
+        ]
+      : []),
+  ]
+
   return (
     <Col className={'full rounded'}>
       <AnswerBar
@@ -643,26 +700,7 @@ export function Answer(props: {
             />
             <DropdownMenu
               icon={<DotsVerticalIcon className="h-5 w-5" aria-hidden />}
-              items={[
-                ...(canEdit && 'poolYes' in answer && !answer.isOther
-                  ? [
-                      {
-                        icon: <PencilIcon className=" h-4 w-4" />,
-                        name: 'Edit',
-                        onClick: () => setEditingAnswer(answer),
-                      },
-                    ]
-                  : []),
-                ...(onCommentClick
-                  ? [
-                      {
-                        icon: <ChatIcon className=" h-4 w-4" />,
-                        name: 'Comment',
-                        onClick: onCommentClick,
-                      },
-                    ]
-                  : []),
-              ]}
+              items={dropdownItems}
               withinOverflowContainer
               menuItemsClass="!z-50"
               className="!z-50"
@@ -674,48 +712,9 @@ export function Answer(props: {
       <Col>
         <Row
           className={
-            'select-none flex-wrap items-center justify-between gap-2 px-3 py-0.5 text-xs'
+            'select-none flex-wrap items-center justify-end gap-2 px-3 py-0.5 text-xs'
           }
         >
-          <Row className="grow-x text-ink-300 dark:text-ink-500/80 items-center gap-1">
-            {'poolYes' in answer && (
-              <>
-                <TradesButton
-                  contract={contract}
-                  answer={answer}
-                  color={'gray-outline'}
-                  size="sm"
-                  className="hover:text-ink-400 dark:hover:text-ink-600 transition-colors"
-                />
-                {'·'}
-              </>
-            )}
-            <Tooltip text={formatTime(answer.createdTime)} placement="bottom">
-              <div>{shortenedFromNow(answer.createdTime)}</div>
-            </Tooltip>
-
-            {unfilledBets?.length && limitOrderVolume ? (
-              <>
-                {'·'}
-                <OrderBookButton
-                  limitBets={unfilledBets}
-                  contract={contract}
-                  answer={answer as Answer}
-                  label={
-                    <Tooltip
-                      text={`Limit orders: ${formatMoney(limitOrderVolume)}`}
-                      placement="bottom"
-                      noTap
-                      className="hover:text-ink-400 dark:hover:text-ink-600 flex flex-row items-center gap-0.5 transition-colors"
-                    >
-                      <ScaleIcon className="h-3 w-3" />
-                      {shortFormatNumber(limitOrderVolume)}
-                    </Tooltip>
-                  }
-                />
-              </>
-            ) : null}
-          </Row>
           <Row className="text-ink-600 gap-1">
             {userHasLimitOrders && (
               <AnswerOrdersButton
@@ -748,6 +747,29 @@ export function Answer(props: {
           color={color}
           user={user}
         />
+      )}
+      <TradesModal
+        contract={contract}
+        modalOpen={tradesModalOpen}
+        setModalOpen={setTradesModalOpen}
+        answer={answer}
+      />
+      {!!hasLimitOrders && (
+        <Modal
+          open={limitBetModalOpen}
+          setOpen={setLimitBetModalOpen}
+          size="md"
+        >
+          <Col className="bg-canvas-0">
+            <OrderBookPanel
+              limitBets={unfilledBets}
+              contract={contract}
+              answer={answer}
+              showTitle
+              expanded
+            />
+          </Col>
+        </Modal>
       )}
     </Col>
   )

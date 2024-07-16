@@ -2,6 +2,7 @@ import { APIError } from 'common/api/utils'
 import { Bet, LimitBet } from 'common/bet'
 import {
   getAnswerProbability,
+  getContractBetMetrics,
   getInvested,
   getProbability,
 } from 'common/calculate'
@@ -381,7 +382,7 @@ const getSaleResult = (
   }
 }
 
-const getSaleResultMultiSumsToOne = (
+export const getSaleResultMultiSumsToOne = (
   contract: CPMMMultiContract | CPMMNumericContract,
   answerId: string,
   shares: number,
@@ -420,4 +421,68 @@ const getSaleResultMultiSumsToOne = (
     probChange,
     fees,
   }
+}
+
+export function MultiSellerPosition(props: {
+  contract: CPMMMultiContract | CPMMNumericContract
+  userBets: Bet[]
+}) {
+  const { contract, userBets } = props
+  const { totalShares } = getContractBetMetrics(contract, userBets)
+  const yesWinnings = totalShares.YES ?? 0
+  const noWinnings = totalShares.NO ?? 0
+  const position = yesWinnings - noWinnings
+
+  if (position > 1e-7) {
+    return <>YES</>
+  }
+  return <>NO</>
+}
+
+export function MultiSellerProfit(props: {
+  contract: CPMMMultiContract | CPMMNumericContract
+  userBets: Bet[]
+  answer: Answer
+}) {
+  const { contract, userBets, answer } = props
+  const { id: answerId } = answer
+  const { outcomeType } = contract
+  const isMultiSumsToOne =
+    (outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne) ||
+    outcomeType === 'NUMBER'
+  const sharesSum = sumBy(userBets, (bet) =>
+    bet.outcome === 'YES' ? bet.shares : -bet.shares
+  )
+  const sharesOutcome = sharesSum > 0 ? 'YES' : 'NO'
+
+  const { unfilledBets: allUnfilledBets, balanceByUserId } =
+    useUnfilledBetsAndBalanceByUserId(contract.id)
+
+  const unfilledBets = allUnfilledBets.filter((b) => b.answerId === answerId)
+
+  let saleValue: number
+
+  if (isMultiSumsToOne) {
+    ;({ saleValue } = getSaleResultMultiSumsToOne(
+      contract,
+      answerId,
+      Math.abs(sharesSum),
+      sharesOutcome,
+      unfilledBets,
+      balanceByUserId
+    ))
+  } else {
+    ;({ saleValue } = getSaleResult(
+      contract,
+      Math.abs(sharesSum),
+      sharesOutcome,
+      unfilledBets,
+      balanceByUserId,
+      answer
+    ))
+  }
+
+  const invested = getInvested(contract, userBets)
+
+  return <>{formatMoney(saleValue - invested)}</>
 }
