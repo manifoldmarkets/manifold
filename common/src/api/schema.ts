@@ -56,6 +56,7 @@ import {
 
 import { notification_preference } from 'common/user-notification-preferences'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
+import { Notification } from 'common/notification'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1316,6 +1317,17 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as ManaSupply,
     props: z.object({}).strict(),
+  },
+  'get-notifications': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as Notification[],
+    props: z
+      .object({
+        limit: z.coerce.number().gte(0).lte(1000).default(100),
+      })
+      .strict(),
   },
   'update-mod-report': {
     method: 'POST',

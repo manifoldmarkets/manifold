@@ -51,9 +51,6 @@ alter publication supabase_realtime
 add table group_members;
 
 alter publication supabase_realtime
-add table user_notifications;
-
-alter publication supabase_realtime
 add table user_follows;
 
 alter publication supabase_realtime

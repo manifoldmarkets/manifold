@@ -20,21 +20,10 @@ drop index if exists user_notifications_pkey;
 
 create unique index user_notifications_pkey on public.user_notifications using btree (user_id, notification_id);
 
-drop index if exists user_notifications_created_time;
-
-create index user_notifications_created_time on public.user_notifications using btree (
-  user_id,
-  ((to_jsonb(data) -> 'createdTime'::text)) desc
-);
-
 drop index if exists user_notifications_notification_id;
 
 create index user_notifications_notification_id on public.user_notifications using btree (notification_id, user_id);
 
-drop index if exists user_notifications_unseen_text_created_time_idx;
+drop index if exists user_notifications_user_id_created_time;
 
-create index user_notifications_unseen_text_created_time_idx on public.user_notifications using btree (
-  user_id,
-  ((data ->> 'isSeen'::text)),
-  (((data -> 'createdTime'::text))::bigint) desc
-);
+create index user_notifications_user_id_created_time on user_notifications(user_id, ((data->'createdTime')::bigint) desc);

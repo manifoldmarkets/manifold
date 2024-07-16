@@ -183,6 +183,7 @@ import {
   getLastSeenChannelTime,
   setChannelLastSeenTime,
 } from 'api/get-private-messages'
+import { getNotifications } from 'api/get-notifications'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -262,6 +263,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
   bets: getBets,
+  'get-notifications': getNotifications,
   'get-channel-memberships': getChannelMemberships,
   'get-channel-messages': getChannelMessages,
   'get-channel-seen-time': getLastSeenChannelTime,
