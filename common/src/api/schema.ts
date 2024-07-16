@@ -34,7 +34,7 @@ import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { Dashboard } from 'common/dashboard'
-import { ChatMessage } from 'common/chat-message'
+import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
 import { PrivateUser, User } from 'common/user'
 import { ManaSupply } from 'common/stats'
 import { Repost } from 'common/repost'
@@ -1269,7 +1269,7 @@ export const API = (_apiTypeCheck = {
       limit: z.coerce.number(),
       id: z.coerce.number().optional(),
     }),
-    returns: [] as Row<'private_user_messages'>[],
+    returns: [] as PrivateChatMessage[],
   },
   'get-channel-seen-time': {
     method: 'GET',

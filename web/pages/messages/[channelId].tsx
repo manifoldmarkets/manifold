@@ -1,7 +1,7 @@
 import { Page } from 'web/components/layout/page'
 import { useRouter } from 'next/router'
 import {
-  useRealtimePrivateMessagesPolling,
+  usePrivateMessages,
   useSortedPrivateMessageMemberships,
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
@@ -50,6 +50,7 @@ import {
   usePaginatedScrollingMessages,
 } from 'web/lib/supabase/chat-messages'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
+import { ChatMessage } from 'common/chat-message'
 
 export default function PrivateMessagesPage() {
   const router = useRouter()
@@ -110,10 +111,10 @@ export const PrivateChat = (props: {
   const isMobile = useIsMobile()
 
   const totalMessagesToLoad = 100
-  const realtimeMessages = useRealtimePrivateMessagesPolling(
+  const realtimeMessages = usePrivateMessages(
     channelId,
-    100,
-    totalMessagesToLoad
+    totalMessagesToLoad,
+    user.id
   )
 
   const [showUsers, setShowUsers] = useState(false)
@@ -137,7 +138,17 @@ export const PrivateChat = (props: {
   const router = useRouter()
 
   const { topVisibleRef, showMessages, messages, innerDiv, outerDiv } =
-    usePaginatedScrollingMessages(realtimeMessages, 200, user?.id)
+    usePaginatedScrollingMessages(
+      realtimeMessages?.map(
+        (m) =>
+          ({
+            ...m,
+            id: m.id.toString(),
+          } as ChatMessage)
+      ),
+      200,
+      user?.id
+    )
 
   const editor = useTextEditor({
     key: `private-message-${channelId}-${user.id}`,

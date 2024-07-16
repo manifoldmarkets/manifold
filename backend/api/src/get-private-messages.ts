@@ -1,7 +1,9 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from './helpers/endpoint'
-import { PrivateMessageChannel } from 'common/supabase/private-messages'
-import { Row } from 'common/supabase/utils'
+import {
+  convertPrivateChatMessage,
+  PrivateMessageChannel,
+} from 'common/supabase/private-messages'
 import { groupBy, mapValues } from 'lodash'
 
 export const getChannelMemberships: APIHandler<
@@ -101,7 +103,7 @@ export const getChannelMessages: APIHandler<'get-channel-messages'> = async (
        limit $3
       `,
     [channelId, auth.uid, limit, id],
-    (r) => r as Row<'private_user_messages'>
+    convertPrivateChatMessage
   )
 }
 

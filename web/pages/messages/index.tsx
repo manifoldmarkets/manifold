@@ -10,7 +10,7 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Title } from 'web/components/widgets/title'
 import {
   useHasUnseenPrivateMessage,
-  useRealtimePrivateMessagesPolling,
+  usePrivateMessages,
   useSortedPrivateMessageMemberships,
 } from 'web/hooks/use-private-messages'
 import { useUser } from 'web/hooks/use-user'
@@ -75,7 +75,7 @@ export const MessageChannelRow = (props: {
   const channelId = channel.channel_id
   const otherUsers = useUsersInStore(otherUserIds, `${channelId}`, 100)
 
-  const messages = useRealtimePrivateMessagesPolling(channelId, 10000, 1)
+  const messages = usePrivateMessages(channelId, 1, currentUser.id)
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0

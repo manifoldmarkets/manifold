@@ -1,62 +1,76 @@
-import { ChatMessage } from 'common/chat-message'
-import { millisToTs, Row, tsToMillis } from 'common/supabase/utils'
+import { PrivateChatMessage } from 'common/chat-message'
+import { millisToTs, tsToMillis } from 'common/supabase/utils'
 import { useEffect } from 'react'
-import { first, last, orderBy, sortBy, uniq } from 'lodash'
+import { first, orderBy, uniq, uniqBy } from 'lodash'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
   getSortedChatMessageChannels,
   getTotalChatMessages,
 } from 'web/lib/supabase/private-messages'
-import { usePersistentApiPolling } from 'web/hooks/use-persistent-supabase-polling'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { track } from 'web/lib/service/analytics'
 import { usePathname } from 'next/navigation'
 import { api } from 'web/lib/api/api'
-import {
-  convertChatMessage,
-  PrivateMessageChannel,
-} from 'common/supabase/private-messages'
+import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useApiSubscription } from 'web/hooks/use-api-subscription'
 
-// NOTE: must be authorized (useIsAuthorized) to use this hook
-export function useRealtimePrivateMessagesPolling(
+export function usePrivateMessages(
   channelId: number,
-  ms: number,
-  initialLimit = 50
+  limit: number,
+  userId: string
 ) {
-  const allRowsQ = api('get-channel-messages', {
-    channelId,
-    limit: initialLimit,
-  }) as any
-  const newRowsOnlyQ = (rows: Row<'private_user_messages'>[] | undefined) => {
-    const latest = last(sortBy(rows, 'created_time'))
-    return api('get-channel-messages', {
-      id: latest?.id,
-      channelId,
-      limit: 100,
-    }) as any
-  }
-
-  const results = usePersistentApiPolling(
-    'private_user_messages',
-    allRowsQ,
-    newRowsOnlyQ,
-    `private-messages-${channelId}-${ms}ms-${initialLimit}limit-v1`,
-    {
-      ms,
-      deps: [channelId],
-      shouldUseLocalStorage: true,
-    }
+  const [messages, setMessages] = usePersistentLocalState<
+    PrivateChatMessage[] | undefined
+  >(undefined, `private-messages-${channelId}-${limit}-v1`)
+  const [newestId, setNewestId] = usePersistentLocalState<number | undefined>(
+    undefined,
+    `private-message-newest-id-${channelId}`
   )
-  return results
-    ? orderBy(results.map(convertChatMessage), 'createdTime', 'desc')
-    : undefined
+  const fetchMessages = async () => {
+    if (messages === undefined) {
+      const initialMessages = await api('get-channel-messages', {
+        channelId,
+        limit,
+      })
+      setMessages(initialMessages)
+      setNewestId(initialMessages[0]?.id)
+    } else if (newestId !== undefined) {
+      const newMessages = await api('get-channel-messages', {
+        channelId,
+        limit,
+        id: newestId,
+      })
+      setMessages((prevMessages) =>
+        orderBy(
+          uniqBy([...newMessages, ...(prevMessages ?? [])], (m) => m.id),
+          'createdTime',
+          'desc'
+        )
+      )
+      if (newMessages.length > 0 && newMessages[0].id !== newestId) {
+        setNewestId(newMessages[0].id)
+      }
+    }
+  }
+  useEffect(() => {
+    fetchMessages()
+  }, [channelId, limit, messages?.length, newestId])
+
+  useApiSubscription({
+    topics: ['private-user-messages/' + userId],
+    onBroadcast: () => {
+      fetchMessages()
+    },
+  })
+
+  return messages
 }
 
 export const useHasUnseenPrivateMessage = (
   userId: string,
   channelId: number,
-  chats: ChatMessage[] | undefined
+  chats: PrivateChatMessage[] | undefined
 ) => {
   const [lastSeenChatTime, setLastSeenChatTime] = usePersistentLocalState<
     number | undefined
