@@ -26,7 +26,7 @@ export function FilterPill(props: {
   onSelect: () => void
   className?: string
   children: ReactNode
-  type: 'filter' | 'sort' | 'contractType' | 'spice'
+  type?: 'spice'
 }) {
   const { children, selected, onSelect, className, type } = props
 
@@ -213,7 +213,7 @@ export function TopicDropdownPill(props: {
     (topic) => topic.slug == currentTopicFilter
   )?.name
   const currentTopicLabel = forYou
-    ? 'For You'
+    ? 'Your topics'
     : currentTopicInInitialTopicsName ?? 'All Topics'
 
   const selectTopicFilter = (selection: string) => {
@@ -229,7 +229,7 @@ export function TopicDropdownPill(props: {
 
   const forYouItem = user
     ? {
-        name: 'For You',
+        name: 'Your topics',
         onClick: () =>
           updateParams({
             [FOR_YOU_KEY]: '1',

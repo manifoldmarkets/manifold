@@ -1,6 +1,8 @@
 # scripts
 
-Any code that people have found it convenient to write and run against our backend stuff.
+Migrations, analytics, or any handy scripts that use our backend or library code.
+
+We do _not_ update scripts to stay in line with changes in their dependencies or with the db schema. Scripts just mean "I ran this about when I checked it into git." This also means you likely can't typescript build the whole project.
 
 ## Set up
 
@@ -15,12 +17,10 @@ import { runScript } from 'run-script'
 import { DAY_MS } from 'common/util/time'
 import { getRecentContractLikes } from 'shared/supabase/likes'
 
-if (require.main === module) {
-  runScript(async ({ db }) => {
-    const weekAgo = Date.now() - 7 * DAY_MS
-    console.log(await getRecentContractLikes(db, weekAgo))
-  })
-}
+runScript(async ({ db }) => {
+  const weekAgo = Date.now() - 7 * DAY_MS
+  console.log(await getRecentContractLikes(db, weekAgo))
+})
 ```
 
 ## Running a script
@@ -36,12 +36,6 @@ Use [ts-node](https://www.npmjs.com/package/ts-node) to run whatever you want:
 ```shell
 $ cd backend/scripts
 $ ts-node script.ts
-```
-
-Or if you don't want to use `ts-node` you can compile and run them with Node:
-
-```shell
-$ yarn build && node lib/script.js
 ```
 
 ### Environment variables

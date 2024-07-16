@@ -1,7 +1,30 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { chunk } from 'lodash'
+import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
+import { log } from 'shared/utils'
 
-export const getManaSupply = async () => {
+export const getManaSupply = async (recalculateAllUserPortfolios: boolean) => {
   const pg = createSupabaseDirectClient()
+  if (recalculateAllUserPortfolios) {
+    const allBetUserIds = await pg.map(
+      `
+          select distinct u.id from users u
+           join user_contract_metrics ucm on u.id = ucm.user_id
+           join contracts c on ucm.contract_id = c.id
+          where u.data->'lastBetTime' is not null
+          and c.resolution_time is null;
+      `,
+      [],
+      (r) => r.id as string
+    )
+    const chunks = chunk(allBetUserIds, 1000)
+    let processed = 0
+    for (const userIds of chunks) {
+      await updateUserMetricsCore(userIds)
+      processed += userIds.length
+      log(`Processed ${processed} of ${allBetUserIds.length} users`)
+    }
+  }
   const userPortfolio = await pg.one(
     `
       select

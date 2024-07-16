@@ -15,8 +15,12 @@ import { PrivateUser, User } from 'common/user'
 import { useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
 import { api } from 'web/lib/api/api'
+import { DeleteYourselfButton } from './delete-yourself'
 
-export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
+export const AccountSettings = (props: {
+  user: User
+  privateUser: PrivateUser
+}) => {
   const { user, privateUser } = props
 
   const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
@@ -35,19 +39,7 @@ export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
   }
 
   return (
-    <Col className="gap-2">
-      <div>
-        <label className="mb-1 block">
-          Advanced trader mode <InfoTooltip text={'More advanced betting UI'} />
-        </label>
-        <ShortToggle
-          on={advancedTraderMode}
-          setOn={(enabled) => {
-            setAdvancedTraderMode(enabled)
-            api('me/update', { isAdvancedTrader: enabled })
-          }}
-        />
-      </div>
+    <Col className="gap-5">
       <div>
         <label className="mb-1 block">
           Bet warnings{' '}
@@ -67,6 +59,13 @@ export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
       </div>
 
       <div>
+        <label className="mb-1 block">Notifications & Emails </label>
+        <Link href="/notifications?tab=settings">
+          <Button>Edit settings</Button>
+        </Link>
+      </div>
+
+      <div>
         <label className="mb-1 block">API key</label>
         <Row className="items-stretch gap-3">
           <Input
@@ -76,6 +75,7 @@ export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
             readOnly
             className={'w-24'}
           />
+
           <Button
             color={'indigo'}
             onClick={() => {
@@ -114,6 +114,12 @@ export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
             </Col>
           </ConfirmationButton>
         </Row>
+      </div>
+      <div>
+        <label className="mb-1 block">Delete Account </label>
+        <div className="flex  items-center  ">
+          <DeleteYourselfButton username={user.username} />
+        </div>
       </div>
     </Col>
   )

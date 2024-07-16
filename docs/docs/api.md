@@ -79,12 +79,13 @@ Feel free to use the API for any purpose you'd like. There is a rate limit of 10
 
 ## Trade history dumps
 
-For data analysis and backtesting purposes, you can bulk download all markets and bets/trades on the platform.
+For data analysis and backtesting purposes, you can bulk download all markets and bets/trades on the platform since December 2021.
 
-- [Markets dump 2023-08-04](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-dump-markets-04082023.json.zip?alt=media&token=7e18a376-6ac3-4d66-a9a0-552b967f2fe8) (10MB)
-- [Bets dump 2024-07-04](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-dump-bets-04072024.json.zip?alt=media&token=5ff8fd10-8079-4570-9728-7d0be1d4a463) (967MB)
+- [Bets data 2024-07-04](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-dump-bets-04072024.json.zip?alt=media&token=5ff8fd10-8079-4570-9728-7d0be1d4a463) (967MB)
+- [Markets data 2024-07-06](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-contracts-20240706.json.zip?alt=media&token=ca3ef6b6-fe61-41b4-a789-dcc2d4ea4421) (87MB)
+- [Comments data 2024-07-06](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-comments-20240706.json.zip?alt=media&token=08f9a2b1-534a-493d-bb01-77cf1f54b9f3) (127MB)
 
-Dumps last updated: August 8, 2023
+Data dumps last updated: July 6, 2024
 
 ## Useful resources
 

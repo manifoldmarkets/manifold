@@ -31,7 +31,6 @@ const ENDPOINT =
 export const register: APIHandler<'register-gidx'> = async (
   props,
   auth,
-  req
 ) => {
   if (!GIDX_REGISTATION_ENABLED)
     throw new APIError(400, 'GIDX registration is disabled')

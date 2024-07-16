@@ -1,7 +1,7 @@
 import { uniq, uniqBy, sortBy } from 'lodash'
 import { useEffect } from 'react'
 
-import { Bet, BetFilter, LimitBet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useApiSubscription } from './use-api-subscription'
@@ -10,7 +10,7 @@ import { api } from 'web/lib/api/api'
 import { APIParams } from 'common/api/schema'
 import { useIsPageVisible } from './use-page-visible'
 
-export function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
+export function betShouldBeFiltered(bet: Bet, options?: APIParams<'bets'>) {
   if (!options) {
     return false
   }
@@ -24,14 +24,11 @@ export function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
     // if beforeTime filter exists, and bet is after that time
     (options.beforeTime !== undefined &&
       bet.createdTime >= options.beforeTime) ||
-    // if challenges filter is true, and bet is a challenge
-    (options.filterChallenges && bet.isChallenge) ||
-    // if ante filter is true, and bet is ante
-    (options.filterAntes && bet.isAnte) ||
     // if redemption filter is true, and bet is redemption
     (options.filterRedemptions && bet.isRedemption) ||
-    // if isOpenlimitOrder filter exists, and bet is not filled/cancelled
-    (options.isOpenLimitOrder && (bet.isFilled || bet.isCancelled))
+    // if open-limit kind exists, and bet is not filled/cancelled
+    (options.kinds === 'open-limit' && (bet.isFilled || bet.isCancelled))
+
   return shouldBeFiltered
 }
 
@@ -92,7 +89,7 @@ export const useContractBets = (
   return newBets
 }
 
-export const useSubscribeGlobalBets = (options?: BetFilter) => {
+export const useSubscribeGlobalBets = (options?: APIParams<'bets'>) => {
   const [newBets, setNewBets] = usePersistentInMemoryState<Bet[]>(
     [],
     'global-new-bets'

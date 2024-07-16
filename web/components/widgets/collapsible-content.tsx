@@ -55,7 +55,6 @@ export function CollapsibleContent(props: {
   const {
     content,
     mediaSize,
-    collapseLines,
     stateKey,
     defaultCollapse,
     hideCollapse,
@@ -79,7 +78,6 @@ export function CollapsibleContent(props: {
         mediaSize={mediaSize}
         stateKey={stateKey}
         defaultCollapse={defaultCollapse}
-        collapseLines={collapseLines}
         showMorePlacement={showMorePlacement}
       />
     )
@@ -98,16 +96,9 @@ function ActuallyCollapsibleContent(props: {
   showMorePlacement: 'top' | 'bottom'
   mediaSize?: 'sm' | 'md' | 'lg'
   defaultCollapse?: boolean
-  collapseLines?: number
 }) {
-  const {
-    content,
-    collapseLines = 3,
-    mediaSize,
-    stateKey,
-    defaultCollapse,
-    showMorePlacement,
-  } = props
+  const { content, mediaSize, stateKey, defaultCollapse, showMorePlacement } =
+    props
   const [isCollapsed, setCollapsed] = usePersistentLocalState<boolean>(
     defaultCollapse ?? false,
     stateKey
@@ -119,7 +110,7 @@ function ActuallyCollapsibleContent(props: {
   return (
     <div>
       <div
-        style={{ height: isCollapsed ? LINE_HEIGHT * collapseLines : 'auto' }}
+        style={{ height: isCollapsed ? SHOW_COLLAPSE_TRESHOLD : 'auto' }}
         className="relative w-full overflow-hidden"
       >
         {showMorePlacement === 'top' && (

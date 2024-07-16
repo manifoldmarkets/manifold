@@ -3,10 +3,9 @@ import {
   ChatAlt2Icon,
   ScaleIcon,
   PresentationChartLineIcon,
-  ViewListIcon,
   ChevronDownIcon,
+  ViewListIcon,
 } from '@heroicons/react/outline'
-import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { removeUndefinedProps } from 'common/util/object'
@@ -62,8 +61,6 @@ import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { shouldIgnoreUserPage } from 'common/user'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
 import { isBetChange } from 'common/balance-change'
-import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
-import { buttonClass } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { buildArray } from 'common/util/array'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
@@ -73,6 +70,7 @@ import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number
 import { FaCrown } from 'react-icons/fa6'
 import { getUserForStaticProps } from 'common/supabase/users'
 import { VerifyMe } from 'web/components/gidx/verify-me'
+import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
 
 export const getStaticProps = async (props: {
   params: {
@@ -82,7 +80,10 @@ export const getStaticProps = async (props: {
   const { username } = props.params
 
   const user = await getUserForStaticProps(db, username)
-
+  const { data } = user
+    ? await db.from('contracts').select('id').eq('creator_id', user.id).limit(1)
+    : { data: null }
+  const hasCreatedQuestion = data?.length
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
   const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user, db) : false
@@ -95,6 +96,7 @@ export const getStaticProps = async (props: {
       reviewCount: count,
       averageRating: averageRating,
       shouldIgnoreUser,
+      hasCreatedQuestion,
     }),
     revalidate: 60,
   }
@@ -111,6 +113,7 @@ export default function UserPage(props: {
   reviewCount?: number
   averageRating?: number
   shouldIgnoreUser: boolean
+  hasCreatedQuestion: boolean
 }) {
   const isAdmin = useAdmin()
   const { user, ...profileProps } = props
@@ -147,22 +150,19 @@ function UserProfile(props: {
   reviewCount?: number
   averageRating?: number
   shouldIgnoreUser: boolean
+  hasCreatedQuestion: boolean
 }) {
-  const { rating, shouldIgnoreUser, reviewCount, averageRating } = props
+  const {
+    rating,
+    hasCreatedQuestion,
+    shouldIgnoreUser,
+    reviewCount,
+    averageRating,
+  } = props
   const user = useWebsocketUser(props.user.id) ?? props.user
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
-
-  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
-    userId: user.id,
-    after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
-  })
-  // TODO: paginate
-
-  const balanceChanges = newBalanceChanges ?? []
-  const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
-  const balanceChangesKey = 'balance-changes'
 
   useSaveReferral(currentUser, {
     defaultReferrerUsername: user?.username,
@@ -207,6 +207,15 @@ function UserProfile(props: {
         })
     }
   }, [currentUser?.id, user?.id])
+
+  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
+    userId: user.id,
+    after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
+  })
+
+  const balanceChanges = newBalanceChanges ?? []
+  const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
+  const balanceChangesKey = 'balance-changes'
 
   return (
     <Page
@@ -381,8 +390,7 @@ function UserProfile(props: {
                   </>
                 ),
               },
-              (user.creatorTraders.allTime > 0 ||
-                (user.freeQuestionsCreated ?? 0) > 0) && {
+              hasCreatedQuestion && {
                 title: 'Questions',
                 prerender: true,
                 stackedTabIcon: <ScaleIcon className="h-5" />,
@@ -501,23 +509,6 @@ function ProfilePublicStats(props: {
           <FaCrown className="mb-1 mr-1 inline h-4 w-4" />
           Partner
         </Link>
-      )}
-
-      <ShareButton user={user} currentUser={currentUser} />
-
-      {isCurrentUser && (
-        <>
-          <Link
-            href="/profile"
-            className={clsx(
-              buttonClass('2xs', 'gray-white'),
-              '-mx-1 gap-0.5 !px-1 !py-0.5'
-            )}
-          >
-            <PencilIcon className="mb-0.5 h-4 w-4" />
-            <span className="text-sm">Edit profile</span>
-          </Link>
-        </>
       )}
 
       <FollowsDialog

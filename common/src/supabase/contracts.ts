@@ -150,11 +150,6 @@ export const followContract = async (
   return db.from('contract_follows').upsert({
     contract_id: contractId,
     follow_id: userId,
-    data: {
-      createdTime: Date.now(),
-      id: userId,
-    },
-    fs_updated_time: new Date().toISOString(),
   })
 }
 

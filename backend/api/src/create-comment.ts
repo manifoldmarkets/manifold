@@ -256,7 +256,6 @@ async function getMostRecentCommentableBet(
       and ($4 is null or answer_id = $4)
       and created_time < millis_to_ts($3)
       and created_time > (select cutoff from cutoff_time)
-      and not is_ante
       and not is_redemption
       order by created_time desc
       limit 1

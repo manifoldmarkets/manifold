@@ -220,7 +220,6 @@ export const updateStatsCore = async () => {
     .valueOf()
 
   log('Fetching data for stats update...')
-  await calculateManaStats(startOfDayAgo, 1)
   const [
     dailyBets,
     dailyContracts,
@@ -228,6 +227,7 @@ export const updateStatsCore = async () => {
     dailyNewUsers,
     dailyManaSales,
     feedConversionScores,
+    _,
   ] = await Promise.all([
     getDailyBets(pg, start, numberOfDays),
     getDailyContracts(pg, start, numberOfDays),
@@ -235,6 +235,7 @@ export const updateStatsCore = async () => {
     getDailyNewUsers(pg, start, numberOfDays),
     getSales(pg, start, numberOfDays),
     getFeedConversionScores(pg, start, numberOfDays),
+    calculateManaStats(startOfDayAgo, 1),
   ])
   logMemory()
 
@@ -260,16 +261,6 @@ export const updateStatsCore = async () => {
   const dailySales = dailyManaSales.map((sales) =>
     sum(sales.map((s) => s.amount))
   )
-  const salesWeeklyAvg = dailySales.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i + 1
-    return average(dailySales.slice(start, end))
-  })
-  const monthlySales = dailySales.map((_, i) => {
-    const start = Math.max(0, i - 29)
-    const end = i + 1
-    return sum(dailySales.slice(start, end))
-  })
 
   const dailyUserIds = zip(dailyContracts, dailyBets, dailyComments).map(
     ([contracts, bets, comments]) => {
@@ -303,11 +294,6 @@ export const updateStatsCore = async () => {
   )
 
   const dailyActiveUsers = dailyUserIds.map((userIds) => userIds.length)
-  const dailyActiveUsersWeeklyAvg = dailyUserIds.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i + 1
-    return average(dailyActiveUsers.slice(start, end))
-  })
 
   const weeklyActiveUsers = dailyUserIds.map((_, i) => {
     const start = Math.max(0, i - 6)
@@ -360,12 +346,6 @@ export const updateStatsCore = async () => {
     return yesterday.length === 0 ? 0 : retainedCount / yesterday.length
   })
 
-  const d1WeeklyAvg = d1.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i + 1
-    return average(d1.slice(start, end))
-  })
-
   const nd1 = dailyNewRealUserIds.map((today, i) => {
     if (i === dailyNewRealUserIds.length - 1) return 0
     if (today.length === 0) return 0
@@ -377,11 +357,6 @@ export const updateStatsCore = async () => {
     return retainedCount / today.length
   })
 
-  const nd1WeeklyAvg = nd1.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i + 1
-    return average(nd1.slice(start, end))
-  })
   const fracDaysActiveD1ToD3 = dailyNewRealUserIds.map((today, i) => {
     if (today.length === 0) return 0
     if (i > dailyNewRealUserIds.length - 4) return 0
@@ -393,12 +368,7 @@ export const updateStatsCore = async () => {
     const totalActive = sumBy(today, (userId) => thisWeekCounts[userId] ?? 0)
     return totalActive / today.length / 3
   })
-  const fracDaysActiveD1ToD3Avg7d = fracDaysActiveD1ToD3.map((_, i) => {
-    if (i > dailyNewRealUserIds.length - 4) return 0
-    const start = Math.max(0, i - 6)
-    const end = i + 1
-    return average(fracDaysActiveD1ToD3.slice(start, end))
-  })
+
   const nw1 = dailyNewRealUserIds.map((_userIds, i) => {
     if (i < 13) return 0
 
@@ -486,11 +456,6 @@ export const updateStatsCore = async () => {
     })
     return activedCount / newUsers.length
   })
-  const dailyActivationRateWeeklyAvg = dailyActivationRate.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i + 1
-    return average(dailyActivationRate.slice(start, end))
-  })
 
   const d1BetAverage = dailyNewRealUsers.map((newUsers) => {
     if (newUsers.length === 0) return 0
@@ -516,39 +481,18 @@ export const updateStatsCore = async () => {
   const manaBetDaily = dailyBets.map((bets) => {
     return Math.round(sumBy(bets, (bet) => Math.abs(bet.amount)) / 100)
   })
-  const manaBetWeekly = manaBetDaily.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i + 1
-    const total = sum(manaBetDaily.slice(start, end))
-    if (end - start < 7) return (total * 7) / (end - start)
-    return total
-  })
-  const manaBetMonthly = manaBetDaily.map((_, i) => {
-    const start = Math.max(0, i - 29)
-    const end = i + 1
-    const total = sum(manaBetDaily.slice(start, end))
-    const range = end - start
-    if (range < 30) return (total * 30) / range
-    return total
-  })
 
   const statsData: Stats = {
     startDate: [start.valueOf()],
     dailyActiveUsers,
-    dailyActiveUsersWeeklyAvg,
     avgDailyUserActions,
     dailySales,
-    salesWeeklyAvg,
-    monthlySales,
     weeklyActiveUsers,
     monthlyActiveUsers,
     engagedUsers,
     d1,
-    d1WeeklyAvg,
     nd1,
-    nd1WeeklyAvg,
     fracDaysActiveD1ToD3,
-    fracDaysActiveD1ToD3Avg7d,
     nw1,
     dailyBetCounts,
     dailyContractCounts,
@@ -556,11 +500,8 @@ export const updateStatsCore = async () => {
     dailySignups,
     weekOnWeekRetention,
     dailyActivationRate,
-    dailyActivationRateWeeklyAvg,
     monthlyRetention,
     manaBetDaily,
-    manaBetWeekly,
-    manaBetMonthly,
     d1BetAverage,
     d1Bet3DayAverage,
     dailyNewRealUserSignups,

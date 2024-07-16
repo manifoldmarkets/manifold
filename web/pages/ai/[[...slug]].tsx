@@ -188,7 +188,6 @@ function MultiDashboard(props: MultiDashboardProps) {
                 labels={{
                   lower: 'sooner',
                   higher: 'later',
-                  about: 'about right',
                 }}
               />
             </Col>

@@ -431,9 +431,7 @@ async function convertOtherAnswerShares(
         probAfter: newAnswer.prob,
         createdTime: now,
         fees: noFees,
-        isAnte: false,
         isRedemption: true,
-        isChallenge: false,
         visibility: bets[0].visibility,
         isApi: false,
       }
@@ -466,9 +464,7 @@ async function convertOtherAnswerShares(
         probAfter: otherAnswer.prob,
         createdTime: now,
         fees: noFees,
-        isAnte: false,
         isRedemption: true,
-        isChallenge: false,
         visibility: bets[0].visibility,
         isApi: false,
       }
@@ -494,9 +490,7 @@ async function convertOtherAnswerShares(
           probAfter: answer.prob,
           createdTime: now,
           fees: noFees,
-          isAnte: false,
           isRedemption: true,
-          isChallenge: false,
           visibility: bets[0].visibility,
           isApi: false,
         }

@@ -1,8 +1,7 @@
 import { runScript } from 'run-script'
 
-if (require.main === module) {
-  runScript(async ({ pg }) => {
-    await pg.none(`
+runScript(async ({ pg }) => {
+  await pg.none(`
 -- Update each contract's data->'uniqueBettorCountDay' field
 UPDATE contracts
 SET data = jsonb_set(
@@ -24,5 +23,4 @@ FROM (
 WHERE 
     contracts.id = subquery.contract_id;
 `)
-  })
-}
+})

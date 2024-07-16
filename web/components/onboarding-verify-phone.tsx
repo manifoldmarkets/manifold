@@ -107,6 +107,7 @@ export function OnboardingVerifyPhone(props: { onClose: () => void }) {
             <Title>Enter verification code</Title>
 
             <Input
+              type={'number'}
               className={'w-36 self-center'}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}

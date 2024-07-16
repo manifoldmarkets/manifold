@@ -1,6 +1,7 @@
 import { runScript } from './run-script'
 import { runTxn } from 'shared/src/txn/run-txn'
 import { ReclaimManaTxn } from 'common/src/txn'
+import { convertTxn } from 'common/supabase/txns'
 
 if (require.main === module) {
   runScript(async ({ pg, firestore }) => {
@@ -29,12 +30,12 @@ if (require.main === module) {
       ({ from_id }) => from_id as string
     )
     const reclaimTxns = await pg.map(
-      `SELECT data FROM txns
+      `SELECT * FROM txns
       WHERE
       from_id IN ($1:list)
       AND category = 'RECLAIM_MANA'`,
       [usersIdsToUndoReclaim],
-      (r) => r.data as ReclaimManaTxn
+      (r) => convertTxn(r) as ReclaimManaTxn
     )
 
     for (const reclaimTxn of reclaimTxns) {

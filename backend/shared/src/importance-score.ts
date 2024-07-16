@@ -83,7 +83,9 @@ export async function calculateImportanceScore(
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
-    select('where importance_score > $1 or freshness_score > $1 or resolution_time is null'),
+    select(
+      'where importance_score > $1 or freshness_score > $1 or c.resolution_time is null'
+    ),
     [MIN_IMPORTANCE_SCORE],
     convertRow
   )
@@ -380,11 +382,11 @@ export const computeContractScores = (
   const rawMarketFreshness =
     normalize(Math.log10(contract.volume24Hours + 1), 5) +
     normalize(traderHour, 20) +
-    newness
+    0.5 * newness
 
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
   const hourRatio = traderHour / (thisWeekScore - traderHour + 1)
-  const freshnessFactor = clamp((todayRatio + 10 * hourRatio) / 5, 0.05, 1)
+  const freshnessFactor = clamp((todayRatio + 5 * hourRatio) / 5, 0.05, 1) // Reduced multiplier for hourRatio
 
   const freshnessScore =
     outcomeType === 'POLL' || outcomeType === 'BOUNTIED_QUESTION'

@@ -161,7 +161,6 @@ async function getPostBySlug(slug: string) {
 
 const convertPost = (sqlPost: rowFor<'old_posts'>) =>
   convertSQLtoTS<'old_posts', OldPost>(sqlPost, {
-    fs_updated_time: false,
     created_time: false, // grab from data
   })
 

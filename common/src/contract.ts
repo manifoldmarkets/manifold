@@ -106,7 +106,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isSubsidized?: boolean // NOTE: not backfilled, undefined = true
   /** @deprecated - no more auto-subsidization */
   isPolitics?: boolean
-  /** @deprecated - these are still being updated, but group-contracts is source of truth so try to use that */
+  /** @deprecated - not kept up-to-date */
   groupSlugs?: string[]
   /** @deprecated */
   groupLinks?: GroupLink[]

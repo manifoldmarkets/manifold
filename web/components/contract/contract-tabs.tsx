@@ -36,7 +36,6 @@ import { useEvent } from 'web/hooks/use-event'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { getOlderBets } from 'web/lib/supabase/bets'
 import { FeedBet } from '../feed/feed-bets'
 import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
 import { FeedLiquidity } from '../feed/feed-liquidity'
@@ -54,6 +53,7 @@ import { Button } from '../buttons/button'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { api } from 'web/lib/api/api'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -523,9 +523,12 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const { contract, setReplyToBet, totalBets } = props
   const { outcomeType } = contract
   const [olderBets, setOlderBets] = useState<Bet[]>([])
+
   const [page, setPage] = useState(0)
-  const ITEMS_PER_PAGE = 50
+  const isNumber = outcomeType === 'NUMBER'
+  const ITEMS_PER_PAGE = 50 * (isNumber ? contract.answers.length : 1)
   const bets = [...props.bets, ...olderBets]
+
   const oldestBet = minBy(bets, (b) => b.createdTime)
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
@@ -538,14 +541,13 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
       l.amount > 0
   )
-  const isMultiNumber = outcomeType === 'NUMBER'
-  const betsByBetGroupId = isMultiNumber
-    ? groupBy(props.bets, (bet) => bet.betGroupId ?? bet.id)
+  const betsByBetGroupId = isNumber
+    ? groupBy(bets, (bet) => bet.betGroupId ?? bet.id)
     : {}
   const groupedBets = Object.values(betsByBetGroupId)
 
   const items = [
-    ...(isMultiNumber
+    ...(isNumber
       ? groupedBets.map((bets) => ({
           type: 'betGroup' as const,
           id: 'bets-tab-' + bets[0].betGroupId,
@@ -572,10 +574,15 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const oldestBetTime = oldestBet?.createdTime ?? now
   useEffect(() => {
     if (!shouldLoadMore) return
-    getOlderBets(contract.id, oldestBetTime, limit)
+    api('bets', {
+      contractId: contract.id,
+      beforeTime: oldestBetTime,
+      limit,
+      filterRedemptions: !isNumber,
+      includeZeroShareRedemptions: isNumber,
+    })
       .then((olderBets) => {
-        const filteredBets = olderBets.filter((bet) => !bet.isAnte)
-        setOlderBets((bets) => uniqBy([...bets, ...filteredBets], (b) => b.id))
+        setOlderBets((bets) => uniqBy([...bets, ...olderBets], (b) => b.id))
       })
       .catch((err) => {
         console.error(err)

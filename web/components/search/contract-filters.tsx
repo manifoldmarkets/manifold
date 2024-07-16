@@ -58,6 +58,7 @@ export function ContractFilters(props: {
   updateParams: (params: Partial<SearchParams>) => void
   topicSlug?: string
   initialTopics?: LiteGroup[]
+  isHomePage?: boolean
 }) {
   const { className, params, updateParams, topicSlug, initialTopics } = props
 
@@ -152,6 +153,44 @@ export function ContractFilters(props: {
         <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
           <FaSliders className="h-4 w-4" />
         </IconButton>
+        <Row className="bg-ink-200 dark:bg-ink-300 items-center rounded-full">
+          <button
+            key="score"
+            className={clsx(
+              'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
+              sort == 'score'
+                ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+                : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
+              className
+            )}
+            onClick={() => {
+              if (sort === 'score') {
+                selectSort('freshness-score')
+              }
+              selectSort('score')
+            }}
+          >
+            Best
+          </button>
+          <button
+            key="freshness-score"
+            className={clsx(
+              'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
+              sort == 'freshness-score'
+                ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+                : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
+              className
+            )}
+            onClick={() => {
+              if (sort === 'freshness-score') {
+                selectSort('score')
+              }
+              selectSort('freshness-score')
+            }}
+          >
+            Hot
+          </button>
+        </Row>
         {sortItems.map((sortValue) => (
           <FilterPill
             key={sortValue}
@@ -163,7 +202,6 @@ export function ContractFilters(props: {
                 selectSort(sortValue as Sort)
               }
             }}
-            type="sort"
           >
             {getLabelFromValue(SORTS, sortValue)}
           </FilterPill>
@@ -248,7 +286,6 @@ export function ContractFilters(props: {
                   selectFilter(filterValue as Filter)
                 }
               }}
-              type="filter"
             >
               {getLabelFromValue(FILTERS, filterValue)}
             </FilterPill>
@@ -264,7 +301,6 @@ export function ContractFilters(props: {
                 selectContractType(contractValue as ContractTypeType)
               }
             }}
-            type="contractType"
           >
             {getLabelFromValue(CONTRACT_TYPES, contractValue)}
           </FilterPill>
@@ -362,7 +398,6 @@ function FilterModal(props: {
                         selectFilter(filterValue as Filter)
                       }
                     }}
-                    type="filter"
                   >
                     {filterLabel}
                   </FilterPill>
@@ -387,7 +422,6 @@ function FilterModal(props: {
                     selectSort(sortValue as Sort)
                   }
                 }}
-                type="sort"
               >
                 {sortLabel}
               </FilterPill>
@@ -412,7 +446,6 @@ function FilterModal(props: {
                       selectContractType(contractTypeValue as ContractTypeType)
                     }
                   }}
-                  type="contractType"
                 >
                   {contractTypeLabel}
                 </FilterPill>

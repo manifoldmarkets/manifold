@@ -134,10 +134,10 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     )
   }
 
-  const baseQueryArray = (boosts = false) =>
+  const baseQueryArray = (adQuery = false) =>
     buildArray(
       select('contracts.*'),
-      !boosts
+      !adQuery
         ? select(
             `avg(uti.topic_score) as topic_conversion_score, cv.latest_seen_time`
           )
@@ -152,13 +152,13 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       join(`group_contracts on group_contracts.group_id = uti.group_id`),
       join(`contracts on contracts.id = group_contracts.contract_id`),
       // Another option: get the top 1000 contracts by uti.CS * contracts.CS and then filter by user_contract_views
-      !boosts && [
+      !adQuery && [
         leftJoin(
           `(${viewedContractsQuery}) cv ON cv.contract_id = contracts.id`
         ),
         where(`cv.latest_seen_time is null`),
       ],
-      ...minimumContractsQualityBarWhereClauses,
+      ...minimumContractsQualityBarWhereClauses(adQuery),
       where(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
@@ -167,7 +167,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         where(`contracts.id <> all(array[$1])`, [ignoreContractIds]),
       privateUserBlocksSql(privateUser),
       lim(limit, offset),
-      !boosts && groupBy(`contracts.id, cv.latest_seen_time`)
+      !adQuery && groupBy(`contracts.id, cv.latest_seen_time`)
     )
 
   const adsQuery = renderSql(

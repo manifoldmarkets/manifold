@@ -29,7 +29,7 @@ import {
   traderColumn,
 } from './contract/contract-table-col-formats'
 import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
-import { BestHotToggle, ContractFilters } from './search/contract-filters'
+import { ContractFilters } from './search/contract-filters'
 import { UserResults } from './search/user-results'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { LoadingIndicator } from './widgets/loading-indicator'
@@ -372,9 +372,7 @@ export function SupabaseSearch(props: {
     query &&
     query.length > 0
 
-  const isHomePage = persistPrefix === 'search'
   const hasQuery = query !== ''
-  const inputPaddingRight = `${(isHomePage ? 106 : 0) + (hasQuery ? 40 : 0)}px`
 
   return (
     <Col className="w-full">
@@ -404,7 +402,7 @@ export function SupabaseSearch(props: {
               }
               className={clsx('w-full')}
               style={{
-                paddingRight: inputPaddingRight,
+                paddingRight: hasQuery ? '40px' : '0px',
               }}
               autoFocus={autoFocus}
             />
@@ -423,7 +421,6 @@ export function SupabaseSearch(props: {
                   )}
                 </IconButton>
               )}
-              {isHomePage && <BestHotToggle sort={sort} onChange={onChange} />}
             </Row>
           </Row>
         )}
@@ -436,6 +433,7 @@ export function SupabaseSearch(props: {
             }
             topicSlug={topicSlug}
             initialTopics={initialTopics}
+            isHomePage={persistPrefix === 'search'}
           />
         )}
       </Col>

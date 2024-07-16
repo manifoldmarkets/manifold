@@ -1,4 +1,4 @@
-import { Bet, BetFilter, LimitBet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
@@ -16,6 +16,7 @@ import {
   where,
 } from './sql-builder'
 import { buildArray } from 'common/util/array'
+import { APIParams } from 'common/api/schema'
 
 export const getBetsDirect = async (
   pg: SupabaseDirectClient,
@@ -30,15 +31,12 @@ export const getBetsDirect = async (
 
 export const getBetsWithFilter = async (
   pg: SupabaseDirectClient,
-  options: BetFilter
+  options: APIParams<'bets'>
 ) => {
   const {
     contractId,
     userId,
-    filterChallenges,
     filterRedemptions,
-    filterAntes,
-    isOpenLimitOrder,
     afterTime,
     beforeTime,
     commentRepliesOnly,
@@ -46,13 +44,13 @@ export const getBetsWithFilter = async (
     includeZeroShareRedemptions,
     order,
     limit: limitValue,
-    visibility,
+    kinds,
   } = options
 
   const conditions = buildArray(
-    visibility && [
+    !contractId && [
       join('contracts on contracts.id = contract_bets.contract_id'),
-      where('contracts.visibility = ${visibility}', { visibility }),
+      where('contracts.visibility = ${visibility}', { visibility: 'public' }),
     ],
 
     contractId &&
@@ -62,7 +60,7 @@ export const getBetsWithFilter = async (
 
     userId && where('user_id = ${userId}', { userId }),
 
-    isOpenLimitOrder &&
+    kinds == 'open-limit' &&
       where(
         `(contract_bets.data->'isFilled')::boolean = false and (contract_bets.data->'isCancelled')::boolean = false`
       ),
@@ -82,11 +80,7 @@ export const getBetsWithFilter = async (
 
     answerId !== undefined && where('answer_id = ${answerId}', { answerId }),
 
-    filterChallenges && where('is_challenge = false'),
-
     filterRedemptions && where('is_redemption = false'),
-
-    filterAntes && where('is_ante = false'),
 
     !includeZeroShareRedemptions &&
       where(

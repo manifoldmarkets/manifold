@@ -1,37 +1,9 @@
 import { db } from './db'
-import { millisToTs, run, selectJson } from 'common/supabase/utils'
 import { Contract } from 'common/contract'
 import { Dictionary, flatMap } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { useCallback, useEffect, useState } from 'react'
 import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
-
-export async function getOlderBets(
-  contractId: string,
-  beforeTime: number,
-  limit: number
-) {
-  const query = selectJson(db, 'contract_bets')
-    .eq('contract_id', contractId)
-    .eq('is_redemption', false)
-    .eq('is_ante', false)
-    .lt('created_time', millisToTs(beforeTime))
-    .order('created_time', { ascending: false })
-    .limit(limit)
-  const { data } = await run(query)
-
-  return data.map((r) => r.data)
-}
-
-export const getUnfilledLimitOrders = async (contractId: string) => {
-  const q = selectJson(db, 'contract_bets')
-    .eq('contract_id', contractId)
-    .eq('data->>isFilled', false)
-    .eq('data->>isCancelled', false)
-    .order('created_time', { ascending: false })
-  const { data } = await run(q)
-  return data.map((r) => r.data as LimitBet)
-}
 
 export const getOpenLimitOrdersWithContracts = async (
   userId: string,

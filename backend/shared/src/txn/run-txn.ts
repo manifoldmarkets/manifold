@@ -1,12 +1,11 @@
 import { Txn } from 'common/txn'
 import { isAdminId } from 'common/envs/constants'
-import { bulkInsert } from 'shared/supabase/utils'
+import { bulkInsert, insert } from 'shared/supabase/utils'
 import { APIError } from 'common/api/utils'
 import { SupabaseTransaction } from 'shared/supabase/init'
-import { Row } from 'common/supabase/utils'
 import { convertTxn } from 'common/supabase/txns'
 import { removeUndefinedProps } from 'common/util/object'
-import { getUser, log } from 'shared/utils'
+import { getUser } from 'shared/utils'
 import { incrementBalance } from 'shared/supabase/users'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
@@ -124,27 +123,7 @@ export async function insertTxn(
   pgTransaction: SupabaseTransaction,
   txn: TxnData
 ) {
-  const row = await pgTransaction
-    .one<Row<'txns'>>(
-      `insert into txns 
-      (data, amount, from_id, to_id, from_type, to_type, category) 
-      values ($1, $2, $3, $4, $5, $6, $7) 
-      returning *`,
-      [
-        JSON.stringify(removeUndefinedProps(txn)),
-        txn.amount,
-        txn.fromId,
-        txn.toId,
-        txn.fromType,
-        txn.toType,
-        txn.category,
-      ]
-    )
-    .catch((e) => {
-      logFailedToRecordTxn(txn)
-      throw e
-    })
-
+  const row = await insert(pgTransaction, 'txns', txnDataToRow(txn))
   return convertTxn(row)
 }
 
@@ -153,29 +132,21 @@ export async function insertTxns(
   pgTransaction: SupabaseTransaction,
   txns: TxnData[]
 ) {
-  await bulkInsert(
-    pgTransaction,
-    'txns',
-    txns.map((txn) => ({
-      data: JSON.stringify(removeUndefinedProps(txn)),
-      amount: txn.amount,
-      from_id: txn.fromId,
-      to_id: txn.toId,
-      from_type: txn.fromType,
-      to_type: txn.toType,
-      category: txn.category,
-    }))
-  ).catch((e) => {
-    for (const txn of txns) {
-      logFailedToRecordTxn(txn)
-    }
-    throw e
-  })
+  await bulkInsert(pgTransaction, 'txns', txns.map(txnDataToRow))
 }
 
-export function logFailedToRecordTxn(txn: TxnData) {
-  log.error(
-    `Failed to record ${txn.category} txn: send ${txn.amount} from ${txn.fromType} ${txn.fromId} to ${txn.toType} ${txn.toId}`,
-    txn
-  )
+const txnDataToRow = (data: TxnData) => {
+  return {
+    data: JSON.stringify(
+      // data is nested an extra level for legacy reasons
+      removeUndefinedProps({ data: data.data, description: data.description })
+    ),
+    amount: data.amount,
+    token: data.token,
+    from_id: data.fromId,
+    to_id: data.toId,
+    from_type: data.fromType,
+    to_type: data.toType,
+    category: data.category,
+  } as const
 }

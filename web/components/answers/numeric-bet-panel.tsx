@@ -43,15 +43,13 @@ export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
   labels?: {
     lower: string
-    about: string
     higher: string
   }
-  mode?: 'less than' | 'more than' | 'about right'
+  mode?: 'less than' | 'more than'
 }) => {
   const {
     labels = {
       lower: 'Lower',
-      about: 'About right',
       higher: 'Higher',
     },
   } = props
@@ -65,9 +63,9 @@ export const NumericBetPanel = (props: {
     maximum,
   ])
   const [debouncedAmount, setDebouncedAmount] = useState(betAmount)
-  const [mode, setMode] = useState<
-    'less than' | 'more than' | 'about right' | undefined
-  >(props.mode)
+  const [mode, setMode] = useState<'less than' | 'more than' | undefined>(
+    props.mode
+  )
   useEffect(() => {
     if (props.mode) changeMode(props.mode)
   }, [props.mode])
@@ -91,13 +89,7 @@ export const NumericBetPanel = (props: {
     : `${range[0]} ≤ val < ${range[1]}`
 
   const modeColor =
-    mode === 'less than'
-      ? 'red'
-      : mode === 'more than'
-      ? 'green'
-      : mode === 'about right'
-      ? 'blue'
-      : 'gray-outline'
+    mode === 'less than' || mode === 'more than' ? 'purple' : 'gray-outline'
 
   const roundToEpsilon = (num: number) => Number(num.toFixed(2))
   const shouldIncludeAnswer = (a: Answer) => {
@@ -170,18 +162,11 @@ export const NumericBetPanel = (props: {
     debounceRange(range)
   }
 
-  const changeMode = (newMode: 'less than' | 'more than' | 'about right') => {
+  const changeMode = (newMode: 'less than' | 'more than') => {
     const newExpectedValue = getExpectedValue(contract)
     setExpectedValue(newExpectedValue)
     const midPointBucket = getRangeContainingValue(newExpectedValue, contract)
-    if (newMode === 'about right') {
-      const quarterRange = (maximum - minimum) / 4
-      const quarterAbove = Math.min(newExpectedValue + quarterRange, maximum)
-      const quarterBelow = Math.max(newExpectedValue - quarterRange, minimum)
-      const start = getRangeContainingValue(quarterBelow, contract)
-      const end = getRangeContainingValue(quarterAbove, contract)
-      setRange([start[0], end[1]])
-    } else if (newMode === 'less than') {
+    if (newMode === 'less than') {
       setRange([minimum, midPointBucket[1]])
     } else if (newMode === 'more than') {
       setRange([midPointBucket[0], maximum])
@@ -296,7 +281,7 @@ export const NumericBetPanel = (props: {
           </Row>
           <Col className={'mb-2 gap-2'}>
             <SizedContainer
-              className={clsx('h-[150px] w-full pb-3 pl-2 pr-10 sm:h-[200px]')}
+              className={clsx('h-[150px] w-full pb-3 pr-6 sm:h-[200px]')}
             >
               {(w, h) => (
                 <MultiNumericDistributionChart
@@ -312,7 +297,7 @@ export const NumericBetPanel = (props: {
             <RangeSlider
               step={step}
               color={'indigo'}
-              className={'mr-8 h-4 items-end'}
+              className={'-ml-1 mr-4 h-4 items-end'}
               highValue={range[1]}
               lowValue={range[0]}
               setValues={onChangeRange}
@@ -333,14 +318,6 @@ export const NumericBetPanel = (props: {
             {capitalize(labels.lower)}
           </Button>
           <Button
-            color={'blue'}
-            size={'xl'}
-            className={'grow'}
-            onClick={() => changeMode('about right')}
-          >
-            {capitalize(labels.about)}
-          </Button>
-          <Button
             color={'green'}
             size={'xl'}
             className={'grow'}
@@ -353,11 +330,7 @@ export const NumericBetPanel = (props: {
         <Col
           className={clsx(
             'mt-2 gap-4 rounded-md px-3 py-2',
-            mode === 'less than'
-              ? 'bg-scarlet-50'
-              : mode === 'more than'
-              ? 'bg-teal-50'
-              : 'bg-blue-50 dark:bg-blue-900/30'
+            'bg-purple-50 dark:bg-purple-900/30'
           )}
         >
           <Row className={'justify-between'}>

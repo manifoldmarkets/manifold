@@ -55,6 +55,8 @@ import {
 } from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
+import { PrivateMessageChannel } from 'common/supabase/private-messages'
+import { Notification } from 'common/notification'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -76,6 +78,13 @@ type APIGenericSchema = {
   cache?: string
 }
 
+// Zod doesn't handle z.coerce.boolean() properly for GET requests
+const coerceBoolean = z
+  .union([z.boolean(), z.literal('true'), z.literal('false')])
+  .transform(
+    (value) => value === true || value === 'true'
+  ) as z.ZodType<boolean>
+
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
 export const API = (_apiTypeCheck = {
   comment: {
@@ -92,6 +101,17 @@ export const API = (_apiTypeCheck = {
         replyToCommentId: z.string().optional(),
         replyToAnswerId: z.string().optional(),
         replyToBetId: z.string().optional(),
+      })
+      .strict(),
+  },
+  'get-contract': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as Contract,
+    props: z
+      .object({
+        contractId: z.string(),
       })
       .strict(),
   },
@@ -120,7 +140,7 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(1000).default(1000),
         page: z.coerce.number().gte(0).default(0),
         userId: z.string().optional(),
-        isPolitics: z.coerce.boolean().optional(),
+        isPolitics: coerceBoolean.optional(),
       })
       .strict(),
   },
@@ -251,10 +271,9 @@ export const API = (_apiTypeCheck = {
         order: z.enum(['asc', 'desc']).optional(),
         kinds: z.enum(['open-limit']).optional(),
         // undocumented fields. idk what a good api interface would be
-        filterRedemptions: z.coerce.boolean().optional(),
-        filterChallenges: z.coerce.boolean().optional(),
-        filterAntes: z.coerce.boolean().optional(),
-        includeZeroShareRedemptions: z.coerce.boolean().optional(),
+        filterRedemptions: coerceBoolean.optional(),
+        includeZeroShareRedemptions: coerceBoolean.optional(),
+        commentRepliesOnly: coerceBoolean.optional(),
       })
       .strict(),
   },
@@ -357,7 +376,7 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as LiteMarket | FullMarket,
     cache: DEFAULT_CACHE_STRATEGY,
-    props: z.object({ id: z.string(), lite: z.boolean().optional() }),
+    props: z.object({ id: z.string(), lite: coerceBoolean.optional() }),
   },
   // deprecated. use /market/:id?lite=true instead
   'market/:id/lite': {
@@ -374,7 +393,7 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as LiteMarket | FullMarket,
     cache: DEFAULT_CACHE_STRATEGY,
-    props: z.object({ slug: z.string(), lite: z.boolean().optional() }),
+    props: z.object({ slug: z.string(), lite: coerceBoolean.optional() }),
   },
   market: {
     method: 'POST',
@@ -1226,6 +1245,49 @@ export const API = (_apiTypeCheck = {
     }),
     returns: {} as PortfolioMetrics[],
   },
+  'get-channel-memberships': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.coerce.number().optional(),
+      createdTime: z.string().optional(),
+      lastUpdatedTime: z.string().optional(),
+      limit: z.coerce.number(),
+    }),
+    returns: {
+      channels: [] as PrivateMessageChannel[],
+      memberIdsByChannelId: {} as { [channelId: string]: string[] },
+    },
+  },
+  'get-channel-messages': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.coerce.number(),
+      limit: z.coerce.number(),
+      id: z.coerce.number().optional(),
+    }),
+    returns: [] as Row<'private_user_messages'>[],
+  },
+  'get-channel-seen-time': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.coerce.number(),
+    }),
+    returns: {} as { created_time: string },
+  },
+  'set-channel-seen-time': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.coerce.number(),
+    }),
+  },
   'get-feed': {
     method: 'GET',
     visibility: 'undocumented',
@@ -1253,6 +1315,17 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as ManaSupply,
     props: z.object({}).strict(),
+  },
+  'get-notifications': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as Notification[],
+    props: z
+      .object({
+        limit: z.coerce.number().gte(0).lte(1000).default(100),
+      })
+      .strict(),
   },
   'update-mod-report': {
     method: 'POST',

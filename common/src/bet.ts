@@ -13,9 +13,7 @@ supabase status: columns exist for
   outcome: text
   probBefore: number
   probAfter: number
-  isAnte: boolean
   isRedemption: boolean
-  isChallenge: boolean
   visibility: text
 
 any changes to the type of these columns in firestore will require modifying
@@ -43,9 +41,7 @@ export type Bet = {
 
   isApi?: boolean // true if bet was placed via API
 
-  isAnte: boolean
   isRedemption: boolean
-  isChallenge: boolean
   visibility: Visibility
   /** @deprecated */
   challengeSlug?: string
@@ -86,23 +82,6 @@ export type fill = {
   // If the fill is a sale, it means the matching bet has shares of the same outcome.
   // I.e. -fill.shares === matchedBet.shares
   isSale?: boolean
-}
-
-export type BetFilter = {
-  contractId?: string | string[]
-  userId?: string
-  filterChallenges?: boolean
-  filterRedemptions?: boolean
-  filterAntes?: boolean
-  isOpenLimitOrder?: boolean
-  afterTime?: number
-  beforeTime?: number
-  order?: 'desc' | 'asc'
-  limit?: number
-  commentRepliesOnly?: boolean
-  answerId?: string
-  includeZeroShareRedemptions?: boolean
-  visibility?: Visibility
 }
 
 export const calculateMultiBets = (

@@ -1,9 +1,10 @@
 import { SupabaseClient, convertSQLtoTS } from 'common/supabase/utils'
 import type { PostgrestFilterBuilder } from '@supabase/postgrest-js'
-import { Row, Schema, millisToTs, run, selectJson, tsToMillis } from './utils'
-import { Bet, BetFilter } from 'common/bet'
+import { Row, Schema, millisToTs, run, tsToMillis } from './utils'
+import { Bet } from 'common/bet'
 import { sortBy } from 'lodash'
 import { buildArray } from 'common/util/array'
+import { APIParams } from 'common/api/schema'
 
 export const convertBet = (row: Row<'contract_bets'>) =>
   convertSQLtoTS<'contract_bets', Bet>(row, {
@@ -19,37 +20,16 @@ export async function getTotalBetCount(contractId: string, db: SupabaseClient) {
       .from('contract_bets')
       .select('*', { head: true, count: 'exact' })
       .eq('contract_id', contractId)
-      .eq('is_challenge', false)
       .eq('is_redemption', false)
-      .eq('is_ante', false)
   )
   return count as number
-}
-
-export const getPublicBets = async (
-  db: SupabaseClient,
-  options?: BetFilter
-) => {
-  let q = selectJson(db, 'public_contract_bets')
-  q = q.order('created_time', { ascending: options?.order === 'asc' })
-  q = applyBetsFilter(q, options)
-  const { data } = await run(q)
-  return data.map((r) => r.data)
-}
-
-export const getBets = async (db: SupabaseClient, options?: BetFilter) => {
-  let q = selectJson(db, 'contract_bets')
-  q = q.order('created_time', { ascending: options?.order === 'asc' })
-  q = applyBetsFilter(q, options)
-  const { data } = await run(q)
-  return data.map((r) => r.data)
 }
 
 // gets random bets - 50,000 by default
 export const getBetPoints = async <S extends SupabaseClient>(
   db: S,
   contractId: string,
-  options?: BetFilter
+  options?: APIParams<'bets'>
 ) => {
   let q = db
     .from('contract_bets')
@@ -87,7 +67,7 @@ export const applyBetsFilter = <
   T extends PostgrestFilterBuilder<Schema, Row<'contract_bets'>, any>
 >(
   q: T,
-  options?: BetFilter
+  options?: APIParams<'bets'>
 ): T => {
   if (options?.contractId && typeof options.contractId === 'string') {
     q = q.eq('contract_id', options.contractId)
@@ -104,16 +84,10 @@ export const applyBetsFilter = <
   if (options?.beforeTime !== undefined) {
     q = q.lt('created_time', millisToTs(options.beforeTime))
   }
-  if (options?.filterChallenges) {
-    q = q.eq('is_challenge', false)
-  }
-  if (options?.filterAntes) {
-    q = q.eq('is_ante', false)
-  }
   if (options?.filterRedemptions) {
     q = q.eq('is_redemption', false)
   }
-  if (options?.isOpenLimitOrder) {
+  if (options?.kinds === 'open-limit') {
     q = q.contains('data', { isFilled: false, isCancelled: false })
   }
   if (options?.limit) {

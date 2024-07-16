@@ -1,7 +1,7 @@
 import { CPMMNumericContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Answer } from 'common/answer'
-import { Button } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { useMemo, useState } from 'react'
 import { debounce, find, groupBy, mapValues, sum, sumBy } from 'lodash'
 import { floatingEqual, floatingGreater } from 'common/util/math'
@@ -31,6 +31,7 @@ import { getInvested } from 'common/calculate'
 import { DiagonalPattern } from 'web/components/charts/generic-charts'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { FeeDisplay } from 'web/components/bet/fees'
+import { XIcon } from '@heroicons/react/solid'
 
 export const NumericSellPanel = (props: {
   contract: CPMMNumericContract
@@ -84,7 +85,7 @@ export const NumericSellPanel = (props: {
 
   const sellShares = async () => {
     setIsSubmitting(true)
-    toast
+    await toast
       .promise(
         api(
           'multi-sell',
@@ -196,7 +197,12 @@ export const NumericSellPanel = (props: {
   const patternId = `pattern-${Math.random().toString(36).slice(2, 9)}`
   return (
     <Col className={'mt-2 gap-2'}>
-      <span className={'mb-2 text-xl'}>Probability Distribution</span>
+      <Row className={'justify-between'}>
+        <span className={'mb-2 text-xl'}>Probability Distribution</span>
+        <IconButton className={'w-12'} disabled={isSubmitting} onClick={cancel}>
+          <XIcon className={'h-4 w-4'} />
+        </IconButton>
+      </Row>
       <Row className={' flex-wrap gap-4'}>
         <Row className={'gap-1'}>
           <svg width="20" height="20" viewBox="0 0 120 120">
@@ -241,7 +247,7 @@ export const NumericSellPanel = (props: {
       </Row>
       <Col className={'mb-2 gap-2'}>
         <SizedContainer
-          className={clsx('h-[150px] w-full pb-3 pl-2 pr-10 sm:h-[200px]')}
+          className={clsx('h-[150px] w-full pb-3 pr-6 sm:h-[200px]')}
         >
           {(w, h) => (
             <MultiNumericDistributionChart
@@ -260,7 +266,7 @@ export const NumericSellPanel = (props: {
         <RangeSlider
           step={Math.abs(maximum - minimum) / contract.answers.length}
           color={'indigo'}
-          className={'mr-8 h-4 items-end'}
+          className={'-ml-1 mr-4 h-4 items-end'}
           highValue={range[1]}
           lowValue={range[0]}
           setValues={onChangeRange}
@@ -268,7 +274,7 @@ export const NumericSellPanel = (props: {
           max={maximum}
         />
       </Col>
-      <Row className="text-ink-500 mx-4 items-center justify-between sm:justify-around sm:gap-20 ">
+      <Row className="text-ink-500 mx-4 items-center justify-between sm:justify-end sm:gap-28 ">
         <Col className={'text-ink-500 gap-2'}>
           <span className={''}>Sale value:</span>
           {isLoanOwed && <span>Loan repayment</span>}
@@ -293,10 +299,7 @@ export const NumericSellPanel = (props: {
           <FeeDisplay totalFees={totalFee} amount={potentialPayout} />
         </Col>
       </Row>
-      <Row className={'justify-between sm:gap-36 md:justify-center'}>
-        <Button onClick={cancel} className={''} color={'gray-outline'}>
-          Cancel
-        </Button>
+      <Row className={'mx-4 justify-end'}>
         <Button
           disabled={isSubmitting || sharesInAnswersToSell <= 0}
           onClick={sellShares}

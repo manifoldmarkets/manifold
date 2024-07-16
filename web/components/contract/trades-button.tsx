@@ -20,14 +20,19 @@ import { useUniqueBettorCountOnAnswer } from 'web/hooks/use-answers'
 import { Button, ColorType } from 'web/components/buttons/button'
 import { UserHovercard } from '../user/user-hovercard'
 import { useBountyAwardCount } from 'web/hooks/use-bounties'
+import { FaUser } from 'react-icons/fa6'
 
 export function TradesButton(props: {
   contract: Contract
   answer?: Answer
   className?: string
   color?: ColorType
+  size?: 'sm' | 'md'
 }) {
-  const { contract, color, answer, className } = props
+  const { contract, color, answer, className, size } = props
+
+  const [modalOpen, setModalOpen] = useState<boolean>(false)
+
   const { uniqueBettorCount: uniqueTraders } = contract
   const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
     contract.id,
@@ -35,38 +40,58 @@ export function TradesButton(props: {
   )
   const uniqueBountyRewardCount = useBountyAwardCount(contract)
 
-  const [modalOpen, setModalOpen] = useState<boolean>(false)
-
   const isPoll = contract.outcomeType === 'POLL'
   const isBounty = contract.outcomeType === 'BOUNTIED_QUESTION'
 
+  const tradesNumber = isBounty
+    ? uniqueBountyRewardCount
+    : answer
+    ? uniqueAnswerBettorCount
+    : uniqueTraders || ''
+
+  const tooltipText = isPoll ? 'Voters' : isBounty ? 'Rewards given' : 'Traders'
+
   return (
     <>
-      <Button
-        size={'2xs'}
-        color={color ?? 'gray-white'}
-        className={clsx(className)}
-        onClick={(e) => {
-          track('click feed card traders button', { contractId: contract.id })
-          e.preventDefault()
-          setModalOpen(true)
-        }}
-      >
-        <Tooltip
-          text={isPoll ? 'Voters' : isBounty ? 'Rewards given' : 'Traders'}
-          placement="top"
-          noTap
+      {!size || size == 'md' ? (
+        <Button
+          size={'2xs'}
+          color={color ?? 'gray-white'}
+          className={clsx(className)}
+          onClick={(e) => {
+            track('click feed card traders button', {
+              contractId: contract.id,
+            })
+            e.preventDefault()
+            setModalOpen(true)
+          }}
         >
-          <Row className="relative items-center  gap-1.5 text-sm">
-            <UserIcon className="h-5 w-5" />
-            {isBounty
-              ? uniqueBountyRewardCount
-              : answer
-              ? uniqueAnswerBettorCount
-              : uniqueTraders || ''}
-          </Row>
-        </Tooltip>
-      </Button>
+          <Tooltip text={tooltipText} placement="top" noTap>
+            <Row className="relative items-center gap-1.5 text-sm">
+              <UserIcon className="h-5 w-5" />
+              {tradesNumber}
+            </Row>
+          </Tooltip>
+        </Button>
+      ) : (
+        <button
+          className={clsx(className)}
+          onClick={(e) => {
+            track('click answer traders button', {
+              contractId: contract.id,
+            })
+            e.preventDefault()
+            setModalOpen(true)
+          }}
+        >
+          <Tooltip text={tooltipText} placement="bottom" noTap>
+            <Row className="relative items-center gap-0.5">
+              <FaUser className=" h-2.5 w-2.5" />
+              {tradesNumber}
+            </Row>
+          </Tooltip>
+        </button>
+      )}
       <Modal
         open={modalOpen}
         setOpen={setModalOpen}
@@ -139,7 +164,6 @@ function BetsModalContent(props: {
   const bets = useBetsOnce({
     contractId: contract.id,
     answerId: answer?.id,
-    filterAntes: true,
     filterRedemptions: true,
   })
 

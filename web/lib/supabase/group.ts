@@ -152,8 +152,9 @@ export async function getGroupMarkets(groupId: string) {
       async (chunkedIds) =>
         await run(
           db
-            .from('public_contracts')
+            .from('contracts')
             .select('data')
+            .eq('visibility', 'public')
             .in(
               'id',
               chunkedIds.map((c) => c.contract_id)

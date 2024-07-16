@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Answer } from 'common/answer'
-import { unserializeBase64Multi } from 'common/chart'
+import { HistoryPoint, MultiPoints, unserializeBase64Multi } from 'common/chart'
 import {
   ContractParams,
   MaybeAuthedContractParams,
@@ -49,7 +49,7 @@ import {
   useContractBets,
   useUnfilledBets,
 } from 'web/hooks/use-bets'
-import { useLiveContract } from 'web/hooks/use-contract'
+import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
@@ -169,7 +169,7 @@ export function ContractPageContent(props: ContractParams) {
     betReplies,
   } = props
 
-  const contract = useLiveContract(props.contract)
+  const contract = useLiveContractWithAnswers(props.contract)
   if (!contract.viewCount) {
     contract.viewCount = props.contract.viewCount
   }
@@ -218,6 +218,7 @@ export function ContractPageContent(props: ContractParams) {
   const newBets = useContractBets(contract.id, {
     afterTime: props.lastBetTime ?? 0,
     includeZeroShareRedemptions: true,
+    filterRedemptions: !isNumber,
   })
 
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
@@ -244,14 +245,14 @@ export function ContractPageContent(props: ContractParams) {
 
       return mergeWith(data, newData, (array1, array2) =>
         [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
-      )
+      ) as MultiPoints
     } else {
       const points = pointsString ? base64toPoints(pointsString) : []
       const newPoints = newBetsWithoutRedemptions.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,
       }))
-      return [...points, ...newPoints]
+      return [...points, ...newPoints] as HistoryPoint<Partial<Bet>>[]
     }
   }, [pointsString, newBets.length])
 
@@ -459,7 +460,7 @@ export function ContractPageContent(props: ContractParams) {
               </div>
               <ContractOverview
                 contract={contract}
-                betPoints={betPoints as any}
+                betPoints={betPoints}
                 showResolver={showResolver}
                 resolutionRating={
                   userHasReviewed ? (
@@ -477,7 +478,7 @@ export function ContractPageContent(props: ContractParams) {
 
               {!tradingAllowed(contract) && (
                 <UserBetsSummary
-                  className="border-ink-200 !mb-2 mt-2 "
+                  className="border-ink-200 !mb-2 "
                   contract={contract}
                 />
               )}
@@ -631,7 +632,6 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
   const staticBets = useBetsOnce({
     contractId: contract.id,
     userId: !user ? 'loading' : user.id,
-    filterAntes: true,
     order: 'asc',
   })
 
@@ -652,8 +652,15 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
     (bet) => bet.userId === user?.id
   ) as LimitBet[]
 
+  if (
+    (userLimitBets.length === 0 || contract.mechanism != 'cpmm-1') &&
+    visibleUserBets.length === 0
+  ) {
+    return null
+  }
+
   return (
-    <Col>
+    <Col className="bg-canvas-50 rounded px-3 py-4 pb-0">
       {contract.mechanism === 'cpmm-1' && (
         <YourOrders
           contract={contract}
@@ -664,12 +671,12 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
 
       {visibleUserBets.length > 0 && (
         <>
-          <div className="text-ink-700 text-lg">Your trades</div>
+          <div className="pl-2 font-semibold">Your trades</div>
           <ContractBetsTable
             contract={contract}
             bets={userBets}
             isYourBets
-            truncate
+            paginate
           />
         </>
       )}

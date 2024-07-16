@@ -71,6 +71,7 @@ import {
   ChartAnnotations,
   EditChartAnnotationsButton,
 } from '../charts/chart-annotations'
+import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 
 export const ContractOverview = memo(
   (props: {
@@ -688,7 +689,7 @@ const BinaryChoiceOverview = (props: {
 }
 
 export const SimpleMultiOverview = (props: { contract: CPMMMultiContract }) => {
-  const { contract } = props
+  const contract = useLiveContractWithAnswers(props.contract)
   const user = useUser()
   const defaultSort = getDefaultSort(contract)
 
