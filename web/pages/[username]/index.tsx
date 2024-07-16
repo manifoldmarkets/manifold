@@ -4,6 +4,7 @@ import {
   ScaleIcon,
   PresentationChartLineIcon,
   ChevronDownIcon,
+  ViewListIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
@@ -69,6 +70,7 @@ import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number
 import { FaCrown } from 'react-icons/fa6'
 import { getUserForStaticProps } from 'common/supabase/users'
 import { VerifyMe } from 'web/components/gidx/verify-me'
+import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
 
 export const getStaticProps = async (props: {
   params: {
@@ -213,6 +215,7 @@ function UserProfile(props: {
 
   const balanceChanges = newBalanceChanges ?? []
   const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
+  const balanceChangesKey = 'balance-changes'
 
   return (
     <Page
@@ -411,6 +414,17 @@ function UserProfile(props: {
                     <UserCommentsList user={user} />
                   </Col>
                 ),
+              },
+              {
+                title: 'Balance log',
+                stackedTabIcon: <ViewListIcon className="h-5" />,
+                content: (
+                  <BalanceChangeTable
+                    user={user}
+                    balanceChanges={balanceChanges}
+                  />
+                ),
+                queryString: balanceChangesKey,
               },
               {
                 title: 'Payments',
