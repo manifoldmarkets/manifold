@@ -7,7 +7,7 @@ import { Title } from 'web/components/widgets/title'
 import { getStats } from 'web/lib/supabase/stats'
 import { Stats } from 'common/stats'
 import { PLURAL_BETS } from 'common/user'
-import { capitalize, orderBy, sumBy } from 'lodash'
+import { capitalize, orderBy, sum, sumBy } from 'lodash'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
 import { SEO } from 'web/components/SEO'
@@ -20,6 +20,7 @@ import { BonusSummary } from 'web/components/stats/bonus-summary'
 import { ManaSupplySummary } from 'web/components/stats/mana-summary'
 import { Row } from 'web/components/layout/row'
 import { VIEW_RECORDINGS_START } from 'common/feed'
+import { average } from 'common/util/math'
 
 export const getStaticProps = async () => {
   try {
@@ -82,19 +83,13 @@ export function CustomAnalytics(props: {
 }) {
   const {
     dailyActiveUsers,
-    dailyActiveUsersWeeklyAvg,
-    dailySales,
-    salesWeeklyAvg,
-    monthlySales,
     weeklyActiveUsers,
     monthlyActiveUsers,
+    dailySales,
     engagedUsers,
     d1,
-    d1WeeklyAvg,
     nd1,
-    nd1WeeklyAvg,
     fracDaysActiveD1ToD3,
-    fracDaysActiveD1ToD3Avg7d,
     nw1,
     dailyBetCounts,
     dailyContractCounts,
@@ -102,10 +97,7 @@ export function CustomAnalytics(props: {
     weekOnWeekRetention,
     monthlyRetention,
     dailyActivationRate,
-    dailyActivationRateWeeklyAvg,
     manaBetDaily,
-    manaBetWeekly,
-    manaBetMonthly,
     dailyNewRealUserSignups,
     d1BetAverage,
     d1Bet3DayAverage,
@@ -113,6 +105,19 @@ export function CustomAnalytics(props: {
   } = props.stats
 
   const { manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+
+  const dailyActiveUsersWeeklyAvg = rollingAvg(dailyActiveUsers, 7)
+  const salesWeeklyAvg = rollingAvg(dailySales, 7)
+  const monthlySales = rollingSum(dailySales, 30)
+  const d1WeeklyAvg = rollingAvg(d1, 7)
+  const nd1WeeklyAvg = rollingAvg(nd1, 7)
+  const dailyActivationRateWeeklyAvg = rollingAvg(dailyActivationRate, 7)
+  const manaBetWeekly = rollingSum(manaBetDaily, 7)
+  const manaBetMonthly = rollingSum(manaBetDaily, 30)
+
+  const fracDaysActiveD1ToD3Avg7d = rollingAvg(fracDaysActiveD1ToD3, 7)
+  // replace last 4 days with 0s
+  fracDaysActiveD1ToD3.splice(-4, 4, 0, 0, 0, 0)
 
   const currentSupply = manaSupplyOverTime[manaSupplyOverTime.length - 1]
   const yesterdaySupply = manaSupplyOverTime[manaSupplyOverTime.length - 2]
@@ -663,3 +668,20 @@ export function CustomAnalytics(props: {
     </Col>
   )
 }
+
+const rollingAvg = (arr: number[], period: number) =>
+  arr.map((_, i) => {
+    const start = Math.max(0, i - period + 1)
+    const end = i + 1
+    return average(arr.slice(start, end))
+  })
+
+const rollingSum = (arr: number[], period: number) =>
+  arr.map((_, i) => {
+    const start = Math.max(0, i - period + 1)
+    const end = i + 1
+    const total = sum(arr.slice(start, end))
+    // adjust start to make up for missing data
+    if (end - start < period) return (total * period) / (end - start)
+    return total
+  })

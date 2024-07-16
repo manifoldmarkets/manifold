@@ -759,7 +759,7 @@ create
 or replace function public.get_user_bets_from_resolved_contracts (uid text, count integer, start integer) returns table (contract_id text, bets jsonb[], contract jsonb) language sql stable parallel SAFE as $function$;
 select contract_id,
   bets.data as bets,
-  contracts.data as contracts
+  c.data as contracts
 from (
     select contract_id,
       array_agg(
@@ -771,9 +771,10 @@ from (
       and amount != 0
     group by contract_id
   ) as bets
-  join contracts on contracts.id = bets.contract_id
-where contracts.resolution_time is not null
-  and contracts.outcome_type = 'BINARY'
+  join contracts c on c.id = bets.contract_id
+where c.resolution_time is not null
+  and c.outcome_type = 'BINARY'
+  order by c.resolution_time desc
 limit count offset start $function$;
 
 create
@@ -860,15 +861,6 @@ union
 select contract_id
 from your_followed_contracts $function$;
 
-create
-or replace function public.get_your_daily_changed_contracts (uid text, n integer, start integer) returns table (data jsonb, daily_score real) language sql stable parallel SAFE as $function$
-select data,
-  coalesce((data->>'dailyScore')::real, 0.0) as daily_score
-from get_your_contract_ids(uid)
-  left join contracts on contracts.id = contract_id
-where contracts.outcome_type = 'BINARY'
-order by daily_score desc
-limit n offset start $function$;
 
 create
 or replace function public.get_your_recent_contracts (uid text, n integer, start integer) returns table (data jsonb, max_ts bigint) language sql stable parallel SAFE as $function$

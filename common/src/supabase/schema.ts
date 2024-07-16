@@ -197,9 +197,7 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          is_ante: boolean | null
           is_api: boolean | null
-          is_challenge: boolean | null
           is_redemption: boolean | null
           loan_amount: number | null
           outcome: string | null
@@ -217,9 +215,7 @@ export type Database = {
           contract_id: string
           created_time?: string
           data: Json
-          is_ante?: boolean | null
           is_api?: boolean | null
-          is_challenge?: boolean | null
           is_redemption?: boolean | null
           loan_amount?: number | null
           outcome?: string | null
@@ -237,9 +233,7 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
-          is_ante?: boolean | null
           is_api?: boolean | null
-          is_challenge?: boolean | null
           is_redemption?: boolean | null
           loan_amount?: number | null
           outcome?: string | null
@@ -3640,19 +3634,12 @@ export type Database = {
           n: number
         }[]
       }
-      ts_to_millis:
-        | {
-            Args: {
-              ts: string
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              ts: string
-            }
-            Returns: number
-          }
+      ts_to_millis: {
+        Args: {
+          ts: string
+        }
+        Returns: number
+      }
       vector_avg: {
         Args: {
           '': number[]

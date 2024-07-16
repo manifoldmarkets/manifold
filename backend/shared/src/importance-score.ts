@@ -45,7 +45,7 @@ export async function calculateImportanceScore(
            c.data->'createdTime' as created_time,
            c.data->'volume24Hours' as volume_24_hours,
            c.data->'shouldAnswersSumToOne' as should_answers_sum_to_one,
-           conversion_score,importance_score, freshness_score, view_count,
+           conversion_score,importance_score, freshness_score, view_count, daily_score,
            case when count(a.prob) > 0 then json_agg(a.prob) end as answer_probs
     from contracts c
            left join answers a on c.id = a.contract_id
@@ -84,7 +84,7 @@ export async function calculateImportanceScore(
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
     select(
-      'where importance_score > $1 or freshness_score > $1 or resolution_time is null'
+      'where importance_score > $1 or freshness_score > $1 or c.resolution_time is null'
     ),
     [MIN_IMPORTANCE_SCORE],
     convertRow
@@ -127,26 +127,29 @@ export async function calculateImportanceScore(
   const contractsWithUpdates: Contract[] = []
 
   for (const contract of contracts) {
-    const { importanceScore, freshnessScore } = computeContractScores(
-      now,
-      contract,
-      todayComments[contract.id] ?? 0,
-      todayLikesByContract[contract.id] ?? 0,
-      thisWeekLikesByContract[contract.id] ?? 0,
-      todayTradersByContract[contract.id] ?? 0,
-      hourAgoTradersByContract[contract.id] ?? 0,
-      thisWeekTradersByContract[contract.id] ?? 0
-    )
+    const { importanceScore, freshnessScore, dailyScore } =
+      computeContractScores(
+        now,
+        contract,
+        todayComments[contract.id] ?? 0,
+        todayLikesByContract[contract.id] ?? 0,
+        thisWeekLikesByContract[contract.id] ?? 0,
+        todayTradersByContract[contract.id] ?? 0,
+        hourAgoTradersByContract[contract.id] ?? 0,
+        thisWeekTradersByContract[contract.id] ?? 0
+      )
 
     const epsilon = 0.01
     // NOTE: These scores aren't updated in firestore, so are never accurate in the data blob
     if (
       rescoreAll ||
       !floatingEqual(importanceScore, contract.importanceScore, epsilon) ||
-      !floatingEqual(freshnessScore, contract.freshnessScore, epsilon)
+      !floatingEqual(freshnessScore, contract.freshnessScore, epsilon) ||
+      !floatingEqual(dailyScore, contract.dailyScore, epsilon)
     ) {
       contract.importanceScore = importanceScore
       contract.freshnessScore = freshnessScore
+      contract.dailyScore = dailyScore
       contractsWithUpdates.push(contract)
     }
   }
@@ -199,6 +202,7 @@ export async function calculateImportanceScore(
         id: contract.id,
         importance_score: contract.importanceScore,
         freshness_score: contract.freshnessScore,
+        daily_score: contract.dailyScore,
       }))
     )
   }

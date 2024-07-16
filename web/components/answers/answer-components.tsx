@@ -9,11 +9,7 @@ import {
   resolution,
   tradingAllowed,
 } from 'common/contract'
-import {
-  formatLargeNumber,
-  formatMoney,
-  formatPercent,
-} from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { ReactNode, useState } from 'react'
 import { Button } from '../buttons/button'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -45,6 +41,7 @@ import { track } from 'web/lib/service/analytics'
 import { UserHovercard } from '../user/user-hovercard'
 import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { MultiSellerPosition, MultiSellerProfit } from '../bet/sell-panel'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -330,42 +327,23 @@ export const MultiSeller = (props: {
         )}
         onClick={() => setOpen(true)}
       >
-        Sell
+        <span className="font-bold">Sell</span>
         {showPosition && (
           <>
             {' '}
-            <MultiSellPosition contract={contract} userBets={userBets} />
+            <span className="font-bold">
+              <MultiSellerPosition contract={contract} userBets={userBets} />
+            </span>{' '}
+            (
+            <MultiSellerProfit
+              contract={contract}
+              userBets={userBets}
+              answer={answer}
+            />{' '}
+            profit)
           </>
         )}
       </button>
-    </>
-  )
-}
-
-export function MultiSellPosition(props: {
-  contract: CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
-}) {
-  const { contract, userBets } = props
-  const { totalShares } = getContractBetMetrics(contract, userBets)
-  const yesWinnings = totalShares.YES ?? 0
-  const noWinnings = totalShares.NO ?? 0
-  const position = yesWinnings - noWinnings
-  return (
-    <>
-      {position > 1e-7 ? (
-        <>
-          <span className="font-bold">{formatLargeNumber(position)}</span> YES
-          shares
-        </>
-      ) : position < -1e-7 ? (
-        <>
-          <span className="font-bold">{formatLargeNumber(-position)}</span> NO
-          shares
-        </>
-      ) : (
-        <></>
-      )}
     </>
   )
 }

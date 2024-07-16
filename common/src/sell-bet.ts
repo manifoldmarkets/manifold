@@ -83,9 +83,7 @@ export const getCpmmSellBetInfo = (
     isFilled: true,
     isCancelled: false,
     orderAmount: takerAmount,
-    isAnte: false,
     isRedemption: false,
-    isChallenge: false,
     visibility: contract.visibility,
     answerId: answer?.id,
   })
@@ -148,9 +146,7 @@ export const getCpmmMultiSellBetInfo = (
     isFilled: true,
     isCancelled: false,
     orderAmount: takerAmount,
-    isAnte: false,
     isRedemption: false,
-    isChallenge: false,
     visibility: contract.visibility,
   }
 
@@ -174,9 +170,7 @@ export const getCpmmMultiSellBetInfo = (
       probAfter,
       createdTime: now,
       fees: totalFees,
-      isAnte: false,
       isRedemption: true,
-      isChallenge: false,
       visibility: contract.visibility,
     })
     return {
@@ -261,9 +255,7 @@ export const getNewSellBetInfo = (
     probAfter,
     createdTime: now,
     fees: totalFees,
-    isAnte: false,
     isRedemption,
-    isChallenge: false,
     visibility: contract.visibility,
   })
 

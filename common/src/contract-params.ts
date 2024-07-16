@@ -70,7 +70,6 @@ export async function getContractParams(
           contractId: contract.id,
           limit: 1,
           order: 'desc',
-          filterAntes: true,
           filterRedemptions: true,
         })
       : ([] as Bet[]),

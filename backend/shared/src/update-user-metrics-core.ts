@@ -4,7 +4,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getUsers, log, revalidateStaticProps } from 'shared/utils'
-import { groupBy, sumBy, uniq } from 'lodash'
+import { groupBy, sortBy, sumBy, uniq } from 'lodash'
 import { Contract, CPMMMultiContract } from 'common/contract'
 import {
   calculateMetricsByContractAndAnswer,
@@ -404,13 +404,16 @@ const getUnresolvedOrRecentlyResolvedBets = async (
     where
       cb.user_id in ($1:list)
       and (c.resolution_time is null or c.resolution_time > $2)
-      and (a is null or millis_to_ts(coalesce(((a.data->'resolutionTime')::bigint),ts_to_millis(now()))) > $2)
-    order by cb.created_time`,
+      and (a is null or a.resolution_time is null or a.resolution_time > $2)
+    `,
     [userIds, new Date(since).toISOString()],
     convertBet
   )
 
-  return groupBy(bets, (r) => r.userId as string)
+  return groupBy(
+    sortBy(bets, (b) => b.createdTime),
+    (r) => r.userId as string
+  )
 }
 
 const getPortfolioSnapshot = async (

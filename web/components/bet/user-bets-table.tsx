@@ -769,6 +769,7 @@ function BetsTable(props: {
                             contract={contract}
                             bets={bets}
                             isYourBets={areYourBets}
+                            paginate
                           />
                         </Col>
                       ))}

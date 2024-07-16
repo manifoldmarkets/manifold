@@ -132,6 +132,7 @@ export const convertContract = (c: {
   view_count?: number | null
   conversion_score?: number | null
   freshness_score?: number | null
+  daily_score?: number | null
 }) =>
   removeUndefinedProps({
     ...(c.data as Contract),
@@ -140,6 +141,7 @@ export const convertContract = (c: {
     conversionScore: c.conversion_score,
     freshnessScore: c.freshness_score,
     viewCount: Number(c.view_count),
+    dailyScore: c.daily_score,
   } as Contract)
 
 export const followContract = async (

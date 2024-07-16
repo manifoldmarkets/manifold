@@ -93,7 +93,6 @@ if (require.main === module) {
             fees: noFees,
             isAnte: false,
             isRedemption: true,
-            isChallenge: false,
             visibility: bets[0].visibility,
             isApi: false,
           }
