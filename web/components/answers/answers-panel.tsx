@@ -58,21 +58,16 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
 import { Avatar } from 'web/components/widgets/avatar'
 import {
-  TradesButton,
   TradesModal,
   TradesNumber,
 } from 'web/components/contract/trades-button'
 import toast from 'react-hot-toast'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
-  OrderBookButton,
   OrderBookPanel,
   YourOrders,
   getOrderBookButtonLabel,
 } from '../bet/order-book'
 import { useUnfilledBets } from 'web/hooks/use-bets'
-import { Tooltip } from '../widgets/tooltip'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
@@ -81,8 +76,6 @@ import { UserHovercard } from '../user/user-hovercard'
 import { searchInAny } from 'common/util/parse'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { formatTime } from 'web/lib/util/time'
-import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { UserIcon } from '@heroicons/react/solid'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
