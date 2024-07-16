@@ -184,7 +184,6 @@ const getVolumeSince = async (
       from contract_bets
       where created_time >= millis_to_ts($1)
       and not is_redemption
-      and not is_ante
       and contract_id = any($2)
        group by contract_id`,
       [since, contractIds],

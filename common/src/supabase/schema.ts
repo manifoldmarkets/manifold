@@ -197,7 +197,6 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          is_ante: boolean | null
           is_api: boolean | null
           is_redemption: boolean | null
           loan_amount: number | null
@@ -216,7 +215,6 @@ export type Database = {
           contract_id: string
           created_time?: string
           data: Json
-          is_ante?: boolean | null
           is_api?: boolean | null
           is_redemption?: boolean | null
           loan_amount?: number | null
@@ -235,7 +233,6 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
-          is_ante?: boolean | null
           is_api?: boolean | null
           is_redemption?: boolean | null
           loan_amount?: number | null

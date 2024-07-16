@@ -632,7 +632,6 @@ function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
   const staticBets = useBetsOnce({
     contractId: contract.id,
     userId: !user ? 'loading' : user.id,
-    filterAntes: true,
     order: 'asc',
   })
 

@@ -12,7 +12,6 @@ create table if not exists
     outcome text,
     prob_before numeric,
     prob_after numeric,
-    is_ante boolean,
     is_redemption boolean,
     visibility text,
     is_api boolean,
@@ -48,7 +47,6 @@ begin
         new.outcome := ((new.data) ->> 'outcome');
         new.prob_before := ((new.data) ->> 'probBefore')::numeric;
         new.prob_after := ((new.data) ->> 'probAfter')::numeric;
-        new.is_ante := ((new.data) -> 'isAnte')::boolean;
         new.is_redemption := ((new.data) -> 'isRedemption')::boolean;
         new.visibility := ((new.data) ->> 'visibility')::text;
         new.answer_id := ((new.data) ->> 'answerId')::text;

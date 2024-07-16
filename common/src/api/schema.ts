@@ -272,7 +272,6 @@ export const API = (_apiTypeCheck = {
         kinds: z.enum(['open-limit']).optional(),
         // undocumented fields. idk what a good api interface would be
         filterRedemptions: coerceBoolean.optional(),
-        filterAntes: coerceBoolean.optional(),
         includeZeroShareRedemptions: coerceBoolean.optional(),
         commentRepliesOnly: coerceBoolean.optional(),
       })

@@ -164,7 +164,6 @@ function BetsModalContent(props: {
   const bets = useBetsOnce({
     contractId: contract.id,
     answerId: answer?.id,
-    filterAntes: true,
     filterRedemptions: true,
   })
 

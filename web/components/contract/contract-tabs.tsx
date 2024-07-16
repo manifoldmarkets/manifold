@@ -580,7 +580,6 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       limit,
       filterRedemptions: !isNumber,
       includeZeroShareRedemptions: isNumber,
-      filterAntes: true,
     })
       .then((olderBets) => {
         setOlderBets((bets) => uniqBy([...bets, ...olderBets], (b) => b.id))

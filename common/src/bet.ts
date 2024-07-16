@@ -13,7 +13,6 @@ supabase status: columns exist for
   outcome: text
   probBefore: number
   probAfter: number
-  isAnte: boolean
   isRedemption: boolean
   visibility: text
 
@@ -42,7 +41,6 @@ export type Bet = {
 
   isApi?: boolean // true if bet was placed via API
 
-  isAnte: boolean
   isRedemption: boolean
   visibility: Visibility
   /** @deprecated */

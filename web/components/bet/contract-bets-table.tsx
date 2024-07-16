@@ -36,7 +36,7 @@ export function ContractBetsTable(props: {
   const { isResolved, mechanism, outcomeType } = contract
 
   const bets = sortBy(
-    props.bets.filter((b) => !b.isAnte && (b.amount !== 0 || b.loanAmount)),
+    props.bets.filter((b) => b.amount !== 0 || b.loanAmount),
     (bet) => bet.createdTime
   ).reverse()
 
@@ -185,9 +185,7 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
         </td>
       )}
       <td>
-        {bet.isAnte ? (
-          'ANTE'
-        ) : isCpmmMulti && !isBinaryMC ? (
+        {isCpmmMulti && !isBinaryMC ? (
           <BinaryOutcomeLabel outcome={outcome as any} />
         ) : (
           <OutcomeLabel
