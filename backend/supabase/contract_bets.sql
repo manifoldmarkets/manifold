@@ -95,6 +95,10 @@ drop index if exists contract_bets_contract_user_id;
 
 create index contract_bets_contract_user_id on public.contract_bets using btree (contract_id, user_id, created_time desc);
 
+drop index if exists contract_bets_user_id_contract_id;
+
+create index contract_bets_user_id_contract_id on public.contract_bets using btree (user_id,contract_id, created_time desc);
+
 drop index if exists contract_bets_created_time;
 
 create index contract_bets_created_time on public.contract_bets using btree (contract_id, created_time desc);
