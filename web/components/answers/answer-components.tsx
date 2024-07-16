@@ -9,10 +9,7 @@ import {
   resolution,
   tradingAllowed,
 } from 'common/contract'
-import {
-  formatMoney,
-  formatPercent,
-} from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { ReactNode, useState } from 'react'
 import { Button } from '../buttons/button'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
