@@ -39,7 +39,7 @@ export function LiveGeneratedFeed(props: {
   const { userId, reload, hidden } = props
   const user = useUser()
 
-  const limit = 5
+  const limit = 7
   const [feedData, setFeedData] = usePersistentInMemoryState(
     defaultValue,
     `feed-data-${userId}`
