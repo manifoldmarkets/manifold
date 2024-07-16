@@ -1,6 +1,6 @@
 import { groupBy, mapValues, sortBy } from 'lodash'
 
-import { getIds, updateData } from 'shared/supabase/utils'
+import { bulkUpdateData, getIds } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 
@@ -37,8 +37,8 @@ export async function updateGroupMetricsCore() {
   const groupProfitScores = await pg.manyOrNone(
     `with profit_scores as (
       select
-        gc.group_id, ucm.user_id, sum((ucm.data->'profit')::numeric) as score,
-        row_number() over (partition by gc.group_id order by sum((ucm.data->'profit')::numeric) desc) as nth
+        gc.group_id, ucm.user_id, sum(ucm.profit) as score,
+        row_number() over (partition by gc.group_id order by sum(ucm.profit) desc) as nth
       from group_contracts as gc
       join user_contract_metrics as ucm on ucm.contract_id = gc.contract_id
       where ucm.answer_id is null
@@ -57,16 +57,16 @@ export async function updateGroupMetricsCore() {
 
   log('Updating leaderboards...')
 
-  for (const groupId of groupIds) {
+  const updates = groupIds.map((groupId) => {
     const topTraderScores = profitScoresByGroup[groupId] ?? []
     const topCreatorScores = creatorScoresByGroup[groupId] ?? []
-
-    updateData(pg, 'groups', 'id', {
+    return {
       id: groupId,
       cachedLeaderboard: {
         topTraders: sortBy(topTraderScores, (x) => -x.score),
         topCreators: sortBy(topCreatorScores, (x) => -x.score),
       },
-    })
-  }
+    }
+  })
+  await bulkUpdateData(pg, 'groups', updates)
 }
