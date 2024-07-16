@@ -164,8 +164,11 @@ export function AnswersPanel(props: {
     )
   }, [sortedAnswers, query])
 
-  const [answersToShow, setAnswersToShow] = useState<Answer[]>(
-    getAnswersToShow(query, page, sortedAnswers, searchedAnswers)
+  const answersToShow = getAnswersToShow(
+    query,
+    page,
+    sortedAnswers,
+    searchedAnswers
   )
 
   const selectedAnswers = answers.filter((a) =>
@@ -176,12 +179,6 @@ export function AnswersPanel(props: {
     if (!selectedAnswerIds.length)
       setDefaultAnswerIdsToGraph?.(answersToShow.map((a) => a.id))
   }, [answersToShow])
-
-  useEffect(() => {
-    setAnswersToShow(
-      getAnswersToShow(query, page, sortedAnswers, searchedAnswers)
-    )
-  }, [query, page, sortedAnswers, searchedAnswers])
 
   const user = useUser()
 
@@ -234,6 +231,9 @@ export function AnswersPanel(props: {
         setText={setQuery}
         isSearchOpen={isSearchOpen}
         setIsSearchOpen={setIsSearchOpen}
+        onCreateAnswer={() => {
+          setSort('new')
+        }}
       >
         <Row className={'mb-1 items-center gap-4'}>
           <DropdownMenu
@@ -345,7 +345,7 @@ export function AnswersPanel(props: {
           <Pagination
             page={page}
             pageSize={ANSWERS_PER_PAGE}
-            totalItems={answers.length}
+            totalItems={query ? searchedAnswers.length : sortedAnswers.length}
             setPage={setPage}
           />
         </Col>
