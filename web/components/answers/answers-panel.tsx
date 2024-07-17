@@ -32,7 +32,7 @@ import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
 import { groupBy, sumBy } from 'lodash'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Ref, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CirclePicker } from 'react-color'
 import toast from 'react-hot-toast'
 import { Button, buttonClass } from 'web/components/buttons/button'
@@ -69,7 +69,7 @@ import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { UserHovercard } from '../user/user-hovercard'
-import { ControlledCarousel, useCarousel } from '../widgets/carousel'
+import { Carousel, ControlledCarousel, useCarousel } from '../widgets/carousel'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Pagination } from '../widgets/pagination'
@@ -236,32 +236,60 @@ export function AnswersPanel(props: {
 
   const [carouselRef, setCarouselRef] = useState<HTMLDivElement | null>(null)
 
-  const { onScroll, scrollLeft, scrollRight, atFront, atBack, scrollToIndex } =
+  const { onScroll, scrollLeft, scrollRight, atFront, atBack } =
     useCarousel(carouselRef)
 
-  const handleScroll = useCallback(
-    (event: React.UIEvent<HTMLDivElement>) => {
-      onScroll(event)
-      const newPage = Math.round(
-        event.currentTarget.scrollLeft / event.currentTarget.offsetWidth
-      )
-      if (newPage !== page) {
-        scrollToIndex(newPage)
-        setPage(newPage)
-      }
+  const scrollToPage = useCallback(
+    (index: number) => {
+      if (!carouselRef) return
+      const itemWidth = carouselRef.offsetWidth + 16
+      carouselRef.scrollTo({
+        left: index * itemWidth,
+        behavior: 'smooth',
+      })
     },
-    [onScroll, page, scrollToIndex]
+    [carouselRef]
   )
+
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const handleScroll = useCallback(() => {
+    onScroll()
+    if (!carouselRef) return
+    const newPage = Math.round(carouselRef.scrollLeft / carouselRef.offsetWidth)
+    setPage(newPage)
+    // Clear any existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+    }
+
+    // Set a new timeout
+    scrollTimeoutRef.current = setTimeout(() => {
+      const itemWidth = carouselRef.offsetWidth + 16
+      const scrollPosition = carouselRef.scrollLeft
+      const newPage = Math.round(scrollPosition / itemWidth)
+      setPage(newPage)
+      scrollToPage(newPage)
+    }, 150) // Adjust this delay as needed
+  }, [onScroll, carouselRef, scrollToPage])
+
+  useEffect(() => {
+    // Cleanup function to clear the timeout when the component unmounts
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handlePageChange = useCallback(
     (newPage: number) => {
+      scrollToPage(newPage)
       setPage(newPage)
-      scrollToIndex(newPage)
     },
-    [scrollToIndex]
+    [scrollToPage]
   )
 
-  console.log(carouselRef)
   return (
     <Col>
       <SearchCreateAnswerPanel
@@ -349,7 +377,10 @@ export function AnswersPanel(props: {
             ))}
 
           <ControlledCarousel
-            className={clsx('relative', 'max-w-full gap-1')}
+            className={clsx(
+              'relative max-w-full gap-1'
+              // 'snap-x snap-mandatory'
+            )}
             ref={setCarouselRef}
             onScroll={handleScroll}
             scrollLeft={scrollLeft}
@@ -404,7 +435,7 @@ export function AnswersPanel(props: {
               page={page}
               pageSize={ANSWERS_PER_PAGE}
               totalItems={query ? searchedAnswers.length : sortedAnswers.length}
-              setPage={setPage}
+              setPage={handlePageChange}
             />
             {canAddAnswer && (
               <Button

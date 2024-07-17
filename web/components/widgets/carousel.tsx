@@ -79,7 +79,7 @@ export const ControlledCarousel = forwardRef(function (
     scrollRight: () => void
     atFront: boolean
     atBack: boolean
-    noButtons: boolean
+    noButtons?: boolean
   },
   current: Ref<HTMLDivElement>
 ) {
@@ -145,18 +145,6 @@ export const useCarousel = (carouselRef: HTMLDivElement | null) => {
     carouselRef?.scrollBy({ left: carouselRef.clientWidth - 80 })
   })
 
-  const scrollToIndex = useCallback(
-    (index: number) => {
-      if (carouselRef) {
-        carouselRef.scrollTo({
-          left: index * carouselRef.offsetWidth,
-          behavior: 'smooth',
-        })
-      }
-    },
-    [carouselRef]
-  )
-
   const [atFront, setAtFront] = useState(true)
   const [atBack, setAtBack] = useState(true)
   const onScroll = throttle(() => {
@@ -172,6 +160,5 @@ export const useCarousel = (carouselRef: HTMLDivElement | null) => {
     atFront,
     atBack,
     onScroll,
-    scrollToIndex,
   }
 }
