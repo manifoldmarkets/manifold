@@ -245,7 +245,7 @@ export function AnswersPanel(props: {
       const itemWidth = carouselRef.offsetWidth + 16
       carouselRef.scrollTo({
         left: index * itemWidth,
-        // behavior: 'smooth',
+        behavior: 'auto',
       })
     },
     [carouselRef]
@@ -256,8 +256,7 @@ export function AnswersPanel(props: {
   const handleScroll = useCallback(() => {
     onScroll()
     if (!carouselRef) return
-    const newPage = Math.round(carouselRef.scrollLeft / carouselRef.offsetWidth)
-    setPage(newPage)
+
     // Clear any existing timeout
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current)
