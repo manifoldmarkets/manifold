@@ -51,9 +51,17 @@ export function Pagination(props: {
   setPage: (page: number) => void
   className?: string
   savePageToQuery?: boolean
+  scrolledPage?: number
 }) {
-  const { page, pageSize, totalItems, setPage, className, savePageToQuery } =
-    props
+  const {
+    page,
+    pageSize,
+    totalItems,
+    setPage,
+    className,
+    savePageToQuery,
+    scrolledPage,
+  } = props
   const router = useRouter()
   const { searchParams, createQueryString } = useDefinedSearchParams()
   const pathname = usePathname()
@@ -104,6 +112,7 @@ export function Pagination(props: {
               pageNumber={pageNumber}
               setPage={onClick}
               page={page}
+              scrolledPage={scrolledPage}
             />
           ))}
         </Row>
@@ -147,8 +156,10 @@ export function PageNumbers(props: {
   pageNumber: PageNumbers
   setPage: (page: number) => void
   page: number
+  scrolledPage?: number
 }) {
-  const { pageNumber, setPage, page } = props
+  const { pageNumber, setPage, page, scrolledPage } = props
+  const scrolledPageExists = scrolledPage !== undefined
   if (pageNumber === PAGE_ELLIPSES || typeof pageNumber === 'string') {
     return <div className="text-ink-400 select-none">{PAGE_ELLIPSES}</div>
   }
@@ -156,9 +167,11 @@ export function PageNumbers(props: {
     <button
       onClick={() => setPage(pageNumber)}
       className={clsx(
-        'select-none rounded-lg px-2',
+        'select-none rounded-lg px-2 transition-all',
         page === pageNumber
           ? 'bg-primary-100 text-primary-700'
+          : !!scrolledPageExists && scrolledPage === pageNumber
+          ? 'bg-primary-50 text-ink-400'
           : 'text-ink-400 hover:bg-ink-100'
       )}
     >

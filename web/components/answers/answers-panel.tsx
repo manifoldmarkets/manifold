@@ -262,6 +262,11 @@ export function AnswersPanel(props: {
     onScroll()
     if (!carouselRef) return
 
+    const itemWidth = carouselRef.offsetWidth + 16
+    const scrollPosition = carouselRef.scrollLeft
+
+    const tempPage = Math.round(scrollPosition / itemWidth)
+    setScrolledPage(tempPage)
     // Clear any existing timeout
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current)
@@ -269,12 +274,10 @@ export function AnswersPanel(props: {
 
     // Set a new timeout
     scrollTimeoutRef.current = setTimeout(() => {
-      const itemWidth = carouselRef.offsetWidth + 16
-      const scrollPosition = carouselRef.scrollLeft
-      const newPage = Math.round(scrollPosition / itemWidth)
-      setPage(newPage)
-      scrollToPage(newPage)
-    }, 50)
+      // const newPage = Math.round(scrollPosition / itemWidth)
+      setPage(scrolledPage)
+      scrollToPage(scrolledPage)
+    }, 150)
   }, [onScroll, carouselRef, scrollToPage])
 
   useEffect(() => {
@@ -440,6 +443,7 @@ export function AnswersPanel(props: {
               pageSize={ANSWERS_PER_PAGE}
               totalItems={query ? searchedAnswers.length : sortedAnswers.length}
               setPage={handlePageChange}
+              scrolledPage={scrolledPage}
             />
             {canAddAnswer && (
               <Button
