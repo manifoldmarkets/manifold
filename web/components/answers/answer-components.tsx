@@ -322,7 +322,7 @@ export const MultiSeller = (props: {
       )}
       <button
         className={clsx(
-          'hover:text-ink-700 decoration-2 hover:underline',
+          'hover:text-primary-700 text-primary-600 decoration-2 hover:underline',
           className
         )}
         onClick={() => setOpen(true)}
@@ -330,10 +330,9 @@ export const MultiSeller = (props: {
         <span className="font-bold">Sell</span>
         {showPosition && (
           <>
-            {' '}
             <span className="font-bold">
               <MultiSellerPosition contract={contract} userBets={userBets} />
-            </span>{' '}
+            </span>
             (
             <MultiSellerProfit
               contract={contract}
@@ -535,7 +534,7 @@ export function AnswerPosition(props: {
     <Row
       className={clsx(
         className,
-        'text-ink-500 gap-1.5 whitespace-nowrap text-xs font-semibold'
+        'text-ink-500 gap-1.5 whitespace-nowrap text-xs'
       )}
     >
       <Row className="gap-1">

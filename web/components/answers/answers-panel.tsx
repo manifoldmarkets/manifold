@@ -74,6 +74,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { Pagination } from '../widgets/pagination'
 import {
   AnswerBar,
+  AnswerPosition,
   AnswerStatus,
   BetButtons,
   CreatorAndAnswerLabel,
@@ -774,23 +775,22 @@ export function Answer(props: {
             'select-none flex-wrap items-center justify-end gap-2 px-3 py-0.5 text-xs'
           }
         >
-          <Row className="text-ink-600 gap-1">
+          <Row className="text-ink-500 gap-1.5">
+            {showSellButton && (
+              <AnswerPosition
+                contract={contract}
+                answer={answer as Answer}
+                userBets={userBets}
+                className="self-end"
+                user={user}
+              />
+            )}
+            {userHasLimitOrders && showSellButton && <>&middot;</>}
             {userHasLimitOrders && (
               <AnswerOrdersButton
                 contract={contract}
                 yourUnfilledBets={yourUnfilledBets}
-                buttonClassName="hover:text-ink-700 hover:underline transition-all"
-              />
-            )}
-            {userHasLimitOrders && showSellButton && <>{'·'}</>}
-            {showSellButton && (
-              <MultiSeller
-                answer={answer}
-                contract={contract}
-                userBets={userBets}
-                user={user}
-                className="text-primary-600 hover:text-primary-700 transition-all"
-                showPosition
+                buttonClassName="hover:text-primary-700 text-primary-600 font-bold hover:underline transition-all"
               />
             )}
           </Row>
