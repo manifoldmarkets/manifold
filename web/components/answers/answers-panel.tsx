@@ -140,13 +140,9 @@ export function AnswersPanel(props: {
 
   const [page, setPage] = useState(0)
   const [scrolledPage, setScrolledPage] = useState(0)
-  const setAbsolutePage = (page: number) => {
-    setScrolledPage(page)
-    setPage(page)
-  }
 
   useEffect(() => {
-    setAbsolutePage(0)
+    setPage(0)
   }, [query, sort])
 
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
