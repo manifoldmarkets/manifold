@@ -78,7 +78,6 @@ import {
   AnswerStatus,
   BetButtons,
   CreatorAndAnswerLabel,
-  MultiSeller,
 } from './answer-components'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 
