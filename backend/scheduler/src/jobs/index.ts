@@ -125,7 +125,7 @@ export function createJobs() {
     createJob(
       'update-stats',
       '0 20 4 * * *', // on 4:20am daily
-      updateStatsCore
+      () => updateStatsCore(7)
     ),
     createJob(
       'onboarding-notification',

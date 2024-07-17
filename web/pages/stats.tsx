@@ -5,9 +5,7 @@ import { Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getStats } from 'web/lib/supabase/stats'
-import { Stats } from 'common/stats'
-import { PLURAL_BETS } from 'common/user'
-import { capitalize, orderBy, sum, sumBy } from 'lodash'
+import { orderBy, sum, sumBy } from 'lodash'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
 import { SEO } from 'web/components/SEO'
@@ -15,12 +13,12 @@ import { useAdmin } from 'web/hooks/use-admin'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { api } from '../lib/api/api'
-import { Row as rowfor } from 'common/supabase/utils'
+import { Column, Row as rowfor } from 'common/supabase/utils'
 import { BonusSummary } from 'web/components/stats/bonus-summary'
 import { ManaSupplySummary } from 'web/components/stats/mana-summary'
 import { Row } from 'web/components/layout/row'
-import { VIEW_RECORDINGS_START } from 'common/feed'
 import { average } from 'common/util/math'
+import { useCallback } from 'react'
 
 export const getStaticProps = async () => {
   try {
@@ -49,7 +47,7 @@ export const getStaticProps = async () => {
 }
 
 export default function Analytics(props: {
-  stats: Stats | null
+  stats: rowfor<'daily_stats'>[]
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
@@ -76,48 +74,20 @@ export default function Analytics(props: {
 }
 
 export function CustomAnalytics(props: {
-  stats: Stats
+  stats: rowfor<'daily_stats'>[]
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
 }) {
-  const {
-    dailyActiveUsers,
-    weeklyActiveUsers,
-    monthlyActiveUsers,
-    dailySales,
-    engagedUsers,
-    d1,
-    nd1,
-    fracDaysActiveD1ToD3,
-    nw1,
-    dailyBetCounts,
-    dailyContractCounts,
-    dailyCommentCounts,
-    weekOnWeekRetention,
-    monthlyRetention,
-    dailyActivationRate,
-    manaBetDaily,
-    dailyNewRealUserSignups,
-    d1BetAverage,
-    d1Bet3DayAverage,
-    feedConversionScores,
-  } = props.stats
+  const { stats, manaSupplyOverTime, fromBankSummary, toBankSummary } = props
 
-  const { manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+  const dataFor = useCallback(dataForStats(stats), [stats])
 
-  const dailyActiveUsersWeeklyAvg = rollingAvg(dailyActiveUsers, 7)
-  const salesWeeklyAvg = rollingAvg(dailySales, 7)
-  const monthlySales = rollingSum(dailySales, 30)
-  const d1WeeklyAvg = rollingAvg(d1, 7)
-  const nd1WeeklyAvg = rollingAvg(nd1, 7)
-  const dailyActivationRateWeeklyAvg = rollingAvg(dailyActivationRate, 7)
-  const manaBetWeekly = rollingSum(manaBetDaily, 7)
-  const manaBetMonthly = rollingSum(manaBetDaily, 30)
-
-  const fracDaysActiveD1ToD3Avg7d = rollingAvg(fracDaysActiveD1ToD3, 7)
-  // replace last 4 days with 0s
-  fracDaysActiveD1ToD3.splice(-4, 4, 0, 0, 0, 0)
+  const fracDaysActiveD1ToD3 = dataFor('active_d1_to_d3').slice(0, -3)
+  const fracDaysActiveD1ToD3Avg7d = rollingAvg(
+    dataFor('active_d1_to_d3'),
+    7
+  ).slice(7, -3)
 
   const currentSupply = manaSupplyOverTime[manaSupplyOverTime.length - 1]
   const yesterdaySupply = manaSupplyOverTime[manaSupplyOverTime.length - 2]
@@ -137,24 +107,28 @@ export function CustomAnalytics(props: {
   const unaccountedDifference =
     differenceInSupplySinceYesterday - netBankTransactions
 
-  const startDate = props.stats.startDate[0]
+  const dailyDividedByWeekly = stats
+    .filter((row) => row.dau && row.wau)
+    .map((row) => ({ x: row.start_date, y: row.dau! / row.wau! }))
+    .slice(7)
+  const dailyDividedByMonthly = stats
+    .filter((row) => row.dau && row.mau)
+    .map((row) => ({ x: row.start_date, y: row.dau! / row.mau! }))
+    .slice(30)
+  const weeklyDividedByMonthly = stats
+    .filter((row) => row.wau && row.mau)
+    .map((row) => ({ x: row.start_date, y: row.wau! / row.mau! }))
+    .slice(30)
 
-  const dailyDividedByWeekly = dailyActiveUsers.map(
-    (dailyActive, i) => dailyActive / weeklyActiveUsers[i]
+  const current = stats[stats.length - 1]
+  const avgDAUlastWeek = average(
+    stats
+      .slice(-7)
+      .map((row) => row.dau)
+      .filter((val): val is number => val != null)
   )
-  const dailyDividedByMonthly = dailyActiveUsers.map(
-    (dailyActive, i) => dailyActive / monthlyActiveUsers[i]
-  )
-  const weeklyDividedByMonthly = weeklyActiveUsers.map(
-    (weeklyActive, i) => weeklyActive / monthlyActiveUsers[i]
-  )
+  const last30dSales = sum(stats.slice(-30).map((row) => row.sales || 0))
 
-  const currentDAUs = dailyActiveUsers[dailyActiveUsers.length - 1]
-  const avgDAUs =
-    dailyActiveUsersWeeklyAvg[dailyActiveUsersWeeklyAvg.length - 1]
-  const last30dSales = dailySales.slice(-30).reduce((a, b) => a + b, 0)
-
-  const currentEngaged = engagedUsers[engagedUsers.length - 1]
   const isAdmin = useAdmin()
 
   return (
@@ -165,69 +139,46 @@ export function CustomAnalytics(props: {
         question.
       </p>
       <div className="text-ink-500 mt-2">
-        <b>{formatLargeNumber(currentDAUs)} DAUs</b> yesterday;{' '}
-        {formatLargeNumber(avgDAUs)} avg DAUs last week
+        <b>{formatLargeNumber(current.dau ?? 0)} DAUs</b> yesterday;{' '}
+        {formatLargeNumber(avgDAUlastWeek)} avg DAUs last week
       </div>
       <Spacer h={4} />
-
       <Tabs
         className="mb-4"
         defaultIndex={1}
         tabs={[
           {
             title: 'Daily',
-            content: (
-              <DailyChart
-                dailyValues={dailyActiveUsers}
-                startDate={startDate}
-              />
-            ),
+            content: <DailyChart values={dataFor('dau')} />,
           },
           {
             title: 'Daily (7d avg)',
             content: (
-              <DailyChart
-                dailyValues={dailyActiveUsersWeeklyAvg.map(Math.round)}
-                startDate={startDate}
-              />
+              <DailyChart values={rollingAvg(dataFor('dau'), 7).map(round)} />
             ),
           },
           {
             title: 'Weekly',
-            content: (
-              <DailyChart
-                dailyValues={weeklyActiveUsers}
-                startDate={startDate}
-              />
-            ),
+            content: <DailyChart values={dataFor('wau')} />,
           },
           {
             title: 'Monthly',
-            content: (
-              <DailyChart
-                dailyValues={monthlyActiveUsers}
-                startDate={startDate}
-              />
-            ),
+            content: <DailyChart values={dataFor('mau')} />,
           },
         ]}
       />
-
       <Spacer h={8} />
-
       <Title>Engaged users</Title>
       <p className="text-ink-500">
         An engaged user is a user who has traded in, commented on, or created a
         question on at least 2 out of 7 days in each of the past 3 weeks.
       </p>
       <div className="text-ink-500 mt-2">
-        <b>{formatLargeNumber(currentEngaged)} </b> engaged users
+        <b>{formatLargeNumber(current.engaged_users ?? 0)} </b> engaged users
       </div>
       <Spacer h={4} />
-
-      <DailyChart dailyValues={engagedUsers} startDate={startDate} />
+      <DailyChart values={dataFor('engaged_users')} />
       <Spacer h={8} />
-
       <Title>Mana supply</Title>
       <Col className="mb-6 max-w-sm gap-2">
         Supply Today
@@ -274,61 +225,42 @@ export function CustomAnalytics(props: {
           </div>
         </Row>
       </Col>
-
       <Title>Mana supply over time</Title>
       <ManaSupplySummary manaSupplyStats={manaSupplyOverTime} />
-
       <Spacer h={8} />
       <Title>Transactions from Manifold</Title>
       <BonusSummary txnSummaryStats={fromBankSummary} />
-
       <Spacer h={8} />
-
       <Title>Transactions to Manifold</Title>
       <span className={'text-ink-700'}>(Ignores mana purchases)</span>
       <BonusSummary txnSummaryStats={toBankSummary} />
       <Spacer h={8} />
-
       <Title>Mana sales</Title>
-
       <p className="text-ink-500">
         <b>${formatWithCommas(last30dSales)}</b> of mana sold in the last 30d
       </p>
-
       <Spacer h={4} />
-
       <Tabs
         className="mb-4"
         defaultIndex={0}
         tabs={[
           {
             title: 'Daily',
-            content: (
-              <DailyChart dailyValues={dailySales} startDate={startDate} />
-            ),
+            content: <DailyChart values={dataFor('sales')} />,
           },
           {
             title: 'Daily (7d avg)',
             content: (
-              <DailyChart
-                dailyValues={salesWeeklyAvg.map(Math.round)}
-                startDate={startDate}
-              />
+              <DailyChart values={rollingAvg(dataFor('sales'), 7).map(round)} />
             ),
           },
           {
             title: 'Monthly',
-            content: (
-              <DailyChart
-                dailyValues={monthlySales.map(Math.round)}
-                startDate={startDate}
-              />
-            ),
+            content: <DailyChart values={rollingSum(dataFor('sales'), 30)} />,
           },
         ]}
       />
       <Spacer h={8} />
-
       <Title>Retention</Title>
       <p className="text-ink-500">
         What fraction of active users are still active after the given time
@@ -340,194 +272,104 @@ export function CustomAnalytics(props: {
         tabs={[
           {
             title: 'D1',
-            content: (
-              <DailyChart
-                dailyValues={d1}
-                startDate={startDate}
-                excludeFirstDays={1}
-                pct
-              />
-            ),
+            content: <DailyChart values={dataFor('d1').slice(1)} pct />,
           },
           {
             title: 'D1 (7d avg)',
             content: (
-              <DailyChart
-                dailyValues={d1WeeklyAvg}
-                startDate={startDate}
-                excludeFirstDays={7}
-                pct
-              />
+              <DailyChart values={rollingAvg(dataFor('d1'), 7).slice(7)} pct />
             ),
           },
           {
             title: 'W1',
-            content: (
-              <DailyChart
-                dailyValues={weekOnWeekRetention}
-                startDate={startDate}
-                excludeFirstDays={14}
-                pct
-              />
-            ),
+            content: <DailyChart values={dataFor('w1').slice(14)} pct />,
           },
           {
             title: 'M1',
-            content: (
-              <DailyChart
-                dailyValues={monthlyRetention}
-                startDate={startDate}
-                excludeFirstDays={60}
-                pct
-              />
-            ),
+            content: <DailyChart values={dataFor('m1').slice(60)} pct />,
           },
         ]}
       />
-
       <Spacer h={8} />
       <Title>New user retention</Title>
       <p className="text-ink-500">
         What fraction of new users are still active after the given time period?
       </p>
       <Spacer h={4} />
-
       <Tabs
         className="mb-4"
         defaultIndex={1}
         tabs={[
           {
             title: 'ND1',
-            content: (
-              <DailyChart
-                dailyValues={nd1}
-                startDate={startDate}
-                excludeLastDays={1}
-                pct
-              />
-            ),
+            content: <DailyChart values={dataFor('nd1').slice(0, -1)} pct />,
           },
           {
             title: 'ND1 (7d avg)',
             content: (
               <DailyChart
-                dailyValues={nd1WeeklyAvg}
-                startDate={startDate}
-                excludeFirstDays={7}
-                excludeLastDays={1}
+                values={rollingAvg(dataFor('nd1'), 7).slice(7, -1)}
                 pct
               />
             ),
           },
           {
             title: 'Active days D1-D3',
-            content: (
-              <DailyChart
-                dailyValues={fracDaysActiveD1ToD3}
-                startDate={startDate}
-                excludeLastDays={3}
-                pct
-              />
-            ),
+            content: <DailyChart values={fracDaysActiveD1ToD3} pct />,
           },
           {
             title: 'Active days D1-D3 (7d avg)',
-            content: (
-              <DailyChart
-                dailyValues={fracDaysActiveD1ToD3Avg7d}
-                startDate={startDate}
-                excludeLastDays={3}
-                pct
-              />
-            ),
+            content: <DailyChart values={fracDaysActiveD1ToD3Avg7d} pct />,
           },
           {
             title: 'NW1',
-            content: (
-              <DailyChart
-                dailyValues={nw1}
-                startDate={startDate}
-                excludeFirstDays={14}
-                pct
-              />
-            ),
+            content: <DailyChart values={dataFor('nw1').slice(14)} pct />,
           },
         ]}
       />
       <Spacer h={8} />
-
       <Title>Daily activity</Title>
-
       <Tabs
         className="mb-4"
         defaultIndex={0}
         tabs={[
           {
-            title: capitalize(PLURAL_BETS),
-            content: (
-              <DailyChart dailyValues={dailyBetCounts} startDate={startDate} />
-            ),
+            title: 'Bets',
+            content: <DailyChart values={dataFor('bet_count')} />,
           },
           {
             title: 'Questions created',
-            content: (
-              <DailyChart
-                dailyValues={dailyContractCounts}
-                startDate={startDate}
-              />
-            ),
+            content: <DailyChart values={dataFor('contract_count')} />,
           },
           {
             title: 'Comments',
-            content: (
-              <DailyChart
-                dailyValues={dailyCommentCounts}
-                startDate={startDate}
-              />
-            ),
+            content: <DailyChart values={dataFor('comment_count')} />,
           },
           {
             title: 'Signups',
-            content: (
-              <DailyChart
-                dailyValues={dailyNewRealUserSignups}
-                startDate={startDate}
-              />
-            ),
+            content: <DailyChart values={dataFor('signups_real')} />,
           },
         ]}
       />
-
       <Spacer h={8} />
-
       <Title>Activation rate</Title>
       <p className="text-ink-500">
         Out of all new users, how many placed at least one bet?
       </p>
       <Spacer h={4} />
-
       <Tabs
         className="mb-4"
         defaultIndex={1}
         tabs={[
           {
             title: 'Daily',
-            content: (
-              <DailyChart
-                dailyValues={dailyActivationRate}
-                startDate={startDate}
-                excludeFirstDays={1}
-                pct
-              />
-            ),
+            content: <DailyChart values={dataFor('activation').slice(1)} pct />,
           },
           {
             title: 'Daily (7d avg)',
             content: (
               <DailyChart
-                dailyValues={dailyActivationRateWeeklyAvg}
-                startDate={startDate}
-                excludeFirstDays={7}
+                values={rollingAvg(dataFor('activation'), 7).slice(7)}
                 pct
               />
             ),
@@ -546,35 +388,23 @@ export function CustomAnalytics(props: {
         </Link>
       )}
       <Spacer h={4} />
-
       <Tabs
         className="mb-4"
         defaultIndex={1}
         tabs={[
           {
             title: 'Daily',
-            content: (
-              <DailyChart
-                dailyValues={d1BetAverage}
-                startDate={startDate}
-                excludeFirstDays={1}
-              />
-            ),
+            content: <DailyChart values={dataFor('d1_bet_average').slice(1)} />,
           },
           {
             title: 'Daily (3d average)',
             content: (
-              <DailyChart
-                dailyValues={d1Bet3DayAverage}
-                startDate={startDate}
-                excludeFirstDays={1}
-              />
+              <DailyChart values={dataFor('d1_bet_3_day_average').slice(1)} />
             ),
           },
         ]}
       />
       <Spacer h={8} />
-
       <Title>Ratio of Active Users</Title>
       <Tabs
         className="mb-4"
@@ -582,41 +412,19 @@ export function CustomAnalytics(props: {
         tabs={[
           {
             title: 'Daily / Weekly',
-            content: (
-              <DailyChart
-                dailyValues={dailyDividedByWeekly}
-                startDate={startDate}
-                excludeFirstDays={7}
-                pct
-              />
-            ),
+            content: <DailyChart values={dailyDividedByWeekly} pct />,
           },
           {
             title: 'Daily / Monthly',
-            content: (
-              <DailyChart
-                dailyValues={dailyDividedByMonthly}
-                startDate={startDate}
-                excludeFirstDays={30}
-                pct
-              />
-            ),
+            content: <DailyChart values={dailyDividedByMonthly} pct />,
           },
           {
             title: 'Weekly / Monthly',
-            content: (
-              <DailyChart
-                dailyValues={weeklyDividedByMonthly}
-                startDate={startDate}
-                excludeFirstDays={30}
-                pct
-              />
-            ),
+            content: <DailyChart values={weeklyDividedByMonthly} pct />,
           },
         ]}
       />
       <Spacer h={8} />
-
       <Title>Total mana bet</Title>
       <p className="text-ink-500">
         Sum of bet amounts. (Divided by 100 to be more readable.)
@@ -627,20 +435,18 @@ export function CustomAnalytics(props: {
         tabs={[
           {
             title: 'Daily',
-            content: (
-              <DailyChart dailyValues={manaBetDaily} startDate={startDate} />
-            ),
+            content: <DailyChart values={dataFor('bet_amount')} />,
           },
           {
             title: 'Weekly',
             content: (
-              <DailyChart dailyValues={manaBetWeekly} startDate={startDate} />
+              <DailyChart values={rollingSum(dataFor('bet_amount'), 7)} />
             ),
           },
           {
             title: 'Monthly',
             content: (
-              <DailyChart dailyValues={manaBetMonthly} startDate={startDate} />
+              <DailyChart values={rollingSum(dataFor('bet_amount'), 30)} />
             ),
           },
         ]}
@@ -648,40 +454,41 @@ export function CustomAnalytics(props: {
       <Spacer h={8} />
       <Title>Home feed conversion rate</Title>
       <p className="text-ink-500">Interactions/views</p>
-      <Tabs
-        className="mb-4"
-        defaultIndex={0}
-        tabs={[
-          {
-            title: 'Daily',
-            content: (
-              <DailyChart
-                dailyValues={feedConversionScores}
-                startDate={VIEW_RECORDINGS_START}
-                pct
-              />
-            ),
-          },
-        ]}
-      />
+      <Spacer h={4} />
+      <DailyChart values={dataFor('feed_conversion')} pct />,
       <Spacer h={8} />
     </Col>
   )
 }
 
-const rollingAvg = (arr: number[], period: number) =>
-  arr.map((_, i) => {
+const dataForStats =
+  (stats: rowfor<'daily_stats'>[]) =>
+  <S extends Column<'daily_stats'>>(key: S) =>
+    stats
+      .map((row) => ({ x: row.start_date, y: row[key]! }))
+      .filter((row) => row.y != null)
+
+const rollingAvg = (arr: { x: string; y: number }[], period: number) =>
+  arr.map(({ x }, i) => {
     const start = Math.max(0, i - period + 1)
     const end = i + 1
-    return average(arr.slice(start, end))
+    const values = arr.slice(start, end).map((d) => d.y ?? 0)
+    return { x, y: values.length ? average(values) : 0 }
   })
 
-const rollingSum = (arr: number[], period: number) =>
-  arr.map((_, i) => {
+const rollingSum = (arr: { x: string; y: number }[], period: number) =>
+  arr.map(({ x }, i) => {
     const start = Math.max(0, i - period + 1)
     const end = i + 1
-    const total = sum(arr.slice(start, end))
-    // adjust start to make up for missing data
-    if (end - start < period) return (total * period) / (end - start)
-    return total
+    const values = arr.slice(start, end).map((d) => d.y ?? 0)
+    const total = sum(values)
+    // scale to make up for holes or missing data at the start
+    const adjusted =
+      values.length == period ? total : (total * period) / values.length
+    return { x, y: adjusted }
   })
+
+const round = (point: { x: string; y: number }) => ({
+  x: point.x,
+  y: Math.round(point.y),
+})

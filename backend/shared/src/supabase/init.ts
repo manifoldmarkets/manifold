@@ -30,9 +30,13 @@ export const pgp = pgPromise({
   },
 })
 
+// get type id via SELECT oid, typname FROM pg_type where typename = '...'
+
 // This loses precision for large numbers (> 2^53). Beware fetching int8 columns with large values.
-pgp.pg.types.setTypeParser(20, (value) => parseInt(value, 10))
-pgp.pg.types.setTypeParser(1700, parseFloat) // Type Id 1700 = NUMERIC
+pgp.pg.types.setTypeParser(20, (value) => parseInt(value, 10)) // int8.
+pgp.pg.types.setTypeParser(1700, parseFloat) // numeric
+
+pgp.pg.types.setTypeParser(1082, (value) => value) // date (not timestamp! has no time info so we just parse as string)
 
 export type SupabaseTransaction = ITask<{}>
 export type SupabaseDirectClient = IDatabase<{}, IClient> | SupabaseTransaction
