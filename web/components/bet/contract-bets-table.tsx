@@ -11,7 +11,6 @@ import {
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
-import { Spacer } from 'web/components/layout/spacer'
 import { Table } from 'web/components/widgets/table'
 import { useState } from 'react'
 import { BinaryOutcomeLabel, OutcomeLabel } from 'web/components/outcome-label'
@@ -23,6 +22,7 @@ import {
   getMultiNumericAnswerMidpoints,
 } from 'common/multi-numeric'
 import { Pagination } from '../widgets/pagination'
+import { Row } from 'web/components/layout/row'
 
 export function ContractBetsTable(props: {
   contract: Contract
@@ -67,36 +67,16 @@ export function ContractBetsTable(props: {
   )
 
   const [page, setPage] = useState(0)
+  const unexpandedBetsPerPage = 2
   const betsPerPage = 5
+  const [expanded, setExpanded] = useState(false)
+
+  const displayedBets = expanded
+    ? normalBets.slice(page * betsPerPage, (page + 1) * betsPerPage)
+    : normalBets.slice(0, unexpandedBetsPerPage)
 
   return (
     <div className="overflow-x-auto">
-      {!hideRedemptionAndLoanMessages && amountRedeemed > 0 && (
-        <>
-          <div className="text-ink-500 pl-2 text-sm">
-            {amountRedeemed} {isPseudoNumeric ? 'HIGHER' : 'YES'} shares and{' '}
-            {amountRedeemed} {isPseudoNumeric ? 'LOWER' : 'NO'} shares
-            automatically redeemed for {formatMoney(amountRedeemed)}.
-          </div>
-          <Spacer h={4} />
-        </>
-      )}
-
-      {!hideRedemptionAndLoanMessages && !isResolved && amountLoaned > 0 && (
-        <>
-          <div className="text-ink-500 pl-2 text-sm">
-            {isYourBets ? (
-              <>You currently have a loan of {formatMoney(amountLoaned)}.</>
-            ) : (
-              <>
-                This user currently has a loan of {formatMoney(amountLoaned)}.
-              </>
-            )}
-          </div>
-          <Spacer h={4} />
-        </>
-      )}
-
       <Table>
         <thead>
           <tr className="p-2">
@@ -118,12 +98,9 @@ export function ContractBetsTable(props: {
         </thead>
         <tbody>
           {isMultiNumber
-            ? (paginate
-                ? groupedBets.slice(
-                    page * betsPerPage,
-                    (page + 1) * betsPerPage
-                  )
-                : groupedBets
+            ? (expanded
+                ? groupedBets.slice(0, betsPerPage)
+                : groupedBets.slice(0, unexpandedBetsPerPage)
               ).map((bets) => (
                 <MultiNumberBetRow
                   key={bets[0].id}
@@ -132,21 +109,57 @@ export function ContractBetsTable(props: {
                   isYourBet={isYourBets}
                 />
               ))
-            : (paginate
-                ? normalBets.slice(page * betsPerPage, (page + 1) * betsPerPage)
-                : normalBets
-              ).map((bet) => (
+            : displayedBets.map((bet) => (
                 <BetRow key={bet.id} bet={bet} contract={contract} />
               ))}
         </tbody>
       </Table>
-      {paginate && (
-        <Pagination
-          page={page}
-          setPage={setPage}
-          pageSize={betsPerPage}
-          totalItems={isMultiNumber ? groupedBets.length : normalBets.length}
-        />
+      <Row className={''}>
+        {!expanded && normalBets.length > unexpandedBetsPerPage && (
+          <button
+            className={
+              'hover:bg-canvas-100 mb-1 rounded-md p-2 text-sm text-indigo-700'
+            }
+            onClick={() => setExpanded(true)}
+          >
+            Show {normalBets.length - unexpandedBetsPerPage} more bets
+          </button>
+        )}
+      </Row>
+      {expanded && (
+        <>
+          {paginate && (
+            <Pagination
+              page={page}
+              setPage={setPage}
+              pageSize={betsPerPage}
+              totalItems={
+                isMultiNumber ? groupedBets.length : normalBets.length
+              }
+            />
+          )}
+          {!hideRedemptionAndLoanMessages && amountRedeemed > 0 && (
+            <div className="text-ink-500 pl-2 text-sm">
+              {amountRedeemed} {isPseudoNumeric ? 'HIGHER' : 'YES'} shares and{' '}
+              {amountRedeemed} {isPseudoNumeric ? 'LOWER' : 'NO'} shares
+              automatically redeemed for {formatMoney(amountRedeemed)}.
+            </div>
+          )}
+          {!hideRedemptionAndLoanMessages &&
+            !isResolved &&
+            amountLoaned > 0 && (
+              <div className="text-ink-500 mt-2 pl-2 text-sm">
+                {isYourBets ? (
+                  <>You currently have a loan of {formatMoney(amountLoaned)}.</>
+                ) : (
+                  <>
+                    This user currently has a loan of{' '}
+                    {formatMoney(amountLoaned)}.
+                  </>
+                )}
+              </div>
+            )}
+        </>
       )}
     </div>
   )
