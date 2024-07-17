@@ -83,7 +83,7 @@ import { SearchCreateAnswerPanel } from './create-answer-panel'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 
-const ANSWERS_PER_PAGE = 5
+const ANSWERS_PER_PAGE = 10
 
 function getAnswersToShow(
   query: string,
