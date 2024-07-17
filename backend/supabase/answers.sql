@@ -47,7 +47,7 @@ begin
         new.prob_change_week := ((new.data) -> 'probChanges'->>'week')::numeric;
         new.prob_change_month := ((new.data) -> 'probChanges'->>'month')::numeric;
         new.resolution_time :=
-        case when new.data ? 'resolutionTime' then millis_to_ts(((new.data) ->> 'resolutionTime')::bigint) end;
+                case when new.data ? 'resolutionTime' then millis_to_ts(((new.data) ->> 'resolutionTime')::bigint) end;
     end if;
     return new;
 end

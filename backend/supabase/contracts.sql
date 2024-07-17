@@ -126,10 +126,6 @@ drop index if exists contracts_creator_id;
 
 create index contracts_creator_id on public.contracts using btree (creator_id, created_time);
 
-drop index if exists contracts_daily_score;
-
-create index contracts_daily_score on public.contracts using btree (daily_score desc);
-
 drop index if exists contracts_elasticity;
 
 create index contracts_elasticity on public.contracts using btree ((((data ->> 'elasticity'::text))::numeric) desc);
@@ -205,3 +201,7 @@ create index question_nostop_fts on public.contracts using gin (question_nostop_
 drop index if exists market_tier_idx;
 
 create index market_tier_idx on public.contracts using btree (tier);
+
+drop index if exists contracts_daily_score;
+
+create index contracts_daily_score on public.contracts using btree (daily_score desc);

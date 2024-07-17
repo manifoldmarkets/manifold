@@ -26,4 +26,7 @@ create index user_notifications_notification_id on public.user_notifications usi
 
 drop index if exists user_notifications_user_id_created_time;
 
-create index user_notifications_user_id_created_time on user_notifications(user_id, ((data->'createdTime')::bigint) desc);
+create index user_notifications_user_id_created_time on public.user_notifications using btree (
+  user_id,
+  (((data -> 'createdTime'::text))::bigint) desc
+);

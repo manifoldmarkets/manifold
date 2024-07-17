@@ -9,9 +9,6 @@ create table if not exists
     visibility text default 'private'::text not null
   );
 
--- Policies
-alter table private_user_messages enable row level security;
-
 -- Indexes
 drop index if exists private_user_messages_pkey;
 

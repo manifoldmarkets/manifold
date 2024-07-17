@@ -239,29 +239,17 @@ group by creator_id;
 $function$;
 
 create
-or replace function public.get_contracts_in_group_slugs (
-  contract_ids text[],
-  group_slugs text[],
-  ignore_slugs text[]
-) returns table (data json, importance_score numeric) language sql stable parallel SAFE as $function$
-select data, importance_score
-from public_contracts
-where id = any(contract_ids)
-  and (public_contracts.data -> 'groupSlugs' ?| group_slugs)
-  and not (public_contracts.data -> 'groupSlugs' ?| ignore_slugs)
-$function$;
-
-create
 or replace function public.get_contracts_in_group_slugs_1 (
   contract_ids text[],
   p_group_slugs text[],
   ignore_slugs text[]
 ) returns table (data json, importance_score numeric) language sql stable parallel SAFE as $function$
 select data, importance_score
-from public_contracts
+from contracts
 where id = any(contract_ids)
-  and (public_contracts.group_slugs && p_group_slugs)
-  and not (public_contracts.group_slugs && ignore_slugs)
+  and visibility = 'public'
+  and (group_slugs && p_group_slugs)
+  and not (group_slugs && ignore_slugs)
 $function$;
 
 create
@@ -445,24 +433,6 @@ $function$;
 create
 or replace function public.get_non_empty_private_message_channel_ids (
   p_user_id text,
-  p_ignored_statuses text[],
-  p_limit integer
-) returns setof private_user_message_channels language sql as $function$
-select distinct pumc.*
-from private_user_message_channels pumc
-         join private_user_message_channel_members pumcm on pumcm.channel_id = pumc.id
-         left join private_user_messages pum on pumc.id = pum.channel_id
-    and (pum.visibility != 'introduction' or pum.user_id != p_user_id)
-where pumcm.user_id = p_user_id
-  and pumcm.status not in (select unnest(p_ignored_statuses))
-  and pum.id is not null
-order by pumc.last_updated_time desc
-limit p_limit;
-$function$;
-
-create
-or replace function public.get_non_empty_private_message_channel_ids (
-  p_user_id text,
   p_limit integer default null::integer
 ) returns table (id bigint) language plpgsql as $function$
 BEGIN
@@ -479,6 +449,24 @@ BEGIN
     ORDER BY pumc.last_updated_time DESC
     LIMIT p_limit;
 END;
+$function$;
+
+create
+or replace function public.get_non_empty_private_message_channel_ids (
+  p_user_id text,
+  p_ignored_statuses text[],
+  p_limit integer
+) returns setof private_user_message_channels language sql as $function$
+select distinct pumc.*
+from private_user_message_channels pumc
+         join private_user_message_channel_members pumcm on pumcm.channel_id = pumc.id
+         left join private_user_messages pum on pumc.id = pum.channel_id
+    and (pum.visibility != 'introduction' or pum.user_id != p_user_id)
+where pumcm.user_id = p_user_id
+  and pumcm.status not in (select unnest(p_ignored_statuses))
+  and pum.id is not null
+order by pumc.last_updated_time desc
+limit p_limit;
 $function$;
 
 create
@@ -582,30 +570,18 @@ or replace function public.get_rating (user_id text) returns table (count bigint
 $function$;
 
 create
-or replace function public.get_recently_active_contracts_in_group_slugs (
-  group_slugs text[],
-  ignore_slugs text[],
-  max integer
-) returns table (data json, importance_score numeric) language sql stable parallel SAFE as $function$
-select data, importance_score
-from public_contracts
-where (public_contracts.data -> 'groupSlugs' ?| group_slugs)
-  and not (public_contracts.data -> 'groupSlugs' ?| ignore_slugs)
-order by ((data->>'lastUpdatedTime')::bigint) desc
-limit max
-$function$;
-
-create
 or replace function public.get_recently_active_contracts_in_group_slugs_1 (
   p_group_slugs text[],
   ignore_slugs text[],
   max integer
 ) returns table (data json, importance_score numeric) language sql stable parallel SAFE as $function$
 select data, importance_score
-from public_contracts
-where (public_contracts.group_slugs && p_group_slugs)
-  and not (public_contracts.group_slugs && ignore_slugs)
-order by ((data->>'lastUpdatedTime')::bigint) desc
+from contracts
+where
+  visibility = 'public'
+  and (group_slugs && p_group_slugs)
+  and not (group_slugs && ignore_slugs)
+order by last_updated_time desc
 limit max
 $function$;
 
@@ -763,23 +739,23 @@ $function$;
 create
 or replace function public.get_user_bets_from_resolved_contracts (uid text, count integer, start integer) returns table (contract_id text, bets jsonb[], contract jsonb) language sql stable parallel SAFE as $function$;
 select contract_id,
-  bets.data as bets,
-  c.data as contracts
+       bets.data as bets,
+       c.data as contracts
 from (
-    select contract_id,
-      array_agg(
-        data
-        order by created_time desc
-      ) as data
-    from contract_bets
-    where user_id = uid
-      and amount != 0
-    group by contract_id
-  ) as bets
-  join contracts c on c.id = bets.contract_id
+         select contract_id,
+                array_agg(
+                        data
+                        order by created_time desc
+                ) as data
+         from contract_bets
+         where user_id = uid
+           and amount != 0
+         group by contract_id
+     ) as bets
+         join contracts c on c.id = bets.contract_id
 where c.resolution_time is not null
   and c.outcome_type = 'BINARY'
-  order by c.resolution_time desc
+order by c.resolution_time desc
 limit count offset start $function$;
 
 create
@@ -866,6 +842,15 @@ union
 select contract_id
 from your_followed_contracts $function$;
 
+create
+or replace function public.get_your_daily_changed_contracts (uid text, n integer, start integer) returns table (data jsonb, daily_score real) language sql stable parallel SAFE as $function$
+select data,
+  coalesce((data->>'dailyScore')::real, 0.0) as daily_score
+from get_your_contract_ids(uid)
+  left join contracts on contracts.id = contract_id
+where contracts.outcome_type = 'BINARY'
+order by daily_score desc
+limit n offset start $function$;
 
 create
 or replace function public.get_your_recent_contracts (uid text, n integer, start integer) returns table (data jsonb, max_ts bigint) language sql stable parallel SAFE as $function$
@@ -1233,11 +1218,11 @@ or replace function public.top_creators_for_user (uid text, excluded_ids text[],
 $function$;
 
 create
-or replace function public.ts_to_millis (ts timestamp with time zone) returns bigint language sql immutable parallel SAFE as $function$
-select (extract(epoch from ts) * 1000)::bigint
+or replace function public.ts_to_millis (ts timestamp without time zone) returns bigint language sql immutable parallel SAFE as $function$
+select extract(epoch from ts)::bigint * 1000
 $function$;
 
 create
-or replace function public.ts_to_millis (ts timestamp without time zone) returns bigint language sql immutable parallel SAFE as $function$
-select extract(epoch from ts)::bigint * 1000
+or replace function public.ts_to_millis (ts timestamp with time zone) returns bigint language sql immutable parallel SAFE as $function$
+select (extract(epoch from ts) * 1000)::bigint
 $function$;

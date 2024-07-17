@@ -22,6 +22,7 @@ export type Database = {
           prob_change_day: number | null
           prob_change_month: number | null
           prob_change_week: number | null
+          resolution_time: string | null
           subsidy_pool: number | null
           text: string | null
           text_fts: unknown | null
@@ -40,6 +41,7 @@ export type Database = {
           prob_change_day?: number | null
           prob_change_month?: number | null
           prob_change_week?: number | null
+          resolution_time?: string | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
@@ -58,6 +60,7 @@ export type Database = {
           prob_change_day?: number | null
           prob_change_month?: number | null
           prob_change_week?: number | null
+          resolution_time?: string | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
@@ -396,6 +399,7 @@ export type Database = {
           conversion_score: number
           created_time: string | null
           creator_id: string | null
+          daily_score: number
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
@@ -428,6 +432,7 @@ export type Database = {
           conversion_score?: number
           created_time?: string | null
           creator_id?: string | null
+          daily_score?: number
           data: Json
           deleted?: boolean | null
           description_fts?: unknown | null
@@ -460,6 +465,7 @@ export type Database = {
           conversion_score?: number
           created_time?: string | null
           creator_id?: string | null
+          daily_score?: number
           data?: Json
           deleted?: boolean | null
           description_fts?: unknown | null
@@ -3289,6 +3295,7 @@ export type Database = {
           conversion_score: number
           created_time: string | null
           creator_id: string | null
+          daily_score: number
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
