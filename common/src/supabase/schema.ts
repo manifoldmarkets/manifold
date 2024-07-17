@@ -3126,6 +3126,12 @@ export type Database = {
         }
         Returns: number
       }
+      date_to_midnight_pt: {
+        Args: {
+          d: string
+        }
+        Returns: string
+      }
       extract_text_from_rich_text_json: {
         Args: {
           description: Json

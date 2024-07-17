@@ -128,6 +128,11 @@ or replace function public.creator_rank (uid text) returns integer language sql 
 $function$;
 
 create
+or replace function public.date_to_midnight_pt (d date) returns timestamp without time zone language sql immutable parallel SAFE as $function$
+  select timezone('America/Los_Angeles', d::timestamp)::timestamptz
+$function$;
+
+create
 or replace function public.extract_text_from_rich_text_json (description jsonb) returns text language sql immutable as $function$
 WITH RECURSIVE content_elements AS (
     SELECT jsonb_array_elements(description->'content') AS element
