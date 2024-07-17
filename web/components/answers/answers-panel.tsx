@@ -245,7 +245,7 @@ export function AnswersPanel(props: {
       const itemWidth = carouselRef.offsetWidth + 16
       carouselRef.scrollTo({
         left: index * itemWidth,
-        behavior: 'smooth',
+        // behavior: 'smooth',
       })
     },
     [carouselRef]
