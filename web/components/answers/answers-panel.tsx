@@ -32,7 +32,7 @@ import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
 import { groupBy, sumBy } from 'lodash'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CirclePicker } from 'react-color'
 import toast from 'react-hot-toast'
 import { Button, buttonClass } from 'web/components/buttons/button'
@@ -69,6 +69,7 @@ import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { UserHovercard } from '../user/user-hovercard'
+import { ControlledCarousel, useCarousel } from '../widgets/carousel'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Pagination } from '../widgets/pagination'
@@ -165,6 +166,10 @@ export function AnswersPanel(props: {
     )
   }, [sortedAnswers, query])
 
+  const TOTAL_PAGES = Math.ceil(
+    (query ? searchedAnswers.length : sortedAnswers.length) / ANSWERS_PER_PAGE
+  )
+
   const answersToShow = getAnswersToShow(
     query,
     page,
@@ -229,6 +234,34 @@ export function AnswersPanel(props: {
       contract.outcomeType !== 'NUMBER'
   )
 
+  const [carouselRef, setCarouselRef] = useState<HTMLDivElement | null>(null)
+
+  const { onScroll, scrollLeft, scrollRight, atFront, atBack, scrollToIndex } =
+    useCarousel(carouselRef)
+
+  const handleScroll = useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      onScroll(event)
+      const newPage = Math.round(
+        event.currentTarget.scrollLeft / event.currentTarget.offsetWidth
+      )
+      if (newPage !== page) {
+        scrollToIndex(newPage)
+        setPage(newPage)
+      }
+    },
+    [onScroll, page, scrollToIndex]
+  )
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setPage(newPage)
+      scrollToIndex(newPage)
+    },
+    [scrollToIndex]
+  )
+
+  console.log(carouselRef)
   return (
     <Col>
       <SearchCreateAnswerPanel
@@ -290,7 +323,7 @@ export function AnswersPanel(props: {
             )
             .map((selectedAnswer) => (
               <Answer
-                className={clsx('border-primary-500 rounded border')}
+                className={clsx('border-primary-500 w-full rounded border')}
                 key={selectedAnswer.id}
                 user={user}
                 answer={selectedAnswer}
@@ -315,46 +348,74 @@ export function AnswersPanel(props: {
               />
             ))}
 
-          {answersToShow.map((answer) => (
-            <Answer
-              className={clsx(
-                selectedAnswerIds.length > 0
-                  ? !selectedAnswerIds.includes(answer.id)
-                    ? 'opacity-70'
-                    : 'border-primary-500 rounded border'
-                  : ''
-              )}
-              key={answer.id}
-              user={user}
-              answer={answer}
-              contract={contract}
-              onCommentClick={
-                onAnswerCommentClick
-                  ? () => onAnswerCommentClick(answer)
-                  : undefined
-              }
-              onHover={(hovering) =>
-                onAnswerHover?.(hovering ? answer : undefined)
-              }
-              onClick={() => {
-                onAnswerClick?.(answer)
-              }}
-              unfilledBets={unfilledBets?.filter(
-                (b) => b.answerId === answer.id
-              )}
-              color={getAnswerColor(answer)}
-              userBets={userBetsByAnswer[answer.id]}
-              shouldShowLimitOrderChart={
-                isAdvancedTrader && shouldShowLimitOrderChart
-              }
+          <ControlledCarousel
+            className={clsx('relative', 'max-w-full gap-1')}
+            ref={setCarouselRef}
+            onScroll={handleScroll}
+            scrollLeft={scrollLeft}
+            scrollRight={scrollRight}
+            atFront={atFront}
+            atBack={atBack}
+            noButtons
+          >
+            {Array.from({ length: TOTAL_PAGES }, (_, i) => i).map((i) => (
+              <Col key={i} className="w-full flex-shrink-0 gap-2">
+                {getAnswersToShow(query, i, sortedAnswers, searchedAnswers).map(
+                  (answer) => (
+                    <Answer
+                      className={clsx(
+                        selectedAnswerIds.length > 0
+                          ? !selectedAnswerIds.includes(answer.id)
+                            ? 'opacity-70'
+                            : 'border-primary-500 rounded border'
+                          : ''
+                      )}
+                      key={answer.id}
+                      user={user}
+                      answer={answer}
+                      contract={contract}
+                      onCommentClick={
+                        onAnswerCommentClick
+                          ? () => onAnswerCommentClick(answer)
+                          : undefined
+                      }
+                      onHover={(hovering) =>
+                        onAnswerHover?.(hovering ? answer : undefined)
+                      }
+                      onClick={() => {
+                        onAnswerClick?.(answer)
+                      }}
+                      unfilledBets={unfilledBets?.filter(
+                        (b) => b.answerId === answer.id
+                      )}
+                      color={getAnswerColor(answer)}
+                      userBets={userBetsByAnswer[answer.id]}
+                      shouldShowLimitOrderChart={
+                        isAdvancedTrader && shouldShowLimitOrderChart
+                      }
+                    />
+                  )
+                )}
+              </Col>
+            ))}
+          </ControlledCarousel>
+          <Row className="h-full items-center justify-between">
+            <Pagination
+              page={page}
+              pageSize={ANSWERS_PER_PAGE}
+              totalItems={query ? searchedAnswers.length : sortedAnswers.length}
+              setPage={setPage}
             />
-          ))}
-          <Pagination
-            page={page}
-            pageSize={ANSWERS_PER_PAGE}
-            totalItems={query ? searchedAnswers.length : sortedAnswers.length}
-            setPage={setPage}
-          />
+            {canAddAnswer && (
+              <Button
+                color="indigo-outline"
+                className="h-min whitespace-nowrap"
+                size="2xs"
+              >
+                Add Answer
+              </Button>
+            )}
+          </Row>
         </Col>
       )}
       {isAdvancedTrader && (

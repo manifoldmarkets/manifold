@@ -1,7 +1,15 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { throttle } from 'lodash'
-import { useState, useEffect, forwardRef, useRef, Ref, ReactNode } from 'react'
+import {
+  useState,
+  useEffect,
+  forwardRef,
+  useRef,
+  Ref,
+  ReactNode,
+  useCallback,
+} from 'react'
 import { Row } from '../layout/row'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 
@@ -71,6 +79,7 @@ export const ControlledCarousel = forwardRef(function (
     scrollRight: () => void
     atFront: boolean
     atBack: boolean
+    noButtons: boolean
   },
   current: Ref<HTMLDivElement>
 ) {
@@ -84,6 +93,7 @@ export const ControlledCarousel = forwardRef(function (
     scrollRight,
     atFront,
     atBack,
+    noButtons,
   } = props
 
   return (
@@ -105,7 +115,8 @@ export const ControlledCarousel = forwardRef(function (
           />
         )}
       </Row>
-      {!atFront && (
+
+      {!noButtons && !atFront && (
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 left-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
           onMouseDown={scrollLeft}
@@ -113,7 +124,7 @@ export const ControlledCarousel = forwardRef(function (
           <ChevronLeftIcon className="bg-primary-50 text-primary-800 h-7 w-7 rounded-full transition-colors group-hover:bg-transparent" />
         </div>
       )}
-      {!atBack && (
+      {!noButtons && !atBack && (
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
           onMouseDown={scrollRight}
@@ -134,6 +145,18 @@ export const useCarousel = (carouselRef: HTMLDivElement | null) => {
     carouselRef?.scrollBy({ left: carouselRef.clientWidth - 80 })
   })
 
+  const scrollToIndex = useCallback(
+    (index: number) => {
+      if (carouselRef) {
+        carouselRef.scrollTo({
+          left: index * carouselRef.offsetWidth,
+          behavior: 'smooth',
+        })
+      }
+    },
+    [carouselRef]
+  )
+
   const [atFront, setAtFront] = useState(true)
   const [atBack, setAtBack] = useState(true)
   const onScroll = throttle(() => {
@@ -149,5 +172,6 @@ export const useCarousel = (carouselRef: HTMLDivElement | null) => {
     atFront,
     atBack,
     onScroll,
+    scrollToIndex,
   }
 }

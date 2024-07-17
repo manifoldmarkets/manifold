@@ -87,13 +87,13 @@ export function Pagination(props: {
       )}
       aria-label="Pagination"
     >
-      <Row className="mx-auto gap-4">
+      <Row className="mx-auto gap-2">
         <PaginationArrow
           onClick={() => onClick(page - 1)}
           disabled={page <= 0}
           nextOrPrev="prev"
         />
-        <Row className="gap-2">
+        <Row className="gap-1">
           {pageNumbers.map((pageNumber, index) => (
             <PageNumbers
               key={
