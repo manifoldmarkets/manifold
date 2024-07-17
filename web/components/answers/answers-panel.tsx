@@ -250,7 +250,6 @@ export function AnswersPanel(props: {
       const itemWidth = carouselRef.offsetWidth + 16
       carouselRef.scrollTo({
         left: index * itemWidth,
-        behavior: 'auto',
       })
     },
     [carouselRef]
@@ -265,7 +264,11 @@ export function AnswersPanel(props: {
     const itemWidth = carouselRef.offsetWidth + 16
     const scrollPosition = carouselRef.scrollLeft
 
-    const tempPage = Math.round(scrollPosition / itemWidth)
+    const getPage = () => {
+      return Math.round(scrollPosition / itemWidth)
+    }
+
+    const tempPage = getPage()
     setScrolledPage(tempPage)
     // Clear any existing timeout
     if (scrollTimeoutRef.current) {
@@ -274,10 +277,10 @@ export function AnswersPanel(props: {
 
     // Set a new timeout
     scrollTimeoutRef.current = setTimeout(() => {
-      // const newPage = Math.round(scrollPosition / itemWidth)
-      setPage(scrolledPage)
-      scrollToPage(scrolledPage)
-    }, 150)
+      const newPage = getPage()
+      setPage(newPage)
+      scrollToPage(newPage)
+    }, 200)
   }, [onScroll, carouselRef, scrollToPage])
 
   useEffect(() => {
