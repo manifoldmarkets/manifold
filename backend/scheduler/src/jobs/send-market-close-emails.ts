@@ -10,7 +10,7 @@ import { updateContract } from 'shared/supabase/contracts'
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
 
 export async function sendMarketCloseEmails() {
-  if (isProd()) {
+  if (!isProd()) {
     console.log('Not prod, not sending emails')
     return
   }

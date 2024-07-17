@@ -188,7 +188,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   )
   const sorts = {
     conversion: `avg(uti.topic_score  * contracts.conversion_score) desc`,
-    importance: `avg(uti.topic_score  * contracts.importance_score) desc`,
     freshness: `avg(uti.topic_score  * contracts.freshness_score) desc`,
   }
   const sortQueries = Object.values(sorts).map((orderQ) =>
@@ -202,7 +201,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const startTime = Date.now()
   const [
     convertingContracts,
-    importantContracts,
     freshContracts,
     followedContracts,
     adContracts,
@@ -265,15 +263,9 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
 
   const contracts = uniqBy(
     orderBy(
-      convertingContracts.concat(
-        importantContracts,
-        freshContracts,
-        followedContracts,
-        allReposts
-      ),
+      convertingContracts.concat(freshContracts, followedContracts, allReposts),
       (c) =>
         c.contract.conversionScore *
-        c.contract.importanceScore *
         c.contract.freshnessScore *
         c.topicConversionScore,
       'desc'
@@ -287,8 +279,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         ? 'followed'
         : convertingContracts.find((cc) => cc.contract.id === c.id)
         ? 'conversion'
-        : importantContracts.find((cc) => cc.contract.id === c.id)
-        ? 'importance'
         : freshContracts.find((cc) => cc.contract.id === c.id)
         ? 'freshness'
         : '',
