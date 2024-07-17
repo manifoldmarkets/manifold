@@ -236,7 +236,7 @@ export function AnswersPanel(props: {
         isSearchOpen={isSearchOpen}
         setIsSearchOpen={setIsSearchOpen}
         onCreateAnswer={(newAnswer: string) => {
-          // setSort('new')
+          setSort('new')
         }}
       >
         <Row className={'mb-1 items-center gap-4'}>
