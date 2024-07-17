@@ -125,7 +125,7 @@ export function CustomAnalytics(props: {
     stats
       .slice(-7)
       .map((row) => row.dau)
-      .filter((val) => val != null)
+      .filter((val): val is number => val != null)
   )
   const last30dSales = sum(stats.slice(-30).map((row) => row.sales || 0))
 
