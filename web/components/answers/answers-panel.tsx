@@ -139,9 +139,14 @@ export function AnswersPanel(props: {
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
   const [page, setPage] = useState(0)
+  const [scrolledPage, setScrolledPage] = useState(0)
+  const setAbsolutePage = (page: number) => {
+    setScrolledPage(page)
+    setPage(page)
+  }
 
   useEffect(() => {
-    setPage(0)
+    setAbsolutePage(0)
   }, [query, sort])
 
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
@@ -269,7 +274,7 @@ export function AnswersPanel(props: {
       const newPage = Math.round(scrollPosition / itemWidth)
       setPage(newPage)
       scrollToPage(newPage)
-    }, 150) // Adjust this delay as needed
+    }, 50)
   }, [onScroll, carouselRef, scrollToPage])
 
   useEffect(() => {
