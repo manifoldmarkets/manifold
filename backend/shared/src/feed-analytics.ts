@@ -27,25 +27,25 @@ export const getFeedConversionScores = async (
         count(name) as count
       from user_contract_interactions
       where
-        name not in ('card click', 'card bet', 'card like')
-        and created_time >= $1 at time zone 'america/los_angeles'
-        and created_time < $2 at time zone 'america/los_angeles'
+        name in ('card click', 'card bet', 'card like')
+        and created_time >= date_to_midnight_pt($1)
+        and created_time < date_to_midnight_pt($2)
         and user_id not in ($3:list)
       group by start_date
     ),
     views as (
-      select 
+      select
         date_trunc('day', created_time at time zone 'america/los_angeles')::date as start_date,
         count(*)
-      from user_view_events 
+      from user_view_events
       where
-        name != 'card'
-        and created_time >= $1 at time zone 'america/los_angeles'
-        and created_time < $2 at time zone 'america/los_angeles'
+        name = 'card'
+        and created_time >= date_to_midnight_pt($1)
+        and created_time < date_to_midnight_pt($2)
         and user_id not in ($3:list)
       group by start_date
     )
-    select 
+    select
       i.start_date, i.count / v.count::numeric as feed_conversion
       from interacts i join views v
     on i.start_date = v.start_date`,

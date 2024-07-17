@@ -54,3 +54,7 @@ alter table daily_stats enable row level security;
 create policy "public read" on daily_stats for
 select
   using (true);
+
+create function date_to_midnight_pt (d date) returns timestamp language sql immutable parallel safe as $$
+  select timezone('America/Los_Angeles', d::timestamp)::timestamptz
+$$;

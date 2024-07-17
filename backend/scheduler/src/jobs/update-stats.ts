@@ -13,12 +13,13 @@ import {
   mapValues,
   intersection,
   mergeWith,
+  pickBy,
 } from 'lodash'
 import { log, logMemory, revalidateStaticProps } from 'shared/utils'
 import { average, median } from 'common/util/math'
 import {
   createSupabaseDirectClient,
-  SupabaseDirectClient,
+  type SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { bulkUpsert } from 'shared/supabase/utils'
 import { saveCalibrationData } from 'shared/calculate-calibration'
@@ -44,15 +45,19 @@ type StatUser = StatEvent & {
 
 export const updateStatsCore = async (daysAgo: number) => {
   // We run the script at 4am, but we want data from the start of each day up until last midnight.
-  const endDay = dayjs().tz('America/Los_Angeles').subtract(1, 'day')
+  const endDay = dayjs().tz('America/Los_Angeles')
   const startDay = endDay.subtract(daysAgo, 'day')
   const end = endDay.format('YYYY-MM-DD')
   const start = startDay.format('YYYY-MM-DD')
 
-  await updateStatsBetween(start, end)
+  const pg = createSupabaseDirectClient()
 
-  const startOfDayAgo = endDay.startOf('day').valueOf()
-  await calculateManaStats(startOfDayAgo, 1)
+  await updateStatsBetween(pg, start, end)
+
+  const startOfYesterday = endDay.subtract(1, 'day').startOf('day').valueOf()
+  await calculateManaStats(startOfYesterday, 1)
+
+  await saveCalibrationData(pg)
 
   await revalidateStaticProps(`/stats`)
 
@@ -60,12 +65,14 @@ export const updateStatsCore = async (daysAgo: number) => {
 }
 
 // YYYY-MM-DD
-export const updateStatsBetween = async (start: string, end: string) => {
-  const pg = createSupabaseDirectClient()
+export const updateStatsBetween = async (
+  pg: SupabaseDirectClient,
+  start: string,
+  end: string
+) => {
   await updateActivityStats(pg, start, end)
   await updateDailySales(pg, start, end)
   await updateConversionScores(pg, start, end)
-  await saveCalibrationData(pg)
 }
 
 async function getDailyBets(
@@ -84,8 +91,8 @@ async function getDailyBets(
     )) as values
     from contract_bets
     where
-      created_time >= $1 at time zone 'america/los_angeles'
-      and created_time < $2 at time zone 'america/los_angeles'
+      created_time >= date_to_midnight_pt($1)
+      and created_time < date_to_midnight_pt($2)
       and is_redemption = false
     group by day
     order by day asc`,
@@ -110,9 +117,10 @@ async function getDailyComments(
       )) as values
     from contract_comments
     where
-      created_time >= $1 at time zone 'america/los_angeles'
-      and created_time < $2 at time zone 'america/los_angeles'
-    group by day`,
+      created_time >= date_to_midnight_pt($1)
+      and created_time < date_to_midnight_pt($2)
+    group by day
+    order by day asc`,
     [start, end]
   )
 
@@ -134,9 +142,10 @@ async function getDailyContracts(
       )) as values
     from contracts
     where
-      created_time >= $1 at time zone 'america/los_angeles'
-      and created_time < $2 at time zone 'america/los_angeles'
-    group by day`,
+      created_time >= date_to_midnight_pt($1)
+      and created_time < date_to_midnight_pt($2)
+    group by day
+    order by day asc`,
     [start, end]
   )
 
@@ -163,12 +172,12 @@ async function getDailyNewUsers(
         and (cb.created_time >= u.created_time and cb.created_time <= u.created_time + interval '24 hours')
       left join dashboards d on u.id = d.creator_id
     where
-      u.created_time >= '2024-07-09' at time zone 'america/los_angeles'
-      and u.created_time < '2024-07-30' at time zone 'america/los_angeles'
+      u.created_time >= date_to_midnight_pt($1)
+      and u.created_time < date_to_midnight_pt($2)
       and u.data->'fromLove' is null
     group by u.id
     )
-    select 
+    select
       date_trunc('day', created_time at time zone 'america/los_angeles')::date as day,
       json_agg(json_build_object(
         'ts', ts_to_millis(created_time),
@@ -176,20 +185,21 @@ async function getDailyNewUsers(
         'id', id,
         'bioIsLong', length(bio) > 10,
         'freeQuestionsCeated', free_questions_created,
-        'betCountWithin24h', bet_count_within_24h,
+        'd1BetCount', bet_count_within_24h,
         'dashboardCount', dashboard_count,
         'referrerId', referrer_id
       )) as values
     from all_new_users
-    group by day`,
+    group by day
+    order by day asc`,
     [start, end]
   )
 
   return users as { day: string; values: StatUser[] }[]
 }
 
-// this should at least be a month for monthly stats
-const bufferDays = 31
+// this should at least be two months for monthly stats
+const bufferDays = 61
 
 export const updateActivityStats = async (
   pg: SupabaseDirectClient,
@@ -200,7 +210,7 @@ export const updateActivityStats = async (
     .subtract(bufferDays, 'days')
     .format('YYYY-MM-DD')
 
-  log('Fetching data for activity stats...')
+  log(`Fetching data for activity stats between ${startWithBuffer} and ${end}`)
   const [dailyBets, dailyContracts, dailyComments] = await Promise.all([
     getDailyBets(pg, startWithBuffer, end),
     getDailyContracts(pg, startWithBuffer, end),
@@ -209,7 +219,6 @@ export const updateActivityStats = async (
   logMemory()
 
   log('upsert bets counts and totals')
-  log(typeof dailyBets[0].day)
   await bulkUpsertStats(
     pg,
     dailyBets.map((bets) => ({
@@ -293,66 +302,66 @@ export const updateActivityStats = async (
     .sort((a, b) => a.day.localeCompare(b.day))
 
   log('upsert dau, wau, mau, d1, w1, m1')
+
   await bulkUpsertStats(
     pg,
-    dailyUserIds.map((today, i) => ({
-      start_date: today.day,
-      dau: today.values.length,
-      wau: uniqBetween(dailyUserIds, i - 6, i + 1).length,
-      mau: uniqBetween(dailyUserIds, i - 29, i + 1).length,
-      d1: i == 0 ? 0 : retention(dailyUserIds[i - 1].values, today.values),
-      w1: retention(
-        uniqBetween(dailyUserIds, i - 13, i - 6), // 2 weeks ago
-        uniqBetween(dailyUserIds, i - 6, i + 1) // last week
-      ),
-      m1: retention(
-        uniqBetween(dailyUserIds, i - 59, i - 29), // 2 months ago
-        uniqBetween(dailyUserIds, i - 29, i + 1) // last month
-      ),
-    }))
+    dailyUserIds
+      .map((today, i) => ({
+        start_date: today.day,
+        dau: today.values.length,
+        wau: uniqBetween(dailyUserIds, i - 6, i + 1).length,
+        mau: uniqBetween(dailyUserIds, i - 29, i + 1).length,
+        d1: i == 0 ? 0 : retention(dailyUserIds[i - 1].values, today.values),
+        w1: retention(
+          uniqBetween(dailyUserIds, i - 13, i - 6), // 2 weeks ago
+          uniqBetween(dailyUserIds, i - 6, i + 1) // last week
+        ),
+        m1: retention(
+          uniqBetween(dailyUserIds, i - 59, i - 29), // 2 months ago
+          uniqBetween(dailyUserIds, i - 29, i + 1) // last month
+        ),
+      }))
+      .slice(bufferDays)
   )
 
-  const engagedUsers = dailyUserIds.map((_, i) => {
-    const start = Math.max(0, i - 20)
-    const week1 = Math.max(0, i - 13)
-    const week2 = Math.max(0, i - 6)
-    const end = i + 1
-
+  log('upsert engaged users')
+  {
     const getTwiceActive = (
       dailyActiveIds: { day: string; values: string[] }[]
     ) => {
-      const userActiveCounts = mapValues(
-        groupBy(dailyActiveIds.flat(), (id) => id),
-        (ids) => ids.length
-      )
-      return Object.keys(userActiveCounts).filter(
-        (id) => userActiveCounts[id] > 1
-      )
+      const allIds = dailyActiveIds.flatMap((d) => d.values)
+      const counts = countBy(allIds, (id) => id)
+      return Object.keys(pickBy(counts, (count) => count >= 2))
     }
 
-    const engaged1 = getTwiceActive(dailyUserIds.slice(start, week1))
-    const engaged2 = getTwiceActive(dailyUserIds.slice(week1, week2))
-    const engaged3 = getTwiceActive(dailyUserIds.slice(week2, end))
-    return intersection(engaged1, engaged2, engaged3).length
-  })
+    const engagedUsers = dailyUserIds
+      .map(({ day }, i) => {
+        const start = Math.max(0, i - 20)
+        const week1 = Math.max(0, i - 13)
+        const week2 = Math.max(0, i - 6)
+        const end = i + 1
 
-  log('upsert engaged users')
-  await bulkUpsertStats(
-    pg,
-    dailyUserIds.map((today, i) => ({
-      start_date: today.day,
-      engaged_users: engagedUsers[i],
-    }))
-  )
+        const engaged1 = getTwiceActive(dailyUserIds.slice(start, week1))
+        const engaged2 = getTwiceActive(dailyUserIds.slice(week1, week2))
+        const engaged3 = getTwiceActive(dailyUserIds.slice(week2, end))
+        return {
+          start_date: day,
+          engaged_users: intersection(engaged1, engaged2, engaged3).length,
+        }
+      })
+      .slice(bufferDays)
+
+    await bulkUpsertStats(pg, engagedUsers)
+  }
 
   // new user stats
   {
-    const firstBetDict: { [userId: string]: number } = {}
-    for (let i = 0; i < dailyBets.length; i++) {
-      const bets = dailyBets[i].values
-      for (const bet of bets) {
+    // TODO: do we really need to do this instead of d1 bet count > 1?
+    const firstBetDict: { [userId: string]: string } = {}
+    for (const { day, values } of dailyBets) {
+      for (const bet of values) {
         if (bet.userId in firstBetDict) continue
-        firstBetDict[bet.userId] = i
+        firstBetDict[bet.userId] = day
       }
     }
 
@@ -378,49 +387,54 @@ export const updateActivityStats = async (
       values: values.map((u) => u.id),
     }))
 
-    log('upsert new user stats')
+    log('upsert real new user stats')
     await bulkUpsertStats(
       pg,
-      dailyNewRealUsers.map(({ day, values: users }, i) => ({
+      dailyNewRealUserIds
+        .map(({ day, values: users }, i) => ({
+          start_date: day,
+          signups_real: users.length,
+          activation: average(
+            users.map((u) => (firstBetDict[u] === day ? 1 : 0))
+          ),
+          nd1: retention(users, dailyUserIds[i + 1]?.values),
+          nw1: retention(
+            uniqBetween(dailyNewRealUserIds, i - 13, i - 6), // new users 2 weeks ago
+            uniqBetween(dailyUserIds, i - 6, i + 1) // active users last week
+          ),
+        }))
+        .slice(bufferDays)
+    )
+
+    log('upsert new user bets')
+
+    const newUsersBets = dailyNewRealUsers
+      .map(({ day, values: users }, i) => ({
         start_date: day,
-        signups_real: users.values.length,
-        activation: average(
-          users.map((u) => (firstBetDict[u.id] === i ? 1 : 0))
-        ),
-        nd1: retention(
-          users.map((u) => u.id),
-          dailyUserIds[i + 1]?.values ?? []
-        ),
-        nw1: retention(
-          uniqBetween(dailyNewRealUserIds, i - 13, i - 6), // new users 2 weeks ago
-          uniqBetween(dailyUserIds, i - 6, i + 1) // active users last week
-        ),
         d1_bet_average: average(users.map((u) => u.d1BetCount)),
         d1_bet_3_day_average: average(
           dailyNewRealUsers
-            .slice(Math.max(0, i - 2), i + 1)
+            .slice(i - 2, i + 1)
             .map((u) => average(u.values.map((u) => u.d1BetCount)))
         ),
       }))
-    )
+      .slice(2)
 
-    const fracDaysActiveD1ToD3 = dailyNewRealUsers
+    await bulkUpsertStats(pg, newUsersBets)
+
+    log('upsert % active d1 to d3')
+    const fracDaysActiveD1ToD3 = dailyNewRealUserIds
       .slice(0, -3)
       .map(({ day, values: today }, i) => {
-        if (today.length === 0) return { start_date: day, active_d1_to_d3: 0 }
+        const week = dailyUserIds.slice(i + 1, i + 4).flatMap((d) => d.values)
+        const counts = countBy(week, (id) => id)
 
-        const thisWeekCounts = mapValues(
-          groupBy(dailyUserIds.slice(i + 1, i + 4).flat(), (id) => id),
-          (ids) => ids.length
-        )
-        const totalActive = sumBy(today, (user) => thisWeekCounts[user.id] ?? 0)
         return {
           start_date: day,
-          active_d1_to_d3: totalActive / today.length / 3,
+          active_d1_to_d3: average(today.map((id) => counts[id])) / 3,
         }
       })
 
-    log('upsert % active d1 to d3')
     await bulkUpsertStats(pg, fracDaysActiveD1ToD3)
   }
 }
@@ -443,9 +457,10 @@ async function updateDailySales(
       ) as sales
     from txns
       where category = 'MANA_PURCHASE'
-      and created_time >= $1 at time zone 'america/los_angeles'
-      and created_time < $2 at time zone 'america/los_angeles'
-    group by start_date`,
+      and created_time >= date_to_midnight_pt($1)
+      and created_time < date_to_midnight_pt($2)
+    group by start_date
+    order by start_date asc`,
     [start, end, MANA_PURCHASE_RATE_CHANGE_DATE.toISOString()]
   )
 
@@ -464,20 +479,20 @@ async function updateConversionScores(
   await bulkUpsertStats(pg, scores)
 }
 
-const retention = (cohort1: string[], cohort2: string[]) =>
-  average(cohort1.map((id) => (cohort2.includes(id) ? 1 : 0)))
+const retention = (
+  cohort1: string[] | undefined,
+  cohort2: string[] | undefined
+) => {
+  if (!cohort1 || !cohort2) return undefined
+  return average(cohort1.map((id) => (cohort2.includes(id) ? 1 : 0)))
+}
 
 // sum of distinct [start, end)
 const uniqBetween = <T = any>(
   arr: { day: string; values: T[] }[],
   start: number,
   end: number
-) =>
-  uniq(
-    arr
-      .slice(Math.max(0, start), Math.max(0, end))
-      .flatMap(({ values }) => values)
-  )
+) => uniq(arr.slice(start, end).flatMap(({ values }) => values))
 
 const bulkUpsertStats = async (
   pg: SupabaseDirectClient,

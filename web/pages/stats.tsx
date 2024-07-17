@@ -334,7 +334,7 @@ export function CustomAnalytics(props: {
         defaultIndex={0}
         tabs={[
           {
-            title: 'Bets placed',
+            title: 'Bets',
             content: <DailyChart values={dataFor('bet_count')} />,
           },
           {

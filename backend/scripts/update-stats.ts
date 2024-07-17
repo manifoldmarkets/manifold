@@ -1,9 +1,10 @@
 import { runScript } from './run-script'
-import { log } from 'shared/utils'
+import { log, revalidateStaticProps } from 'shared/utils'
+import { saveCalibrationData } from 'shared/calculate-calibration'
 import { updateStatsBetween } from '../scheduler/src/jobs/update-stats'
 
 if (require.main === module)
-  runScript(async () => {
+  runScript(async ({ pg }) => {
     // get dates from cli
     if (process.argv.length < 4) {
       log('Usage: yarn update-stats <start> <end>')
@@ -18,7 +19,11 @@ if (require.main === module)
       process.exit(1)
     }
 
-    await updateStatsBetween(start, end)
+    await updateStatsBetween(pg, start, end)
+    await saveCalibrationData(pg)
+    await revalidateStaticProps('/stats')
+
+    // note does not update mana stats. if you want that please add the call to this script
   })
 
 const dateregex = /^\d{4}-\d{2}-\d{2}$/
