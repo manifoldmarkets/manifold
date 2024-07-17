@@ -8,80 +8,99 @@ import {
   ScaleIcon,
   SearchIcon,
 } from '@heroicons/react/outline'
-import { groupBy, sumBy } from 'lodash'
+import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import {
+  OTHER_TOOLTIP_TEXT,
+  getMaximumAnswers,
   sortAnswers,
   type Answer,
   type MultiSort,
-  OTHER_TOOLTIP_TEXT,
-  getMaximumAnswers,
 } from 'common/answer'
 import { Bet, LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import {
-  MultiContract,
-  contractPath,
   Contract,
+  MultiContract,
   SORTS,
+  contractPath,
   tradingAllowed,
 } from 'common/contract'
-import Link from 'next/link'
-import { Button, buttonClass } from 'web/components/buttons/button'
-import { Row } from 'web/components/layout/row'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
-import { getAnswerColor } from '../charts/contract/choice'
-import { Col } from '../layout/col'
-import {
-  AnswerBar,
-  CreatorAndAnswerLabel,
-  AnswerStatus,
-  BetButtons,
-  MultiSeller,
-} from './answer-components'
+import { isAdminId, isModId } from 'common/envs/constants'
+import { User } from 'common/user'
 import { floatingEqual } from 'common/util/math'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import DropdownMenu from '../comments/dropdown-menu'
-import generateFilterDropdownItems from '../search/search-dropdown-helpers'
-import { SearchCreateAnswerPanel } from './create-answer-panel'
+import { searchInAny } from 'common/util/parse'
+import { groupBy, sumBy } from 'lodash'
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { api, editAnswerCpmm, updateMarket } from 'web/lib/api/api'
+import { CirclePicker } from 'react-color'
+import toast from 'react-hot-toast'
+import { Button, buttonClass } from 'web/components/buttons/button'
+import {
+  TradesModal,
+  TradesNumber,
+} from 'web/components/contract/trades-button'
 import {
   MODAL_CLASS,
   Modal,
   SCROLLABLE_MODAL_CLASS,
 } from 'web/components/layout/modal'
-import { Input } from 'web/components/widgets/input'
-import { isAdminId, isModId } from 'common/envs/constants'
-import { User } from 'common/user'
+import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import {
-  TradesModal,
-  TradesNumber,
-} from 'web/components/contract/trades-button'
-import toast from 'react-hot-toast'
+import { Input } from 'web/components/widgets/input'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { useUnfilledBets } from 'web/hooks/use-bets'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { useIsClient } from 'web/hooks/use-is-client'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { api, editAnswerCpmm, updateMarket } from 'web/lib/api/api'
 import {
   OrderBookPanel,
   YourOrders,
   getOrderBookButtonLabel,
 } from '../bet/order-book'
-import { useUnfilledBets } from 'web/hooks/use-bets'
-import { useIsClient } from 'web/hooks/use-is-client'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
-import { CirclePicker } from 'react-color'
+import { getAnswerColor } from '../charts/contract/choice'
+import DropdownMenu from '../comments/dropdown-menu'
+import { Col } from '../layout/col'
+import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { UserHovercard } from '../user/user-hovercard'
-import { searchInAny } from 'common/util/parse'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { UserIcon } from '@heroicons/react/solid'
+import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import { Pagination } from '../widgets/pagination'
+import {
+  AnswerBar,
+  AnswerStatus,
+  BetButtons,
+  CreatorAndAnswerLabel,
+  MultiSeller,
+} from './answer-components'
+import { SearchCreateAnswerPanel } from './create-answer-panel'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
-const MAX_DEFAULT_ANSWERS = 20
-const MAX_DEFAULT_GRAPHED_ANSWERS = 6
+
+const ANSWERS_PER_PAGE = 5
+
+function getAnswersToShow(
+  query: string,
+  page: number,
+  sortedAnswers: Answer[],
+  searchedAnswers: Answer[]
+) {
+  return query
+    ? searchedAnswers.slice(
+        page * ANSWERS_PER_PAGE,
+        (page + 1) * ANSWERS_PER_PAGE
+      )
+    : sortedAnswers.slice(
+        page * ANSWERS_PER_PAGE,
+        (page + 1) * ANSWERS_PER_PAGE
+      )
+}
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
@@ -118,6 +137,12 @@ export function AnswersPanel(props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
+  const [page, setPage] = useState(0)
+
+  useEffect(() => {
+    setPage(0)
+  }, [query, sort])
+
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
   const answers = contract.answers
@@ -126,10 +151,7 @@ export function AnswersPanel(props: {
       ...a,
       prob: getAnswerProbability(contract, a.id),
     }))
-  const [showAll, setShowAll] = useState(
-    (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
-      answers.length <= 5
-  )
+
   const sortedAnswers = useMemo(
     () => sortAnswers(contract, answers, sort),
     [answers, resolutions, shouldAnswersSumToOne, sort]
@@ -143,37 +165,25 @@ export function AnswersPanel(props: {
     )
   }, [sortedAnswers, query])
 
-  const allResolved =
-    (shouldAnswersSumToOne && !!contract.resolutions) ||
-    answers.every((a) => 'resolution' in a)
+  const answersToShow = getAnswersToShow(
+    query,
+    page,
+    sortedAnswers,
+    searchedAnswers
+  )
 
-  const answersToShow = query
-    ? searchedAnswers
-    : showAll
-    ? sortedAnswers
-    : sortedAnswers
-        .filter((answer) => {
-          if (selectedAnswerIds.includes(answer.id)) {
-            return true
-          }
+  const selectedAnswers = answers.filter((a) =>
+    selectedAnswerIds.includes(a.id)
+  )
 
-          if (allResolved) return true
-          if (sort === 'prob-asc') {
-            return answer.prob < 0.99
-          } else if (sort === 'prob-desc') {
-            return answer.prob > 0.01
-          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
-            return !('resolution' in answer)
-          }
-          return true
-        })
-        .slice(0, MAX_DEFAULT_ANSWERS)
-  useEffect(() => {
+  const [highlightedAnswer, setHighlightedAnswer] = useState<
+    string | undefined
+  >(undefined)
+
+  useEffectCheckEquality(() => {
     if (!selectedAnswerIds.length)
-      setDefaultAnswerIdsToGraph?.(
-        answersToShow.map((a) => a.id).slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
-      )
-  }, [selectedAnswerIds.length, answersToShow.length])
+      setDefaultAnswerIdsToGraph?.(answersToShow.map((a) => a.id))
+  }, [answersToShow])
 
   const user = useUser()
 
@@ -187,8 +197,6 @@ export function AnswersPanel(props: {
     enabled: isAdvancedTrader && shouldShowLimitOrderChart,
   })
 
-  const moreCount = answers.length - answersToShow.length
-  // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
   const setDefaultSort = async () => {
@@ -230,6 +238,9 @@ export function AnswersPanel(props: {
         setText={setQuery}
         isSearchOpen={isSearchOpen}
         setIsSearchOpen={setIsSearchOpen}
+        onCreateAnswer={(newAnswer: string) => {
+          setSort('new')
+        }}
       >
         <Row className={'mb-1 items-center gap-4'}>
           <DropdownMenu
@@ -272,14 +283,47 @@ export function AnswersPanel(props: {
         <div className="text-ink-500 p-4 text-center">No answers yet</div>
       ) : (
         <Col className="mx-[2px] mt-1 gap-2">
+          {/* selected answers that are not in answersToShow */}
+          {selectedAnswers
+            .filter(
+              (answer) => !answersToShow.map((a) => a.id).includes(answer.id)
+            )
+            .map((selectedAnswer) => (
+              <Answer
+                className={clsx('border-primary-500 rounded border')}
+                key={selectedAnswer.id}
+                user={user}
+                answer={selectedAnswer}
+                contract={contract}
+                onCommentClick={
+                  onAnswerCommentClick
+                    ? () => onAnswerCommentClick(selectedAnswer)
+                    : undefined
+                }
+                onHover={(hovering) =>
+                  onAnswerHover?.(hovering ? selectedAnswer : undefined)
+                }
+                onClick={() => {
+                  onAnswerClick?.(selectedAnswer)
+                }}
+                unfilledBets={unfilledBets?.filter(
+                  (b) => b.answerId === selectedAnswer.id
+                )}
+                color={getAnswerColor(selectedAnswer)}
+                userBets={userBetsByAnswer[selectedAnswer.id]}
+                shouldShowLimitOrderChart={isAdvancedTrader}
+              />
+            ))}
+
           {answersToShow.map((answer) => (
             <Answer
-              className={
-                selectedAnswerIds.length &&
-                !selectedAnswerIds.includes(answer.id)
-                  ? 'opacity-70'
+              className={clsx(
+                selectedAnswerIds.length > 0
+                  ? !selectedAnswerIds.includes(answer.id)
+                    ? 'opacity-70'
+                    : 'border-primary-500 rounded border'
                   : ''
-              }
+              )}
               key={answer.id}
               user={user}
               answer={answer}
@@ -305,22 +349,12 @@ export function AnswersPanel(props: {
               }
             />
           ))}
-
-          {moreCount > 0 &&
-            (query ? (
-              <div className="text-ink-600 pb-4 text-center">
-                {moreCount} answers hidden by search
-              </div>
-            ) : (
-              <Button
-                color="gray-white"
-                onClick={() => setShowAll(true)}
-                size="xs"
-              >
-                <ChevronDownIcon className="mr-1 h-4 w-4" />
-                Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
-              </Button>
-            ))}
+          <Pagination
+            page={page}
+            pageSize={ANSWERS_PER_PAGE}
+            totalItems={query ? searchedAnswers.length : sortedAnswers.length}
+            setPage={setPage}
+          />
         </Col>
       )}
       {isAdvancedTrader && (
