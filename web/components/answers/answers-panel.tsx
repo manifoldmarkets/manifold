@@ -68,6 +68,7 @@ import {
   getOrderBookButtonLabel,
 } from '../bet/order-book'
 import { useUnfilledBets } from 'web/hooks/use-bets'
+import { useIsClient } from 'web/hooks/use-is-client'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
@@ -180,8 +181,10 @@ export function AnswersPanel(props: {
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   const isAdvancedTrader = useIsAdvancedTrader()
+  const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
+    usePersistentLocalState<boolean>(true, SHOW_LIMIT_ORDER_CHARTS_KEY)
   const unfilledBets = useUnfilledBets(contract.id, {
-    enabled: isAdvancedTrader,
+    enabled: isAdvancedTrader && shouldShowLimitOrderChart,
   })
 
   const moreCount = answers.length - answersToShow.length
@@ -295,10 +298,11 @@ export function AnswersPanel(props: {
               unfilledBets={unfilledBets?.filter(
                 (b) => b.answerId === answer.id
               )}
-              selected={selectedAnswerIds?.includes(answer.id)}
               color={getAnswerColor(answer)}
               userBets={userBetsByAnswer[answer.id]}
-              shouldShowLimitOrderChart={isAdvancedTrader}
+              shouldShowLimitOrderChart={
+                isAdvancedTrader && shouldShowLimitOrderChart
+              }
             />
           ))}
 
@@ -318,6 +322,25 @@ export function AnswersPanel(props: {
               </Button>
             ))}
         </Col>
+      )}
+      {isAdvancedTrader && (
+        <Row className="mt-2 items-center gap-2 self-end">
+          <input
+            id="limitOrderChart"
+            type="checkbox"
+            className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
+            checked={shouldShowLimitOrderChart}
+            onChange={() =>
+              setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
+            }
+          />
+          <label
+            htmlFor="limitOrderChart"
+            className="text-ink-500 text-sm font-medium"
+          >
+            Show limit orders
+          </label>
+        </Row>
       )}
     </Col>
   )
@@ -536,7 +559,6 @@ export function Answer(props: {
   onHover?: (hovering: boolean) => void
   onClick?: () => void
   userBets?: Bet[]
-  selected?: boolean
   barColor?: string
   shouldShowLimitOrderChart: boolean
   feedReason?: string
@@ -551,7 +573,6 @@ export function Answer(props: {
     onClick,
     color,
     userBets,
-    selected,
     user,
     barColor,
     feedReason,
@@ -576,6 +597,7 @@ export function Answer(props: {
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
+  const isClient = useIsClient()
 
   const yourUnfilledBets = unfilledBets?.filter(
     (bet) => bet.userId === user?.id
@@ -699,6 +721,16 @@ export function Answer(props: {
               className="!z-50"
             />
           </Row>
+        }
+        renderBackgroundLayer={
+          shouldShowLimitOrderChart &&
+          isClient && (
+            <LimitOrderBarChart
+              limitOrders={unfilledBets}
+              prob={prob}
+              activeColor={color}
+            />
+          )
         }
       />
 
