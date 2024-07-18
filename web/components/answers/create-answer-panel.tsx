@@ -172,7 +172,7 @@ export function SearchCreateAnswerPanel(props: {
       <Input
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className="!bg-canvas-50 !h-8 flex-grow !rounded-full !pl-8 !text-sm"
+        className="!bg-canvas-50 !h-6 flex-grow !rounded-full !pl-8 !text-sm"
         placeholder="Search answers"
         onBlur={() => !text && setIsSearchOpen?.(false)}
         autoFocus
