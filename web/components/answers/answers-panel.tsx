@@ -50,7 +50,6 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUnfilledBets } from 'web/hooks/use-bets'
-import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -71,7 +70,6 @@ import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { UserHovercard } from '../user/user-hovercard'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { Pagination } from '../widgets/pagination'
 import {
   AnswerBar,
   AnswerPosition,
@@ -82,25 +80,8 @@ import {
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
-
-const ANSWERS_PER_PAGE = 10
-
-function getAnswersToShow(
-  query: string,
-  page: number,
-  sortedAnswers: Answer[],
-  searchedAnswers: Answer[]
-) {
-  return query
-    ? searchedAnswers.slice(
-        page * ANSWERS_PER_PAGE,
-        (page + 1) * ANSWERS_PER_PAGE
-      )
-    : sortedAnswers.slice(
-        page * ANSWERS_PER_PAGE,
-        (page + 1) * ANSWERS_PER_PAGE
-      )
-}
+const MAX_DEFAULT_ANSWERS = 20
+const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
@@ -137,12 +118,6 @@ export function AnswersPanel(props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
-  const [page, setPage] = useState(0)
-
-  useEffect(() => {
-    setPage(0)
-  }, [query, sort])
-
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
   const answers = contract.answers
@@ -151,7 +126,10 @@ export function AnswersPanel(props: {
       ...a,
       prob: getAnswerProbability(contract, a.id),
     }))
-
+  const [showAll, setShowAll] = useState(
+    (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
+      answers.length <= 5
+  )
   const sortedAnswers = useMemo(
     () => sortAnswers(contract, answers, sort),
     [answers, resolutions, shouldAnswersSumToOne, sort]
@@ -165,25 +143,37 @@ export function AnswersPanel(props: {
     )
   }, [sortedAnswers, query])
 
-  const answersToShow = getAnswersToShow(
-    query,
-    page,
-    sortedAnswers,
-    searchedAnswers
-  )
+  const allResolved =
+    (shouldAnswersSumToOne && !!contract.resolutions) ||
+    answers.every((a) => 'resolution' in a)
 
-  const selectedAnswers = answers.filter((a) =>
-    selectedAnswerIds.includes(a.id)
-  )
+  const answersToShow = query
+    ? searchedAnswers
+    : showAll
+    ? sortedAnswers
+    : sortedAnswers
+        .filter((answer) => {
+          if (selectedAnswerIds.includes(answer.id)) {
+            return true
+          }
 
-  const [highlightedAnswer, setHighlightedAnswer] = useState<
-    string | undefined
-  >(undefined)
-
-  useEffectCheckEquality(() => {
+          if (allResolved) return true
+          if (sort === 'prob-asc') {
+            return answer.prob < 0.99
+          } else if (sort === 'prob-desc') {
+            return answer.prob > 0.01
+          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
+            return !('resolution' in answer)
+          }
+          return true
+        })
+        .slice(0, MAX_DEFAULT_ANSWERS)
+  useEffect(() => {
     if (!selectedAnswerIds.length)
-      setDefaultAnswerIdsToGraph?.(answersToShow.map((a) => a.id))
-  }, [answersToShow])
+      setDefaultAnswerIdsToGraph?.(
+        answersToShow.map((a) => a.id).slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
+      )
+  }, [selectedAnswerIds.length, answersToShow.length])
 
   const user = useUser()
 
@@ -197,6 +187,8 @@ export function AnswersPanel(props: {
     enabled: isAdvancedTrader && shouldShowLimitOrderChart,
   })
 
+  const moreCount = answers.length - answersToShow.length
+  // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
   const setDefaultSort = async () => {
@@ -238,9 +230,6 @@ export function AnswersPanel(props: {
         setText={setQuery}
         isSearchOpen={isSearchOpen}
         setIsSearchOpen={setIsSearchOpen}
-        onCreateAnswer={(newAnswer: string) => {
-          setSort('new')
-        }}
       >
         <Row className={'mb-1 items-center gap-4'}>
           <DropdownMenu
@@ -283,47 +272,14 @@ export function AnswersPanel(props: {
         <div className="text-ink-500 p-4 text-center">No answers yet</div>
       ) : (
         <Col className="mx-[2px] mt-1 gap-2">
-          {/* selected answers that are not in answersToShow */}
-          {selectedAnswers
-            .filter(
-              (answer) => !answersToShow.map((a) => a.id).includes(answer.id)
-            )
-            .map((selectedAnswer) => (
-              <Answer
-                className={clsx('border-primary-500 rounded border')}
-                key={selectedAnswer.id}
-                user={user}
-                answer={selectedAnswer}
-                contract={contract}
-                onCommentClick={
-                  onAnswerCommentClick
-                    ? () => onAnswerCommentClick(selectedAnswer)
-                    : undefined
-                }
-                onHover={(hovering) =>
-                  onAnswerHover?.(hovering ? selectedAnswer : undefined)
-                }
-                onClick={() => {
-                  onAnswerClick?.(selectedAnswer)
-                }}
-                unfilledBets={unfilledBets?.filter(
-                  (b) => b.answerId === selectedAnswer.id
-                )}
-                color={getAnswerColor(selectedAnswer)}
-                userBets={userBetsByAnswer[selectedAnswer.id]}
-                shouldShowLimitOrderChart={isAdvancedTrader}
-              />
-            ))}
-
           {answersToShow.map((answer) => (
             <Answer
-              className={clsx(
-                selectedAnswerIds.length > 0
-                  ? !selectedAnswerIds.includes(answer.id)
-                    ? 'opacity-70'
-                    : 'border-primary-500 rounded border'
+              className={
+                selectedAnswerIds.length &&
+                !selectedAnswerIds.includes(answer.id)
+                  ? 'opacity-70'
                   : ''
-              )}
+              }
               key={answer.id}
               user={user}
               answer={answer}
@@ -349,12 +305,22 @@ export function AnswersPanel(props: {
               }
             />
           ))}
-          <Pagination
-            page={page}
-            pageSize={ANSWERS_PER_PAGE}
-            totalItems={query ? searchedAnswers.length : sortedAnswers.length}
-            setPage={setPage}
-          />
+
+          {moreCount > 0 &&
+            (query ? (
+              <div className="text-ink-600 pb-4 text-center">
+                {moreCount} answers hidden by search
+              </div>
+            ) : (
+              <Button
+                color="gray-white"
+                onClick={() => setShowAll(true)}
+                size="xs"
+              >
+                <ChevronDownIcon className="mr-1 h-4 w-4" />
+                Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
+              </Button>
+            ))}
         </Col>
       )}
       {isAdvancedTrader && (
