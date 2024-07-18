@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import { CPMMMultiContract, MultiContract, SORTS } from 'common/contract'
 import { Col } from '../layout/col'
 import { api } from 'web/lib/api/api'
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
-import { MAX_ANSWER_LENGTH } from 'common/answer'
+import { MAX_ANSWER_LENGTH, MultiSort } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
@@ -12,6 +12,9 @@ import { getTieredAnswerCost } from 'common/economy'
 import { Input } from '../widgets/input'
 import { getTierFromLiquidity } from 'common/tier'
 import clsx from 'clsx'
+import DropdownMenu from '../comments/dropdown-menu'
+import generateFilterDropdownItems from '../search/search-dropdown-helpers'
+import { ChevronDownIcon } from '@heroicons/react/solid'
 
 export function CreateAnswerCpmmPanel(props: {
   contract: CPMMMultiContract
@@ -101,15 +104,40 @@ export function CreateAnswerCpmmPanel(props: {
   )
 }
 
+function MultiSortDropdown(props: {
+  sort: MultiSort
+  setSort: (sort: MultiSort) => void
+}) {
+  const { sort, setSort } = props
+  return (
+    <DropdownMenu
+      closeOnClick
+      items={generateFilterDropdownItems(SORTS, setSort)}
+      icon={
+        <Row className="text-ink-500 items-center gap-0.5">
+          <span className="whitespace-nowrap text-sm font-medium">
+            {SORTS.find((s) => s.value === sort)?.label}
+          </span>
+          <ChevronDownIcon className="h-4 w-4" />
+        </Row>
+      }
+      buttonClass={
+        'rounded-full bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400 py-0.5 text-sm px-3'
+      }
+    />
+  )
+}
+
 export function SearchCreateAnswerPanel(props: {
   contract: MultiContract
   canAddAnswer: boolean
   text: string
   setText: (text: string) => void
   children?: React.ReactNode
-  isSearchOpen?: boolean
   setIsSearchOpen?: (isSearchOpen: boolean) => void
   className?: string
+  sort: MultiSort
+  setSort: (sort: MultiSort) => void
 }) {
   const {
     contract,
@@ -117,12 +145,11 @@ export function SearchCreateAnswerPanel(props: {
     text,
     setText,
     children,
-    isSearchOpen,
     setIsSearchOpen,
     className,
+    sort,
+    setSort,
   } = props
-
-  if (!isSearchOpen) return <>{children}</>
 
   if (canAddAnswer && contract.outcomeType !== 'NUMBER') {
     return (
@@ -141,16 +168,16 @@ export function SearchCreateAnswerPanel(props: {
   }
 
   return (
-    <Col className={className}>
+    <Row className={clsx('w-full items-center gap-2 py-1', className)}>
       <Input
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className="!text-md"
+        className="!bg-canvas-50 !h-8 flex-grow !rounded-full !pl-8 !text-sm"
         placeholder="Search answers"
         onBlur={() => !text && setIsSearchOpen?.(false)}
         autoFocus
       />
-      {children}
-    </Col>
+      <MultiSortDropdown sort={sort} setSort={setSort} />
+    </Row>
   )
 }

@@ -199,12 +199,6 @@ export function AnswersPanel(props: {
     })
   }
 
-  const [isSearchOpen, setIsSearchOpen] = usePersistentInMemoryState(
-    defaultAddAnswer ?? false,
-    `answers-panel-search-open-${contract.id}`
-  )
-  const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
-
   const privateUser = usePrivateUser()
   const unresolvedAnswers = answers.filter((a) =>
     'resolution' in a ? !a.resolution : true
@@ -228,43 +222,15 @@ export function AnswersPanel(props: {
         canAddAnswer={canAddAnswer}
         text={query}
         setText={setQuery}
-        isSearchOpen={isSearchOpen}
-        setIsSearchOpen={setIsSearchOpen}
-        className={'sticky top-20 z-40'}
+        className={'bg-canvas-0 sticky top-[48px] z-40'}
+        sort={sort}
+        setSort={setSort}
       >
         <Row className={'mb-1 items-center gap-4'}>
-          <DropdownMenu
-            closeOnClick
-            items={generateFilterDropdownItems(SORTS, setSort)}
-            icon={
-              <Row className="text-ink-500 items-center gap-0.5">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  {SORTS.find((s) => s.value === sort)?.label}
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Row>
-            }
-          />
           {showSetDefaultSort && contract.sort !== sort && (
             <Button color="gray-outline" size="2xs" onClick={setDefaultSort}>
               Set default
             </Button>
-          )}
-          {!isSearchOpen && (
-            <button
-              onClick={toggleSearch}
-              className="text-ink-500 hover:text-ink-300 flex items-center gap-0.5 text-sm font-medium"
-            >
-              <SearchIcon className="h-4 w-4" /> Search
-            </button>
-          )}
-          {!isSearchOpen && canAddAnswer && (
-            <button
-              onClick={toggleSearch}
-              className="text-ink-500 hover:text-ink-300 flex items-center gap-0.5 text-sm font-medium"
-            >
-              <PlusCircleIcon className="h-4 w-4" /> Add answer
-            </button>
           )}
         </Row>
       </SearchCreateAnswerPanel>
