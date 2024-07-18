@@ -159,9 +159,8 @@ function CandidateAnswer(props: {
   selected?: boolean
   userBets?: Bet[]
   user?: User | null
-  className?: string
 }) {
-  const { answer, contract, selected, color, userBets, user, className } = props
+  const { answer, contract, selected, color, userBets, user } = props
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -180,8 +179,7 @@ function CandidateAnswer(props: {
         resolvedProb={resolvedProb}
         className={clsx(
           'cursor-pointer',
-          selected && 'ring-primary-600 rounded ring-2',
-          className
+          selected && 'ring-primary-600 rounded ring-2'
         )}
         answer={answer}
         contract={contract}
