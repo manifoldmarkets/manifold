@@ -77,7 +77,7 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
   },
   'Mike Pence': {
     party: 'Republican',
-    photo: '/political-candidates/pence.avif',
+    photo: '/political-candidates/pence.png',
     shortName: 'Pence',
   },
   'Tucker Carlson': {
