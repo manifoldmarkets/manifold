@@ -20,18 +20,9 @@ export function CreateAnswerCpmmPanel(props: {
   close?: () => void
   placeholder?: string
   autoFocus?: boolean
-  onCreateAnswer?: (newAnswer: string) => void
 }) {
-  const {
-    contract,
-    text,
-    setText,
-    children,
-    close,
-    placeholder,
-    autoFocus,
-    onCreateAnswer,
-  } = props
+  const { contract, text, setText, children, close, placeholder, autoFocus } =
+    props
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -46,11 +37,9 @@ export function CreateAnswerCpmmPanel(props: {
           contractId: contract.id,
           text,
         })
+        setText('')
       } catch (e) {}
-      if (onCreateAnswer) {
-        onCreateAnswer(text)
-      }
-      setText('')
+
       setIsSubmitting(false)
     }
   }
@@ -110,7 +99,6 @@ export function SearchCreateAnswerPanel(props: {
   children?: React.ReactNode
   isSearchOpen?: boolean
   setIsSearchOpen?: (isSearchOpen: boolean) => void
-  onCreateAnswer?: (newAnswer: string) => void
 }) {
   const {
     contract,
@@ -120,7 +108,6 @@ export function SearchCreateAnswerPanel(props: {
     children,
     isSearchOpen,
     setIsSearchOpen,
-    onCreateAnswer,
   } = props
 
   if (!isSearchOpen) return <>{children}</>
@@ -134,7 +121,6 @@ export function SearchCreateAnswerPanel(props: {
         close={() => setIsSearchOpen?.(false)}
         placeholder="Search or add answer"
         autoFocus
-        onCreateAnswer={onCreateAnswer}
       >
         {children}
       </CreateAnswerCpmmPanel>
