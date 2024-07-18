@@ -436,24 +436,13 @@ export function AnswersPanel(props: {
               </Col>
             ))}
           </ControlledCarousel>
-          <Row className="h-full items-center justify-between">
-            <Pagination
-              page={page}
-              pageSize={ANSWERS_PER_PAGE}
-              totalItems={query ? searchedAnswers.length : sortedAnswers.length}
-              setPage={handlePageChange}
-              scrolledPage={scrolledPage}
-            />
-            {canAddAnswer && (
-              <Button
-                color="indigo-outline"
-                className="h-min whitespace-nowrap"
-                size="2xs"
-              >
-                Add Answer
-              </Button>
-            )}
-          </Row>
+          <Pagination
+            page={page}
+            pageSize={ANSWERS_PER_PAGE}
+            totalItems={query ? searchedAnswers.length : sortedAnswers.length}
+            setPage={handlePageChange}
+            scrolledPage={scrolledPage}
+          />
         </Col>
       )}
       {isAdvancedTrader && (
