@@ -11,6 +11,7 @@ import { ExpandingInput } from '../widgets/expanding-input'
 import { getTieredAnswerCost } from 'common/economy'
 import { Input } from '../widgets/input'
 import { getTierFromLiquidity } from 'common/tier'
+import clsx from 'clsx'
 
 export function CreateAnswerCpmmPanel(props: {
   contract: CPMMMultiContract
@@ -20,9 +21,18 @@ export function CreateAnswerCpmmPanel(props: {
   close?: () => void
   placeholder?: string
   autoFocus?: boolean
+  className?: string
 }) {
-  const { contract, text, setText, children, close, placeholder, autoFocus } =
-    props
+  const {
+    contract,
+    text,
+    setText,
+    children,
+    close,
+    placeholder,
+    autoFocus,
+    className,
+  } = props
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -45,7 +55,7 @@ export function CreateAnswerCpmmPanel(props: {
   }
 
   return (
-    <Col className="gap-1">
+    <Col className={clsx('gap-1', className)}>
       <ExpandingInput
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -99,6 +109,7 @@ export function SearchCreateAnswerPanel(props: {
   children?: React.ReactNode
   isSearchOpen?: boolean
   setIsSearchOpen?: (isSearchOpen: boolean) => void
+  className?: string
 }) {
   const {
     contract,
@@ -108,6 +119,7 @@ export function SearchCreateAnswerPanel(props: {
     children,
     isSearchOpen,
     setIsSearchOpen,
+    className,
   } = props
 
   if (!isSearchOpen) return <>{children}</>
@@ -121,6 +133,7 @@ export function SearchCreateAnswerPanel(props: {
         close={() => setIsSearchOpen?.(false)}
         placeholder="Search or add answer"
         autoFocus
+        className={className}
       >
         {children}
       </CreateAnswerCpmmPanel>
@@ -128,7 +141,7 @@ export function SearchCreateAnswerPanel(props: {
   }
 
   return (
-    <>
+    <Col className={className}>
       <Input
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -138,6 +151,6 @@ export function SearchCreateAnswerPanel(props: {
         autoFocus
       />
       {children}
-    </>
+    </Col>
   )
 }

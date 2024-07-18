@@ -230,6 +230,7 @@ export function AnswersPanel(props: {
         setText={setQuery}
         isSearchOpen={isSearchOpen}
         setIsSearchOpen={setIsSearchOpen}
+        className={'sticky top-20 z-40'}
       >
         <Row className={'mb-1 items-center gap-4'}>
           <DropdownMenu
@@ -238,7 +239,7 @@ export function AnswersPanel(props: {
             icon={
               <Row className="text-ink-500 items-center gap-0.5">
                 <span className="whitespace-nowrap text-sm font-medium">
-                  Sort: {SORTS.find((s) => s.value === sort)?.label}
+                  {SORTS.find((s) => s.value === sort)?.label}
                 </span>
                 <ChevronDownIcon className="h-4 w-4" />
               </Row>
