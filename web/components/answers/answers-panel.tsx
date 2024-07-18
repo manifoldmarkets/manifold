@@ -276,7 +276,7 @@ export function AnswersPanel(props: {
       const newPage = getPage()
       setPage(newPage)
       scrollToPage(newPage)
-    }, 200)
+    }, 100)
   }, [onScroll, carouselRef, scrollToPage])
 
   useEffect(() => {
