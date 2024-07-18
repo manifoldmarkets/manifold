@@ -354,15 +354,6 @@ export const updateActivityStats = async (
 
   // new user stats
   {
-    // TODO: do we really need to do this instead of d1 bet count > 1?
-    const firstBetDict: { [userId: string]: string } = {}
-    for (const { day, values } of dailyBets) {
-      for (const bet of values) {
-        if (bet.userId in firstBetDict) continue
-        firstBetDict[bet.userId] = day
-      }
-    }
-
     log('fetch daily new users')
     const dailyNewUsers = await getDailyNewUsers(pg, startWithBuffer, end)
 
@@ -392,9 +383,6 @@ export const updateActivityStats = async (
         .map(({ day, values: users }, i) => ({
           start_date: day,
           signups_real: users.length,
-          activation: average(
-            users.map((u) => (firstBetDict[u] === day ? 1 : 0))
-          ),
           nd1: retention(users, dailyUserIds[i + 1]?.values),
           nw1: retention(
             uniqBetween(dailyNewRealUserIds, i - 13, i - 6), // new users 2 weeks ago
@@ -409,6 +397,7 @@ export const updateActivityStats = async (
     const newUsersBets = dailyNewRealUsers
       .map(({ day, values: users }, i) => ({
         start_date: day,
+        activation: average(users.map((u) => (u.d1BetCount > 0 ? 1 : 0))),
         d1_bet_average: average(users.map((u) => u.d1BetCount)),
         d1_bet_3_day_average: average(
           dailyNewRealUsers
