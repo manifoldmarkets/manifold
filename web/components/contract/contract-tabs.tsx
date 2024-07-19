@@ -3,7 +3,6 @@ import {
   keyBy,
   minBy,
   mapValues,
-  maxBy,
   sortBy,
   sumBy,
   uniqBy,
