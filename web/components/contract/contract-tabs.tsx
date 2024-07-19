@@ -44,7 +44,7 @@ import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useRealtimeCommentsPolling } from 'web/hooks/use-comments'
+import { useSubscribeNewComments } from 'web/hooks/use-comments'
 import { ParentFeedComment } from '../feed/feed-comments'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
@@ -209,18 +209,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     contractId: contract.id,
   })
 
-  // Poll for new comments
-  const realtimeComments = useRealtimeCommentsPolling(
-    contract.id,
-    maxBy(props.comments, 'createdTime')?.createdTime ?? 0,
-    500
-  )
+  // Listen for new comments
+  const newComments = useSubscribeNewComments(contract.id)
   const comments = uniqBy(
-    [
-      ...(realtimeComments ?? []),
-      ...(fetchedComments ?? []),
-      ...props.comments,
-    ],
+    [...(newComments ?? []), ...(fetchedComments ?? []), ...props.comments],
     'id'
   ).filter((c) => !blockedUserIds.includes(c.userId))
 
