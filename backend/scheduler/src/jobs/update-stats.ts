@@ -453,6 +453,10 @@ async function updateDailySales(
 
   log('upsert daily sales')
   await bulkUpsertStats(pg, sales)
+  await pg.none(
+    `update daily_stats set sales = 0 where sales is null and start_date >= $1 and start_date < $2`,
+    [start, end]
+  )
 }
 
 async function updateConversionScores(
