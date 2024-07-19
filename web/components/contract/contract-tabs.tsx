@@ -1,12 +1,4 @@
-import {
-  groupBy,
-  keyBy,
-  minBy,
-  mapValues,
-  sortBy,
-  sumBy,
-  uniqBy,
-} from 'lodash'
+import { groupBy, keyBy, minBy, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
