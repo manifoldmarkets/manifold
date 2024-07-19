@@ -418,7 +418,7 @@ export const updateActivityStats = async (
 
         return {
           start_date: day,
-          active_d1_to_d3: average(today.map((id) => counts[id])) / 3,
+          active_d1_to_d3: average(today.map((id) => counts[id] ?? 0)) / 3,
         }
       })
 
