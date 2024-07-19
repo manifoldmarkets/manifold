@@ -1,6 +1,7 @@
+import { MINUTE_MS } from 'common/util/time'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
-import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { db } from 'web/lib/supabase/db'
 
 export interface ScheduleItem {
   id: number
@@ -34,17 +35,17 @@ export const useTVSchedule = (
 ) => {
   const [schedule, setSchedule] = useState(defaultSchedule)
 
-  const tvSchedule = useSubscription('tv_schedule')
+  const fetchSchedule = async () => {
+    const { data } = await db.from('tv_schedule').select('*')
+    const newSchedule = filterSchedule(data as any, defaultScheduleId)
+    setSchedule(newSchedule)
+  }
 
   useEffect(() => {
-    if (!tvSchedule.rows || !tvSchedule.rows.length) return
-
-    const newSchedule = filterSchedule(
-      tvSchedule.rows as any,
-      defaultScheduleId
-    )
-    setSchedule(newSchedule)
-  }, [tvSchedule.rows])
+    fetchSchedule()
+    const interval = setInterval(fetchSchedule, 1 * MINUTE_MS)
+    return () => clearInterval(interval)
+  })
 
   return schedule
 }
