@@ -18,7 +18,8 @@ import { BonusSummary } from 'web/components/stats/bonus-summary'
 import { ManaSupplySummary } from 'web/components/stats/mana-summary'
 import { Row } from 'web/components/layout/row'
 import { average } from 'common/util/math'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
+import { Button } from 'web/components/buttons/button'
 
 export const getStaticProps = async () => {
   try {
@@ -80,7 +81,8 @@ export function CustomAnalytics(props: {
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
 }) {
-  const { stats, manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+  const { manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+  const [stats, setStats] = useState(props.stats)
 
   const dataFor = useCallback(dataForStats(stats), [stats])
 
@@ -131,7 +133,10 @@ export function CustomAnalytics(props: {
 
   return (
     <Col className="px-4 sm:pl-6 sm:pr-16">
-      <Title>Active users</Title>
+      <div className="flex items-start justify-between">
+        <Title>Active users</Title>
+        <Button onClick={() => getStats().then(setStats)}>Reload All</Button>
+      </div>
       <p className="text-ink-500">
         An active user is a user who has traded in, commented on, or created a
         question.
