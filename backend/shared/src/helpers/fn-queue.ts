@@ -89,7 +89,10 @@ export const createFnQueue = (props?: {
     const expiredItems = spliceExpiredItems(fnQueue)
     for (const item of expiredItems) {
       item.reject(
-        new APIError(503, 'High volume of requests. Please try again later.')
+        new APIError(
+          503,
+          `High volume of requests (${fnQueue.length} requests in queue); please try again later.`
+        )
       )
     }
 
