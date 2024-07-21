@@ -72,7 +72,12 @@ export const createFnQueue = (props?: { timeout?: number }) => {
     activeItems.push(item)
 
     try {
-      const result = await fn()
+      const result = await Promise.race([
+        fn(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Work item timed out')), timeout)
+        ),
+      ])
       resolve(result)
     } catch (e) {
       reject(e)
