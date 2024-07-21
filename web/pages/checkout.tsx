@@ -10,8 +10,8 @@ import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { CheckoutSession, GPSData } from 'common/gidx/gidx'
-import { formatMoney } from 'common/util/format'
+import { CheckoutSession, GPSData, PaymentAmount } from 'common/gidx/gidx'
+import { formatMoney, formatWithCommas } from 'common/util/format'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
 import { api, validateIapReceipt } from 'web/lib/api/api'
@@ -25,6 +25,7 @@ import {
 import router from 'next/router'
 import { LocationPanel } from 'web/components/gidx/register-user-form'
 import { getVerificationStatus } from 'common/user'
+import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 
 const CheckoutPage = () => {
   const user = useUser()
@@ -38,6 +39,7 @@ const CheckoutPage = () => {
   const [amountSelected, setAmountSelected] = useState<number>(
     prices[formatMoney(25000)]
   )
+  const [productSelected, setProductSelected] = useState<PaymentAmount>()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [DeviceGPS, setDeviceGPS] = usePersistentInMemoryState<
@@ -185,6 +187,15 @@ const CheckoutPage = () => {
       })
       const { session, status, message } = res
       if (session) {
+        const product = session.PaymentAmounts.find(
+          (a) => a.PaymentAmount === amountSelected
+        )
+        if (!product) {
+          setError(
+            `We couldn't find that product, please ping us in discord or choose another!`
+          )
+        }
+        setProductSelected(product)
         setCheckoutSession(session)
         setPage('payment')
       } else if (message && status === 'error') {
@@ -253,8 +264,11 @@ const CheckoutPage = () => {
           back={() => setPage('checkout')}
         />
       )}
-      {page === 'payment' && checkoutSession && (
-        <PaymentSection CheckoutSession={checkoutSession} />
+      {page === 'payment' && checkoutSession && productSelected && (
+        <PaymentSection
+          CheckoutSession={checkoutSession}
+          amountSelected={productSelected}
+        />
       )}
       <Row className="text-error mt-2 text-sm">{error}</Row>
     </Page>
@@ -262,8 +276,11 @@ const CheckoutPage = () => {
 }
 
 // TODO parse payment options and bonuses add complete-checkout=-gidx
-const PaymentSection = (props: { CheckoutSession: CheckoutSession }) => {
-  const { CheckoutSession } = props
+const PaymentSection = (props: {
+  CheckoutSession: CheckoutSession
+  amountSelected: PaymentAmount
+}) => {
+  const { CheckoutSession, amountSelected } = props
   const [paymentType, setPaymentType] = useState<'credit-card' | 'apple-pay'>(
     'credit-card'
   )
@@ -334,6 +351,24 @@ const PaymentSection = (props: { CheckoutSession: CheckoutSession }) => {
       <Col className="min-h-screen items-center justify-center py-12">
         <Card className="w-full max-w-md p-8">
           <h1 className="mb-6 text-2xl font-bold">Checkout</h1>
+          <Row className={'justify-between'}>
+            Cost:
+            <span>${formatWithCommas(amountSelected.PaymentAmount)}</span>
+          </Row>
+
+          <Row className={'justify-between'}>
+            To receive:
+            <span>
+              <CoinNumber amount={amountSelected.PaymentAmount} isInline /> &{' '}
+              {/*// TODO: are we going to use bonus amount? Not sure how this will work yet*/}
+              <CoinNumber
+                isSpice
+                amount={amountSelected.BonusAmount}
+                isInline
+              />
+            </span>
+          </Row>
+
           <form onSubmit={handleSubmit}>
             <Col className="space-y-4">
               <Input
