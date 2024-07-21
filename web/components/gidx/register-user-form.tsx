@@ -98,6 +98,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          // TODO:re-enable in prod
           const { coords } = position
           setUserInfo({
             ...userInfo,
@@ -128,8 +129,6 @@ export const RegisterUserForm = (props: { user: User }) => {
     ([key, value]) =>
       !optionalKeys.includes(key) && (value === undefined || value === '')
   )
-  console.log('unfilled', unfilled)
-
   const register = async () => {
     setError(null)
     setLoading(true)
@@ -216,6 +215,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
+  // TODO: if they've already shared location permission, skip this step
   if (page === 2) {
     return (
       <LocationPanel
@@ -445,7 +445,7 @@ export const RegisterUserForm = (props: { user: User }) => {
   )
 }
 
-const LocationPanel = (props: {
+export const LocationPanel = (props: {
   requestLocation: () => void
   locationError: string | null
   back: () => void

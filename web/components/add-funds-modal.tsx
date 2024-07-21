@@ -257,7 +257,7 @@ export function FundsSelector(props: {
   )
 }
 
-const use24hrUsdPurchases = (userId: string) => {
+export const use24hrUsdPurchases = (userId: string) => {
   const [purchases, setPurchases] = useState<Txn[]>([])
 
   useEffect(() => {

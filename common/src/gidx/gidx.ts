@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const GIDX_REGISTATION_ENABLED = false
+export const GIDX_REGISTATION_ENABLED = true
 export const GIDX_DOCUMENTS_REQUIRED = 2
 
 export const GPSProps = z.object({
@@ -144,6 +144,83 @@ export type GIDXMonitorResponse = {
   ResponseCode: number
   ResponseMessage: string
 }
+export type CashierLimit = {
+  MinAmount: number
+  MaxAmount: number
+}
+
+export type PaymentAmount = {
+  PaymentAmount: number
+  BonusAmount: number
+}
+export type PaymentMethod = {
+  Token: string
+  DisplayName: string
+  Type: 'CC' | 'ACH' | 'Paypal' | 'ApplePay' | 'GooglePay'
+  NameOnAccount: string
+  BillingAddress: {
+    AddressLine1: string
+    City: string
+    StateCode: string
+    PostalCode: string
+    CountryCode: string
+  }
+  PhoneNumber?: string
+  // CC specific fields
+  CardNumber?: string
+  CVV?: string
+  ExpirationDate?: string
+  Network?: string
+  AVSResult?: string
+  CVVResult?: string
+  ThreeDS?: {
+    CAVV: string
+    ECI: string
+    DSTransactionID: string
+  }
+  // ACH specific fields
+  AccountNumber?: string
+  RoutingNumber?: string
+  // ApplePay specific fields
+  Payment?: string
+  WalletToken?: string
+  // GooglePay specific fields
+  PaymentData?: string
+}
+export type PaymentMethodSetting =
+  | {
+      Type: 'CC' | 'ACH' | 'ApplePay'
+    }
+  | {
+      Type: 'Paypal'
+      ClientID: string
+    }
+  | {
+      Type: 'GooglePay'
+      Environment: string
+      Gateway: string
+      GatewayMerchantID: string
+      MerchantID: string
+    }
+
+export type CheckoutSession = {
+  MerchantTransactionID: string
+  CashierLimits: CashierLimit[]
+  PaymentAmounts: PaymentAmount[]
+  PaymentMethods: PaymentMethod[]
+  PaymentMethodSettings: PaymentMethodSetting[]
+}
+
+export type CheckoutSessionResponse = {
+  ApiKey: string
+  ApiVersion: number
+  SessionID: string
+  MerchantID: string
+  MerchantSessionID: string
+  ResponseCode: number
+  ResponseMessage: string
+  ReasonCodes: string[]
+} & CheckoutSession
 
 export const ID_ERROR_MSG =
   'Registration failed, identity error. Check your identifying information.'

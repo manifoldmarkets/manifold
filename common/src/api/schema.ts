@@ -48,6 +48,7 @@ import { ModReport } from '../mod-report'
 
 import { RegistrationReturnType } from 'common/reason-codes'
 import {
+  CheckoutSession,
   GIDXDocument,
   GIDXMonitorResponse,
   GPSProps,
@@ -1408,6 +1409,19 @@ export const API = (_apiTypeCheck = {
       DeviceGPS: GPSProps,
     }),
   },
+  'get-checkout-session-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      status: string
+      message?: string
+      session?: CheckoutSession
+    },
+    props: z.object({
+      DeviceGPS: GPSProps,
+    }),
+  },
   'get-verification-documents-gidx': {
     method: 'POST',
     visibility: 'undocumented',
@@ -1432,7 +1446,17 @@ export const API = (_apiTypeCheck = {
       fileUrl: z.string(),
     }),
   },
-  'callback-gidx': {
+  'identity-callback-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as { Accepted: boolean },
+    props: z.object({
+      MerchantCustomerID: z.string(),
+      NotificationType: z.string(),
+    }),
+  },
+  'payment-callback-gidx': {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
