@@ -11,8 +11,11 @@ type WorkItem = {
   timestamp: number
 }
 
-export const createFnQueue = (props?: { timeout?: number }) => {
-  const { timeout = DEFAULT_QUEUE_TIME_LIMIT } = props || {}
+export const createFnQueue = (props?: {
+  timeout?: number
+  maxConcurrent?: number
+}) => {
+  const { timeout = DEFAULT_QUEUE_TIME_LIMIT, maxConcurrent = 5 } = props || {}
 
   const state = {
     fnQueue: [] as WorkItem[],
@@ -90,22 +93,17 @@ export const createFnQueue = (props?: { timeout?: number }) => {
       )
     }
 
-    const cumulativeDependencies = new Set<string>(
-      activeItems.flatMap((item) => item.dependencies)
-    )
-    const toRun = []
-    for (const item of fnQueue) {
-      const { dependencies } = item
-      if (!dependencies.some((d) => cumulativeDependencies.has(d))) {
-        toRun.push(item)
-      }
-      dependencies.forEach((d) => cumulativeDependencies.add(d))
-    }
+    while (activeItems.length < maxConcurrent && fnQueue.length > 0) {
+      const cumulativeDependencies = new Set<string>(
+        activeItems.flatMap((item) => item.dependencies)
+      )
+      const itemIndex = fnQueue.findIndex(
+        (item) => !item.dependencies.some((d) => cumulativeDependencies.has(d))
+      )
 
-    const runSet = new Set(toRun)
-    remove(fnQueue, (item) => runSet.has(item))
+      if (itemIndex === -1) break
 
-    for (const item of toRun) {
+      const item = fnQueue.splice(itemIndex, 1)[0]
       runItem(item)
     }
   }
@@ -113,5 +111,5 @@ export const createFnQueue = (props?: { timeout?: number }) => {
   return { enqueueFn, enqueueFnFirst }
 }
 
-export const betsQueue = createFnQueue()
-export const pollQueue = createFnQueue()
+export const betsQueue = createFnQueue({ maxConcurrent: 10 })
+export const pollQueue = createFnQueue({ maxConcurrent: 10 })
