@@ -36,11 +36,9 @@ export const createFnQueue = (props?: {
         dependencies,
         timestamp: Date.now(),
       }
-      if (first) {
-        fnQueue.unshift(item)
-      } else {
-        fnQueue.push(item)
-      }
+
+      fnQueue.unshift(item)
+
       run()
     })
   }
