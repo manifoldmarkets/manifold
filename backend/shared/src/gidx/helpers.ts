@@ -4,14 +4,14 @@ import { GIDXCustomerProfile } from 'common/gidx/gidx'
 import { getPrivateUserSupabase } from 'shared/utils'
 import { getPhoneNumber } from 'shared/helpers/get-phone-number'
 
-export const getGIDXStandardParams = () => ({
+export const getGIDXStandardParams = (MerchantSessionID?: string) => ({
   // TODO: before merging into main, switch from sandbox key to production key in prod
   ApiKey: process.env.GIDX_API_KEY,
   MerchantID: process.env.GIDX_MERCHANT_ID,
   ProductTypeID: process.env.GIDX_PRODUCT_TYPE_ID,
   DeviceTypeID: process.env.GIDX_DEVICE_TYPE_ID,
   ActivityTypeID: process.env.GIDX_ACTIVITY_TYPE_ID,
-  MerchantSessionID: crypto.randomUUID(),
+  MerchantSessionID: MerchantSessionID ?? crypto.randomUUID(),
 })
 
 export const getGIDXCustomerProfile = async (userId: string) => {
@@ -32,16 +32,16 @@ export const getGIDXCustomerProfile = async (userId: string) => {
 }
 
 export const getUserRegistrationRequirements = async (userId: string) => {
-  const user = await getPrivateUserSupabase(userId)
-  if (!user) {
+  const privateUser = await getPrivateUserSupabase(userId)
+  if (!privateUser) {
     throw new APIError(404, 'Private user not found')
   }
-  if (!user.email) {
+  if (!privateUser.email) {
     throw new APIError(400, 'User must have an email address')
   }
   const phoneNumberWithCode = await getPhoneNumber(userId)
   if (!phoneNumberWithCode) {
     throw new APIError(400, 'User must have a phone number')
   }
-  return { user, phoneNumberWithCode }
+  return { privateUser, phoneNumberWithCode }
 }

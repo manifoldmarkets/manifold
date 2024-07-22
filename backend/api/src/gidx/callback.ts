@@ -24,13 +24,14 @@ export const paymentCallbackGIDX: APIHandler<'payment-callback-gidx'> = async (
 ) => {
   log('payment-callback-gidx', props)
 
-  const { MerchantCustomerID } = props
-  const customerProfile = await getGIDXCustomerProfile(MerchantCustomerID)
-  log('CustomerProfile', customerProfile)
+  // const { MerchantCustomerID } = props
+  // const customerProfile = await getGIDXCustomerProfile(MerchantCustomerID)
+  // log('CustomerProfile', customerProfile)
   return {
-    result: { Accepted: true },
-    continue: async () => {
-      await getVerificationStatusInternal(MerchantCustomerID, customerProfile)
-    },
+    Accepted: true,
+    // result: { Accepted: true },
+    // continue: async () => {
+    //   await getVerificationStatusInternal(MerchantCustomerID, customerProfile)
+    // },
   }
 }

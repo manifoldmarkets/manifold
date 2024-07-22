@@ -185,6 +185,7 @@ import {
 } from 'api/get-private-messages'
 import { getNotifications } from 'api/get-notifications'
 import { getCheckoutSession } from 'api/gidx/get-checkout-session'
+import { completeCheckoutSession } from 'api/gidx/complete-checkout-session'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -374,6 +375,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-mana-summary-stats': getManaSummaryStats,
   'register-gidx': register,
   'get-checkout-session-gidx': getCheckoutSession,
+  'complete-checkout-session-gidx': completeCheckoutSession,
   'get-verification-status-gidx': getVerificationStatus,
   'upload-document-gidx': uploadDocument,
   'identity-callback-gidx': identityCallbackGIDX,

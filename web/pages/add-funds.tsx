@@ -12,6 +12,12 @@ export const WEB_PRICES = {
   [formatMoney(100000)]: 10999,
   [formatMoney(1000000)]: 100000,
 }
+export const GIDX_PRICES = {
+  [formatMoney(10000)]: 1500,
+  [formatMoney(25000)]: 3000,
+  [formatMoney(100000)]: 11000,
+  [formatMoney(1000000)]: 100000,
+}
 
 export const IOS_PRICES = {
   [formatMoney(10000)]: 1499,

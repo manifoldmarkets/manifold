@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Page } from '../components/layout/page'
-import { Card } from '../components/widgets/card'
 import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { Input } from '../components/widgets/input'
@@ -11,9 +10,9 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { CheckoutSession, GPSData, PaymentAmount } from 'common/gidx/gidx'
-import { formatMoney, formatWithCommas } from 'common/util/format'
+import { formatMoney, unformatMoney } from 'common/util/format'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
+import { GIDX_PRICES, IOS_PRICES } from 'web/pages/add-funds'
 import { api, validateIapReceipt } from 'web/lib/api/api'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
@@ -26,12 +25,13 @@ import router from 'next/router'
 import { LocationPanel } from 'web/components/gidx/register-user-form'
 import { getVerificationStatus } from 'common/user'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { LogoIcon } from 'web/components/icons/logo-icon'
 
 const CheckoutPage = () => {
   const user = useUser()
   const [locationError, setLocationError] = useState<string | null>(null)
   const { isNative, platform } = getNativePlatform()
-  const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
+  const prices = isNative && platform === 'ios' ? IOS_PRICES : GIDX_PRICES
   const [page, setPage] = useState<'checkout' | 'payment' | 'location'>(
     'checkout'
   )
@@ -186,14 +186,15 @@ const CheckoutPage = () => {
         DeviceGPS,
       })
       const { session, status, message } = res
-      if (session) {
+      if (session && status !== 'error') {
         const product = session.PaymentAmounts.find(
-          (a) => a.PaymentAmount === amountSelected
+          (a) => a.PaymentAmount === amountSelected / 100
         )
         if (!product) {
           setError(
             `We couldn't find that product, please ping us in discord or choose another!`
           )
+          return
         }
         setProductSelected(product)
         setCheckoutSession(session)
@@ -211,7 +212,11 @@ const CheckoutPage = () => {
   useEffect(() => {
     getCheckoutSession()
   }, [DeviceGPS, amountSelected])
-
+  const manaGivenPrice = unformatMoney(
+    Object.entries(prices).find(
+      ([_, value]) => value === amountSelected
+    )?.[0] ?? ''
+  )
   return (
     <Page trackPageView={'checkout page'}>
       {page === 'checkout' && (
@@ -268,6 +273,8 @@ const CheckoutPage = () => {
         <PaymentSection
           CheckoutSession={checkoutSession}
           amountSelected={productSelected}
+          manaAmount={manaGivenPrice}
+          spiceAmount={manaGivenPrice}
         />
       )}
       <Row className="text-error mt-2 text-sm">{error}</Row>
@@ -275,52 +282,30 @@ const CheckoutPage = () => {
   )
 }
 
-// TODO parse payment options and bonuses add complete-checkout=-gidx
 const PaymentSection = (props: {
   CheckoutSession: CheckoutSession
   amountSelected: PaymentAmount
+  manaAmount: number
+  spiceAmount: number
 }) => {
-  const { CheckoutSession, amountSelected } = props
-  const [paymentType, setPaymentType] = useState<'credit-card' | 'apple-pay'>(
-    'credit-card'
+  const { CheckoutSession, spiceAmount, manaAmount, amountSelected } = props
+  const { CustomerProfile, MerchantSessionID, MerchantTransactionID } =
+    CheckoutSession
+
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [name, setName] = useState(
+    CustomerProfile.Name.FirstName + ' ' + CustomerProfile.Name.LastName
   )
-  const [name, setName] = useState('')
   const [cardNumber, setCardNumber] = useState('')
   const [expiryDate, setExpiryDate] = useState('')
   const [cvv, setCvv] = useState('')
-  const [address, setAddress] = useState('')
-  const [city, setCity] = useState('')
-  const [state, setState] = useState('')
-  const [zipCode, setZipCode] = useState('')
+  const [address, setAddress] = useState(CustomerProfile.Address.AddressLine1)
+  const [city, setCity] = useState(CustomerProfile.Address.City)
+  const [state, setState] = useState(CustomerProfile.Address.StateCode)
+  const [zipCode, setZipCode] = useState(CustomerProfile.Address.PostalCode)
 
-  const handleFinalSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Handle form submission logic here
-    console.log('Form submitted', {
-      paymentType,
-      name,
-      cardNumber,
-      expiryDate,
-      cvv,
-      address,
-      city,
-      state,
-      zipCode,
-    })
-  }
-
-  const renderStep1 = () => (
-    <Col className="space-y-4">
-      <h2 className="text-xl font-semibold">Select Payment Method</h2>
-      <Button color={'indigo'} onClick={() => setPaymentType('credit-card')}>
-        Credit Card
-      </Button>
-      <Button color={'purple'} onClick={() => setPaymentType('apple-pay')}>
-        Apple Pay
-      </Button>
-    </Col>
-  )
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (
       name &&
@@ -332,43 +317,71 @@ const PaymentSection = (props: {
       state &&
       zipCode
     ) {
-      // Handle form submission logic here
-      console.log('Form submitted', {
-        name,
-        cardNumber,
-        expiryDate,
-        cvv,
-        address,
-        city,
-        state,
-        zipCode,
+      setLoading(true)
+      const res = await api('complete-checkout-session-gidx', {
+        PaymentMethod: {
+          Type: 'CC',
+          BillingAddress: {
+            AddressLine1: address,
+            City: city,
+            StateCode: state,
+            PostalCode: zipCode,
+            CountryCode: 'US',
+          },
+          creditCard: {
+            CardNumber: cardNumber,
+            CVV: cvv,
+            ExpirationDate: expiryDate,
+          },
+          NameOnAccount: name,
+          SavePaymentMethod: false,
+        },
+        PaymentAmount: amountSelected,
+        MerchantTransactionID,
+        MerchantSessionID,
+      }).catch((e) => {
+        console.error('Error completing checkout session', e)
+        return { status: 'error', message: 'Error completing checkout session' }
       })
+      setLoading(false)
+      if (res.status !== 'success') {
+        console.error('Error completing checkout session', res.message)
+        setError(res.message ?? 'Error completing checkout session')
+      } else {
+        console.log('Checkout session completed', res)
+      }
     }
   }
 
   return (
     <Col>
       <Col className="min-h-screen items-center justify-center py-12">
-        <Card className="w-full max-w-md p-8">
-          <h1 className="mb-6 text-2xl font-bold">Checkout</h1>
-          <Row className={'justify-between'}>
-            Cost:
-            <span>${formatWithCommas(amountSelected.PaymentAmount)}</span>
-          </Row>
-
-          <Row className={'justify-between'}>
-            To receive:
-            <span>
-              <CoinNumber amount={amountSelected.PaymentAmount} isInline /> &{' '}
-              {/*// TODO: are we going to use bonus amount? Not sure how this will work yet*/}
-              <CoinNumber
-                isSpice
-                amount={amountSelected.BonusAmount}
-                isInline
-              />
-            </span>
-          </Row>
-
+        <Row className={'w-full justify-center'}>
+          <LogoIcon
+            className="h-40 w-40 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white"
+            aria-hidden
+          />
+        </Row>
+        <Row className={'my-2 justify-center text-lg'}>
+          <span>
+            <CoinNumber
+              className={'font-semibold'}
+              amount={manaAmount}
+              isInline
+            />{' '}
+            +{' '}
+            <CoinNumber
+              className={'font-semibold'}
+              isSpice
+              amount={spiceAmount}
+              isInline
+            />
+          </span>
+        </Row>
+        <Row className={'my-4 justify-center text-4xl '}>
+          <span>{formatter.format(amountSelected.PaymentAmount)}</span>
+        </Row>
+        <Col className="bg-canvas-0 w-full max-w-md rounded p-8">
           <form onSubmit={handleSubmit}>
             <Col className="space-y-4">
               <Input
@@ -428,10 +441,12 @@ const PaymentSection = (props: {
                   className="w-1/4"
                 />
               </Row>
+              {error && <span className={'text-error'}>{error}</span>}
               <Button
                 type="submit"
                 color="indigo"
                 size="lg"
+                loading={loading}
                 disabled={
                   !name ||
                   !cardNumber ||
@@ -440,17 +455,25 @@ const PaymentSection = (props: {
                   !address ||
                   !city ||
                   !state ||
-                  !zipCode
+                  !zipCode ||
+                  loading
                 }
               >
                 Complete Purchase
               </Button>
             </Col>
           </form>
-        </Card>
+        </Col>
       </Col>
     </Col>
   )
 }
+
+const formatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 2,
+})
 
 export default CheckoutPage

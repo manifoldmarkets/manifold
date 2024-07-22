@@ -205,10 +205,15 @@ export type PaymentMethodSetting =
 
 export type CheckoutSession = {
   MerchantTransactionID: string
+  MerchantSessionID: string
   CashierLimits: CashierLimit[]
   PaymentAmounts: PaymentAmount[]
   PaymentMethods: PaymentMethod[]
   PaymentMethodSettings: PaymentMethodSetting[]
+  CustomerProfile: {
+    Address: Address
+    Name: Name
+  }
 }
 
 export type CheckoutSessionResponse = {
@@ -299,3 +304,79 @@ export const exampleCustomers = [
     },
   },
 ]
+
+type Action = {
+  Type: string
+  URL: string
+  ClientID: string
+  OrderID: string
+}
+export type PaymentDetail = {
+  PaymentStatusCode: string
+  PaymentStatusMessage: string
+  PaymentAmountType: string
+  PaymentAmount: number
+  CurrencyCode: string
+  PaymentAmountCode: string
+  PaymentMethodType: string
+  PaymentMethodAccount: string
+  PaymentApprovalDateTime: string
+  PaymentStatusDateTime: string
+  PaymentProcessDateTime: string
+  ProcessorName: string
+  ProcessorTransactionID: string
+  ProcessorResponseCode: number
+  ProcessorResponseMessage: string
+  Action: Action
+  FinancialConfidenceScore: number
+  Recurring: boolean
+  RecurringInterval?: string
+  NextRecurringDate?: string
+}
+export type CompleteSessionDirectCashierResponse = {
+  ReasonCodes: string[]
+  SessionID: string
+  SessionStatusCode: number
+  SessionStatusMessage: string
+  MerchantTransactionID: string
+  AllowRetry: boolean
+  Action: Action
+  FinancialConfidenceScoreString: number
+  PaymentDetails: PaymentDetail[]
+}
+type Address = {
+  AddressLine1: string
+  AddressLine2: string
+  City: string
+  State: string
+  StateCode: string
+  PostalCode: string
+  Country: string
+  IdentityConfidenceScore: number
+  Primary: boolean
+}
+
+type Name = {
+  FirstName: string
+  LastName: string
+  MiddleName: string
+  IdentityConfidenceScore: number
+  Primary: boolean
+}
+export type CustomerProfileResponse = {
+  MerchantCustomerID: string
+  ReasonCodes: string[]
+  WatchChecks: WatchCheckType[]
+  Name: Name[]
+  Address: Address[]
+  Citizenship: {
+    CountryCode: string
+    IdentityConfidenceScore: number
+    DateAcquired: string
+  }[]
+  DateOfBirth: {
+    PlaceOfBirth: string
+    DateOfBirth: string
+    IdentityConfidenceScore: number
+  }[]
+}

@@ -19,6 +19,11 @@ export function formatMoney(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
 }
+export function unformatMoney(amount: string) {
+  return parseFloat(
+    amount.replace(ENV_CONFIG.moneyMoniker, '').replace(',', '')
+  )
+}
 
 export function formatSpice(amount: number) {
   const newAmount = getMoneyNumber(amount)
