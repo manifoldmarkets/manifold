@@ -14,10 +14,7 @@ import { getTierFromLiquidity } from 'common/tier'
 import clsx from 'clsx'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
-import {
-  ChevronDownIcon,
-  XCircleIcon,
-} from '@heroicons/react/solid'
+import { ChevronDownIcon, XCircleIcon } from '@heroicons/react/solid'
 import { FaSearch, FaSearchPlus } from 'react-icons/fa'
 import { InfoTooltip } from '../widgets/info-tooltip'
 
