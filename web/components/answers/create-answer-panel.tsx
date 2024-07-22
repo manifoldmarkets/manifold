@@ -21,6 +21,7 @@ import {
   XIcon,
 } from '@heroicons/react/solid'
 import { FaSearch, FaSearchPlus } from 'react-icons/fa'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export function CreateAnswerCpmmPanel(props: {
   contract: CPMMMultiContract
@@ -235,8 +236,15 @@ export function SearchCreateAnswerPanel(props: {
         <MultiSortDropdown sort={sort} setSort={setSort} />
       </Row>
       {showDefaultSort && (
-        <Row className="text-primary-700 flex-grow justify-end text-xs font-semibold hover:underline">
-          <button onClick={setDefaultSort}>Set default sort</button>
+        <Row className="text-primary-700 flex-grow items-center justify-end gap-0.5 text-xs font-semibold hover:underline">
+          <button onClick={setDefaultSort}>Set default</button>
+          <InfoTooltip
+            size="sm"
+            text={`This sets the default sort order to ${
+              SORTS.find((s) => s.value === sort)?.label
+            } for all users`}
+            tooltipParams={{ placement: 'bottom' }}
+          />
         </Row>
       )}
     </Col>
