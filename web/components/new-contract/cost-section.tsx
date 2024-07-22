@@ -177,10 +177,10 @@ function Tier(props: {
       <div
         className={clsx(
           'bg-canvas-50 w-full select-none items-baseline rounded py-2 pl-2 pr-4 transition-colors',
-          'flex flex-row justify-start gap-3 sm:flex-col sm:justify-between sm:gap-0 sm:items-center'
+          'flex flex-row justify-start gap-3 sm:flex-col sm:items-center sm:justify-between sm:gap-0'
         )}
       >
-        <div className="text-ink-500 text-sm font-bold flex items-center gap-1 flex-col sm:flex-row sm:items-start">
+        <div className="text-ink-500 flex flex-col items-center gap-1 text-sm font-bold sm:flex-row sm:items-start">
           <div>Disabled</div>
           <InfoTooltip
             text={`The ${questionType} question type does not work with the ${tierName} tier because it requires more liquidity.`}
@@ -188,7 +188,10 @@ function Tier(props: {
         </div>
         <Col className="sm:items-center">
           <div className="text-ink-400">{tierName}</div>
-          <div className="text-xl opacity-50" style={{ filter: 'saturate(0%)'}}>
+          <div
+            className="text-xl opacity-50"
+            style={{ filter: 'saturate(0%)' }}
+          >
             <ManaCoin />
           </div>
         </Col>
