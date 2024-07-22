@@ -5,6 +5,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type ColorType =
   | 'amber-outline'
+  | 'lime-outline'
   | 'green'
   | 'green-outline'
   | 'red'
@@ -48,6 +49,10 @@ export function buttonClass(size: SizeType, color: ColorType) {
     baseButtonClasses,
     sizeClasses[size],
     color === 'amber-outline' && [outline, 'text-amber-500 hover:bg-amber-500'],
+    color === 'lime-outline' && [
+      outline,
+      'text-lime-700 hover:bg-lime-700 dark:text-lime-400 dark:hover:text-lime-400',
+    ],
     color === 'green' && [solid, 'bg-teal-500 hover:bg-teal-600'],
     color === 'green-outline' && [outline, 'text-teal-500 hover:bg-teal-500'],
     color === 'red' && [solid, 'bg-scarlet-500 hover:bg-scarlet-600'],

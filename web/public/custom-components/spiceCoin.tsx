@@ -6,7 +6,7 @@ export function SpiceCoin(props: { className?: string }) {
   const { className } = props
   return (
     <img
-      src="/spice.svg"
+      src="/SweepiesCoin.svg"
       alt={'P'}
       className={clsx('inline-block', className)}
       style={{
