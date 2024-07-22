@@ -15,6 +15,7 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { BURN_MANA_USER_ID } from 'common/economy'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const managram: APIHandler<'managram'> = async (props, auth) => {
   const { amount, toIds, message, token, groupId: passedGroupId } = props
@@ -33,106 +34,112 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
 
   const pg = createSupabaseDirectClient()
 
-  // Run as transaction to prevent race conditions.
-  const fromUser = await pg.tx(async (tx) => {
-    const fromUser = await getUser(fromId, tx)
-    if (!fromUser) {
-      throw new APIError(401, `User ${fromId} not found`)
-    }
-
-    if (!isVerified(fromUser)) {
-      throw new APIError(403, 'You must verify your phone number to send mana.')
-    }
-
-    const { canSend, message: errorMessage } = await canSendMana(fromUser, () =>
-      getUserPortfolioInternal(fromUser.id)
-    )
-    if (!canSend) {
-      throw new APIError(403, errorMessage)
-    }
-
-    if (token === 'PP') {
-      const ManifoldAccount = isProd()
-        ? HOUSE_LIQUIDITY_PROVIDER_ID
-        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-
-      if (fromId !== ManifoldAccount) {
-        if (toIds.length > 1)
-          throw new APIError(
-            400,
-            'You cannot send prize points to multiple users.'
-          )
-        if (toIds[0] !== ManifoldAccount)
-          throw new APIError(
-            400,
-            'Do send prize points only to @ManifoldMarkets.'
-          )
+  const fromUser = await betsQueue.enqueueFn(async () => {
+    // Run as transaction to prevent race conditions.
+    return await pg.tx(async (tx) => {
+      const fromUser = await getUser(fromId, tx)
+      if (!fromUser) {
+        throw new APIError(401, `User ${fromId} not found`)
       }
-    }
 
-    const total = amount * toIds.length
-    const balance = token === 'M$' ? fromUser.balance : fromUser.spiceBalance
-    if (balance < total) {
-      throw new APIError(
-        403,
-        `Insufficient balance: ${fromUser.name} needed ${
-          amount * toIds.length
-        } but only had ${balance} `
+      if (!isVerified(fromUser)) {
+        throw new APIError(
+          403,
+          'You must verify your phone number to send mana.'
+        )
+      }
+
+      const { canSend, message: errorMessage } = await canSendMana(
+        fromUser,
+        () => getUserPortfolioInternal(fromUser.id)
       )
-    }
+      if (!canSend) {
+        throw new APIError(403, errorMessage)
+      }
 
-    const toUsers = await getUsers(toIds, tx)
-    if (toUsers.length !== toIds.length) {
-      throw new APIError(404, 'Some destination users not found.')
-    }
-    if (toUsers.some((toUser) => !isVerified(toUser))) {
-      throw new APIError(403, 'All destination users must be verified.')
-    }
+      if (token === 'PP') {
+        const ManifoldAccount = isProd()
+          ? HOUSE_LIQUIDITY_PROVIDER_ID
+          : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
 
-    const balanceField = token === 'M$' ? 'balance' : 'spiceBalance'
+        if (fromId !== ManifoldAccount) {
+          if (toIds.length > 1)
+            throw new APIError(
+              400,
+              'You cannot send prize points to multiple users.'
+            )
+          if (toIds[0] !== ManifoldAccount)
+            throw new APIError(
+              400,
+              'Do send prize points only to @ManifoldMarkets.'
+            )
+        }
+      }
 
-    await bulkIncrementBalances(
-      tx,
-      buildArray(
-        {
-          id: fromId,
-          [balanceField]: -total,
-          totalDeposits: -total,
-        },
-        toIds
-          .filter((id) => id !== BURN_MANA_USER_ID)
-          .map((toId) => ({
-            id: toId,
-            [balanceField]: amount,
-            totalDeposits: amount,
-          }))
+      const total = amount * toIds.length
+      const balance = token === 'M$' ? fromUser.balance : fromUser.spiceBalance
+      if (balance < total) {
+        throw new APIError(
+          403,
+          `Insufficient balance: ${fromUser.name} needed ${
+            amount * toIds.length
+          } but only had ${balance} `
+        )
+      }
+
+      const toUsers = await getUsers(toIds, tx)
+      if (toUsers.length !== toIds.length) {
+        throw new APIError(404, 'Some destination users not found.')
+      }
+      if (toUsers.some((toUser) => !isVerified(toUser))) {
+        throw new APIError(403, 'All destination users must be verified.')
+      }
+
+      const balanceField = token === 'M$' ? 'balance' : 'spiceBalance'
+
+      await bulkIncrementBalances(
+        tx,
+        buildArray(
+          {
+            id: fromId,
+            [balanceField]: -total,
+            totalDeposits: -total,
+          },
+          toIds
+            .filter((id) => id !== BURN_MANA_USER_ID)
+            .map((toId) => ({
+              id: toId,
+              [balanceField]: amount,
+              totalDeposits: amount,
+            }))
+        )
       )
-    )
 
-    return fromUser
-  })
+      const groupId = passedGroupId ? passedGroupId : crypto.randomUUID()
 
-  const groupId = passedGroupId ? passedGroupId : crypto.randomUUID()
+      const txns = toIds.map(
+        (toId) =>
+          ({
+            fromId: auth.uid,
+            fromType: 'USER',
+            toId,
+            toType: 'USER',
+            amount,
+            token: token === 'M$' ? 'M$' : 'SPICE',
+            category: 'MANA_PAYMENT',
+            data: {
+              message,
+              groupId,
+              visibility: 'public',
+            },
+            description: message || 'Mana payment',
+          } as const)
+      )
+      await pg.tx((tx) => insertTxns(tx, txns))
 
-  const txns = toIds.map(
-    (toId) =>
-      ({
-        fromId: auth.uid,
-        fromType: 'USER',
-        toId,
-        toType: 'USER',
-        amount,
-        token: token === 'M$' ? 'M$' : 'SPICE',
-        category: 'MANA_PAYMENT',
-        data: {
-          message,
-          groupId,
-          visibility: 'public',
-        },
-        description: message || 'Mana payment',
-      } as const)
-  )
-  await pg.tx((tx) => insertTxns(tx, txns))
+      return fromUser
+    })
+  }, [fromId, ...toIds])
 
   await Promise.all(
     toIds.map((toId) =>
