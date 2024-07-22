@@ -67,7 +67,7 @@ export function CandidatePanel(props: {
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   return (
-    <Col className="mx-[2px]">
+    <Col className="mx-[2px] select-none">
       {showNoAnswers ? (
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
@@ -92,7 +92,7 @@ export function CandidatePanel(props: {
               <Link href={contractPath(contract)} className="my-auto h-full">
                 <Col
                   className={clsx(
-                    ' text-ink-1000 items-center justify-center overflow-hidden text-sm transition-all hover:underline '
+                    ' text-ink-1000 h-full items-center justify-center overflow-hidden text-sm transition-all hover:underline'
                   )}
                 >
                   <Col className=" items-center gap-1 whitespace-nowrap">

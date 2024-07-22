@@ -1,7 +1,7 @@
 import { remove } from 'lodash'
 import { APIError } from 'common/api/utils'
 
-const DEFAULT_QUEUE_TIME_LIMIT = 15000
+const DEFAULT_QUEUE_TIME_LIMIT = 5000
 
 type WorkItem = {
   fn: () => Promise<any>
@@ -86,7 +86,10 @@ export const createFnQueue = (props?: { timeout?: number }) => {
     const expiredItems = spliceExpiredItems(fnQueue)
     for (const item of expiredItems) {
       item.reject(
-        new APIError(503, 'High volume of requests. Please try again later.')
+        new APIError(
+          503,
+          `High volume of requests (${fnQueue.length} requests in queue); please try again later.`
+        )
       )
     }
 

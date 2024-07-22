@@ -7,17 +7,13 @@ import { db } from 'web/lib/supabase/db'
 import {
   getGroup,
   getGroupFromSlug,
-  getGroupMembers,
-  getGroupOfRole,
   getMemberRole,
-  MEMBER_LOAD_NUM,
 } from 'web/lib/supabase/group'
 import {
   getGroupsWhereUserHasRole,
   getMyGroupRoles,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
-import { usePostgresChanges } from 'web/lib/supabase/realtime/use-postgres-changes'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized } from './use-user'
@@ -163,86 +159,7 @@ export function useGroupRole(
   return isMod ? 'admin' : userRole
 }
 
-export function useRealtimeGroupMemberIds(groupId: string) {
-  const { rows } = useSubscription('group_members', {
-    k: 'group_id',
-    v: groupId,
-  })
-  return rows?.map((row) => row.member_id) ?? []
-}
-
 export type Member = Row<'group_role'>
-
-export function useRealtimeGroupMembers(
-  group: Group,
-  hitBottom: boolean,
-  numMembers: number | undefined
-) {
-  const { id: groupId } = group
-  const [admins, setAdmins] = useState<Member[] | undefined>(undefined)
-  const [moderators, setModerators] = useState<Member[] | undefined>(undefined)
-  const [members, setMembers] = useState<Member[] | undefined>(undefined)
-  const [loadMore, setLoadMore] = useState<boolean>(false)
-  const [offsetPage, setOffsetPage] = useState<number>(0)
-
-  function loadMoreMembers() {
-    setLoadMore(true)
-    getGroupMembers(groupId, offsetPage + 1)
-      .then((result) => {
-        if (members) {
-          setMembers([...members, ...result.data])
-        } else {
-          setMembers(result.data)
-        }
-        setOffsetPage((offsetPage) => offsetPage + 1)
-      })
-      .catch((e) => console.log(e))
-      .finally(() => setLoadMore(false))
-  }
-  function fetchGroupMembers() {
-    getGroupOfRole(groupId, 'admin')
-      .then((result) => {
-        const admins = result.data
-        setAdmins(admins)
-      })
-      .catch((e) => console.log(e))
-
-    getGroupOfRole(groupId, 'moderator')
-      .then((result) => {
-        const moderators = result.data
-        setModerators(moderators)
-      })
-      .catch((e) => console.log(e))
-
-    if (group.totalMembers > 250) return
-    getGroupMembers(groupId, offsetPage, 0)
-      .then((result) => {
-        const members = result.data
-        setMembers(members)
-      })
-      .catch((e) => console.log(e))
-  }
-
-  useEffect(() => {
-    fetchGroupMembers()
-  }, [])
-
-  useEffect(() => {
-    if (hitBottom && !loadMore && numMembers && numMembers > MEMBER_LOAD_NUM) {
-      loadMoreMembers()
-    }
-  }, [hitBottom])
-
-  const filter = { k: 'group_id', v: groupId } as const
-  usePostgresChanges({
-    bindings: [{ table: 'group_members', event: '*', filter }],
-    onChange: (_change) => {
-      fetchGroupMembers()
-    },
-  })
-
-  return { admins, moderators, members, loadMore }
-}
 
 export async function getTranslatedMemberRole(
   groupId: string | undefined,
