@@ -4,6 +4,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { Json } from 'common/supabase/schema'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { convertPublicChatMessage } from 'common/chat-message'
+import { broadcast } from 'shared/websockets/server'
 
 export const createPublicChatMessage: APIHandler<
   'create-public-chat-message'
@@ -28,6 +29,8 @@ export const createPublicChatMessage: APIHandler<
     console.error(error)
     throw new APIError(500, 'Failed to create chat message.')
   }
+
+  broadcast('chat_message', {})
 
   return convertPublicChatMessage({
     ...chatMessage,
