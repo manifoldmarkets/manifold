@@ -388,8 +388,8 @@ export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public', 'unlisted'] as const
 
 export const SORTS = [
-  { label: 'Highest %', value: 'prob-desc' },
-  { label: 'Lowest %', value: 'prob-asc' },
+  { label: 'High %', value: 'prob-desc' },
+  { label: 'Low %', value: 'prob-asc' },
   { label: 'Oldest', value: 'old' },
   { label: 'Newest', value: 'new' },
   { label: 'Trending', value: 'liquidity' },

@@ -14,7 +14,8 @@ import { getTierFromLiquidity } from 'common/tier'
 import clsx from 'clsx'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
-import { ChevronDownIcon } from '@heroicons/react/solid'
+import { ChevronDownIcon, SearchIcon } from '@heroicons/react/solid'
+import { FaSearch, FaSearchPlus } from 'react-icons/fa'
 
 export function CreateAnswerCpmmPanel(props: {
   contract: CPMMMultiContract
@@ -122,7 +123,7 @@ function MultiSortDropdown(props: {
         </Row>
       }
       buttonClass={
-        'rounded-full bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400 py-0.5 text-sm px-3'
+        'rounded-full bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400 py-1 text-sm px-3'
       }
     />
   )
@@ -141,7 +142,6 @@ export function SearchCreateAnswerPanel(props: {
 }) {
   const {
     contract,
-    canAddAnswer,
     text,
     setText,
     children,
@@ -151,32 +151,66 @@ export function SearchCreateAnswerPanel(props: {
     setSort,
   } = props
 
-  if (canAddAnswer && contract.outcomeType !== 'NUMBER') {
-    return (
-      <CreateAnswerCpmmPanel
-        contract={contract as CPMMMultiContract}
-        text={text}
-        setText={setText}
-        close={() => setIsSearchOpen?.(false)}
-        placeholder="Search or add answer"
-        autoFocus
-        className={className}
-      >
-        {children}
-      </CreateAnswerCpmmPanel>
-    )
+  const canAddAnswer = props.canAddAnswer && contract.outcomeType !== 'NUMBER'
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const canSubmit = text && !isSubmitting
+
+  const submitAnswer = async () => {
+    if (canSubmit) {
+      setIsSubmitting(true)
+
+      try {
+        await api('market/:contractId/answer', {
+          contractId: contract.id,
+          text,
+        })
+        setText('')
+      } catch (e) {}
+
+      setIsSubmitting(false)
+    }
   }
 
   return (
-    <Row className={clsx('w-full items-center gap-2 py-1', className)}>
-      <Input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        className="!bg-canvas-50 !h-6 flex-grow !rounded-full !pl-8 !text-sm"
-        placeholder="Search answers"
-        onBlur={() => !text && setIsSearchOpen?.(false)}
-        autoFocus
-      />
+    <Row className={clsx('w-full items-center gap-1 py-1 sm:gap-2', className)}>
+      <div className="relative flex flex-grow">
+        <Input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="!bg-canvas-50 !h-8 flex-grow !rounded-full !pl-7 !text-sm"
+          placeholder={
+            canAddAnswer ? 'Search or Add answers' : 'Search answers'
+          }
+          onBlur={() => !text && setIsSearchOpen?.(false)}
+          autoFocus
+        />
+        {canAddAnswer ? (
+          <FaSearchPlus className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4 " />
+        ) : (
+          <FaSearch className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4" />
+        )}
+        {canAddAnswer && text && (
+          <Button
+            className="absolute right-1 top-1 !rounded-full"
+            size="2xs"
+            loading={isSubmitting}
+            disabled={!canSubmit}
+            onClick={withTracking(submitAnswer, 'submit answer')}
+          >
+            Add
+            <span className="text-ink-700 ml-1">
+              {formatMoney(
+                getTieredAnswerCost(
+                  contract.marketTier ??
+                    getTierFromLiquidity(contract, contract.totalLiquidity)
+                )
+              )}
+            </span>
+          </Button>
+        )}
+      </div>
       <MultiSortDropdown sort={sort} setSort={setSort} />
     </Row>
   )
