@@ -236,15 +236,19 @@ export function SearchCreateAnswerPanel(props: {
         <MultiSortDropdown sort={sort} setSort={setSort} />
       </Row>
       {showDefaultSort && (
-        <Row className="text-primary-700 flex-grow items-center justify-end gap-0.5 text-xs font-semibold hover:underline">
-          <button onClick={setDefaultSort}>Set default</button>
-          <InfoTooltip
-            size="sm"
-            text={`This sets the default sort order to ${
-              SORTS.find((s) => s.value === sort)?.label
-            } for all users`}
-            tooltipParams={{ placement: 'bottom' }}
-          />
+        <Row className="text-primary-700 flex-grow items-center justify-end gap-0.5 text-xs font-semibold">
+          <button className="hover:underline" onClick={setDefaultSort}>
+            Set default
+          </button>
+          <div className="mb-1 flex items-center">
+            <InfoTooltip
+              size="sm"
+              text={`This sets the default sort order to ${
+                SORTS.find((s) => s.value === sort)?.label
+              } for all users`}
+              tooltipParams={{ placement: 'bottom' }}
+            />
+          </div>
         </Row>
       )}
     </Col>
