@@ -35,7 +35,11 @@ import {
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
-import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
+import {
+  cancelLimitOrders,
+  getBetsWithFilter,
+  insertBet,
+} from 'shared/supabase/bets'
 import { broadcastOrders } from 'shared/websockets/helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
@@ -48,10 +52,14 @@ import {
 import { updateContract } from 'shared/supabase/contracts'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
+  const pg = createSupabaseDirectClient()
   const isApi = auth.creds.kind === 'key'
+  const { contractId } = props
+
+  const deps = await getBetDeps(pg, contractId, auth.uid)
   return await betsQueue.enqueueFn(
     () => placeBetMain(props, auth.uid, isApi),
-    [props.contractId, auth.uid]
+    deps
   )
 }
 
@@ -453,51 +461,6 @@ export const executeNewBetResult = async (
     )
   }
 
-  // Special case for relationship markets.
-  if (
-    contract.isLove &&
-    newPool &&
-    contract.outcomeType === 'MULTIPLE_CHOICE'
-  ) {
-    const answer = contract.answers.find((a) => a.id === newBet.answerId) as
-      | Answer
-      | undefined
-    if (
-      user.id === contract.creatorId ||
-      (answer && user.id === answer.loverUserId)
-    ) {
-      throw new APIError(403, 'You cannot bet on your own relationship market.')
-    }
-    const prob = getCpmmProbability(newPool, 0.5)
-    if (prob < 0.02) {
-      throw new APIError(
-        403,
-        'Minimum of 2% probability in relationship markets.'
-      )
-    }
-  }
-  // Special case for relationship markets. (Old markets.)
-  if (contract.loverUserId1 && newPool) {
-    if (contract.outcomeType === 'BINARY') {
-      // Binary relationship markets deprecated.
-      const prob = getCpmmProbability(newPool, newP ?? 0.5)
-      if (prob < 0.01) {
-        throw new APIError(
-          403,
-          'Minimum of 1% probability in relationship markets.'
-        )
-      }
-    } else if (contract.outcomeType === 'MULTIPLE_CHOICE') {
-      const prob = getCpmmProbability(newPool, 0.5)
-      if (prob < 0.05) {
-        throw new APIError(
-          403,
-          'Minimum of 5% probability in relationship markets.'
-        )
-      }
-    }
-  }
-
   const candidateBet = removeUndefinedProps({
     userId: user.id,
     isApi,
@@ -766,4 +729,29 @@ export const getMakerIdsFromBetResult = (result: NewBetResult) => {
   ].map((o) => o.userId)
 
   return uniq([...makerUserIds, ...cancelledUserIds])
+}
+
+export const getBetDeps = async (
+  pg: SupabaseDirectClient,
+  contractId: string,
+  userId: string
+) => {
+  const [unfilledBets, creatorId] = await Promise.all([
+    getBetsWithFilter(pg, {
+      contractId,
+      kinds: 'open-limit',
+    }),
+    pg.one<string>(
+      `select creator_id from contracts where id = $1`,
+      [contractId],
+      (r) => r.creator_id
+    ),
+  ])
+
+  return uniq([
+    userId,
+    creatorId,
+    contractId,
+    ...unfilledBets.map((bet) => bet.userId),
+  ])
 }
