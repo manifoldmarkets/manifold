@@ -6,6 +6,7 @@ import {
 } from 'shared/supabase/init'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { broadcastTVScheduleUpdate } from 'shared/websockets/helpers'
 
 const schema = z.object({
   id: z.string().optional(),
@@ -52,6 +53,7 @@ export const settv = authEndpoint(async (req, auth) => {
       isFeatured,
     ]
   )
+  broadcastTVScheduleUpdate()
 
   return { status: 'success' }
 })
@@ -74,5 +76,7 @@ export const deletetv = authEndpoint(async (req, auth) => {
       userId,
     ])
   }
+
+  broadcastTVScheduleUpdate()
   return { status: 'success' }
 })
