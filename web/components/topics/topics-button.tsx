@@ -8,7 +8,6 @@ import { unfollowTopic } from 'web/lib/supabase/groups'
 import { Button, SizeType } from '../buttons/button'
 import { followTopic } from 'web/lib/api/api'
 import { Group, LiteGroup } from 'common/group'
-import { TopicOptions } from 'web/components/topics/topic-options'
 import { BookmarkIcon } from '@heroicons/react/outline'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
@@ -88,6 +87,7 @@ export function FollowOrUnfolowTopicButton(props: {
     </Button>
   )
 }
+
 export const internalFollowTopic = async (
   user: User | null | undefined,
   group: Group
@@ -103,7 +103,8 @@ export const internalFollowTopic = async (
     })
   track('join group', { slug: group.slug })
 }
-export const unfollowTopicInternal = async (
+
+export const internalUnfollowTopic = async (
   user: User | null | undefined,
   group: Group
 ) => {
@@ -116,26 +117,4 @@ export const unfollowTopicInternal = async (
       toast.error('Failed to unfollow topic')
     })
   track('leave group', { slug: group.slug })
-}
-
-export const TopicOptionsButton = (props: {
-  group: Group
-  yourGroupIds: string[] | undefined
-  user: User | null | undefined
-  className?: string
-}) => {
-  const { group, className, yourGroupIds, user } = props
-  const isMember = yourGroupIds ? yourGroupIds.includes(group.id) : false
-
-  return (
-    <TopicOptions
-      group={group}
-      user={user}
-      isMember={isMember}
-      className={className}
-      unfollow={() => {
-        unfollowTopicInternal(user, group)
-      }}
-    />
-  )
 }

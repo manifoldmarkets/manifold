@@ -2,7 +2,7 @@ import { Contract } from 'common/contract'
 import { Group, GroupRole, LiteGroup, Topic } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { api, getUserIsGroupMember } from 'web/lib/api/api'
+import { api, getUserIsFollowingTopic } from 'web/lib/api/api'
 import { db } from 'web/lib/supabase/db'
 import {
   getGroup,
@@ -14,31 +14,27 @@ import {
   getMyGroupRoles,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
-import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized } from './use-user'
 import { Row } from 'common/supabase/utils'
 import { useAsyncData } from 'web/hooks/use-async-data'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { useAPIGetter } from './use-api-getter'
-import { sortBy } from 'lodash'
 
-export function useIsGroupMember(groupSlug: string) {
-  const [isMember, setIsMember] = usePersistentInMemoryState<
+export function useIsFollowingTopic(groupSlug?: string) {
+  const [isFollowing, setIsFollowing] = usePersistentInMemoryState<
     boolean | undefined
   >(undefined, 'is-member-' + groupSlug)
   const isAuthorized = useIsAuthorized()
   useEffect(() => {
-    // if there is no user
-    if (isAuthorized === false) {
-      setIsMember(false)
-    } else if (isAuthorized) {
-      getUserIsGroupMember({ groupSlug: groupSlug }).then((result) => {
-        setIsMember(result.isGroupMember)
+    if (!isAuthorized || !groupSlug) {
+      setIsFollowing(false)
+    } else {
+      getUserIsFollowingTopic({ groupSlug }).then((result) => {
+        setIsFollowing(result.isGroupMember)
       })
     }
   }, [groupSlug, isAuthorized])
-  return isMember
+  return { isFollowing, setIsFollowing }
 }
 
 export function useMemberGroupIdsOnLoad(
@@ -60,16 +56,6 @@ export function useMemberGroupIdsOnLoad(
       })
   }, [userId])
   return groupIds
-}
-
-export function useRealtimeMemberGroupIds(
-  userId: string | undefined | null
-): string[] | undefined {
-  const { rows } = useSubscription('group_members', {
-    k: 'member_id',
-    v: userId ?? '_',
-  })
-  return rows?.map((row) => row.group_id) ?? undefined
 }
 
 export const useTopicsWithContract = (
@@ -95,33 +81,6 @@ export const useTopicsWithContract = (
   return { topics, addTopic, removeTopic }
 }
 
-export function useRealtimeMemberTopics(
-  userId: string | undefined | null,
-  limit: number = 20
-) {
-  const [groups, setGroups] = usePersistentInMemoryState<
-    LiteGroup[] | undefined
-  >(undefined, `member-topics-${userId ?? ''}`)
-
-  // Listen for changes in membership to re-fetch their topics
-  const ids = useRealtimeMemberGroupIds(userId)
-  const { data, refresh } = useAPIGetter('search-my-groups', {
-    limit,
-    term: '',
-    type: 'lite',
-  })
-  useEffect(() => {
-    if (!ids) return
-    refresh()
-  }, [ids])
-  useEffect(() => {
-    if (data) {
-      setGroups(data.lite)
-    }
-  }, [JSON.stringify(data)])
-
-  return groups
-}
 export function useNewUserMemberTopicsAndContracts(
   user: User | null | undefined,
   enabled: boolean
