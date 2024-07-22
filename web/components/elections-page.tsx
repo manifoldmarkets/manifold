@@ -23,9 +23,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
     electionPartyContract,
     republicanCandidateContract,
     democratCandidateContract,
-    republicanVPContract,
     houseContract,
-    // democraticVPContract,
+    democraticVPContract,
     democraticElectability,
     // republicanElectability,
     trendingDashboard,
@@ -173,8 +172,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
       />
 
       <PoliticsCard
-        customTitle="Republican vice presidential nomination"
-        contract={republicanVPContract as MultiContract}
+        customTitle="Democratic vice presidential nomination"
+        contract={democraticVPContract as MultiContract}
         viewType="CANDIDATE"
       />
 
@@ -183,11 +182,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
           contract={democratCandidateContract as MultiContract}
           viewType="CANDIDATE"
         />
-        {/* <PoliticsCard
-          customTitle="Democratic vice presidential nomination"
-          contract={democraticVPContract as MultiContract}
-          viewType="CANDIDATE"
-        /> */}
+
         <PoliticsCard
           contract={republicanCandidateContract as MultiContract}
           viewType="CANDIDATE"
