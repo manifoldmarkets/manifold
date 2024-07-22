@@ -225,15 +225,9 @@ export function AnswersPanel(props: {
         className={'bg-canvas-0 sticky top-[48px] z-40'}
         sort={sort}
         setSort={setSort}
-      >
-        <Row className={'mb-1 items-center gap-4'}>
-          {showSetDefaultSort && contract.sort !== sort && (
-            <Button color="gray-outline" size="2xs" onClick={setDefaultSort}>
-              Set default
-            </Button>
-          )}
-        </Row>
-      </SearchCreateAnswerPanel>
+        showDefaultSort={showSetDefaultSort && contract.sort !== sort}
+        setDefaultSort={setDefaultSort}
+      />
 
       {showNoAnswers ? (
         <div className="text-ink-500 p-4 text-center">No answers yet</div>

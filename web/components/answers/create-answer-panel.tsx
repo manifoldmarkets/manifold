@@ -139,21 +139,23 @@ export function SearchCreateAnswerPanel(props: {
   canAddAnswer: boolean
   text: string
   setText: (text: string) => void
-  children?: React.ReactNode
   setIsSearchOpen?: (isSearchOpen: boolean) => void
   className?: string
   sort: MultiSort
   setSort: (sort: MultiSort) => void
+  showDefaultSort?: boolean
+  setDefaultSort: () => void
 }) {
   const {
     contract,
     text,
     setText,
-    children,
     setIsSearchOpen,
     className,
     sort,
     setSort,
+    showDefaultSort,
+    setDefaultSort,
   } = props
 
   const canAddAnswer = props.canAddAnswer && contract.outcomeType !== 'NUMBER'
@@ -180,56 +182,63 @@ export function SearchCreateAnswerPanel(props: {
   }
 
   return (
-    <Row className={clsx('w-full items-center gap-1 py-1 sm:gap-2', className)}>
-      <div className="relative flex flex-grow">
-        <Input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="!bg-canvas-50 !h-8 flex-grow !rounded-full !pl-7 !text-sm"
-          placeholder={
-            canAddAnswer ? 'Search or Add answers' : 'Search answers'
-          }
-          onBlur={() => !text && setIsSearchOpen?.(false)}
-          autoFocus
-        />
-        {canAddAnswer ? (
-          <FaSearchPlus className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4 " />
-        ) : (
-          <FaSearch className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4" />
-        )}
-        {text && (
-          <button
-            className={clsx(
-              'group absolute h-full',
-              canAddAnswer ? 'right-20' : 'right-1'
-            )}
-            onClick={() => (setText(''), close?.())}
-          >
-            <XCircleIcon className="fill-ink-300 group-hover:fill-ink-400 h-7 w-7 items-center transition-colors" />
-          </button>
-        )}
-
-        {canAddAnswer && text && (
-          <Button
-            className="absolute right-1 top-1 !rounded-full"
-            size="2xs"
-            loading={isSubmitting}
-            disabled={!canSubmit}
-            onClick={withTracking(submitAnswer, 'submit answer')}
-          >
-            <span className="font-semibold">Add</span>
-            <span className="text-ink-200 dark:text-ink-800 ml-1">
-              {formatMoney(
-                getTieredAnswerCost(
-                  contract.marketTier ??
-                    getTierFromLiquidity(contract, contract.totalLiquidity)
-                )
+    <Col className={clsx(className)}>
+      <Row className={'w-full items-center gap-1 py-1 sm:gap-2'}>
+        <div className="relative flex flex-grow">
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="!bg-canvas-50 !h-8 flex-grow !rounded-full !pl-7 !text-sm"
+            placeholder={
+              canAddAnswer ? 'Search or Add answers' : 'Search answers'
+            }
+            onBlur={() => !text && setIsSearchOpen?.(false)}
+            autoFocus
+          />
+          {canAddAnswer ? (
+            <FaSearchPlus className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4 " />
+          ) : (
+            <FaSearch className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4" />
+          )}
+          {text && (
+            <button
+              className={clsx(
+                'group absolute h-full',
+                canAddAnswer ? 'right-20' : 'right-1'
               )}
-            </span>
-          </Button>
-        )}
-      </div>
-      <MultiSortDropdown sort={sort} setSort={setSort} />
-    </Row>
+              onClick={() => (setText(''), close?.())}
+            >
+              <XCircleIcon className="fill-ink-300 group-hover:fill-ink-400 h-7 w-7 items-center transition-colors" />
+            </button>
+          )}
+
+          {canAddAnswer && text && (
+            <Button
+              className="absolute right-1 top-1 !rounded-full"
+              size="2xs"
+              loading={isSubmitting}
+              disabled={!canSubmit}
+              onClick={withTracking(submitAnswer, 'submit answer')}
+            >
+              <span className="font-semibold">Add</span>
+              <span className="text-ink-200 dark:text-ink-800 ml-1">
+                {formatMoney(
+                  getTieredAnswerCost(
+                    contract.marketTier ??
+                      getTierFromLiquidity(contract, contract.totalLiquidity)
+                  )
+                )}
+              </span>
+            </Button>
+          )}
+        </div>
+        <MultiSortDropdown sort={sort} setSort={setSort} />
+      </Row>
+      {showDefaultSort && (
+        <Row className="text-primary-700 flex-grow justify-end text-xs font-semibold hover:underline">
+          <button onClick={setDefaultSort}>Set default sort</button>
+        </Row>
+      )}
+    </Col>
   )
 }
