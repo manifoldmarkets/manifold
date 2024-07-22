@@ -18,10 +18,10 @@ import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized } from './use-user'
 import { Row } from 'common/supabase/utils'
-import { convertGroup } from 'common/supabase/groups'
 import { useAsyncData } from 'web/hooks/use-async-data'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useAPIGetter } from './use-api-getter'
+import { sortBy } from 'lodash'
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<
@@ -72,25 +72,27 @@ export function useRealtimeMemberGroupIds(
   return rows?.map((row) => row.group_id) ?? undefined
 }
 
-export const useGroupsWithContract = (
-  contract: Contract | undefined | null
+export const useTopicsWithContract = (
+  contractId: string,
+  initial?: Topic[]
 ) => {
-  const [groups, setGroups] = useState<Group[] | undefined>()
-  const groupIds = useSubscription('group_contracts', {
-    k: 'contract_id',
-    v: contract?.id ?? '_',
-  }).rows?.map((r) => r.group_id)
-  useEffect(() => {
-    if (groupIds) {
-      db.from('groups')
-        .select('*')
-        .in('id', groupIds)
-        .then((result) => {
-          setGroups(result.data?.map(convertGroup))
-        })
-    }
-  }, [groupIds?.length])
-  return groups
+  const [topics, setTopics] = useState<Topic[]>(initial ?? [])
+
+  const addTopic = async (topic: Topic) => {
+    await api('market/:contractId/group', { contractId, groupId: topic.id })
+    setTopics((prev) => [...(prev ?? []), topic])
+  }
+
+  const removeTopic = async (topic: Topic) => {
+    await api('market/:contractId/group', {
+      contractId,
+      groupId: topic.id,
+      remove: true,
+    })
+    setTopics((prev) => prev?.filter((g) => g.id !== topic.id))
+  }
+
+  return { topics, addTopic, removeTopic }
 }
 
 export function useRealtimeMemberTopics(
