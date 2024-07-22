@@ -14,6 +14,26 @@ import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 
 const DEBUG = false
 export type ArbitrageBetArray = ReturnType<typeof combineBetsOnSameAnswers>
+const noFillsReturn = (
+  outcome: string,
+  answer: Answer,
+  collectedFees: Fees
+) => ({
+  newBetResult: {
+    outcome,
+    answer,
+    takers: [],
+    makers: [],
+    ordersToCancel: [],
+    cpmmState: {
+      pool: { YES: answer.poolYes, NO: answer.poolNo },
+      p: 0.5,
+      collectedFees,
+    },
+    totalFees: { creatorFee: 0, liquidityFee: 0, platformFee: 0 },
+  },
+  otherBetResults: [] as ArbitrageBetArray,
+})
 export function calculateCpmmMultiArbitrageBet(
   answers: Answer[],
   answerToBuy: Answer,
@@ -30,6 +50,12 @@ export function calculateCpmmMultiArbitrageBet(
       : outcome === 'YES'
       ? MAX_CPMM_PROB
       : MIN_CPMM_PROB
+  if (
+    (answerToBuy.prob < MIN_CPMM_PROB && outcome === 'NO') ||
+    (answerToBuy.prob > MAX_CPMM_PROB && outcome === 'YES')
+  ) {
+    return noFillsReturn(outcome, answerToBuy, collectedFees)
+  }
   const result =
     outcome === 'YES'
       ? calculateCpmmMultiArbitrageBetYes(
@@ -53,22 +79,7 @@ export function calculateCpmmMultiArbitrageBet(
   if (floatingEqual(sumBy(result.newBetResult.takers, 'amount'), 0)) {
     // No trades matched.
     const { outcome, answer } = result.newBetResult
-    return {
-      newBetResult: {
-        outcome,
-        answer,
-        takers: [],
-        makers: [],
-        ordersToCancel: [],
-        cpmmState: {
-          pool: { YES: answer.poolYes, NO: answer.poolNo },
-          p: 0.5,
-          collectedFees,
-        },
-        totalFees: { creatorFee: 0, liquidityFee: 0, platformFee: 0 },
-      },
-      otherBetResults: [] as ArbitrageBetArray,
-    }
+    return noFillsReturn(outcome, answer, collectedFees)
   }
   return result
 }
