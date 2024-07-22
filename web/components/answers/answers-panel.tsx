@@ -32,7 +32,7 @@ import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
 import { groupBy, sumBy } from 'lodash'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CirclePicker } from 'react-color'
 import toast from 'react-hot-toast'
 import { Button, buttonClass } from 'web/components/buttons/button'
@@ -78,10 +78,16 @@ import {
   CreatorAndAnswerLabel,
 } from './answer-components'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
+import { debounce } from 'lodash'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
+
+// the offset in which the top of answers is visible
+const SCROLL_OFFSET = 100
+// debounce when typing a query to ensure smoother autoscrolling
+const DEBOUNCE_DELAY = 100
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
@@ -168,6 +174,7 @@ export function AnswersPanel(props: {
           return true
         })
         .slice(0, MAX_DEFAULT_ANSWERS)
+
   useEffect(() => {
     if (!selectedAnswerIds.length)
       setDefaultAnswerIdsToGraph?.(
@@ -199,12 +206,6 @@ export function AnswersPanel(props: {
     })
   }
 
-  const [isSearchOpen, setIsSearchOpen] = usePersistentInMemoryState(
-    defaultAddAnswer ?? false,
-    `answers-panel-search-open-${contract.id}`
-  )
-  const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
-
   const privateUser = usePrivateUser()
   const unresolvedAnswers = answers.filter((a) =>
     'resolution' in a ? !a.resolution : true
@@ -221,6 +222,27 @@ export function AnswersPanel(props: {
       contract.outcomeType !== 'NUMBER'
   )
 
+  const answersContainerRef = useRef<HTMLDivElement>(null)
+
+  const scrollToAnswers = useCallback(
+    debounce(() => {
+      if (answersContainerRef.current) {
+        const rect = answersContainerRef.current.getBoundingClientRect()
+        if (rect.top < SCROLL_OFFSET) {
+          window.scrollTo({
+            top: window.scrollY + rect.top - SCROLL_OFFSET,
+            behavior: 'smooth',
+          })
+        }
+      }
+    }, DEBOUNCE_DELAY),
+    []
+  )
+
+  useEffect(() => {
+    scrollToAnswers()
+  }, [query, scrollToAnswers])
+
   return (
     <Col>
       <SearchCreateAnswerPanel
@@ -228,101 +250,71 @@ export function AnswersPanel(props: {
         canAddAnswer={canAddAnswer}
         text={query}
         setText={setQuery}
-        isSearchOpen={isSearchOpen}
-        setIsSearchOpen={setIsSearchOpen}
-      >
-        <Row className={'mb-1 items-center gap-4'}>
-          <DropdownMenu
-            closeOnClick
-            items={generateFilterDropdownItems(SORTS, setSort)}
-            icon={
-              <Row className="text-ink-500 items-center gap-0.5">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  Sort: {SORTS.find((s) => s.value === sort)?.label}
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Row>
-            }
-          />
-          {showSetDefaultSort && contract.sort !== sort && (
-            <Button color="gray-outline" size="2xs" onClick={setDefaultSort}>
-              Set default
-            </Button>
-          )}
-          {!isSearchOpen && (
-            <button
-              onClick={toggleSearch}
-              className="text-ink-500 hover:text-ink-300 flex items-center gap-0.5 text-sm font-medium"
-            >
-              <SearchIcon className="h-4 w-4" /> Search
-            </button>
-          )}
-          {!isSearchOpen && canAddAnswer && (
-            <button
-              onClick={toggleSearch}
-              className="text-ink-500 hover:text-ink-300 flex items-center gap-0.5 text-sm font-medium"
-            >
-              <PlusCircleIcon className="h-4 w-4" /> Add answer
-            </button>
-          )}
-        </Row>
-      </SearchCreateAnswerPanel>
-
-      {showNoAnswers ? (
-        <div className="text-ink-500 p-4 text-center">No answers yet</div>
-      ) : (
-        <Col className="mx-[2px] mt-1 gap-2">
-          {answersToShow.map((answer) => (
-            <Answer
-              className={
-                selectedAnswerIds.length &&
-                !selectedAnswerIds.includes(answer.id)
-                  ? 'opacity-70'
-                  : ''
-              }
-              key={answer.id}
-              user={user}
-              answer={answer}
-              contract={contract}
-              onCommentClick={
-                onAnswerCommentClick
-                  ? () => onAnswerCommentClick(answer)
-                  : undefined
-              }
-              onHover={(hovering) =>
-                onAnswerHover?.(hovering ? answer : undefined)
-              }
-              onClick={() => {
-                onAnswerClick?.(answer)
-              }}
-              unfilledBets={unfilledBets?.filter(
-                (b) => b.answerId === answer.id
-              )}
-              color={getAnswerColor(answer)}
-              userBets={userBetsByAnswer[answer.id]}
-              shouldShowLimitOrderChart={
-                isAdvancedTrader && shouldShowLimitOrderChart
-              }
-            />
-          ))}
-
-          {moreCount > 0 &&
-            (query ? (
-              <div className="text-ink-600 pb-4 text-center">
-                {moreCount} answers hidden by search
-              </div>
-            ) : (
-              <Button
-                color="gray-white"
-                onClick={() => setShowAll(true)}
-                size="xs"
-              >
-                <ChevronDownIcon className="mr-1 h-4 w-4" />
-                Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
-              </Button>
+        className={'bg-canvas-0 sticky top-[48px] z-40'}
+        sort={sort}
+        setSort={setSort}
+        showDefaultSort={showSetDefaultSort && contract.sort !== sort}
+        setDefaultSort={setDefaultSort}
+      />
+      <Col ref={answersContainerRef}>
+        {showNoAnswers ? (
+          <div className="text-ink-500 p-4 pt-20 text-center">
+            No answers yet
+          </div>
+        ) : (
+          <Col className="mx-[2px] mt-1 gap-2">
+            {answersToShow.map((answer) => (
+              <Answer
+                className={
+                  selectedAnswerIds.length &&
+                  !selectedAnswerIds.includes(answer.id)
+                    ? 'opacity-70'
+                    : ''
+                }
+                key={answer.id}
+                user={user}
+                answer={answer}
+                contract={contract}
+                onCommentClick={
+                  onAnswerCommentClick
+                    ? () => onAnswerCommentClick(answer)
+                    : undefined
+                }
+                onHover={(hovering) =>
+                  onAnswerHover?.(hovering ? answer : undefined)
+                }
+                onClick={() => {
+                  onAnswerClick?.(answer)
+                }}
+                unfilledBets={unfilledBets?.filter(
+                  (b) => b.answerId === answer.id
+                )}
+                color={getAnswerColor(answer)}
+                userBets={userBetsByAnswer[answer.id]}
+                shouldShowLimitOrderChart={
+                  isAdvancedTrader && shouldShowLimitOrderChart
+                }
+              />
             ))}
-        </Col>
-      )}
+
+            {moreCount > 0 &&
+              (query ? (
+                <div className="text-ink-600 pb-4 text-center">
+                  {moreCount} answers hidden by search
+                </div>
+              ) : (
+                <Button
+                  color="gray-white"
+                  onClick={() => setShowAll(true)}
+                  size="xs"
+                >
+                  <ChevronDownIcon className="mr-1 h-4 w-4" />
+                  Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
+                </Button>
+              ))}
+          </Col>
+        )}
+      </Col>
       {isAdvancedTrader && (
         <Row className="mt-2 items-center gap-2 self-end">
           <input
