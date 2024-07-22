@@ -61,12 +61,6 @@ export function Policy(props: {
       <Row className="border-ink-300 w-full items-center">{title}</Row>
       <Row className="items-center">
         <ConditionalPercent
-          path={bidenPath}
-          contract={bidenContract}
-          className="bg-azure-500/20 dark:bg-azure-500/10 items-center justify-center py-2"
-          isLargerPercent={bidenProbability > trumpProbability}
-        />
-        <ConditionalPercent
           path={trumpPath}
           contract={trumpContract}
           className="bg-sienna-500/20 dark:bg-sienna-500/10 justify-end  px-4 py-2"
@@ -142,33 +136,7 @@ export function MobilePolicy(props: {
   return (
     <Col className={clsx('bg-canvas-0 mb-2 rounded-lg px-4 py-2', className)}>
       <div className="font-semibold">{title}</div>
-      <Row
-        className={clsx('border-ink-300 gap-0.5 border-b-[0.5px]', className)}
-      >
-        <div className="grow">
-          <Link
-            href={bidenPath}
-            className="hover:text-primary-700  text-ink-700 hover:underline"
-          >
-            <Row className="gap-2">
-              <Image
-                src={joePhoto}
-                alt={joeShortName}
-                width={40}
-                height={40}
-                className="h-10 w-10 object-fill"
-              />
-              <div className="py-2">Biden wins</div>
-            </Row>
-          </Link>
-        </div>
-        <ConditionalPercent
-          path={bidenPath}
-          contract={bidenContract}
-          className="  items-center justify-center py-2"
-          isLargerPercent={bidenProbability > trumpProbability}
-        />
-      </Row>
+
       <Row className={clsx(' gap-0.5', className)}>
         <div className="grow">
           <Link
