@@ -73,7 +73,8 @@ export function createSupabaseClient() {
 
 type TimeoutTask = <T>(
   timeoutInMs: number,
-  queryMethod: (t: ITask<{}>) => Promise<T>
+  queryMethod: (t: ITask<{}>) => Promise<T>,
+  serialize?: boolean
 ) => Promise<T>
 
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
@@ -122,19 +123,26 @@ export function createSupabaseDirectClient(
 
   const timeout: TimeoutTask = async <T>(
     timeoutInMs: number,
-    queryMethod: (t: ITask<{}>) => Promise<T>
+    queryMethod: (t: ITask<{}>) => Promise<T>,
+    serialize?: boolean
   ) => {
     let pid: number | undefined
-    const task = client.task(async (t) => {
+    let timeoutId: NodeJS.Timeout | undefined
+
+    const callback = async (t: ITask<{}>) => {
       const pidResult = await t.one('SELECT pg_backend_pid() AS pid')
       pid = pidResult.pid
       log('Query PID:', pid)
-
       return queryMethod(t)
-    })
+    }
+
+    const t = serialize
+      ? client.tx({ mode: SERIAL_MODE }, callback)
+      : client.tx(callback)
 
     const cancelAfterTimeout = new Promise<never>((_, reject) => {
-      setTimeout(async () => {
+      log(`Starting timeout: ${timeoutInMs / 1000} seconds`)
+      timeoutId = setTimeout(async () => {
         if (pid) {
           try {
             log('Cancelling query:', pid)
@@ -152,7 +160,14 @@ export function createSupabaseDirectClient(
       }, timeoutInMs)
     })
 
-    return Promise.race([task, cancelAfterTimeout])
+    try {
+      const res = await Promise.race([t, cancelAfterTimeout])
+      clearTimeout(timeoutId)
+      return res
+    } catch (error) {
+      clearTimeout(timeoutId)
+      throw error
+    }
   }
 
   pgpDirect = {

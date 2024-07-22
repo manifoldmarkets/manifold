@@ -1,19 +1,20 @@
-import { DEV_CONFIG } from 'common/envs/dev'
 import { initAdmin } from 'shared/init-admin'
+import { DEV_CONFIG } from 'common/envs/dev'
 
 async function placeManyBets(apiKey: string, count: number) {
   const url = `https://${DEV_CONFIG.apiEndpoint}/v0/bet` //'https://placebet-w3txbmd3ba-uc.a.run.app'
+  // const url = `http://localhost:8088/v0/bet` //'https://placebet-w3txbmd3ba-uc.a.run.app'
 
   const apiKey2 = 'ad55b4c6-794a-4eef-94dc-d80a7438319d' // Manifold Markets
   const betData = {
     contractId: 'pdcWgwpzV4RsJjQGVq9v', // https://dev.manifold.markets/IanPhilips/beeeep-bop
-    amount: 10,
-    outcome: 'NO',
+    amount: 1,
+    outcome: Math.random() > 0.5 ? 'YES' : 'NO',
   }
   const betData2 = {
     contractId: 'Y9C5Hb9yS8D3C3KRwRYC', // https://dev.manifold.markets/DavidChee/will-sirsalty-hit-infinity-by-this
-    amount: 10,
-    outcome: 'YES',
+    amount: 1,
+    outcome: Math.random() > 0.5 ? 'YES' : 'NO',
   }
   let success = 0
   let failure = 0
@@ -25,7 +26,7 @@ async function placeManyBets(apiKey: string, count: number) {
   const errorMessage: { [key: string]: number } = {}
   for (let i = 0; i < count; i++) {
     const chosenBet = Math.random() > 0.5 ? betData : betData2
-    const chosenAPIKey= Math.random() > 0.5 ? apiKey : apiKey2
+    const chosenAPIKey = Math.random() > 0.5 ? apiKey : apiKey2
     const resp = fetch(url, {
       method: 'POST',
       headers: {
