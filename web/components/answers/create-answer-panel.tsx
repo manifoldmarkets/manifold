@@ -14,7 +14,12 @@ import { getTierFromLiquidity } from 'common/tier'
 import clsx from 'clsx'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
-import { ChevronDownIcon, SearchIcon } from '@heroicons/react/solid'
+import {
+  ChevronDownIcon,
+  SearchIcon,
+  XCircleIcon,
+  XIcon,
+} from '@heroicons/react/solid'
 import { FaSearch, FaSearchPlus } from 'react-icons/fa'
 
 export function CreateAnswerCpmmPanel(props: {
@@ -123,7 +128,7 @@ function MultiSortDropdown(props: {
         </Row>
       }
       buttonClass={
-        'rounded-full bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400 py-1 text-sm px-3'
+        'h-8 rounded-full bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400 py-1 text-sm px-3'
       }
     />
   )
@@ -170,6 +175,7 @@ export function SearchCreateAnswerPanel(props: {
       } catch (e) {}
 
       setIsSubmitting(false)
+      setSort('new')
     }
   }
 
@@ -191,6 +197,18 @@ export function SearchCreateAnswerPanel(props: {
         ) : (
           <FaSearch className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4" />
         )}
+        {text && (
+          <button
+            className={clsx(
+              'group absolute h-full',
+              canAddAnswer ? 'right-20' : 'right-1'
+            )}
+            onClick={() => (setText(''), close?.())}
+          >
+            <XCircleIcon className="fill-ink-300 group-hover:fill-ink-400 h-7 w-7 items-center transition-colors" />
+          </button>
+        )}
+
         {canAddAnswer && text && (
           <Button
             className="absolute right-1 top-1 !rounded-full"
@@ -199,8 +217,8 @@ export function SearchCreateAnswerPanel(props: {
             disabled={!canSubmit}
             onClick={withTracking(submitAnswer, 'submit answer')}
           >
-            Add
-            <span className="text-ink-700 ml-1">
+            <span className="font-semibold">Add</span>
+            <span className="text-ink-200 dark:text-ink-800 ml-1">
               {formatMoney(
                 getTieredAnswerCost(
                   contract.marketTier ??
