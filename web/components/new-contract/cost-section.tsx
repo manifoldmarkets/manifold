@@ -25,17 +25,50 @@ import { getContractTypeFromValue } from './create-contract-types'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { capitalize } from 'lodash'
 
+const type TIER_TYPE = {name:string, icon:ReactNode}
+
+export const TIERS = [
+  { name: 'play', icon: <PlayTier /> },
+  {
+    name: 'basic',
+    icon: (
+      <LogoIcon
+        className="stroke-ink-600 flex-inline shrink-0 stroke-[1.5px]"
+        aria-hidden
+        style={{
+          width: '1em',
+          height: '1em',
+          marginRight: '0.1em',
+          marginBottom: '0.1em',
+        }}
+      />
+    ),
+  },
+  {
+    name: 'plus',
+    icon: <PlusTier />,
+  },
+  {
+    name: 'premium',
+    icon: <PremiumTier />,
+  },
+  {
+    name: 'crystal',
+    icon: <CrystalTier />,
+  },
+] as const
+
 const TIER_EXCLUSIONS: Partial<
   Record<CreateableOutcomeType, MarketTierType[]>
 > = {
   NUMBER: ['play', 'basic'],
 }
 
-const isTierEnabled = (
+const isTierDisabled = (
   outcomeType: CreateableOutcomeType,
   tier: MarketTierType
 ) => {
-  return !TIER_EXCLUSIONS[outcomeType]?.includes(tier)
+  return TIER_EXCLUSIONS[outcomeType]?.includes(tier)
 }
 
 export const CostSection = (props: {
@@ -100,57 +133,7 @@ function PriceSection(props: {
         market. More liquidity attracts more traders but has a higher cost.
       </div>
       <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-5">
-        <Tier
-          baseCost={baseCost}
-          tier="play"
-          icon={<PlayTier />}
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
-        <Tier
-          baseCost={baseCost}
-          tier="basic"
-          icon={
-            <LogoIcon
-              className="stroke-ink-600 flex-inline shrink-0 stroke-[1.5px]"
-              aria-hidden
-              style={{
-                width: '1em',
-                height: '1em',
-                marginRight: '0.1em',
-                marginBottom: '0.1em',
-              }}
-            />
-          }
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
-        <Tier
-          baseCost={baseCost}
-          tier="plus"
-          icon={<PlusTier />}
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
-        <Tier
-          baseCost={baseCost}
-          tier="premium"
-          icon={<PremiumTier />}
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
-        <Tier
-          baseCost={baseCost}
-          tier="crystal"
-          icon={<CrystalTier />}
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
+       {TIERS.map()}
       </div>
     </Col>
   )
@@ -167,71 +150,67 @@ function Tier(props: {
   const { baseCost, icon, tier, outcomeType, currentTier, setMarketTier } =
     props
 
-  if (!isTierEnabled(outcomeType, tier)) {
-    const questionType = capitalize(
-      getContractTypeFromValue(outcomeType, 'name')
-    )
-    const tierName = getPresentedTierName(tier)
-
-    return (
-      <div
-        className={clsx(
-          'bg-canvas-50 w-full select-none items-baseline rounded py-2 pl-2 pr-4 transition-colors',
-          'flex flex-row justify-start gap-3 sm:flex-col sm:justify-between sm:gap-0 sm:items-center'
-        )}
-      >
-        <div className="text-ink-500 text-sm font-bold flex items-center gap-1 flex-col sm:flex-row sm:items-start">
-          <div>Disabled</div>
-          <InfoTooltip
-            text={`The ${questionType} question type does not work with the ${tierName} tier because it requires more liquidity.`}
-          />
-        </div>
-        <Col className="sm:items-center">
-          <div className="text-ink-400">{tierName}</div>
-          <div className="text-xl opacity-50" style={{ filter: 'saturate(0%)'}}>
-            <ManaCoin />
-          </div>
-        </Col>
-      </div>
-    )
-  }
+  const questionType = capitalize(getContractTypeFromValue(outcomeType, 'name'))
+  const tierName = getPresentedTierName(tier)
 
   return (
     <div
       className={clsx(
-        currentTier == tier
-          ? tier == 'play'
-            ? 'outline-ink-500'
-            : tier == 'basic'
-            ? 'outline-ink-500'
-            : tier == 'plus'
-            ? 'outline-blue-500'
-            : tier == 'premium'
-            ? 'outline-purple-400'
-            : 'outline-pink-500'
-          : tier == 'play'
-          ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
-          : tier == 'basic'
-          ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
-          : tier == 'plus'
-          ? 'opacity-50 outline-transparent hover:outline-purple-500/50'
-          : tier == 'premium'
-          ? 'opacity-50 outline-transparent hover:outline-fuchsia-400/50'
-          : 'opacity-50 outline-transparent hover:outline-pink-500/50',
-        'bg-canvas-50 w-full cursor-pointer select-none items-center rounded px-4 py-2 outline transition-colors',
-        'flex flex-row gap-2 sm:flex-col sm:gap-0'
+        'bg-canvas-50 w-full select-none items-baseline rounded py-2 pl-2 pr-4 transition-colors',
+        'flex flex-row justify-start gap-3 sm:flex-col sm:items-center sm:justify-between sm:gap-0'
       )}
-      onClick={() => setMarketTier(tier)}
     >
-      <div className="text-5xl sm:text-4xl">{icon}</div>
-      <Col className="sm:items-center">
-        <div className="text-ink-600">{getPresentedTierName(tier)}</div>
-        <CoinNumber
-          className="text-xl font-semibold"
-          amount={getTieredCost(baseCost, tier, outcomeType)}
-          numberType="short"
+      <div className="text-ink-500 flex flex-col items-center gap-1 text-sm font-bold sm:flex-row sm:items-start">
+        <div>Disabled</div>
+        <InfoTooltip
+          text={`The ${questionType} question type does not work with the ${tierName} tier because it requires more liquidity.`}
         />
+      </div>
+      <Col className="sm:items-center">
+        <div className="text-ink-400">{tierName}</div>
+        <div className="text-xl opacity-50" style={{ filter: 'saturate(0%)' }}>
+          <ManaCoin />
+        </div>
       </Col>
     </div>
   )
 }
+
+return (
+  <div
+    className={clsx(
+      currentTier == tier
+        ? tier == 'play'
+          ? 'outline-ink-500'
+          : tier == 'basic'
+          ? 'outline-ink-500'
+          : tier == 'plus'
+          ? 'outline-blue-500'
+          : tier == 'premium'
+          ? 'outline-purple-400'
+          : 'outline-pink-500'
+        : tier == 'play'
+        ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
+        : tier == 'basic'
+        ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
+        : tier == 'plus'
+        ? 'opacity-50 outline-transparent hover:outline-purple-500/50'
+        : tier == 'premium'
+        ? 'opacity-50 outline-transparent hover:outline-fuchsia-400/50'
+        : 'opacity-50 outline-transparent hover:outline-pink-500/50',
+      'bg-canvas-50 w-full cursor-pointer select-none items-center rounded px-4 py-2 outline transition-colors',
+      'flex flex-row gap-2 sm:flex-col sm:gap-0'
+    )}
+    onClick={() => setMarketTier(tier)}
+  >
+    <div className="text-5xl sm:text-4xl">{icon}</div>
+    <Col className="sm:items-center">
+      <div className="text-ink-600">{getPresentedTierName(tier)}</div>
+      <CoinNumber
+        className="text-xl font-semibold"
+        amount={getTieredCost(baseCost, tier, outcomeType)}
+        numberType="short"
+      />
+    </Col>
+  </div>
+)
