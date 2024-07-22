@@ -8,5 +8,5 @@ export const runShortTrans = async <T>(
   callback: (trans: SupabaseTransaction) => Promise<T>
 ) => {
   const pg = createSupabaseDirectClient()
-  return await pg.timeout(DEFAULT_QUEUE_TIME_LIMIT, callback, true)
+  return await pg.timeout(DEFAULT_QUEUE_TIME_LIMIT, callback, false)
 }
