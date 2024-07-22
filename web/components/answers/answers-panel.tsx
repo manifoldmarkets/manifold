@@ -4,9 +4,7 @@ import {
   ChevronDownIcon,
   DotsVerticalIcon,
   PencilIcon,
-  PlusCircleIcon,
   ScaleIcon,
-  SearchIcon,
 } from '@heroicons/react/outline'
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -22,7 +20,6 @@ import { getAnswerProbability } from 'common/calculate'
 import {
   Contract,
   MultiContract,
-  SORTS,
   contractPath,
   tradingAllowed,
 } from 'common/contract'
@@ -52,7 +49,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -66,7 +62,6 @@ import {
 import { getAnswerColor } from '../charts/contract/choice'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
-import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { UserHovercard } from '../user/user-hovercard'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
 import { InfoTooltip } from '../widgets/info-tooltip'

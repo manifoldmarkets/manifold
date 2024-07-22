@@ -16,9 +16,7 @@ import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import {
   ChevronDownIcon,
-  SearchIcon,
   XCircleIcon,
-  XIcon,
 } from '@heroicons/react/solid'
 import { FaSearch, FaSearchPlus } from 'react-icons/fa'
 import { InfoTooltip } from '../widgets/info-tooltip'
