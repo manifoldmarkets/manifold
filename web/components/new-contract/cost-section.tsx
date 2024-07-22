@@ -20,6 +20,23 @@ import { LogoIcon } from '../icons/logo-icon'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { MarketTierType } from 'common/tier'
 import { getPresentedTierName } from '../tiers/tier-tooltip'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { getContractTypeFromValue } from './create-contract-types'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import { capitalize } from 'lodash'
+
+const TIER_EXCLUSIONS: Partial<
+  Record<CreateableOutcomeType, MarketTierType[]>
+> = {
+  NUMBER: ['play', 'basic'],
+}
+
+const isTierEnabled = (
+  outcomeType: CreateableOutcomeType,
+  tier: MarketTierType
+) => {
+  return !TIER_EXCLUSIONS[outcomeType]?.includes(tier)
+}
 
 export const CostSection = (props: {
   balance: number
@@ -82,45 +99,34 @@ function PriceSection(props: {
         Choose a tier to determine how much initial liquidity to inject into the
         market. More liquidity attracts more traders but has a higher cost.
       </div>
-      <div
-        className={clsx(
-          'grid w-full gap-2',
-          outcomeType === 'NUMBER'
-            ? 'grid-cols-3'
-            : 'grid-cols-2 sm:grid-cols-5'
-        )}
-      >
-        {outcomeType !== 'NUMBER' && (
-          <Tier
-            baseCost={baseCost}
-            tier="play"
-            icon={<PlayTier />}
-            outcomeType={outcomeType}
-            currentTier={currentTier}
-            setMarketTier={setMarketTier}
-          />
-        )}
-        {outcomeType !== 'NUMBER' && (
-          <Tier
-            baseCost={baseCost}
-            tier="basic"
-            icon={
-              <LogoIcon
-                className="stroke-ink-600 flex-inline shrink-0 stroke-[1.5px]"
-                aria-hidden
-                style={{
-                  width: '1em',
-                  height: '1em',
-                  marginRight: '0.1em',
-                  marginBottom: '0.1em',
-                }}
-              />
-            }
-            outcomeType={outcomeType}
-            currentTier={currentTier}
-            setMarketTier={setMarketTier}
-          />
-        )}
+      <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-5">
+        <Tier
+          baseCost={baseCost}
+          tier="play"
+          icon={<PlayTier />}
+          outcomeType={outcomeType}
+          currentTier={currentTier}
+          setMarketTier={setMarketTier}
+        />
+        <Tier
+          baseCost={baseCost}
+          tier="basic"
+          icon={
+            <LogoIcon
+              className="stroke-ink-600 flex-inline shrink-0 stroke-[1.5px]"
+              aria-hidden
+              style={{
+                width: '1em',
+                height: '1em',
+                marginRight: '0.1em',
+                marginBottom: '0.1em',
+              }}
+            />
+          }
+          outcomeType={outcomeType}
+          currentTier={currentTier}
+          setMarketTier={setMarketTier}
+        />
         <Tier
           baseCost={baseCost}
           tier="plus"
@@ -160,6 +166,36 @@ function Tier(props: {
 }) {
   const { baseCost, icon, tier, outcomeType, currentTier, setMarketTier } =
     props
+
+  if (!isTierEnabled(outcomeType, tier)) {
+    const questionType = capitalize(
+      getContractTypeFromValue(outcomeType, 'name')
+    )
+    const tierName = getPresentedTierName(tier)
+
+    return (
+      <div
+        className={clsx(
+          'bg-canvas-50 w-full select-none items-baseline rounded py-2 pl-2 pr-4 transition-colors',
+          'flex flex-row justify-start gap-3 sm:flex-col sm:justify-between sm:gap-0 sm:items-center'
+        )}
+      >
+        <div className="text-ink-500 text-sm font-bold flex items-center gap-1 flex-col sm:flex-row sm:items-start">
+          <div>Disabled</div>
+          <InfoTooltip
+            text={`The ${questionType} question type does not work with the ${tierName} tier because it requires more liquidity.`}
+          />
+        </div>
+        <Col className="sm:items-center">
+          <div className="text-ink-400">{tierName}</div>
+          <div className="text-xl opacity-50" style={{ filter: 'saturate(0%)'}}>
+            <ManaCoin />
+          </div>
+        </Col>
+      </div>
+    )
+  }
+
   return (
     <div
       className={clsx(
