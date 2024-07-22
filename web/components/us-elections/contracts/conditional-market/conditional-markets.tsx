@@ -24,7 +24,6 @@ export function ConditionalMarkets(props: {
     }
   })
 
-
   const { shortName: trumpShortName, photo: trumpPhoto } =
     CANDIDATE_DATA['Donald Trump'] ?? {}
   return (
@@ -35,7 +34,6 @@ export function ConditionalMarkets(props: {
             What will happen if...
           </Col>
           <Row className="hidden text-xs sm:flex">
-           
             <Row className="bg-sienna-700 w-[120px] items-center justify-start gap-0.5 rounded-t-lg text-white">
               <Image
                 src={trumpPhoto}
