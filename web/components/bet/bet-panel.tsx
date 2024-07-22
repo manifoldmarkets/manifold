@@ -92,7 +92,6 @@ export function BuyPanel(props: {
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
-  const isAdvancedTrader = useIsAdvancedTrader()
 
   const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
 
@@ -347,61 +346,75 @@ export const BuyPanelBody = (props: {
   let probAfter: number
   let fees: number
   let filledAmount: number
-  if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
-    const { answers, answerToBuy } = multiProps
-    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
-      answers,
-      answerToBuy,
-      outcome ?? 'YES',
-      betAmount ?? 0,
-      undefined,
-      unfilledBets,
-      balanceByUserId,
-      contract.collectedFees
-    )
-    const { pool, p } = newBetResult.cpmmState
-    currentPayout = sumBy(newBetResult.takers, 'shares')
-    filledAmount = sumBy(newBetResult.takers, 'amount')
-    if (multiProps.answerToBuy.text !== multiProps.answerText && isBinaryMC) {
-      probBefore = 1 - answerToBuy.prob
-      probAfter = 1 - getCpmmProbability(pool, p)
-    } else {
-      probBefore = answerToBuy.prob
-      probAfter = getCpmmProbability(pool, p)
-    }
-    fees =
-      getFeeTotal(newBetResult.totalFees) +
-      sumBy(otherBetResults, (result) => getFeeTotal(result.totalFees))
-  } else {
-    const cpmmState = isCpmmMulti
-      ? {
-          pool: {
-            YES: multiProps!.answerToBuy.poolYes,
-            NO: multiProps!.answerToBuy.poolNo,
-          },
-          p: 0.5,
-          collectedFees: contract.collectedFees,
-        }
-      : {
-          pool: contract.pool,
-          p: contract.p,
-          collectedFees: contract.collectedFees,
-        }
 
-    const result = computeCpmmBet(
-      cpmmState,
-      outcome ?? 'YES',
-      betAmount ?? 0,
-      undefined,
-      unfilledBets,
-      balanceByUserId,
-      limits
+  try {
+    if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
+      const { answers, answerToBuy } = multiProps
+      const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+        answers,
+        answerToBuy,
+        outcome ?? 'YES',
+        betAmount ?? 0,
+        undefined,
+        unfilledBets,
+        balanceByUserId,
+        contract.collectedFees
+      )
+      const { pool, p } = newBetResult.cpmmState
+      currentPayout = sumBy(newBetResult.takers, 'shares')
+      filledAmount = sumBy(newBetResult.takers, 'amount')
+      if (multiProps.answerToBuy.text !== multiProps.answerText && isBinaryMC) {
+        probBefore = 1 - answerToBuy.prob
+        probAfter = 1 - getCpmmProbability(pool, p)
+      } else {
+        probBefore = answerToBuy.prob
+        probAfter = getCpmmProbability(pool, p)
+      }
+      fees =
+        getFeeTotal(newBetResult.totalFees) +
+        sumBy(otherBetResults, (result) => getFeeTotal(result.totalFees))
+    } else {
+      const cpmmState = isCpmmMulti
+        ? {
+            pool: {
+              YES: multiProps!.answerToBuy.poolYes,
+              NO: multiProps!.answerToBuy.poolNo,
+            },
+            p: 0.5,
+            collectedFees: contract.collectedFees,
+          }
+        : {
+            pool: contract.pool,
+            p: contract.p,
+            collectedFees: contract.collectedFees,
+          }
+
+      const result = computeCpmmBet(
+        cpmmState,
+        outcome ?? 'YES',
+        betAmount ?? 0,
+        undefined,
+        unfilledBets,
+        balanceByUserId,
+        limits
+      )
+      currentPayout = result.shares
+      filledAmount = result.amount
+      probBefore = result.probBefore
+      probAfter = result.probAfter
+      fees = getFeeTotal(result.fees)
+    }
+  } catch (err: any) {
+    console.error('Error in calculateCpmmMultiArbitrageBet:', err)
+    setError(
+      err?.message ?? 'An error occurred during bet calculation, try again.'
     )
-    currentPayout = result.shares
-    filledAmount = result.amount
-    probBefore = result.probBefore
-    probAfter = result.probAfter
-    fees = getFeeTotal(result.fees)
+    // Set default values or handle the error case as needed
+    currentPayout = 0
+    probBefore = 0
+    probAfter = 0
+    fees = 0
+    filledAmount = 0
   }
 
   const probStayedSame = formatPercent(probAfter) === formatPercent(probBefore)
