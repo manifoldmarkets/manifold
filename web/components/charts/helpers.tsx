@@ -340,6 +340,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
   chartPositions?: ChartPosition[]
   hideXAxis?: boolean
   yKind?: ValueKind
+  noWatermark?: boolean
 }) => {
   const {
     children,
@@ -367,6 +368,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
     chartPositions,
     hoveredChartPosition,
     setHoveredChartPosition,
+    noWatermark,
   } = props
 
   const showAnnotations = xScale && yAtTime && y0 !== undefined
