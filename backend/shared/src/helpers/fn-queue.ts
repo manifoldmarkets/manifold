@@ -1,7 +1,7 @@
 import { remove } from 'lodash'
 import { APIError } from 'common/api/utils'
 
-export const DEFAULT_QUEUE_TIME_LIMIT = 5000
+export const DEFAULT_QUEUE_TIME_LIMIT = 10_000
 
 type WorkItem = {
   fn: () => Promise<any>
