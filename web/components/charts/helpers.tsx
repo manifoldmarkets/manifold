@@ -340,6 +340,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
   chartPositions?: ChartPosition[]
   hideXAxis?: boolean
   yKind?: ValueKind
+  noWatermark?: boolean
 }) => {
   const {
     children,
@@ -367,6 +368,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
     chartPositions,
     hoveredChartPosition,
     setHoveredChartPosition,
+    noWatermark,
   } = props
 
   const showAnnotations = xScale && yAtTime && y0 !== undefined
@@ -546,6 +548,30 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
                 ))}
           </g>
         </g>
+        {!noWatermark && (
+          <>
+            <rect
+              x={4}
+              y={h - 23}
+              width={150}
+              height={18}
+              className="fill-canvas-0"
+              rx={4}
+              ry={4}
+              opacity={0.85}
+            />
+            <text
+              x={10}
+              y={h - 10}
+              fontSize="12"
+              fill="currentColor"
+              opacity={0.5}
+              fontWeight={'semibold'}
+            >
+              Source: manifold.markets
+            </text>
+          </>
+        )}
       </svg>
     </div>
   )
