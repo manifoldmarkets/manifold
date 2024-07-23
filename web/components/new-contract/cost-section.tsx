@@ -18,12 +18,45 @@ import {
 } from 'web/public/custom-components/tiers'
 import { LogoIcon } from '../icons/logo-icon'
 import { CoinNumber } from '../widgets/manaCoinNumber'
-import { MarketTierType } from 'common/tier'
+import { MarketTierType, TierParamsType } from 'common/tier'
 import { getPresentedTierName } from '../tiers/tier-tooltip'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { getContractTypeFromValue } from './create-contract-types'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { capitalize } from 'lodash'
+
+type TIER_TYPE = { name: MarketTierType; icon: ReactNode }
+
+export const TIERS: TIER_TYPE[] = [
+  { name: 'play', icon: <PlayTier /> },
+  {
+    name: 'basic',
+    icon: (
+      <LogoIcon
+        className="stroke-ink-600 flex-inline shrink-0 stroke-[1.5px]"
+        aria-hidden
+        style={{
+          width: '1em',
+          height: '1em',
+          marginRight: '0.1em',
+          marginBottom: '0.1em',
+        }}
+      />
+    ),
+  },
+  {
+    name: 'plus',
+    icon: <PlusTier />,
+  },
+  {
+    name: 'premium',
+    icon: <PremiumTier />,
+  },
+  {
+    name: 'crystal',
+    icon: <CrystalTier />,
+  },
+] as const
 
 const TIER_EXCLUSIONS: Partial<
   Record<CreateableOutcomeType, MarketTierType[]>
@@ -31,11 +64,11 @@ const TIER_EXCLUSIONS: Partial<
   NUMBER: ['play', 'basic'],
 }
 
-const isTierEnabled = (
+const isTierDisabled = (
   outcomeType: CreateableOutcomeType,
   tier: MarketTierType
 ) => {
-  return !TIER_EXCLUSIONS[outcomeType]?.includes(tier)
+  return TIER_EXCLUSIONS[outcomeType]?.includes(tier)
 }
 
 export const CostSection = (props: {
@@ -100,57 +133,20 @@ function PriceSection(props: {
         market. More liquidity attracts more traders but has a higher cost.
       </div>
       <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-5">
-        <Tier
-          baseCost={baseCost}
-          tier="play"
-          icon={<PlayTier />}
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
-        <Tier
-          baseCost={baseCost}
-          tier="basic"
-          icon={
-            <LogoIcon
-              className="stroke-ink-600 flex-inline shrink-0 stroke-[1.5px]"
-              aria-hidden
-              style={{
-                width: '1em',
-                height: '1em',
-                marginRight: '0.1em',
-                marginBottom: '0.1em',
-              }}
+        {TIERS.map((tier: TIER_TYPE) => {
+          return (
+            <Tier
+              key={tier.name}
+              baseCost={baseCost}
+              icon={tier.icon}
+              tier={tier.name}
+              outcomeType={outcomeType}
+              currentTier={currentTier}
+              setMarketTier={setMarketTier}
+              isTierDisabled={isTierDisabled(outcomeType, tier.name)}
             />
-          }
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
-        <Tier
-          baseCost={baseCost}
-          tier="plus"
-          icon={<PlusTier />}
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
-        <Tier
-          baseCost={baseCost}
-          tier="premium"
-          icon={<PremiumTier />}
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
-        <Tier
-          baseCost={baseCost}
-          tier="crystal"
-          icon={<CrystalTier />}
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
+          )
+        })}
       </div>
     </Col>
   )
@@ -163,16 +159,24 @@ function Tier(props: {
   outcomeType: CreateableOutcomeType
   currentTier: MarketTierType
   setMarketTier: (tier: MarketTierType) => void
+  isTierDisabled?: boolean
 }) {
-  const { baseCost, icon, tier, outcomeType, currentTier, setMarketTier } =
-    props
+  const {
+    baseCost,
+    icon,
+    tier,
+    outcomeType,
+    currentTier,
+    setMarketTier,
+    isTierDisabled,
+  } = props
 
-  if (!isTierEnabled(outcomeType, tier)) {
-    const questionType = capitalize(
-      getContractTypeFromValue(outcomeType, 'name')
-    )
-    const tierName = getPresentedTierName(tier)
+  const questionType = capitalize(getContractTypeFromValue(outcomeType, 'name'))
+  const tierName = getPresentedTierName(tier)
 
+  console.log(tier, isTierDisabled)
+
+  if (isTierDisabled) {
     return (
       <div
         className={clsx(
@@ -221,10 +225,14 @@ function Tier(props: {
           : tier == 'premium'
           ? 'opacity-50 outline-transparent hover:outline-fuchsia-400/50'
           : 'opacity-50 outline-transparent hover:outline-pink-500/50',
-        'bg-canvas-50 w-full cursor-pointer select-none items-center rounded px-4 py-2 outline transition-colors',
-        'flex flex-row gap-2 sm:flex-col sm:gap-0'
+        'bg-canvas-50 cursor-pointer ',
+        'flex w-full select-none flex-row items-center gap-2 rounded px-4 py-2 outline transition-colors sm:flex-col sm:gap-0'
       )}
-      onClick={() => setMarketTier(tier)}
+      onClick={() => {
+        if (!isTierDisabled) {
+          setMarketTier(tier)
+        }
+      }}
     >
       <div className="text-5xl sm:text-4xl">{icon}</div>
       <Col className="sm:items-center">
