@@ -184,6 +184,7 @@ import {
   setChannelLastSeenTime,
 } from 'api/get-private-messages'
 import { getNotifications } from 'api/get-notifications'
+import { getContractTopics } from './get-contract-topics'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -275,6 +276,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   comments: getComments,
   market: createMarket,
   'market/:contractId/group': addOrRemoveTopicFromContract,
+  'market/:contractId/groups': getContractTopics,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
   'group/by-id/:id/markets': ({ id, limit }, ...rest) =>

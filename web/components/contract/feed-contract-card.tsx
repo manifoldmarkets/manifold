@@ -50,6 +50,7 @@ import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { TierTooltip } from '../tiers/tier-tooltip'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -125,6 +126,10 @@ export function FeedContractCard(props: {
       setVisible(false)
     }
   )
+
+  const topics = useAPIGetter('market/:contractId/groups', {
+    contractId: contract.id,
+  })
 
   const adSecondsLeft =
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -338,7 +343,7 @@ export function FeedContractCard(props: {
           <Col>
             {!hideTags && (
               <CategoryTags
-                categories={contract.groupLinks}
+                categories={topics.data}
                 // hide tags after first line. (tags are 24 px tall)
                 className="h-6 flex-wrap overflow-hidden"
               />

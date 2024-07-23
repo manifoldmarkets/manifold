@@ -478,6 +478,13 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: true },
   },
+  'market/:contractId/groups': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({ contractId: z.string() }),
+    returns: [] as LiteGroup[],
+  },
   'market/:contractId/answer': {
     method: 'POST',
     visibility: 'public',
