@@ -25,6 +25,7 @@ export function CoinNumber(props: {
     coinClassName,
     style,
   } = props
+
   return (
     <Row
       className={clsx(
