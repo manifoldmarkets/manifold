@@ -7,23 +7,17 @@ import {
   getRoundedLimitProb,
   executeNewBetResult,
   fetchContractBetDataAndValidate,
-  getBetDeps,
 } from 'api/place-bet'
 import { log } from 'shared/utils'
 import { runShortTrans } from 'shared/short-transaction'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  const pg = createSupabaseDirectClient()
-  const { contractId } = props
-
-  const deps = await getBetDeps(pg, contractId, auth.uid)
 
   return await betsQueue.enqueueFn(
     () => placeMultiBetMain(props, auth.uid, isApi),
-    deps
+    [auth.uid, props.contractId]
   )
 }
 

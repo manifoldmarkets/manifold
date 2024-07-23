@@ -35,11 +35,7 @@ import {
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
-import {
-  cancelLimitOrders,
-  getBetsWithFilter,
-  insertBet,
-} from 'shared/supabase/bets'
+import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { broadcastOrders } from 'shared/websockets/helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
@@ -52,11 +48,27 @@ import {
 import { updateContract } from 'shared/supabase/contracts'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
-  const pg = createSupabaseDirectClient()
   const isApi = auth.creds.kind === 'key'
-  const { contractId } = props
 
-  const deps = await getBetDeps(pg, contractId, auth.uid)
+  const { user, contract, answers, unfilledBets, balanceByUserId } =
+    await fetchContractBetDataAndValidate(
+      createSupabaseDirectClient(),
+      props,
+      auth.uid,
+      isApi
+    )
+  // Simulate bet to see whose limit orders you match.
+  const simulatedResult = calculateBetResult(
+    props,
+    user,
+    contract,
+    answers,
+    unfilledBets,
+    balanceByUserId
+  )
+  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
+  const deps = [auth.uid, contract.id, ...simulatedMakerIds]
+
   return await betsQueue.enqueueFn(
     () => placeBetMain(props, auth.uid, isApi),
     deps
@@ -693,12 +705,13 @@ export const updateMakers = async (
     }))
   )
 
-  log('Redeeming shares for makers', Object.keys(spentByUser))
-  await Promise.all(
-    Object.keys(spentByUser).map((userId) =>
-      redeemShares(pgTrans, userId, contract)
+  const makerIds = Object.keys(spentByUser)
+  if (makerIds.length > 0) {
+    log('Redeeming shares for makers', makerIds)
+    await Promise.all(
+      makerIds.map((userId) => redeemShares(pgTrans, userId, contract))
     )
-  )
+  }
 
   // TODO: figure out LOGGING
 }
@@ -729,29 +742,4 @@ export const getMakerIdsFromBetResult = (result: NewBetResult) => {
   ].map((o) => o.userId)
 
   return uniq([...makerUserIds, ...cancelledUserIds])
-}
-
-export const getBetDeps = async (
-  pg: SupabaseDirectClient,
-  contractId: string,
-  userId: string
-) => {
-  const [unfilledBets, creatorId] = await Promise.all([
-    getBetsWithFilter(pg, {
-      contractId,
-      kinds: 'open-limit',
-    }),
-    pg.one<string>(
-      `select creator_id from contracts where id = $1`,
-      [contractId],
-      (r) => r.creator_id
-    ),
-  ])
-
-  return uniq([
-    userId,
-    creatorId,
-    contractId,
-    ...unfilledBets.map((bet) => bet.userId),
-  ])
 }

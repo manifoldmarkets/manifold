@@ -6,7 +6,6 @@ import { removeUndefinedProps } from 'common/util/object'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import {
   fetchContractBetDataAndValidate,
-  getBetDeps,
   getMakerIdsFromBetResult,
   getUserBalances,
   updateMakers,
@@ -38,9 +37,30 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   auth,
   req
 ) => {
-  const pg = createSupabaseDirectClient()
-  const { contractId } = props
-  const deps = await getBetDeps(pg, contractId, auth.uid)
+  const userId = auth.uid
+  const isApi = auth.creds.kind === 'key'
+  const { contractId, shares, outcome, answerId } = props
+  const { contract, answers, balanceByUserId, unfilledBets, userBets } =
+    await fetchSellSharesDataAndValidate(
+      createSupabaseDirectClient(),
+      contractId,
+      answerId,
+      userId,
+      isApi
+    )
+  const simulatedResult = calculateSellResult(
+    contract,
+    answers,
+    unfilledBets,
+    balanceByUserId,
+    answerId,
+    outcome,
+    shares,
+    userBets
+  )
+  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
+  const deps = [userId, contractId, ...simulatedMakerIds]
+
   return await betsQueue.enqueueFn(() => sellSharesMain(props, auth, req), deps)
 }
 
