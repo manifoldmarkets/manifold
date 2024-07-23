@@ -16,9 +16,6 @@ supabase status: columns exist for
   isRedemption: boolean
   visibility: text
 
-any changes to the type of these columns in firestore will require modifying
-the supabase trigger, or replication of contracts may fail!
-
 *************************************************/
 
 export type Bet = {
@@ -42,7 +39,6 @@ export type Bet = {
   isApi?: boolean // true if bet was placed via API
 
   isRedemption: boolean
-  visibility: Visibility
   /** @deprecated */
   challengeSlug?: string
 

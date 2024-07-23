@@ -102,27 +102,10 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     await updateContract(pg, contract.id, {
       lastUpdatedTime: Date.now(),
     })
-
-    //TODO: Now that we don't have private contracts, do we really need to update visibilities?
-    if (visibility) {
-      await updateContractSubcollectionsVisibility(contract.id, visibility)
-    }
   }
 
   return {
     result: { success: true },
     continue: continuation,
   }
-}
-
-async function updateContractSubcollectionsVisibility(
-  contractId: string,
-  newVisibility: 'public' | 'unlisted'
-) {
-  const pg = createSupabaseDirectClient()
-
-  await pg.none(
-    `update contract_bets set data = data || $1 where contract_id = $2`,
-    [JSON.stringify({ visibility: newVisibility }), contractId]
-  )
 }

@@ -13,7 +13,6 @@ create table if not exists
     prob_before numeric,
     prob_after numeric,
     is_redemption boolean,
-    visibility text,
     is_api boolean,
     answer_id text,
     loan_amount numeric
@@ -48,7 +47,6 @@ begin
         new.prob_before := ((new.data) ->> 'probBefore')::numeric;
         new.prob_after := ((new.data) ->> 'probAfter')::numeric;
         new.is_redemption := ((new.data) -> 'isRedemption')::boolean;
-        new.visibility := ((new.data) ->> 'visibility')::text;
         new.answer_id := ((new.data) ->> 'answerId')::text;
         new.is_api := ((new.data) ->> 'isApi')::boolean;
         new.loan_amount := ((new.data) ->> 'loanAmount')::numeric;

@@ -147,7 +147,6 @@ export const getCpmmMultiSellBetInfo = (
     isCancelled: false,
     orderAmount: takerAmount,
     isRedemption: false,
-    visibility: contract.visibility,
   }
 
   const otherResultsWithBet = otherBetResults!.map((result) => {
@@ -171,7 +170,6 @@ export const getCpmmMultiSellBetInfo = (
       createdTime: now,
       fees: totalFees,
       isRedemption: true,
-      visibility: contract.visibility,
     })
     return {
       ...result,

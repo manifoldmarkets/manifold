@@ -432,7 +432,6 @@ async function convertOtherAnswerShares(
         createdTime: now,
         fees: noFees,
         isRedemption: true,
-        visibility: bets[0].visibility,
         isApi: false,
       }
       await insertBet(freeYesSharesBet, pgTrans)
@@ -465,7 +464,6 @@ async function convertOtherAnswerShares(
         createdTime: now,
         fees: noFees,
         isRedemption: true,
-        visibility: bets[0].visibility,
         isApi: false,
       }
       newBets.push(convertNoSharesBet)
@@ -491,7 +489,6 @@ async function convertOtherAnswerShares(
           createdTime: now,
           fees: noFees,
           isRedemption: true,
-          visibility: bets[0].visibility,
           isApi: false,
         }
         newBets.push(gainYesSharesBet)
