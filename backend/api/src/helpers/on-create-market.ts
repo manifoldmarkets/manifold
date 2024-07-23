@@ -84,7 +84,12 @@ export const onCreateMarket = async (
     log('Added contract to unsubsidized group')
   }
   if (contract.visibility === 'public') {
-    const groupIds = (contract.groupLinks ?? []).map((gl) => gl.groupId)
+    const groupIds = await pg.map(
+      `select group_id from group_contracts where contract_id = $1`,
+      [contract.id],
+      (data) => data.group_id
+    )
+
     await Promise.all(
       groupIds.map(async (groupId) => upsertGroupEmbedding(pg, groupId))
     )

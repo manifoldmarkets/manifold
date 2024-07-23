@@ -46,9 +46,14 @@ export const addOrRemoveTopicFromContract: APIHandler<
   const group = groupQuery.data
   const contract = convertContract(contractQuery.data)
 
+  const { count: existingCount } = await db
+    .from('group_contracts')
+    .select('*', { count: 'exact', head: true })
+    .eq('contract_id', contractId)
+
   if (
     !remove &&
-    (contract.groupLinks?.length ?? 0) > MAX_GROUPS_PER_MARKET &&
+    (existingCount ?? 0) > MAX_GROUPS_PER_MARKET &&
     !isModId(auth.uid) &&
     !isAdminId(auth.uid) &&
     ![UNSUBSIDIZED_GROUP_ID, UNRANKED_GROUP_ID].includes(groupId)
