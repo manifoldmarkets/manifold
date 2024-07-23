@@ -1,6 +1,6 @@
 import { JSONContent } from '@tiptap/core'
 import { getDisplayProbability } from 'common/calculate'
-import { GroupLink, Topic } from 'common/group'
+import { Topic } from 'common/group'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { sum } from 'lodash'
 import { Answer } from './answer'
