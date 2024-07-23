@@ -44,16 +44,6 @@ export const GroupNameSchema = z
   .min(2)
   .max(MAX_GROUP_NAME_LENGTH)
 
-export type GroupLink = {
-  slug: string
-  name: string
-  groupId: string
-  /** @deprecated - may not exist */
-  createdTime?: number
-  /** @deprecated */
-  userId?: string
-}
-
 export type Topic = LiteGroup
 export type LiteGroup = Pick<
   Group,
