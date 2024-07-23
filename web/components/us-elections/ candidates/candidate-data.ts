@@ -210,4 +210,24 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     photo: '/political-candidates/rubio.png',
     shortName: 'Rubio',
   },
+  'Mark Kelly': {
+    party: 'Democrat',
+    photo: '/political-candidates/kelly.png',
+    shortName: 'Kelly',
+  },
+  'Roy Cooper': {
+    party: 'Democrat',
+    photo: '/political-candidates/cooper.png',
+    shortName: 'Cooper',
+  },
+  'Tim Walz': {
+    party: 'Democrat',
+    photo: '/political-candidates/walz.png',
+    shortName: 'Walz',
+  },
+  'JD Vance': {
+    party: 'Republican',
+    photo: '/political-candidates/vance.png',
+    shortName: 'Vance',
+  },
 }
