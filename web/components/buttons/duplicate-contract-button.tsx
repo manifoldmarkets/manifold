@@ -67,8 +67,8 @@ function duplicateContractHref(contract: Contract) {
     params.shouldAnswersSumToOne = contract.shouldAnswersSumToOne
   }
 
-  if (contract.groupLinks && contract.groupLinks.length > 0) {
-    params.groupIds = contract.groupLinks.map((gl) => gl.groupId)
+  if (contract.groupSlugs && contract.groupSlugs.length > 0) {
+    params.groupSlugs = contract.groupSlugs
   }
 
   return `/create?params=` + encodeURIComponent(JSON.stringify(params))
