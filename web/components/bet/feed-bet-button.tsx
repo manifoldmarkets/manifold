@@ -5,11 +5,11 @@ import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { BuyPanel } from './bet-panel'
 import { track } from 'web/lib/service/analytics'
-import { CPMMBinaryContract, StonkContract } from 'common/contract'
+import { BinaryContract, StonkContract } from 'common/contract'
 import { User, firebaseLogin } from 'web/lib/firebase/users'
 
 export function BetButton(props: {
-  contract: CPMMBinaryContract | StonkContract
+  contract: BinaryContract | StonkContract
   user: User | null | undefined
   feedReason?: string
   className?: string

@@ -9,7 +9,7 @@ import {
   getCpmmProbability,
 } from './calculate-cpmm'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   MAX_CPMM_PROB,
@@ -317,7 +317,7 @@ export const computeCpmmBet = (
 }
 
 export const getBinaryCpmmBetInfo = (
-  contract: CPMMBinaryContract | PseudoNumericContract | StonkContract,
+  contract: BinaryContract | PseudoNumericContract | StonkContract,
   outcome: 'YES' | 'NO',
   betAmount: number,
   limitProb: number | undefined,

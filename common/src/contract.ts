@@ -135,18 +135,16 @@ export type MarketContract =
   | CPMMNumericContract
 
 export type BinaryContract = Contract & Binary
-export type CPMMBinaryContract = BinaryContract & CPMM
 export type PseudoNumericContract = Contract & PseudoNumeric
 export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
-export type CPMMStonkContract = StonkContract & CPMM
-export type BountiedQuestionContract = Contract & BountiedQuestion & NonBet
-export type PollContract = Contract & Poll & NonBet
+export type BountiedQuestionContract = Contract & BountiedQuestion
+export type PollContract = Contract & Poll
 
 export type BinaryOrPseudoNumericContract =
-  | CPMMBinaryContract
+  | BinaryContract
   | PseudoNumericContract
-  | CPMMStonkContract
+  | StonkContract
 
 export type CPMM = {
   mechanism: 'cpmm-1'

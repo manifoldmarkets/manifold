@@ -2,7 +2,7 @@ import clsx from 'clsx'
 
 import {
   contractPath,
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   isBinaryMulti,
@@ -22,7 +22,7 @@ import { Row } from 'web/components/layout/row'
 import { MultiNumericResolutionOrExpectation } from 'web/components/contract/contract-price'
 
 export function BetDialog(props: {
-  contract: CPMMBinaryContract
+  contract: BinaryContract
   open: boolean
   setOpen: (open: boolean) => void
   trackingLocation: string

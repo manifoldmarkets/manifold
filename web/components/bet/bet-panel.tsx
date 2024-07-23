@@ -6,7 +6,7 @@ import { CheckIcon } from '@heroicons/react/solid'
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   isBinaryMulti,
@@ -66,7 +66,7 @@ export type MultiBetProps = {
 
 export function BuyPanel(props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -171,7 +171,7 @@ export function BuyPanel(props: {
 
 export const BuyPanelBody = (props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract

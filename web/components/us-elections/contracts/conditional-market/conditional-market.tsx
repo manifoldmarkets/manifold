@@ -1,10 +1,5 @@
 import clsx from 'clsx'
-import {
-  BinaryContract,
-  CPMMBinaryContract,
-  Contract,
-  contractPath,
-} from 'common/contract'
+import { BinaryContract, Contract, contractPath } from 'common/contract'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -102,7 +97,7 @@ function ConditionalPercent(props: {
           )}
         />
       </Row>
-      <BinaryBetButton contract={contract as CPMMBinaryContract} />
+      <BinaryBetButton contract={contract as BinaryContract} />
     </ClickFrame>
   )
 }
@@ -166,7 +161,7 @@ export function MobilePolicy(props: {
   )
 }
 
-export const BinaryBetButton = (props: { contract: CPMMBinaryContract }) => {
+export const BinaryBetButton = (props: { contract: BinaryContract }) => {
   const { contract } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 

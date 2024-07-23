@@ -8,7 +8,7 @@ import { getProbability } from 'common/calculate'
 import { CpmmState } from 'common/calculate-cpmm'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   getBinaryMCProb,
@@ -44,7 +44,7 @@ import { FeeDisplay } from './fees'
 
 export default function LimitOrderPanel(props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract

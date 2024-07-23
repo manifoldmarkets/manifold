@@ -12,7 +12,7 @@ import {
 } from 'common/api/market-types'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   Contract,
@@ -603,7 +603,7 @@ async function generateAntes(
   ) {
     const lp = getCpmmInitialLiquidity(
       providerId,
-      contract as CPMMBinaryContract | CPMMMultiContract,
+      contract as BinaryContract | CPMMMultiContract,
       ante,
       contract.createdTime
     )

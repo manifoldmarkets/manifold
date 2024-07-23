@@ -10,11 +10,7 @@ import {
 } from 'common/antes'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import {
-  CPMMBinaryContract,
-  Contract,
-  CPMMNumericContract,
-} from 'common/contract'
+import { BinaryContract, Contract, CPMMNumericContract } from 'common/contract'
 import { buildArray } from 'common/util/array'
 import { shortFormatNumber, maybePluralize } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
@@ -143,7 +139,7 @@ export function ContractTabs(props: {
                     ? userPositionsByOutcome
                     : undefined
                 }
-                contract={contract as CPMMBinaryContract}
+                contract={contract as BinaryContract}
                 setTotalPositions={setTotalPositions}
               />
             ),

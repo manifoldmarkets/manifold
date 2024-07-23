@@ -9,7 +9,7 @@ import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { ContractStatusLabel } from './contracts-table'
-import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
+import { Contract, contractPath, BinaryContract } from 'common/contract'
 import Masonry from 'react-masonry-css'
 import { Button } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
@@ -361,8 +361,8 @@ const RelatedContractCard = memo(function (props: {
     contract.outcomeType === 'BINARY' &&
     showGraph &&
     'probChanges' in contract &&
-    Math.abs((contract as CPMMBinaryContract).probChanges.day) > 0.03
-      ? (contract as CPMMBinaryContract).probChanges.day
+    Math.abs((contract as BinaryContract).probChanges.day) > 0.03
+      ? (contract as BinaryContract).probChanges.day
       : 0
 
   return (

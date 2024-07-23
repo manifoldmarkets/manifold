@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   MAX_CPMM_PROB,
@@ -89,7 +89,7 @@ export function ProbabilityInput(props: {
 
 export function ProbabilityOrNumericInput(props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract

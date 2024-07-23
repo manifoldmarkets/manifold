@@ -1,8 +1,4 @@
-import {
-  Contract,
-  CPMMBinaryContract,
-  CPMMMultiContract,
-} from 'common/contract'
+import { Contract, BinaryContract, CPMMMultiContract } from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -111,7 +107,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
         )}
         {open && (
           <BetDialog
-            contract={contract as CPMMBinaryContract}
+            contract={contract as BinaryContract}
             open={open}
             setOpen={setOpen}
             trackingLocation="contract table"
