@@ -1,4 +1,7 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { ITask } from 'pg-promise'
 import { chunk, mean, sum, zip } from 'lodash'
 import { bulkUpdate } from 'shared/supabase/utils'
@@ -278,9 +281,8 @@ async function computeUserDisinterestEmbedding(
   )
 }
 
-export async function updateViewsAndViewersEmbeddings(
-  pg: SupabaseDirectClient
-) {
+export async function updateViewsAndViewersEmbeddings() {
+  const pg = createSupabaseDirectClient()
   const userToEmbeddingMap: { [userId: string]: number[] | null } = {}
   const viewerIds = await getMostlyActiveUserIds(pg)
   log('Found', viewerIds.length, 'viewers to update')

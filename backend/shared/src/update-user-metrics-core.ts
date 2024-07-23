@@ -1,10 +1,10 @@
-import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getUsers, log, revalidateStaticProps } from 'shared/utils'
-import { groupBy, sortBy, sumBy, uniq } from 'lodash'
+import { chunk, groupBy, sortBy, sumBy, uniq } from 'lodash'
 import { Contract, CPMMMultiContract } from 'common/contract'
 import {
   calculateMetricsByContractAndAnswer,
@@ -343,6 +343,8 @@ export async function updateUserMetricsCore(
   const userIdsNotWritten = activeUserIds.filter(
     (id) => !portfolioUpdates.some((p) => p.user_id === id)
   )
+  const chunkSize = 50
+  const userUpdateChunks = chunk(userUpdates, chunkSize)
   log('Writing updates and inserts...')
   await Promise.all(
     buildArray(
@@ -361,14 +363,20 @@ export async function updateUserMetricsCore(
           `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
           [new Date(now).toISOString(), userIdsNotWritten]
         ),
-      bulkUpdate(
-        pg,
-        'users',
-        ['id'],
-        userUpdates.map((u) => ({
-          id: u.id,
-          data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
-        }))
+
+      Promise.all(
+        userUpdateChunks.map(async (chunk) =>
+          bulkUpdate(
+            pg,
+            'users',
+            ['id'],
+            chunk.map((u) => ({
+              id: u.id,
+              data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
+            })),
+            5 * MINUTE_MS
+          )
+        )
       )
         .catch((e) => log.error('Error writing user updates', e))
         .then(() => log('Finished user updates.'))

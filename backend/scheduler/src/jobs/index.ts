@@ -29,7 +29,7 @@ import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
 import { scoreContracts } from './score-contracts'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateLeague } from './update-league'
-import { updateContractViewEmbeddings } from './update-contract-view-embeddings'
+import { updateViewsAndViewersEmbeddings } from 'shared/helpers/embeddings'
 
 export function createJobs() {
   return [
@@ -167,7 +167,7 @@ export function createJobs() {
     createJob(
       'update-contract-view-embeddings',
       '0 0 0 1 * *', // 1st day of the month
-      updateContractViewEmbeddings
+      updateViewsAndViewersEmbeddings
     ),
   ]
 }

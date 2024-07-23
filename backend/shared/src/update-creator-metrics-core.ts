@@ -1,4 +1,4 @@
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, MINUTE_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -9,6 +9,7 @@ import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { bulkInsert, bulkUpdate } from 'shared/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
+import { chunk } from 'lodash'
 export const CREATOR_UPDATE_FREQUENCY = 13
 export async function updateCreatorMetricsCore() {
   const now = Date.now()
@@ -92,7 +93,8 @@ export async function updateCreatorMetricsCore() {
             ?.unique_bettors ?? 0,
       },
     }))
-
+  const chunkSize = 50
+  const userUpdateChunks = chunk(userUpdates, chunkSize)
   log('Writing updates and inserts...')
   await Promise.all(
     buildArray(
@@ -102,14 +104,19 @@ export async function updateCreatorMetricsCore() {
           .then(() =>
             log('Finished creating Supabase portfolio history entries...')
           ),
-      bulkUpdate(
-        pg,
-        'users',
-        ['id'],
-        userUpdates.map((u) => ({
-          id: u.id,
-          data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
-        }))
+      Promise.all(
+        userUpdateChunks.map(async (chunk) =>
+          bulkUpdate(
+            pg,
+            'users',
+            ['id'],
+            chunk.map((u) => ({
+              id: u.id,
+              data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
+            })),
+            5 * MINUTE_MS
+          )
+        )
       )
         .catch((e) => log.error('Error bulk writing user updates', e))
         .then(() => log('Committed Firestore writes.'))

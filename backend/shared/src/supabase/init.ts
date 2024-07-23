@@ -37,9 +37,13 @@ pgp.pg.types.setTypeParser(20, (value) => parseInt(value, 10)) // int8.
 pgp.pg.types.setTypeParser(1700, parseFloat) // numeric
 
 pgp.pg.types.setTypeParser(1082, (value) => value) // date (not timestamp! has no time info so we just parse as string)
-
+export type SupbaseDirectClientTimeout = IDatabase<{}, IClient> & {
+  timeout: TimeoutTask
+}
 export type SupabaseTransaction = ITask<{}>
-export type SupabaseDirectClient = IDatabase<{}, IClient> | SupabaseTransaction
+export type SupabaseDirectClient =
+  | SupbaseDirectClientTimeout
+  | SupabaseTransaction
 
 export function getInstanceId() {
   return (
@@ -86,7 +90,7 @@ let pgpDirect:
 export function createSupabaseDirectClient(
   instanceId?: string,
   password?: string
-) {
+): SupbaseDirectClientTimeout {
   if (pgpDirect) return pgpDirect
   instanceId = instanceId ?? getInstanceId()
   if (!instanceId) {

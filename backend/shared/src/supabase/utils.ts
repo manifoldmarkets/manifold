@@ -1,5 +1,5 @@
 import { sortBy } from 'lodash'
-import { pgp, SupabaseDirectClient } from './init'
+import { pgp, SupabaseDirectClient, SupbaseDirectClientTimeout } from './init'
 import { DataFor, Tables, TableName, Column, Row } from 'common/supabase/utils'
 
 export async function getIds<T extends TableName>(
@@ -41,10 +41,11 @@ export async function bulkUpdate<
   ColumnValues extends Tables[T]['Update'],
   Row extends Tables[T]['Row']
 >(
-  db: SupabaseDirectClient,
+  db: SupbaseDirectClientTimeout,
   table: T,
   idFields: (string & keyof Row)[],
-  values: ColumnValues[]
+  values: ColumnValues[],
+  timeoutMs?: number
 ) {
   if (values.length) {
     const columnNames = Object.keys(values[0])
@@ -53,7 +54,11 @@ export async function bulkUpdate<
     const query = pgp.helpers.update(values, cs) + ` WHERE ${clause}`
     // Hack to properly cast jsonb values.
     const q = query.replace(/::jsonb'/g, "'::jsonb")
-    await db.none(q)
+    if (timeoutMs) {
+      await db.timeout(timeoutMs, (t) => t.none(q))
+    } else {
+      await db.none(q)
+    }
   }
 }
 
