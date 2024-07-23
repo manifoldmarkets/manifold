@@ -1,5 +1,4 @@
 import { groupBy, mapValues } from 'lodash'
-import { Visibility } from './contract'
 import { Fees } from './fees'
 import { maxMinBin } from './chart'
 
