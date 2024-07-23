@@ -142,7 +142,6 @@ const cleanContractForStaticProps = (c: Contract) =>
     description: '',
     answers: [],
     groupSlugs: [],
-    groupLinks: [],
   } as Contract)
 
 const refreshedRelatedMarkets = async (

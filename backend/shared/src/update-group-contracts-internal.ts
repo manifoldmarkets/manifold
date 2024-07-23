@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { GroupLink, GroupResponse } from 'common/group'
+import { GroupResponse } from 'common/group'
 import { createSupabaseDirectClient } from './supabase/init'
 import {
   UNRANKED_GROUP_ID,
@@ -10,10 +10,11 @@ import { trackPublicEvent } from 'shared/analytics'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { GroupMember } from 'common/group-member'
 import { updateContract } from './supabase/contracts'
+import { FieldVal } from './supabase/utils'
 
 export async function addGroupToContract(
   contract: Contract,
-  group: { id: string; slug: string; name: string },
+  group: { id: string; slug: string },
   userId?: string
 ) {
   const pg = createSupabaseDirectClient()
@@ -22,43 +23,26 @@ export async function addGroupToContract(
     `insert into group_contracts (contract_id, group_id) values ($1, $2)`,
     [contract.id, group.id]
   )
+  await updateContract(pg, contract.id, {
+    groupSlugs: FieldVal.arrayConcat(group.slug),
+    lastUpdatedTime: Date.now(),
+  })
 
-  const linkedToGroupAlready = (contract?.groupLinks ?? []).some(
-    (g) => g.groupId === group.id
-  )
-  if (!linkedToGroupAlready) {
-    // update group slugs and group links
-
-    const newSlugs = contract.groupSlugs?.concat(group.slug)
-    const newLinks = contract.groupLinks?.concat({
-      groupId: group.id,
-      createdTime: Date.now(),
-      slug: group.slug,
-      name: group.name,
-    })
-
+  if (group.id === UNRANKED_GROUP_ID) {
     await updateContract(pg, contract.id, {
-      groupSlugs: newSlugs,
-      groupLinks: newLinks,
-      lastUpdatedTime: Date.now(),
+      isRanked: false,
     })
-
-    if (group.id === UNRANKED_GROUP_ID) {
-      await updateContract(pg, contract.id, {
-        isRanked: false,
-      })
-      if (userId) {
-        await recordContractEdit(contract, userId, ['isRanked'])
-      }
+    if (userId) {
+      await recordContractEdit(contract, userId, ['isRanked'])
     }
+  }
 
-    if (group.id === UNSUBSIDIZED_GROUP_ID) {
-      await updateContract(pg, contract.id, {
-        isSubsidized: false,
-      })
-      if (userId) {
-        await recordContractEdit(contract, userId, ['isSubsidized'])
-      }
+  if (group.id === UNSUBSIDIZED_GROUP_ID) {
+    await updateContract(pg, contract.id, {
+      isSubsidized: false,
+    })
+    if (userId) {
+      await recordContractEdit(contract, userId, ['isSubsidized'])
     }
   }
 
@@ -82,14 +66,8 @@ export async function removeGroupFromContract(
     [contract.id, group.id]
   )
 
-  // update group slugs and group links
-  const newSlugs = contract.groupSlugs?.filter((s) => s !== group.slug)
-  const newLinks = contract.groupLinks?.filter(
-    (l: GroupLink) => l.groupId !== group.id
-  )
   await updateContract(pg, contract.id, {
-    groupSlugs: newSlugs,
-    groupLinks: newLinks,
+    groupSlugs: FieldVal.arrayRemove(group.slug),
     lastUpdatedTime: Date.now(),
   })
 

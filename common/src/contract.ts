@@ -108,8 +108,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isPolitics?: boolean
   /** @deprecated - not kept up-to-date */
   groupSlugs?: string[]
-  /** @deprecated */
-  groupLinks?: GroupLink[]
   /** @deprecated - not deprecated, only updated in supabase though*/
   popularityScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/

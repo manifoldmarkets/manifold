@@ -68,7 +68,6 @@ export const onCreateMarket = async (
       {
         id: UNRANKED_GROUP_ID,
         slug: 'nonpredictive',
-        name: 'Unranked',
       },
       HOUSE_LIQUIDITY_PROVIDER_ID
     )
@@ -77,7 +76,6 @@ export const onCreateMarket = async (
       {
         id: UNSUBSIDIZED_GROUP_ID,
         slug: 'unsubsidized',
-        name: 'Unsubsidized',
       },
       HOUSE_LIQUIDITY_PROVIDER_ID
     )
