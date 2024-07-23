@@ -6,9 +6,10 @@ import { classToTw } from 'web/components/og/utils'
 import { OgCardProps } from 'common/contract-seo'
 
 export const config = { runtime: 'edge' }
-export const getCardOptions = async () => {
+export const getCardOptions = async (): Promise<ImageResponseOptions> => {
   const [light, med] = await Promise.all([figtreeLightData, figtreeMediumData])
 
+  // https://vercel.com/docs/functions/og-image-generation/og-image-api
   return {
     width: 600,
     height: 315,
@@ -24,6 +25,11 @@ export const getCardOptions = async () => {
         style: 'normal',
       },
     ],
+    headers: {
+      // max-age is in seconds. Vercel defaults to a very large value, but
+      // we want to show fresh data, so we override here.
+      'cache-control': 'public, no-transform, max-age=30',
+    },
   }
 }
 
@@ -45,7 +51,7 @@ export default async function handler(req: NextRequest) {
     ) as OgCardProps
     const image = OgMarket(OgMarketProps)
 
-    return new ImageResponse(classToTw(image), options as ImageResponseOptions)
+    return new ImageResponse(classToTw(image), options)
   } catch (e: any) {
     console.log(`${e.message}`)
     return new Response(`Failed to generate the image`, {
