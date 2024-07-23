@@ -50,13 +50,13 @@ import { updateContract } from 'shared/supabase/contracts'
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
 
-  const { user, contract, answers, unfilledBets, balanceByUserId } =
-    await fetchContractBetDataAndValidate(
-      createSupabaseDirectClient(),
-      props,
-      auth.uid,
-      isApi
-    )
+  const fetchedData = await fetchContractBetDataAndValidate(
+    createSupabaseDirectClient(),
+    props,
+    auth.uid,
+    isApi
+  )
+  const { user, contract, answers, unfilledBets, balanceByUserId } = fetchedData
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
     props,
@@ -69,8 +69,11 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
   const deps = [auth.uid, contract.id, ...simulatedMakerIds]
 
+  const data = { ...fetchedData, simulatedMakerIds }
+
   return await betsQueue.enqueueFn(
-    () => placeBetMain(props, auth.uid, isApi),
+    (ranImmediately) =>
+      placeBetMain(props, auth.uid, isApi, ranImmediately ? data : undefined),
     deps
   )
 }
@@ -78,45 +81,51 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
 export const placeBetMain = async (
   body: ValidatedAPIParams<'bet'>,
   uid: string,
-  isApi: boolean
+  isApi: boolean,
+  data?: Awaited<ReturnType<typeof fetchContractBetDataAndValidate>> & {
+    simulatedMakerIds: string[]
+  }
 ) => {
   const startTime = Date.now()
 
   const { contractId, replyToCommentId, dryRun } = body
 
-  // Fetch data outside transaction first.
-  const {
-    user,
-    contract,
-    answers,
-    unfilledBets,
-    balanceByUserId,
-    unfilledBetUserIds,
-  } = await fetchContractBetDataAndValidate(
-    createSupabaseDirectClient(),
-    body,
-    uid,
-    isApi
-  )
-  // Simulate bet to see whose limit orders you match.
-  const simulatedResult = calculateBetResult(
-    body,
-    user,
-    contract,
-    answers,
-    unfilledBets,
-    balanceByUserId
-  )
-  if (dryRun) {
-    return {
-      result: {
-        ...simulatedResult.newBet,
-        betId: 'dry-run',
-      },
-      continue: () => Promise.resolve(),
-    }
+  if (!data) {
+    // Fetch data outside transaction first.
+    const {
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId,
+      unfilledBetUserIds,
+    } = await fetchContractBetDataAndValidate(
+      createSupabaseDirectClient(),
+      body,
+      uid,
+      isApi
+    )
+    // Simulate bet to see whose limit orders you match.
+    const simulatedResult = calculateBetResult(
+      body,
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId
+    )
+    const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
   }
-  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
+
+    if (dryRun) {
+      return {
+        result: {
+          ...simulatedResult.newBet,
+          betId: 'dry-run',
+        },
+        continue: () => Promise.resolve(),
+      }
+    }
 
   const result = await runShortTrans(async (pgTrans) => {
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)

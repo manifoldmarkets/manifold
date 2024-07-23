@@ -4,11 +4,12 @@ import { APIError } from 'common/api/utils'
 export const DEFAULT_QUEUE_TIME_LIMIT = 10_000
 
 type WorkItem = {
-  fn: () => Promise<any>
+  fn: (ranImmediately: boolean) => Promise<any>
   dependencies: string[]
   resolve: (value: any) => void
   reject: (reason: any) => void
   timestamp: number
+  immediate: boolean
 }
 
 export const createFnQueue = (props?: { timeout?: number }) => {
@@ -21,7 +22,7 @@ export const createFnQueue = (props?: { timeout?: number }) => {
   const { fnQueue, activeItems } = state
 
   const enqueuePrivate = async <T>(
-    fn: () => Promise<T>,
+    fn: (ranImmediately: boolean) => Promise<T>,
     dependencies: string[],
     first: boolean
   ) => {
@@ -32,22 +33,33 @@ export const createFnQueue = (props?: { timeout?: number }) => {
         reject,
         dependencies,
         timestamp: Date.now(),
+        immediate: true,
       }
-      if (first) {
-        fnQueue.unshift(item)
+      const allDeps = new Set([
+        ...activeItems.flatMap((item) => item.dependencies),
+        ...fnQueue.flatMap((item) => item.dependencies),
+      ])
+      if (dependencies.some((d) => allDeps.has(d))) {
+        if (first) {
+          fnQueue.unshift(item)
+        } else {
+          fnQueue.push(item)
+        }
       } else {
-        fnQueue.push(item)
+        runItem(item, true)
       }
-      run()
     })
   }
 
-  const enqueueFn = async <T>(fn: () => Promise<T>, dependencies: string[]) => {
+  const enqueueFn = async <T>(
+    fn: (ranImmediately: boolean) => Promise<T>,
+    dependencies: string[]
+  ) => {
     return await enqueuePrivate(fn, dependencies, false)
   }
 
   const enqueueFnFirst = async <T>(
-    fn: () => Promise<T>,
+    fn: (ranImmediately: boolean) => Promise<T>,
     dependencies: string[]
   ) => {
     return await enqueuePrivate(fn, dependencies, true)
@@ -66,13 +78,13 @@ export const createFnQueue = (props?: { timeout?: number }) => {
     return expiredItems
   }
 
-  const runItem = async (item: WorkItem) => {
+  const runItem = async (item: WorkItem, ranImmediately: boolean) => {
     const { fn, resolve, reject } = item
 
     activeItems.push(item)
 
     try {
-      const result = await fn()
+      const result = await fn(ranImmediately)
       resolve(result)
     } catch (e) {
       reject(e)
@@ -109,7 +121,10 @@ export const createFnQueue = (props?: { timeout?: number }) => {
     remove(fnQueue, (item) => runSet.has(item))
 
     for (const item of toRun) {
-      runItem(item)
+      runItem(item, false)
+    }
+    for (const item of fnQueue) {
+      item.immediate = false
     }
   }
 
