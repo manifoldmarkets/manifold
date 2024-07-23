@@ -133,7 +133,7 @@ export const minimumContractsQualityBarWhereClauses = (adQuery: boolean) =>
     where(`contracts.close_time > now()`),
     where(`contracts.outcome_type != 'STONK'`),
     where(`contracts.outcome_type != 'BOUNTIED_QUESTION'`),
-    !adQuery && where(`(contracts.data->>'marketTier') != 'play'`), // filtering by liquidity takes too long
+    !adQuery && where(`contracts.tier != 'play'`), // filtering by liquidity takes too long
     where(`contracts.visibility = 'public'`),
     !adQuery && where(`contracts.unique_bettor_count > 1`)
   )

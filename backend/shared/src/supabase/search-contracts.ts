@@ -151,7 +151,7 @@ export async function getForYouSQL(items: {
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
       else 0.0
-      end) 
+      end)
       desc`)
     )
   )
@@ -339,7 +339,7 @@ type SortFields = Record<
 >
 export const sortFields: SortFields = {
   score: {
-    sql: `importance_score::numeric desc, (data->>'uniqueBettorCount')::integer`,
+    sql: `importance_score::numeric desc, unique_bettor_count`,
     sortCallback: (c: Contract) =>
       c.importanceScore > 0 ? c.importanceScore : c.uniqueBettorCount,
     order: 'DESC',
@@ -374,12 +374,12 @@ export const sortFields: SortFields = {
   },
 
   'last-updated': {
-    sql: "(data->>'lastUpdatedTime')::numeric",
+    sql: 'last_updated_time',
     sortCallback: (c: Contract) => c.lastUpdatedTime,
     order: 'DESC',
   },
   'most-popular': {
-    sql: "(data->>'uniqueBettorCount')::integer",
+    sql: 'unique_bettor_count',
     sortCallback: (c: Contract) => c.uniqueBettorCount,
     order: 'DESC',
   },

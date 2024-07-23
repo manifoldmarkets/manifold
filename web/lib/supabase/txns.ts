@@ -21,7 +21,7 @@ export function getDonationsPageQuery(charityId: string) {
   return async (p: { limit: number; after?: { ts: number } }) => {
     let q = db
       .from('txns')
-      .select(`from_id, created_time, amount, data->>token`)
+      .select(`from_id, created_time, amount, token`)
       .eq('category', 'CHARITY')
       .eq('to_id', charityId)
       .order('created_time', { ascending: false } as any)
