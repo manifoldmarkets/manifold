@@ -25,11 +25,13 @@ export function OgMarket(props: OgCardProps) {
 
   const showGraph = data && data.length > 5
 
+  console.log('data', data, points)
+
   return (
     <div className="relative flex h-full w-full flex-col items-stretch justify-between bg-white pt-4">
       <div
         className={clsx(
-          'mx-6 flex overflow-hidden leading-tight text-indigo-700',
+          'mx-6 flex flex-row overflow-hidden leading-tight text-black',
           showGraph ? 'text-2xl' : 'text-3xl'
         )}
       >
