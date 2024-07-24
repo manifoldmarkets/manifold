@@ -10,11 +10,15 @@ import { convertLiquidity } from 'common/supabase/liquidity'
 import { getTierFromLiquidity } from 'common/tier'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
 > = async ({ contractId, amount }, auth) => {
-  return addContractLiquidity(contractId, amount, auth.uid)
+  return betsQueue.enqueueFn(
+    () => addContractLiquidity(contractId, amount, auth.uid),
+    [contractId]
+  )
 }
 
 export const addContractLiquidity = async (

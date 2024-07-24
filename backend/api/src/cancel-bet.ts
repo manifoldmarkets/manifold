@@ -4,8 +4,31 @@ import { cancelLimitOrders } from 'shared/supabase/bets'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { type LimitBet } from 'common/bet'
 import { updateContract } from 'shared/supabase/contracts'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const cancelBet: APIHandler<'bet/cancel/:betId'> = async (
+  body,
+  auth,
+  req
+) => {
+  const { betId } = body
+  const pg = createSupabaseDirectClient()
+  const bet = await pg.oneOrNone(
+    `select * from contract_bets where bet_id = $1`,
+    [betId],
+    (row) => (row ? convertBet(row) : null)
+  )
+
+  if (!bet) throw new APIError(404, 'Bet not found')
+  if (bet.userId !== auth.uid)
+    throw new APIError(403, 'You can only cancel your own bets')
+  return betsQueue.enqueueFn(
+    () => cancelBetMain(body, auth, req),
+    [betId, bet.userId, bet.contractId]
+  )
+}
+
+const cancelBetMain: APIHandler<'bet/cancel/:betId'> = async (
   { betId },
   auth
 ) => {
