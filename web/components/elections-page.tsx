@@ -154,7 +154,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
         viewType="CANDIDATE"
       />
 
-
       <Col className="hidden gap-6 sm:flex sm:gap-8">
         {/* <Col className="gap-2">
           <Row className="items-center gap-2">
