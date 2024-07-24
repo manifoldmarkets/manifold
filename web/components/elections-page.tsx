@@ -7,12 +7,8 @@ import { HomepageMap } from './usa-map/homepage-map'
 import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
 import { ConditionalMarkets } from './us-elections/contracts/conditional-market/conditional-markets'
-import { SizedContainer } from './sized-container'
-import clsx from 'clsx'
-import { ChoiceMiniGraph } from './us-elections/contracts/choice-mini-graph'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 import { Carousel } from './widgets/carousel'
-import { ProbabilityNeedle } from './us-elections/probability-needle'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const {

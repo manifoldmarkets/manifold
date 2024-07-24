@@ -15,7 +15,6 @@ import { sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { User } from 'common/user'
 import { UserPosition } from './candidates-user-position'
-import { Spacer } from 'web/components/layout/spacer'
 
 export function removeTextInParentheses(input: string): string {
   return input.replace(/\s*\([^)]*\)/g, '')
