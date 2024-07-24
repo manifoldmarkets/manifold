@@ -47,10 +47,10 @@ if (require.main === module) {
       `select * from contracts where slug in ($1:list)`,
       [
         [
-          'test3sumstoone', // sums to one, 3 answers
-          'test-ad1dc7797b41', // binary
+          // 'test3sumstoone', // sums to one, 3 answers
+          // 'test-ad1dc7797b41', // binary
           // 'testr', // multi-choice, 50 answers
-          'beeeep-bop', // binary
+          // 'beeeep-bop', // binary
           'other-doyh5vt8vt', // sums to one, 50 answers
         ],
       ],
