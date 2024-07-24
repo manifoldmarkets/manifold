@@ -51,6 +51,17 @@ export const getAnswersForContract = async (
   )
 }
 
+export const getSpecificAnswersForContract = async (
+  pg: SupabaseDirectClient,
+  answerIds: string[]
+) => {
+  return await pg.map(
+    `select * from answers where id = any($1)`,
+    [answerIds],
+    convertAnswer
+  )
+}
+
 export const insertAnswer = async (
   pg: SupabaseDirectClient,
   ans: Omit<Answer, 'id'>
