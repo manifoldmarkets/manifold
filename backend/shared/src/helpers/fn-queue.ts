@@ -2,7 +2,7 @@ import { intersection, remove } from 'lodash'
 import { APIError } from 'common/api/utils'
 import { getKeys, invalidateCache } from 'shared/helpers/bet-cache'
 
-export const DEFAULT_QUEUE_TIME_LIMIT = 10_000
+export const DEFAULT_QUEUE_TIME_LIMIT = 20_000
 
 type WorkItem = {
   fn: () => Promise<any>

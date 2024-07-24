@@ -16,7 +16,7 @@ import {
 } from 'shared/supabase/answers'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import { convertBet } from 'common/supabase/bets'
-import { buildArray, filterDefined } from 'common/util/array'
+import { filterDefined } from 'common/util/array'
 
 export const validateBet = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
@@ -114,7 +114,7 @@ const fetchCachableData = async ({
   contractId,
   answerId,
   answerIds,
-}: FetchProps) => {
+}: FetchContractDataProps) => {
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found.')
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
@@ -137,7 +137,7 @@ const fetchCachableData = async ({
 
   return { contract, answers, unfilledBets }
 }
-type FetchProps = {
+type FetchContractDataProps = {
   pg: SupabaseDirectClient
   contractId: string
   answerId?: string
@@ -154,15 +154,9 @@ export const fetchContractBetDataAndValidate = async (
   uid: string,
   isApi: boolean
 ) => {
-  const { amount, contractId } = body
-
-  const answerIdsNeeded = uniq(
-    buildArray(body.answerId, ...(body.answerIds ?? []))
-  )
-
-  const { answerId, answerIds } = body
+  const { amount, contractId, answerId, answerIds } = body
   const awaitStart = Date.now()
-  let cached = await getCachedResult({
+  const cached = await getCachedResult({
     pg,
     contractId,
     answerId,
@@ -172,35 +166,16 @@ export const fetchContractBetDataAndValidate = async (
     `[cache] Revalidation took ${Date.now() - awaitStart}ms for ${contractId}`
   )
 
-  const missingAnswerIdsFromLastCache = answerIdsNeeded.filter(
-    (id) => !cached.answers?.some((a) => a.id === id)
-  )
-  const answersFromGlobalCache = filterDefined(
-    missingAnswerIdsFromLastCache.map((id) => allCachedAnswers[id])
-  )
-  const uncachedAnswerIds = missingAnswerIdsFromLastCache.filter(
-    (id) => !answersFromGlobalCache.some((a) => a.id === id)
-  )
-  const cachedAnswers = [
-    ...(cached.answers ?? []),
-    ...answersFromGlobalCache,
-  ].filter((a) => answerIdsNeeded.includes(a.id))
-  const refetchAnswers = uncachedAnswerIds.length > 0
-  if (refetchAnswers) {
-    // revalidate cache with missing answers
-    cached = await invalidateCache(contractId, {
-      contractId,
-      pg,
-      answerId: undefined,
-      answerIds: answerIdsNeeded,
-    })
-  }
-  const { contract, unfilledBets } = cached
-  const contractAnswers =
-    contract.mechanism === 'cpmm-multi-1' ? contract.answers ?? [] : []
-  const freshAnswers = refetchAnswers ? cached.answers ?? [] : cachedAnswers
+  const { contract, unfilledBets, answers: cachedAnswers } = cached
+
   const answers = sortBy(
-    uniqBy([...freshAnswers, ...contractAnswers], (a) => a.id),
+    uniqBy(
+      [
+        ...(cachedAnswers ?? []),
+        ...((contract.mechanism === 'cpmm-multi-1' && contract.answers) || []),
+      ],
+      (a) => a.id
+    ),
     (a) => a.index
   )
   if (contract.mechanism === 'cpmm-multi-1') {
@@ -225,19 +200,21 @@ export const fetchContractBetDataAndValidate = async (
   }
 }
 
-const createCacheHelper = (fn: (args: FetchProps) => Promise<CacheEntry>) => {
+const createCacheHelper = (
+  fn: (args: FetchContractDataProps) => Promise<CacheEntry>
+) => {
   const caches = new Map<
     string,
     {
       data: CacheEntry | null
       isRevalidating: boolean
       waitingPromises: ((value: CacheEntry | PromiseLike<CacheEntry>) => void)[]
-      args: Omit<FetchProps, 'pg'>
+      args: Omit<FetchContractDataProps, 'pg'>
     }
   >()
   const allCachedAnswers: { [answerId: string]: Answer } = {}
 
-  const getCachedResult = async (args: FetchProps) => {
+  const getCachedResult = async (args: FetchContractDataProps) => {
     const key = args.contractId
     if (!caches.has(key)) {
       const { pg: _, ...rest } = args
@@ -251,8 +228,20 @@ const createCacheHelper = (fn: (args: FetchProps) => Promise<CacheEntry>) => {
     const cache = caches.get(key)!
 
     if (cache.data && !cache.isRevalidating) {
-      log(`[cache] Returning cached data for ${key}`)
-      return cache.data
+      const { answerIds: passedIds, answerId } = args
+      const answerIds = filterDefined([answerId].concat(passedIds ?? []))
+      if (answerIds.length === 0) {
+        log(`[cache] Returning cached data for ${key}`)
+        return cache.data
+      }
+      const cachedAnswers = filterDefined(
+        answerIds.map((id) => allCachedAnswers[id])
+      )
+      if (cachedAnswers.length === (answerIds?.length ?? 0)) {
+        log(`[cache] Returning cached data for ${key}`)
+        return { ...cache.data, answers: cachedAnswers }
+      }
+      log(`[cache] Missing answers for ${key}, revalidating`)
     }
 
     if (cache.isRevalidating) {
@@ -278,7 +267,10 @@ const createCacheHelper = (fn: (args: FetchProps) => Promise<CacheEntry>) => {
     }
   }
 
-  const invalidateCache = async (key: string, newArgs?: FetchProps) => {
+  const invalidateCache = async (
+    key: string,
+    newArgs?: FetchContractDataProps
+  ) => {
     log(`[cache] Invalidating cache for ${key}`)
     if (caches.has(key)) {
       const cache = caches.get(key)!
