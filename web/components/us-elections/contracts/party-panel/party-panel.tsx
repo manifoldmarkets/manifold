@@ -31,8 +31,9 @@ import { Spacer } from 'web/components/layout/spacer'
 export function PartyPanel(props: {
   contract: MultiContract
   maxAnswers?: number
+  includeNeedle?: boolean
 }) {
-  const { contract, maxAnswers = Infinity } = props
+  const { contract, maxAnswers = Infinity, includeNeedle } = props
   const { resolutions, outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -82,20 +83,41 @@ export function PartyPanel(props: {
     democratToRepublicanRatio = democraticProb / totalProb
   }
 
-  return (
-    <div className="mx-[2px] flex flex-col gap-2">
-      <div className="hidden md:flex md:items-center md:justify-between">
-        {!!republicanAnswer && (
-          <PartyAnswerSnippet
-            contract={contract}
-            answer={republicanAnswer}
-            color={getPartyColor(republicanAnswer.text)}
-            alignment="left"
-            userBets={userBetsByAnswer[republicanAnswer.id]}
-            user={user}
-          />
-        )}
-        <SizedContainer className="h-[210px] w-1/2">
+  if (includeNeedle) {
+    return (
+      <div className="mx-[2px] flex flex-col gap-2">
+        <div className="hidden md:flex md:items-center md:justify-between">
+          {!!republicanAnswer && (
+            <PartyAnswerSnippet
+              contract={contract}
+              answer={republicanAnswer}
+              color={getPartyColor(republicanAnswer.text)}
+              alignment="left"
+              userBets={userBetsByAnswer[republicanAnswer.id]}
+              user={user}
+            />
+          )}
+          <SizedContainer className="h-[210px] w-1/2">
+            {(width, height) => (
+              <ProbabilityNeedle
+                percentage={democratToRepublicanRatio}
+                width={width}
+                height={height}
+              />
+            )}
+          </SizedContainer>
+          {!!democraticAnswer && (
+            <PartyAnswerSnippet
+              contract={contract}
+              answer={democraticAnswer}
+              color={getPartyColor(democraticAnswer.text)}
+              alignment="right"
+              userBets={userBetsByAnswer[democraticAnswer.id]}
+              user={user}
+            />
+          )}
+        </div>
+        <SizedContainer className="h-[210px] w-full md:hidden">
           {(width, height) => (
             <ProbabilityNeedle
               percentage={democratToRepublicanRatio}
@@ -104,45 +126,47 @@ export function PartyPanel(props: {
             />
           )}
         </SizedContainer>
-        {!!democraticAnswer && (
-          <PartyAnswerSnippet
-            contract={contract}
-            answer={democraticAnswer}
-            color={getPartyColor(democraticAnswer.text)}
-            alignment="right"
-            userBets={userBetsByAnswer[democraticAnswer.id]}
-            user={user}
-          />
-        )}
+        <Col className="gap-2 md:hidden">
+          {showNoAnswers ? (
+            <div className="text-ink-500 pb-4">No answers yet</div>
+          ) : (
+            <>
+              {displayedAnswers.map((answer) => (
+                <PartyAnswer
+                  key={answer.id}
+                  answer={answer as Answer}
+                  contract={contract}
+                  color={getPartyColor(answer.text)}
+                  user={user}
+                  userBets={userBetsByAnswer[answer.id]}
+                />
+              ))}
+            </>
+          )}
+        </Col>
       </div>
-      <SizedContainer className="h-[210px] w-full md:hidden">
-        {(width, height) => (
-          <ProbabilityNeedle
-            percentage={democratToRepublicanRatio}
-            width={width}
-            height={height}
-          />
-        )}
-      </SizedContainer>
-      <Col className="gap-2 md:hidden">
-        {showNoAnswers ? (
-          <div className="text-ink-500 pb-4">No answers yet</div>
-        ) : (
-          <>
-            {displayedAnswers.map((answer) => (
-              <PartyAnswer
-                key={answer.id}
-                answer={answer as Answer}
-                contract={contract}
-                color={getPartyColor(answer.text)}
-                user={user}
-                userBets={userBetsByAnswer[answer.id]}
-              />
-            ))}
-          </>
-        )}
-      </Col>
-    </div>
+    )
+  }
+
+  return (
+    <Col className="gap-2">
+      {showNoAnswers ? (
+        <div className="text-ink-500 pb-4">No answers yet</div>
+      ) : (
+        <>
+          {displayedAnswers.map((answer) => (
+            <PartyAnswer
+              key={answer.id}
+              answer={answer as Answer}
+              contract={contract}
+              color={getPartyColor(answer.text)}
+              user={user}
+              userBets={userBetsByAnswer[answer.id]}
+            />
+          ))}
+        </>
+      )}
+    </Col>
   )
 }
 
