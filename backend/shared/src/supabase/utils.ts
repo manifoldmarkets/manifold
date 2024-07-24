@@ -159,17 +159,17 @@ export const FieldVal = {
   arrayConcat:
     (...values: string[]) =>
     (fieldName: string) => {
-      return pgp.as.format(`|| jsonb_build_object($1, data->$1 || $2:json)`, [
-        fieldName,
-        values,
-      ])
+      return pgp.as.format(
+        `|| jsonb_build_object($1, coalesce(data->$1, '[]'::jsonb) || $2:json)`,
+        [fieldName, values]
+      )
     },
 
   arrayRemove:
     (...values: string[]) =>
     (fieldName: string) => {
       return pgp.as.format(
-        `|| jsonb_build_object($1, (data->$1) - '{$2:raw}'::text[])`,
+        `|| jsonb_build_object($1, coalesce(data->$1,'[]'::jsonb) - '{$2:raw}'::text[])`,
         [fieldName, values.join(',')]
       )
     },
