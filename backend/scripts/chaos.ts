@@ -44,9 +44,9 @@ if (require.main === module) {
       `select * from contracts where slug in ($1:list)`,
       [
         [
-          // 'test-ad1dc7797b41',
-          // 'beeeep-bop',
-          // 'exit-valuation-of-lingtual-yc-s23',
+          'test-ad1dc7797b41',
+          'beeeep-bop',
+          'exit-valuation-of-lingtual-yc-s23',
           'other-b7vrdghhwv',
         ],
       ],
