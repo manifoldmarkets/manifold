@@ -20,6 +20,8 @@ import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { UserPosition } from '../candidates-panel/candidates-user-position'
+import { ProbabilityNeedle } from 'web/components/us-elections/probability-needle'
+import { SizedContainer } from 'web/components/sized-container'
 
 // just the bars
 export function PartyPanel(props: {
@@ -59,8 +61,35 @@ export function PartyPanel(props: {
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
+  // Calculate Republican to Democratic ratio
+  const republicanAnswer = answers.find((a) =>
+    a.text.includes('Republican Party')
+  )
+  const democraticAnswer = answers.find((a) =>
+    a.text.includes('Democratic Party')
+  )
+
+  const republicanProb = getAnswerProbability(contract, republicanAnswer!.id)
+  const democraticProb = getAnswerProbability(contract, democraticAnswer!.id)
+
+  let republicanToDemocraticRatio = 0
+  if (republicanAnswer && democraticAnswer) {
+    const totalProb = republicanProb + democraticProb
+    republicanToDemocraticRatio = republicanProb / totalProb
+  }
+
+  console.log(republicanToDemocraticRatio, republicanProb, democraticProb)
   return (
     <Col className="mx-[2px] gap-2">
+      <SizedContainer className="h-[210px] w-full">
+        {(width, height) => (
+          <ProbabilityNeedle
+            percentage={republicanToDemocraticRatio}
+            width={width}
+            height={height}
+          />
+        )}
+      </SizedContainer>
       {showNoAnswers ? (
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
