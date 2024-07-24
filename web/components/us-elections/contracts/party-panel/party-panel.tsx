@@ -15,13 +15,17 @@ import {
 import { CreatorAndAnswerLabel } from 'web/components/answers/answer-components'
 import { MultiBettor } from 'web/components/answers/answer-components'
 import { CPMMMultiContract } from 'common/contract'
-import { PercentChangeToday } from '../candidates-panel/candidate-bar'
+import {
+  BubblePercentChange,
+  PercentChangeToday,
+} from '../candidates-panel/candidate-bar'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { UserPosition } from '../candidates-panel/candidates-user-position'
 import { ProbabilityNeedle } from 'web/components/us-elections/probability-needle'
 import { SizedContainer } from 'web/components/sized-container'
+import { Spacer } from 'web/components/layout/spacer'
 
 // just the bars
 export function PartyPanel(props: {
@@ -72,40 +76,74 @@ export function PartyPanel(props: {
   const republicanProb = getAnswerProbability(contract, republicanAnswer!.id)
   const democraticProb = getAnswerProbability(contract, democraticAnswer!.id)
 
-  let republicanToDemocraticRatio = 0
+  let democratToRepublicanRatio = 0
   if (republicanAnswer && democraticAnswer) {
     const totalProb = republicanProb + democraticProb
-    republicanToDemocraticRatio = republicanProb / totalProb
+    democratToRepublicanRatio = democraticProb / totalProb
   }
 
   return (
-    <Col className="mx-[2px] gap-2">
-      <SizedContainer className="h-[210px] w-full">
+    <div className="mx-[2px] flex flex-col gap-2">
+      <div className="hidden lg:flex lg:items-center lg:justify-between">
+        {!!republicanAnswer && (
+          <PartyAnswerSnippet
+            contract={contract}
+            answer={republicanAnswer}
+            color={getPartyColor(republicanAnswer.text)}
+            className="w-1/4"
+            alignment="left"
+            userBets={userBetsByAnswer[republicanAnswer.id]}
+            user={user}
+          />
+        )}
+        <SizedContainer className="h-[210px] w-1/2">
+          {(width, height) => (
+            <ProbabilityNeedle
+              percentage={democratToRepublicanRatio}
+              width={width}
+              height={height}
+            />
+          )}
+        </SizedContainer>
+        {!!democraticAnswer && (
+          <PartyAnswerSnippet
+            contract={contract}
+            answer={democraticAnswer}
+            color={getPartyColor(democraticAnswer.text)}
+            alignment="right"
+            userBets={userBetsByAnswer[democraticAnswer.id]}
+            user={user}
+          />
+        )}
+      </div>
+      <SizedContainer className="h-[210px] w-full lg:hidden">
         {(width, height) => (
           <ProbabilityNeedle
-            percentage={republicanToDemocraticRatio}
+            percentage={democratToRepublicanRatio}
             width={width}
             height={height}
           />
         )}
       </SizedContainer>
-      {showNoAnswers ? (
-        <div className="text-ink-500 pb-4">No answers yet</div>
-      ) : (
-        <>
-          {displayedAnswers.map((answer) => (
-            <PartyAnswer
-              key={answer.id}
-              answer={answer as Answer}
-              contract={contract}
-              color={getPartyColor(answer.text)}
-              user={user}
-              userBets={userBetsByAnswer[answer.id]}
-            />
-          ))}
-        </>
-      )}
-    </Col>
+      <Col className="gap-2 lg:hidden">
+        {showNoAnswers ? (
+          <div className="text-ink-500 pb-4">No answers yet</div>
+        ) : (
+          <>
+            {displayedAnswers.map((answer) => (
+              <PartyAnswer
+                key={answer.id}
+                answer={answer as Answer}
+                contract={contract}
+                color={getPartyColor(answer.text)}
+                user={user}
+                userBets={userBetsByAnswer[answer.id]}
+              />
+            ))}
+          </>
+        )}
+      </Col>
+    </div>
   )
 }
 
@@ -146,6 +184,7 @@ function PartyAnswer(props: {
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
+
   return (
     <Col className={'w-full'}>
       <AnswerBar
@@ -193,6 +232,70 @@ function PartyAnswer(props: {
           </Row>
         }
       />
+    </Col>
+  )
+}
+
+function PartyAnswerSnippet(props: {
+  contract: MultiContract
+  answer: Answer
+  color: string
+  userBets?: Bet[]
+  user?: User | null
+  className?: string
+  alignment: 'left' | 'right'
+}) {
+  const { answer, contract, userBets, user, className, alignment } = props
+
+  const { resolution, resolutions } = contract
+  const sharesSum = sumBy(userBets, (bet) =>
+    bet.outcome === 'YES' ? bet.shares : -bet.shares
+  )
+
+  const hasBets = userBets && !floatingEqual(sharesSum, 0)
+
+  const isCpmm = contract.mechanism === 'cpmm-multi-1'
+
+  return (
+    <Col
+      className={clsx(
+        className,
+        alignment == 'right' ? 'items-end text-right' : ''
+      )}
+    >
+      <div className="text-ink-700">{answer.text}</div>
+      <Spacer h={1} />
+      <Row className={alignment == 'right' ? 'flex-row-reverse' : ''}>
+        <AnswerStatus
+          className="!text-5xl"
+          contract={contract}
+          answer={answer}
+        />
+        <BubblePercentChange
+          // probChange={answer.probChanges.day}
+          probChange={answer.text == 'Democratic Party' ? 0.2 : -0.2}
+          className="whitespace-nowrap text-sm"
+        />
+      </Row>
+
+      <Spacer h={2} />
+      <MultiBettor
+        contract={contract as CPMMMultiContract}
+        answer={answer as Answer}
+        buttonClassName="w-20"
+      />
+      <Spacer h={1} />
+      {!resolution && hasBets && isCpmm && user && (
+        <UserPosition
+          contract={contract as CPMMMultiContract}
+          answer={answer as Answer}
+          userBets={userBets}
+          user={user}
+          className="text-ink-600 dark:text-ink-700 text-xs hover:underline"
+          greenArrowClassName="text-teal-600 dark:text-teal-300"
+          redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
+        />
+      )}
     </Col>
   )
 }
