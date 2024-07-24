@@ -95,7 +95,7 @@ export function PartyPanel(props: {
             user={user}
           />
         )}
-        <SizedContainer className="h-[210px] w-[60%]">
+        <SizedContainer className="h-[210px] w-1/2">
           {(width, height) => (
             <ProbabilityNeedle
               percentage={democratToRepublicanRatio}
