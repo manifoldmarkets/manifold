@@ -97,7 +97,7 @@ export function ProbabilityNeedle(props: {
   })
 
   const needleAngle = 180 - percentage * 180
-  const needleLength = RADIUS * 0.9
+  const needleLength = RADIUS * 0.55
   const needleX =
     RADIUS + needleLength * Math.cos((Math.PI * needleAngle) / 180)
   const needleY =
