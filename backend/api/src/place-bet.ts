@@ -40,7 +40,7 @@ import {
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  const startTime = Date.now()
+  // const startTime = Date.now()
   const { user, contract, answers, unfilledBets, balanceByUserId } =
     await fetchContractBetDataAndValidate(
       createSupabaseDirectClient(),
@@ -59,11 +59,11 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   )
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
   const deps = [auth.uid, contract.id, ...simulatedMakerIds]
-  log(
-    `PRE place bet took: ${Date.now() - startTime}ms, answer id: ${
-      props.answerId
-    }, amount: ${props.amount}, startTime: ${startTime}`
-  )
+  // log(
+  //   `PRE place bet took: ${Date.now() - startTime}ms, answer id: ${
+  //     props.answerId
+  //   }, amount: ${props.amount}, startTime: ${startTime}`
+  // )
   return await betsQueue.enqueueFn(
     () => placeBetMain(props, auth.uid, isApi),
     deps
@@ -78,7 +78,7 @@ export const placeBetMain = async (
   const startTime = Date.now()
 
   const { contractId, replyToCommentId, dryRun } = body
-
+  const awaitStart = Date.now()
   // Fetch data outside transaction first.
   const {
     user,
@@ -92,6 +92,11 @@ export const placeBetMain = async (
     body,
     uid,
     isApi
+  )
+  log(
+    `fetchContractBetDataAndValidate took ${
+      Date.now() - awaitStart
+    }ms for ${contractId}`
   )
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
@@ -559,8 +564,6 @@ export const updateMakers = async (
       makerIds.map((userId) => redeemShares(pgTrans, userId, contract))
     )
   }
-
-  // TODO: figure out LOGGING
 }
 
 export const getRoundedLimitProb = (limitProb: number | undefined) => {
