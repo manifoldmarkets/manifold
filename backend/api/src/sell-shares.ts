@@ -4,12 +4,7 @@ import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { removeUndefinedProps } from 'common/util/object'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
-import {
-  fetchContractBetDataAndValidate,
-  getMakerIdsFromBetResult,
-  getUserBalances,
-  updateMakers,
-} from './place-bet'
+import { getMakerIdsFromBetResult, updateMakers } from './place-bet'
 import { removeUserFromContractFollowers } from 'shared/follow-market'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { onCreateBets } from 'api/on-create-bet'
@@ -31,6 +26,10 @@ import {
 } from 'shared/supabase/init'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
+import {
+  fetchContractBetDataAndValidate,
+  getUserBalances,
+} from 'shared/helpers/bet-cache'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -46,8 +45,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       contractId,
       answerId,
       userId,
-      isApi,
-      false
+      isApi
     )
   const simulatedResult = calculateSellResult(
     contract,
@@ -86,8 +84,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     contractId,
     answerId,
     userId,
-    isApi,
-    true
+    isApi
   )
   const simulatedResult = calculateSellResult(
     contract,
@@ -313,8 +310,7 @@ const fetchSellSharesDataAndValidate = async (
   contractId: string,
   answerId: string | undefined,
   userId: string,
-  isApi: boolean,
-  revalidateCache: boolean
+  isApi: boolean
 ) => {
   const userBetsPromise = pgTrans.map(
     `select * from contract_bets where user_id = $1 
@@ -338,8 +334,7 @@ const fetchSellSharesDataAndValidate = async (
       answerId,
     },
     userId,
-    isApi,
-    revalidateCache
+    isApi
   )
   const userBets = await userBetsPromise
 
