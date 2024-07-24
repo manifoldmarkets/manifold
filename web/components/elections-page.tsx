@@ -12,6 +12,7 @@ import clsx from 'clsx'
 import { ChoiceMiniGraph } from './us-elections/contracts/choice-mini-graph'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 import { Carousel } from './widgets/carousel'
+import { ProbabilityNeedle } from './us-elections/probability-needle'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const {
@@ -89,6 +90,11 @@ export function USElectionsPage(props: ElectionsPageProps) {
         className="-mt-4"
       />
 
+      <PoliticsCard
+        contract={electionPartyContract as MultiContract}
+        viewType="PARTY"
+        customTitle="Which party will win the Presidential Election?"
+      />
       <Col className="gap-2">
         <Row className="items-center gap-2">
           <div className="bg-ink-600 flex h-[1px] grow flex-row" />
@@ -137,32 +143,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
         rawGovernorStateContracts={rawGovernorStateContracts}
         houseContract={houseContract as MultiContract}
       />
-
-      <PoliticsCard
-        contract={electionPartyContract as MultiContract}
-        viewType="PARTY"
-        customTitle="Which party will win the Presidential Election?"
-      >
-        {partyPoints && afterTime && (
-          <SizedContainer
-            className={clsx('h-[50px] w-full pb-4 pr-10 sm:h-[100px]')}
-          >
-            {(w, h) => (
-              <ChoiceMiniGraph
-                width={w}
-                height={h}
-                multiPoints={partyPoints}
-                contract={electionPartyContract}
-                selectedAnswerIds={electionPartyContract?.answers
-                  .filter((a) => a.text !== 'Other')
-                  .map((a) => a.id)}
-                showMinimumYScale
-                startTime={afterTime}
-              />
-            )}
-          </SizedContainer>
-        )}
-      </PoliticsCard>
 
       <PoliticsCard
         contract={democraticElectability as MultiContract}
