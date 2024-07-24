@@ -272,8 +272,7 @@ function PartyAnswerSnippet(props: {
           answer={answer}
         />
         <BubblePercentChange
-          // probChange={answer.probChanges.day}
-          probChange={answer.text == 'Democratic Party' ? 0.2 : -0.2}
+          probChange={answer.probChanges.day}
           className="whitespace-nowrap text-sm"
         />
       </Row>
