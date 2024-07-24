@@ -82,6 +82,32 @@ export const getUserBalances = async (
   return Object.fromEntries(users.map((user) => [user.id, user.balance]))
 }
 
+const getAnswersForBet = async (
+  pgTrans: SupabaseDirectClient,
+  contract: Contract,
+  answerId: string | undefined,
+  answerIds: string[] | undefined
+) => {
+  const { mechanism } = contract
+  const contractId = contract.id
+  if (
+    (mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne) ||
+    answerIds
+  ) {
+    return await getAnswersForContract(pgTrans, contractId)
+  }
+  if (answerId && mechanism === 'cpmm-multi-1') {
+    // Only fetch the one answer if it's independent multi.
+    const answer = await getAnswer(pgTrans, answerId)
+    if (answer)
+      return sortBy(
+        uniqBy([answer, ...contract.answers], (a) => a.id),
+        (a) => a.index
+      )
+  }
+  return undefined
+}
+
 const fetchCachableData = async (
   pgTrans: SupabaseDirectClient,
   contractId: string,
@@ -109,32 +135,6 @@ const fetchCachableData = async (
   ])
 
   return { contract, answers, unfilledBets }
-}
-
-const getAnswersForBet = async (
-  pgTrans: SupabaseDirectClient,
-  contract: Contract,
-  answerId: string | undefined,
-  answerIds: string[] | undefined
-) => {
-  const { mechanism } = contract
-  const contractId = contract.id
-  if (
-    (mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne) ||
-    answerIds
-  ) {
-    return await getAnswersForContract(pgTrans, contractId)
-  }
-  if (answerId && mechanism === 'cpmm-multi-1') {
-    // Only fetch the one answer if it's independent multi.
-    const answer = await getAnswer(pgTrans, answerId)
-    if (answer)
-      return sortBy(
-        uniqBy([answer, ...contract.answers], (a) => a.id),
-        (a) => a.index
-      )
-  }
-  return undefined
 }
 
 export const fetchContractBetDataAndValidate = async (
