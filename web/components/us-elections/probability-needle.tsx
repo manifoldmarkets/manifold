@@ -30,7 +30,6 @@ export function ProbabilityNeedle(props: {
   height: number
 }) {
   const { percentage, width, height } = props
-  //   const rotation = (percentage - 0.5) * 180 // -90deg to 90deg
 
   const segments = [
     { percent: 0.05, color: DEM_DARK_HEX },

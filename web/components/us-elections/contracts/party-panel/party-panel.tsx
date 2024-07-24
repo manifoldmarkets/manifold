@@ -78,7 +78,6 @@ export function PartyPanel(props: {
     republicanToDemocraticRatio = republicanProb / totalProb
   }
 
-  console.log(republicanToDemocraticRatio, republicanProb, democraticProb)
   return (
     <Col className="mx-[2px] gap-2">
       <SizedContainer className="h-[210px] w-full">
