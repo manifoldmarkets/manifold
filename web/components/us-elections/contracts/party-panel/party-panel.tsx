@@ -84,7 +84,7 @@ export function PartyPanel(props: {
 
   return (
     <div className="mx-[2px] flex flex-col gap-2">
-      <div className="hidden lg:flex lg:items-center lg:justify-between">
+      <div className="hidden md:flex md:items-center md:justify-between">
         {!!republicanAnswer && (
           <PartyAnswerSnippet
             contract={contract}
@@ -116,7 +116,7 @@ export function PartyPanel(props: {
           />
         )}
       </div>
-      <SizedContainer className="h-[210px] w-full lg:hidden">
+      <SizedContainer className="h-[210px] w-full md:hidden">
         {(width, height) => (
           <ProbabilityNeedle
             percentage={democratToRepublicanRatio}
@@ -125,7 +125,7 @@ export function PartyPanel(props: {
           />
         )}
       </SizedContainer>
-      <Col className="gap-2 lg:hidden">
+      <Col className="gap-2 md:hidden">
         {showNoAnswers ? (
           <div className="text-ink-500 pb-4">No answers yet</div>
         ) : (
