@@ -205,7 +205,6 @@ async function placeManyBets(
         const end = Date.now()
         executionTimes.push(end - start)
         const json = await resp.json()
-        const message = json.message
         if (resp.status === 200) {
           success++
           totalSpent += betData.amount
