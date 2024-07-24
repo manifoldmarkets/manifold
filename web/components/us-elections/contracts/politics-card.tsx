@@ -89,7 +89,11 @@ export function PoliticsCard(props: {
             e.currentTarget.focus() // focus the div like a button, for style
           }}
         >
-          <PartyPanel contract={contract} maxAnswers={maxAnswers ?? 2} />
+          <PartyPanel
+            contract={contract}
+            maxAnswers={maxAnswers ?? 2}
+            includeNeedle
+          />
         </ClickFrame>
       </Col>
     )
