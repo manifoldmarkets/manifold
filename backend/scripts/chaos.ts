@@ -42,18 +42,52 @@ if (require.main === module) {
           )
         })
     )
+    const marketCreations = [
+      {
+        question: 'test ' + Math.random().toString(36).substring(7),
+        outcomeType: 'MULTIPLE_CHOICE',
+        answers: Array(50)
+          .fill(0)
+          .map((_, i) => 'answer ' + i),
+        shouldAnswersSumToOne: true,
+      },
+      // {
+      //   question: 'test ' + Math.random().toString(36).substring(7),
+      //   outcomeType: 'BINARY',
+      // },
+      // {
+      //   question: 'test ' + Math.random().toString(36).substring(7),
+      //   outcomeType: 'MULTIPLE_CHOICE',
+      //   answers: Array(50)
+      //     .fill(0)
+      //     .map((_, i) => 'answer ' + i),
+      //   shouldAnswersSumToOne: false,
+      // },
+    ]
+
+    const markets = await Promise.all(
+      marketCreations.map(async (market) => {
+        const resp = await fetch(
+          `https://${DEV_CONFIG.apiEndpoint}/v0/market`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Key ${privateUsers[0].apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(market),
+          }
+        )
+        if (resp.status !== 200) {
+          console.error('Failed to create market', await resp.text())
+        }
+        return resp.json()
+      })
+    )
     console.log(`${privateUsers.length} user balances incremented by 1000`)
     const contracts = await pg.map(
       `select * from contracts where slug in ($1:list)`,
-      [
-        [
-          // 'test3sumstoone', // sums to one, 3 answers
-          // 'test-ad1dc7797b41', // binary
-          // 'testr', // multi-choice, 50 answers
-          // 'beeeep-bop', // binary
-          'other-doyh5vt8vt', // sums to one, 50 answers
-        ],
-      ],
+      [markets.map((m: any) => m.slug)],
       convertContract
     )
     console.log(`Found ${contracts.length} contracts`)
