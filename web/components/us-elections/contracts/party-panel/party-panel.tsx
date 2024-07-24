@@ -279,23 +279,24 @@ function PartyAnswerSnippet(props: {
       </Row>
 
       <Spacer h={2} />
-      <MultiBettor
-        contract={contract as CPMMMultiContract}
-        answer={answer as Answer}
-        buttonClassName="w-20"
-      />
-      <Spacer h={1} />
-      {!resolution && hasBets && isCpmm && user && (
-        <UserPosition
+      <div className="relative">
+        <MultiBettor
           contract={contract as CPMMMultiContract}
           answer={answer as Answer}
-          userBets={userBets}
-          user={user}
-          className="text-ink-600 dark:text-ink-700 text-xs hover:underline"
-          greenArrowClassName="text-teal-600 dark:text-teal-300"
-          redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
+          buttonClassName="w-20"
         />
-      )}
+        {!resolution && hasBets && isCpmm && user && (
+          <UserPosition
+            contract={contract as CPMMMultiContract}
+            answer={answer as Answer}
+            userBets={userBets}
+            user={user}
+            className="text-ink-600 dark:text-ink-700 absolute -bottom-[22px] left-0  text-xs hover:underline"
+            greenArrowClassName="text-teal-600 dark:text-teal-300"
+            redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
+          />
+        )}
+      </div>
     </Col>
   )
 }
