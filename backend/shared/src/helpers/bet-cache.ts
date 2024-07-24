@@ -2,7 +2,11 @@ import { Contract, MarketContract } from 'common/contract'
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getContract, getUser, log } from 'shared/utils'
-import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
+import {
+  SupabaseDirectClient,
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { sortBy, uniq, uniqBy } from 'lodash'
 import { APIError } from 'common/api/utils'
 import { getAnswer, getAnswersForContract } from 'shared/supabase/answers'
@@ -159,7 +163,9 @@ export const fetchContractBetDataAndValidate = async (
     body.answerId,
     body.answerIds
   )
-  log(`[cache] Revalidation took ${Date.now() - awaitStart}ms for`)
+  log(
+    `[cache] Revalidation took ${Date.now() - awaitStart}ms for ${contractId}`
+  )
   // const missingAnswersInCache = answersNeeded.some(
   //   (answerId) =>
   //     !cached?.answers || !cached.answers.find((a) => a.id === answerId)
@@ -192,6 +198,7 @@ const createCacheHelper = <T>(fn: (...args: any[]) => Promise<T>) => {
       data: T | null
       isRevalidating: boolean
       waitingPromises: ((value: T | PromiseLike<T>) => void)[]
+      args: any[]
     }
   >()
 
@@ -201,6 +208,7 @@ const createCacheHelper = <T>(fn: (...args: any[]) => Promise<T>) => {
         data: null,
         isRevalidating: false,
         waitingPromises: [],
+        args: args.slice(1), // Store all args except pgTrans
       })
     }
     const cache = caches.get(key)!
@@ -231,13 +239,17 @@ const createCacheHelper = <T>(fn: (...args: any[]) => Promise<T>) => {
       cache.isRevalidating = false
     }
   }
-  const invalidateCache = (key: string): void => {
+  const invalidateCache = async (key: string): Promise<void> => {
     log(`[cache] Invalidating cache for ${key}`)
     if (caches.has(key)) {
       const cache = caches.get(key)!
       cache.data = null
       cache.isRevalidating = false
       cache.waitingPromises = []
+
+      // Revalidate the cache with stored arguments
+      const pg = createSupabaseDirectClient()
+      await getCachedResult(key, pg, ...cache.args)
     }
   }
   const getKeys = (): string[] => Array.from(caches.keys())
