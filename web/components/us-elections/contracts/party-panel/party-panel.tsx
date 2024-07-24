@@ -90,13 +90,12 @@ export function PartyPanel(props: {
             contract={contract}
             answer={republicanAnswer}
             color={getPartyColor(republicanAnswer.text)}
-            className="w-1/4"
             alignment="left"
             userBets={userBetsByAnswer[republicanAnswer.id]}
             user={user}
           />
         )}
-        <SizedContainer className="h-[210px] w-1/2">
+        <SizedContainer className="h-[210px] w-[60%]">
           {(width, height) => (
             <ProbabilityNeedle
               percentage={democratToRepublicanRatio}
