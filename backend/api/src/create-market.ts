@@ -567,7 +567,7 @@ async function getLoveAnswerUserIds(answers: string[]) {
   )
 }
 
-async function generateAntes(
+export async function generateAntes(
   pg: SupabaseDirectClient,
   providerId: string,
   contract: Contract,
@@ -615,7 +615,7 @@ async function generateAntes(
     drizzledAmount > 0 &&
     (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
   ) {
-    return await pg.tx(async (tx) => {
+    return await pg.txIf(async (tx) => {
       await runTxn(tx, {
         fromId: providerId,
         amount: drizzledAmount,
