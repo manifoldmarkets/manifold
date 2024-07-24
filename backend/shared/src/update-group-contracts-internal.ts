@@ -1,6 +1,6 @@
 import { Contract } from 'common/contract'
 import { GroupResponse } from 'common/group'
-import { createSupabaseDirectClient } from './supabase/init'
+import { SupabaseDirectClient } from './supabase/init'
 import {
   UNRANKED_GROUP_ID,
   UNSUBSIDIZED_GROUP_ID,
@@ -13,12 +13,11 @@ import { updateContract } from './supabase/contracts'
 import { FieldVal } from './supabase/utils'
 
 export async function addGroupToContract(
+  pg: SupabaseDirectClient,
   contract: Contract,
   group: { id: string; slug: string },
   userId?: string
 ) {
-  const pg = createSupabaseDirectClient()
-
   await pg.none(
     `insert into group_contracts (contract_id, group_id) values ($1, $2)`,
     [contract.id, group.id]
@@ -54,12 +53,11 @@ export async function addGroupToContract(
 }
 
 export async function removeGroupFromContract(
+  pg: SupabaseDirectClient,
   contract: Contract,
   group: { id: string; slug: string },
   userId: string
 ) {
-  const pg = createSupabaseDirectClient()
-
   // delete from group_contracts table
   await pg.none(
     `delete from group_contracts where contract_id = $1 and group_id = $2`,

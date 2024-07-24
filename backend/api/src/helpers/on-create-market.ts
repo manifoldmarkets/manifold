@@ -64,6 +64,7 @@ export const onCreateMarket = async (
   const isNonPredictive = isContractNonPredictive(contract)
   if (isNonPredictive) {
     await addGroupToContract(
+      pg,
       contract,
       {
         id: UNRANKED_GROUP_ID,
@@ -72,6 +73,7 @@ export const onCreateMarket = async (
       HOUSE_LIQUIDITY_PROVIDER_ID
     )
     await addGroupToContract(
+      pg,
       contract,
       {
         id: UNSUBSIDIZED_GROUP_ID,

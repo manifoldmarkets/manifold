@@ -25,6 +25,7 @@ export const addOrRemoveTopicFromContract: APIHandler<
   const { contractId, groupId, remove } = props
 
   const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
   const { data: membership } = await db
     .from('group_members')
@@ -76,9 +77,9 @@ export const addOrRemoveTopicFromContract: APIHandler<
   }
 
   if (remove) {
-    await removeGroupFromContract(contract, group, auth.uid)
+    await removeGroupFromContract(pg, contract, group, auth.uid)
   } else {
-    await addGroupToContract(contract, group, auth.uid)
+    await addGroupToContract(pg, contract, group, auth.uid)
   }
 
   const continuation = async () => {
