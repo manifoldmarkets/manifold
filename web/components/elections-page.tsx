@@ -91,6 +91,16 @@ export function USElectionsPage(props: ElectionsPageProps) {
         viewType="PARTY"
         customTitle="Which party will win the Presidential Election?"
       />
+
+      {trending}
+
+      <HomepageMap
+        rawPresidencyStateContracts={rawPresidencyStateContracts}
+        rawSenateStateContracts={rawSenateStateContracts}
+        rawGovernorStateContracts={rawGovernorStateContracts}
+        houseContract={houseContract as MultiContract}
+      />
+
       <Col className="gap-2">
         <Row className="items-center gap-2">
           <div className="bg-ink-600 flex h-[1px] grow flex-row" />
@@ -131,15 +141,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
         </Carousel>
       </Col>
 
-      {trending}
-
-      <HomepageMap
-        rawPresidencyStateContracts={rawPresidencyStateContracts}
-        rawSenateStateContracts={rawSenateStateContracts}
-        rawGovernorStateContracts={rawGovernorStateContracts}
-        houseContract={houseContract as MultiContract}
-      />
-
       <PoliticsCard
         contract={democraticElectability as MultiContract}
         viewType="CANDIDATE"
@@ -153,17 +154,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
         viewType="CANDIDATE"
       />
 
-      <Col className="gap-6 sm:hidden sm:gap-8">
-        <PoliticsCard
-          contract={democratCandidateContract as MultiContract}
-          viewType="CANDIDATE"
-        />
-
-        <PoliticsCard
-          contract={republicanCandidateContract as MultiContract}
-          viewType="CANDIDATE"
-        />
-      </Col>
 
       <Col className="hidden gap-6 sm:flex sm:gap-8">
         {/* <Col className="gap-2">
