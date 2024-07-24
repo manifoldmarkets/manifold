@@ -5,7 +5,10 @@ import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
 import { incrementBalance } from 'shared/supabase/users'
 import { formatApiUrlWithParams } from 'common/util/api'
+
 import { DEV_CONFIG } from 'common/envs/dev'
+const BET_URL = `https://${DEV_CONFIG.apiEndpoint}/v0/bet`
+// const BET_URL = `http://localhost:8088/v0/bet`
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -44,10 +47,11 @@ if (require.main === module) {
       `select * from contracts where slug in ($1:list)`,
       [
         [
-          'test-ad1dc7797b41',
-          'beeeep-bop',
-          'exit-valuation-of-lingtual-yc-s23',
-          'other-b7vrdghhwv',
+          'test3sumstoone', // sums to one, 3 answers
+          'test-ad1dc7797b41', // binary
+          // 'testr', // multi-choice, 50 answers
+          'beeeep-bop', // binary
+          'other-doyh5vt8vt', // sums to one, 50 answers
         ],
       ],
       convertContract
@@ -131,6 +135,7 @@ if (require.main === module) {
       console.log(
         `Successful bets per second: ${(totalBets / elapsedSeconds).toFixed(2)}`
       )
+      console.log(`Total time elapsed: ${elapsedSeconds.toFixed(2)} seconds`)
       console.log(`-------------------------`)
     }
 
@@ -168,8 +173,6 @@ async function placeManyBets(
   count: number,
   contract: Contract
 ) {
-  const url = `https://${DEV_CONFIG.apiEndpoint}/v0/bet`
-  // const url = `http://localhost:8088/v0/bet`
   const limitProb =
     Math.random() > 0.5 ? parseFloat(Math.random().toPrecision(1)) : undefined
 
@@ -193,7 +196,7 @@ async function placeManyBets(
   for (let i = 0; i < count; i++) {
     const start = Date.now()
     await new Promise((resolve) => setTimeout(resolve, Math.random() * 2000))
-    await fetch(url, {
+    await fetch(BET_URL, {
       method: 'POST',
       headers: {
         Authorization: `Key ${apiKey}`,
