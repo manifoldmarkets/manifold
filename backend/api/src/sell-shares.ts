@@ -46,7 +46,8 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       contractId,
       answerId,
       userId,
-      isApi
+      isApi,
+      false
     )
   const simulatedResult = calculateSellResult(
     contract,
@@ -85,7 +86,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     contractId,
     answerId,
     userId,
-    isApi
+    isApi,
+    true
   )
   const simulatedResult = calculateSellResult(
     contract,
@@ -311,7 +313,8 @@ const fetchSellSharesDataAndValidate = async (
   contractId: string,
   answerId: string | undefined,
   userId: string,
-  isApi: boolean
+  isApi: boolean,
+  revalidateCache: boolean
 ) => {
   const userBetsPromise = pgTrans.map(
     `select * from contract_bets where user_id = $1 
@@ -335,7 +338,8 @@ const fetchSellSharesDataAndValidate = async (
       answerId,
     },
     userId,
-    isApi
+    isApi,
+    revalidateCache
   )
   const userBets = await userBetsPromise
 

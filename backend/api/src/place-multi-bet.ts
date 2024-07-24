@@ -33,7 +33,7 @@ export const placeMultiBetMain = async (
     )
 
     const { user, contract, answers, unfilledBets, balanceByUserId } =
-      await fetchContractBetDataAndValidate(pgTrans, body, uid, isApi)
+      await fetchContractBetDataAndValidate(pgTrans, body, uid, isApi, true)
 
     const { mechanism } = contract
 

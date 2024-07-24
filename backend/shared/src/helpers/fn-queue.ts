@@ -1,5 +1,6 @@
-import { remove } from 'lodash'
+import { intersection, remove } from 'lodash'
 import { APIError } from 'common/api/utils'
+import { contractBetCache, revalidateBetCache } from 'shared/helpers/bet-cache'
 
 export const DEFAULT_QUEUE_TIME_LIMIT = 10_000
 
@@ -43,7 +44,16 @@ export const createFnQueue = (props?: { timeout?: number }) => {
   }
 
   const enqueueFn = async <T>(fn: () => Promise<T>, dependencies: string[]) => {
-    return await enqueuePrivate(fn, dependencies, false)
+    const res = await enqueuePrivate(fn, dependencies, false)
+    const contractIds = Object.keys(contractBetCache)
+    // TODO I think this could work for refreshing user balances as well
+    const sharedDeps = intersection(contractIds, dependencies)
+    if (sharedDeps.length > 0) {
+      sharedDeps.forEach((contractIdToRevalidate) => {
+        revalidateBetCache(contractIdToRevalidate)
+      })
+    }
+    return res
   }
 
   const enqueueFnFirst = async <T>(

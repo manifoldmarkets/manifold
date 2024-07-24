@@ -1,11 +1,11 @@
 import { runScript } from './run-script'
 import { isProd } from 'shared/utils'
 import { convertContract } from 'common/supabase/contracts'
-import { DEV_CONFIG } from 'common/envs/dev'
 import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
 import { incrementBalance } from 'shared/supabase/users'
 import { formatApiUrlWithParams } from 'common/util/api'
+import { DEV_CONFIG } from 'common/envs/dev'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -16,7 +16,7 @@ if (require.main === module) {
     const privateUsers = await pg.map(
       `select id, data->>'apiKey' as api_key from private_users
               where data->>'email' ilike '%manifoldtestnewuser%'
-              limit 100`,
+              limit 50`,
       [],
       (r) => ({ id: r.id as string, apiKey: r.api_key as string })
     )
@@ -29,15 +29,25 @@ if (require.main === module) {
         })
       )
     )
+    await Promise.all(
+      privateUsers
+        .filter((p) => !p.apiKey)
+        .map(async (p) => {
+          return await pg.none(
+            `update private_users set data = data || $2 where id = $1`,
+            [p.id, JSON.stringify({ apiKey: crypto.randomUUID() })]
+          )
+        })
+    )
     console.log(`${privateUsers.length} user balances incremented by 1000`)
     const contracts = await pg.map(
       `select * from contracts where slug in ($1:list)`,
       [
         [
-          'test-ad1dc7797b41',
-          'beeeep-bop',
-          'exit-valuation-of-lingtual-yc-s23',
-          'other',
+          // 'test-ad1dc7797b41',
+          // 'beeeep-bop',
+          // 'exit-valuation-of-lingtual-yc-s23',
+          'other-b7vrdghhwv',
         ],
       ],
       convertContract
@@ -57,7 +67,7 @@ if (require.main === module) {
       await Promise.all(
         privateUsers.map(async (user) => {
           const manyBetsPromise = async () => {
-            const betCount = Math.floor(Math.random() * 10) + 1
+            const betCount = Math.floor(Math.random() * 5) + 1
             const contract =
               contracts[Math.floor(Math.random() * contracts.length)]
             const betResult = await placeManyBets(
@@ -109,10 +119,10 @@ if (require.main === module) {
         console.log(`Error seen ${value} times: ${key}`)
       })
       console.log(`----- End of errors -----`)
-      console.log(`Total visit errors: ${totalVisitErrors}`)
-      console.log(`Total bet errors: ${totalBetErrors}`)
-      console.log(`Total visits: ${totalVisits}`)
-      console.log(`Total bets: ${totalBets}`)
+      console.log(`Total error visits: ${totalVisitErrors}`)
+      console.log(`Total error bets: ${totalBetErrors}`)
+      console.log(`Total successful visits: ${totalVisits}`)
+      console.log(`Total successful bets: ${totalBets}`)
       console.log(
         `Successful visits per second: ${(totalVisits / elapsedSeconds).toFixed(
           2
@@ -159,6 +169,7 @@ async function placeManyBets(
   contract: Contract
 ) {
   const url = `https://${DEV_CONFIG.apiEndpoint}/v0/bet`
+  // const url = `http://localhost:8088/v0/bet`
   const limitProb =
     Math.random() > 0.5 ? parseFloat(Math.random().toPrecision(1)) : undefined
 
@@ -176,13 +187,13 @@ async function placeManyBets(
   let success = 0
   let failure = 0
   let totalSpent = 0
-  const promises = []
   const executionTimes: number[] = []
 
   const errorMessage: { [key: string]: number } = {}
   for (let i = 0; i < count; i++) {
     const start = Date.now()
-    const resp = fetch(url, {
+    await new Promise((resolve) => setTimeout(resolve, Math.random() * 2000))
+    await fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Key ${apiKey}`,
@@ -194,6 +205,7 @@ async function placeManyBets(
         const end = Date.now()
         executionTimes.push(end - start)
         const json = await resp.json()
+        const message = json.message
         if (resp.status === 200) {
           success++
           totalSpent += betData.amount
@@ -212,9 +224,7 @@ async function placeManyBets(
           : 1
         failure++
       })
-    promises.push(resp)
   }
-  await Promise.all(promises)
 
   return { success, failure, errorMessage, totalSpent, executionTimes }
 }

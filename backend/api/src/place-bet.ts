@@ -46,16 +46,24 @@ import {
   updateAnswers,
 } from 'shared/supabase/answers'
 import { updateContract } from 'shared/supabase/contracts'
+import {
+  CacheEntry,
+  contractBetCache,
+  setBetCache,
+  setRevalidateBetCachePromise,
+} from 'shared/helpers/bet-cache'
+import { buildArray } from 'common/util/array'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-
+  const startTime = Date.now()
   const { user, contract, answers, unfilledBets, balanceByUserId } =
     await fetchContractBetDataAndValidate(
       createSupabaseDirectClient(),
       props,
       auth.uid,
-      isApi
+      isApi,
+      false
     )
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
@@ -68,7 +76,11 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   )
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
   const deps = [auth.uid, contract.id, ...simulatedMakerIds]
-
+  log(
+    `PRE place bet took: ${Date.now() - startTime}ms, answer id: ${
+      props.answerId
+    }, amount: ${props.amount}, startTime: ${startTime}`
+  )
   return await betsQueue.enqueueFn(
     () => placeBetMain(props, auth.uid, isApi),
     deps
@@ -96,7 +108,8 @@ export const placeBetMain = async (
     createSupabaseDirectClient(),
     body,
     uid,
-    isApi
+    isApi,
+    true
   )
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
@@ -192,13 +205,45 @@ export const placeBetMain = async (
   }
 
   const time = Date.now() - startTime
-  log(`Place bet took ${time}ms.`)
+  log(
+    `Place bet took ${time}ms, answer id: ${body.answerId}, amount: ${body.amount}, startTime: ${startTime}`
+  )
 
   return {
     result: { ...newBet, betId, betGroupId },
     continue: continuation,
   }
 }
+const revalidateBetCachePromise =
+  (
+    pgTrans: SupabaseTransaction | SupabaseDirectClient,
+    contractId: string,
+    answerId?: string,
+    answerIds?: string[]
+  ) =>
+  async () => {
+    const contract = await getContract(pgTrans, contractId)
+    if (!contract) throw new APIError(404, 'Contract not found.')
+    if (contract.mechanism === 'none' || contract.mechanism === 'qf')
+      throw new APIError(400, 'This is not a market')
+
+    const { closeTime } = contract
+    if (closeTime && Date.now() > closeTime)
+      throw new APIError(403, 'Trading is closed.')
+
+    const [answers, unfilledBets] = await Promise.all([
+      getAnswersForBet(pgTrans, contract, answerId, answerIds),
+      getUnfilledBets(
+        pgTrans,
+        contractId,
+        'shouldAnswersSumToOne' in contract && contract.shouldAnswersSumToOne
+          ? undefined
+          : answerId
+      ),
+    ])
+
+    setBetCache(contract, answers, unfilledBets)
+  }
 
 export const fetchContractBetDataAndValidate = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
@@ -209,43 +254,61 @@ export const fetchContractBetDataAndValidate = async (
     answerIds?: string[]
   },
   uid: string,
-  isApi: boolean
+  isApi: boolean,
+  revalidateCacheAfter: boolean
 ) => {
   const { amount, contractId } = body
-  const answerId = 'answerId' in body ? body.answerId : undefined
-
-  const contract = await getContract(pgTrans, contractId)
-  if (!contract) throw new APIError(404, 'Contract not found.')
-  if (contract.mechanism === 'none' || contract.mechanism === 'qf')
-    throw new APIError(400, 'This is not a market')
-
-  const { closeTime } = contract
-  if (closeTime && Date.now() > closeTime)
-    throw new APIError(403, 'Trading is closed.')
-
-  const answersPromise = getAnswersForBet(
-    pgTrans,
-    contract,
-    answerId,
+  const cached = contractBetCache[contractId] as CacheEntry | undefined
+  const answersNeeded = buildArray(
+    'answerId' in body ? body.answerId : undefined,
     'answerIds' in body ? body.answerIds : undefined
   )
-
-  const unfilledBets = await getUnfilledBets(
-    pgTrans,
-    contractId,
-    // Fetch all limit orders if answers should sum to one.
-    'shouldAnswersSumToOne' in contract && contract.shouldAnswersSumToOne
-      ? undefined
-      : answerId
+  const missingAnswersInCache = answersNeeded.some(
+    (answerId) =>
+      !cached?.answers || !cached.answers.find((a) => a.id === answerId)
   )
+  const shouldRevalidate = !cached || missingAnswersInCache
+
+  const answerId = 'answerId' in body ? body.answerId : undefined
+
+  if (shouldRevalidate) {
+    log(`[cache] needs revalidation ${contractId}`)
+    const revalidate = revalidateBetCachePromise(
+      pgTrans,
+      contractId,
+      answerId,
+      'answerIds' in body ? body.answerIds : undefined
+    )
+    setRevalidateBetCachePromise(contractId, revalidate)
+    log(`[cache] Set revalidation promise for this run ${contractId}`)
+  }
+  const awaitStart = Date.now()
+  await contractBetCache[contractId].revalidationPromise?.()
+  log(`[cache] Revalidation took ${Date.now() - awaitStart}ms for`)
+  if (revalidateCacheAfter) {
+    const revalidate = revalidateBetCachePromise(
+      pgTrans,
+      contractId,
+      answerId,
+      'answerIds' in body ? body.answerIds : undefined
+    )
+    // set it again for the next run
+    setRevalidateBetCachePromise(contractId, revalidate)
+    log(
+      `[cache] Set revalidation promise for next run ${contractId}, ${answerId}, ${amount}`
+    )
+  }
+
+  const { contract, answers, unfilledBets } = contractBetCache[contractId]
+
   const unfilledBetUserIds = uniq(unfilledBets.map((bet) => bet.userId))
 
+  const uncachedStart = Date.now()
   const [user, balanceByUserId] = await Promise.all([
     validateBet(pgTrans, uid, amount, contract, isApi),
     getUserBalances(pgTrans, unfilledBetUserIds),
   ])
-
-  const answers = await answersPromise
+  log(`[cache] Uncached took ${Date.now() - uncachedStart}ms`)
 
   return {
     user,
