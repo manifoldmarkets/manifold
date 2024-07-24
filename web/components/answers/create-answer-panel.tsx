@@ -189,7 +189,6 @@ export function SearchCreateAnswerPanel(props: {
               canAddAnswer ? 'Search or Add answers' : 'Search answers'
             }
             onBlur={() => !text && setIsSearchOpen?.(false)}
-            autoFocus
           />
           {canAddAnswer ? (
             <FaSearchPlus className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4 " />
