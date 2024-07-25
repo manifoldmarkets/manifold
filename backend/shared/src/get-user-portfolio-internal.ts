@@ -21,7 +21,8 @@ export const getUserPortfolioInternal = async (userId: string) => {
 
   // Based off of getMetricRelevantUserBets in update-user-metrics-core.ts
   const unresolvedBets = await pg.map(
-    `select outcome, amount, shares, cb.contract_id, answer_id, loan_amount
+    `select outcome, amount, shares, cb.contract_id, answer_id,
+    (cb.data->>'loanAmount')::numeric as loan_amount
     from contract_bets as cb
     join contracts as c on cb.contract_id = c.id
     left join answers as a on cb.answer_id = a.id
