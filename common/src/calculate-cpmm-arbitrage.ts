@@ -492,7 +492,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   const redeemedAmount = noShares * (answers.length - 2)
   const netNoAmount = totalNoAmount - redeemedAmount
   let yesBetAmount = betAmount - netNoAmount
-  if (floatingEqual(yesBetAmount, 0)) {
+  if (floatingArbitrageEqual(yesBetAmount, 0)) {
     yesBetAmount = 0
   }
   if (yesBetAmount < 0) {
@@ -678,7 +678,7 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   })
 
   let noBetAmount = betAmount - totalYesAmount
-  if (floatingEqual(noBetAmount, 0)) {
+  if (floatingArbitrageEqual(noBetAmount, 0)) {
     noBetAmount = 0
   }
   if (noBetAmount < 0) {
@@ -1395,4 +1395,8 @@ export const getSellAllRedemptionPreliminaryBets = (
       answer,
     }
   })
+}
+
+export function floatingArbitrageEqual(a: number, b: number, epsilon = 0.001) {
+  return Math.abs(a - b) < epsilon
 }
