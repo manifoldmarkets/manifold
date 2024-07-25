@@ -15,17 +15,21 @@ import { log, metrics } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
-import { onCreateBets } from 'api/on-create-bet'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import {
   createSupabaseDirectClient,
+  SupabaseDirectClient,
   SupabaseTransaction,
 } from 'shared/supabase/init'
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
-import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
+import {
+  bulkInsertBets,
+  cancelLimitOrders,
+  insertBet,
+} from 'shared/supabase/bets'
 import { broadcastOrders } from 'shared/websockets/helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
@@ -37,16 +41,19 @@ import {
   getUnfilledBets,
   getUserBalances,
 } from 'shared/helpers/bet-cache'
+import { filterDefined } from 'common/util/array'
+import { onCreateBets } from 'api/on-create-bet'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  // const startTime = Date.now()
+  const startTime = Date.now()
   const { user, contract, answers, unfilledBets, balanceByUserId } =
     await fetchContractBetDataAndValidate(
       createSupabaseDirectClient(),
       props,
       auth.uid,
-      isApi
+      isApi,
+      true
     )
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
@@ -59,11 +66,11 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   )
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
   const deps = [auth.uid, contract.id, ...simulatedMakerIds]
-  // log(
-  //   `PRE place bet took: ${Date.now() - startTime}ms, answer id: ${
-  //     props.answerId
-  //   }, amount: ${props.amount}, startTime: ${startTime}`
-  // )
+  log(
+    `[cache]PRE place bet took: ${Date.now() - startTime}ms, answer id: ${
+      props.answerId
+    }, amount: ${props.amount}, startTime: ${startTime}`
+  )
   return await betsQueue.enqueueFn(
     () => placeBetMain(props, auth.uid, isApi),
     deps
@@ -99,6 +106,7 @@ export const placeBetMain = async (
     }ms for ${contractId}`
   )
   // Simulate bet to see whose limit orders you match.
+  const simulationStart = Date.now()
   const simulatedResult = calculateBetResult(
     body,
     user,
@@ -107,6 +115,9 @@ export const placeBetMain = async (
     unfilledBets,
     balanceByUserId
   )
+  const simulationEnd = Date.now()
+  log(`Simulation took ${simulationEnd - simulationStart}ms`)
+
   if (dryRun) {
     return {
       result: {
@@ -118,14 +129,19 @@ export const placeBetMain = async (
   }
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
 
+  const transactionStart = Date.now()
   const result = await runShortTrans(async (pgTrans) => {
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)
 
     // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
+    const balanceFetchStart = Date.now()
     const balanceByUserId = await getUserBalances(pgTrans, [
       uid,
       ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
     ])
+    const balanceFetchEnd = Date.now()
+    log(`Balance fetch took ${balanceFetchEnd - balanceFetchStart}ms`)
+
     user.balance = balanceByUserId[uid]
     if (user.balance < body.amount)
       throw new APIError(403, 'Insufficient balance.')
@@ -137,6 +153,7 @@ export const placeBetMain = async (
       }
     }
 
+    const betCalculationStart = Date.now()
     const newBetResult = calculateBetResult(
       body,
       user,
@@ -145,6 +162,9 @@ export const placeBetMain = async (
       unfilledBets,
       balanceByUserId
     )
+    const betCalculationEnd = Date.now()
+    log(`Bet calculation took ${betCalculationEnd - betCalculationStart}ms`)
+
     const { newBet } = newBetResult
     if (!newBet.amount && !newBet.orderAmount && !newBet.shares) {
       throw new APIError(400, 'Betting allowed only between 1-99%.')
@@ -170,7 +190,8 @@ export const placeBetMain = async (
         ? crypto.randomBytes(12).toString('hex')
         : undefined
 
-    return await executeNewBetResult(
+    const executionStart = Date.now()
+    const executionResult = await executeNewBetResult(
       pgTrans,
       newBetResult,
       contract,
@@ -179,7 +200,13 @@ export const placeBetMain = async (
       replyToCommentId,
       betGroupId
     )
+    const executionEnd = Date.now()
+    log(`Bet execution took ${executionEnd - executionStart}ms`)
+
+    return executionResult
   })
+  const transactionEnd = Date.now()
+  log(`Main transaction took ${transactionEnd - transactionStart}ms`)
 
   const { newBet, fullBets, allOrdersToCancel, betId, makers, betGroupId } =
     result
@@ -188,7 +215,10 @@ export const placeBetMain = async (
   metrics.inc('app/bet_count', { contract_id: contractId })
 
   const continuation = async () => {
+    const onCreateBetsStart = Date.now()
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
+    const onCreateBetsEnd = Date.now()
+    log(`onCreateBets took ${onCreateBetsEnd - onCreateBetsStart}ms`)
   }
 
   const time = Date.now() - startTime
@@ -241,7 +271,8 @@ const calculateBetResult = (
     log(
       `Checking for limit orders in placebet for user ${user.id} on contract id ${contractId}.`
     )
-    return getBinaryCpmmBetInfo(
+    const binaryCpmmStart = Date.now()
+    const result = getBinaryCpmmBetInfo(
       contract,
       outcome,
       amount,
@@ -250,6 +281,9 @@ const calculateBetResult = (
       balanceByUserId,
       expiresAt
     )
+    const binaryCpmmEnd = Date.now()
+    log(`getBinaryCpmmBetInfo took ${binaryCpmmEnd - binaryCpmmStart}ms`)
+    return result
   } else if (
     (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
     mechanism == 'cpmm-multi-1'
@@ -274,7 +308,8 @@ const calculateBetResult = (
 
     const roundedLimitProb = getRoundedLimitProb(limitProb)
 
-    return getNewMultiCpmmBetInfo(
+    const multiCpmmStart = Date.now()
+    const result = getNewMultiCpmmBetInfo(
       contract,
       answers,
       answer,
@@ -285,6 +320,9 @@ const calculateBetResult = (
       balanceByUserId,
       expiresAt
     )
+    const multiCpmmEnd = Date.now()
+    log(`getNewMultiCpmmBetInfo took ${multiCpmmEnd - multiCpmmStart}ms`)
+    return result
   } else {
     throw new APIError(
       400,
@@ -298,9 +336,16 @@ export const getUnfilledBetsAndUserBalances = async (
   contractId: string,
   answerId?: string
 ) => {
+  const unfilledBetsStart = Date.now()
   const unfilledBets = await getUnfilledBets(pgTrans, contractId, answerId)
+  const unfilledBetsEnd = Date.now()
+  log(`getUnfilledBets took ${unfilledBetsEnd - unfilledBetsStart}ms`)
+
   const userIds = uniq(unfilledBets.map((bet) => bet.userId))
+  const userBalancesStart = Date.now()
   const balanceByUserId = await getUserBalances(pgTrans, userIds)
+  const userBalancesEnd = Date.now()
+  log(`getUserBalances took ${userBalancesEnd - userBalancesStart}ms`)
 
   return { unfilledBets, balanceByUserId }
 }
@@ -366,31 +411,49 @@ export const executeNewBetResult = async (
     betGroupId,
     ...newBet,
   })
+  const insertBetStart = Date.now()
   const betRow = await insertBet(candidateBet, pgTrans)
+  const insertBetEnd = Date.now()
+  log(`insertBet took ${insertBetEnd - insertBetStart}ms`)
+
   fullBets.push(convertBet(betRow))
   log(`Inserted bet for ${user.username} - auth ${user.id}.`)
 
-  if (makers) {
+  if (makers && makers.length > 0) {
+    const updateMakersStart = Date.now()
     await updateMakers(makers, betRow.bet_id, contract, pgTrans)
+    const updateMakersEnd = Date.now()
+    log(`updateMakers took ${updateMakersEnd - updateMakersStart}ms`)
   }
   if (ordersToCancel) {
     allOrdersToCancel.push(...ordersToCancel)
   }
 
   const apiFee = isApi ? FLAT_TRADE_FEE : 0
+  const incrementBalanceStart = Date.now()
   await incrementBalance(pgTrans, user.id, {
     balance: -newBet.amount - apiFee,
   })
+  const incrementBalanceEnd = Date.now()
+  log(`incrementBalance took ${incrementBalanceEnd - incrementBalanceStart}ms`)
+
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
   const totalCreatorFee =
     newBet.fees.creatorFee +
     sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
   if (totalCreatorFee !== 0) {
+    const incrementCreatorBalanceStart = Date.now()
     await incrementBalance(pgTrans, contract.creatorId, {
       balance: totalCreatorFee,
       totalDeposits: totalCreatorFee,
     })
+    const incrementCreatorBalanceEnd = Date.now()
+    log(
+      `incrementCreatorBalance took ${
+        incrementCreatorBalanceEnd - incrementCreatorBalanceStart
+      }ms`
+    )
 
     log(
       `Updated creator ${
@@ -422,6 +485,7 @@ export const executeNewBetResult = async (
         })
       }
     } else {
+      const updateContractStart = Date.now()
       await updateContract(
         pgTrans,
         contract.id,
@@ -432,53 +496,94 @@ export const executeNewBetResult = async (
           prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
         })
       )
+      const updateContractEnd = Date.now()
+      log(`updateContract took ${updateContractEnd - updateContractStart}ms`)
     }
 
     if (otherBetResults) {
-      // TODO: do in a single query as a bulk update
-      for (const result of otherBetResults) {
-        const { answer, bet, cpmmState, makers, ordersToCancel } = result
-        const { probBefore, probAfter } = bet
-        const smallEnoughToIgnore =
-          probBefore < 0.001 &&
-          probAfter < 0.001 &&
-          Math.abs(probAfter - probBefore) < 0.00001
+      const betsToInsert = filterDefined(
+        otherBetResults.map((result) => {
+          const { answer, bet, cpmmState, ordersToCancel } = result
+          const { probBefore, probAfter } = bet
+          const smallEnoughToIgnore =
+            probBefore < 0.001 &&
+            probAfter < 0.001 &&
+            Math.abs(probAfter - probBefore) < 0.00001
 
-        if (!smallEnoughToIgnore || Math.random() < 0.01) {
-          const candidateBet = removeUndefinedProps({
-            userId: user.id,
-            isApi,
-            betGroupId,
-            ...bet,
-          })
-          const betRow = await insertBet(candidateBet, pgTrans)
-          fullBets.push(convertBet(betRow))
+          if (!smallEnoughToIgnore || Math.random() < 0.01) {
+            const candidateBet = removeUndefinedProps({
+              userId: user.id,
+              isApi,
+              betGroupId,
+              ...bet,
+            })
 
-          await updateMakers(makers, betRow.bet_id, contract, pgTrans)
+            const { YES: poolYes, NO: poolNo } = cpmmState.pool
+            const prob = getCpmmProbability(cpmmState.pool, 0.5)
+            answerUpdates.push({
+              id: answer.id,
+              poolYes,
+              poolNo,
+              prob,
+            })
 
-          const { YES: poolYes, NO: poolNo } = cpmmState.pool
-          const prob = getCpmmProbability(cpmmState.pool, 0.5)
-          answerUpdates.push({
-            id: answer.id,
-            poolYes,
-            poolNo,
-            prob,
-          })
-        }
-        allOrdersToCancel.push(...ordersToCancel)
+            return candidateBet
+          }
+
+          allOrdersToCancel.push(...ordersToCancel)
+          return undefined
+        })
+      )
+
+      const bulkInsertStart = Date.now()
+      const insertedBets = await bulkInsertBets(betsToInsert, pgTrans)
+      const bulkInsertEnd = Date.now()
+      log(`bulkInsertBets took ${bulkInsertEnd - bulkInsertStart}ms`)
+
+      for (let i = 0; i < insertedBets.length; i++) {
+        const betRow = insertedBets[i]
+        fullBets.push(convertBet(betRow))
+
+        const updateOtherMakersStart = Date.now()
+        await updateMakers(
+          otherBetResults[i].makers,
+          betRow.bet_id,
+          contract,
+          pgTrans
+        )
+        const updateOtherMakersEnd = Date.now()
+        log(
+          `updateOtherMakers took ${
+            updateOtherMakersEnd - updateOtherMakersStart
+          }ms`
+        )
       }
     }
 
+    const updateAnswersStart = Date.now()
     await updateAnswers(pgTrans, contract.id, answerUpdates)
+    const updateAnswersEnd = Date.now()
+    log(`updateAnswers took ${updateAnswersEnd - updateAnswersStart}ms`)
+
+    const cancelLimitOrdersStart = Date.now()
     await cancelLimitOrders(
       pgTrans,
       allOrdersToCancel.map((o) => o.id)
+    )
+    const cancelLimitOrdersEnd = Date.now()
+    log(
+      `cancelLimitOrders took ${
+        cancelLimitOrdersEnd - cancelLimitOrdersStart
+      }ms`
     )
 
     log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
 
     log('Redeeming shares for bettor', user.username, user.id)
+    const redeemSharesStart = Date.now()
     await redeemShares(pgTrans, user.id, contract)
+    const redeemSharesEnd = Date.now()
+    log(`redeemShares took ${redeemSharesEnd - redeemSharesStart}ms`)
     log('Share redemption transaction finished.')
   }
 
@@ -500,6 +605,39 @@ export type maker = {
   shares: number
   timestamp: number
 }
+
+export async function bulkUpdateLimitOrders(
+  db: SupabaseDirectClient,
+  updates: Array<{
+    id: string
+    fills?: any[]
+    isFilled?: boolean
+    amount?: number
+    shares?: number
+  }>
+) {
+  if (updates.length > 0) {
+    const values = updates
+      .map((update) => {
+        const updateData = {
+          fills: update.fills,
+          isFilled: update.isFilled,
+          amount: update.amount,
+          shares: update.shares,
+        }
+        return `('${update.id}', '${JSON.stringify(updateData)}'::jsonb)`
+      })
+      .join(',\n')
+
+    await db.none(
+      `UPDATE contract_bets AS c
+       SET data = data || v.update
+       FROM (VALUES ${values}) AS v(id, update)
+       WHERE c.bet_id = v.id`
+    )
+  }
+}
+
 export const updateMakers = async (
   makers: maker[],
   takerBetId: string,
@@ -507,8 +645,16 @@ export const updateMakers = async (
   pgTrans: SupabaseTransaction
 ) => {
   const updatedLimitBets: LimitBet[] = []
-  // TODO: do this in a single query as a bulk update
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
+  if (Object.keys(makersByBet).length === 0) return
+  const updates: Array<{
+    id: string
+    fills: any[]
+    isFilled: boolean
+    amount: number
+    shares: number
+  }> = []
+
   for (const makers of Object.values(makersByBet)) {
     const bet = makers[0].bet
     const newFills = makers.map((maker) => {
@@ -520,27 +666,28 @@ export const updateMakers = async (
     const totalAmount = sumBy(fills, 'amount')
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
-    log('Update a matched limit order.')
-    const newData = await pgTrans.one<LimitBet>(
-      `update contract_bets
-      set data = data || $1
-      where bet_id = $2
-      returning data`,
-      [
-        JSON.stringify({
-          fills,
-          isFilled,
-          amount: totalAmount,
-          shares: totalShares,
-        }),
-        bet.id,
-      ],
-      (r) => r.data
-    )
-
-    updatedLimitBets.push(newData)
+    updates.push({
+      id: bet.id,
+      fills,
+      isFilled,
+      amount: totalAmount,
+      shares: totalShares,
+    })
   }
 
+  const bulkUpdateStart = Date.now()
+  await bulkUpdateLimitOrders(pgTrans, updates)
+  const bulkUpdateEnd = Date.now()
+  log(`bulkUpdateLimitOrders took ${bulkUpdateEnd - bulkUpdateStart}ms`)
+
+  // Fetch updated bets
+  await pgTrans.map(
+    `SELECT data
+       FROM contract_bets
+       WHERE bet_id IN ($1:csv)`,
+    [updates.map((u) => u.id)],
+    (r) => updatedLimitBets.push(r.data)
+  )
   broadcastOrders(updatedLimitBets)
 
   // Deduct balance of makers.
@@ -549,6 +696,7 @@ export const updateMakers = async (
     (makers) => sumBy(makers, (maker) => maker.amount)
   )
 
+  const bulkIncrementBalancesStart = Date.now()
   await bulkIncrementBalances(
     pgTrans,
     Object.entries(spentByUser).map(([userId, spent]) => ({
@@ -556,12 +704,25 @@ export const updateMakers = async (
       balance: -spent,
     }))
   )
+  const bulkIncrementBalancesEnd = Date.now()
+  log(
+    `bulkIncrementBalances took ${
+      bulkIncrementBalancesEnd - bulkIncrementBalancesStart
+    }ms`
+  )
 
   const makerIds = Object.keys(spentByUser)
   if (makerIds.length > 0) {
     log('Redeeming shares for makers', makerIds)
+    const redeemSharesForMakersStart = Date.now()
     await Promise.all(
-      makerIds.map((userId) => redeemShares(pgTrans, userId, contract))
+      makerIds.map(async (userId) => redeemShares(pgTrans, userId, contract))
+    )
+    const redeemSharesForMakersEnd = Date.now()
+    log(
+      `redeemSharesForMakers took ${
+        redeemSharesForMakersEnd - redeemSharesForMakersStart
+      }ms`
     )
   }
 }

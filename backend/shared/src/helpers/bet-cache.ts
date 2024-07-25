@@ -17,6 +17,7 @@ import {
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import { convertBet } from 'common/supabase/bets'
 import { filterDefined } from 'common/util/array'
+import { User } from 'common/user'
 
 export const validateBet = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
@@ -149,7 +150,8 @@ export const fetchContractBetDataAndValidate = async (
     answerIds?: string[]
   },
   uid: string,
-  isApi: boolean
+  isApi: boolean,
+  skipUserValidation?: boolean
 ) => {
   const { amount, contractId, answerId, answerIds } = body
   const awaitStart = Date.now()
@@ -160,7 +162,9 @@ export const fetchContractBetDataAndValidate = async (
     answerIds,
   })
   log(
-    `[cache] Revalidation took ${Date.now() - awaitStart}ms for ${contractId}`
+    `[cache] Getting cached data took ${
+      Date.now() - awaitStart
+    }ms for ${contractId}`
   )
 
   const { contract, unfilledBets, answers: cachedAnswers } = cached
@@ -181,11 +185,18 @@ export const fetchContractBetDataAndValidate = async (
   const unfilledBetUserIds = uniq(unfilledBets.map((bet) => bet.userId))
 
   const uncachedStart = Date.now()
-  const [user, balanceByUserId] = await Promise.all([
-    validateBet(pg, uid, amount, contract, isApi),
-    getUserBalances(pg, unfilledBetUserIds),
-  ])
-  log(`[cache] Uncache-able request took ${Date.now() - uncachedStart}ms`)
+  const [user, balanceByUserId] = skipUserValidation
+    ? [
+        { id: uid } as User,
+        Object.fromEntries(unfilledBetUserIds.map((id) => [id, Infinity])),
+      ]
+    : await Promise.all([
+        validateBet(pg, uid, amount, contract, isApi),
+        getUserBalances(pg, unfilledBetUserIds),
+      ])
+  log(
+    `[cache] Loading user balances request took ${Date.now() - uncachedStart}ms`
+  )
 
   return {
     user,

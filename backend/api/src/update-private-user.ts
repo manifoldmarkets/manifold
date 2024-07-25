@@ -6,6 +6,7 @@ export const updatePrivateUser: APIHandler<'me/private/update'> = async (
   props,
   auth
 ) => {
+  // TODO: update pu cache
   const db = createSupabaseDirectClient()
   await updatePrivateUserData(db, auth.uid, props)
 }

@@ -19,7 +19,7 @@ if (require.main === module) {
     const privateUsers = await pg.map(
       `select id, data->>'apiKey' as api_key from private_users
               where data->>'email' ilike '%manifoldtestnewuser%'
-              limit 50`,
+              limit 150`,
       [],
       (r) => ({ id: r.id as string, apiKey: r.api_key as string })
     )
@@ -92,9 +92,9 @@ if (require.main === module) {
     )
     console.log(`Found ${contracts.length} contracts`)
 
-    let totalVisits = 0
+    const totalVisits = 0
     let totalBets = 0
-    let totalVisitErrors = 0
+    const totalVisitErrors = 0
     let totalBetErrors = 0
     const startTime = Date.now()
     const userSpentAmounts: { [key: string]: number } = {}
@@ -105,7 +105,7 @@ if (require.main === module) {
       await Promise.all(
         privateUsers.map(async (user) => {
           const manyBetsPromise = async () => {
-            const betCount = Math.floor(Math.random() * 5) + 1
+            const betCount = Math.floor(Math.random() * 10) + 1
             const contract =
               contracts[Math.floor(Math.random() * contracts.length)]
             const betResult = await placeManyBets(
@@ -125,24 +125,24 @@ if (require.main === module) {
           }
 
           // 50 visits per user
-          const visitPromises = Array(50)
-            .fill(null)
-            .map(() => async () => {
-              const contract =
-                contracts[Math.floor(Math.random() * contracts.length)]
-              try {
-                await visitContract(contract)
-                totalVisits++
-              } catch (error: any) {
-                errorMessage[error.message] = errorMessage[error.message]
-                  ? errorMessage[error.message] + 1
-                  : 1
-                totalVisitErrors++
-              }
-            })
+          // const visitPromises = Array(50)
+          //   .fill(null)
+          //   .map(() => async () => {
+          //     const contract =
+          //       contracts[Math.floor(Math.random() * contracts.length)]
+          //     try {
+          //       await visitContract(contract)
+          //       totalVisits++
+          //     } catch (error: any) {
+          //       errorMessage[error.message] = errorMessage[error.message]
+          //         ? errorMessage[error.message] + 1
+          //         : 1
+          //       totalVisitErrors++
+          //     }
+          //   })
 
           await Promise.all([
-            ...visitPromises.map((p) => p()),
+            // ...visitPromises.map((p) => p()),
             manyBetsPromise(),
           ])
         })
@@ -157,18 +157,30 @@ if (require.main === module) {
         console.log(`Error seen ${value} times: ${key}`)
       })
       console.log(`----- End of errors -----`)
+      // visits:
+      console.log(`----- VISITS -----`)
       console.log(`Total error visits: ${totalVisitErrors}`)
-      console.log(`Total error bets: ${totalBetErrors}`)
       console.log(`Total successful visits: ${totalVisits}`)
-      console.log(`Total successful bets: ${totalBets}`)
       console.log(
         `Successful visits per second: ${(totalVisits / elapsedSeconds).toFixed(
           2
         )}`
       )
       console.log(
+        'Successful visit rate: ',
+        Math.round((totalVisits / (totalVisits + totalVisitErrors)) * 100) + '%'
+      )
+      console.log(`----- BETS -----`)
+      console.log(`Total error bets: ${totalBetErrors}`)
+      console.log(`Total successful bets: ${totalBets}`)
+      console.log(
         `Successful bets per second: ${(totalBets / elapsedSeconds).toFixed(2)}`
       )
+      console.log(
+        'Successful bet rate: ',
+        Math.round((totalBets / (totalBets + totalBetErrors)) * 100) + '%'
+      )
+      console.log(`----- FINALLY -----`)
       console.log(`Total time elapsed: ${elapsedSeconds.toFixed(2)} seconds`)
       console.log(`-------------------------`)
     }
@@ -212,14 +224,20 @@ async function placeManyBets(
 
   const betData = removeUndefinedProps({
     contractId: contract.id,
-    amount: Math.random() * 100,
+    amount: Math.random() * 100 + 1,
     outcome: Math.random() > 0.5 ? 'YES' : 'NO',
     answerId:
       contract.mechanism === 'cpmm-multi-1'
         ? contract.answers[Math.floor(Math.random() * contract.answers.length)]
             ?.id
         : undefined,
-    limitProb: limitProb === 0 ? 0.1 : limitProb === 1 ? 0.9 : limitProb,
+    limitProb: !limitProb
+      ? undefined
+      : limitProb < 0.01
+      ? 0.01
+      : limitProb > 0.99
+      ? 0.99
+      : limitProb,
   })
   let success = 0
   let failure = 0

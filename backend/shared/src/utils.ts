@@ -178,16 +178,24 @@ export const getPrivateUserSupabase = (userId: string) => {
     (row) => (row ? (row.data as PrivateUser) : null)
   )
 }
+const privateUsersCache: { [key: string]: PrivateUser } = {}
 
 export const getPrivateUserByKey = async (
   apiKey: string,
   pg: SupabaseDirectClient = createSupabaseDirectClient()
 ) => {
-  return await pg.oneOrNone(
+  if (privateUsersCache[apiKey]) {
+    return privateUsersCache[apiKey]
+  }
+  const privateUser = await pg.oneOrNone(
     `select * from private_users where data->>'apiKey' = $1 limit 1`,
     [apiKey],
     convertPrivateUser
   )
+  if (privateUser) {
+    privateUsersCache[apiKey] = privateUser
+  }
+  return privateUser
 }
 
 export const getPrivateUsersNotSent = async (

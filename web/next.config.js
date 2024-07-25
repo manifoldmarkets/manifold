@@ -30,6 +30,7 @@ module.exports = {
     dangerouslyAllowSVG: true,
     remotePatterns: [
       { hostname: 'manifold.markets' },
+      { hostname: 'dev.manifold.markets' },
       { hostname: 'oaidalleapiprodscus.blob.core.windows.net' },
       { hostname: 'lh3.googleusercontent.com' },
       { hostname: 'i.imgur.com' },
