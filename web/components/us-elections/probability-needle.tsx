@@ -123,7 +123,7 @@ export function ProbabilityNeedle(props: {
         fill={'white'}
         opacity={0.8}
       >
-        STRONG REP
+        SAFE R
       </text>
       <text
         x={LIKELY_X}
@@ -133,7 +133,7 @@ export function ProbabilityNeedle(props: {
         fill={'white'}
         opacity={0.8}
       >
-        LIKELY REP
+        LIKELY R
       </text>
       <text
         x={LEANING_X}
@@ -142,7 +142,7 @@ export function ProbabilityNeedle(props: {
         fontWeight={'thin'}
         opacity={0.4}
       >
-        LEANING REP
+        LEAN R
       </text>
       <text
         x={SVG_WIDTH / 2 - 23.5}
@@ -160,7 +160,7 @@ export function ProbabilityNeedle(props: {
         fontWeight={'thin'}
         opacity={0.4}
       >
-        LEANING DEM
+        LEAN D
       </text>
       <text
         x={SVG_WIDTH - LIKELY_X - 65}
@@ -170,7 +170,7 @@ export function ProbabilityNeedle(props: {
         fill={'white'}
         opacity={0.8}
       >
-        LIKELY DEM
+        LIKELY D
       </text>
       <text
         x={SVG_WIDTH - STRONG_X - 80}
@@ -180,7 +180,7 @@ export function ProbabilityNeedle(props: {
         fill={'white'}
         opacity={0.8}
       >
-        STRONG DEM
+        SAFE D
       </text>
 
       <line
