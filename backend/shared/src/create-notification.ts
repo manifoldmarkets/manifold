@@ -37,6 +37,7 @@ import {
 import { Bet, LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
+import { mapAsync } from 'common/util/promise'
 import {
   sendMarketCloseEmail,
   sendMarketResolutionEmail,
@@ -306,13 +307,14 @@ export const createCommentOnContractNotification = async (
   }
 
   const notifyContractFollowers = async () => {
-    await Promise.all(
-      followerIds.map((userId) =>
+    await mapAsync(
+      followerIds,
+      (userId) =>
         sendNotificationsIfSettingsPermit(
           userId,
           'comment_on_contract_you_follow'
-        )
-      )
+        ),
+      20
     )
   }
 
@@ -329,26 +331,28 @@ export const createCommentOnContractNotification = async (
     // then re-followed it - their notification reason should not include 'with_shares_in'
     const recipientUserIds = await getUniqueBettorIds(sourceContract.id, pg)
 
-    await Promise.all(
-      recipientUserIds.map((userId) =>
+    await mapAsync(
+      recipientUserIds,
+      (userId) =>
         sendNotificationsIfSettingsPermit(
           userId,
           'comment_on_contract_with_users_shares_in'
-        )
-      )
+        ),
+      20
     )
   }
   const notifyRepliedUser = async () => {
     if (repliedUsersInfo)
-      await Promise.all(
-        Object.keys(repliedUsersInfo).map((userId) =>
+      await mapAsync(
+        Object.keys(repliedUsersInfo),
+        (userId) =>
           sendNotificationsIfSettingsPermit(
             userId,
             repliedUsersInfo[userId].repliedToType === 'answer'
               ? 'reply_to_users_answer'
               : 'reply_to_users_comment'
-          )
-        )
+          ),
+        20
       )
   }
 
@@ -365,10 +369,10 @@ export const createCommentOnContractNotification = async (
         const allUsers = uniq(allBettors.concat(allVoters))
         taggedUserIds.push(...allUsers)
       }
-      await Promise.all(
-        uniq(taggedUserIds).map((userId) =>
-          sendNotificationsIfSettingsPermit(userId, 'tagged_user')
-        )
+      await mapAsync(
+        uniq(taggedUserIds),
+        (userId) => sendNotificationsIfSettingsPermit(userId, 'tagged_user'),
+        20
       )
     }
   }
@@ -471,8 +475,10 @@ export const createNewAnswerOnContractNotification = async (
     [sourceContract.id],
     (r) => r.follow_id as string
   )
-  await Promise.all(
-    followerIds.map(async (userId) => sendNotificationsIfSettingsPermit(userId))
+  await mapAsync(
+    followerIds,
+    async (userId) => sendNotificationsIfSettingsPermit(userId),
+    20
   )
 }
 
@@ -1271,16 +1277,17 @@ export const createNewContractNotification = async (
   // As it is coded now, the tag notification usurps the new contract notification
   // It'd be easy to append the reason to the eventId if desired
   if (contract.visibility == 'public') {
-    await Promise.all(
-      followerUserIds.map(async (userId) =>
-        sendNotificationsIfSettingsAllow(userId, 'contract_from_followed_user')
-      )
+    await mapAsync(
+      followerUserIds,
+      (userId) =>
+        sendNotificationsIfSettingsAllow(userId, 'contract_from_followed_user'),
+      20
     )
   }
-  await Promise.all(
-    mentionedUserIds.map(async (userId) =>
-      sendNotificationsIfSettingsAllow(userId, 'tagged_user')
-    )
+  await mapAsync(
+    mentionedUserIds,
+    (userId) => sendNotificationsIfSettingsAllow(userId, 'tagged_user'),
+    20
   )
 }
 
@@ -1461,15 +1468,16 @@ export const createContractResolvedNotifications = async (
     ]).filter((id) => id !== resolver.id)
   )
 
-  await Promise.all(
-    usersToNotify.map((id) =>
+  await mapAsync(
+    usersToNotify,
+    (id) =>
       sendNotificationsIfSettingsPermit(
         id,
         userIdToContractMetrics?.[id]?.invested
           ? 'resolutions_on_watched_markets_with_shares_in'
           : 'resolutions_on_watched_markets'
-      )
-    )
+      ),
+    20
   )
 }
 
@@ -1705,12 +1713,14 @@ export const createBountyCanceledNotification = async (
   }
 
   const notifyContractFollowers = async () => {
-    await Promise.all(
-      Object.keys(contractFollowersIds).map((userId) => {
+    await mapAsync(
+      Object.keys(contractFollowersIds),
+      async (userId) => {
         if (userId !== contract.creatorId) {
-          sendNotificationsIfSettingsPermit(userId, 'bounty_canceled')
+          return sendNotificationsIfSettingsPermit(userId, 'bounty_canceled')
         }
-      })
+      },
+      20
     )
   }
 
@@ -1798,15 +1808,17 @@ export const createVotedOnPollNotification = async (
   }
 
   const notifyContractFollowers = async () => {
-    await Promise.all(
-      Object.keys(contractFollowersIds).map((userId) => {
+    await mapAsync(
+      Object.keys(contractFollowersIds),
+      async (userId) => {
         if (userId !== sourceContract.creatorId) {
-          sendNotificationsIfSettingsPermit(
+          return sendNotificationsIfSettingsPermit(
             userId,
             'all_votes_on_watched_markets'
           )
         }
-      })
+      },
+      20
     )
   }
 
@@ -1898,15 +1910,17 @@ export const createPollClosedNotification = async (
   }
 
   const notifyContractFollowers = async () => {
-    await Promise.all(
-      Object.keys(contractFollowersIds).map((userId) => {
+    await mapAsync(
+      Object.keys(contractFollowersIds),
+      async (userId) => {
         if (userId !== sourceContract.creatorId) {
-          sendNotificationsIfSettingsPermit(
+          return sendNotificationsIfSettingsPermit(
             userId,
             'poll_close_on_watched_markets'
           )
         }
-      })
+      },
+      20
     )
   }
 
