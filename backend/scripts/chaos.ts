@@ -1,19 +1,19 @@
 import { runScript } from './run-script'
-import { isProd } from 'shared/utils'
+import { isProd, log } from 'shared/utils'
 import { convertContract } from 'common/supabase/contracts'
 import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
 import { incrementBalance } from 'shared/supabase/users'
 import { formatApiUrlWithParams } from 'common/util/api'
-
 import { DEV_CONFIG } from 'common/envs/dev'
-const BET_URL = `https://${DEV_CONFIG.apiEndpoint}/v0/bet`
-// const BET_URL = `http://localhost:8088/v0/bet`
+
+const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
+// const URL = `http://localhost:8088/v0`
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
     if (isProd()) {
-      console.log('This script is dangerous to run in prod. Exiting.')
+      log('This script is dangerous to run in prod. Exiting.')
       return
     }
     const privateUsers = await pg.map(
@@ -23,7 +23,7 @@ if (require.main === module) {
       [],
       (r) => ({ id: r.id as string, apiKey: r.api_key as string })
     )
-
+    log('got private users')
     await Promise.all(
       privateUsers.map((pu) =>
         incrementBalance(pg, pu.id, {
@@ -32,6 +32,7 @@ if (require.main === module) {
         })
       )
     )
+    log(`${privateUsers.length} user balances incremented by 1000`)
     await Promise.all(
       privateUsers
         .filter((p) => !p.apiKey)
@@ -42,6 +43,7 @@ if (require.main === module) {
           )
         })
     )
+    log('added api keys')
     const marketCreations = [
       {
         question: 'test ' + Math.random().toString(36).substring(7),
@@ -64,33 +66,29 @@ if (require.main === module) {
       //   shouldAnswersSumToOne: false,
       // },
     ]
-
+    log('creating markets')
     const markets = await Promise.all(
       marketCreations.map(async (market) => {
-        const resp = await fetch(
-          `https://${DEV_CONFIG.apiEndpoint}/v0/market`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Key ${privateUsers[0].apiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(market),
-          }
-        )
+        const resp = await fetch(URL + `/market`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Key ${privateUsers[0].apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(market),
+        })
         if (resp.status !== 200) {
           console.error('Failed to create market', await resp.text())
         }
         return resp.json()
       })
     )
-    console.log(`${privateUsers.length} user balances incremented by 1000`)
     const contracts = await pg.map(
       `select * from contracts where slug in ($1:list)`,
       [markets.map((m: any) => m.slug)],
       convertContract
     )
-    console.log(`Found ${contracts.length} contracts`)
+    log(`Found ${contracts.length} contracts`)
 
     const totalVisits = 0
     let totalBets = 0
@@ -101,7 +99,7 @@ if (require.main === module) {
     const errorMessage: { [key: string]: number } = {}
 
     const runChaos = async () => {
-      console.log('Chaos reigns...')
+      log('Chaos reigns...')
       await Promise.all(
         privateUsers.map(async (user) => {
           const manyBetsPromise = async () => {
@@ -151,38 +149,38 @@ if (require.main === module) {
 
     const reportStats = () => {
       const elapsedSeconds = (Date.now() - startTime) / 1000
-      console.log(`----- Stats report -----`)
-      console.log(`----- Errors follow -----`)
+      log(`----- Stats report -----`)
+      log(`----- Errors follow -----`)
       Object.entries(errorMessage).map(([key, value]) => {
-        console.log(`Error seen ${value} times: ${key}`)
+        log(`Error seen ${value} times: ${key}`)
       })
-      console.log(`----- End of errors -----`)
+      log(`----- End of errors -----`)
       // visits:
-      console.log(`----- VISITS -----`)
-      console.log(`Total error visits: ${totalVisitErrors}`)
-      console.log(`Total successful visits: ${totalVisits}`)
-      console.log(
+      log(`----- VISITS -----`)
+      log(`Total error visits: ${totalVisitErrors}`)
+      log(`Total successful visits: ${totalVisits}`)
+      log(
         `Successful visits per second: ${(totalVisits / elapsedSeconds).toFixed(
           2
         )}`
       )
-      console.log(
+      log(
         'Successful visit rate: ',
         Math.round((totalVisits / (totalVisits + totalVisitErrors)) * 100) + '%'
       )
-      console.log(`----- BETS -----`)
-      console.log(`Total error bets: ${totalBetErrors}`)
-      console.log(`Total successful bets: ${totalBets}`)
-      console.log(
+      log(`----- BETS -----`)
+      log(`Total error bets: ${totalBetErrors}`)
+      log(`Total successful bets: ${totalBets}`)
+      log(
         `Successful bets per second: ${(totalBets / elapsedSeconds).toFixed(2)}`
       )
-      console.log(
+      log(
         'Successful bet rate: ',
         Math.round((totalBets / (totalBets + totalBetErrors)) * 100) + '%'
       )
-      console.log(`----- FINALLY -----`)
-      console.log(`Total time elapsed: ${elapsedSeconds.toFixed(2)} seconds`)
-      console.log(`-------------------------`)
+      log(`----- FINALLY -----`)
+      log(`Total time elapsed: ${elapsedSeconds.toFixed(2)} seconds`)
+      log(`-------------------------`)
     }
 
     // Run report stats and repeat chaos
@@ -194,7 +192,7 @@ if (require.main === module) {
       clearInterval(chaosInterval)
       clearInterval(reportInterval)
       reportStats()
-      console.log('Chaos no longer reigns.')
+      log('Chaos no longer reigns.')
       process.exit()
     })
 
@@ -248,7 +246,7 @@ async function placeManyBets(
   for (let i = 0; i < count; i++) {
     const start = Date.now()
     await new Promise((resolve) => setTimeout(resolve, Math.random() * 2000))
-    await fetch(BET_URL, {
+    await fetch(URL + '/bet', {
       method: 'POST',
       headers: {
         Authorization: `Key ${apiKey}`,
