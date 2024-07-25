@@ -157,7 +157,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     : unmodifiedAnte
   const ante = Math.min(unmodifiedAnte, totalMarketCost)
 
-  const contract = await pg.tx(async (tx) => {
+  return await pg.tx(async (tx) => {
     const user = await getUser(userId, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
     if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
@@ -225,33 +225,38 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       transaction: tx,
     })
 
+    log('created contract ', {
+      userUserName: user.username,
+      userId: user.id,
+      question,
+      ante: ante || 0,
+    })
+
+    if (answers && contract.mechanism === 'cpmm-multi-1')
+      await createAnswers(tx, contract)
+
+    if (groups) {
+      await Promise.all(
+        groups.map(async (g) => {
+          await addGroupToContract(tx, contract, g)
+        })
+      )
+    }
+
+    await generateAntes(
+      tx,
+      userId,
+      contract,
+      outcomeType,
+      ante,
+      totalMarketCost
+    )
+
+    await generateContractEmbeddings(contract, pg)
+
+    broadcastNewContract(contract, user)
     return contract
   })
-
-  log('created contract ', {
-    userUserName: user.username,
-    userId: user.id,
-    question,
-    ante: ante || 0,
-  })
-
-  if (answers && contract.mechanism === 'cpmm-multi-1')
-    await createAnswers(pg, contract)
-
-  if (groups) {
-    await Promise.all(
-      groups.map(async (g) => {
-        await addGroupToContract(contract, g)
-      })
-    )
-  }
-
-  await generateAntes(pg, userId, contract, outcomeType, ante, totalMarketCost)
-
-  await generateContractEmbeddings(contract, pg)
-
-  broadcastNewContract(contract, user)
-  return contract
 }
 
 const runCreateMarketTxn = async (args: {
