@@ -230,4 +230,9 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     photo: '/political-candidates/vance.png',
     shortName: 'Vance',
   },
+  'William McRaven': {
+    party: 'Other',
+    photo: '/political-candidates/mcraven.png',
+    shortName: 'McRaven',
+  },
 }
