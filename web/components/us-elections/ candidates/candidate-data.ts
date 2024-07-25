@@ -180,7 +180,7 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     photo: '/political-candidates/jeffries.png',
     shortName: 'Jeffries',
   },
-  'J. B. Pritzker': {
+  'J.B. Pritzker': {
     party: 'Democrat',
     photo: '/political-candidates/pritzker.png',
     shortName: 'Pritzker',
