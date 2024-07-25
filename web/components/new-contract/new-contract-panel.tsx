@@ -13,6 +13,7 @@ import { track } from 'web/lib/service/analytics'
 import { FaQuestion, FaUsers } from 'react-icons/fa'
 import { ExpandSection } from 'web/components/explainer-panel'
 import { WEEK_MS } from 'common/util/time'
+import { randomString } from 'common/util/random'
 
 export type NewQuestionParams = {
   groupIds?: string[]
@@ -50,6 +51,10 @@ export function NewContractPanel(props: {
     params?.outcomeType ? 'filling contract params' : 'choosing contract'
   )
 
+  // Don't use the usePersistentLocalState hook for this, because there's too high a risk that it will survive in local storage
+  // longer than it should under a trivial paramsKey like '', and improperly prevent users from creating any new contracts.
+  const [idempotencyKey] = useState(randomString())
+
   useEffect(() => {
     if (outcomeType !== params?.outcomeType) {
       setOutcomeType(params?.outcomeType)
@@ -82,6 +87,7 @@ export function NewContractPanel(props: {
             outcomeType={outcomeType}
             creator={creator}
             params={params}
+            idempotencyKey={idempotencyKey}
           />
         )}
       </Col>

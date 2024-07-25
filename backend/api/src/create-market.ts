@@ -33,6 +33,7 @@ import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
 import {
   generateContractEmbeddings,
+  getContractsDirect,
   updateContract,
 } from 'shared/supabase/contracts'
 import {
@@ -98,6 +99,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     visibility,
     specialLiquidityPerAnswer,
     marketTier,
+    idempotencyKey,
   } = validateMarketBody(body)
 
   if (outcomeType === 'BOUNTIED_QUESTION') {
@@ -157,6 +159,10 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     : unmodifiedAnte
   const ante = Math.min(unmodifiedAnte, totalMarketCost)
 
+  if (await isDuplicateSubmission(idempotencyKey, pg)) {
+    throw new APIError(400, 'Contract has already been created')
+  }
+
   const contract = await pg.tx(async (tx) => {
     const user = await getUser(userId, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
@@ -175,7 +181,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
     const contract = getNewContract(
       removeUndefinedProps({
-        id: randomString(),
+        // Risk: idempotencyKey comes from the client, mischievous users could pass unexpected strings.
+        id: idempotencyKey ?? randomString(),
         slug,
         creator: user,
         question,
@@ -293,6 +300,15 @@ const runCreateMarketTxn = async (args: {
   }
 }
 
+async function isDuplicateSubmission(
+  idempotencyKey: string | undefined,
+  pg: SupabaseDirectClient
+) {
+  if (!idempotencyKey) return false
+  const contracts = await getContractsDirect([idempotencyKey], pg)
+  return contracts.length > 0
+}
+
 async function getCloseTimestamp(
   closeTime: number | Date | undefined,
   question: string,
@@ -340,6 +356,7 @@ function validateMarketBody(body: Body) {
     matchCreatorId,
     isLove,
     marketTier,
+    idempotencyKey,
   } = body
 
   if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
@@ -466,6 +483,7 @@ function validateMarketBody(body: Body) {
     isLove,
     specialLiquidityPerAnswer,
     marketTier,
+    idempotencyKey,
   }
 }
 
