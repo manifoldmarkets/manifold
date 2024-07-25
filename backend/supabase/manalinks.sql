@@ -2,7 +2,6 @@
 create table if not exists
   manalinks (
     id text default random_alphanumeric (8) not null,
-    data jsonb,
     amount numeric not null,
     created_time timestamp with time zone default now(),
     expires_time timestamp with time zone,
@@ -10,33 +9,6 @@ create table if not exists
     max_uses numeric,
     message text
   );
-
--- Triggers
-create trigger manalinks_populate before insert
-or
-update on public.manalinks for each row
-execute function manalinks_populate_cols ();
-
--- Functions
-create
-or replace function public.manalinks_populate_cols () returns trigger language plpgsql as $function$ begin
-  if new.data is not null then
-    new.amount := ((new.data)->>'amount')::numeric;
-    new.created_time :=
-        case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
-    new.expires_time :=
-        case when new.data ? 'expiresTime' then millis_to_ts(((new.data) ->> 'expiresTime')::bigint) else null end;
-    new.creator_id := (new.data)->>'fromId';
-    new.max_uses := ((new.data)->>'maxUses')::numeric;
-    new.message := (new.data)->>'message';
-    if (new.data)->'claims' is not null then
-        delete from manalink_claims where manalink_id = new.id;
-        with claims as (select new.id, jsonb_array_elements((new.data)->'claims') as cdata)
-        insert into manalink_claims (manalink_id, txn_id) select id, cdata->>'txnId' from claims;
-    end if;
-  end if;
-  return new;
-end $function$;
 
 -- Policies
 alter table manalinks enable row level security;
