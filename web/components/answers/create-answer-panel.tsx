@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { CPMMMultiContract, MultiContract, SORTS } from 'common/contract'
 import { Col } from '../layout/col'
 import { api } from 'web/lib/api/api'
@@ -177,14 +177,25 @@ export function SearchCreateAnswerPanel(props: {
     }
   }
 
+  const inputRef = useRef<HTMLInputElement>(null)
+  const buttonsRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    if (inputRef.current && buttonsRef.current) {
+      const buttonsWidth = buttonsRef.current.offsetWidth
+      inputRef.current.style.paddingRight = `${buttonsWidth + 8}px`
+    }
+  }, [text, canAddAnswer])
+
   return (
     <Col className={clsx(className)}>
       <Row className={'w-full items-center gap-1 py-1 sm:gap-2'}>
-        <div className="relative flex flex-grow">
+        <div className="relative w-full">
           <Input
             value={text}
+            ref={inputRef}
             onChange={(e) => setText(e.target.value)}
-            className="!bg-canvas-50 !h-8 flex-grow !rounded-full !pl-7 !text-sm"
+            className="!bg-canvas-50 !h-8 w-full flex-grow !rounded-full !pl-7 !text-sm"
             placeholder={
               canAddAnswer ? 'Search or Add answers' : 'Search answers'
             }
@@ -195,36 +206,43 @@ export function SearchCreateAnswerPanel(props: {
           ) : (
             <FaSearch className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4" />
           )}
-          {text && (
-            <button
-              className={clsx(
-                'group absolute h-full',
-                canAddAnswer ? 'right-20' : 'right-1'
+          {(text || canAddAnswer) && (
+            <Row
+              ref={buttonsRef}
+              className="absolute right-1 top-0.5 items-center gap-0.5"
+            >
+              {text && (
+                <button
+                  className={clsx('group h-full')}
+                  onClick={() => (setText(''), close?.())}
+                >
+                  <XCircleIcon className="fill-ink-300 group-hover:fill-ink-400 h-7 w-7 items-center transition-colors" />
+                </button>
               )}
-              onClick={() => (setText(''), close?.())}
-            >
-              <XCircleIcon className="fill-ink-300 group-hover:fill-ink-400 h-7 w-7 items-center transition-colors" />
-            </button>
-          )}
 
-          {canAddAnswer && text && (
-            <Button
-              className="absolute right-1 top-1 !rounded-full"
-              size="2xs"
-              loading={isSubmitting}
-              disabled={!canSubmit}
-              onClick={withTracking(submitAnswer, 'submit answer')}
-            >
-              <span className="font-semibold">Add</span>
-              <span className="text-ink-200 dark:text-ink-800 ml-1">
-                {formatMoney(
-                  getTieredAnswerCost(
-                    contract.marketTier ??
-                      getTierFromLiquidity(contract, contract.totalLiquidity)
-                  )
-                )}
-              </span>
-            </Button>
+              {canAddAnswer && text && (
+                <Button
+                  className="!rounded-full"
+                  size="2xs"
+                  loading={isSubmitting}
+                  disabled={!canSubmit}
+                  onClick={withTracking(submitAnswer, 'submit answer')}
+                >
+                  <span className="font-semibold">Add</span>
+                  <span className="text-ink-200 dark:text-ink-800 ml-1">
+                    {formatMoney(
+                      getTieredAnswerCost(
+                        contract.marketTier ??
+                          getTierFromLiquidity(
+                            contract,
+                            contract.totalLiquidity
+                          )
+                      )
+                    )}
+                  </span>
+                </Button>
+              )}
+            </Row>
           )}
         </div>
         <MultiSortDropdown sort={sort} setSort={setSort} />
