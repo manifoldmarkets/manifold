@@ -3,19 +3,8 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { getContract, log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateContract } from 'shared/supabase/contracts'
-import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const closeMarket: APIHandler<'market/:contractId/close'> = async (
-  props,
-  auth,
-  req
-) => {
-  return betsQueue.enqueueFn(
-    () => closeMarketMain(props, auth, req),
-    [props.contractId]
-  )
-}
-const closeMarketMain: APIHandler<'market/:contractId/close'> = async (
   props,
   auth
 ) => {

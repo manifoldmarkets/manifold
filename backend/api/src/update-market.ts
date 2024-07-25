@@ -11,20 +11,8 @@ import { isAdminId } from 'common/envs/constants'
 import { rerankContractMetricsManually } from 'shared/helpers/user-contract-metrics'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateContract } from 'shared/supabase/contracts'
-import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
-  body,
-  auth,
-  req
-) => {
-  return betsQueue.enqueueFn(
-    () => updateMarketMain(body, auth, req),
-    [body.contractId]
-  )
-}
-
-const updateMarketMain: APIHandler<'market/:contractId/update'> = async (
   body,
   auth
 ) => {
