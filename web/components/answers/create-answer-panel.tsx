@@ -177,13 +177,13 @@ export function SearchCreateAnswerPanel(props: {
     }
   }
 
-  const [rightPadding, setRightPadding] = useState(8) // Default padding
+  const inputRef = useRef<HTMLInputElement>(null)
   const buttonsRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
-    if (buttonsRef.current) {
-      const width = buttonsRef.current.offsetWidth
-      setRightPadding(width + 8) // Add 8px for some extra space
+    if (inputRef.current && buttonsRef.current) {
+      const buttonsWidth = buttonsRef.current.offsetWidth
+      inputRef.current.style.paddingRight = `${buttonsWidth + 8}px`
     }
   }, [text, canAddAnswer])
 
@@ -193,13 +193,13 @@ export function SearchCreateAnswerPanel(props: {
         <div className="relative w-full">
           <Input
             value={text}
+            ref={inputRef}
             onChange={(e) => setText(e.target.value)}
             className="!bg-canvas-50 !h-8 w-full flex-grow !rounded-full !pl-7 !text-sm"
             placeholder={
               canAddAnswer ? 'Search or Add answers' : 'Search answers'
             }
             onBlur={() => !text && setIsSearchOpen?.(false)}
-            style={{ paddingRight: `${rightPadding}px` }}
           />
           {canAddAnswer ? (
             <FaSearchPlus className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4 " />
