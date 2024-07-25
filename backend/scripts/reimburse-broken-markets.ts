@@ -4,7 +4,7 @@ import { runTxn } from 'shared/txn/run-txn'
 import { generateAntes } from 'api/create-market'
 import { Contract } from 'common/contract'
 import { Answer } from 'common/answer'
-import { groupBy } from 'lodash'
+import { log } from 'shared/utils'
 
 runScript(async ({ pg }) => {
   const contractAntes = await pg.many<{
@@ -40,10 +40,13 @@ runScript(async ({ pg }) => {
   )
 
   for (const c of contractAntes) {
+    log(`fixing [${c.question}](${c.slug})`)
+
     await pg.tx(async (tx) => {
       // reimburse creation cost if resolved
       if (c.resolution) {
         const message = `Reimbursement for creation cost of [${c.question}](${c.slug})`
+        log(message + `: ${c.amount}`)
         await runTxn(tx, {
           fromId: HOUSE_LIQUIDITY_PROVIDER_ID,
           fromType: 'USER',
@@ -64,14 +67,20 @@ runScript(async ({ pg }) => {
       // insert liquidity doc
 
       let originalAnswers: Answer[] | undefined = undefined
-      if (c.outcome_type == 'MULTIPLE_CHOICE' && c.answers?.length) {
-        const minCreated = Math.min(...c.answers.map((a) => a.createdTime))
-        originalAnswers = c.answers.filter((a) => a.createdTime === minCreated)
-        const ante = c.amount / originalAnswers.length
-        originalAnswers.forEach((ans) => {
-          ans.poolYes = ante
-          ans.poolNo = ante
-        })
+      if (c.outcome_type == 'MULTIPLE_CHOICE') {
+        if (c.answers?.length) {
+          const minCreated = Math.min(...c.answers.map((a) => a.createdTime))
+          originalAnswers = c.answers.filter(
+            (a) => a.createdTime === minCreated
+          )
+          const ante = c.amount / originalAnswers.length
+          originalAnswers.forEach((ans) => {
+            ans.poolYes = ante
+            ans.poolNo = ante
+          })
+        } else {
+          originalAnswers = []
+        }
       }
 
       const initialPool = { YES: c.amount, NO: c.amount }
