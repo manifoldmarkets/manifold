@@ -131,13 +131,38 @@ export const bulkInsertBets = async (
   return await bulkInsert(pg, 'contract_bets', bets.map(betToRow))
 }
 
-const betToRow = (bet: Omit<Bet, 'id'>) => ({
-  contract_id: bet.contractId,
-  user_id: bet.userId,
-  created_time: millisToTs(bet.createdTime),
-  data: JSON.stringify(removeUndefinedProps(bet)) + '::jsonb',
-})
+const betToRow = (bet: Omit<Bet, 'id'>) => {
+  const {
+    contractId,
+    userId,
+    amount,
+    shares,
+    outcome,
+    probBefore,
+    probAfter,
+    isRedemption,
+    isApi,
+    answerId,
+    loanAmount,
+    ...rest
+  } = bet
 
+  return {
+    contract_id: contractId,
+    user_id: userId,
+    created_time: millisToTs(bet.createdTime),
+    amount,
+    shares,
+    outcome,
+    prob_before: probBefore,
+    prob_after: probAfter,
+    is_redemption: isRedemption,
+    is_api: isApi,
+    answer_id: answerId,
+    loanAmount,
+    data: JSON.stringify(removeUndefinedProps(rest)) + '::jsonb',
+  }
+}
 export const cancelLimitOrders = async (
   pg: SupabaseDirectClient,
   limitOrderIds: string[]
