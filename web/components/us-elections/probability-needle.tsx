@@ -154,7 +154,7 @@ export function ProbabilityNeedle(props: {
         TOSSUP
       </text>
       <text
-        x={SVG_WIDTH - LEANING_X - 75}
+        x={SVG_WIDTH - LEANING_X - 45}
         y={LEANING_Y}
         fontSize="12"
         fontWeight={'thin'}
@@ -163,7 +163,7 @@ export function ProbabilityNeedle(props: {
         LEAN D
       </text>
       <text
-        x={SVG_WIDTH - LIKELY_X - 65}
+        x={SVG_WIDTH - LIKELY_X - 50}
         y={LIKELY_Y}
         fontSize="12"
         fontWeight={'thin'}
@@ -173,7 +173,7 @@ export function ProbabilityNeedle(props: {
         LIKELY D
       </text>
       <text
-        x={SVG_WIDTH - STRONG_X - 80}
+        x={SVG_WIDTH - STRONG_X - 45}
         y={STRONG_Y}
         fontSize="12"
         fontWeight={'thin'}
