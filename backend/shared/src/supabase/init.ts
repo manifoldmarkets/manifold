@@ -82,11 +82,7 @@ type TimeoutTask = <T>(
 ) => Promise<T>
 
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
-let pgpDirect:
-  | (IDatabase<{}, IClient> & {
-      timeout: TimeoutTask
-    })
-  | null = null
+let pgpDirect: SupbaseDirectClientTimeout | null = null
 export function createSupabaseDirectClient(
   instanceId?: string,
   password?: string
@@ -179,20 +175,6 @@ export function createSupabaseDirectClient(
     timeout,
   }
   return pgpDirect
-}
-
-let shortTimeoutPgpClient: IDatabase<{}, IClient> | null = null
-export const createShortTimeoutDirectClient = () => {
-  if (shortTimeoutPgpClient) return shortTimeoutPgpClient
-  shortTimeoutPgpClient = pgp({
-    host: `db.${getInstanceHostname(getInstanceId())}`,
-    port: 5432,
-    user: `postgres`,
-    password: process.env.SUPABASE_PASSWORD,
-    query_timeout: 1000 * 30,
-    max: 20,
-  })
-  return shortTimeoutPgpClient
 }
 
 export const SERIAL_MODE = new pgp.txMode.TransactionMode({
