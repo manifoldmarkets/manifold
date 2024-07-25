@@ -31,9 +31,9 @@ runScript(async ({ pg }) => {
     from contracts c
     join txns t
     on c.id = t.to_id
-    left join contract_liquidity l
+    left join (select * from contract_liquidity where (data->'isAnte')::boolean = true) l
     on c.id = l.contract_id
-    where c.created_time > '2024-02-23 16:46-0800'
+    where c.created_time > '2024-07-23 16:46-0800'
     and c.mechanism != 'none'
     and l.contract_id is null
     and t.category = 'CREATE_CONTRACT_ANTE'`
