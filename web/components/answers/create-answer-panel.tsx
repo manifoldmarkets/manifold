@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { CPMMMultiContract, MultiContract, SORTS } from 'common/contract'
 import { Col } from '../layout/col'
 import { api } from 'web/lib/api/api'
