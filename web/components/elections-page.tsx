@@ -142,16 +142,16 @@ export function USElectionsPage(props: ElectionsPageProps) {
       </Col>
 
       <PoliticsCard
+        customTitle="Democratic vice presidential nomination"
+        contract={democraticVPContract as MultiContract}
+        viewType="CANDIDATE"
+      />
+
+      <PoliticsCard
         contract={democraticElectability as MultiContract}
         viewType="CANDIDATE"
         customTitle={'Who would win if they were the Democratic nominee?'}
         excludeAnswers={['Joe Biden', '[Any Democrat Except Biden or Harris]']}
-      />
-
-      <PoliticsCard
-        customTitle="Democratic vice presidential nomination"
-        contract={democraticVPContract as MultiContract}
-        viewType="CANDIDATE"
       />
 
       <Col className="hidden gap-6 sm:flex sm:gap-8">
