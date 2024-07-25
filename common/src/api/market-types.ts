@@ -319,6 +319,7 @@ export const createMarketProps = z
     matchCreatorId: z.string().optional(),
     isLove: z.boolean().optional(),
     marketTier: z.enum(tiers).optional(),
+    idempotencyKey: z.string().optional(),
   })
   .and(
     z.union([

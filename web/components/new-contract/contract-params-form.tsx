@@ -60,8 +60,9 @@ export function ContractParamsForm(props: {
   creator: User
   outcomeType: CreateableOutcomeType
   params?: NewQuestionParams
+  idempotencyKey: string
 }) {
-  const { creator, params, outcomeType } = props
+  const { creator, params, outcomeType, idempotencyKey } = props
   const DEFAULT_TIER = CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(
     outcomeType
   )
@@ -386,6 +387,7 @@ export function ContractParamsForm(props: {
           outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
         precision,
         marketTier,
+        idempotencyKey,
       })
 
       const newContract = await api('market', createProps as any)
