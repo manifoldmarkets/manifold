@@ -105,7 +105,7 @@ const verifyUserCanUnresolve = async (
     }
 
     const answerResolutionTime = await pg.oneOrNone(
-      `select ts_to_millis(resolution_time)
+      `select ts_to_millis(resolution_time) as resolution_time
          from answers
          where id= $1
          limit 1`,
