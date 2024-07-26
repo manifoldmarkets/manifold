@@ -11,6 +11,8 @@ import { MultiBettor, OpenProb } from '../answers/answer-components'
 import { Answer } from 'common/answer'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
+import Link from 'next/link'
+import { ClickFrame } from '../widgets/click-frame'
 
 export function StateContract(props: {
   targetContract: Contract | null
@@ -120,9 +122,9 @@ function SwingStateRow(props: {
 
   const repAnswer = contract.answers.find((a) => a.text === 'Republican Party')
   return (
-    <Row
+    <ClickFrame
       className={clsx(
-        'border-ink-300 group h-[74px] justify-between border-b transition-colors sm:h-10',
+        'border-ink-300 group flex h-[74px] flex-row justify-between border-b transition-colors sm:h-10',
         index == 0 && 'border-t',
         targetState == state
           ? 'bg-canvas-50'
@@ -140,14 +142,19 @@ function SwingStateRow(props: {
         router.push(contractUrl)
       }}
     >
-      <Row className="group-hover:text-primary-700 items-center gap-2 transition-all group-hover:underline">
+      <Row className="select-none items-center gap-2 transition-all ">
         <div
           className=" h-full w-6 transition-colors"
           style={{
             background: probToColor(contract),
           }}
         />
-        {extractStateFromPresidentContract(contract.question)}
+        <Link
+          href={contractUrl}
+          className="hover:text-primary-700 hover:underline"
+        >
+          {extractStateFromPresidentContract(contract.question)}
+        </Link>
       </Row>
       {demAnswer && repAnswer && (
         <div className="my-auto flex flex-col items-center gap-1 sm:flex-row sm:gap-4">
@@ -165,7 +172,7 @@ function SwingStateRow(props: {
           />
         </div>
       )}
-    </Row>
+    </ClickFrame>
   )
 }
 
