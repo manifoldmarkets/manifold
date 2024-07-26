@@ -162,7 +162,6 @@ export function ContractPageContent(props: ContractParams) {
     pointsString,
     multiPointsString,
     chartAnnotations,
-    relatedContractsByTopicSlug,
     topics,
     dashboards,
     pinnedComments,
@@ -597,8 +596,6 @@ export function ContractPageContent(props: ContractParams) {
             <RelatedContractsGrid
               contracts={relatedMarkets}
               loadMore={loadMore}
-              contractsByTopicSlug={relatedContractsByTopicSlug}
-              topics={topics}
               showAll={true}
             />
           </Col>
@@ -615,7 +612,6 @@ export function ContractPageContent(props: ContractParams) {
             contracts={relatedMarkets}
             loadMore={loadMore}
             topics={topics}
-            contractsByTopicSlug={relatedContractsByTopicSlug}
           />
         </Col>
       </Row>

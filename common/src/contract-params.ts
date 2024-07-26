@@ -85,11 +85,9 @@ export async function getContractParams(
       : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    unauthedApi('get-related-markets-cache', {
+    unauthedApi('get-related-markets', {
       contractId: contract.id,
-      limit: 2,
-      embeddingsLimit: 10,
-      limitTopics: 4,
+      limit: 10,
     }),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
@@ -143,7 +141,6 @@ export async function getContractParams(
       totalBets,
       topContractMetrics,
       relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
-      relatedContractsByTopicSlug: relatedContracts.marketsByTopicSlug,
       chartAnnotations,
       pinnedComments,
       topics: orderBy(

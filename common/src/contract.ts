@@ -412,7 +412,6 @@ export type ContractParams = {
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]
-  relatedContractsByTopicSlug: Record<string, Contract[]>
   topics: Topic[]
   dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]

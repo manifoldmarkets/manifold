@@ -924,7 +924,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'get-related-markets-cache': {
+  'get-related-markets': {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
@@ -932,14 +932,11 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         limit: z.coerce.number().gte(0).lte(100),
-        embeddingsLimit: z.coerce.number().gte(0).lte(100),
-        limitTopics: z.coerce.number().gte(0).lte(10),
         userId: z.string().optional(),
       })
       .strict(),
     returns: {} as {
       marketsFromEmbeddings: Contract[]
-      marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
     cache: 'public, max-age=3600, stale-while-revalidate=10',
   },
