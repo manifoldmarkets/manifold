@@ -43,6 +43,8 @@ import {
 } from 'shared/helpers/bet-cache'
 import { filterDefined } from 'common/util/array'
 import { onCreateBets } from 'api/on-create-bet'
+import { filterDefined } from 'common/util/array'
+
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -132,7 +134,6 @@ export const placeBetMain = async (
   const transactionStart = Date.now()
   const result = await runShortTrans(async (pgTrans) => {
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)
-
     // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
     const balanceFetchStart = Date.now()
     const balanceByUserId = await getUserBalances(pgTrans, [
@@ -544,6 +545,7 @@ export const executeNewBetResult = async (
         const betRow = insertedBets[i]
         fullBets.push(convertBet(betRow))
 
+
         const updateOtherMakersStart = Date.now()
         await updateMakers(
           otherBetResults[i].makers,
@@ -551,12 +553,14 @@ export const executeNewBetResult = async (
           contract,
           pgTrans
         )
+
         const updateOtherMakersEnd = Date.now()
         log(
           `updateOtherMakers took ${
             updateOtherMakersEnd - updateOtherMakersStart
           }ms`
         )
+
       }
     }
 
@@ -717,6 +721,7 @@ export const updateMakers = async (
     const redeemSharesForMakersStart = Date.now()
     await Promise.all(
       makerIds.map(async (userId) => redeemShares(pgTrans, userId, contract))
+
     )
     const redeemSharesForMakersEnd = Date.now()
     log(

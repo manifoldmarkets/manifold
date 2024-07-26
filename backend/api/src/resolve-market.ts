@@ -33,10 +33,9 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   )
 }
 
-const resolveMarketMain: APIHandler<'market/:contractId/resolve'> = async (
-  props,
-  auth
-) => {
+export const resolveMarketMain: APIHandler<
+  'market/:contractId/resolve'
+> = async (props, auth) => {
   const db = createSupabaseDirectClient()
 
   const { contractId } = props

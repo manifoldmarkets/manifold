@@ -209,7 +209,6 @@ export type Database = {
           shares: number | null
           updated_time: string
           user_id: string
-          visibility: string | null
         }
         Insert: {
           amount?: number | null
@@ -227,7 +226,6 @@ export type Database = {
           shares?: number | null
           updated_time?: string
           user_id: string
-          visibility?: string | null
         }
         Update: {
           amount?: number | null
@@ -245,7 +243,6 @@ export type Database = {
           shares?: number | null
           updated_time?: string
           user_id?: string
-          visibility?: string | null
         }
         Relationships: []
       }
@@ -1468,7 +1465,6 @@ export type Database = {
           amount: number
           created_time: string | null
           creator_id: string
-          data: Json | null
           expires_time: string | null
           id: string
           max_uses: number | null
@@ -1478,7 +1474,6 @@ export type Database = {
           amount: number
           created_time?: string | null
           creator_id: string
-          data?: Json | null
           expires_time?: string | null
           id?: string
           max_uses?: number | null
@@ -1488,7 +1483,6 @@ export type Database = {
           amount?: number
           created_time?: string | null
           creator_id?: string
-          data?: Json | null
           expires_time?: string | null
           id?: string
           max_uses?: number | null
@@ -3703,12 +3697,19 @@ export type Database = {
           n: number
         }[]
       }
-      ts_to_millis: {
-        Args: {
-          ts: string
-        }
-        Returns: number
-      }
+      ts_to_millis:
+        | {
+            Args: {
+              ts: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              ts: string
+            }
+            Returns: number
+          }
       vector_avg: {
         Args: {
           '': number[]
