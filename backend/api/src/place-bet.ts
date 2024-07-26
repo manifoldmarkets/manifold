@@ -41,10 +41,8 @@ import {
   getUnfilledBets,
   getUserBalances,
 } from 'shared/helpers/bet-cache'
-import { filterDefined } from 'common/util/array'
 import { onCreateBets } from 'api/on-create-bet'
 import { filterDefined } from 'common/util/array'
-
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -545,7 +543,6 @@ export const executeNewBetResult = async (
         const betRow = insertedBets[i]
         fullBets.push(convertBet(betRow))
 
-
         const updateOtherMakersStart = Date.now()
         await updateMakers(
           otherBetResults[i].makers,
@@ -560,7 +557,6 @@ export const executeNewBetResult = async (
             updateOtherMakersEnd - updateOtherMakersStart
           }ms`
         )
-
       }
     }
 
@@ -721,7 +717,6 @@ export const updateMakers = async (
     const redeemSharesForMakersStart = Date.now()
     await Promise.all(
       makerIds.map(async (userId) => redeemShares(pgTrans, userId, contract))
-
     )
     const redeemSharesForMakersEnd = Date.now()
     log(
