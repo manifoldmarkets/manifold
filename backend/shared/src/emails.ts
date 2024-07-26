@@ -371,9 +371,7 @@ export const sendNewCommentEmail = async (
   contract: Contract,
   commentText: string,
   commentId: string,
-  bet?: Bet,
-  answerText?: string,
-  answerId?: string
+  bet?: Bet
 ) => {
   const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
     privateUser,
@@ -646,8 +644,7 @@ export const sendNewUniqueBettorsEmail = async (
   contract: Contract,
   totalPredictors: number,
   newPredictors: User[],
-  userBets: Dictionary<[Bet, ...Bet[]]>,
-  bonusAmount: number
+  userBets: Dictionary<[Bet, ...Bet[]]>
 ) => {
   const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
     privateUser,
@@ -672,7 +669,6 @@ export const sendNewUniqueBettorsEmail = async (
     name: firstName,
     creatorName,
     totalPredictors: totalPredictors.toString(),
-    bonusString: emailMoneyFormat(bonusAmount),
     marketTitle: contract.question,
     marketUrl: contractUrl(contract),
     unsubscribeUrl,
