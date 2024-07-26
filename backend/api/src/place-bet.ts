@@ -742,6 +742,9 @@ export const updateMakers = async (
   }
 
   const bulkUpdateStart = Date.now()
+  // timeout for 4 seconds here:
+  await new Promise((resolve) => setTimeout(resolve, 4000))
+  console.log('Waited 4 seconds')
   await bulkUpdateLimitOrders(pgTrans, updates)
   const bulkUpdateEnd = Date.now()
   log(`bulkUpdateLimitOrders took ${bulkUpdateEnd - bulkUpdateStart}ms`)
