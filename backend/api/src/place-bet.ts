@@ -120,6 +120,8 @@ export const placeBetMain = async (
 
   const result = await runShortTrans(async (pgTrans) => {
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)
+    await new Promise((resolve) => setTimeout(resolve, 5000))
+    console.log('Waited some seconds')
 
     // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
     const balanceByUserId = await getUserBalances(pgTrans, [
