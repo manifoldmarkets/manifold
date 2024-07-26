@@ -32,7 +32,6 @@ import Link from 'next/link'
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
