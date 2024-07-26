@@ -225,7 +225,7 @@ export function AnswersPanel(props: {
   )
 
   const answersContainerRef = useRef<HTMLDivElement>(null)
-  const [previousQuery, setPreviousQuery] = useState(query)
+  const previousQueryRef = useRef(query)
 
   const scrollToAnswers = useCallback(
     debounce(() => {
@@ -243,12 +243,12 @@ export function AnswersPanel(props: {
   )
 
   useEffect(() => {
-    if (query === '' && previousQuery === '') {
+    if (query === '' && previousQueryRef.current === '') {
       // Don't scroll if the query is empty and there was no previous query
       return
     }
     scrollToAnswers()
-    setPreviousQuery(query)
+    previousQueryRef.current = query
   }, [query, scrollToAnswers])
 
   return (
