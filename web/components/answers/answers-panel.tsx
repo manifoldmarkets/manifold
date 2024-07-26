@@ -29,13 +29,7 @@ import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
 import { groupBy, sumBy } from 'lodash'
 import Link from 'next/link'
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CirclePicker } from 'react-color'
 import toast from 'react-hot-toast'
 import { Button, buttonClass } from 'web/components/buttons/button'
