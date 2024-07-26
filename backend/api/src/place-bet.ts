@@ -35,7 +35,11 @@ import {
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
-import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
+import {
+  bulkInsertBets,
+  cancelLimitOrders,
+  insertBet,
+} from 'shared/supabase/bets'
 import { broadcastOrders } from 'shared/websockets/helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
@@ -46,6 +50,7 @@ import {
   updateAnswers,
 } from 'shared/supabase/answers'
 import { updateContract } from 'shared/supabase/contracts'
+import { filterDefined } from 'common/util/array'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -120,7 +125,6 @@ export const placeBetMain = async (
 
   const result = await runShortTrans(async (pgTrans) => {
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)
-
     // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
     const balanceByUserId = await getUserBalances(pgTrans, [
       uid,
@@ -549,37 +553,56 @@ export const executeNewBetResult = async (
     }
 
     if (otherBetResults) {
-      // TODO: do in a single query as a bulk update
-      for (const result of otherBetResults) {
-        const { answer, bet, cpmmState, makers, ordersToCancel } = result
-        const { probBefore, probAfter } = bet
-        const smallEnoughToIgnore =
-          probBefore < 0.001 &&
-          probAfter < 0.001 &&
-          Math.abs(probAfter - probBefore) < 0.00001
+      const betsToInsert = filterDefined(
+        otherBetResults.map((result) => {
+          const { answer, bet, cpmmState, ordersToCancel } = result
+          const { probBefore, probAfter } = bet
+          const smallEnoughToIgnore =
+            probBefore < 0.001 &&
+            probAfter < 0.001 &&
+            Math.abs(probAfter - probBefore) < 0.00001
 
-        if (!smallEnoughToIgnore || Math.random() < 0.01) {
-          const candidateBet = removeUndefinedProps({
-            userId: user.id,
-            isApi,
-            betGroupId,
-            ...bet,
-          })
-          const betRow = await insertBet(candidateBet, pgTrans)
-          fullBets.push(convertBet(betRow))
+          if (!smallEnoughToIgnore || Math.random() < 0.01) {
+            const candidateBet = removeUndefinedProps({
+              userId: user.id,
+              isApi,
+              betGroupId,
+              ...bet,
+            })
 
-          await updateMakers(makers, betRow.bet_id, contract, pgTrans)
+            const { YES: poolYes, NO: poolNo } = cpmmState.pool
+            const prob = getCpmmProbability(cpmmState.pool, 0.5)
+            answerUpdates.push({
+              id: answer.id,
+              poolYes,
+              poolNo,
+              prob,
+            })
 
-          const { YES: poolYes, NO: poolNo } = cpmmState.pool
-          const prob = getCpmmProbability(cpmmState.pool, 0.5)
-          answerUpdates.push({
-            id: answer.id,
-            poolYes,
-            poolNo,
-            prob,
-          })
-        }
-        allOrdersToCancel.push(...ordersToCancel)
+            return candidateBet
+          }
+
+          allOrdersToCancel.push(...ordersToCancel)
+          return undefined
+        })
+      )
+
+      const bulkInsertStart = Date.now()
+      const insertedBets = await bulkInsertBets(betsToInsert, pgTrans)
+      const bulkInsertEnd = Date.now()
+      log(`bulkInsertBets took ${bulkInsertEnd - bulkInsertStart}ms`)
+
+      for (let i = 0; i < insertedBets.length; i++) {
+        const betRow = insertedBets[i]
+        fullBets.push(convertBet(betRow))
+
+        // TODO: bulk update the makers
+        await updateMakers(
+          otherBetResults[i].makers,
+          betRow.bet_id,
+          contract,
+          pgTrans
+        )
       }
     }
 
@@ -648,6 +671,39 @@ export type maker = {
   shares: number
   timestamp: number
 }
+
+export async function bulkUpdateLimitOrders(
+  db: SupabaseDirectClient,
+  updates: Array<{
+    id: string
+    fills?: any[]
+    isFilled?: boolean
+    amount?: number
+    shares?: number
+  }>
+) {
+  if (updates.length > 0) {
+    const values = updates
+      .map((update) => {
+        const updateData = {
+          fills: update.fills,
+          isFilled: update.isFilled,
+          amount: update.amount,
+          shares: update.shares,
+        }
+        return `('${update.id}', '${JSON.stringify(updateData)}'::jsonb)`
+      })
+      .join(',\n')
+
+    await db.none(
+      `UPDATE contract_bets AS c
+       SET data = data || v.update
+       FROM (VALUES ${values}) AS v(id, update)
+       WHERE c.bet_id = v.id`
+    )
+  }
+}
+
 export const updateMakers = async (
   makers: maker[],
   takerBetId: string,
@@ -655,8 +711,16 @@ export const updateMakers = async (
   pgTrans: SupabaseTransaction
 ) => {
   const updatedLimitBets: LimitBet[] = []
-  // TODO: do this in a single query as a bulk update
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
+  if (Object.keys(makersByBet).length === 0) return
+  const updates: Array<{
+    id: string
+    fills: any[]
+    isFilled: boolean
+    amount: number
+    shares: number
+  }> = []
+
   for (const makers of Object.values(makersByBet)) {
     const bet = makers[0].bet
     const newFills = makers.map((maker) => {
@@ -668,27 +732,28 @@ export const updateMakers = async (
     const totalAmount = sumBy(fills, 'amount')
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
-    log('Update a matched limit order.')
-    const newData = await pgTrans.one<LimitBet>(
-      `update contract_bets
-      set data = data || $1
-      where bet_id = $2
-      returning data`,
-      [
-        JSON.stringify({
-          fills,
-          isFilled,
-          amount: totalAmount,
-          shares: totalShares,
-        }),
-        bet.id,
-      ],
-      (r) => r.data
-    )
-
-    updatedLimitBets.push(newData)
+    updates.push({
+      id: bet.id,
+      fills,
+      isFilled,
+      amount: totalAmount,
+      shares: totalShares,
+    })
   }
 
+  const bulkUpdateStart = Date.now()
+  await bulkUpdateLimitOrders(pgTrans, updates)
+  const bulkUpdateEnd = Date.now()
+  log(`bulkUpdateLimitOrders took ${bulkUpdateEnd - bulkUpdateStart}ms`)
+
+  // Fetch updated bets
+  await pgTrans.map(
+    `SELECT data
+       FROM contract_bets
+       WHERE bet_id IN ($1:csv)`,
+    [updates.map((u) => u.id)],
+    (r) => updatedLimitBets.push(r.data)
+  )
   broadcastOrders(updatedLimitBets)
 
   // Deduct balance of makers.
@@ -709,11 +774,9 @@ export const updateMakers = async (
   if (makerIds.length > 0) {
     log('Redeeming shares for makers', makerIds)
     await Promise.all(
-      makerIds.map((userId) => redeemShares(pgTrans, userId, contract))
+      makerIds.map(async (userId) => redeemShares(pgTrans, userId, contract))
     )
   }
-
-  // TODO: figure out LOGGING
 }
 
 export const getRoundedLimitProb = (limitProb: number | undefined) => {
