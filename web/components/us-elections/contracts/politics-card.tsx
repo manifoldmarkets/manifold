@@ -104,7 +104,7 @@ export function PoliticsCard(props: {
         {/* Title is link to contract for open in new tab and a11y */}
         <Link
           className={clsx(
-            'group-hover:text-primary-700 grow items-start font-semibold transition-colors group-hover:underline sm:text-lg',
+            'hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg',
             titleSize === 'lg' && ' sm:text-3xl'
           )}
           href={path}
@@ -136,7 +136,7 @@ export function PoliticsCard(props: {
       >
         <Link
           className={clsx(
-            'group-hover:text-primary-700 grow items-start font-semibold transition-colors group-hover:underline sm:text-lg ',
+            'hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg ',
             titleSize === 'lg' && ' sm:text-3xl'
           )}
           href={path}
