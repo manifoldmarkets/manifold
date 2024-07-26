@@ -48,3 +48,5 @@ If you need additional access to any infrastructure in order to work on somethin
 [cloud-functions]: https://firebase.google.com/docs/functions
 [small-prs]: https://google.github.io/eng-practices/review/developer/small-cls.html
 [discord]: https://discord.gg/3Zuth9792G
+
+[![Mutable.ai Auto Wiki](https://img.shields.io/badge/Auto_Wiki-Mutable.ai-blue)](https://wiki.mutable.ai/manifoldmarkets/manifold)
