@@ -1,26 +1,29 @@
 import { runScript } from './run-script'
-import { isProd } from 'shared/utils'
+import { isProd, log } from 'shared/utils'
 import { convertContract } from 'common/supabase/contracts'
-import { DEV_CONFIG } from 'common/envs/dev'
 import { Contract } from 'common/contract'
 import { removeUndefinedProps } from 'common/util/object'
 import { incrementBalance } from 'shared/supabase/users'
 import { formatApiUrlWithParams } from 'common/util/api'
+import { DEV_CONFIG } from 'common/envs/dev'
+
+const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
+// const URL = `http://localhost:8088/v0`
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
     if (isProd()) {
-      console.log('This script is dangerous to run in prod. Exiting.')
+      log('This script is dangerous to run in prod. Exiting.')
       return
     }
     const privateUsers = await pg.map(
       `select id, data->>'apiKey' as api_key from private_users
               where data->>'email' ilike '%manifoldtestnewuser%'
-              limit 100`,
+              limit 150`,
       [],
       (r) => ({ id: r.id as string, apiKey: r.api_key as string })
     )
-
+    log('got private users')
     await Promise.all(
       privateUsers.map((pu) =>
         incrementBalance(pg, pu.id, {
@@ -29,31 +32,74 @@ if (require.main === module) {
         })
       )
     )
-    console.log(`${privateUsers.length} user balances incremented by 1000`)
+    log(`${privateUsers.length} user balances incremented by 1000`)
+    await Promise.all(
+      privateUsers
+        .filter((p) => !p.apiKey)
+        .map(async (p) => {
+          return await pg.none(
+            `update private_users set data = data || $2 where id = $1`,
+            [p.id, JSON.stringify({ apiKey: crypto.randomUUID() })]
+          )
+        })
+    )
+    log('added api keys')
+    const marketCreations = [
+      {
+        question: 'test ' + Math.random().toString(36).substring(7),
+        outcomeType: 'MULTIPLE_CHOICE',
+        answers: Array(50)
+          .fill(0)
+          .map((_, i) => 'answer ' + i),
+        shouldAnswersSumToOne: true,
+      },
+      // {
+      //   question: 'test ' + Math.random().toString(36).substring(7),
+      //   outcomeType: 'BINARY',
+      // },
+      // {
+      //   question: 'test ' + Math.random().toString(36).substring(7),
+      //   outcomeType: 'MULTIPLE_CHOICE',
+      //   answers: Array(50)
+      //     .fill(0)
+      //     .map((_, i) => 'answer ' + i),
+      //   shouldAnswersSumToOne: false,
+      // },
+    ]
+    log('creating markets')
+    const markets = await Promise.all(
+      marketCreations.map(async (market) => {
+        const resp = await fetch(URL + `/market`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Key ${privateUsers[0].apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(market),
+        })
+        if (resp.status !== 200) {
+          console.error('Failed to create market', await resp.text())
+        }
+        return resp.json()
+      })
+    )
     const contracts = await pg.map(
       `select * from contracts where slug in ($1:list)`,
-      [
-        [
-          'test-ad1dc7797b41',
-          'beeeep-bop',
-          'exit-valuation-of-lingtual-yc-s23',
-          'other',
-        ],
-      ],
+      [markets.map((m: any) => m.slug)],
       convertContract
     )
-    console.log(`Found ${contracts.length} contracts`)
+    log(`Found ${contracts.length} contracts`)
 
-    let totalVisits = 0
+    const totalVisits = 0
     let totalBets = 0
-    let totalVisitErrors = 0
+    const totalVisitErrors = 0
     let totalBetErrors = 0
     const startTime = Date.now()
     const userSpentAmounts: { [key: string]: number } = {}
     const errorMessage: { [key: string]: number } = {}
 
     const runChaos = async () => {
-      console.log('Chaos reigns...')
+      log('Chaos reigns...')
       await Promise.all(
         privateUsers.map(async (user) => {
           const manyBetsPromise = async () => {
@@ -77,24 +123,24 @@ if (require.main === module) {
           }
 
           // 50 visits per user
-          const visitPromises = Array(50)
-            .fill(null)
-            .map(() => async () => {
-              const contract =
-                contracts[Math.floor(Math.random() * contracts.length)]
-              try {
-                await visitContract(contract)
-                totalVisits++
-              } catch (error: any) {
-                errorMessage[error.message] = errorMessage[error.message]
-                  ? errorMessage[error.message] + 1
-                  : 1
-                totalVisitErrors++
-              }
-            })
+          // const visitPromises = Array(50)
+          //   .fill(null)
+          //   .map(() => async () => {
+          //     const contract =
+          //       contracts[Math.floor(Math.random() * contracts.length)]
+          //     try {
+          //       await visitContract(contract)
+          //       totalVisits++
+          //     } catch (error: any) {
+          //       errorMessage[error.message] = errorMessage[error.message]
+          //         ? errorMessage[error.message] + 1
+          //         : 1
+          //       totalVisitErrors++
+          //     }
+          //   })
 
           await Promise.all([
-            ...visitPromises.map((p) => p()),
+            // ...visitPromises.map((p) => p()),
             manyBetsPromise(),
           ])
         })
@@ -103,25 +149,38 @@ if (require.main === module) {
 
     const reportStats = () => {
       const elapsedSeconds = (Date.now() - startTime) / 1000
-      console.log(`----- Stats report -----`)
-      console.log(`----- Errors follow -----`)
+      log(`----- Stats report -----`)
+      log(`----- Errors follow -----`)
       Object.entries(errorMessage).map(([key, value]) => {
-        console.log(`Error seen ${value} times: ${key}`)
+        log(`Error seen ${value} times: ${key}`)
       })
-      console.log(`----- End of errors -----`)
-      console.log(`Total visit errors: ${totalVisitErrors}`)
-      console.log(`Total bet errors: ${totalBetErrors}`)
-      console.log(`Total visits: ${totalVisits}`)
-      console.log(`Total bets: ${totalBets}`)
-      console.log(
+      log(`----- End of errors -----`)
+      // visits:
+      log(`----- VISITS -----`)
+      log(`Total error visits: ${totalVisitErrors}`)
+      log(`Total successful visits: ${totalVisits}`)
+      log(
         `Successful visits per second: ${(totalVisits / elapsedSeconds).toFixed(
           2
         )}`
       )
-      console.log(
+      log(
+        'Successful visit rate: ',
+        Math.round((totalVisits / (totalVisits + totalVisitErrors)) * 100) + '%'
+      )
+      log(`----- BETS -----`)
+      log(`Total error bets: ${totalBetErrors}`)
+      log(`Total successful bets: ${totalBets}`)
+      log(
         `Successful bets per second: ${(totalBets / elapsedSeconds).toFixed(2)}`
       )
-      console.log(`-------------------------`)
+      log(
+        'Successful bet rate: ',
+        Math.round((totalBets / (totalBets + totalBetErrors)) * 100) + '%'
+      )
+      log(`----- FINALLY -----`)
+      log(`Total time elapsed: ${elapsedSeconds.toFixed(2)} seconds`)
+      log(`-------------------------`)
     }
 
     // Run report stats and repeat chaos
@@ -133,7 +192,7 @@ if (require.main === module) {
       clearInterval(chaosInterval)
       clearInterval(reportInterval)
       reportStats()
-      console.log('Chaos no longer reigns.')
+      log('Chaos no longer reigns.')
       process.exit()
     })
 
@@ -158,31 +217,36 @@ async function placeManyBets(
   count: number,
   contract: Contract
 ) {
-  const url = `https://${DEV_CONFIG.apiEndpoint}/v0/bet`
   const limitProb =
     Math.random() > 0.5 ? parseFloat(Math.random().toPrecision(1)) : undefined
 
   const betData = removeUndefinedProps({
     contractId: contract.id,
-    amount: Math.random() * 100,
+    amount: Math.random() * 100 + 1,
     outcome: Math.random() > 0.5 ? 'YES' : 'NO',
     answerId:
       contract.mechanism === 'cpmm-multi-1'
         ? contract.answers[Math.floor(Math.random() * contract.answers.length)]
             ?.id
         : undefined,
-    limitProb: limitProb === 0 ? 0.1 : limitProb === 1 ? 0.9 : limitProb,
+    limitProb: !limitProb
+      ? undefined
+      : limitProb < 0.01
+      ? 0.01
+      : limitProb > 0.99
+      ? 0.99
+      : limitProb,
   })
   let success = 0
   let failure = 0
   let totalSpent = 0
-  const promises = []
   const executionTimes: number[] = []
 
   const errorMessage: { [key: string]: number } = {}
   for (let i = 0; i < count; i++) {
     const start = Date.now()
-    const resp = fetch(url, {
+    await new Promise((resolve) => setTimeout(resolve, Math.random() * 2000))
+    await fetch(URL + '/bet', {
       method: 'POST',
       headers: {
         Authorization: `Key ${apiKey}`,
@@ -212,9 +276,7 @@ async function placeManyBets(
           : 1
         failure++
       })
-    promises.push(resp)
   }
-  await Promise.all(promises)
 
   return { success, failure, errorMessage, totalSpent, executionTimes }
 }
