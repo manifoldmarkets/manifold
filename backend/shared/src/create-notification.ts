@@ -21,7 +21,7 @@ import {
   User,
 } from 'common/user'
 import { Contract, renderResolution } from 'common/contract'
-import { getContract, getPrivateUser, getUser, log } from 'shared/utils'
+import { getContract, getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import {
   groupBy,
@@ -74,9 +74,12 @@ import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 import { getUserFollowerIds } from 'shared/supabase/users'
 import { buildArray, filterDefined } from 'common/util/array'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { insertNotificationToSupabase } from 'shared/supabase/notifications'
+import {
+  bulkInsertNotifications,
+  insertNotificationToSupabase,
+} from 'shared/supabase/notifications'
 import { getCommentSafe } from './supabase/contract_comments'
-import { convertUser } from 'common/supabase/users'
+import { convertPrivateUser, convertUser } from 'common/supabase/users'
 import { convertBet } from 'common/supabase/bets'
 import {
   getRangeContainingValues,
@@ -182,7 +185,11 @@ export type replied_users_info = {
     bet: Bet | undefined
   }
 }
-const ALL_TRADERS_ID = 'X3z4hxRXipWvGoFhxlDOVxmP5vL2'
+
+const ALL_TRADERS_ID = isProd()
+  ? 'X3z4hxRXipWvGoFhxlDOVxmP5vL2'
+  : 'eMG8r3PEdRgtGArGGx1VUBGDwY53'
+
 export const createCommentOnContractNotification = async (
   sourceId: string,
   sourceUser: User,
@@ -210,10 +217,7 @@ export const createCommentOnContractNotification = async (
     const { loverUserId1, loverUserId2 } = sourceContract
     followerIds.push(...filterDefined([loverUserId1, loverUserId2]))
   }
-  const constructNotification = (
-    userId: string,
-    reason: NotificationReason
-  ) => {
+  const buildNotification = (userId: string, reason: NotificationReason) => {
     const notification: Notification = {
       id: crypto.randomUUID(),
       userId,
@@ -242,20 +246,47 @@ export const createCommentOnContractNotification = async (
 
   const needNotFollowContractReasons = ['tagged_user']
 
+  if (
+    taggedUserIds?.includes(ALL_TRADERS_ID) &&
+    (sourceUser.id === sourceContract.creatorId ||
+      isAdminId(sourceUser.id) ||
+      isModId(sourceUser.id))
+  ) {
+    const allBettors = await getUniqueBettorIds(sourceContract.id, pg)
+    const allVoters = await getUniqueVoterIds(sourceContract.id, pg)
+    const allUsers = uniq(allBettors.concat(allVoters))
+    taggedUserIds.push(...allUsers)
+  }
+  const bettorIds = await getUniqueBettorIds(sourceContract.id, pg)
+
+  const allRelevantUserIds = uniq([
+    ...followerIds,
+    sourceContract.creatorId,
+    ...(taggedUserIds ?? []),
+    ...(repliedUsersInfo ? Object.keys(repliedUsersInfo) : []),
+    ...bettorIds,
+  ])
+  const privateUsers = await pg.map(
+    'select * from private_users where id = any($1)',
+    [allRelevantUserIds],
+    convertPrivateUser
+  )
+  const notifications: Notification[] = []
+  const privateUserMap = new Map(privateUsers.map((user) => [user.id, user]))
+
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
     reason: NotificationReason
   ) => {
-    // A user doesn't have to follow a market to receive a notification with their tag
+    const privateUser = privateUserMap.get(userId)
     if (
+      !privateUser ||
+      sourceUser.id == userId ||
+      userIsBlocked(privateUser, sourceUser.id) ||
       (!followerIds.some((id) => id === userId) &&
-        !needNotFollowContractReasons.includes(reason)) ||
-      sourceUser.id == userId
+        !needNotFollowContractReasons.includes(reason))
     )
       return
-    const privateUser = await getPrivateUser(userId)
-    if (!privateUser) return
-    if (userIsBlocked(privateUser, sourceUser.id)) return
 
     const { sendToBrowser, sendToEmail, sendToMobile, notificationPreference } =
       getNotificationDestinationsForUser(privateUser, reason)
@@ -264,8 +295,7 @@ export const createCommentOnContractNotification = async (
 
     // Browser notifications
     if (sendToBrowser && !receivedNotifications.includes('browser')) {
-      const notification = constructNotification(userId, reason)
-      await insertNotificationToSupabase(notification, pg)
+      notifications.push(buildNotification(userId, reason))
       receivedNotifications.push('browser')
     }
 
@@ -275,7 +305,7 @@ export const createCommentOnContractNotification = async (
         (notificationPreference &&
           NOTIFICATION_DESCRIPTIONS[notificationPreference].verb) ??
         'commented'
-      const notification = constructNotification(userId, reason)
+      const notification = buildNotification(userId, reason)
       await createPushNotification(
         notification,
         privateUser,
@@ -306,91 +336,51 @@ export const createCommentOnContractNotification = async (
     usersToReceivedNotifications[userId] = receivedNotifications
   }
 
-  const notifyContractFollowers = async () => {
-    await mapAsync(
-      followerIds,
-      (userId) =>
-        sendNotificationsIfSettingsPermit(
-          userId,
-          'comment_on_contract_you_follow'
-        ),
-      20
-    )
-  }
-
-  const notifyContractCreator = async () => {
-    await sendNotificationsIfSettingsPermit(
-      sourceContract.creatorId,
-      'all_comments_on_my_markets'
-    )
-  }
-
-  const notifyBettorsOnContract = async () => {
-    // We don't need to filter by shares in bc they auto unfollow a market upon selling out of it
-    // Unhandled case sacrificed for performance: they bet in a market, sold out,
-    // then re-followed it - their notification reason should not include 'with_shares_in'
-    const recipientUserIds = await getUniqueBettorIds(sourceContract.id, pg)
-
-    await mapAsync(
-      recipientUserIds,
-      (userId) =>
-        sendNotificationsIfSettingsPermit(
-          userId,
-          'comment_on_contract_with_users_shares_in'
-        ),
-      20
-    )
-  }
-  const notifyRepliedUser = async () => {
-    if (repliedUsersInfo)
-      await mapAsync(
-        Object.keys(repliedUsersInfo),
-        (userId) =>
-          sendNotificationsIfSettingsPermit(
-            userId,
-            repliedUsersInfo[userId].repliedToType === 'answer'
-              ? 'reply_to_users_answer'
-              : 'reply_to_users_comment'
-          ),
-        20
-      )
-  }
-
-  const notifyTaggedUsers = async () => {
-    if (taggedUserIds && taggedUserIds.length > 0) {
-      if (
-        taggedUserIds.includes(ALL_TRADERS_ID) &&
-        (sourceUser.id === sourceContract.creatorId ||
-          isAdminId(sourceUser.id) ||
-          isModId(sourceUser.id))
-      ) {
-        const allBettors = await getUniqueBettorIds(sourceContract.id, pg)
-        const allVoters = await getUniqueVoterIds(sourceContract.id, pg)
-        const allUsers = uniq(allBettors.concat(allVoters))
-        taggedUserIds.push(...allUsers)
-      }
-      await mapAsync(
-        uniq(taggedUserIds),
-        (userId) => sendNotificationsIfSettingsPermit(userId, 'tagged_user'),
-        20
-      )
-    }
-  }
-
-  //TODO: store all possible reasons why the user might be getting the notification
-  // and choose the most lenient that they have enabled so they will unsubscribe
-  // from the least important notifications
   log('notifying replies')
-  await notifyRepliedUser()
+  if (repliedUsersInfo) {
+    await Promise.all(
+      Object.keys(repliedUsersInfo).map(async (userId) =>
+        sendNotificationsIfSettingsPermit(
+          userId,
+          repliedUsersInfo[userId].repliedToType === 'answer'
+            ? 'reply_to_users_answer'
+            : 'reply_to_users_comment'
+        )
+      )
+    )
+  }
   log('notifying tagged users')
-  await notifyTaggedUsers()
+  if (taggedUserIds && taggedUserIds.length > 0) {
+    await Promise.all(
+      uniq(taggedUserIds).map(async (userId) =>
+        sendNotificationsIfSettingsPermit(userId, 'tagged_user')
+      )
+    )
+  }
   log('notifying creator')
-  await notifyContractCreator()
+  await sendNotificationsIfSettingsPermit(
+    sourceContract.creatorId,
+    'all_comments_on_my_markets'
+  )
   log('notifying bettors')
-  await notifyBettorsOnContract()
-  // if they weren't notified previously, notify them now
+  await Promise.all(
+    bettorIds.map(async (userId) =>
+      sendNotificationsIfSettingsPermit(
+        userId,
+        'comment_on_contract_with_users_shares_in'
+      )
+    )
+  )
   log('notifying followers')
-  await notifyContractFollowers()
+  await Promise.all(
+    followerIds.map(async (userId) =>
+      sendNotificationsIfSettingsPermit(
+        userId,
+        'comment_on_contract_you_follow'
+      )
+    )
+  )
+  await bulkInsertNotifications(notifications, pg)
 }
 
 export const createNewAnswerOnContractNotification = async (
