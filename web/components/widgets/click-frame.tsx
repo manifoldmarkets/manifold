@@ -11,10 +11,12 @@ export const ClickFrame = forwardRef(
       children: React.ReactNode
       onClick: MouseEventHandler<HTMLDivElement>
       className?: string
+      onMouseEnter?: MouseEventHandler<HTMLDivElement>
+      onMouseLeave?: MouseEventHandler<HTMLDivElement>
     },
     ref: React.Ref<HTMLDivElement>
   ) => {
-    const { children, onClick, className } = props
+    const { children, onClick, className, onMouseEnter, onMouseLeave } = props
 
     return (
       <div
@@ -22,6 +24,8 @@ export const ClickFrame = forwardRef(
         tabIndex={-1}
         onClick={onClick}
         ref={ref}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
       >
         <div
           // pointer-events:none causes click events to fall through to parent.
