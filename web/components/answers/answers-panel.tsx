@@ -29,7 +29,14 @@ import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
 import { groupBy, sumBy } from 'lodash'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { CirclePicker } from 'react-color'
 import toast from 'react-hot-toast'
 import { Button, buttonClass } from 'web/components/buttons/button'
@@ -218,6 +225,7 @@ export function AnswersPanel(props: {
   )
 
   const answersContainerRef = useRef<HTMLDivElement>(null)
+  const previousQueryRef = useRef(query)
 
   const scrollToAnswers = useCallback(
     debounce(() => {
@@ -235,7 +243,12 @@ export function AnswersPanel(props: {
   )
 
   useEffect(() => {
+    if (query === '' && previousQueryRef.current === '') {
+      // Don't scroll if the query is empty and there was no previous query
+      return
+    }
     scrollToAnswers()
+    previousQueryRef.current = query
   }, [query, scrollToAnswers])
 
   return (
