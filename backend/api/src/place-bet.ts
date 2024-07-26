@@ -596,6 +596,7 @@ export const executeNewBetResult = async (
         const betRow = insertedBets[i]
         fullBets.push(convertBet(betRow))
 
+        // TODO: bulk update the makers
         await updateMakers(
           otherBetResults[i].makers,
           betRow.bet_id,
