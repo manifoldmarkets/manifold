@@ -1218,11 +1218,11 @@ or replace function public.top_creators_for_user (uid text, excluded_ids text[],
 $function$;
 
 create
-or replace function public.ts_to_millis (ts timestamp without time zone) returns bigint language sql immutable parallel SAFE as $function$
-select extract(epoch from ts)::bigint * 1000
+or replace function public.ts_to_millis (ts timestamp with time zone) returns bigint language sql immutable parallel SAFE as $function$
+select (extract(epoch from ts) * 1000)::bigint
 $function$;
 
 create
-or replace function public.ts_to_millis (ts timestamp with time zone) returns bigint language sql immutable parallel SAFE as $function$
-select (extract(epoch from ts) * 1000)::bigint
+or replace function public.ts_to_millis (ts timestamp without time zone) returns bigint language sql immutable parallel SAFE as $function$
+select extract(epoch from ts)::bigint * 1000
 $function$;

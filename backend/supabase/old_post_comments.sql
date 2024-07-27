@@ -5,7 +5,6 @@ create table if not exists
     comment_id text default extensions.uuid_generate_v4 () not null,
     data jsonb not null,
     fs_updated_time timestamp without time zone,
-    visibility text,
     user_id text,
     created_time timestamp with time zone default now()
   );
@@ -28,12 +27,6 @@ end $function$;
 
 -- Policies
 alter table old_post_comments enable row level security;
-
-drop policy if exists "Enable read access for non private post comments" on old_post_comments;
-
-create policy "Enable read access for non private post comments" on old_post_comments for
-select
-  using ((visibility <> 'private'::text));
 
 drop policy if exists "auth read" on old_post_comments;
 

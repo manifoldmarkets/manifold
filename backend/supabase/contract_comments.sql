@@ -33,12 +33,6 @@ end $function$;
 -- Policies
 alter table contract_comments enable row level security;
 
-drop policy if exists "Enable read access for non private comments" on contract_comments;
-
-create policy "Enable read access for non private comments" on contract_comments for
-select
-  using ((visibility <> 'private'::text));
-
 drop policy if exists "auth read" on contract_comments;
 
 create policy "auth read" on contract_comments for

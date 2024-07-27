@@ -1621,7 +1621,6 @@ export type Database = {
           fs_updated_time: string | null
           post_id: string
           user_id: string | null
-          visibility: string | null
         }
         Insert: {
           comment_id?: string
@@ -1630,7 +1629,6 @@ export type Database = {
           fs_updated_time?: string | null
           post_id: string
           user_id?: string | null
-          visibility?: string | null
         }
         Update: {
           comment_id?: string
@@ -1639,7 +1637,6 @@ export type Database = {
           fs_updated_time?: string | null
           post_id?: string
           user_id?: string | null
-          visibility?: string | null
         }
         Relationships: []
       }
