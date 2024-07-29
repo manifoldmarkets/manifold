@@ -214,7 +214,7 @@ export function SearchCreateAnswerPanel(props: {
               {text && (
                 <button
                   className={clsx('group h-full')}
-                  onClick={() => (setText(''), close?.())}
+                  onClick={() => setText('')}
                 >
                   <XCircleIcon className="fill-ink-300 group-hover:fill-ink-400 h-7 w-7 items-center transition-colors" />
                 </button>
