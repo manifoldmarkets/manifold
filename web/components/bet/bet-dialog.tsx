@@ -90,7 +90,7 @@ export function MultiBetDialog(props: {
           <>
             <Link
               href={contractPath(contract)}
-              className={clsx('mb-4 text-xl text-indigo-700', linkClass)}
+              className={clsx('text-primary-700 text-xl', linkClass)}
             >
               {question}
             </Link>
@@ -109,6 +109,7 @@ export function MultiBetDialog(props: {
                 onAnswerHover={() => null}
                 onAnswerClick={() => null}
                 defaultAddAnswer={contract.addAnswersMode === 'ANYONE'}
+                location={'multiBetDialogue'}
               />
             )}
           </>
