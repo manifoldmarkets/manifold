@@ -109,7 +109,7 @@ export function MultiBetDialog(props: {
                 onAnswerHover={() => null}
                 onAnswerClick={() => null}
                 defaultAddAnswer={contract.addAnswersMode === 'ANYONE'}
-                location={'multiBetDialogue'}
+                floatingSearchClassName={'-top-8 pt-4'}
               />
             )}
           </>

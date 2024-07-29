@@ -98,7 +98,7 @@ export function AnswersPanel(props: {
   showSetDefaultSort?: boolean
   setDefaultAnswerIdsToGraph?: (ids: string[]) => void
   defaultAddAnswer?: boolean
-  location?: 'marketPage' | 'multiBetDialogue'
+  floatingSearchClassName?: string
 }) {
   const {
     contract,
@@ -113,7 +113,7 @@ export function AnswersPanel(props: {
     showSetDefaultSort,
     setDefaultAnswerIdsToGraph,
     defaultAddAnswer,
-    location = 'marketPage',
+    floatingSearchClassName,
   } = props
   const { outcomeType, resolutions } = contract
   const addAnswersMode =
@@ -255,7 +255,7 @@ export function AnswersPanel(props: {
         setText={setQuery}
         className={clsx(
           'bg-canvas-0 sticky z-40',
-          location == 'marketPage' ? 'top-[48px]' : '-top-8 pt-4'
+          floatingSearchClassName ?? 'top-[48px]'
         )}
         sort={sort}
         setSort={setSort}
