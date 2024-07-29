@@ -33,9 +33,9 @@ end $function$;
 -- Policies
 alter table contract_comments enable row level security;
 
-drop policy if exists "auth read" on contract_comments;
+drop policy if exists "public read" on contract_comments;
 
-create policy "auth read" on contract_comments to service_role for
+create policy "public read" on contract_comments for
 select
   using (true);
 
