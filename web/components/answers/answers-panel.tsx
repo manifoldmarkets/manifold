@@ -98,6 +98,7 @@ export function AnswersPanel(props: {
   showSetDefaultSort?: boolean
   setDefaultAnswerIdsToGraph?: (ids: string[]) => void
   defaultAddAnswer?: boolean
+  floatingSearchClassName?: string
 }) {
   const {
     contract,
@@ -112,6 +113,7 @@ export function AnswersPanel(props: {
     showSetDefaultSort,
     setDefaultAnswerIdsToGraph,
     defaultAddAnswer,
+    floatingSearchClassName,
   } = props
   const { outcomeType, resolutions } = contract
   const addAnswersMode =
@@ -251,7 +253,10 @@ export function AnswersPanel(props: {
         canAddAnswer={canAddAnswer}
         text={query}
         setText={setQuery}
-        className={'bg-canvas-0 sticky top-[48px] z-40'}
+        className={clsx(
+          'bg-canvas-0 sticky z-40',
+          floatingSearchClassName ?? 'top-[48px]'
+        )}
         sort={sort}
         setSort={setSort}
         showDefaultSort={showSetDefaultSort && contract.sort !== sort}
