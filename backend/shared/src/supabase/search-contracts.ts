@@ -23,7 +23,7 @@ import {
 } from 'shared/topic-interests'
 import { log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
-import { FEED_CARD_CONVERSION_PRIOR } from 'common/feed'
+import { GROUP_SCORE_PRIOR } from 'common/feed'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 
 const DEFAULT_THRESHOLD = 1000
@@ -146,8 +146,8 @@ export async function getForYouSQL(items: {
       // If the user has no contract-matching topic score, use only the contract's importance score
       orderBy(`case
       when bool_or(uti.avg_conversion_score is not null)
-      then avg(coalesce(uti.avg_conversion_score, ${FEED_CARD_CONVERSION_PRIOR}) * contracts.${sortByScore})
-      else avg(contracts.${sortByScore}*${FEED_CARD_CONVERSION_PRIOR})
+      then avg(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}) * contracts.${sortByScore})
+      else avg(contracts.${sortByScore}*${GROUP_SCORE_PRIOR})
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
       else 0.0

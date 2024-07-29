@@ -13,7 +13,7 @@ import {
 } from 'common/supabase/groups'
 import {
   FEED_BETA_LOSS,
-  FEED_CARD_CONVERSION_PRIOR,
+  GROUP_SCORE_PRIOR,
   FEED_CARD_HITS,
   FEED_CARD_MISSES,
 } from 'common/feed'
@@ -129,7 +129,7 @@ export async function calculateUserTopicInterests(
           const priorStats =
             myPriorConversionScores[groupId] ??
             ({
-              conversionScore: FEED_CARD_CONVERSION_PRIOR,
+              conversionScore: GROUP_SCORE_PRIOR,
               hits: 0,
               misses: 0,
             } as GroupIdsToStats[number])
@@ -237,7 +237,7 @@ const getPreviousStats = async (
         userIdToGroupStats[row.userId][groupId] = {
           hits: FEED_CARD_HITS,
           misses: FEED_CARD_MISSES,
-          conversionScore: FEED_CARD_CONVERSION_PRIOR,
+          conversionScore: GROUP_SCORE_PRIOR,
         }
       }
     }
