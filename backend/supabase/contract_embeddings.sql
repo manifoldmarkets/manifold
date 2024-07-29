@@ -11,7 +11,7 @@ alter table contract_embeddings enable row level security;
 
 drop policy if exists "admin write access" on contract_embeddings;
 
-create policy "admin write access" on contract_embeddings for all;
+create policy "admin write access" on contract_embeddings to service_role for all;
 
 drop policy if exists "public read" on contract_embeddings;
 

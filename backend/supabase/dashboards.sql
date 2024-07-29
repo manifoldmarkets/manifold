@@ -26,7 +26,7 @@ alter table dashboards enable row level security;
 
 drop policy if exists "Enable read access for admin" on dashboards;
 
-create policy "Enable read access for admin" on dashboards for
+create policy "Enable read access for admin" on dashboards to service_role for
 select
   using (true);
 

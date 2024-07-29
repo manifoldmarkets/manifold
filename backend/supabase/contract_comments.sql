@@ -35,7 +35,7 @@ alter table contract_comments enable row level security;
 
 drop policy if exists "auth read" on contract_comments;
 
-create policy "auth read" on contract_comments for
+create policy "auth read" on contract_comments to service_role for
 select
   using (true);
 

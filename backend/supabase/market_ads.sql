@@ -19,7 +19,7 @@ alter table market_ads enable row level security;
 
 drop policy if exists "admin write access" on market_ads;
 
-create policy "admin write access" on market_ads for all;
+create policy "admin write access" on market_ads to service_role for all;
 
 drop policy if exists "public read" on market_ads;
 

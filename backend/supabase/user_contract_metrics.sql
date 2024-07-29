@@ -26,7 +26,7 @@ select
 
 drop policy if exists "read for admin" on user_contract_metrics;
 
-create policy "read for admin" on user_contract_metrics for
+create policy "read for admin" on user_contract_metrics to service_role for
 select
   using (true);
 
