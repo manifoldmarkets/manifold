@@ -1,13 +1,12 @@
 import {
-  SERIAL_MODE,
   SupabaseTransaction,
-  createShortTimeoutDirectClient,
+  createSupabaseDirectClient,
 } from './supabase/init'
+import { DEFAULT_QUEUE_TIME_LIMIT } from 'shared/helpers/fn-queue'
 
-// significantly less evil!
 export const runShortTrans = async <T>(
   callback: (trans: SupabaseTransaction) => Promise<T>
 ) => {
-  const pg = createShortTimeoutDirectClient()
-  return await pg.tx({ mode: SERIAL_MODE }, callback)
+  const pg = createSupabaseDirectClient()
+  return await pg.timeout(DEFAULT_QUEUE_TIME_LIMIT / 2, callback, false)
 }

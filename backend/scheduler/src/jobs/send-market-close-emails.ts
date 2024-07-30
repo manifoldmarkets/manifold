@@ -10,7 +10,7 @@ import { updateContract } from 'shared/supabase/contracts'
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
 
 export async function sendMarketCloseEmails() {
-  if (isProd()) {
+  if (!isProd()) {
     console.log('Not prod, not sending emails')
     return
   }
@@ -19,7 +19,7 @@ export async function sendMarketCloseEmails() {
   const contracts = await pg.tx(async (tx) => {
     const contracts = await tx.map(
       `select * from contracts where
-      is_resolved = false and close_time < now()
+      resolution_time is null and close_time < now()
       and outcome_type not in ('POLL', 'BOUNTIED_QUESTION')`,
       [],
       convertContract

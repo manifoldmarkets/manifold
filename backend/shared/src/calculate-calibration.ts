@@ -1,10 +1,7 @@
 import { Dictionary, range } from 'lodash'
-import pgPromise = require('pg-promise')
-import pg = require('pg-promise/typescript/pg-subset')
+import { type SupabaseDirectClient } from 'shared/supabase/init'
 
-export const saveCalibrationData = async (
-  pg: pgPromise.IDatabase<{}, pg.IClient>
-) => {
+export const saveCalibrationData = async (pg: SupabaseDirectClient) => {
   const bets = await pg.many('select * from sample_resolved_bets(15, 0.02)')
   const n = bets?.length ?? 0
   console.log('loaded', n, 'sampled bets')

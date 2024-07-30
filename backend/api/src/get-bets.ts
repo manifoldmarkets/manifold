@@ -20,8 +20,6 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     afterTime,
     order,
     kinds,
-    filterAntes,
-    filterChallenges,
     filterRedemptions,
     includeZeroShareRedemptions,
   } = props
@@ -64,8 +62,6 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     limit,
     order,
     kinds,
-    filterAntes,
-    filterChallenges,
     filterRedemptions,
     includeZeroShareRedemptions,
   }

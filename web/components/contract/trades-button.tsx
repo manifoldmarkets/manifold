@@ -1,6 +1,6 @@
 import { UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Contract, CPMMBinaryContract } from 'common/contract'
+import { Contract, BinaryContract } from 'common/contract'
 import { useState } from 'react'
 import { useBetsOnce } from 'web/hooks/use-bets'
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -20,80 +20,144 @@ import { useUniqueBettorCountOnAnswer } from 'web/hooks/use-answers'
 import { Button, ColorType } from 'web/components/buttons/button'
 import { UserHovercard } from '../user/user-hovercard'
 import { useBountyAwardCount } from 'web/hooks/use-bounties'
+import { FaUser } from 'react-icons/fa6'
+import { shortenNumber } from 'web/lib/util/formatNumber'
 
 export function TradesButton(props: {
   contract: Contract
   answer?: Answer
   className?: string
   color?: ColorType
+  size?: 'sm' | 'md'
 }) {
-  const { contract, color, answer, className } = props
-  const { uniqueBettorCount: uniqueTraders } = contract
-  const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
-    contract.id,
-    answer?.id
-  )
-  const uniqueBountyRewardCount = useBountyAwardCount(contract)
+  const { contract, color, answer, className, size } = props
 
   const [modalOpen, setModalOpen] = useState<boolean>(false)
 
   const isPoll = contract.outcomeType === 'POLL'
   const isBounty = contract.outcomeType === 'BOUNTIED_QUESTION'
 
+  const tooltipText = isPoll ? 'Voters' : isBounty ? 'Rewards given' : 'Traders'
+
   return (
     <>
-      <Button
-        size={'2xs'}
-        color={color ?? 'gray-white'}
-        className={clsx(className)}
-        onClick={(e) => {
-          track('click feed card traders button', { contractId: contract.id })
-          e.preventDefault()
-          setModalOpen(true)
-        }}
-      >
-        <Tooltip
-          text={isPoll ? 'Voters' : isBounty ? 'Rewards given' : 'Traders'}
-          placement="top"
-          noTap
+      {!size || size == 'md' ? (
+        <Button
+          size={'2xs'}
+          color={color ?? 'gray-white'}
+          className={clsx(className)}
+          onClick={(e) => {
+            track('click feed card traders button', {
+              contractId: contract.id,
+            })
+            e.preventDefault()
+            setModalOpen(true)
+          }}
         >
-          <Row className="relative items-center  gap-1.5 text-sm">
-            <UserIcon className="h-5 w-5" />
-            {isBounty
-              ? uniqueBountyRewardCount
-              : answer
-              ? uniqueAnswerBettorCount
-              : uniqueTraders || ''}
-          </Row>
-        </Tooltip>
-      </Button>
-      <Modal
-        open={modalOpen}
-        setOpen={setModalOpen}
-        className={clsx(MODAL_CLASS)}
-        size={'lg'}
-      >
-        {modalOpen && (
-          <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
-            {isPoll ? (
-              <VotesModalContent contract={contract} />
-            ) : (
-              <BetsModalContent
-                contract={contract}
-                answerDetails={
-                  answer
-                    ? {
-                        answer,
-                        totalPositions: uniqueAnswerBettorCount,
-                      }
-                    : undefined
-                }
-              />
-            )}
-          </div>
-        )}
-      </Modal>
+          <Tooltip text={tooltipText} placement="top" noTap>
+            <Row className="relative items-center gap-1.5 text-sm">
+              <UserIcon className="h-5 w-5" />
+              <TradesNumber contract={contract} answer={answer} />
+            </Row>
+          </Tooltip>
+        </Button>
+      ) : (
+        <button
+          className={clsx(className)}
+          onClick={(e) => {
+            track('click answer traders button', {
+              contractId: contract.id,
+            })
+            e.preventDefault()
+            setModalOpen(true)
+          }}
+        >
+          <Tooltip text={tooltipText} placement="bottom" noTap>
+            <Row className="relative items-center gap-0.5">
+              <FaUser className=" h-2.5 w-2.5" />
+              <TradesNumber contract={contract} answer={answer} />
+            </Row>
+          </Tooltip>
+        </button>
+      )}
+      <TradesModal
+        contract={contract}
+        modalOpen={modalOpen}
+        setModalOpen={setModalOpen}
+        answer={answer}
+      />
     </>
+  )
+}
+
+export function TradesNumber(props: {
+  contract: Contract
+  answer?: Answer
+  shorten?: boolean
+}) {
+  const { contract, answer, shorten } = props
+
+  const isBounty = contract.outcomeType === 'BOUNTIED_QUESTION'
+
+  const { uniqueBettorCount: uniqueTraders } = contract
+  const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
+    contract.id,
+    answer?.id
+  )
+  const uniqueBountyRewardCount = useBountyAwardCount(contract)
+  const tradesNumber = isBounty
+    ? uniqueBountyRewardCount
+    : answer
+    ? uniqueAnswerBettorCount
+    : uniqueTraders || ''
+  if (shorten) {
+    return <>{shortenNumber(+tradesNumber)}</>
+  }
+  return <>{tradesNumber}</>
+}
+
+export function TradesModal(props: {
+  contract: Contract
+  modalOpen: boolean
+  answer?: Answer
+  setModalOpen: (open: boolean) => void
+}) {
+  const { contract, modalOpen, setModalOpen, answer } = props
+
+  const isPoll = contract.outcomeType === 'POLL'
+
+  const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
+    contract.id,
+    answer?.id
+  )
+
+  return (
+    <Modal
+      open={modalOpen}
+      setOpen={setModalOpen}
+      className={clsx(MODAL_CLASS)}
+      size={'lg'}
+    >
+      {modalOpen && (
+        <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
+          {isPoll ? (
+            <VotesModalContent contract={contract} />
+          ) : (
+            <BetsModalContent
+              contract={contract}
+              answerDetails={
+                answer
+                  ? {
+                      answer,
+                      totalPositions: uniqueAnswerBettorCount,
+                    }
+                  : undefined
+              }
+            />
+          )}
+        </div>
+      )}
+    </Modal>
   )
 }
 
@@ -139,7 +203,6 @@ function BetsModalContent(props: {
   const bets = useBetsOnce({
     contractId: contract.id,
     answerId: answer?.id,
-    filterAntes: true,
     filterRedemptions: true,
   })
 
@@ -150,7 +213,7 @@ function BetsModalContent(props: {
           title: 'Holders',
           content: (
             <UserPositionsTable
-              contract={contract as CPMMBinaryContract}
+              contract={contract as BinaryContract}
               answerDetails={answerDetails}
             />
           ),

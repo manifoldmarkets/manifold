@@ -24,6 +24,7 @@ import { broadcastUpdatedAnswers } from 'shared/websockets/helpers'
 import { convertAnswer } from 'common/supabase/contracts'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
+import { convertTxn } from 'common/supabase/txns'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
@@ -104,7 +105,7 @@ const verifyUserCanUnresolve = async (
     }
 
     const answerResolutionTime = await pg.oneOrNone(
-      `select data->'resolutionTime' as resolution_time
+      `select ts_to_millis(resolution_time) as resolution_time
          from answers
          where id= $1
          limit 1`,
@@ -180,7 +181,7 @@ const undoResolution = async (
       and ($2 is null or (data->'data'->>'payoutStartTime')::numeric = $2)
       and ($3 is null or data ->'data'->>'answerId' = $3)`,
     [contractId, maxSpicePayoutStartTime, answerId],
-    (r) => r.data as ContractProduceSpiceTxn
+    (r) => convertTxn(r) as ContractProduceSpiceTxn
   )
 
   log('Reverting spice txns ' + spiceTxnsToRevert.length)
@@ -220,7 +221,7 @@ const undoResolution = async (
       and ($2 is null or (data->'data'->>'payoutStartTime')::numeric = $2)
       and ($3 is null or data ->'data'->>'answerId' = $3)`,
     [contractId, maxSpicePayoutStartTime, answerId],
-    (r) => r.data as ContractOldResolutionPayoutTxn
+    (r) => convertTxn(r) as ContractOldResolutionPayoutTxn
   )
 
   log('Reverting mana txns ' + manaTxns.length)
@@ -257,9 +258,15 @@ const undoResolution = async (
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
     // remove resolutionTime and resolverId from all answers in the contract
-    const newAnswers = await pg.map(
+    await pg.none(
       `update answers
       set data = data - 'resolutionTime' - 'resolverId'
+      where contract_id = $1`,
+      [contractId]
+    )
+    const newAnswers = await pg.map(
+      `update answers
+      set resolution_time = null
       where contract_id = $1
       returning *`,
       [contractId],

@@ -1,5 +1,4 @@
 import { groupBy, mapValues } from 'lodash'
-import { Visibility } from './contract'
 import { Fees } from './fees'
 import { maxMinBin } from './chart'
 
@@ -13,13 +12,8 @@ supabase status: columns exist for
   outcome: text
   probBefore: number
   probAfter: number
-  isAnte: boolean
   isRedemption: boolean
-  isChallenge: boolean
   visibility: text
-
-any changes to the type of these columns in firestore will require modifying
-the supabase trigger, or replication of contracts may fail!
 
 *************************************************/
 
@@ -43,10 +37,7 @@ export type Bet = {
 
   isApi?: boolean // true if bet was placed via API
 
-  isAnte: boolean
   isRedemption: boolean
-  isChallenge: boolean
-  visibility: Visibility
   /** @deprecated */
   challengeSlug?: string
 

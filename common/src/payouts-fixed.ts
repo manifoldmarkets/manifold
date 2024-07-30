@@ -19,13 +19,11 @@ export const getFixedCancelPayouts = (
     payout: lp.amount,
   }))
 
-  const payouts = bets
-    .filter((b) => !b.isAnte)
-    .map((bet) => ({
-      userId: bet.userId,
-      // We keep the platform fee.
-      payout: bet.amount - bet.fees.platformFee,
-    }))
+  const payouts = bets.map((bet) => ({
+    userId: bet.userId,
+    // We keep the platform fee.
+    payout: bet.amount - bet.fees.platformFee,
+  }))
 
   // Creator pays back all creator fees for N/A resolution.
   const creatorFees = sumBy(bets, (b) => b.fees.creatorFee)

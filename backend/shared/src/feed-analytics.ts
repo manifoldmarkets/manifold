@@ -1,44 +1,54 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { DAY_MS } from 'common/util/time'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { VIEW_RECORDINGS_START } from 'common/feed'
+import * as dayjs from 'dayjs'
 
 export const getFeedConversionScores = async (
   pg: SupabaseDirectClient,
-  startTime: number,
-  numberOfDays: number
+  start: string, // YYYY-MM-DD
+  end: string
 ) => {
   const { adminIds } = ENV_CONFIG
-  const conversionsByDay: number[] = []
-  for (let i = 0; i < numberOfDays; i++) {
-    const start = startTime + i * DAY_MS
-    const end = start + DAY_MS
-    if (start < VIEW_RECORDINGS_START) continue
-    const interactionCounts = await pg.one(
-      `
-          select count(uci.name) as count
-          from user_contract_interactions uci
-          where uci.created_time > millis_to_ts($1)
-            and uci.created_time < millis_to_ts($2)
-            and uci.name in ('card click', 'card bet', 'card like')
-            and uci.user_id not in ($3:list)
-          `,
-      [start, end, adminIds],
-      (row) => Number(row.count)
+
+  const minDate = dayjs(VIEW_RECORDINGS_START)
+    .tz('America/Los_Angeles')
+    .endOf('day')
+    .format('YYYY-MM-DD')
+
+  const realStart = start < minDate ? minDate : start
+
+  return await pg.manyOrNone<{
+    start_date: string
+    feed_conversion: number
+  }>(
+    `with interacts as (
+      select
+        date_trunc('day', created_time at time zone 'america/los_angeles')::date as start_date,
+        count(name) as count
+      from user_contract_interactions
+      where
+        name in ('card click', 'card bet', 'card like')
+        and created_time >= date_to_midnight_pt($1)
+        and created_time < date_to_midnight_pt($2)
+        and user_id not in ($3:list)
+      group by start_date
+    ),
+    views as (
+      select
+        date_trunc('day', created_time at time zone 'america/los_angeles')::date as start_date,
+        count(*)
+      from user_view_events
+      where
+        name = 'card'
+        and created_time >= date_to_midnight_pt($1)
+        and created_time < date_to_midnight_pt($2)
+        and user_id not in ($3:list)
+      group by start_date
     )
-    const viewCounts = await pg.one(
-      `
-      select count(*) as count from postgres.public.user_view_events uve
-         where uve.created_time > millis_to_ts($1)
-         and uve.created_time < millis_to_ts($2)
-         and uve.name ='card'
-         and uve.user_id not in ($3:list)
-        `,
-      [start, end, adminIds],
-      (row) => Number(row.count)
-    )
-    const conversionScore = interactionCounts / viewCounts
-    conversionsByDay.push(conversionScore)
-  }
-  return conversionsByDay
+    select
+      i.start_date, i.count / v.count::numeric as feed_conversion
+      from interacts i join views v
+    on i.start_date = v.start_date`,
+    [realStart, end, adminIds]
+  )
 }

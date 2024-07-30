@@ -38,35 +38,6 @@ or replace function to_jsonb(jsonb) returns jsonb immutable parallel safe strict
 select $1
 $$;
 
-begin;
-
-drop publication if exists supabase_realtime;
-
-create publication supabase_realtime;
-
-alter publication supabase_realtime
-add table group_contracts;
-
-alter publication supabase_realtime
-add table group_members;
-
-alter publication supabase_realtime
-add table user_notifications;
-
-alter publication supabase_realtime
-add table user_follows;
-
-alter publication supabase_realtime
-add table private_user_messages;
-
-alter publication supabase_realtime
-add table private_user_message_channel_members;
-
-alter publication supabase_realtime
-add table chart_annotations;
-
-commit;
-
 create text search dictionary english_stem_nostop (template = snowball, language = english);
 
 create text search dictionary english_prefix (template = simple);

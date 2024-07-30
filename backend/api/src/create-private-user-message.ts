@@ -23,6 +23,7 @@ import { HOUR_MS } from 'common/util/time'
 import { JSONContent } from '@tiptap/core'
 import { ChatVisibility } from 'common/chat-message'
 import { track } from 'shared/analytics'
+import { broadcast } from 'shared/websockets/server'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
@@ -89,7 +90,9 @@ export const createPrivateUserMessageMain = async (
     [channelId, creator.id],
     (r) => r.user_id
   )
-
+  otherUserIds.concat(creator.id).forEach((otherUserId) => {
+    broadcast(`private-user-messages/${otherUserId}`, {})
+  })
   let bothHaveLoverProfiles = false
   const hasLoverProfile = await pg.oneOrNone(
     'select 1 from lovers where user_id = $1',

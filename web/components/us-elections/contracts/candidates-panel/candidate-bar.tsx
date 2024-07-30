@@ -143,7 +143,9 @@ export function PercentChangeToday(props: {
 }) {
   const { className, threshold = 0.02, probChange } = props
   const percentChangeToday = getPercent(probChange)
-  if (Math.abs(probChange) < threshold) return null
+  if (Math.abs(probChange) < threshold) {
+    return null
+  }
   if (percentChangeToday > threshold) {
     return (
       <div className={clsx('text-teal-700', className)}>
@@ -154,6 +156,40 @@ export function PercentChangeToday(props: {
   return (
     <div className={clsx('text-scarlet-700', className)}>
       <b>{formatPercentShort(probChange)}</b> today
+    </div>
+  )
+}
+
+export function BubblePercentChange(props: {
+  className?: string
+  threshold?: number
+  probChange: number
+}) {
+  const { className, threshold = 0.02, probChange } = props
+  const percentChangeToday = getPercent(probChange)
+  if (Math.abs(probChange) < threshold) {
+    return null
+  }
+  if (percentChangeToday > threshold) {
+    return (
+      <div
+        className={clsx(
+          'h-fit w-fit rounded-full bg-teal-700/20 px-1.5 py-0.5 text-teal-700',
+          className
+        )}
+      >
+        +<b>{formatPercentShort(probChange)}</b>
+      </div>
+    )
+  }
+  return (
+    <div
+      className={clsx(
+        'text-scarlet-700 bg-scarlet-700/20 h-fit w-fit rounded-full px-2 py-1',
+        className
+      )}
+    >
+      <b>{formatPercentShort(probChange)}</b>
     </div>
   )
 }

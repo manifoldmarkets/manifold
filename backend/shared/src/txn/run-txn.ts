@@ -7,6 +7,8 @@ import { convertTxn } from 'common/supabase/txns'
 import { removeUndefinedProps } from 'common/util/object'
 import { getUser } from 'shared/utils'
 import { incrementBalance } from 'shared/supabase/users'
+import { betsQueue } from 'shared/helpers/fn-queue'
+import { buildArray } from 'common/util/array'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
@@ -16,98 +18,103 @@ export async function runTxn(
   affectsProfit = false
 ) {
   const { amount, fromType, fromId, toId, toType, token } = data
-
-  if (!isFinite(amount)) {
-    throw new APIError(400, 'Invalid amount')
-  }
-
-  if (!isAdminId(fromId) && amount <= 0) {
-    throw new APIError(400, 'Amount must be positive')
-  }
-
-  if (token !== 'SPICE' && token !== 'M$') {
-    throw new APIError(400, `Invalid token type: ${token}`)
-  }
-
-  if (fromType === 'BANK' || fromType === 'CONTRACT') {
-    // Do nothing
-  } else if (fromType === 'USER') {
-    const fromUser = await getUser(fromId, pgTransaction)
-
-    if (!fromUser) {
-      throw new APIError(404, `User ${fromId} not found`)
+  const deps = buildArray(
+    (fromType === 'USER' || fromType === 'CONTRACT') && fromId,
+    (toType === 'USER' || toType === 'CONTRACT') && toId
+  )
+  return await betsQueue.enqueueFn(async () => {
+    if (!isFinite(amount)) {
+      throw new APIError(400, 'Invalid amount')
     }
 
-    if (token === 'SPICE') {
-      if (fromUser.spiceBalance < amount) {
-        throw new APIError(
-          403,
-          `Insufficient points balance: ${fromUser.username} needed ${amount} but only had ${fromUser.spiceBalance}`
-        )
-      }
-      await incrementBalance(pgTransaction, fromId, {
-        spiceBalance: -amount,
-        totalDeposits: -amount,
-      })
-    } else {
-      if (fromUser.balance < amount) {
-        throw new APIError(
-          403,
-          `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance}`
-        )
+    if (!isAdminId(fromId) && amount <= 0) {
+      throw new APIError(400, 'Amount must be positive')
+    }
+
+    if (token !== 'SPICE' && token !== 'M$') {
+      throw new APIError(400, `Invalid token type: ${token}`)
+    }
+
+    if (fromType === 'BANK' || fromType === 'CONTRACT') {
+      // Do nothing
+    } else if (fromType === 'USER') {
+      const fromUser = await getUser(fromId, pgTransaction)
+
+      if (!fromUser) {
+        throw new APIError(404, `User ${fromId} not found`)
       }
 
-      await incrementBalance(pgTransaction, fromId, {
-        balance: -amount,
-        totalDeposits: -amount,
-      })
-    }
-  } else {
-    throw new APIError(
-      400,
-      `This method does not support transfers from ${fromType}`
-    )
-  }
+      if (token === 'SPICE') {
+        if (fromUser.spiceBalance < amount) {
+          throw new APIError(
+            403,
+            `Insufficient points balance: ${fromUser.username} needed ${amount} but only had ${fromUser.spiceBalance}`
+          )
+        }
+        await incrementBalance(pgTransaction, fromId, {
+          spiceBalance: -amount,
+          totalDeposits: -amount,
+        })
+      } else {
+        if (fromUser.balance < amount) {
+          throw new APIError(
+            403,
+            `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance}`
+          )
+        }
 
-  if (toType === 'USER') {
-    const toUser = await getUser(toId, pgTransaction)
-    if (!toUser) {
-      throw new APIError(404, `User ${toId} not found`)
-    }
-
-    const update: {
-      balance?: number
-      spiceBalance?: number
-      totalDeposits?: number
-    } = {}
-
-    if (token === 'SPICE') {
-      update.spiceBalance = amount
+        await incrementBalance(pgTransaction, fromId, {
+          balance: -amount,
+          totalDeposits: -amount,
+        })
+      }
     } else {
-      update.balance = amount
+      throw new APIError(
+        400,
+        `This method does not support transfers from ${fromType}`
+      )
     }
 
-    if (!affectsProfit) {
-      update.totalDeposits = amount
+    if (toType === 'USER') {
+      const toUser = await getUser(toId, pgTransaction)
+      if (!toUser) {
+        throw new APIError(404, `User ${toId} not found`)
+      }
+
+      const update: {
+        balance?: number
+        spiceBalance?: number
+        totalDeposits?: number
+      } = {}
+
+      if (token === 'SPICE') {
+        update.spiceBalance = amount
+      } else {
+        update.balance = amount
+      }
+
+      if (!affectsProfit) {
+        update.totalDeposits = amount
+      }
+
+      await incrementBalance(pgTransaction, toId, update)
+    } else if (
+      toType === 'CHARITY' ||
+      toType === 'BANK' ||
+      toType === 'CONTRACT' ||
+      toType === 'AD'
+    ) {
+      // do nothing
+    } else {
+      throw new APIError(
+        400,
+        `This method does not support transfers to ${toType}`
+      )
     }
 
-    await incrementBalance(pgTransaction, toId, update)
-  } else if (
-    toType === 'CHARITY' ||
-    toType === 'BANK' ||
-    toType === 'CONTRACT' ||
-    toType === 'AD'
-  ) {
-    // do nothing
-  } else {
-    throw new APIError(
-      400,
-      `This method does not support transfers to ${toType}`
-    )
-  }
-
-  const txn = await insertTxn(pgTransaction, data)
-  return txn
+    const txn = await insertTxn(pgTransaction, data)
+    return txn
+  }, deps)
 }
 
 export async function runTxnFromBank(

@@ -19,9 +19,7 @@ export async function getTotalBetCount(contractId: string, db: SupabaseClient) {
       .from('contract_bets')
       .select('*', { head: true, count: 'exact' })
       .eq('contract_id', contractId)
-      .eq('is_challenge', false)
       .eq('is_redemption', false)
-      .eq('is_ante', false)
   )
   return count as number
 }
@@ -84,12 +82,6 @@ export const applyBetsFilter = <
   }
   if (options?.beforeTime !== undefined) {
     q = q.lt('created_time', millisToTs(options.beforeTime))
-  }
-  if (options?.filterChallenges) {
-    q = q.eq('is_challenge', false)
-  }
-  if (options?.filterAntes) {
-    q = q.eq('is_ante', false)
   }
   if (options?.filterRedemptions) {
     q = q.eq('is_redemption', false)

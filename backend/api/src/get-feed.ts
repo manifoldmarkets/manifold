@@ -25,7 +25,7 @@ import {
 } from 'shared/topic-interests'
 import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
 import { getFollowedReposts, getTopicReposts } from 'shared/supabase/reposts'
-import { FeedContract } from 'common/feed'
+import { FeedContract, GROUP_SCORE_PRIOR } from 'common/feed'
 
 const DEBUG_USER_ID = undefined
 const DEBUG_FEED = process.platform === 'darwin'
@@ -133,6 +133,14 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       ...topUnseenActiveTopics.map(([, score]) => score)
     )
   }
+  const MAX_TOPICS_TO_EVALUATE = 350
+  const cutoffIndex =
+    userInterestTopicWeights.length > MAX_TOPICS_TO_EVALUATE
+      ? Math.min(
+          userInterestTopicWeights.filter((w) => w > GROUP_SCORE_PRIOR).length,
+          MAX_TOPICS_TO_EVALUATE
+        )
+      : userInterestTopicWeights.length
 
   const baseQueryArray = (adQuery = false) =>
     buildArray(
@@ -147,7 +155,10 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
                unnest(array[$1]) as group_id,
                unnest(array[$2]) as topic_score
                 ) as uti`,
-        [userInterestTopicIds, userInterestTopicWeights]
+        [
+          userInterestTopicIds.slice(0, cutoffIndex),
+          userInterestTopicWeights.slice(0, cutoffIndex),
+        ]
       ),
       join(`group_contracts on group_contracts.group_id = uti.group_id`),
       join(`contracts on contracts.id = group_contracts.contract_id`),
@@ -188,7 +199,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   )
   const sorts = {
     conversion: `avg(uti.topic_score  * contracts.conversion_score) desc`,
-    importance: `avg(uti.topic_score  * contracts.importance_score) desc`,
     freshness: `avg(uti.topic_score  * contracts.freshness_score) desc`,
   }
   const sortQueries = Object.values(sorts).map((orderQ) =>
@@ -202,7 +212,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const startTime = Date.now()
   const [
     convertingContracts,
-    importantContracts,
     freshContracts,
     followedContracts,
     adContracts,
@@ -265,15 +274,9 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
 
   const contracts = uniqBy(
     orderBy(
-      convertingContracts.concat(
-        importantContracts,
-        freshContracts,
-        followedContracts,
-        allReposts
-      ),
+      convertingContracts.concat(freshContracts, followedContracts, allReposts),
       (c) =>
         c.contract.conversionScore *
-        c.contract.importanceScore *
         c.contract.freshnessScore *
         c.topicConversionScore,
       'desc'
@@ -287,8 +290,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         ? 'followed'
         : convertingContracts.find((cc) => cc.contract.id === c.id)
         ? 'conversion'
-        : importantContracts.find((cc) => cc.contract.id === c.id)
-        ? 'importance'
         : freshContracts.find((cc) => cc.contract.id === c.id)
         ? 'freshness'
         : '',

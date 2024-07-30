@@ -120,7 +120,6 @@ import { type APIHandler, typedEndpoint } from './helpers/endpoint'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
-import { getrelatedmarketscache } from 'api/get-related-markets'
 import { getadanalytics } from 'api/get-ad-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
 import { addOrRemoveReaction } from './reaction'
@@ -177,6 +176,15 @@ import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { getMonitorStatus } from 'api/gidx/get-monitor-status'
 import { getBestComments } from 'api/get-best-comments'
 import { recordCommentView } from 'api/record-comment-view'
+import {
+  getChannelMemberships,
+  getChannelMessages,
+  getLastSeenChannelTime,
+  setChannelLastSeenTime,
+} from 'api/get-private-messages'
+import { getNotifications } from 'api/get-notifications'
+import { getContractTopics } from './get-contract-topics'
+import { getRelatedMarkets } from 'api/get-related-markets'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -186,6 +194,13 @@ function cacheController(policy?: string): RequestHandler {
     next()
   }
 }
+const ignoredEndpoints = [
+  '/get-channel-messages',
+  '/v0/user/by-id/',
+  '/get-channel-memberships',
+  '/v0/get-mod-reports',
+  '/get-channel-seen-time',
+]
 
 const requestMonitoring: RequestHandler = (req, _res, next) => {
   const traceContext = req.get('X-Cloud-Trace-Context')
@@ -195,7 +210,13 @@ const requestMonitoring: RequestHandler = (req, _res, next) => {
   const context = { endpoint: req.path, traceId }
   withMonitoringContext(context, () => {
     const startTs = hrtime.bigint()
-    log(`${req.method} ${req.url}`)
+    const isLocalhost = req.get('host')?.includes('localhost')
+    if (
+      !isLocalhost ||
+      (isLocalhost && !ignoredEndpoints.some((e) => req.path.startsWith(e)))
+    ) {
+      log(`${req.method} ${req.url}`)
+    }
     metrics.inc('http/request_count', { endpoint: req.path })
     next()
     const endTs = hrtime.bigint()
@@ -243,6 +264,11 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
   bets: getBets,
+  'get-notifications': getNotifications,
+  'get-channel-memberships': getChannelMemberships,
+  'get-channel-messages': getChannelMessages,
+  'get-channel-seen-time': getLastSeenChannelTime,
+  'set-channel-seen-time': setChannelLastSeenTime,
   'get-contract': getContract,
   comment: createComment,
   'hide-comment': hideComment,
@@ -250,6 +276,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   comments: getComments,
   market: createMarket,
   'market/:contractId/group': addOrRemoveTopicFromContract,
+  'market/:contractId/groups': getContractTopics,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
   'group/by-id/:id/markets': ({ id, limit }, ...rest) =>
@@ -306,7 +333,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'fetch-link-preview': fetchLinkPreview,
   'request-loan': requestloan,
   'remove-pinned-photo': removePinnedPhoto,
-  'get-related-markets-cache': getrelatedmarketscache,
+  'get-related-markets': getRelatedMarkets,
   'unlist-and-cancel-user-contracts': unlistAndCancelUserContracts,
   'get-ad-analytics': getadanalytics,
   'get-compatibility-questions': getCompatibilityQuestions,

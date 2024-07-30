@@ -34,7 +34,7 @@ import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { Dashboard } from 'common/dashboard'
-import { ChatMessage } from 'common/chat-message'
+import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
 import { PrivateUser, User } from 'common/user'
 import { ManaSupply } from 'common/stats'
 import { Repost } from 'common/repost'
@@ -55,6 +55,8 @@ import {
 } from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
+import { PrivateMessageChannel } from 'common/supabase/private-messages'
+import { Notification } from 'common/notification'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -270,8 +272,6 @@ export const API = (_apiTypeCheck = {
         kinds: z.enum(['open-limit']).optional(),
         // undocumented fields. idk what a good api interface would be
         filterRedemptions: coerceBoolean.optional(),
-        filterChallenges: coerceBoolean.optional(),
-        filterAntes: coerceBoolean.optional(),
         includeZeroShareRedemptions: coerceBoolean.optional(),
         commentRepliesOnly: coerceBoolean.optional(),
       })
@@ -477,6 +477,13 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: true },
+  },
+  'market/:contractId/groups': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({ contractId: z.string() }),
+    returns: [] as LiteGroup[],
   },
   'market/:contractId/answer': {
     method: 'POST',
@@ -917,7 +924,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'get-related-markets-cache': {
+  'get-related-markets': {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
@@ -925,14 +932,11 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         limit: z.coerce.number().gte(0).lte(100),
-        embeddingsLimit: z.coerce.number().gte(0).lte(100),
-        limitTopics: z.coerce.number().gte(0).lte(10),
         userId: z.string().optional(),
       })
       .strict(),
     returns: {} as {
       marketsFromEmbeddings: Contract[]
-      marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
     cache: 'public, max-age=3600, stale-while-revalidate=10',
   },
@@ -1245,6 +1249,49 @@ export const API = (_apiTypeCheck = {
     }),
     returns: {} as PortfolioMetrics[],
   },
+  'get-channel-memberships': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.coerce.number().optional(),
+      createdTime: z.string().optional(),
+      lastUpdatedTime: z.string().optional(),
+      limit: z.coerce.number(),
+    }),
+    returns: {
+      channels: [] as PrivateMessageChannel[],
+      memberIdsByChannelId: {} as { [channelId: string]: string[] },
+    },
+  },
+  'get-channel-messages': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.coerce.number(),
+      limit: z.coerce.number(),
+      id: z.coerce.number().optional(),
+    }),
+    returns: [] as PrivateChatMessage[],
+  },
+  'get-channel-seen-time': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.coerce.number(),
+    }),
+    returns: {} as { created_time: string },
+  },
+  'set-channel-seen-time': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      channelId: z.coerce.number(),
+    }),
+  },
   'get-feed': {
     method: 'GET',
     visibility: 'undocumented',
@@ -1272,6 +1319,18 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as ManaSupply,
     props: z.object({}).strict(),
+  },
+  'get-notifications': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as Notification[],
+    props: z
+      .object({
+        after: z.coerce.number().optional(),
+        limit: z.coerce.number().gte(0).lte(1000).default(100),
+      })
+      .strict(),
   },
   'update-mod-report': {
     method: 'POST',

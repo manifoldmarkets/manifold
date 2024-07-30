@@ -1,6 +1,5 @@
-import { Contract, CPMMContract } from 'common/contract'
-import { run, selectFrom, SupabaseClient, Tables } from 'common/supabase/utils'
-import { filterDefined } from 'common/util/array'
+import { Contract } from 'common/contract'
+import { run, selectFrom } from 'common/supabase/utils'
 import { db } from './db'
 import { chunk, uniqBy } from 'lodash'
 import { convertContract } from 'common/supabase/contracts'
@@ -27,7 +26,11 @@ export async function getPublicContractsByIds(contractIds: string[]) {
   const contractLists = await Promise.all(
     chunk(contractIds, 100).map(async (ids) => {
       const { data } = await run(
-        db.from('public_contracts').select('data').in('id', ids)
+        db
+          .from('contracts')
+          .select('data')
+          .eq('visibility', 'public')
+          .in('id', ids)
       )
       if (data && data.length > 0) {
         return data.map((d) => d.data as Contract)
@@ -108,33 +111,17 @@ export const getContractWithFields = async (id: string) => {
   return data?.[0] ? convertContract(data?.[0]) : null
 }
 
-// Only fetches contracts with 'public' visibility
 export const getRecentPublicContractRows = async (options: {
   limit: number
 }) => {
   const q = db
-    .from('public_contracts')
+    .from('contracts')
     .select('*')
+    .eq('visibility', 'public')
     .order('created_time', { ascending: false })
     .limit(options.limit)
   const { data } = await run(q)
-  return data as Tables['contracts']['Row'][]
-}
-
-export async function getYourDailyChangedContracts(
-  db: SupabaseClient,
-  userId: string,
-  count: number
-) {
-  const { data } = await db.rpc('get_your_daily_changed_contracts', {
-    uid: userId,
-    n: count,
-    start: 0,
-  })
-
-  if (!data) return null
-
-  return filterDefined(data.map((d) => d.data as CPMMContract))
+  return data
 }
 
 export async function getWatchedContracts(userId: string) {

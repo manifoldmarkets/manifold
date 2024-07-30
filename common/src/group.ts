@@ -44,25 +44,10 @@ export const GroupNameSchema = z
   .min(2)
   .max(MAX_GROUP_NAME_LENGTH)
 
-export type GroupLink = {
-  slug: string
-  name: string
-  groupId: string
-  /** @deprecated - may not exist */
-  createdTime?: number
-  /** @deprecated */
-  userId?: string
-}
-
-// TODO: unify with LiteGroup?
-export type Topic = Pick<
-  Group,
-  'id' | 'slug' | 'name' | 'importanceScore' | 'privacyStatus' | 'totalMembers'
->
-
+export type Topic = LiteGroup
 export type LiteGroup = Pick<
   Group,
-  'id' | 'name' | 'slug' | 'totalMembers' | 'privacyStatus' | 'creatorId'
+  'id' | 'slug' | 'name' | 'importanceScore' | 'privacyStatus' | 'totalMembers'
 >
 
 export function groupPath(groupSlug: string) {

@@ -1,5 +1,8 @@
 import { Contract } from 'common/contract'
-import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
+import {
+  useGroupsWhereUserHasRole,
+  useTopicsWithContract,
+} from 'web/hooks/use-group-supabase'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
@@ -8,14 +11,14 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractTopicsList } from 'web/components/topics/contract-topics-list'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import { filterDefined } from 'common/util/array'
-import { Group, groupPath, Topic } from 'common/group'
+import { groupPath, Topic } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { removeEmojis } from 'common/util/string'
 import { Tooltip } from '../widgets/tooltip'
 import { SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { Row } from '../layout/row'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import clsx from 'clsx'
 
 const DashboardLink = (props: {
   dashboard: { slug: string; title: string }
@@ -59,19 +62,22 @@ type TopicRowProps = {
 
 export function MarketTopics(props: TopicRowProps) {
   const [open, setOpen] = useState(false)
-  const { contract, topics, dashboards, isSpiceMarket } = props
+  const { contract, dashboards, isSpiceMarket } = props
   const user = useUser()
   const isCreator = contract.creatorId === user?.id
   const adminGroups = useGroupsWhereUserHasRole(user?.id)
   const isMod = useAdminOrMod()
   const canEdit = isMod || isCreator || (adminGroups && adminGroups.length > 0)
-  const onlyGroups = !isMod && !isCreator ? adminGroups : undefined
 
-  const canEditGroup = (group: Group) =>
+  const topicPickerProps = useTopicsWithContract(contract.id, props.topics)
+  const { topics } = topicPickerProps
+
+  const canEditGroup = (groupId: string) =>
     isCreator ||
     isMod ||
     // if user has admin role in that group
-    !!(adminGroups && adminGroups.some((g) => g.group_id === group.id))
+    !!(adminGroups && adminGroups.some((g) => g.group_id === groupId))
+
   return (
     <>
       <div className="group mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium sm:text-sm">
@@ -97,7 +103,10 @@ export function MarketTopics(props: TopicRowProps) {
               e.stopPropagation()
               setOpen(true)
             }}
-            className="hover:bg-ink-400/20 text-ink-500 -ml-2 flex items-center rounded-md px-2 text-xs sm:invisible sm:text-sm sm:group-hover:visible"
+            className={clsx(
+              'hover:bg-ink-400/20 text-ink-500 -ml-2 flex items-center rounded-md text-xs sm:text-sm',
+              topics.length ? 'px-1' : 'px-2'
+            )}
           >
             {topics.length ? (
               <PencilIcon className="h-4 w-4" />
@@ -117,13 +126,8 @@ export function MarketTopics(props: TopicRowProps) {
         >
           <ContractTopicsList
             canEdit={!!canEdit}
-            contract={contract}
-            onlyGroupIds={
-              onlyGroups
-                ? filterDefined(onlyGroups.map((g) => g.group_id))
-                : undefined
-            }
-            canEditGroup={canEditGroup}
+            canEditTopic={canEditGroup}
+            {...topicPickerProps}
           />
         </Col>
       </Modal>

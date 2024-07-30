@@ -6,6 +6,7 @@ import { usePrivateUser } from './use-user'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
 import { useEvent } from './use-event'
+import { convertContract } from 'common/supabase/contracts'
 
 const GROUPS_PAGE_SIZE = 6
 // const RELATED_PAGE_SIZE = 10
@@ -39,31 +40,21 @@ export const useRelatedMarkets = (
       })
     }
 
-    if (contract.groupSlugs?.length) {
-      const groupSlugsToUse = contract.groupSlugs.filter(
-        (slug) => !['spam', 'improperly-resolved'].includes(slug)
-      )
-      const [{ data: groupSlugData }, { data: creatorData }] =
-        await Promise.all([
-          db.rpc('search_contracts_by_group_slugs_1' as any, {
-            p_group_slugs: groupSlugsToUse,
-            lim: GROUPS_PAGE_SIZE,
-            start: groupsPage.current * GROUPS_PAGE_SIZE,
-          }),
-          db.rpc('search_contracts_by_group_slugs_for_creator_1' as any, {
-            creator_id: contract.creatorId,
-            p_group_slugs: groupSlugsToUse,
-            lim: GROUPS_PAGE_SIZE,
-            start: creatorPage.current * GROUPS_PAGE_SIZE,
-          }),
-        ])
-
-      if (groupSlugData) setContracts(groupSlugData, groupsPage)
-      if (creatorData) setContracts(creatorData, creatorPage)
-    } else {
-      // const contracts = await getRelatedContracts(contract, RELATED_PAGE_SIZE)
-      // setContracts(contracts, relatedPage)
-    }
+    const [{ data: groupSlugData }, { data: creatorData }] = await Promise.all([
+      db.rpc('get_related_contracts_by_group' as any, {
+        p_contract_id: contract.id,
+        lim: GROUPS_PAGE_SIZE,
+        start: groupsPage.current * GROUPS_PAGE_SIZE,
+      }),
+      db.rpc('get_related_contracts_by_group_and_creator' as any, {
+        p_contract_id: contract.id,
+        lim: GROUPS_PAGE_SIZE,
+        start: creatorPage.current * GROUPS_PAGE_SIZE,
+      }),
+    ])
+    if (groupSlugData)
+      setContracts(groupSlugData.map(convertContract), groupsPage)
+    if (creatorData) setContracts(creatorData.map(convertContract), creatorPage)
     return hasLoadedMoreContracts
   })
 

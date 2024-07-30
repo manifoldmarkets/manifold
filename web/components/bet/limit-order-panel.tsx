@@ -8,7 +8,7 @@ import { getProbability } from 'common/calculate'
 import { CpmmState } from 'common/calculate-cpmm'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   getBinaryMCProb,
@@ -44,7 +44,7 @@ import { FeeDisplay } from './fees'
 
 export default function LimitOrderPanel(props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -218,21 +218,32 @@ export default function LimitOrderPanel(props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
 
-  const {
-    currentPayout,
-    currentReturn,
-    orderAmount,
-    amount: filledAmount,
-    fees,
-  } = getBetReturns(
-    cpmmState,
-    binaryMCOutcome ?? outcome ?? 'YES',
-    amount,
-    limitProb ?? initialProb,
-    unfilledBets,
-    balanceByUserId,
-    shouldAnswersSumToOne ? multiProps : undefined
-  )
+  let currentPayout = 0
+  let currentReturn = 0
+  let orderAmount = 0
+  let filledAmount = 0
+  let fees = noFees
+  try {
+    const result = getBetReturns(
+      cpmmState,
+      binaryMCOutcome ?? outcome ?? 'YES',
+      amount,
+      limitProb ?? initialProb,
+      unfilledBets,
+      balanceByUserId,
+      shouldAnswersSumToOne ? multiProps : undefined
+    )
+    currentPayout = result.currentPayout
+    currentReturn = result.currentReturn
+    orderAmount = result.orderAmount
+    filledAmount = result.amount
+    fees = result.fees
+  } catch (err: any) {
+    console.error('Error in calculateCpmmMultiArbitrageBet:', err)
+    setError(
+      err?.message ?? 'An error occurred during bet calculation, try again.'
+    )
+  }
   const returnPercent = formatPercent(currentReturn)
   const totalFees = getFeeTotal(fees)
 

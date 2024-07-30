@@ -158,6 +158,8 @@ export const BOT_USERNAMES = [
   'brontobot',
   'OracleBot',
   'spacedroplet',
+  'AriZernerBot',
+  'PV_bot',
 ]
 
 export const MOD_IDS = [
@@ -248,6 +250,9 @@ export const VERIFIED_USERNAMES = [
   'PeterWildeford',
   'SethWalder',
   'SneakySly',
+  'ConorSen',
+  'transmissions11',
+  'DanHendrycks',
 ]
 
 export const BLESSED_BANNED_USER_IDS = [

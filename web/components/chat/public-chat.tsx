@@ -1,6 +1,6 @@
 import { useUser } from 'web/hooks/use-user'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { useRealtimePublicMessagesPolling } from 'web/hooks/use-public-chat-messages'
+import { usePublicChat } from 'web/hooks/use-public-chat-messages'
 import { uniq } from 'lodash'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import {
@@ -35,20 +35,15 @@ export const PublicChat = (props: {
   const user = useUser()
   const isMobile = useIsMobile()
 
-  const realtimeMessages = useRealtimePublicMessagesPolling(channelId, 300)
+  const realtimeMessages = usePublicChat(channelId, 100)
 
-  const maxUsersToGet = 100
   const messageUserIds = uniq(
     (realtimeMessages ?? [])
       .filter((message) => message.userId !== user?.id)
       .map((message) => message.userId)
   )
 
-  const otherUsers = useUsersInStore(
-    messageUserIds,
-    `${channelId}`,
-    maxUsersToGet
-  )
+  const otherUsers = useUsersInStore(messageUserIds, `${channelId}`, 100)
   const { topVisibleRef, showMessages, messages, innerDiv, outerDiv } =
     usePaginatedScrollingMessages(realtimeMessages, 200, user?.id)
 

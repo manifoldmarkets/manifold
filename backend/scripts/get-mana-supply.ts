@@ -5,7 +5,7 @@ import { getManaSupply } from 'shared/mana-supply'
 if (require.main === module) {
   runScript(async () => {
     log('Getting mana supply...')
-    const manaSupply = await getManaSupply()
+    const manaSupply = await getManaSupply(false)
     console.log(manaSupply)
   })
 }

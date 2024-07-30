@@ -32,12 +32,20 @@ export const pgp = pgPromise({
   },
 })
 
-// This loses precision for large numbers (> 2^53). Beware fetching int8 columns with large values.
-pgp.pg.types.setTypeParser(20, (value) => parseInt(value, 10))
-pgp.pg.types.setTypeParser(1700, parseFloat) // Type Id 1700 = NUMERIC
+// get type id via SELECT oid, typname FROM pg_type where typename = '...'
 
+// This loses precision for large numbers (> 2^53). Beware fetching int8 columns with large values.
+pgp.pg.types.setTypeParser(20, (value) => parseInt(value, 10)) // int8.
+pgp.pg.types.setTypeParser(1700, parseFloat) // numeric
+
+pgp.pg.types.setTypeParser(1082, (value) => value) // date (not timestamp! has no time info so we just parse as string)
+export type SupbaseDirectClientTimeout = IDatabase<{}, IClient> & {
+  timeout: TimeoutTask
+}
 export type SupabaseTransaction = ITask<{}>
-export type SupabaseDirectClient = IDatabase<{}, IClient> | SupabaseTransaction
+export type SupabaseDirectClient =
+  | SupbaseDirectClientTimeout
+  | SupabaseTransaction
 
 export function getInstanceId() {
   return (
@@ -71,19 +79,16 @@ export function createSupabaseClient() {
 
 type TimeoutTask = <T>(
   timeoutInMs: number,
-  queryMethod: (t: ITask<{}>) => Promise<T>
+  queryMethod: (t: ITask<{}>) => Promise<T>,
+  serialize?: boolean
 ) => Promise<T>
 
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
-let pgpDirect:
-  | (IDatabase<{}, IClient> & {
-      timeout: TimeoutTask
-    })
-  | null = null
+let pgpDirect: SupbaseDirectClientTimeout | null = null
 export function createSupabaseDirectClient(
   instanceId?: string,
   password?: string
-) {
+): SupbaseDirectClientTimeout {
   if (pgpDirect) return pgpDirect
   instanceId = instanceId ?? getInstanceId()
   if (!instanceId) {
@@ -120,18 +125,22 @@ export function createSupabaseDirectClient(
 
   const timeout: TimeoutTask = async <T>(
     timeoutInMs: number,
-    queryMethod: (t: ITask<{}>) => Promise<T>
+    queryMethod: (t: ITask<{}>) => Promise<T>,
+    serialize?: boolean
   ) => {
     let pid: number | undefined
     let timeoutId: NodeJS.Timeout | undefined
 
-    const task = client.task(async (t) => {
+    const callback = async (t: ITask<{}>) => {
       const pidResult = await t.one('SELECT pg_backend_pid() AS pid')
       pid = pidResult.pid
       log('Query PID:', pid)
-
       return queryMethod(t)
-    })
+    }
+
+    const t = serialize
+      ? client.tx({ mode: SERIAL_MODE }, callback)
+      : client.tx(callback)
 
     const cancelAfterTimeout = new Promise<never>((_, reject) => {
       log(`Starting timeout: ${timeoutInMs / 1000} seconds`)
@@ -154,7 +163,7 @@ export function createSupabaseDirectClient(
     })
 
     try {
-      const res = await Promise.race([task, cancelAfterTimeout])
+      const res = await Promise.race([t, cancelAfterTimeout])
       clearTimeout(timeoutId)
       return res
     } catch (error) {
@@ -168,20 +177,6 @@ export function createSupabaseDirectClient(
     timeout,
   }
   return pgpDirect
-}
-
-let shortTimeoutPgpClient: IDatabase<{}, IClient> | null = null
-export const createShortTimeoutDirectClient = () => {
-  if (shortTimeoutPgpClient) return shortTimeoutPgpClient
-  shortTimeoutPgpClient = pgp({
-    host: `db.${getInstanceHostname(getInstanceId())}`,
-    port: 5432,
-    user: `postgres`,
-    password: process.env.SUPABASE_PASSWORD,
-    query_timeout: 1000 * 30,
-    max: 20,
-  })
-  return shortTimeoutPgpClient
 }
 
 export const SERIAL_MODE = new pgp.txMode.TransactionMode({

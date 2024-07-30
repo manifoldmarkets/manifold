@@ -9,10 +9,11 @@ import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupModal } from 'web/components/topics/add-contract-to-group-modal'
 import {
   internalFollowTopic,
-  TopicOptionsButton,
+  internalUnfollowTopic,
 } from 'web/components/topics/topics-button'
+import { TopicOptions } from 'web/components/topics/topic-options'
 import { Row } from 'web/components/layout/row'
-import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
+import { useIsFollowingTopic } from 'web/hooks/use-group-supabase'
 import { User } from 'common/user'
 import { forwardRef, Ref, useState } from 'react'
 import { TopicDropdown } from 'web/components/topics/topic-dropdown'
@@ -20,7 +21,6 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 import { toast } from 'react-hot-toast'
 import { getTopicShareUrl } from 'common/util/share'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 
 export const QuestionsTopicTitle = forwardRef(
@@ -34,21 +34,13 @@ export const QuestionsTopicTitle = forwardRef(
     ref: Ref<HTMLDivElement>
   ) => {
     const { currentTopic, setTopicSlug, user } = props
-    const yourGroupIds = useRealtimeMemberGroupIds(user?.id)
+    const { isFollowing, setIsFollowing } = useIsFollowingTopic(
+      currentTopic?.slug
+    )
     const [showAddContract, setShowAddContract] = useState(false)
     const [loading, setLoading] = useState(false)
     const isMobile = useIsMobile()
-    const isFollowing =
-      currentTopic && (yourGroupIds ?? []).includes(currentTopic.id)
     const router = useRouter()
-    const { slug: _, ...rest } = router.query
-    // Function to construct the new URL
-    const constructUrlWithQueryParams = (basePath: string) => {
-      const params = new URLSearchParams(
-        rest as Record<string, string>
-      ).toString()
-      return `${basePath}?${params}`
-    }
     if (currentTopic) {
       return (
         <Row
@@ -58,13 +50,13 @@ export const QuestionsTopicTitle = forwardRef(
           ref={ref}
         >
           <Row className={'gap-1 truncate'}>
-            <Link
-              href={constructUrlWithQueryParams('/home')}
+            <button
+              onClick={router.back}
               className="text-ink-600 hover:bg-ink-200 disabled:text-ink-300 font-md text-center' my-auto inline-flex items-center justify-center rounded-md p-2 ring-inset transition-colors disabled:cursor-not-allowed disabled:bg-transparent"
             >
               <ArrowLeftIcon className="h-5 w-5" aria-hidden />
               <div className="sr-only">Back</div>
-            </Link>
+            </button>
             <span
               className="text-primary-700 self-center truncate text-2xl"
               onClick={() =>
@@ -116,9 +108,13 @@ export const QuestionsTopicTitle = forwardRef(
                   size={isMobile ? 'sm' : 'md'}
                   onClick={() => {
                     setLoading(true)
-                    internalFollowTopic(user, currentTopic).finally(() =>
-                      setLoading(false)
-                    )
+                    internalFollowTopic(user, currentTopic)
+                      .then(() => {
+                        setIsFollowing(true)
+                      })
+                      .finally(() => {
+                        setLoading(false)
+                      })
                   }}
                 >
                   {!loading && <BookmarkIcon className={'mr-1 h-5 w-5'} />}
@@ -128,9 +124,16 @@ export const QuestionsTopicTitle = forwardRef(
             )}
 
             {currentTopic ? (
-              <TopicOptionsButton
+              <TopicOptions
                 group={currentTopic}
-                yourGroupIds={yourGroupIds}
+                isMember={!!isFollowing}
+                unfollow={() => {
+                  setIsFollowing(false)
+                  internalUnfollowTopic(user, currentTopic).catch(() =>
+                    // undo optimistic update
+                    setIsFollowing(true)
+                  )
+                }}
                 user={user}
                 className={'flex [&_*]:flex [&_button]:pr-2'}
               />

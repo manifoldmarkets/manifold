@@ -9,7 +9,6 @@ import {
   MinusCircleIcon,
   PlusCircleIcon,
 } from '@heroicons/react/solid'
-import { onFollowClick } from '../buttons/follow-button'
 import { updateUserDisinterestEmbedding } from 'web/lib/api/api'
 import { Contract } from 'common/contract'
 import toast from 'react-hot-toast'
@@ -27,7 +26,7 @@ export function FeedDropdown(props: {
   const user = useUser()
   const creatorId = itemCreatorId ?? contract.creatorId
   const creator = useDisplayUserById(creatorId)
-  const { isFollowing, setIsFollowing } = useIsFollowing(user?.id, creatorId)
+  const { isFollowing, toggleFollow } = useIsFollowing(user?.id, creatorId)
 
   const markUninteresting = async () => {
     await updateUserDisinterestEmbedding({
@@ -53,7 +52,7 @@ export function FeedDropdown(props: {
       ) : (
         <PlusCircleIcon className="h-5 w-5" aria-hidden />
       ),
-      onClick: () => onFollowClick(creatorId, isFollowing, setIsFollowing),
+      onClick: toggleFollow,
     },
     user && {
       name: interesting ? 'Show less of this' : 'Undo show less of this',

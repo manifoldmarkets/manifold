@@ -28,7 +28,7 @@ export const getUserPortfolioInternal = async (userId: string) => {
     where
       cb.user_id = $1
       and c.resolution_time is null
-      and (a is null or ((a.data->'resolutionTime')::bigint) is null)
+      and (a is null or a.resolution_time is null)
       `,
     [userId],
     (r) =>

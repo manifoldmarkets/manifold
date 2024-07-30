@@ -100,3 +100,7 @@ export function broadcastUpdatedAnswers(
   // TODO: broadcast to global
   broadcastMulti(topics, payload)
 }
+
+export function broadcastTVScheduleUpdate() {
+  broadcast('tv_schedule', {})
+}

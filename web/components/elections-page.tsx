@@ -7,9 +7,6 @@ import { HomepageMap } from './usa-map/homepage-map'
 import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
 import { ConditionalMarkets } from './us-elections/contracts/conditional-market/conditional-markets'
-import { SizedContainer } from './sized-container'
-import clsx from 'clsx'
-import { ChoiceMiniGraph } from './us-elections/contracts/choice-mini-graph'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 import { Carousel } from './widgets/carousel'
 
@@ -23,9 +20,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
     electionPartyContract,
     republicanCandidateContract,
     democratCandidateContract,
-    republicanVPContract,
     houseContract,
-    // democraticVPContract,
+    democraticVPContract,
     democraticElectability,
     // republicanElectability,
     trendingDashboard,
@@ -90,6 +86,21 @@ export function USElectionsPage(props: ElectionsPageProps) {
         className="-mt-4"
       />
 
+      <PoliticsCard
+        contract={electionPartyContract as MultiContract}
+        viewType="PARTY"
+        customTitle="Which party will win the Presidential Election?"
+      />
+
+      {trending}
+
+      <HomepageMap
+        rawPresidencyStateContracts={rawPresidencyStateContracts}
+        rawSenateStateContracts={rawSenateStateContracts}
+        rawGovernorStateContracts={rawGovernorStateContracts}
+        houseContract={houseContract as MultiContract}
+      />
+
       <Col className="gap-2">
         <Row className="items-center gap-2">
           <div className="bg-ink-600 flex h-[1px] grow flex-row" />
@@ -130,40 +141,11 @@ export function USElectionsPage(props: ElectionsPageProps) {
         </Carousel>
       </Col>
 
-      {trending}
-
-      <HomepageMap
-        rawPresidencyStateContracts={rawPresidencyStateContracts}
-        rawSenateStateContracts={rawSenateStateContracts}
-        rawGovernorStateContracts={rawGovernorStateContracts}
-        houseContract={houseContract as MultiContract}
-      />
-
       <PoliticsCard
-        contract={electionPartyContract as MultiContract}
-        viewType="PARTY"
-        customTitle="Which party will win the Presidential Election?"
-      >
-        {partyPoints && afterTime && (
-          <SizedContainer
-            className={clsx('h-[50px] w-full pb-4 pr-10 sm:h-[100px]')}
-          >
-            {(w, h) => (
-              <ChoiceMiniGraph
-                width={w}
-                height={h}
-                multiPoints={partyPoints}
-                contract={electionPartyContract}
-                selectedAnswerIds={electionPartyContract?.answers
-                  .filter((a) => a.text !== 'Other')
-                  .map((a) => a.id)}
-                showMinimumYScale
-                startTime={afterTime}
-              />
-            )}
-          </SizedContainer>
-        )}
-      </PoliticsCard>
+        customTitle="Democratic vice presidential nomination"
+        contract={democraticVPContract as MultiContract}
+        viewType="CANDIDATE"
+      />
 
       <PoliticsCard
         contract={democraticElectability as MultiContract}
@@ -171,28 +153,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
         customTitle={'Who would win if they were the Democratic nominee?'}
         excludeAnswers={['Joe Biden', '[Any Democrat Except Biden or Harris]']}
       />
-
-      <PoliticsCard
-        customTitle="Republican vice presidential nomination"
-        contract={republicanVPContract as MultiContract}
-        viewType="CANDIDATE"
-      />
-
-      <Col className="gap-6 sm:hidden sm:gap-8">
-        <PoliticsCard
-          contract={democratCandidateContract as MultiContract}
-          viewType="CANDIDATE"
-        />
-        {/* <PoliticsCard
-          customTitle="Democratic vice presidential nomination"
-          contract={democraticVPContract as MultiContract}
-          viewType="CANDIDATE"
-        /> */}
-        <PoliticsCard
-          contract={republicanCandidateContract as MultiContract}
-          viewType="CANDIDATE"
-        />
-      </Col>
 
       <Col className="hidden gap-6 sm:flex sm:gap-8">
         {/* <Col className="gap-2">

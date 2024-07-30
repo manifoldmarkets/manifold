@@ -1,28 +1,9 @@
-import { db } from 'web/lib/supabase/db'
-import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import {
-  ChartAnnotation,
-  getChartAnnotations,
-} from 'common/supabase/chart-annotations'
-import { orderBy } from 'lodash'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { useEffect, useState } from 'react'
 import { PointerMode } from 'web/components/charts/helpers'
 import { useUser } from 'web/hooks/use-user'
 import { Contract } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
-
-export const useChartAnnotations = (contractId: string) => {
-  const { rows: annotations, status } = useSubscription(
-    'chart_annotations',
-    { k: 'contract_id', v: contractId },
-    () => getChartAnnotations(contractId, db)
-  )
-
-  return {
-    chartAnnotations: orderBy(annotations, (a) => a.event_time, 'asc'),
-    status,
-  }
-}
 
 export const useAnnotateChartTools = (
   contract: Contract,
@@ -33,11 +14,9 @@ export const useAnnotateChartTools = (
     null
   )
   const user = useUser()
-  const { chartAnnotations: liveAnnotations, status } = useChartAnnotations(
-    contract.id
-  )
-  const chartAnnotations =
-    status === 'live' ? liveAnnotations : staticChartAnnotations
+
+  // TODO: make live
+  const chartAnnotations = staticChartAnnotations
 
   const updateHoveredAnnotation = async (hoveredAnnotation: number | null) => {
     if (pointerMode === 'annotate') return

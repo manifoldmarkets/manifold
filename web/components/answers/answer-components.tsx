@@ -41,6 +41,7 @@ import { track } from 'web/lib/service/analytics'
 import { UserHovercard } from '../user/user-hovercard'
 import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { MultiSellerPosition, MultiSellerProfit } from '../bet/sell-panel'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -204,8 +205,9 @@ export const AddComment = (props: { onClick: () => void }) => {
 export const MultiBettor = (props: {
   answer: Answer
   contract: CPMMMultiContract
+  buttonClassName?: string
 }) => {
-  const { answer, contract } = props
+  const { answer, contract, buttonClassName } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   return (
@@ -227,7 +229,7 @@ export const MultiBettor = (props: {
       <Button
         size="2xs"
         color="indigo-outline"
-        className="bg-primary-50"
+        className={clsx('bg-primary-50', buttonClassName)}
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
@@ -296,12 +298,15 @@ export const MultiSeller = (props: {
   contract: CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   user: User
+  className?: string
+  showPosition?: boolean
 }) => {
-  const { answer, contract, userBets, user } = props
+  const { answer, contract, userBets, user, className, showPosition } = props
   const [open, setOpen] = useState(false)
   const sharesSum = sumBy(userBets, (bet) =>
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
+  const sharesOutcome = sharesSum > 0 ? 'YES' : 'NO'
 
   return (
     <>
@@ -311,16 +316,33 @@ export const MultiSeller = (props: {
           user={user}
           userBets={userBets}
           shares={Math.abs(sharesSum)}
-          sharesOutcome={sharesSum > 0 ? 'YES' : 'NO'}
+          sharesOutcome={sharesOutcome}
           setOpen={setOpen}
           answerId={answer.id}
         />
       )}
       <button
-        className={'hover:text-ink-700 decoration-2 hover:underline'}
+        className={clsx(
+          'hover:text-primary-700 text-primary-600 decoration-2 hover:underline',
+          className
+        )}
         onClick={() => setOpen(true)}
       >
-        Sell
+        <span className="font-bold">Sell</span>
+        {showPosition && (
+          <>
+            <span className="font-bold">
+              <MultiSellerPosition contract={contract} userBets={userBets} />
+            </span>
+            (
+            <MultiSellerProfit
+              contract={contract}
+              userBets={userBets}
+              answer={answer}
+            />{' '}
+            profit)
+          </>
+        )}
       </button>
     </>
   )
@@ -405,12 +427,21 @@ export const OpenProb = (props: {
     </Row>
   )
 }
-export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
-  const { prob, resolvedProb: resolveProb } = props
+export const ClosedProb = (props: {
+  prob: number
+  resolvedProb?: number
+  className?: string
+}) => {
+  const { prob, resolvedProb: resolveProb, className } = props
   return (
     <>
       {!!resolveProb && (
-        <span className="dark:text-ink-900 text-lg text-purple-500">
+        <span
+          className={clsx(
+            'dark:text-ink-900 text-lg text-purple-500',
+            className
+          )}
+        >
           {Math.round(resolveProb * 100)}%
         </span>
       )}
@@ -418,7 +449,8 @@ export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
         className={clsx(
           'text-ink-500 whitespace-nowrap text-lg',
           resolveProb != undefined &&
-            'inline-block min-w-[40px] text-right line-through'
+            'inline-block min-w-[40px] text-right line-through',
+          className
         )}
       >
         {formatPercent(prob)}
@@ -431,8 +463,9 @@ export const AnswerStatus = (props: {
   contract: MultiContract
   answer: Answer
   noNewIcon?: boolean
+  className?: string
 }) => {
-  const { contract, answer } = props
+  const { contract, answer, className } = props
   const { resolutions } = contract
 
   const answerResolution =
@@ -453,7 +486,7 @@ export const AnswerStatus = (props: {
 
   if (answerResolution) {
     return (
-      <Row className="items-center gap-1.5 font-semibold">
+      <Row className={clsx('items-center gap-1.5 font-semibold', className)}>
         <div className={'text-ink-800 text-base'}>Resolved</div>
         {answerResolution === 'MKT' && 'resolutionProbability' in answer ? (
           <ProbPercentLabel
@@ -466,9 +499,14 @@ export const AnswerStatus = (props: {
     )
   }
   return isOpen ? (
-    <OpenProb contract={contract} answer={answer} noNewIcon />
+    <OpenProb
+      className={className}
+      contract={contract}
+      answer={answer}
+      noNewIcon
+    />
   ) : (
-    <ClosedProb prob={prob} resolvedProb={resolvedProb} />
+    <ClosedProb className={className} prob={prob} resolvedProb={resolvedProb} />
   )
 }
 export const BetButtons = (props: {
@@ -513,7 +551,7 @@ export function AnswerPosition(props: {
     <Row
       className={clsx(
         className,
-        'text-ink-500 gap-1.5 whitespace-nowrap text-xs font-semibold'
+        'text-ink-500 gap-1.5 whitespace-nowrap text-xs'
       )}
     >
       <Row className="gap-1">

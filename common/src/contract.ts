@@ -1,6 +1,6 @@
 import { JSONContent } from '@tiptap/core'
 import { getDisplayProbability } from 'common/calculate'
-import { GroupLink, Topic } from 'common/group'
+import { Topic } from 'common/group'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { sum } from 'lodash'
 import { Answer } from './answer'
@@ -106,10 +106,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isSubsidized?: boolean // NOTE: not backfilled, undefined = true
   /** @deprecated - no more auto-subsidization */
   isPolitics?: boolean
-  /** @deprecated - these are still being updated, but group-contracts is source of truth so try to use that */
+  /** @deprecated - not kept up-to-date */
   groupSlugs?: string[]
-  /** @deprecated */
-  groupLinks?: GroupLink[]
   /** @deprecated - not deprecated, only updated in supabase though*/
   popularityScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
@@ -135,18 +133,16 @@ export type MarketContract =
   | CPMMNumericContract
 
 export type BinaryContract = Contract & Binary
-export type CPMMBinaryContract = BinaryContract & CPMM
 export type PseudoNumericContract = Contract & PseudoNumeric
 export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
-export type CPMMStonkContract = StonkContract & CPMM
-export type BountiedQuestionContract = Contract & BountiedQuestion & NonBet
-export type PollContract = Contract & Poll & NonBet
+export type BountiedQuestionContract = Contract & BountiedQuestion
+export type PollContract = Contract & Poll
 
 export type BinaryOrPseudoNumericContract =
-  | CPMMBinaryContract
+  | BinaryContract
   | PseudoNumericContract
-  | CPMMStonkContract
+  | StonkContract
 
 export type CPMM = {
   mechanism: 'cpmm-1'
@@ -390,8 +386,8 @@ export const VISIBILITIES = ['public', 'unlisted'] as const
 export const SORTS = [
   { label: 'High %', value: 'prob-desc' },
   { label: 'Low %', value: 'prob-asc' },
-  { label: 'Old', value: 'old' },
-  { label: 'New', value: 'new' },
+  { label: 'Oldest', value: 'old' },
+  { label: 'Newest', value: 'new' },
   { label: 'Trending', value: 'liquidity' },
   { label: 'A-Z', value: 'alphabetical' },
 ] as const
@@ -416,7 +412,6 @@ export type ContractParams = {
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]
-  relatedContractsByTopicSlug: Record<string, Contract[]>
   topics: Topic[]
   dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]

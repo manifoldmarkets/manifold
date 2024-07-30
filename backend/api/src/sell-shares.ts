@@ -37,10 +37,31 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   auth,
   req
 ) => {
-  return await betsQueue.enqueueFn(
-    () => sellSharesMain(props, auth, req),
-    [props.contractId, auth.uid]
+  const userId = auth.uid
+  const isApi = auth.creds.kind === 'key'
+  const { contractId, shares, outcome, answerId } = props
+  const { contract, answers, balanceByUserId, unfilledBets, userBets } =
+    await fetchSellSharesDataAndValidate(
+      createSupabaseDirectClient(),
+      contractId,
+      answerId,
+      userId,
+      isApi
+    )
+  const simulatedResult = calculateSellResult(
+    contract,
+    answers,
+    unfilledBets,
+    balanceByUserId,
+    answerId,
+    outcome,
+    shares,
+    userBets
   )
+  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
+  const deps = [userId, contractId, ...simulatedMakerIds]
+
+  return await betsQueue.enqueueFn(() => sellSharesMain(props, auth, req), deps)
 }
 
 const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
@@ -94,8 +115,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
 
     for (const userId of unfilledBetUserIds) {
       if (!(userId in balanceByUserId)) {
-        // Assume other makers have infinite balance since they are not involved in this bet.
-        balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
+        // Assume other makers have 0 balance since they are not involved in this bet.
+        balanceByUserId[userId] = 0
       }
     }
 

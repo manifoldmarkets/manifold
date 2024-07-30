@@ -2,7 +2,7 @@ import clsx from 'clsx'
 
 import {
   contractPath,
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   isBinaryMulti,
@@ -22,7 +22,7 @@ import { Row } from 'web/components/layout/row'
 import { MultiNumericResolutionOrExpectation } from 'web/components/contract/contract-price'
 
 export function BetDialog(props: {
-  contract: CPMMBinaryContract
+  contract: BinaryContract
   open: boolean
   setOpen: (open: boolean) => void
   trackingLocation: string
@@ -90,7 +90,7 @@ export function MultiBetDialog(props: {
           <>
             <Link
               href={contractPath(contract)}
-              className={clsx('mb-4 text-xl text-indigo-700', linkClass)}
+              className={clsx('text-primary-700 text-xl', linkClass)}
             >
               {question}
             </Link>
@@ -109,6 +109,7 @@ export function MultiBetDialog(props: {
                 onAnswerHover={() => null}
                 onAnswerClick={() => null}
                 defaultAddAnswer={contract.addAnswersMode === 'ANYONE'}
+                floatingSearchClassName={'-top-8 pt-4'}
               />
             )}
           </>

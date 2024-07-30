@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMContract,
   CPMMMultiContract,
   getMainBinaryMCAnswer,
@@ -47,7 +47,7 @@ import { UserHovercard } from '../user/user-hovercard'
 
 export const UserPositionsTable = memo(
   function UserPositionsTableContent(props: {
-    contract: CPMMBinaryContract | CPMMMultiContract
+    contract: BinaryContract | CPMMMultiContract
     positions?: ContractMetricsByOutcome
     setTotalPositions?: (totalPositions: number) => void
     answerDetails?: {

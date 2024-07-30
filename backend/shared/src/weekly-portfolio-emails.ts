@@ -1,5 +1,5 @@
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMContract,
   CPMMMultiContract,
 } from 'common/contract'
@@ -115,7 +115,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       )
     ),
     db
-  )) as CPMMBinaryContract[]
+  )) as BinaryContract[]
   const chunks = chunk(privateUsers, 250)
   let sent = 0
   for (const chunk of chunks) {

@@ -64,27 +64,32 @@ export const onCreateMarket = async (
   const isNonPredictive = isContractNonPredictive(contract)
   if (isNonPredictive) {
     await addGroupToContract(
+      pg,
       contract,
       {
         id: UNRANKED_GROUP_ID,
         slug: 'nonpredictive',
-        name: 'Unranked',
       },
       HOUSE_LIQUIDITY_PROVIDER_ID
     )
     await addGroupToContract(
+      pg,
       contract,
       {
         id: UNSUBSIDIZED_GROUP_ID,
         slug: 'unsubsidized',
-        name: 'Unsubsidized',
       },
       HOUSE_LIQUIDITY_PROVIDER_ID
     )
     log('Added contract to unsubsidized group')
   }
   if (contract.visibility === 'public') {
-    const groupIds = (contract.groupLinks ?? []).map((gl) => gl.groupId)
+    const groupIds = await pg.map(
+      `select group_id from group_contracts where contract_id = $1`,
+      [contract.id],
+      (data) => data.group_id
+    )
+
     await Promise.all(
       groupIds.map(async (groupId) => upsertGroupEmbedding(pg, groupId))
     )

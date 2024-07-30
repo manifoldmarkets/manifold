@@ -1,11 +1,13 @@
 import { DotsHorizontalIcon } from '@heroicons/react/solid'
-import { Fragment, ReactNode, useState } from 'react'
+import { Fragment, ReactNode, useEffect, useState } from 'react'
 import { usePopper } from 'react-popper'
 import { Popover, Transition } from '@headlessui/react'
 import clsx from 'clsx'
+import { createPortal } from 'react-dom'
 
 export type DropdownItem = {
   name: string
+  buttonContent?: ReactNode
   icon?: ReactNode
   onClick: () => void | Promise<void>
 }
@@ -45,6 +47,15 @@ export default function DropdownMenu(props: {
   const icon = props.icon ?? (
     <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
   )
+
+  // Added mounted state
+  const [mounted, setMounted] = useState(false)
+
+  // Added useEffect for mounted state
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
   return (
     <Popover className={clsx('relative inline-block text-left', className)}>
       {({ open, close }) => (
@@ -63,45 +74,51 @@ export default function DropdownMenu(props: {
             <span className="sr-only">Open options</span>
             {buttonContent ? buttonContent(open) : icon}
           </Popover.Button>
-
-          <AnimationOrNothing show={open} animate={!withinOverflowContainer}>
-            <Popover.Panel
-              ref={setPopperElement}
-              style={styles.popper}
-              {...attributes.popper}
-              className={clsx(
-                'bg-canvas-0 ring-ink-1000  z-30 mt-2 rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none',
-                menuWidth ?? 'w-34',
-                menuItemsClass,
-                'py-1'
-              )}
-            >
-              {items.map((item) => (
-                <div key={item.name}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      e.preventDefault()
-                      item.onClick()
-                      if (closeOnClick) {
-                        close()
-                      }
-                    }}
-                    className={clsx(
-                      selectedItemName && item.name == selectedItemName
-                        ? 'bg-primary-100'
-                        : 'hover:bg-ink-100 hover:text-ink-900',
-                      'text-ink-700',
-                      'flex w-full items-center gap-2 px-4 py-2 text-left text-sm'
-                    )}
-                  >
-                    {item.icon && <div className="w-5">{item.icon}</div>}
-                    {item.name}
-                  </button>
-                </div>
-              ))}
-            </Popover.Panel>
-          </AnimationOrNothing>
+          {mounted &&
+            createPortal(
+              <AnimationOrNothing
+                show={open}
+                animate={!withinOverflowContainer}
+              >
+                <Popover.Panel
+                  ref={setPopperElement}
+                  style={styles.popper}
+                  {...attributes.popper}
+                  className={clsx(
+                    'bg-canvas-0 ring-ink-1000 z-30 mt-2 rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none',
+                    menuWidth ?? 'w-34',
+                    menuItemsClass,
+                    'py-1'
+                  )}
+                >
+                  {items.map((item) => (
+                    <div key={item.name}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          item.onClick()
+                          if (closeOnClick) {
+                            close()
+                          }
+                        }}
+                        className={clsx(
+                          selectedItemName && item.name == selectedItemName
+                            ? 'bg-primary-100'
+                            : 'hover:bg-ink-100 hover:text-ink-900',
+                          'text-ink-700',
+                          'flex w-full items-center gap-2 px-4 py-2 text-left text-sm'
+                        )}
+                      >
+                        {item.icon && <div className="w-5">{item.icon}</div>}
+                        {item.buttonContent ?? item.name}
+                      </button>
+                    </div>
+                  ))}
+                </Popover.Panel>
+              </AnimationOrNothing>,
+              document.body
+            )}
         </>
       )}
     </Popover>

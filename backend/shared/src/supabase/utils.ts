@@ -1,5 +1,5 @@
 import { sortBy } from 'lodash'
-import { pgp, SupabaseDirectClient } from './init'
+import { pgp, SupabaseDirectClient, SupbaseDirectClientTimeout } from './init'
 import { DataFor, Tables, TableName, Column, Row } from 'common/supabase/utils'
 
 export async function getIds<T extends TableName>(
@@ -7,13 +7,6 @@ export async function getIds<T extends TableName>(
   table: T
 ) {
   return db.map('select id from $1~', [table], (r) => r.id as string)
-}
-
-export async function getAll<T extends TableName>(
-  db: SupabaseDirectClient,
-  table: T
-) {
-  return db.map('select data from $1~', [table], (r) => r.data as DataFor<T>)
 }
 
 export async function insert<
@@ -48,10 +41,11 @@ export async function bulkUpdate<
   ColumnValues extends Tables[T]['Update'],
   Row extends Tables[T]['Row']
 >(
-  db: SupabaseDirectClient,
+  db: SupbaseDirectClientTimeout,
   table: T,
   idFields: (string & keyof Row)[],
-  values: ColumnValues[]
+  values: ColumnValues[],
+  timeoutMs?: number
 ) {
   if (values.length) {
     const columnNames = Object.keys(values[0])
@@ -60,7 +54,11 @@ export async function bulkUpdate<
     const query = pgp.helpers.update(values, cs) + ` WHERE ${clause}`
     // Hack to properly cast jsonb values.
     const q = query.replace(/::jsonb'/g, "'::jsonb")
-    await db.none(q)
+    if (timeoutMs) {
+      await db.timeout(timeoutMs, (t) => t.none(q))
+    } else {
+      await db.none(q)
+    }
   }
 }
 
@@ -161,17 +159,17 @@ export const FieldVal = {
   arrayConcat:
     (...values: string[]) =>
     (fieldName: string) => {
-      return pgp.as.format(`|| jsonb_build_object($1, data->$1 || $2:json)`, [
-        fieldName,
-        values,
-      ])
+      return pgp.as.format(
+        `|| jsonb_build_object($1, coalesce(data->$1, '[]'::jsonb) || $2:json)`,
+        [fieldName, values]
+      )
     },
 
   arrayRemove:
     (...values: string[]) =>
     (fieldName: string) => {
       return pgp.as.format(
-        `|| jsonb_build_object($1, (data->$1) - '{$2:raw}'::text[])`,
+        `|| jsonb_build_object($1, coalesce(data->$1,'[]'::jsonb) - '{$2:raw}'::text[])`,
         [fieldName, values.join(',')]
       )
     },

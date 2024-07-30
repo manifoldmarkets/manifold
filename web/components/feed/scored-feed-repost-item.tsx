@@ -46,7 +46,7 @@ export const ScoredFeedRepost = memo(function (props: {
   const commenterIsBettor = bet?.userId === comment.userId
   const creatorRepostedTheirComment = repost.user_id === comment.userId
   const showTopLevelRow =
-    (!commenterIsBettor && bet) || !creatorRepostedTheirComment
+    (!commenterIsBettor && !!bet) || !creatorRepostedTheirComment
   const trackClick = () =>
     track(
       'click market card feed',
@@ -61,7 +61,7 @@ export const ScoredFeedRepost = memo(function (props: {
   return (
     <Col
       className={clsx(
-        'bg-canvas-0 ring- ring-primary-200 group rounded-lg py-2',
+        'bg-canvas-0 ring- ring-primary-200 group rounded-lg p-4',
         hoveringChildContract ? '' : 'hover:ring-1'
       )}
     >
@@ -71,73 +71,35 @@ export const ScoredFeedRepost = memo(function (props: {
           router.push(`${contractPath(contract)}#${comment.id}`)
         }}
       >
-        {showTopLevelRow && creatorRepostedTheirComment ? (
-          <Row className="justify-between pr-2">
-            {bet && (
-              <CommentReplyHeaderWithBet
-                comment={comment}
-                contract={contract}
-                bet={bet}
-              />
-            )}
-            <FeedDropdown
-              contract={contract}
-              itemCreatorId={repost.user_id}
-              interesting={true}
-              toggleInteresting={hide}
-              importanceScore={props.contract.importanceScore}
-            />
-          </Row>
-        ) : (
-          showTopLevelRow &&
-          !creatorRepostedTheirComment && (
-            <Col>
-              <Row className={'mb-1 justify-end gap-1 pr-2'}>
-                <CardReason repost={repost} reason={'reposted'} />
-                <FeedDropdown
-                  contract={contract}
-                  itemCreatorId={repost.user_id}
-                  interesting={true}
-                  toggleInteresting={hide}
-                  importanceScore={props.contract.importanceScore}
-                />
-              </Row>
-              {!commenterIsBettor && bet && (
-                <CommentReplyHeaderWithBet
-                  comment={comment}
-                  contract={contract}
-                  bet={bet}
-                />
-              )}
-            </Col>
-          )
-        )}
-        <Row className={'w-full gap-2'}>
+        <RepostLabel
+          showTopLevelRow={showTopLevelRow}
+          creatorRepostedTheirComment={creatorRepostedTheirComment}
+          bet={bet}
+          comment={comment}
+          contract={contract}
+          hide={hide}
+          commenterIsBettor={commenterIsBettor}
+          repost={repost}
+        />
+        <Col className={'w-full gap-2'}>
           <Col className={'w-full pl-1 pr-2  transition-colors'}>
-            <Row className="justify-between gap-2">
-              <Row className="gap-2">
+            <Row className="w-full items-center justify-between">
+              <Row className="min-w-0 flex-shrink items-center gap-1 overflow-hidden">
                 <UserHovercard userId={userId}>
                   <Avatar
                     username={userUsername}
-                    size={'sm'}
+                    size={'xs'}
                     avatarUrl={userAvatarUrl}
-                    className={clsx(marketCreator && 'shadow shadow-amber-300')}
                   />
                 </UserHovercard>
-                <Col>
+                <div className="min-w-0 flex-1 overflow-hidden">
                   <FeedCommentHeader
                     comment={comment}
                     contract={contract}
                     inTimeline={true}
+                    className="truncate"
                   />
-                  <CollapsibleContent
-                    mediaSize={'md'}
-                    content={comment.content}
-                    defaultCollapse={true}
-                    stateKey={'collapse-repost-' + repost.id + contract.id}
-                    showMorePlacement={'bottom'}
-                  />
-                </Col>
+                </div>
               </Row>
               {(commenterIsBettor || !bet) && !showTopLevelRow && (
                 <Row className={' justify-end gap-2'}>
@@ -151,34 +113,108 @@ export const ScoredFeedRepost = memo(function (props: {
                 </Row>
               )}
             </Row>
-            <Col
-              className={'ml-6 mt-2'}
-              onMouseEnter={() => setHoveringChildContract(true)}
-              onMouseLeave={() => setHoveringChildContract(false)}
-            >
-              <FeedContractCard
-                contract={contract}
-                trackingPostfix="feed"
-                className="ring-ink-100 dark:ring-ink-300 hover:ring-primary-200 dark:hover:ring-primary-200 max-w-full pb-2 ring-1 "
-                hideBottomRow={true}
-                size={'xs'}
-              />
-            </Col>
-            <Col>
-              <BottomActionRow
-                className={'ml-4'}
-                contract={contract}
-                user={user}
-                comment={comment}
-                privateUser={privateUser}
-              />
-            </Col>
+            <CollapsibleContent
+              mediaSize={'md'}
+              content={comment.content}
+              defaultCollapse={true}
+              stateKey={'collapse-repost-' + repost.id + contract.id}
+              showMorePlacement={'bottom'}
+            />
           </Col>
-        </Row>
+          <Col
+            onMouseEnter={() => setHoveringChildContract(true)}
+            onMouseLeave={() => setHoveringChildContract(false)}
+          >
+            <FeedContractCard
+              contract={contract}
+              trackingPostfix="feed"
+              className="ring-ink-100 dark:ring-ink-300 hover:ring-primary-200 dark:hover:ring-primary-200 max-w-full pb-2 ring-1 "
+              hideBottomRow={true}
+              size={'xs'}
+            />
+          </Col>
+          <BottomActionRow
+            className={'ml-4'}
+            contract={contract}
+            user={user}
+            comment={comment}
+            privateUser={privateUser}
+          />
+        </Col>
       </ClickFrame>
     </Col>
   )
 })
+
+function RepostLabel(props: {
+  showTopLevelRow: boolean
+  creatorRepostedTheirComment: boolean
+  bet?: Bet
+  comment: ContractComment
+  contract: Contract
+  hide: () => void
+  commenterIsBettor: boolean
+  repost: Repost
+}) {
+  const {
+    showTopLevelRow,
+    creatorRepostedTheirComment,
+    bet,
+    comment,
+    contract,
+    hide,
+    commenterIsBettor,
+    repost,
+  } = props
+  if (showTopLevelRow && creatorRepostedTheirComment)
+    return (
+      <Row className="grow-x bg-canvas-100/50 -mx-4 -mt-4 mb-3 rounded-t-lg px-4 pb-1 pt-2">
+        {bet && (
+          <CommentReplyHeaderWithBet
+            comment={comment}
+            contract={contract}
+            bet={bet}
+          />
+        )}
+        <FeedDropdown
+          contract={contract}
+          itemCreatorId={repost.user_id}
+          interesting={true}
+          toggleInteresting={hide}
+          importanceScore={props.contract.importanceScore}
+        />
+      </Row>
+    )
+
+  if (showTopLevelRow && !creatorRepostedTheirComment) {
+    return (
+      <Col className="grow-x bg-canvas-100/50 -mx-4 -mt-4 mb-3 rounded-t-lg px-4 pb-1 pt-2">
+        <Row className={'mb-1 w-full justify-between gap-1'}>
+          <CardReason
+            repost={repost}
+            reason={'reposted'}
+            className="text-ink-600"
+          />
+          <FeedDropdown
+            contract={contract}
+            itemCreatorId={repost.user_id}
+            interesting={true}
+            toggleInteresting={hide}
+            importanceScore={props.contract.importanceScore}
+          />
+        </Row>
+        {!commenterIsBettor && bet && (
+          <CommentReplyHeaderWithBet
+            comment={comment}
+            contract={contract}
+            bet={bet}
+          />
+        )}
+      </Col>
+    )
+  }
+  return <></>
+}
 
 export const BottomActionRow = (props: {
   contract: Contract

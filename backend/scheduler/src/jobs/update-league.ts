@@ -44,7 +44,7 @@ export async function updateLeague() {
       contracts.creator_id as user_id,
       'CREATOR_FEE' as category,
       sum((cb.data->'fees'->>'creatorFee')::numeric) as amount
-    from contract_bets cb 
+    from contract_bets cb
     join contracts on contracts.id = cb.contract_id
     where
       cb.created_time > millis_to_ts($2)
@@ -123,15 +123,6 @@ export async function updateLeague() {
     'user_id'
   )
 
-  // Set Genzy's referral mana to 0.
-  const GENZY_USER_ID = 'cA1JupYR5AR8btHUs2xvkui7jA93'
-  const genzyManaEarned = amountByUserId[GENZY_USER_ID]
-  if (genzyManaEarned) {
-    genzyManaEarned
-      .filter((a) => a.category === 'REFERRAL')
-      .forEach((a) => (a.amount = 0))
-  }
-
   const manaEarnedUpdates = []
   for (const [userId, manaEarned] of Object.entries(amountByUserId)) {
     const keys = manaEarned.map((a) => a.category)
@@ -150,7 +141,6 @@ export async function updateLeague() {
   console.log('Mana earned updates', manaEarnedUpdates.length)
 
   await bulkUpdate(pg, 'leagues', ['user_id', 'season'], manaEarnedUpdates)
-  await revalidateStaticProps('/leagues')
   log('Done.')
 }
 

@@ -48,8 +48,9 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
     await Promise.all([
       ...userIds.map(async (userId) => {
         userIdsToAverageTopicConversionScores[userId] = {}
-        const [followedTopics, _] = await Promise.all([
+        const [followedTopics, blockedTopics, _] = await Promise.all([
           getFollowedTopics(pg, userId),
+          getBlockedTopics(pg, userId),
           pg.map(
             `
               select distinct uti.*
@@ -81,6 +82,16 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
             )
           }
         }
+        for (const groupId of blockedTopics) {
+          const groupScore =
+            userIdsToAverageTopicConversionScores[userId][groupId]
+          if (groupScore === undefined) {
+            userIdsToAverageTopicConversionScores[userId][groupId] = 0
+          } else {
+            userIdsToAverageTopicConversionScores[userId][groupId] =
+              groupScore ** 2 // assumes score is less than 1
+          }
+        }
       }),
     ])
 
@@ -100,12 +111,29 @@ const getFollowedTopics = async (pg: SupabaseDirectClient, userId: string) => {
   )
 }
 
+const getBlockedTopics = async (pg: SupabaseDirectClient, userId: string) => {
+  return await pg.map(
+    `
+        with user_blocked_slugs as (
+            select pu.id,jsonb_array_elements_text(pu.data->'blockedGroupSlugs') as slug
+            from private_users pu
+            where pu.id = $1
+        )
+        select distinct g.id as blocked_group_ids
+        from user_blocked_slugs ubs
+        join groups g on g.slug = ubs.slug;
+`,
+    [userId],
+    (row) => (row ? row.blocked_group_ids : [])
+  )
+}
+
 export const minimumContractsQualityBarWhereClauses = (adQuery: boolean) =>
   buildArray(
     where(`contracts.close_time > now()`),
     where(`contracts.outcome_type != 'STONK'`),
     where(`contracts.outcome_type != 'BOUNTIED_QUESTION'`),
-    !adQuery && where(`(contracts.data->>'marketTier') != 'play'`), // filtering by liquidity takes too long
+    !adQuery && where(`contracts.tier != 'play'`), // filtering by liquidity takes too long
     where(`contracts.visibility = 'public'`),
     !adQuery && where(`contracts.unique_bettor_count > 1`)
   )

@@ -26,7 +26,7 @@ export const calculateManaStats = async (
       `
         select from_type,
         to_type,
-        data ->> 'token' as token,
+        token,
         data -> 'data' ->> 'questType' as quest_type,
         category,
         sum(amount) as total_amount
@@ -37,7 +37,7 @@ export const calculateManaStats = async (
          and category not in ('CONSUME_SPICE', 'CONSUME_SPICE_DONE')
         group by from_type,
           to_type,
-          data ->> 'token',
+          token,
           data -> 'data' ->> 'questType',
           category;`,
       [startTime, endTime],
@@ -50,7 +50,7 @@ export const calculateManaStats = async (
     )
     const fees = await pg.one(
       `select sum((data->'fees'->'platformFee')::numeric) as platform_fees
-                from contract_bets 
+                from contract_bets
                 where created_time >$1
                 and created_time < $2`,
       [startTime, endTime],
@@ -80,7 +80,7 @@ export const calculateManaStats = async (
     )
   }
   const now = new Date().toISOString()
-  const ms = await getManaSupply()
+  const ms = await getManaSupply(true)
   await pg.none(
     `insert into mana_supply_stats (start_time, end_time, total_value, balance, spice_balance, investment_value, loan_total, amm_liquidity)
             values ($1, $2, $3, $4, $5, $6, $7, $8)`,

@@ -5,97 +5,83 @@ import {
   notification_source_types,
   NotificationReason,
 } from 'common/notification'
-import { Dictionary, first, groupBy, sortBy } from 'lodash'
+import { Dictionary, first, groupBy, sortBy, uniqBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
 import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
-import {
-  useSubscription,
-  usePersistentSubscription,
-} from 'web/lib/supabase/realtime/use-subscription'
-import {
-  getNotifications,
-  getUnseenNotifications,
-} from 'common/supabase/notifications'
-import { safeLocalStorage } from 'web/lib/util/local'
-import { Row } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
 import { User } from 'common/user'
+
+import { api } from 'web/lib/api/api'
+import { useApiSubscription } from 'web/hooks/use-api-subscription'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export type NotificationGroup = {
   notifications: Notification[]
   groupedById: string
   isSeen: boolean
+  latestCreatedTime: number
 }
-
-const NOTIFICATIONS_KEY = 'notifications_1'
 
 function useNotifications(
   userId: string,
-  // Nobody's going through 10 pages of notifications, right?
-  count = 15 * NOTIFICATIONS_PER_PAGE
+  count = 15 * NOTIFICATIONS_PER_PAGE,
+  newOnly?: boolean
 ) {
-  const { rows } = usePersistentSubscription(
-    NOTIFICATIONS_KEY,
-    'user_notifications',
-    safeLocalStorage,
-    { k: 'user_id', v: userId },
-    () => getNotifications(db, userId, count)
-  )
-  return useMemo(() => rows?.map((r) => r.data as Notification), [rows])
-}
-
-function useUnseenNotifications(
-  userId: string,
-  count = NOTIFICATIONS_PER_PAGE
-) {
-  const { status, rows } = useSubscription(
-    'user_notifications',
-    { k: 'user_id', v: userId },
-    () => getUnseenNotifications(db, userId, count)
-  )
-
-  // hack: we tack the unseen notifications we got onto the end of the persisted
-  // notifications state so that when you navigate to the notifications page,
-  // you see the new ones immediately
+  const [notifications, setNotifications] = usePersistentLocalState<
+    Notification[] | undefined
+  >(undefined, 'notifications-' + userId)
+  const [latestCreatedTime, setLatestCreatedTime] = usePersistentLocalState<
+    number | undefined
+  >(undefined, 'latest-notification-time-' + userId)
 
   useEffect(() => {
-    if (status === 'live' && rows != null) {
-      const json = safeLocalStorage?.getItem(NOTIFICATIONS_KEY)
-      const existing = json != null ? JSON.parse(json) : []
-      const newNotifications =
-        rows?.filter(
-          (n) =>
-            !existing.some(
-              (n2: Row<'user_notifications'>) =>
-                n2.notification_id === n.notification_id
-            )
-        ) ?? []
-      safeLocalStorage?.setItem(
-        NOTIFICATIONS_KEY,
-        JSON.stringify([...newNotifications, ...existing])
-      )
+    if (userId) {
+      const params = {
+        limit: count,
+        after: newOnly ? latestCreatedTime : undefined,
+      }
+      api('get-notifications', params).then((newData) => {
+        setNotifications((oldData) => {
+          const updatedNotifications = uniqBy(
+            [...newData, ...(oldData ?? [])],
+            'id'
+          )
+          const newLatestCreatedTime = Math.max(
+            ...updatedNotifications.map((n) => n.createdTime),
+            latestCreatedTime ?? 0
+          )
+          setLatestCreatedTime(newLatestCreatedTime)
+          return updatedNotifications
+        })
+      })
     }
-  }, [status, rows])
+  }, [userId, count, newOnly])
 
-  return useMemo(() => {
-    return rows?.map((r) => r.data as Notification).filter((r) => !r.isSeen)
-  }, [rows])
+  useApiSubscription({
+    topics: [`user-notifications/${userId}`],
+    onBroadcast: ({ data }) => {
+      console.log('new notification', data)
+      setNotifications((notifs) => {
+        const newNotification = data.notification as Notification
+        setLatestCreatedTime((prevTime) =>
+          Math.max(prevTime ?? 0, newNotification.createdTime)
+        )
+        return [newNotification, ...(notifs ?? [])]
+      })
+    },
+  })
+  return notifications
 }
 
-export function useGroupedUnseenNotifications(
-  userId: string,
-  selectTypes?: notification_source_types[],
-  selectReasons?: NotificationReason[]
-) {
-  const notifications = useUnseenNotifications(userId)?.filter(
-    (n) =>
-      (selectTypes?.includes(n.sourceType) ||
-        selectReasons?.includes(n.reason)) ??
-      true
-  )
+export function useGroupedUnseenNotifications(userId: string) {
+  const unseenNotifs = useNotifications(
+    userId,
+    NOTIFICATIONS_PER_PAGE,
+    true
+  )?.filter((n) => !n.isSeen)
+
   return useMemo(() => {
-    return notifications ? groupNotificationsForIcon(notifications) : undefined
-  }, [notifications])
+    return unseenNotifs ? groupNotificationsForIcon(unseenNotifs) : undefined
+  }, [unseenNotifs?.length])
 }
 
 export function useGroupedNotifications(
@@ -159,6 +145,7 @@ const groupNotifications = (
     notifications: value,
     groupedById: key,
     isSeen: value.every((n) => n.isSeen),
+    latestCreatedTime: Math.max(...value.map((n) => n.createdTime)),
   }))
 }
 

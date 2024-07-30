@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { LimitBet } from 'common/bet'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   getBinaryMCProb,
@@ -43,7 +43,7 @@ import { Tooltip } from '../widgets/tooltip'
 
 export function YourOrders(props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -113,7 +113,7 @@ export function YourOrders(props: {
 export function OrderTable(props: {
   limitBets: LimitBet[]
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -195,7 +195,7 @@ export function OrderTable(props: {
 
 function OrderRow(props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -299,7 +299,7 @@ function OrderRow(props: {
 export function OrderBookButton(props: {
   limitBets: LimitBet[]
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -312,17 +312,9 @@ export function OrderBookButton(props: {
 
   return (
     <>
-      <Button
-        onClick={() => setOpen(true)}
-        disabled={limitBets.length === 0}
-        size="xs"
-        color={'gray-outline'}
-      >
-        {label ||
-          `${limitBets.length === 0 ? 'Currently' : 'View'} ${
-            limitBets.length
-          } order${limitBets.length === 1 ? '' : 's'}`}
-      </Button>
+      <button onClick={() => setOpen(true)} disabled={limitBets.length === 0}>
+        {label || getOrderBookButtonLabel(limitBets)}
+      </button>
 
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="bg-canvas-0">
@@ -339,10 +331,16 @@ export function OrderBookButton(props: {
   )
 }
 
+export function getOrderBookButtonLabel(limitBets: LimitBet[]) {
+  return `${limitBets.length === 0 ? 'Currently' : 'View'} ${
+    limitBets.length
+  } order${limitBets.length === 1 ? '' : 's'}`
+}
+
 export function OrderBookPanel(props: {
   limitBets: LimitBet[]
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
