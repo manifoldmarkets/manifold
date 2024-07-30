@@ -14,7 +14,7 @@ create table if not exists
     resolution_time timestamp with time zone,
     resolution_probability numeric,
     resolution text,
-    popularity_score numeric,
+    popularity_score numeric default 0 not null,
     question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
     description_fts tsvector generated always as (
       to_tsvector(
@@ -25,15 +25,15 @@ create table if not exists
     question_nostop_fts tsvector generated always as (
       to_tsvector('english_nostop_with_prefix'::regconfig, question)
     ) stored,
-    importance_score numeric default '0'::numeric,
+    importance_score numeric default 0 not null,
     deleted boolean default false,
     group_slugs text[],
     last_updated_time timestamp with time zone,
     last_bet_time timestamp with time zone,
     last_comment_time timestamp with time zone,
-    freshness_score numeric default 0,
+    freshness_score numeric default 0 not null,
     conversion_score numeric default 0 not null,
-    view_count bigint default 0,
+    view_count bigint default 0 not null,
     is_spice_payout boolean default false,
     unique_bettor_count bigint default 0 not null,
     tier text,

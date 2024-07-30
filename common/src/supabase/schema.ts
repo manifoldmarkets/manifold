@@ -400,17 +400,17 @@ export type Database = {
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
-          freshness_score: number | null
+          freshness_score: number
           group_slugs: string[] | null
           id: string
-          importance_score: number | null
+          importance_score: number
           is_spice_payout: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
           last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
-          popularity_score: number | null
+          popularity_score: number
           question: string | null
           question_fts: unknown | null
           question_nostop_fts: unknown | null
@@ -420,7 +420,7 @@ export type Database = {
           slug: string | null
           tier: string | null
           unique_bettor_count: number
-          view_count: number | null
+          view_count: number
           visibility: string | null
         }
         Insert: {
@@ -432,17 +432,17 @@ export type Database = {
           data: Json
           deleted?: boolean | null
           description_fts?: unknown | null
-          freshness_score?: number | null
+          freshness_score?: number
           group_slugs?: string[] | null
           id: string
-          importance_score?: number | null
+          importance_score?: number
           is_spice_payout?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
-          popularity_score?: number | null
+          popularity_score?: number
           question?: string | null
           question_fts?: unknown | null
           question_nostop_fts?: unknown | null
@@ -452,7 +452,7 @@ export type Database = {
           slug?: string | null
           tier?: string | null
           unique_bettor_count?: number
-          view_count?: number | null
+          view_count?: number
           visibility?: string | null
         }
         Update: {
@@ -464,17 +464,17 @@ export type Database = {
           data?: Json
           deleted?: boolean | null
           description_fts?: unknown | null
-          freshness_score?: number | null
+          freshness_score?: number
           group_slugs?: string[] | null
           id?: string
-          importance_score?: number | null
+          importance_score?: number
           is_spice_payout?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
-          popularity_score?: number | null
+          popularity_score?: number
           question?: string | null
           question_fts?: unknown | null
           question_nostop_fts?: unknown | null
@@ -484,7 +484,7 @@ export type Database = {
           slug?: string | null
           tier?: string | null
           unique_bettor_count?: number
-          view_count?: number | null
+          view_count?: number
           visibility?: string | null
         }
         Relationships: []
@@ -3287,17 +3287,17 @@ export type Database = {
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
-          freshness_score: number | null
+          freshness_score: number
           group_slugs: string[] | null
           id: string
-          importance_score: number | null
+          importance_score: number
           is_spice_payout: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
           last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
-          popularity_score: number | null
+          popularity_score: number
           question: string | null
           question_fts: unknown | null
           question_nostop_fts: unknown | null
@@ -3307,7 +3307,7 @@ export type Database = {
           slug: string | null
           tier: string | null
           unique_bettor_count: number
-          view_count: number | null
+          view_count: number
           visibility: string | null
         }[]
       }
