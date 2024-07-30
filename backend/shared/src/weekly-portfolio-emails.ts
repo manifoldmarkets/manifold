@@ -109,12 +109,12 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     'week'
   )
   const allWeeklyMoversContracts = (await getContracts(
+    db,
     uniq(
       Object.values(usersToContractMetrics).flatMap((cms) =>
         cms.map((cm) => cm.contractId)
       )
-    ),
-    db
+    )
   )) as BinaryContract[]
   const chunks = chunk(privateUsers, 250)
   let sent = 0

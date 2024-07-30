@@ -6,17 +6,15 @@ import {
   useTopMarketsByUser,
 } from 'web/components/cards/MarketCard'
 import { groupBy, shuffle } from 'lodash'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { Button } from 'web/components/buttons/button'
 import { UserCard } from 'web/components/cards/UserCard'
-import { getContracts } from 'common/supabase/contracts'
-import { db } from 'web/lib/supabase/db'
-import { Contract } from 'common/contract'
 import { useRouter } from 'next/router'
 import { Grenze_Gotisch } from 'next/font/google'
 import clsx from 'clsx'
+import { useContracts } from 'web/hooks/use-contract'
 
 const fancyFont = Grenze_Gotisch({
   weight: ['300', '500', '700'],
@@ -35,14 +33,6 @@ const DEFAULT_MARKETS = [
   'usSjx2AtbUvfg7QNq5g2',
   '4MkPyu5D9MRLPREODSD7',
 ]
-
-function useContractsByIds(ids: string[]) {
-  const [contracts, setContracts] = useState<Contract[]>([])
-  useEffect(() => {
-    getContracts(ids, db).then((contracts) => setContracts(contracts))
-  }, [ids])
-  return contracts
-}
 
 // A memory game with 2 rows of TOTAL_MARKETS cards
 // Users flip 2 cards at a time; if they match, they stay flipped
@@ -63,7 +53,7 @@ export default function CardsPage() {
   // GAME DATA
   const user = useUser()
   const topMarkets = useTopMarketsByUser(user?.id ?? '')
-  const defaults = useContractsByIds(DEFAULT_MARKETS)
+  const defaults = useContracts(DEFAULT_MARKETS)
   const shuffledMarkets = useMemo(
     () => shuffle([...topMarkets, ...defaults]),
     [topMarkets.length]

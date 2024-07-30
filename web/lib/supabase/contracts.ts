@@ -1,28 +1,10 @@
-import { Contract } from 'common/contract'
-import { run, selectFrom } from 'common/supabase/utils'
+import { run } from 'common/supabase/utils'
 import { db } from './db'
 import { chunk, uniqBy } from 'lodash'
 import { convertContract } from 'common/supabase/contracts'
 
-export async function getPublicContractsByIds(contractIds: string[]) {
-  const contractLists = await Promise.all(
-    chunk(contractIds, 100).map(async (ids) => {
-      const { data } = await run(
-        db
-          .from('contracts')
-          .select('data')
-          .eq('visibility', 'public')
-          .in('id', ids)
-      )
-      if (data && data.length > 0) {
-        return data.map((d) => d.data as Contract)
-      } else {
-        return []
-      }
-    })
-  )
-  return uniqBy(contractLists.flat(), 'id')
-}
+// see also: common/supabase/contracts.ts
+
 export async function getPublicContractIdsInTopics(
   contractIds: string[],
   topicSlugs: string[],
@@ -66,29 +48,6 @@ export async function getRecentActiveContractsOnTopics(
   }
 }
 
-export async function getContracts(
-  contractIds: string[],
-  pk: 'id' | 'slug' = 'id'
-) {
-  const q = db
-    .from('contracts')
-    .select('data, importance_score, view_count, conversion_score')
-    .in(pk, contractIds)
-  const { data } = await run(q)
-  return data.map((d) => convertContract(d))
-}
-
-export const getContract = async (id: string) => {
-  const { data } = await run(
-    db
-      .from('contracts')
-      .select('data, importance_score, view_count, conversion_score')
-      .eq('id', id)
-  )
-
-  return data && data.length ? convertContract(data[0]) : null
-}
-
 export async function getWatchedContracts(userId: string) {
   const { data: ids } = await run(
     db.from('contract_follows').select('contract_id').eq('follow_id', userId)
@@ -100,7 +59,9 @@ export async function getWatchedContracts(userId: string) {
   const datas = await Promise.all(
     chunks.map(async (ids) => {
       const { data } = await run(
-        selectFrom(db, 'contracts', 'id', 'question', 'slug', 'creatorUsername')
+        db
+          .from('contracts')
+          .select('id, question, slug, data->>creatorUsername')
           .in('id', ids)
           .order('created_time' as any, { ascending: false })
       )

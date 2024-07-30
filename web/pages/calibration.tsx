@@ -10,18 +10,20 @@ import { formatLargeNumber } from 'common/util/format'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Linkify } from 'web/components/widgets/linkify'
 import { SizedContainer } from 'web/components/sized-container'
-import { db } from 'web/lib/supabase/db'
 import { TrustPanel } from 'web/components/trust-panel'
 import ChevronDownIcon from '@heroicons/react/solid/ChevronDownIcon'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
-import { getContract } from 'web/lib/supabase/contracts'
 import { Contract } from 'common/contract'
 import { Subtitle } from 'web/components/widgets/subtitle'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { getContract } from 'common/supabase/contracts'
 
 const TRADER_THRESHOLD = 15
 const SAMPLING_P = 0.02
 
 export const getStaticProps = async () => {
+  const db = await initSupabaseAdmin()
+
   try {
     const result = await db
       .from('platform_calibration')
@@ -30,9 +32,9 @@ export const getStaticProps = async () => {
       .limit(1)
 
     const { points, score, n } = result.data?.[0]?.data as any
-    const trumpMarket = await getContract('AiEh38dIYVV5tOs1RmN3')
-    const gazaMarket = await getContract('KmWz1wvC8AmNX3a1iiUF')
-    const sbfMarket = await getContract('dRdXZtj8UXiXxkoF2rXE')
+    const trumpMarket = await getContract(db, 'AiEh38dIYVV5tOs1RmN3')
+    const gazaMarket = await getContract(db, 'KmWz1wvC8AmNX3a1iiUF')
+    const sbfMarket = await getContract(db, 'dRdXZtj8UXiXxkoF2rXE')
 
     return {
       props: {
