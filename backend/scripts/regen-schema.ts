@@ -107,7 +107,7 @@ async function getFunctions(pg: SupabaseDirectClient) {
     WHERE
       pronamespace = 'public'::regnamespace
       and prokind = 'f'
-    ORDER BY proname asc`
+    ORDER BY proname asc, pronargs asc, oid desc`
   )
   return rows.filter((f) => !f.definition.includes(`'$libdir/`))
 }
