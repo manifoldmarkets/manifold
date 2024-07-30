@@ -1,5 +1,5 @@
 import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
-import { Row, run, SupabaseClient } from 'common/supabase/utils'
+import { run, SupabaseClient } from 'common/supabase/utils'
 import { db } from './db'
 import { Contract } from 'common/contract'
 import { convertGroup } from 'common/supabase/groups'
