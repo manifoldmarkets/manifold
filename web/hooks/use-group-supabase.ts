@@ -11,7 +11,6 @@ import {
 } from 'web/lib/supabase/group'
 import {
   getGroupsWhereUserHasRole,
-  getMyGroupRoles,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
@@ -120,19 +119,13 @@ export function useGroupRole(
   return isMod ? 'admin' : userRole
 }
 
-export type Member = Row<'group_role'>
-
 export async function getTranslatedMemberRole(
   groupId: string | undefined,
   user: User | null | undefined
 ) {
   if (user && groupId) {
     try {
-      const { data } = await getMemberRole(user, groupId)
-      if (data.length == 0) {
-        return null
-      }
-      return (data[0]?.role ?? 'member') as GroupRole
+      return await getMemberRole(user, groupId)
     } catch (e) {
       console.error(e)
     }
@@ -156,43 +149,6 @@ export function useListGroupsBySlug(groupSlugs: string[]) {
   return useAsyncData(groupSlugs, listGroupsBySlug)
 }
 
-export function useMyGroupRoles(userId: string | undefined) {
-  return useAsyncData(userId, getMyGroupRoles)
-}
-
 export function useGroupsWhereUserHasRole(userId: string | undefined) {
   return useAsyncData(userId, getGroupsWhereUserHasRole)
-}
-
-export const useGroupRoles = (user: User | undefined | null) => {
-  const [roles, setRoles] =
-    useState<Awaited<ReturnType<typeof getMyGroupRoles>>>()
-
-  useEffect(() => {
-    if (user)
-      getMyGroupRoles(user.id).then((roles) =>
-        setRoles(
-          roles?.sort(
-            (a, b) =>
-              (b.role === 'admin' ? 2 : b.role === 'moderator' ? 1 : 0) -
-              (a.role === 'admin' ? 2 : a.role === 'moderator' ? 1 : 0)
-          )
-        )
-      )
-  }, [])
-
-  const groups: Group[] =
-    roles?.map((g) => ({
-      id: g.group_id!,
-      name: g.group_name!,
-      slug: g.group_slug!,
-      privacyStatus: g.privacy_status as any,
-      totalMembers: g.total_members!,
-      creatorId: g.creator_id!,
-      createdTime: g.createdtime!,
-      postIds: [],
-      importanceScore: 0,
-    })) ?? []
-
-  return { roles, groups }
 }
