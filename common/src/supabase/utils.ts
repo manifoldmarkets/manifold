@@ -66,7 +66,6 @@ type JsonTypes = {
   contracts: Contract
   answers: Answer
   contract_bets: Bet
-  public_contract_bets: Bet
   groups: Group
   txns: Txn
 }
