@@ -20,7 +20,7 @@ if (require.main === module) {
     for (const userIds of chunks) {
       await updateUserMetricsCore(
         userIds.map((u) => u[0]),
-        true
+        0
       )
       total += userIds.length
       console.log(

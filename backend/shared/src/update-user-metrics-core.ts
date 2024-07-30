@@ -37,11 +37,12 @@ const userToPortfolioMetrics: {
     timeCachedPeriodProfits: number
   }
 } = {}
-
+const LIMIT = 400
 export async function updateUserMetricsCore(
   userIds?: string[],
-  allTime?: boolean
+  since?: number
 ) {
+  const useSince = since !== undefined
   const now = Date.now()
   const yesterday = now - DAY_MS
   const weekAgo = now - DAY_MS * 7
@@ -73,8 +74,8 @@ export async function updateUserMetricsCore(
              and user_contract_metrics.has_shares = true
            ))
        )
-        order by uph.last_calculated nulls first limit 400`,
-        [random, BOT_USERNAMES],
+        order by uph.last_calculated nulls first limit $3`,
+        [random, BOT_USERNAMES, LIMIT],
         (r) => r.id as string
       )
 
@@ -134,7 +135,7 @@ export async function updateUserMetricsCore(
   const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
     pg,
     activeUserIds,
-    allTime ? 0 : weekAgo
+    useSince ? since : weekAgo
   )
   log(
     `Loaded ${sumBy(
@@ -256,7 +257,7 @@ export async function updateUserMetricsCore(
       return !contract.isResolved
     })
     let resolvedProfitAdjustment = user.resolvedProfitAdjustment ?? 0
-    if (allTime) {
+    if (since === 0) {
       const resolvedMetrics = freshMetrics.filter((m) => {
         const contract = contractsById[m.contractId]
         if (contract.mechanism === 'cpmm-multi-1') {
@@ -343,8 +344,7 @@ export async function updateUserMetricsCore(
   const userIdsNotWritten = activeUserIds.filter(
     (id) => !portfolioUpdates.some((p) => p.user_id === id)
   )
-  const chunkSize = 50
-  const userUpdateChunks = chunk(userUpdates, chunkSize)
+  const userUpdateChunks = chunk(userUpdates, LIMIT / 10)
   log('Writing updates and inserts...')
   await Promise.all(
     buildArray(
