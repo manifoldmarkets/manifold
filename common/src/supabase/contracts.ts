@@ -13,38 +13,45 @@ import { Json } from 'common/supabase/schema'
 import { removeUndefinedProps } from 'common/util/object'
 
 export const CONTRACTS_PER_SEARCH_PAGE = 40
+
 export const getContractFromSlug = async (
-  contractSlug: string,
-  db: SupabaseClient
+  db: SupabaseClient,
+  contractSlug: string
+) => getContract(db, contractSlug, 'slug')
+
+export const getContract = async (
+  db: SupabaseClient,
+  id: string,
+  pk: 'id' | 'slug' = 'id'
 ) => {
-  const { data } = await run(
-    db
-      .from('contracts')
-      .select('data, importance_score, view_count, conversion_score')
-      .eq('slug', contractSlug)
-  )
-  return data?.[0] ? convertContract(data?.[0]) : null
+  const { data } = await db.from('contracts').select(contractFields).eq(pk, id)
+  return data && data.length ? convertContract(data[0]) : null
 }
 
 export const getContracts = async (
-  contractIds: string[],
-  db: SupabaseClient
+  db: SupabaseClient,
+  ids: string[],
+  pk: 'id' | 'slug' = 'id',
+  publicOnly = false
 ) => {
-  if (contractIds.length === 0) {
+  if (ids.length === 0) {
     return [] as Contract[]
   }
-  const chunks = chunk(contractIds, 300)
-  const promises = chunks.map((chunk) =>
-    run(
-      db
-        .from('contracts')
-        .select('data, importance_score, view_count, conversion_score')
-        .in('id', chunk)
-    )
-  )
+  const chunks = chunk(ids, 300)
+  const promises = chunks.map((chunk) => {
+    const q = db.from('contracts').select(contractFields).in(pk, chunk)
+    if (publicOnly) {
+      q.eq('visibility', 'public')
+    }
+
+    return run(q)
+  })
   const results = await Promise.all(promises)
   return results.flatMap((result) => result.data.map((r) => convertContract(r)))
 }
+
+export const contractFields =
+  'data, importance_score, view_count, conversion_score, freshness_score, daily_score'
 
 export const getUnresolvedContractsCount = async (
   creatorId: string,

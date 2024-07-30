@@ -13,7 +13,7 @@ alter table user_embeddings enable row level security;
 
 drop policy if exists "admin write access" on user_embeddings;
 
-create policy "admin write access" on user_embeddings for all;
+create policy "admin write access" on user_embeddings to service_role for all;
 
 drop policy if exists "public read" on user_embeddings;
 

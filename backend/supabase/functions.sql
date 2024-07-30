@@ -202,6 +202,16 @@ END;
 $function$;
 
 create
+or replace function public.get_contract_metrics_with_contracts (uid text, count integer) returns table (contract_id text, metrics jsonb, contract jsonb) language sql immutable parallel SAFE as $function$
+select ucm.contract_id, ucm.data as metrics, c.data as contract
+from user_contract_metrics as ucm
+join contracts as c on c.id = ucm.contract_id
+where ucm.user_id = uid
+order by ((ucm.data)->'lastBetTime')::bigint desc
+limit count
+$function$;
+
+create
 or replace function public.get_contract_metrics_with_contracts (uid text, count integer, start integer) returns table (contract_id text, metrics jsonb, contract jsonb) language sql stable as $function$select ucm.contract_id,
        ucm.data as metrics,
        c.data as contract
@@ -212,16 +222,6 @@ where ucm.user_id = uid
   and ucm.answer_id is null
 order by ((ucm.data)->'lastBetTime')::bigint desc offset start
     limit count$function$;
-
-create
-or replace function public.get_contract_metrics_with_contracts (uid text, count integer) returns table (contract_id text, metrics jsonb, contract jsonb) language sql immutable parallel SAFE as $function$
-select ucm.contract_id, ucm.data as metrics, c.data as contract
-from user_contract_metrics as ucm
-join contracts as c on c.id = ucm.contract_id
-where ucm.user_id = uid
-order by ((ucm.data)->'lastBetTime')::bigint desc
-limit count
-$function$;
 
 create
 or replace function public.get_contract_voters (this_contract_id text) returns table (data json) language sql parallel SAFE as $function$
@@ -502,24 +502,9 @@ limit count $function$;
 
 create
 or replace function public.get_open_limit_bets_with_contracts_1 (uid text, count integer, politics boolean) returns table (contract_id text, bets jsonb[], contract jsonb) language sql stable parallel SAFE as $function$;
-select contract_id,
-       bets.data as bets,
-       contracts.data as contracts
-from (
-         select contract_id,
-                array_agg(
-                        data
-                        order by created_time desc
-                ) as data
-         from contract_bets
-         where user_id = uid
-           and (data->>'isFilled')::boolean = false
-           and (data->>'isCancelled')::boolean = false
-         group by contract_id
-     ) as bets
-         join contracts on contracts.id = bets.contract_id
-where (politics is false or is_politics = politics)
-limit count $function$;
+  -- TODO: drop this function
+  select * from get_open_limit_bets_with_contracts(uid, count);
+$function$;
 
 create
 or replace function public.get_option_voters (this_contract_id text, this_option_id text) returns table (data json) language sql parallel SAFE as $function$
@@ -801,6 +786,23 @@ end;
 $function$;
 
 create
+or replace function public.get_your_contract_ids (uid text) returns table (contract_id text) language sql stable parallel SAFE as $function$ with your_liked_contracts as (
+    select content_id as contract_id
+    from user_reactions
+    where user_id = uid
+  ),
+  your_followed_contracts as (
+    select contract_id
+    from contract_follows
+    where follow_id = uid
+  )
+select contract_id
+from your_liked_contracts
+union
+select contract_id
+from your_followed_contracts $function$;
+
+create
 or replace function public.get_your_contract_ids (uid text, n integer, start integer) returns table (contract_id text) language sql immutable parallel SAFE as $function$
   with your_bet_on_contracts as (
     select contract_id
@@ -824,23 +826,6 @@ or replace function public.get_your_contract_ids (uid text, n integer, start int
   limit n
   offset start
 $function$;
-
-create
-or replace function public.get_your_contract_ids (uid text) returns table (contract_id text) language sql stable parallel SAFE as $function$ with your_liked_contracts as (
-    select content_id as contract_id
-    from user_reactions
-    where user_id = uid
-  ),
-  your_followed_contracts as (
-    select contract_id
-    from contract_follows
-    where follow_id = uid
-  )
-select contract_id
-from your_liked_contracts
-union
-select contract_id
-from your_followed_contracts $function$;
 
 create
 or replace function public.get_your_daily_changed_contracts (uid text, n integer, start integer) returns table (data jsonb, daily_score real) language sql stable parallel SAFE as $function$
@@ -1218,11 +1203,11 @@ or replace function public.top_creators_for_user (uid text, excluded_ids text[],
 $function$;
 
 create
-or replace function public.ts_to_millis (ts timestamp without time zone) returns bigint language sql immutable parallel SAFE as $function$
-select extract(epoch from ts)::bigint * 1000
+or replace function public.ts_to_millis (ts timestamp with time zone) returns bigint language sql immutable parallel SAFE as $function$
+select (extract(epoch from ts) * 1000)::bigint
 $function$;
 
 create
-or replace function public.ts_to_millis (ts timestamp with time zone) returns bigint language sql immutable parallel SAFE as $function$
-select (extract(epoch from ts) * 1000)::bigint
+or replace function public.ts_to_millis (ts timestamp without time zone) returns bigint language sql immutable parallel SAFE as $function$
+select extract(epoch from ts)::bigint * 1000
 $function$;

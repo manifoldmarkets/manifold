@@ -400,18 +400,17 @@ export type Database = {
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
-          freshness_score: number | null
+          freshness_score: number
           group_slugs: string[] | null
           id: string
-          importance_score: number | null
-          is_politics: boolean | null
+          importance_score: number
           is_spice_payout: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
           last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
-          popularity_score: number | null
+          popularity_score: number
           question: string | null
           question_fts: unknown | null
           question_nostop_fts: unknown | null
@@ -421,7 +420,7 @@ export type Database = {
           slug: string | null
           tier: string | null
           unique_bettor_count: number
-          view_count: number | null
+          view_count: number
           visibility: string | null
         }
         Insert: {
@@ -433,18 +432,17 @@ export type Database = {
           data: Json
           deleted?: boolean | null
           description_fts?: unknown | null
-          freshness_score?: number | null
+          freshness_score?: number
           group_slugs?: string[] | null
           id: string
-          importance_score?: number | null
-          is_politics?: boolean | null
+          importance_score?: number
           is_spice_payout?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
-          popularity_score?: number | null
+          popularity_score?: number
           question?: string | null
           question_fts?: unknown | null
           question_nostop_fts?: unknown | null
@@ -454,7 +452,7 @@ export type Database = {
           slug?: string | null
           tier?: string | null
           unique_bettor_count?: number
-          view_count?: number | null
+          view_count?: number
           visibility?: string | null
         }
         Update: {
@@ -466,18 +464,17 @@ export type Database = {
           data?: Json
           deleted?: boolean | null
           description_fts?: unknown | null
-          freshness_score?: number | null
+          freshness_score?: number
           group_slugs?: string[] | null
           id?: string
-          importance_score?: number | null
-          is_politics?: boolean | null
+          importance_score?: number
           is_spice_payout?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
-          popularity_score?: number | null
+          popularity_score?: number
           question?: string | null
           question_fts?: unknown | null
           question_nostop_fts?: unknown | null
@@ -487,7 +484,7 @@ export type Database = {
           slug?: string | null
           tier?: string | null
           unique_bettor_count?: number
-          view_count?: number | null
+          view_count?: number
           visibility?: string | null
         }
         Relationships: []
@@ -1525,13 +1522,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'contracts'
             referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            isOneToOne: false
-            referencedRelation: 'public_contracts'
-            referencedColumns: ['id']
           }
         ]
       }
@@ -1621,7 +1611,6 @@ export type Database = {
           fs_updated_time: string | null
           post_id: string
           user_id: string | null
-          visibility: string | null
         }
         Insert: {
           comment_id?: string
@@ -1630,7 +1619,6 @@ export type Database = {
           fs_updated_time?: string | null
           post_id: string
           user_id?: string | null
-          visibility?: string | null
         }
         Update: {
           comment_id?: string
@@ -1639,7 +1627,6 @@ export type Database = {
           fs_updated_time?: string | null
           post_id?: string
           user_id?: string | null
-          visibility?: string | null
         }
         Relationships: []
       }
@@ -2921,105 +2908,6 @@ export type Database = {
         }
         Relationships: []
       }
-      public_contracts: {
-        Row: {
-          close_time: string | null
-          conversion_score: number | null
-          created_time: string | null
-          creator_id: string | null
-          data: Json | null
-          deleted: boolean | null
-          description_fts: unknown | null
-          freshness_score: number | null
-          group_slugs: string[] | null
-          id: string | null
-          importance_score: number | null
-          is_politics: boolean | null
-          is_spice_payout: boolean | null
-          last_bet_time: string | null
-          last_comment_time: string | null
-          last_updated_time: string | null
-          mechanism: string | null
-          outcome_type: string | null
-          popularity_score: number | null
-          question: string | null
-          question_fts: unknown | null
-          question_nostop_fts: unknown | null
-          resolution: string | null
-          resolution_probability: number | null
-          resolution_time: string | null
-          slug: string | null
-          tier: string | null
-          unique_bettor_count: number | null
-          view_count: number | null
-          visibility: string | null
-        }
-        Insert: {
-          close_time?: string | null
-          conversion_score?: number | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          is_spice_payout?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          tier?: string | null
-          unique_bettor_count?: number | null
-          view_count?: number | null
-          visibility?: string | null
-        }
-        Update: {
-          close_time?: string | null
-          conversion_score?: number | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          is_spice_payout?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          tier?: string | null
-          unique_bettor_count?: number | null
-          view_count?: number | null
-          visibility?: string | null
-        }
-        Relationships: []
-      }
       user_league_info: {
         Row: {
           cohort: string | null
@@ -3293,18 +3181,17 @@ export type Database = {
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
-          freshness_score: number | null
+          freshness_score: number
           group_slugs: string[] | null
           id: string
-          importance_score: number | null
-          is_politics: boolean | null
+          importance_score: number
           is_spice_payout: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
           last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
-          popularity_score: number | null
+          popularity_score: number
           question: string | null
           question_fts: unknown | null
           question_nostop_fts: unknown | null
@@ -3314,7 +3201,7 @@ export type Database = {
           slug: string | null
           tier: string | null
           unique_bettor_count: number
-          view_count: number | null
+          view_count: number
           visibility: string | null
         }[]
       }

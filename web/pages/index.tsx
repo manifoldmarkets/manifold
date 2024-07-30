@@ -22,7 +22,6 @@ import { db } from 'web/lib/supabase/db'
 import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
-import { getContract } from 'web/lib/supabase/contracts'
 import { useABTest } from 'web/hooks/use-ab-test'
 import { Typewriter } from 'web/components/home/typewriter'
 import { PillButton } from 'web/components/buttons/pill-button'
@@ -30,11 +29,16 @@ import { Carousel } from 'web/components/widgets/carousel'
 import { removeEmojis } from 'common/util/string'
 import { filterDefined } from 'common/util/array'
 import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
+import {
+  contractFields,
+  convertContract,
+  getContract,
+} from 'common/supabase/contracts'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
     .from('contracts')
-    .select('data')
+    .select(contractFields)
     .not(
       'outcome_type',
       'in',
@@ -43,9 +47,9 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
     .order('importance_score', { ascending: false })
     .limit(100)
 
-  const contracts = (data ?? []).map((d) => d.data) as Contract[]
+  const contracts = (data ?? []).map(convertContract)
 
-  const prezContract = await getContract('ikSUiiNS8MwAI75RwEJf')
+  const prezContract = await getContract(db, 'ikSUiiNS8MwAI75RwEJf')
 
   const filteredContracts = contracts.filter(
     (c) =>

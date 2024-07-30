@@ -158,7 +158,6 @@ export type SupabaseAdditionalFilter = {
   excludeContractIds?: string[]
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
-  isPolitics?: boolean
 }
 
 export type SearchState = {
@@ -633,7 +632,6 @@ const useContractSearch = (
             ? topicFilter
             : undefined,
         creatorId: additionalFilter?.creatorId,
-        isPolitics: additionalFilter?.isPolitics,
         isPrizeMarket: isPrizeMarketString,
         marketTier,
         forYou,

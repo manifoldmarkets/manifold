@@ -1,4 +1,4 @@
-import { Contract, resolution } from 'common/contract'
+import { resolution } from 'common/contract'
 
 const OUTCOME_TO_COLOR_TEXT = {
   YES: 'text-teal-600',
@@ -7,7 +7,10 @@ const OUTCOME_TO_COLOR_TEXT = {
   MKT: 'text-blue-600 dark:text-blue-200',
 }
 
-export function getTextColor(contract: Contract) {
+export function getTextColor(contract: {
+  resolution?: string
+  closeTime?: number
+}) {
   const { resolution } = contract
 
   if (resolution) {

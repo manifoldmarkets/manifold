@@ -48,7 +48,7 @@ alter table group_invites enable row level security;
 
 drop policy if exists "Enable read access for admin" on group_invites;
 
-create policy "Enable read access for admin" on group_invites for
+create policy "Enable read access for admin" on group_invites to service_role for
 select
   using (true);
 

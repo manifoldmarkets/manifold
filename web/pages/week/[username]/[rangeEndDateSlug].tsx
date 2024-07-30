@@ -79,8 +79,8 @@ export async function getStaticProps(props: {
       : []
   const contracts = weeklyPortfolioUpdate
     ? await getContracts(
-        (contract_metrics as ContractMetric[]).map((c) => c.contractId),
-        db
+        db,
+        (contract_metrics as ContractMetric[]).map((c) => c.contractId)
       )
     : null
 

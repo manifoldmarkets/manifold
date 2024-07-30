@@ -16,8 +16,8 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { BannedBadge, UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { usePagination } from 'web/hooks/use-pagination'
+import { api } from 'web/lib/api/api'
 import { getComment } from 'web/lib/supabase/comments'
-import { getContract } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 
@@ -196,7 +196,10 @@ const convertReports = async (
           null
         // Reported contract
         if (contentType === 'contract') {
-          const contract = await getContract(contentId)
+          const contract = await api('market/:id', {
+            id: contentId,
+            lite: true,
+          })
           partialReport = contract
             ? {
                 slug: contractPath(contract),
@@ -209,7 +212,7 @@ const convertReports = async (
           parentType === 'contract' &&
           parentId
         ) {
-          const contract = await getContract(parentId)
+          const contract = await api('market/:id', { id: parentId, lite: true })
           if (contract) {
             const comment = await getComment(contentId)
             partialReport = comment && {

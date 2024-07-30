@@ -65,18 +65,16 @@ export function MarketTopics(props: TopicRowProps) {
   const { contract, dashboards, isSpiceMarket } = props
   const user = useUser()
   const isCreator = contract.creatorId === user?.id
-  const adminGroups = useGroupsWhereUserHasRole(user?.id)
+  const myEditableGroupIds = useGroupsWhereUserHasRole(user?.id)
   const isMod = useAdminOrMod()
-  const canEdit = isMod || isCreator || (adminGroups && adminGroups.length > 0)
+  const canEdit =
+    isMod || isCreator || (myEditableGroupIds && myEditableGroupIds.length > 0)
 
   const topicPickerProps = useTopicsWithContract(contract.id, props.topics)
   const { topics } = topicPickerProps
 
   const canEditGroup = (groupId: string) =>
-    isCreator ||
-    isMod ||
-    // if user has admin role in that group
-    !!(adminGroups && adminGroups.some((g) => g.group_id === groupId))
+    isCreator || isMod || !!myEditableGroupIds?.includes(groupId)
 
   return (
     <>

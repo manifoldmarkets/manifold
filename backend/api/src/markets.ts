@@ -12,14 +12,14 @@ const SORT_COLUMNS = {
 
 // mqp: this pagination approach is technically incorrect if multiple contracts
 // have the exact same createdTime, but that's very unlikely
-const getBeforeValue = async <T extends Column<'public_contracts'>>(
+const getBeforeValue = async <T extends Column<'contracts'>>(
   db: SupabaseClient,
   beforeId: string | undefined,
   sortColumn: T
 ) => {
   if (beforeId) {
     const { data } = await run(
-      db.from('public_contracts').select(sortColumn).eq('id', beforeId)
+      db.from('contracts').select(sortColumn).eq('id', beforeId)
     )
     if (!data?.length) {
       throw new APIError(
@@ -27,7 +27,7 @@ const getBeforeValue = async <T extends Column<'public_contracts'>>(
         'Contract specified in before parameter not found.'
       )
     }
-    return (data[0] as any)[sortColumn] as Row<'public_contracts'>[T]
+    return (data[0] as any)[sortColumn] as Row<'contracts'>[T]
   } else {
     return undefined
   }
@@ -44,11 +44,12 @@ export const getMarkets: APIHandler<'markets'> = async ({
 }) => {
   const db = createSupabaseClient()
   const sortColumn = SORT_COLUMNS[sort ?? 'created-time']
-  const q = selectJson(db, 'public_contracts')
-  q.order(sortColumn, {
-    ascending: order === 'asc',
-    nullsFirst: false,
-  } as any)
+  const q = selectJson(db, 'contracts')
+    .eq('visibility', 'public')
+    .order(sortColumn, {
+      ascending: order === 'asc',
+      nullsFirst: false,
+    } as any)
   if (before) {
     const beforeVal = await getBeforeValue(db, before, sortColumn)
     q.lt(sortColumn, beforeVal)

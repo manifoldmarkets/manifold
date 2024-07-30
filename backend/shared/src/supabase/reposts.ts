@@ -1,7 +1,7 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
 import { convertContract } from 'common/supabase/contracts'
-import { FEED_CARD_CONVERSION_PRIOR, FeedContract } from 'common/feed'
+import { GROUP_SCORE_PRIOR, FeedContract } from 'common/feed'
 import { TopicToInterestWeights } from 'shared/topic-interests'
 import { average } from 'common/util/math'
 
@@ -79,9 +79,7 @@ export const getFollowedReposts = async (
         },
         bet: bet_data as Bet,
         topicConversionScore:
-          topicWeights.length > 0
-            ? average(topicWeights)
-            : FEED_CARD_CONVERSION_PRIOR,
+          topicWeights.length > 0 ? average(topicWeights) : GROUP_SCORE_PRIOR,
         repost: rest,
       } as FeedContract
     }

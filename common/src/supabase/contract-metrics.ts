@@ -126,8 +126,8 @@ export async function getUserContractMetricsByProfitWithContracts(
 ) {
   const cms = await getBestAndWorstUserContractMetrics(userId, db, from, limit)
   const contracts = (await getContracts(
-    cms.map((cm) => cm.contractId),
-    db
+    db,
+    cms.map((cm) => cm.contractId)
   )) as CPMMContract[]
   return {
     metrics: cms,

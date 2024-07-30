@@ -250,7 +250,9 @@ export const VERIFIED_USERNAMES = [
   'PeterWildeford',
   'SethWalder',
   'SneakySly',
-  'ConorSen'
+  'ConorSen',
+  'transmissions11',
+  'DanHendrycks',
 ]
 
 export const BLESSED_BANNED_USER_IDS = [

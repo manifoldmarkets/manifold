@@ -175,6 +175,15 @@ export async function calculateImportanceScore(
     log(contract.importanceScore, contract.question)
   })
 
+  log('Bottom 5 contracts by score')
+  contractsWithUpdates
+    .slice()
+    .reverse()
+    .slice(0, 5)
+    .forEach((contract) => {
+      log(contract.importanceScore, contract.question)
+    })
+
   // Sort in descending order by freshness
   const freshest = sortBy(
     contractsWithUpdates,
@@ -186,13 +195,13 @@ export async function calculateImportanceScore(
     log(contract.freshnessScore, contract.question)
   })
 
-  log('Bottom 5 contracts by score')
-  contractsWithUpdates
+  log('Bottom 5 contracts by freshness')
+  freshest
     .slice()
     .reverse()
     .slice(0, 5)
     .forEach((contract) => {
-      log(contract.importanceScore, contract.question)
+      log(contract.freshnessScore, contract.question)
     })
 
   if (!readOnly) {
@@ -387,9 +396,9 @@ export const computeContractScores = (
       : normalize(rawMarketImportance, 8)
 
   const rawMarketFreshness =
-    normalize(Math.log10(contract.volume24Hours + 1), 5) +
-    normalize(traderHour, 20) +
-    0.5 * newness
+    (contract.volume24Hours / (contract.volume + 1)) *
+      normalize(Math.log10(contract.volume24Hours + 1), 5) +
+    normalize(todayScore, 10)
 
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
   const hourRatio = traderHour / (thisWeekScore - traderHour + 1)

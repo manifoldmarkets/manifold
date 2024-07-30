@@ -1,110 +1,21 @@
-import { useLayoutEffect, useRef, useState } from 'react'
-import { CPMMMultiContract, MultiContract, SORTS } from 'common/contract'
-import { Col } from '../layout/col'
-import { api } from 'web/lib/api/api'
-import { Row } from '../layout/row'
+import { ChevronDownIcon, XCircleIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import { MultiSort } from 'common/answer'
+import { MultiContract, SORTS } from 'common/contract'
+import { getTieredAnswerCost } from 'common/economy'
+import { getTierFromLiquidity } from 'common/tier'
 import { formatMoney } from 'common/util/format'
-import { MAX_ANSWER_LENGTH, MultiSort } from 'common/answer'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { FaSearch, FaSearchPlus } from 'react-icons/fa'
+import { api } from 'web/lib/api/api'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
-import { ExpandingInput } from '../widgets/expanding-input'
-import { getTieredAnswerCost } from 'common/economy'
-import { Input } from '../widgets/input'
-import { getTierFromLiquidity } from 'common/tier'
-import clsx from 'clsx'
 import DropdownMenu from '../comments/dropdown-menu'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
-import { ChevronDownIcon, XCircleIcon } from '@heroicons/react/solid'
-import { FaSearch, FaSearchPlus } from 'react-icons/fa'
 import { InfoTooltip } from '../widgets/info-tooltip'
-
-export function CreateAnswerCpmmPanel(props: {
-  contract: CPMMMultiContract
-  text: string
-  setText: (text: string) => void
-  children?: React.ReactNode
-  close?: () => void
-  placeholder?: string
-  autoFocus?: boolean
-  className?: string
-}) {
-  const {
-    contract,
-    text,
-    setText,
-    children,
-    close,
-    placeholder,
-    autoFocus,
-    className,
-  } = props
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const canSubmit = text && !isSubmitting
-
-  const submitAnswer = async () => {
-    if (canSubmit) {
-      setIsSubmitting(true)
-
-      try {
-        await api('market/:contractId/answer', {
-          contractId: contract.id,
-          text,
-        })
-        setText('')
-      } catch (e) {}
-
-      setIsSubmitting(false)
-    }
-  }
-
-  return (
-    <Col className={clsx('gap-1', className)}>
-      <ExpandingInput
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        className="w-full"
-        placeholder={placeholder ?? 'Search or add answer'}
-        rows={1}
-        maxLength={MAX_ANSWER_LENGTH}
-        onBlur={() => !text && close?.()}
-        autoFocus={autoFocus}
-      />
-
-      <Row className="justify-between">
-        {children}
-
-        <Row className="gap-1">
-          {text && (
-            <Button
-              size="2xs"
-              color="gray"
-              onClick={() => (setText(''), close?.())}
-            >
-              Clear
-            </Button>
-          )}
-          <Button
-            size="2xs"
-            loading={isSubmitting}
-            disabled={!canSubmit}
-            onClick={withTracking(submitAnswer, 'submit answer')}
-          >
-            Add answer (
-            {formatMoney(
-              getTieredAnswerCost(
-                contract.marketTier ??
-                  getTierFromLiquidity(contract, contract.totalLiquidity)
-              )
-            )}
-            )
-          </Button>
-        </Row>
-      </Row>
-    </Col>
-  )
-}
+import { Input } from '../widgets/input'
 
 function MultiSortDropdown(props: {
   sort: MultiSort
@@ -214,7 +125,7 @@ export function SearchCreateAnswerPanel(props: {
               {text && (
                 <button
                   className={clsx('group h-full')}
-                  onClick={() => (setText(''), close?.())}
+                  onClick={() => setText('')}
                 >
                   <XCircleIcon className="fill-ink-300 group-hover:fill-ink-400 h-7 w-7 items-center transition-colors" />
                 </button>

@@ -11,18 +11,12 @@ const bodySchema = z
     userId: z.string(),
     limit: z.number(),
     offset: z.number().gte(0).optional(),
-    isPolitics: z.boolean().optional(),
   })
   .strict()
 
 export const getusercontractmetricswithcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
-    const {
-      userId,
-      limit,
-      offset = 0,
-      isPolitics,
-    } = validate(bodySchema, req.body)
+    const { userId, limit, offset = 0 } = validate(bodySchema, req.body)
     const visibilitySQL = getContractPrivacyWhereSQLFilter(
       auth?.uid,
       undefined,
@@ -41,12 +35,11 @@ export const getusercontractmetricswithcontracts = MaybeAuthedEndpoint(
       and ucm.user_id='${userId}'
       and ucm.data->'lastBetTime' is not null
       and ucm.answer_id is null
-      and ($3 is null or c.is_politics = $3)
     order by ((ucm.data)->'lastBetTime')::bigint desc offset $1
     limit $2`
       await pg.map(
         q,
-        [offset, limit, isPolitics],
+        [offset, limit],
         (data: {
           contract_id: string
           metrics: ContractMetric

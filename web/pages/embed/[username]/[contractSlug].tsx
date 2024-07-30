@@ -64,7 +64,8 @@ export async function getStaticProps(props: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = props.params
-  const contract = (await getContractFromSlug(contractSlug, db)) || null
+  // TODO: use admin db
+  const contract = await getContractFromSlug(db, contractSlug)
   if (contract == null) {
     return { notFound: true, revalidate: 60 }
   }

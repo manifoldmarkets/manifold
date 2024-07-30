@@ -104,21 +104,19 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   /** @deprecated - no more auto-subsidization */
   isSubsidized?: boolean // NOTE: not backfilled, undefined = true
-  /** @deprecated - no more auto-subsidization */
-  isPolitics?: boolean
-  /** @deprecated - not kept up-to-date */
+  /** @deprecated - try to use group-contracts table instead */
   groupSlugs?: string[]
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   popularityScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   importanceScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   dailyScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   freshnessScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   conversionScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   viewCount: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
@@ -396,7 +394,10 @@ export type SortType = (typeof SORTS)[number]['value']
 
 export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
 
-export function contractPath(contract: Contract) {
+export function contractPath(contract: {
+  creatorUsername: string
+  slug: string
+}) {
   return `/${contract.creatorUsername}/${contract.slug}`
 }
 
@@ -412,7 +413,6 @@ export type ContractParams = {
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]
-  relatedContractsByTopicSlug: Record<string, Contract[]>
   topics: Topic[]
   dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]

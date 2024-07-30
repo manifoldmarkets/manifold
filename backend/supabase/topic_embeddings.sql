@@ -11,7 +11,7 @@ alter table topic_embeddings enable row level security;
 
 drop policy if exists "admin write access" on topic_embeddings;
 
-create policy "admin write access" on topic_embeddings for all;
+create policy "admin write access" on topic_embeddings to service_role for all;
 
 drop policy if exists "public read" on topic_embeddings;
 

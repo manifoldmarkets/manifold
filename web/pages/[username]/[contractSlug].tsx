@@ -65,11 +65,9 @@ import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-
 import { Bet, LimitBet } from 'common/bet'
 import { getContractParams } from 'common/contract-params'
 import { getContractFromSlug } from 'common/supabase/contracts'
-
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { DangerZone } from 'web/components/contract/danger-zone'
@@ -92,7 +90,7 @@ export async function getStaticProps(ctx: {
 }) {
   const { contractSlug } = ctx.params
   const adminDb = await initSupabaseAdmin()
-  const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
+  const contract = await getContractFromSlug(adminDb, contractSlug)
 
   if (!contract) {
     return {
@@ -162,7 +160,6 @@ export function ContractPageContent(props: ContractParams) {
     pointsString,
     multiPointsString,
     chartAnnotations,
-    relatedContractsByTopicSlug,
     topics,
     dashboards,
     pinnedComments,
@@ -597,8 +594,6 @@ export function ContractPageContent(props: ContractParams) {
             <RelatedContractsGrid
               contracts={relatedMarkets}
               loadMore={loadMore}
-              contractsByTopicSlug={relatedContractsByTopicSlug}
-              topics={topics}
               showAll={true}
             />
           </Col>
@@ -615,7 +610,6 @@ export function ContractPageContent(props: ContractParams) {
             contracts={relatedMarkets}
             loadMore={loadMore}
             topics={topics}
-            contractsByTopicSlug={relatedContractsByTopicSlug}
           />
         </Col>
       </Row>

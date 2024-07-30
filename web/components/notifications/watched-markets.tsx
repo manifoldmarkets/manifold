@@ -41,7 +41,7 @@ export const UserWatchedContractsButton = memo(
     // filter by query
     const filteredWatchedContracts = watchedContracts?.filter((c) => {
       return (
-        query === '' || c.question.toLowerCase().includes(query.toLowerCase())
+        query === '' || c.question?.toLowerCase().includes(query.toLowerCase())
       )
     })
 
