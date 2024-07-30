@@ -7,7 +7,6 @@ import {
 import { contentSchema } from 'common/api/zod-types'
 import { createMarketReviewedNotification } from 'shared/create-notification'
 import { User } from 'common/user'
-import { Contract } from 'common/contract'
 import { parseJsonContentToText } from 'common/util/parse'
 import { getContract } from 'common/supabase/contracts'
 
