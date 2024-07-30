@@ -7,8 +7,6 @@
     "**/package-lock.json": true,
     "**/yarn.lock": true
   },
-  "window.autoDetectColorScheme": true,
-  "workbench.preferredLightColorTheme": "Default Light+",
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",

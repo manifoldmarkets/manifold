@@ -115,8 +115,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
 
     for (const userId of unfilledBetUserIds) {
       if (!(userId in balanceByUserId)) {
-        // Assume other makers have 0 balance since they are not involved in this bet.
-        balanceByUserId[userId] = 0
+        // Assume other makers have infinite balance since they are not involved in this bet.
+        balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
       }
     }
 

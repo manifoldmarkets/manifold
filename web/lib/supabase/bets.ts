@@ -7,13 +7,11 @@ import { getUserContractMetricsWithContracts } from 'common/supabase/contract-me
 
 export const getOpenLimitOrdersWithContracts = async (
   userId: string,
-  count = 1000,
-  isPolitics?: boolean
+  count = 1000
 ) => {
-  const { data } = await db.rpc('get_open_limit_bets_with_contracts_1', {
+  const { data } = await db.rpc('get_open_limit_bets_with_contracts', {
     count,
     uid: userId,
-    politics: !!isPolitics,
   })
   const betsByContract = {} as Dictionary<LimitBet[]>
 

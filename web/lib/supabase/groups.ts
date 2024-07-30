@@ -1,5 +1,5 @@
 import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
-import { Row, run, SupabaseClient } from 'common/supabase/utils'
+import { run, SupabaseClient } from 'common/supabase/utils'
 import { db } from './db'
 import { Contract } from 'common/contract'
 import { convertGroup } from 'common/supabase/groups'
@@ -50,30 +50,17 @@ export async function getMemberGroupsCount(userId: string) {
   return count
 }
 
-export type GroupAndRoleType = Row<'group_role'>
-
 // gets all groups where the user is an admin or moderator
 export async function getGroupsWhereUserHasRole(userId: string) {
   const { data } = await run(
     db
-      .from('group_role')
-      .select()
+      .from('group_members')
+      .select('group_id')
       .eq('member_id', userId)
       .or('role.eq.admin,role.eq.moderator')
   )
 
-  return data as GroupAndRoleType[]
-}
-
-export async function getMyGroupRoles(userId: string) {
-  const { data } = await run(
-    db
-      .from('group_role')
-      .select()
-      .eq('member_id', userId)
-      .order('createdtime', { ascending: false })
-  )
-  return data
+  return data.map((row) => row.group_id)
 }
 
 export async function getGroupBySlug(groupSlug: string) {
@@ -106,19 +93,6 @@ export async function listGroupsBySlug(groupSlugs: string[]) {
     return data.map(convertGroup)
   }
   return []
-}
-
-export async function getYourNonPrivateNonModeratorGroups(userId: string) {
-  const { data } = await run(
-    db
-      .from('group_role')
-      .select('*')
-      .eq('member_id', userId)
-      .neq('role', 'moderator')
-      .neq('role', 'admin')
-      .order('createdtime', { ascending: false })
-  )
-  return data ?? []
 }
 
 export async function unfollowTopic(groupId: string, userId: string) {

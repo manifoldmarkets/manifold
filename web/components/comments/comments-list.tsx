@@ -29,8 +29,8 @@ function contractPath(slug: string) {
   return `/market/${slug}`
 }
 
-export function UserCommentsList(props: { user: User; isPolitics?: boolean }) {
-  const { user, isPolitics } = props
+export function UserCommentsList(props: { user: User }) {
+  const { user } = props
 
   const q = useCallback(
     async (p: { limit: number; offset: number }) => {
@@ -39,10 +39,9 @@ export function UserCommentsList(props: { user: User; isPolitics?: boolean }) {
         userId: user.id,
         limit: p.limit,
         page,
-        isPolitics,
       })
     },
-    [user.id, isPolitics]
+    [user.id]
   )
   const pagination = usePagination({ pageSize: 50, q })
 

@@ -22,7 +22,6 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
 import { Row } from 'web/components/layout/row'
 import { HorizontalDashboard } from 'web/components/dashboard/horizontal-dashboard'
-import { getContract } from 'web/lib/supabase/contracts'
 import { contractPath, CPMMNumericContract } from 'common/contract'
 import { getExpectedValue } from 'common/multi-numeric'
 import { Clock } from 'web/components/clock/clock'
@@ -31,6 +30,8 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import { getContract } from 'common/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
 
 // In order to duplicate:
 // - duplicate this directory (endpoint/[[...slug]].tsx)
@@ -76,7 +77,7 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
     slug: TOP_SLUG,
     title: capitalize(TOP_SLUG),
   })
-  const whenAgi = (await getContract('Gtv5mhjKaiLD6Bkvfhcv'))!
+  const whenAgi = await getContract(db, 'Gtv5mhjKaiLD6Bkvfhcv')
 
   return {
     props: {

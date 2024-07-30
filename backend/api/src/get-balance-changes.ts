@@ -8,6 +8,7 @@ import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { charities } from 'common/charity'
 import { convertTxn } from 'common/supabase/txns'
+import { convertContract } from 'common/supabase/contracts'
 
 // market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
@@ -30,13 +31,11 @@ const getTxnBalanceChanges = async (after: number, userId: string) => {
   const balanceChanges = [] as TxnBalanceChange[]
 
   const txns = await pg.map(
-    `
-    select *
+    `select *
     from txns
     where created_time > millis_to_ts($1)
       and (to_id = $2 or from_id = $2)
-    order by created_time;
-    `,
+    order by created_time`,
     [after, userId],
     convertTxn
   )
@@ -47,18 +46,14 @@ const getTxnBalanceChanges = async (after: number, userId: string) => {
     txns.map((txn) => getOtherUserIdFromTxn(txn, userId))
   )
   const contracts = await pg.map(
-    `
-    select data from contracts
-    where id = any($1);
-    `,
+    `select data from contracts
+    where id = any($1)`,
     [contractIds],
-    (row) => row.data as Contract
+    convertContract
   )
   const users = await pg.map(
-    `
-    select id, username, name from users
-    where id = any($1);
-    `,
+    `select id, username, name from users
+    where id = any($1)`,
     [userIds],
     (row) => row
   )

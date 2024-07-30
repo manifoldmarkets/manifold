@@ -20,7 +20,7 @@ import { mapValues } from 'lodash'
 
 export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
-  const getContract = (slug: string) => getContractFromSlug(slug, adminDb)
+  const getContract = (slug: string) => getContractFromSlug(adminDb, slug)
 
   const [
     presidencyStateContracts,
