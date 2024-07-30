@@ -44,7 +44,6 @@ const search = async (
     topicSlug: possibleTopicSlug,
     forYou,
     creatorId,
-    isPolitics,
     marketTier,
   } = props
 
@@ -116,7 +115,6 @@ const search = async (
           uid: userId,
           isForYou,
           searchType,
-          isPolitics,
           isPrizeMarket,
           marketTier: marketTier as TierParamsType,
         })

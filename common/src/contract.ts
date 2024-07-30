@@ -104,9 +104,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   /** @deprecated - no more auto-subsidization */
   isSubsidized?: boolean // NOTE: not backfilled, undefined = true
-  /** @deprecated - no more auto-subsidization */
-  isPolitics?: boolean
-  /** @deprecated - not kept up-to-date */
+  /** @deprecated - try to use group-contracts table instead */
   groupSlugs?: string[]
   /** @deprecated - not deprecated, only updated in supabase though*/
   popularityScore: number

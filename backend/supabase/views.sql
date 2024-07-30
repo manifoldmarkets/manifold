@@ -49,13 +49,13 @@ select
   contracts.last_updated_time,
   contracts.last_bet_time,
   contracts.last_comment_time,
-  contracts.is_politics,
   contracts.freshness_score,
   contracts.conversion_score,
   contracts.view_count,
   contracts.is_spice_payout,
   contracts.unique_bettor_count,
-  contracts.tier
+  contracts.tier,
+  contracts.daily_score
 from
   contracts
 where

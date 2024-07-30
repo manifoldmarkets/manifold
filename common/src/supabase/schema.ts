@@ -404,7 +404,6 @@ export type Database = {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
-          is_politics: boolean | null
           is_spice_payout: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
@@ -437,7 +436,6 @@ export type Database = {
           group_slugs?: string[] | null
           id: string
           importance_score?: number | null
-          is_politics?: boolean | null
           is_spice_payout?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
@@ -470,7 +468,6 @@ export type Database = {
           group_slugs?: string[] | null
           id?: string
           importance_score?: number | null
-          is_politics?: boolean | null
           is_spice_payout?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
@@ -2924,6 +2921,7 @@ export type Database = {
           conversion_score: number | null
           created_time: string | null
           creator_id: string | null
+          daily_score: number | null
           data: Json | null
           deleted: boolean | null
           description_fts: unknown | null
@@ -2931,7 +2929,6 @@ export type Database = {
           group_slugs: string[] | null
           id: string | null
           importance_score: number | null
-          is_politics: boolean | null
           is_spice_payout: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
@@ -2956,6 +2953,7 @@ export type Database = {
           conversion_score?: number | null
           created_time?: string | null
           creator_id?: string | null
+          daily_score?: number | null
           data?: Json | null
           deleted?: boolean | null
           description_fts?: unknown | null
@@ -2963,7 +2961,6 @@ export type Database = {
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
-          is_politics?: boolean | null
           is_spice_payout?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
@@ -2988,6 +2985,7 @@ export type Database = {
           conversion_score?: number | null
           created_time?: string | null
           creator_id?: string | null
+          daily_score?: number | null
           data?: Json | null
           deleted?: boolean | null
           description_fts?: unknown | null
@@ -2995,7 +2993,6 @@ export type Database = {
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
-          is_politics?: boolean | null
           is_spice_payout?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
@@ -3294,7 +3291,6 @@ export type Database = {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
-          is_politics: boolean | null
           is_spice_payout: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null

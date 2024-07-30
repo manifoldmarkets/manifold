@@ -502,24 +502,9 @@ limit count $function$;
 
 create
 or replace function public.get_open_limit_bets_with_contracts_1 (uid text, count integer, politics boolean) returns table (contract_id text, bets jsonb[], contract jsonb) language sql stable parallel SAFE as $function$;
-select contract_id,
-       bets.data as bets,
-       contracts.data as contracts
-from (
-         select contract_id,
-                array_agg(
-                        data
-                        order by created_time desc
-                ) as data
-         from contract_bets
-         where user_id = uid
-           and (data->>'isFilled')::boolean = false
-           and (data->>'isCancelled')::boolean = false
-         group by contract_id
-     ) as bets
-         join contracts on contracts.id = bets.contract_id
-where (politics is false or is_politics = politics)
-limit count $function$;
+  -- TODO: drop this function
+  select * from get_open_limit_bets_with_contracts(uid, count);
+$function$;
 
 create
 or replace function public.get_option_voters (this_contract_id text, this_option_id text) returns table (data json) language sql parallel SAFE as $function$
