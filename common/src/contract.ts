@@ -106,17 +106,17 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isSubsidized?: boolean // NOTE: not backfilled, undefined = true
   /** @deprecated - try to use group-contracts table instead */
   groupSlugs?: string[]
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   popularityScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   importanceScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   dailyScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   freshnessScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   conversionScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   viewCount: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
