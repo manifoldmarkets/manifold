@@ -1,7 +1,7 @@
 import { PrivateChatMessage } from 'common/chat-message'
 import { millisToTs, tsToMillis } from 'common/supabase/utils'
 import { useEffect } from 'react'
-import { first, orderBy, uniq, uniqBy } from 'lodash'
+import { first, max, orderBy, uniq, uniqBy } from 'lodash'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
   getSortedChatMessageChannels,
@@ -14,6 +14,7 @@ import { api } from 'web/lib/api/api'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useApiSubscription } from 'web/hooks/use-api-subscription'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export function usePrivateMessages(
   channelId: number,
@@ -23,39 +24,25 @@ export function usePrivateMessages(
   const [messages, setMessages] = usePersistentLocalState<
     PrivateChatMessage[] | undefined
   >(undefined, `private-messages-${channelId}-${limit}-v1`)
-  const [newestId, setNewestId] = usePersistentLocalState<number | undefined>(
-    undefined,
-    `private-message-newest-id-${channelId}`
-  )
+
   const fetchMessages = async () => {
-    if (messages === undefined) {
-      const initialMessages = await api('get-channel-messages', {
-        channelId,
-        limit,
-      })
-      setMessages(initialMessages)
-      setNewestId(initialMessages[0]?.id)
-    } else if (newestId !== undefined) {
-      const newMessages = await api('get-channel-messages', {
-        channelId,
-        limit,
-        id: newestId,
-      })
-      setMessages((prevMessages) =>
-        orderBy(
-          uniqBy([...newMessages, ...(prevMessages ?? [])], (m) => m.id),
-          'createdTime',
-          'desc'
-        )
+    const newMessages = await api('get-channel-messages', {
+      channelId,
+      limit,
+      id: messages ? max(messages.map((m) => m.id)) : undefined,
+    })
+    setMessages((prevMessages) =>
+      orderBy(
+        uniqBy([...newMessages, ...(prevMessages ?? [])], (m) => m.id),
+        'createdTime',
+        'desc'
       )
-      if (newMessages.length > 0 && newMessages[0].id !== newestId) {
-        setNewestId(newMessages[0].id)
-      }
-    }
+    )
   }
+
   useEffect(() => {
     fetchMessages()
-  }, [channelId, limit, messages?.length, newestId])
+  }, [channelId, limit, messages?.length])
 
   useApiSubscription({
     topics: ['private-user-messages/' + userId],
@@ -167,12 +154,16 @@ const useLastSeenMessagesPageTime = () => {
 
   const [lastSeenMessagesPageTime, setLastSeenMessagesPageTime] =
     usePersistentLocalState(0, 'last-seen-private-messages-page')
+  const [unloadingPage, setUnloadingPage] = usePersistentInMemoryState(
+    '',
+    'unloading-page-private-messages-page'
+  )
   useEffect(() => {
-    if (pathname === '/messages') {
+    if (pathname === '/messages' || unloadingPage === '/messages') {
       setLastSeenMessagesPageTime(Date.now())
       track('view messages page')
-      return
     }
+    setUnloadingPage(pathname)
   }, [pathname, isVisible])
 
   return lastSeenMessagesPageTime
