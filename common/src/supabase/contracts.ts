@@ -50,7 +50,7 @@ export const getContracts = async (
   return results.flatMap((result) => result.data.map((r) => convertContract(r)))
 }
 
-const contractFields =
+export const contractFields =
   'data, importance_score, view_count, conversion_score, freshness_score, daily_score'
 
 export const getUnresolvedContractsCount = async (

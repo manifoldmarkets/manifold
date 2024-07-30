@@ -9,6 +9,7 @@ import { createMarketReviewedNotification } from 'shared/create-notification'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import { parseJsonContentToText } from 'common/util/parse'
+import { getContract } from 'common/supabase/contracts'
 
 const schema = z
   .object({
@@ -22,22 +23,18 @@ export const leavereview = authEndpoint(async (req, auth) => {
   const { marketId, review, rating } = validate(schema, req.body)
   const db = createSupabaseClient()
 
-  const { data, error } = await db
-    .from('contracts')
-    .select('*')
-    .eq('id', marketId)
-    .single()
+  const contract = await getContract(db, marketId)
 
-  if (error) {
+  if (!contract) {
     throw new APIError(404, `No market found with id ${marketId}`)
   }
 
-  const creatorId = data.creator_id
+  const { creatorId } = contract
   if (!creatorId) {
     throw new APIError(500, `Market has no creator`)
   }
 
-  if (creatorId === auth.uid) {
+  if (contract.creatorId === auth.uid) {
     throw new APIError(403, `You can't review your own market`)
   }
 
@@ -62,7 +59,6 @@ export const leavereview = authEndpoint(async (req, auth) => {
     rating,
     content: review,
   })
-  const contract = data.data as Contract
 
   await createMarketReviewedNotification(
     creatorId,

@@ -29,12 +29,16 @@ import { Carousel } from 'web/components/widgets/carousel'
 import { removeEmojis } from 'common/util/string'
 import { filterDefined } from 'common/util/array'
 import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
-import { getContract } from 'common/supabase/contracts'
+import {
+  contractFields,
+  convertContract,
+  getContract,
+} from 'common/supabase/contracts'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
     .from('contracts')
-    .select('data')
+    .select(contractFields)
     .not(
       'outcome_type',
       'in',
@@ -43,7 +47,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
     .order('importance_score', { ascending: false })
     .limit(100)
 
-  const contracts = (data ?? []).map((d) => d.data) as Contract[]
+  const contracts = (data ?? []).map(convertContract)
 
   const prezContract = await getContract(db, 'ikSUiiNS8MwAI75RwEJf')
 
