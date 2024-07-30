@@ -9,8 +9,6 @@ import { IClient } from 'pg-promise/typescript/pg-subset'
 import { HOUR_MS } from 'common/util/time'
 import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
 import { getMonitoringContext } from 'shared/monitoring/context'
-import { firestore } from 'firebase-admin'
-import Query = firestore.Query
 
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
