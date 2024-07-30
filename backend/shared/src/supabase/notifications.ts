@@ -27,4 +27,7 @@ export const bulkInsertNotifications = async (
       data: n,
     }))
   )
+  notifications.forEach((notification) =>
+    broadcast(`user-notifications/${notification.userId}`, { notification })
+  )
 }
