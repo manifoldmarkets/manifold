@@ -1,9 +1,8 @@
 import { run } from 'common/supabase/utils'
-import { chunk, uniqBy } from 'lodash'
+import { uniqBy } from 'lodash'
 import { GroupRole as GroupRoleType } from 'common/group'
 import { User } from '../firebase/users'
 import { db } from './db'
-import { Contract } from 'common/contract'
 import { convertGroup } from 'common/supabase/groups'
 
 // functions called for one group
