@@ -5,15 +5,14 @@ import {
   getContracts,
   getPublicContractIdsInTopics,
   getPublicContractsByIds,
-  getRecentPublicContractRows,
 } from 'web/lib/supabase/contracts'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { difference, uniqBy } from 'lodash'
 import { useApiSubscription } from './use-api-subscription'
 import { useAnswersCpmm } from './use-answers'
-import { convertContract } from 'common/supabase/contracts'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsPageVisible } from './use-page-visible'
+import { api } from 'web/lib/api/api'
 
 export const usePublicContracts = (
   contractIds: string[] | undefined,
@@ -82,9 +81,9 @@ export function useLiveAllNewContracts(limit: number) {
   const [contracts, setContracts] = useState<Contract[]>([])
 
   useEffect(() => {
-    getRecentPublicContractRows({ limit }).then((result) => {
-      setContracts(result.map(convertContract))
-    })
+    api('search-markets-full', { sort: 'newest', limit }).then((result) =>
+      setContracts(result)
+    )
   }, [])
 
   useApiSubscription({

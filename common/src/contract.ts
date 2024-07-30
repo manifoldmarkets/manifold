@@ -396,7 +396,10 @@ export type SortType = (typeof SORTS)[number]['value']
 
 export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
 
-export function contractPath(contract: Contract) {
+export function contractPath(contract: {
+  creatorUsername: string
+  slug: string
+}) {
   return `/${contract.creatorUsername}/${contract.slug}`
 }
 

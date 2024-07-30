@@ -4,24 +4,6 @@ import { db } from './db'
 import { chunk, uniqBy } from 'lodash'
 import { convertContract } from 'common/supabase/contracts'
 
-// A function to retrieve all contracts a user has bet on.
-export async function getUserBetContracts(
-  userId: string,
-  limit?: number
-): Promise<any[]> {
-  const { data } = await run(
-    db.rpc('get_user_bet_contracts', {
-      this_user_id: userId,
-      this_limit: limit ?? 1000,
-    })
-  )
-  if (data && data.length > 0) {
-    return data.map((d) => (d as any).data as Contract)
-  } else {
-    return []
-  }
-}
-
 export async function getPublicContractsByIds(contractIds: string[]) {
   const contractLists = await Promise.all(
     chunk(contractIds, 100).map(async (ids) => {
@@ -103,25 +85,8 @@ export const getContract = async (id: string) => {
       .select('data, importance_score, view_count, conversion_score')
       .eq('id', id)
   )
-  return data?.[0] ? convertContract(data?.[0]) : null
-}
 
-export const getContractWithFields = async (id: string) => {
-  const { data } = await run(db.from('contracts').select('*').eq('id', id))
-  return data?.[0] ? convertContract(data?.[0]) : null
-}
-
-export const getRecentPublicContractRows = async (options: {
-  limit: number
-}) => {
-  const q = db
-    .from('contracts')
-    .select('*')
-    .eq('visibility', 'public')
-    .order('created_time', { ascending: false })
-    .limit(options.limit)
-  const { data } = await run(q)
-  return data
+  return data && data.length ? convertContract(data[0]) : null
 }
 
 export async function getWatchedContracts(userId: string) {

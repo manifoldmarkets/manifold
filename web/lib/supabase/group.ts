@@ -140,32 +140,6 @@ export async function getGroup(groupId: string) {
   }
 }
 
-export async function getGroupMarkets(groupId: string) {
-  const { data: contractIds } = await run(
-    db.from('group_contracts').select('contract_id').eq('group_id', groupId)
-  )
-
-  if (!contractIds) return null
-  const chunkedContractIds = chunk(contractIds, 200)
-  const data = await Promise.all(
-    chunkedContractIds.map(
-      async (chunkedIds) =>
-        await run(
-          db
-            .from('contracts')
-            .select('data')
-            .eq('visibility', 'public')
-            .in(
-              'id',
-              chunkedIds.map((c) => c.contract_id)
-            )
-        )
-    )
-  )
-  const markets = data.flatMap((d) => d.data)
-  return markets.map((m) => m.data as Contract)
-}
-
 export async function getGroupFromSlug(groupSlug: string) {
   const { data } = await run(db.from('groups').select().eq('slug', groupSlug))
 
