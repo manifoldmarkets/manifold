@@ -1,6 +1,6 @@
 import { Dictionary, first, groupBy, mapValues, sum, sumBy } from 'lodash'
 import { Answer } from './answer'
-import { Bet, LimitBet } from './bet'
+import { Bet, LimitBet, maker } from './bet'
 import {
   calculateAmountToBuySharesFixedP,
   getCpmmProbability,
@@ -23,7 +23,7 @@ const noFillsReturn = (
     outcome,
     answer,
     takers: [],
-    makers: [],
+    makers: [] as maker[],
     ordersToCancel: [],
     cpmmState: {
       pool: { YES: answer.poolYes, NO: answer.poolNo },

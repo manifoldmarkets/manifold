@@ -93,3 +93,9 @@ export const calculateMultiBets = (
     )
   )
 }
+export type maker = {
+  bet: LimitBet
+  amount: number
+  shares: number
+  timestamp: number
+}

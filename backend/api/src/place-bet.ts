@@ -8,7 +8,7 @@ import {
   uniqBy,
 } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { CPMM_MIN_POOL_QTY, Contract, MarketContract } from 'common/contract'
+import { Contract, CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
 import {
   BetInfo,
@@ -17,7 +17,7 @@ import {
   getNewMultiCpmmBetInfo,
 } from 'common/new-bet'
 import { removeUndefinedProps } from 'common/util/object'
-import { Bet, LimitBet } from 'common/bet'
+import { Bet, LimitBet, maker } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { getContract, getUser, log, metrics } from 'shared/utils'
 import { Answer } from 'common/answer'
@@ -28,9 +28,9 @@ import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import {
+  createSupabaseDirectClient,
   SupabaseDirectClient,
   SupabaseTransaction,
-  createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
@@ -55,24 +55,32 @@ import { filterDefined } from 'common/util/array'
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
 
-  const { user, contract, answers, unfilledBets, balanceByUserId } =
-    await fetchContractBetDataAndValidate(
-      createSupabaseDirectClient(),
+  let simulatedMakerIds: string[] = []
+  if (props.deps === undefined) {
+    const { user, contract, answers, unfilledBets, balanceByUserId } =
+      await fetchContractBetDataAndValidate(
+        createSupabaseDirectClient(),
+        props,
+        auth.uid,
+        isApi
+      )
+    // Simulate bet to see whose limit orders you match.
+    const simulatedResult = calculateBetResult(
       props,
-      auth.uid,
-      isApi
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId
     )
-  // Simulate bet to see whose limit orders you match.
-  const simulatedResult = calculateBetResult(
-    props,
-    user,
-    contract,
-    answers,
-    unfilledBets,
-    balanceByUserId
-  )
-  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
-  const deps = [auth.uid, contract.id, ...simulatedMakerIds]
+    simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
+  }
+
+  const deps = [
+    auth.uid,
+    props.contractId,
+    ...(props.deps ?? simulatedMakerIds),
+  ]
 
   return await betsQueue.enqueueFn(
     () => placeBetMain(props, auth.uid, isApi),
@@ -663,13 +671,6 @@ export const validateBet = async (
   )
 
   return user
-}
-
-export type maker = {
-  bet: LimitBet
-  amount: number
-  shares: number
-  timestamp: number
 }
 
 export async function bulkUpdateLimitOrders(

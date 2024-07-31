@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { sumBy } from 'lodash'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
@@ -55,6 +55,7 @@ import { FeeDisplay } from './fees'
 import { floatingEqual } from 'common/util/math'
 import { getTierFromLiquidity } from 'common/tier'
 import { getAnswerColor } from '../charts/contract/choice'
+import { maker } from 'common/bet'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -234,6 +235,7 @@ export const BuyPanelBody = (props: {
 
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const makers = useRef<maker[]>()
 
   const [inputRef, focusAmountInput] = useFocus()
 
@@ -285,6 +287,7 @@ export const BuyPanelBody = (props: {
         contractId: contract.id,
         answerId: multiProps?.answerToBuy.id,
         replyToCommentId,
+        deps: makers.current?.map((m) => m.bet.userId),
       })
     )
       .then((r) => {
@@ -373,6 +376,9 @@ export const BuyPanelBody = (props: {
       fees =
         getFeeTotal(newBetResult.totalFees) +
         sumBy(otherBetResults, (result) => getFeeTotal(result.totalFees))
+      makers.current = newBetResult.makers.concat(
+        otherBetResults.flatMap((r) => r.makers)
+      )
     } else {
       const cpmmState = isCpmmMulti
         ? {
@@ -403,6 +409,7 @@ export const BuyPanelBody = (props: {
       probBefore = result.probBefore
       probAfter = result.probAfter
       fees = getFeeTotal(result.fees)
+      makers.current = result.makers
     }
   } catch (err: any) {
     console.error('Error in calculateCpmmMultiArbitrageBet:', err)
