@@ -1,5 +1,5 @@
 import { sortBy } from 'lodash'
-import { pgp, SupabaseDirectClient, SupbaseDirectClientTimeout } from './init'
+import { pgp, SupabaseDirectClient, SupabaseDirectClientTimeout } from './init'
 import { DataFor, Tables, TableName, Column, Row } from 'common/supabase/utils'
 
 export async function getIds<T extends TableName>(
@@ -41,7 +41,7 @@ export async function bulkUpdate<
   ColumnValues extends Tables[T]['Update'],
   Row extends Tables[T]['Row']
 >(
-  db: SupbaseDirectClientTimeout,
+  db: SupabaseDirectClientTimeout,
   table: T,
   idFields: (string & keyof Row)[],
   values: ColumnValues[],

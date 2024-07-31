@@ -37,12 +37,12 @@ pgp.pg.types.setTypeParser(20, (value) => parseInt(value, 10)) // int8.
 pgp.pg.types.setTypeParser(1700, parseFloat) // numeric
 
 pgp.pg.types.setTypeParser(1082, (value) => value) // date (not timestamp! has no time info so we just parse as string)
-export type SupbaseDirectClientTimeout = IDatabase<{}, IClient> & {
+export type SupabaseDirectClientTimeout = IDatabase<{}, IClient> & {
   timeout: TimeoutTask
 }
 export type SupabaseTransaction = ITask<{}>
 export type SupabaseDirectClient =
-  | SupbaseDirectClientTimeout
+  | SupabaseDirectClientTimeout
   | SupabaseTransaction
 
 export function getInstanceId() {
@@ -82,11 +82,11 @@ type TimeoutTask = <T>(
 ) => Promise<T>
 
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
-let pgpDirect: SupbaseDirectClientTimeout | null = null
+let pgpDirect: SupabaseDirectClientTimeout | null = null
 export function createSupabaseDirectClient(
   instanceId?: string,
   password?: string
-): SupbaseDirectClientTimeout {
+): SupabaseDirectClientTimeout {
   if (pgpDirect) return pgpDirect
   instanceId = instanceId ?? getInstanceId()
   if (!instanceId) {
