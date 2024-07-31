@@ -1,7 +1,6 @@
 'use client'
 import clsx from 'clsx'
 import {
-  SPICE_NAME,
   SPICE_TO_MANA_CONVERSION_RATE,
 } from 'common/envs/constants'
 import { Period, periodDurations } from 'common/period'
@@ -23,10 +22,8 @@ import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 import { ColorType } from '../widgets/choices-toggle-group'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
-import { PortfolioTab } from './portfolio-tabs'
 import {
   GraphMode,
-  PortfolioGraph,
   PortfolioMode,
 } from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
