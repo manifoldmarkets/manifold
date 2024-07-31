@@ -419,7 +419,7 @@ function TwombaPortfolioValueSkeleton(props: {
               </SizedContainer>
             )}
           </Col>
-          <Spacer h={4} />
+          <Spacer h={6} />
           <Col>
             <span>
               <CoinNumber
@@ -467,20 +467,17 @@ function TwombaPortfolioValueSkeleton(props: {
             toggleClassName="grow justify-center"
           />
         )}
-        {!hideAddFundsButton && (
-          <Row className="mt-4 w-full gap-1">
-            <AddFundsButton
-              userId={userId}
-              className="w-1/2 whitespace-nowrap"
-            />
-            <RedeemSpiceButton
-              userId={userId}
-              className="w-1/2 whitespace-nowrap"
-              spice={portfolioValues?.spice}
-            />
-          </Row>
-        )}
       </Col>
+      {!hideAddFundsButton && (
+        <Row className="mt-4 w-full gap-1 sm:gap-2">
+          <AddFundsButton userId={userId} className="w-1/2 whitespace-nowrap" />
+          <RedeemSpiceButton
+            userId={userId}
+            className="w-1/2 whitespace-nowrap"
+            spice={portfolioValues?.spice}
+          />
+        </Row>
+      )}
     </Col>
   )
 }

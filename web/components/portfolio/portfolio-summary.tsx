@@ -29,13 +29,11 @@ export const PortfolioSummary = (props: { user: User; className?: string }) => {
         <TwombaPortfolioValueSection
           user={user}
           defaultTimePeriod={currentUser?.id === user.id ? 'weekly' : 'monthly'}
-          hideAddFundsButton
         />
       ) : (
         <PortfolioValueSection
           user={user}
           defaultTimePeriod={currentUser?.id === user.id ? 'weekly' : 'monthly'}
-          hideAddFundsButton
         />
       )}
 
