@@ -1,7 +1,6 @@
-import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { Row } from '../layout/row'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import clsx from 'clsx'
+import { ManaFlatCoin } from 'web/public/custom-components/manaFlatCoin'
+import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
 
 export type TWOMBA_MODE_TYPE = 'sweepies' | 'mana'
 
@@ -22,13 +21,13 @@ export function TwombaToggle(props: {
           mode === 'sweepies' ? 'left-0' : 'left-[calc(100%-2.3rem)]'
         )}
       /> */}
-      <SweepiesCoin
+      <SweepiesFlatCoin
         className={clsx(
           'z-10 h-8 transition-opacity',
           mode === 'sweepies' ? 'opacity-100' : 'opacity-20'
         )}
       />
-      <ManaCoin
+      <ManaFlatCoin
         className={clsx(
           'z-10 h-8 transition-opacity',
           mode === 'mana' ? 'opacity-100' : 'opacity-20'

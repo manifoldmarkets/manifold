@@ -6,7 +6,7 @@ import { animated } from '@react-spring/web'
 import clsx from 'clsx'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesFlatCoin'
 
 export function CoinNumber(props: {
   amount?: number
