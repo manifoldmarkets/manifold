@@ -223,10 +223,8 @@ async function generateSQLFiles(pg: SupabaseDirectClient) {
     for (const policy of tableInfo.policies) {
       content += `DROP POLICY IF EXISTS "${policy.policy_name}" ON ${tableInfo.tableName};\n`
       content += `CREATE POLICY "${policy.policy_name}" ON ${tableInfo.tableName} `
-      if (policy.role && policy.role !== 'public')
-        content += `TO ${policy.role} `
       if (policy.command) content += `FOR ${policy.command} `
-
+      if (policy.role) content += `TO ${policy.role} `
       if (policy.expression) content += `USING (${policy.expression}) `
       if (policy.with_check) content += `WITH CHECK (${policy.with_check})`
       content += ';\n\n'
