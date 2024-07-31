@@ -55,7 +55,7 @@ import { FeeDisplay } from './fees'
 import { floatingEqual } from 'common/util/math'
 import { getTierFromLiquidity } from 'common/tier'
 import { getAnswerColor } from '../charts/contract/choice'
-import { maker } from 'common/bet'
+import { LimitBet } from 'common/bet'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -235,7 +235,7 @@ export const BuyPanelBody = (props: {
 
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const makers = useRef<maker[]>()
+  const betDeps = useRef<LimitBet[]>()
 
   const [inputRef, focusAmountInput] = useFocus()
 
@@ -287,7 +287,7 @@ export const BuyPanelBody = (props: {
         contractId: contract.id,
         answerId: multiProps?.answerToBuy.id,
         replyToCommentId,
-        deps: makers.current?.map((m) => m.bet.userId),
+        deps: betDeps.current?.map((b) => b.userId),
       })
     )
       .then((r) => {
@@ -376,9 +376,11 @@ export const BuyPanelBody = (props: {
       fees =
         getFeeTotal(newBetResult.totalFees) +
         sumBy(otherBetResults, (result) => getFeeTotal(result.totalFees))
-      makers.current = newBetResult.makers.concat(
-        otherBetResults.flatMap((r) => r.makers)
-      )
+      betDeps.current = newBetResult.makers
+        .map((m) => m.bet)
+        .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
+        .concat(newBetResult.ordersToCancel)
+        .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
     } else {
       const cpmmState = isCpmmMulti
         ? {
@@ -409,7 +411,9 @@ export const BuyPanelBody = (props: {
       probBefore = result.probBefore
       probAfter = result.probAfter
       fees = getFeeTotal(result.fees)
-      makers.current = result.makers
+      betDeps.current = result.makers
+        .map((m) => m.bet)
+        .concat(result.ordersToCancel)
     }
   } catch (err: any) {
     console.error('Error in calculateCpmmMultiArbitrageBet:', err)

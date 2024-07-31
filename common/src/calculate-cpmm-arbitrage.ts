@@ -24,7 +24,7 @@ const noFillsReturn = (
     answer,
     takers: [],
     makers: [] as maker[],
-    ordersToCancel: [],
+    ordersToCancel: [] as LimitBet[],
     cpmmState: {
       pool: { YES: answer.poolYes, NO: answer.poolNo },
       p: 0.5,
