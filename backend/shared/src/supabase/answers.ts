@@ -16,6 +16,7 @@ import {
   broadcastNewAnswer,
   broadcastUpdatedAnswers,
 } from 'shared/websockets/helpers'
+import { pick } from 'lodash'
 
 export const getAnswer = async (pg: SupabaseDirectClient, id: string) => {
   const row = await pg.oneOrNone(`select * from answers where id = $1`, [id])
@@ -74,7 +75,6 @@ export const updateAnswer = async (
   answerId: string,
   data: Partial<Answer>
 ) => {
-  await updateData(pg, 'answers', 'id', { ...data, id: answerId }) // for backwards compatibility TODO: remove
   const row = await update(
     pg,
     'answers',
@@ -91,7 +91,6 @@ export const updateAnswers = async (
   contractId: string,
   updates: (Partial<Answer> & { id: string })[]
 ) => {
-  await bulkUpdateData<'answers'>(pg, 'answers', updates) // for backwards compatibility TODO: remove
   await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
 
   broadcastUpdatedAnswers(contractId, updates)
@@ -121,9 +120,13 @@ const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
   prob_change_day: answer.probChanges?.day,
   prob_change_week: answer.probChanges?.week,
   prob_change_month: answer.probChanges?.month,
-  data: JSON.stringify(removeUndefinedProps(answer)) + '::jsonb',
+  data:
+    JSON.stringify(
+      removeUndefinedProps(pick(answer, ['isOther', 'loverUserId']))
+    ) + '::jsonb',
 })
 
+// does not convert isOther, loverUserId
 const partialAnswerToRow = (answer: Partial<Answer>) => {
   const partial: any = removeUndefinedProps(answerToRow(answer as any))
   delete partial.data
