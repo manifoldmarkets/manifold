@@ -34,6 +34,8 @@ import {
   TwombaPortfolioGraph,
   TwombaProfitGraph,
 } from './twomba-portfolio-graph'
+import { TwombaToggle } from '../twomba/twomba-toggle'
+import { Spacer } from '../layout/spacer'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
@@ -327,6 +329,7 @@ function TwombaPortfolioValueSkeleton(props: {
   function togglePortfolioFocus(toggleTo: PortfolioMode) {
     setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
   }
+  const [isSweepies, setIsSweepies] = useState(false)
 
   return (
     <Col>
@@ -398,48 +401,16 @@ function TwombaPortfolioValueSkeleton(props: {
                     )}
                     onClick={() => togglePortfolioFocus('investment')}
                   />
-
-                  <PortfolioGraphNumber
-                    numberType={'spice'}
-                    descriptor={SPICE_NAME.toLowerCase() + 's'}
-                    portfolioFocus={portfolioFocus}
-                    displayedAmount={displayAmounts(
-                      graphValues.spice,
-                      user.spiceBalance
-                    )}
-                    className={clsx(
-                      portfolioFocus == 'spice'
-                        ? ' bg-amber-600 text-white'
-                        : 'bg-canvas-50 text-ink-1000'
-                    )}
-                    onClick={() => togglePortfolioFocus('spice')}
-                    isSpice
-                  />
                 </Row>
               </Col>
-              {!hideAddFundsButton && (
-                <Col className="hidden gap-1 sm:flex">
-                  <AddFundsButton
-                    userId={userId}
-                    className="h-fit whitespace-nowrap"
-                  />
-                  <RedeemSpiceButton
-                    userId={userId}
-                    className="h-fit whitespace-nowrap"
-                    spice={user.spiceBalance}
-                  />
-                </Col>
-              )}
+              <TwombaToggle
+                mode={isSweepies ? 'sweepies' : 'mana'}
+                onClick={() => setIsSweepies(!isSweepies)}
+              />
             </Row>
             {portfolioGraphElement && (
               <SizedContainer
-                className={clsx(
-                  className,
-                  'mt-2',
-                  size == 'sm'
-                    ? 'h-[80px] sm:h-[100px]'
-                    : 'h-[125px] sm:h-[200px]'
-                )}
+                className={clsx(className, 'mt-2 h-[80] sm:h-[100px]')}
                 style={{
                   paddingRight: Y_AXIS_MARGIN,
                 }}
@@ -448,7 +419,8 @@ function TwombaPortfolioValueSkeleton(props: {
               </SizedContainer>
             )}
           </Col>
-          <div>
+          <Spacer h={4} />
+          <Col>
             <span>
               <CoinNumber
                 amount={displayAmounts(
@@ -472,18 +444,11 @@ function TwombaPortfolioValueSkeleton(props: {
                 profit
               </span>
             </span>
-          </div>
-
+          </Col>
           <ProfitWidget user={user} portfolio={portfolio} />
           {profitGraphElement && (
             <SizedContainer
-              className={clsx(
-                className,
-                'mt-2',
-                size == 'sm'
-                  ? 'h-[80px] sm:h-[100px]'
-                  : 'h-[125px] sm:h-[200px]'
-              )}
+              className={clsx(className, 'mt-2 h-[80] sm:h-[100px]')}
               style={{
                 paddingRight: Y_AXIS_MARGIN,
               }}
@@ -503,7 +468,7 @@ function TwombaPortfolioValueSkeleton(props: {
           />
         )}
         {!hideAddFundsButton && (
-          <Row className="mt-4 w-full gap-1 sm:hidden">
+          <Row className="mt-4 w-full gap-1">
             <AddFundsButton
               userId={userId}
               className="w-1/2 whitespace-nowrap"
