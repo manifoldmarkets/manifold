@@ -170,8 +170,8 @@ export const OtherWaysToGetMana = () => {
       </Item>
       <Item url="/referrals">
         👋 Refer a friend for{' '}
-        <CoinNumber amount={REFERRAL_AMOUNT} isSpice isInline /> after their
-        first trade
+        <CoinNumber amount={REFERRAL_AMOUNT} coinType={'spice'} isInline />{' '}
+        after their first trade
       </Item>
     </ul>
   )
