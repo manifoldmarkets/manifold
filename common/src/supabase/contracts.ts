@@ -1,11 +1,5 @@
 import { chunk, groupBy, mapValues, sortBy } from 'lodash'
-import {
-  millisToTs,
-  Row,
-  run,
-  SupabaseClient,
-  tsToMillis,
-} from './utils'
+import { millisToTs, Row, run, SupabaseClient, tsToMillis } from './utils'
 import { Contract } from '../contract'
 import { Answer } from 'common/answer'
 import { Json } from 'common/supabase/schema'
@@ -147,7 +141,9 @@ export const convertAnswer = (row: Row<'answers'>): Answer => ({
 
   // resolutions
   resolution: row.resolution as any,
-  resolutionTime: row.resolution_time ? tsToMillis(row.resolution_time) : 0,
+  resolutionTime: row.resolution_time
+    ? tsToMillis(row.resolution_time)
+    : undefined,
   resolutionProbability: row.resolution_probability!,
   resolverId: row.resolver_id!,
 
