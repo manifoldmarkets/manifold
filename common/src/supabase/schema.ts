@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       answers: {
         Row: {
+          color: string | null
           contract_id: string | null
           created_time: string | null
           data: Json
@@ -22,7 +23,10 @@ export type Database = {
           prob_change_day: number | null
           prob_change_month: number | null
           prob_change_week: number | null
+          resolution: string | null
+          resolution_probability: number | null
           resolution_time: string | null
+          resolver_id: string | null
           subsidy_pool: number | null
           text: string | null
           text_fts: unknown | null
@@ -30,6 +34,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          color?: string | null
           contract_id?: string | null
           created_time?: string | null
           data: Json
@@ -41,7 +46,10 @@ export type Database = {
           prob_change_day?: number | null
           prob_change_month?: number | null
           prob_change_week?: number | null
+          resolution?: string | null
+          resolution_probability?: number | null
           resolution_time?: string | null
+          resolver_id?: string | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
@@ -49,6 +57,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          color?: string | null
           contract_id?: string | null
           created_time?: string | null
           data?: Json
@@ -60,7 +69,10 @@ export type Database = {
           prob_change_day?: number | null
           prob_change_month?: number | null
           prob_change_week?: number | null
+          resolution?: string | null
+          resolution_probability?: number | null
           resolution_time?: string | null
+          resolver_id?: string | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
