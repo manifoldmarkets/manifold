@@ -66,14 +66,14 @@ export const addHouseSubsidyToAnswer = async (
 
     await tx.none(
       `update answers
-      set data = data ||
-        jsonb_build_object('totalLiquidity', data->>'totalLiquidity'::numeric + $1) ||
-        jsonb_build_object('subsidyPool', data->>'subsidyPool'::numeric + $1)
+      set
+        total_liquidity = total_liquidity + $1,
+        subsidy_pool = subsidy_pool + $1
       where id = $2`,
       [amount, answerId]
     )
 
-    await updateContract(pg, contractId, {
+    await updateContract(tx, contractId, {
       totalLiquidity: FieldVal.increment(amount),
     })
   })
