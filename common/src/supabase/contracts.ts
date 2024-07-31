@@ -1,6 +1,5 @@
 import { chunk, groupBy, mapValues, sortBy } from 'lodash'
 import {
-  convertSQLtoTS,
   millisToTs,
   Row,
   run,
