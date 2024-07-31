@@ -410,7 +410,7 @@ function TwombaPortfolioValueSkeleton(props: {
             </Row>
             {portfolioGraphElement && (
               <SizedContainer
-                className={clsx(className, 'mt-2 h-[80] sm:h-[100px]')}
+                className={clsx(className, 'mt-2 h-[50px] sm:h-[80px]')}
                 style={{
                   paddingRight: Y_AXIS_MARGIN,
                 }}
@@ -428,7 +428,7 @@ function TwombaPortfolioValueSkeleton(props: {
                   portfolioValues?.profit
                 )}
                 className={clsx(
-                  'text-ink-1000 text-2xl font-bold transition-all sm:text-4xl',
+                  'text-ink-1000 text-3xl font-bold transition-all sm:text-4xl',
                   (graphValues.profit ?? portfolioValues?.profit ?? 0) < 0
                     ? 'text-scarlet-500'
                     : 'text-teal-500'
@@ -448,7 +448,7 @@ function TwombaPortfolioValueSkeleton(props: {
           <ProfitWidget user={user} portfolio={portfolio} />
           {profitGraphElement && (
             <SizedContainer
-              className={clsx(className, 'mt-2 h-[80] sm:h-[100px]')}
+              className={clsx(className, 'mt-2 h-[50px] sm:h-[80px]')}
               style={{
                 paddingRight: Y_AXIS_MARGIN,
               }}

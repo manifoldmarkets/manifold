@@ -11,16 +11,16 @@ export function TwombaToggle(props: {
   const { mode, onClick } = props
   return (
     <button
-      className="bg-ink-200 dark:bg-canvas-50 relative flex h-fit flex-row items-center gap-0.5 rounded-full p-0.5 text-3xl"
+      className="bg-ink-200 dark:bg-canvas-50 relative flex h-fit w-fit flex-row items-center gap-1 rounded-full p-0.5 text-2xl"
       onClick={onClick}
     >
       {/* Add a moving circle behind the active coin */}
-      {/* <div
+      <div
         className={clsx(
-          'dark:bg-ink-300 bg-canvas-0 absolute h-[34px] w-[34px] rounded-full drop-shadow transition-all duration-300',
-          mode === 'sweepies' ? 'left-0' : 'left-[calc(100%-2.3rem)]'
+          'dark:bg-ink-300 bg-canvas-0 absolute h-[28px] w-[28px] rounded-full drop-shadow transition-all',
+          mode === 'sweepies' ? 'left-0' : 'left-[calc(100%-28px)]'
         )}
-      /> */}
+      />
       <SweepiesFlatCoin
         className={clsx(
           'z-10 h-8 transition-opacity',

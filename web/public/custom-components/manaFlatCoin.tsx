@@ -12,7 +12,6 @@ export function ManaFlatCoin(props: { className?: string }) {
       style={{
         width: '1em',
         height: '1em',
-        marginRight: '0.1em',
       }}
     />
   )
