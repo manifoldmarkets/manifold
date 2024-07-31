@@ -332,7 +332,7 @@ function TwombaPortfolioValueSkeleton(props: {
     <Col>
       <Col
         className={clsx(
-          'bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-b-lg border-2 p-4 sm:rounded-lg sm:rounded-tl-none'
+          'bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-lg border-2 p-4'
         )}
       >
         <div>
