@@ -113,7 +113,7 @@ export function useGroupRole(
   )
   const isMod = !user ? false : isModId(user.id) || isAdminId(user.id)
   useEffect(() => {
-    getTranslatedMemberRole(groupId, user).then(setUserRole)
+    getTranslatedMemberRole(groupId, user).then((role) => setUserRole(role))
   }, [user, groupId])
 
   return isMod ? 'admin' : userRole

@@ -17,9 +17,9 @@ alter table dashboard_groups enable row level security;
 
 drop policy if exists "Enable read access for admin" on dashboard_groups;
 
-create policy "Enable read access for admin" on dashboard_groups to service_role for
+create policy "Enable read access for admin" on dashboard_groups for
 select
-  using (true);
+  to service_role using (true);
 
 -- Indexes
 drop index if exists dashboard_groups_pkey;

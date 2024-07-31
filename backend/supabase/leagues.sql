@@ -9,7 +9,7 @@ create table if not exists
     created_time timestamp without time zone default now() not null,
     mana_earned_breakdown jsonb default '{}'::jsonb not null,
     rank_snapshot integer,
-    primary key uuid default gen_random_uuid () not null
+    id uuid default gen_random_uuid () not null
   );
 
 -- Policies
@@ -24,7 +24,7 @@ select
 -- Indexes
 drop index if exists leagues_pkey;
 
-create unique index leagues_pkey on public.leagues using btree ("Primary Key");
+create unique index leagues_pkey on public.leagues using btree (id);
 
 drop index if exists unique_user_id_season;
 

@@ -525,7 +525,7 @@ export const BetButtons = (props: {
   return (
     <YesNoBetButtons
       feedReason={feedReason}
-      answer={answer as Answer}
+      answer={answer}
       contract={contract as CPMMMultiContract}
       fillColor={fillColor}
     />

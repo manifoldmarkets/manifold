@@ -236,7 +236,7 @@ function augmentAnswerWithProbability(
   answer: Answer
 ): ApiAnswer {
   const probability = getAnswerProbability(contract, answer.id)
-  const { poolYes, poolNo, prob: _, ...other } = answer as Answer
+  const { poolYes, poolNo, prob: _, ...other } = answer
   const pool = {
     YES: poolYes,
     NO: poolNo,

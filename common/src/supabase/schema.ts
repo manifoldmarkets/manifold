@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       answers: {
         Row: {
+          color: string | null
           contract_id: string | null
           created_time: string | null
           data: Json
@@ -22,7 +23,10 @@ export type Database = {
           prob_change_day: number | null
           prob_change_month: number | null
           prob_change_week: number | null
+          resolution: string | null
+          resolution_probability: number | null
           resolution_time: string | null
+          resolver_id: string | null
           subsidy_pool: number | null
           text: string | null
           text_fts: unknown | null
@@ -30,6 +34,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          color?: string | null
           contract_id?: string | null
           created_time?: string | null
           data: Json
@@ -41,7 +46,10 @@ export type Database = {
           prob_change_day?: number | null
           prob_change_month?: number | null
           prob_change_week?: number | null
+          resolution?: string | null
+          resolution_probability?: number | null
           resolution_time?: string | null
+          resolver_id?: string | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
@@ -49,6 +57,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          color?: string | null
           contract_id?: string | null
           created_time?: string | null
           data?: Json
@@ -60,7 +69,10 @@ export type Database = {
           prob_change_day?: number | null
           prob_change_month?: number | null
           prob_change_week?: number | null
+          resolution?: string | null
+          resolution_probability?: number | null
           resolution_time?: string | null
+          resolver_id?: string | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
@@ -279,7 +291,6 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          is_api: boolean
           likes: number
           user_id: string
           visibility: string | null
@@ -289,7 +300,6 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          is_api?: boolean
           likes?: number
           user_id: string
           visibility?: string | null
@@ -299,7 +309,6 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
-          is_api?: boolean
           likes?: number
           user_id?: string
           visibility?: string | null
@@ -756,17 +765,17 @@ export type Database = {
         Row: {
           api_key: string
           discord_user_id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           api_key: string
           discord_user_id: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           api_key?: string
           discord_user_id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -991,9 +1000,9 @@ export type Database = {
           cohort: string
           created_time: string
           division: number
+          id: string
           mana_earned: number
           mana_earned_breakdown: Json
-          'Primary Key': string
           rank_snapshot: number | null
           season: number
           user_id: string
@@ -1002,9 +1011,9 @@ export type Database = {
           cohort: string
           created_time?: string
           division: number
+          id?: string
           mana_earned?: number
           mana_earned_breakdown?: Json
-          'Primary Key'?: string
           rank_snapshot?: number | null
           season: number
           user_id: string
@@ -1013,9 +1022,9 @@ export type Database = {
           cohort?: string
           created_time?: string
           division?: number
+          id?: string
           mana_earned?: number
           mana_earned_breakdown?: Json
-          'Primary Key'?: string
           rank_snapshot?: number | null
           season?: number
           user_id?: string
@@ -2168,18 +2177,6 @@ export type Database = {
           created_at?: string
           embedding?: string
           topic?: string
-        }
-        Relationships: []
-      }
-      total_profit: {
-        Row: {
-          sum: number | null
-        }
-        Insert: {
-          sum?: number | null
-        }
-        Update: {
-          sum?: number | null
         }
         Relationships: []
       }

@@ -742,7 +742,7 @@ export function Answer(props: {
             {showSellButton && (
               <AnswerPosition
                 contract={contract}
-                answer={answer as Answer}
+                answer={answer}
                 userBets={userBets}
                 className="self-end"
                 user={user}

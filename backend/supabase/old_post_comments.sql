@@ -30,9 +30,9 @@ alter table old_post_comments enable row level security;
 
 drop policy if exists "auth read" on old_post_comments;
 
-create policy "auth read" on old_post_comments to service_role for
+create policy "auth read" on old_post_comments for
 select
-  using (true);
+  to service_role using (true);
 
 drop policy if exists "user can insert" on old_post_comments;
 

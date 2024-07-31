@@ -103,7 +103,7 @@ export const CandidateBar = (props: {
             <OpenProb contract={contract} answer={answer} />
             <MultiBettor
               contract={contract as CPMMMultiContract}
-              answer={answer as Answer}
+              answer={answer}
             />
           </Row>
           <PercentChangeToday
@@ -126,7 +126,7 @@ export const CandidateBar = (props: {
       {!resolution && hasBets && isCpmm && user && (
         <UserPosition
           contract={contract as CPMMMultiContract}
-          answer={answer as Answer}
+          answer={answer}
           userBets={userBets}
           user={user}
           className="bg-ink-700/80 hover:bg-ink-700 hover:dark:bg-ink-200 dark:bg-ink-200/80 absolute bottom-0 left-0 right-0 z-20 flex flex-row gap-1.5 whitespace-nowrap px-2 py-1 text-xs text-white transition-opacity"

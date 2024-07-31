@@ -28,7 +28,7 @@ export function AnswerCpmmBetPanel(props: {
         contract={contract}
         multiProps={{
           answers: contract.answers,
-          answerToBuy: answer as Answer,
+          answerToBuy: answer,
         }}
         initialOutcome={outcome}
         // singularView={outcome}

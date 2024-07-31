@@ -14,7 +14,7 @@ export async function getMemberRole(user: User, groupId: string) {
       .eq('group_id', groupId)
       .eq('member_id', user.id)
   )
-  return data[0]?.role ?? ('member' as GroupRole)
+  return (data[0]?.role ?? 'member') as GroupRole
 }
 
 export async function getGroupContractIds(groupId: string) {

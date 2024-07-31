@@ -81,7 +81,7 @@ export function CandidatePanel(props: {
             {displayedAnswers.map((answer) => (
               <CandidateAnswer
                 key={answer.id}
-                answer={answer as Answer}
+                answer={answer}
                 contract={contract}
                 color={getCandidateColor(removeTextInParentheses(answer.text))}
                 user={user}
@@ -115,7 +115,7 @@ export function CandidatePanel(props: {
             {displayedAnswers.map((answer) => (
               <CandidateAnswer
                 key={answer.id}
-                answer={answer as Answer}
+                answer={answer}
                 contract={contract}
                 color={getCandidateColor(removeTextInParentheses(answer.text))}
                 user={user}
@@ -189,7 +189,7 @@ function CandidateAnswer(props: {
       {/* {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition
           contract={contract}
-          answer={answer as Answer}
+          answer={answer}
           userBets={userBets}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
           user={user}

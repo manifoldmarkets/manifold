@@ -808,9 +808,9 @@ or replace function public.get_your_contract_ids (uid text, n integer, start int
     select contract_id
     from user_contract_metrics
     where user_id = uid
-    and (data->'hasShares')::boolean = true
+    and has_shares = true
   ), your_liked_contracts as (
-    select (data->>'contentId') as contract_id
+    select content_id as contract_id
     from user_reactions
     where user_id = uid
   ), your_followed_contracts as (

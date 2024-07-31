@@ -79,7 +79,7 @@ export function SmallCandidatePanel(props: {
           {displayedAnswers.map((answer) => (
             <SmallCandidateAnswer
               key={answer.id}
-              answer={answer as Answer}
+              answer={answer}
               contract={contract}
               user={user}
               userBets={userBetsByAnswer[answer.id]}
