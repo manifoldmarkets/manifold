@@ -3,7 +3,7 @@ create table if not exists
   discord_users (
     discord_user_id text not null,
     api_key text not null,
-    user_id text
+    user_id text not null
   );
 
 -- Indexes

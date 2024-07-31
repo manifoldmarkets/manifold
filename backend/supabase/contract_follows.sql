@@ -15,16 +15,6 @@ create policy "public read" on contract_follows for
 select
   using (true);
 
-drop policy if exists "user can delete" on contract_follows;
-
-create policy "user can delete" on contract_follows for delete using ((firebase_uid () = follow_id));
-
-drop policy if exists "user can insert" on contract_follows;
-
-create policy "user can insert" on contract_follows for insert
-with
-  check ((firebase_uid () = follow_id));
-
 -- Indexes
 drop index if exists contract_follows_pkey;
 

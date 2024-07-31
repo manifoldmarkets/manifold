@@ -7,7 +7,6 @@ create table if not exists
     visibility text,
     user_id text not null,
     created_time timestamp with time zone not null,
-    is_api boolean default false not null,
     likes integer default 0 not null
   );
 

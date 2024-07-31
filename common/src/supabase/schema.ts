@@ -291,7 +291,6 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          is_api: boolean
           likes: number
           user_id: string
           visibility: string | null
@@ -301,7 +300,6 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          is_api?: boolean
           likes?: number
           user_id: string
           visibility?: string | null
@@ -311,7 +309,6 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
-          is_api?: boolean
           likes?: number
           user_id?: string
           visibility?: string | null
@@ -768,17 +765,17 @@ export type Database = {
         Row: {
           api_key: string
           discord_user_id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           api_key: string
           discord_user_id: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           api_key?: string
           discord_user_id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1003,9 +1000,9 @@ export type Database = {
           cohort: string
           created_time: string
           division: number
+          id: string
           mana_earned: number
           mana_earned_breakdown: Json
-          'Primary Key': string
           rank_snapshot: number | null
           season: number
           user_id: string
@@ -1014,9 +1011,9 @@ export type Database = {
           cohort: string
           created_time?: string
           division: number
+          id?: string
           mana_earned?: number
           mana_earned_breakdown?: Json
-          'Primary Key'?: string
           rank_snapshot?: number | null
           season: number
           user_id: string
@@ -1025,9 +1022,9 @@ export type Database = {
           cohort?: string
           created_time?: string
           division?: number
+          id?: string
           mana_earned?: number
           mana_earned_breakdown?: Json
-          'Primary Key'?: string
           rank_snapshot?: number | null
           season?: number
           user_id?: string
@@ -2180,18 +2177,6 @@ export type Database = {
           created_at?: string
           embedding?: string
           topic?: string
-        }
-        Relationships: []
-      }
-      total_profit: {
-        Row: {
-          sum: number | null
-        }
-        Insert: {
-          sum?: number | null
-        }
-        Update: {
-          sum?: number | null
         }
         Relationships: []
       }
