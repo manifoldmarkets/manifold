@@ -231,8 +231,8 @@ function DonationBox(props: {
       )}
 
       <div className="mt-2 text-xs">
-        <CoinNumber amount={MIN_SPICE_DONATION} isInline isSpice /> donation
-        minimum
+        <CoinNumber amount={MIN_SPICE_DONATION} isInline coinType={'spice'} />{' '}
+        donation minimum
       </div>
     </div>
   )

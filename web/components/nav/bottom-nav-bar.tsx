@@ -171,7 +171,7 @@ function NavBarItem(props: {
                 amount={user?.spiceBalance}
                 numberType="short"
                 className="text-amber-600 dark:text-amber-400"
-                isSpice
+                coinType="spice"
               />
             </Row>
           </Row>

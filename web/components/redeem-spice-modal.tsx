@@ -38,7 +38,7 @@ export function RedeemSpiceModal(props: {
             className={clsx('text-ink-1000 text-4xl font-bold transition-all')}
             isInline
             coinClassName="top-[0.1rem]"
-            isSpice
+            coinType='spice'
           />
           <span
             className={clsx(
