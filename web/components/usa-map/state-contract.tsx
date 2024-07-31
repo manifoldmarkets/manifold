@@ -187,10 +187,7 @@ function SwingStatePercent(props: {
     <Row className={clsx('w-32 items-center gap-2 sm:w-24', className)}>
       <div className="text-ink-600 font-light sm:hidden">{label}</div>
       <OpenProb contract={contract} answer={answer} size="sm" />
-      <MultiBettor
-        contract={contract as CPMMMultiContract}
-        answer={answer as Answer}
-      />
+      <MultiBettor contract={contract as CPMMMultiContract} answer={answer} />
     </Row>
   )
 }

@@ -164,7 +164,7 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
             <HouseRow
               key={answer.text}
               id={answer.text}
-              houseAnswer={answer as Answer}
+              houseAnswer={answer}
               contract={liveHouseContract}
               isSelected={targetAnswer === answer.text}
               isHovered={hoverAnswer === answer.text}

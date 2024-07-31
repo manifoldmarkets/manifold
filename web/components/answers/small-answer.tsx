@@ -119,7 +119,7 @@ export function SmallAnswer(props: {
       {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition
           contract={contract}
-          answer={answer as Answer}
+          answer={answer}
           userBets={userBets}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
           user={user}
@@ -207,7 +207,7 @@ export const SmallAnswerBar = (props: {
             <AnswerStatus contract={contract} answer={answer} noNewIcon />
             <MultiBettor
               contract={contract as CPMMMultiContract}
-              answer={answer as Answer}
+              answer={answer}
             />
           </Row>
         </Row>

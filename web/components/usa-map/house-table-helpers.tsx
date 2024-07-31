@@ -130,7 +130,7 @@ export function HouseBetPanel(props: {
         contract={contract}
         multiProps={{
           answers: contract.answers,
-          answerToBuy: answer as Answer,
+          answerToBuy: answer,
         }}
         initialOutcome={outcome}
         // singularView={outcome}

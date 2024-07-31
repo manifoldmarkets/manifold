@@ -95,7 +95,7 @@ export function getInitialAnswerProbability(
     if (contract.addAnswersMode === 'DISABLED') {
       return 1 / contract.answers.length
     } else {
-      const answers = contract.answers as Answer[]
+      const answers = contract.answers
       const initialTime = answers.find((a) => a.isOther)?.createdTime
 
       if (answer.createdTime === initialTime) {

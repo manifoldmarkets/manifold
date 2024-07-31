@@ -540,7 +540,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
     const takerAmount = sumBy(takers, 'amount')
     const takerShares = sumBy(takers, 'shares')
-    const answer = answers.find((a) => a.id === updatedAnswer.id) as Answer
+    const answer = answers.find((a) => a.id === updatedAnswer.id)!
     const multiBuyTakerAmount = sumBy(
       newBetResults.flatMap((r) => r.takers),
       'amount'
@@ -582,7 +582,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
         outcome,
         totalFees,
       } = result
-      const answer = answers.find((a) => a.id === updatedAnswer.id) as Answer
+      const answer = answers.find((a) => a.id === updatedAnswer.id)!
       const probBefore = answer.prob
       const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
 

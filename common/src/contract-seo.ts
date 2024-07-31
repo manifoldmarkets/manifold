@@ -23,7 +23,7 @@ export const getContractOGProps = (
     outcomeType === 'MULTIPLE_CHOICE'
       ? resolution
         ? (contract as MultiContract).answers.find((a) => a.id === resolution)
-        : sortAnswers(contract, contract.answers as Answer[])[0]
+        : sortAnswers(contract, contract.answers)[0]
       : undefined
 
   const probPercent =
