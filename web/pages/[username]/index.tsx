@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 
 import { SEO } from 'web/components/SEO'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
@@ -71,6 +71,7 @@ import { FaCrown } from 'react-icons/fa6'
 import { getUserForStaticProps } from 'common/supabase/users'
 import { VerifyMe } from 'web/components/gidx/verify-me'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
+import { TwombaPortfolioValueSection } from 'web/components/portfolio/twomba-portfolio-value-section'
 
 export const getStaticProps = async (props: {
   params: {
@@ -376,13 +377,23 @@ function UserProfile(props: {
                     <Spacer h={2} />
                     {!isCurrentUser && (
                       <>
-                        <PortfolioValueSection
-                          user={user}
-                          defaultTimePeriod={
-                            currentUser?.id === user.id ? 'weekly' : 'monthly'
-                          }
-                          hideAddFundsButton
-                        />
+                        {TWOMBA_ENABLED ? (
+                          <TwombaPortfolioValueSection
+                            user={user}
+                            defaultTimePeriod={
+                              currentUser?.id === user.id ? 'weekly' : 'monthly'
+                            }
+                            hideAddFundsButton
+                          />
+                        ) : (
+                          <PortfolioValueSection
+                            user={user}
+                            defaultTimePeriod={
+                              currentUser?.id === user.id ? 'weekly' : 'monthly'
+                            }
+                            hideAddFundsButton
+                          />
+                        )}
                         <Spacer h={4} />
                       </>
                     )}
