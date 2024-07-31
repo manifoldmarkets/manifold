@@ -487,6 +487,8 @@ const getBetReturns = (
     betDeps = newBetResult.makers
       .map((m) => m.bet)
       .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
+      .concat(newBetResult.ordersToCancel)
+      .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
     fees = addObjects(
       newBetResult.totalFees,
       otherBetResults.reduce(
