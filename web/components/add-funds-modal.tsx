@@ -166,7 +166,6 @@ function PriceTile(props: {
   return (
     <button
       id={`ios-${manaAmount}-tile`}
-      // loading={loading}
       className={clsx(
         'group relative flex w-full flex-col items-center rounded text-center  shadow transition-all ',
         disabled
