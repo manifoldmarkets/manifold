@@ -161,6 +161,7 @@ export const API = (_apiTypeCheck = {
         //Multi
         answerId: z.string().optional(),
         dryRun: z.boolean().optional(),
+        deps: z.array(z.string()).optional(),
       })
       .strict(),
   },
