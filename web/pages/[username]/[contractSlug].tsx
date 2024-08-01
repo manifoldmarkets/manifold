@@ -274,8 +274,7 @@ export function ContractPageContent(props: ContractParams) {
     defaultReferrerUsername: contract.creatorUsername,
     contractId: contract.id,
   })
-  // Request new user signup bonus on every contract page visited
-  useRequestNewUserSignupBonus(contract.id)
+
   const [replyTo, setReplyTo] = useState<Answer | Bet>()
 
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)

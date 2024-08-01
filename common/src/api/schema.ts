@@ -1054,13 +1054,7 @@ export const API = (_apiTypeCheck = {
       status: 'success'
     },
   },
-  'request-signup-bonus': {
-    method: 'GET',
-    visibility: 'undocumented',
-    authed: true,
-    returns: {} as { bonus: number },
-    props: z.object({}),
-  },
+  
   'get-likes-and-ships': {
     method: 'GET',
     visibility: 'public',

@@ -9,6 +9,9 @@ import { MARKET_VISIT_BONUS, MARKET_VISIT_BONUS_TOTAL } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { isVerified } from 'common/user'
 
+/**
+ * @deprecated market visit bonus no longer in use
+ */
 export const useRequestNewUserSignupBonus = (contractId: string) => {
   const user = useUser()
 
