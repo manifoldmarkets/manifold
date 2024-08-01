@@ -121,6 +121,7 @@ export const placeBetMain = async (
     balanceByUserId
   )
   if (dryRun) {
+    log('Dry run complete.')
     return {
       result: {
         ...simulatedResult.newBet,
