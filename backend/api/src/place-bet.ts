@@ -26,7 +26,6 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import * as crypto from 'crypto'
-import { formatMoneyWithDecimals } from 'common/util/format'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -51,12 +50,13 @@ import {
 } from 'shared/supabase/answers'
 import { updateContract } from 'shared/supabase/contracts'
 import { filterDefined } from 'common/util/array'
+import { formatMoneyWithDecimals } from 'common/util/format'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
 
-  let simulatedMakerIds: string[] = []
-  if (props.deps === undefined) {
+  let simulatedMakerIds = props.deps
+  if (simulatedMakerIds === undefined) {
     const { user, contract, answers, unfilledBets, balanceByUserId } =
       await fetchContractBetDataAndValidate(
         createSupabaseDirectClient(),
@@ -76,11 +76,7 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
     simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
   }
 
-  const deps = [
-    auth.uid,
-    props.contractId,
-    ...(props.deps ?? simulatedMakerIds),
-  ]
+  const deps = [auth.uid, props.contractId, ...simulatedMakerIds]
 
   return await betsQueue.enqueueFn(
     () => placeBetMain(props, auth.uid, isApi),
@@ -193,14 +189,13 @@ export const placeBetMain = async (
     )
   })
 
-  const { newBet, fullBets, allOrdersToCancel, betId, makers, betGroupId } =
-    result
+  const { newBet, betId, betGroupId } = result
 
   log(`Main transaction finished - auth ${uid}.`)
   metrics.inc('app/bet_count', { contract_id: contractId })
 
   const continuation = async () => {
-    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
+    await onCreateBets(result)
   }
 
   const time = Date.now() - startTime
@@ -497,7 +492,11 @@ export const executeNewBetResult = async (
   log(`Inserted bet for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
-    await updateMakers(makers, betRow.bet_id, contract, pgTrans)
+    log(
+      'Updating makers:',
+      makers.map((m) => m.bet.userId)
+    )
+    await updateMakers(makers, betRow.bet_id, pgTrans)
   }
   if (ordersToCancel) {
     allOrdersToCancel.push(...ordersToCancel)
@@ -605,12 +604,7 @@ export const executeNewBetResult = async (
         fullBets.push(convertBet(betRow))
 
         // TODO: bulk update the makers
-        await updateMakers(
-          otherBetResults[i].makers,
-          betRow.bet_id,
-          contract,
-          pgTrans
-        )
+        await updateMakers(otherBetResults[i].makers, betRow.bet_id, pgTrans)
       }
     }
 
@@ -708,7 +702,6 @@ export async function bulkUpdateLimitOrders(
 export const updateMakers = async (
   makers: maker[],
   takerBetId: string,
-  contract: MarketContract,
   pgTrans: SupabaseTransaction
 ) => {
   const updatedLimitBets: LimitBet[] = []
@@ -770,14 +763,6 @@ export const updateMakers = async (
       balance: -spent,
     }))
   )
-
-  const makerIds = Object.keys(spentByUser)
-  if (makerIds.length > 0) {
-    log('Redeeming shares for makers', makerIds)
-    await Promise.all(
-      makerIds.map(async (userId) => redeemShares(pgTrans, userId, contract))
-    )
-  }
 }
 
 export const getRoundedLimitProb = (limitProb: number | undefined) => {

@@ -272,6 +272,7 @@ async function placeManyBets(
       : limitProb > 0.99
       ? 0.99
       : limitProb,
+    deps: [], // bypasses the pre-queue check that exhausts our pool connections
   })
   let success = 0
   let failure = 0

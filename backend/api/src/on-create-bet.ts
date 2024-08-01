@@ -5,13 +5,8 @@ import {
   getBettingStreakResetTimeBeforeNow,
   getUser,
 } from 'shared/utils'
-import { Bet, LimitBet, maker } from 'common/bet'
-import {
-  CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-  Contract,
-} from 'common/contract'
+import { Bet, LimitBet } from 'common/bet'
+import { Contract } from 'common/contract'
 import { isVerified, User } from 'common/user'
 import { groupBy, keyBy, sumBy, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
@@ -66,14 +61,24 @@ import { APIError } from 'common/api/utils'
 import { updateUser } from 'shared/supabase/users'
 import { broadcastNewBets } from 'shared/websockets/helpers'
 import { getAnswersForContract } from 'shared/supabase/answers'
+import { executeNewBetResult } from 'api/place-bet'
+import { betsQueue } from 'shared/helpers/fn-queue'
+import { runShortTrans } from 'shared/short-transaction'
+import { redeemShares } from 'api/redeem-shares'
 
 export const onCreateBets = async (
-  bets: Bet[],
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
-  originalBettor: User,
-  ordersToCancel: LimitBet[] | undefined,
-  makers: maker[] | undefined
+  betResults: Omit<
+    Awaited<ReturnType<typeof executeNewBetResult>>,
+    'betId' | 'newBet' | 'betGroupId'
+  >
 ) => {
+  const {
+    contract,
+    fullBets: bets,
+    allOrdersToCancel: ordersToCancel,
+    user: originalBettor,
+    makers,
+  } = betResults
   const pg = createSupabaseDirectClient()
   broadcastNewBets(contract.id, contract.visibility, bets)
 
@@ -135,6 +140,20 @@ export const onCreateBets = async (
   const uniqueNonRedemptionBetsByUserId = uniqBy(
     bets.filter((bet) => !bet.isRedemption),
     'userId'
+  )
+  const makerIds = uniq(makers?.map((m) => m.bet.userId))
+  log('Redeeming shares for makers', makerIds)
+  await Promise.all(
+    makerIds.map(async (userId) =>
+      betsQueue.enqueueFn(
+        () =>
+          runShortTrans(async (pgTrans) => {
+            log('redeeming shares for maker', userId)
+            return redeemShares(pgTrans, userId, contract)
+          }),
+        [userId]
+      )
+    )
   )
 
   // NOTE: if place-multi-bet is added for any MULTIPLE_CHOICE question, this won't give multiple bonuses for every answer
@@ -324,19 +343,20 @@ const updateUserContractMetrics = async (
       ? await getAnswersForContract(pg, contract.id)
       : []
 
-  const metrics = await Promise.all(
-    users.map(async (user) => {
-      const bets = await pg.map(
-        `select * from contract_bets where contract_id = $1 and user_id = $2`,
-        [contract.id, user.id],
-        convertBet
-      )
-
-      return calculateUserMetrics(contract, bets, user, answers)
-    })
+  const allBets = await pg.map(
+    `select * from contract_bets where contract_id = $1 and user_id in ($2:list)`,
+    [contract.id, users.map((u) => u.id)],
+    convertBet
   )
+  const groupedBetsByUser = groupBy(allBets, 'userId')
+  const metrics = Object.keys(groupedBetsByUser).flatMap((userId) => {
+    const bets = groupedBetsByUser[userId]
+    const user = users.find((u) => u.id === userId)
+    if (!user) return undefined
+    return calculateUserMetrics(contract, bets, user, answers)
+  })
 
-  await bulkUpdateContractMetrics(metrics.flat())
+  await bulkUpdateContractMetrics(filterDefined(metrics))
 }
 
 const handleBetReplyToComment = async (
