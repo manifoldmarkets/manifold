@@ -32,6 +32,8 @@ import { unfollowTopic } from 'web/lib/supabase/groups'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
 import { removeEmojis } from 'common/util/string'
+import { unauthedApi } from 'common/util/api'
+import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 
 const FORCE_SHOW_WELCOME_MODAL = false
 
@@ -100,11 +102,10 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
       .flat()
       .flatMap(([_, __, groupIds]) => groupIds)
     const [userInterestedTopicsRes, trendingTopicsRes] = await Promise.all([
-      run(
-        db.rpc('get_groups_and_scores_from_user_seen_markets', {
-          uid: userId,
-        })
-      ),
+      unauthedApi('get-interesting-groups-from-views', {
+        userId,
+        contractIds: getSavedContractVisitsLocally(),
+      }),
       run(
         db
           .from('groups')
@@ -121,12 +122,7 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
       ),
     ])
     const userInterestedTopics = orderBy(
-      userInterestedTopicsRes.data?.flat().map((groupData) => ({
-        ...(groupData?.data as Group),
-        id: groupData.id,
-        hasBet: groupData.has_bet,
-        importanceScore: groupData.importance_score,
-      })),
+      userInterestedTopicsRes,
       'importanceScore',
       'desc'
     )

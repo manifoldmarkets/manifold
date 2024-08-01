@@ -13,10 +13,10 @@ import { governors2024 } from 'web/public/data/governors-data'
 import { senate2024 } from 'web/public/data/senate-state-data'
 import { api } from 'web/lib/api/api'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
-import { getBetPoints } from 'common/supabase/bets'
 import { getMultiBetPoints } from 'common/contract-params'
 import { PolicyContractType, PolicyData } from 'web/public/data/policy-data'
 import { mapValues } from 'lodash'
+import { getBetPoints } from 'web/lib/supabase/bets'
 
 export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
@@ -80,7 +80,7 @@ export async function getElectionsPageProps() {
     electionPartyContract &&
     electionPartyContract.mechanism == 'cpmm-multi-1'
   ) {
-    const allBetPoints = await getBetPoints(adminDb, electionPartyContract.id, {
+    const allBetPoints = await getBetPoints(electionPartyContract.id, {
       afterTime: afterTime,
     })
 
