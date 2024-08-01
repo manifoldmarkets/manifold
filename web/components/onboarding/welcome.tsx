@@ -162,6 +162,10 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
       if (user) await api('me/update', { shouldShowWelcome: false })
       track('welcome screen: complete')
       setOpen(false)
+
+      if (window.location.pathname === '/home') {
+        window.location.reload() // reload to ensure personalized feed
+      }
     }
   }
 
