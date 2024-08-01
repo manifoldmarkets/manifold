@@ -71,9 +71,6 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
-  const [amountSelected, setAmountSelected] = useState<number>(
-    prices[formatMoney(25000)]
-  )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const handleIapReceipt = async <T extends nativeToWebMessageType>(
@@ -109,25 +106,14 @@ export function BuyManaTab(props: { onClose: () => void }) {
         Buy <ManaCoin /> mana to trade in your favorite questions.
       </div>
 
-      <div className="text-ink-500 mb-2 text-sm">Amount</div>
-      <FundsSelector
-        fundAmounts={prices}
-        selected={amountSelected}
-        onSelect={setAmountSelected}
-      />
-
-      <div className="mt-6">
-        <div className="text-ink-500 mb-1 text-sm">Price USD</div>
-        <div className="text-xl">${amountSelected / 100}</div>
-      </div>
-
       {pastLimit && (
         <AlertBox title="Purchase limit" className="my-4">
           You have reached your daily purchase limit. Please try again tomorrow.
         </AlertBox>
       )}
 
-      <div className="mt-2 flex gap-2">
+      <div className="grid-cols-2">{}</div>
+      {/* <div className="mt-2 flex gap-2">
         {isNative && platform === 'ios' ? (
           <Button
             color={'gradient'}
@@ -151,11 +137,13 @@ export function BuyManaTab(props: { onClose: () => void }) {
             </Button>
           </form>
         )}
-      </div>
+      </div> */}
       <Row className="text-error mt-2 text-sm">{error}</Row>
     </>
   )
 }
+
+function PriceTile(dollarAmount: number, manaAmount: number) {}
 
 export const OtherWaysToGetMana = () => {
   return (
@@ -237,23 +225,6 @@ const Item = (props: { children: React.ReactNode; url?: string }) => {
         <div className="py-3">{children}</div>
       )}
     </li>
-  )
-}
-
-export function FundsSelector(props: {
-  fundAmounts: { [key: number]: number }
-  selected: number
-  onSelect: (selected: number) => void
-}) {
-  const { selected, onSelect, fundAmounts } = props
-
-  return (
-    <ChoicesToggleGroup
-      className="self-start"
-      currentChoice={selected}
-      choicesMap={fundAmounts}
-      setChoice={onSelect as any}
-    />
   )
 }
 
