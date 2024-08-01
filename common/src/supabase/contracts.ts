@@ -141,7 +141,7 @@ export const convertAnswer = (row: Row<'answers'>): Answer =>
     totalLiquidity: row.total_liquidity!,
     subsidyPool: row.subsidy_pool!,
 
-    isOther: (row.data as any).isOther,
+    isOther: row.is_other,
 
     // resolutions
     resolution: row.resolution as any,

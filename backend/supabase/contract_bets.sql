@@ -63,9 +63,6 @@ begin
 end;
 $function$;
 
--- Policies
-alter table contract_bets enable row level security;
-
 -- Indexes
 drop index if exists contract_bets_pkey;
 

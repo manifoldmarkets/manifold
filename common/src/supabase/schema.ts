@@ -14,9 +14,10 @@ export type Database = {
           color: string | null
           contract_id: string | null
           created_time: string | null
-          data: Json
+          data: Json | null
           id: string
           index: number | null
+          is_other: boolean
           pool_no: number | null
           pool_yes: number | null
           prob: number | null
@@ -37,9 +38,10 @@ export type Database = {
           color?: string | null
           contract_id?: string | null
           created_time?: string | null
-          data: Json
+          data?: Json | null
           id?: string
           index?: number | null
+          is_other?: boolean
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
@@ -60,9 +62,10 @@ export type Database = {
           color?: string | null
           contract_id?: string | null
           created_time?: string | null
-          data?: Json
+          data?: Json | null
           id?: string
           index?: number | null
+          is_other?: boolean
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
