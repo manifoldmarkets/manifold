@@ -81,9 +81,11 @@ export const getBets: APIHandler<'bets'> = async (props) => {
 }
 
 async function getBetTime(pg: SupabaseDirectClient, id: string) {
-  return pg.oneOrNone(
+  const created = await pg.oneOrNone(
     `
   select ts_to_millis(created_time) as "createdTime" from postgres.public.contract_bets where bet_id = $1`,
-    [id]
+    [id],
+    (r) => r.createdTime
   )
+  return created ?? undefined
 }
