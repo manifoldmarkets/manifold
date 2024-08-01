@@ -66,12 +66,6 @@ $function$;
 -- Policies
 alter table contract_bets enable row level security;
 
-drop policy if exists "public read" on contract_bets;
-
-create policy "public read" on contract_bets for
-select
-  using (true);
-
 -- Indexes
 drop index if exists contract_bets_pkey;
 
