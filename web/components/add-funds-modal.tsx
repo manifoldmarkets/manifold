@@ -188,11 +188,12 @@ function PriceTile(props: {
               : ''
           }
           alt="10k mana"
-          width={560}
+          className="w-2/3"
+          width={460}
           height={400}
         />
 
-        <div className="text-primary-700 -mt-2 text-xl font-semibold">
+        <div className="text-primary-700 -mt-1 text-xl font-semibold">
           {shortenNumber(manaAmount)}{' '}
         </div>
       </Col>
