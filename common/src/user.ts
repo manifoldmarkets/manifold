@@ -1,6 +1,5 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
-import { run, SupabaseClient } from 'common/supabase/utils'
 
 export type User = {
   id: string
@@ -140,18 +139,6 @@ export const isUserLikelySpammer = (
   return (
     !hasBet &&
     ((user.bio ?? '').length > 10 || (user.freeQuestionsCreated ?? 0) > 0)
-  )
-}
-
-export const shouldIgnoreUserPage = async (user: User, db: SupabaseClient) => {
-  // lastBetTime isn't always reliable, so use the contract_bets table to be sure
-  const { data: bet } = await run(
-    db.from('contract_bets').select('bet_id').eq('user_id', user.id).limit(1)
-  )
-  return (
-    user.userDeleted ||
-    user.isBannedFromPosting ||
-    isUserLikelySpammer(user, bet.length > 0)
   )
 }
 

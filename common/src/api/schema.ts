@@ -57,6 +57,7 @@ import {
 import { notification_preference } from 'common/user-notification-preferences'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
+import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -264,7 +265,11 @@ export const API = (_apiTypeCheck = {
         contractSlug: z.string().optional(),
         answerId: z.string().optional(),
         // market: z.string().optional(), // deprecated, synonym for `contractSlug`
-        limit: z.coerce.number().gte(0).lte(10000).default(10000),
+        limit: z.coerce
+          .number()
+          .gte(0)
+          .lte(50000)
+          .default(NON_POINTS_BETS_LIMIT),
         before: z.string().optional(),
         after: z.string().optional(),
         beforeTime: z.coerce.number().optional(),
@@ -275,6 +280,8 @@ export const API = (_apiTypeCheck = {
         filterRedemptions: coerceBoolean.optional(),
         includeZeroShareRedemptions: coerceBoolean.optional(),
         commentRepliesOnly: coerceBoolean.optional(),
+        count: coerceBoolean.optional(),
+        points: coerceBoolean.optional(),
       })
       .strict(),
   },

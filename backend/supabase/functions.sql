@@ -705,14 +705,6 @@ where
 $function$;
 
 create
-or replace function public.get_unique_bettors_since (this_contract_id text, since bigint) returns bigint language sql as $function$
-  select count(distinct user_id)
-  from contract_bets
-  where contract_id = this_contract_id
-    and created_time >= millis_to_ts(since);
-$function$;
-
-create
 or replace function public.get_user_bet_contracts (this_user_id text, this_limit integer) returns table (data json) language sql immutable parallel SAFE as $function$
   select c.data
   from contracts c
@@ -720,28 +712,6 @@ or replace function public.get_user_bet_contracts (this_user_id text, this_limit
   where ucm.user_id = this_user_id
   limit this_limit;
 $function$;
-
-create
-or replace function public.get_user_bets_from_resolved_contracts (uid text, count integer, start integer) returns table (contract_id text, bets jsonb[], contract jsonb) language sql stable parallel SAFE as $function$;
-select contract_id,
-       bets.data as bets,
-       c.data as contracts
-from (
-         select contract_id,
-                array_agg(
-                        data
-                        order by created_time desc
-                ) as data
-         from contract_bets
-         where user_id = uid
-           and amount != 0
-         group by contract_id
-     ) as bets
-         join contracts c on c.id = bets.contract_id
-where c.resolution_time is not null
-  and c.outcome_type = 'BINARY'
-order by c.resolution_time desc
-limit count offset start $function$;
 
 create
 or replace function public.get_user_group_id_for_current_user () returns text language plpgsql as $function$
@@ -1190,17 +1160,6 @@ $function$;
 
 create
 or replace function public.to_jsonb (jsonb) returns jsonb language sql immutable parallel SAFE strict as $function$ select $1 $function$;
-
-create
-or replace function public.top_creators_for_user (uid text, excluded_ids text[], limit_n integer) returns table (user_id text, n double precision) language sql stable parallel SAFE as $function$
-  select c.creator_id as user_id, count(*) as n
-  from contract_bets as cb
-  join contracts as c on c.id = cb.contract_id
-  where cb.user_id = uid and not c.creator_id = any(excluded_ids)
-  group by c.creator_id
-  order by count(*) desc
-  limit limit_n
-$function$;
 
 create
 or replace function public.ts_to_millis (ts timestamp with time zone) returns bigint language sql immutable parallel SAFE as $function$

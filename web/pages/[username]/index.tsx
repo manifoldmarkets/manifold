@@ -48,7 +48,6 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
-import { useDiscoverUsers } from 'web/hooks/use-users'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
@@ -58,7 +57,7 @@ import { UserPayments } from 'web/pages/payments'
 import { UserHandles } from 'web/components/user/user-handles'
 import { BackButton } from 'web/components/contract/back-button'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { shouldIgnoreUserPage } from 'common/user'
+import { isUserLikelySpammer } from 'common/user'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
 import { isBetChange } from 'common/balance-change'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -72,6 +71,7 @@ import { getUserForStaticProps } from 'common/supabase/users'
 import { VerifyMe } from 'web/components/gidx/verify-me'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
 import { TwombaPortfolioValueSection } from 'web/components/portfolio/twomba-portfolio-value-section'
+import { unauthedApi } from 'common/util/api'
 
 export const getStaticProps = async (props: {
   params: {
@@ -87,7 +87,7 @@ export const getStaticProps = async (props: {
   const hasCreatedQuestion = data?.length
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
-  const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user, db) : false
+  const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user) : false
 
   return {
     props: removeUndefinedProps({
@@ -128,6 +128,16 @@ export default function UserPage(props: {
     <BlockedUser user={user} privateUser={privateUser} />
   ) : (
     <UserProfile user={user} {...profileProps} />
+  )
+}
+
+const shouldIgnoreUserPage = async (user: User) => {
+  // lastBetTime isn't always reliable, so use the contract_bets table to be sure
+  const bet = await unauthedApi('bets', { userId: user.id, limit: 1 })
+  return (
+    user.userDeleted ||
+    user.isBannedFromPosting ||
+    isUserLikelySpammer(user, bet.length > 0)
   )
 }
 
@@ -571,14 +581,6 @@ function FollowsDialog(props: {
   const { user, followingIds, followerIds, defaultTab, isOpen, setIsOpen } =
     props
 
-  const currentUser = useUser()
-  const myFollowedIds = useFollows(currentUser?.id)
-  const suggestedUserIds = useDiscoverUsers(
-    isOpen ? user.id : undefined, // don't bother fetching this unless someone looks
-    myFollowedIds ?? [],
-    50
-  )
-
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
       <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">
@@ -593,10 +595,6 @@ function FollowsDialog(props: {
             {
               title: 'Followers',
               content: <FollowList userIds={followerIds} />,
-            },
-            {
-              title: 'Similar',
-              content: <FollowList userIds={suggestedUserIds} />,
             },
           ]}
           defaultIndex={defaultTab === 'following' ? 0 : 1}
