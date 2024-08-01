@@ -459,12 +459,6 @@ or replace function public.get_noob_questions () returns setof contracts languag
   order by created_time desc$function$;
 
 create
-or replace function public.get_open_limit_bets_with_contracts_1 (uid text, count integer, politics boolean) returns table (contract_id text, bets jsonb[], contract jsonb) language sql stable parallel SAFE as $function$;
-  -- TODO: drop this function
-  select * from get_open_limit_bets_with_contracts(uid, count);
-$function$;
-
-create
 or replace function public.get_option_voters (this_contract_id text, this_option_id text) returns table (data json) language sql parallel SAFE as $function$
   SELECT users.data from users join votes on votes.user_id = users.id where votes.contract_id = this_contract_id and votes.id = this_option_id;
 $function$;
