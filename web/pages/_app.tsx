@@ -13,7 +13,6 @@ import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { useThemeManager } from 'web/hooks/use-theme'
-import Welcome from 'web/components/onboarding/welcome'
 import { ENV_CONFIG } from 'common/envs/constants'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
@@ -132,7 +131,6 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
       >
         <AuthProvider serverUser={pageProps.auth}>
           <NativeMessageListener />
-          <Welcome />
           <Component {...pageProps} />
         </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}

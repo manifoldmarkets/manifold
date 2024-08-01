@@ -37,7 +37,7 @@ import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 
 const FORCE_SHOW_WELCOME_MODAL = false
 
-export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
+export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const { setFeedKey } = props
 
   const user = useUser()
