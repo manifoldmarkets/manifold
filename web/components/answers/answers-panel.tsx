@@ -18,6 +18,7 @@ import {
 import { Bet, LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import {
+  CPMMMultiContract,
   Contract,
   MultiContract,
   contractPath,
@@ -122,12 +123,12 @@ export function AnswersPanel(props: {
 
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
-  const answers = contract.answers
-    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({
-      ...a,
-      prob: getAnswerProbability(contract, a.id),
-    }))
+  const answers = !isMultipleChoice
+    ? []
+    : contract.answers.map((a) => ({
+        ...a,
+        prob: getAnswerProbability(contract, a.id),
+      }))
   const [showAll, setShowAll] = useState(
     (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
       answers.length <= 5
@@ -147,7 +148,7 @@ export function AnswersPanel(props: {
 
   const allResolved =
     (shouldAnswersSumToOne && !!contract.resolutions) ||
-    answers.every((a) => 'resolution' in a)
+    answers.every((a) => a.resolution)
 
   const answersToShow = query
     ? searchedAnswers
@@ -203,9 +204,7 @@ export function AnswersPanel(props: {
   }
 
   const privateUser = usePrivateUser()
-  const unresolvedAnswers = answers.filter((a) =>
-    'resolution' in a ? !a.resolution : true
-  )
+  const unresolvedAnswers = answers.filter((a) => !a.resolution)
   const canAddAnswer = Boolean(
     user &&
       !user.isBannedFromPosting &&
@@ -478,23 +477,20 @@ export const EditAnswerModal = (props: {
 
 // just the bars
 export function SimpleAnswerBars(props: {
-  contract: MultiContract
+  contract: CPMMMultiContract
   maxAnswers?: number
   barColor?: string
   feedReason?: string
 }) {
   const { contract, maxAnswers = Infinity, barColor, feedReason } = props
-  const { outcomeType } = contract
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
   const user = useUser()
-  const answers = contract.answers
-    .filter(
-      (a) =>
-        outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
-    )
-    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+  const answers = contract.answers.map((a) => ({
+    ...a,
+    prob: getAnswerProbability(contract, a.id),
+  }))
 
   const displayedAnswers = sortAnswers(contract, answers).slice(0, maxAnswers)
 
