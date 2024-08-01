@@ -168,8 +168,11 @@ function PriceTile(props: {
       id={`ios-${manaAmount}-tile`}
       // loading={loading}
       className={clsx(
-        'group relative flex w-full flex-col items-center rounded text-center opacity-90 shadow transition-all hover:opacity-100',
-        'ring-2 ring-blue-600 ring-opacity-0 hover:ring-opacity-100'
+        'group relative flex w-full flex-col items-center rounded text-center  shadow transition-all ',
+        disabled
+          ? 'pointer-events-none cursor-not-allowed opacity-50'
+          : 'opacity-90 ring-2 ring-blue-600 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
+        isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait'
       )}
       type={isSubmitButton ? 'submit' : 'button'}
       onClick={onClick}
