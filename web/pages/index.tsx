@@ -44,6 +44,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
       'in',
       `(${['STONK', 'BOUNTIED_QUESTION', 'POLL'].join(',')})`
     )
+    .is('resolution', null) // Add this line to select only unresolved contracts
     .order('importance_score', { ascending: false })
     .limit(100)
 
@@ -55,7 +56,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
     (c) =>
       !c.groupSlugs?.some((slug) =>
         HIDE_FROM_NEW_USER_SLUGS.includes(slug as any)
-      )
+      ) && !c.isResolved // Add this condition to filter out resolved contracts
   )
 
   const hasCommonGroupSlug = (contract: Contract, groupSlugsSet: string[]) =>
@@ -69,14 +70,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
       addedGroupSlugs.push(...(contract.groupSlugs ?? []))
     }
   })
-  const topicSlugs = [
-    'us-politics',
-    'technology-default',
-    'ai',
-    'entertainment',
-    'sports-default',
-    'science-default',
-  ]
+  const topicSlugs = ['us-politics', 'technology-default', 'sports-default']
   const topicSlugToContracts: Record<string, Contract[]> = {}
   topicSlugs.forEach((slug) => {
     topicSlugToContracts[slug] = filteredContracts
