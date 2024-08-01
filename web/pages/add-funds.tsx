@@ -12,6 +12,7 @@ export const WEB_PRICES = {
   100000: 10999,
   1000000: 100000,
 }
+export type WebPriceKeys = keyof typeof WEB_PRICES
 
 export const IOS_PRICES = {
   10000: 1499,
