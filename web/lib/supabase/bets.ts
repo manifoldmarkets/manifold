@@ -1,27 +1,11 @@
 import { db } from './db'
 import { Contract } from 'common/contract'
-import { flatMap, sortBy } from 'lodash'
-import { LimitBet } from 'common/bet'
+import { sortBy } from 'lodash'
 import { useCallback, useEffect, useState } from 'react'
 import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
 import { APIParams } from 'common/api/schema'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
-
-export const getUserBetsFromResolvedContracts = async (
-  userId: string,
-  count = 1000
-) => {
-  const { data } = await db.rpc('get_user_bets_from_resolved_contracts', {
-    count,
-    start: 0,
-    uid: userId,
-  })
-
-  return flatMap(data).map((d) => {
-    return [d.contract, d.bets]
-  }) as [Contract, LimitBet[]][]
-}
 
 export const useRecentlyBetOnContracts = (userId: string) => {
   const [savedContracts, setSavedContracts] = useState<Contract[]>()
