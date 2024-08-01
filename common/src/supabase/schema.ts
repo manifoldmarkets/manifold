@@ -218,6 +218,8 @@ export type Database = {
           outcome: string | null
           prob_after: number | null
           prob_before: number | null
+          is_filled: boolean | null
+          is_cancelled: boolean | null
           shares: number | null
           updated_time: string
           user_id: string
@@ -236,6 +238,8 @@ export type Database = {
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
+          is_filled?: boolean | null
+          is_cancelled?: boolean | null
           updated_time?: string
           user_id: string
         }
@@ -252,6 +256,8 @@ export type Database = {
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
+          is_filled?: boolean | null
+          is_cancelled?: boolean | null
           shares?: number | null
           updated_time?: string
           user_id?: string

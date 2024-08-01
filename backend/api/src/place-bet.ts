@@ -396,8 +396,8 @@ export const getUnfilledBets = async (
   return await pg.map(
     `select * from contract_bets
     where contract_id = $1
-    and (data->'isFilled')::boolean = false
-    and (data->'isCancelled')::boolean = false
+    and contract_bets.is_filled = false
+    and contract_bets.is_cancelled = false
     ${answerId ? `and answer_id = $2` : ''}`,
     [contractId, answerId],
     (r) => convertBet(r) as LimitBet

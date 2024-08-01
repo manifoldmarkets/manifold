@@ -15,7 +15,9 @@ create table if not exists
     is_redemption boolean,
     is_api boolean,
     answer_id text,
-    loan_amount numeric
+    loan_amount numeric,
+    is_filled boolean,
+    is_cancelled boolean
   );
 
 -- Triggers
@@ -50,6 +52,8 @@ begin
         new.answer_id := ((new.data) ->> 'answerId')::text;
         new.is_api := ((new.data) ->> 'isApi')::boolean;
         new.loan_amount := ((new.data) ->> 'loanAmount')::numeric;
+        new.is_filled := ((new.data) ->> 'isFilled')::boolean;
+        new.is_cancelled := ((new.data) ->> 'isCancelled')::boolean;
     end if;
     return new;
 end
@@ -95,8 +99,8 @@ drop index if exists contract_bets_user_outstanding_limit_orders;
 
 create index contract_bets_user_outstanding_limit_orders on public.contract_bets using btree (
   user_id,
-  (((data -> 'isFilled'::text))::boolean),
-  (((data -> 'isCancelled'::text))::boolean)
+  is_filled,
+  is_cancelled
 );
 
 drop index if exists contract_bets_historical_probs;
@@ -115,8 +119,8 @@ drop index if exists contract_bets_contract_limit_orders;
 
 create index contract_bets_contract_limit_orders on public.contract_bets using btree (
   contract_id,
-  (((data -> 'isFilled'::text))::boolean),
-  (((data -> 'isCancelled'::text))::boolean),
+  is_filled,
+  is_cancelled,
   is_redemption,
   created_time desc
 );
