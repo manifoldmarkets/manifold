@@ -305,28 +305,6 @@ select contracts.data from
     $function$;
 
 create
-or replace function public.get_groups_and_scores_from_user_seen_markets (uid text) returns table (
-  id text,
-  data jsonb,
-  importance_score numeric,
-  has_bet boolean
-) language sql as $function$
-select (g.id, g.data, g.importance_score, false)
-from
-    groups g
-        join group_contracts gc on g.id = gc.group_id
-        join user_contract_views ucv on gc.contract_id = ucv.contract_id
-  where ucv.user_id = uid and ucv.page_views > 0
-union
-select (g.id, g.data, g.importance_score, true)
-from
-    groups g
-        join group_contracts gc on g.id = gc.group_id
-        join contract_bets cb on gc.contract_id = cb.contract_id
-where cb.user_id = uid
-$function$;
-
-create
 or replace function public.get_love_question_answers_and_lovers (p_question_id bigint) returns setof other_lover_answers_type language plpgsql as $function$
 BEGIN
     RETURN QUERY
@@ -479,26 +457,6 @@ or replace function public.get_noob_questions () returns setof contracts languag
   where creator_id in (select * from newbs)
   and visibility = 'public'
   order by created_time desc$function$;
-
-create
-or replace function public.get_open_limit_bets_with_contracts (uid text, count integer) returns table (contract_id text, bets jsonb[], contract jsonb) language sql stable parallel SAFE as $function$;
-select contract_id,
-  bets.data as bets,
-  contracts.data as contracts
-from (
-    select contract_id,
-      array_agg(
-        data
-        order by created_time desc
-      ) as data
-    from contract_bets
-    where user_id = uid
-      and (data->>'isFilled')::boolean = false
-      and (data->>'isCancelled')::boolean = false
-    group by contract_id
-  ) as bets
-  join contracts on contracts.id = bets.contract_id
-limit count $function$;
 
 create
 or replace function public.get_open_limit_bets_with_contracts_1 (uid text, count integer, politics boolean) returns table (contract_id text, bets jsonb[], contract jsonb) language sql stable parallel SAFE as $function$;

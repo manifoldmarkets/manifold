@@ -251,6 +251,33 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-user-limit-orders-with-contracts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as {
+      betsByContract: { [contractId: string]: LimitBet[] }
+      contracts: Contract[]
+    },
+    props: z
+      .object({
+        userId: z.string(),
+        count: z.coerce.number().lte(5000),
+      })
+      .strict(),
+  },
+  'get-interesting-groups-from-views': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as (Group & { hasBet: boolean })[],
+    props: z
+      .object({
+        userId: z.string(),
+        contractIds: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
   bets: {
     method: 'GET',
     visibility: 'public',

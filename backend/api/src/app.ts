@@ -185,6 +185,8 @@ import {
 import { getNotifications } from 'api/get-notifications'
 import { getContractTopics } from './get-contract-topics'
 import { getRelatedMarkets } from 'api/get-related-markets'
+import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
+import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -298,6 +300,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:contractId/answer': createAnswerCPMM,
   'market/:contractId/block': blockMarket,
   'market/:contractId/unblock': unblockMarket,
+  'get-user-limit-orders-with-contracts': getUserLimitOrdersWithContracts,
+  'get-interesting-groups-from-views': getInterestingGroupsFromViews,
   leagues: getLeagues,
   markets: getMarkets,
   'search-markets': searchMarketsLite,

@@ -1,30 +1,12 @@
 import { db } from './db'
 import { Contract } from 'common/contract'
-import { Dictionary, flatMap, sortBy } from 'lodash'
+import { flatMap, sortBy } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { useCallback, useEffect, useState } from 'react'
 import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
 import { APIParams } from 'common/api/schema'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
-
-export const getOpenLimitOrdersWithContracts = async (
-  userId: string,
-  count = 1000
-) => {
-  const { data } = await db.rpc('get_open_limit_bets_with_contracts', {
-    count,
-    uid: userId,
-  })
-  const betsByContract = {} as Dictionary<LimitBet[]>
-
-  const contracts = [] as Contract[]
-  flatMap(data).forEach((d) => {
-    betsByContract[d.contract_id] = d.bets as LimitBet[]
-    contracts.push(d.contract as Contract)
-  })
-  return { betsByContract, contracts }
-}
 
 export const getUserBetsFromResolvedContracts = async (
   userId: string,
