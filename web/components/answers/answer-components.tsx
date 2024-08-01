@@ -468,12 +468,11 @@ export const AnswerStatus = (props: {
   const { contract, answer, className } = props
   const { resolutions } = contract
 
-  const answerResolution =
-    'resolution' in answer ? answer.resolution : undefined
+  const answerResolution = answer.resolution
 
   const prob = getAnswerProbability(contract, answer.id)
   const resolvedProb =
-    answerResolution === 'MKT' && 'resolutionProbability' in answer
+    answerResolution === 'MKT'
       ? answer.resolutionProbability ?? answer.prob
       : resolutions
       ? (resolutions?.[answer.id] ?? 0) / 100

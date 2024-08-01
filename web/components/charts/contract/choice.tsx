@@ -81,7 +81,7 @@ export function getAnswerColor(answer: Answer) {
   if (answer.text === 'Democratic Party') return '#adc4e3'
   if (answer.text === 'Republican Party') return '#ecbab5'
 
-  return 'isOther' in answer && answer.isOther
+  return answer.isOther
     ? CHOICE_OTHER_COLOR
     : 'color' in answer && answer.color
     ? answer.color

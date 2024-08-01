@@ -78,23 +78,19 @@ export const sortAnswers = <T extends Answer>(
       ? // Winners first
         (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
       : // Resolved last
-        (answer) => ('resolution' in answer ? 1 : 0),
+        (answer) => (answer.resolution ? 1 : 0),
     // then by sort
     (answer) => {
       if (sort === 'old') {
-        if ('resolutionTime' in answer && answer.resolutionTime)
-          return answer.resolutionTime
-        return answer.index
+        return answer.resolutionTime ? answer.resolutionTime : answer.index
       } else if (sort === 'new') {
-        if ('resolutionTime' in answer && answer.resolutionTime)
-          return -answer.resolutionTime
-        return -answer.index
+        return answer.resolutionTime ? -answer.resolutionTime : -answer.index
       } else if (sort === 'prob-asc') {
         return answer.prob
       } else if (sort === 'prob-desc') {
         return -1 * answer.prob
       } else if (sort === 'liquidity') {
-        return 'subsidyPool' in answer ? -answer.subsidyPool : 0
+        return answer.subsidyPool ? -1 * answer.subsidyPool : 0
       } else if (sort === 'alphabetical') {
         return answer.text.toLowerCase()
       }

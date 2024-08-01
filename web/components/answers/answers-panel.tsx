@@ -112,7 +112,6 @@ export function AnswersPanel(props: {
     setQuery,
     showSetDefaultSort,
     setDefaultAnswerIdsToGraph,
-    defaultAddAnswer,
     floatingSearchClassName,
   } = props
   const { outcomeType, resolutions } = contract
@@ -166,7 +165,7 @@ export function AnswersPanel(props: {
           } else if (sort === 'prob-desc') {
             return answer.prob > 0.01
           } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
-            return !('resolution' in answer)
+            return !answer.resolution
           }
           return true
         })
@@ -581,8 +580,6 @@ export function Answer(props: {
   const prob = getAnswerProbability(contract, answer.id)
   const [editingAnswer, setEditingAnswer] = useState<Answer>()
 
-  const isOther = 'isOther' in answer && answer.isOther
-
   const { resolution, resolutions } = contract
   const resolvedProb =
     resolution == undefined
@@ -627,7 +624,7 @@ export function Answer(props: {
   const hasLimitOrders = unfilledBets?.length && limitOrderVolume
 
   const dropdownItems = [
-    ...(canEdit && 'poolYes' in answer && !answer.isOther
+    ...(canEdit && answer.poolYes != undefined && !answer.isOther
       ? [
           {
             icon: <PencilIcon className=" h-4 w-4" />,
@@ -683,7 +680,7 @@ export function Answer(props: {
               <AnswerAvatar answer={answer} />
             )}
             <AnswerStatus contract={contract} answer={answer} />
-            {isOther ? (
+            {answer.isOther ? (
               <span className={textColorClass}>
                 Other{' '}
                 <InfoTooltip
@@ -829,7 +826,6 @@ export function canEditAnswer(
 ) {
   return (
     user &&
-    'isOther' in answer &&
     !answer.isOther &&
     (isAdminId(user.id) ||
       isModId(user.id) ||

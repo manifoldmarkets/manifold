@@ -51,13 +51,9 @@ export function PartyPanel(props: {
     // Winners for shouldAnswersSumToOne
     (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
     // Winners for independent binary
-    (answer) =>
-      'resolution' in answer && answer.resolution
-        ? -answer.subsidyPool
-        : -Infinity,
+    (answer) => (answer.resolution ? -answer.subsidyPool : -Infinity),
     // then by prob or index
-    (answer) =>
-      !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
+    (answer) => (!sortByProb ? answer.index : -1 * answer.prob),
   ]).slice(0, maxAnswers)
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =

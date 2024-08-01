@@ -150,7 +150,7 @@ export const SmallAnswerBar = (props: {
     answer,
   } = props
 
-  const isOther = 'isOther' in answer && answer.isOther
+  const isOther = !!answer.isOther
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
     <Col className={clsx('relative isolate h-full w-full', className)}>
