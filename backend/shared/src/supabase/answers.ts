@@ -4,9 +4,7 @@ import { groupBy } from 'lodash'
 import { Answer } from 'common/answer'
 import {
   bulkInsert,
-  updateData,
   insert,
-  bulkUpdateData,
   bulkUpdate,
   update,
 } from './utils'
