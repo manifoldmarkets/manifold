@@ -194,10 +194,21 @@ function PriceTile(props: {
       onClick={onClick}
     >
       {TWOMBA_ENABLED && (
-        <div className="absolute -right-2 -top-2 whitespace-nowrap rounded-full bg-lime-100 px-2 py-0.5 text-sm text-lime-800 shadow transition-colors group-hover:bg-lime-200 group-hover:text-lime-900 dark:bg-lime-700 dark:text-white group-hover:dark:bg-lime-600 group-hover:dark:text-white">
-          +{' '}
-          <CoinNumber coinType="sweepies" amount={manaAmount / 1000} isInline />{' '}
-          bonus
+        <div
+          className="absolute -right-2 -top-2 
+        whitespace-nowrap rounded-full bg-lime-100 px-2 py-0.5
+         text-lime-800 shadow transition-colors group-hover:bg-lime-200
+          group-hover:text-lime-900 dark:bg-lime-700 dark:text-white
+           group-hover:dark:bg-lime-600 group-hover:dark:text-white"
+        >
+          +
+          <CoinNumber
+            coinType="sweepies"
+            className="font-bold"
+            amount={manaAmount / 1000}
+            isInline
+          />{' '}
+          <span className="text-sm">bonus</span>
         </div>
       )}
       <Col className="bg-canvas-50 items-center rounded-t px-4 pb-2 pt-4">
