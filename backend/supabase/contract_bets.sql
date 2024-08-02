@@ -72,10 +72,6 @@ drop index if exists contract_bets_pkey;
 
 create unique index contract_bets_pkey on public.contract_bets using btree (contract_id, bet_id);
 
-drop index if exists contract_bets_answer_id_created_time;
-
-create index contract_bets_answer_id_created_time on public.contract_bets using btree (answer_id, created_time desc);
-
 drop index if exists contract_bets_bet_id;
 
 create index contract_bets_bet_id on public.contract_bets using btree (bet_id);
