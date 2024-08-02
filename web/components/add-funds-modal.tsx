@@ -165,7 +165,6 @@ function PriceTile(props: {
   const disabled = props.disabled || (loading && !isCurrentlyLoading)
   return (
     <button
-      id={`ios-${manaAmount}-tile`}
       className={clsx(
         'group relative flex w-full flex-col items-center rounded text-center  shadow transition-all ',
         disabled
@@ -189,7 +188,17 @@ function PriceTile(props: {
               ? '/buy-mana-graphics/1M.png'
               : ''
           }
-          alt="10k mana"
+          alt={
+            manaAmount == 10000
+              ? '10k mana'
+              : manaAmount == 25000
+              ? '25k mana'
+              : manaAmount == 100000
+              ? '100k mana'
+              : manaAmount == 1000000
+              ? '1 million mana'
+              : ''
+          }
           className="w-2/3"
           width={460}
           height={400}
