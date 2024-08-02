@@ -181,9 +181,9 @@ function PriceTile(props: {
             manaAmount == 10000
               ? '/buy-mana-graphics/10k.png'
               : manaAmount == 25000
-              ? '/buy-mana-graphics/25kd.png'
+              ? '/buy-mana-graphics/25k.png'
               : manaAmount == 100000
-              ? '/buy-mana-graphics/100kd.png'
+              ? '/buy-mana-graphics/100k.png'
               : manaAmount == 1000000
               ? '/buy-mana-graphics/1M.png'
               : ''
