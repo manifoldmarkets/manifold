@@ -29,6 +29,8 @@ import { AmountInput } from './widgets/amount-input'
 import { CoinNumber } from './widgets/manaCoinNumber'
 import { Col } from './layout/col'
 import { shortenNumber } from 'web/lib/util/formatNumber'
+import { FaStore } from 'react-icons/fa6'
+import { Title } from './widgets/title'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -104,8 +106,24 @@ export function BuyManaTab(props: { onClose: () => void }) {
 
   return (
     <>
-      <div className="mb-4">
-        Buy <ManaCoin /> mana to trade in your favorite questions.
+      <Row className="mb-2 items-center gap-1 text-2xl font-semibold">
+        <FaStore className="h-6 w-6" />
+        Mana Shop
+      </Row>
+      <div
+        className={clsx(
+          'text-ink-700 text-sm',
+          TWOMBA_ENABLED ? 'mb-5' : 'mb-4'
+        )}
+      >
+        {TWOMBA_ENABLED ? (
+          <span>
+            Buy mana to trade in your favorite questions. Always free to play,
+            no purchase necessary.
+          </span>
+        ) : (
+          <span>Buy mana to trade in your favorite questions.</span>
+        )}
       </div>
 
       {pastLimit && (
