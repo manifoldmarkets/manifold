@@ -2,7 +2,7 @@
 import clsx from 'clsx'
 import { AD_REDEEM_REWARD } from 'common/boost'
 import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 import { convertTxn } from 'common/supabase/txns'
 import { run } from 'common/supabase/utils'
@@ -114,7 +114,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
         </AlertBox>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 gap-y-6">
         {Object.entries(prices).map(([manaAmount, dollarAmount]) =>
           isNative && platform === 'ios' ? (
             <PriceTile
@@ -166,7 +166,7 @@ function PriceTile(props: {
   return (
     <button
       className={clsx(
-        'group relative flex w-full flex-col items-center rounded text-center  shadow transition-all ',
+        'group relative flex w-full flex-col items-center rounded text-center shadow transition-all ',
         disabled
           ? 'pointer-events-none cursor-not-allowed opacity-50'
           : 'opacity-90 ring-2 ring-blue-600 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
@@ -175,7 +175,14 @@ function PriceTile(props: {
       type={isSubmitButton ? 'submit' : 'button'}
       onClick={onClick}
     >
-      <Col className="bg-canvas-50 items-center rounded-t px-4 py-2">
+      {TWOMBA_ENABLED && (
+        <div className="absolute -right-2 -top-2 whitespace-nowrap rounded-full bg-lime-100 px-2 py-0.5 text-sm text-lime-800 shadow group-hover:bg-lime-200 group-hover:text-lime-900 dark:bg-lime-700 dark:text-lime-50">
+          +{' '}
+          <CoinNumber coinType="sweepies" amount={manaAmount / 1000} isInline />{' '}
+          bonus
+        </div>
+      )}
+      <Col className="bg-canvas-50 items-center rounded-t px-4 pb-2 pt-4">
         <Image
           src={
             manaAmount == 10000
