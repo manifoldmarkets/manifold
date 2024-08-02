@@ -314,7 +314,7 @@ const fetchSellSharesDataAndValidate = async (
   isApi: boolean
 ) => {
   const userBetsPromise = pgTrans.map(
-    `select * from contract_bets where user_id = $1 
+    `select * from contract_bets where user_id = $1
         and contract_id = $2
         ${answerId ? 'and answer_id = $3' : ''}`,
     [userId, contractId, answerId],
@@ -424,7 +424,7 @@ const calculateSellResult = (
       if (!answer) {
         throw new APIError(400, 'Could not find answer ' + answerId)
       }
-      if ('resolution' in answer && answer.resolution) {
+      if (answer.resolution) {
         throw new APIError(403, 'Answer is resolved and cannot be bet on')
       }
     }

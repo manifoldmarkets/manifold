@@ -6,9 +6,13 @@ import { removeUndefinedProps } from 'common/util/object'
 import { incrementBalance } from 'shared/supabase/users'
 import { formatApiUrlWithParams } from 'common/util/api'
 import { DEV_CONFIG } from 'common/envs/dev'
+import { pgp } from 'shared/supabase/init'
 
+// TODO: try without limit orders, and try on an older market
 const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 // const URL = `http://localhost:8088/v0`
+const USE_OLD_MARKET = true
+const ENABLE_LIMIT_ORDERS = true
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -85,7 +89,7 @@ if (require.main === module) {
     )
     const contracts = await pg.map(
       `select * from contracts where slug in ($1:list)`,
-      [markets.map((m: any) => m.slug)],
+      USE_OLD_MARKET ? [['test-ubyxer']] : [markets.map((m: any) => m.slug)],
       convertContract
     )
     log(`Found ${contracts.length} contracts`)
@@ -97,6 +101,8 @@ if (require.main === module) {
     const startTime = Date.now()
     const userSpentAmounts: { [key: string]: number } = {}
     const errorMessage: { [key: string]: number } = {}
+
+    const recentBetResults: { timestamp: number; success: boolean }[] = []
 
     const runChaos = async () => {
       log('Chaos reigns...')
@@ -120,24 +126,41 @@ if (require.main === module) {
                 ? errorMessage[key] + value
                 : value
             })
-          }
 
-          // 50 visits per user
-          // const visitPromises = Array(50)
-          //   .fill(null)
-          //   .map(() => async () => {
-          //     const contract =
-          //       contracts[Math.floor(Math.random() * contracts.length)]
-          //     try {
-          //       await visitContract(contract)
-          //       totalVisits++
-          //     } catch (error: any) {
-          //       errorMessage[error.message] = errorMessage[error.message]
-          //         ? errorMessage[error.message] + 1
-          //         : 1
-          //       totalVisitErrors++
-          //     }
-          //   })
+            // Add bet results to recentBetResults
+            const now = Date.now()
+            for (let i = 0; i < betResult.success; i++) {
+              recentBetResults.push({ timestamp: now, success: true })
+            }
+            for (let i = 0; i < betResult.failure; i++) {
+              recentBetResults.push({ timestamp: now, success: false })
+            }
+
+            // Remove bet results older than 60 seconds
+            const sixtySecondsAgo = now - 60000
+            while (
+              recentBetResults.length > 0 &&
+              recentBetResults[0].timestamp < sixtySecondsAgo
+            ) {
+              recentBetResults.shift()
+            }
+            // 50 visits per user
+            // const visitPromises = Array(50)
+            //   .fill(null)
+            //   .map(() => async () => {
+            //     const contract =
+            //       contracts[Math.floor(Math.random() * contracts.length)]
+            //     try {
+            //       await visitContract(contract)
+            //       totalVisits++
+            //     } catch (error: any) {
+            //       errorMessage[error.message] = errorMessage[error.message]
+            //         ? errorMessage[error.message] + 1
+            //         : 1
+            //       totalVisitErrors++
+            //     }
+            //   })
+          }
 
           await Promise.all([
             // ...visitPromises.map((p) => p()),
@@ -155,7 +178,6 @@ if (require.main === module) {
         log(`Error seen ${value} times: ${key}`)
       })
       log(`----- End of errors -----`)
-      // visits:
       log(`----- VISITS -----`)
       log(`Total error visits: ${totalVisitErrors}`)
       log(`Total successful visits: ${totalVisits}`)
@@ -174,10 +196,20 @@ if (require.main === module) {
       log(
         `Successful bets per second: ${(totalBets / elapsedSeconds).toFixed(2)}`
       )
+      const totalRecentBets = recentBetResults.length
+      const successfulRecentBets = recentBetResults.filter(
+        (r) => r.success
+      ).length
+      const recentSuccessRate =
+        totalRecentBets > 0 ? (successfulRecentBets / 60).toFixed(2) : '0'
+      log(
+        `Successful bets per second over the last minute: ${recentSuccessRate}`
+      )
       log(
         'Successful bet rate: ',
         Math.round((totalBets / (totalBets + totalBetErrors)) * 100) + '%'
       )
+
       log(`----- FINALLY -----`)
       log(`Total time elapsed: ${elapsedSeconds.toFixed(2)} seconds`)
       log(`-------------------------`)
@@ -192,6 +224,7 @@ if (require.main === module) {
       clearInterval(chaosInterval)
       clearInterval(reportInterval)
       reportStats()
+      pgp.end()
       log('Chaos no longer reigns.')
       process.exit()
     })
@@ -217,8 +250,11 @@ async function placeManyBets(
   count: number,
   contract: Contract
 ) {
-  const limitProb =
-    Math.random() > 0.5 ? parseFloat(Math.random().toPrecision(1)) : undefined
+  const limitProb = !ENABLE_LIMIT_ORDERS
+    ? undefined
+    : Math.random() > 0.5
+    ? parseFloat(Math.random().toPrecision(1))
+    : undefined
 
   const betData = removeUndefinedProps({
     contractId: contract.id,

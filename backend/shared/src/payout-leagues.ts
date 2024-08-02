@@ -25,7 +25,7 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     prevRows.map((r) => [r.user_id, r])
   )
 
-  for (const rows of chunk(newRows, 20)) {
+  for (const rows of chunk(newRows, 5)) {
     await Promise.all(
       rows.map((newRow) => {
         const prevRow = prevRowsByUserId[newRow.user_id] as

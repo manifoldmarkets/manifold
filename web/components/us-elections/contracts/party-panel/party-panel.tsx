@@ -39,25 +39,23 @@ export function PartyPanel(props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
   const user = useUser()
-  const answers = contract.answers
-    .filter(
-      (a) =>
-        outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
-    )
-    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+
+  const answers =
+    outcomeType !== 'MULTIPLE_CHOICE'
+      ? []
+      : contract.answers.map((a) => ({
+          ...a,
+          prob: getAnswerProbability(contract, a.id),
+        }))
 
   const sortByProb = true
   const displayedAnswers = sortBy(answers, [
     // Winners for shouldAnswersSumToOne
     (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
     // Winners for independent binary
-    (answer) =>
-      'resolution' in answer && answer.resolution
-        ? -answer.subsidyPool
-        : -Infinity,
+    (answer) => (answer.resolution ? -answer.subsidyPool : -Infinity),
     // then by prob or index
-    (answer) =>
-      !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
+    (answer) => (!sortByProb ? answer.index : -1 * answer.prob),
   ]).slice(0, maxAnswers)
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =

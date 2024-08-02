@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { clamp, sumBy } from 'lodash'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
@@ -91,7 +91,7 @@ export default function LimitOrderPanel(props: {
   const [error, setError] = useState<string | undefined>()
   const [inputError, setInputError] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
+  const betDeps = useRef<LimitBet[]>()
   // Expiring orders
   const [addExpiration, setAddExpiration] = usePersistentInMemoryState(
     false,
@@ -185,6 +185,7 @@ export default function LimitOrderPanel(props: {
         answerId,
         limitProb: limitProb,
         expiresAt,
+        deps: betDeps.current?.map((b) => b.userId),
       })
     )
       .then((r) => {
@@ -238,6 +239,7 @@ export default function LimitOrderPanel(props: {
     orderAmount = result.orderAmount
     filledAmount = result.amount
     fees = result.fees
+    betDeps.current = result.betDeps
   } catch (err: any) {
     console.error('Error in calculateCpmmMultiArbitrageBet:', err)
     setError(
@@ -467,6 +469,7 @@ const getBetReturns = (
   let amount: number
   let shares: number
   let fees: Fees
+  let betDeps: LimitBet[]
   if (arbitrageProps) {
     const { answers, answerToBuy } = arbitrageProps
     const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
@@ -481,6 +484,11 @@ const getBetReturns = (
     )
     amount = sumBy(newBetResult.takers, 'amount')
     shares = sumBy(newBetResult.takers, 'shares')
+    betDeps = newBetResult.makers
+      .map((m) => m.bet)
+      .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
+      .concat(newBetResult.ordersToCancel)
+      .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
     fees = addObjects(
       newBetResult.totalFees,
       otherBetResults.reduce(
@@ -489,7 +497,7 @@ const getBetReturns = (
       )
     )
   } else {
-    ;({ amount, shares, fees } = computeCpmmBet(
+    const result = computeCpmmBet(
       cpmmState,
       outcome,
       betAmount,
@@ -497,7 +505,11 @@ const getBetReturns = (
       unfilledBets,
       balanceByUserId,
       !arbitrageProps && { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
-    ))
+    )
+    amount = result.amount
+    shares = result.shares
+    fees = result.fees
+    betDeps = result.makers.map((m) => m.bet).concat(result.ordersToCancel)
   }
 
   const remainingMatched = limitProb
@@ -507,5 +519,13 @@ const getBetReturns = (
   const currentPayout = shares + remainingMatched
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
 
-  return { orderAmount, amount, shares, currentPayout, currentReturn, fees }
+  return {
+    orderAmount,
+    amount,
+    shares,
+    currentPayout,
+    currentReturn,
+    fees,
+    betDeps,
+  }
 }

@@ -81,11 +81,7 @@ export function getAnswerColor(answer: Answer) {
   if (answer.text === 'Democratic Party') return '#adc4e3'
   if (answer.text === 'Republican Party') return '#ecbab5'
 
-  return 'isOther' in answer && answer.isOther
-    ? CHOICE_OTHER_COLOR
-    : 'color' in answer && answer.color
-    ? answer.color
-    : nthColor(index)
+  return answer.isOther ? CHOICE_OTHER_COLOR : answer.color ?? nthColor(index)
 }
 
 const getAnswers = (contract: MultiContract) => {
@@ -158,7 +154,7 @@ export const ChoiceContractChart = (props: {
         const startingPoints = multiPoints[a.id] ?? []
         const additionalPoints = []
 
-        if ('resolution' in a) {
+        if (a.resolution) {
           if (a.resolutionTime) {
             additionalPoints.push({
               x: a.resolutionTime,

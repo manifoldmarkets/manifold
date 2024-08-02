@@ -305,28 +305,6 @@ select contracts.data from
     $function$;
 
 create
-or replace function public.get_groups_and_scores_from_user_seen_markets (uid text) returns table (
-  id text,
-  data jsonb,
-  importance_score numeric,
-  has_bet boolean
-) language sql as $function$
-select (g.id, g.data, g.importance_score, false)
-from
-    groups g
-        join group_contracts gc on g.id = gc.group_id
-        join user_contract_views ucv on gc.contract_id = ucv.contract_id
-  where ucv.user_id = uid and ucv.page_views > 0
-union
-select (g.id, g.data, g.importance_score, true)
-from
-    groups g
-        join group_contracts gc on g.id = gc.group_id
-        join contract_bets cb on gc.contract_id = cb.contract_id
-where cb.user_id = uid
-$function$;
-
-create
 or replace function public.get_love_question_answers_and_lovers (p_question_id bigint) returns setof other_lover_answers_type language plpgsql as $function$
 BEGIN
     RETURN QUERY
@@ -479,32 +457,6 @@ or replace function public.get_noob_questions () returns setof contracts languag
   where creator_id in (select * from newbs)
   and visibility = 'public'
   order by created_time desc$function$;
-
-create
-or replace function public.get_open_limit_bets_with_contracts (uid text, count integer) returns table (contract_id text, bets jsonb[], contract jsonb) language sql stable parallel SAFE as $function$;
-select contract_id,
-  bets.data as bets,
-  contracts.data as contracts
-from (
-    select contract_id,
-      array_agg(
-        data
-        order by created_time desc
-      ) as data
-    from contract_bets
-    where user_id = uid
-      and (data->>'isFilled')::boolean = false
-      and (data->>'isCancelled')::boolean = false
-    group by contract_id
-  ) as bets
-  join contracts on contracts.id = bets.contract_id
-limit count $function$;
-
-create
-or replace function public.get_open_limit_bets_with_contracts_1 (uid text, count integer, politics boolean) returns table (contract_id text, bets jsonb[], contract jsonb) language sql stable parallel SAFE as $function$;
-  -- TODO: drop this function
-  select * from get_open_limit_bets_with_contracts(uid, count);
-$function$;
 
 create
 or replace function public.get_option_voters (this_contract_id text, this_option_id text) returns table (data json) language sql parallel SAFE as $function$
@@ -705,14 +657,6 @@ where
 $function$;
 
 create
-or replace function public.get_unique_bettors_since (this_contract_id text, since bigint) returns bigint language sql as $function$
-  select count(distinct user_id)
-  from contract_bets
-  where contract_id = this_contract_id
-    and created_time >= millis_to_ts(since);
-$function$;
-
-create
 or replace function public.get_user_bet_contracts (this_user_id text, this_limit integer) returns table (data json) language sql immutable parallel SAFE as $function$
   select c.data
   from contracts c
@@ -720,28 +664,6 @@ or replace function public.get_user_bet_contracts (this_user_id text, this_limit
   where ucm.user_id = this_user_id
   limit this_limit;
 $function$;
-
-create
-or replace function public.get_user_bets_from_resolved_contracts (uid text, count integer, start integer) returns table (contract_id text, bets jsonb[], contract jsonb) language sql stable parallel SAFE as $function$;
-select contract_id,
-       bets.data as bets,
-       c.data as contracts
-from (
-         select contract_id,
-                array_agg(
-                        data
-                        order by created_time desc
-                ) as data
-         from contract_bets
-         where user_id = uid
-           and amount != 0
-         group by contract_id
-     ) as bets
-         join contracts c on c.id = bets.contract_id
-where c.resolution_time is not null
-  and c.outcome_type = 'BINARY'
-order by c.resolution_time desc
-limit count offset start $function$;
 
 create
 or replace function public.get_user_group_id_for_current_user () returns text language plpgsql as $function$
@@ -1190,17 +1112,6 @@ $function$;
 
 create
 or replace function public.to_jsonb (jsonb) returns jsonb language sql immutable parallel SAFE strict as $function$ select $1 $function$;
-
-create
-or replace function public.top_creators_for_user (uid text, excluded_ids text[], limit_n integer) returns table (user_id text, n double precision) language sql stable parallel SAFE as $function$
-  select c.creator_id as user_id, count(*) as n
-  from contract_bets as cb
-  join contracts as c on c.id = cb.contract_id
-  where cb.user_id = uid and not c.creator_id = any(excluded_ids)
-  group by c.creator_id
-  order by count(*) desc
-  limit limit_n
-$function$;
 
 create
 or replace function public.ts_to_millis (ts timestamp with time zone) returns bigint language sql immutable parallel SAFE as $function$

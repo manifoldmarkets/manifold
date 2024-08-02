@@ -5,7 +5,7 @@ import {
   getBettingStreakResetTimeBeforeNow,
   getUser,
 } from 'shared/utils'
-import { Bet, LimitBet } from 'common/bet'
+import { Bet, LimitBet, maker } from 'common/bet'
 import {
   CPMMContract,
   CPMMMultiContract,
@@ -31,7 +31,6 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
-import { maker } from 'api/place-bet'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'

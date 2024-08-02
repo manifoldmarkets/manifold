@@ -45,8 +45,6 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     const answers = await getAnswersForContract(pgTrans, contractId)
     const answersToSell = answers.filter((a) => answerIds.includes(a.id))
     if (!answersToSell) throw new APIError(404, 'Answers not found')
-    if ('resolution' in answersToSell && answersToSell.resolution)
-      throw new APIError(403, 'Answer is resolved and cannot be bet on')
 
     const unfilledBetsAndBalances = await Promise.all(
       answersToSell.map((answer) =>

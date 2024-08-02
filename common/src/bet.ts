@@ -24,6 +24,7 @@ export type Bet = {
   contractId: string
   answerId?: string // For multi-binary contracts
   createdTime: number
+  updatedTime?: number // Generated on supabase, useful for limit orders
 
   amount: number // bet size; negative if SELL bet
   loanAmount?: number
@@ -92,4 +93,10 @@ export const calculateMultiBets = (
       500
     )
   )
+}
+export type maker = {
+  bet: LimitBet
+  amount: number
+  shares: number
+  timestamp: number
 }

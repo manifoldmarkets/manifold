@@ -468,27 +468,23 @@ export const AnswerStatus = (props: {
   const { contract, answer, className } = props
   const { resolutions } = contract
 
-  const answerResolution =
-    'resolution' in answer ? answer.resolution : undefined
+  const answerResolution = answer.resolution
 
   const prob = getAnswerProbability(contract, answer.id)
   const resolvedProb =
-    answerResolution === 'MKT' && 'resolutionProbability' in answer
+    answerResolution === 'MKT'
       ? answer.resolutionProbability ?? answer.prob
       : resolutions
       ? (resolutions?.[answer.id] ?? 0) / 100
       : undefined
 
-  const isOpen = tradingAllowed(
-    contract,
-    'resolution' in answer ? answer : undefined
-  )
+  const isOpen = tradingAllowed(contract, answer)
 
   if (answerResolution) {
     return (
       <Row className={clsx('items-center gap-1.5 font-semibold', className)}>
         <div className={'text-ink-800 text-base'}>Resolved</div>
-        {answerResolution === 'MKT' && 'resolutionProbability' in answer ? (
+        {answerResolution === 'MKT' && answer.resolutionProbability ? (
           <ProbPercentLabel
             prob={answer.resolutionProbability ?? answer.prob}
           />
@@ -517,10 +513,7 @@ export const BetButtons = (props: {
 }) => {
   const { contract, answer, fillColor, feedReason } = props
 
-  const isOpen = tradingAllowed(
-    contract,
-    'resolution' in answer ? answer : undefined
-  )
+  const isOpen = tradingAllowed(contract, answer)
   if (!isOpen) return null
   return (
     <YesNoBetButtons

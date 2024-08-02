@@ -45,6 +45,8 @@ export const getBetsWithFilter = async (
     order,
     limit: limitValue,
     kinds,
+    count,
+    points,
   } = options
 
   const conditions = buildArray(
@@ -85,14 +87,26 @@ export const getBetsWithFilter = async (
     !includeZeroShareRedemptions &&
       where(`(shares != 0 or is_redemption = false or loan_amount != 0)`)
   )
+  const selection = count
+    ? select('count(contract_bets.*)')
+    : points
+    ? select(
+        'contract_bets.created_time, contract_bets.prob_before, contract_bets.prob_after, contract_bets.answer_id'
+      )
+    : select('contract_bets.*')
+
+  const ordering = points
+    ? orderBy('contract_bets.bet_id')
+    : !count &&
+      orderBy(
+        `contract_bets.created_time ${order ? order.toLowerCase() : 'desc'}`
+      )
 
   const query = renderSql(
-    select('contract_bets.*'),
+    selection,
     from('contract_bets'),
     ...conditions,
-    orderBy(
-      `contract_bets.created_time ${order ? order.toLowerCase() : 'desc'}`
-    ),
+    ordering,
     limitValue && limit(limitValue)
   )
   // console.log('getBetsWithFilter query:\n', query)

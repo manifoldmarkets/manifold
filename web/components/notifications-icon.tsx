@@ -8,7 +8,7 @@ import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
 
 import { usePathname } from 'next/navigation'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export function NotificationsIcon(props: { className?: string }) {
   const privateUser = usePrivateUser()
@@ -25,7 +25,7 @@ export function NotificationsIcon(props: { className?: string }) {
 function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
   const pathname = usePathname()
   const { privateUser } = props
-  const [lastSeenTime, setLastSeenTime] = usePersistentInMemoryState(
+  const [lastSeenTime, setLastSeenTime] = usePersistentLocalState(
     0,
     'notifications-seen-time'
   )

@@ -53,13 +53,11 @@ export const ChoiceMiniGraph = (props: {
     answers.forEach((a) => {
       const points = cloneDeep(multiPoints[a.id] ?? [])
 
-      if ('resolution' in a) {
-        if (a.resolutionTime) {
-          points.push({
-            x: a.resolutionTime,
-            y: getAnswerProbability(contract, a.id),
-          })
-        }
+      if (a.resolution && a.resolutionTime) {
+        points.push({
+          x: a.resolutionTime,
+          y: getAnswerProbability(contract, a.id),
+        })
       } else {
         points.push({
           x: end ?? now,

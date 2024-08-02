@@ -3,7 +3,6 @@ import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Dictionary, mapValues, range, sortBy } from 'lodash'
-import { getUserBetsFromResolvedContracts } from 'web/lib/supabase/bets'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { ContractMention } from 'web/components/contract/contract-mention'
@@ -27,11 +26,8 @@ export const getStaticProps = async (props: {
   const { username } = props.params
   const user = await getFullUserByUsername(username)
 
-  const bets = user
-    ? await getUserBetsFromResolvedContracts(user.id, 10000)
-    : []
   const { yesBuckets, noBuckets, yesBetsBuckets, noBetsBuckets } =
-    getCalibrationPoints(bets)
+    getCalibrationPoints([])
 
   const yesPoints = getXY(yesBuckets)
   const noPoints = getXY(noBuckets)
