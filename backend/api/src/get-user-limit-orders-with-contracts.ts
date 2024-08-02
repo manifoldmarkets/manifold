@@ -22,8 +22,8 @@ export const getUserLimitOrdersWithContracts: APIHandler<
       ) as data
     from contract_bets
     where user_id = $1
-      and (data->>'isFilled')::boolean = false
-      and (data->>'isCancelled')::boolean = false
+      and contract_bets.is_filled = false
+      and contract_bets.is_cancelled = false
     group by contract_id
   ) as bets
   join contracts on contracts.id = bets.contract_id

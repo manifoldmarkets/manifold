@@ -18,7 +18,7 @@ create table if not exists
     loan_amount numeric,
     is_filled boolean,
     is_cancelled boolean
-    );
+  );
 
 -- Triggers
 create trigger contract_bet_populate before insert
@@ -96,8 +96,8 @@ drop index if exists contract_bets_user_outstanding_limit_orders;
 
 create index contract_bets_user_outstanding_limit_orders on public.contract_bets using btree (
   user_id,
-  (((data -> 'isFilled'::text))::boolean),
-  (((data -> 'isCancelled'::text))::boolean)
+  is_filled,
+  is_cancelled
 );
 
 drop index if exists contract_bets_historical_probs;
@@ -116,8 +116,8 @@ drop index if exists contract_bets_contract_limit_orders;
 
 create index contract_bets_contract_limit_orders on public.contract_bets using btree (
   contract_id,
-  (((data -> 'isFilled'::text))::boolean),
-  (((data -> 'isCancelled'::text))::boolean),
+  is_filled,
+  is_cancelled,
   is_redemption,
   created_time desc
 );

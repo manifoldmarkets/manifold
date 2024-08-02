@@ -12,8 +12,8 @@ export async function expireLimitOrders() {
     `
     update contract_bets
     set data = data || '{"isCancelled": true}'
-    where (data->'isFilled')::boolean = false
-    and (data->'isCancelled')::boolean = false
+    where is_filled = false
+    and is_cancelled = false
     and (data->'expiresAt')::bigint < ts_to_millis(now())
     returning *
   `,

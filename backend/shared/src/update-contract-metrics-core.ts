@@ -162,8 +162,8 @@ const getUnfilledLimitOrders = async (
     `select contract_id, data
     from contract_bets
     where (data->'limitProb')::numeric > 0
-    and not (data->'isFilled')::boolean
-    and not (data->'isCancelled')::boolean
+    and not contract_bets.is_filled
+    and not contract_bets.is_cancelled
     and contract_id = any($1)`,
     [contractIds]
   )
