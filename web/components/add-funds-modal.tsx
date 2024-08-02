@@ -1,32 +1,34 @@
 'use client'
-import { formatMoney } from 'common/util/format'
-import { useEffect, useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
-import { checkoutURL } from 'web/lib/service/stripe'
-import { Button } from './buttons/button'
-import { Modal } from './layout/modal'
-import { getNativePlatform } from 'web/lib/native/is-native'
-import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
-import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
-import Link from 'next/link'
-import { APIError, api, validateIapReceipt } from 'web/lib/api/api'
-import { useNativeMessages } from 'web/hooks/use-native-messages'
-import { Row } from 'web/components/layout/row'
-import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
-import { sum } from 'lodash'
-import { AlertBox } from './widgets/alert-box'
+import clsx from 'clsx'
 import { AD_REDEEM_REWARD } from 'common/boost'
-import { Txn } from 'common/txn'
-import { DAY_MS } from 'common/util/time'
-import { postMessageToNative } from 'web/lib/native/post-message'
-import { AmountInput } from './widgets/amount-input'
-import { run } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
-import { convertTxn } from 'common/supabase/txns'
-import { CoinNumber } from './widgets/manaCoinNumber'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
+import { convertTxn } from 'common/supabase/txns'
+import { run } from 'common/supabase/utils'
+import { Txn } from 'common/txn'
+import { DAY_MS } from 'common/util/time'
+import { sum } from 'lodash'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { Row } from 'web/components/layout/row'
+import { useNativeMessages } from 'web/hooks/use-native-messages'
+import { useUser } from 'web/hooks/use-user'
+import { APIError, api, validateIapReceipt } from 'web/lib/api/api'
+import { getNativePlatform } from 'web/lib/native/is-native'
+import { postMessageToNative } from 'web/lib/native/post-message'
+import { checkoutURL } from 'web/lib/service/stripe'
+import { db } from 'web/lib/supabase/db'
+import { IOS_PRICES, WEB_PRICES, WebPriceKeys } from 'web/pages/add-funds'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { Button } from './buttons/button'
+import { Modal } from './layout/modal'
+import { AlertBox } from './widgets/alert-box'
+import { AmountInput } from './widgets/amount-input'
+import { CoinNumber } from './widgets/manaCoinNumber'
+import { Col } from './layout/col'
+import { shortenNumber } from 'web/lib/util/formatNumber'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -71,10 +73,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
-  const [amountSelected, setAmountSelected] = useState<number>(
-    prices[formatMoney(25000)]
-  )
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState<WebPriceKeys | null>(null)
   const [error, setError] = useState<string | null>(null)
   const handleIapReceipt = async <T extends nativeToWebMessageType>(
     type: T,
@@ -93,7 +92,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
     } else if (type === 'iapError') {
       setError('Error during purchase! Try again.')
     }
-    setLoading(false)
+    setLoading(null)
   }
   useNativeMessages(['iapReceipt', 'iapError'], handleIapReceipt)
 
@@ -109,51 +108,110 @@ export function BuyManaTab(props: { onClose: () => void }) {
         Buy <ManaCoin /> mana to trade in your favorite questions.
       </div>
 
-      <div className="text-ink-500 mb-2 text-sm">Amount</div>
-      <FundsSelector
-        fundAmounts={prices}
-        selected={amountSelected}
-        onSelect={setAmountSelected}
-      />
-
-      <div className="mt-6">
-        <div className="text-ink-500 mb-1 text-sm">Price USD</div>
-        <div className="text-xl">${amountSelected / 100}</div>
-      </div>
-
       {pastLimit && (
         <AlertBox title="Purchase limit" className="my-4">
           You have reached your daily purchase limit. Please try again tomorrow.
         </AlertBox>
       )}
 
-      <div className="mt-2 flex gap-2">
-        {isNative && platform === 'ios' ? (
-          <Button
-            color={'gradient'}
-            loading={loading}
-            disabled={pastLimit}
-            onClick={() => {
-              setError(null)
-              setLoading(true)
-              postMessageToNative('checkout', { amount: amountSelected })
-            }}
-          >
-            Checkout
-          </Button>
-        ) : (
-          <form
-            action={checkoutURL(user?.id || '', amountSelected, url)}
-            method="POST"
-          >
-            <Button type="submit" color="gradient" disabled={pastLimit}>
-              Checkout
-            </Button>
-          </form>
+      <div className="grid grid-cols-2 gap-4">
+        {Object.entries(prices).map(([manaAmount, dollarAmount]) =>
+          isNative && platform === 'ios' ? (
+            <PriceTile
+              key={`ios-${manaAmount}`}
+              dollarAmount={dollarAmount}
+              manaAmount={manaAmount as unknown as WebPriceKeys}
+              loading={loading}
+              disabled={pastLimit}
+              onClick={() => {
+                setError(null)
+                setLoading(manaAmount as unknown as WebPriceKeys)
+                postMessageToNative('checkout', { amount: dollarAmount })
+              }}
+            />
+          ) : (
+            <form
+              key={`web-${manaAmount}`}
+              action={checkoutURL(user?.id || '', dollarAmount, url)}
+              method="POST"
+            >
+              <PriceTile
+                dollarAmount={dollarAmount}
+                manaAmount={manaAmount as unknown as WebPriceKeys}
+                loading={loading}
+                disabled={pastLimit}
+                isSubmitButton
+              />
+            </form>
+          )
         )}
       </div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
     </>
+  )
+}
+
+function PriceTile(props: {
+  dollarAmount: number
+  manaAmount: WebPriceKeys
+  loading: WebPriceKeys | null
+  disabled: boolean
+  onClick?: () => void
+  isSubmitButton?: boolean
+}) {
+  const { dollarAmount, manaAmount, loading, onClick, isSubmitButton } = props
+
+  const isCurrentlyLoading = loading === manaAmount
+  const disabled = props.disabled || (loading && !isCurrentlyLoading)
+  return (
+    <button
+      className={clsx(
+        'group relative flex w-full flex-col items-center rounded text-center  shadow transition-all ',
+        disabled
+          ? 'pointer-events-none cursor-not-allowed opacity-50'
+          : 'opacity-90 ring-2 ring-blue-600 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
+        isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait'
+      )}
+      type={isSubmitButton ? 'submit' : 'button'}
+      onClick={onClick}
+    >
+      <Col className="bg-canvas-50 items-center rounded-t px-4 py-2">
+        <Image
+          src={
+            manaAmount == 10000
+              ? '/buy-mana-graphics/10k.png'
+              : manaAmount == 25000
+              ? '/buy-mana-graphics/25k.png'
+              : manaAmount == 100000
+              ? '/buy-mana-graphics/100k.png'
+              : manaAmount == 1000000
+              ? '/buy-mana-graphics/1M.png'
+              : ''
+          }
+          alt={
+            manaAmount == 10000
+              ? '10k mana'
+              : manaAmount == 25000
+              ? '25k mana'
+              : manaAmount == 100000
+              ? '100k mana'
+              : manaAmount == 1000000
+              ? '1 million mana'
+              : ''
+          }
+          className="w-2/3"
+          width={460}
+          height={400}
+        />
+
+        <div className="text-primary-700 -mt-1 text-xl font-semibold">
+          {shortenNumber(manaAmount)}{' '}
+        </div>
+      </Col>
+      <Col className="w-full rounded-b bg-blue-600 px-4 py-1 text-lg font-semibold text-white">
+        ${dollarAmount / 100}
+      </Col>
+    </button>
   )
 }
 
@@ -237,23 +295,6 @@ const Item = (props: { children: React.ReactNode; url?: string }) => {
         <div className="py-3">{children}</div>
       )}
     </li>
-  )
-}
-
-export function FundsSelector(props: {
-  fundAmounts: { [key: number]: number }
-  selected: number
-  onSelect: (selected: number) => void
-}) {
-  const { selected, onSelect, fundAmounts } = props
-
-  return (
-    <ChoicesToggleGroup
-      className="self-start"
-      currentChoice={selected}
-      choicesMap={fundAmounts}
-      setChoice={onSelect as any}
-    />
   )
 }
 
