@@ -39,7 +39,7 @@ export const hideComment: APIHandler<'hide-comment'> = async (
   const comment = await getComment(db, commentId)
 
   // update the comment
-  updateData(pg, 'contract_comments', 'comment_id', {
+  await updateData(pg, 'contract_comments', 'comment_id', {
     comment_id: commentId,
     hidden: !comment.hidden,
     hiddenTime: Date.now(),
