@@ -5,7 +5,15 @@ import {
   notification_source_types,
   NotificationReason,
 } from 'common/notification'
-import { Dictionary, first, groupBy, sortBy, uniqBy } from 'lodash'
+import {
+  concat,
+  Dictionary,
+  first,
+  groupBy,
+  sortBy,
+  uniq,
+  uniqBy,
+} from 'lodash'
 import { useEffect, useMemo } from 'react'
 import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
 import { User } from 'common/user'
@@ -41,10 +49,19 @@ function useNotifications(
       }
       api('get-notifications', params).then((newData) => {
         setNotifications((oldData) => {
-          const updatedNotifications = uniqBy(
-            [...newData, ...(oldData ?? [])],
-            'id'
+          const allNotifications = concat(newData, oldData ?? [])
+
+          const seenIds = uniq(
+            allNotifications.filter((n) => n.isSeen).map((n) => n.id)
           )
+
+          const updatedNotifications = uniqBy(allNotifications, 'id').map(
+            (n) => ({
+              ...n,
+              isSeen: seenIds.includes(n.id) || n.isSeen,
+            })
+          )
+
           const newLatestCreatedTime = Math.max(
             ...updatedNotifications.map((n) => n.createdTime),
             latestCreatedTime ?? 0
@@ -134,7 +151,7 @@ export function useGroupedNotifications(
       groupedNewMarketNotifications,
       groupedMentionNotifications,
     }),
-    [notifications]
+    [JSON.stringify(notifications)]
   )
 }
 

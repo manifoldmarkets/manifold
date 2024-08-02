@@ -30,11 +30,12 @@ export const useRecentlyBetOnContracts = (userId: string) => {
 }
 
 export async function getTotalBetCount(contractId: string) {
-  return unauthedApi('bets', {
+  const res = (await unauthedApi('bets', {
     contractId,
     count: true,
     filterRedemptions: true,
-  })
+  })) as any as { count: number }[]
+  return res[0].count
 }
 
 // gets random bets - 50,000 by default

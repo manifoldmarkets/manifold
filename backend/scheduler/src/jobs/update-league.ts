@@ -1,5 +1,5 @@
 import { groupBy, sum, uniq, zipObject } from 'lodash'
-import { log, revalidateStaticProps } from 'shared/utils'
+import { log } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import {
@@ -25,7 +25,7 @@ export async function updateLeague() {
 
   log('Loading users...')
   const userIds = await pg.map(
-    `select id from users
+    `select users.id from users
     join leagues on leagues.user_id = users.id
     where leagues.season = $1`,
     [season],

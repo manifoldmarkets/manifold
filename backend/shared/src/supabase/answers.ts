@@ -2,19 +2,13 @@ import { type SupabaseDirectClient } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import { groupBy } from 'lodash'
 import { Answer } from 'common/answer'
-import {
-  bulkInsert,
-  insert,
-  bulkUpdate,
-  update,
-} from './utils'
+import { bulkInsert, insert, bulkUpdate, update } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { Row, millisToTs } from 'common/supabase/utils'
 import {
   broadcastNewAnswer,
   broadcastUpdatedAnswers,
 } from 'shared/websockets/helpers'
-import { pick } from 'lodash'
 
 export const getAnswer = async (pg: SupabaseDirectClient, id: string) => {
   const row = await pg.oneOrNone(`select * from answers where id = $1`, [id])
@@ -109,6 +103,7 @@ const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
   created_time: answer.createdTime
     ? millisToTs(answer.createdTime) + '::timestamptz'
     : undefined,
+  is_other: answer.isOther,
   resolution: answer.resolution,
   resolution_time: answer.resolutionTime
     ? millisToTs(answer.resolutionTime) + '::timestamptz'
@@ -118,10 +113,6 @@ const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
   prob_change_day: answer.probChanges?.day,
   prob_change_week: answer.probChanges?.week,
   prob_change_month: answer.probChanges?.month,
-  data:
-    JSON.stringify(
-      removeUndefinedProps(pick(answer, ['isOther', 'loverUserId']))
-    ) + '::jsonb',
 })
 
 // does not convert isOther, loverUserId
