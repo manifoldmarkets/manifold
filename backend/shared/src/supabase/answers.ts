@@ -103,7 +103,7 @@ const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
   created_time: answer.createdTime
     ? millisToTs(answer.createdTime) + '::timestamptz'
     : undefined,
-  isOther: answer.isOther,
+  is_other: answer.isOther,
   resolution: answer.resolution,
   resolution_time: answer.resolutionTime
     ? millisToTs(answer.resolutionTime) + '::timestamptz'
