@@ -59,7 +59,7 @@ if (require.main === module) {
   })
 }
 
-const ranges = [
+export const ranges = [
   { start: '0', end: '1' },
   { start: '1', end: '2' },
   { start: '2', end: '3' },
