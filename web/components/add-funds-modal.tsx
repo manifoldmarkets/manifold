@@ -175,7 +175,7 @@ function PriceTile(props: {
       type={isSubmitButton ? 'submit' : 'button'}
       onClick={onClick}
     >
-      <Col className="bg-canvas-50 items-center rounded-t px-4 py-2">
+      <Col className="bg-canvas-50 w-full items-center rounded-t px-4 py-2">
         <Image
           src={
             manaAmount == 10000
