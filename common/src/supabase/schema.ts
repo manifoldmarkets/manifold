@@ -3403,6 +3403,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_valid_contract: {
+        Args: {
+          ct: unknown
+        }
+        Returns: boolean
+      }
       ivfflathandler: {
         Args: {
           '': unknown

@@ -877,6 +877,12 @@ select EXISTS (
     ) $function$;
 
 create
+or replace function public.is_valid_contract (ct contracts) returns boolean language sql stable parallel SAFE as $function$
+select ct.resolution_time is null
+  and ct.visibility = 'public'
+  and ((ct.close_time > now() + interval '10 minutes') or ct.close_time is null) $function$;
+
+create
 or replace function public.jsonb_array_to_text_array (_js jsonb) returns text[] language sql immutable parallel SAFE strict as $function$
 select array(select jsonb_array_elements_text(_js))
 $function$;
