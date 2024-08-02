@@ -2,7 +2,7 @@
 import clsx from 'clsx'
 import { AD_REDEEM_REWARD } from 'common/boost'
 import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 import { convertTxn } from 'common/supabase/txns'
 import { run } from 'common/supabase/utils'
@@ -29,6 +29,8 @@ import { AmountInput } from './widgets/amount-input'
 import { CoinNumber } from './widgets/manaCoinNumber'
 import { Col } from './layout/col'
 import { shortenNumber } from 'web/lib/util/formatNumber'
+import { FaStore } from 'react-icons/fa6'
+import { Title } from './widgets/title'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -104,8 +106,24 @@ export function BuyManaTab(props: { onClose: () => void }) {
 
   return (
     <>
-      <div className="mb-4">
-        Buy <ManaCoin /> mana to trade in your favorite questions.
+      <Row className="mb-2 items-center gap-1 text-2xl font-semibold">
+        <FaStore className="h-6 w-6" />
+        Mana Shop
+      </Row>
+      <div
+        className={clsx(
+          'text-ink-700 text-sm',
+          TWOMBA_ENABLED ? 'mb-5' : 'mb-4'
+        )}
+      >
+        {TWOMBA_ENABLED ? (
+          <span>
+            Buy mana to trade in your favorite questions. Always free to play,
+            no purchase necessary.
+          </span>
+        ) : (
+          <span>Buy mana to trade in your favorite questions.</span>
+        )}
       </div>
 
       {pastLimit && (
@@ -114,7 +132,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
         </AlertBox>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 gap-y-6">
         {Object.entries(prices).map(([manaAmount, dollarAmount]) =>
           isNative && platform === 'ios' ? (
             <PriceTile
@@ -166,7 +184,7 @@ function PriceTile(props: {
   return (
     <button
       className={clsx(
-        'group relative flex w-full flex-col items-center rounded text-center  shadow transition-all ',
+        'group relative flex w-full flex-col items-center rounded text-center shadow transition-all ',
         disabled
           ? 'pointer-events-none cursor-not-allowed opacity-50'
           : 'opacity-90 ring-2 ring-blue-600 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
@@ -175,7 +193,25 @@ function PriceTile(props: {
       type={isSubmitButton ? 'submit' : 'button'}
       onClick={onClick}
     >
-      <Col className="bg-canvas-50 w-full items-center rounded-t px-4 py-2">
+      {TWOMBA_ENABLED && (
+        <div
+          className="absolute -right-2 -top-2 
+        whitespace-nowrap rounded-full bg-lime-100 px-2 py-0.5
+         text-lime-800 shadow transition-colors group-hover:bg-lime-200
+          group-hover:text-lime-900 dark:bg-lime-700 dark:text-white
+           group-hover:dark:bg-lime-600 group-hover:dark:text-white"
+        >
+          +
+          <CoinNumber
+            coinType="sweepies"
+            className="font-bold"
+            amount={manaAmount / 1000}
+            isInline
+          />{' '}
+          <span className="text-sm">bonus</span>
+        </div>
+      )}
+      <Col className="bg-canvas-50 items-center rounded-t px-4 pb-2 pt-4">
         <Image
           src={
             manaAmount == 10000
