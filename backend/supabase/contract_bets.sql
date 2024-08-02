@@ -68,13 +68,9 @@ end;
 $function$;
 
 -- Indexes
-drop index if exists contract_bets_pkey;
+drop index if exists contract_bets_bet_id_key;
 
-create unique index contract_bets_pkey on public.contract_bets using btree (contract_id, bet_id);
-
-drop index if exists contract_bets_bet_id;
-
-create index contract_bets_bet_id on public.contract_bets using btree (bet_id);
+create unique index contract_bets_bet_id_key on public.contract_bets using btree (bet_id);
 
 drop index if exists contract_bets_contract_user_id;
 
