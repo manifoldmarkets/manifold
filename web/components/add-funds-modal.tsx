@@ -179,13 +179,13 @@ function PriceTile(props: {
         <Image
           src={
             manaAmount == 10000
-              ? '/buy-mana-graphics/10k.png'
+              ? '/buy-mana-graphics/10k_mana.png'
               : manaAmount == 25000
-              ? '/buy-mana-graphics/25k.png'
+              ? '/buy-mana-graphics/25k_mana.png'
               : manaAmount == 100000
-              ? '/buy-mana-graphics/100k.png'
+              ? '/buy-mana-graphics/100k_mana.png'
               : manaAmount == 1000000
-              ? '/buy-mana-graphics/1M.png'
+              ? '/buy-mana-graphics/1M_mana.png'
               : ''
           }
           alt={
