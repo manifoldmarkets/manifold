@@ -15,8 +15,10 @@ create table if not exists
     is_redemption boolean,
     is_api boolean,
     answer_id text,
-    loan_amount numeric
-  );
+    loan_amount numeric,
+    is_filled boolean,
+    is_cancelled boolean
+    );
 
 -- Triggers
 create trigger contract_bet_populate before insert
@@ -50,6 +52,8 @@ begin
         new.answer_id := ((new.data) ->> 'answerId')::text;
         new.is_api := ((new.data) ->> 'isApi')::boolean;
         new.loan_amount := ((new.data) ->> 'loanAmount')::numeric;
+        new.is_filled := ((new.data) ->> 'isFilled')::boolean;
+        new.is_cancelled := ((new.data) ->> 'isCancelled')::boolean;
     end if;
     return new;
 end

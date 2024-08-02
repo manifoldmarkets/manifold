@@ -3,7 +3,6 @@ import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { formatMoney } from 'common/util/format'
 import { BuyManaTab } from 'web/components/add-funds-modal'
 
 export const WEB_PRICES = {

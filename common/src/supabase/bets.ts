@@ -8,4 +8,6 @@ export const convertBet = (row: Row<'contract_bets'>) =>
     updated_time: tsToMillis,
     created_time: tsToMillis,
     answer_id: (a) => (a != null ? a : undefined),
+    is_filled: false,
+    is_cancelled: false,
   })
