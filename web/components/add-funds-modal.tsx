@@ -21,7 +21,6 @@ import { postMessageToNative } from 'web/lib/native/post-message'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { db } from 'web/lib/supabase/db'
 import { IOS_PRICES, WEB_PRICES, WebPriceKeys } from 'web/pages/add-funds'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
 import { AlertBox } from './widgets/alert-box'
@@ -30,7 +29,6 @@ import { CoinNumber } from './widgets/manaCoinNumber'
 import { Col } from './layout/col'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 import { FaStore } from 'react-icons/fa6'
-import { Title } from './widgets/title'
 
 export function AddFundsModal(props: {
   open: boolean
