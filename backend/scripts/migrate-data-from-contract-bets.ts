@@ -5,7 +5,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 if (require.main === module) {
   runScript(async () => {
     const pg = createSupabaseDirectClient()
-    const startDate = new Date('2023-01-12')
+    const startDate = new Date('2024-05-05')
     const endDate = new Date()
     const diff = 2
     while (startDate < endDate) {
