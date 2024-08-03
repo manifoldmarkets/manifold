@@ -10,12 +10,14 @@ export function ConditionalMarkets(props: {
   rawPolicyContracts: PolicyContractType[]
 }) {
   const policyContracts = props.rawPolicyContracts.map((policy) => {
-    const bidenContract =
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      useLiveContract(policy.bidenContract) ?? policy.bidenContract
-    const trumpContract =
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      useLiveContract(policy.trumpContract) ?? policy.trumpContract
+    const bidenContract = policy.bidenContract
+      ? // eslint-disable-next-line react-hooks/rules-of-hooks
+        useLiveContract(policy.bidenContract) ?? policy.bidenContract
+      : null
+    const trumpContract = policy.trumpContract
+      ? // eslint-disable-next-line react-hooks/rules-of-hooks
+        useLiveContract(policy.trumpContract) ?? policy.trumpContract
+      : null
 
     return {
       title: policy.title,

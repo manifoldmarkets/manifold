@@ -144,9 +144,7 @@ async function getPolicyContracts(
   const mapContractsPromises = PolicyData.map(async (m) => {
     const bidenContract = await getContract(m.bidenSlug)
     const trumpContract = await getContract(m.trumpSlug)
-    if (!bidenContract || !trumpContract) {
-      throw new Error('Policy contract not found')
-    }
+
     return {
       title: m.title,
       bidenContract: bidenContract,
