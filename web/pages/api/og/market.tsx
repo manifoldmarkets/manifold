@@ -3,7 +3,9 @@ import { ImageResponseOptions } from '@vercel/og/dist/types'
 import { NextRequest } from 'next/server'
 import { OgMarket } from 'web/components/og/og-market'
 import { classToTw } from 'web/components/og/utils'
-import { OgCardProps } from 'common/contract-seo'
+import { getContractOGProps, OgCardProps } from 'common/contract-seo'
+import { getContract } from 'common/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
 
 export const config = { runtime: 'edge' }
 export const getCardOptions = async (): Promise<ImageResponseOptions> => {
@@ -42,14 +44,36 @@ const figtreeMediumData = fetch(FIGTREE_MED_URL).then((res) =>
   res.arrayBuffer()
 )
 
+async function getFreshOgMarketProps(
+  contractId: string | undefined
+): Promise<OgCardProps | undefined> {
+  if (contractId) {
+    try {
+      const contract = await getContract(db, contractId)
+      if (contract) {
+        return getContractOGProps(contract)
+      }
+    } catch (e) {
+      console.log(
+        'Failed to fetch contract ${contractId} when rendering OG image',
+        e
+      )
+    }
+  }
+  return undefined
+}
+
 export default async function handler(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const options = await getCardOptions()
-    const OgMarketProps = Object.fromEntries(
+    const ogMarketPropsFromParams = Object.fromEntries(
       searchParams.entries()
     ) as OgCardProps
-    const image = OgMarket(OgMarketProps)
+    const { contractId } = ogMarketPropsFromParams
+    const ogMarketPropsFromDb = await getFreshOgMarketProps(contractId)
+
+    const image = OgMarket(ogMarketPropsFromDb ?? ogMarketPropsFromParams)
 
     return new ImageResponse(classToTw(image), options)
   } catch (e: any) {
