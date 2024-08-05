@@ -2,7 +2,6 @@ import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
 import { sumBy } from 'lodash'
 import toast from 'react-hot-toast'
-import { CheckIcon } from '@heroicons/react/solid'
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 
 import {
@@ -279,60 +278,59 @@ export const BuyPanelBody = (props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    const bet = await api(
-      'bet',
-      removeUndefinedProps({
-        outcome,
-        amount: betAmount,
-        contractId: contract.id,
-        answerId: multiProps?.answerToBuy.id,
-        replyToCommentId,
-        deps: betDeps.current?.map((b) => b.userId),
-      })
-    )
-      .then((r) => {
-        console.log('placed bet. Result:', r)
-        setIsSubmitting(false)
-        setBetAmount(undefined)
-        if (onBuySuccess) onBuySuccess()
-        else {
-          toast('Trade submitted!', {
-            icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
+    try {
+      const bet = await toast.promise(
+        api(
+          'bet',
+          removeUndefinedProps({
+            outcome,
+            amount: betAmount,
+            contractId: contract.id,
+            answerId: multiProps?.answerToBuy.id,
+            replyToCommentId,
+            deps: betDeps.current?.map((b) => b.userId),
           })
+        ),
+        {
+          loading: 'Submitting bet...',
+          success: 'Bet submitted!',
+          error: 'Error submitting bet',
         }
-        return r
-      })
-      .catch((e) => {
-        if (e instanceof APIError) {
-          const message = e.message.toString()
-          if (message.includes('could not serialize access')) {
-            setError('Error placing bet')
-            console.error('Error placing bet', e)
-          } else setError(message)
-        } else {
-          console.error(e)
-          setError('Error placing bet')
-        }
-        setIsSubmitting(false)
-        return undefined
-      })
-
-    track(
-      'bet',
-      removeUndefinedProps({
-        location,
-        outcomeType: contract.outcomeType,
-        slug: contract.slug,
-        contractId: contract.id,
-        amount: betAmount,
-        betGroupId: bet?.betGroupId,
-        betId: bet?.betId,
-        outcome,
-        isLimitOrder: false,
-        answerId: multiProps?.answerToBuy.id,
-        feedReason,
-      })
-    )
+      )
+      console.log('placed bet. Result:', bet)
+      setBetAmount(undefined)
+      if (onBuySuccess) onBuySuccess()
+      track(
+        'bet',
+        removeUndefinedProps({
+          location,
+          outcomeType: contract.outcomeType,
+          slug: contract.slug,
+          contractId: contract.id,
+          amount: betAmount,
+          betGroupId: bet?.betGroupId,
+          betId: bet?.betId,
+          outcome,
+          isLimitOrder: false,
+          answerId: multiProps?.answerToBuy.id,
+          feedReason,
+        })
+      )
+    } catch (e) {
+      if (e instanceof APIError) {
+        const message = e.message.toString()
+        if (message.includes('could not serialize access')) {
+          setError('Error placing bet (could not serialize access)')
+          console.error('Error placing bet', e)
+        } else setError(message)
+      } else {
+        console.error(e)
+        setError('Error placing bet')
+      }
+      return undefined
+    } finally {
+      setIsSubmitting(false)
+    }
   }
   const betDisabled =
     isSubmitting ||

@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 import { clamp, sumBy } from 'lodash'
 import { useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
@@ -180,44 +181,50 @@ export default function LimitOrderPanel(props: {
 
     const answerId = multiProps?.answerToBuy.id
 
-    await api(
-      'bet',
-      removeUndefinedProps({
-        outcome,
-        amount,
-        contractId: contract.id,
-        answerId,
-        limitProb: limitProb,
-        expiresAt,
-        deps: betDeps.current?.map((b) => b.userId),
-      })
-    )
-      .then((r) => {
-        console.log('placed bet. Result:', r)
-        setIsSubmitting(false)
-        if (onBuySuccess) onBuySuccess()
-      })
-      .catch((e) => {
-        if (e instanceof APIError) {
-          setError(e.message.toString())
-        } else {
-          console.error(e)
-          setError('Error placing bet')
+    try {
+      const bet = await toast.promise(
+        api(
+          'bet',
+          removeUndefinedProps({
+            outcome,
+            amount,
+            contractId: contract.id,
+            answerId,
+            limitProb: limitProb,
+            expiresAt,
+            deps: betDeps.current?.map((b) => b.userId),
+          })
+        ),
+        {
+          loading: 'Submitting bet...',
+          success: 'Bet submitted!',
+          error: 'Error submitting bet',
         }
-        setIsSubmitting(false)
-      })
+      )
+      console.log('placed bet. Result:', bet)
+      if (onBuySuccess) onBuySuccess()
 
-    await track('bet', {
-      location: 'bet panel',
-      outcomeType: contract.outcomeType,
-      slug: contract.slug,
-      contractId: contract.id,
-      amount,
-      outcome,
-      limitProb: limitProb,
-      isLimitOrder: true,
-      answerId: multiProps?.answerToBuy.id,
-    })
+      await track('bet', {
+        location: 'bet panel',
+        outcomeType: contract.outcomeType,
+        slug: contract.slug,
+        contractId: contract.id,
+        amount,
+        outcome,
+        limitProb: limitProb,
+        isLimitOrder: true,
+        answerId: multiProps?.answerToBuy.id,
+      })
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.message.toString())
+      } else {
+        console.error(e)
+        setError('Error placing bet')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const shouldAnswersSumToOne =
