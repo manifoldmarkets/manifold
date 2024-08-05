@@ -4,8 +4,7 @@ import { createMarketClosedNotification } from 'shared/create-notification'
 import { DAY_MS } from 'common/util/time'
 import { convertContract } from 'common/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { FieldVal } from 'shared/supabase/utils'
-import { updateContract } from 'shared/supabase/contracts'
+import { bulkUpdate, bulkUpdateData } from 'shared/supabase/utils'
 
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
 
@@ -30,11 +29,14 @@ export async function sendMarketCloseEmails() {
     )
     console.log(`Found ${needsNotification.length} notifications to send`)
 
-    for (const contract of needsNotification) {
-      await updateContract(pg, contract.id, {
-        closeEmailsSent: FieldVal.increment(1),
-      })
-    }
+    await bulkUpdateData(
+      pg,
+      'contracts',
+      needsNotification.map((c) => ({
+        id: c.id,
+        closeEmailsSent: (c.closeEmailsSent ?? 0) + 1,
+      }))
+    )
     return needsNotification
   })
 

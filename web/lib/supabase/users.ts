@@ -87,21 +87,6 @@ export async function getTopCreators() {
   return data
 }
 
-export async function getTopUserCreators(
-  userId: string,
-  excludedUserIds: string[],
-  limit: number
-) {
-  const { data } = await run(
-    db.rpc('top_creators_for_user', {
-      uid: userId,
-      excluded_ids: excludedUserIds,
-      limit_n: limit,
-    })
-  )
-  return data
-}
-
 export const getTotalPublicContractsCreated = async (userId: string) => {
   const { count } = await run(
     db

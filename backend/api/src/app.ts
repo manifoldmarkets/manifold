@@ -126,7 +126,6 @@ import { addOrRemoveReaction } from './reaction'
 import { likeLover } from './love/like-lover'
 import { shipLovers } from './love/ship-lovers'
 import { createManalink } from './create-manalink'
-import { requestSignupBonus } from 'api/request-signup-bonus'
 import { getLikesAndShips } from './love/get-likes-and-ships'
 import { hasFreeLike } from './love/has-free-like'
 import { starLover } from './love/star-lover'
@@ -185,6 +184,9 @@ import {
 import { getNotifications } from 'api/get-notifications'
 import { getContractTopics } from './get-contract-topics'
 import { getRelatedMarkets } from 'api/get-related-markets'
+import { followContract } from './follow-contract'
+import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
+import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -261,6 +263,7 @@ app.options('*', allowCorsUnrestricted)
 const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
   'multi-bet': placeMultiBet,
+  'follow-contract': followContract,
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
   bets: getBets,
@@ -298,6 +301,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:contractId/answer': createAnswerCPMM,
   'market/:contractId/block': blockMarket,
   'market/:contractId/unblock': unblockMarket,
+  'get-user-limit-orders-with-contracts': getUserLimitOrdersWithContracts,
+  'get-interesting-groups-from-views': getInterestingGroupsFromViews,
   leagues: getLeagues,
   markets: getMarkets,
   'search-markets': searchMarketsLite,
@@ -339,7 +344,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-compatibility-questions': getCompatibilityQuestions,
   'like-lover': likeLover,
   'ship-lovers': shipLovers,
-  'request-signup-bonus': requestSignupBonus,
   'get-likes-and-ships': getLikesAndShips,
   'has-free-like': hasFreeLike,
   'star-lover': starLover,

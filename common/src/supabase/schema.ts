@@ -11,18 +11,23 @@ export type Database = {
     Tables: {
       answers: {
         Row: {
+          color: string | null
           contract_id: string | null
           created_time: string | null
-          data: Json
+          data: Json | null
           id: string
           index: number | null
+          is_other: boolean
           pool_no: number | null
           pool_yes: number | null
           prob: number | null
           prob_change_day: number | null
           prob_change_month: number | null
           prob_change_week: number | null
+          resolution: string | null
+          resolution_probability: number | null
           resolution_time: string | null
+          resolver_id: string | null
           subsidy_pool: number | null
           text: string | null
           text_fts: unknown | null
@@ -30,18 +35,23 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          color?: string | null
           contract_id?: string | null
           created_time?: string | null
-          data: Json
+          data?: Json | null
           id?: string
           index?: number | null
+          is_other?: boolean
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
           prob_change_day?: number | null
           prob_change_month?: number | null
           prob_change_week?: number | null
+          resolution?: string | null
+          resolution_probability?: number | null
           resolution_time?: string | null
+          resolver_id?: string | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
@@ -49,18 +59,23 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          color?: string | null
           contract_id?: string | null
           created_time?: string | null
-          data?: Json
+          data?: Json | null
           id?: string
           index?: number | null
+          is_other?: boolean
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
           prob_change_day?: number | null
           prob_change_month?: number | null
           prob_change_week?: number | null
+          resolution?: string | null
+          resolution_probability?: number | null
           resolution_time?: string | null
+          resolver_id?: string | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
@@ -206,6 +221,8 @@ export type Database = {
           outcome: string | null
           prob_after: number | null
           prob_before: number | null
+          is_filled: boolean | null
+          is_cancelled: boolean | null
           shares: number | null
           updated_time: string
           user_id: string
@@ -224,6 +241,8 @@ export type Database = {
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
+          is_filled?: boolean | null
+          is_cancelled?: boolean | null
           updated_time?: string
           user_id: string
         }
@@ -240,6 +259,8 @@ export type Database = {
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
+          is_filled?: boolean | null
+          is_cancelled?: boolean | null
           shares?: number | null
           updated_time?: string
           user_id?: string
@@ -279,7 +300,6 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          is_api: boolean
           likes: number
           user_id: string
           visibility: string | null
@@ -289,7 +309,6 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          is_api?: boolean
           likes?: number
           user_id: string
           visibility?: string | null
@@ -299,7 +318,6 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
-          is_api?: boolean
           likes?: number
           user_id?: string
           visibility?: string | null
@@ -756,17 +774,17 @@ export type Database = {
         Row: {
           api_key: string
           discord_user_id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           api_key: string
           discord_user_id: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           api_key?: string
           discord_user_id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -991,9 +1009,9 @@ export type Database = {
           cohort: string
           created_time: string
           division: number
+          id: string
           mana_earned: number
           mana_earned_breakdown: Json
-          'Primary Key': string
           rank_snapshot: number | null
           season: number
           user_id: string
@@ -1002,9 +1020,9 @@ export type Database = {
           cohort: string
           created_time?: string
           division: number
+          id?: string
           mana_earned?: number
           mana_earned_breakdown?: Json
-          'Primary Key'?: string
           rank_snapshot?: number | null
           season: number
           user_id: string
@@ -1013,9 +1031,9 @@ export type Database = {
           cohort?: string
           created_time?: string
           division?: number
+          id?: string
           mana_earned?: number
           mana_earned_breakdown?: Json
-          'Primary Key'?: string
           rank_snapshot?: number | null
           season?: number
           user_id?: string
@@ -2171,18 +2189,6 @@ export type Database = {
         }
         Relationships: []
       }
-      total_profit: {
-        Row: {
-          sum: number | null
-        }
-        Insert: {
-          sum?: number | null
-        }
-        Update: {
-          sum?: number | null
-        }
-        Relationships: []
-      }
       tv_schedule: {
         Row: {
           contract_id: string
@@ -3118,17 +3124,6 @@ export type Database = {
           data: Json
         }[]
       }
-      get_groups_and_scores_from_user_seen_markets: {
-        Args: {
-          uid: string
-        }
-        Returns: {
-          id: string
-          data: Json
-          importance_score: number
-          has_bet: boolean
-        }[]
-      }
       get_love_question_answers_and_lovers: {
         Args: {
           p_question_id: number
@@ -3205,29 +3200,6 @@ export type Database = {
           visibility: string | null
         }[]
       }
-      get_open_limit_bets_with_contracts: {
-        Args: {
-          uid: string
-          count: number
-        }
-        Returns: {
-          contract_id: string
-          bets: Json[]
-          contract: Json
-        }[]
-      }
-      get_open_limit_bets_with_contracts_1: {
-        Args: {
-          uid: string
-          count: number
-          politics: boolean
-        }
-        Returns: {
-          contract_id: string
-          bets: Json[]
-          contract: Json
-        }[]
-      }
       get_option_voters: {
         Args: {
           this_contract_id: string
@@ -3298,13 +3270,6 @@ export type Database = {
           market_data: Json
         }[]
       }
-      get_unique_bettors_since: {
-        Args: {
-          this_contract_id: string
-          since: number
-        }
-        Returns: number
-      }
       get_user_bet_contracts: {
         Args: {
           this_user_id: string
@@ -3312,18 +3277,6 @@ export type Database = {
         }
         Returns: {
           data: Json
-        }[]
-      }
-      get_user_bets_from_resolved_contracts: {
-        Args: {
-          uid: string
-          count: number
-          start: number
-        }
-        Returns: {
-          contract_id: string
-          bets: Json[]
-          contract: Json
         }[]
       }
       get_user_group_id_for_current_user: {
@@ -3450,6 +3403,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_valid_contract: {
+        Args: {
+          ct: unknown
+        }
+        Returns: boolean
+      }
       ivfflathandler: {
         Args: {
           '': unknown
@@ -3572,17 +3531,6 @@ export type Database = {
           '': Json
         }
         Returns: Json
-      }
-      top_creators_for_user: {
-        Args: {
-          uid: string
-          excluded_ids: string[]
-          limit_n: number
-        }
-        Returns: {
-          user_id: string
-          n: number
-        }[]
       }
       ts_to_millis:
         | {

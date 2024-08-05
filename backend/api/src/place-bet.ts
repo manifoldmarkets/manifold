@@ -46,31 +46,34 @@ import { filterDefined } from 'common/util/array'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  const startTime = Date.now()
-  const { user, contract, answers, unfilledBets, balanceByUserId } =
-    await fetchContractBetDataAndValidate(
-      createSupabaseDirectClient(),
+
+  let simulatedMakerIds: string[] = []
+  if (props.deps === undefined) {
+    const { user, contract, answers, unfilledBets, balanceByUserId } =
+      await fetchContractBetDataAndValidate(
+        createSupabaseDirectClient(),
+        props,
+        auth.uid,
+        isApi
+      )
+    // Simulate bet to see whose limit orders you match.
+    const simulatedResult = calculateBetResult(
       props,
-      auth.uid,
-      isApi,
-      true
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId
     )
-  // Simulate bet to see whose limit orders you match.
-  const simulatedResult = calculateBetResult(
-    props,
-    user,
-    contract,
-    answers,
-    unfilledBets,
-    balanceByUserId
-  )
-  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
-  const deps = [auth.uid, contract.id, ...simulatedMakerIds]
-  log(
-    `[cache]PRE place bet took: ${Date.now() - startTime}ms, answer id: ${
-      props.answerId
-    }, amount: ${props.amount}, startTime: ${startTime}`
-  )
+    simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
+  }
+
+  const deps = [
+    auth.uid,
+    props.contractId,
+    ...(props.deps ?? simulatedMakerIds),
+  ]
+
   return await betsQueue.enqueueFn(
     () => placeBetMain(props, auth.uid, isApi),
     deps
@@ -119,6 +122,7 @@ export const placeBetMain = async (
   log(`Simulation took ${simulationEnd - simulationStart}ms`)
 
   if (dryRun) {
+    log('Dry run complete.')
     return {
       result: {
         ...simulatedResult.newBet,
@@ -297,7 +301,7 @@ const calculateBetResult = (
       throw new APIError(403, 'Bet cannot expire in the past.')
     const answer = answers.find((a) => a.id === answerId)
     if (!answer) throw new APIError(404, 'Answer not found')
-    if ('resolution' in answer && answer.resolution)
+    if (answer.resolution)
       throw new APIError(403, 'Answer is resolved and cannot be bet on')
     if (shouldAnswersSumToOne && answers.length < 2)
       throw new APIError(

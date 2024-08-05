@@ -1,17 +1,10 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import { type SupabaseDirectClient } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import { groupBy } from 'lodash'
 import { Answer } from 'common/answer'
-import {
-  bulkInsert,
-  updateData,
-  insert,
-  DataUpdate,
-  bulkUpdateData,
-} from './utils'
-import { randomString } from 'common/util/random'
+import { bulkInsert, insert, bulkUpdate, update } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
-import { DataFor, millisToTs } from 'common/supabase/utils'
+import { Row, millisToTs } from 'common/supabase/utils'
 import {
   broadcastNewAnswer,
   broadcastUpdatedAnswers,
@@ -83,9 +76,14 @@ export const bulkInsertAnswers = async (
 export const updateAnswer = async (
   pg: SupabaseDirectClient,
   answerId: string,
-  update: DataUpdate<'answers'>
+  data: Partial<Answer>
 ) => {
-  const row = await updateData(pg, 'answers', 'id', { ...update, id: answerId })
+  const row = await update(
+    pg,
+    'answers',
+    'id',
+    partialAnswerToRow({ ...data, id: answerId })
+  )
   const answer = convertAnswer(row)
   broadcastUpdatedAnswers(answer.contractId, [answer])
   return answer
@@ -94,21 +92,43 @@ export const updateAnswer = async (
 export const updateAnswers = async (
   pg: SupabaseDirectClient,
   contractId: string,
-  updates: (Partial<DataFor<'answers'>> & { id: string })[]
+  updates: (Partial<Answer> & { id: string })[]
 ) => {
-  await bulkUpdateData<'answers'>(pg, 'answers', updates)
+  await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
+
   broadcastUpdatedAnswers(contractId, updates)
 }
 
-export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
-  id: 'id' in answer ? answer.id : randomString(),
+const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
+  id: answer.id,
   index: answer.index,
   contract_id: answer.contractId,
   user_id: answer.userId,
   text: answer.text,
+  color: answer.color,
   pool_yes: answer.poolYes,
   pool_no: answer.poolNo,
   prob: answer.prob,
-  created_time: answer.createdTime ? millisToTs(answer.createdTime) : undefined,
-  data: JSON.stringify(removeUndefinedProps(answer)) + '::jsonb',
+  total_liquidity: answer.totalLiquidity,
+  subsidy_pool: answer.subsidyPool,
+  created_time: answer.createdTime
+    ? millisToTs(answer.createdTime) + '::timestamptz'
+    : undefined,
+  is_other: answer.isOther,
+  resolution: answer.resolution,
+  resolution_time: answer.resolutionTime
+    ? millisToTs(answer.resolutionTime) + '::timestamptz'
+    : undefined,
+  resolution_probability: answer.resolutionProbability,
+  resolver_id: answer.resolverId,
+  prob_change_day: answer.probChanges?.day,
+  prob_change_week: answer.probChanges?.week,
+  prob_change_month: answer.probChanges?.month,
 })
+
+// does not convert isOther, loverUserId
+const partialAnswerToRow = (answer: Partial<Answer>) => {
+  const partial: any = removeUndefinedProps(answerToRow(answer as any))
+  delete partial.data
+  return partial as Partial<Row<'answers'>>
+}

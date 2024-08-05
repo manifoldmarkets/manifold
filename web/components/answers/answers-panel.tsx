@@ -18,6 +18,7 @@ import {
 import { Bet, LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import {
+  CPMMMultiContract,
   Contract,
   MultiContract,
   contractPath,
@@ -112,7 +113,6 @@ export function AnswersPanel(props: {
     setQuery,
     showSetDefaultSort,
     setDefaultAnswerIdsToGraph,
-    defaultAddAnswer,
     floatingSearchClassName,
   } = props
   const { outcomeType, resolutions } = contract
@@ -123,12 +123,12 @@ export function AnswersPanel(props: {
 
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
-  const answers = contract.answers
-    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({
-      ...a,
-      prob: getAnswerProbability(contract, a.id),
-    }))
+  const answers = !isMultipleChoice
+    ? []
+    : contract.answers.map((a) => ({
+        ...a,
+        prob: getAnswerProbability(contract, a.id),
+      }))
   const [showAll, setShowAll] = useState(
     (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
       answers.length <= 5
@@ -148,7 +148,7 @@ export function AnswersPanel(props: {
 
   const allResolved =
     (shouldAnswersSumToOne && !!contract.resolutions) ||
-    answers.every((a) => 'resolution' in a)
+    answers.every((a) => a.resolution)
 
   const answersToShow = query
     ? searchedAnswers
@@ -166,7 +166,7 @@ export function AnswersPanel(props: {
           } else if (sort === 'prob-desc') {
             return answer.prob > 0.01
           } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
-            return !('resolution' in answer)
+            return !answer.resolution
           }
           return true
         })
@@ -204,9 +204,7 @@ export function AnswersPanel(props: {
   }
 
   const privateUser = usePrivateUser()
-  const unresolvedAnswers = answers.filter((a) =>
-    'resolution' in a ? !a.resolution : true
-  )
+  const unresolvedAnswers = answers.filter((a) => !a.resolution)
   const canAddAnswer = Boolean(
     user &&
       !user.isBannedFromPosting &&
@@ -479,23 +477,20 @@ export const EditAnswerModal = (props: {
 
 // just the bars
 export function SimpleAnswerBars(props: {
-  contract: MultiContract
+  contract: CPMMMultiContract
   maxAnswers?: number
   barColor?: string
   feedReason?: string
 }) {
   const { contract, maxAnswers = Infinity, barColor, feedReason } = props
-  const { outcomeType } = contract
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
   const user = useUser()
-  const answers = contract.answers
-    .filter(
-      (a) =>
-        outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
-    )
-    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+  const answers = contract.answers.map((a) => ({
+    ...a,
+    prob: getAnswerProbability(contract, a.id),
+  }))
 
   const displayedAnswers = sortAnswers(contract, answers).slice(0, maxAnswers)
 
@@ -581,8 +576,6 @@ export function Answer(props: {
   const prob = getAnswerProbability(contract, answer.id)
   const [editingAnswer, setEditingAnswer] = useState<Answer>()
 
-  const isOther = 'isOther' in answer && answer.isOther
-
   const { resolution, resolutions } = contract
   const resolvedProb =
     resolution == undefined
@@ -627,7 +620,7 @@ export function Answer(props: {
   const hasLimitOrders = unfilledBets?.length && limitOrderVolume
 
   const dropdownItems = [
-    ...(canEdit && 'poolYes' in answer && !answer.isOther
+    ...(canEdit && answer.poolYes != undefined && !answer.isOther
       ? [
           {
             icon: <PencilIcon className=" h-4 w-4" />,
@@ -683,7 +676,7 @@ export function Answer(props: {
               <AnswerAvatar answer={answer} />
             )}
             <AnswerStatus contract={contract} answer={answer} />
-            {isOther ? (
+            {answer.isOther ? (
               <span className={textColorClass}>
                 Other{' '}
                 <InfoTooltip
@@ -742,7 +735,7 @@ export function Answer(props: {
             {showSellButton && (
               <AnswerPosition
                 contract={contract}
-                answer={answer as Answer}
+                answer={answer}
                 userBets={userBets}
                 className="self-end"
                 user={user}
@@ -829,7 +822,6 @@ export function canEditAnswer(
 ) {
   return (
     user &&
-    'isOther' in answer &&
     !answer.isOther &&
     (isAdminId(user.id) ||
       isModId(user.id) ||

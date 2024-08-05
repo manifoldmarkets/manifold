@@ -7,6 +7,8 @@ import { LoadingContractRow } from '../contract/contracts-table'
 import { Col } from '../layout/col'
 import { SupabaseSearch } from '../supabase-search'
 import { PortfolioValueSection } from './portfolio-value-section'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { TwombaPortfolioValueSection } from './twomba-portfolio-value-section'
 
 export const PortfolioSummary = (props: { user: User; className?: string }) => {
   const { user, className } = props
@@ -23,17 +25,31 @@ export const PortfolioSummary = (props: { user: User; className?: string }) => {
 
   return (
     <Col className={clsx(className, 'gap-4')}>
-      <PortfolioValueSection
-        user={user}
-        defaultTimePeriod={
-          isCreatedInLastWeek
-            ? 'allTime'
-            : currentUser?.id === user.id
-            ? 'weekly'
-            : 'monthly'
-        }
-        portfolio={portfolioData}
-      />
+      {TWOMBA_ENABLED ? (
+        <TwombaPortfolioValueSection
+          user={user}
+          defaultTimePeriod={
+            isCreatedInLastWeek
+              ? 'allTime'
+              : currentUser?.id === user.id
+              ? 'weekly'
+              : 'monthly'
+          }
+          portfolio={portfolioData}
+        />
+      ) : (
+        <PortfolioValueSection
+          user={user}
+          defaultTimePeriod={
+            isCreatedInLastWeek
+              ? 'allTime'
+              : currentUser?.id === user.id
+              ? 'weekly'
+              : 'monthly'
+          }
+          portfolio={portfolioData}
+        />
+      )}
 
       {isCurrentUser && (
         <Col className="mb-6 mt-2 gap-2">

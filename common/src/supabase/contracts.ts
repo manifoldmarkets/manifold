@@ -1,16 +1,12 @@
 import { chunk, groupBy, mapValues, sortBy } from 'lodash'
-import {
-  convertSQLtoTS,
-  millisToTs,
-  Row,
-  run,
-  SupabaseClient,
-  tsToMillis,
-} from './utils'
+import { millisToTs, Row, run, SupabaseClient, tsToMillis } from './utils'
 import { Contract } from '../contract'
 import { Answer } from 'common/answer'
 import { Json } from 'common/supabase/schema'
-import { removeUndefinedProps } from 'common/util/object'
+import {
+  removeNullOrUndefinedProps,
+  removeUndefinedProps,
+} from 'common/util/object'
 
 export const CONTRACTS_PER_SEARCH_PAGE = 40
 
@@ -129,10 +125,39 @@ export const getAnswersForContracts = async (
   return mapValues(groupBy(answers, 'contractId'), (a) => sortBy(a, 'index'))
 }
 
-export const convertAnswer = (row: Row<'answers'>) =>
-  convertSQLtoTS<'answers', Answer>(row, {
-    created_time: (maybeTs) => (maybeTs != null ? tsToMillis(maybeTs) : 0),
+export const convertAnswer = (row: Row<'answers'>): Answer =>
+  removeNullOrUndefinedProps({
+    id: row.id,
+    index: row.index!,
+    contractId: row.contract_id!,
+    userId: row.user_id!,
+    text: row.text!,
+    createdTime: row.created_time ? tsToMillis(row.created_time) : 0,
+    color: row.color!,
+
+    poolYes: row.pool_yes!,
+    poolNo: row.pool_no!,
+    prob: row.prob!,
+    totalLiquidity: row.total_liquidity!,
+    subsidyPool: row.subsidy_pool!,
+
+    isOther: row.is_other,
+
+    // resolutions
+    resolution: row.resolution as any,
+    resolutionTime: row.resolution_time
+      ? tsToMillis(row.resolution_time)
+      : undefined,
+    resolutionProbability: row.resolution_probability!,
+    resolverId: row.resolver_id!,
+
+    probChanges: {
+      day: row.prob_change_day ?? 0,
+      week: row.prob_change_week ?? 0,
+      month: row.prob_change_month ?? 0,
+    },
   })
+
 export const convertContract = (c: {
   data: Json
   importance_score: number | null
@@ -160,16 +185,4 @@ export const followContract = async (
     contract_id: contractId,
     follow_id: userId,
   })
-}
-
-export const unfollowContract = async (
-  db: SupabaseClient,
-  contractId: string,
-  userId: string
-) => {
-  return db
-    .from('contract_follows')
-    .delete()
-    .eq('contract_id', contractId)
-    .eq('follow_id', userId)
 }

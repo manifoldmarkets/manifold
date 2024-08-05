@@ -70,7 +70,7 @@ const getAMMLiquidity = async () => {
     pg.one(
       `select sum(prob * pool_yes + (1-prob) * pool_no + subsidy_pool) from answers
         join contracts on contract_id = contracts.id
-        where resolution is null`,
+        where contracts.resolution is null`,
       [],
       (r: any) => Number(r.sum)
     ),

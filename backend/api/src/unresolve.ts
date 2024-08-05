@@ -258,15 +258,11 @@ const undoResolution = async (
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
     // remove resolutionTime and resolverId from all answers in the contract
-    await pg.none(
-      `update answers
-      set data = data - 'resolutionTime' - 'resolverId'
-      where contract_id = $1`,
-      [contractId]
-    )
     const newAnswers = await pg.map(
       `update answers
-      set resolution_time = null
+      set
+        resolution_time = null,
+        resolver_id = null
       where contract_id = $1
       returning *`,
       [contractId],
@@ -276,7 +272,11 @@ const undoResolution = async (
   } else if (answerId) {
     const answer = await pg.one(
       `update answers
-      set data = data - '{resolution,resolutionTime,resolutionProbability,resolverId}'::text[]
+      set
+        resolution = null,
+        resolution_time = null,
+        resolution_probability = null,
+        resolver_id = null
       where id = $1
       returning *`,
       [answerId],

@@ -22,8 +22,6 @@ import { db } from 'web/lib/supabase/db'
 import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
-import { useABTest } from 'web/hooks/use-ab-test'
-import { Typewriter } from 'web/components/home/typewriter'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { removeEmojis } from 'common/util/string'
@@ -44,6 +42,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
       'in',
       `(${['STONK', 'BOUNTIED_QUESTION', 'POLL'].join(',')})`
     )
+    .is('resolution', null) // Add this line to select only unresolved contracts
     .order('importance_score', { ascending: false })
     .limit(100)
 
@@ -55,7 +54,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
     (c) =>
       !c.groupSlugs?.some((slug) =>
         HIDE_FROM_NEW_USER_SLUGS.includes(slug as any)
-      )
+      ) && !c.isResolved // Add this condition to filter out resolved contracts
   )
 
   const hasCommonGroupSlug = (contract: Contract, groupSlugsSet: string[]) =>
@@ -69,14 +68,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
       addedGroupSlugs.push(...(contract.groupSlugs ?? []))
     }
   })
-  const topicSlugs = [
-    'us-politics',
-    'technology-default',
-    'ai',
-    'entertainment',
-    'sports-default',
-    'science-default',
-  ]
+  const topicSlugs = ['us-politics', 'technology-default', 'sports-default']
   const topicSlugToContracts: Record<string, Contract[]> = {}
   topicSlugs.forEach((slug) => {
     topicSlugToContracts[slug] = filteredContracts
@@ -119,13 +111,6 @@ export default function LandingPage(props: {
   const contracts = selectedTopicSlug
     ? topicSlugToContracts[selectedTopicSlug] ?? []
     : trendingContracts
-  const abTestVariant = useABTest('signed out home page variations v0', [
-    'know the future',
-    'real-world impact',
-    'wisdom of the crowds',
-    'bet',
-    'bet-typewriter',
-  ])
 
   return (
     <Page trackPageView={'signed out home page'} hideSidebar>
@@ -193,97 +178,22 @@ export default function LandingPage(props: {
 
           <Row className="justify-between rounded-lg ">
             <Col className="w-full gap-2 sm:max-w-lg">
-              {abTestVariant === 'know the future' && (
-                <>
-                  <h1 className="mb-4 text-4xl">Know the future</h1>
-                  <h1 className="text-lg">
-                    Harness wisdom of the crowds to predict politics, pandemics,
-                    tech breakthroughs & more with
-                    <span className={'ml-1 underline'}>play money</span>.
-                  </h1>
-                  <h1 className="text-lg">
-                    Forecasting for everything that matters.
-                  </h1>
-                </>
-              )}
-              {abTestVariant === 'real-world impact' && (
-                <>
-                  <h1 className="mb-4 text-4xl">
-                    Play-money betting.
-                    <br />
-                    Real-world impact.
-                  </h1>
-                  <h1 className="text-lg">
-                    Harness humanity's collective intelligence to make smarter
-                    decisions through forecasting.
-                  </h1>
-                  <h1 className="text-lg">
-                    Join a global community betting on a better world.
-                  </h1>
-                </>
-              )}
-              {abTestVariant === 'wisdom of the crowds' && (
-                <>
-                  <h1 className="mb-4 text-4xl">
-                    Harness the wisdom of the crowds
-                  </h1>
-                  <h1 className="text-lg">
-                    <span className={'underline'}>Play-money</span> betting.{' '}
-                    <span className={'underline'}>Real-world</span> decisions.
-                  </h1>
-                  <h1 className="text-lg">
-                    Shape the world with accurate forecasts for better
-                    decision-making.
-                  </h1>
-                </>
-              )}
-              {abTestVariant === 'bet' && (
-                <>
-                  <h1 className="mb-4 text-4xl">Bet on politics & more</h1>
-                  <h1 className="text-lg">
-                    Play-money markets. Real-world accuracy.
-                  </h1>
-                  <h1 className="text-lg">
-                    Compete with your friends by betting on politics, tech,
-                    sports, and more. It's play money and free to play.
-                  </h1>
-                </>
-              )}
-              {abTestVariant === 'bet-typewriter' && (
-                <>
-                  <h1 className="mb-4 text-4xl">
-                    Bet on the next:{' '}
-                    <Row>
-                      <Typewriter
-                        words={[
-                          'election',
-                          'tech breakthrough',
-                          'game',
-                          'bachelor',
-                        ]}
-                      />
-                    </Row>
-                  </h1>
-                  <h1 className="text-lg">
-                    Play-money betting. Real-world accuracy.
-                  </h1>
-                  <h1 className="text-lg">
-                    Forecast events in politics, policy, technology, sports &
-                    beyond.
-                  </h1>
-                </>
-              )}
+              <h1 className="mb-4 text-4xl">Bet on politics & more</h1>
+              <h1 className="text-lg">
+                Play-money markets. Real-world accuracy.
+              </h1>
+              <h1 className="text-lg">
+                Compete with your friends by betting on politics, tech, sports,
+                and more. It's play money and free to play.
+              </h1>
+
               <Button
                 color="gradient"
                 size="2xl"
                 className="mt-8"
                 onClick={firebaseLogin}
               >
-                {abTestVariant === 'know the future'
-                  ? 'See the forecasts'
-                  : abTestVariant === 'real-world impact'
-                  ? 'Forecast the future'
-                  : 'Start predicting'}
+                Start predicting
               </Button>
             </Col>
             <Col className="mx-auto hidden h-full sm:flex">

@@ -37,12 +37,12 @@ pgp.pg.types.setTypeParser(20, (value) => parseInt(value, 10)) // int8.
 pgp.pg.types.setTypeParser(1700, parseFloat) // numeric
 
 pgp.pg.types.setTypeParser(1082, (value) => value) // date (not timestamp! has no time info so we just parse as string)
-export type SupbaseDirectClientTimeout = IDatabase<{}, IClient> & {
+export type SupabaseDirectClientTimeout = IDatabase<{}, IClient> & {
   timeout: TimeoutTask
 }
 export type SupabaseTransaction = ITask<{}>
 export type SupabaseDirectClient =
-  | SupbaseDirectClientTimeout
+  | SupabaseDirectClientTimeout
   | SupabaseTransaction
 
 export function getInstanceId() {
@@ -82,11 +82,11 @@ type TimeoutTask = <T>(
 ) => Promise<T>
 
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
-let pgpDirect: SupbaseDirectClientTimeout | null = null
+let pgpDirect: SupabaseDirectClientTimeout | null = null
 export function createSupabaseDirectClient(
   instanceId?: string,
   password?: string
-): SupbaseDirectClientTimeout {
+): SupabaseDirectClientTimeout {
   if (pgpDirect) return pgpDirect
   instanceId = instanceId ?? getInstanceId()
   if (!instanceId) {
@@ -105,8 +105,20 @@ export function createSupabaseDirectClient(
     port: 5432,
     user: `postgres`,
     password: password,
+
     // ian: query_timeout doesn't cancel long-running queries, it just stops waiting for them
     query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
+
+    // ian: during a pool-depletion-related outage, we can cancel any stuck queries
+    // without a huge backlog of waiting connections instead of redeploying the api.
+    // See queries to run during outage here: https://www.notion.so/manifoldmarkets/Backend-resources-8fba2b67cad04dd188564442c5876bfa?pvs=4#a8629a618e9e44ee9b6bbe408b10f9ff
+    connectionTimeoutMillis: 10_000,
+
+    // ian: during the past few outages we've seen a lot of "idle in transaction" connections
+    // that last for approx. an hour. See: https://docs.google.com/spreadsheets/d/1GrXMQtPXRL3j3dSza7rwI4fRmFjabk0x1sJYoTRKpoE/edit?gid=801504140#gid=801504140
+    // Although we don't yet know the cause, setting this timeout will limit the damage
+    // from these connections. We should figure out the cause ASAP.
+    idle_in_transaction_session_timeout: 15_000,
     max: 20,
   })
   const pool = client.$pool

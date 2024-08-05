@@ -3,20 +3,20 @@ import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { formatMoney } from 'common/util/format'
 import { BuyManaTab } from 'web/components/add-funds-modal'
 
 export const WEB_PRICES = {
-  [formatMoney(10000)]: 1399,
-  [formatMoney(25000)]: 2999,
-  [formatMoney(100000)]: 10999,
-  [formatMoney(1000000)]: 100000,
+  10000: 1399,
+  25000: 2999,
+  100000: 10999,
+  1000000: 100000,
 }
+export type WebPriceKeys = keyof typeof WEB_PRICES
 
 export const IOS_PRICES = {
-  [formatMoney(10000)]: 1499,
-  [formatMoney(25000)]: 3599,
-  [formatMoney(100000)]: 14299,
+  10000: 1499,
+  25000: 3599,
+  100000: 14299,
 }
 
 export default function AddFundsPage() {

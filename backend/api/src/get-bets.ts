@@ -1,12 +1,13 @@
-import { run, tsToMillis, type SupabaseClient } from 'common/supabase/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
+  SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
 import { getUserIdFromUsername } from 'shared/supabase/users'
 import { getBetsWithFilter } from 'shared/supabase/bets'
+import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 
 export const getBets: APIHandler<'bets'> = async (props) => {
   const {
@@ -22,11 +23,19 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     kinds,
     filterRedemptions,
     includeZeroShareRedemptions,
+    count,
+    points,
   } = props
   if (limit === 0) {
     return []
+  } else if (limit > NON_POINTS_BETS_LIMIT && !points) {
+    throw new APIError(
+      400,
+      'Non-points limit must be less than or equal to ' + NON_POINTS_BETS_LIMIT
+    )
   }
   const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
   const userId = props.userId ?? (await getUserIdFromUsername(db, username))
   const contractId =
@@ -37,13 +46,13 @@ export const getBets: APIHandler<'bets'> = async (props) => {
   const beforeBetTime =
     before === undefined
       ? undefined
-      : await getBetTime(db, before).catch(() => {
+      : await getBetTime(pg, before).catch(() => {
           throw new APIError(404, 'Bet specified in before parameter not found')
         })
 
   const afterBetTime = !after
     ? undefined
-    : await getBetTime(db, after).catch(() => {
+    : await getBetTime(pg, after).catch(() => {
         throw new APIError(404, 'Bet specified in after parameter not found')
       })
 
@@ -64,15 +73,19 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     kinds,
     filterRedemptions,
     includeZeroShareRedemptions,
+    count,
+    points,
   }
 
-  const pg = createSupabaseDirectClient()
   return await getBetsWithFilter(pg, opts)
 }
 
-async function getBetTime(db: SupabaseClient, id: string) {
-  const { data } = await run(
-    db.from('contract_bets').select('created_time').eq('bet_id', id).single()
+async function getBetTime(pg: SupabaseDirectClient, id: string) {
+  const created = await pg.oneOrNone(
+    `
+  select ts_to_millis(created_time) as "createdTime" from postgres.public.contract_bets where bet_id = $1`,
+    [id],
+    (r) => r.createdTime
   )
-  return tsToMillis(data.created_time)
+  return created ?? undefined
 }

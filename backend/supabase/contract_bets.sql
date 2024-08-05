@@ -15,7 +15,9 @@ create table if not exists
     is_redemption boolean,
     is_api boolean,
     answer_id text,
-    loan_amount numeric
+    loan_amount numeric,
+    is_filled boolean,
+    is_cancelled boolean
   );
 
 -- Triggers
@@ -50,6 +52,8 @@ begin
         new.answer_id := ((new.data) ->> 'answerId')::text;
         new.is_api := ((new.data) ->> 'isApi')::boolean;
         new.loan_amount := ((new.data) ->> 'loanAmount')::numeric;
+        new.is_filled := ((new.data) ->> 'isFilled')::boolean;
+        new.is_cancelled := ((new.data) ->> 'isCancelled')::boolean;
     end if;
     return new;
 end
@@ -63,27 +67,10 @@ begin
 end;
 $function$;
 
--- Policies
-alter table contract_bets enable row level security;
-
-drop policy if exists "public read" on contract_bets;
-
-create policy "public read" on contract_bets for
-select
-  using (true);
-
 -- Indexes
-drop index if exists contract_bets_pkey;
+drop index if exists contract_bets_bet_id_key;
 
-create unique index contract_bets_pkey on public.contract_bets using btree (contract_id, bet_id);
-
-drop index if exists contract_bets_answer_id_created_time;
-
-create index contract_bets_answer_id_created_time on public.contract_bets using btree (answer_id, created_time desc);
-
-drop index if exists contract_bets_bet_id;
-
-create index contract_bets_bet_id on public.contract_bets using btree (bet_id);
+create unique index contract_bets_bet_id_key on public.contract_bets using btree (bet_id);
 
 drop index if exists contract_bets_contract_user_id;
 
@@ -101,17 +88,13 @@ drop index if exists contract_bets_user_outstanding_limit_orders;
 
 create index contract_bets_user_outstanding_limit_orders on public.contract_bets using btree (
   user_id,
-  (((data -> 'isFilled'::text))::boolean),
-  (((data -> 'isCancelled'::text))::boolean)
+  is_filled,
+  is_cancelled
 );
 
 drop index if exists contract_bets_historical_probs;
 
 create index contract_bets_historical_probs on public.contract_bets using btree (contract_id, answer_id, created_time desc) include (prob_before, prob_after);
-
-drop index if exists contract_bets_user_updated_time;
-
-create index contract_bets_user_updated_time on public.contract_bets using btree (user_id, updated_time desc);
 
 drop index if exists contract_bets_created_time_only;
 
@@ -121,8 +104,8 @@ drop index if exists contract_bets_contract_limit_orders;
 
 create index contract_bets_contract_limit_orders on public.contract_bets using btree (
   contract_id,
-  (((data -> 'isFilled'::text))::boolean),
-  (((data -> 'isCancelled'::text))::boolean),
+  is_filled,
+  is_cancelled,
   is_redemption,
   created_time desc
 );

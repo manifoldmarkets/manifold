@@ -58,7 +58,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
           <CoinNumber
             className="text-sm text-amber-600 dark:text-amber-400"
             amount={user.spiceBalance}
-            isSpice
+            coinType="spice"
           />
         )}
       </div>

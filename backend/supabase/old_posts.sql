@@ -35,9 +35,9 @@ alter table old_posts enable row level security;
 
 drop policy if exists "admin read" on old_posts;
 
-create policy "admin read" on old_posts to service_role for
+create policy "admin read" on old_posts for
 select
-  using (true);
+  to service_role using (true);
 
 -- Indexes
 drop index if exists posts_pkey;

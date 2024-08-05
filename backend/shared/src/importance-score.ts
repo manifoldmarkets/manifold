@@ -1,6 +1,6 @@
 import {
   SupabaseDirectClient,
-  SupbaseDirectClientTimeout,
+  SupabaseDirectClientTimeout,
 } from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
 import {
@@ -27,7 +27,7 @@ export const MIN_IMPORTANCE_SCORE = 0.1
 
 export async function calculateImportanceScore(
   db: SupabaseClient,
-  pg: SupbaseDirectClientTimeout,
+  pg: SupabaseDirectClientTimeout,
   readOnly = false,
   rescoreAll = false
 ) {

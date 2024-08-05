@@ -29,7 +29,7 @@ export function RedeemSpiceButton(props: {
           Redeem{' '}
           <CoinNumber
             amount={spice ?? undefined}
-            isSpice
+            coinType="spice"
             coinClassName={disabled ? 'grayscale opacity-50' : ''}
           />
         </Row>

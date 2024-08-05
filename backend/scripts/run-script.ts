@@ -5,7 +5,7 @@ import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
-  SupbaseDirectClientTimeout,
+  SupabaseDirectClientTimeout,
 } from 'shared/supabase/init'
 
 initAdmin()
@@ -13,7 +13,7 @@ initAdmin()
 export const runScript = async (
   main: (services: {
     db: SupabaseClient
-    pg: SupbaseDirectClientTimeout
+    pg: SupabaseDirectClientTimeout
     firestore: admin.firestore.Firestore
   }) => Promise<any> | any
 ) => {

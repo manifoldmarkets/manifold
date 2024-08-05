@@ -1,26 +1,6 @@
 import { PrivateUser, User } from 'common/user'
 import { useEffect, useState } from 'react'
-import {
-  getRecentlyActiveUsers,
-  getTopUserCreators,
-} from 'web/lib/supabase/users'
-
-export const useDiscoverUsers = (
-  userId: string | null | undefined,
-  excludedUserIds: string[],
-  limit: number
-) => {
-  const [discoverUserIds, setDiscoverUserIds] = useState<string[] | undefined>()
-
-  useEffect(() => {
-    if (userId)
-      getTopUserCreators(userId, excludedUserIds, limit).then((rows) => {
-        setDiscoverUserIds(rows.map((r) => r.user_id))
-      })
-  }, [userId])
-
-  return discoverUserIds
-}
+import { getRecentlyActiveUsers } from 'web/lib/supabase/users'
 
 export const useRecentlyActiveUsersAndPrivateUsers = (limit: number) => {
   const [usersAndPrivates, setUsersAndPrivates] = useState<
