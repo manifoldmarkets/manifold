@@ -86,7 +86,7 @@ export const UserWatchedContractsButton = memo(
                         onClick={async (e) => {
                           e.stopPropagation()
                           e.preventDefault()
-                          await unfollowMarket(contract.id, contract.slug, user)
+                          await unfollowMarket(contract.id, contract.slug)
                           setWatchedContracts(
                             filteredWatchedContracts?.filter(
                               (c) => c.id !== contract.id

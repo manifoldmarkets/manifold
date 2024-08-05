@@ -184,6 +184,7 @@ import {
 import { getNotifications } from 'api/get-notifications'
 import { getContractTopics } from './get-contract-topics'
 import { getRelatedMarkets } from 'api/get-related-markets'
+import { followContract } from './follow-contract'
 import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 
@@ -262,6 +263,7 @@ app.options('*', allowCorsUnrestricted)
 const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
   'multi-bet': placeMultiBet,
+  'follow-contract': followContract,
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
   bets: getBets,

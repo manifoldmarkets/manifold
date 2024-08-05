@@ -186,15 +186,3 @@ export const followContract = async (
     follow_id: userId,
   })
 }
-
-export const unfollowContract = async (
-  db: SupabaseClient,
-  contractId: string,
-  userId: string
-) => {
-  return db
-    .from('contract_follows')
-    .delete()
-    .eq('contract_id', contractId)
-    .eq('follow_id', userId)
-}

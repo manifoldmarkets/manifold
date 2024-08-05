@@ -105,10 +105,10 @@ function useNotificationFollowItem(notification: Notification) {
       onClick: () => {
         if (isFollowing) {
           setIsFollowing(false)
-          unfollowMarket(sourceContractId, sourceContractSlug, user)
+          unfollowMarket(sourceContractId, sourceContractSlug)
         } else {
           setIsFollowing(true)
-          followMarket(sourceContractId, sourceContractSlug, user)
+          followMarket(sourceContractId, sourceContractSlug)
         }
       },
     } as DropdownItem,

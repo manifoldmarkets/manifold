@@ -105,6 +105,19 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+
+  'follow-contract': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: true },
+    props: z
+      .object({
+        contractId: z.string(),
+        follow: z.boolean(),
+      })
+      .strict(),
+  },
   'get-contract': {
     method: 'GET',
     visibility: 'undocumented',
