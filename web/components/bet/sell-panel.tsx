@@ -113,7 +113,8 @@ export function SellPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
-  const betDisabled = isSubmitting || !amount || error !== undefined
+  const betDisabled =
+    isSubmitting || !amount || (error && error.includes('Maximum'))
 
   // Sell all shares if remaining shares would be < 1
   const isSellingAllShares = amount === Math.floor(shares)

@@ -335,7 +335,10 @@ export const BuyPanelBody = (props: {
     )
   }
   const betDisabled =
-    isSubmitting || !betAmount || !!error || outcome === undefined
+    isSubmitting ||
+    !betAmount ||
+    outcome === undefined ||
+    error === 'Insufficient balance'
 
   const limits =
     contract.outcomeType === 'STONK'

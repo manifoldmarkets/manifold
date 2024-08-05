@@ -125,7 +125,11 @@ export default function LimitOrderPanel(props: {
   const hasLimitBet = !!limitProbInt && !!betAmount
 
   const betDisabled =
-    isSubmitting || !outcome || !betAmount || !!error || !hasLimitBet
+    isSubmitting ||
+    !outcome ||
+    !betAmount ||
+    !hasLimitBet ||
+    error === 'Insufficient balance'
 
   const preLimitProb =
     limitProbInt === undefined
