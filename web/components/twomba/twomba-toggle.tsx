@@ -11,7 +11,7 @@ export function TwombaToggle(props: {
   const { mode, onClick } = props
   return (
     <button
-      className="bg-ink-200 dark:bg-canvas-50 relative flex h-fit w-fit flex-row items-center gap-1 rounded-full p-0.5 text-2xl"
+      className="bg-ink-200 dark:bg-canvas-50 relative flex h-fit w-fit shrink-0 flex-row items-center gap-1 rounded-full p-0.5 text-2xl"
       onClick={onClick}
     >
       {/* Add a moving circle behind the active coin */}

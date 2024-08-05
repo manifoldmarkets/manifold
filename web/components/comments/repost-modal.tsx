@@ -20,26 +20,44 @@ import { Row } from '../layout/row'
 import { api } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import { UserHovercard } from '../user/user-hovercard'
+import { useRepostsOnContract } from 'web/hooks/use-reposts'
 
 export const RepostButton = (props: {
   contract: Contract
   bet?: Bet
   size: SizeType
   className?: string
+  location?: 'contract page'
+  iconClassName?: string
 }) => {
-  const { contract, bet, size, className } = props
+  const { contract, bet, size, className, location, iconClassName } = props
   const [open, setOpen] = useState(false)
+  const repostCount = useRepostsOnContract(contract.id)
   return (
     <>
-      <Tooltip text="Repost with comment to followers" placement="bottom" noTap>
-        <Button
-          color={'gray-white'}
-          size={size}
-          className={clsx(className)}
-          onClick={() => setOpen(true)}
-        >
-          <BiRepost className="h-6 w-6" />
-        </Button>
+      <Tooltip
+        text="Repost with comment to followers"
+        placement="bottom"
+        noTap
+        className="flex flex-row items-center"
+      >
+        {location == 'contract page' ? (
+          <>
+            <button>
+              <BiRepost className={clsx(iconClassName, 'h-5 w-5')} />
+            </button>
+            {repostCount && repostCount > 0 && { repostCount }}
+          </>
+        ) : (
+          <Button
+            color={'gray-white'}
+            size={size}
+            className={clsx(className)}
+            onClick={() => setOpen(true)}
+          >
+            <BiRepost className={clsx(iconClassName, 'h-6 w-6')} />
+          </Button>
+        )}
       </Tooltip>
       {open && (
         <RepostModal

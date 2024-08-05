@@ -10,6 +10,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { RepostButton } from 'web/components/comments/repost-modal'
 import { Button } from '../buttons/button'
+import { TwombaToggle } from '../twomba/twomba-toggle'
 
 export function TwombaHeaderActions(props: {
   contract: Contract
@@ -22,9 +23,14 @@ export function TwombaHeaderActions(props: {
 
   return (
     // make tooltip children stretch
-    <Row className="[&>*]:flex">
+    <Row className="items-center [&>*]:flex">
+      <TwombaToggle
+        mode={'sweepies'}
+        onClick={function (): void {
+          throw new Error('Function not implemented.')
+        }}
+      />
       {children}
-
       <CopyLinkOrShareButton
         url={getShareUrl(contract, user?.username)}
         tooltip="Copy question share link"

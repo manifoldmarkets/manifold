@@ -357,6 +357,14 @@ export function TwombaContractPageContent(props: ContractParams) {
                     canEdit={isAdmin || isCreator || isMod}
                   />
                 </div>
+                <Row className="items-center gap-2">
+                  <MarketTopics
+                    contract={contract}
+                    dashboards={dashboards}
+                    topics={topics}
+                    isSpiceMarket={isSpiceMarket}
+                  />
+                </Row>
               </Col>
 
               <div className="text-ink-600 flex flex-wrap items-center justify-end gap-y-1 text-sm">
@@ -446,14 +454,6 @@ export function TwombaContractPageContent(props: ContractParams) {
               hasReviewed={!!userHasReviewed}
             />
             <ContractDescription contract={contract} />
-            <Row className="items-center gap-2">
-              <MarketTopics
-                contract={contract}
-                dashboards={dashboards}
-                topics={topics}
-                isSpiceMarket={isSpiceMarket}
-              />
-            </Row>
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
             {!!user && (

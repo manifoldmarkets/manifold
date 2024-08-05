@@ -1,16 +1,16 @@
 import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
+import { Contract } from 'common/contract'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { shortenNumber } from '../../lib/util/formatNumber'
+import { RepostButton } from '../comments/repost-modal'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
 import { CreatorFeesDisplay } from './creator-fees-display'
-import { Contract } from 'common/contract'
 import { LikeButton } from './like-button'
-import { RepostButton } from '../comments/repost-modal'
 
 export function TwombaContractSummaryStats(props: {
   contract: Contract
@@ -58,7 +58,14 @@ export function TwombaContractSummaryStats(props: {
             <CreatorFeesDisplay contract={contract} />
           )}
           <CloseOrResolveTime contract={contract} editable={editable} />
-          {<RepostButton size="xs" contract={contract} />}
+          {
+            <RepostButton
+              size="xs"
+              contract={contract}
+              location={'contract page'}
+              iconClassName="text-ink-500"
+            />
+          }
           {!isBlocked(privateUser, contract.creatorId) && (
             <LikeButton
               user={user}
