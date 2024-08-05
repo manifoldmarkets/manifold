@@ -3,11 +3,10 @@ import { useEffect, useState } from 'react'
 import { DAY_MS } from 'common/util/time'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { getBetPoints } from 'common/supabase/bets'
-import { db } from 'web/lib/supabase/db'
 import { maxBy, minBy } from 'lodash'
 import { buildArray } from 'common/util/array'
 import { SizedBinaryChart } from '../charts/contract/binary'
+import { getBetPoints } from 'web/lib/supabase/bets'
 
 // defaults to the previous day, unless you set a startDate
 export function FeedBinaryChart(props: {
@@ -26,7 +25,7 @@ export function FeedBinaryChart(props: {
   const startingDate = startDate ? startDate : now - DAY_MS
 
   useEffect(() => {
-    getBetPoints(db, contract.id, {
+    getBetPoints(contract.id, {
       limit: 1000,
       filterRedemptions: true,
       afterTime: startingDate,

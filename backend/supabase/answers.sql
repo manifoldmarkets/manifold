@@ -9,7 +9,7 @@ create table if not exists
     pool_yes numeric,
     pool_no numeric,
     prob numeric,
-    data jsonb not null,
+    data jsonb,
     index integer,
     total_liquidity numeric default 0,
     subsidy_pool numeric default 0,
@@ -21,7 +21,8 @@ create table if not exists
     color text,
     resolution_probability numeric,
     resolution text,
-    resolver_id text
+    resolver_id text,
+    is_other boolean default false not null
   );
 
 -- Policies

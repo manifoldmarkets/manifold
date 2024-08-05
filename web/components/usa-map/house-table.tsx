@@ -15,13 +15,10 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
   const { liveHouseContract } = props
   const [sort, setSort] = useState<MultiSort>('alphabetical')
 
-  const isMultipleChoice = liveHouseContract.outcomeType === 'MULTIPLE_CHOICE'
-  const answers = liveHouseContract.answers
-    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({
-      ...a,
-      prob: getAnswerProbability(liveHouseContract, a.id),
-    }))
+  const answers = liveHouseContract.answers.map((a) => ({
+    ...a,
+    prob: getAnswerProbability(liveHouseContract, a.id),
+  }))
 
   const sortedAnswers = useMemo(
     () => sortAnswers(liveHouseContract, answers, sort),

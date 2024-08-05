@@ -16,7 +16,6 @@ import { Input } from 'web/components/widgets/input'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { Contract } from 'common/contract'
 import { User } from 'web/lib/firebase/users'
-import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import Link from 'next/link'
@@ -47,6 +46,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import DropdownMenu from '../comments/dropdown-menu'
 import { BsThreeDotsVertical } from 'react-icons/bs'
 import { MODAL_CLASS, Modal } from '../layout/modal'
+import { unauthedApi } from 'common/util/api'
 
 type BetSort =
   | 'newest'
@@ -109,7 +109,10 @@ export function UserBetsTable(props: { user: User }) {
   }, [getMetrics, user.id, isAuth])
 
   useEffect(() => {
-    getOpenLimitOrdersWithContracts(user.id, 5000).then((betsWithContracts) => {
+    unauthedApi('get-user-limit-orders-with-contracts', {
+      userId: user.id,
+      count: 5000,
+    }).then((betsWithContracts) => {
       const { contracts, betsByContract } = betsWithContracts
       setOpenLimitBetsByContract(betsByContract)
       setInitialContracts((c) =>

@@ -463,7 +463,6 @@ function IndependentResolutionAnswerItem(props: {
 
   const prob = getAnswerProbability(contract, answer.id)
 
-  const isOther = 'isOther' in answer && answer.isOther
   const addAnswersMode = contract.addAnswersMode ?? 'DISABLED'
 
   return (
@@ -475,7 +474,7 @@ function IndependentResolutionAnswerItem(props: {
           label={
             <Row className={'items-center gap-1'}>
               <AnswerStatus contract={contract} answer={answer} />
-              {isOther ? (
+              {answer.isOther ? (
                 <span>
                   Other{' '}
                   <InfoTooltip

@@ -117,6 +117,7 @@ export const placeBetMain = async (
     balanceByUserId
   )
   if (dryRun) {
+    log('Dry run complete.')
     return {
       result: {
         ...simulatedResult.newBet,
@@ -353,7 +354,7 @@ const calculateBetResult = (
       throw new APIError(403, 'Bet cannot expire in the past.')
     const answer = answers.find((a) => a.id === answerId)
     if (!answer) throw new APIError(404, 'Answer not found')
-    if ('resolution' in answer && answer.resolution)
+    if (answer.resolution)
       throw new APIError(403, 'Answer is resolved and cannot be bet on')
     if (shouldAnswersSumToOne && answers.length < 2)
       throw new APIError(
@@ -390,8 +391,8 @@ export const getUnfilledBets = async (
   return await pg.map(
     `select * from contract_bets
     where contract_id = $1
-    and (data->'isFilled')::boolean = false
-    and (data->'isCancelled')::boolean = false
+    and contract_bets.is_filled = false
+    and contract_bets.is_cancelled = false
     ${answerId ? `and answer_id = $2` : ''}`,
     [contractId, answerId],
     (r) => convertBet(r) as LimitBet

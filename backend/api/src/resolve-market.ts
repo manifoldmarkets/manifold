@@ -69,7 +69,7 @@ export const resolveMarketMain: APIHandler<
   if ('answerId' in resolutionParams && 'answers' in contract) {
     const { answerId } = resolutionParams
     const answer = answers.find((a) => a.id === answerId)
-    if (answer && 'resolution' in answer && answer.resolution) {
+    if (answer?.resolution) {
       throw new APIError(403, `${answerId} answer is already resolved`)
     }
   }

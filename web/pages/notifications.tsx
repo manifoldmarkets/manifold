@@ -247,7 +247,7 @@ export function NotificationsList(props: {
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
     return groupedNotifications?.slice(start, end)
-  }, [groupedNotifications, page])
+  }, [JSON.stringify(groupedNotifications), page])
 
   const isPageVisible = useIsPageVisible()
 

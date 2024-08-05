@@ -10,7 +10,6 @@ import {
   getUserBalances,
   updateMakers,
 } from './place-bet'
-import { removeUserFromContractFollowers } from 'shared/follow-market'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { onCreateBets } from 'api/on-create-bet'
 import { log } from 'shared/utils'
@@ -137,7 +136,6 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       makers,
       ordersToCancel,
       otherResultsWithBet,
-      soldAllShares,
     } = newBetResult
 
     const actualMakerIds = getMakerIdsFromBetResult(newBetResult)
@@ -276,15 +274,11 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       contract,
       otherResultsWithBet,
       allOrdersToCancel,
-      soldAllShares,
     }
   })
 
-  const { newBet, betId, makers, soldAllShares, otherResultsWithBet } = result
 
-  if (contract.mechanism === 'cpmm-1' && soldAllShares) {
-    await removeUserFromContractFollowers(contractId, auth.uid)
-  }
+  const { newBet, betId, makers, otherResultsWithBet } = result
 
   const continuation = async () => {
     await onCreateBets({
@@ -303,7 +297,7 @@ const fetchSellSharesDataAndValidate = async (
   isApi: boolean
 ) => {
   const userBetsPromise = pgTrans.map(
-    `select * from contract_bets where user_id = $1 
+    `select * from contract_bets where user_id = $1
         and contract_id = $2
         ${answerId ? 'and answer_id = $3' : ''}`,
     [userId, contractId, answerId],
@@ -401,8 +395,6 @@ const calculateSellResult = (
   let loanPaid = saleFrac * loanAmount
   if (!isFinite(loanPaid)) loanPaid = 0
 
-  const soldAllShares = floatingEqual(soldShares, maxShares)
-
   let answer
   if (
     mechanism === 'cpmm-1' ||
@@ -413,13 +405,12 @@ const calculateSellResult = (
       if (!answer) {
         throw new APIError(400, 'Could not find answer ' + answerId)
       }
-      if ('resolution' in answer && answer.resolution) {
+      if (answer.resolution) {
         throw new APIError(403, 'Answer is resolved and cannot be bet on')
       }
     }
     return {
       otherResultsWithBet: [],
-      soldAllShares,
       ...getCpmmSellBetInfo(
         soldShares,
         chosenOutcome,
@@ -443,7 +434,6 @@ const calculateSellResult = (
 
     return {
       newP: 0.5,
-      soldAllShares,
       ...getCpmmMultiSellBetInfo(
         contract,
         answers,
