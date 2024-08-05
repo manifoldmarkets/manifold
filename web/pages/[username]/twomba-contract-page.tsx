@@ -1,60 +1,57 @@
 import { StarIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { mergeWith, uniqBy, sortBy } from 'lodash'
+import { ContractParams } from 'common/contract'
+import { mergeWith, uniqBy } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Answer } from 'common/answer'
+import { Bet } from 'common/bet'
 import { HistoryPoint, MultiPoints, unserializeBase64Multi } from 'common/chart'
-import {
-  ContractParams,
-  MaybeAuthedContractParams,
-  tradingAllowed,
-} from 'common/contract'
+import { tradingAllowed } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import {
-  HOUSE_BOT_USERNAME,
-  SPICE_MARKET_TOOLTIP,
-  TWOMBA_ENABLED,
-} from 'common/envs/constants'
+import { base64toPoints } from 'common/edge/og'
+import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
+import { parseJsonContentToText } from 'common/util/parse'
+import { DAY_MS } from 'common/util/time'
+import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { BackButton } from 'web/components/contract/back-button'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
+import { ContractDescription } from 'web/components/contract/contract-description'
 import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
-import { ContractSEO } from 'web/components/contract/contract-seo'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
+import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
+import { DangerZone } from 'web/components/contract/danger-zone'
+import { EditableQuestionTitle } from 'web/components/contract/editable-question-title'
 import { HeaderActions } from 'web/components/contract/header-actions'
 import { MarketTopics } from 'web/components/contract/market-topics'
 import {
   RelatedContractsGrid,
   SidebarRelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
-import { EditableQuestionTitle } from 'web/components/contract/editable-question-title'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
-import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-import {
-  useBetsOnce,
-  useContractBets,
-  useUnfilledBets,
-} from 'web/hooks/use-bets'
+import { useContractBets } from 'web/hooks/use-bets'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
-import { useIsIframe } from 'web/hooks/use-is-iframe'
+import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
@@ -63,106 +60,15 @@ import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Contract } from 'common/contract'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import Custom404 from '../404'
-import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { Bet, LimitBet } from 'common/bet'
-import { getContractParams } from 'common/contract-params'
-import { getContractFromSlug } from 'common/supabase/contracts'
-import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
-import { DangerZone } from 'web/components/contract/danger-zone'
-import { ContractDescription } from 'web/components/contract/contract-description'
-import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
-import { parseJsonContentToText } from 'common/util/parse'
-import { UserBetsSummary } from 'web/components/bet/bet-summary'
-import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
-import { DAY_MS } from 'common/util/time'
-import { Title } from 'web/components/widgets/title'
-import { base64toPoints } from 'common/edge/og'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { YourOrders } from 'web/components/bet/order-book'
-import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
-import { TwombaContractPageContent } from './twomba-contract-page'
+import { YourTrades } from './[contractSlug]'
+import { TwombaHeaderActions } from 'web/components/contract/twomba-header-actions'
+import { TwombaContractSummaryStats } from 'web/components/contract/twomba-contract-summary-stats'
 
-export async function getStaticProps(ctx: {
-  params: { username: string; contractSlug: string }
-}) {
-  const { contractSlug } = ctx.params
-  const adminDb = await initSupabaseAdmin()
-  const contract = await getContractFromSlug(adminDb, contractSlug)
-
-  if (!contract) {
-    return {
-      notFound: true,
-    }
-  }
-
-  if (contract.deleted) {
-    return {
-      props: {
-        state: 'deleted',
-        slug: contract.slug,
-        visibility: contract.visibility,
-      },
-    }
-  }
-
-  const props = await getContractParams(contract, adminDb)
-  return { props }
-}
-
-export async function getStaticPaths() {
-  return { paths: [], fallback: 'blocking' }
-}
-
-export default function ContractPage(props: MaybeAuthedContractParams) {
-  if (props.state === 'deleted') {
-    return (
-      <Page trackPageView={false}>
-        <div className="flex h-[50vh] flex-col items-center justify-center">
-          <Title>Question deleted</Title>
-        </div>
-      </Page>
-    )
-  }
-
-  return <NonPrivateContractPage contractParams={props.params} />
-}
-
-function NonPrivateContractPage(props: { contractParams: ContractParams }) {
-  const { contract, pointsString } = props.contractParams
-
-  const points = pointsString ? base64toPoints(pointsString) : []
-
-  const inIframe = useIsIframe()
-  if (!contract) {
-    return <Custom404 customText="Unable to fetch question" />
-  }
-  if (inIframe) {
-    return <ContractEmbedPage contract={contract} points={points} />
-  }
-
-  return (
-    <Page trackPageView={false} className="xl:col-span-10">
-      <ContractSEO contract={contract} points={pointsString} />
-      {TWOMBA_ENABLED ? (
-        <TwombaContractPageContent
-          key={contract.id}
-          {...props.contractParams}
-        />
-      ) : (
-        <ContractPageContent key={contract.id} {...props.contractParams} />
-      )}
-    </Page>
-  )
-}
-
-export function ContractPageContent(props: ContractParams) {
+export function TwombaContractPageContent(props: ContractParams) {
   const {
     userPositionsByOutcome,
     comments,
@@ -406,14 +312,14 @@ export function ContractPageContent(props: ContractParams) {
               </Row>
 
               {(headerStuck || !coverImageUrl) && (
-                <HeaderActions contract={contract}>
+                <TwombaHeaderActions contract={contract}>
                   {!coverImageUrl && isCreator && (
                     <ChangeBannerButton
                       contract={contract}
                       className="ml-3 first:ml-0"
                     />
                   )}
-                </HeaderActions>
+                </TwombaHeaderActions>
               )}
             </Row>
           </div>
@@ -423,20 +329,24 @@ export function ContractPageContent(props: ContractParams) {
               <div>
                 <BackButton className="pr-8" />
               </div>
-              <HeaderActions contract={contract}>
+              <TwombaHeaderActions contract={contract}>
                 {!coverImageUrl && isCreator && (
                   <ChangeBannerButton
                     contract={contract}
                     className="ml-3 first:ml-0"
                   />
                 )}
-              </HeaderActions>
+              </TwombaHeaderActions>
             </Row>
           )}
           <Col className={clsx('mb-4 p-4 pt-0 md:pb-8 lg:px-8')}>
             <Col className="w-full gap-3 lg:gap-4">
               <Col>
                 <div ref={titleRef}>
+                  <AuthorInfo
+                    contract={contract}
+                    className="text-ink-600 mb-0.5"
+                  />
                   <VisibilityIcon
                     contract={contract}
                     isLarge
@@ -457,10 +367,8 @@ export function ContractPageContent(props: ContractParams) {
                 </Row>
               </Col>
 
-              <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
-                <AuthorInfo contract={contract} />
-
-                <ContractSummaryStats
+              <div className="text-ink-600 flex flex-wrap items-center justify-end gap-y-1 text-sm">
+                <TwombaContractSummaryStats
                   contract={contract}
                   editable={isCreator || isAdmin || isMod}
                 />
@@ -626,64 +534,5 @@ export function ContractPageContent(props: ContractParams) {
 
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>
-  )
-}
-
-export function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
-  const { contract, yourNewBets } = props
-  const user = useUser()
-
-  const staticBets = useBetsOnce({
-    contractId: contract.id,
-    userId: !user ? 'loading' : user.id,
-    order: 'asc',
-  })
-
-  const userBets = sortBy(
-    uniqBy([...yourNewBets, ...(staticBets ?? [])], 'id'),
-    'createdTime'
-  )
-  const visibleUserBets = userBets.filter(
-    (bet) => !bet.isRedemption && bet.amount !== 0
-  )
-
-  const allLimitBets =
-    contract.mechanism === 'cpmm-1'
-      ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useUnfilledBets(contract.id, { enabled: true }) ?? []
-      : []
-  const userLimitBets = allLimitBets.filter(
-    (bet) => bet.userId === user?.id
-  ) as LimitBet[]
-
-  if (
-    (userLimitBets.length === 0 || contract.mechanism != 'cpmm-1') &&
-    visibleUserBets.length === 0
-  ) {
-    return null
-  }
-
-  return (
-    <Col className="bg-canvas-50 rounded px-3 py-4 pb-0">
-      {contract.mechanism === 'cpmm-1' && (
-        <YourOrders
-          contract={contract}
-          bets={userLimitBets}
-          deemphasizedHeader
-        />
-      )}
-
-      {visibleUserBets.length > 0 && (
-        <>
-          <div className="pl-2 font-semibold">Your trades</div>
-          <ContractBetsTable
-            contract={contract}
-            bets={userBets}
-            isYourBets
-            paginate
-          />
-        </>
-      )}
-    </Col>
   )
 }

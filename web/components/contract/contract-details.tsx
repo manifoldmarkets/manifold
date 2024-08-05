@@ -21,12 +21,12 @@ import { MdLockClock } from 'react-icons/md'
 import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
-export function AuthorInfo(props: { contract: Contract }) {
-  const { contract } = props
+export function AuthorInfo(props: { contract: Contract; className?: string }) {
+  const { contract, className } = props
   const { creatorId, creatorName, creatorUsername, creatorAvatarUrl } = contract
   const resolver = useDisplayUserById(contract.resolverId)
   return (
-    <Row className="grow flex-wrap items-center gap-2">
+    <Row className={clsx('grow flex-wrap items-center gap-2', className)}>
       <UserHovercard userId={creatorId}>
         <Avatar
           username={creatorUsername}
