@@ -14,7 +14,6 @@ import { getCpmmProbability } from 'common/calculate-cpmm'
 import { onCreateBets } from 'api/on-create-bet'
 import { log } from 'shared/utils'
 import * as crypto from 'crypto'
-import { formatMoneyWithDecimals } from 'common/util/format'
 import { incrementBalance } from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
@@ -30,6 +29,7 @@ import {
 } from 'shared/supabase/init'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
+import { formatMoneyWithDecimals } from 'common/util/format'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -202,7 +202,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     const betRow = await insertBet(candidateBet, pgTrans)
     fullBets.push(convertBet(betRow))
 
-    await updateMakers(makers, betRow.bet_id, contract, pgTrans)
+    await updateMakers(makers, betRow.bet_id, pgTrans)
 
     allOrdersToCancel.push(...ordersToCancel)
 
@@ -245,7 +245,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       const betRow = await insertBet(candidateBet, pgTrans)
       fullBets.push(convertBet(betRow))
 
-      await updateMakers(makers, betRow.bet_id, contract, pgTrans)
+      await updateMakers(makers, betRow.bet_id, pgTrans)
 
       const { YES: poolYes, NO: poolNo } = cpmmState.pool
       const prob = getCpmmProbability(cpmmState.pool, 0.5)
@@ -277,23 +277,14 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     }
   })
 
-  const {
-    newBet,
-    betId,
-    makers,
-    otherResultsWithBet,
-    fullBets,
-    allOrdersToCancel,
-  } = result
+
+  const { newBet, betId, makers, otherResultsWithBet } = result
 
   const continuation = async () => {
-    await onCreateBets(
-      fullBets,
-      contract as MarketContract,
-      user,
-      allOrdersToCancel,
-      [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)]
-    )
+    await onCreateBets({
+      ...result,
+      makers: [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)],
+    })
   }
   return { result: { ...newBet, betId }, continue: continuation }
 }

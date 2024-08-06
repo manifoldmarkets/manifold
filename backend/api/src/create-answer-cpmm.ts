@@ -39,7 +39,8 @@ import { getTierFromLiquidity } from 'common/tier'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { runShortTrans } from 'shared/short-transaction'
-import { LimitBet } from 'common/bet'
+import { LimitBet, maker } from 'common/bet'
+import { redeemShares } from 'api/redeem-shares'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -95,7 +96,7 @@ export const createAnswerCpmmMain = async (
     getTierFromLiquidity(contract, contract.totalLiquidity)
   )
 
-  const { newAnswer, user } = await runShortTrans(async (pgTrans) => {
+  const { newAnswer, user, makers } = await runShortTrans(async (pgTrans) => {
     const user = await getUser(creatorId, pgTrans)
     if (!user) throw new APIError(401, 'Your account was not found')
     if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
@@ -158,8 +159,9 @@ export const createAnswerCpmmMain = async (
     })
 
     const updatedAnswers: Answer[] = []
+    let makers: maker[] = []
     if (shouldAnswersSumToOne) {
-      await createAnswerAndSumAnswersToOne(
+      makers = await createAnswerAndSumAnswersToOne(
         pgTrans,
         user,
         contract,
@@ -189,7 +191,7 @@ export const createAnswerCpmmMain = async (
       await insertLiquidity(pgTrans, lp)
     }
 
-    return { newAnswer, updatedAnswers, user }
+    return { newAnswer, updatedAnswers, user, makers }
   })
 
   const continuation = async () => {
@@ -200,6 +202,19 @@ export const createAnswerCpmmMain = async (
       contract
     )
     await addUserToContractFollowers(contractId, creatorId)
+    await Promise.all(
+      makers
+        .map((m) => m.bet.userId)
+        .map(async (userId) =>
+          betsQueue.enqueueFn(
+            () =>
+              runShortTrans(async (pgTrans) =>
+                redeemShares(pgTrans, userId, contract)
+              ),
+            [userId]
+          )
+        )
+    )
   }
   return { result: { newAnswerId: newAnswer.id }, continue: continuation }
 }
@@ -365,7 +380,7 @@ async function createAnswerAndSumAnswersToOne(
       prob,
     })
 
-    await updateMakers(makers, betRow.bet_id, contract, pgTrans)
+    await updateMakers(makers, betRow.bet_id, pgTrans)
     allOrdersToCancel.push(...ordersToCancel)
   }
 
@@ -384,6 +399,7 @@ async function createAnswerAndSumAnswersToOne(
     pgTrans,
     allOrdersToCancel.map((b) => b.id)
   )
+  return betResults.flatMap((r) => r.makers.map((m) => m))
 }
 
 async function convertOtherAnswerShares(
