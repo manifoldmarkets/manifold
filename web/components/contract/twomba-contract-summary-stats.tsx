@@ -32,11 +32,33 @@ export function TwombaContractSummaryStats(props: {
         />
       ) : (
         <Row className="gap-4">
+          {marketTier && marketTier !== 'basic' && (
+            <TierTooltip tier={marketTier} contract={contract} />
+          )}
+          <RepostButton
+            size="xs"
+            contract={contract}
+            location={'contract page'}
+            iconClassName="text-ink-500"
+          />
+
+          {!isBlocked(privateUser, contract.creatorId) && (
+            <LikeButton
+              user={user}
+              size={'xs'}
+              contentId={contract.id}
+              contentType="contract"
+              contentCreatorId={contract.creatorId}
+              contentText={contract.question}
+              trackingLocation={'contract page'}
+              
+            />
+          )}
           <Tooltip
             text={outcomeType == 'POLL' ? 'Voters' : 'Traders'}
             placement="bottom"
             noTap
-            className="flex flex-row items-center gap-1"
+            className="flex flex-row items-center gap-0.5"
           >
             <UserIcon className="text-ink-500 h-4 w-4" />
             <div>{shortFormatNumber(contract.uniqueBettorCount ?? 0)}</div>
@@ -47,7 +69,7 @@ export function TwombaContractSummaryStats(props: {
               text={`Trading volume: ${formatMoney(contract.volume)}`}
               placement="bottom"
               noTap
-              className="flex flex-row items-center gap-1"
+              className="flex flex-row items-center gap-0.5"
             >
               <ChartBarIcon className="text-ink-500 h-4 w-4" />Ṁ
               {shortenNumber(contract.volume)}
@@ -58,28 +80,6 @@ export function TwombaContractSummaryStats(props: {
             <CreatorFeesDisplay contract={contract} />
           )}
           <CloseOrResolveTime contract={contract} editable={editable} />
-          {
-            <RepostButton
-              size="xs"
-              contract={contract}
-              location={'contract page'}
-              iconClassName="text-ink-500"
-            />
-          }
-          {!isBlocked(privateUser, contract.creatorId) && (
-            <LikeButton
-              user={user}
-              size={'xs'}
-              contentId={contract.id}
-              contentType="contract"
-              contentCreatorId={contract.creatorId}
-              contentText={contract.question}
-              trackingLocation={'contract page'}
-            />
-          )}
-          {marketTier && marketTier !== 'basic' && (
-            <TierTooltip tier={marketTier} contract={contract} />
-          )}
         </Row>
       )}
     </>

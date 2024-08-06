@@ -39,14 +39,14 @@ export const RepostButton = (props: {
         text="Repost with comment to followers"
         placement="bottom"
         noTap
-        className="flex flex-row items-center"
+        className="flex select-none items-center"
       >
         {location == 'contract page' ? (
           <>
-            <button>
+            <button className="flex flex-row items-center gap-0.5">
               <BiRepost className={clsx(iconClassName, 'h-5 w-5')} />
+              {repostCount && repostCount > 0 && <span>{repostCount}</span>}
             </button>
-            {repostCount && repostCount > 0 && { repostCount }}
           </>
         ) : (
           <Button

@@ -24,6 +24,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import { removeUndefinedProps } from 'common/util/object'
 import { useUsers } from 'web/hooks/use-user-supabase'
 import { DisplayUser } from 'common/api/user-types'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const LIKES_SHOWN = 3
 
@@ -135,34 +136,61 @@ export const LikeButton = memo(function LikeButton(props: {
         noTap
         hasSafePolygon={showList}
       >
-        <Button
-          color={'gray-white'}
-          disabled={disabled}
-          size={size}
-          className={clsx(
-            'text-ink-500 disabled:cursor-not-allowed',
-            'disabled:text-ink-500',
-            className
-          )}
-          {...likeLongPress}
-        >
-          <Row className={'items-center gap-1.5'}>
-            <div className="relative">
-              <HeartIcon
-                className={clsx(
-                  'h-6 w-6',
-                  liked &&
-                    'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
-                )}
-              />
-            </div>
-            {totalLikes > 0 && (
-              <div className="text-ink-500 my-auto h-5  text-sm disabled:opacity-50">
-                {totalLikes}
-              </div>
+        {TWOMBA_ENABLED && trackingLocation == 'contract page' ? (
+          <button
+            disabled={disabled}
+            className={clsx(
+              'disabled:cursor-not-allowed',
+              'disabled:text-ink-500',
+              className
             )}
-          </Row>
-        </Button>
+            {...likeLongPress}
+          >
+            <Row className={'items-center gap-0.5'}>
+              <div className="relative">
+                <HeartIcon
+                  className={clsx(
+                    'stroke-ink-500 h-4 w-4',
+                    liked &&
+                      'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
+                  )}
+                />
+              </div>
+              {totalLikes > 0 && (
+                <div className=" text-sm disabled:opacity-50">{totalLikes}</div>
+              )}
+            </Row>
+          </button>
+        ) : (
+          <Button
+            color={'gray-white'}
+            disabled={disabled}
+            size={size}
+            className={clsx(
+              'text-ink-500 disabled:cursor-not-allowed',
+              'disabled:text-ink-500',
+              className
+            )}
+            {...likeLongPress}
+          >
+            <Row className={'items-center gap-1.5'}>
+              <div className="relative">
+                <HeartIcon
+                  className={clsx(
+                    'h-6 w-6',
+                    liked &&
+                      'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
+                  )}
+                />
+              </div>
+              {totalLikes > 0 && (
+                <div className="text-ink-500 my-auto h-5  text-sm disabled:opacity-50">
+                  {totalLikes}
+                </div>
+              )}
+            </Row>
+          </Button>
+        )}
       </Tooltip>
       {modalOpen && (
         <UserLikedFullList
