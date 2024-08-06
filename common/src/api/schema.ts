@@ -988,6 +988,22 @@ export const API = (_apiTypeCheck = {
     },
     cache: 'public, max-age=3600, stale-while-revalidate=10',
   },
+  'get-related-markets-by-group': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=3600, stale-while-revalidate=10',
+    returns: {} as {
+      groupContracts: Contract[]
+    },
+    props: z
+      .object({
+        contractId: z.string(),
+        limit: z.coerce.number().gte(0).lte(100),
+        offset: z.coerce.number().gte(0),
+      })
+      .strict(),
+  },
   'unlist-and-cancel-user-contracts': {
     method: 'POST',
     visibility: 'undocumented',
@@ -1067,7 +1083,7 @@ export const API = (_apiTypeCheck = {
       status: 'success'
     },
   },
-  
+
   'get-likes-and-ships': {
     method: 'GET',
     visibility: 'public',
