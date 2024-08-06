@@ -35,13 +35,6 @@ export function TwombaContractSummaryStats(props: {
           {marketTier && marketTier !== 'basic' && (
             <TierTooltip tier={marketTier} contract={contract} />
           )}
-          <RepostButton
-            size="xs"
-            contract={contract}
-            location={'contract page'}
-            iconClassName="text-ink-500"
-          />
-
           {!isBlocked(privateUser, contract.creatorId) && (
             <LikeButton
               user={user}
@@ -51,7 +44,6 @@ export function TwombaContractSummaryStats(props: {
               contentCreatorId={contract.creatorId}
               contentText={contract.question}
               trackingLocation={'contract page'}
-              
             />
           )}
           <Tooltip

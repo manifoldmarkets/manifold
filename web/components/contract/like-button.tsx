@@ -135,6 +135,7 @@ export const LikeButton = memo(function LikeButton(props: {
         placement={placement}
         noTap
         hasSafePolygon={showList}
+        className="flex items-center"
       >
         {TWOMBA_ENABLED && trackingLocation == 'contract page' ? (
           <button
