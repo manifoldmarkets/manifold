@@ -4,12 +4,17 @@ import { usePopper } from 'react-popper'
 import { Popover, Transition } from '@headlessui/react'
 import clsx from 'clsx'
 import { createPortal } from 'react-dom'
+import Link from 'next/link'
 
 export type DropdownItem = {
   name: string
   buttonContent?: ReactNode
   icon?: ReactNode
-  onClick: () => void | Promise<void>
+  onClick?: () => void | Promise<void>
+  isLink?: boolean
+  linkProps?: React.AnchorHTMLAttributes<HTMLAnchorElement>
+  className?: string
+  nonButtonContent?: ReactNode
 }
 
 // NOTE: you can't conditionally render any of the items from a useEffect hook, or you'll get hydration errors
@@ -56,6 +61,7 @@ export default function DropdownMenu(props: {
     setMounted(true)
     return () => setMounted(false)
   }, [])
+  
   return (
     <Popover className={clsx('relative inline-block text-left', className)}>
       {({ open, close }) => (
@@ -93,26 +99,50 @@ export default function DropdownMenu(props: {
                 >
                   {items.map((item) => (
                     <div key={item.name}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          e.preventDefault()
-                          item.onClick()
-                          if (closeOnClick) {
-                            close()
-                          }
-                        }}
-                        className={clsx(
-                          selectedItemName && item.name == selectedItemName
-                            ? 'bg-primary-100'
-                            : 'hover:bg-ink-100 hover:text-ink-900',
-                          'text-ink-700',
-                          'flex w-full items-center gap-2 px-4 py-2 text-left text-sm'
-                        )}
-                      >
-                        {item.icon && <div className="w-5">{item.icon}</div>}
-                        {item.buttonContent ?? item.name}
-                      </button>
+                      {!!item.nonButtonContent ? (
+                        item.nonButtonContent
+                      ) : item.isLink &&
+                        item.linkProps &&
+                        item.linkProps.href ? (
+                        <Link
+                          href={item.linkProps?.href || '#'}
+                          {...item.linkProps}
+                          className={clsx(
+                            selectedItemName && item.name === selectedItemName
+                              ? 'bg-primary-100'
+                              : 'hover:bg-ink-100 hover:text-ink-900',
+                            'text-ink-700',
+                            'flex w-full items-center gap-2 px-4 py-2 text-left text-sm'
+                          )}
+                        >
+                          {item.icon && <div className="w-5">{item.icon}</div>}
+                          {item.buttonContent ?? item.name}
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            e.preventDefault()
+                            if (item.onClick) {
+                              item.onClick()
+                            }
+                            if (closeOnClick) {
+                              close()
+                            }
+                          }}
+                          className={clsx(
+                            selectedItemName && item.name === selectedItemName
+                              ? 'bg-primary-100'
+                              : 'hover:bg-ink-100 hover:text-ink-900',
+                            'text-ink-700',
+                            'flex w-full items-center gap-2 px-4 py-2 text-left text-sm',
+                            item.className
+                          )}
+                        >
+                          {item.icon && <div className="w-5">{item.icon}</div>}
+                          {item.buttonContent ?? item.name}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </Popover.Panel>

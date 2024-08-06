@@ -427,7 +427,7 @@ export const Stats = (props: {
   )
 }
 
-const CheckOrSwitch = (props: {
+export const CheckOrSwitch = (props: {
   canToggle: boolean
   disabled?: boolean
   on: boolean
