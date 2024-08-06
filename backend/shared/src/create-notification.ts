@@ -1195,6 +1195,7 @@ export const createContractResolvedNotifications = async (
     )
     resolutionText = resolvedAnswers.map((a) => a.text).join(', ')
   }
+  const bulkNotifications: Notification[] = []
 
   const {
     userIdToContractMetrics,
@@ -1257,10 +1258,7 @@ export const createContractResolvedNotifications = async (
 
     // Browser notifications
     if (sendToBrowser) {
-      await insertNotificationToSupabase(
-        constructNotification(userId, reason),
-        pg
-      )
+      bulkNotifications.push(constructNotification(userId, reason))
     }
 
     // Emails notifications
@@ -1316,10 +1314,10 @@ export const createContractResolvedNotifications = async (
   // We ignore whether users are still watching a market if they have a payout, mainly
   // bc market resolutions changes their profits, and they'll likely want to know, esp. if NA resolution
   const usersToNotify = uniq(
-    buildArray([
+    buildArray(
       !isIndependentMulti && contractFollowersIds,
-      Object.keys(userPayouts),
-    ]).filter((id) => id !== resolver.id)
+      Object.keys(userPayouts)
+    ).filter((id) => id !== resolver.id)
   )
 
   await mapAsync(
@@ -1333,6 +1331,7 @@ export const createContractResolvedNotifications = async (
       ),
     20
   )
+  await bulkInsertNotifications(bulkNotifications, pg)
 }
 
 export const createMarketClosedNotification = async (
