@@ -3229,34 +3229,6 @@ export type Database = {
           importance_score: number
         }[]
       }
-      get_related_contracts: {
-        Args: {
-          cid: string
-          lim: number
-          start: number
-        }
-        Returns: Json[]
-      }
-      get_related_contracts_by_group: {
-        Args: {
-          p_contract_id: string
-          lim: number
-          start: number
-        }
-        Returns: {
-          data: Json
-        }[]
-      }
-      get_related_contracts_by_group_and_creator: {
-        Args: {
-          p_contract_id: string
-          lim: number
-          start: number
-        }
-        Returns: {
-          data: Json
-        }[]
-      }
       get_top_market_ads: {
         Args: {
           uid: string
