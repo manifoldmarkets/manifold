@@ -320,7 +320,7 @@ export function SellPanel(props: {
         userOptedOutOfWarning={user.optOutBetWarnings}
         isSubmitting={isSubmitting}
         onSubmit={betDisabled ? undefined : submitSell}
-        disabled={betDisabled}
+        disabled={!!betDisabled}
         size="xl"
         color="indigo"
         actionLabel={
