@@ -8,6 +8,7 @@ import {
   CPMM,
   CPMMMulti,
   CPMMMultiNumeric,
+  CPMMPool,
   CREATEABLE_OUTCOME_TYPES,
   Contract,
   NonBet,
@@ -192,7 +193,7 @@ const getBinaryCpmmProps = (initialProb: number, ante: number) => {
   const pool = { YES: ante, NO: ante }
   const p = initialProb / 100
 
-  const system: CPMM & Binary = {
+  const system: CPMM & CPMMPool & Binary = {
     mechanism: 'cpmm-1',
     outcomeType: 'BINARY',
     totalLiquidity: ante,
@@ -214,7 +215,7 @@ const getPseudoNumericCpmmProps = (
   max: number,
   isLogScale: boolean
 ) => {
-  const system: CPMM & PseudoNumeric = {
+  const system: CPMM & CPMMPool & PseudoNumeric = {
     ...getBinaryCpmmProps(initialProb, ante),
     outcomeType: 'PSEUDO_NUMERIC',
     min,
@@ -225,7 +226,7 @@ const getPseudoNumericCpmmProps = (
   return system
 }
 const getStonkCpmmProps = (initialProb: number, ante: number) => {
-  const system: CPMM & Stonk = {
+  const system: CPMM & CPMMPool & Stonk = {
     ...getBinaryCpmmProps(initialProb, ante),
     outcomeType: 'STONK',
   }

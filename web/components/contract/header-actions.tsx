@@ -4,7 +4,7 @@ import { ReactNode, useState } from 'react'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Contract } from 'common/contract'
+import { FullContract } from 'common/contract'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
@@ -12,7 +12,7 @@ import { RepostButton } from 'web/components/comments/repost-modal'
 import { Button } from '../buttons/button'
 
 export function HeaderActions(props: {
-  contract: Contract
+  contract: FullContract
   children?: ReactNode
 }) {
   const { contract, children } = props

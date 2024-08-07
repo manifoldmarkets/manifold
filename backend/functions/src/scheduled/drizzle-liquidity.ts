@@ -100,7 +100,7 @@ const drizzleMarket = async (contractId: string) => {
         subsidyPool: subsidyPool - amount,
       })
     } else {
-      const { yes, no, p, subsidy_pool } = pool
+      const { yes, no, p } = pool
       const { newPool, newP } = addCpmmLiquidity(
         { YES: yes, NO: no },
         p,

@@ -185,18 +185,18 @@ $function$;
 create
 or replace function public.get_compatibility_questions_with_answer_count () returns setof love_question_with_count_type language plpgsql as $function$
 BEGIN
-    RETURN QUERY 
-    SELECT 
+    RETURN QUERY
+    SELECT
         love_questions.*,
         COUNT(love_compatibility_answers.question_id) as answer_count
-    FROM 
+    FROM
         love_questions
-    LEFT JOIN 
+    LEFT JOIN
         love_compatibility_answers ON love_questions.id = love_compatibility_answers.question_id
         WHERE love_questions.answer_type='compatibility_multiple_choice'
-    GROUP BY 
+    GROUP BY
         love_questions.id
-    ORDER BY 
+    ORDER BY
         answer_count DESC;
 END;
 $function$;
@@ -265,6 +265,16 @@ end
 $function$;
 
 create
+or replace function public.get_cpmm_pool_prob (p_yes: numeric, p_no:numeric, p:numeric returns numeric language plpgsql immutable parallel SAFE as $function$
+declare
+    no_weight numeric := p * p_no;
+    yes_weight numeric := (1 - p) * +_yes + p * p_no;
+begin
+    return case when yes_weight = 0 then 1 else (no_weight / yes_weight) end;
+end
+$function$;
+
+create
 or replace function public.get_daily_claimed_boosts (user_id text) returns table (total numeric) language sql as $function$
 with daily_totals as (
     select
@@ -299,16 +309,16 @@ $function$;
 
 create
 or replace function public.get_group_contracts (this_group_id text) returns table (data json) language sql immutable parallel SAFE as $function$
-select contracts.data from 
+select contracts.data from
     contracts join group_contracts on group_contracts.contract_id = contracts.id
-    where group_contracts.group_id = this_group_id 
+    where group_contracts.group_id = this_group_id
     $function$;
 
 create
 or replace function public.get_love_question_answers_and_lovers (p_question_id bigint) returns setof other_lover_answers_type language plpgsql as $function$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         love_answers.question_id,
         love_answers.created_time,
         love_answers.free_response,
@@ -322,8 +332,8 @@ BEGIN
         lovers
     JOIN
         love_answers ON lovers.user_id = love_answers.creator_id
-    join 
-        users on lovers.user_id = users.id 
+    join
+        users on lovers.user_id = users.id
     WHERE
         love_answers.question_id = p_question_id
     order by love_answers.created_time desc;
@@ -360,7 +370,7 @@ unredeemed_market_ads as (
     id, market_id, funds, cost_per_view, embedding
   from
     market_ads
-  where 
+  where
     market_ads.user_id != uid -- hide your own ads; comment out to debug
     and not exists (
       SELECT 1
@@ -417,10 +427,10 @@ BEGIN
     RETURN QUERY
     SELECT pumc.id
     FROM private_user_message_channels pumc
-    JOIN private_user_message_channel_members pumcm ON pumcm.channel_id = pumc.id 
+    JOIN private_user_message_channel_members pumcm ON pumcm.channel_id = pumc.id
     WHERE pumcm.user_id = p_user_id
     AND EXISTS (
-        SELECT 1 
+        SELECT 1
         FROM private_user_messages
         WHERE pumc.id = private_user_messages.channel_id
     )
@@ -767,8 +777,8 @@ create
 or replace function public.install_available_extensions_and_test () returns boolean language plpgsql as $function$
 DECLARE extension_name TEXT;
 allowed_extentions TEXT[] := string_to_array(current_setting('supautils.privileged_extensions'), ',');
-BEGIN 
-  FOREACH extension_name IN ARRAY allowed_extentions 
+BEGIN
+  FOREACH extension_name IN ARRAY allowed_extentions
   LOOP
     SELECT trim(extension_name) INTO extension_name;
     /* skip below extensions check for now */
@@ -791,13 +801,13 @@ DECLARE
 -- @Austin, @JamesGrugett, @SG, @DavidChee, @Alice, @ian, @IngaWei, @mqp, @Sinclair, @ManifoldPolitics, @baraki
     strings TEXT[] := ARRAY[
         'igi2zGXsfxYPgB0DJTXVJVmwCOr2',
-        '5LZ4LgYuySdL1huCWe7bti02ghx2', 
-        'tlmGNz9kjXc2EteizMORes4qvWl2', 
-        'uglwf3YKOZNGjjEXKc5HampOFRE2', 
-        'qJHrvvGfGsYiHZkGY6XjVfIMj233', 
+        '5LZ4LgYuySdL1huCWe7bti02ghx2',
+        'tlmGNz9kjXc2EteizMORes4qvWl2',
+        'uglwf3YKOZNGjjEXKc5HampOFRE2',
+        'qJHrvvGfGsYiHZkGY6XjVfIMj233',
         'AJwLWoo3xue32XIiAVrL5SyR1WB2', -- ian
         'GRwzCexe5PM6ThrSsodKZT9ziln2',
-        '62TNqzdBx7X2q621HltsJm8UFht2', 
+        '62TNqzdBx7X2q621HltsJm8UFht2',
         '0k1suGSJKVUnHbCPEhHNpgZPkUP2',
         'vuI5upWB8yU00rP7yxj95J2zd952',
         'vUks7InCtYhBFrdLQhqXFUBHD4D2',
@@ -952,11 +962,11 @@ group by contract_id $function$;
 
 create
 or replace function public.sample_resolved_bets (trader_threshold integer, p numeric) returns table (prob numeric, is_yes boolean) language sql stable parallel SAFE as $function$
-select  0.5 * ((contract_bets.prob_before)::numeric + (contract_bets.prob_after)::numeric)  as prob, 
+select  0.5 * ((contract_bets.prob_before)::numeric + (contract_bets.prob_after)::numeric)  as prob,
        ((contracts.resolution)::text = 'YES')::boolean as is_yes
 from contract_bets
   join contracts on contracts.id = contract_bets.contract_id
-where 
+where
    contracts.outcome_type = 'BINARY'
   and (contracts.resolution = 'YES' or contracts.resolution = 'NO')
   and contracts.visibility = 'public'
@@ -1046,7 +1056,7 @@ AND contractz.group_id = %L',
 ELSE base_query := FORMAT(
   '
   SELECT contracts_rbac.data
-  FROM contracts_rbac 
+  FROM contracts_rbac
     %s',
   generate_where_query(contract_filter, contract_sort, creator_id)
 );

@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { sum } from 'lodash'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
-import { Contract, contractPool } from 'common/contract'
+import { Contract, FullContract, contractPool } from 'common/contract'
 import {
   ENV_CONFIG,
   isAdminId,
@@ -41,7 +41,7 @@ import { BoostButton } from './boost-button'
 import { SubsidizeButton } from './subsidize-button'
 
 export const Stats = (props: {
-  contract: Contract
+  contract: FullContract
   user?: User | null | undefined
 }) => {
   const { contract, user } = props
@@ -449,7 +449,7 @@ const CheckOrSwitch = (props: {
 }
 
 export function ContractInfoDialog(props: {
-  contract: Contract
+  contract: FullContract
   user: User | null | undefined
   open: boolean
   setOpen: (open: boolean) => void

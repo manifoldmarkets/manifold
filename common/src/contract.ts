@@ -122,6 +122,9 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   likedByUserCount?: number
 } & T
 
+export type FullContract<T extends AnyContractType = AnyContractType> =
+  Contract<T> & (T extends CPMM ? CPMMPool : Record<string, never>)
+
 export type CPMMContract = Contract & CPMM
 export type CPMMMultiContract = Contract & CPMMMulti
 export type CPMMNumericContract = Contract & CPMMMultiNumeric
@@ -144,16 +147,19 @@ export type BinaryOrPseudoNumericContract =
 
 export type CPMM = {
   mechanism: 'cpmm-1'
-  pool: { [outcome: string]: number }
-  p: number // probability constant in y^p * n^(1-p) = k
-  totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
-  subsidyPool: number // current value of subsidy pool in Ṁ
-  prob: number
   probChanges: {
     day: number
     week: number
     month: number
   }
+}
+
+export type CPMMPool = {
+  pool: { YES: number; NO: number }
+  p: number // probability constant in y^p * n^(1-p) = k
+  totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
+  subsidyPool: number // current value of subsidy pool in Ṁ
+  prob: number
 }
 
 export type NonBet = {
@@ -188,6 +194,11 @@ export type CPMMMulti = {
   answers: Answer[]
   sort?: SortType
 }
+
+// export type CPMMMultiPool = {
+//   totalLiquidity: number
+//   subsidyPool: number
+// }
 
 export type CPMMMultiNumeric = {
   mechanism: 'cpmm-multi-1'
@@ -328,7 +339,7 @@ export function contractUrl(contract: Contract) {
   return `https://${ENV_CONFIG.domain}${contractPath(contract)}`
 }
 
-export function contractPool(contract: Contract) {
+export function contractPool(contract: FullContract) {
   return contract.mechanism === 'cpmm-1'
     ? formatMoney(contract.totalLiquidity)
     : contract.mechanism === 'cpmm-multi-1'

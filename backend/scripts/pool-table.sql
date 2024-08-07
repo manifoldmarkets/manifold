@@ -58,3 +58,14 @@ select
 from
   contracts c
   left join pools p on c.id = p.contract_id;
+
+
+create
+or replace function public.get_cpmm_pool_prob (p_yes: numeric, p_no:numeric, p:numeric returns numeric language plpgsql immutable parallel SAFE as $$
+declare
+    no_weight numeric := p * p_no;
+    yes_weight numeric := (1 - p) * +_yes + p * p_no;
+begin
+    return case when yes_weight = 0 then 1 else (no_weight / yes_weight) end;
+end;
+$$ language plpgsql;

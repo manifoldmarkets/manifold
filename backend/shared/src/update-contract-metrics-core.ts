@@ -4,7 +4,7 @@ import {
 } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
-import { Contract, CPMM } from 'common/contract'
+import { Contract, CPMM, CPMMPool } from 'common/contract'
 import { computeElasticity } from 'common/calculate-metrics'
 import { hasChanges } from 'common/util/object'
 import { chunk, groupBy, mapValues } from 'lodash'
@@ -81,7 +81,7 @@ export async function updateContractMetricsCore() {
     }[] = []
 
     for (const contract of contracts) {
-      let cpmmFields: Partial<CPMM> = {}
+      let cpmmFields: Partial<CPMM & CPMMPool> = {}
       if (contract.mechanism === 'cpmm-1') {
         const { poolProb, resProb, resTime } = currentContractProbs[contract.id]
         const prob = resProb ?? poolProb
@@ -200,12 +200,12 @@ const getCurrentProbs = async (
     await pg.map(
       `select
          id, resolution_time as res_time,
-         get_cpmm_pool_prob(data->'pool', (data->>'p')::numeric) as pool_prob,
+         get_cpmm_pool_prob(yes, no, p) as pool_prob,
          case when resolution = 'YES' then 1
               when resolution = 'NO' then 0
               when resolution = 'MKT' then resolution_probability
               else null end as res_prob
-      from contracts
+      from full_contracts
       where mechanism = 'cpmm-1'
       and id = any($1)
       `,
@@ -234,7 +234,7 @@ const getBetProbsAt = async (
           contract_id, answer_id, prob_after as prob
         from contract_bets
         where created_time < millis_to_ts($1)
-        and contract_id = any($2) 
+        and contract_id = any($2)
         order by contract_id, answer_id, created_time desc
       ), probs_after as (
         select distinct on (contract_id, answer_id)

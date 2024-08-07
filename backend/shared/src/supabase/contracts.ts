@@ -7,6 +7,7 @@ import { APIError } from 'common/api/utils'
 import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 import { updateData, DataUpdate } from './utils'
 import { mapValues } from 'lodash'
+import { Row } from 'common/supabase/utils'
 
 // used for API to allow slug as param
 export const getContractIdFromSlug = async (
@@ -23,6 +24,14 @@ export const getContractIdFromSlug = async (
 
   if (error) throw new APIError(404, `Contract with slug ${slug} not found`)
   return data.id
+}
+
+// TODO: extend with answerId
+export const getPool = async (pg: SupabaseDirectClient, contractId: string) => {
+  return (await pg.oneOrNone<Row<'pools'>>(
+    `select * from pools where contract_id = $1 and answer_id is null`,
+    [contractId]
+  )) as any
 }
 
 export const getUniqueBettorIds = async (
@@ -99,7 +108,7 @@ export const getContractLikerIds = async (
   pg: SupabaseDirectClient
 ) => {
   const likedUserIds = await pg.manyOrNone<{ user_id: string }>(
-    `select user_id from user_reactions 
+    `select user_id from user_reactions
                where content_id = $1
                and content_type = 'contract'`,
     [contractId]
@@ -146,7 +155,7 @@ export const getContractPrivacyWhereSQLFilter = (
   contractIdString = 'id'
 ) => {
   const otherVisibilitySQL = `
-  OR (visibility = 'unlisted' 
+  OR (visibility = 'unlisted'
     AND (
      creator_id='${uid}'
      OR ${isAdminId(uid ?? '_')}
