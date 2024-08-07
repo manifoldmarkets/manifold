@@ -3,12 +3,15 @@ import { ImageResponseOptions } from '@vercel/og/dist/types'
 import { NextRequest } from 'next/server'
 import { OgMarket } from 'web/components/og/og-market'
 import { classToTw } from 'web/components/og/utils'
-import { OgCardProps } from 'common/contract-seo'
+import { getContractOGProps, OgCardProps } from 'common/contract-seo'
+import { getContract } from 'common/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
 
 export const config = { runtime: 'edge' }
-export const getCardOptions = async () => {
+export const getCardOptions = async (): Promise<ImageResponseOptions> => {
   const [light, med] = await Promise.all([figtreeLightData, figtreeMediumData])
 
+  // https://vercel.com/docs/functions/og-image-generation/og-image-api
   return {
     width: 600,
     height: 315,
@@ -24,6 +27,11 @@ export const getCardOptions = async () => {
         style: 'normal',
       },
     ],
+    headers: {
+      // max-age is in seconds. Vercel defaults to a very large value, but
+      // we want to show fresh data, so we override here.
+      'cache-control': 'public, no-transform, max-age=30',
+    },
   }
 }
 
@@ -36,16 +44,38 @@ const figtreeMediumData = fetch(FIGTREE_MED_URL).then((res) =>
   res.arrayBuffer()
 )
 
+async function getFreshOgMarketProps(
+  contractId: string | undefined
+): Promise<OgCardProps | undefined> {
+  if (contractId) {
+    try {
+      const contract = await getContract(db, contractId)
+      if (contract) {
+        return getContractOGProps(contract)
+      }
+    } catch (e) {
+      console.log(
+        'Failed to fetch contract ${contractId} when rendering OG image',
+        e
+      )
+    }
+  }
+  return undefined
+}
+
 export default async function handler(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const options = await getCardOptions()
-    const OgMarketProps = Object.fromEntries(
+    const ogMarketPropsFromParams = Object.fromEntries(
       searchParams.entries()
     ) as OgCardProps
-    const image = OgMarket(OgMarketProps)
+    const { contractId } = ogMarketPropsFromParams
+    const ogMarketPropsFromDb = await getFreshOgMarketProps(contractId)
 
-    return new ImageResponse(classToTw(image), options as ImageResponseOptions)
+    const image = OgMarket(ogMarketPropsFromDb ?? ogMarketPropsFromParams)
+
+    return new ImageResponse(classToTw(image), options)
   } catch (e: any) {
     console.log(`${e.message}`)
     return new Response(`Failed to generate the image`, {
