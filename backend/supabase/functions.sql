@@ -523,62 +523,6 @@ limit max
 $function$;
 
 create
-or replace function public.get_related_contracts (cid text, lim integer, start integer) returns jsonb[] language sql immutable parallel SAFE as $function$
-select array_agg(data) from (
-  select data
-  from get_related_contract_ids(cid)
-    left join contracts
-    on contracts.id = contract_id
-    where is_valid_contract(contracts)
-  limit lim
-  offset start
-  ) as rel_contracts
-$function$;
-
-create
-or replace function public.get_related_contracts_by_group (p_contract_id text, lim integer, start integer) returns table (data jsonb) language sql stable parallel SAFE as $function$
-select distinct on (other_contracts.importance_score, other_contracts.slug) other_contracts.data
-from contracts
-     join group_contracts on contracts.id = group_contracts.contract_id
-     join contracts as other_contracts on other_contracts.id in (
-    select gc.contract_id
-    from group_contracts gc
-    where gc.group_id in (
-        select group_id
-        from group_contracts
-        where contract_id = p_contract_id
-    )
-)
-where contracts.id = p_contract_id
-  and is_valid_contract(other_contracts)
-  and other_contracts.id != p_contract_id
-order by other_contracts.importance_score desc, other_contracts.slug
-offset start limit lim
-$function$;
-
-create
-or replace function public.get_related_contracts_by_group_and_creator (p_contract_id text, lim integer, start integer) returns table (data jsonb) language sql stable parallel SAFE as $function$
-select distinct on (other_contracts.importance_score, other_contracts.slug) other_contracts.data
-from contracts
-         join group_contracts on contracts.id = group_contracts.contract_id
-         join contracts as other_contracts on other_contracts.id in (
-    select gc.contract_id
-    from group_contracts gc
-    where gc.group_id in (
-        select group_id
-        from group_contracts
-        where contract_id = p_contract_id
-    )
-)
-where contracts.id = p_contract_id
-  and is_valid_contract(other_contracts)
-  and other_contracts.id != p_contract_id
-  and other_contracts.creator_id = contracts.creator_id
-order by other_contracts.importance_score desc, other_contracts.slug
-offset start limit lim
-$function$;
-
-create
 or replace function public.get_top_market_ads (uid text, distance_threshold numeric) returns table (
   ad_id text,
   market_id text,

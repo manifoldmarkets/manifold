@@ -288,8 +288,7 @@ export const BuyPanelBody = (props: {
       })
     )
   }
-  const betDisabled =
-    isSubmitting || !betAmount || !!error || outcome === undefined
+  const betDisabled = isSubmitting || !betAmount || outcome === undefined
 
   const cpmmState = {
     pool: {

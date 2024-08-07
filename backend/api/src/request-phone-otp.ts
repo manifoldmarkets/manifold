@@ -27,6 +27,7 @@ export const requestOTP: APIHandler<'request-otp'> = rateLimitByUser(
         .fetch({ fields: 'line_type_intelligence' })
       if (
         lookup.lineTypeIntelligence.type !== 'mobile' &&
+        lookup.lineTypeIntelligence.type !== null &&
         lookup.countryCode !== 'CA'
       ) {
         throw new APIError(400, 'Only mobile carriers allowed')

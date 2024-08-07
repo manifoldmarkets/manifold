@@ -184,6 +184,7 @@ import {
 import { getNotifications } from 'api/get-notifications'
 import { getContractTopics } from './get-contract-topics'
 import { getRelatedMarkets } from 'api/get-related-markets'
+import { getRelatedMarketsByGroup } from './get-related-markets-by-group'
 import { followContract } from './follow-contract'
 import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
@@ -339,6 +340,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-loan': requestloan,
   'remove-pinned-photo': removePinnedPhoto,
   'get-related-markets': getRelatedMarkets,
+  'get-related-markets-by-group': getRelatedMarketsByGroup,
   'unlist-and-cancel-user-contracts': unlistAndCancelUserContracts,
   'get-ad-analytics': getadanalytics,
   'get-compatibility-questions': getCompatibilityQuestions,

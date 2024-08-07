@@ -31,8 +31,17 @@ const credentials = LOCAL_DEV
 loadSecretsToEnv(credentials).then(async () => {
   log('Secrets loaded.')
 
-  await initCaches()
-  log('Caches loaded.')
+  const initCachesWithRetry = async () => {
+    try {
+      await initCaches()
+      log('Caches loaded.')
+    } catch (error) {
+      log.warn(`Failed to initialize caches. Retrying in 1 second`)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await initCachesWithRetry()
+    }
+  }
+  await initCachesWithRetry()
 
   const PORT = process.env.PORT ?? 8088
   const httpServer = app.listen(PORT, () => {

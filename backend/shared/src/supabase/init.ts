@@ -113,6 +113,12 @@ export function createSupabaseDirectClient(
     // without a huge backlog of waiting connections instead of redeploying the api.
     // See queries to run during outage here: https://www.notion.so/manifoldmarkets/Backend-resources-8fba2b67cad04dd188564442c5876bfa?pvs=4#a8629a618e9e44ee9b6bbe408b10f9ff
     connectionTimeoutMillis: 10_000,
+
+    // ian: during the past few outages we've seen a lot of "idle in transaction" connections
+    // that last for approx. an hour. See: https://docs.google.com/spreadsheets/d/1GrXMQtPXRL3j3dSza7rwI4fRmFjabk0x1sJYoTRKpoE/edit?gid=801504140#gid=801504140
+    // Although we don't yet know the cause, setting this timeout will limit the damage
+    // from these connections. We should figure out the cause ASAP.
+    idle_in_transaction_session_timeout: 15_000,
     max: 20,
   })
   const pool = client.$pool
