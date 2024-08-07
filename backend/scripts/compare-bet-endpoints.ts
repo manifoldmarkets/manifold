@@ -2,7 +2,6 @@ import { runScript } from './run-script'
 import { log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { DEV_CONFIG } from 'common/envs/dev'
 import {
   getRandomTestBet,
   getTestUsersForBetting,
@@ -11,38 +10,39 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import { ContractMetric } from 'common/contract-metric'
 import { convertContract } from 'common/supabase/contracts'
 
-const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
-const NUM_USERS = 100
+// const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
+const API_URL = `http://localhost:8088/v0`
 const BETS_PER_USER = 10
-const INITIAL_BALANCE = 10000
 
 async function createTestMarkets(pg: SupabaseDirectClient, apiKey: string) {
-  const markets: Contract[] = []
-
   const binaryMarketProps = {
     question: 'binary test ' + Math.random().toString(36).substring(7),
-    outcomeType: 'BINARY' as const,
+    outcomeType: 'BINARY',
     initialProb: 50,
-    visibility: 'public',
-  }
+  } as const
 
   const multiChoiceMarketProps = {
     question:
       'sums-to-one multi-choice test ' +
       Math.random().toString(36).substring(7),
-    outcomeType: 'MULTIPLE_CHOICE' as const,
+    outcomeType: 'MULTIPLE_CHOICE',
     answers: Array(50)
       .fill(0)
       .map((_, i) => 'answer ' + i),
     shouldAnswersSumToOne: true,
-    visibility: 'public',
-  }
+    addAnswersMode: 'DISABLED',
+  } as const
 
-  for (let i = 0; i < 2; i++) {
-    await createMarkets([binaryMarketProps, multiChoiceMarketProps], apiKey, pg)
-  }
-
-  return markets
+  return await createMarkets(
+    [
+      binaryMarketProps,
+      binaryMarketProps,
+      multiChoiceMarketProps,
+      multiChoiceMarketProps,
+    ],
+    apiKey,
+    pg
+  )
 }
 
 async function placeBet(
@@ -73,7 +73,7 @@ const createMarkets = async (
 ) => {
   const markets = await Promise.all(
     marketProps.map(async (market) => {
-      const resp = await fetch(URL + `/market`, {
+      const resp = await fetch(API_URL + `/market`, {
         method: 'POST',
         headers: {
           Authorization: `Key ${apiKey}`,
@@ -87,7 +87,7 @@ const createMarkets = async (
       return resp.json()
     })
   )
-  const contracts = await pg.map(
+  return await pg.map(
     `select * from contracts where slug in ($1:list)`,
     [markets.map((m: any) => m.slug)],
     convertContract
@@ -146,27 +146,35 @@ if (require.main === module) {
 
     log('Created test markets and users')
 
-    const binaryMarkets = [markets[0], markets[2]]
-    const multiChoiceMarkets = [markets[1], markets[3]]
+    const binaryMarkets = [markets[0], markets[1]]
+    const multiChoiceMarkets = [markets[2], markets[3]]
 
     const startTime = Date.now()
 
     for (const user of users) {
       for (let i = 0; i < BETS_PER_USER; i++) {
         const binaryBet = getRandomTestBet(binaryMarkets[0], true)
-        const multiChoiceBet = getRandomTestBet(markets[1], true)
+        const binaryBet2 = {
+          ...binaryBet,
+          contractId: binaryMarkets[1].id,
+        }
+        const multiChoiceBet = getRandomTestBet(multiChoiceMarkets[0], true)
+        const multiChoiceBet2 = {
+          ...multiChoiceBet,
+          contractId: multiChoiceMarkets[1].id,
+        }
 
         await Promise.all([
           placeBet('bet', binaryBet, user.apiKey),
+          placeBet('bet-batched', binaryBet2, user.apiKey),
           placeBet('bet', multiChoiceBet, user.apiKey),
-          placeBet('bet-batched', binaryBet, user.apiKey),
-          placeBet('bet-batched', multiChoiceBet, user.apiKey),
+          placeBet('bet-batched', multiChoiceBet2, user.apiKey),
         ])
       }
     }
 
     const endTime = Date.now()
-    const totalBets = NUM_USERS * BETS_PER_USER * 4
+    const totalBets = users.length * BETS_PER_USER * 4
     const duration = (endTime - startTime) / 1000
     const betsPerSecond = totalBets / duration
 
