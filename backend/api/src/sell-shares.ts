@@ -39,9 +39,10 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   const userId = auth.uid
   const isApi = auth.creds.kind === 'key'
   const { contractId, shares, outcome, answerId } = props
+  const pg = createSupabaseDirectClient()
   const { contract, answers, balanceByUserId, unfilledBets, userBets } =
     await fetchSellSharesDataAndValidate(
-      createSupabaseDirectClient(),
+      pg,
       contractId,
       answerId,
       userId,
@@ -70,6 +71,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   const { contractId, shares, outcome, answerId } = props
   const userId = auth.uid
   const isApi = auth.creds.kind === 'key'
+  const pg = createSupabaseDirectClient()
 
   const {
     user,
@@ -80,7 +82,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     userBets,
     unfilledBetUserIds,
   } = await fetchSellSharesDataAndValidate(
-    createSupabaseDirectClient(),
+    pg,
     contractId,
     answerId,
     userId,
