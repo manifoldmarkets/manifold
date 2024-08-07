@@ -88,6 +88,14 @@ export const updateAnswers = async (
   broadcastUpdatedAnswers(contractId, updates)
 }
 
+// Can update answers across multiple contracts.
+export const bulkUpdateAnswers = async (
+  pg: SupabaseDirectClient,
+  updates: Partial<Answer>[]
+) => {
+  await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
+}
+
 const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
   id: answer.id,
   index: answer.index,
