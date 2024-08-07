@@ -75,6 +75,7 @@ import {
 } from './answer-components'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { debounce } from 'lodash'
+import { RelativeTimestamp } from '../relative-timestamp'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -618,8 +619,34 @@ export function Answer(props: {
   const [limitBetModalOpen, setLimitBetModalOpen] = useState(false)
 
   const hasLimitOrders = unfilledBets?.length && limitOrderVolume
+  const answerCreator = useDisplayUserByIdOrAnswer(answer)
 
   const dropdownItems = [
+    {
+      name: 'author info',
+      nonButtonContent: (
+        <div className="text-ink-400 select-none whitespace-pre-wrap px-4 py-1 text-xs">
+          <span>
+            {!!answerCreator && contract.addAnswersMode == 'ANYONE' ? (
+              <span>
+                <Link
+                  className="hover:text-primary-600 hover:underline"
+                  href={`/${answerCreator.username}`}
+                >
+                  {answerCreator.name}
+                </Link>
+                {' •'}
+              </span>
+            ) : (
+              <span>Created</span>
+            )}
+            <span>
+              <RelativeTimestamp time={answer.createdTime} />
+            </span>
+          </span>
+        </div>
+      ),
+    },
     ...(canEdit && answer.poolYes != undefined && !answer.isOther
       ? [
           {
