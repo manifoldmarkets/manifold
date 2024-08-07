@@ -1,42 +1,35 @@
 import {
-  DotsHorizontalIcon,
-  DotsVerticalIcon,
   EyeIcon,
   EyeOffIcon,
   InformationCircleIcon,
 } from '@heroicons/react/solid'
+import { Contract } from 'common/contract'
 import { getShareUrl } from 'common/util/share'
 import { ReactNode, useEffect, useState } from 'react'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
-import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Contract } from 'common/contract'
-import { Row } from '../layout/row'
-import { Tooltip } from '../widgets/tooltip'
-import { LikeButton } from './like-button'
-import { RepostButton, RepostModal } from 'web/components/comments/repost-modal'
-import { Button } from '../buttons/button'
-import { TwombaToggle } from '../twomba/twomba-toggle'
-import DropdownMenu from '../comments/dropdown-menu'
-import { BiRepost } from 'react-icons/bi'
-import { IoDuplicate, IoRocket } from 'react-icons/io5'
-import { BoostDialog } from './boost-button'
-import { duplicateContractHref } from '../buttons/duplicate-contract-button'
-import { trackCallback, withTracking } from 'web/lib/service/analytics'
-import { getLinkTarget } from '../widgets/linkify'
-import { ReportModal } from '../buttons/report-button'
-import { MdOutlineReport } from 'react-icons/md'
-import { TwombaContractInfoDialog } from './twomba-contract-info-dialog'
 import { toast } from 'react-hot-toast'
-import { api, updateUserDisinterestEmbedding } from 'web/lib/api/api'
+import { BiRepost } from 'react-icons/bi'
 import { CgBlock, CgUnblock } from 'react-icons/cg'
-import { TiVolumeMute } from 'react-icons/ti'
-import { AddLiquidityModal } from './subsidize-button'
 import { FaDroplet } from 'react-icons/fa6'
+import { IoDuplicate, IoRocket } from 'react-icons/io5'
+import { MdOutlineReport } from 'react-icons/md'
+import { TiVolumeMute } from 'react-icons/ti'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { RepostModal } from 'web/components/comments/repost-modal'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { api, updateUserDisinterestEmbedding } from 'web/lib/api/api'
+import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
-import { WatchMarketModal } from './watch-market-modal'
+import { duplicateContractHref } from '../buttons/duplicate-contract-button'
 import { followMarket, unfollowMarket } from '../buttons/follow-market-button'
-import { InfoTooltip } from '../widgets/info-tooltip'
+import { ReportModal } from '../buttons/report-button'
+import DropdownMenu from '../comments/dropdown-menu'
+import { Row } from '../layout/row'
+import { TwombaToggle } from '../twomba/twomba-toggle'
+import { getLinkTarget } from '../widgets/linkify'
+import { BoostDialog } from './boost-button'
+import { AddLiquidityModal } from './subsidize-button'
+import { TwombaContractInfoDialog } from './twomba-contract-info-dialog'
+import { WatchMarketModal } from './watch-market-modal'
 
 export function TwombaHeaderActions(props: {
   contract: Contract
@@ -228,7 +221,7 @@ export function TwombaHeaderActions(props: {
   ]
   return (
     // make tooltip children stretch
-    <Row className="mr-4 items-center [&>*]:flex">
+    <Row className="mr-4 shrink-0 items-center [&>*]:flex">
       <TwombaToggle
         mode={'sweepies'}
         onClick={function (): void {
