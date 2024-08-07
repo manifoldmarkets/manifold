@@ -58,8 +58,6 @@ export function TwombaContractInfoDialog(props: {
       setOpen={setOpen}
       className="bg-canvas-0 flex flex-col gap-4 rounded p-6"
     >
-      <FollowMarketButton contract={contract} user={user} />
-
       <Stats contract={contract} user={user} />
 
       {!!user && (

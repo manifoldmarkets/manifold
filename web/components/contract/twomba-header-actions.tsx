@@ -3,6 +3,7 @@ import {
   DotsVerticalIcon,
   EyeIcon,
   EyeOffIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/solid'
 import { getShareUrl } from 'common/util/share'
 import { ReactNode, useEffect, useState } from 'react'
@@ -26,7 +27,7 @@ import { getLinkTarget } from '../widgets/linkify'
 import { ReportModal } from '../buttons/report-button'
 import { MdOutlineReport } from 'react-icons/md'
 import { TwombaContractInfoDialog } from './twomba-contract-info-dialog'
-import toast from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 import { api, updateUserDisinterestEmbedding } from 'web/lib/api/api'
 import { CgBlock, CgUnblock } from 'react-icons/cg'
 import { TiVolumeMute } from 'react-icons/ti'
@@ -35,6 +36,7 @@ import { FaDroplet } from 'react-icons/fa6'
 import { db } from 'web/lib/supabase/db'
 import { WatchMarketModal } from './watch-market-modal'
 import { followMarket, unfollowMarket } from '../buttons/follow-market-button'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export function TwombaHeaderActions(props: {
   contract: Contract
@@ -50,6 +52,7 @@ export function TwombaHeaderActions(props: {
   const [boostOpen, setBoostOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [liquidityOpen, setLiquidityOpen] = useState(false)
+
   const duplicateHref = duplicateContractHref(contract)
 
   const isBlocked =
@@ -79,12 +82,15 @@ export function TwombaHeaderActions(props: {
     })
   }
 
-  const addLiquidityEnabled =
-    user &&
-    (contract.mechanism == 'cpmm-1' || contract.mechanism == 'cpmm-multi-1') &&
+  const contractOpenAndPublic =
     !contract.isResolved &&
     (contract.closeTime ?? Infinity) > Date.now() &&
     contract.visibility == 'public'
+
+  const addLiquidityEnabled =
+    user &&
+    (contract.mechanism == 'cpmm-1' || contract.mechanism == 'cpmm-multi-1') &&
+    contractOpenAndPublic
 
   const [following, setFollowing] = useState<boolean>()
   const [followingOpen, setFollowingOpen] = useState(false)
@@ -134,7 +140,7 @@ export function TwombaHeaderActions(props: {
           },
         ]
       : []),
-    ...(user && isCreator
+    ...(user && contractOpenAndPublic
       ? [
           {
             name: 'Boost',
@@ -152,7 +158,7 @@ export function TwombaHeaderActions(props: {
             onClick: () => {
               setLiquidityOpen(true)
             },
-            icon: <FaDroplet className="h-4 w-4" />,
+            icon: <FaDroplet className="h-5 w-5" />,
           },
         ]
       : []),
@@ -173,9 +179,9 @@ export function TwombaHeaderActions(props: {
         ]
       : []),
     {
-      name: 'See details',
+      name: 'See info',
       onClick: () => setDetailsOpen(true),
-      icon: <DotsHorizontalIcon className="h-5 w-5" />,
+      icon: <InformationCircleIcon className="h-5 w-5" />,
     },
     {
       name: 'line',
@@ -205,18 +211,17 @@ export function TwombaHeaderActions(props: {
       ? [
           {
             name: isBlocked ? 'Unblock' : 'Block',
-            onClick: () => {
-              isBlocked
-                ? withTracking(onUnblock, 'unblock')
-                : withTracking(onBlock, 'block')
-            },
+            onClick: isBlocked
+              ? withTracking(onUnblock, 'unblock')
+              : withTracking(onBlock, 'block'),
             icon: isBlocked ? (
               <CgUnblock className="h-5 w-5" />
             ) : (
               <CgBlock className="h-5 w-5" />
             ),
-            className:
-              'text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-100 dark:hover:bg-ink-100',
+            className: isBlocked
+              ? ''
+              : 'text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-100 dark:hover:bg-ink-100',
           },
         ]
       : []),
