@@ -1,18 +1,20 @@
 import { runScript } from './run-script'
 import { log } from 'shared/utils'
-import { Contract } from 'common/contract'
+import { Contract, MultiContract } from 'common/contract'
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import {
-  getRandomTestBet,
-  getTestUsersForBetting,
-} from 'shared/test/test-users'
+import { getTestUsers } from 'shared/test/users'
+import { getRandomTestBet } from 'shared/test/bets'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { ContractMetric } from 'common/contract-metric'
 import { convertContract } from 'common/supabase/contracts'
+import { DEV_CONFIG } from 'common/envs/dev'
+import { floatingEqual } from 'common/util/math'
 
-// const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
-const API_URL = `http://localhost:8088/v0`
-const BETS_PER_USER = 10
+const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
+// const API_URL = `http://localhost:8088/v0`
+const BETS_PER_USER_PER_MARKET = 1
+const NUM_USERS = 160
+const ENABLE_LIMIT_ORDERS = true
 
 async function createTestMarkets(pg: SupabaseDirectClient, apiKey: string) {
   const binaryMarketProps = {
@@ -121,15 +123,17 @@ async function comparePositions(
   const posMap2 = new Map(positions2.map((p) => [p.userId, p]))
 
   for (const [userId, pos1] of posMap1) {
-    const pos2 = posMap2.get(userId)
-    if (
-      !pos2 ||
-      pos1.payout !== pos2.payout ||
-      pos1.totalShares !== pos2.totalShares
-    ) {
+    const pos2 = posMap2.get(userId)!
+    const unequalPos = Object.entries(pos1.totalShares).find(
+      ([key, value]) => !floatingEqual(pos2.totalShares[key], value)
+    )
+    if (!pos2 || pos1.payout !== pos2.payout || unequalPos) {
       log(
         `Mismatch for user ${userId} in markets ${market1.id} and ${market2.id}`
       )
+      if (unequalPos) {
+        log(`Unequal position: ${unequalPos}`)
+      }
       log(`Market 1: ${JSON.stringify(pos1)}`)
       log(`Market 2: ${JSON.stringify(pos2)}`)
       return false
@@ -140,45 +144,93 @@ async function comparePositions(
 }
 
 if (require.main === module) {
-  runScript(async ({ pg }) => {
-    const users = await getTestUsersForBetting(pg)
+  runScript(async ({ pg, firestore }) => {
+    const users = await getTestUsers(firestore, pg, NUM_USERS)
     const markets = await createTestMarkets(pg, users[0].apiKey)
 
     log('Created test markets and users')
 
     const binaryMarkets = [markets[0], markets[1]]
-    const multiChoiceMarkets = [markets[2], markets[3]]
+    const multiChoiceMarkets = [markets[2], markets[3]] as MultiContract[]
 
     const startTime = Date.now()
-
+    let totalAttempts = 0
+    let successfulBets = 0
+    log('Placing bets...')
     for (const user of users) {
-      for (let i = 0; i < BETS_PER_USER; i++) {
-        const binaryBet = getRandomTestBet(binaryMarkets[0], true)
+      for (let i = 0; i < BETS_PER_USER_PER_MARKET; i++) {
+        const binaryBet = getRandomTestBet(
+          binaryMarkets[0],
+          ENABLE_LIMIT_ORDERS,
+          0.5
+        )
         const binaryBet2 = {
           ...binaryBet,
           contractId: binaryMarkets[1].id,
         }
-        const multiChoiceBet = getRandomTestBet(multiChoiceMarkets[0], true)
+        const multiChoiceBet = getRandomTestBet(
+          multiChoiceMarkets[0],
+          ENABLE_LIMIT_ORDERS,
+          0.05
+        )
+        const answerIndex = multiChoiceMarkets[0].answers.findIndex(
+          (a) => a.id === multiChoiceBet.answerId
+        )
         const multiChoiceBet2 = {
           ...multiChoiceBet,
           contractId: multiChoiceMarkets[1].id,
+          answerId: multiChoiceMarkets[1].answers[answerIndex].id,
         }
 
-        await Promise.all([
-          placeBet('bet', binaryBet, user.apiKey),
-          placeBet('bet-batched', binaryBet2, user.apiKey),
-          placeBet('bet', multiChoiceBet, user.apiKey),
-          placeBet('bet-batched', multiChoiceBet2, user.apiKey),
-        ])
+        const bets = [
+          { type: 'bet', bet: binaryBet },
+          { type: 'bet-batched', bet: binaryBet2 },
+          { type: 'bet', bet: multiChoiceBet },
+          { type: 'bet-batched', bet: multiChoiceBet2 },
+        ]
+
+        for (const { type, bet } of bets) {
+          let betPlaced = false
+          let attempts = 0
+          while (!betPlaced) {
+            attempts++
+            totalAttempts++
+            try {
+              await placeBet(type, bet, user.apiKey)
+              betPlaced = true
+              successfulBets++
+            } catch (error: any) {
+              if ('message' in error) {
+                if (error.message === 'Betting allowed only between 1-99%') {
+                  break
+                }
+                log(`Bet failed (attempt ${attempts}): ${error.message}`)
+              } else log(`Bet failed (attempt ${attempts}): ${error}`)
+              if (attempts % 5 === 0) {
+                log(`Continuing to retry for bet: ${JSON.stringify(bet)}`)
+              }
+            }
+          }
+        }
+        if (successfulBets % 8 === 0) {
+          const currentTime = Date.now()
+          const elapsedTime = (currentTime - startTime) / 1000
+          log(
+            `In ${elapsedTime.toFixed(2)} seconds:
+                ${successfulBets} successful bets,
+                ${totalAttempts} total attempts`
+          )
+        }
       }
     }
 
     const endTime = Date.now()
-    const totalBets = users.length * BETS_PER_USER * 4
+    const totalBets = successfulBets
     const duration = (endTime - startTime) / 1000
     const betsPerSecond = totalBets / duration
 
     log(`Placed ${totalBets} bets in ${duration.toFixed(2)} seconds`)
+    log(`Total attempts: ${totalAttempts}`)
     log(`Performance: ${betsPerSecond.toFixed(2)} bets per second`)
 
     const binaryPositionsMatch = await comparePositions(

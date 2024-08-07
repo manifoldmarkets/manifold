@@ -5,10 +5,8 @@ import { Contract } from 'common/contract'
 import { formatApiUrlWithParams } from 'common/util/api'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { pgp } from 'shared/supabase/init'
-import {
-  getRandomTestBet,
-  getTestUsersForBetting,
-} from 'shared/test/test-users'
+import { getTestUsers } from 'shared/test/users'
+import { getRandomTestBet } from 'shared/test/bets'
 
 // TODO: try without limit orders, and try on an older market
 const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
@@ -17,12 +15,12 @@ const USE_OLD_MARKET = true
 const ENABLE_LIMIT_ORDERS = true
 
 if (require.main === module) {
-  runScript(async ({ pg }) => {
+  runScript(async ({ pg, firestore }) => {
     if (isProd()) {
       log('This script is dangerous to run in prod. Exiting.')
       return
     }
-    const privateUsers = await getTestUsersForBetting(pg)
+    const privateUsers = await getTestUsers(firestore, pg, 100)
     const marketCreations = [
       {
         question: 'test ' + Math.random().toString(36).substring(7),
