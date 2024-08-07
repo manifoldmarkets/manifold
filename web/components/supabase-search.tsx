@@ -252,7 +252,7 @@ export function SupabaseSearch(props: {
   const filter = searchParams[FILTER_KEY]
   const contractType = searchParams[CONTRACT_TYPE_KEY]
   const prizeMarketState = searchParams[PRIZE_MARKET_KEY]
-  const forYou = searchParams[FOR_YOU_KEY] === '1'
+  const forYou = searchParams[FOR_YOU_KEY]
   const marketTiers = searchParams[MARKET_TIER_KEY]
   const topicFilter = searchParams[TOPIC_FILTER_KEY]
 
