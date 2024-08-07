@@ -14,7 +14,9 @@ export const getTestUsers = async (
     `select count(*) from private_users where data->>'email' ilike '%manifoldtestnewuser%'`
   )
   const missing = limit - totalPrivateUsers.count
-  log('No enough new users, will create ' + missing + ' more')
+  if (missing > 0) {
+    log('No enough new users, will create ' + missing + ' more')
+  }
   const auth = admin.app().auth()
   const missingUserIds = await Promise.all(
     Array.from({ length: missing }).map(async () => {

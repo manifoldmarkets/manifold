@@ -1,13 +1,13 @@
 import { getUser, isProd } from 'shared/utils'
 import { type PrivateUser, type User } from 'common/user'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { createPrivateUserMessageChannelMain } from '@manifold/api/lib/create-private-user-message-channel'
 import { type JSONContent } from '@tiptap/core'
-import { createPrivateUserMessageMain } from '@manifold/api/lib/create-private-user-message'
 import { addNewUserToLeague } from 'shared/generate-leagues'
 import { createReferralsProgramNotification } from 'shared/create-notification'
 import { sendWelcomeEmail } from 'shared/emails'
 import { NEW_USER_HERLPER_IDS, isAdminId } from 'common/envs/constants'
+import { createPrivateUserMessageMain } from 'shared/supabase/private-messages'
+import { createPrivateUserMessageChannelMain } from 'shared/supabase/private-message-channels'
 
 export const onCreateUser = async (user: User, privateUser: PrivateUser) => {
   const pg = createSupabaseDirectClient()

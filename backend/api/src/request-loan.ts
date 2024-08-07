@@ -13,6 +13,10 @@ import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { groupBy, uniq } from 'lodash'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import * as dayjs from 'dayjs'
+import * as utc from 'dayjs/plugin/utc'
+import * as timezone from 'dayjs/plugin/timezone'
+dayjs.extend(utc)
+dayjs.extend(timezone)
 import { LoanTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 

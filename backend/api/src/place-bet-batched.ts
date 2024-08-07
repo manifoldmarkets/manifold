@@ -1,16 +1,48 @@
-import { APIError, type APIHandler } from './helpers/endpoint'
-import { placeBetMain } from './place-bet'
+import { type APIHandler } from './helpers/endpoint'
+import {
+  fetchContractBetDataAndValidate,
+  getMakerIdsFromBetResult,
+  placeBetMain,
+  calculateBetResult,
+} from 'api/place-bet'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
-export const placeBetBatched: APIHandler<'bet-batched'> = async (props, auth) => {
+export const placeBetBatched: APIHandler<'bet-batched'> = async (
+  props,
+  auth
+) => {
   const isApi = auth.creds.kind === 'key'
-  
-  try {
-    const result = await placeBetMain(props, auth.uid, isApi)
-    return result
-  } catch (error) {
-    if (error instanceof APIError) {
-      throw error
-    }
-    throw new APIError(500, 'An unexpected error occurred while placing the bet')
+
+  let simulatedMakerIds: string[] = []
+  if (props.deps === undefined) {
+    const { user, contract, answers, unfilledBets, balanceByUserId } =
+      await fetchContractBetDataAndValidate(
+        createSupabaseDirectClient(),
+        props,
+        auth.uid,
+        isApi
+      )
+    // Simulate bet to see whose limit orders you match.
+    const simulatedResult = calculateBetResult(
+      props,
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId
+    )
+    simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
   }
+
+  const deps = [
+    auth.uid,
+    props.contractId,
+    ...(props.deps ?? simulatedMakerIds),
+  ]
+
+  return await betsQueue.enqueueFn(
+    () => placeBetMain(props, auth.uid, isApi),
+    deps
+  )
 }

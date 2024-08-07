@@ -297,7 +297,7 @@ const getAnswersForBet = async (
   return undefined
 }
 
-const calculateBetResult = (
+export const calculateBetResult = (
   body: ValidatedAPIParams<'bet'>,
   user: User,
   contract: MarketContract,
