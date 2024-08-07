@@ -24,7 +24,7 @@ import { followMarket, unfollowMarket } from '../buttons/follow-market-button'
 import { ReportModal } from '../buttons/report-button'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
-import { TwombaToggle } from '../twomba/twomba-toggle'
+import { TWOMBA_MODE_TYPE, TwombaToggle } from '../twomba/twomba-toggle'
 import { getLinkTarget } from '../widgets/linkify'
 import { BoostDialog } from './boost-button'
 import { AddLiquidityModal } from './subsidize-button'
@@ -219,13 +219,19 @@ export function TwombaHeaderActions(props: {
         ]
       : []),
   ]
+
+  const [mode, setMode] = useState<TWOMBA_MODE_TYPE>('sweepies')
   return (
     // make tooltip children stretch
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
       <TwombaToggle
         mode={'sweepies'}
-        onClick={function (): void {
-          throw new Error('Function not implemented.')
+        onClick={() => {
+          if (mode === 'sweepies') {
+            setMode('mana')
+          } else {
+            setMode('sweepies')
+          }
         }}
       />
       {children}
