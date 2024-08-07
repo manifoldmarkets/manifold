@@ -2,11 +2,13 @@ import { runScript } from './run-script'
 import { isProd, log } from 'shared/utils'
 import { convertContract } from 'common/supabase/contracts'
 import { Contract } from 'common/contract'
-import { removeUndefinedProps } from 'common/util/object'
-import { incrementBalance } from 'shared/supabase/users'
 import { formatApiUrlWithParams } from 'common/util/api'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { pgp } from 'shared/supabase/init'
+import {
+  getRandomTestBet,
+  getTestUsersForBetting,
+} from 'shared/test/test-users'
 
 // TODO: try without limit orders, and try on an older market
 const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
@@ -20,34 +22,7 @@ if (require.main === module) {
       log('This script is dangerous to run in prod. Exiting.')
       return
     }
-    const privateUsers = await pg.map(
-      `select id, data->>'apiKey' as api_key from private_users
-              where data->>'email' ilike '%manifoldtestnewuser%'
-              limit 150`,
-      [],
-      (r) => ({ id: r.id as string, apiKey: r.api_key as string })
-    )
-    log('got private users')
-    await Promise.all(
-      privateUsers.map((pu) =>
-        incrementBalance(pg, pu.id, {
-          balance: 10000,
-          totalDeposits: 10000,
-        })
-      )
-    )
-    log(`${privateUsers.length} user balances incremented by 1000`)
-    await Promise.all(
-      privateUsers
-        .filter((p) => !p.apiKey)
-        .map(async (p) => {
-          return await pg.none(
-            `update private_users set data = data || $2 where id = $1`,
-            [p.id, JSON.stringify({ apiKey: crypto.randomUUID() })]
-          )
-        })
-    )
-    log('added api keys')
+    const privateUsers = await getTestUsersForBetting(pg)
     const marketCreations = [
       {
         question: 'test ' + Math.random().toString(36).substring(7),
@@ -250,29 +225,7 @@ async function placeManyBets(
   count: number,
   contract: Contract
 ) {
-  const limitProb = !ENABLE_LIMIT_ORDERS
-    ? undefined
-    : Math.random() > 0.5
-    ? parseFloat(Math.random().toPrecision(1))
-    : undefined
-
-  const betData = removeUndefinedProps({
-    contractId: contract.id,
-    amount: Math.random() * 100 + 1,
-    outcome: Math.random() > 0.5 ? 'YES' : 'NO',
-    answerId:
-      contract.mechanism === 'cpmm-multi-1'
-        ? contract.answers[Math.floor(Math.random() * contract.answers.length)]
-            ?.id
-        : undefined,
-    limitProb: !limitProb
-      ? undefined
-      : limitProb < 0.01
-      ? 0.01
-      : limitProb > 0.99
-      ? 0.99
-      : limitProb,
-  })
+  const betData = getRandomTestBet(contract, ENABLE_LIMIT_ORDERS)
   let success = 0
   let failure = 0
   let totalSpent = 0

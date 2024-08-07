@@ -58,6 +58,7 @@ import { notification_preference } from 'common/user-notification-preferences'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
+import { ContractMetric } from 'common/contract-metric'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -176,6 +177,24 @@ export const API = (_apiTypeCheck = {
         answerId: z.string().optional(),
         dryRun: z.boolean().optional(),
         deps: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
+  'bet-batched': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as CandidateBet & { betId: string },
+    props: z
+      .object({
+        contractId: z.string(),
+        amount: z.number().gte(1),
+        replyToCommentId: z.string().optional(),
+        limitProb: z.number().gte(0.01).lte(0.99).optional(),
+        expiresAt: z.number().optional(),
+        outcome: z.enum(['YES', 'NO']).default('YES'),
+        answerId: z.string().optional(),
+        dryRun: z.boolean().optional(),
       })
       .strict(),
   },
@@ -695,7 +714,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: {} as any,
+    returns: [] as ContractMetric[],
     props: z
       .object({
         id: z.string(),
