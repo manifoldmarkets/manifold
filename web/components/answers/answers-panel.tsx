@@ -682,6 +682,7 @@ export function Answer(props: {
                 <InfoTooltip
                   className="!text-ink-600 dark:!text-ink-700"
                   text={OTHER_TOOLTIP_TEXT}
+                  tooltipParams={{ placement: 'bottom' }}
                 />
               </span>
             ) : (
