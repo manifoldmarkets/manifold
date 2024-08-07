@@ -9,7 +9,7 @@ import { insertLiquidity } from 'shared/supabase/liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
 import { getTierFromLiquidity } from 'common/tier'
 import { FieldVal } from 'shared/supabase/utils'
-import { updateContract } from 'shared/supabase/contracts'
+import { getPool, updateContract } from 'shared/supabase/contracts'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
@@ -32,6 +32,8 @@ export const addContractLiquidity = async (
       contract.mechanism !== 'cpmm-multi-1'
     )
       throw new APIError(403, 'Only cpmm-1 and cpmm-multi-1 are supported')
+
+    const pool = await getPool(tx, contractId)
 
     const { closeTime } = contract
     if (closeTime && Date.now() > closeTime)
@@ -65,12 +67,13 @@ export const addContractLiquidity = async (
     const liquidityRow = await insertLiquidity(tx, newLiquidityProvision)
     const liquidity = convertLiquidity(liquidityRow)
 
+    // TODO: update pool directly
     await updateContract(tx, contractId, {
       subsidyPool: FieldVal.increment(subsidyAmount),
       totalLiquidity: FieldVal.increment(subsidyAmount),
       marketTier: getTierFromLiquidity(
         contract,
-        contract.totalLiquidity + subsidyAmount
+        pool.total_liquidity + subsidyAmount
       ),
     })
 

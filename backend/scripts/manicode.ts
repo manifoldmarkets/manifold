@@ -790,10 +790,7 @@ function getSystemPrompt() {
     })
     .join('\n')
 
-  const manifoldInfoPath = path.join(__dirname, '..', '..', 'manifold-info.md')
-  const manifoldInfo = fs.readFileSync(manifoldInfoPath, 'utf8')
-
-  const codeGuidePath = path.join(__dirname, '..', '..', 'code-guide.md')
+  const codeGuidePath = path.join(__dirname, '..', '..', 'knowledge.md')
   const codeGuide = fs.readFileSync(codeGuidePath, 'utf8')
 
   const apiSchemaFile = fs.readFileSync(
@@ -811,10 +808,6 @@ ${apiSchemaFile}
 `
 
   return `
-<manifold_info>
-${manifoldInfo}
-</manifold_info>
-
 <code_guide>
 ${codeGuide}
 </code_guide>

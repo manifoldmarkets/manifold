@@ -24,16 +24,16 @@ import {
 import { runShortTrans } from 'shared/short-transaction'
 import { secrets } from 'common/secrets'
 import { getContract, log } from 'shared/utils'
-import { updateContract } from 'shared/supabase/contracts'
-import { bulkUpdateData } from 'shared/supabase/utils'
+import { getPool, updateContract } from 'shared/supabase/contracts'
+import { FieldVal, bulkUpdateData } from 'shared/supabase/utils'
 
 export const drizzleLiquidity = async () => {
   const pg = createSupabaseDirectClient()
 
-  const data = await pg.manyOrNone<{ id: string }>(
-    `select id from contracts where (data->'subsidyPool')::numeric > 1e-7`
+  const data = await pg.manyOrNone<{ contract_id: string }>(
+    `select contract_id from pools where subsidy_pool > 1e-7`
   )
-  const contractIds = shuffle(data.map((doc) => doc.id))
+  const contractIds = shuffle(data.map((doc) => doc.contract_id))
   log('found', contractIds.length, 'markets to drizzle')
 
   await mapAsync(contractIds, (cid) => drizzleMarket(cid), 10)
@@ -60,7 +60,12 @@ const drizzleMarket = async (contractId: string) => {
     if (!fetched) throw new APIError(404, 'Contract not found.')
     const contract = fetched as CPMMContract | CPMMMultiContract
 
-    const { subsidyPool, slug, uniqueBettorCount } = contract
+    const pool = await getPool(pgTrans, contractId)
+    if (!pool) throw new APIError(500, 'Pool not found.')
+
+    const { slug, uniqueBettorCount } = contract
+    const { subsidy_pool: subsidyPool } = pool
+
     if ((subsidyPool ?? 0) < 1e-7) return
 
     const r = Math.random()
@@ -95,8 +100,12 @@ const drizzleMarket = async (contractId: string) => {
         subsidyPool: subsidyPool - amount,
       })
     } else {
-      const { pool, p } = contract
-      const { newPool, newP } = addCpmmLiquidity(pool, p, amount)
+      const { yes, no, p, subsidy_pool } = pool
+      const { newPool, newP } = addCpmmLiquidity(
+        { YES: yes, NO: no },
+        p,
+        amount
+      )
 
       if (!isFinite(newP)) {
         throw new APIError(
@@ -105,11 +114,12 @@ const drizzleMarket = async (contractId: string) => {
         )
       }
 
+      // TODO: update pool directly
       await updateContract(pgTrans, contract.id, {
         pool: newPool,
         p: newP,
-        subsidyPool: subsidyPool - amount,
-      })
+        subsidyPool: FieldVal.increment(-amount),
+      } as any)
     }
 
     log(
