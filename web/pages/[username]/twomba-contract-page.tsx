@@ -27,17 +27,17 @@ import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
-import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { DangerZone } from 'web/components/contract/danger-zone'
 import { EditableQuestionTitle } from 'web/components/contract/editable-question-title'
-import { HeaderActions } from 'web/components/contract/header-actions'
 import { MarketTopics } from 'web/components/contract/market-topics'
 import {
   RelatedContractsGrid,
   SidebarRelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
+import { TwombaContractSummaryStats } from 'web/components/contract/twomba-contract-summary-stats'
+import { TwombaHeaderActions } from 'web/components/contract/twomba-header-actions'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -65,10 +65,8 @@ import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from './[contractSlug]'
-import { TwombaHeaderActions } from 'web/components/contract/twomba-header-actions'
-import { TwombaContractSummaryStats } from 'web/components/contract/twomba-contract-summary-stats'
 
-export function TwombaContractPageContent(props: ContractParams) {
+export default function TwombaContractPageContent(props: ContractParams) {
   const {
     userPositionsByOutcome,
     comments,
