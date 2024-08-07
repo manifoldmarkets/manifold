@@ -87,7 +87,7 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { YourOrders } from 'web/components/bet/order-book'
 import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
-import { TwombaContractPageContent } from './twomba-contract-page'
+import { TwombaContractPageContent } from '../../components/contract/twomba-contract-page'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
