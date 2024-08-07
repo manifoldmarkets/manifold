@@ -33,7 +33,8 @@ export function SubsidizeButton(props: {
     </Button>
   )
 }
-function AddLiquidityModal(props: {
+
+export function AddLiquidityModal(props: {
   contract: MarketContract
   isOpen: boolean
   setOpen: (open: boolean) => void
