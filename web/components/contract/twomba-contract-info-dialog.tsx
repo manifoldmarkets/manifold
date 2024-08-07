@@ -1,9 +1,7 @@
 import { Contract } from 'common/contract'
 
-
 import { User } from 'common/user'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-
 
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
