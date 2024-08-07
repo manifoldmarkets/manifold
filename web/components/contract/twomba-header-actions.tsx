@@ -225,7 +225,7 @@ export function TwombaHeaderActions(props: {
     // make tooltip children stretch
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
       <TwombaToggle
-        mode={'sweepies'}
+        mode={mode}
         onClick={() => {
           if (mode === 'sweepies') {
             setMode('mana')
