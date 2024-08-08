@@ -137,24 +137,21 @@ async function comparePositions(market1: Contract, market2: Contract) {
       return false
     }
     const unequalShares = Object.keys(pos1.totalShares).filter(
-      (key) =>
-        // I shrank epsilon here bc we lowered the number of arbitrage runs recently to speed up sums-to-one bets
-        !floatingEqual(pos1.totalShares[key], pos2.totalShares[key], 0.001)
+      (key) => !floatingEqual(pos1.totalShares[key], pos2.totalShares[key])
     )
-    if (
-      !floatingEqual(pos1.invested, pos2.invested) ||
-      unequalShares.length > 0
-    ) {
+    if (unequalShares.length > 0) {
+      unequalShares.forEach((key) => {
+        log(
+          `Unequal position for ${key} for user ${userId} in twin markets ${market1.id} and ${market2.id}`
+        )
+        log(`Market ${pos1.contractId}: ${pos1.totalShares[key]}`)
+        log(`Market ${pos2.contractId}: ${pos2.totalShares[key]}`)
+      })
+    }
+    if (!floatingEqual(pos1.invested, pos2.invested)) {
       log(
-        `Mismatch for user ${userId} in twin markets ${market1.id} and ${market2.id}`
+        `Unequal invested for user ${userId} in twin markets ${market1.id} and ${market2.id}`
       )
-      if (unequalShares.length > 0) {
-        unequalShares.forEach((key) => {
-          log(`Unequal position for ${key}:`)
-          log(`Market ${pos1.contractId}: ${pos1.totalShares[key]}`)
-          log(`Market ${pos2.contractId}: ${pos2.totalShares[key]}`)
-        })
-      }
       log(`Market ${pos1.contractId}: invested: ${pos1.invested}`)
       log(`Market ${pos2.contractId}: invested: ${pos2.invested}`)
       return false
