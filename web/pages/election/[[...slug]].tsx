@@ -29,9 +29,6 @@ export default function Elections(props: ElectionsPageProps) {
   useSaveContractVisitsLocally(user === null, 'ikSUiiNS8MwAI75RwEJf')
   useSaveCampaign()
 
-  if (props.state == 'not found') {
-    return <Custom404 />
-  }
 
   return (
     <Page trackPageView="us elections page 2024">
