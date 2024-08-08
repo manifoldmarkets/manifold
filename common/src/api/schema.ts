@@ -177,10 +177,11 @@ export const API = (_apiTypeCheck = {
         answerId: z.string().optional(),
         dryRun: z.boolean().optional(),
         deps: z.array(z.string()).optional(),
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },
-  'bet-batched': {
+  'bet-er': {
     method: 'POST',
     visibility: 'public',
     authed: true,
@@ -198,6 +199,7 @@ export const API = (_apiTypeCheck = {
         answerId: z.string().optional(),
         dryRun: z.boolean().optional(),
         deps: z.array(z.string()).optional(),
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },

@@ -1,5 +1,5 @@
 import { runScript } from './run-script'
-import { log } from 'shared/utils'
+import { isProd, log } from 'shared/utils'
 import { Contract, MultiContract } from 'common/contract'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { getTestUsers } from 'shared/test/users'
@@ -9,13 +9,13 @@ import { ContractMetric } from 'common/contract-metric'
 import { convertContract } from 'common/supabase/contracts'
 import { floatingEqual } from 'common/util/math'
 import { APIError } from 'common/api/utils'
-import { DEV_CONFIG } from 'common/envs/dev'
+import { Bet } from 'common/bet'
 
 const ENDPOINT_1 = 'bet'
-const ENDPOINT_2 = 'bet-batched'
+const ENDPOINT_2 = 'bet-er'
 
-const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
-// const API_URL = `http://localhost:8088/v0`
+// const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
+const API_URL = `http://localhost:8088/v0`
 
 const BETS_PER_USER_PER_MARKET = 10
 const NUM_USERS = 20
@@ -81,7 +81,7 @@ async function placeBet(
     throw new APIError(response.status as any, json?.message, json?.details)
   }
 
-  return json
+  return json as Bet
 }
 
 const createMarkets = async (
@@ -166,6 +166,10 @@ async function comparePositions(market1: Contract, market2: Contract) {
 
 if (require.main === module) {
   runScript(async ({ pg, firestore }) => {
+    if (isProd()) {
+      log('This script is not intended to run in production')
+      process.exit(1)
+    }
     const users = await getTestUsers(firestore, pg, NUM_USERS)
     const markets = await createTestMarkets(pg, users[0].apiKey)
 
@@ -177,7 +181,7 @@ if (require.main === module) {
     const startTime = Date.now()
     let totalAttempts = 0
     let successfulBets = 0
-    log('Placing bets...')
+    log('Placing bets on contracts ' + markets.map((m) => m.id).join(', '))
 
     let shouldQuit = 0
     process.on('SIGINT', () => {
@@ -186,8 +190,42 @@ if (require.main === module) {
         process.exit(0)
       }
       shouldQuit++
-      log('Letting final bet pairs run and doing position comparison...')
+      log(
+        'Letting final bet pairs finish and doing position comparison. Be patient!'
+      )
     })
+    const allBets: Bet[] = []
+
+    const placeBetWithRetry = async (
+      endpoint: string,
+      bet: any,
+      apiKey: string
+    ) => {
+      let attempts = 0
+      while (true) {
+        attempts++
+        totalAttempts++
+        try {
+          const result = await placeBet(endpoint, bet, apiKey)
+          allBets.push(result)
+          successfulBets++
+          return true
+        } catch (error: any) {
+          if (error.message.includes('Betting allowed only between 1-99%')) {
+            log(`Skipping bet pair due to 1-99% limit`)
+            return false
+          }
+          log(`Bet failed (attempt ${attempts}): ${error.message}`)
+          if (attempts % 5 === 0) {
+            log(`Continuing to retry for bet: ${JSON.stringify(bet)}`)
+            if (shouldQuit > 0) {
+              log('Exiting early from error, positions likely will not match')
+              return false
+            }
+          }
+        }
+      }
+    }
 
     for (const user of users) {
       if (shouldQuit > 0) break
@@ -207,13 +245,15 @@ if (require.main === module) {
           // Smaller to avoid betting must be between 1-99% error
           0.05
         )
-        const answerIndex = multiChoiceMarkets[0].answers.findIndex(
+        const answer = multiChoiceMarkets[0].answers.find(
           (a) => a.id === multiChoiceBet.answerId
         )
         const multiChoiceBet2 = {
           ...multiChoiceBet,
           contractId: multiChoiceMarkets[1].id,
-          answerId: multiChoiceMarkets[1].answers[answerIndex].id,
+          answerId:
+            multiChoiceMarkets[1].answers.find((a) => a.index === answer?.index)
+              ?.id ?? 'error',
         }
 
         const bothBets = [
@@ -229,38 +269,24 @@ if (require.main === module) {
 
         await Promise.all(
           bothBets.map(async (bets) => {
-            let skipBetPair = false
             for (const { endpoint, bet } of bets) {
-              if (skipBetPair) break
-              let betPlaced = false
-              let attempts = 0
-              while (!betPlaced) {
-                attempts++
-                totalAttempts++
-                try {
-                  await placeBet(endpoint, bet, user.apiKey)
-                  betPlaced = true
-                  successfulBets++
-                } catch (error: any) {
-                  if (
-                    error.message.includes('Betting allowed only between 1-99%')
-                  ) {
-                    log(`Skipping bet pair due to 1-99% limit `)
-                    skipBetPair = true
-                    break
-                  }
-                  log(`Bet failed (attempt ${attempts}): ${error.message}`)
-                  if (attempts % 5 === 0) {
-                    log(`Continuing to retry for bet: ${JSON.stringify(bet)}`)
-                    if (shouldQuit > 0) {
-                      log(
-                        'Exiting early from error, positions likely will not match'
-                      )
-                      break
-                    }
-                  }
-                }
-              }
+              const betPlaced = await placeBetWithRetry(
+                endpoint,
+                bet,
+                user.apiKey
+              )
+              if (!betPlaced) break
+            }
+            const contractIds = bets.map((b) => b.bet.contractId)
+            const latestBets = allBets
+              .filter((b) => contractIds.includes(b.contractId))
+              .slice(-2)
+            const bet1 = latestBets[0]
+            const bet2 = latestBets[1]
+            if (bet1.probAfter !== bet2.probAfter) {
+              log(
+                `Probabilities don't match: ${bet1.probAfter} vs ${bet2.probAfter} on contracts ${bet1.contractId} and ${bet2.contractId}`
+              )
             }
             if (successfulBets % 8 === 0) {
               const currentTime = Date.now()
@@ -284,8 +310,9 @@ if (require.main === module) {
     log(`Placed ${totalBets} bets in ${duration.toFixed(2)} seconds`)
     log(`Total attempts: ${totalAttempts}`)
     log(`Performance: ${betsPerSecond.toFixed(2)} bets per second`)
+    log('Calculating final positions...')
 
-    // wait seconds for final bets to settle
+    // wait second for final bets to settle
     await new Promise((resolve) => setTimeout(resolve, 1000))
     const binaryPositionsMatch = await comparePositions(
       binaryMarkets[0],

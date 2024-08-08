@@ -61,13 +61,13 @@ export const getTestUsers = async (
   await Promise.all(
     privateUsers.map((pu) =>
       incrementBalance(pg, pu.id, {
-        balance: 10000,
-        totalDeposits: 10000,
+        balance: 10_000,
+        totalDeposits: 10_000,
       })
     )
   )
   const apiKeysMissing = privateUsers.filter((p) => !p.apiKey)
-  log(`${privateUsers.length} user balances incremented by 1000`)
+  log(`${privateUsers.length} user balances incremented by 10k`)
   await Promise.all(
     apiKeysMissing.map(async (p) => {
       return await pg.none(
@@ -80,9 +80,9 @@ export const getTestUsers = async (
     log('generated api keys for users')
     const refetchedUsers = await pg.map(
       `select id, data->>'apiKey' as api_key from private_users
-              where data->>'email' ilike '%manifoldtestnewuser%'
-              limit $1`,
-      [limit],
+              where id in ($1:list)
+              `,
+      [apiKeysMissing.map((p) => p.id)],
       (r) => ({ id: r.id as string, apiKey: r.api_key as string })
     )
     return [...refetchedUsers, ...privateUsers.filter((p) => !p.apiKey)]

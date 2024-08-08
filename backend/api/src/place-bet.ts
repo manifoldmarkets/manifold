@@ -95,7 +95,7 @@ export const placeBetMain = async (
 ) => {
   const startTime = Date.now()
 
-  const { contractId, replyToCommentId, dryRun } = body
+  const { contractId, replyToCommentId, dryRun, deterministic } = body
 
   // Fetch data outside transaction first.
   const {
@@ -190,7 +190,8 @@ export const placeBetMain = async (
       user,
       isApi,
       replyToCommentId,
-      betGroupId
+      betGroupId,
+      deterministic
     )
   })
 
@@ -451,7 +452,8 @@ export const executeNewBetResult = async (
   user: User,
   isApi: boolean,
   replyToCommentId?: string,
-  betGroupId?: string
+  betGroupId?: string,
+  deterministic?: boolean
 ) => {
   const allOrdersToCancel: LimitBet[] = []
   const fullBets: Bet[] = []
@@ -571,7 +573,7 @@ export const executeNewBetResult = async (
             probAfter < 0.001 &&
             Math.abs(probAfter - probBefore) < 0.00001
 
-          if (!smallEnoughToIgnore || Math.random() < 0.01) {
+          if (deterministic || !smallEnoughToIgnore || Math.random() < 0.01) {
             const candidateBet = removeUndefinedProps({
               userId: user.id,
               isApi,
