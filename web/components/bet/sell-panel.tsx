@@ -284,7 +284,7 @@ export function SellPanel(props: {
         )}
         <Row className="text-ink-500 items-center justify-between gap-2">
           Fees
-          <FeeDisplay totalFees={totalFees} amount={buyAmount} />
+          <FeeDisplay totalFees={totalFees} amount={saleValue + totalFees} />
         </Row>
         <Row className="text-ink-500 items-center justify-between gap-2">
           Profit
