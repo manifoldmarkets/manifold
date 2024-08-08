@@ -29,7 +29,6 @@ export default function Elections(props: ElectionsPageProps) {
   useSaveContractVisitsLocally(user === null, 'ikSUiiNS8MwAI75RwEJf')
   useSaveCampaign()
 
-
   return (
     <Page trackPageView="us elections page 2024">
       <SEO
