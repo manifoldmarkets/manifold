@@ -188,7 +188,7 @@ if (require.main === module) {
       }
       shouldQuit++
       log(
-        'Letting final bet pairs finish and doing position comparison. Be patient!'
+        'Letting final bet pairs finish and doing position comparison. This may take 10-20 seconds, hit ctrl+c again to exit early without a position comparison.'
       )
     })
     const allBets: Bet[] = []
