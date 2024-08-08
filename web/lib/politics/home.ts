@@ -20,10 +20,6 @@ import { getBetPoints } from 'web/lib/supabase/bets'
 import { ENV } from 'common/envs/constants'
 
 export async function getElectionsPageProps() {
-  if (ENV === 'DEV') {
-    return { state: 'not found' }
-  }
-
   const adminDb = await initSupabaseAdmin()
   const getContract = (slug: string) => getContractFromSlug(adminDb, slug)
 
@@ -122,7 +118,6 @@ export async function getElectionsPageProps() {
     trendingDashboard,
     partyGraphData: { partyPoints, afterTime },
     houseContract,
-    state: 'success',
   } as ElectionsPageProps
 }
 
