@@ -232,6 +232,7 @@ export type MapContractsDictionary = {
 }
 
 export type ElectionsPageProps = {
+  state: 'not found' | 'success'
   rawPresidencyStateContracts: MapContractsDictionary
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
