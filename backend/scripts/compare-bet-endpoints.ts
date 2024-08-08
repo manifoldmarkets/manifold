@@ -8,12 +8,14 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import { ContractMetric } from 'common/contract-metric'
 import { convertContract } from 'common/supabase/contracts'
 import { floatingEqual } from 'common/util/math'
+import { APIError } from 'common/api/utils'
+import { DEV_CONFIG } from 'common/envs/dev'
 
 const ENDPOINT_1 = 'bet'
 const ENDPOINT_2 = 'bet-batched'
 
-// const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
-const API_URL = `http://localhost:8088/v0`
+const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
+// const API_URL = `http://localhost:8088/v0`
 
 const BETS_PER_USER_PER_MARKET = 10
 const NUM_USERS = 20
@@ -22,15 +24,11 @@ const ENABLE_LIMIT_ORDERS = true
 
 async function createTestMarkets(pg: SupabaseDirectClient, apiKey: string) {
   const binaryMarketProps = {
-    question: 'binary test ' + Math.random().toString(36).substring(7),
     outcomeType: 'BINARY',
     initialProb: 50,
   } as const
 
   const multiChoiceMarketProps = {
-    question:
-      'sums-to-one multi-choice test ' +
-      Math.random().toString(36).substring(7),
     outcomeType: 'MULTIPLE_CHOICE',
     answers: Array(50)
       .fill(0)
@@ -41,10 +39,24 @@ async function createTestMarkets(pg: SupabaseDirectClient, apiKey: string) {
 
   return await createMarkets(
     [
-      binaryMarketProps,
-      binaryMarketProps,
-      multiChoiceMarketProps,
-      multiChoiceMarketProps,
+      {
+        ...binaryMarketProps,
+        question: 'binary test ' + Math.random().toString(36).substring(7),
+      },
+      {
+        ...binaryMarketProps,
+        question: 'binary test ' + Math.random().toString(36).substring(7),
+      },
+      {
+        ...multiChoiceMarketProps,
+        question:
+          'multi-choice test ' + Math.random().toString(36).substring(7),
+      },
+      {
+        ...multiChoiceMarketProps,
+        question:
+          'multi-choice test ' + Math.random().toString(36).substring(7),
+      },
     ],
     apiKey,
     pg
@@ -64,8 +76,12 @@ async function placeBet(
     },
     body: JSON.stringify(bet),
   })
+  const json = await response.json()
+  if (!response.ok) {
+    throw new APIError(response.status as any, json?.message, json?.details)
+  }
 
-  return await response.json()
+  return json
 }
 
 const createMarkets = async (
@@ -115,24 +131,32 @@ async function comparePositions(market1: Contract, market2: Contract) {
   const posMap2 = new Map(positions2.map((p) => [p.userId, p]))
 
   for (const [userId, pos1] of posMap1) {
-    const pos2 = posMap2.get(userId)!
+    const pos2 = posMap2.get(userId)
+    if (!pos2) {
+      log(`Position for user ${userId} not found in market ${market2.id}`)
+      return false
+    }
     const unequalShares = Object.keys(pos1.totalShares).filter(
       (key) =>
+        // I shrank epsilon here bc we lowered the number of arbitrage runs recently to speed up sums-to-one bets
         !floatingEqual(pos1.totalShares[key], pos2.totalShares[key], 0.001)
     )
-    if (!pos2 || pos1.payout !== pos2.payout || unequalShares.length > 0) {
+    if (
+      !floatingEqual(pos1.invested, pos2.invested) ||
+      unequalShares.length > 0
+    ) {
       log(
-        `Mismatch for user ${userId} in markets ${market1.id} and ${market2.id}`
+        `Mismatch for user ${userId} in twin markets ${market1.id} and ${market2.id}`
       )
       if (unequalShares.length > 0) {
         unequalShares.forEach((key) => {
           log(`Unequal position for ${key}:`)
-          log(`  Market 1: ${pos1.totalShares[key]}`)
-          log(`  Market 2: ${pos2.totalShares[key]}`)
+          log(`Market ${pos1.contractId}: ${pos1.totalShares[key]}`)
+          log(`Market ${pos2.contractId}: ${pos2.totalShares[key]}`)
         })
       }
-      log(`Market 1: ${JSON.stringify(pos1)}`)
-      log(`Market 2: ${JSON.stringify(pos2)}`)
+      log(`Market ${pos1.contractId}: invested: ${pos1.invested}`)
+      log(`Market ${pos2.contractId}: invested: ${pos2.invested}`)
       return false
     }
   }
@@ -155,93 +179,100 @@ if (require.main === module) {
     let successfulBets = 0
     log('Placing bets...')
 
-    let isRunning = true
+    let shouldQuit = 0
     process.on('SIGINT', () => {
-      isRunning = false
-      log('Stopping bet placement. Running final position comparison...')
+      if (shouldQuit > 1) {
+        log('Exiting early without final position comparison')
+        process.exit(0)
+      }
+      shouldQuit++
+      log('Letting final bet pairs run and doing position comparison...')
     })
 
-    while (isRunning) {
-      for (const user of users) {
-        if (!isRunning) break
-        for (let i = 0; i < BETS_PER_USER_PER_MARKET; i++) {
-          if (!isRunning) break
-          const binaryBet = getRandomTestBet(
-            binaryMarkets[0],
-            ENABLE_LIMIT_ORDERS,
-            0.5
-          )
-          const binaryBet2 = {
-            ...binaryBet,
-            contractId: binaryMarkets[1].id,
-          }
-          const multiChoiceBet = getRandomTestBet(
-            multiChoiceMarkets[0],
-            ENABLE_LIMIT_ORDERS,
-            // Smaller to avoid betting must be between 1-99% error
-            0.05
-          )
-          const answerIndex = multiChoiceMarkets[0].answers.findIndex(
-            (a) => a.id === multiChoiceBet.answerId
-          )
-          const multiChoiceBet2 = {
-            ...multiChoiceBet,
-            contractId: multiChoiceMarkets[1].id,
-            answerId: multiChoiceMarkets[1].answers[answerIndex].id,
-          }
+    for (const user of users) {
+      if (shouldQuit > 0) break
+      for (let i = 0; i < BETS_PER_USER_PER_MARKET; i++) {
+        const binaryBet = getRandomTestBet(
+          binaryMarkets[0],
+          ENABLE_LIMIT_ORDERS,
+          0.5
+        )
+        const binaryBet2 = {
+          ...binaryBet,
+          contractId: binaryMarkets[1].id,
+        }
+        const multiChoiceBet = getRandomTestBet(
+          multiChoiceMarkets[0],
+          ENABLE_LIMIT_ORDERS,
+          // Smaller to avoid betting must be between 1-99% error
+          0.05
+        )
+        const answerIndex = multiChoiceMarkets[0].answers.findIndex(
+          (a) => a.id === multiChoiceBet.answerId
+        )
+        const multiChoiceBet2 = {
+          ...multiChoiceBet,
+          contractId: multiChoiceMarkets[1].id,
+          answerId: multiChoiceMarkets[1].answers[answerIndex].id,
+        }
 
-          const bothBets = [
-            [
-              { endpoint: ENDPOINT_1, bet: binaryBet },
-              { endpoint: ENDPOINT_2, bet: binaryBet2 },
-            ],
-            [
-              { endpoint: ENDPOINT_1, bet: multiChoiceBet },
-              { endpoint: ENDPOINT_2, bet: multiChoiceBet2 },
-            ],
-          ]
-          await Promise.all(
-            bothBets.map(async (bets) => {
-              let skipBetPair = false
-              for (const { endpoint, bet } of bets) {
-                if (skipBetPair || !isRunning) break
-                let betPlaced = false
-                let attempts = 0
-                while (!betPlaced && isRunning) {
-                  attempts++
-                  totalAttempts++
-                  try {
-                    await placeBet(endpoint, bet, user.apiKey)
-                    betPlaced = true
-                    successfulBets++
-                  } catch (error: any) {
-                    if ('message' in error) {
-                      if (
-                        error.message === 'Betting allowed only between 1-99%'
-                      ) {
-                        skipBetPair = true
-                        break
-                      }
-                      log(`Bet failed (attempt ${attempts}): ${error.message}`)
-                    } else log(`Bet failed (attempt ${attempts}): ${error}`)
-                    if (attempts % 5 === 0) {
-                      log(`Continuing to retry for bet: ${JSON.stringify(bet)}`)
+        const bothBets = [
+          [
+            { endpoint: ENDPOINT_1, bet: binaryBet },
+            { endpoint: ENDPOINT_2, bet: binaryBet2 },
+          ],
+          [
+            { endpoint: ENDPOINT_1, bet: multiChoiceBet },
+            { endpoint: ENDPOINT_2, bet: multiChoiceBet2 },
+          ],
+        ]
+
+        await Promise.all(
+          bothBets.map(async (bets) => {
+            let skipBetPair = false
+            for (const { endpoint, bet } of bets) {
+              if (skipBetPair) break
+              let betPlaced = false
+              let attempts = 0
+              while (!betPlaced) {
+                attempts++
+                totalAttempts++
+                try {
+                  await placeBet(endpoint, bet, user.apiKey)
+                  betPlaced = true
+                  successfulBets++
+                } catch (error: any) {
+                  if (
+                    error.message.includes('Betting allowed only between 1-99%')
+                  ) {
+                    log(`Skipping bet pair due to 1-99% limit `)
+                    skipBetPair = true
+                    break
+                  }
+                  log(`Bet failed (attempt ${attempts}): ${error.message}`)
+                  if (attempts % 5 === 0) {
+                    log(`Continuing to retry for bet: ${JSON.stringify(bet)}`)
+                    if (shouldQuit > 0) {
+                      log(
+                        'Exiting early from error, positions likely will not match'
+                      )
+                      break
                     }
                   }
                 }
               }
-              if (successfulBets % 8 === 0) {
-                const currentTime = Date.now()
-                const elapsedTime = (currentTime - startTime) / 1000
-                log(
-                  `In ${elapsedTime.toFixed(2)} seconds:
+            }
+            if (successfulBets % 8 === 0) {
+              const currentTime = Date.now()
+              const elapsedTime = (currentTime - startTime) / 1000
+              log(
+                `In ${elapsedTime.toFixed(2)} seconds:
                   ${successfulBets} successful bets,
                   ${totalAttempts} total attempts`
-                )
-              }
-            })
-          )
-        }
+              )
+            }
+          })
+        )
       }
     }
 
@@ -254,6 +285,8 @@ if (require.main === module) {
     log(`Total attempts: ${totalAttempts}`)
     log(`Performance: ${betsPerSecond.toFixed(2)} bets per second`)
 
+    // wait seconds for final bets to settle
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     const binaryPositionsMatch = await comparePositions(
       binaryMarkets[0],
       binaryMarkets[1]

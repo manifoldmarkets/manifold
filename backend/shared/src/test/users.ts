@@ -52,6 +52,7 @@ export const getTestUsers = async (
   const privateUsers = await pg.map(
     `select id, data->>'apiKey' as api_key from private_users
               where data->>'email' ilike '%manifoldtestnewuser%'
+              order by random()
               limit $1`,
     [limit],
     (r) => ({ id: r.id as string, apiKey: r.api_key as string })
