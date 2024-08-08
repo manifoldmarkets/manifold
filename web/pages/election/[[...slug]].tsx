@@ -7,7 +7,6 @@ import { USElectionsPage } from 'web/components/elections-page'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import Custom404 from '../404'
 
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
