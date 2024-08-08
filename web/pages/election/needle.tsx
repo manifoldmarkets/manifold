@@ -42,5 +42,6 @@ export async function getStaticProps() {
     props: {
       electionPartyContract,
     },
+    revalidate: 60,
   }
 }
