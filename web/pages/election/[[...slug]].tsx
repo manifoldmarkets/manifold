@@ -7,6 +7,7 @@ import { USElectionsPage } from 'web/components/elections-page'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import Custom404 from '../404'
 
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
@@ -15,7 +16,6 @@ const revalidate = 60
 
 export async function getStaticProps() {
   const electionsPageProps = await getElectionsPageProps()
-
   return {
     props: electionsPageProps,
     revalidate,
@@ -28,6 +28,7 @@ export default function Elections(props: ElectionsPageProps) {
   // mark US prez contract as seen to ensure US Politics group is auto-selected during onboarding
   useSaveContractVisitsLocally(user === null, 'ikSUiiNS8MwAI75RwEJf')
   useSaveCampaign()
+
 
   return (
     <Page trackPageView="us elections page 2024">

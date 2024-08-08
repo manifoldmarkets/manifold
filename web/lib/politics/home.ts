@@ -17,6 +17,10 @@ import { getMultiBetPoints } from 'common/contract-params'
 import { PolicyContractType, PolicyData } from 'web/public/data/policy-data'
 import { mapValues } from 'lodash'
 import { getBetPoints } from 'web/lib/supabase/bets'
+import { ENV } from 'common/envs/constants'
+
+export const ELECTION_PARTY_CONTRACT_SLUG =
+  'which-party-will-win-the-2024-us-pr-f4158bf9278a'
 
 export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
@@ -43,7 +47,7 @@ export async function getElectionsPageProps() {
   const trendingDashboard = await getDashboardProps('politicsheadline')
 
   const specialContractSlugs = [
-    'which-party-will-win-the-2024-us-pr-f4158bf9278a',
+    ELECTION_PARTY_CONTRACT_SLUG,
     'who-will-win-the-2024-us-presidenti-8c1c8b2f8964',
     'who-will-win-the-2024-republican-pr-e1332cf40e59',
     'who-will-win-the-2024-democratic-pr-47576e90fa38',
