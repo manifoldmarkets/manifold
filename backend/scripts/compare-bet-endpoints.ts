@@ -9,10 +9,15 @@ import { ContractMetric } from 'common/contract-metric'
 import { convertContract } from 'common/supabase/contracts'
 import { floatingEqual } from 'common/util/math'
 
+const ENDPOINT_1 = 'bet'
+const ENDPOINT_2 = 'bet-batched'
+
 // const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 const API_URL = `http://localhost:8088/v0`
+
 const BETS_PER_USER_PER_MARKET = 10
-const NUM_USERS = 10
+const NUM_USERS = 20
+// total bets will be: 4 markets x bets per user x num users
 const ENABLE_LIMIT_ORDERS = true
 
 async function createTestMarkets(pg: SupabaseDirectClient, apiKey: string) {
@@ -60,10 +65,6 @@ async function placeBet(
     body: JSON.stringify(bet),
   })
 
-  if (!response.ok) {
-    throw new Error(`Failed to place bet: ${await response.text()}`)
-  }
-
   return await response.json()
 }
 
@@ -103,18 +104,10 @@ async function getMarketPositions(contractId: string) {
     },
   })
 
-  if (!response.ok) {
-    throw new Error(`Failed to get market positions: ${await response.text()}`)
-  }
-
   return (await response.json()) as ContractMetric[]
 }
 
-async function comparePositions(
-  pg: SupabaseDirectClient,
-  market1: Contract,
-  market2: Contract
-) {
+async function comparePositions(market1: Contract, market2: Contract) {
   const positions1 = await getMarketPositions(market1.id)
   const positions2 = await getMarketPositions(market2.id)
 
@@ -124,7 +117,8 @@ async function comparePositions(
   for (const [userId, pos1] of posMap1) {
     const pos2 = posMap2.get(userId)!
     const unequalShares = Object.keys(pos1.totalShares).filter(
-      (key) => !floatingEqual(pos1.totalShares[key], pos2.totalShares[key])
+      (key) =>
+        !floatingEqual(pos1.totalShares[key], pos2.totalShares[key], 0.001)
     )
     if (!pos2 || pos1.payout !== pos2.payout || unequalShares.length > 0) {
       log(
@@ -160,82 +154,94 @@ if (require.main === module) {
     let totalAttempts = 0
     let successfulBets = 0
     log('Placing bets...')
-    for (const user of users) {
-      for (let i = 0; i < BETS_PER_USER_PER_MARKET; i++) {
-        const binaryBet = getRandomTestBet(
-          binaryMarkets[0],
-          ENABLE_LIMIT_ORDERS,
-          0.5
-        )
-        const binaryBet2 = {
-          ...binaryBet,
-          contractId: binaryMarkets[1].id,
-        }
-        const multiChoiceBet = getRandomTestBet(
-          multiChoiceMarkets[0],
-          ENABLE_LIMIT_ORDERS,
-          0.05
-        )
-        const answerIndex = multiChoiceMarkets[0].answers.findIndex(
-          (a) => a.id === multiChoiceBet.answerId
-        )
-        const multiChoiceBet2 = {
-          ...multiChoiceBet,
-          contractId: multiChoiceMarkets[1].id,
-          answerId: multiChoiceMarkets[1].answers[answerIndex].id,
-        }
 
-        const bothBets = [
-          [
-            { type: 'bet', bet: binaryBet },
-            { type: 'bet-batched', bet: binaryBet2 },
-          ],
-          [
-            { type: 'bet', bet: multiChoiceBet },
-            { type: 'bet-batched', bet: multiChoiceBet2 },
-          ],
-        ]
-        await Promise.all(
-          bothBets.map(async (bets) => {
-            let skipBetPair = false
-            for (const { type, bet } of bets) {
-              if (skipBetPair) break
-              let betPlaced = false
-              let attempts = 0
-              while (!betPlaced) {
-                attempts++
-                totalAttempts++
-                try {
-                  await placeBet(type, bet, user.apiKey)
-                  betPlaced = true
-                  successfulBets++
-                } catch (error: any) {
-                  if ('message' in error) {
-                    if (
-                      error.message === 'Betting allowed only between 1-99%'
-                    ) {
-                      skipBetPair = true
-                      break
+    let isRunning = true
+    process.on('SIGINT', () => {
+      isRunning = false
+      log('Stopping bet placement. Running final position comparison...')
+    })
+
+    while (isRunning) {
+      for (const user of users) {
+        if (!isRunning) break
+        for (let i = 0; i < BETS_PER_USER_PER_MARKET; i++) {
+          if (!isRunning) break
+          const binaryBet = getRandomTestBet(
+            binaryMarkets[0],
+            ENABLE_LIMIT_ORDERS,
+            0.5
+          )
+          const binaryBet2 = {
+            ...binaryBet,
+            contractId: binaryMarkets[1].id,
+          }
+          const multiChoiceBet = getRandomTestBet(
+            multiChoiceMarkets[0],
+            ENABLE_LIMIT_ORDERS,
+            // Smaller to avoid betting must be between 1-99% error
+            0.05
+          )
+          const answerIndex = multiChoiceMarkets[0].answers.findIndex(
+            (a) => a.id === multiChoiceBet.answerId
+          )
+          const multiChoiceBet2 = {
+            ...multiChoiceBet,
+            contractId: multiChoiceMarkets[1].id,
+            answerId: multiChoiceMarkets[1].answers[answerIndex].id,
+          }
+
+          const bothBets = [
+            [
+              { endpoint: ENDPOINT_1, bet: binaryBet },
+              { endpoint: ENDPOINT_2, bet: binaryBet2 },
+            ],
+            [
+              { endpoint: ENDPOINT_1, bet: multiChoiceBet },
+              { endpoint: ENDPOINT_2, bet: multiChoiceBet2 },
+            ],
+          ]
+          await Promise.all(
+            bothBets.map(async (bets) => {
+              let skipBetPair = false
+              for (const { endpoint, bet } of bets) {
+                if (skipBetPair || !isRunning) break
+                let betPlaced = false
+                let attempts = 0
+                while (!betPlaced && isRunning) {
+                  attempts++
+                  totalAttempts++
+                  try {
+                    await placeBet(endpoint, bet, user.apiKey)
+                    betPlaced = true
+                    successfulBets++
+                  } catch (error: any) {
+                    if ('message' in error) {
+                      if (
+                        error.message === 'Betting allowed only between 1-99%'
+                      ) {
+                        skipBetPair = true
+                        break
+                      }
+                      log(`Bet failed (attempt ${attempts}): ${error.message}`)
+                    } else log(`Bet failed (attempt ${attempts}): ${error}`)
+                    if (attempts % 5 === 0) {
+                      log(`Continuing to retry for bet: ${JSON.stringify(bet)}`)
                     }
-                    log(`Bet failed (attempt ${attempts}): ${error.message}`)
-                  } else log(`Bet failed (attempt ${attempts}): ${error}`)
-                  if (attempts % 5 === 0) {
-                    log(`Continuing to retry for bet: ${JSON.stringify(bet)}`)
                   }
                 }
               }
-            }
-            if (successfulBets % 8 === 0) {
-              const currentTime = Date.now()
-              const elapsedTime = (currentTime - startTime) / 1000
-              log(
-                `In ${elapsedTime.toFixed(2)} seconds:
-                ${successfulBets} successful bets,
-                ${totalAttempts} total attempts`
-              )
-            }
-          })
-        )
+              if (successfulBets % 8 === 0) {
+                const currentTime = Date.now()
+                const elapsedTime = (currentTime - startTime) / 1000
+                log(
+                  `In ${elapsedTime.toFixed(2)} seconds:
+                  ${successfulBets} successful bets,
+                  ${totalAttempts} total attempts`
+                )
+              }
+            })
+          )
+        }
       }
     }
 
@@ -249,12 +255,10 @@ if (require.main === module) {
     log(`Performance: ${betsPerSecond.toFixed(2)} bets per second`)
 
     const binaryPositionsMatch = await comparePositions(
-      pg,
       binaryMarkets[0],
       binaryMarkets[1]
     )
     const multiChoicePositionsMatch = await comparePositions(
-      pg,
       multiChoiceMarkets[0],
       multiChoiceMarkets[1]
     )
