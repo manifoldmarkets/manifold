@@ -12,7 +12,7 @@ export const getRandomTestBet = (
     ? parseFloat(Math.random().toPrecision(1))
     : undefined
 
-  const betData = removeUndefinedProps({
+  return removeUndefinedProps({
     contractId: contract.id,
     amount: Math.random() * 100 + 1,
     outcome:
@@ -29,6 +29,6 @@ export const getRandomTestBet = (
       : limitProb > 0.99
       ? 0.99
       : limitProb,
+    deterministic: true,
   })
-  return betData
 }

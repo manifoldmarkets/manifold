@@ -37,7 +37,7 @@ export const getAnswersForContract = async (
   pg: SupabaseDirectClient,
   contractId: string
 ) => {
-  // Answers must be sorted by index or you get non-deterministic results
+  // Answers must be sorted by index, or you get non-deterministic results
   return await pg.map(
     `select * from answers where contract_id = $1
             order by index`,
