@@ -11,7 +11,7 @@ import {
   CommentReplyHeaderWithBet,
   ContractCommentInput,
   FeedCommentHeader,
-} from 'web/components/feed/feed-comments'
+} from 'web/components/comments/comments'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Avatar } from 'web/components/widgets/avatar'

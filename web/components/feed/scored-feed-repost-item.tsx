@@ -1,6 +1,9 @@
 import { ContractComment } from 'common/comment'
 import { Contract, contractPath } from 'common/contract'
-import { CommentReplyHeaderWithBet, FeedCommentHeader } from './feed-comments'
+import {
+  CommentReplyHeaderWithBet,
+  FeedCommentHeader,
+} from '../comments/comments'
 import { Col } from '../layout/col'
 import clsx from 'clsx'
 import { memo, useState } from 'react'

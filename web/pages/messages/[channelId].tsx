@@ -43,7 +43,7 @@ import { buildArray, filterDefined } from 'common/util/array'
 import { GiSpeakerOff } from 'react-icons/gi'
 import toast from 'react-hot-toast'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { ReplyToUserInfo } from 'web/components/feed/feed-comments'
+import { ReplyToUserInfo } from 'web/components/comments/comments'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
   useGroupedMessages,
