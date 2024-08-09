@@ -14,7 +14,7 @@ This directory contains the implementation of various API endpoints for the Mani
 
 To add a new API endpoint, follow these steps:
 
-1. Create a new file for the endpoint in the `backend/api/src` directory.
+1. Create a new file for the endpoint in the `backend/api/src` directory. Each endpoint should be in a new file.
 2. Implement the endpoint logic in the new file.
 3. Add the endpoint schema to `common/src/api/schema.ts`, including props, return type, and other information.
 4. Update `backend/api/src/app.ts`:
@@ -72,6 +72,14 @@ export const myAuthenticatedEndpoint: APIHandler<'my-authenticated-endpoint'> = 
 ## Best Practices
 
 - Use the `createSupabaseDirectClient` function from `shared/supabase/init` for database operations.
+This uses the pg promise library, where you pass raw sql strings like so:
+```ts
+import { createSupabaseClient } from 'shared/supabase/init'
+
+const pg = createSupabaseDirectConnection()
+const contractIds = await pg.manyOrNone(`select id from contracts`, [], r => r.id as string)
+```
+
 - Keep endpoint logic modular and reusable when possible.
 - Use TypeScript types consistently to ensure type safety across the API.
 - Use Zod schemas in `common/src/api/schema.ts` to define prop and return types for strong type checking.
