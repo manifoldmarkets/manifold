@@ -1,7 +1,12 @@
 import { z } from 'zod'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { log, getContractSupabase, getUser } from 'shared/utils'
+import {
+  log,
+  getContractSupabase,
+  getUser,
+  revalidateContractStaticProps,
+} from 'shared/utils'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { MAX_ID_LENGTH } from 'common/group'
 import {
@@ -10,6 +15,7 @@ import {
 } from 'shared/supabase/init'
 import { getComment } from 'shared/supabase/contract_comments'
 import { richTextToString } from 'common/util/parse'
+import { broadcastNewChartAnnotation } from 'shared/websockets/helpers'
 
 const bodySchema = z
   .object({
@@ -74,7 +80,7 @@ export const createchartannotation = authEndpoint(async (req, auth) => {
          user_username, user_avatar_url, user_name, user_id, prob_change
          )
         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-    returning id
+    returning *
         `,
     [
       contractId,
@@ -95,6 +101,9 @@ export const createchartannotation = authEndpoint(async (req, auth) => {
       probChange ?? null,
     ]
   )
+
+  broadcastNewChartAnnotation(contractId, res)
+  await revalidateContractStaticProps(contract)
 
   return { success: true, id: Number(res.id) }
 })
