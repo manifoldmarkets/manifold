@@ -37,13 +37,17 @@ export function Policy(props: {
   const harrisPath = contractPath(harrisContract)
   const trumpPath = contractPath(trumpContract)
 
-  const harrisProbability = getPercent(
-    getDisplayProbability(harrisContract as BinaryContract)
-  ).toFixed(0)
+  const harrisProbability = Number(
+    getPercent(getDisplayProbability(harrisContract as BinaryContract)).toFixed(
+      0
+    )
+  )
 
-  const trumpProbability = getPercent(
-    getDisplayProbability(trumpContract as BinaryContract)
-  ).toFixed(0)
+  const trumpProbability = Number(
+    getPercent(getDisplayProbability(trumpContract as BinaryContract)).toFixed(
+      0
+    )
+  )
 
   return (
     <Row
@@ -129,14 +133,17 @@ export function MobilePolicy(props: {
   const harrisPath = contractPath(harrisContract)
   const trumpPath = contractPath(trumpContract)
 
-  const harrisProbability = getPercent(
-    getDisplayProbability(harrisContract as BinaryContract)
-  ).toFixed(0)
+  const harrisProbability = Number(
+    getPercent(getDisplayProbability(harrisContract as BinaryContract)).toFixed(
+      0
+    )
+  )
 
-  const trumpProbability = getPercent(
-    getDisplayProbability(trumpContract as BinaryContract)
-  ).toFixed(0)
-
+  const trumpProbability = Number(
+    getPercent(getDisplayProbability(trumpContract as BinaryContract)).toFixed(
+      0
+    )
+  )
   return (
     <Col className={clsx('bg-canvas-0 mb-2 rounded-lg px-4 py-2', className)}>
       <div className="font-semibold">{title}</div>
