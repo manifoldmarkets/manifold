@@ -379,7 +379,7 @@ export const MULTI_NUMERIC_BUCKETS_MAX = 50
 export const MULTI_NUMERIC_CREATION_ENABLED = true
 
 export type Visibility = 'public' | 'unlisted'
-export const VISIBILITIES = ['public', 'unlisted'] as const
+export const VISIBILITIES = ['public' /*, 'unlisted'*/] as const
 
 export const SORTS = [
   { label: 'High %', value: 'prob-desc' },

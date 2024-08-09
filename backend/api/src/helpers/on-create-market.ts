@@ -4,7 +4,6 @@ import { JSONContent } from '@tiptap/core'
 import { getUser, log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
-import { addUserToContractFollowers } from 'shared/follow-market'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { createNewContractNotification } from 'shared/create-notification'
 import {
@@ -25,13 +24,14 @@ import {
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { randomString } from 'common/util/random'
 import { generateImage } from 'shared/helpers/openai-utils'
+import { followContractInternal } from 'api/follow-contract'
 
 export const onCreateMarket = async (
   contract: Contract,
-  triggerEventId?: string
+  embedding: number[]
 ) => {
   const { creatorId, question, creatorUsername } = contract
-  const eventId = triggerEventId ?? contract.id + '-on-create'
+  const eventId = contract.id + '-on-create'
   const contractCreator = await getUser(creatorId)
   if (!contractCreator) throw new Error('Could not find contract creator')
 
@@ -43,7 +43,8 @@ export const onCreateMarket = async (
   )
   const desc = contract.description as JSONContent
   const mentioned = parseMentions(desc)
-  await addUserToContractFollowers(contract.id, contractCreator.id)
+  const pg = createSupabaseDirectClient()
+  await followContractInternal(pg, contract.id, true, contractCreator.id)
 
   await createNewContractNotification(
     contractCreator,
@@ -52,14 +53,7 @@ export const onCreateMarket = async (
     richTextToString(desc),
     mentioned
   )
-  const pg = createSupabaseDirectClient()
-
-  const embedding = await pg.oneOrNone(
-    `select embedding
-              from contract_embeddings
-              where contract_id = $1`,
-    [contract.id]
-  )
+  // Try again if first embedding failed
   if (!embedding) await generateContractEmbeddings(contract, pg)
   const isNonPredictive = isContractNonPredictive(contract)
   if (isNonPredictive) {

@@ -32,7 +32,6 @@ import {
 } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { addUserToContractFollowers } from 'shared/follow-market'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { getCommentSafe } from 'shared/supabase/contract_comments'
@@ -66,6 +65,7 @@ import { APIError } from 'common/api/utils'
 import { updateUser } from 'shared/supabase/users'
 import { broadcastNewBets } from 'shared/websockets/helpers'
 import { getAnswersForContract } from 'shared/supabase/answers'
+import { followContractInternal } from 'api/follow-contract'
 
 export const onCreateBets = async (
   bets: Bet[],
@@ -155,7 +155,8 @@ export const onCreateBets = async (
         await updateBettingStreak(bettor, bet, contract, eventId)
 
         await Promise.all([
-          bet.amount >= 0 && addUserToContractFollowers(contract.id, bettor.id),
+          bet.amount >= 0 &&
+            followContractInternal(pg, contract.id, true, bettor.id),
 
           sendUniqueBettorNotification(contract, bettor, bet, bets),
           updateUserInterestEmbedding(pg, bettor.id),

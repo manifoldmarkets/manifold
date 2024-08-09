@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import * as dayjs from 'dayjs'
 import 'dayjs/plugin/utc'
+import { log } from 'shared/utils'
 
 export const generateEmbeddings = async (question: string) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -11,10 +12,10 @@ export const generateEmbeddings = async (question: string) => {
       input: question,
     })
   } catch (e: any) {
-    console.error(
-      'Error generating embeddings',
-      !process.env.OPENAI_API_KEY ? ' (no OpenAI API key found)' : '',
-      e.message
+    log.error(
+      'Error generating embeddings ' +
+        (!process.env.OPENAI_API_KEY ? ' (no OpenAI API key found) ' : ' ') +
+        e.message
     )
     return undefined
   }
