@@ -12,7 +12,7 @@ import { APIError } from 'common/api/utils'
 import { Bet } from 'common/bet'
 
 const ENDPOINT_1 = 'bet'
-const ENDPOINT_2 = 'bet-er'
+const ENDPOINT_2 = 'bet-ter'
 
 // const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 const API_URL = `http://localhost:8088/v0`

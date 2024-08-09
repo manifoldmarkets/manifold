@@ -181,7 +181,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'bet-er': {
+  'bet-ter': {
     method: 'POST',
     visibility: 'public',
     authed: true,

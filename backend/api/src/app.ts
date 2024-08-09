@@ -265,7 +265,7 @@ app.options('*', allowCorsUnrestricted)
 const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
   'multi-bet': placeMultiBet,
-  'bet-er': placeBetBatched,
+  'bet-ter': placeBetBatched,
   'follow-contract': followContract,
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
