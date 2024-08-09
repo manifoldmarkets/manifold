@@ -1,4 +1,3 @@
-import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 import { memo, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -6,32 +5,23 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { CommentView } from 'common/events'
-import { toast } from 'react-hot-toast'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
-import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import { CommentInput, CommentType } from './comment-input'
 import { ReplyToggle } from './reply-toggle'
 import { Content } from '../widgets/editor'
-import { Answer } from 'common/answer'
-import { CommentOnAnswer } from '../feed/comment-on-answer'
 import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import { FeedReplyBet } from 'web/components/feed/feed-bets'
 import { HOUR_MS } from 'common/util/time'
 import { last, orderBy, sumBy } from 'lodash'
 import { UserHovercard } from '../user/user-hovercard'
-import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import Link from 'next/link'
 import {
   CommentReplyHeader,
   FeedCommentHeader,
-  ReplyToBetRow,
 } from './comment-header'
 import { CommentActions } from './comment-actions'
 
