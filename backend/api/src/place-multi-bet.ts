@@ -43,7 +43,7 @@ export const placeMultiBetMain = async (
     if (!answers) throw new APIError(404, 'Answers not found')
 
     const { shouldAnswersSumToOne } = contract
-    const { answerIds, limitProb, expiresAt } = body
+    const { answerIds, limitProb, expiresAt, deterministic } = body
     if (expiresAt && expiresAt < Date.now())
       throw new APIError(403, 'Bet cannot expire in the past.')
 
@@ -82,7 +82,8 @@ export const placeMultiBetMain = async (
           user,
           isApi,
           undefined,
-          betGroupId
+          betGroupId,
+          deterministic
         )
       )
     )
