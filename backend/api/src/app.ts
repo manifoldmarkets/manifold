@@ -508,10 +508,6 @@ app.post(
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
 
-// mqp: definitely don't enable this in production since there's no authorization
-// import { broadcastTest } from 'api/broadcast-test'
-// app.post('/broadcast-test', ...apiRoute(broadcastTest))
-
 // Catch 404 errors - this should be the last route
 app.use(allowCorsUnrestricted, (req, res) => {
   res
