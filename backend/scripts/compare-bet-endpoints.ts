@@ -22,145 +22,6 @@ const NUM_USERS = 20
 // total bets will be: 4 markets x bets per user x num users
 const ENABLE_LIMIT_ORDERS = true
 
-async function createTestMarkets(pg: SupabaseDirectClient, apiKey: string) {
-  const binaryMarketProps = {
-    outcomeType: 'BINARY',
-    initialProb: 50,
-  } as const
-
-  const multiChoiceMarketProps = {
-    outcomeType: 'MULTIPLE_CHOICE',
-    answers: Array(50)
-      .fill(0)
-      .map((_, i) => 'answer ' + i),
-    shouldAnswersSumToOne: true,
-    addAnswersMode: 'DISABLED',
-  } as const
-
-  return await createMarkets(
-    [
-      {
-        ...binaryMarketProps,
-        question: 'binary test ' + Math.random().toString(36).substring(7),
-      },
-      {
-        ...binaryMarketProps,
-        question: 'binary test ' + Math.random().toString(36).substring(7),
-      },
-      {
-        ...multiChoiceMarketProps,
-        question:
-          'multi-choice test ' + Math.random().toString(36).substring(7),
-      },
-      {
-        ...multiChoiceMarketProps,
-        question:
-          'multi-choice test ' + Math.random().toString(36).substring(7),
-      },
-    ],
-    apiKey,
-    pg
-  )
-}
-
-async function placeBet(
-  endpoint: string,
-  bet: ValidatedAPIParams<'bet'>,
-  apiKey: string
-) {
-  const response = await fetch(`${API_URL}/${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Key ${apiKey}`,
-    },
-    body: JSON.stringify(bet),
-  })
-  const json = await response.json()
-  if (!response.ok) {
-    throw new APIError(response.status as any, json?.message, json?.details)
-  }
-
-  return json as Bet
-}
-
-const createMarkets = async (
-  marketProps: ValidatedAPIParams<'market'>[],
-  apiKey: string,
-  pg: SupabaseDirectClient
-) => {
-  const markets = await Promise.all(
-    marketProps.map(async (market) => {
-      const resp = await fetch(API_URL + `/market`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Key ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(market),
-      })
-      if (resp.status !== 200) {
-        console.error('Failed to create market', await resp.text())
-      }
-      return resp.json()
-    })
-  )
-  return await pg.map(
-    `select * from contracts where slug in ($1:list)`,
-    [markets.map((m: any) => m.slug)],
-    convertContract
-  )
-}
-
-async function getMarketPositions(contractId: string) {
-  const response = await fetch(`${API_URL}/market/${contractId}/positions`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-
-  return (await response.json()) as ContractMetric[]
-}
-
-async function comparePositions(market1: Contract, market2: Contract) {
-  const positions1 = await getMarketPositions(market1.id)
-  const positions2 = await getMarketPositions(market2.id)
-
-  const posMap1 = new Map(positions1.map((p) => [p.userId, p]))
-  const posMap2 = new Map(positions2.map((p) => [p.userId, p]))
-
-  for (const [userId, pos1] of posMap1) {
-    const pos2 = posMap2.get(userId)
-    if (!pos2) {
-      log(`Position for user ${userId} not found in market ${market2.id}`)
-      return false
-    }
-    const unequalShares = Object.keys(pos1.totalShares).filter(
-      (key) => !floatingEqual(pos1.totalShares[key], pos2.totalShares[key])
-    )
-    if (unequalShares.length > 0) {
-      unequalShares.forEach((key) => {
-        log(
-          `Unequal position for ${key} for user ${userId} in twin markets ${market1.id} and ${market2.id}`
-        )
-        log(`Market ${pos1.contractId}: ${pos1.totalShares[key]}`)
-        log(`Market ${pos2.contractId}: ${pos2.totalShares[key]}`)
-      })
-    }
-    if (!floatingEqual(pos1.invested, pos2.invested)) {
-      log(
-        `Unequal invested for user ${userId} in twin markets ${market1.id} and ${market2.id}`
-      )
-      log(`Market ${pos1.contractId}: invested: ${pos1.invested}`)
-      log(`Market ${pos2.contractId}: invested: ${pos2.invested}`)
-      return false
-    }
-  }
-
-  return true
-}
-
 if (require.main === module) {
   runScript(async ({ pg, firestore }) => {
     if (isProd()) {
@@ -203,7 +64,7 @@ if (require.main === module) {
         attempts++
         totalAttempts++
         try {
-          const result = await placeBet(endpoint, bet, apiKey)
+          const result = await placeTestBet(endpoint, bet, apiKey)
           allBets.push(result)
           successfulBets++
           return true
@@ -329,4 +190,143 @@ if (require.main === module) {
       log('Position mismatch detected')
     }
   })
+}
+
+async function createTestMarkets(pg: SupabaseDirectClient, apiKey: string) {
+  const binaryMarketProps = {
+    outcomeType: 'BINARY',
+    initialProb: 50,
+  } as const
+
+  const multiChoiceMarketProps = {
+    outcomeType: 'MULTIPLE_CHOICE',
+    answers: Array(50)
+      .fill(0)
+      .map((_, i) => 'answer ' + i),
+    shouldAnswersSumToOne: true,
+    addAnswersMode: 'DISABLED',
+  } as const
+
+  return await createMarkets(
+    [
+      {
+        ...binaryMarketProps,
+        question: 'binary test ' + Math.random().toString(36).substring(7),
+      },
+      {
+        ...binaryMarketProps,
+        question: 'binary test ' + Math.random().toString(36).substring(7),
+      },
+      {
+        ...multiChoiceMarketProps,
+        question:
+          'multi-choice test ' + Math.random().toString(36).substring(7),
+      },
+      {
+        ...multiChoiceMarketProps,
+        question:
+          'multi-choice test ' + Math.random().toString(36).substring(7),
+      },
+    ],
+    apiKey,
+    pg
+  )
+}
+
+async function placeTestBet(
+  endpoint: string,
+  bet: ValidatedAPIParams<'bet'>,
+  apiKey: string
+) {
+  const response = await fetch(`${API_URL}/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Key ${apiKey}`,
+    },
+    body: JSON.stringify(bet),
+  })
+  const json = await response.json()
+  if (!response.ok) {
+    throw new APIError(response.status as any, json?.message, json?.details)
+  }
+
+  return json as Bet
+}
+
+const createMarkets = async (
+  marketProps: ValidatedAPIParams<'market'>[],
+  apiKey: string,
+  pg: SupabaseDirectClient
+) => {
+  const markets = await Promise.all(
+    marketProps.map(async (market) => {
+      const resp = await fetch(API_URL + `/market`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Key ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(market),
+      })
+      if (resp.status !== 200) {
+        console.error('Failed to create market', await resp.text())
+      }
+      return resp.json()
+    })
+  )
+  return await pg.map(
+    `select * from contracts where slug in ($1:list)`,
+    [markets.map((m: any) => m.slug)],
+    convertContract
+  )
+}
+
+async function getMarketPositions(contractId: string) {
+  const response = await fetch(`${API_URL}/market/${contractId}/positions`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  return (await response.json()) as ContractMetric[]
+}
+
+async function comparePositions(market1: Contract, market2: Contract) {
+  const positions1 = await getMarketPositions(market1.id)
+  const positions2 = await getMarketPositions(market2.id)
+
+  const posMap1 = new Map(positions1.map((p) => [p.userId, p]))
+  const posMap2 = new Map(positions2.map((p) => [p.userId, p]))
+
+  for (const [userId, pos1] of posMap1) {
+    const pos2 = posMap2.get(userId)
+    if (!pos2) {
+      log(`Position for user ${userId} not found in market ${market2.id}`)
+      return false
+    }
+    const unequalShares = Object.keys(pos1.totalShares).filter(
+      (key) => !floatingEqual(pos1.totalShares[key], pos2.totalShares[key])
+    )
+    if (unequalShares.length > 0) {
+      unequalShares.forEach((key) => {
+        log(
+          `Unequal position for ${key} for user ${userId} in twin markets ${market1.id} and ${market2.id}`
+        )
+        log(`Market ${pos1.contractId}: ${pos1.totalShares[key]}`)
+        log(`Market ${pos2.contractId}: ${pos2.totalShares[key]}`)
+      })
+    }
+    if (!floatingEqual(pos1.invested, pos2.invested)) {
+      log(
+        `Unequal invested for user ${userId} in twin markets ${market1.id} and ${market2.id}`
+      )
+      log(`Market ${pos1.contractId}: invested: ${pos1.invested}`)
+      log(`Market ${pos2.contractId}: invested: ${pos2.invested}`)
+      return false
+    }
+  }
+
+  return true
 }
