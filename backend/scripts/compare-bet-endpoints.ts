@@ -177,7 +177,7 @@ if (require.main === module) {
                 `Probabilities don't match: ${bet1.probAfter} vs ${bet2.probAfter} on contracts ${bet1.contractId} and ${bet2.contractId}`
               )
             }
-            const latestSales = allBets
+            const latestSales = allSales
               .filter((b) => contractIds.includes(b.contractId))
               .slice(-2)
             const sale1 = latestSales[0]
