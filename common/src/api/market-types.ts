@@ -311,7 +311,7 @@ export const createMarketProps = z
       .optional(),
     outcomeType: z.enum(CREATEABLE_OUTCOME_TYPES),
     groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
-    visibility: z.enum(VISIBILITIES).default('public'),
+    visibility: z.enum(VISIBILITIES).default('public').optional(),
     isTwitchContract: z.boolean().optional(),
     utcOffset: z.number().optional(),
     loverUserId1: z.string().optional(),
