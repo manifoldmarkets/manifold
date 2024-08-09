@@ -55,8 +55,9 @@ export const PolicyData: PolicyDataType[] = [
     trumpSlug: 'if-trump-wins-the-election-will-the',
   },
   {
-    title: 'Will the US enter a recession before 2027?',
-    harrisSlug: 'if-harris-wins-will-the-us-enter-a?r=UGV0ZXJG',
+    title:
+      'Will the US enter a recession before 2027? (as measured by Sahm rule)',
+    harrisSlug: 'if-harris-wins-will-the-us-enter-a',
     trumpSlug: 'if-trump-wins-will-the-us-enter-a-r',
   },
   {
