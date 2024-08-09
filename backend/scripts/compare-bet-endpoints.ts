@@ -84,6 +84,10 @@ if (require.main === module) {
             log(`Skipping sale due to didn't have any`)
             return null
           }
+          if (error.message.includes(`You can only sell up to`)) {
+            log(`Skipping sale due to didn't have enough`)
+            return null
+          }
           log(`Bet failed (attempt ${attempts}): ${error.message}`)
           if (attempts % 5 === 1) {
             log(`Continuing to retry bet.`)
@@ -150,21 +154,25 @@ if (require.main === module) {
               )
               if (!betPlaced) break
               allBets.push(betPlaced)
-              const sale = {
-                contractId: bet.contractId,
-                shares: bet.amount / 10,
-                outcome: bet.outcome,
-                answerId: bet.answerId,
-              }
-              const salePlaced = await betWithRetry(() =>
-                placeTestSell(
-                  variant.getSellEndpoint(bet.contractId),
-                  sale,
-                  user.apiKey
+            }
+            for (const { variant, bet } of bets) {
+              if (bet.limitProb == null) {
+                const sale = {
+                  contractId: bet.contractId,
+                  shares: bet.amount / 10,
+                  outcome: bet.outcome,
+                  answerId: bet.answerId,
+                }
+                const salePlaced = await betWithRetry(() =>
+                  placeTestSell(
+                    variant.getSellEndpoint(bet.contractId),
+                    sale,
+                    user.apiKey
+                  )
                 )
-              )
-              if (!salePlaced) break
-              allSales.push(salePlaced)
+                if (!salePlaced) break
+                allSales.push(salePlaced)
+              }
             }
             const contractIds = bets.map((b) => b.bet.contractId)
             const latestBets = allBets
