@@ -29,16 +29,16 @@ export function Policy(props: {
   isLast: boolean
 }) {
   const { policy, className, isLast } = props
-  const { bidenContract, trumpContract, title } = policy
-  if (!bidenContract || !trumpContract) {
+  const { harrisContract, trumpContract, title } = policy
+  if (!harrisContract || !trumpContract) {
     return <></>
   }
 
-  const bidenPath = contractPath(bidenContract)
+  const harrisPath = contractPath(harrisContract)
   const trumpPath = contractPath(trumpContract)
 
-  const bidenProbability = getPercent(
-    getDisplayProbability(bidenContract as BinaryContract)
+  const harrisProbability = getPercent(
+    getDisplayProbability(harrisContract as BinaryContract)
   ).toFixed(0)
 
   const trumpProbability = getPercent(
@@ -56,10 +56,18 @@ export function Policy(props: {
       <Row className="border-ink-300 w-full items-center">{title}</Row>
       <Row className="items-center">
         <ConditionalPercent
+          path={harrisPath}
+          contract={harrisContract}
+          className="bg-azure-500/20 dark:bg-azure-500/10 justify-end  px-4 py-2"
+          isLargerPercent={harrisProbability > trumpProbability}
+        />
+      </Row>
+      <Row className="items-center">
+        <ConditionalPercent
           path={trumpPath}
           contract={trumpContract}
           className="bg-sienna-500/20 dark:bg-sienna-500/10 justify-end  px-4 py-2"
-          isLargerPercent={trumpProbability > bidenProbability}
+          isLargerPercent={trumpProbability > harrisProbability}
         />
       </Row>
     </Row>
@@ -107,21 +115,22 @@ export function MobilePolicy(props: {
   className?: string
 }) {
   const { policy, className } = props
-  const { bidenContract, trumpContract, title } = policy
-  if (!bidenContract || !trumpContract) {
+  const { harrisContract, trumpContract, title } = policy
+  if (!harrisContract || !trumpContract) {
     return <></>
   }
 
-  const { shortName: joeShortName, photo: joePhoto } =
-    CANDIDATE_DATA['Joe Biden'] ?? {}
+  const { shortName: harrisShortName, photo: harrisPhoto } =
+    CANDIDATE_DATA['Kamala Harris'] ?? {}
+
   const { shortName: trumpShortName, photo: trumpPhoto } =
     CANDIDATE_DATA['Donald Trump'] ?? {}
 
-  const bidenPath = contractPath(bidenContract)
+  const harrisPath = contractPath(harrisContract)
   const trumpPath = contractPath(trumpContract)
 
-  const bidenProbability = getPercent(
-    getDisplayProbability(bidenContract as BinaryContract)
+  const harrisProbability = getPercent(
+    getDisplayProbability(harrisContract as BinaryContract)
   ).toFixed(0)
 
   const trumpProbability = getPercent(
@@ -135,7 +144,32 @@ export function MobilePolicy(props: {
       <Row className={clsx(' gap-0.5', className)}>
         <div className="grow">
           <Link
-            href={bidenPath}
+            href={harrisPath}
+            className="hover:text-primary-700  text-ink-700 hover:underline"
+          >
+            <Row className="gap-2">
+              <Image
+                src={harrisPhoto}
+                alt={harrisShortName}
+                width={40}
+                height={40}
+                className="h-10 w-10 object-fill"
+              />
+              <div className="py-2">Harris wins</div>
+            </Row>
+          </Link>
+        </div>
+        <ConditionalPercent
+          path={harrisPath}
+          contract={harrisContract}
+          className="items-center justify-center py-2"
+          isLargerPercent={harrisProbability > trumpProbability}
+        />
+      </Row>
+      <Row className={clsx(' gap-0.5', className)}>
+        <div className="grow">
+          <Link
+            href={trumpPath}
             className="hover:text-primary-700  text-ink-700 hover:underline"
           >
             <Row className="gap-2">
@@ -154,7 +188,7 @@ export function MobilePolicy(props: {
           path={trumpPath}
           contract={trumpContract}
           className="  items-center justify-center py-2"
-          isLargerPercent={trumpProbability > bidenProbability}
+          isLargerPercent={trumpProbability > harrisProbability}
         />
       </Row>
     </Col>
