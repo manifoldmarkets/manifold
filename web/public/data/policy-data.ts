@@ -54,11 +54,12 @@ export const PolicyData: PolicyDataType[] = [
     harrisSlug: 'if-harris-wins-the-election-will-th',
     trumpSlug: 'if-trump-wins-the-election-will-the',
   },
-  // {
-  //   title: 'Will the US enter a recession before 2027?',
-  //   trumpSlug: 'if-trump-wins-will-the-us-enter-a-r',
-  //   bidenSlug: 'if-biden-wins-will-the-us-enter-a-r',
-  // },
+  {
+    title:
+      'Will the US enter a recession before 2027? (as measured by Sahm rule)',
+    harrisSlug: 'if-harris-wins-will-the-us-enter-a',
+    trumpSlug: 'if-trump-wins-will-the-us-enter-a-r',
+  },
   {
     title: 'Gallup satisfaction poll greater than Obama',
     harrisSlug: 'if-harris-becomes-president-will-sh',
