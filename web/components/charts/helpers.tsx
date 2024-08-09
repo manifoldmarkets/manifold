@@ -23,7 +23,7 @@ import React, {
 } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
-import { ManaSvg, SpiceSvg } from './mana-spice-chart'
+import { ManaSvg, SpiceSvg, SweepiesSvg } from './mana-spice-chart'
 import { PositionsTooltip } from 'web/components/charts/contract/choice'
 import { ChartPosition } from 'common/chart-position'
 
@@ -489,6 +489,8 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
                 ? ManaSvg
                 : yKind === 'spice'
                 ? SpiceSvg
+                : yKind === 'sweepies'
+                ? SweepiesSvg
                 : undefined
             }
           />
