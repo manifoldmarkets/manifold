@@ -145,12 +145,12 @@ async function getPolicyContracts(
   getContract: (slug: string) => Promise<Contract | null>
 ): Promise<PolicyContractType[]> {
   const mapContractsPromises = PolicyData.map(async (m) => {
-    const bidenContract = await getContract(m.bidenSlug)
+    const harrisContract = await getContract(m.harrisSlug)
     const trumpContract = await getContract(m.trumpSlug)
 
     return {
       title: m.title,
-      bidenContract: bidenContract,
+      harrisContract: harrisContract,
       trumpContract: trumpContract,
     }
   })
