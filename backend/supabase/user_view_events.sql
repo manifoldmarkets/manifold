@@ -18,3 +18,6 @@ create unique index user_view_events_pkey on public.user_view_events using btree
 drop index if exists user_view_events_name_contract_id_user_id;
 
 create index user_view_events_name_contract_id_user_id on public.user_view_events using btree (user_id, contract_id, name);
+
+-- useful for conversion scores
+create index user_view_events_contract_id_name_created_time on public.user_view_events using btree (contract_id, name, created_time desc);
