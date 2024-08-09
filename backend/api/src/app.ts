@@ -155,7 +155,7 @@ import { getFeed } from 'api/get-feed'
 import { getManaSupply } from './get-mana-supply'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { deleteMe } from './delete-me'
-import { placeBetBatched } from './place-bet-batched'
+import { placeBetter } from './place-better'
 import { updateModReport } from './update-mod-report'
 import { getModReports } from './get-mod-reports'
 import { searchContractPositions } from 'api/search-contract-positions'
@@ -265,7 +265,7 @@ app.options('*', allowCorsUnrestricted)
 const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
   'multi-bet': placeMultiBet,
-  'bet-ter': placeBetBatched,
+  'bet-ter': placeBetter,
   'follow-contract': followContract,
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,

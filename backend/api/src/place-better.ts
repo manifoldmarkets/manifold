@@ -8,7 +8,7 @@ import {
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { betsQueue } from 'shared/helpers/fn-queue'
 
-export const placeBetBatched: APIHandler<'bet-ter'> = async (props, auth) => {
+export const placeBetter: APIHandler<'bet-ter'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
 
   let simulatedMakerIds: string[] = []
