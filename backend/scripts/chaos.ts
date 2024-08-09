@@ -8,7 +8,6 @@ import { pgp } from 'shared/supabase/init'
 import { getTestUsers } from 'shared/test/users'
 import { getRandomTestBet } from 'shared/test/bets'
 
-// TODO: try without limit orders, and try on an older market
 const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 // const URL = `http://localhost:8088/v0`
 const USE_OLD_MARKET = true
