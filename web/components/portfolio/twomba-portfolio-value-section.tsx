@@ -325,6 +325,16 @@ function TwombaPortfolioValueSkeleton(props: {
 
   return (
     <Col>
+      {!hideAddFundsButton && (
+        <Row className="mb-2 w-full gap-1 sm:gap-2">
+          <AddFundsButton userId={userId} className="w-1/2 whitespace-nowrap" />
+          <RedeemSpiceButton
+            userId={userId}
+            className="w-1/2 whitespace-nowrap"
+            spice={portfolioValues?.spice}
+          />
+        </Row>
+      )}
       <Col
         className={clsx(
           'bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-lg border-2 p-4'
@@ -460,16 +470,6 @@ function TwombaPortfolioValueSkeleton(props: {
           />
         )}
       </Col>
-      {!hideAddFundsButton && (
-        <Row className="mt-4 w-full gap-1 sm:gap-2">
-          <AddFundsButton userId={userId} className="w-1/2 whitespace-nowrap" />
-          <RedeemSpiceButton
-            userId={userId}
-            className="w-1/2 whitespace-nowrap"
-            spice={portfolioValues?.spice}
-          />
-        </Row>
-      )}
     </Col>
   )
 }
