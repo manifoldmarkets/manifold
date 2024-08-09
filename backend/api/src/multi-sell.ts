@@ -22,7 +22,7 @@ export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
 }
 
 const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
-  const { contractId, answerIds } = props
+  const { contractId, answerIds, deterministic } = props
   const { uid } = auth
   const isApi = auth.creds.kind === 'key'
 
@@ -101,7 +101,8 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
           user,
           isApi,
           undefined,
-          betGroupId
+          betGroupId,
+          deterministic
         )
       )
     )

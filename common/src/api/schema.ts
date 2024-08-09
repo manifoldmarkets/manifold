@@ -228,6 +228,7 @@ export const API = (_apiTypeCheck = {
         limitProb: z.number().gte(0).lte(1).optional(),
         expiresAt: z.number().optional(),
         answerIds: z.array(z.string()).min(1),
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },
@@ -240,6 +241,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         answerIds: z.array(z.string()).min(1),
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },
@@ -285,6 +287,7 @@ export const API = (_apiTypeCheck = {
         shares: z.number().positive().optional(), // leave it out to sell all shares
         outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
         answerId: z.string().optional(), // Required for multi binary markets
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },

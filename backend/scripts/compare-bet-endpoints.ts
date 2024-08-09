@@ -11,14 +11,25 @@ import { floatingEqual } from 'common/util/math'
 import { APIError } from 'common/api/utils'
 import { Bet } from 'common/bet'
 
-const ENDPOINT_1 = 'bet'
-const ENDPOINT_2 = 'bet-ter'
+type APIVariant = {
+  getBetEndpoint: () => string
+  getSellEndpoint: (contractId: string) => string
+}
+
+const DEFAULT_VARIANT: APIVariant = {
+  getBetEndpoint: () => 'bet',
+  getSellEndpoint: (contractId: string) => `market/${contractId}/sell-old`,
+}
+const TEST_VARIANT: APIVariant = {
+  getBetEndpoint: () => 'bet',
+  getSellEndpoint: (contractId: string) => `market/${contractId}/sell-old`,
+}
 
 // const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 const API_URL = `http://localhost:8088/v0`
 
-const BETS_PER_USER_PER_MARKET = 10
-const NUM_USERS = 20
+const BETS_PER_USER_PER_MARKET = 4
+const NUM_USERS = 4
 // total bets will be: 4 markets x bets per user x num users
 const ENABLE_LIMIT_ORDERS = true
 
@@ -53,39 +64,39 @@ if (require.main === module) {
       )
     })
     const allBets: Bet[] = []
+    const allSales: Bet[] = []
 
-    const placeBetWithRetry = async (
-      endpoint: string,
-      bet: any,
-      apiKey: string
-    ) => {
+    const betWithRetry = async (f: () => Promise<any>) => {
       let attempts = 0
       while (true) {
         attempts++
         totalAttempts++
         try {
-          const result = await placeTestBet(endpoint, bet, apiKey)
-          allBets.push(result)
+          const result = await f()
           successfulBets++
-          return true
+          return result
         } catch (error: any) {
           if (error.message.includes('Betting allowed only between 1-99%')) {
             log(`Skipping bet pair due to 1-99% limit`)
-            return false
+            return null
+          }
+          if (error.message.includes(`You don't have any`)) {
+            log(`Skipping sale due to didn't have any`)
+            return null
           }
           log(`Bet failed (attempt ${attempts}): ${error.message}`)
-          if (attempts % 5 === 0) {
-            log(`Continuing to retry for bet: ${JSON.stringify(bet)}`)
+          if (attempts % 5 === 1) {
+            log(`Continuing to retry bet.`)
             if (shouldQuit > 0) {
               log('Exiting early from error, positions likely will not match')
-              return false
+              return null
             }
           }
           if (attempts > 20) {
             log(
               'Failed to place bet after 20 attempts, returning early, positions likely may not match'
             )
-            return false
+            return null
           }
         }
       }
@@ -122,24 +133,38 @@ if (require.main === module) {
 
         const betPairsPerMarket = [
           [
-            { endpoint: ENDPOINT_1, bet: binaryBet },
-            { endpoint: ENDPOINT_2, bet: binaryBetTwin },
+            { variant: DEFAULT_VARIANT, bet: binaryBet },
+            { variant: TEST_VARIANT, bet: binaryBetTwin },
           ],
           [
-            { endpoint: ENDPOINT_1, bet: multiChoiceBet },
-            { endpoint: ENDPOINT_2, bet: multiChoiceBetTwin },
+            { variant: DEFAULT_VARIANT, bet: multiChoiceBet },
+            { variant: TEST_VARIANT, bet: multiChoiceBetTwin },
           ],
         ]
 
         await Promise.all(
           betPairsPerMarket.map(async (bets) => {
-            for (const { endpoint, bet } of bets) {
-              const betPlaced = await placeBetWithRetry(
-                endpoint,
-                bet,
-                user.apiKey
+            for (const { variant, bet } of bets) {
+              const betPlaced = await betWithRetry(() =>
+                placeTestBet(variant.getBetEndpoint(), bet, user.apiKey)
               )
               if (!betPlaced) break
+              allBets.push(betPlaced)
+              const sale = {
+                contractId: bet.contractId,
+                shares: bet.amount / 10,
+                outcome: bet.outcome,
+                answerId: bet.answerId,
+              }
+              const salePlaced = await betWithRetry(() =>
+                placeTestSell(
+                  variant.getSellEndpoint(bet.contractId),
+                  sale,
+                  user.apiKey
+                )
+              )
+              if (!salePlaced) break
+              allSales.push(salePlaced)
             }
             const contractIds = bets.map((b) => b.bet.contractId)
             const latestBets = allBets
@@ -150,6 +175,16 @@ if (require.main === module) {
             if (bet1.probAfter !== bet2.probAfter) {
               log(
                 `Probabilities don't match: ${bet1.probAfter} vs ${bet2.probAfter} on contracts ${bet1.contractId} and ${bet2.contractId}`
+              )
+            }
+            const latestSales = allBets
+              .filter((b) => contractIds.includes(b.contractId))
+              .slice(-2)
+            const sale1 = latestSales[0]
+            const sale2 = latestSales[1]
+            if (sale1.probAfter !== sale2.probAfter) {
+              log(
+                `Probabilities don't match: ${sale1.probAfter} vs ${sale2.probAfter} on contracts ${sale1.contractId} and ${sale2.contractId}`
               )
             }
             if (successfulBets % 8 === 0) {
@@ -251,6 +286,27 @@ async function placeTestBet(
       Authorization: `Key ${apiKey}`,
     },
     body: JSON.stringify(bet),
+  })
+  const json = await response.json()
+  if (!response.ok) {
+    throw new APIError(response.status as any, json?.message, json?.details)
+  }
+
+  return json as Bet
+}
+
+async function placeTestSell(
+  endpoint: string,
+  sale: ValidatedAPIParams<'market/:contractId/sell'>,
+  apiKey: string
+) {
+  const response = await fetch(`${API_URL}/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Key ${apiKey}`,
+    },
+    body: JSON.stringify(sale),
   })
   const json = await response.json()
   if (!response.ok) {
