@@ -3,7 +3,7 @@ import { Contract, contractPath } from 'common/contract'
 import {
   CommentReplyHeaderWithBet,
   FeedCommentHeader,
-} from '../comments/comments'
+} from '../comments/comment-header'
 import { Col } from '../layout/col'
 import clsx from 'clsx'
 import { memo, useState } from 'react'
@@ -44,7 +44,6 @@ export const ScoredFeedRepost = memo(function (props: {
   const { contract, user, repost, bet, hide, comment } = props
   const privateUser = usePrivateUser()
   const { userUsername, userAvatarUrl, userId } = comment
-  const marketCreator = contract.creatorId === comment.userId
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
   const commenterIsBettor = bet?.userId === comment.userId
   const creatorRepostedTheirComment = repost.user_id === comment.userId

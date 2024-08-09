@@ -9,9 +9,9 @@ import { Button, SizeType } from 'web/components/buttons/button'
 import {
   CommentReplyHeader,
   CommentReplyHeaderWithBet,
-  ContractCommentInput,
   FeedCommentHeader,
-} from 'web/components/comments/comments'
+} from 'web/components/comments/comment-header'
+import { ContractCommentInput } from 'web/components/comments/comment-input'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Avatar } from 'web/components/widgets/avatar'
