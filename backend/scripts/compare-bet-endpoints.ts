@@ -18,11 +18,11 @@ type APIVariant = {
 
 const DEFAULT_VARIANT: APIVariant = {
   getBetEndpoint: () => 'bet',
-  getSellEndpoint: (contractId: string) => `market/${contractId}/sell-old`,
+  getSellEndpoint: (contractId: string) => `market/${contractId}/sell`,
 }
 const TEST_VARIANT: APIVariant = {
   getBetEndpoint: () => 'bet',
-  getSellEndpoint: (contractId: string) => `market/${contractId}/sell-old`,
+  getSellEndpoint: (contractId: string) => `market/${contractId}/sell`,
 }
 
 // const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
