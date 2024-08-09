@@ -19,10 +19,7 @@ import { HOUR_MS } from 'common/util/time'
 import { last, orderBy, sumBy } from 'lodash'
 import { UserHovercard } from '../user/user-hovercard'
 import Link from 'next/link'
-import {
-  CommentReplyHeader,
-  FeedCommentHeader,
-} from './comment-header'
+import { CommentReplyHeader, FeedCommentHeader } from './comment-header'
 import { CommentActions } from './comment-actions'
 
 export type ReplyToUserInfo = { id: string; username: string }
