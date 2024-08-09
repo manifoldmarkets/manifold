@@ -772,7 +772,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         ? axisRight<number>(yScale)
             .tickValues(customTickValues)
             .tickFormat((n) => formatPct(n))
-        : yKind === 'Ṁ' || yKind === 'spice'
+        : yKind === 'Ṁ' || yKind === 'spice' || yKind === 'sweepies'
         ? negativeThreshold
           ? axisRight<number>(yScale)
               .tickValues(customTickValues)
