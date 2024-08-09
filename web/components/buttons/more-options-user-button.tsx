@@ -6,7 +6,6 @@ import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import clsx from 'clsx'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
-import { ChartBarIcon } from '@heroicons/react/solid'
 import { CogIcon } from '@heroicons/react/outline'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
@@ -25,8 +24,6 @@ import {
 } from 'web/components/buttons/referrals-button'
 import { banUser } from 'web/lib/api/api'
 import SuperBanControl from '../SuperBanControl'
-import Link from 'next/link'
-import { linkClass } from '../widgets/site-link'
 import { buildArray } from 'common/util/array'
 import { AccountSettings } from '../profile/settings'
 import { EditProfile } from '../profile/edit-profile'
@@ -106,13 +103,6 @@ export function MoreOptionsUserButton(props: { user: User }) {
               }
             >
               <span className={'text-sm'}>Joined {createdTime}</span>
-              <Link
-                href={`/${user.username}/calibration`}
-                className={clsx(linkClass, 'text-sm')}
-              >
-                <ChartBarIcon className="mb-1 mr-1 inline h-4 w-4" />
-                Calibration
-              </Link>
               {isAdmin && (
                 <>
                   <a
