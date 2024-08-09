@@ -81,6 +81,12 @@ if (require.main === module) {
               return false
             }
           }
+          if (attempts > 20) {
+            log(
+              'Failed to place bet after 20 attempts, returning early, positions likely may not match'
+            )
+            return false
+          }
         }
       }
     }
@@ -93,7 +99,7 @@ if (require.main === module) {
           ENABLE_LIMIT_ORDERS,
           0.5
         )
-        const binaryBet2 = {
+        const binaryBetTwin = {
           ...binaryBet,
           contractId: binaryMarkets[1].id,
         }
@@ -106,7 +112,7 @@ if (require.main === module) {
         const answer = multiChoiceMarkets[0].answers.find(
           (a) => a.id === multiChoiceBet.answerId
         )
-        const multiChoiceBet2 = {
+        const multiChoiceBetTwin = {
           ...multiChoiceBet,
           contractId: multiChoiceMarkets[1].id,
           answerId:
@@ -114,19 +120,19 @@ if (require.main === module) {
               ?.id ?? 'error',
         }
 
-        const bothBets = [
+        const betPairsPerMarket = [
           [
             { endpoint: ENDPOINT_1, bet: binaryBet },
-            { endpoint: ENDPOINT_2, bet: binaryBet2 },
+            { endpoint: ENDPOINT_2, bet: binaryBetTwin },
           ],
           [
             { endpoint: ENDPOINT_1, bet: multiChoiceBet },
-            { endpoint: ENDPOINT_2, bet: multiChoiceBet2 },
+            { endpoint: ENDPOINT_2, bet: multiChoiceBetTwin },
           ],
         ]
 
         await Promise.all(
-          bothBets.map(async (bets) => {
+          betPairsPerMarket.map(async (bets) => {
             for (const { endpoint, bet } of bets) {
               const betPlaced = await placeBetWithRetry(
                 endpoint,
