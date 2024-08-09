@@ -40,7 +40,7 @@ export function ConditionalMarkets(props: {
             What will happen if...
           </Col>
           <Row className="hidden text-xs sm:flex">
-            <Row className="bg-azure-700 w-[120px] items-center justify-start gap-0.5 rounded-t-lg text-white">
+            <Row className="bg-azure-700 w-[120px] items-center justify-start gap-0.5 rounded-tl-lg text-white">
               <Image
                 src={harrisPhoto}
                 alt={harrisShortName}
@@ -50,7 +50,7 @@ export function ConditionalMarkets(props: {
               />
               Harris wins
             </Row>
-            <Row className="bg-sienna-700 w-[120px] items-center justify-start gap-0.5 rounded-t-lg text-white">
+            <Row className="bg-sienna-700 w-[120px] items-center justify-start gap-0.5 rounded-tr-lg text-white">
               <Image
                 src={trumpPhoto}
                 alt={trumpShortName}
@@ -77,8 +77,8 @@ export function ConditionalMarkets(props: {
         </div>
         <Row className=" w-full justify-end text-xs ">
           <Row className="hidden  sm:flex">
-            <Row className="bg-azure-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-b-lg text-white" />
-            <Row className="bg-sienna-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-b-lg text-white" />
+            <Row className="bg-azure-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-bl-lg text-white" />
+            <Row className="bg-sienna-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-br-lg text-white" />
           </Row>
         </Row>
       </Col>
