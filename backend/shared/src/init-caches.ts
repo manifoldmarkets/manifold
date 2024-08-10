@@ -7,13 +7,11 @@ export const initCaches = async (timeoutId: NodeJS.Timeout) => {
   if (DEBUG_TOPIC_INTERESTS) return
   const pg = createSupabaseDirectClient()
   log('Connected to the db')
-  const activeUserIdsToCacheInterests = await pg.timeout(15_000, (pg) =>
-    pg.map(
-      `select distinct user_id from user_contract_interactions
+  const activeUserIdsToCacheInterests = await pg.map(
+    `select distinct user_id from user_contract_interactions
               where created_time > now() - interval $1`,
-      ['3 months'],
-      (r) => r.user_id as string
-    )
+    ['3 months'],
+    (r) => r.user_id as string
   )
   clearTimeout(timeoutId)
   log(
