@@ -18,7 +18,7 @@ export const pgp = pgPromise({
       event: e,
     })
   },
-  query(ev) {
+  query() {
     const ctx = getMonitoringContext()
     if (ctx?.endpoint) {
       metrics.inc('pg/query_count', { endpoint: ctx.endpoint })
@@ -100,6 +100,7 @@ export function createSupabaseDirectClient(
       "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
     )
   }
+  log('Connecting to postgres')
   const client = pgp({
     host: `db.${getInstanceHostname(instanceId)}`,
     port: 5432,
