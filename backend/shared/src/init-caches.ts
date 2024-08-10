@@ -3,7 +3,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 export const DEBUG_TOPIC_INTERESTS = process.platform === 'darwin'
 
-export const initCaches = async () => {
+export const initCaches = async (timeoutId: NodeJS.Timeout) => {
   if (DEBUG_TOPIC_INTERESTS) return
   const pg = createSupabaseDirectClient()
   log('Connected to the db')
@@ -15,6 +15,7 @@ export const initCaches = async () => {
       (r) => r.user_id as string
     )
   )
+  clearTimeout(timeoutId)
   log(
     'Active user ids to cache interests: ',
     activeUserIdsToCacheInterests.length
