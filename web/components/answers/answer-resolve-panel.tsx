@@ -11,12 +11,15 @@ import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/api/api'
 import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../bet/yes-no-selector'
-import { ResolveConfirmationButton } from '../buttons/confirmation-button'
+import {
+  CancelAllConfirmationButton,
+  ResolveConfirmationButton,
+} from '../buttons/confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
 import { useUser } from 'web/hooks/use-user'
-import { Answer, OTHER_TOOLTIP_TEXT } from 'common/answer'
+import { Answer, OTHER_TOOLTIP_TEXT, sortAnswers } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import {
@@ -32,11 +35,15 @@ import {
   ClosedProb,
   OpenProb,
 } from './answer-components'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdmin, useAdminOrMod } from 'web/hooks/use-admin'
 import { GradientContainer } from '../widgets/gradient-container'
 import { AmountInput } from '../widgets/amount-input'
 import { getAnswerColor } from '../charts/contract/choice'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { resolveMarketProps } from 'common/api/market-types'
+import { z } from 'zod'
+
+type ResolutionProps = z.infer<typeof resolveMarketProps>
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -116,18 +123,21 @@ function AnswersResolveOptions(props: {
 
     const resolutionProps = removeUndefinedProps({
       contractId: contract.id,
-      outcome: resolveOption,
+      outcome:
+        resolveOption === 'CANCEL'
+          ? 'CANCEL'
+          : resolveOption === 'CHOOSE_ONE'
+          ? 'MKT'
+          : resolveOption,
       resolutions:
         resolveOption === 'CHOOSE_MULTIPLE' ? resolutions : undefined,
       answerId: resolveOption === 'CHOOSE_ONE' ? answerIds[0] : undefined,
     })
 
     try {
-      // NOTE(James): I don't understand why this doesn't work without the cast to any.
-      const result = await api(
-        'market/:contractId/resolve',
-        resolutionProps as any
-      )
+      const validatedProps: ResolutionProps =
+        resolveMarketProps.parse(resolutionProps) // Validate props with Zod schema
+      const result = await api('market/:contractId/resolve', validatedProps)
       console.log('resolved', resolutionProps, 'result:', result)
     } catch (e) {
       if (e instanceof APIError) {
@@ -416,13 +426,49 @@ export const IndependentAnswersResolvePanel = (props: {
 
   const isAdmin = useAdmin()
   const user = useUser()
+  const answers = useAnswersCpmm(contract.id) ?? contract.answers
+  const isAdminOrMod = useAdminOrMod()
 
-  const { answers, addAnswersMode } = contract
-  const sortedAnswers = sortBy(
-    answers,
-    (a) => (a.resolution ? -a.subsidyPool : -Infinity),
-    (a) => (addAnswersMode === 'ANYONE' ? -1 * a.prob : a.index)
-  )
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | undefined>(undefined)
+
+  const onCancelAll = async () => {
+    setIsSubmitting(true)
+    setError(undefined)
+
+    const cancelPromises = answers.map((answer) => {
+      const resolutionProps: ResolutionProps = removeUndefinedProps({
+        contractId: contract.id,
+        outcome: 'CANCEL',
+        answerId: answer.id,
+      })
+
+      return api('market/:contractId/resolve', resolutionProps)
+        .then((result) => {
+          console.log('resolved', resolutionProps, 'result:', result)
+        })
+        .catch((e) => {
+          if (e instanceof APIError) {
+            setError(e.toString())
+          } else {
+            console.error(e)
+            setError('Error resolving question')
+          }
+        })
+    })
+
+    try {
+      await Promise.all(cancelPromises)
+      console.log('All contracts canceled successfully')
+    } catch (e) {
+      console.error(e)
+      setError('Error canceling all contracts')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const sortedAnswers = sortAnswers(contract, answers)
 
   return (
     <GradientContainer>
@@ -432,6 +478,16 @@ export const IndependentAnswersResolvePanel = (props: {
           isCreator={user?.id === contract.creatorId}
           onClose={onClose}
         />
+        {isAdminOrMod && (
+          <Row className="justify-end">
+            <CancelAllConfirmationButton
+              onResolve={onCancelAll}
+              isSubmitting={isSubmitting}
+              marketTitle={contract.question}
+              color="red"
+            />
+          </Row>
+        )}
         <Col className="gap-2">
           {sortedAnswers.map((answer) => (
             <IndependentResolutionAnswerItem
@@ -445,6 +501,7 @@ export const IndependentAnswersResolvePanel = (props: {
         </Col>
         <ResolutionExplainer independentMulti />
       </Col>
+      {!!error && <div className="text-scarlet-500">{error}</div>}
     </GradientContainer>
   )
 }
@@ -466,7 +523,7 @@ function IndependentResolutionAnswerItem(props: {
   const addAnswersMode = contract.addAnswersMode ?? 'DISABLED'
 
   return (
-    <GradientContainer className={' shadow-none'}>
+    <GradientContainer className={'shadow-none'}>
       <Col>
         <AnswerBar
           color={color}
