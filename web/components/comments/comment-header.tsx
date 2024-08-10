@@ -1,4 +1,4 @@
-import { XCircleIcon } from '@heroicons/react/solid'
+import { DotsHorizontalIcon, EyeOffIcon, FlagIcon, LinkIcon, PencilIcon, PlusCircleIcon, XCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
@@ -9,7 +9,7 @@ import { TiPin } from 'react-icons/ti'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { CommentOnAnswer } from '../feed/comment-on-answer'
-import { CopyLinkDateTimeComponent } from '../feed/copy-link-date-time'
+import { CopyLinkDateTimeComponent, copyLinkToComment, getCommentLink } from '../feed/copy-link-date-time'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { OutcomeLabel } from '../outcome-label'
@@ -19,7 +19,21 @@ import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { CommentEditHistoryButton } from './comment-edit-history-button'
 import { commenterAndBettorMatch, roundThreadColor } from './comment'
-import { DotMenu } from './comment-actions'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { isAdminId } from 'common/envs/constants'
+import { buildArray } from 'common/util/array'
+import { useState } from 'react'
+import toast from 'react-hot-toast'
+import { PiPushPinBold } from 'react-icons/pi'
+import { useAdminOrMod } from 'web/hooks/use-admin'
+import { api } from 'web/lib/api/api'
+import { PaymentsModal } from 'web/pages/payments'
+import TipJar from 'web/public/custom-components/tipJar'
+import { AnnotateChartModal } from '../annotate-chart'
+import { ReportModal } from '../buttons/report-button'
+import DropdownMenu from './dropdown-menu'
+import { EditCommentModal } from './edit-comment-modal'
+import { RepostModal } from './repost-modal'
 
 export function FeedCommentHeader(props: {
   comment: ContractComment
@@ -378,4 +392,187 @@ function CommentStatus(props: {
     )
 
   return <span />
+}
+
+export function DotMenu(props: {
+  comment: ContractComment
+  updateComment: (update: Partial<ContractComment>) => void
+  contract: Contract
+}) {
+  const { comment, updateComment, contract } = props
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const user = useUser()
+  const privateUser = usePrivateUser()
+  const isMod = useAdminOrMod()
+  const isContractCreator = privateUser?.id === contract.creatorId
+  const [editingComment, setEditingComment] = useState(false)
+  const [tipping, setTipping] = useState(false)
+  const [reposting, setReposting] = useState(false)
+  const [annotating, setAnnotating] = useState(false)
+  return (
+    <>
+      <ReportModal
+        report={{
+          contentOwnerId: comment.userId,
+          contentId: comment.id,
+          contentType: 'comment',
+          parentId: contract.id,
+          parentType: 'contract',
+        }}
+        setIsModalOpen={setIsModalOpen}
+        isModalOpen={isModalOpen}
+        label={'Comment'}
+      />
+      <DropdownMenu
+        menuWidth={'w-36'}
+        icon={
+          <DotsHorizontalIcon
+            className="mt-[0.12rem] h-4 w-4"
+            aria-hidden="true"
+          />
+        }
+        items={buildArray(
+          {
+            name: 'Copy link',
+            icon: <LinkIcon className="h-5 w-5" />,
+            onClick: () => {
+              copyLinkToComment(
+                contract.creatorUsername,
+                contract.slug,
+                comment.id
+              )
+            },
+          },
+          user && {
+            name: 'Repost',
+            icon: <BiRepost className="h-5 w-5" />,
+            onClick: () => setReposting(true),
+          },
+          user &&
+            comment.userId !== user.id && {
+              name: 'Tip',
+              icon: <TipJar size={20} color="currentcolor" />,
+              onClick: () => setTipping(true),
+            },
+          user &&
+            comment.userId !== user.id && {
+              name: 'Report',
+              icon: <FlagIcon className="h-5 w-5" />,
+              onClick: () => {
+                if (user?.id !== comment.userId) setIsModalOpen(true)
+                else toast.error(`You can't report your own comment`)
+              },
+            },
+          user &&
+            (comment.userId === user.id || isAdminId(user?.id)) && {
+              name: 'Edit',
+              icon: <PencilIcon className="h-5 w-5" />,
+              onClick: () => setEditingComment(true),
+            },
+          isContractCreator && {
+            name: 'Add to chart',
+            icon: <PlusCircleIcon className="h-5 w-5 text-green-500" />,
+            onClick: async () => setAnnotating(true),
+          },
+          (isMod || isContractCreator) && {
+            name: comment.hidden ? 'Unhide' : 'Hide',
+            icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
+            onClick: async () => {
+              const commentPath = `contracts/${contract.id}/comments/${comment.id}`
+              const wasHidden = comment.hidden
+              updateComment({ hidden: !wasHidden })
+
+              try {
+                await api('hide-comment', { commentPath })
+              } catch (e) {
+                toast.error(
+                  wasHidden ? 'Error unhiding comment' : 'Error hiding comment'
+                )
+                // undo optimistic update
+                updateComment({ hidden: wasHidden })
+              }
+            },
+          },
+          (isMod || isContractCreator) && {
+            name: comment.pinned ? 'Unpin' : 'Pin',
+            icon: <PiPushPinBold className="text-primary-500 h-5 w-5" />,
+            onClick: async () => {
+              const commentPath = `contracts/${contract.id}/comments/${comment.id}`
+              const wasPinned = comment.pinned
+              updateComment({ pinned: !wasPinned })
+
+              try {
+                await api('pin-comment', { commentPath })
+              } catch (e) {
+                toast.error(
+                  wasPinned ? 'Error pinning comment' : 'Error pinning comment'
+                )
+                // undo optimistic update
+                updateComment({ pinned: wasPinned })
+              }
+            },
+          }
+        )}
+      />
+      {annotating && (
+        <AnnotateChartModal
+          open={annotating}
+          setOpen={setAnnotating}
+          contractId={contract.id}
+          atTime={comment.createdTime}
+          comment={comment}
+        />
+      )}
+      {user && reposting && (
+        <RepostModal
+          contract={contract}
+          open={reposting}
+          setOpen={setReposting}
+          comment={comment}
+          bet={
+            comment.betId
+              ? ({
+                  amount: comment.betAmount,
+                  outcome: comment.betOutcome,
+                  limitProb: comment.betLimitProb,
+                  orderAmount: comment.betOrderAmount,
+                  id: comment.betId,
+                } as Bet)
+              : undefined
+          }
+        />
+      )}
+      {user && editingComment && (
+        <EditCommentModal
+          user={user}
+          comment={comment}
+          setContent={(content) => updateComment({ content })}
+          contract={contract}
+          open={editingComment}
+          setOpen={setEditingComment}
+        />
+      )}
+      {user && tipping && (
+        <PaymentsModal
+          fromUser={user}
+          toUser={{
+            id: comment.userId,
+            name: comment.userName,
+            username: comment.userUsername,
+            avatarUrl: comment.userAvatarUrl ?? '',
+          }}
+          setShow={setTipping}
+          show={tipping}
+          groupId={comment.id}
+          defaultMessage={`Tip for comment on ${
+            contract.question
+          } ${getCommentLink(
+            contract.creatorUsername,
+            contract.slug,
+            comment.id
+          )}`}
+        />
+      )}
+    </>
+  )
 }
