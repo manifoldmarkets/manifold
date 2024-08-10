@@ -1,4 +1,12 @@
-import { DotsHorizontalIcon, EyeOffIcon, FlagIcon, LinkIcon, PencilIcon, PlusCircleIcon, XCircleIcon } from '@heroicons/react/solid'
+import {
+  DotsHorizontalIcon,
+  EyeOffIcon,
+  FlagIcon,
+  LinkIcon,
+  PencilIcon,
+  PlusCircleIcon,
+  XCircleIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
@@ -9,7 +17,11 @@ import { TiPin } from 'react-icons/ti'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { CommentOnAnswer } from '../feed/comment-on-answer'
-import { CopyLinkDateTimeComponent, copyLinkToComment, getCommentLink } from '../feed/copy-link-date-time'
+import {
+  CopyLinkDateTimeComponent,
+  copyLinkToComment,
+  getCommentLink,
+} from '../feed/copy-link-date-time'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { OutcomeLabel } from '../outcome-label'
