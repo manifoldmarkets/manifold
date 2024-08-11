@@ -4,7 +4,10 @@ import { log } from 'shared/utils'
 export const DEBUG_TOPIC_INTERESTS = process.platform === 'darwin'
 
 export const initCaches = async (timeoutId: NodeJS.Timeout) => {
-  if (DEBUG_TOPIC_INTERESTS) return
+  if (DEBUG_TOPIC_INTERESTS) {
+    clearTimeout(timeoutId)
+    return
+  }
   const pg = createSupabaseDirectClient()
   log('Connected to the db')
   const activeUserIdsToCacheInterests = await pg.map(
