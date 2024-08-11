@@ -1,8 +1,12 @@
 // max 10 length string. For longer, concat multiple
+// Often used as a unique identifier.
 export const randomString = (length = 10) =>
   Math.random()
     .toString(36)
     .substring(2, length + 2)
+
+// Matches the output of the randomString function, for validation purposes.
+export const randomStringRegex = /[0-9a-z]+/
 
 export function genHash(str: string) {
   // xmur3

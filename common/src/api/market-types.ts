@@ -18,6 +18,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
 import { z } from 'zod'
 import { contentSchema } from './zod-types'
+import { randomStringRegex } from 'common/util/random'
 
 export type LiteMarket = {
   // Unique identifier for this market
@@ -319,7 +320,7 @@ export const createMarketProps = z
     matchCreatorId: z.string().optional(),
     isLove: z.boolean().optional(),
     marketTier: z.enum(tiers).optional(),
-    idempotencyKey: z.string().optional(),
+    idempotencyKey: z.string().regex(randomStringRegex).length(10).optional(),
   })
   .and(
     z.union([

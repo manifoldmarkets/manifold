@@ -179,7 +179,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
     const contract = getNewContract(
       removeUndefinedProps({
-        // Risk: idempotencyKey comes from the client, mischievous users could pass unexpected strings.
         id: idempotencyKey ?? randomString(),
         slug,
         creator: user,
