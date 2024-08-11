@@ -13,7 +13,7 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { getComment } from 'shared/supabase/contract_comments'
+import { getComment } from 'shared/supabase/contract-comments'
 import { richTextToString } from 'common/util/parse'
 import { broadcastNewChartAnnotation } from 'shared/websockets/helpers'
 

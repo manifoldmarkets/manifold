@@ -78,7 +78,7 @@ import {
   bulkInsertNotifications,
   insertNotificationToSupabase,
 } from 'shared/supabase/notifications'
-import { getCommentSafe } from './supabase/contract_comments'
+import { getCommentSafe } from './supabase/contract-comments'
 import { convertPrivateUser, convertUser } from 'common/supabase/users'
 import { convertBet } from 'common/supabase/bets'
 import {

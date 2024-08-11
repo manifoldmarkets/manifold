@@ -1,6 +1,6 @@
 import { isAdminId, isModId } from 'common/envs/constants'
 import { getContract, revalidateContractStaticProps } from 'shared/utils'
-import { getComment } from 'shared/supabase/contract_comments'
+import { getComment } from 'shared/supabase/contract-comments'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,

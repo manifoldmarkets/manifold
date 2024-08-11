@@ -10,7 +10,7 @@ import { contentSchema } from 'common/api/zod-types'
 import { isAdminId } from 'common/envs/constants'
 import { revalidateStaticProps } from 'shared/utils'
 import { contractPath } from 'common/contract'
-import { getComment } from 'shared/supabase/contract_comments'
+import { getComment } from 'shared/supabase/contract-comments'
 import { updateData } from 'shared/supabase/utils'
 
 const editSchema = z

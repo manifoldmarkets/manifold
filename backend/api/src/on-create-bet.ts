@@ -34,7 +34,7 @@ import { convertBet } from 'common/supabase/bets'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
-import { getCommentSafe } from 'shared/supabase/contract_comments'
+import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
 import { updateData } from 'shared/supabase/utils'
 import {
