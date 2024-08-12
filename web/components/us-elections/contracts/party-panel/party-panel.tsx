@@ -120,7 +120,7 @@ export function PartyPanel(props: {
               className="absolute left-[85px]"
             />
           )}
-          <SizedContainer className="mx-auto h-[210px] w-1/2 lg:w-1/3 xl:w-1/2">
+          <SizedContainer className="mx-auto h-[210px] w-1/2 lg:w-2/5 xl:w-1/2">
             {(width, height) => (
               <ProbabilityNeedle
                 percentage={democratToRepublicanRatio}
