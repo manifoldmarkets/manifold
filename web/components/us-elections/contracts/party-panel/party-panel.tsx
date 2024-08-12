@@ -117,7 +117,7 @@ export function PartyPanel(props: {
               color={getPartyColor(republicanAnswer.text)}
               userBets={userBetsByAnswer[republicanAnswer.id]}
               user={user}
-              className="absolute left-[85px]"
+              className="absolute left-[90px]"
             />
           )}
           <SizedContainer className="mx-auto h-[210px] w-1/2 lg:w-2/5 xl:w-1/2">
@@ -136,7 +136,7 @@ export function PartyPanel(props: {
               color={getPartyColor(democraticAnswer.text)}
               userBets={userBetsByAnswer[democraticAnswer.id]}
               user={user}
-              className="absolute right-[85px]"
+              className="absolute right-[90px]"
             />
           )}
         </div>
