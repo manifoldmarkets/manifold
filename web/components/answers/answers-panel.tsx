@@ -695,7 +695,11 @@ export function Answer(props: {
         resolvedProb={resolvedProb}
         onHover={onHover}
         onClick={onClick}
-        className={clsx('group cursor-pointer', className)}
+        className={clsx(
+          'group cursor-pointer',
+          answer.isOther ? 'z-30' : 'z-20',
+          className
+        )}
         barColor={barColor}
         label={
           <Row className={'items-center gap-2'}>
