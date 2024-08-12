@@ -12,7 +12,11 @@ const schema = z.object({
   id: z.string().optional(),
   slug: z.string(),
   streamId: z.string(),
-  source: z.union([z.literal('youtube'), z.literal('twitch')]),
+  source: z.union([
+    z.literal('youtube'),
+    z.literal('twitch'),
+    z.literal('twitter'),
+  ]),
   title: z.string(),
   startTime: z.string(),
   endTime: z.string(),
