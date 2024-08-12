@@ -311,24 +311,8 @@ function PartyAnswerSnippet(props: {
         isDemocraticParty ? 'items-end text-right' : ''
       )}
     >
-      {/* <Image
-        height={100}
-        width={100}
-        src={
-          isDemocraticParty
-            ? '/political-candidates/harris.png'
-            : '/political-candidates/trump.png'
-        }
-        alt={answer.text}
-        className={clsx(
-          '-mt-4 rounded-full',
-          isDemocraticParty
-            ? 'bg-azure-400 dark:bg-azure-600'
-            : 'bg-sienna-400 dark:bg-sienna-600'
-        )}
-      /> */}
       <div className="text-ink-700">{answer.text}</div>
-      {/* <Spacer h={1} /> */}
+      <Spacer h={1} />
       <Row className={isDemocraticParty ? 'flex-row-reverse' : ''}>
         <AnswerStatus
           className="!text-5xl"
