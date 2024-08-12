@@ -26,6 +26,7 @@ import { UserPosition } from '../candidates-panel/candidates-user-position'
 import { ProbabilityNeedle } from 'web/components/us-elections/probability-needle'
 import { SizedContainer } from 'web/components/sized-container'
 import { Spacer } from 'web/components/layout/spacer'
+import Image from 'next/image'
 
 // just the bars
 export function PartyPanel(props: {
@@ -83,14 +84,13 @@ export function PartyPanel(props: {
 
   if (includeNeedle) {
     return (
-      <div className="mx-[2px] flex flex-col gap-2">
+      <Col className="mx-[2px] gap-2">
         <div className="hidden md:flex md:items-center md:justify-between">
           {!!republicanAnswer && (
             <PartyAnswerSnippet
               contract={contract}
               answer={republicanAnswer}
               color={getPartyColor(republicanAnswer.text)}
-              alignment="left"
               userBets={userBetsByAnswer[republicanAnswer.id]}
               user={user}
             />
@@ -109,7 +109,6 @@ export function PartyPanel(props: {
               contract={contract}
               answer={democraticAnswer}
               color={getPartyColor(democraticAnswer.text)}
-              alignment="right"
               userBets={userBetsByAnswer[democraticAnswer.id]}
               user={user}
             />
@@ -142,7 +141,7 @@ export function PartyPanel(props: {
             </>
           )}
         </Col>
-      </div>
+      </Col>
     )
   }
 
@@ -264,9 +263,8 @@ function PartyAnswerSnippet(props: {
   userBets?: Bet[]
   user?: User | null
   className?: string
-  alignment: 'left' | 'right'
 }) {
-  const { answer, contract, userBets, user, className, alignment } = props
+  const { answer, contract, userBets, user, className } = props
 
   const { resolution } = contract
   const sharesSum = sumBy(userBets, (bet) =>
@@ -277,18 +275,37 @@ function PartyAnswerSnippet(props: {
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
 
+  const isDemocraticParty = answer.text == 'Democratic Party'
+
   return (
     <Col
       className={clsx(
         className,
-        alignment == 'right' ? 'items-end text-right' : ''
+
+        isDemocraticParty ? 'items-end text-right' : ''
       )}
     >
+      <Image
+        height={100}
+        width={100}
+        src={
+          isDemocraticParty
+            ? '/political-candidates/harris.png'
+            : '/political-candidates/trump.png'
+        }
+        alt={answer.text}
+        className={clsx(
+          '-mt-4 rounded-full',
+          isDemocraticParty
+            ? 'bg-azure-400 dark:bg-azure-600'
+            : 'bg-sienna-400 dark:bg-sienna-600'
+        )}
+      />
       <div className="text-ink-700">{answer.text}</div>
-      <Spacer h={1} />
-      <Row className={alignment == 'right' ? 'flex-row-reverse' : ''}>
+      {/* <Spacer h={1} /> */}
+      <Row className={isDemocraticParty ? 'flex-row-reverse' : ''}>
         <AnswerStatus
-          className="!text-5xl"
+          className="!text-4xl"
           contract={contract}
           answer={answer}
         />
