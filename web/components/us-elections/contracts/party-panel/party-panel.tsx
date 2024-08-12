@@ -85,7 +85,31 @@ export function PartyPanel(props: {
   if (includeNeedle) {
     return (
       <Col className="mx-[2px] gap-2">
-        <div className="hidden md:flex md:items-center md:justify-between">
+        <div className="relative hidden md:flex md:items-center md:justify-between">
+          <div
+            style={{ overflow: 'hidden' }}
+            className="absolute -bottom-4 -left-[18px]"
+          >
+            <Image
+              height={250}
+              width={250} // Double the width to ensure the image is not stretched
+              src="/political-candidates/trump-right.png"
+              alt={'trump'}
+              className="h-full rounded-bl-lg"
+            />
+          </div>
+          <div
+            style={{ overflow: 'hidden' }}
+            className="absolute -bottom-4 -right-[18px]"
+          >
+            <Image
+              height={250}
+              width={250} // Double the width to ensure the image is not stretched
+              src="/political-candidates/kamala-left.png"
+              alt={'trump'}
+              className="h-full rounded-br-lg"
+            />
+          </div>
           {!!republicanAnswer && (
             <PartyAnswerSnippet
               contract={contract}
@@ -93,9 +117,10 @@ export function PartyPanel(props: {
               color={getPartyColor(republicanAnswer.text)}
               userBets={userBetsByAnswer[republicanAnswer.id]}
               user={user}
+              className="absolute left-[85px]"
             />
           )}
-          <SizedContainer className="h-[210px] w-1/2">
+          <SizedContainer className="mx-auto h-[210px] w-1/2 lg:w-1/3 xl:w-1/2">
             {(width, height) => (
               <ProbabilityNeedle
                 percentage={democratToRepublicanRatio}
@@ -111,6 +136,7 @@ export function PartyPanel(props: {
               color={getPartyColor(democraticAnswer.text)}
               userBets={userBetsByAnswer[democraticAnswer.id]}
               user={user}
+              className="absolute right-[85px]"
             />
           )}
         </div>
@@ -285,7 +311,7 @@ function PartyAnswerSnippet(props: {
         isDemocraticParty ? 'items-end text-right' : ''
       )}
     >
-      <Image
+      {/* <Image
         height={100}
         width={100}
         src={
@@ -300,12 +326,12 @@ function PartyAnswerSnippet(props: {
             ? 'bg-azure-400 dark:bg-azure-600'
             : 'bg-sienna-400 dark:bg-sienna-600'
         )}
-      />
+      /> */}
       <div className="text-ink-700">{answer.text}</div>
       {/* <Spacer h={1} /> */}
       <Row className={isDemocraticParty ? 'flex-row-reverse' : ''}>
         <AnswerStatus
-          className="!text-4xl"
+          className="!text-5xl"
           contract={contract}
           answer={answer}
         />
@@ -328,7 +354,7 @@ function PartyAnswerSnippet(props: {
             answer={answer}
             userBets={userBets}
             user={user}
-            className="text-ink-600 dark:text-ink-700 absolute -bottom-[22px] left-0  text-xs hover:underline"
+            className="text-ink-500 dark:text-ink-700 absolute -bottom-[22px] left-0 text-xs hover:underline"
             greenArrowClassName="text-teal-600 dark:text-teal-300"
             redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
           />
