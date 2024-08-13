@@ -66,7 +66,7 @@ export function CoinNumber(props: {
           +formatMoneyNoMoniker(Math.abs(amount ?? 0)).replaceAll(',', '')
         )
       ) : numberType == 'animated' ? (
-        <AnimatedNumber amount={amount} />
+        <AnimatedNumber amount={Math.abs(amount ?? 0)} />
       ) : (
         formatMoneyNoMoniker(Math.abs(amount))
       )}
