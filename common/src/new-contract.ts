@@ -60,6 +60,7 @@ export function getNewContract(props: {
 
   isAutoBounty: boolean | undefined
   marketTier?: MarketTierType
+  token: 'MANA' | 'CASH'
 }) {
   const {
     id,
@@ -88,6 +89,7 @@ export function getNewContract(props: {
     answerLoverUserIds,
     isAutoBounty,
     marketTier,
+    token,
   } = props
   const createdTime = Date.now()
 
@@ -159,6 +161,7 @@ export function getNewContract(props: {
     matchCreatorId,
     isLove,
     marketTier,
+    token,
   })
   if (visibility === 'unlisted') {
     contract.unlistedById = creator.id

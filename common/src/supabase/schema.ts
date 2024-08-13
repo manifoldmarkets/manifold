@@ -437,6 +437,7 @@ export type Database = {
           resolution_time: string | null
           slug: string | null
           tier: string | null
+          token: string
           unique_bettor_count: number
           view_count: number
           visibility: string | null
@@ -469,6 +470,7 @@ export type Database = {
           resolution_time?: string | null
           slug?: string | null
           tier?: string | null
+          token?: string
           unique_bettor_count?: number
           view_count?: number
           visibility?: string | null
@@ -501,6 +503,7 @@ export type Database = {
           resolution_time?: string | null
           slug?: string | null
           tier?: string | null
+          token?: string
           unique_bettor_count?: number
           view_count?: number
           visibility?: string | null
@@ -2789,6 +2792,7 @@ export type Database = {
       users: {
         Row: {
           balance: number
+          cash_balance: number
           created_time: string
           data: Json
           id: string
@@ -2801,6 +2805,7 @@ export type Database = {
         }
         Insert: {
           balance?: number
+          cash_balance?: number
           created_time?: string
           data: Json
           id?: string
@@ -2813,6 +2818,7 @@ export type Database = {
         }
         Update: {
           balance?: number
+          cash_balance?: number
           created_time?: string
           data?: Json
           id?: string
@@ -3195,6 +3201,7 @@ export type Database = {
           resolution_time: string | null
           slug: string | null
           tier: string | null
+          token: string
           unique_bettor_count: number
           view_count: number
           visibility: string | null

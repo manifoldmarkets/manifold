@@ -207,6 +207,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         specialLiquidityPerAnswer,
         isAutoBounty,
         marketTier,
+        token: 'MANA',
       })
     )
 
