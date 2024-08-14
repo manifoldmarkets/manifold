@@ -46,19 +46,19 @@ export function getNewContract(props: {
   max: number
   isLogScale: boolean
   answers: string[]
-  addAnswersMode: add_answers_mode | undefined
-  shouldAnswersSumToOne: boolean | undefined
+  addAnswersMode?: add_answers_mode | undefined
+  shouldAnswersSumToOne?: boolean | undefined
 
   // Manifold.love
-  loverUserId1: string | undefined
-  loverUserId2: string | undefined
-  matchCreatorId: string | undefined
-  isLove: boolean | undefined
-  answerLoverUserIds: string[] | undefined
+  loverUserId1?: string | undefined
+  loverUserId2?: string | undefined
+  matchCreatorId?: string | undefined
+  isLove?: boolean | undefined
+  answerLoverUserIds?: string[] | undefined
 
-  specialLiquidityPerAnswer: number | undefined
+  specialLiquidityPerAnswer?: number | undefined
 
-  isAutoBounty: boolean | undefined
+  isAutoBounty?: boolean | undefined
   marketTier?: MarketTierType
   token: 'MANA' | 'CASH'
 }) {

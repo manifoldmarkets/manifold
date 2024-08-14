@@ -97,6 +97,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   marketTier?: MarketTierType
 
   token: 'MANA' | 'CASH'
+  siblingContractId?: string
 
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
