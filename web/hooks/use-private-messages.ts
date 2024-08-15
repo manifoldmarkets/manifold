@@ -78,7 +78,7 @@ export const useHasUnseenPrivateMessage = (
 
 export const useUnseenPrivateMessageChannels = (userId: string) => {
   const pathName = usePathname()
-  const lastSeenMessagesPageTime = useLastSeenMessagesPageTime()
+  const lastSeenMessagesPageTime = useLastSeenMessagesPageTime(true)
   const [lastSeenChatTimeByChannelId, setLastSeenChatTimeByChannelId] =
     usePersistentLocalState<Record<number, number> | undefined>(
       undefined,
@@ -148,23 +148,18 @@ export const useUnseenPrivateMessageChannels = (userId: string) => {
   })
 }
 
-const useLastSeenMessagesPageTime = () => {
-  const pathname = usePathname()
+const useLastSeenMessagesPageTime = (updateTime?: boolean) => {
   const isVisible = useIsPageVisible()
 
   const [lastSeenMessagesPageTime, setLastSeenMessagesPageTime] =
     usePersistentLocalState(0, 'last-seen-private-messages-page')
-  const [unloadingPage, setUnloadingPage] = usePersistentInMemoryState(
-    '',
-    'unloading-page-private-messages-page'
-  )
+
   useEffect(() => {
-    if (pathname === '/messages' || unloadingPage === '/messages') {
+    if (updateTime) {
       setLastSeenMessagesPageTime(Date.now())
-      track('view messages page')
+      track('view messages tab')
     }
-    setUnloadingPage(pathname)
-  }, [pathname, isVisible])
+  }, [isVisible])
 
   return lastSeenMessagesPageTime
 }
