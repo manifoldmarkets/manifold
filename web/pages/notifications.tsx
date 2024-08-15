@@ -139,7 +139,7 @@ function NotificationsContent(props: {
             {
               title: 'Messages',
               content: <MessagesContent />,
-              inlineTabIcon: <UnreadPrivateMessages />,
+              inlineTabIcon: <UnreadPrivateMessages className="ml-1" />,
             },
             {
               title: 'Following',
@@ -147,7 +147,7 @@ function NotificationsContent(props: {
                 unseenNewMarketNotifs > 0 ? (
                   <div
                     className={
-                      'text-ink-0 bg-primary-400 ml-2 min-w-[15px] rounded-full px-2 text-xs'
+                      'text-ink-0 bg-primary-400 ml-1 min-w-[15px] rounded-full px-2 text-xs'
                     }
                   >
                     {unseenNewMarketNotifs}

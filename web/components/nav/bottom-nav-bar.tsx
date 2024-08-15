@@ -117,7 +117,6 @@ export function BottomNavBar() {
             )}
             onClick={() => setSidebarOpen(true)}
           >
-            <UnseenMessagesBubble />
             <MenuAlt3Icon className="mx-auto my-2 h-8 w-8" aria-hidden="true" />
           </div>
           <MobileSidebar

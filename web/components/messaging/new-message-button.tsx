@@ -1,5 +1,5 @@
 import { PlusIcon } from '@heroicons/react/solid'
-import { Button } from '../buttons/button'
+import { Button, IconButton } from '../buttons/button'
 import { useState } from 'react'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Col } from '../layout/col'
@@ -11,14 +11,24 @@ import { SelectUsers } from 'web/components/select-users'
 import { DisplayUser } from 'common/api/user-types'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { buildArray } from 'common/util/array'
+import { RiChatNewFill } from 'react-icons/ri'
 
-export default function NewMessageButton() {
+export default function NewMessageButton(props: { className?: string }) {
   const [open, setOpen] = useState(false)
+  const { className } = props
   return (
     <>
-      <Button className="h-fit gap-1" onClick={() => setOpen(true)}>
-        <PlusIcon className="h-5 w-5" aria-hidden="true" />
-        New Message
+      <Button
+        onClick={() => {
+          setOpen(true)
+        }}
+        className="mr-2 items-center lg:mr-0"
+        size="xs"
+      >
+        <Row className="items-center gap-1">
+          <RiChatNewFill className="h-4 w-4" aria-hidden="true" />
+          New Message
+        </Row>
       </Button>
       <MessageModal open={open} setOpen={setOpen} />
     </>

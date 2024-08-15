@@ -29,6 +29,9 @@ export function MessagesContent() {
 
   return (
     <>
+      <Row className="mb-1 w-full justify-end sm:mt-2">
+        <NewMessageButton />
+      </Row>
       <Col className={'w-full overflow-hidden'}>
         {currentUser && channels && channels.length === 0 && (
           <div className={'text-ink-500 dark:text-ink-600 mt-4 text-center'}>

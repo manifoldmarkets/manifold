@@ -28,7 +28,7 @@ export function UnreadPrivateMessages(props: { className?: string }) {
     <Row className="relative justify-center">
       {privateUser && (
         <InternalUnseenMessagesBubble
-          bubbleClassName={clsx('-mt-2', className)}
+          bubbleClassName={clsx(className)}
           privateUser={privateUser}
         />
       )}
@@ -39,9 +39,8 @@ export function UnreadPrivateMessages(props: { className?: string }) {
 function InternalUnseenMessagesBubble(props: {
   privateUser: PrivateUser
   bubbleClassName?: string
-  className?: string
 }) {
-  const { privateUser, className, bubbleClassName } = props
+  const { privateUser, bubbleClassName } = props
 
   const unseenMessages = useUnseenPrivateMessageChannels(privateUser.id)
   const pathName = usePathname()
@@ -55,20 +54,13 @@ function InternalUnseenMessagesBubble(props: {
     return null
 
   return (
-    <Row
+    <div
       className={clsx(
-        'absolute left-0 right-0 top-1 items-center justify-center',
-        className
+        'text-ink-0 bg-primary-400 min-w-[15px] rounded-full p-[2px] text-center text-xs leading-3 ',
+        bubbleClassName
       )}
     >
-      <div
-        className={clsx(
-          'text-ink-0 bg-primary-500 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3 ',
-          bubbleClassName
-        )}
-      >
-        {unseenMessages.length}
-      </div>
-    </Row>
+      {unseenMessages.length}
+    </div>
   )
 }
