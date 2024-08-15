@@ -55,7 +55,7 @@ export async function createCashContract(
       initialProb: manaContract.prob,
 
       creator,
-      slug: manaContract.slug,
+      slug: manaContract.slug + '--cash',
       question: manaContract.question,
       outcomeType: manaContract.outcomeType,
       closeTime: manaContract.closeTime,
