@@ -21,23 +21,17 @@ export function UnseenMessagesBubble(props: { className?: string }) {
   )
 }
 
-export function PrivateMessagesIcon(props: {
-  className?: string
-  bubbleClassName?: string
-  solid?: boolean
-}) {
-  const { solid, className, bubbleClassName } = props
+export function UnreadPrivateMessages(props: { className?: string }) {
+  const { className } = props
   const privateUser = usePrivateUser()
-  const Icon = solid ? BiSolidEnvelope : BiEnvelope
   return (
     <Row className="relative justify-center">
       {privateUser && (
         <InternalUnseenMessagesBubble
-          bubbleClassName={clsx('-mt-2', bubbleClassName)}
+          bubbleClassName={clsx('-mt-2', className)}
           privateUser={privateUser}
         />
       )}
-      <Icon className={className} />
     </Row>
   )
 }

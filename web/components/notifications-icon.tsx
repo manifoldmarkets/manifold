@@ -9,6 +9,7 @@ import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
 
 import { usePathname } from 'next/navigation'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
 
 export function NotificationsIcon(props: { className?: string }) {
   const privateUser = usePrivateUser()
@@ -36,21 +37,24 @@ function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
     (ng) => ng.latestCreatedTime > lastSeenTime
   ).length
 
+  const unseenMessages = useUnseenPrivateMessageChannels(privateUser.id).length
+
   useEffect(() => {
     if (pathname?.endsWith('notifications')) {
       setLastSeenTime(Date.now())
     }
   }, [pathname, unseenNotifs])
 
-  if (unseenNotifs === 0) {
+  const unseenTotalNotifs = unseenNotifs + unseenMessages
+  if (unseenTotalNotifs === 0) {
     return null
   }
 
   return (
     <div className="-mt-0.75 text-ink-0 bg-primary-500 absolute ml-3.5 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3 lg:left-0 lg:-mt-1 lg:ml-2">
-      {unseenNotifs > NOTIFICATIONS_PER_PAGE
+      {unseenTotalNotifs > NOTIFICATIONS_PER_PAGE
         ? `${NOTIFICATIONS_PER_PAGE}+`
-        : unseenNotifs}
+        : unseenTotalNotifs}
     </div>
   )
 }

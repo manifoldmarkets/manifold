@@ -1,27 +1,31 @@
+import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Notification, ReactionNotificationTypes } from 'common/notification'
 import { PrivateUser, User } from 'common/user'
 import { groupBy, sortBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
+import { SEO } from 'web/components/SEO'
+import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { MessagesContent } from 'web/components/messaging/message-content'
+import { UnreadPrivateMessages } from 'web/components/messaging/messages-icon'
 import { NotificationSettings } from 'web/components/notification-settings'
 import { combineAndSumIncomeNotifications } from 'web/components/notifications/income-summary-notifications'
 import {
-  combineReactionNotifications,
   NOTIFICATIONS_PER_PAGE,
   NUM_SUMMARY_LINES,
   ParentNotificationHeader,
   QuestionOrGroupLink,
+  combineReactionNotifications,
 } from 'web/components/notifications/notification-helpers'
-import { api, markAllNotifications } from 'web/lib/api/api'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
-import { SEO } from 'web/components/SEO'
 import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
 import {
@@ -31,10 +35,8 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { XIcon } from '@heroicons/react/outline'
+import { api, markAllNotifications } from 'web/lib/api/api'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { track } from 'web/lib/service/analytics'
 
 export default function NotificationsPage() {
@@ -133,6 +135,11 @@ function NotificationsContent(props: {
                   mostRecentNotification={mostRecentNotification}
                 />
               ),
+            },
+            {
+              title: 'Messages',
+              content: <MessagesContent />,
+              inlineTabIcon: <UnreadPrivateMessages />,
             },
             {
               title: 'Following',
