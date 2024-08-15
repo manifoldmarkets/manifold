@@ -142,6 +142,16 @@ export async function calculateImportanceScore(
         thisWeekTradersByContract[contract.id] ?? 0
       )
 
+    if (isNaN(dailyScore)) {
+      log.error('NaN daily score for contract ' + contract.id)
+    }
+    if (isNaN(freshnessScore)) {
+      log.error('NaN freshness score for contract ' + contract.id)
+    }
+    if (isNaN(importanceScore)) {
+      log.error('NaN importance score for contract ' + contract.id)
+    }
+
     const epsilon = 0.01
     // NOTE: These scores aren't updated in firestore, so are never accurate in the data blob
     if (
