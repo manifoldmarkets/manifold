@@ -9,6 +9,7 @@ import { updateContract } from './supabase/contracts'
 import { randomString } from 'common/util/random'
 import { getNewContract } from 'common/new-contract'
 import { convertContract } from 'common/supabase/contracts'
+import { clamp } from 'lodash'
 
 // cribbed from backend/api/src/create-market.ts
 
@@ -52,7 +53,7 @@ export async function createCashContract(
       ante: subsidyAmount,
       token: 'CASH',
       description: htmlToRichText('<p></p>'),
-      initialProb: manaContract.prob,
+      initialProb: clamp(Math.round(manaContract.prob * 100), 1, 99),
 
       creator,
       slug: manaContract.slug + '--cash',
