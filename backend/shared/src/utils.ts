@@ -112,7 +112,7 @@ export const getContract = async (
   contractId: string
 ) => {
   const res = await pg.map(
-    `select data, importance_score, conversion_score, view_count from contracts where id = $1
+    `select data, importance_score, conversion_score, view_count, token from contracts where id = $1
             limit 1`,
     [contractId],
     (row) => convertContract(row)
@@ -128,7 +128,7 @@ export const getContractSupabase = async (contractId: string) => {
 export const getContractFromSlugSupabase = async (contractSlug: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
-    `select data, importance_score, conversion_score, view_count from contracts where slug = $1
+    `select data, importance_score, conversion_score, view_count, token from contracts where slug = $1
             limit 1`,
     [contractSlug],
     (row) => convertContract(row)
@@ -196,7 +196,7 @@ export const getPrivateUsersNotSent = async (
   pg: SupabaseDirectClient
 ) => {
   return await pg.map(
-    `select data from private_users 
+    `select data from private_users
          where (data->'notificationPreferences'->>'${preference}')::jsonb @> '["email"]'
          and ${
            preference === 'trending_markets'

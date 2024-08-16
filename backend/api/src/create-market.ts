@@ -211,10 +211,10 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       })
     )
 
-    await tx.none(`insert into contracts (id, data) values ($1, $2)`, [
-      contract.id,
-      JSON.stringify(contract),
-    ])
+    await tx.none(
+      `insert into contracts (id, data, token) values ($1, $2, $3)`,
+      [contract.id, JSON.stringify(contract), contract.token]
+    )
 
     await runCreateMarketTxn({
       contractId: contract.id,

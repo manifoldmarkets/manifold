@@ -62,8 +62,8 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   ) {
     log('no topic interests for user', userId)
     const defaultContracts = await pg.map(
-      `select data, importance_score, conversion_score, freshness_score, view_count from contracts
-                order by importance_score desc 
+      `select data, importance_score, conversion_score, freshness_score, view_count, token from contracts
+                order by importance_score desc
                 limit $1 offset $2`,
       [limit * 4, offset],
       (r) => convertContract(r)

@@ -69,8 +69,8 @@ export async function createCashContract(
     })
 
     const newRow = await tx.one(
-      `insert into contracts (id, data) values ($1, $2) returning *`,
-      [contract.id, JSON.stringify(contract)]
+      `insert into contracts (id, data, token) values ($1, $2, $3) returning *`,
+      [contract.id, JSON.stringify(contract), contract.token]
     )
     const cashContract = convertContract(newRow)
 

@@ -47,7 +47,7 @@ export const getContracts = async (
 }
 
 export const contractFields =
-  'data, importance_score, view_count, conversion_score, freshness_score, daily_score'
+  'data, importance_score, view_count, conversion_score, freshness_score, daily_score, token'
 
 export const getUnresolvedContractsCount = async (
   creatorId: string,
@@ -165,6 +165,7 @@ export const convertContract = (c: {
   conversion_score?: number | null
   freshness_score?: number | null
   daily_score?: number | null
+  token?: string
 }) =>
   removeUndefinedProps({
     ...(c.data as Contract),
@@ -174,6 +175,7 @@ export const convertContract = (c: {
     freshnessScore: c.freshness_score,
     viewCount: Number(c.view_count),
     dailyScore: c.daily_score,
+    token: c.token,
   } as Contract)
 
 export const followContract = async (

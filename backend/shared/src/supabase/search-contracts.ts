@@ -81,7 +81,7 @@ export async function getForYouSQL(items: {
     log('No topic interests found for user', userId)
     return renderSql(
       select(
-        `data, importance_score, conversion_score, freshness_score, view_count`
+        `data, importance_score, conversion_score, freshness_score, view_count, token`
       ),
       from('contracts'),
       orderBy(`${sortByScore} desc`),
