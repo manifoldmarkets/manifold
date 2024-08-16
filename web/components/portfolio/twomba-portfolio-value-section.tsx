@@ -326,7 +326,7 @@ function TwombaPortfolioValueSkeleton(props: {
   return (
     <Col>
       {!hideAddFundsButton && (
-        <Row className="mb-2 w-full gap-1 sm:gap-2">
+        <Row className="mb-2 w-full gap-1 sm:gap-2 md:hidden">
           <AddFundsButton userId={userId} className="w-1/2 whitespace-nowrap" />
           <RedeemSpiceButton
             userId={userId}
@@ -335,93 +335,87 @@ function TwombaPortfolioValueSkeleton(props: {
           />
         </Row>
       )}
-      <Col
-        className={clsx(
-          'bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-lg border-2 p-4'
-        )}
-      >
-        <div>
-          <Col className="w-full">
-            <Row className="w-full justify-between gap-2">
-              <Col>
-                <span
-                  className={clsx(
-                    'cursor-pointer select-none transition-opacity',
-                    portfolioFocus == 'all'
-                      ? 'text-primary-700 dark:text-primary-600 opacity-100'
-                      : 'text-ink-1000 opacity-50 hover:opacity-[85%]'
-                  )}
-                  onClick={() => togglePortfolioFocus('all')}
-                >
-                  <CoinNumber
-                    amount={displayAmounts(
-                      graphValues.net,
-                      portfolioValues?.net
-                    )}
-                    className={clsx(
-                      'text-3xl font-bold transition-all sm:text-4xl'
-                    )}
-                    isInline
-                    coinClassName="top-[0.25rem] sm:top-[0.1rem]"
-                  />
-                  <span
-                    className={clsx(
-                      'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
-                    )}
-                  >
-                    net worth
-                  </span>
-                </span>
-                <Row className="mt-2 gap-2">
-                  <PortfolioGraphNumber
-                    numberType={'balance'}
-                    descriptor="balance"
-                    portfolioFocus={portfolioFocus}
-                    displayedAmount={displayAmounts(
-                      graphValues.balance,
-                      portfolioValues?.balance
-                    )}
-                    className={clsx(
-                      portfolioFocus == 'balance'
-                        ? 'bg-indigo-700 text-white'
-                        : 'bg-canvas-50 text-ink-1000'
-                    )}
-                    onClick={() => togglePortfolioFocus('balance')}
-                  />
-                  <PortfolioGraphNumber
-                    numberType={'investment'}
-                    descriptor="invested"
-                    portfolioFocus={portfolioFocus}
-                    displayedAmount={displayAmounts(
-                      graphValues.invested,
-                      portfolioValues?.invested
-                    )}
-                    className={clsx(
-                      portfolioFocus == 'investment'
-                        ? 'bg-indigo-700 text-white'
-                        : 'bg-canvas-50 text-ink-1000'
-                    )}
-                    onClick={() => togglePortfolioFocus('investment')}
-                  />
-                </Row>
-              </Col>
-              <TwombaToggle
-                mode={isSweepies ? 'sweepies' : 'mana'}
-                onClick={() => setIsSweepies(!isSweepies)}
+
+      <Col className={clsx('gap-2')}>
+        <Row className="text-ink-800 w-full items-center justify-between text-xl font-semibold">
+          Portfolio
+          <TwombaToggle
+            mode={isSweepies ? 'sweepies' : 'mana'}
+            onClick={() => setIsSweepies(!isSweepies)}
+          />
+        </Row>
+        <Col className="bg-canvas-0 w-full rounded-lg p-4">
+          <Col>
+            <span
+              className={clsx(
+                'cursor-pointer select-none transition-opacity',
+                portfolioFocus == 'all'
+                  ? 'text-primary-700 dark:text-primary-600 opacity-100'
+                  : 'text-ink-1000 opacity-50 hover:opacity-[85%]'
+              )}
+              onClick={() => togglePortfolioFocus('all')}
+            >
+              <CoinNumber
+                amount={displayAmounts(graphValues.net, portfolioValues?.net)}
+                className={clsx(
+                  'text-3xl font-bold transition-all sm:text-4xl'
+                )}
+                isInline
+                coinClassName="top-[0.25rem] sm:top-[0.1rem]"
+              />
+              <span
+                className={clsx(
+                  'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
+                )}
+              >
+                net worth
+              </span>
+            </span>
+            <Row className="mt-2 gap-2">
+              <PortfolioGraphNumber
+                numberType={'balance'}
+                descriptor="balance"
+                portfolioFocus={portfolioFocus}
+                displayedAmount={displayAmounts(
+                  graphValues.balance,
+                  portfolioValues?.balance
+                )}
+                className={clsx(
+                  portfolioFocus == 'balance'
+                    ? 'bg-indigo-700 text-white'
+                    : 'bg-canvas-50 text-ink-1000'
+                )}
+                onClick={() => togglePortfolioFocus('balance')}
+              />
+              <PortfolioGraphNumber
+                numberType={'investment'}
+                descriptor="invested"
+                portfolioFocus={portfolioFocus}
+                displayedAmount={displayAmounts(
+                  graphValues.invested,
+                  portfolioValues?.invested
+                )}
+                className={clsx(
+                  portfolioFocus == 'investment'
+                    ? 'bg-indigo-700 text-white'
+                    : 'bg-canvas-50 text-ink-1000'
+                )}
+                onClick={() => togglePortfolioFocus('investment')}
               />
             </Row>
-            {portfolioGraphElement && (
-              <SizedContainer
-                className={clsx(className, 'mt-2 h-[50px] sm:h-[80px]')}
-                style={{
-                  paddingRight: Y_AXIS_MARGIN,
-                }}
-              >
-                {portfolioGraphElement}
-              </SizedContainer>
-            )}
           </Col>
-          <Spacer h={6} />
+          {portfolioGraphElement && (
+            <SizedContainer
+              className={clsx(className, 'mt-2 h-[50px] sm:h-[80px]')}
+              style={{
+                paddingRight: Y_AXIS_MARGIN,
+              }}
+            >
+              {portfolioGraphElement}
+            </SizedContainer>
+          )}
+        </Col>
+        <Col className="bg-canvas-0 w-full rounded-lg p-4">
           <Col>
             <span>
               <CoinNumber
@@ -458,14 +452,15 @@ function TwombaPortfolioValueSkeleton(props: {
               {profitGraphElement}
             </SizedContainer>
           )}
-        </div>
+        </Col>
+
         {!hideSwitcher && !!portfolioGraphElement && (
           <TimeRangePicker
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setCurrentTimePeriod}
             color={switcherColor}
             disabled={disabled}
-            className="bg-canvas-50 mt-8 border-0"
+            className="bg-canvas-0 border-0"
             toggleClassName="grow justify-center"
           />
         )}
