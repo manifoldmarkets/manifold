@@ -103,16 +103,19 @@ export const incrementBalance = async (
     totalDeposits?: number
   }
 ) => {
-  const updates = {
-    balance: deltas.balance,
-    cash_balance: deltas.cashBalance,
-    spice_balance: deltas.spiceBalance,
-    total_deposits: deltas.totalDeposits,
+  const updates = [
+    ['balance', deltas.balance],
+    ['cash_balance', deltas.cashBalance],
+    ['spice_balance', deltas.spiceBalance],
+    ['total_deposits', deltas.totalDeposits],
+  ].filter(([_, v]) => v) // defined and not 0
+
+  if (updates.length === 0) {
+    return
   }
 
   const result = await db.one(
-    `update users set ${Object.entries(updates)
-      .filter(([_, v]) => v) // defined and not 0
+    `update users set ${updates
       .map(([k, v]) => `${k} = ${k} + ${v}`)
       .join(',')} where id = $1
     returning *`,
