@@ -1,6 +1,6 @@
 -- Add 'token' column to contracts table
 alter table contracts
-add column token varchar(5) not null default 'MANA';
+add column token text not null default 'MANA';
 
 -- Add a check constraint to ensure token is either 'MANA' or 'CASH'
 alter table contracts
