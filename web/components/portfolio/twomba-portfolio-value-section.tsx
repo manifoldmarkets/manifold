@@ -401,8 +401,8 @@ function TwombaPortfolioValueSkeleton(props: {
             </SizedContainer>
           )}
         </Col>
-        <Col className="bg-canvas-0 w-full items-start rounded-lg p-4">
-          <Col>
+        <Col className="bg-canvas-0 w-full  rounded-lg p-4">
+          <Col className="items-start">
             <span>
               <CoinNumber
                 amount={displayAmounts(
@@ -426,8 +426,8 @@ function TwombaPortfolioValueSkeleton(props: {
                 profit
               </span>
             </span>
+            <ProfitWidget user={user} portfolio={portfolio} />
           </Col>
-          <ProfitWidget user={user} portfolio={portfolio} />
           {profitGraphElement && (
             <SizedContainer
               className={clsx(className, 'mt-2 h-[50px] sm:h-[80px]')}

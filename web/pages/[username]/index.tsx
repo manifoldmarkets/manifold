@@ -402,13 +402,21 @@ function UserProfile(props: {
                     {!isCurrentUser && (
                       <>
                         {TWOMBA_ENABLED ? (
-                          <TwombaPortfolioValueSection
-                            user={user}
-                            defaultTimePeriod={
-                              currentUser?.id === user.id ? 'weekly' : 'monthly'
-                            }
-                            hideAddFundsButton
-                          />
+                          <>
+                            <TwombaPortfolioValueSection
+                              user={user}
+                              defaultTimePeriod={
+                                currentUser?.id === user.id
+                                  ? 'weekly'
+                                  : 'monthly'
+                              }
+                              hideAddFundsButton
+                            />
+
+                            <div className="text-ink-800 mx-2 mt-6 gap-2 border-t pt-4 text-xl font-semibold lg:mx-0">
+                              Trades
+                            </div>
+                          </>
                         ) : (
                           <PortfolioValueSection
                             user={user}
