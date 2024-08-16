@@ -325,17 +325,6 @@ function TwombaPortfolioValueSkeleton(props: {
 
   return (
     <Col>
-      {!hideAddFundsButton && (
-        <Row className="mb-2 w-full gap-1 sm:gap-2 md:hidden">
-          <AddFundsButton userId={userId} className="w-1/2 whitespace-nowrap" />
-          <RedeemSpiceButton
-            userId={userId}
-            className="w-1/2 whitespace-nowrap"
-            spice={portfolioValues?.spice}
-          />
-        </Row>
-      )}
-
       <Col className={clsx('gap-2')}>
         <Row className="text-ink-800 w-full items-center justify-between text-xl font-semibold">
           Portfolio
