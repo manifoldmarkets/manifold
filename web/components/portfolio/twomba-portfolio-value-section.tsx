@@ -404,7 +404,7 @@ function TwombaPortfolioValueSkeleton(props: {
             </SizedContainer>
           )}
         </Col>
-        <Col className="bg-canvas-0 w-full rounded-lg p-4">
+        <Col className="bg-canvas-0 w-full items-start rounded-lg p-4">
           <Col>
             <span>
               <CoinNumber
