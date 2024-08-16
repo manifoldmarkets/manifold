@@ -50,7 +50,7 @@ export const addContractLiquidity = async (
       toId: contractId,
       toType: 'CONTRACT',
       category: 'ADD_SUBSIDY',
-      token: 'M$',
+      token: contract.token === 'CASH' ? 'CASH' : 'M$',
       fromType: 'USER',
     })
 

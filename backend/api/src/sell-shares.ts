@@ -175,7 +175,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
 
     const apiFee = isApi ? FLAT_TRADE_FEE : 0
     await incrementBalance(pgTrans, user.id, {
-      balance: -newBet.amount + (newBet.loanAmount ?? 0) - apiFee,
+      [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+        -newBet.amount + (newBet.loanAmount ?? 0) - apiFee,
     })
 
     const totalCreatorFee =
@@ -183,7 +184,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       sumBy(otherResultsWithBet, (r) => r.bet.fees.creatorFee)
     if (totalCreatorFee !== 0) {
       await incrementBalance(pgTrans, contract.creatorId, {
-        balance: totalCreatorFee,
+        [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+          totalCreatorFee,
       })
 
       log(

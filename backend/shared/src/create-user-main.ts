@@ -114,6 +114,7 @@ export const createUserMain = async (
       username,
       avatarUrl,
       balance: 0,
+      cashBalance: 0,
       spiceBalance: 0,
       totalDeposits: 0,
       createdTime: Date.now(),

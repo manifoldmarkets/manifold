@@ -67,7 +67,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   toType: SourceType
 
   amount: number
-  token: 'M$' | 'SHARE' | 'SPICE' // if you add a new type, update the check in txn table schema
+  token: 'M$' | 'SHARE' | 'SPICE' | 'CASH' // if you add a new type, update the check in txn table schema
 
   category: AnyTxnType['category']
 
@@ -187,7 +187,7 @@ type ContractOldResolutionPayout = {
   fromType: 'CONTRACT'
   toType: 'USER'
   category: 'CONTRACT_RESOLUTION_PAYOUT'
-  token: 'M$'
+  token: 'M$' | 'CASH'
   data: {
     /** @deprecated - we use CONTRACT_UNDO_RESOLUTION_PAYOUT **/
     reverted?: boolean
@@ -234,14 +234,14 @@ type ContractAnte = {
   fromType: 'USER' | 'BANK'
   toType: 'CONTRACT'
   category: 'CREATE_CONTRACT_ANTE'
-  token: 'M$'
+  token: 'M$' | 'CASH'
 }
 
 type ContractUndoOldResolutionPayout = {
   fromType: 'USER'
   toType: 'CONTRACT'
   category: 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
-  token: 'M$'
+  token: 'M$' | 'CASH'
   data: {
     revertsTxnId: string
   }
@@ -415,7 +415,7 @@ type AddSubsidy = {
   category: 'ADD_SUBSIDY'
   fromType: 'USER'
   toType: 'CONTRACT'
-  token: 'M$'
+  token: 'M$' | 'CASH'
 }
 
 type ReclaimMana = {
