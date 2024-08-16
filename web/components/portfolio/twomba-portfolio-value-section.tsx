@@ -5,7 +5,6 @@ import { Period, periodDurations } from 'common/period'
 import { LivePortfolioMetrics } from 'common/portfolio-metrics'
 import { last } from 'lodash'
 import { ReactNode, memo, useState } from 'react'
-import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { SizedContainer } from 'web/components/sized-container'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
@@ -16,7 +15,7 @@ import { Y_AXIS_MARGIN, useZoom } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { RedeemSpiceButton } from '../profile/redeem-spice-button'
+import { TwombaToggle } from '../twomba/twomba-toggle'
 import { ColorType } from '../widgets/choices-toggle-group'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
@@ -26,8 +25,6 @@ import {
   TwombaPortfolioGraph,
   TwombaProfitGraph,
 } from './twomba-portfolio-graph'
-import { TwombaToggle } from '../twomba/twomba-toggle'
-import { Spacer } from '../layout/spacer'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
