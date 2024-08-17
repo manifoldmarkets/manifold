@@ -508,7 +508,7 @@ export const executeNewBetResult = async (
 
   const apiFee = isApi ? FLAT_TRADE_FEE : 0
   await incrementBalance(pgTrans, user.id, {
-    balance: -newBet.amount - apiFee,
+    [contract.token === 'CASH' ? 'cashBalance' : 'balance']: -newBet.amount - apiFee,
   })
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
@@ -652,7 +652,8 @@ export const validateBet = async (
   const user = await getUser(uid, pgTrans)
   if (!user) throw new APIError(404, 'User not found.')
 
-  if (amount !== undefined && user.balance < amount)
+  const balance = contract.token === 'CASH' ? user.cashBalance : user.balance
+  if (amount !== undefined && balance < amount)
     throw new APIError(403, 'Insufficient balance.')
   if (
     (user.isBannedFromPosting || user.userDeleted) &&
@@ -770,7 +771,7 @@ export const updateMakers = async (
     pgTrans,
     Object.entries(spentByUser).map(([userId, spent]) => ({
       id: userId,
-      balance: -spent,
+      [contract.token === 'CASH' ? 'cashBalance' : 'balance']: -spent,
     }))
   )
 

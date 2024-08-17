@@ -96,26 +96,36 @@ export const updatePrivateUser = async (
 export const incrementBalance = async (
   db: SupabaseDirectClient,
   id: string,
-  deltas: { balance?: number; spiceBalance?: number; totalDeposits?: number }
+  deltas: {
+    balance?: number
+    cashBalance?: number
+    spiceBalance?: number
+    totalDeposits?: number
+  }
 ) => {
+  const updates = [
+    ['balance', deltas.balance],
+    ['cash_balance', deltas.cashBalance],
+    ['spice_balance', deltas.spiceBalance],
+    ['total_deposits', deltas.totalDeposits],
+  ].filter(([_, v]) => v) // defined and not 0
+
+  if (updates.length === 0) {
+    return
+  }
+
   const result = await db.one(
-    `update users
-    set balance = balance + $1,
-        spice_balance = spice_balance + $2,
-        total_deposits = total_deposits + $3
-    where id = $4
-    returning balance, spice_balance, total_deposits`,
-    [
-      deltas.balance ?? 0,
-      deltas.spiceBalance ?? 0,
-      deltas.totalDeposits ?? 0,
-      id,
-    ]
+    `update users set ${updates
+      .map(([k, v]) => `${k} = ${k} + ${v}`)
+      .join(',')} where id = $1
+    returning *`,
+    [id]
   )
 
   broadcastUpdatedUser({
     id,
     balance: result.balance,
+    cashBalance: result.cash_balance,
     spiceBalance: result.spice_balance,
     totalDeposits: result.total_deposits,
   })
@@ -126,6 +136,7 @@ export const bulkIncrementBalances = async (
   userUpdates: {
     id: string
     balance?: number
+    cashBalance?: number
     spiceBalance?: number
     totalDeposits?: number
   }[]
@@ -134,9 +145,10 @@ export const bulkIncrementBalances = async (
 
   const values = userUpdates
     .map((update) =>
-      pgp.as.format(`($1, $2, $3, $4)`, [
+      pgp.as.format(`($1, $2, $3, $4, $5)`, [
         update.id,
         update.balance ?? 0,
+        update.cashBalance ?? 0,
         update.spiceBalance ?? 0,
         update.totalDeposits ?? 0,
       ])
@@ -144,22 +156,24 @@ export const bulkIncrementBalances = async (
     .join(',\n')
 
   const results = await db.many(`update users as u
-    set 
+    set
         balance = u.balance + v.balance,
+        cash_balance = u.cash_balance + v.cash_balance,
         spice_balance = u.spice_balance + v.spice_balance,
         total_deposits = u.total_deposits + v.total_deposits
-    from (values ${values}) as v(id, balance, spice_balance, total_deposits)
+    from (values ${values}) as v(id, balance, cash_balance, spice_balance, total_deposits)
     where u.id = v.id
-    returning u.id, u.balance, u.spice_balance, u.total_deposits
+    returning u.*
   `)
 
   for (const row of results as Pick<
     Row<'users'>,
-    'id' | 'balance' | 'spice_balance' | 'total_deposits'
+    'id' | 'balance' | 'cash_balance' | 'spice_balance' | 'total_deposits'
   >[]) {
     broadcastUpdatedUser({
       id: row.id,
       balance: row.balance,
+      cashBalance: row.cash_balance,
       spiceBalance: row.spice_balance,
       totalDeposits: row.total_deposits,
     })

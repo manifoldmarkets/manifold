@@ -229,16 +229,6 @@ or replace function public.get_contract_voters (this_contract_id text) returns t
 $function$;
 
 create
-or replace function public.get_contracts_by_creator_ids (creator_ids text[], created_time bigint) returns table (creator_id text, contracts jsonb) language sql stable parallel SAFE as $function$
-select creator_id,
-  jsonb_agg(data) as contracts
-from contracts
-where creator_id = any(creator_ids)
-  and contracts.created_time > millis_to_ts($2)
-group by creator_id;
-$function$;
-
-create
 or replace function public.get_contracts_in_group_slugs_1 (
   contract_ids text[],
   p_group_slugs text[],
@@ -1016,47 +1006,6 @@ BEGIN
         -- Handle exceptions here if needed
        WHEN others THEN
                 RAISE EXCEPTION 'An error occurred: %', SQLERRM;
-END;
-$function$;
-
-create
-or replace function public.test_empty_search_contracts (
-  contract_filter text,
-  contract_sort text,
-  offset_n integer,
-  limit_n integer,
-  group_id text default null::text,
-  creator_id text default null::text
-) returns text language plpgsql as $function$
-DECLARE base_query TEXT;
-where_clause TEXT;
-sql_query TEXT;
-BEGIN -- Common WHERE clause
--- If fuzzy search is enabled and is group search
-IF group_id is not null then base_query := FORMAT(
-  '
-SELECT contractz.data
-FROM (select contracts_rbac.*, group_contracts.group_id from contracts_rbac join group_contracts on group_contracts.contract_id = contracts_rbac.id) as contractz
-      %s
-AND contractz.group_id = %L',
-  generate_where_query(contract_filter, contract_sort, creator_id),
-  group_id
-);
--- If full text search is enabled
-ELSE base_query := FORMAT(
-  '
-  SELECT contracts_rbac.data
-  FROM contracts_rbac 
-    %s',
-  generate_where_query(contract_filter, contract_sort, creator_id)
-);
-END IF;
-sql_query := FORMAT(
-  ' %s %s ',
-  base_query,
-  generate_sort_query(contract_sort, TRUE, offset_n, limit_n, TRUE)
-);
-RETURN sql_query;
 END;
 $function$;
 

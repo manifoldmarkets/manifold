@@ -16,6 +16,7 @@ export type User = {
   discordHandle?: string
 
   balance: number // M$
+  cashBalance: number // prize points
   spiceBalance: number
   totalDeposits: number
   resolvedProfitAdjustment?: number

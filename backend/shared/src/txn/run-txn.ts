@@ -31,7 +31,7 @@ export async function runTxn(
       throw new APIError(400, 'Amount must be positive')
     }
 
-    if (token !== 'SPICE' && token !== 'M$') {
+    if (token !== 'SPICE' && token !== 'M$' && token !== 'CASH') {
       throw new APIError(400, `Invalid token type: ${token}`)
     }
 
@@ -55,6 +55,17 @@ export async function runTxn(
           spiceBalance: -amount,
           totalDeposits: -amount,
         })
+      } else if (token === 'CASH') {
+        if (fromUser.cashBalance < amount) {
+          throw new APIError(
+            403,
+            `Insufficient cash balance: ${fromUser.username} needed ${amount} but only had ${fromUser.cashBalance}`
+          )
+        }
+        await incrementBalance(pgTransaction, fromId, {
+          cashBalance: -amount,
+          totalDeposits: -amount,
+        })
       } else {
         if (fromUser.balance < amount) {
           throw new APIError(
@@ -62,7 +73,6 @@ export async function runTxn(
             `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance}`
           )
         }
-
         await incrementBalance(pgTransaction, fromId, {
           balance: -amount,
           totalDeposits: -amount,
@@ -83,12 +93,15 @@ export async function runTxn(
 
       const update: {
         balance?: number
+        cashBalance?: number
         spiceBalance?: number
         totalDeposits?: number
       } = {}
 
       if (token === 'SPICE') {
         update.spiceBalance = amount
+      } else if (token === 'CASH') {
+        update.cashBalance = amount
       } else {
         update.balance = amount
       }

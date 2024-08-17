@@ -216,13 +216,13 @@ export type Database = {
           created_time: string
           data: Json
           is_api: boolean | null
+          is_cancelled: boolean | null
+          is_filled: boolean | null
           is_redemption: boolean | null
           loan_amount: number | null
           outcome: string | null
           prob_after: number | null
           prob_before: number | null
-          is_filled: boolean | null
-          is_cancelled: boolean | null
           shares: number | null
           updated_time: string
           user_id: string
@@ -235,14 +235,14 @@ export type Database = {
           created_time?: string
           data: Json
           is_api?: boolean | null
+          is_cancelled?: boolean | null
+          is_filled?: boolean | null
           is_redemption?: boolean | null
           loan_amount?: number | null
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
-          is_filled?: boolean | null
-          is_cancelled?: boolean | null
           updated_time?: string
           user_id: string
         }
@@ -254,13 +254,13 @@ export type Database = {
           created_time?: string
           data?: Json
           is_api?: boolean | null
+          is_cancelled?: boolean | null
+          is_filled?: boolean | null
           is_redemption?: boolean | null
           loan_amount?: number | null
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
-          is_filled?: boolean | null
-          is_cancelled?: boolean | null
           shares?: number | null
           updated_time?: string
           user_id?: string
@@ -437,6 +437,7 @@ export type Database = {
           resolution_time: string | null
           slug: string | null
           tier: string | null
+          token: string
           unique_bettor_count: number
           view_count: number
           visibility: string | null
@@ -469,6 +470,7 @@ export type Database = {
           resolution_time?: string | null
           slug?: string | null
           tier?: string | null
+          token?: string
           unique_bettor_count?: number
           view_count?: number
           visibility?: string | null
@@ -501,6 +503,7 @@ export type Database = {
           resolution_time?: string | null
           slug?: string | null
           tier?: string | null
+          token?: string
           unique_bettor_count?: number
           view_count?: number
           visibility?: string | null
@@ -2789,6 +2792,7 @@ export type Database = {
       users: {
         Row: {
           balance: number
+          cash_balance: number
           created_time: string
           data: Json
           id: string
@@ -2801,6 +2805,7 @@ export type Database = {
         }
         Insert: {
           balance?: number
+          cash_balance?: number
           created_time?: string
           data: Json
           id?: string
@@ -2813,6 +2818,7 @@ export type Database = {
         }
         Update: {
           balance?: number
+          cash_balance?: number
           created_time?: string
           data?: Json
           id?: string
@@ -3072,16 +3078,6 @@ export type Database = {
           data: Json
         }[]
       }
-      get_contracts_by_creator_ids: {
-        Args: {
-          creator_ids: string[]
-          created_time: number
-        }
-        Returns: {
-          creator_id: string
-          contracts: Json
-        }[]
-      }
       get_contracts_in_group_slugs_1: {
         Args: {
           contract_ids: string[]
@@ -3195,6 +3191,7 @@ export type Database = {
           resolution_time: string | null
           slug: string | null
           tier: string | null
+          token: string
           unique_bettor_count: number
           view_count: number
           visibility: string | null
@@ -3486,17 +3483,6 @@ export type Database = {
       test: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      test_empty_search_contracts: {
-        Args: {
-          contract_filter: string
-          contract_sort: string
-          offset_n: number
-          limit_n: number
-          group_id?: string
-          creator_id?: string
-        }
-        Returns: string
       }
       to_jsonb: {
         Args: {

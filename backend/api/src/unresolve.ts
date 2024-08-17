@@ -204,7 +204,7 @@ const undoResolution = async (
 
   log('reverted txns')
 
-  // old payouts
+  // mana and cash payouts
   const maxManaPayoutStartTime = await pg.oneOrNone(
     `select max((data->'data'->'payoutStartTime')::numeric) as max
       FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
@@ -227,7 +227,8 @@ const undoResolution = async (
   log('Reverting mana txns ' + manaTxns.length)
   log('With max payout start time ' + maxManaPayoutStartTime)
   const balanceUpdates: {
-    balance: number
+    balance?: number
+    cashBalance?: number
     totalDeposits: number
     id: string
   }[] = []
@@ -315,11 +316,11 @@ export function getUndoContractPayoutSpice(txnData: ContractProduceSpiceTxn) {
 export function getUndoOldContractPayout(
   txnData: ContractOldResolutionPayoutTxn
 ) {
-  const { amount, toId, data, fromId, id } = txnData
+  const { amount, toId, data, fromId, id, token } = txnData
   const { deposit } = data ?? {}
 
   const balanceUpdate = {
-    balance: -amount,
+    [token === 'CASH' ? 'cashBalance' : 'balance']: -amount,
     totalDeposits: -(deposit ?? 0),
     id: toId,
   }
@@ -331,7 +332,7 @@ export function getUndoOldContractPayout(
     fromId: toId,
     toType: 'CONTRACT',
     category: 'CONTRACT_UNDO_RESOLUTION_PAYOUT',
-    token: 'M$',
+    token,
     description: `Undo contract resolution payout from contract ${fromId}`,
     data: { revertsTxnId: id },
   }
