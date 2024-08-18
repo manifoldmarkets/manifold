@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ReactNode, useEffect } from 'react'
+import { ReactNode } from 'react'
 import { BottomNavBar } from '../nav/bottom-nav-bar'
 import Sidebar from '../nav/sidebar'
 import { Toaster } from 'react-hot-toast'
@@ -8,8 +8,6 @@ import { Col } from './col'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { ConfettiOnDemand } from '../confetti-on-demand'
 import { useTracking } from 'web/hooks/use-tracking'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { Banner } from '../nav/banner'
 import { useUser } from 'web/hooks/use-user'
 
@@ -33,21 +31,12 @@ export function Page(props: {
   } = props
 
   // Force enable maintainance banner.
-  const maintainanceBannerEnabled = false
+  const maintainanceBannerEnabled = true
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
   const isMobile = useIsMobile()
 
-  const [showBanner, setShowBanner] = usePersistentLocalState<
-    boolean | undefined
-  >(undefined, 'show-banner')
-  useEffect(() => {
-    const shouldHide = safeLocalStorage?.getItem('show-banner') === 'false'
-    if (!shouldHide) {
-      setShowBanner(true)
-    }
-  }, [showBanner])
   const user = useUser()
 
   return (
@@ -71,18 +60,14 @@ export function Page(props: {
         )}
         <main
           className={clsx(
-            'flex flex-1 flex-col lg:mt-6 xl:px-2',
-            'col-span-8',
-            maintainanceBannerEnabled && showBanner ? 'lg:mt-0' : 'lg:mt-6',
+            'col-span-8 flex flex-1 flex-col xl:px-2',
+            maintainanceBannerEnabled ? 'lg:mt-0' : 'lg:mt-6',
             className
           )}
         >
-          {maintainanceBannerEnabled && showBanner && user && (
-            <Banner className="mb-3" setShowBanner={setShowBanner}>
-              <div className="flex flex-col items-start">
-                🛠️ Trading has been turned off, while we fix issues with the
-                site. Sorry for the inconvenience.
-              </div>
+          {maintainanceBannerEnabled && user && (
+            <Banner className={'py-3'}>
+              🛠️ Site is undergoing maintenance, sorry for the inconvenience.
             </Banner>
           )}
           {banner}
