@@ -936,8 +936,8 @@ export const createLikeNotification = async (reaction: Reaction) => {
   if (content_type === 'contract') {
     text = contract.question
   } else {
-    const comment = await getCommentSafe(db, content_id)
-    if (comment == null) return
+    const comment = await getCommentSafe(pg, content_id)
+    if (!comment) return
 
     text = richTextToString(comment?.content)
   }
