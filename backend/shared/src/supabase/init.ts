@@ -71,6 +71,7 @@ export function createSupabaseClient() {
   // mqp - note that if you want to pass autoRefreshToken: true, you MUST call
   // `client.auth.stopAutoRefresh` on the client when you are done or it will
   // leak the refresh interval!
+  log('Creating supabase client connection')
 
   return createClient(instanceId, key, { auth: { autoRefreshToken: false } })
 }
