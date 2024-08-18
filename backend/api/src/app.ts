@@ -101,7 +101,7 @@ import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
 import { getComments } from './get-comments'
 import { getBets } from './get-bets'
-import { getDisplayUser, getUser } from './get-user'
+import { getLiteUser, getUser } from './get-user'
 import { getUsers } from './get-users'
 import { getMarket } from './get-market'
 import { getGroup } from './get-group'
@@ -322,9 +322,9 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'me/private': getCurrentPrivateUser,
   'me/private/update': updatePrivateUser,
   'user/by-id/:id': getUser,
-  'user/by-id/:id/lite': getDisplayUser,
+  'user/by-id/:id/lite': getLiteUser,
   'user/:username': getUser,
-  'user/:username/lite': getDisplayUser,
+  'user/:username/lite': getLiteUser,
   'user/:username/bets': (...props) => getBets(...props),
   'user/by-id/:id/block': blockUser,
   'user/by-id/:id/unblock': unblockUser,
