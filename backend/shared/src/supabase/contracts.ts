@@ -1,4 +1,4 @@
-import { SupabaseClient, SupabaseDirectClient } from 'shared/supabase/init'
+import { SupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
@@ -10,19 +10,17 @@ import { mapValues } from 'lodash'
 
 // used for API to allow slug as param
 export const getContractIdFromSlug = async (
-  db: SupabaseClient,
+  pg: SupabaseDirectClient,
   slug?: string
 ) => {
   if (!slug) return undefined
-
-  const { data, error } = await db
-    .from('contracts')
-    .select('id')
-    .eq('slug', slug)
-    .single()
-
-  if (error) throw new APIError(404, `Contract with slug ${slug} not found`)
-  return data.id
+  const id = await pg.oneOrNone(
+    `select id from contracts where slug = $1`,
+    [slug],
+    (r) => r?.id as string
+  )
+  if (!id) throw new APIError(400, 'No contract found with that slug')
+  return id
 }
 
 export const getUniqueBettorIds = async (
