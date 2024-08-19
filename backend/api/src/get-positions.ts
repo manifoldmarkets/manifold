@@ -13,15 +13,20 @@ import {
   select,
   where,
 } from 'shared/supabase/sql-builder'
+import { log } from 'shared/utils'
+import { getIp } from 'shared/analytics'
 
 export const getPositions: APIHandler<'market/:id/positions'> = async (
-  props
+  props,
+  _,
+  req
 ) => {
   const { id: contractId } = props
 
   if (contractId === 'U3zLgOZkGUE7cvG98961') {
     throw new APIError(404, `We're done with whales vs minnows, sorry!`)
   }
+  log('getPositions from ip:', getIp(req))
   const pg = createSupabaseDirectClient()
   const { top, bottom, userId, order } = props
 
