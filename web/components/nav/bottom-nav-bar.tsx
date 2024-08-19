@@ -25,6 +25,7 @@ import { CoinNumber } from '../widgets/manaCoinNumber'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
 import { Row } from '../layout/row'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -156,24 +157,35 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        <Col className="mx-auto items-center">
+        <Col className="relative mx-auto h-full w-full items-center">
           <Avatar size="sm" avatarUrl={user.avatarUrl} noLink />
           <Row className="gap-1">
-            <Row className="w-[40px] justify-end rounded-l-full">
+            <CoinNumber
+              amount={user?.balance}
+              className="text-primary-600"
+              numberType="short"
+              isInline
+              coinClassName="!top-[0.15em]"
+            />
+            {TWOMBA_ENABLED ? (
               <CoinNumber
-                amount={user?.balance}
+                amount={user?.cashBalance}
+                className="text-lime-600 dark:text-lime-400"
+                coinType="sweepies"
                 numberType="short"
-                className="text-primary-600"
+                isInline
+                coinClassName="!top-[0.15em]"
               />
-            </Row>
-            <Row className="w-[40px] rounded-r-full">
+            ) : (
               <CoinNumber
                 amount={user?.spiceBalance}
-                numberType="short"
                 className="text-amber-600 dark:text-amber-400"
                 coinType="spice"
+                numberType="short"
+                isInline
+                coinClassName="!top-[0.15em]"
               />
-            </Row>
+            )}
           </Row>
         </Col>
       </Link>
