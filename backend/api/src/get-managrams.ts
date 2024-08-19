@@ -1,8 +1,7 @@
 import { millisToTs } from 'common/supabase/utils'
-import { APIError, type APIHandler } from './helpers/endpoint'
+import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertTxn } from 'common/supabase/txns'
-import { ManaPayTxn } from 'common/txn'
 import { buildArray } from 'common/util/array'
 import {
   from,
@@ -12,6 +11,7 @@ import {
   select,
   where,
 } from 'shared/supabase/sql-builder'
+import { ManaPayTxn } from 'common/txn'
 
 export const getManagrams: APIHandler<'managrams'> = async (props) => {
   const { limit: limitValue, toId, fromId, before, after } = props
@@ -34,10 +34,5 @@ export const getManagrams: APIHandler<'managrams'> = async (props) => {
     limitValue && limit(limitValue)
   )
 
-  try {
-    const data = await pg.manyOrNone(query)
-    return (data.map(convertTxn) as ManaPayTxn[]) ?? []
-  } catch (e) {
-    throw new APIError(500, `Error while fetching managrams: ${e}`)
-  }
+  return (await pg.map(query, [], convertTxn)) as ManaPayTxn[]
 }
