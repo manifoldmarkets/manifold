@@ -7,6 +7,7 @@ import { APIError } from 'common/api/utils'
 import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 import { updateData, DataUpdate } from './utils'
 import { mapValues } from 'lodash'
+import { log } from 'shared/utils'
 
 // used for API to allow slug as param
 export const getContractIdFromSlug = async (
@@ -197,11 +198,11 @@ export const updateContract = async (
   const newContract = convertContract(
     await updateData(pg, 'contracts', 'id', fullUpdate)
   )
+  log('updated contract', update)
   const updatedValues = mapValues(
     fullUpdate,
     (_, k) => newContract[k as keyof Contract] ?? null
   ) as any
-
   broadcastUpdatedContract(newContract.visibility, updatedValues)
   return newContract
 }
