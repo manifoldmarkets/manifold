@@ -33,7 +33,6 @@ import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
-import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { DAY_MS } from 'common/util/time'
 import { LiveTVIcon } from '../tv-icon'
@@ -158,11 +157,6 @@ const getDesktopNav = (
       //   href: '/tv',
       //   icon: PiTelevisionSimpleBold,
       // },
-      {
-        name: 'Messages',
-        href: '/messages',
-        icon: PrivateMessagesIcon,
-      },
       options.isAdminOrMod && {
         name: 'Reports',
         href: '/reports',
@@ -210,11 +204,6 @@ const getMobileNav = (
       name: 'TV',
       href: '/tv',
       icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
-    },
-    {
-      name: 'Messages',
-      href: '/messages',
-      icon: PrivateMessagesIcon,
     },
     isAdminOrMod && {
       name: 'Reports',

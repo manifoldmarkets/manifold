@@ -20,14 +20,6 @@ import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avata
 import { BannedBadge } from 'web/components/widgets/user-link'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 
-export default function MessagesPage() {
-  return (
-    <Page trackPageView={'messages page'} className={'p-2'}>
-      <MessagesContent />
-    </Page>
-  )
-}
-
 export function MessagesContent() {
   useRedirectIfSignedOut()
   const currentUser = useUser()
@@ -37,8 +29,7 @@ export function MessagesContent() {
 
   return (
     <>
-      <Row className="justify-between">
-        <Title>Messages</Title>
+      <Row className="mb-1 w-full justify-end sm:mt-2">
         <NewMessageButton />
       </Row>
       <Col className={'w-full overflow-hidden'}>
