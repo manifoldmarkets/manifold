@@ -20,6 +20,7 @@ import {
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
   add_answers_mode,
+  contractUrl,
 } from 'common/contract'
 import { getAnte, getTieredCost } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
@@ -157,8 +158,9 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     : unmodifiedAnte
   const ante = Math.min(unmodifiedAnte, totalMarketCost)
 
-  if (await isDuplicateSubmission(idempotencyKey, pg)) {
-    throw new APIError(400, 'Contract has already been created')
+  const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(idempotencyKey, pg)
+  if (duplicateSubmissionUrl) {
+    throw new APIError(400, 'Contract has already been created at ' + duplicateSubmissionUrl)
   }
 
   return await pg.tx(async (tx) => {
@@ -300,13 +302,16 @@ const runCreateMarketTxn = async (args: {
   }
 }
 
-async function isDuplicateSubmission(
+async function getDuplicateSubmissionUrl(
   idempotencyKey: string | undefined,
   pg: SupabaseDirectClient
-) {
-  if (!idempotencyKey) return false
+): Promise<string | undefined> {
+  if (!idempotencyKey) return undefined;
   const contracts = await getContractsDirect([idempotencyKey], pg)
-  return contracts.length > 0
+  if (contracts.length > 0) {
+    return contractUrl(contracts[0])
+  }
+  return undefined;
 }
 
 async function getCloseTimestamp(

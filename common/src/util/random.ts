@@ -6,7 +6,7 @@ export const randomString = (length = 10) =>
     .substring(2, length + 2)
 
 // Matches the output of the randomString function, for validation purposes.
-export const randomStringRegex = /[0-9a-z]+/
+export const randomStringRegex = /^[0-9a-z]+$/
 
 export function genHash(str: string) {
   // xmur3

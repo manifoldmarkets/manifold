@@ -55,14 +55,14 @@ import { SimilarContractsSection } from 'web/components/new-contract/similar-con
 import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MarketTierType } from 'common/tier'
+import { randomString } from 'common/util/random'
 
 export function ContractParamsForm(props: {
   creator: User
   outcomeType: CreateableOutcomeType
   params?: NewQuestionParams
-  idempotencyKey: string
 }) {
-  const { creator, params, outcomeType, idempotencyKey } = props
+  const { creator, params, outcomeType } = props
   const DEFAULT_TIER = CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(
     outcomeType
   )
@@ -98,6 +98,10 @@ export function ContractParamsForm(props: {
     params?.initValue?.toString(),
     'new-init-value' + paramsKey
   )
+
+  // Don't use the usePersistentLocalState hook for this, because there's too high a risk that it will survive in local storage
+  // longer than it should under a trivial paramsKey like '', and improperly prevent users from creating any new contracts.
+  const [idempotencyKey] = useState(randomString())
 
   // For multiple choice, init to 2 empty answers
   const defaultAnswers =
