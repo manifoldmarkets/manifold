@@ -158,7 +158,7 @@ export const PrivateChat = (props: {
 
   useEffect(() => {
     setAsSeen(channelId)
-  }, [messages.length])
+  }, [JSON.stringify(messages)])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
