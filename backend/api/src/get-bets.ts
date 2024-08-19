@@ -1,6 +1,5 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -34,12 +33,11 @@ export const getBets: APIHandler<'bets'> = async (props) => {
       'Non-points limit must be less than or equal to ' + NON_POINTS_BETS_LIMIT
     )
   }
-  const db = createSupabaseClient()
   const pg = createSupabaseDirectClient()
 
-  const userId = props.userId ?? (await getUserIdFromUsername(db, username))
+  const userId = props.userId ?? (await getUserIdFromUsername(pg, username))
   const contractId =
-    props.contractId ?? (await getContractIdFromSlug(db, contractSlug))
+    props.contractId ?? (await getContractIdFromSlug(pg, contractSlug))
 
   // mqp: this pagination approach is technically incorrect if multiple bets
   // have the exact same createdTime, but that's very unlikely

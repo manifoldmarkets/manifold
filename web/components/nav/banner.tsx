@@ -17,26 +17,22 @@ export function Banner(props: {
     <Row
       className={clsx(
         className,
-        'text-ink-900 bg-primary-100 group items-center justify-between gap-4'
+        'text-ink-900 bg-primary-100 z-10 justify-between gap-4'
       )}
     >
-      <a
-        href={link}
-        className="w-full py-3 pl-4"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a href={link} className="pl-4" target="_blank" rel="noopener noreferrer">
         {children}
       </a>
 
       {setShowBanner && (
         <IconButton
+          className={'h-8'}
+          size={'sm'}
           onClick={() => {
-            console.log('banner click')
             setShowBanner(false)
           }}
         >
-          <XIcon className="text-ink-700 h-5 w-5 cursor-pointer" />
+          <XIcon className="text-ink-700 h-5 w-5" />
         </IconButton>
       )}
     </Row>

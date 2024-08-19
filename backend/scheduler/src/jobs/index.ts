@@ -8,7 +8,6 @@ import { updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
 import { autoAwardBounty } from './auto-award-bounty'
 import { resetPgStats } from './reset-pg-stats'
-import { MINUTE_MS } from 'common/util/time'
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
 import {
   CREATOR_UPDATE_FREQUENCY,
@@ -42,8 +41,7 @@ export function createJobs() {
     createJob(
       'update-contract-metrics',
       '0 */21 * * * *', // every 21 minutes - (on the 3rd minute of every hour)
-      updateContractMetricsCore,
-      30 * MINUTE_MS
+      updateContractMetricsCore
     ),
     createJob(
       'update-creator-metrics',
@@ -83,8 +81,7 @@ export function createJobs() {
     createJob(
       'update-user-metrics',
       '0 * * * * *', // every minute
-      () => updateUserMetricsCore(),
-      10 * MINUTE_MS // The caches take time to build
+      () => updateUserMetricsCore()
     ),
     createJob(
       'expire-limit-orders',

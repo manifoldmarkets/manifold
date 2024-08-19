@@ -3,18 +3,15 @@ import { type SupabaseClient } from 'common/supabase/utils'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
 
-export async function getCommentSafe(db: SupabaseClient, commentId: string) {
-  const res = await db
-    .from('contract_comments')
-    .select()
-    .eq('comment_id', commentId)
-    .single()
-
-  if (res.error) {
-    return null
-  }
-
-  return convertContractComment(res.data)
+export async function getCommentSafe(
+  pg: SupabaseDirectClient,
+  commentId: string
+) {
+  return pg.oneOrNone(
+    `select data from contract_comments where comment_id = $1`,
+    [commentId],
+    (r) => (r ? convertContractComment(r.data) : null)
+  )
 }
 
 export async function getComment(db: SupabaseClient, commentId: string) {

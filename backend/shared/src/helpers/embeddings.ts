@@ -76,6 +76,7 @@ export async function upsertGroupEmbedding(
     'insert into group_embeddings (group_id, embedding) values ($1, $2) on conflict (group_id) do update set embedding = $2',
     [groupId, embed]
   )
+  log('Upserted group embedding for', groupId)
 }
 
 export async function getAverageGroupEmbedding(

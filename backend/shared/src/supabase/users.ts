@@ -1,5 +1,5 @@
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
-import { Row, SupabaseClient } from 'common/supabase/utils'
+import { Row } from 'common/supabase/utils'
 import { WEEK_MS } from 'common/util/time'
 import { APIError } from 'common/api/utils'
 import { User } from 'common/user'
@@ -11,19 +11,17 @@ import {
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
-  db: SupabaseClient,
+  pg: SupabaseDirectClient,
   username?: string
 ) => {
   if (!username) return undefined
-
-  const { data, error } = await db
-    .from('users')
-    .select('id')
-    .eq('username', username)
-    .single()
-  if (error) throw new APIError(404, `User with username ${username} not found`)
-
-  return data.id
+  const id = await pg.oneOrNone(
+    `select id from users where username = $1`,
+    [username],
+    (r) => r?.id as string
+  )
+  if (!id) throw new APIError(400, 'No user found with that username')
+  return id
 }
 
 export const getUserFollowerIds = async (

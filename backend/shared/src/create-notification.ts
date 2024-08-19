@@ -71,7 +71,6 @@ import {
 import { richTextToString } from 'common/util/parse'
 import { league_user_info } from 'common/leagues'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
-import { getUserFollowerIds } from 'shared/supabase/users'
 import { buildArray, filterDefined } from 'common/util/array'
 import { isAdminId, isModId } from 'common/envs/constants'
 import {
@@ -936,8 +935,8 @@ export const createLikeNotification = async (reaction: Reaction) => {
   if (content_type === 'contract') {
     text = contract.question
   } else {
-    const comment = await getCommentSafe(db, content_id)
-    if (comment == null) return
+    const comment = await getCommentSafe(pg, content_id)
+    if (!comment) return
 
     text = richTextToString(comment?.content)
   }
@@ -1096,13 +1095,14 @@ export const createNewContractNotification = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const bulkNotifications: Notification[] = []
-  const followerUserIds = await getUserFollowerIds(contractCreator.id, pg)
 
   const privateUsers = await pg.map(
-    'select * from private_users where id = any($1)',
-    [followerUserIds],
+    `select * from private_users where id in
+           (select user_id from user_follows where follow_id = $1)`,
+    [contractCreator.id],
     convertPrivateUser
   )
+  const followerUserIds = privateUsers.map((user) => user.id)
   const privateUserMap = new Map(privateUsers.map((user) => [user.id, user]))
   const sendNotificationsIfSettingsAllow = async (
     userId: string,
@@ -1146,6 +1146,7 @@ export const createNewContractNotification = async (
   // As it is coded now, the tag notification usurps the new contract notification
   // It'd be easy to append the reason to the eventId if desired
   if (contract.visibility == 'public') {
+    // perhaps we have to bulk send these emails?
     await mapAsync(
       followerUserIds,
       (userId) =>

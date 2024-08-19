@@ -20,7 +20,7 @@ export const generateEmbeddings = async (question: string) => {
     )
     return undefined
   }
-
+  log('Made embeddings for question', question)
   return response.data[0].embedding
 }
 

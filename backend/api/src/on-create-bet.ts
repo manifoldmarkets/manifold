@@ -26,7 +26,6 @@ import {
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -350,8 +349,7 @@ const handleBetReplyToComment = async (
 ) => {
   if (!bet.replyToCommentId) return
 
-  const db = createSupabaseClient()
-  const comment = await getCommentSafe(db, bet.replyToCommentId)
+  const comment = await getCommentSafe(pg, bet.replyToCommentId)
 
   if (!comment) return
 

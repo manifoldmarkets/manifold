@@ -100,14 +100,14 @@ const uploadAndSetCoverImage = async (
 ) => {
   const dalleImage = await generateImage(question)
   if (!dalleImage) return
-  console.log('generated dalle image: ' + dalleImage)
+  log('generated dalle image: ' + dalleImage)
 
   // Upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
   const coverImageUrl = await uploadToStorage(
     dalleImage,
     creatorUsername
   ).catch((err) => {
-    console.error('Failed to load image', err)
+    log.error('Failed to load image', err)
     return null
   })
   if (!coverImageUrl) return

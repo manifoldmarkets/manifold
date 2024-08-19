@@ -581,7 +581,6 @@ export const sendNewFollowedMarketEmail = async (
   const creatorName = contract.creatorName
 
   const questionImgSrc = imageSourceUrl(contract)
-  console.log('questionImgSrc', questionImgSrc)
   return await sendTemplateEmail(
     privateUser.email,
     `${creatorName} asked ${contract.question}`,
