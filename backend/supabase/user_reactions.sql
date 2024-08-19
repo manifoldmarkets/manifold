@@ -6,7 +6,8 @@ create table if not exists
     content_id text not null,
     content_type text not null,
     content_owner_id text not null,
-    created_time timestamp with time zone default now() not null
+    created_time timestamp with time zone default now() not null,
+    reaction_type character varying(20)
   );
 
 -- Policies
