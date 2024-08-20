@@ -153,11 +153,11 @@ const getDesktopNav = (
         href: '/election',
         icon: GiCapitol,
       },
-      // {
-      //   name: 'TV',
-      //   href: '/tv',
-      //   icon: PiTelevisionSimpleBold,
-      // },
+      {
+        name: 'TV',
+        href: '/tv',
+        icon: PiTelevisionSimpleBold,
+      },
       {
         name: 'Messages',
         href: '/messages',
