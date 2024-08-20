@@ -141,7 +141,7 @@ export function LiveGeneratedFeed(props: {
           }}
         />
       </div>
-      {contracts.length === 0 && (
+      {contracts.length === 0 && !loading && (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           <div>Congratulations!</div>
           <div>You've reached the end of the feed.</div>
