@@ -133,10 +133,10 @@ export async function getStaticProps(ctx: {
     }
   }
   return {
-    props: removeUndefinedProps({
+    props: {
       state: 'authed',
-      params: { ...props, cash },
-    }),
+      params: removeUndefinedProps({ ...props, cash }),
+    },
   }
 }
 
