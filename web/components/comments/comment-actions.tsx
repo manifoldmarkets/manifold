@@ -8,7 +8,7 @@ import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
 import { useUser, usePrivateUser, isBlocked } from 'web/hooks/use-user'
 import { BuyPanel } from '../bet/bet-panel'
 import { IconButton } from '../buttons/button'
-import { LikeButton } from '../contract/like-button'
+import { UpButton } from '../buttons/up-button'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -91,11 +91,10 @@ export function CommentActions(props: {
           </Tooltip>
         </IconButton>
       )}
-      <LikeButton
+      <UpButton
         contentCreatorId={comment.userId}
         contentId={comment.id}
         user={user}
-        contentType={'comment'}
         size={'xs'}
         contentText={richTextToString(comment.content)}
         disabled={isBlocked(privateUser, comment.userId)}

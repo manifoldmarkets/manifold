@@ -11,6 +11,7 @@ export const unLike = async (
     remove: true,
     contentId,
     contentType,
+    reactionType: 'like',
   })
 }
 
@@ -22,6 +23,31 @@ export const like = async (
     remove: false,
     contentId,
     contentType,
+    reactionType: 'like',
+  })
+}
+
+export const upvote = async (
+  contentId: string,
+  contentType: ReactionContentTypes
+) => {
+  api('react', {
+    remove: false,
+    contentId,
+    contentType,
+    reactionType: 'upvote',
+  })
+}
+
+export const RemoveUpvote = async (
+  contentId: string,
+  contentType: ReactionContentTypes
+) => {
+  api('react', {
+    remove: true,
+    contentId,
+    contentType,
+    reactionType: 'upvote',
   })
 }
 
@@ -34,6 +60,7 @@ export async function getLikedContracts(userId: string) {
       .select('reaction_id, content_id, created_time')
       .eq('content_type', 'contract')
       .eq('user_id', userId)
+      .eq('reaction_type', 'like')
       .order('created_time', { ascending: false })
       .limit(1000)
   )
@@ -58,6 +85,7 @@ export async function getLikedContractsCount(userId: string) {
       .select('*', { head: true, count: 'exact' })
       .eq('user_id', userId)
       .eq('content_type', 'contract')
+      .eq('reaction_type', 'like')
   )
   return count
 }
