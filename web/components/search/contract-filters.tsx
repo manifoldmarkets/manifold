@@ -155,7 +155,6 @@ export function ContractFilters(props: {
       updateParams({ mt: tiersArray.join('') as TierParamsType })
     }
   }
-
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
       <Carousel labelsParentClassName="-ml-1.5 gap-1 items-center">
@@ -175,7 +174,7 @@ export function ContractFilters(props: {
               )}
             >
               <SweepiesCoin />
-              <span>Sweepies</span>
+              Sweepies
             </Row>
           </FilterPill>
         )}

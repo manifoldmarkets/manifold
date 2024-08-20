@@ -33,7 +33,7 @@ export function FilterPill(props: {
   return (
     <button
       className={clsx(
-        'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
+        'flex h-6 shrink-0 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
         type === 'spice'
           ? selected
             ? 'bg-amber-500 text-white hover:bg-amber-600'

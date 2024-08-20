@@ -70,7 +70,8 @@ const search = async (
     !term &&
     userId &&
     (sort === 'score' || sort === 'freshness-score') &&
-    !topicSlug
+    !topicSlug &&
+    !isSweepies
   ) {
     const forYouSql = await getForYouSQL({
       userId,
