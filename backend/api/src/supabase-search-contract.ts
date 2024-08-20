@@ -49,9 +49,13 @@ const search = async (
 
   const isPrizeMarket =
     props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
+
+  const isSweepies = props.isSweepies == 'true' || props.isSweepies == '1'
+
   if (limit === 0) {
     return []
   }
+
   const isForYou = forYou === '1'
   const isRecent = possibleTopicSlug === 'recent'
   const topicSlug =
@@ -76,6 +80,7 @@ const search = async (
       offset,
       sort,
       isPrizeMarket,
+      isSweepies,
       marketTier: marketTier as TierParamsType,
     })
     const start = Date.now()
@@ -116,6 +121,7 @@ const search = async (
           isForYou,
           searchType,
           isPrizeMarket,
+          isSweepies,
           marketTier: marketTier as TierParamsType,
         })
         return pg

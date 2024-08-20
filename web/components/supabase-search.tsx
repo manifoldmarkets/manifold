@@ -141,6 +141,7 @@ export type SearchParams = {
   [FOR_YOU_KEY]: BinaryDigit
   [MARKET_TIER_KEY]: TierParamsType
   [TOPIC_FILTER_KEY]: string
+  [SWEEPIES_KEY]: BinaryDigit
 }
 
 export const QUERY_KEY = 'q'
@@ -152,6 +153,7 @@ export const PRIZE_MARKET_KEY = 'p'
 export const FOR_YOU_KEY = 'fy'
 export const MARKET_TIER_KEY = 'mt'
 export const TOPIC_FILTER_KEY = 'tf'
+export const SWEEPIES_KEY = 'sw'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
@@ -174,6 +176,7 @@ export type SearchState = {
     forYou: '1' | '0'
     marketTier: TierParamsType
     topicFilter: string
+    isSweepies: '1' | '0'
   }
 }
 
@@ -252,6 +255,7 @@ export function SupabaseSearch(props: {
   const filter = searchParams[FILTER_KEY]
   const contractType = searchParams[CONTRACT_TYPE_KEY]
   const prizeMarketState = searchParams[PRIZE_MARKET_KEY]
+  const sweepiesState = searchParams[SWEEPIES_KEY]
   const forYou = searchParams[FOR_YOU_KEY] === '1'
   const marketTiers = searchParams[MARKET_TIER_KEY]
   const topicFilter = searchParams[TOPIC_FILTER_KEY]
@@ -309,6 +313,7 @@ export function SupabaseSearch(props: {
       forYou,
       marketTiers,
       topicFilter,
+      sweepiesState,
     ]
   )
 
@@ -332,7 +337,10 @@ export function SupabaseSearch(props: {
 
   const emptyContractsState =
     props.emptyState ??
-    (filter !== 'all' || contractType !== 'ALL' || prizeMarketState === '1' ? (
+    (filter !== 'all' ||
+    contractType !== 'ALL' ||
+    prizeMarketState === '1' ||
+    sweepiesState === '1' ? (
       <span className="text-ink-700 mx-2 my-6 text-center">
         No results found under this filter.{' '}
         <button
@@ -505,7 +513,8 @@ export function SupabaseSearch(props: {
           {!shouldLoadMore &&
             (filter !== 'all' ||
               contractType !== 'ALL' ||
-              prizeMarketState === '1') && (
+              prizeMarketState === '1' ||
+              sweepiesState === '1') && (
               <div className="text-ink-500 mx-2 my-8 text-center">
                 No more results under this filter.{' '}
                 <button
@@ -589,6 +598,7 @@ const useContractSearch = (
       fy: forYou,
       mt: marketTier,
       tf: topicFilter,
+      sw: isSweepiesString,
     } = searchParams
     // if fresh query and the search params haven't changed (like user clicked back) do nothing
     if (
@@ -602,7 +612,8 @@ const useContractSearch = (
       isPrizeMarketString == state.lastSearchParams?.isPrizeMarket &&
       forYou == state.lastSearchParams?.forYou &&
       marketTier == state.lastSearchParams?.marketTier &&
-      topicFilter == state.lastSearchParams?.topicFilter
+      topicFilter == state.lastSearchParams?.topicFilter &&
+      isSweepiesString == state.lastSearchParams?.isSweepies
     ) {
       return state.shouldLoadMore
     }
@@ -635,6 +646,7 @@ const useContractSearch = (
         isPrizeMarket: isPrizeMarketString,
         marketTier,
         forYou,
+        isSweepies: isSweepiesString,
       })
 
       if (id === requestId.current) {
@@ -657,6 +669,7 @@ const useContractSearch = (
             forYou,
             marketTier,
             topicFilter,
+            isSweepies: isSweepiesString,
           },
         })
         clearTimeout(timeoutId)
@@ -698,6 +711,7 @@ const useSearchQueryState = (props: {
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
   defaultPrizeMarket?: '1' | '0'
+  defaultSweepies?: '1' | '0'
   defaultForYou?: '1' | '0'
   useUrlParams?: boolean
   defaultMarketTier?: TierParamsType
@@ -714,6 +728,7 @@ const useSearchQueryState = (props: {
     defaultForYou = '0',
     defaultMarketTier = DEFAULT_TIER,
     defaultTopicFilter = '',
+    defaultSweepies = '0',
   } = props
 
   const [lastSort, setLastSort, localStateReady] =
@@ -732,6 +747,7 @@ const useSearchQueryState = (props: {
     [FOR_YOU_KEY]: defaultForYou,
     [MARKET_TIER_KEY]: defaultMarketTier,
     [TOPIC_FILTER_KEY]: defaultTopicFilter,
+    [SWEEPIES_KEY]: defaultSweepies,
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : useShim

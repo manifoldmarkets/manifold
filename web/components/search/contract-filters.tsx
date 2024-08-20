@@ -51,6 +51,8 @@ import {
   PremiumTier,
 } from 'web/public/custom-components/tiers'
 import { LiteGroup } from 'common/group'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function ContractFilters(props: {
   className?: string
@@ -69,6 +71,7 @@ export function ContractFilters(props: {
     p: isPrizeMarketString,
     mt: currentTiers,
     tf: topicFilter,
+    sw: isSweepiesString,
   } = params
 
   const selectFilter = (selection: Filter) => {
@@ -108,6 +111,12 @@ export function ContractFilters(props: {
   const togglePrizeMarket = () => {
     updateParams({
       p: isPrizeMarketString == '1' ? '0' : '1',
+    })
+  }
+
+  const toggleSweepies = () => {
+    updateParams({
+      sw: isSweepiesString == '1' ? '0' : '1',
     })
   }
 
@@ -153,6 +162,23 @@ export function ContractFilters(props: {
         <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
           <FaSliders className="h-4 w-4" />
         </IconButton>
+        {TWOMBA_ENABLED && (
+          <FilterPill
+            selected={isSweepiesString === '1'}
+            onSelect={toggleSweepies}
+            type="sweepies"
+          >
+            <Row
+              className={clsx(
+                'items-center gap-1',
+                isSweepiesString != '1' ? 'opacity-50' : 'opacity-100'
+              )}
+            >
+              <SweepiesCoin />
+              <span>Sweepies</span>
+            </Row>
+          </FilterPill>
+        )}
         <Row className="bg-ink-200 dark:bg-ink-300 items-center rounded-full">
           <button
             key="score"
