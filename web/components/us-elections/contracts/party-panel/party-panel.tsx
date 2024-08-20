@@ -27,6 +27,8 @@ import { ProbabilityNeedle } from 'web/components/us-elections/probability-needl
 import { SizedContainer } from 'web/components/sized-container'
 import { Spacer } from 'web/components/layout/spacer'
 import Image from 'next/image'
+import { UserIcon } from '@heroicons/react/solid'
+import { IoIosPerson } from 'react-icons/io'
 
 // just the bars
 export function PartyPanel(props: {
@@ -232,6 +234,8 @@ function PartyAnswer(props: {
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
 
   const isDemocraticParty = answer.text == 'Democratic Party'
+  const isRepublicanParty = answer.text == 'Republican Party'
+  const isOther = answer.text == 'Other'
 
   return (
     <Col className={'w-full'}>
@@ -246,17 +250,23 @@ function PartyAnswer(props: {
         )}
         label={
           <Row className="relative h-8">
-            <Image
-              height={80}
-              width={80} // Double the width to ensure the image is not stretched
-              src={
-                isDemocraticParty
-                  ? '/political-candidates/harris.png'
-                  : '/political-candidates/trump.png'
-              }
-              alt={''}
-              className="absolute -bottom-3.5 -left-3 h-14 w-14 rounded-bl"
-            />
+            {isOther ? (
+              <IoIosPerson className="text-ink-700 absolute -bottom-6 -left-4 h-16 w-16 rounded-bl" />
+            ) : (
+              <Image
+                height={80}
+                width={80} // Double the width to ensure the image is not stretched
+                src={
+                  isDemocraticParty
+                    ? '/political-candidates/harris.png'
+                    : '/political-candidates/trump.png'
+                }
+                alt={''}
+                className={clsx(
+                  'absolute -bottom-3.5 -left-3 h-14 w-14 rounded-bl'
+                )}
+              />
+            )}
 
             <Col className="ml-12">
               <CreatorAndAnswerLabel
