@@ -1,11 +1,11 @@
-import React, { memo, useEffect, useState } from 'react'
- import { ChevronUpIcon } from '@heroicons/react/solid'
+import React, { memo, useEffect, useState, useCallback } from 'react'
+import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Reaction } from 'common/reaction'
 import { User } from 'common/user'
 import { useVotesOnComment } from 'web/hooks/use-comment-votes'
 import useLongTouch from 'web/hooks/use-long-touch'
-import { upvote, RemoveUpvote } from 'web/lib/supabase/reactions'
+import { upvote, downvote, RemoveUpvote, RemoveDownvote } from 'web/lib/supabase/reactions'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import {
@@ -28,7 +28,7 @@ import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const VOTES_SHOWN = 3
 
-export const UpButton = memo(function UpButton(props: {
+export const CommentVoteButton = memo(function VoteButton(props: {
   contentId: string
   contentCreatorId: string
   user: User | null | undefined
@@ -53,61 +53,79 @@ export const UpButton = memo(function UpButton(props: {
     size,
     commentId,
   } = props
-  const votes = useVotesOnComment('comment' as const, contentId)
-  const [voted, setVoted] = useState(false)
+
+  const votes = useVotesOnComment('comment', contentId)
+  const [upvoted, setUpvoted] = useState(false)
+  const [downvoted, setDownvoted] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  
   useEffect(() => {
-    if (votes) setVoted(votes.some((v) => v.user_id === user?.id))
+    if (votes && user) {
+      setUpvoted(votes.some((v) => v.user_id === user.id && v.reaction_id === 'upvote'))
+      setDownvoted(votes.some((v) => v.user_id === user.id && v.reaction_id === 'downvote'))
+    }
   }, [votes, user])
 
-  const totalVotes =
-    (votes ? votes.filter((v) => v.user_id !== user?.id).length : 0) +
-    (voted ? 1 : 0)
+  const totalUpvotes = votes ? votes.filter((v) => v.reaction_id === 'upvote' && v.user_id !== user?.id).length : 0
+  const totalDownvotes = votes ? votes.filter((v) => v.reaction_id === 'downvote' && v.user_id !== user?.id).length : 0
 
   const disabled = props.disabled || !user
   const isMe = contentCreatorId === user?.id
-  const [modalOpen, setModalOpen] = useState(false)
 
-  const onVote = async (shouldVote: boolean) => {
+  const onVote = useCallback(async (voteType: 'upvote' | 'downvote') => {
     if (!user) return
-    setVoted(shouldVote)
-    if (shouldVote) {
-      await upvote(contentId, 'comment')
-
-      track(
-        'vote',
-        removeUndefinedProps({
-          itemId: contentId,
-          location: trackingLocation,
-          commentId: contentId,
-          feedReason,
-        })
-      )
-    } else {
-      await RemoveUpvote(contentId, 'comment')
+    if (isMe) {
+      toast("You can't vote on your own content", { icon: '🤨' })
+      return
     }
-  }
 
-  function handleVoted() {
-    onVote(!voted)
-  }
-
-  const voteLongPress = useLongTouch(
-    () => {
-      setModalOpen(true)
-    },
-    () => {
-      if (!disabled) {
-        if (isMe) {
-          toast("Of course you'd like yourself", { icon: '🙄' })
-        } else {
-          handleVoted()
+    if (voteType === 'upvote') {
+      if (upvoted) {
+        await RemoveUpvote(contentId, 'comment')
+        setUpvoted(false)
+      } else {
+        await upvote(contentId, 'comment')
+        setUpvoted(true)
+        if (downvoted) {
+          await RemoveDownvote(contentId, 'comment')
+          setDownvoted(false)
+        }
+      }
+    } else {
+      if (downvoted) {
+        await RemoveDownvote(contentId, 'comment')
+        setDownvoted(false)
+      } else {
+        await downvote(contentId, 'comment')
+        setDownvoted(true)
+        if (upvoted) {
+          await RemoveUpvote(contentId, 'comment')
+          setUpvoted(false)
         }
       }
     }
-  )
+    track(
+      'vote',
+      removeUndefinedProps({
+        itemId: contentId,
+        location: trackingLocation,
+        commentId: contentId,
+        feedReason,
+        voteType,
+      })
+    )
+  }, [user, isMe, contentId, upvoted, downvoted, trackingLocation, feedReason])
 
-  const otherVotes = voted ? totalVotes - 1 : totalVotes
-  const showList = otherVotes > 0
+  const handleUpvote = useCallback(() => onVote('upvote'), [onVote])
+  const handleDownvote = useCallback(() => onVote('downvote'), [onVote])
+
+  const openModal = useCallback(() => setModalOpen(true), [])
+
+  const upvoteLongPress = useLongTouch(openModal, handleUpvote)
+  const downvoteLongPress = useLongTouch(openModal, handleDownvote)
+
+  const otherVotes = (upvoted ? totalUpvotes + 1 : totalUpvotes) - (downvoted ? totalDownvotes + 1 : totalDownvotes)
+  const showList = otherVotes !== 0
 
   return (
     <>
@@ -116,45 +134,22 @@ export const UpButton = memo(function UpButton(props: {
           showList ? (
             <UserVotedPopup
               contentId={contentId}
-              onRequestModal={() => setModalOpen(true)}
+              onRequestModal={openModal}
               user={user}
-              userVoted={voted}
+              userUpvoted={upvoted}
+              userDownvoted={downvoted}
             />
           ) : (
-            'Upvote'
+            'Vote'
           )
         }
         placement={placement}
         noTap
         hasSafePolygon={showList}
+        
         className="flex items-center"
       >
-        {TWOMBA_ENABLED && trackingLocation == 'contract page' ? (
-          <button
-            disabled={disabled}
-            className={clsx(
-              'disabled:cursor-not-allowed',
-              'disabled:text-ink-500',
-              className
-            )}
-            {...voteLongPress}
-          >
-            <Row className={'items-center gap-0.5'}>
-              <div className="relative">
-                <ChevronUpIcon
-                  className={clsx(
-                    'stroke-ink-500 h-4 w-4',
-                    voted &&
-                      'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
-                  )}
-                />
-              </div>
-              {totalVotes > 0 && (
-                <div className=" text-sm disabled:opacity-50">{totalVotes}</div>
-              )}
-            </Row>
-          </button>
-        ) : (
+        <Row className="items-center gap-1">
           <Button
             color={'gray-white'}
             disabled={disabled}
@@ -164,32 +159,46 @@ export const UpButton = memo(function UpButton(props: {
               'disabled:text-ink-500',
               className
             )}
-            {...voteLongPress}
+            {...upvoteLongPress}
           >
-            <Row className={'items-center gap-1.5'}>
-              <div className="relative">
-                <ChevronUpIcon
-                  className={clsx(
-                    'h-6 w-6',
-                    voted &&
-                      'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
-                  )}
-                />
-              </div>
-              {totalVotes > 0 && (
-                <div className="text-ink-500 my-auto h-5  text-sm disabled:opacity-50">
-                  {totalVotes}
-                </div>
+            <ChevronUpIcon
+              className={clsx(
+                'h-6 w-6',
+                upvoted &&
+                  'fill-blue-200 stroke-blue-300 dark:stroke-blue-600'
               )}
-            </Row>
+            />
           </Button>
-        )}
+          <div className="text-ink-500 my-auto h-5 text-sm disabled:opacity-50">
+            {otherVotes}
+          </div>
+          <Button
+            color={'gray-white'}
+            disabled={disabled}
+            size={size}
+            className={clsx(
+              'text-ink-500 disabled:cursor-not-allowed',
+              'disabled:text-ink-500',
+              className
+            )}
+            {...downvoteLongPress}
+          >
+            <ChevronDownIcon
+              className={clsx(
+                'h-6 w-6',
+                downvoted &&
+                  'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
+              )}
+            />
+          </Button>
+        </Row>
       </Tooltip>
       {modalOpen && (
         <UserVotedFullList
           contentId={contentId}
           user={user}
-          userVoted={voted}
+          userUpvoted={upvoted}
+          userDownvoted={downvoted}
           setOpen={setModalOpen}
           titleName={contentText}
         />
@@ -214,20 +223,21 @@ function useVoteDisplayList(
 function UserVotedFullList(props: {
   contentId: string
   user?: User | null
-  userVoted?: boolean
+  userUpvoted?: boolean
+  userDownvoted?: boolean
   setOpen: (isOpen: boolean) => void
   titleName?: string
 }) {
-  const { contentId, user, userVoted, setOpen, titleName } = props
+  const { contentId, user, userUpvoted, userDownvoted, setOpen, titleName } = props
   const reacts = useVotesOnComment('comment' as const, contentId)
-  const displayInfos = useVoteDisplayList(reacts, user, userVoted)
+  const displayInfos = useVoteDisplayList(reacts, user, userUpvoted || userDownvoted)
 
   return (
     <MultiUserTransactionModal
       userInfos={displayInfos}
       modalLabel={
         <span>
-          💖 Upvoted {' '}
+          {userUpvoted ? '💖 Upvoted' : userDownvoted ? '👎 Downvoted' : 'Voted on'}{' '}
           <span className="font-bold">
             {titleName ? titleName : 'this comment'}
           </span>
@@ -244,16 +254,17 @@ function UserVotedPopup(props: {
   contentId: string
   onRequestModal: () => void
   user?: User | null
-  userVoted?: boolean
+  userUpvoted?: boolean
+  userDownvoted?: boolean
 }) {
-  const { contentId, onRequestModal, user, userVoted } = props
+  const { contentId, onRequestModal, user, userUpvoted, userDownvoted } = props
   const reacts = useVotesOnComment('comment' as const, contentId)
-  const displayInfos = useVoteDisplayList(reacts, user, userVoted)
+  const displayInfos = useVoteDisplayList(reacts, user, userUpvoted || userDownvoted)
 
   if (displayInfos == null) {
     return (
       <Col className="min-w-[6rem] items-start">
-        <div className="mb-1 font-bold">Upvote</div>
+        <div className="mb-1 font-bold">Vote</div>
         <LoadingIndicator className="mx-auto my-2" size="sm" />
       </Col>
     )
@@ -298,3 +309,4 @@ function UserVotedItem(props: { userInfo: MultiUserLinkInfo }) {
     </UserHovercard>
   )
 }
+
