@@ -442,6 +442,7 @@ export const API = (_apiTypeCheck = {
       .object({
         availableToUserId: z.string().optional(),
         beforeTime: z.coerce.number().int().optional(),
+        limit: z.coerce.number().gte(0).lte(1000).default(500),
       })
       .strict(),
   },
