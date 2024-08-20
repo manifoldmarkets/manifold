@@ -12,6 +12,7 @@ export type ChatMessage = {
 }
 export type PrivateChatMessage = Omit<ChatMessage, 'id'> & {
   id: number
+  createdTimeTs: string
 }
 
 export const convertPublicChatMessage = (row: Row<'chat_messages'>) =>

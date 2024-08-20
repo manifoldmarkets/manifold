@@ -4,7 +4,7 @@ or replace function public.add_creator_name_to_description (data jsonb) returns 
 select * from CONCAT_WS(
         ' '::text,
         data->>'creatorName',
-        extract_text_from_rich_text_json(data->'description')
+        public.extract_text_from_rich_text_json(data->'description')
     )
 $function$;
 
@@ -67,7 +67,7 @@ or replace function public.close_contract_embeddings (
     SELECT contract_id,
            similarity,
            data
-    FROM search_contract_embeddings(
+    FROM public.search_contract_embeddings(
                  (
                      SELECT embedding
                      FROM embedding
@@ -705,7 +705,7 @@ or replace function public.get_your_recent_contracts (uid text, n integer, start
       limit n * 10 + start * 5),
     your_liked_contracts as (
           select content_id as contract_id,
-                ts_to_millis(created_time) as ts
+                public.ts_to_millis(created_time) as ts
           from user_reactions
           where user_id = uid
           order by created_time desc
@@ -713,7 +713,7 @@ or replace function public.get_your_recent_contracts (uid text, n integer, start
     ),
     your_viewed_contracts as (
         select contract_id,
-              ts_to_millis(last_page_view_ts) as ts
+               public.ts_to_millis(last_page_view_ts) as ts
         from user_contract_views
         where user_id = uid and last_page_view_ts is not null
         order by last_page_view_ts desc
@@ -937,7 +937,7 @@ select content_id as contract_id,
   count(*) as n
 from user_reactions
 where content_type = 'contract'
-  and ts_to_millis(created_time) > since
+  and public.ts_to_millis(created_time) > since
 group by contract_id $function$;
 
 create

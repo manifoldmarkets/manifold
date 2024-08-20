@@ -1,7 +1,7 @@
 import { PrivateChatMessage } from 'common/chat-message'
 import { millisToTs, tsToMillis } from 'common/supabase/utils'
-import { useEffect } from 'react'
-import { first, max, orderBy, uniq, uniqBy } from 'lodash'
+import { useEffect, useState } from 'react'
+import { max, orderBy, uniq, uniqBy } from 'lodash'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
   getSortedChatMessageChannels,
@@ -54,39 +54,19 @@ export function usePrivateMessages(
   return messages
 }
 
-export const useHasUnseenPrivateMessage = (
+export const useUnseenPrivateMessageChannels = (
   userId: string,
-  channelId: number,
-  chats: PrivateChatMessage[] | undefined
+  ignorePageSeenTime: boolean
 ) => {
-  const [lastSeenChatTime, setLastSeenChatTime] = usePersistentLocalState<
-    number | undefined
-  >(undefined, `private-message-channel-last-seen-${userId}-${channelId}-v1`)
-  useEffect(() => {
-    api('get-channel-seen-time', { channelId }).then((data) =>
-      setLastSeenChatTime(tsToMillis(data.created_time))
-    )
-  }, [chats?.length])
-
-  const lastChatMessage = first(
-    chats?.filter((c) => c.userId !== userId)
-  )?.createdTime
-  return (
-    lastChatMessage && lastSeenChatTime && lastChatMessage > lastSeenChatTime
-  )
-}
-
-export const useUnseenPrivateMessageChannels = (userId: string) => {
   const pathName = usePathname()
   const lastSeenMessagesPageTime = useLastSeenMessagesPageTime()
   const [lastSeenChatTimeByChannelId, setLastSeenChatTimeByChannelId] =
-    usePersistentLocalState<Record<number, number> | undefined>(
-      undefined,
-      `private-message-channel-last-seen-${userId}-v1`
-    )
+    useState<Record<number, string> | undefined>(undefined)
 
   const { data, refresh } = useAPIGetter('get-channel-memberships', {
-    lastUpdatedTime: millisToTs(lastSeenMessagesPageTime),
+    lastUpdatedTime: ignorePageSeenTime
+      ? new Date(0).toISOString()
+      : millisToTs(lastSeenMessagesPageTime),
     limit: 100,
   })
   const { channels } = data ?? {
@@ -100,20 +80,23 @@ export const useUnseenPrivateMessageChannels = (userId: string) => {
 
   const fetchLastSeenTimesPerChannel = async (forChannelIds: number[]) => {
     if (!forChannelIds.length) return
-    const results = await Promise.all(
-      forChannelIds.map(async (channelId) => {
-        const data = await api('get-channel-seen-time', { channelId })
-        return { channelId, time: tsToMillis(data.created_time) }
-      })
-    )
+    const seenTimes = await api('get-channel-seen-time', {
+      channelIds: forChannelIds,
+    })
     const newState = lastSeenChatTimeByChannelId ?? {}
-    results.forEach(({ channelId, time }) => (newState[channelId] = time))
+    seenTimes.forEach(([channelId, time]) => {
+      newState[channelId] = time
+    })
     setLastSeenChatTimeByChannelId(newState)
   }
 
   useEffect(() => {
     const newMessageRows = channels
-      .filter((m) => tsToMillis(m.last_updated_time) > lastSeenMessagesPageTime)
+      .filter(
+        (m) =>
+          ignorePageSeenTime ||
+          tsToMillis(m.last_updated_time) > lastSeenMessagesPageTime
+      )
       .map((m) => m.channel_id)
     if (newMessageRows?.length)
       fetchLastSeenTimesPerChannel(uniq(newMessageRows))
@@ -130,22 +113,25 @@ export const useUnseenPrivateMessageChannels = (userId: string) => {
     }
   }, [channels?.length])
 
-  if (!lastSeenChatTimeByChannelId) return []
-  return channels.filter((channel) => {
+  if (!lastSeenChatTimeByChannelId)
+    return { unseenChannels: [], lastSeenChatTimeByChannelId: {} }
+  const unseenChannels = channels.filter((channel) => {
     const channelId = channel.channel_id
-    const notifyAfterTime = tsToMillis(
+    const notifyAfterTime =
       channels?.find((m) => m.channel_id === channelId)?.notify_after_time ??
-        '0'
-    )
+      '0'
+
     const lastSeenTime = lastSeenChatTimeByChannelId[channelId] ?? 0
     const lastSeenChatTime =
       notifyAfterTime > lastSeenTime ? notifyAfterTime : lastSeenTime ?? 0
     return (
-      tsToMillis(channel.last_updated_time) > lastSeenChatTime &&
-      tsToMillis(channel.last_updated_time) > lastSeenMessagesPageTime &&
+      channel.last_updated_time > lastSeenChatTime &&
+      (ignorePageSeenTime ||
+        tsToMillis(channel.last_updated_time) > lastSeenMessagesPageTime) &&
       !pathName?.endsWith(`/messages/${channelId}`)
     )
   })
+  return { unseenChannels, lastSeenChatTimeByChannelId }
 }
 
 const useLastSeenMessagesPageTime = () => {

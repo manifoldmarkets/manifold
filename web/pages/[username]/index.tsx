@@ -72,6 +72,8 @@ import { VerifyMe } from 'web/components/gidx/verify-me'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
 import { TwombaPortfolioValueSection } from 'web/components/portfolio/twomba-portfolio-value-section'
 import { unauthedApi } from 'common/util/api'
+import { AddFundsButton } from 'web/components/profile/add-funds-button'
+import { RedeemSpiceButton } from 'web/components/profile/redeem-spice-button'
 
 export const getStaticProps = async (props: {
   params: {
@@ -337,6 +339,7 @@ function UserProfile(props: {
                 <FollowButton userId={user.id} />
               </>
             )}
+
             {!isMobile && <MoreOptionsUserButton user={user} />}
           </Row>
         </Row>
@@ -355,6 +358,17 @@ function UserProfile(props: {
               className="mt-2"
             />
           </Col>
+        )}
+
+        {isCurrentUser && TWOMBA_ENABLED && (
+          <Row className="my-2 w-full items-center gap-2 px-4">
+            <AddFundsButton userId={user.id} className="whitespace-nowrap" />
+            <RedeemSpiceButton
+              userId={user.id}
+              className="whitespace-nowrap"
+              spice={user.spiceBalance}
+            />
+          </Row>
         )}
 
         <Col className="mx-4">
@@ -388,13 +402,21 @@ function UserProfile(props: {
                     {!isCurrentUser && (
                       <>
                         {TWOMBA_ENABLED ? (
-                          <TwombaPortfolioValueSection
-                            user={user}
-                            defaultTimePeriod={
-                              currentUser?.id === user.id ? 'weekly' : 'monthly'
-                            }
-                            hideAddFundsButton
-                          />
+                          <>
+                            <TwombaPortfolioValueSection
+                              user={user}
+                              defaultTimePeriod={
+                                currentUser?.id === user.id
+                                  ? 'weekly'
+                                  : 'monthly'
+                              }
+                              hideAddFundsButton
+                            />
+
+                            <div className="text-ink-800 mx-2 mt-6 gap-2 border-t pt-4 text-xl font-semibold lg:mx-0">
+                              Trades
+                            </div>
+                          </>
                         ) : (
                           <PortfolioValueSection
                             user={user}

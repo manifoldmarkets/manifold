@@ -1365,9 +1365,9 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: z.object({
-      channelId: z.coerce.number(),
+      channelIds: z.array(z.coerce.number()),
     }),
-    returns: {} as { created_time: string },
+    returns: [] as [number, string][],
   },
   'set-channel-seen-time': {
     method: 'POST',

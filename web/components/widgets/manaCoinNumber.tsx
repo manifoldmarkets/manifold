@@ -54,7 +54,7 @@ export function CoinNumber(props: {
       ) : (
         <ManaCoin
           className={clsx(
-            isInline && 'absolute -left-[1.1em] top-[0.25em]',
+            isInline && 'absolute -left-[1.1em] top-[0.25em] shrink-0',
             coinClassName
           )}
         />
