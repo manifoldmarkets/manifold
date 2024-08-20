@@ -211,7 +211,8 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
   const traceId = traceContext
     ? traceContext.split('/')[0]
     : crypto.randomUUID()
-  const context = { endpoint: req.path, traceId }
+  const baseEndpoint = getBaseName(req.path)
+  const context = { endpoint: req.path, traceId, baseEndpoint }
   withMonitoringContext(context, () => {
     const startTs = hrtime.bigint()
     const isLocalhost = req.get('host')?.includes('localhost')
@@ -228,7 +229,7 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
       metrics.push('http/request_latency', latencyMs, {
         endpoint: req.path,
         method: req.method,
-        baseEndpoint: getBaseName(req.path),
+        baseEndpoint,
       })
     })
     next()

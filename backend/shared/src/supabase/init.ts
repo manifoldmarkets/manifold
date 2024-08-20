@@ -29,8 +29,9 @@ export const pgp = pgPromise({
       const successStr = success ? 'true' : 'false'
 
       const mctx = getMonitoringContext()
-      if (mctx?.endpoint) {
+      if (mctx?.baseEndpoint) {
         metrics.push('pg/transaction_duration', duration, {
+          baseEndpoint: mctx.baseEndpoint,
           endpoint: mctx.endpoint,
           query,
           successStr,
