@@ -24,7 +24,7 @@ import { followMarket, unfollowMarket } from '../buttons/follow-market-button'
 import { ReportModal } from '../buttons/report-button'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
-import { TWOMBA_MODE_TYPE, TwombaToggle } from '../twomba/twomba-toggle'
+import { TwombaToggle } from '../twomba/twomba-toggle'
 import { getLinkTarget } from '../widgets/linkify'
 import { BoostDialog } from './boost-button'
 import { AddLiquidityModal } from './subsidize-button'
@@ -220,20 +220,10 @@ export function TwombaHeaderActions(props: {
       : []),
   ]
 
-  const [mode, setMode] = useState<TWOMBA_MODE_TYPE>('sweepies')
   return (
     // make tooltip children stretch
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
-      <TwombaToggle
-        mode={mode}
-        onClick={() => {
-          if (mode === 'sweepies') {
-            setMode('mana')
-          } else {
-            setMode('sweepies')
-          }
-        }}
-      />
+      <TwombaToggle />
       {children}
       <CopyLinkOrShareButton
         url={getShareUrl(contract, user?.username)}

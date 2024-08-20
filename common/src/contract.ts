@@ -420,6 +420,14 @@ export type ContractParams = {
   dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]
   betReplies: Bet[]
+  cash?: {
+    contract: Contract
+    pointsString: string
+    multiPointsString: { [answerId: string]: string }
+    userPositionsByOutcome: ContractMetricsByOutcome
+    totalPositions: number
+    totalBets: number
+  }
 }
 
 export type MaybeAuthedContractParams =

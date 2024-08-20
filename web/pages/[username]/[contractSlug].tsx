@@ -71,7 +71,7 @@ import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { Bet, LimitBet } from 'common/bet'
 import { getContractParams } from 'common/contract-params'
-import { getContractFromSlug } from 'common/supabase/contracts'
+import { getContract, getContractFromSlug } from 'common/supabase/contracts'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { DangerZone } from 'web/components/contract/danger-zone'
@@ -88,6 +88,8 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { YourOrders } from 'web/components/bet/order-book'
 import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
 import { TwombaContractPageContent } from '../../components/contract/twomba-contract-page'
+import { removeUndefinedProps } from 'common/util/object'
+import { pick } from 'lodash'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -113,7 +115,29 @@ export async function getStaticProps(ctx: {
   }
 
   const props = await getContractParams(contract, adminDb)
-  return { props }
+
+  // Fetch sibling contract if it exists
+  let cash = undefined
+  if (contract.siblingContractId) {
+    const cashContract = await getContract(adminDb, contract.siblingContractId)
+    if (cashContract) {
+      const params = await getContractParams(cashContract, adminDb)
+      cash = pick(params, [
+        'contract',
+        'pointsString',
+        'multiPointsString',
+        'userPositionsByOutcome',
+        'totalPositions',
+        'totalBets',
+      ])
+    }
+  }
+  return {
+    props: removeUndefinedProps({
+      state: 'authed',
+      params: { ...props, cash },
+    }),
+  }
 }
 
 export async function getStaticPaths() {

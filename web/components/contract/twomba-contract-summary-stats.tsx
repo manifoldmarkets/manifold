@@ -12,11 +12,20 @@ import { CreatorFeesDisplay } from './creator-fees-display'
 import { LikeButton } from './like-button'
 
 export function TwombaContractSummaryStats(props: {
-  contract: Contract
+  contractId: string
+  creatorId: string
+  question: string
+  financeContract: Contract
   editable?: boolean
 }) {
-  const { contract, editable } = props
-  const { creatorId, outcomeType, marketTier } = contract
+  const {
+    contractId,
+    creatorId,
+    question,
+    financeContract: contract,
+    editable,
+  } = props
+  const { outcomeType, marketTier } = contract
   const isCreator = useUser()?.id === creatorId
   const privateUser = usePrivateUser()
   const user = useUser()
@@ -38,10 +47,10 @@ export function TwombaContractSummaryStats(props: {
             <LikeButton
               user={user}
               size={'xs'}
-              contentId={contract.id}
+              contentId={contractId}
               contentType="contract"
-              contentCreatorId={contract.creatorId}
-              contentText={contract.question}
+              contentCreatorId={creatorId}
+              contentText={question}
               trackingLocation={'contract page'}
             />
           )}

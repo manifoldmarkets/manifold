@@ -35,7 +35,7 @@ import { getBetPoints, getTotalBetCount } from 'web/lib/supabase/bets'
 export async function getContractParams(
   contract: Contract,
   db: SupabaseClient
-): Promise<MaybeAuthedContractParams> {
+): Promise<Omit<ContractParams, 'cash'>> {
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
   const isMulti = contract.mechanism === 'cpmm-multi-1'
@@ -126,31 +126,28 @@ export async function getContractParams(
   const lastBet: Bet | undefined = lastBetArray[0]
   const lastBetTime = lastBet?.createdTime
 
-  return {
-    state: 'authed',
-    params: removeUndefinedProps({
-      outcomeType: contract.outcomeType,
-      contract,
-      lastBetTime,
-      betReplies,
-      pointsString,
-      multiPointsString,
-      comments,
-      userPositionsByOutcome,
-      totalPositions,
-      totalBets,
-      topContractMetrics,
-      relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
-      chartAnnotations,
-      pinnedComments,
-      topics: orderBy(
-        topics,
-        (t) => t.importanceScore + (t.privacyStatus === 'public' ? 1 : 0),
-        'desc'
-      ),
-      dashboards,
-    }) as ContractParams,
-  }
+  return removeUndefinedProps({
+    outcomeType: contract.outcomeType,
+    contract,
+    lastBetTime,
+    betReplies,
+    pointsString,
+    multiPointsString,
+    comments,
+    userPositionsByOutcome,
+    totalPositions,
+    totalBets,
+    topContractMetrics,
+    relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
+    chartAnnotations,
+    pinnedComments,
+    topics: orderBy(
+      topics,
+      (t) => t.importanceScore + (t.privacyStatus === 'public' ? 1 : 0),
+      'desc'
+    ),
+    dashboards,
+  })
 }
 
 export const getSingleBetPoints = (
