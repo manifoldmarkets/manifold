@@ -18,6 +18,29 @@ export const pgp = pgPromise({
       event: e,
     })
   },
+  disconnect() {
+    metrics.inc('pg/connections_disconnected')
+  },
+  receive({ ctx }) {
+    const taskOrTransactCtx = ctx.ctx
+    // Duration only works for tasks and transactions, not regular queries
+    const duration = taskOrTransactCtx?.duration
+    if (!duration) return
+    const mctx = getMonitoringContext()
+    if (mctx?.endpoint) {
+      metrics.push('pg/transaction_duration', duration, {
+        endpoint: mctx.endpoint,
+        query: ctx.query,
+      })
+    } else if (mctx?.job) {
+      metrics.push('pg/transaction_duration', duration, {
+        job: mctx.job,
+        query: ctx.query,
+      })
+    } else {
+      metrics.push('pg/transaction_duration', duration, { query: ctx.query })
+    }
+  },
   query() {
     const ctx = getMonitoringContext()
     if (ctx?.endpoint) {

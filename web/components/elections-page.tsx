@@ -89,6 +89,12 @@ export function USElectionsPage(props: ElectionsPageProps) {
       />
 
       <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
+      {/* 
+      <PoliticsCard
+        contract={electionCandidateContract as MultiContract}
+        viewType="CANDIDATE"
+        className="-mt-4"
+      /> */}
     </Col>
   )
 }
