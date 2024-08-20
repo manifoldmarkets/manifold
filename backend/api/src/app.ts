@@ -239,14 +239,13 @@ const getBaseName = (path: string) => {
   const parts = path.split('/').filter(Boolean)
   if (parts.length < 2) return path
   const base = parts[1]
-  if (parts.length === 2) return base
+  if (parts.length === 2) return `/${base}`
   const specificPaths = ['bet', 'user', 'group', 'market']
   if (specificPaths.includes(base)) {
-    return `${base}/*`
+    return `/${base}/*`
   }
   return base
 }
-
 const apiErrorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   if (error instanceof APIError) {
     log.info(error)
