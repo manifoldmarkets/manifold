@@ -206,7 +206,7 @@ const ignoredEndpoints = [
   '/get-channel-seen-time',
 ]
 
-const requestMonitoring: RequestHandler = (req, _res, next) => {
+const requestMonitoring: RequestHandler = (req, res, next) => {
   const traceContext = req.get('X-Cloud-Trace-Context')
   const traceId = traceContext
     ? traceContext.split('/')[0]
@@ -222,10 +222,12 @@ const requestMonitoring: RequestHandler = (req, _res, next) => {
       log(`${req.method} ${req.url}`)
     }
     metrics.inc('http/request_count', { endpoint: req.path })
+    res.on('close', () => {
+      const endTs = hrtime.bigint()
+      const latencyMs = Number(endTs - startTs) / 1e6 // Convert to milliseconds
+      metrics.push('http/request_latency', latencyMs, { endpoint: req.path })
+    })
     next()
-    const endTs = hrtime.bigint()
-    const latencyMs = Number(endTs - startTs) / 1e6
-    metrics.push('http/request_latency', latencyMs, { endpoint: req.path })
   })
 }
 
