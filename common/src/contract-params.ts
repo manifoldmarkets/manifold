@@ -5,7 +5,6 @@ import {
 import {
   CPMMMultiContract,
   Contract,
-  MaybeAuthedContractParams,
   CPMMNumericContract,
   ContractParams,
 } from 'common/contract'
