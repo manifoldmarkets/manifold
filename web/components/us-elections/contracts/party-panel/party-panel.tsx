@@ -27,7 +27,6 @@ import { ProbabilityNeedle } from 'web/components/us-elections/probability-needl
 import { SizedContainer } from 'web/components/sized-container'
 import { Spacer } from 'web/components/layout/spacer'
 import Image from 'next/image'
-import { UserIcon } from '@heroicons/react/solid'
 import { IoIosPerson } from 'react-icons/io'
 
 // just the bars
