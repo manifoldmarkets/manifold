@@ -27,6 +27,8 @@ import { ProbabilityNeedle } from 'web/components/us-elections/probability-needl
 import { SizedContainer } from 'web/components/sized-container'
 import { Spacer } from 'web/components/layout/spacer'
 import Image from 'next/image'
+import { UserIcon } from '@heroicons/react/solid'
+import { IoIosPerson } from 'react-icons/io'
 
 // just the bars
 export function PartyPanel(props: {
@@ -231,6 +233,10 @@ function PartyAnswer(props: {
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
 
+  const isDemocraticParty = answer.text == 'Democratic Party'
+  const isRepublicanParty = answer.text == 'Republican Party'
+  const isOther = answer.text == 'Other'
+
   return (
     <Col className={'w-full'}>
       <AnswerBar
@@ -243,24 +249,44 @@ function PartyAnswer(props: {
           selected && 'ring-primary-600 ring-2'
         )}
         label={
-          <Col>
-            <CreatorAndAnswerLabel
-              text={answer.text}
-              createdTime={answer.createdTime}
-              className={clsx('items-center !leading-none ')}
-            />
-            {!resolution && hasBets && isCpmm && user && (
-              <UserPosition
-                contract={contract as CPMMMultiContract}
-                answer={answer}
-                userBets={userBets}
-                user={user}
-                className="text-ink-700 dark:text-ink-800 text-xs hover:underline"
-                greenArrowClassName="text-teal-600 dark:text-teal-300"
-                redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
+          <Row className="relative h-8">
+            {isOther ? (
+              <IoIosPerson className="text-ink-700 absolute -bottom-6 -left-4 h-16 w-16 rounded-bl" />
+            ) : (
+              <Image
+                height={80}
+                width={80} // Double the width to ensure the image is not stretched
+                src={
+                  isDemocraticParty
+                    ? '/political-candidates/harris.png'
+                    : '/political-candidates/trump.png'
+                }
+                alt={''}
+                className={clsx(
+                  'absolute -bottom-3.5 -left-3 h-14 w-14 rounded-bl'
+                )}
               />
             )}
-          </Col>
+
+            <Col className="ml-12">
+              <CreatorAndAnswerLabel
+                text={answer.text}
+                createdTime={answer.createdTime}
+                className={clsx('items-center !leading-none ')}
+              />
+              {!resolution && hasBets && isCpmm && user && (
+                <UserPosition
+                  contract={contract as CPMMMultiContract}
+                  answer={answer}
+                  userBets={userBets}
+                  user={user}
+                  className="text-ink-700 dark:text-ink-800 text-xs hover:underline"
+                  greenArrowClassName="text-teal-600 dark:text-teal-300"
+                  redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
+                />
+              )}
+            </Col>
+          </Row>
         }
         end={
           <Row className={'items-center gap-1 sm:gap-2'}>
