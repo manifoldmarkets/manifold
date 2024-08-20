@@ -231,6 +231,8 @@ function PartyAnswer(props: {
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
 
+  const isDemocraticParty = answer.text == 'Democratic Party'
+
   return (
     <Col className={'w-full'}>
       <AnswerBar
@@ -243,24 +245,38 @@ function PartyAnswer(props: {
           selected && 'ring-primary-600 ring-2'
         )}
         label={
-          <Col>
-            <CreatorAndAnswerLabel
-              text={answer.text}
-              createdTime={answer.createdTime}
-              className={clsx('items-center !leading-none ')}
+          <Row className="relative h-8">
+            <Image
+              height={80}
+              width={80} // Double the width to ensure the image is not stretched
+              src={
+                isDemocraticParty
+                  ? '/political-candidates/harris.png'
+                  : '/political-candidates/trump.png'
+              }
+              alt={''}
+              className="absolute -bottom-3.5 -left-3 h-14 w-14 rounded-bl"
             />
-            {!resolution && hasBets && isCpmm && user && (
-              <UserPosition
-                contract={contract as CPMMMultiContract}
-                answer={answer}
-                userBets={userBets}
-                user={user}
-                className="text-ink-700 dark:text-ink-800 text-xs hover:underline"
-                greenArrowClassName="text-teal-600 dark:text-teal-300"
-                redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
+
+            <Col className="ml-12">
+              <CreatorAndAnswerLabel
+                text={answer.text}
+                createdTime={answer.createdTime}
+                className={clsx('items-center !leading-none ')}
               />
-            )}
-          </Col>
+              {!resolution && hasBets && isCpmm && user && (
+                <UserPosition
+                  contract={contract as CPMMMultiContract}
+                  answer={answer}
+                  userBets={userBets}
+                  user={user}
+                  className="text-ink-700 dark:text-ink-800 text-xs hover:underline"
+                  greenArrowClassName="text-teal-600 dark:text-teal-300"
+                  redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
+                />
+              )}
+            </Col>
+          </Row>
         }
         end={
           <Row className={'items-center gap-1 sm:gap-2'}>

@@ -67,6 +67,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
           Live prediction market odds on the US election
         </div>
       </Col>
+
       <PoliticsCard
         contract={electionPartyContract as MultiContract}
         viewType="PARTY"
