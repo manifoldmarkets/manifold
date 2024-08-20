@@ -18,8 +18,9 @@ export const useVotesOnComment = (
       db
         .from('user_reactions')
         .select()
-        .eq('content_type', contentType)
+        .eq('content_type', "comment")
         .eq('content_id', commentId)
+        .or('reaction_types.eq.upvote,reaction_types.eq.downvote')
     ).then(({ data }) => setVotes(data))
   }, [commentId])
 
