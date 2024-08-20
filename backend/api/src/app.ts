@@ -225,10 +225,26 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
     res.on('close', () => {
       const endTs = hrtime.bigint()
       const latencyMs = Number(endTs - startTs) / 1e6 // Convert to milliseconds
-      metrics.push('http/request_latency', latencyMs, { endpoint: req.path })
+      metrics.push('http/request_latency', latencyMs, {
+        endpoint: req.path,
+        method: req.method,
+        baseEndpoint: getBaseName(req.path),
+      })
     })
     next()
   })
+}
+
+const getBaseName = (path: string) => {
+  const parts = path.split('/').filter(Boolean)
+  if (parts.length < 2) return path
+  const base = parts[1]
+  if (parts.length === 2) return base
+  const specificPaths = ['bet', 'user', 'group', 'market']
+  if (specificPaths.includes(base)) {
+    return `${base}/*`
+  }
+  return base
 }
 
 const apiErrorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
