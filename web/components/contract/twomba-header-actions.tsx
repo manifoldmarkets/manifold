@@ -223,7 +223,7 @@ export function TwombaHeaderActions(props: {
   return (
     // make tooltip children stretch
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
-      <TwombaToggle />
+      {!!contract.siblingContractId && <TwombaToggle />}
       {children}
       <CopyLinkOrShareButton
         url={getShareUrl(contract, user?.username)}

@@ -130,11 +130,10 @@ export function BuyPanel(props: {
                 onOutcomeChoice(choice)
               }}
               yesLabel={
-                isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
+                isPseudoNumeric ? 'HIGHER' : isStonk ? STONK_YES : 'YES'
               }
-              noLabel={
-                isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
-              }
+              noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : 'NO'}
+              isCash={contract.token === 'CASH'}
             />
           </Row>
         </Col>
