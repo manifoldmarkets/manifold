@@ -9,10 +9,7 @@ import {
 } from 'shared/utils'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { MAX_ID_LENGTH } from 'common/group'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getComment } from 'shared/supabase/contract-comments'
 import { richTextToString } from 'common/util/parse'
 import { broadcastNewChartAnnotation } from 'shared/websockets/helpers'
@@ -49,8 +46,9 @@ export const createchartannotation = authEndpoint(async (req, auth) => {
 
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(404, 'Your account was not found')
-  const db = createSupabaseClient()
-  const comment = commentId ? await getComment(db, commentId) : null
+  const pg = createSupabaseDirectClient()
+
+  const comment = commentId ? await getComment(pg, commentId) : null
 
   const text = passedText
     ? passedText.trim()
@@ -71,7 +69,6 @@ export const createchartannotation = authEndpoint(async (req, auth) => {
     probChange,
   })
 
-  const pg = createSupabaseDirectClient()
   const res = await pg.one(
     `
     insert into chart_annotations
