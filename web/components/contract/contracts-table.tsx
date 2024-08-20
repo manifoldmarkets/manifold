@@ -2,7 +2,11 @@ import { EyeOffIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
-import { ENV_CONFIG, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  SPICE_MARKET_TOOLTIP,
+  SWEEPIES_MARKET_TOOLTIP,
+} from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatMoney, formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
@@ -27,6 +31,7 @@ import { removeEmojis } from 'common/util/string'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { track } from 'web/lib/service/analytics'
 import { TierTooltip } from '../tiers/tier-tooltip'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -268,6 +273,16 @@ function ContractQuestion(props: {
       )}
       <span>
         {/* <VisibilityIcon contract={contract} /> */}
+        {contract.token == 'CASH' && (
+          <span>
+            <Tooltip
+              text={SWEEPIES_MARKET_TOOLTIP}
+              className=" relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+            >
+              <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
+            </Tooltip>
+          </span>
+        )}
         {!!contract.isSpicePayout && (
           <span>
             <Tooltip
