@@ -73,14 +73,14 @@ export function USElectionsPage(props: ElectionsPageProps) {
         customTitle="Which party will win the Presidential Election?"
       />
 
-      {trending}
-
       <HomepageMap
         rawPresidencyStateContracts={rawPresidencyStateContracts}
         rawSenateStateContracts={rawSenateStateContracts}
         rawGovernorStateContracts={rawGovernorStateContracts}
         houseContract={houseContract as MultiContract}
       />
+
+      {trending}
 
       <PoliticsCard
         contract={electionCandidateContract as MultiContract}
