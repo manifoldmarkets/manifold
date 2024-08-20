@@ -73,6 +73,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
         customTitle="Which party will win the Presidential Election?"
       />
 
+      {trending}
+
       <HomepageMap
         rawPresidencyStateContracts={rawPresidencyStateContracts}
         rawSenateStateContracts={rawSenateStateContracts}
@@ -80,15 +82,13 @@ export function USElectionsPage(props: ElectionsPageProps) {
         houseContract={houseContract as MultiContract}
       />
 
-      {trending}
-
+      <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
+      {/* 
       <PoliticsCard
         contract={electionCandidateContract as MultiContract}
         viewType="CANDIDATE"
         className="-mt-4"
-      />
-
-      <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
+      /> */}
     </Col>
   )
 }
