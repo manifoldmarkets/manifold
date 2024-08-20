@@ -28,11 +28,12 @@ export const getPositions: APIHandler<'market/:id/positions'> = async (
   }
   log('getPositions from ip:', getIp(req))
   const pg = createSupabaseDirectClient()
-  const { top, bottom, userId, order } = props
+  const { top, bottom, userId, answerId, order } = props
 
   return await getOrderedContractMetricRowsForContractId(pg, contractId, {
     top,
     userId,
+    answerId,
     bottom,
     order,
   })
