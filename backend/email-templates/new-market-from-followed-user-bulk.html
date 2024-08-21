@@ -3,7 +3,7 @@
     xmlns:o="urn:schemas-microsoft-com:office:office">
 
 <head>
-    <title>New market from {{creatorName}}</title>
+    <title>New market from %recipient.creatorName%</title>
     <!--[if !mso]><!-->
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <!--<![endif]-->
@@ -203,7 +203,7 @@
                                                     style="line-height: 24px; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;"
                                                     data-testid="4XoHRGw1Y"><span
                                                         style="color:#000000;font-family:Arial, Helvetica, sans-serif;font-size:18px;">
-                                                    </span>Hi {{name}},</p>
+                                                    </span>Hi %recipient.name%,</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -217,7 +217,7 @@
                                                     style="line-height: 24px; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;"
                                                     data-testid="4XoHRGw1Y"><span
                                                         style="color:#000000;font-family:Arial, Helvetica, sans-serif;font-size:18px;">
-                                                        {{creatorName}}, (who you're following) just created a new market, check it out!</span></p>
+                                                        %recipient.creatorName%, (whom you're following) just created a new market, check it out!</span></p>
                                             </div>
                                         </td>
                                     </tr>
@@ -227,16 +227,16 @@
                                             style="font-size:0px;padding:10px 25px;padding-top:0px;padding-bottom:20px;word-break:break-word;">
                                             <div
                                                 style="font-family:Arial, sans-serif;font-size:18px;letter-spacing:normal;line-height:1;text-align:center;color:#000000;">
-                                                <a href="{{questionUrl}}">
-                                                    <img alt="{{questionTitle}}" width="375" height="200"
-                                                        style="border: 1px solid #4337c9;" src="{{questionImgSrc}}">
+                                                <a href="%recipient.questionUrl%">
+                                                    <img alt="%recipient.questionTitle%" width="375" height="200"
+                                                        style="border: 1px solid #4337c9;" src="%recipient.questionImgSrc%">
                                                 </a>
                                             </div>
 
                                             <table cellspacing="0" cellpadding="0">
                                                 <tr>
                                                     <td style="border-radius: 4px;" bgcolor="#4337c9">
-                                                        <a href="{{questionUrl}}" target="_blank"
+                                                        <a href="%recipient.questionUrl%" target="_blank"
                                                             style="padding: 6px 10px; border: 1px solid #4337c9;border-radius: 12px;font-family: Helvetica, Arial, sans-serif;font-size: 16px; color: #ffffff;text-decoration: none;font-weight:semibold;display: inline-block;">
                                                             View market
                                                         </a>
@@ -314,8 +314,8 @@
                                     ">
                                                                                     <p style="margin: 10px 0">
                                                                                         This e-mail has been sent to
-                                                                                        {{name}},
-                                                                                        <a href="{{unsubscribeUrl}}" style="
+                                                                                        %recipient.name%,
+                                                                                        <a href="%recipient.unsubscribeUrl%" style="
                                           color: inherit;
                                           text-decoration: none;
                                         " target="_blank">click here to unsubscribe from this type of notification</a>.

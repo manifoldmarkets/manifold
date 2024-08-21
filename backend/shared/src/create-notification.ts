@@ -40,12 +40,14 @@ import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { mapAsync } from 'common/util/promise'
 import {
+  sendBulkEmails,
   sendMarketCloseEmail,
   sendMarketResolutionEmail,
   sendNewAnswerEmail,
   sendNewCommentEmail,
-  sendNewFollowedMarketEmail,
+  getNewFollowedMarketEmail,
   sendNewUniqueBettorsEmail,
+  EmailAndTemplateEntry,
 } from './emails'
 import {
   getNotificationDestinationsForUser,
@@ -857,6 +859,7 @@ export const createBettingStreakExpiringNotification = async (
   await bulkInsertNotifications(bulkNotifications, pg)
 }
 
+/** @deprecated until bulkified **/
 export const createLeagueChangedNotification = async (
   userId: string,
   previousLeague: league_user_info | undefined,
@@ -1092,16 +1095,19 @@ export const createNewContractNotification = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const bulkNotifications: Notification[] = []
+  const bulkEmails: EmailAndTemplateEntry[] = []
 
   const privateUsers = await pg.map(
-    `select * from private_users where id in
+    `select private_users.*, users.name from private_users
+           join users on private_users.id = users.id
+           where private_users.id in
            (select user_id from user_follows where follow_id = $1)`,
     [contractCreator.id],
-    convertPrivateUser
+    (r) => ({ ...convertPrivateUser(r), name: r.name })
   )
   const followerUserIds = privateUsers.map((user) => user.id)
   const privateUserMap = new Map(privateUsers.map((user) => [user.id, user]))
-  const sendNotificationsIfSettingsAllow = async (
+  const sendNotificationsIfSettingsAllow = (
     userId: string,
     reason: notification_preference
   ) => {
@@ -1136,27 +1142,36 @@ export const createNewContractNotification = async (
       }
       bulkNotifications.push(notification)
     }
-    if (sendToEmail && reason === 'contract_from_followed_user')
-      await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
+    if (sendToEmail && reason === 'contract_from_followed_user') {
+      const entry = getNewFollowedMarketEmail(
+        reason,
+        privateUser.name,
+        privateUser,
+        contract
+      )
+      if (entry) bulkEmails.push(entry)
+    }
   }
 
   // As it is coded now, the tag notification usurps the new contract notification
-  // It'd be easy to append the reason to the eventId if desired
   if (contract.visibility == 'public') {
-    // perhaps we have to bulk send these emails?
-    await mapAsync(
-      followerUserIds,
+    forEach(
+      followerUserIds.filter((userId) => !mentionedUserIds.includes(userId)),
       (userId) =>
-        sendNotificationsIfSettingsAllow(userId, 'contract_from_followed_user'),
-      20
+        sendNotificationsIfSettingsAllow(userId, 'contract_from_followed_user')
     )
   }
-  await mapAsync(
-    mentionedUserIds,
-    (userId) => sendNotificationsIfSettingsAllow(userId, 'tagged_user'),
-    20
+  forEach(mentionedUserIds, (userId) =>
+    sendNotificationsIfSettingsAllow(userId, 'tagged_user')
   )
   await bulkInsertNotifications(bulkNotifications, pg)
+
+  await sendBulkEmails(
+    `${contractCreator.name} asked ${contract.question}`,
+    'new-market-followed-user-bulk',
+    `${contractCreator.name} on Manifold <no-reply@manifold.markets>`,
+    bulkEmails
+  )
 }
 
 export const createContractResolvedNotifications = async (

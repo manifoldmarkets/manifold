@@ -17,7 +17,7 @@ import {
   notification_reason_types,
   NotificationReason,
 } from 'common/notification'
-import { Dictionary } from 'lodash'
+import { chunk, Dictionary } from 'lodash'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { buildOgUrl } from 'common/util/og'
 import { removeUndefinedProps } from 'common/util/object'
@@ -54,6 +54,7 @@ export const emailMoneyFormat = (amount: number) => {
   return formatMoney(amount).replace(ENV_CONFIG.moneyMoniker, 'M')
 }
 
+// TODO: we should load users in bulk and pass them through
 export const sendMarketResolutionEmail = async (
   reason: NotificationReason,
   privateUser: PrivateUser,
@@ -211,6 +212,52 @@ export const sendWelcomeEmail = async (
       'o:deliverytime': new Date(Date.now() + 2 * HOUR_MS).toUTCString(),
     }
   )
+}
+
+export type EmailAndTemplateData = { name: string; [key: string]: string }
+export type EmailAndTemplateEntry = [string, EmailAndTemplateData]
+
+export const sendBulkEmails = async (
+  subject: string,
+  template: string,
+  from: string,
+  recipients: EmailAndTemplateEntry[]
+) => {
+  // Mailgun has a limit of 1000 recipients per batch
+  const emailChunks = chunk(recipients, 1000)
+  for (const chunk of emailChunks) {
+    const mailgunDomain = 'mg.manifold.markets'
+    const mailgunApiKey = process.env.MAILGUN_KEY as string
+    const url = `https://api.mailgun.net/v3/${mailgunDomain}/messages`
+    const data = new URLSearchParams()
+    data.append('from', from)
+    data.append('subject', subject)
+    data.append('template', template)
+    chunk.forEach(([recipientEmail, details]) => {
+      data.append('to', `${details.name} <${recipientEmail}>`)
+    })
+    data.append(
+      'recipient-variables',
+      JSON.stringify(Object.fromEntries(chunk))
+    )
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${btoa(`api:${mailgunApiKey}`)}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: data,
+      })
+      const json = await response.json()
+      log('Sent bulk emails for subject: ' + subject, json)
+    } catch (error) {
+      log.error('Error sending emails for subject: ' + subject, {
+        error,
+      })
+    }
+  }
 }
 
 export const sendPersonalFollowupEmail = async (
@@ -561,10 +608,9 @@ function imageSourceUrl(contract: Contract) {
     'market'
   )
 }
-
-export const sendNewFollowedMarketEmail = async (
+export const getNewFollowedMarketEmail = (
   reason: notification_reason_types,
-  userId: string,
+  userName: string,
   privateUser: PrivateUser,
   contract: Contract
 ) => {
@@ -573,18 +619,12 @@ export const sendNewFollowedMarketEmail = async (
     reason
   )
   if (!privateUser.email || !sendToEmail) return
-  const user = await getUser(privateUser.id)
-  if (!user) return
-
-  const { name } = user
-  const firstName = name.split(' ')[0]
+  const firstName = userName.split(' ')[0]
   const creatorName = contract.creatorName
 
   const questionImgSrc = imageSourceUrl(contract)
-  return await sendTemplateEmail(
+  return [
     privateUser.email,
-    `${creatorName} asked ${contract.question}`,
-    'new-market-from-followed-user',
     {
       name: firstName,
       creatorName,
@@ -593,10 +633,7 @@ export const sendNewFollowedMarketEmail = async (
       questionUrl: contractUrl(contract),
       questionImgSrc,
     },
-    {
-      from: `${creatorName} on Manifold <no-reply@manifold.markets>`,
-    }
-  )
+  ] as EmailAndTemplateEntry
 }
 
 export const sendNewPrivateMarketEmail = async (
