@@ -59,7 +59,6 @@ import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { formatMoney } from 'common/util/format'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -895,27 +894,16 @@ export const createLikeNotification = async (reaction: Reaction) => {
   const creatorPrivateUser = await getPrivateUser(content_owner_id)
   const user = await getUser(user_id)
 
-  const db = createSupabaseClient()
   const pg = createSupabaseDirectClient()
 
-  let contractId
-  if (content_type === 'contract') {
-    contractId = content_id
-  } else {
-    const { data, error } = await db
-      .from('contract_comments')
-      .select('contract_id')
-      .eq('comment_id', content_id)
-    if (error) {
-      log('Failed to get contract id: ' + error.message)
-      return
-    }
-    if (!data.length) {
-      log('Contract that comment belongs to not found')
-      return
-    }
-    contractId = data[0].contract_id
-  }
+  const contractId =
+    content_type === 'contract'
+      ? content_id
+      : await pg.one(
+          `select contract_id from contract_comments where comment_id = $1`,
+          [content_id],
+          (r) => r.contract_id
+        )
 
   const contract = await getContract(pg, contractId)
 
