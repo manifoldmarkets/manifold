@@ -7,7 +7,7 @@ export function SweepiesCoin(props: { className?: string }) {
   return (
     <img
       src="/sweepies.svg"
-      alt={ENV_CONFIG.moneyMoniker}
+      alt={'S'}
       className={clsx('inline-block', className)}
       style={{
         width: '1em',

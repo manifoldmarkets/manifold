@@ -38,6 +38,8 @@ import { FeeDisplay } from '../bet/fees'
 import { XIcon } from '@heroicons/react/solid'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import { getTierFromLiquidity } from 'common/tier'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { CoinNumber } from '../widgets/manaCoinNumber'
 
 export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
@@ -238,6 +240,7 @@ export const NumericBetPanel = (props: {
     mode,
   ])
   const step = getPrecision(minimum, maximum, answers.length)
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <Col className={'gap-2'}>
@@ -379,7 +382,14 @@ export const NumericBetPanel = (props: {
             <Col className={'mt-0.5'}>
               <Row className={'gap-1'}>
                 <span className={'text-ink-700'}>Max payout:</span>
-                {formatMoney(potentialPayout)}
+                {TWOMBA_ENABLED ? (
+                  <CoinNumber
+                    amount={potentialPayout}
+                    coinType={isCashContract ? 'sweepies' : 'mana'}
+                  />
+                ) : (
+                  formatMoney(potentialPayout)
+                )}
                 <span className=" text-green-500">
                   {'+' + currentReturnPercent}
                 </span>

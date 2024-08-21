@@ -34,9 +34,9 @@ export function YesNoSelector(props: {
   const getToken = () => {
     if (TWOMBA_ENABLED) {
       return isCash ? (
-        <SweepiesCoin className="ml-1" />
+        <SweepiesCoin className="mx-1" />
       ) : (
-        <ManaCoin className="ml-1" />
+        <ManaCoin className="mx-1" />
       )
     }
     return null
@@ -45,11 +45,7 @@ export function YesNoSelector(props: {
   return (
     <Row className={clsx('space-x-3', className)}>
       <Button
-        color={
-          (highlight && !selected) || selected === 'YES'
-            ? 'green'
-            : 'green-outline'
-        }
+        color={'green-outline'}
         size="xl"
         onClick={() => onSelect('YES')}
         className={clsx(
@@ -65,9 +61,7 @@ export function YesNoSelector(props: {
       </Button>
 
       <Button
-        color={
-          (highlight && !selected) || selected === 'NO' ? 'red' : 'red-outline'
-        }
+        color={'red-outline'}
         size="xl"
         onClick={() => onSelect('NO')}
         className={clsx(
