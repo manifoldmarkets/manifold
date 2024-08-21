@@ -71,7 +71,7 @@ import {
 import { richTextToString } from 'common/util/parse'
 import { league_user_info } from 'common/leagues'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
-import { buildArray, filterDefined } from 'common/util/array'
+import { filterDefined } from 'common/util/array'
 import { isAdminId, isModId } from 'common/envs/constants'
 import {
   bulkInsertNotifications,
@@ -416,16 +416,14 @@ export const createNewAnswerOnContractNotification = async (
     return removeUndefinedProps(notification)
   }
   const bulkNotifications: Notification[] = []
-  const followerIds = await pg.map(
-    `select follow_id from contract_follows where contract_id = $1`,
-    [sourceContract.id],
-    (r) => r.follow_id as string
-  )
   const privateUsers = await pg.map(
-    'select * from private_users where id = any($1)',
-    [followerIds],
+    `select * from private_users where id in
+           (select follow_id from contract_follows where contract_id = $1)
+           and id != $2`,
+    [sourceContract.id, sourceUser.id],
     convertPrivateUser
   )
+  const followerIds = privateUsers.map((user) => user.id)
   const privateUserMap = new Map(privateUsers.map((user) => [user.id, user]))
 
   const sendNotificationsIfSettingsPermit = async (userId: string) => {
@@ -1211,13 +1209,24 @@ export const createContractResolvedNotifications = async (
     resolutions,
   } = resolutionData
 
+  const pg = createSupabaseDirectClient()
+  const privateUsers = await pg.map(
+    `select * from private_users where id in
+           (select follow_id from contract_follows where contract_id = $1)
+           or id = any ($2)`,
+    [isIndependentMulti ? '_' : contract.id, Object.keys(userPayouts)],
+    convertPrivateUser
+  )
+  const usersToNotify = uniq(
+    privateUsers.map((u) => u.id).filter((id) => id !== resolver.id)
+  )
+
   const sortedProfits = Object.entries(userIdToContractMetrics)
     .map(([userId, metrics]) => {
       const profit = metrics.profit ?? 0
       return { userId, profit }
     })
     .sort((a, b) => b.profit - a.profit)
-  const pg = createSupabaseDirectClient()
   const constructNotification = (
     userId: string,
     reason: NotificationReason
@@ -1257,7 +1266,7 @@ export const createContractResolvedNotifications = async (
     userId: string,
     reason: NotificationReason
   ) => {
-    const privateUser = await getPrivateUser(userId)
+    const privateUser = privateUsers.find((u) => u.id === userId)
     if (!privateUser) return
     const { sendToBrowser, sendToEmail, sendToMobile } =
       getNotificationDestinationsForUser(privateUser, reason)
@@ -1311,20 +1320,6 @@ export const createContractResolvedNotifications = async (
       )
     }
   }
-
-  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
-    `select follow_id from contract_follows where contract_id = $1`,
-    [contract.id]
-  )
-  const contractFollowersIds = followerIds.map((f) => f.follow_id)
-  // We ignore whether users are still watching a market if they have a payout, mainly
-  // bc market resolutions changes their profits, and they'll likely want to know, esp. if NA resolution
-  const usersToNotify = uniq(
-    buildArray(
-      !isIndependentMulti && contractFollowersIds,
-      Object.keys(userPayouts)
-    ).filter((id) => id !== resolver.id)
-  )
 
   await mapAsync(
     usersToNotify,
