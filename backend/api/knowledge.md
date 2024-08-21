@@ -83,6 +83,7 @@ const contractIds = await pg.manyOrNone(`select id from contracts`, [], r => r.i
 - Use TypeScript types consistently to ensure type safety across the API.
 - Use Zod schemas in `common/src/api/schema.ts` to define prop and return types for strong type checking.
 - Use the `APIError` class from `api/helpers/endpoint` to throw standardized API errors.
+- Use lowercase SQL keywords in queries. Don't capitalize SQL keywords.
 
 
 ## Data schema
@@ -90,5 +91,5 @@ Tables like contract_comments, contract_bets, contract_follows, etc, use two pri
 
 Thus to get a comment you would do:
 ```sql
-select * FROM contract_comments WHERE comment_id = $1
+select * from contract_comments where comment_id = $1
 ```
