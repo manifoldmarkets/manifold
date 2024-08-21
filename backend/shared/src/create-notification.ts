@@ -44,7 +44,7 @@ import {
   sendMarketCloseEmail,
   getMarketResolutionEmail,
   sendNewAnswerEmail,
-  sendNewCommentEmail,
+  getNewCommentEmail,
   getNewFollowedMarketEmail,
   sendNewUniqueBettorsEmail,
   EmailAndTemplateEntry,
@@ -73,7 +73,6 @@ import {
 import { richTextToString } from 'common/util/parse'
 import { league_user_info } from 'common/leagues'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
-import { filterDefined } from 'common/util/array'
 import { isAdminId, isModId } from 'common/envs/constants'
 import {
   bulkInsertNotifications,
@@ -215,10 +214,6 @@ export const createCommentOnContractNotification = async (
     [sourceContract.id],
     (r) => r.follow_id
   )
-  if (sourceContract.loverUserId1 || sourceContract.loverUserId2) {
-    const { loverUserId1, loverUserId2 } = sourceContract
-    followerIds.push(...filterDefined([loverUserId1, loverUserId2]))
-  }
   const buildNotification = (userId: string, reason: NotificationReason) => {
     const notification: Notification = {
       id: crypto.randomUUID(),
@@ -268,11 +263,14 @@ export const createCommentOnContractNotification = async (
     ...(repliedUsersInfo ? Object.keys(repliedUsersInfo) : []),
     ...bettorIds,
   ])
-  const notifications: Notification[] = []
+  const bulkNotifications: Notification[] = []
+  const bulkEmails: EmailAndTemplateEntry[] = []
   const privateUsers = await pg.map(
-    'select * from private_users where id = any($1)',
+    `select private_users.*, users.name from private_users
+           join users on private_users.id = users.id
+           where private_users.id = any($1)`,
     [allRelevantUserIds],
-    convertPrivateUser
+    (r) => ({ ...convertPrivateUser(r), name: r.name })
   )
   const privateUserMap = new Map(privateUsers.map((user) => [user.id, user]))
 
@@ -297,7 +295,7 @@ export const createCommentOnContractNotification = async (
 
     // Browser notifications
     if (sendToBrowser && !receivedNotifications.includes('browser')) {
-      notifications.push(buildNotification(userId, reason))
+      bulkNotifications.push(buildNotification(userId, reason))
       receivedNotifications.push('browser')
     }
 
@@ -321,15 +319,19 @@ export const createCommentOnContractNotification = async (
     if (sendToEmail && !receivedNotifications.includes('email')) {
       const { bet } = repliedUsersInfo?.[userId] ?? {}
       // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
-      await sendNewCommentEmail(
+      const email = getNewCommentEmail(
         reason,
         privateUser,
+        privateUser.name,
         sourceUser,
         sourceContract,
         sourceText,
         sourceId,
         bet
       )
+      if (email) {
+        bulkEmails.push(email)
+      }
       receivedNotifications.push('email')
     }
     usersToReceivedNotifications[userId] = receivedNotifications
@@ -379,7 +381,13 @@ export const createCommentOnContractNotification = async (
       )
     )
   )
-  await bulkInsertNotifications(notifications, pg)
+  await bulkInsertNotifications(bulkNotifications, pg)
+  await sendBulkEmails(
+    `Comment on ${sourceContract.question}`,
+    'market-comment-bulk',
+    bulkEmails,
+    `${sourceUser.name} on Manifold <no-reply@manifold.markets>`
+  )
 }
 
 export const createNewAnswerOnContractNotification = async (

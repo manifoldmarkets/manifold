@@ -404,9 +404,10 @@ export const sendMarketCloseEmail = async (
   )
 }
 
-export const sendNewCommentEmail = async (
+export const getNewCommentEmail = (
   reason: NotificationReason,
   privateUser: PrivateUser,
+  userName: string,
   commentCreator: User,
   contract: Contract,
   commentText: string,
@@ -419,7 +420,6 @@ export const sendNewCommentEmail = async (
   )
   if (!privateUser || !privateUser.email || !sendToEmail) return
 
-  const { question } = contract
   const marketUrl = `https://${DOMAIN}/${contract.creatorUsername}/${contract.slug}#${commentId}`
 
   const { name: commentorName, avatarUrl: commentorAvatarUrl } = commentCreator
@@ -432,20 +432,16 @@ export const sendNewCommentEmail = async (
     )}`
   }
 
-  const subject = `Comment on ${question}`
-  const from = `${commentorName} on Manifold <no-reply@manifold.markets>`
-
   if (bet) {
     betDescription = `${betDescription} of ${toDisplayResolution(
       contract,
       bet.outcome
     )}`
   }
-  return await sendTemplateEmail(
+  return [
     privateUser.email,
-    subject,
-    'market-comment',
     {
+      name: userName,
       commentorName,
       commentorAvatarUrl: commentorAvatarUrl ?? '',
       comment: commentText,
@@ -453,8 +449,7 @@ export const sendNewCommentEmail = async (
       unsubscribeUrl,
       betDescription,
     },
-    { from }
-  )
+  ] as EmailAndTemplateEntry
 }
 
 export const sendNewAnswerEmail = async (
