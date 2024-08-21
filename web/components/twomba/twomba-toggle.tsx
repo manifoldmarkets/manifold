@@ -22,7 +22,7 @@ export function TwombaToggle() {
       <div
         className={clsx(
           'dark:bg-ink-300 bg-canvas-0 absolute h-[28px] w-[28px] rounded-full drop-shadow transition-all',
-          isPlay ? 'left-[calc(100%-28px)]' : 'left-0'
+          isPlay ? 'left-0' : 'left-[calc(100%-28px)]'
         )}
       />
       <ManaFlatCoin
