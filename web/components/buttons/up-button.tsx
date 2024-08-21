@@ -5,7 +5,12 @@ import { Reaction } from 'common/reaction'
 import { User } from 'common/user'
 import { useVotesOnComment } from 'web/hooks/use-comment-votes'
 import useLongTouch from 'web/hooks/use-long-touch'
-import { upvote, downvote, RemoveUpvote, RemoveDownvote } from 'web/lib/supabase/reactions'
+import {
+  upvote,
+  downvote,
+  RemoveUpvote,
+  RemoveDownvote,
+} from 'web/lib/supabase/reactions'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import {
@@ -58,63 +63,74 @@ export const CommentVoteButton = memo(function VoteButton(props: {
   const [upvoted, setUpvoted] = useState(false)
   const [downvoted, setDownvoted] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
-  
+
   useEffect(() => {
     if (votes && user) {
-      setUpvoted(votes.some((v) => v.user_id === user.id && v.reaction_id === 'upvote'))
-      setDownvoted(votes.some((v) => v.user_id === user.id && v.reaction_id === 'downvote'))
+      setUpvoted(
+        votes.reactions.some(
+          (v) => v.user_id === user.id && v.reaction_id === 'upvote'
+        )
+      )
+      setDownvoted(
+        votes.reactions.some(
+          (v) => v.user_id === user.id && v.reaction_id === 'downvote'
+        )
+      )
     }
   }, [votes, user])
 
-  const totalUpvotes = votes ? votes.filter((v) => v.reaction_id === 'upvote' && v.user_id !== user?.id).length : 0
-  const totalDownvotes = votes ? votes.filter((v) => v.reaction_id === 'downvote' && v.user_id !== user?.id).length : 0
+  const totalUpvotes = votes ? votes.upvotes : 0 // filter((v) => v.reaction_id === 'upvote' && v.user_id !== user?.id).length : 0
+  const totalDownvotes = votes ? votes.downvotes : 0 // filter((v) => v.reaction_id === 'downvote' && v.user_id !== user?.id).length : 0
 
   const disabled = props.disabled || !user
   const isMe = contentCreatorId === user?.id
 
-  const onVote = useCallback(async (voteType: 'upvote' | 'downvote') => {
-    if (!user) return
-    if (isMe) {
-      toast("You can't vote on your own content", { icon: '🤨' })
-      return
-    }
-
-    if (voteType === 'upvote') {
-      if (upvoted) {
-        await RemoveUpvote(contentId, 'comment')
-        setUpvoted(false)
-      } else {
-        await upvote(contentId, 'comment')
-        setUpvoted(true)
-        if (downvoted) {
-          await RemoveDownvote(contentId, 'comment')
-          setDownvoted(false)
-        }
+  const onVote = useCallback(
+    async (voteType: 'upvote' | 'downvote') => {
+      if (!user) return
+      if (isMe) {
+        toast("You can't vote on your own content", { icon: '🤨' })
+        return
       }
-    } else {
-      if (downvoted) {
-        await RemoveDownvote(contentId, 'comment')
-        setDownvoted(false)
-      } else {
-        await downvote(contentId, 'comment')
-        setDownvoted(true)
+
+      if (voteType === 'upvote') {
         if (upvoted) {
           await RemoveUpvote(contentId, 'comment')
           setUpvoted(false)
+        } else {
+          await upvote(contentId, 'comment')
+          setUpvoted(true)
+          if (downvoted) {
+            await RemoveDownvote(contentId, 'comment')
+            setDownvoted(false)
+          }
+        }
+      } else {
+        if (downvoted) {
+          await RemoveDownvote(contentId, 'comment')
+          setDownvoted(false)
+        } else {
+          await downvote(contentId, 'comment')
+          setDownvoted(true)
+          if (upvoted) {
+            await RemoveUpvote(contentId, 'comment')
+            setUpvoted(false)
+          }
         }
       }
-    }
-    track(
-      'vote',
-      removeUndefinedProps({
-        itemId: contentId,
-        location: trackingLocation,
-        commentId: contentId,
-        feedReason,
-        voteType,
-      })
-    )
-  }, [user, isMe, contentId, upvoted, downvoted, trackingLocation, feedReason])
+      track(
+        'vote',
+        removeUndefinedProps({
+          itemId: contentId,
+          location: trackingLocation,
+          commentId: contentId,
+          feedReason,
+          voteType,
+        })
+      )
+    },
+    [user, isMe, contentId, upvoted, downvoted, trackingLocation, feedReason]
+  )
 
   const handleUpvote = useCallback(() => onVote('upvote'), [onVote])
   const handleDownvote = useCallback(() => onVote('downvote'), [onVote])
@@ -124,7 +140,9 @@ export const CommentVoteButton = memo(function VoteButton(props: {
   const upvoteLongPress = useLongTouch(openModal, handleUpvote)
   const downvoteLongPress = useLongTouch(openModal, handleDownvote)
 
-  const otherVotes = (upvoted ? totalUpvotes + 1 : totalUpvotes) - (downvoted ? totalDownvotes + 1 : totalDownvotes)
+  const otherVotes =
+    (upvoted ? totalUpvotes + 1 : totalUpvotes) -
+    (downvoted ? totalDownvotes + 1 : totalDownvotes)
   const showList = otherVotes !== 0
 
   return (
@@ -146,7 +164,6 @@ export const CommentVoteButton = memo(function VoteButton(props: {
         placement={placement}
         noTap
         hasSafePolygon={showList}
-        
         className="flex items-center"
       >
         <Row className="items-center gap-1">
@@ -164,8 +181,7 @@ export const CommentVoteButton = memo(function VoteButton(props: {
             <ChevronUpIcon
               className={clsx(
                 'h-6 w-6',
-                upvoted &&
-                  'fill-blue-200 stroke-blue-300 dark:stroke-blue-600'
+                upvoted && 'fill-blue-200 stroke-blue-300 dark:stroke-blue-600'
               )}
             />
           </Button>
@@ -228,16 +244,25 @@ function UserVotedFullList(props: {
   setOpen: (isOpen: boolean) => void
   titleName?: string
 }) {
-  const { contentId, user, userUpvoted, userDownvoted, setOpen, titleName } = props
-  const reacts = useVotesOnComment('comment' as const, contentId)
-  const displayInfos = useVoteDisplayList(reacts, user, userUpvoted || userDownvoted)
+  const { contentId, user, userUpvoted, userDownvoted, setOpen, titleName } =
+    props
+  const react = useVotesOnComment('comment' as const, contentId)
+  const displayInfos = useVoteDisplayList(
+    react?.reactions,
+    user,
+    userUpvoted || userDownvoted
+  )
 
   return (
     <MultiUserTransactionModal
       userInfos={displayInfos}
       modalLabel={
         <span>
-          {userUpvoted ? '💖 Upvoted' : userDownvoted ? '👎 Downvoted' : 'Voted on'}{' '}
+          {userUpvoted
+            ? '💖 Upvoted'
+            : userDownvoted
+            ? '👎 Downvoted'
+            : 'Voted on'}{' '}
           <span className="font-bold">
             {titleName ? titleName : 'this comment'}
           </span>
@@ -259,7 +284,11 @@ function UserVotedPopup(props: {
 }) {
   const { contentId, onRequestModal, user, userUpvoted, userDownvoted } = props
   const reacts = useVotesOnComment('comment' as const, contentId)
-  const displayInfos = useVoteDisplayList(reacts, user, userUpvoted || userDownvoted)
+  const displayInfos = useVoteDisplayList(
+    reacts?.reactions,
+    user,
+    userUpvoted || userDownvoted
+  )
 
   if (displayInfos == null) {
     return (
@@ -309,4 +338,3 @@ function UserVotedItem(props: { userInfo: MultiUserLinkInfo }) {
     </UserHovercard>
   )
 }
-

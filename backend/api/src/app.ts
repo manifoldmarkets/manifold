@@ -189,6 +189,7 @@ import { getRelatedMarketsByGroup } from './get-related-markets-by-group'
 import { followContract } from './follow-contract'
 import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
+import { getCommentVotes } from './get-comment-votes'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -323,6 +324,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:contractId/unblock': unblockMarket,
   'get-user-limit-orders-with-contracts': getUserLimitOrdersWithContracts,
   'get-interesting-groups-from-views': getInterestingGroupsFromViews,
+  'get-comment-votes': getCommentVotes,
   leagues: getLeagues,
   markets: getMarkets,
   'search-markets': searchMarketsLite,

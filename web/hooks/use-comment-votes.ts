@@ -1,28 +1,35 @@
-import { Reaction, ReactionContentTypes } from 'common/reaction'
-import { db } from 'web/lib/supabase/db'
+import { Reaction } from 'common/reaction'
+import { sum } from 'lodash'
 import { useEffect } from 'react'
-import { run } from 'common/supabase/utils'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { useAPIGetter } from './use-api-getter'
 
 export const useVotesOnComment = (
-  contentType: ReactionContentTypes,
+  contentType: 'comment',
   commentId: string
 ) => {
-  const [votes, setVotes] = usePersistentInMemoryState<Reaction[] | undefined>(
-    undefined,
-    `${contentType}-votes-on-${commentId}`
-  )
+  const [votes, setVotes] = usePersistentInMemoryState<
+    { reactions: Reaction[]; upvotes: number; downvotes: number } | undefined
+  >(undefined, `${contentType}-votes-on-${commentId}`)
+
+  const { data } = useAPIGetter('get-comment-votes', {
+    contentType,
+    commentId,
+  })
 
   useEffect(() => {
-    run(
-      db
-        .from('user_reactions')
-        .select()
-        .eq('content_type', "comment")
-        .eq('content_id', commentId)
-        .or('reaction_types.eq.upvote,reaction_types.eq.downvote')
-    ).then(({ data }) => setVotes(data))
-  }, [commentId])
+    if (data) {
+      const reactions = data
+      const upvotes = sum(
+        reactions.map((r) => (r.reaction_type === 'upvote' ? 1 : 0))
+      )
+      const downvotes = sum(
+        reactions.map((r) => (r.reaction_type === 'downvote' ? 1 : 0))
+      )
+
+      setVotes({ reactions, upvotes, downvotes })
+    }
+  }, [data, setVotes])
 
   return votes
 }

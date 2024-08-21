@@ -5,7 +5,7 @@ import { assertUnreachable } from 'common/util/types'
 import { log } from 'shared/utils'
 
 export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
-  const { contentId, contentType, remove } = props
+  const { contentId, contentType, remove, reactionType } = props
   const userId = auth.uid
 
   const db = createSupabaseClient()
@@ -52,7 +52,7 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
       if (!data?.creator_id) {
         throw new APIError(
           500,
-          'Failed to send like notification. Contract has no creator',
+          'Failed to send reaction notification. Contract has no creator',
           {
             contentId,
           }
@@ -65,16 +65,36 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
     }
 
     // see if reaction exists already
-    const existing = await db
+    const existingQuery = db
       .from('user_reactions')
       .select()
       .eq('content_id', contentId)
       .eq('content_type', contentType)
       .eq('user_id', userId)
+    const existing = await (reactionType === 'like'
+      ? existingQuery.eq('reaction_type', reactionType)
+      : existingQuery.or('reaction_type.eq.upvote,reaction_type.eq.downvote'))
 
     if (existing.data?.length) {
-      log('Reaction already exists, do nothing')
-      return { result: { success: true }, continue: async () => {} }
+      const existingReaction = existing.data[0]
+      if (
+        (existingReaction.reaction_type === 'upvote' &&
+          reactionType === 'downvote') ||
+        (existingReaction.reaction_type === 'downvote' &&
+          reactionType === 'upvote')
+      ) {
+        const { error } = await db
+          .from('user_reactions')
+          .delete()
+          .eq('reaction_id', existingReaction.reaction_id)
+
+        if (error) {
+          throw new APIError(500, 'Failed to change reaction: ' + error.message)
+        }
+      } else if (existingReaction.reaction_type === 'like') {
+        log('Reaction already exists, do nothing')
+        return { result: { success: true }, continue: async () => {} }
+      }
     }
 
     // actually do the insert
@@ -85,6 +105,7 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
         content_type: contentType,
         content_owner_id: ownerId,
         user_id: userId,
+        reaction_type: reactionType,
       })
       .select()
       .single()
@@ -104,10 +125,11 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
           .select('*', { head: true, count: 'exact' })
           .eq('content_id', contentId)
           .eq('content_type', contentType)
-        log('new like count ' + count)
+          .eq('reaction_type', reactionType)
+        log('new reaction count ' + count)
         await db
           .from('contract_comments')
-          .update({ likes: count ?? 0 })
+          .update({ [reactionType + 's']: count ?? 0 })
           .eq('comment_id', contentId)
       }
     },
