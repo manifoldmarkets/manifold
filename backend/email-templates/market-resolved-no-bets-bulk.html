@@ -210,7 +210,7 @@
                           padding: 0 0 6px 0;
                           text-align: left;
                         " valign="top">
-                      {{creatorName}} asked
+                      %recipient.creatorName% asked
                     </td>
                   </tr>
                   <tr style="
@@ -229,7 +229,7 @@
                           margin: 0;
                           padding: 0 0 20px;
                         " valign="top">
-                      <a href="{{url}}" style="
+                      <a href="%recipient.url%" style="
                             font-family: 'Helvetica Neue', Helvetica, Arial,
                               'Lucida Grande', sans-serif;
                             box-sizing: border-box;
@@ -243,7 +243,7 @@
                             display: block;
                             text-decoration: none;
                           ">
-                        {{question}}</a>
+                        %recipient.question%</a>
                     </td>
                   </tr>
                   <tr style="
@@ -273,7 +273,7 @@
                             text-align: center;
                             margin: 10px 0 0;
                           " align="center">
-                        Resolved {{outcome}}
+                        Resolved %recipient.outcome%
                       </h2>
                     </td>
                   </tr>
@@ -319,7 +319,7 @@
                                 margin: 0;
                                 padding: 5px 0;
                               " valign="top">
-                            Dear {{name}},
+                            Dear %recipient.name%,
                             <br style="
                                   font-family: 'Helvetica Neue', Helvetica,
                                     Arial, sans-serif;
@@ -334,39 +334,7 @@
                                   font-size: 16px;
                                   margin: 0;
                                 " />
-                            A market you bet in has been resolved!
-                            <br style="
-                                  font-family: 'Helvetica Neue', Helvetica,
-                                    Arial, sans-serif;
-                                  box-sizing: border-box;
-                                  font-size: 16px;
-                                  margin: 0;
-                                " />
-                            <br style="
-                                  font-family: 'Helvetica Neue', Helvetica,
-                                    Arial, sans-serif;
-                                  box-sizing: border-box;
-                                  font-size: 16px;
-                                  margin: 0;
-                                " />
-                            Your investment was
-                            <span style="font-weight: bold">{{investment}}</span>.
-                            <br style="
-                                  font-family: 'Helvetica Neue', Helvetica,
-                                    Arial, sans-serif;
-                                  box-sizing: border-box;
-                                  font-size: 16px;
-                                  margin: 0;
-                                " />
-                            <br style="
-                                  font-family: 'Helvetica Neue', Helvetica,
-                                    Arial, sans-serif;
-                                  box-sizing: border-box;
-                                  font-size: 16px;
-                                  margin: 0;
-                                " />
-                            Your payout is
-                            <span style="font-weight: bold">{{payout}}</span>.
+                            A market you were following has been resolved!
                             <br style="
                                   font-family: 'Helvetica Neue', Helvetica,
                                     Arial, sans-serif;
@@ -416,7 +384,7 @@
                           <td style="padding: 10px 0 0 0; margin: 0">
                             <div align="center">
                               <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-spacing: 0; border-collapse: collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-family:arial,helvetica,sans-serif;"><tr><td style="font-family:arial,helvetica,sans-serif;" align="center"><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="" style="height:37px; v-text-anchor:middle; width:110px;" arcsize="11%" stroke="f" fillcolor="#3AAEE0"><w:anchorlock/><center style="color:#FFFFFF;font-family:arial,helvetica,sans-serif;"><![endif]-->
-                              <a href="{{url}}" target="_blank" style="
+                              <a href="%recipient.url%" target="_blank" style="
                                     box-sizing: border-box;
                                     display: inline-block;
                                     font-family: arial, helvetica, sans-serif;
@@ -499,7 +467,7 @@
                         text-decoration: underline;
                         margin: 0;
                       ">our Discord</a>! Or,
-                  <a href="{{unsubscribeUrl}}" style="
+                  <a href="%recipient.unsubscribeUrl%" style="
                                           color: inherit;
                                           text-decoration: none;
                                         " target="_blank">click here to unsubscribe from this type of notification</a>.

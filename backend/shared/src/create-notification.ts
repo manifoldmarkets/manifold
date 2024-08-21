@@ -42,7 +42,7 @@ import { mapAsync } from 'common/util/promise'
 import {
   sendBulkEmails,
   sendMarketCloseEmail,
-  sendMarketResolutionEmail,
+  getMarketResolutionEmail,
   sendNewAnswerEmail,
   sendNewCommentEmail,
   getNewFollowedMarketEmail,
@@ -86,6 +86,7 @@ import {
   getRangeContainingValues,
   answerToMidpoint,
 } from 'common/multi-numeric'
+import { floatingEqual } from 'common/util/math'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
@@ -1169,8 +1170,8 @@ export const createNewContractNotification = async (
   await sendBulkEmails(
     `${contractCreator.name} asked ${contract.question}`,
     'new-market-followed-user-bulk',
-    `${contractCreator.name} on Manifold <no-reply@manifold.markets>`,
-    bulkEmails
+    bulkEmails,
+    `${contractCreator.name} on Manifold <no-reply@manifold.markets>`
   )
 }
 
@@ -1225,7 +1226,8 @@ export const createContractResolvedNotifications = async (
     resolutionText = resolvedAnswers.map((a) => a.text).join(', ')
   }
   const bulkNotifications: Notification[] = []
-
+  const bulkNoPayoutEmails: EmailAndTemplateEntry[] = []
+  const bulkEmails: EmailAndTemplateEntry[] = []
   const {
     userIdToContractMetrics,
     userPayouts,
@@ -1236,11 +1238,13 @@ export const createContractResolvedNotifications = async (
 
   const pg = createSupabaseDirectClient()
   const privateUsers = await pg.map(
-    `select * from private_users where id in
-           (select follow_id from contract_follows where contract_id = $1)
-           or id = any ($2)`,
+    `select private_users.*, users.name from private_users
+          join users on private_users.id = users.id
+          where private_users.id in
+          (select follow_id from contract_follows where contract_id = $1)
+          or private_users.id = any($2)`,
     [isIndependentMulti ? '_' : contract.id, Object.keys(userPayouts)],
-    convertPrivateUser
+    (r) => ({ ...convertPrivateUser(r), name: r.name })
   )
   const usersToNotify = uniq(
     privateUsers.map((u) => u.id).filter((id) => id !== resolver.id)
@@ -1302,10 +1306,11 @@ export const createContractResolvedNotifications = async (
     }
 
     // Emails notifications
-    if (sendToEmail && !contract.isTwitchContract)
-      await sendMarketResolutionEmail(
+    if (sendToEmail && !contract.isTwitchContract) {
+      const email = getMarketResolutionEmail(
         reason,
         privateUser,
+        privateUser.name,
         userIdToContractMetrics?.[userId]?.invested ?? 0,
         userPayouts[userId] ?? 0,
         creator,
@@ -1316,7 +1321,12 @@ export const createContractResolvedNotifications = async (
         resolutions,
         answerId
       )
-
+      if (email && floatingEqual(email.correctedInvestment, 0)) {
+        bulkNoPayoutEmails.push(email.entry)
+      } else if (email && !floatingEqual(email?.correctedInvestment, 0)) {
+        bulkEmails.push(email.entry)
+      }
+    }
     if (sendToMobile) {
       const notification = constructNotification(userId, reason)
       const { userPayout, profitRank, userInvestment, totalShareholders } =
@@ -1358,6 +1368,13 @@ export const createContractResolvedNotifications = async (
     20
   )
   await bulkInsertNotifications(bulkNotifications, pg)
+  const subject = `Resolved ${outcome}: ${contract.question}`
+  await sendBulkEmails(subject, 'market-resolved-bulk', bulkEmails)
+  await sendBulkEmails(
+    subject,
+    'market-resolved-no-bets-bulk',
+    bulkNoPayoutEmails
+  )
 }
 
 export const createMarketClosedNotification = async (

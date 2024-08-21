@@ -54,10 +54,10 @@ export const emailMoneyFormat = (amount: number) => {
   return formatMoney(amount).replace(ENV_CONFIG.moneyMoniker, 'M')
 }
 
-// TODO: we should load users in bulk and pass them through
-export const sendMarketResolutionEmail = async (
+export const getMarketResolutionEmail = (
   reason: NotificationReason,
   privateUser: PrivateUser,
+  userName: string,
   investment: number,
   payout: number,
   creator: User,
@@ -72,10 +72,7 @@ export const sendMarketResolutionEmail = async (
     privateUser,
     reason
   )
-  if (!privateUser || !privateUser.email || !sendToEmail) return
-
-  const user = await getUser(privateUser.id)
-  if (!user) return
+  if (!privateUser.email || !sendToEmail) return
 
   const outcome = toDisplayResolution(
     contract,
@@ -84,8 +81,6 @@ export const sendMarketResolutionEmail = async (
     resolutions,
     answerId
   )
-
-  const subject = `Resolved ${outcome}: ${contract.question}`
 
   const creatorPayoutText =
     creatorPayout >= 1 && privateUser.id === creator.id
@@ -99,8 +94,8 @@ export const sendMarketResolutionEmail = async (
   const displayedPayout = emailMoneyFormat(payout)
 
   const templateData: market_resolved_template = {
-    userId: user.id,
-    name: user.name,
+    userId: privateUser.id,
+    name: userName,
     creatorName: creator.name,
     question: contract.question,
     outcome,
@@ -111,14 +106,12 @@ export const sendMarketResolutionEmail = async (
   }
 
   // Modify template here:
-  // https://app.mailgun.com/app/sending/domains/mg.manifold.markets/templates/edit/market-resolved/initial
+  // https://app.mailgun.com/app/sending/domains/mg.manifold.markets/templates/edit/market-resolved-bulk/initial
 
-  return await sendTemplateEmail(
-    privateUser.email,
-    subject,
-    correctedInvestment === 0 ? 'market-resolved-no-bets' : 'market-resolved',
-    templateData
-  )
+  return {
+    entry: [privateUser.email, templateData] as EmailAndTemplateEntry,
+    correctedInvestment,
+  }
 }
 
 type market_resolved_template = {
@@ -220,8 +213,8 @@ export type EmailAndTemplateEntry = [string, EmailAndTemplateData]
 export const sendBulkEmails = async (
   subject: string,
   template: string,
-  from: string,
-  recipients: EmailAndTemplateEntry[]
+  recipients: EmailAndTemplateEntry[],
+  from = `Manifold <no-reply@manifold.markets>`
 ) => {
   // Mailgun has a limit of 1000 recipients per batch
   const emailChunks = chunk(recipients, 1000)
