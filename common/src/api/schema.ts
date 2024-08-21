@@ -1,3 +1,4 @@
+import { Reaction } from 'common/reaction'
 import { z } from 'zod'
 import {
   Group,
@@ -949,6 +950,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contentId: z.string(),
         contentType: z.enum(['comment', 'contract']),
+        reactionType: z.enum(['upvote', 'downvote', 'like']),
         remove: z.boolean().optional(),
       })
       .strict(),
@@ -1544,6 +1546,19 @@ export const API = (_apiTypeCheck = {
       ignoreContractIds: z.array(z.string()).optional(),
       justLikes: z.coerce.number().optional(),
     }),
+  },
+  'get-comment-votes': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as Reaction[],
+    props: z
+      .object({
+        contentType: z.enum(['comment']),
+        commentId: z.string(),
+      })
+      .strict(),
   },
 } as const)
 

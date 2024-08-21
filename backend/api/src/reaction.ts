@@ -13,8 +13,8 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
   if (remove) {
     await pg.none(
       `delete from user_reactions
-       where user_id = $1 and content_id = $2 and content_type = $3`,
-      [userId, contentId, contentType]
+       where user_id = $1 and content_id = $2 and content_type = $3 and reaction_type = $4`,
+      [userId, contentId, contentType, reactionType]
     )
   } else {
     // get the id of the person this content belongs to, to denormalize the owner
@@ -53,9 +53,29 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
       [contentId, contentType, userId]
     )
 
-    if (existingReactions.length > 0) {
-      log('Reaction already exists, do nothing')
-      return { result: { success: true }, continue: async () => {} }
+    const existing = await pg.manyOrNone(
+      reactionType === 'like'
+        ? `select * from user_reactions where reaction_type = 'like'`
+        : `select * from user_reactions WHERE reaction_type = 'upvote' OR reaction_type = 'downvote'`
+    )
+
+    if (existing.length > 0) {
+      const existingReaction = existing[0]
+      if (
+        (existingReaction.reaction_type === 'upvote' &&
+          reactionType === 'downvote') ||
+        (existingReaction.reaction_type === 'downvote' &&
+          reactionType === 'upvote')
+      ) {
+        await pg.none(
+          `delete from user_reactions
+          where reaction_id = ??`,
+          [existingReaction.reaction_id]
+        )
+      } else if (existingReaction.reaction_type === 'like') {
+        log('Reaction already exists, do nothing')
+        return { result: { success: true }, continue: async () => {} }
+      }
     }
 
     // actually do the insert
