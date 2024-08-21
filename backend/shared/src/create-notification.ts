@@ -807,46 +807,56 @@ export const createBettingStreakBonusNotification = async (
 }
 
 export const createBettingStreakExpiringNotification = async (
-  userId: string,
-  streak: number,
+  idsAndStreaks: [string, number][],
   pg: SupabaseDirectClient
 ) => {
-  const privateUser = await getPrivateUser(userId)
-  if (!privateUser) return
-  const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
-    privateUser,
-    'betting_streaks'
+  const privateUsers = await pg.map(
+    `select * from private_users where id = any($1)`,
+    [idsAndStreaks.map(([id]) => id)],
+    convertPrivateUser
   )
-  if (!sendToBrowser) return
-  const id = crypto.randomUUID()
-  const notification: Notification = {
-    id,
-    userId,
-    reason: 'betting_streaks',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: id,
-    sourceText: streak.toString(),
-    sourceType: 'betting_streak_expiring',
-    sourceUpdateType: 'created',
-    sourceUserName: '',
-    sourceUserUsername: '',
-    sourceUserAvatarUrl: '',
-    sourceTitle: 'Betting Streak Expiring',
-    data: {
-      streak: streak,
-    } as BettingStreakData,
-  }
-  await insertNotificationToSupabase(notification, pg)
-  if (sendToMobile) {
-    return await createPushNotification(
-      notification,
+  const bulkNotifications: Notification[] = []
+  forEach(idsAndStreaks, async ([userId, streak]) => {
+    const privateUser = privateUsers.find((user) => user.id === userId)
+    if (!privateUser) return
+    const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
       privateUser,
-      `${streak} day streak expiring!`,
-      'Place a prediction in the next 3 hours to keep it.'
+      'betting_streaks'
     )
-  }
+    const id = crypto.randomUUID()
+    const notification: Notification = {
+      id,
+      userId,
+      reason: 'betting_streaks',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: id,
+      sourceText: streak.toString(),
+      sourceType: 'betting_streak_expiring',
+      sourceUpdateType: 'created',
+      sourceUserName: '',
+      sourceUserUsername: '',
+      sourceUserAvatarUrl: '',
+      sourceTitle: 'Betting Streak Expiring',
+      data: {
+        streak: streak,
+      } as BettingStreakData,
+    }
+    if (sendToMobile) {
+      await createPushNotification(
+        notification,
+        privateUser,
+        `${streak} day streak expiring!`,
+        'Place a prediction in the next 3 hours to keep it.'
+      )
+    }
+    if (sendToBrowser) {
+      bulkNotifications.push(notification)
+    }
+  })
+  await bulkInsertNotifications(bulkNotifications, pg)
 }
+
 export const createLeagueChangedNotification = async (
   userId: string,
   previousLeague: league_user_info | undefined,
