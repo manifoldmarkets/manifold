@@ -52,7 +52,7 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
        where content_id = $1 and content_type = $2 and user_id = $3`,
       [contentId, contentType, userId]
     )
-
+    // update to up/down vote if opposite button is clicked
     if (existingReactions.length > 0) {
       const existingReaction = existingReactions[0]
       if (
@@ -72,9 +72,8 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
       }
     }
 
-    // actually do the insert
+    // actually do the insert for likes
     const reactionRow = await pg.one(
-      // To-Do this currently does not insert "likes"
       `INSERT into user_reactions
        (content_id, content_type, content_owner_id, user_id, reaction_type)
        values ($1, $2, $3, $4, $5)
@@ -95,7 +94,7 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
           [contentId, contentType, reactionType],
           (r) => r.count
         )
-        log(`new ${reactionType} count ${ count }`)
+        log(`new ${reactionType} count ${count}`)
 
         if (reactionType === 'like') {
           await pg.none(

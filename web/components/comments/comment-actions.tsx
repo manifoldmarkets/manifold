@@ -9,12 +9,14 @@ import { useUser, usePrivateUser, isBlocked } from 'web/hooks/use-user'
 import { BuyPanel } from '../bet/bet-panel'
 import { IconButton } from '../buttons/button'
 import { CommentVoteButton } from '../buttons/up-button'
+import { COMMENT_UP_DOWN_VOTES_ENABLED } from 'common/envs/constants'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import { track } from 'web/lib/service/analytics'
 import { AwardBountyButton } from '../contract/bountied-question'
+import { LikeButton } from '../contract/like-button'
 
 export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
@@ -91,15 +93,29 @@ export function CommentActions(props: {
           </Tooltip>
         </IconButton>
       )}
-      <CommentVoteButton
-        contentCreatorId={comment.userId}
-        contentId={comment.id}
-        user={user}
-        size={'xs'}
-        contentText={richTextToString(comment.content)}
-        disabled={isBlocked(privateUser, comment.userId)}
-        trackingLocation={trackingLocation}
-      />
+
+      {COMMENT_UP_DOWN_VOTES_ENABLED ? (
+        <CommentVoteButton
+          contentCreatorId={comment.userId}
+          contentId={comment.id}
+          user={user}
+          size={'xs'}
+          contentText={richTextToString(comment.content)}
+          disabled={isBlocked(privateUser, comment.userId)}
+          trackingLocation={trackingLocation}
+        />
+      ) : (
+        <LikeButton
+          contentCreatorId={comment.userId}
+          contentId={comment.id}
+          user={user}
+          size={'xs'}
+          contentType={'comment'}
+          contentText={richTextToString(comment.content)}
+          disabled={isBlocked(privateUser, comment.userId)}
+          trackingLocation={trackingLocation}
+        />
+      )}
       {showBetModal && (
         <Modal
           open={showBetModal}
