@@ -14,7 +14,7 @@ import { track } from 'shared/analytics'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import * as crypto from 'crypto'
 import { Notification } from 'common/notification'
-import { createPushNotification } from 'shared/create-push-notification'
+import { createPushNotifications } from 'shared/create-push-notifications'
 import { sendNewMessageEmail } from 'shared/emails'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
@@ -233,12 +233,9 @@ const createNewMessageNotification = async (
   }
 
   if (sendToMobile) {
-    await createPushNotification(
-      notification,
-      privateUser,
-      `New message`,
-      sourceText
-    )
+    await createPushNotifications([
+      [privateUser, notification, `${fromUser.name} messaged you`, sourceText],
+    ])
   }
   if (sendToEmail && otherUserHasLoverProfile) {
     await sendNewMessageEmail(

@@ -56,7 +56,7 @@ import {
   userIsBlocked,
   userOptedOutOfBrowserNotifications,
 } from 'common/user-notification-preferences'
-import { createPushNotification } from './create-push-notification'
+import { createPushNotifications } from './create-push-notifications'
 import { Reaction } from 'common/reaction'
 import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
@@ -265,6 +265,8 @@ export const createCommentOnContractNotification = async (
   ])
   const bulkNotifications: Notification[] = []
   const bulkEmails: EmailAndTemplateEntry[] = []
+  const bulkPushNotifications: [PrivateUser, Notification, string, string][] =
+    []
   const privateUsers = await pg.map(
     `select private_users.*, users.name from private_users
            join users on private_users.id = users.id
@@ -306,12 +308,12 @@ export const createCommentOnContractNotification = async (
           NOTIFICATION_DESCRIPTIONS[notificationPreference].verb) ??
         'commented'
       const notification = buildNotification(userId, reason)
-      await createPushNotification(
-        notification,
+      bulkPushNotifications.push([
         privateUser,
+        notification,
         `${sourceUser.name} ${reasonText} on ${sourceContract.question}`,
-        sourceText
-      )
+        sourceText,
+      ])
       receivedNotifications.push('mobile')
     }
 
@@ -381,6 +383,7 @@ export const createCommentOnContractNotification = async (
       )
     )
   )
+  await createPushNotifications(bulkPushNotifications)
   await bulkInsertNotifications(bulkNotifications, pg)
   await sendBulkEmails(
     `Comment on ${sourceContract.question}`,
@@ -427,6 +430,8 @@ export const createNewAnswerOnContractNotification = async (
     return removeUndefinedProps(notification)
   }
   const bulkNotifications: Notification[] = []
+  const bulkPushNotifications: [PrivateUser, Notification, string, string][] =
+    []
   const privateUsers = await pg.map(
     `select * from private_users where id in
            (select follow_id from contract_follows where contract_id = $1)
@@ -456,12 +461,12 @@ export const createNewAnswerOnContractNotification = async (
 
     if (sendToMobile) {
       const notification = constructNotification(userId, reason)
-      await createPushNotification(
-        notification,
+      bulkPushNotifications.push([
         privateUser,
-        `${sourceUser.name} answered your question on ${sourceContract.question}`,
-        sourceText
-      )
+        notification,
+        `${sourceUser.name} answered ${sourceContract.question}`,
+        sourceText,
+      ])
     }
 
     if (sendToEmail) {
@@ -475,7 +480,7 @@ export const createNewAnswerOnContractNotification = async (
       )
     }
   }
-
+  await createPushNotifications(bulkPushNotifications)
   await mapAsync(
     followerIds,
     async (userId) => sendNotificationsIfSettingsPermit(userId),
@@ -826,6 +831,8 @@ export const createBettingStreakExpiringNotification = async (
     [idsAndStreaks.map(([id]) => id)],
     convertPrivateUser
   )
+  const bulkPushNotifications: [PrivateUser, Notification, string, string][] =
+    []
   const bulkNotifications: Notification[] = []
   forEach(idsAndStreaks, async ([userId, streak]) => {
     const privateUser = privateUsers.find((user) => user.id === userId)
@@ -854,17 +861,18 @@ export const createBettingStreakExpiringNotification = async (
       } as BettingStreakData,
     }
     if (sendToMobile) {
-      await createPushNotification(
-        notification,
+      bulkPushNotifications.push([
         privateUser,
+        notification,
         `${streak} day streak expiring!`,
-        'Place a prediction in the next 3 hours to keep it.'
-      )
+        'Place a prediction in the next 3 hours to keep it.',
+      ])
     }
     if (sendToBrowser) {
       bulkNotifications.push(notification)
     }
   })
+  await createPushNotifications(bulkPushNotifications)
   await bulkInsertNotifications(bulkNotifications, pg)
 }
 
@@ -1236,6 +1244,8 @@ export const createContractResolvedNotifications = async (
   const bulkNotifications: Notification[] = []
   const bulkNoPayoutEmails: EmailAndTemplateEntry[] = []
   const bulkEmails: EmailAndTemplateEntry[] = []
+  const bulkPushNotifications: [PrivateUser, Notification, string, string][] =
+    []
   const {
     userIdToContractMetrics,
     userPayouts,
@@ -1350,17 +1360,17 @@ export const createContractResolvedNotifications = async (
         profit
       )} (+${profitPercent}%)`
       const lossString = ` You lost M${Math.round(-profit)}`
-      await createPushNotification(
-        notification,
+      bulkPushNotifications.push([
         privateUser,
+        notification,
         contract.question.length > 50
           ? contract.question.slice(0, 50) + '...'
           : contract.question,
         `Resolved: ${resolutionText}.` +
           (userInvestment === 0 || outcome === 'CANCEL'
             ? ''
-            : (profit > 0 ? profitString : lossString) + comparison)
-      )
+            : (profit > 0 ? profitString : lossString) + comparison),
+      ])
     }
   }
 
@@ -1375,6 +1385,7 @@ export const createContractResolvedNotifications = async (
       ),
     20
   )
+  await createPushNotifications(bulkPushNotifications)
   await bulkInsertNotifications(bulkNotifications, pg)
   const subject = `Resolved ${outcome}: ${contract.question}`
   await sendBulkEmails(subject, 'market-resolved-bulk', bulkEmails)

@@ -84,6 +84,7 @@ const contractIds = await pg.manyOrNone(`select id from contracts`, [], r => r.i
 - Use Zod schemas in `common/src/api/schema.ts` to define prop and return types for strong type checking.
 - Use the `APIError` class from `api/helpers/endpoint` to throw standardized API errors.
 - Use lowercase SQL keywords in queries. Don't capitalize SQL keywords.
+- Avoid editing the SQL via `${}`, and instead when using pgpromise, use the argument following the query to pass parameters to the query.
 
 
 ## Data schema
