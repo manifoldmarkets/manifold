@@ -64,7 +64,7 @@ export async function runTxn(
         }
         await incrementBalance(pgTransaction, fromId, {
           cashBalance: -amount,
-          totalDeposits: -amount,
+          totalCashDeposits: -amount,
         })
       } else {
         if (fromUser.balance < amount) {

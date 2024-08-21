@@ -9,7 +9,10 @@ create table if not exists
     loan_total numeric,
     spice_balance numeric default 0.0 not null,
     last_calculated timestamp with time zone not null,
-    profit numeric
+    profit numeric,
+    cash_balance numeric default 0.0 not null,
+    cash_investment_value numeric default 0.0 not null,
+    total_cash_deposits numeric default 0.0 not null
   );
 
 -- Indexes

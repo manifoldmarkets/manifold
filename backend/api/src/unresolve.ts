@@ -230,13 +230,14 @@ const undoResolution = async (
     balance?: number
     cashBalance?: number
     totalDeposits: number
+    totalCashDeposits: number
     id: string
   }[] = []
   const txns: TxnData[] = []
 
   for (const txnToRevert of manaTxns) {
     const { balanceUpdate, txn } = getUndoOldContractPayout(txnToRevert)
-    balanceUpdates.push(balanceUpdate)
+    balanceUpdates.push(balanceUpdate as any)
     txns.push(txn)
   }
 
@@ -321,7 +322,7 @@ export function getUndoOldContractPayout(
 
   const balanceUpdate = {
     [token === 'CASH' ? 'cashBalance' : 'balance']: -amount,
-    totalDeposits: -(deposit ?? 0),
+    [token === 'CASH' ? 'totalCashDeposits' : 'totalDeposits']: -(deposit ?? 0),
     id: toId,
   }
 

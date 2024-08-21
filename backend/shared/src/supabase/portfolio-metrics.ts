@@ -9,9 +9,9 @@ export async function getPortfolioHistory(
   pg: SupabaseDirectClient
 ) {
   return pg.map(
-    `select ts, investment_value, total_deposits, balance, loan_total, spice_balance
+    `select *
     from user_portfolio_history
-    where user_id = $1 
+    where user_id = $1
     and ts > $2
     order by ts
     limit $3

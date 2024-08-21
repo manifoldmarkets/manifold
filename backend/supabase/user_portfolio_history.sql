@@ -9,7 +9,10 @@ create table if not exists
     loan_total numeric,
     id bigint not null,
     spice_balance numeric default 0 not null,
-    profit numeric
+    profit numeric,
+    cash_balance numeric default 0 not null,
+    cash_investment_value numeric default 0 not null,
+    total_cash_deposits numeric default 0 not null
   );
 
 -- Triggers
@@ -21,13 +24,16 @@ execute function update_user_portfolio_history_latest ();
 create
 or replace function public.update_user_portfolio_history_latest () returns trigger language plpgsql as $function$
 begin
-    insert into user_portfolio_history_latest (user_id, ts, investment_value, balance, total_deposits, spice_balance, loan_total, profit, last_calculated)
-    values (new.user_id, new.ts, new.investment_value, new.balance, new.total_deposits, new.spice_balance, new.loan_total, new.profit, new.ts)
+    insert into user_portfolio_history_latest (user_id, ts, investment_value, cash_investment_value, balance, total_deposits, total_cash_deposits, cash_balance, spice_balance, loan_total, profit, last_calculated)
+    values (new.user_id, new.ts, new.investment_value, new.cash_investment_value, new.balance, new.total_deposits, new.total_cash_deposits, new.cash_balance, new.spice_balance, new.loan_total, new.profit, new.ts)
     on conflict (user_id) do update
         set ts = excluded.ts,
             investment_value = excluded.investment_value,
-            balance = excluded.balance,
+            cash_investment_value = excluded.cash_investment_value,
             total_deposits = excluded.total_deposits,
+            total_cash_deposits = excluded.total_cash_deposits,
+            balance = excluded.balance,
+            cash_balance = excluded.cash_balance,
             spice_balance = excluded.spice_balance,
             loan_total = excluded.loan_total,
             profit = excluded.profit,
