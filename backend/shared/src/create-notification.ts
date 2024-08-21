@@ -24,6 +24,7 @@ import { Contract, renderResolution } from 'common/contract'
 import { getContract, getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import {
+  forEach,
   groupBy,
   keyBy,
   last,
@@ -1587,28 +1588,21 @@ export const createBountyCanceledNotification = async (
 }
 
 export const createVotedOnPollNotification = async (
-  voterId: string,
+  voter: User,
   sourceText: string,
   sourceContract: Contract
 ) => {
   const pg = createSupabaseDirectClient()
-  const voter = await getUser(voterId)
-  if (!voter) return
 
-  const usersToReceivedNotifications: Record<
-    string,
-    notification_destination_types[]
-  > = {}
-
-  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
-    `select follow_id from contract_follows where contract_id = $1`,
-    [sourceContract.id]
+  const privateUsers = await pg.map(
+    `select * from private_users where id in
+           (select follow_id from contract_follows where contract_id = $1)
+           and id != $2`,
+    [sourceContract.id, voter.id],
+    convertPrivateUser
   )
-  const contractFollowersIds = mapValues(
-    keyBy(followerIds, 'follow_id'),
-    () => true
-  )
-
+  const followerIds = privateUsers.map((user) => user.id)
+  const bulkNotifications: Notification[] = []
   const constructNotification = (
     userId: string,
     reason: notification_preference
@@ -1635,61 +1629,34 @@ export const createVotedOnPollNotification = async (
     return removeUndefinedProps(notification)
   }
 
-  const stillFollowingContract = (userId: string) => {
-    // Should be better performance than includes
-    return contractFollowersIds[userId] !== undefined
-  }
-
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
     reason: notification_preference
   ) => {
-    // A user doesn't have to follow a market to receive a notification with their tag
-    if (!stillFollowingContract(userId) || voter.id == userId) return
-    const privateUser = await getPrivateUser(userId)
-    if (!privateUser) return
-    if (userIsBlocked(privateUser, voter.id)) return
+    const privateUser = privateUsers.find((user) => user.id === userId)
+    if (!privateUser || userIsBlocked(privateUser, voter.id)) return
 
     const { sendToBrowser } = getNotificationDestinationsForUser(
       privateUser,
       reason
     )
-
-    const receivedNotifications = usersToReceivedNotifications[userId] ?? []
-
     // Browser notifications
-    if (sendToBrowser && !receivedNotifications.includes('browser')) {
-      const notification = constructNotification(userId, reason)
-      await insertNotificationToSupabase(notification, pg)
-      receivedNotifications.push('browser')
-    }
+    if (!sendToBrowser) return
+    const notification = constructNotification(userId, reason)
+    bulkNotifications.push(notification)
   }
 
-  const notifyContractFollowers = async () => {
-    await mapAsync(
-      Object.keys(contractFollowersIds),
-      async (userId) => {
-        if (userId !== sourceContract.creatorId) {
-          return sendNotificationsIfSettingsPermit(
-            userId,
-            'all_votes_on_watched_markets'
-          )
-        }
-      },
-      20
-    )
-  }
-
-  const notifyContractCreator = async () => {
-    await sendNotificationsIfSettingsPermit(
-      sourceContract.creatorId,
-      'vote_on_your_contract'
-    )
-  }
-  log('notifying creator')
-  await notifyContractCreator()
   log('notifying followers')
-  await notifyContractFollowers()
+  forEach(followerIds, (userId) => {
+    sendNotificationsIfSettingsPermit(
+      userId,
+      userId === sourceContract.creatorId
+        ? 'vote_on_your_contract'
+        : 'all_votes_on_watched_markets'
+    )
+  })
+
+  await bulkInsertNotifications(bulkNotifications, pg)
 }
 
 export const createPollClosedNotification = async (
@@ -1697,19 +1664,14 @@ export const createPollClosedNotification = async (
   sourceContract: Contract
 ) => {
   const pg = createSupabaseDirectClient()
-  const usersToReceivedNotifications: Record<
-    string,
-    notification_destination_types[]
-  > = {}
-
-  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
-    `select follow_id from contract_follows where contract_id = $1`,
-    [sourceContract.id]
+  const privateUsers = await pg.map(
+    `select * from private_users where id in
+           (select follow_id from contract_follows where contract_id = $1)`,
+    [sourceContract.id],
+    convertPrivateUser
   )
-  const contractFollowersIds = mapValues(
-    keyBy(followerIds, 'follow_id'),
-    () => true
-  )
+  const followerIds = privateUsers.map((user) => user.id)
+  const bulkNotifications: Notification[] = []
 
   const constructNotification = (
     userId: string,
@@ -1737,18 +1699,11 @@ export const createPollClosedNotification = async (
     return removeUndefinedProps(notification)
   }
 
-  const stillFollowingContract = (userId: string) => {
-    // Should be better performance than includes
-    return contractFollowersIds[userId] !== undefined
-  }
-
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
     reason: NotificationReason
   ) => {
-    // A user doesn't have to follow a market to receive a notification with their tag
-    if (!stillFollowingContract(userId)) return
-    const privateUser = await getPrivateUser(userId)
+    const privateUser = privateUsers.find((user) => user.id === userId)
     if (!privateUser) return
     if (userIsBlocked(privateUser, sourceContract.creatorId)) return
 
@@ -1757,41 +1712,22 @@ export const createPollClosedNotification = async (
       reason
     )
 
-    const receivedNotifications = usersToReceivedNotifications[userId] ?? []
-
-    // Browser notifications
-    if (sendToBrowser && !receivedNotifications.includes('browser')) {
+    if (sendToBrowser) {
       const notification = constructNotification(userId, reason)
-      await insertNotificationToSupabase(notification, pg)
-      receivedNotifications.push('browser')
+      bulkNotifications.push(notification)
     }
   }
 
-  const notifyContractFollowers = async () => {
-    await mapAsync(
-      Object.keys(contractFollowersIds),
-      async (userId) => {
-        if (userId !== sourceContract.creatorId) {
-          return sendNotificationsIfSettingsPermit(
-            userId,
-            'poll_close_on_watched_markets'
-          )
-        }
-      },
-      20
-    )
-  }
-
-  const notifyContractCreator = async () => {
-    await sendNotificationsIfSettingsPermit(
-      sourceContract.creatorId,
-      'your_poll_closed'
-    )
-  }
-  log('notifying creator')
-  await notifyContractCreator()
   log('notifying followers')
-  await notifyContractFollowers()
+  forEach(followerIds, (userId) => {
+    sendNotificationsIfSettingsPermit(
+      userId,
+      userId === sourceContract.creatorId
+        ? 'your_poll_closed'
+        : 'poll_close_on_watched_markets'
+    )
+  })
+  await bulkInsertNotifications(bulkNotifications, pg)
 }
 
 export const createReferralsProgramNotification = async (
