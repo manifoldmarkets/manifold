@@ -84,7 +84,7 @@ export function getInstanceId() {
 export function getInstanceHostname(instanceId: string) {
   return `${instanceId}.supabase.co`
 }
-
+/**@deprecated: Use createSupabaseDirectClient instead. */
 export function createSupabaseClient() {
   const instanceId = getInstanceId()
   if (!instanceId) {
