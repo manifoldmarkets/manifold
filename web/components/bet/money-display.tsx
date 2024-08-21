@@ -6,8 +6,9 @@ export function MoneyDisplay(props: {
   amount: number
   isCashContract: boolean
   numberType?: NumberDisplayType
+  className?: string
 }) {
-  const { amount, isCashContract, numberType } = props
+  const { amount, isCashContract, numberType, className } = props
 
   if (TWOMBA_ENABLED) {
     return (
@@ -16,6 +17,7 @@ export function MoneyDisplay(props: {
         coinType={isCashContract ? 'sweepies' : 'mana'}
         isInline
         numberType={numberType}
+        className={className}
       />
     )
   }

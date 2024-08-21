@@ -40,6 +40,7 @@ import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import { getTierFromLiquidity } from 'common/tier'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { CoinNumber } from '../widgets/manaCoinNumber'
+import { MoneyDisplay } from '../bet/money-display'
 
 export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
@@ -409,7 +410,13 @@ export const NumericBetPanel = (props: {
               onClick={placeBet}
               disabled={isSubmitting}
             >
-              Bet {formatMoney(betAmount ?? 0)} on {betLabel}
+              Bet&nbsp;
+              <MoneyDisplay
+                amount={betAmount ?? 0}
+                isCashContract={isCashContract}
+              />
+              &nbsp;on&nbsp;
+              {betLabel}
             </Button>
           </Row>
           {fees && (
