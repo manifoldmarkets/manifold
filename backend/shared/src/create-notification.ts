@@ -24,6 +24,7 @@ import { Contract, renderResolution } from 'common/contract'
 import { getContract, getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import {
+  forEach,
   groupBy,
   keyBy,
   last,
@@ -59,7 +60,6 @@ import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { formatMoney } from 'common/util/format'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -71,7 +71,7 @@ import {
 import { richTextToString } from 'common/util/parse'
 import { league_user_info } from 'common/leagues'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
-import { buildArray, filterDefined } from 'common/util/array'
+import { filterDefined } from 'common/util/array'
 import { isAdminId, isModId } from 'common/envs/constants'
 import {
   bulkInsertNotifications,
@@ -416,16 +416,14 @@ export const createNewAnswerOnContractNotification = async (
     return removeUndefinedProps(notification)
   }
   const bulkNotifications: Notification[] = []
-  const followerIds = await pg.map(
-    `select follow_id from contract_follows where contract_id = $1`,
-    [sourceContract.id],
-    (r) => r.follow_id as string
-  )
   const privateUsers = await pg.map(
-    'select * from private_users where id = any($1)',
-    [followerIds],
+    `select * from private_users where id in
+           (select follow_id from contract_follows where contract_id = $1)
+           and id != $2`,
+    [sourceContract.id, sourceUser.id],
     convertPrivateUser
   )
+  const followerIds = privateUsers.map((user) => user.id)
   const privateUserMap = new Map(privateUsers.map((user) => [user.id, user]))
 
   const sendNotificationsIfSettingsPermit = async (userId: string) => {
@@ -809,46 +807,56 @@ export const createBettingStreakBonusNotification = async (
 }
 
 export const createBettingStreakExpiringNotification = async (
-  userId: string,
-  streak: number,
+  idsAndStreaks: [string, number][],
   pg: SupabaseDirectClient
 ) => {
-  const privateUser = await getPrivateUser(userId)
-  if (!privateUser) return
-  const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
-    privateUser,
-    'betting_streaks'
+  const privateUsers = await pg.map(
+    `select * from private_users where id = any($1)`,
+    [idsAndStreaks.map(([id]) => id)],
+    convertPrivateUser
   )
-  if (!sendToBrowser) return
-  const id = crypto.randomUUID()
-  const notification: Notification = {
-    id,
-    userId,
-    reason: 'betting_streaks',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: id,
-    sourceText: streak.toString(),
-    sourceType: 'betting_streak_expiring',
-    sourceUpdateType: 'created',
-    sourceUserName: '',
-    sourceUserUsername: '',
-    sourceUserAvatarUrl: '',
-    sourceTitle: 'Betting Streak Expiring',
-    data: {
-      streak: streak,
-    } as BettingStreakData,
-  }
-  await insertNotificationToSupabase(notification, pg)
-  if (sendToMobile) {
-    return await createPushNotification(
-      notification,
+  const bulkNotifications: Notification[] = []
+  forEach(idsAndStreaks, async ([userId, streak]) => {
+    const privateUser = privateUsers.find((user) => user.id === userId)
+    if (!privateUser) return
+    const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
       privateUser,
-      `${streak} day streak expiring!`,
-      'Place a prediction in the next 3 hours to keep it.'
+      'betting_streaks'
     )
-  }
+    const id = crypto.randomUUID()
+    const notification: Notification = {
+      id,
+      userId,
+      reason: 'betting_streaks',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: id,
+      sourceText: streak.toString(),
+      sourceType: 'betting_streak_expiring',
+      sourceUpdateType: 'created',
+      sourceUserName: '',
+      sourceUserUsername: '',
+      sourceUserAvatarUrl: '',
+      sourceTitle: 'Betting Streak Expiring',
+      data: {
+        streak: streak,
+      } as BettingStreakData,
+    }
+    if (sendToMobile) {
+      await createPushNotification(
+        notification,
+        privateUser,
+        `${streak} day streak expiring!`,
+        'Place a prediction in the next 3 hours to keep it.'
+      )
+    }
+    if (sendToBrowser) {
+      bulkNotifications.push(notification)
+    }
+  })
+  await bulkInsertNotifications(bulkNotifications, pg)
 }
+
 export const createLeagueChangedNotification = async (
   userId: string,
   previousLeague: league_user_info | undefined,
@@ -895,27 +903,16 @@ export const createLikeNotification = async (reaction: Reaction) => {
   const creatorPrivateUser = await getPrivateUser(content_owner_id)
   const user = await getUser(user_id)
 
-  const db = createSupabaseClient()
   const pg = createSupabaseDirectClient()
 
-  let contractId
-  if (content_type === 'contract') {
-    contractId = content_id
-  } else {
-    const { data, error } = await db
-      .from('contract_comments')
-      .select('contract_id')
-      .eq('comment_id', content_id)
-    if (error) {
-      log('Failed to get contract id: ' + error.message)
-      return
-    }
-    if (!data.length) {
-      log('Contract that comment belongs to not found')
-      return
-    }
-    contractId = data[0].contract_id
-  }
+  const contractId =
+    content_type === 'contract'
+      ? content_id
+      : await pg.one(
+          `select contract_id from contract_comments where comment_id = $1`,
+          [content_id],
+          (r) => r.contract_id
+        )
 
   const contract = await getContract(pg, contractId)
 
@@ -1222,13 +1219,24 @@ export const createContractResolvedNotifications = async (
     resolutions,
   } = resolutionData
 
+  const pg = createSupabaseDirectClient()
+  const privateUsers = await pg.map(
+    `select * from private_users where id in
+           (select follow_id from contract_follows where contract_id = $1)
+           or id = any ($2)`,
+    [isIndependentMulti ? '_' : contract.id, Object.keys(userPayouts)],
+    convertPrivateUser
+  )
+  const usersToNotify = uniq(
+    privateUsers.map((u) => u.id).filter((id) => id !== resolver.id)
+  )
+
   const sortedProfits = Object.entries(userIdToContractMetrics)
     .map(([userId, metrics]) => {
       const profit = metrics.profit ?? 0
       return { userId, profit }
     })
     .sort((a, b) => b.profit - a.profit)
-  const pg = createSupabaseDirectClient()
   const constructNotification = (
     userId: string,
     reason: NotificationReason
@@ -1268,7 +1276,7 @@ export const createContractResolvedNotifications = async (
     userId: string,
     reason: NotificationReason
   ) => {
-    const privateUser = await getPrivateUser(userId)
+    const privateUser = privateUsers.find((u) => u.id === userId)
     if (!privateUser) return
     const { sendToBrowser, sendToEmail, sendToMobile } =
       getNotificationDestinationsForUser(privateUser, reason)
@@ -1322,20 +1330,6 @@ export const createContractResolvedNotifications = async (
       )
     }
   }
-
-  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
-    `select follow_id from contract_follows where contract_id = $1`,
-    [contract.id]
-  )
-  const contractFollowersIds = followerIds.map((f) => f.follow_id)
-  // We ignore whether users are still watching a market if they have a payout, mainly
-  // bc market resolutions changes their profits, and they'll likely want to know, esp. if NA resolution
-  const usersToNotify = uniq(
-    buildArray(
-      !isIndependentMulti && contractFollowersIds,
-      Object.keys(userPayouts)
-    ).filter((id) => id !== resolver.id)
-  )
 
   await mapAsync(
     usersToNotify,
@@ -1599,28 +1593,21 @@ export const createBountyCanceledNotification = async (
 }
 
 export const createVotedOnPollNotification = async (
-  voterId: string,
+  voter: User,
   sourceText: string,
   sourceContract: Contract
 ) => {
   const pg = createSupabaseDirectClient()
-  const voter = await getUser(voterId)
-  if (!voter) return
 
-  const usersToReceivedNotifications: Record<
-    string,
-    notification_destination_types[]
-  > = {}
-
-  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
-    `select follow_id from contract_follows where contract_id = $1`,
-    [sourceContract.id]
+  const privateUsers = await pg.map(
+    `select * from private_users where id in
+           (select follow_id from contract_follows where contract_id = $1)
+           and id != $2`,
+    [sourceContract.id, voter.id],
+    convertPrivateUser
   )
-  const contractFollowersIds = mapValues(
-    keyBy(followerIds, 'follow_id'),
-    () => true
-  )
-
+  const followerIds = privateUsers.map((user) => user.id)
+  const bulkNotifications: Notification[] = []
   const constructNotification = (
     userId: string,
     reason: notification_preference
@@ -1647,61 +1634,34 @@ export const createVotedOnPollNotification = async (
     return removeUndefinedProps(notification)
   }
 
-  const stillFollowingContract = (userId: string) => {
-    // Should be better performance than includes
-    return contractFollowersIds[userId] !== undefined
-  }
-
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
     reason: notification_preference
   ) => {
-    // A user doesn't have to follow a market to receive a notification with their tag
-    if (!stillFollowingContract(userId) || voter.id == userId) return
-    const privateUser = await getPrivateUser(userId)
-    if (!privateUser) return
-    if (userIsBlocked(privateUser, voter.id)) return
+    const privateUser = privateUsers.find((user) => user.id === userId)
+    if (!privateUser || userIsBlocked(privateUser, voter.id)) return
 
     const { sendToBrowser } = getNotificationDestinationsForUser(
       privateUser,
       reason
     )
-
-    const receivedNotifications = usersToReceivedNotifications[userId] ?? []
-
     // Browser notifications
-    if (sendToBrowser && !receivedNotifications.includes('browser')) {
-      const notification = constructNotification(userId, reason)
-      await insertNotificationToSupabase(notification, pg)
-      receivedNotifications.push('browser')
-    }
+    if (!sendToBrowser) return
+    const notification = constructNotification(userId, reason)
+    bulkNotifications.push(notification)
   }
 
-  const notifyContractFollowers = async () => {
-    await mapAsync(
-      Object.keys(contractFollowersIds),
-      async (userId) => {
-        if (userId !== sourceContract.creatorId) {
-          return sendNotificationsIfSettingsPermit(
-            userId,
-            'all_votes_on_watched_markets'
-          )
-        }
-      },
-      20
-    )
-  }
-
-  const notifyContractCreator = async () => {
-    await sendNotificationsIfSettingsPermit(
-      sourceContract.creatorId,
-      'vote_on_your_contract'
-    )
-  }
-  log('notifying creator')
-  await notifyContractCreator()
   log('notifying followers')
-  await notifyContractFollowers()
+  forEach(followerIds, (userId) => {
+    sendNotificationsIfSettingsPermit(
+      userId,
+      userId === sourceContract.creatorId
+        ? 'vote_on_your_contract'
+        : 'all_votes_on_watched_markets'
+    )
+  })
+
+  await bulkInsertNotifications(bulkNotifications, pg)
 }
 
 export const createPollClosedNotification = async (
@@ -1709,19 +1669,14 @@ export const createPollClosedNotification = async (
   sourceContract: Contract
 ) => {
   const pg = createSupabaseDirectClient()
-  const usersToReceivedNotifications: Record<
-    string,
-    notification_destination_types[]
-  > = {}
-
-  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
-    `select follow_id from contract_follows where contract_id = $1`,
-    [sourceContract.id]
+  const privateUsers = await pg.map(
+    `select * from private_users where id in
+           (select follow_id from contract_follows where contract_id = $1)`,
+    [sourceContract.id],
+    convertPrivateUser
   )
-  const contractFollowersIds = mapValues(
-    keyBy(followerIds, 'follow_id'),
-    () => true
-  )
+  const followerIds = privateUsers.map((user) => user.id)
+  const bulkNotifications: Notification[] = []
 
   const constructNotification = (
     userId: string,
@@ -1749,18 +1704,11 @@ export const createPollClosedNotification = async (
     return removeUndefinedProps(notification)
   }
 
-  const stillFollowingContract = (userId: string) => {
-    // Should be better performance than includes
-    return contractFollowersIds[userId] !== undefined
-  }
-
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
     reason: NotificationReason
   ) => {
-    // A user doesn't have to follow a market to receive a notification with their tag
-    if (!stillFollowingContract(userId)) return
-    const privateUser = await getPrivateUser(userId)
+    const privateUser = privateUsers.find((user) => user.id === userId)
     if (!privateUser) return
     if (userIsBlocked(privateUser, sourceContract.creatorId)) return
 
@@ -1769,41 +1717,22 @@ export const createPollClosedNotification = async (
       reason
     )
 
-    const receivedNotifications = usersToReceivedNotifications[userId] ?? []
-
-    // Browser notifications
-    if (sendToBrowser && !receivedNotifications.includes('browser')) {
+    if (sendToBrowser) {
       const notification = constructNotification(userId, reason)
-      await insertNotificationToSupabase(notification, pg)
-      receivedNotifications.push('browser')
+      bulkNotifications.push(notification)
     }
   }
 
-  const notifyContractFollowers = async () => {
-    await mapAsync(
-      Object.keys(contractFollowersIds),
-      async (userId) => {
-        if (userId !== sourceContract.creatorId) {
-          return sendNotificationsIfSettingsPermit(
-            userId,
-            'poll_close_on_watched_markets'
-          )
-        }
-      },
-      20
-    )
-  }
-
-  const notifyContractCreator = async () => {
-    await sendNotificationsIfSettingsPermit(
-      sourceContract.creatorId,
-      'your_poll_closed'
-    )
-  }
-  log('notifying creator')
-  await notifyContractCreator()
   log('notifying followers')
-  await notifyContractFollowers()
+  forEach(followerIds, (userId) => {
+    sendNotificationsIfSettingsPermit(
+      userId,
+      userId === sourceContract.creatorId
+        ? 'your_poll_closed'
+        : 'poll_close_on_watched_markets'
+    )
+  })
+  await bulkInsertNotifications(bulkNotifications, pg)
 }
 
 export const createReferralsProgramNotification = async (

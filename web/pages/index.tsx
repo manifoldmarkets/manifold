@@ -42,7 +42,8 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
       'in',
       `(${['STONK', 'BOUNTIED_QUESTION', 'POLL'].join(',')})`
     )
-    .is('resolution', null) // Add this line to select only unresolved contracts
+    .is('resolution', null)
+    .eq('token', 'MANA')
     .order('importance_score', { ascending: false })
     .limit(100)
 

@@ -314,10 +314,6 @@ export const createMarketProps = z
     visibility: z.enum(VISIBILITIES).default('public').optional(),
     isTwitchContract: z.boolean().optional(),
     utcOffset: z.number().optional(),
-    loverUserId1: z.string().optional(),
-    loverUserId2: z.string().optional(),
-    matchCreatorId: z.string().optional(),
-    isLove: z.boolean().optional(),
     marketTier: z.enum(tiers).optional(),
   })
   .and(

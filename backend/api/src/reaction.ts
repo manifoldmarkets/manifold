@@ -1,4 +1,4 @@
-import { createSupabaseClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { createLikeNotification } from 'shared/create-notification'
 import { assertUnreachable } from 'common/util/types'
@@ -8,129 +8,83 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
   const { contentId, contentType, remove, reactionType } = props
   const userId = auth.uid
 
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
   if (remove) {
-    const { error } = await db
-      .from('user_reactions')
-      .delete()
-      .eq('user_id', userId)
-      .eq('content_id', contentId)
-      .eq('content_type', contentType)
-
-    if (error) {
-      throw new APIError(500, 'Failed to remove reaction: ' + error.message)
-    }
-
-    // otherwise add
+    await pg.none(
+      `delete from user_reactions
+       where user_id = $1 and content_id = $2 and content_type = $3`,
+      [userId, contentId, contentType]
+    )
   } else {
     // get the id of the person this content belongs to, to denormalize the owner
     let ownerId: string
     if (contentType === 'comment') {
-      const { data, error } = await db
-        .from('contract_comments')
-        .select()
-        .eq('comment_id', contentId)
-        .single()
+      const userId = await pg.oneOrNone(
+        `select user_id from contract_comments where comment_id = $1`,
+        [contentId],
+        (r) => r?.user_id
+      )
 
-      if (error) {
-        throw new APIError(404, 'Failed to find comment: ' + error.message)
+      if (!userId) {
+        throw new APIError(404, 'Failed to find comment')
       }
-
-      ownerId = data.user_id
+      ownerId = userId
     } else if (contentType === 'contract') {
-      const { data, error } = await db
-        .from('contracts')
-        .select('creator_id')
-        .eq('id', contentId)
-        .single()
+      const creatorId = await pg.oneOrNone(
+        `select creator_id from contracts where id = $1`,
+        [contentId],
+        (r) => r?.creator_id
+      )
 
-      if (error) {
-        throw new APIError(404, 'Failed to find contract: ' + error.message)
+      if (!creatorId) {
+        throw new APIError(404, 'Failed to find contract')
       }
 
-      if (!data?.creator_id) {
-        throw new APIError(
-          500,
-          'Failed to send reaction notification. Contract has no creator',
-          {
-            contentId,
-          }
-        )
-      }
-
-      ownerId = data.creator_id
+      ownerId = creatorId
     } else {
       assertUnreachable(contentType)
     }
 
     // see if reaction exists already
-    const existingQuery = db
-      .from('user_reactions')
-      .select()
-      .eq('content_id', contentId)
-      .eq('content_type', contentType)
-      .eq('user_id', userId)
-    const existing = await (reactionType === 'like'
-      ? existingQuery.eq('reaction_type', reactionType)
-      : existingQuery.or('reaction_type.eq.upvote,reaction_type.eq.downvote'))
+    const existingReactions = await pg.manyOrNone(
+      `select * from user_reactions
+       where content_id = $1 and content_type = $2 and user_id = $3`,
+      [contentId, contentType, userId]
+    )
 
-    if (existing.data?.length) {
-      const existingReaction = existing.data[0]
-      if (
-        (existingReaction.reaction_type === 'upvote' &&
-          reactionType === 'downvote') ||
-        (existingReaction.reaction_type === 'downvote' &&
-          reactionType === 'upvote')
-      ) {
-        const { error } = await db
-          .from('user_reactions')
-          .delete()
-          .eq('reaction_id', existingReaction.reaction_id)
-
-        if (error) {
-          throw new APIError(500, 'Failed to change reaction: ' + error.message)
-        }
-      } else if (existingReaction.reaction_type === 'like') {
-        log('Reaction already exists, do nothing')
-        return { result: { success: true }, continue: async () => {} }
-      }
+    if (existingReactions.length > 0) {
+      log('Reaction already exists, do nothing')
+      return { result: { success: true }, continue: async () => {} }
     }
 
     // actually do the insert
-    const { data, error } = await db
-      .from('user_reactions')
-      .insert({
-        content_id: contentId,
-        content_type: contentType,
-        content_owner_id: ownerId,
-        user_id: userId,
-        reaction_type: reactionType,
-      })
-      .select()
-      .single()
+    const reactionRow = await pg.one(
+      `insert into user_reactions
+       (content_id, content_type, content_owner_id, user_id)
+       values ($1, $2, $3, $4)
+       returning *`,
+      [contentId, contentType, ownerId, userId]
+    )
 
-    if (error) {
-      throw new APIError(500, 'Failed to add reaction: ' + error.message)
-    }
-
-    await createLikeNotification(data)
+    await createLikeNotification(reactionRow)
   }
+
   return {
     result: { success: true },
     continue: async () => {
       if (contentType === 'comment') {
-        const { count } = await db
-          .from('user_reactions')
-          .select('*', { head: true, count: 'exact' })
-          .eq('content_id', contentId)
-          .eq('content_type', contentType)
-          .eq('reaction_type', reactionType)
-        log('new reaction count ' + count)
-        await db
-          .from('contract_comments')
-          .update({ [reactionType + 's']: count ?? 0 })
-          .eq('comment_id', contentId)
+        const count = await pg.one(
+          `select count(*) from user_reactions
+           where content_id = $1 and content_type = $2`,
+          [contentId, contentType],
+          (r) => r.count
+        )
+        log('new like count ' + count)
+        await pg.none(
+          `update contract_comments set likes = $1 where comment_id = $2`,
+          [count, contentId]
+        )
       }
     },
   }

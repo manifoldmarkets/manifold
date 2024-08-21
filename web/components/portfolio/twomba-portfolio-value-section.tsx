@@ -318,17 +318,13 @@ function TwombaPortfolioValueSkeleton(props: {
   function togglePortfolioFocus(toggleTo: PortfolioMode) {
     setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
   }
-  const [isSweepies, setIsSweepies] = useState(false)
 
   return (
     <Col>
       <Col className={clsx('gap-2')}>
         <Row className="text-ink-800 w-full items-center justify-between text-xl font-semibold">
           Portfolio
-          <TwombaToggle
-            mode={isSweepies ? 'sweepies' : 'mana'}
-            onClick={() => setIsSweepies(!isSweepies)}
-          />
+          <TwombaToggle />
         </Row>
         <Col className="bg-canvas-0 w-full rounded-lg p-4">
           <Col>

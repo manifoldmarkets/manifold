@@ -67,16 +67,11 @@ export function USElectionsPage(props: ElectionsPageProps) {
           Live prediction market odds on the US election
         </div>
       </Col>
+
       <PoliticsCard
         contract={electionPartyContract as MultiContract}
         viewType="PARTY"
         customTitle="Which party will win the Presidential Election?"
-      />
-
-      <PoliticsCard
-        contract={electionCandidateContract as MultiContract}
-        viewType="CANDIDATE"
-        className="-mt-4"
       />
 
       {trending}
@@ -88,7 +83,19 @@ export function USElectionsPage(props: ElectionsPageProps) {
         houseContract={houseContract as MultiContract}
       />
 
+      <PoliticsCard
+        contract={electionCandidateContract as MultiContract}
+        viewType="CANDIDATE"
+        className="-mt-4"
+      />
+
       <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
+      {/* 
+      <PoliticsCard
+        contract={electionCandidateContract as MultiContract}
+        viewType="CANDIDATE"
+        className="-mt-4"
+      /> */}
     </Col>
   )
 }

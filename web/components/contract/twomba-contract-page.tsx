@@ -1,15 +1,22 @@
 import { StarIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { ContractParams } from 'common/contract'
+import {
+  type Contract,
+  type ContractParams,
+  tradingAllowed,
+} from 'common/contract'
 import { mergeWith, uniqBy } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
-
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
-import { HistoryPoint, MultiPoints, unserializeBase64Multi } from 'common/chart'
-import { tradingAllowed } from 'common/contract'
+import {
+  HistoryPoint,
+  MultiBase64Points,
+  MultiPoints,
+  unserializeBase64Multi,
+} from 'common/chart'
 import { ContractMetric } from 'common/contract-metric'
 import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
@@ -65,12 +72,11 @@ import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from '../../pages/[username]/[contractSlug]'
+import { useSweepstakes } from '../sweestakes-context'
 
 export function TwombaContractPageContent(props: ContractParams) {
   const {
-    userPositionsByOutcome,
     comments,
-    totalPositions,
     relatedContracts,
     pointsString,
     multiPointsString,
@@ -79,22 +85,13 @@ export function TwombaContractPageContent(props: ContractParams) {
     dashboards,
     pinnedComments,
     betReplies,
+    cash,
   } = props
 
   const contract = useLiveContractWithAnswers(props.contract)
   if (!contract.viewCount) {
     contract.viewCount = props.contract.viewCount
   }
-
-  const cachedContract = useMemo(
-    () => contract,
-    [
-      contract.id,
-      contract.resolution,
-      contract.closeTime,
-      'answers' in contract ? JSON.stringify(contract.answers) : undefined,
-    ]
-  )
 
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
@@ -125,48 +122,30 @@ export function TwombaContractPageContent(props: ContractParams) {
   )
   useSaveContractVisitsLocally(user === null, contract.id)
 
-  const isNumber = contract.outcomeType === 'NUMBER'
+  const { isPlay } = useSweepstakes()
 
-  const newBets = useContractBets(contract.id, {
-    afterTime: props.lastBetTime ?? 0,
-    includeZeroShareRedemptions: true,
-    filterRedemptions: !isNumber,
+  const playBetData = useBetData({
+    contractId: contract.id,
+    outcomeType: contract.outcomeType,
+    userId: user?.id,
+    lastBetTime: props.lastBetTime,
+    totalBets: props.totalBets,
+    pointsString,
+    multiPointsString,
   })
 
-  const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
-  const totalBets =
-    props.totalBets +
-    (isNumber
-      ? uniqBy(newBetsWithoutRedemptions, 'betGroupId').length
-      : newBetsWithoutRedemptions.length)
-  const bets = useMemo(
-    () => uniqBy(isNumber ? newBets : newBetsWithoutRedemptions, 'id'),
-    [newBets.length]
-  )
-  const yourNewBets = newBets.filter((bet) => bet.userId === user?.id)
+  const cashBetData = useBetData({
+    contractId: cash?.contract.id ?? '',
+    outcomeType: cash?.contract.outcomeType,
+    userId: user?.id,
+    lastBetTime: props.lastBetTime,
+    totalBets: cash?.totalBets ?? 0,
+    pointsString: cash?.pointsString,
+    multiPointsString: cash?.multiPointsString,
+  })
 
-  const betPoints = useMemo(() => {
-    if (
-      contract.outcomeType === 'MULTIPLE_CHOICE' ||
-      contract.outcomeType === 'NUMBER'
-    ) {
-      const data = multiPointsString
-        ? unserializeBase64Multi(multiPointsString)
-        : []
-      const newData = getMultiBetPoints(newBets)
-
-      return mergeWith(data, newData, (array1, array2) =>
-        [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
-      ) as MultiPoints
-    } else {
-      const points = pointsString ? base64toPoints(pointsString) : []
-      const newPoints = newBetsWithoutRedemptions.map((bet) => ({
-        x: bet.createdTime,
-        y: bet.probAfter,
-      }))
-      return [...points, ...newPoints] as HistoryPoint<Partial<Bet>>[]
-    }
-  }, [pointsString, newBets.length])
+  const { bets, totalBets, yourNewBets, betPoints } =
+    cashBetData && !isPlay ? cashBetData : playBetData
 
   const {
     isResolved,
@@ -367,12 +346,15 @@ export function TwombaContractPageContent(props: ContractParams) {
 
               <div className="text-ink-600 flex flex-wrap items-center justify-end gap-y-1 text-sm">
                 <TwombaContractSummaryStats
-                  contract={contract}
+                  contractId={contract.id}
+                  creatorId={contract.creatorId}
+                  question={contract.question}
+                  financeContract={!isPlay && cash ? cash.contract : contract}
                   editable={isCreator || isAdmin || isMod}
                 />
               </div>
               <ContractOverview
-                contract={contract}
+                contract={!isPlay && cash ? cash.contract : contract}
                 betPoints={betPoints}
                 showResolver={showResolver}
                 resolutionRating={
@@ -396,7 +378,10 @@ export function TwombaContractPageContent(props: ContractParams) {
                 />
               )}
 
-              <YourTrades contract={contract} yourNewBets={yourNewBets} />
+              <YourTrades
+                contract={!isPlay && cash ? cash.contract : contract}
+                yourNewBets={yourNewBets}
+              />
             </Col>
             {showRelatedMarketsBelowBet && (
               <RelatedContractsGrid
@@ -477,6 +462,7 @@ export function TwombaContractPageContent(props: ContractParams) {
             )}
             {isResolved && resolution !== 'CANCEL' && (
               <>
+                {/* TODO: cash top contract metrics */}
                 <ContractLeaderboard
                   topContractMetrics={topContractMetrics.filter(
                     (metric) => metric.userUsername !== HOUSE_BOT_USERNAME
@@ -491,19 +477,25 @@ export function TwombaContractPageContent(props: ContractParams) {
 
             <div ref={tabsContainerRef} className="mb-4">
               <ContractTabs
-                // Pass cached contract so it won't rerender so many times.
-                contract={cachedContract}
+                contract={!isPlay && cash ? cash.contract : contract}
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}
-                userPositionsByOutcome={userPositionsByOutcome}
-                totalPositions={totalPositions}
+                userPositionsByOutcome={
+                  !isPlay && cash
+                    ? cash.userPositionsByOutcome
+                    : props.userPositionsByOutcome
+                }
+                totalPositions={
+                  !isPlay && cash ? cash.totalPositions : props.totalPositions
+                }
                 replyTo={replyTo}
                 setReplyTo={setReplyTo}
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
                 pinnedComments={pinnedComments}
+                // TODO: cash-bet replies???
                 betReplies={betReplies}
               />
             </div>
@@ -533,4 +525,70 @@ export function TwombaContractPageContent(props: ContractParams) {
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>
   )
+}
+
+const useBetData = (props: {
+  contractId: string
+  outcomeType: Contract['outcomeType'] | undefined
+  userId: string | undefined
+  lastBetTime: number | undefined
+  totalBets: number
+  pointsString: string | undefined
+  multiPointsString: MultiBase64Points | undefined
+}) => {
+  const {
+    contractId,
+    userId,
+    outcomeType,
+    lastBetTime,
+    pointsString,
+    multiPointsString,
+  } = props
+
+  const isNumber = outcomeType === 'NUMBER'
+
+  const newBets = useContractBets(contractId, {
+    afterTime: lastBetTime ?? 0,
+    includeZeroShareRedemptions: true,
+    filterRedemptions: !isNumber,
+  })
+
+  const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
+  const totalBets =
+    props.totalBets +
+    (isNumber
+      ? uniqBy(newBetsWithoutRedemptions, 'betGroupId').length
+      : newBetsWithoutRedemptions.length)
+  const bets = useMemo(
+    () => uniqBy(isNumber ? newBets : newBetsWithoutRedemptions, 'id'),
+    [newBets.length]
+  )
+  const yourNewBets = newBets.filter((bet) => userId && bet.userId === userId)
+
+  const betPoints = useMemo(() => {
+    if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') {
+      const data = multiPointsString
+        ? unserializeBase64Multi(multiPointsString)
+        : []
+      const newData = getMultiBetPoints(newBets)
+
+      return mergeWith(data, newData, (array1, array2) =>
+        [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
+      ) as MultiPoints
+    } else {
+      const points = pointsString ? base64toPoints(pointsString) : []
+      const newPoints = newBetsWithoutRedemptions.map((bet) => ({
+        x: bet.createdTime,
+        y: bet.probAfter,
+      }))
+      return [...points, ...newPoints] as HistoryPoint<Partial<Bet>>[]
+    }
+  }, [pointsString, newBets.length])
+
+  return {
+    bets,
+    totalBets,
+    yourNewBets,
+    betPoints,
+  }
 }

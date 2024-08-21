@@ -18,6 +18,35 @@ export const pgp = pgPromise({
       event: e,
     })
   },
+  disconnect() {
+    metrics.inc('pg/connections_disconnected')
+  },
+  transact(e) {
+    if (e.ctx.finish) {
+      const { ctx, query } = e
+      const { duration, success } = ctx
+      if (!duration) return
+      const successStr = success ? 'true' : 'false'
+
+      const mctx = getMonitoringContext()
+      if (mctx?.baseEndpoint) {
+        metrics.push('pg/transaction_duration', duration, {
+          baseEndpoint: mctx.baseEndpoint,
+          endpoint: mctx.endpoint,
+          query,
+          successStr,
+        })
+      } else if (mctx?.job) {
+        metrics.push('pg/transaction_duration', duration, {
+          job: mctx.job,
+          query,
+          successStr,
+        })
+      } else {
+        metrics.push('pg/transaction_duration', duration, { query, successStr })
+      }
+    }
+  },
   query() {
     const ctx = getMonitoringContext()
     if (ctx?.endpoint) {

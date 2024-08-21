@@ -38,8 +38,8 @@ const castPollVoteMain = async (
   if (user?.isBannedFromPosting) {
     throw new APIError(403, 'You are banned and cannot vote')
   }
-
-  return await createSupabaseDirectClient().tx(async (t) => {
+  const pg = createSupabaseDirectClient()
+  const res = await pg.tx(async (t) => {
     const contract = await getContract(t, contractId)
     if (!contract) {
       throw new APIError(404, 'Contract not found')
@@ -52,26 +52,23 @@ const castPollVoteMain = async (
     // Find the option to update
     const optionToUpdate = options.find((o) => o.id === voteId)
 
-    const totalVoters = await t.manyOrNone(
-      `select * from votes where contract_id = $1`,
-      [contractId, voteId]
+    const hasVoted = await t.oneOrNone(
+      `select 1 as exists from votes where contract_id = $1 and user_id = $2`,
+      [contractId, userId],
+      (r) => r?.exists
     )
 
-    const idVoters = totalVoters.filter((v) => v.id == voteId)
-
-    if (totalVoters.some((v) => v.user_id === userId)) {
+    if (hasVoted) {
       throw new APIError(403, 'You have already voted on this poll')
-    }
-
-    // Update the votes field
-    if (optionToUpdate) {
-      optionToUpdate.votes = idVoters.length + 1
     }
 
     // Write the updated options back to the document
     await updateContract(t, contractId, {
-      options,
-      uniqueBettorCount: totalVoters.length + 1,
+      options: options.map((o) => ({
+        ...o,
+        votes: o.id === voteId ? o.votes + 1 : o.votes,
+      })),
+      uniqueBettorCount: contract.uniqueBettorCount + 1,
     })
 
     // create the vote row
@@ -81,18 +78,18 @@ const castPollVoteMain = async (
         returning id`,
       [voteId, contractId, userId]
     )
-
-    await createVotedOnPollNotification(
-      userId,
-      optionToUpdate?.text ?? '',
-      contract
-    )
-
-    return {
-      result: { status: 'success', voteId: id },
-      continue: async () => {
-        await revalidateContractStaticProps(contract)
-      },
-    }
+    return { id, optionToUpdate, contract }
   })
+  await createVotedOnPollNotification(
+    user,
+    res.optionToUpdate?.text ?? '',
+    res.contract
+  )
+
+  return {
+    result: { status: 'success', voteId: res.id },
+    continue: async () => {
+      await revalidateContractStaticProps(res.contract)
+    },
+  }
 }

@@ -14,6 +14,7 @@ import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { useThemeManager } from 'web/hooks/use-theme'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { SweepstakesProvider } from 'web/components/sweestakes-context'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -130,8 +131,10 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         )}
       >
         <AuthProvider serverUser={pageProps.auth}>
-          <NativeMessageListener />
-          <Component {...pageProps} />
+          <SweepstakesProvider>
+            <NativeMessageListener />
+            <Component {...pageProps} />
+          </SweepstakesProvider>
         </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
         <div id="headlessui-portal-root">
