@@ -44,9 +44,7 @@ import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeFromValue } from './create-contract-types'
 import { NewQuestionParams } from './new-contract-panel'
-import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
-import { LiteMarket } from 'common/api/market-types'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { compareTwoStrings } from 'string-similarity'
 import { CostSection } from 'web/components/new-contract/cost-section'
@@ -392,9 +390,6 @@ export function ContractParamsForm(props: {
 
       const newContract = await api('market', createProps as any)
 
-      // wait for supabase
-      const supabaseContract = await waitForSupabaseContract(newContract)
-
       track('create market', {
         slug: newContract.slug,
         selectedGroups: selectedGroups.map((g) => g.id),
@@ -410,7 +405,7 @@ export function ContractParamsForm(props: {
       router.events.on('routeChangeComplete', clearFormOnNavigate)
 
       try {
-        await router.push(contractPath(supabaseContract as Contract))
+        await router.push(contractPath(newContract))
       } catch (error) {
         console.error(error)
       }
@@ -616,36 +611,5 @@ export function ContractParamsForm(props: {
       </Button>
       <div />
     </Col>
-  )
-}
-
-async function fetchContract(contractId: string) {
-  try {
-    const contract = await getContractWithFields(contractId)
-    if (contract && contract.visibility && contract.slug) {
-      return contract
-    }
-    return null
-  } catch (error) {
-    console.error('Error fetching the contract:', error)
-    return null
-  }
-}
-
-async function waitForSupabaseContract(contract: LiteMarket) {
-  let retries = 100
-
-  const delay = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms))
-
-  while (retries > 0) {
-    const c = await fetchContract(contract.id)
-    if (c) return c
-    retries--
-    await delay(100) // wait for 100 milliseconds after each try
-  }
-
-  throw new Error(
-    `We created your market, but it's taking a while to appear. Check this link in a minute: ${contract.url}`
   )
 }

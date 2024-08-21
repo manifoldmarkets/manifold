@@ -14,7 +14,7 @@ create table if not exists
     resolution_time timestamp with time zone,
     resolution_probability numeric,
     resolution text,
-    popularity_score numeric,
+    popularity_score numeric default 0 not null,
     question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
     description_fts tsvector generated always as (
       to_tsvector(
@@ -25,20 +25,30 @@ create table if not exists
     question_nostop_fts tsvector generated always as (
       to_tsvector('english_nostop_with_prefix'::regconfig, question)
     ) stored,
-    importance_score numeric default '0'::numeric,
+    importance_score numeric default 0 not null,
     deleted boolean default false,
     group_slugs text[],
     last_updated_time timestamp with time zone,
     last_bet_time timestamp with time zone,
     last_comment_time timestamp with time zone,
-    is_politics boolean default false,
-    freshness_score numeric default 0,
+    freshness_score numeric default 0 not null,
     conversion_score numeric default 0 not null,
-    view_count bigint default 0,
+    view_count bigint default 0 not null,
     is_spice_payout boolean default false,
     unique_bettor_count bigint default 0 not null,
     tier text,
-    daily_score numeric default 0 not null
+    daily_score numeric default 0 not null,
+    token text default 'MANA'::character varying not null,
+    constraint contracts_token_check check (
+      (
+        token = any (
+          array[
+            ('MANA'::character varying)::text,
+            ('CASH'::character varying)::text
+          ]
+        )
+      )
+    )
   );
 
 -- Triggers
@@ -51,52 +61,50 @@ execute function contract_populate_cols ();
 create
 or replace function public.contract_populate_cols () returns trigger language plpgsql as $function$
 begin
-    if new.data is not null then
-        new.slug := (new.data) ->> 'slug';
-        new.question := (new.data) ->> 'question';
-        new.creator_id := (new.data) ->> 'creatorId';
-        new.visibility := (new.data) ->> 'visibility';
-        new.mechanism := (new.data) ->> 'mechanism';
-        new.outcome_type := (new.data) ->> 'outcomeType';
-        new.unique_bettor_count := ((new.data) -> 'uniqueBettorCount')::bigint;
-        new.tier := (new.data) ->> 'marketTier';
-        new.created_time := case
-                                when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint)
-                                else null
-            end;
-        new.close_time := case
-                              when new.data ? 'closeTime' then millis_to_ts(((new.data) ->> 'closeTime')::bigint)
-                              else null
-            end;
-        new.resolution_time := case
-                                   when new.data ? 'resolutionTime'
-                                       then millis_to_ts(((new.data) ->> 'resolutionTime')::bigint)
-                                   else null
-            end;
-        new.resolution_probability := ((new.data) ->> 'resolutionProbability')::numeric;
-        new.resolution := (new.data) ->> 'resolution';
-        new.is_spice_payout := coalesce(((new.data) ->> 'isSpicePayout')::boolean, false);
-        new.popularity_score := coalesce(((new.data) ->> 'popularityScore')::numeric, 0);
-        new.deleted := coalesce(((new.data) ->> 'deleted')::boolean, false);
-        new.group_slugs := case
-                               when new.data ? 'groupSlugs' then jsonb_array_to_text_array((new.data) -> 'groupSlugs')
-                               else null
-            end;
-        new.last_updated_time := case
-                                     when new.data ? 'lastUpdatedTime' then millis_to_ts(((new.data) ->> 'lastUpdatedTime')::bigint)
-                                     else null
-            end;
-        new.last_bet_time := case
-                                 when new.data ? 'lastBetTime' then millis_to_ts(((new.data) ->> 'lastBetTime')::bigint)
-                                 else null
-            end;
-        new.last_comment_time := case
-                                     when new.data ? 'lastCommentTime' then millis_to_ts(((new.data) ->> 'lastCommentTime')::bigint)
-                                     else null
-            end;
-        new.is_politics := coalesce(((new.data) ->> 'isPolitics')::boolean, false);
-    end if;
-    return new;
+  if new.data is not null then
+  new.slug := (new.data) ->> 'slug';
+  new.question := (new.data) ->> 'question';
+  new.creator_id := (new.data) ->> 'creatorId';
+  new.visibility := (new.data) ->> 'visibility';
+  new.mechanism := (new.data) ->> 'mechanism';
+  new.outcome_type := (new.data) ->> 'outcomeType';
+  new.unique_bettor_count := ((new.data) -> 'uniqueBettorCount')::bigint;
+  new.tier := (new.data) ->> 'marketTier';
+  new.created_time := case
+      when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint)
+      else null
+    end;
+  new.close_time := case
+      when new.data ? 'closeTime' then millis_to_ts(((new.data) ->> 'closeTime')::bigint)
+      else null
+    end;
+  new.resolution_time := case
+      when new.data ? 'resolutionTime' then millis_to_ts(((new.data) ->> 'resolutionTime')::bigint)
+      else null
+    end;
+  new.resolution_probability := ((new.data) ->> 'resolutionProbability')::numeric;
+  new.resolution := (new.data) ->> 'resolution';
+  new.is_spice_payout := coalesce(((new.data) ->> 'isSpicePayout')::boolean, false);
+  new.popularity_score := coalesce(((new.data) ->> 'popularityScore')::numeric, 0);
+  new.deleted := coalesce(((new.data) ->> 'deleted')::boolean, false);
+  new.group_slugs := case
+      when new.data ? 'groupSlugs' then jsonb_array_to_text_array((new.data) -> 'groupSlugs')
+      else null
+    end;
+  new.last_updated_time := case
+      when new.data ? 'lastUpdatedTime' then millis_to_ts(((new.data) ->> 'lastUpdatedTime')::bigint)
+      else null
+    end;
+  new.last_bet_time := case
+      when new.data ? 'lastBetTime' then millis_to_ts(((new.data) ->> 'lastBetTime')::bigint)
+      else null
+    end;
+  new.last_comment_time := case
+      when new.data ? 'lastCommentTime' then millis_to_ts(((new.data) ->> 'lastCommentTime')::bigint)
+      else null
+    end;
+  end if;
+  return new;
 end
 $function$;
 

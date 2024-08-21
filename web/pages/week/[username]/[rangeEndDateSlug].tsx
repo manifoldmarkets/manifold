@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { HistoryPoint } from 'common/chart'
-import { CPMMBinaryContract } from 'common/contract'
+import { BinaryContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
@@ -79,8 +79,8 @@ export async function getStaticProps(props: {
       : []
   const contracts = weeklyPortfolioUpdate
     ? await getContracts(
-        (contract_metrics as ContractMetric[]).map((c) => c.contractId),
-        db
+        db,
+        (contract_metrics as ContractMetric[]).map((c) => c.contractId)
       )
     : null
 
@@ -121,7 +121,7 @@ export default function RangePerformancePage(props: {
   const weeklyPortfolioUpdate = JSON.parse(
     weeklyPortfolioUpdateString
   ) as WeeklyPortfolioUpdate
-  const contracts = JSON.parse(props.contractsString) as CPMMBinaryContract[]
+  const contracts = JSON.parse(props.contractsString) as BinaryContract[]
   const currentUser = useUser()
   useSaveReferral(currentUser, {
     defaultReferrerUsername: user?.username,

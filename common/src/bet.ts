@@ -1,5 +1,4 @@
 import { groupBy, mapValues } from 'lodash'
-import { Visibility } from './contract'
 import { Fees } from './fees'
 import { maxMinBin } from './chart'
 
@@ -16,9 +15,6 @@ supabase status: columns exist for
   isRedemption: boolean
   visibility: text
 
-any changes to the type of these columns in firestore will require modifying
-the supabase trigger, or replication of contracts may fail!
-
 *************************************************/
 
 export type Bet = {
@@ -28,6 +24,7 @@ export type Bet = {
   contractId: string
   answerId?: string // For multi-binary contracts
   createdTime: number
+  updatedTime?: number // Generated on supabase, useful for limit orders
 
   amount: number // bet size; negative if SELL bet
   loanAmount?: number
@@ -42,7 +39,6 @@ export type Bet = {
   isApi?: boolean // true if bet was placed via API
 
   isRedemption: boolean
-  visibility: Visibility
   /** @deprecated */
   challengeSlug?: string
 
@@ -97,4 +93,10 @@ export const calculateMultiBets = (
       500
     )
   )
+}
+export type maker = {
+  bet: LimitBet
+  amount: number
+  shares: number
+  timestamp: number
 }

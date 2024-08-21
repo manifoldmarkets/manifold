@@ -23,7 +23,7 @@ import {
 } from 'shared/topic-interests'
 import { log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
-import { FEED_CARD_CONVERSION_PRIOR } from 'common/feed'
+import { GROUP_SCORE_PRIOR } from 'common/feed'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 
 const DEFAULT_THRESHOLD = 1000
@@ -40,6 +40,7 @@ export async function getForYouSQL(items: {
   offset: number
   sort: 'score' | 'freshness-score'
   isPrizeMarket: boolean
+  isSweepies: boolean
   marketTier: TierParamsType
   privateUser?: PrivateUser
   threshold?: number
@@ -51,6 +52,7 @@ export async function getForYouSQL(items: {
     offset,
     sort,
     isPrizeMarket,
+    isSweepies,
     marketTier,
     privateUser,
     threshold = DEFAULT_THRESHOLD,
@@ -81,7 +83,7 @@ export async function getForYouSQL(items: {
     log('No topic interests found for user', userId)
     return renderSql(
       select(
-        `data, importance_score, conversion_score, freshness_score, view_count`
+        `data, importance_score, conversion_score, freshness_score, view_count, token`
       ),
       from('contracts'),
       orderBy(`${sortByScore} desc`),
@@ -91,6 +93,7 @@ export async function getForYouSQL(items: {
         uid: userId,
         hideStonks: true,
         isPrizeMarket,
+        isSweepies,
         marketTier,
       }),
       privateUserBlocksSql(privateUser),
@@ -130,6 +133,7 @@ export async function getForYouSQL(items: {
         uid: userId,
         hideStonks: true,
         isPrizeMarket,
+        isSweepies,
         marketTier,
       }),
       offset <= threshold / 2 &&
@@ -146,12 +150,12 @@ export async function getForYouSQL(items: {
       // If the user has no contract-matching topic score, use only the contract's importance score
       orderBy(`case
       when bool_or(uti.avg_conversion_score is not null)
-      then avg(coalesce(uti.avg_conversion_score, ${FEED_CARD_CONVERSION_PRIOR}) * contracts.${sortByScore})
-      else avg(contracts.${sortByScore}*${FEED_CARD_CONVERSION_PRIOR})
+      then avg(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}) * contracts.${sortByScore})
+      else avg(contracts.${sortByScore}*${GROUP_SCORE_PRIOR})
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
       else 0.0
-      end) 
+      end)
       desc`)
     )
   )
@@ -177,8 +181,8 @@ export function getSearchContractSQL(args: {
   uid?: string
   isForYou?: boolean
   searchType: SearchTypes
-  isPolitics?: boolean
   isPrizeMarket?: boolean
+  isSweepies?: boolean
   marketTier: TierParamsType
 }) {
   const {
@@ -189,7 +193,6 @@ export function getSearchContractSQL(args: {
     groupId,
     creatorId,
     searchType,
-    isPolitics,
     marketTier,
   } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
@@ -227,7 +230,6 @@ export function getSearchContractSQL(args: {
       ),
 
     whereSql,
-    isPolitics && where('is_politics = true'),
     term.length && [
       searchType === 'prefix' &&
         where(
@@ -259,6 +261,7 @@ function getSearchContractWhereSQL(args: {
   hideStonks?: boolean
   hideLove?: boolean
   isPrizeMarket?: boolean
+  isSweepies?: boolean
   marketTier: TierParamsType
 }) {
   const {
@@ -270,6 +273,7 @@ function getSearchContractWhereSQL(args: {
     hideStonks,
     hideLove,
     isPrizeMarket,
+    isSweepies,
     marketTier,
   } = args
   type FilterSQL = Record<string, string>
@@ -304,6 +308,8 @@ function getSearchContractWhereSQL(args: {
 
   const isPrizeMarketFilter = isPrizeMarket ? 'is_spice_payout = true' : ''
 
+  const isSweepiesFilter = isSweepies ? `token = 'CASH'` : ''
+
   const tierFilters = tiers
     .map((tier: MarketTierType, index) =>
       marketTier[index] === '1' ? `tier = '${tier}'` : ''
@@ -325,6 +331,7 @@ function getSearchContractWhereSQL(args: {
     where(creatorFilter),
     where(deletedFilter),
     where(isPrizeMarketFilter),
+    where(isSweepiesFilter),
     where(combinedTierFilter),
   ]
 }
@@ -339,7 +346,7 @@ type SortFields = Record<
 >
 export const sortFields: SortFields = {
   score: {
-    sql: `importance_score::numeric desc, (data->>'uniqueBettorCount')::integer`,
+    sql: `importance_score::numeric desc, unique_bettor_count`,
     sortCallback: (c: Contract) =>
       c.importanceScore > 0 ? c.importanceScore : c.uniqueBettorCount,
     order: 'DESC',
@@ -374,12 +381,12 @@ export const sortFields: SortFields = {
   },
 
   'last-updated': {
-    sql: "(data->>'lastUpdatedTime')::numeric",
+    sql: 'last_updated_time',
     sortCallback: (c: Contract) => c.lastUpdatedTime,
     order: 'DESC',
   },
   'most-popular': {
-    sql: "(data->>'uniqueBettorCount')::integer",
+    sql: 'unique_bettor_count',
     sortCallback: (c: Contract) => c.uniqueBettorCount,
     order: 'DESC',
   },

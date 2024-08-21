@@ -9,10 +9,11 @@ import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupModal } from 'web/components/topics/add-contract-to-group-modal'
 import {
   internalFollowTopic,
-  TopicOptionsButton,
+  internalUnfollowTopic,
 } from 'web/components/topics/topics-button'
+import { TopicOptions } from 'web/components/topics/topic-options'
 import { Row } from 'web/components/layout/row'
-import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
+import { useIsFollowingTopic } from 'web/hooks/use-group-supabase'
 import { User } from 'common/user'
 import { forwardRef, Ref, useState } from 'react'
 import { TopicDropdown } from 'web/components/topics/topic-dropdown'
@@ -33,12 +34,12 @@ export const QuestionsTopicTitle = forwardRef(
     ref: Ref<HTMLDivElement>
   ) => {
     const { currentTopic, setTopicSlug, user } = props
-    const yourGroupIds = useRealtimeMemberGroupIds(user?.id)
+    const { isFollowing, setIsFollowing } = useIsFollowingTopic(
+      currentTopic?.slug
+    )
     const [showAddContract, setShowAddContract] = useState(false)
     const [loading, setLoading] = useState(false)
     const isMobile = useIsMobile()
-    const isFollowing =
-      currentTopic && (yourGroupIds ?? []).includes(currentTopic.id)
     const router = useRouter()
     if (currentTopic) {
       return (
@@ -107,9 +108,13 @@ export const QuestionsTopicTitle = forwardRef(
                   size={isMobile ? 'sm' : 'md'}
                   onClick={() => {
                     setLoading(true)
-                    internalFollowTopic(user, currentTopic).finally(() =>
-                      setLoading(false)
-                    )
+                    internalFollowTopic(user, currentTopic)
+                      .then(() => {
+                        setIsFollowing(true)
+                      })
+                      .finally(() => {
+                        setLoading(false)
+                      })
                   }}
                 >
                   {!loading && <BookmarkIcon className={'mr-1 h-5 w-5'} />}
@@ -119,9 +124,16 @@ export const QuestionsTopicTitle = forwardRef(
             )}
 
             {currentTopic ? (
-              <TopicOptionsButton
+              <TopicOptions
                 group={currentTopic}
-                yourGroupIds={yourGroupIds}
+                isMember={!!isFollowing}
+                unfollow={() => {
+                  setIsFollowing(false)
+                  internalUnfollowTopic(user, currentTopic).catch(() =>
+                    // undo optimistic update
+                    setIsFollowing(true)
+                  )
+                }}
                 user={user}
                 className={'flex [&_*]:flex [&_button]:pr-2'}
               />

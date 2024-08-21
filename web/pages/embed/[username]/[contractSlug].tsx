@@ -39,10 +39,10 @@ import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { PollPanel } from 'web/components/poll/poll-panel'
-import { getBetPoints } from 'common/supabase/bets'
 import { getSingleBetPoints } from 'common/contract-params'
 import { ChoiceContractChart } from 'web/components/charts/contract/choice'
 import { Spacer } from 'web/components/layout/spacer'
+import { getBetPoints } from 'web/lib/supabase/bets'
 
 type Points = HistoryPoint<any>[]
 
@@ -51,7 +51,7 @@ async function getHistoryData(contract: Contract) {
     case 'BINARY':
     case 'PSEUDO_NUMERIC':
     case 'STONK': {
-      const allBetPoints = await getBetPoints(db, contract.id)
+      const allBetPoints = await getBetPoints(contract.id)
       const points = getSingleBetPoints(allBetPoints, contract)
       return points.map(([x, y]) => ({ x, y }))
     }
@@ -64,7 +64,8 @@ export async function getStaticProps(props: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = props.params
-  const contract = (await getContractFromSlug(contractSlug, db)) || null
+  // TODO: use admin db
+  const contract = await getContractFromSlug(db, contractSlug)
   if (contract == null) {
     return { notFound: true, revalidate: 60 }
   }

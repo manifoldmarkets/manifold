@@ -13,7 +13,11 @@ import {
   tradingAllowed,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
+import {
+  HOUSE_BOT_USERNAME,
+  SPICE_MARKET_TOOLTIP,
+  TWOMBA_ENABLED,
+} from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
@@ -65,18 +69,15 @@ import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-
 import { Bet, LimitBet } from 'common/bet'
 import { getContractParams } from 'common/contract-params'
-import { getContractFromSlug } from 'common/supabase/contracts'
-
+import { getContract, getContractFromSlug } from 'common/supabase/contracts'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { DangerZone } from 'web/components/contract/danger-zone'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { parseJsonContentToText } from 'common/util/parse'
-import { useRequestNewUserSignupBonus } from 'web/hooks/use-request-new-user-signup-bonus'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DAY_MS } from 'common/util/time'
@@ -86,13 +87,16 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { YourOrders } from 'web/components/bet/order-book'
 import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
+import { TwombaContractPageContent } from '../../components/contract/twomba-contract-page'
+import { removeUndefinedProps } from 'common/util/object'
+import { pick } from 'lodash'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
   const adminDb = await initSupabaseAdmin()
-  const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
+  const contract = await getContractFromSlug(adminDb, contractSlug)
 
   if (!contract) {
     return {
@@ -111,7 +115,29 @@ export async function getStaticProps(ctx: {
   }
 
   const props = await getContractParams(contract, adminDb)
-  return { props }
+
+  // Fetch sibling contract if it exists
+  let cash = undefined
+  if (contract.siblingContractId) {
+    const cashContract = await getContract(adminDb, contract.siblingContractId)
+    if (cashContract) {
+      const params = await getContractParams(cashContract, adminDb)
+      cash = pick(params, [
+        'contract',
+        'pointsString',
+        'multiPointsString',
+        'userPositionsByOutcome',
+        'totalPositions',
+        'totalBets',
+      ])
+    }
+  }
+  return {
+    props: {
+      state: 'authed',
+      params: removeUndefinedProps({ ...props, cash }),
+    },
+  }
 }
 
 export async function getStaticPaths() {
@@ -148,7 +174,14 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   return (
     <Page trackPageView={false} className="xl:col-span-10">
       <ContractSEO contract={contract} points={pointsString} />
-      <ContractPageContent key={contract.id} {...props.contractParams} />
+      {TWOMBA_ENABLED ? (
+        <TwombaContractPageContent
+          key={contract.id}
+          {...props.contractParams}
+        />
+      ) : (
+        <ContractPageContent key={contract.id} {...props.contractParams} />
+      )}
     </Page>
   )
 }
@@ -162,7 +195,6 @@ export function ContractPageContent(props: ContractParams) {
     pointsString,
     multiPointsString,
     chartAnnotations,
-    relatedContractsByTopicSlug,
     topics,
     dashboards,
     pinnedComments,
@@ -277,8 +309,7 @@ export function ContractPageContent(props: ContractParams) {
     defaultReferrerUsername: contract.creatorUsername,
     contractId: contract.id,
   })
-  // Request new user signup bonus on every contract page visited
-  useRequestNewUserSignupBonus(contract.id)
+
   const [replyTo, setReplyTo] = useState<Answer | Bet>()
 
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
@@ -597,8 +628,6 @@ export function ContractPageContent(props: ContractParams) {
             <RelatedContractsGrid
               contracts={relatedMarkets}
               loadMore={loadMore}
-              contractsByTopicSlug={relatedContractsByTopicSlug}
-              topics={topics}
               showAll={true}
             />
           </Col>
@@ -615,7 +644,6 @@ export function ContractPageContent(props: ContractParams) {
             contracts={relatedMarkets}
             loadMore={loadMore}
             topics={topics}
-            contractsByTopicSlug={relatedContractsByTopicSlug}
           />
         </Col>
       </Row>
@@ -625,7 +653,7 @@ export function ContractPageContent(props: ContractParams) {
   )
 }
 
-function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
+export function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
   const { contract, yourNewBets } = props
   const user = useUser()
 

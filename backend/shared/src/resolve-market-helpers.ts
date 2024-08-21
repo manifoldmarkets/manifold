@@ -222,13 +222,10 @@ export const resolveMarketHelper = async (
         await updateAnswers(tx, contractId, answerUpdates)
       }
       log('processing payouts', { payouts })
-      await payUsersTransactions(
-        tx,
-        payouts,
-        contractId,
-        answerId,
-        !!contract.isSpicePayout && outcome !== 'CANCEL'
-      )
+      await payUsersTransactions(tx, payouts, contractId, answerId, {
+        payoutSpice: !!contract.isSpicePayout && outcome !== 'CANCEL',
+        payoutCash: contract.token === 'CASH',
+      })
 
       // TODO: we may want to support clawing back trader bonuses on MC markets too
       if (!answerId) {
@@ -311,7 +308,7 @@ export const getDataAndPayoutInfo = async (
     bets = await pg.map(
       `select * from contract_bets
       where contract_id = $1
-      and (shares != 0 or (data->>'loanAmount')::numeric != 0)
+      and (shares != 0 or loan_amount != 0)
       `,
       [contractId],
       convertBet
@@ -440,8 +437,12 @@ export const payUsersTransactions = async (
   }[],
   contractId: string,
   answerId: string | undefined,
-  payoutSpice: boolean
+  options?: {
+    payoutSpice: boolean
+    payoutCash: boolean
+  }
 ) => {
+  const { payoutSpice, payoutCash } = options ?? {}
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutStartTime = Date.now()
 
@@ -479,7 +480,7 @@ export const payUsersTransactions = async (
     } else {
       balanceUpdates.push({
         id: userId,
-        balance: payout,
+        [payoutCash ? 'cashBalance' : 'balance']: payout,
         totalDeposits: deposit ?? 0,
       })
 
@@ -490,7 +491,7 @@ export const payUsersTransactions = async (
         toType: 'USER',
         toId: userId,
         amount: payout,
-        token: 'M$',
+        token: payoutCash ? 'CASH' : 'M$',
         data: removeUndefinedProps({
           deposit: deposit ?? 0,
           payoutStartTime,

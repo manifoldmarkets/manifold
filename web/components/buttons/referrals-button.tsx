@@ -60,7 +60,7 @@ export function Referrals(props: { user: User }) {
             Refer a friend for{' '}
             <span className={'text-teal-500'}>
               <CoinNumber
-                isSpice
+                coinType="spice"
                 amount={REFERRAL_AMOUNT}
                 style={{
                   color: SPICE_COLOR,

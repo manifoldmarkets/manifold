@@ -1,10 +1,10 @@
-import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getUsers, log, revalidateStaticProps } from 'shared/utils'
-import { groupBy, sortBy, sumBy, uniq } from 'lodash'
+import { chunk, groupBy, sortBy, sumBy, uniq } from 'lodash'
 import { Contract, CPMMMultiContract } from 'common/contract'
 import {
   calculateMetricsByContractAndAnswer,
@@ -37,11 +37,12 @@ const userToPortfolioMetrics: {
     timeCachedPeriodProfits: number
   }
 } = {}
-
+const LIMIT = 400
 export async function updateUserMetricsCore(
   userIds?: string[],
-  allTime?: boolean
+  since?: number
 ) {
+  const useSince = since !== undefined
   const now = Date.now()
   const yesterday = now - DAY_MS
   const weekAgo = now - DAY_MS * 7
@@ -73,8 +74,8 @@ export async function updateUserMetricsCore(
              and user_contract_metrics.has_shares = true
            ))
        )
-        order by uph.last_calculated nulls first limit 400`,
-        [random, BOT_USERNAMES],
+        order by uph.last_calculated nulls first limit $3`,
+        [random, BOT_USERNAMES, LIMIT],
         (r) => r.id as string
       )
 
@@ -134,7 +135,7 @@ export async function updateUserMetricsCore(
   const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
     pg,
     activeUserIds,
-    allTime ? 0 : weekAgo
+    useSince ? since : weekAgo
   )
   log(
     `Loaded ${sumBy(
@@ -256,7 +257,7 @@ export async function updateUserMetricsCore(
       return !contract.isResolved
     })
     let resolvedProfitAdjustment = user.resolvedProfitAdjustment ?? 0
-    if (allTime) {
+    if (since === 0) {
       const resolvedMetrics = freshMetrics.filter((m) => {
         const contract = contractsById[m.contractId]
         if (contract.mechanism === 'cpmm-multi-1') {
@@ -343,6 +344,7 @@ export async function updateUserMetricsCore(
   const userIdsNotWritten = activeUserIds.filter(
     (id) => !portfolioUpdates.some((p) => p.user_id === id)
   )
+  const userUpdateChunks = chunk(userUpdates, LIMIT / 10)
   log('Writing updates and inserts...')
   await Promise.all(
     buildArray(
@@ -361,14 +363,20 @@ export async function updateUserMetricsCore(
           `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
           [new Date(now).toISOString(), userIdsNotWritten]
         ),
-      bulkUpdate(
-        pg,
-        'users',
-        ['id'],
-        userUpdates.map((u) => ({
-          id: u.id,
-          data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
-        }))
+
+      Promise.all(
+        userUpdateChunks.map(async (chunk) =>
+          bulkUpdate(
+            pg,
+            'users',
+            ['id'],
+            chunk.map((u) => ({
+              id: u.id,
+              data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
+            })),
+            5 * MINUTE_MS
+          )
+        )
       )
         .catch((e) => log.error('Error writing user updates', e))
         .then(() => log('Finished user updates.'))
@@ -397,7 +405,7 @@ const getUnresolvedOrRecentlyResolvedBets = async (
 ) => {
   const bets = await pg.map(
     `
-    select cb.amount, cb.shares, cb.outcome, cb.data->'loanAmount' as "loanAmount", cb.user_id, cb.answer_id, cb.contract_id, cb.data->'createdTime' as "createdTime", cb.is_redemption
+    select cb.amount, cb.shares, cb.outcome, cb.loan_amount, cb.user_id, cb.answer_id, cb.contract_id, cb.created_time, cb.is_redemption
     from contract_bets as cb
     join contracts as c on cb.contract_id = c.id
     left join answers as a on cb.answer_id = a.id

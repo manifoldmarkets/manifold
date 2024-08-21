@@ -33,10 +33,9 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   )
 }
 
-const resolveMarketMain: APIHandler<'market/:contractId/resolve'> = async (
-  props,
-  auth
-) => {
+export const resolveMarketMain: APIHandler<
+  'market/:contractId/resolve'
+> = async (props, auth) => {
   const db = createSupabaseDirectClient()
 
   const { contractId } = props
@@ -70,7 +69,7 @@ const resolveMarketMain: APIHandler<'market/:contractId/resolve'> = async (
   if ('answerId' in resolutionParams && 'answers' in contract) {
     const { answerId } = resolutionParams
     const answer = answers.find((a) => a.id === answerId)
-    if (answer && 'resolution' in answer && answer.resolution) {
+    if (answer?.resolution) {
       throw new APIError(403, `${answerId} answer is already resolved`)
     }
   }

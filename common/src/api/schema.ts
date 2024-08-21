@@ -59,6 +59,8 @@ import {
 import { notification_preference } from 'common/user-notification-preferences'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
+import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
+import { ContractMetric } from 'common/contract-metric'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -103,6 +105,19 @@ export const API = (_apiTypeCheck = {
         replyToCommentId: z.string().optional(),
         replyToAnswerId: z.string().optional(),
         replyToBetId: z.string().optional(),
+      })
+      .strict(),
+  },
+
+  'follow-contract': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: true },
+    props: z
+      .object({
+        contractId: z.string(),
+        follow: z.boolean(),
       })
       .strict(),
   },
@@ -163,6 +178,30 @@ export const API = (_apiTypeCheck = {
         //Multi
         answerId: z.string().optional(),
         dryRun: z.boolean().optional(),
+        deps: z.array(z.string()).optional(),
+        deterministic: z.boolean().optional(),
+      })
+      .strict(),
+  },
+  'bet-ter': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as CandidateBet & { betId: string },
+    props: z
+      .object({
+        contractId: z.string(),
+        amount: z.number().gte(1),
+        replyToCommentId: z.string().optional(),
+        limitProb: z.number().gte(0.01).lte(0.99).optional(),
+        expiresAt: z.number().optional(),
+        // Used for binary and new multiple choice contracts (cpmm-multi-1).
+        outcome: z.enum(['YES', 'NO']).default('YES'),
+        //Multi
+        answerId: z.string().optional(),
+        dryRun: z.boolean().optional(),
+        deps: z.array(z.string()).optional(),
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },
@@ -191,6 +230,7 @@ export const API = (_apiTypeCheck = {
         limitProb: z.number().gte(0).lte(1).optional(),
         expiresAt: z.number().optional(),
         answerIds: z.array(z.string()).min(1),
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },
@@ -203,6 +243,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         answerIds: z.array(z.string()).min(1),
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },
@@ -248,6 +289,34 @@ export const API = (_apiTypeCheck = {
         shares: z.number().positive().optional(), // leave it out to sell all shares
         outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
         answerId: z.string().optional(), // Required for multi binary markets
+        deterministic: z.boolean().optional(),
+      })
+      .strict(),
+  },
+  'get-user-limit-orders-with-contracts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as {
+      betsByContract: { [contractId: string]: LimitBet[] }
+      contracts: Contract[]
+    },
+    props: z
+      .object({
+        userId: z.string(),
+        count: z.coerce.number().lte(5000),
+      })
+      .strict(),
+  },
+  'get-interesting-groups-from-views': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as (Group & { hasBet: boolean })[],
+    props: z
+      .object({
+        userId: z.string(),
+        contractIds: z.array(z.string()).optional(),
       })
       .strict(),
   },
@@ -265,7 +334,11 @@ export const API = (_apiTypeCheck = {
         contractSlug: z.string().optional(),
         answerId: z.string().optional(),
         // market: z.string().optional(), // deprecated, synonym for `contractSlug`
-        limit: z.coerce.number().gte(0).lte(10000).default(10000),
+        limit: z.coerce
+          .number()
+          .gte(0)
+          .lte(50000)
+          .default(NON_POINTS_BETS_LIMIT),
         before: z.string().optional(),
         after: z.string().optional(),
         beforeTime: z.coerce.number().optional(),
@@ -276,6 +349,8 @@ export const API = (_apiTypeCheck = {
         filterRedemptions: coerceBoolean.optional(),
         includeZeroShareRedemptions: coerceBoolean.optional(),
         commentRepliesOnly: coerceBoolean.optional(),
+        count: coerceBoolean.optional(),
+        points: coerceBoolean.optional(),
       })
       .strict(),
   },
@@ -369,6 +444,7 @@ export const API = (_apiTypeCheck = {
       .object({
         availableToUserId: z.string().optional(),
         beforeTime: z.coerce.number().int().optional(),
+        limit: z.coerce.number().gte(0).lte(1000).default(500),
       })
       .strict(),
   },
@@ -479,6 +555,13 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: true },
+  },
+  'market/:contractId/groups': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({ contractId: z.string() }),
+    returns: [] as LiteGroup[],
   },
   'market/:contractId/answer': {
     method: 'POST',
@@ -642,7 +725,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: {} as any,
+    returns: [] as ContractMetric[],
     props: z
       .object({
         id: z.string(),
@@ -919,7 +1002,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'get-related-markets-cache': {
+  'get-related-markets': {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
@@ -927,16 +1010,29 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         limit: z.coerce.number().gte(0).lte(100),
-        embeddingsLimit: z.coerce.number().gte(0).lte(100),
-        limitTopics: z.coerce.number().gte(0).lte(10),
         userId: z.string().optional(),
       })
       .strict(),
     returns: {} as {
       marketsFromEmbeddings: Contract[]
-      marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
     cache: 'public, max-age=3600, stale-while-revalidate=10',
+  },
+  'get-related-markets-by-group': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=3600, stale-while-revalidate=10',
+    returns: {} as {
+      groupContracts: Contract[]
+    },
+    props: z
+      .object({
+        contractId: z.string(),
+        limit: z.coerce.number().gte(0).lte(100),
+        offset: z.coerce.number().gte(0),
+      })
+      .strict(),
   },
   'unlist-and-cancel-user-contracts': {
     method: 'POST',
@@ -1017,13 +1113,7 @@ export const API = (_apiTypeCheck = {
       status: 'success'
     },
   },
-  'request-signup-bonus': {
-    method: 'GET',
-    visibility: 'undocumented',
-    authed: true,
-    returns: {} as { bonus: number },
-    props: z.object({}),
-  },
+
   'get-likes-and-ships': {
     method: 'GET',
     visibility: 'public',
@@ -1278,9 +1368,9 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: z.object({
-      channelId: z.coerce.number(),
+      channelIds: z.array(z.coerce.number()),
     }),
-    returns: {} as { created_time: string },
+    returns: [] as [number, string][],
   },
   'set-channel-seen-time': {
     method: 'POST',
@@ -1325,6 +1415,7 @@ export const API = (_apiTypeCheck = {
     returns: [] as Notification[],
     props: z
       .object({
+        after: z.coerce.number().optional(),
         limit: z.coerce.number().gte(0).lte(1000).default(100),
       })
       .strict(),

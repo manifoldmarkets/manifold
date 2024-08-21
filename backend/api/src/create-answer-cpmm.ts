@@ -15,11 +15,14 @@ import { isAdminId } from 'common/envs/constants'
 import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
-import { addUserToContractFollowers } from 'shared/follow-market'
 import { getContractSupabase, getUser, log } from 'shared/utils'
 import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
-import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
 import { incrementBalance } from 'shared/supabase/users'
 import {
   bulkInsertBets,
@@ -32,6 +35,7 @@ import { insertLiquidity } from 'shared/supabase/liquidity'
 import {
   getAnswersForContract,
   insertAnswer,
+  updateAnswer,
   updateAnswers,
 } from 'shared/supabase/answers'
 import { getTierFromLiquidity } from 'common/tier'
@@ -39,6 +43,7 @@ import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { runShortTrans } from 'shared/short-transaction'
 import { LimitBet } from 'common/bet'
+import { followContractInternal } from 'api/follow-contract'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -198,7 +203,8 @@ export const createAnswerCpmmMain = async (
       text,
       contract
     )
-    await addUserToContractFollowers(contractId, creatorId)
+    const pg = createSupabaseDirectClient()
+    await followContractInternal(pg, contractId, true, creatorId)
   }
   return { result: { newAnswerId: newAnswer.id }, continue: continuation }
 }
@@ -318,12 +324,6 @@ async function createAnswerAndSumAnswersToOne(
     ),
   })
 
-  const answerUpdates: (Partial<Answer> & { id: string })[] = []
-  answerUpdates.push({
-    id: otherAnswer.id,
-    ...updatedOtherAnswerProps,
-  })
-
   const poolsByAnswer = Object.fromEntries(
     betResults.map((r) => [
       r.answer.id,
@@ -346,6 +346,7 @@ async function createAnswerAndSumAnswersToOne(
     extraMana
   )
 
+  const answerUpdates: Pick<Answer, 'id' | 'poolNo' | 'poolYes' | 'prob'>[] = []
   const allOrdersToCancel: LimitBet[] = []
   for (const result of betResults) {
     const { answer, bet, makers, ordersToCancel } = result
@@ -362,12 +363,6 @@ async function createAnswerAndSumAnswersToOne(
     const pool = newPoolsByAnswer[answer.id]
     const { YES: poolYes, NO: poolNo } = pool
     const prob = getCpmmProbability(pool, 0.5)
-    log('Updating answer ', {
-      answerText: answer.text,
-      poolYes,
-      poolNo,
-      prob,
-    })
     answerUpdates.push({
       id: answer.id,
       poolYes,
@@ -379,7 +374,14 @@ async function createAnswerAndSumAnswersToOne(
     allOrdersToCancel.push(...ordersToCancel)
   }
 
+  log('inserting new answer')
   await insertAnswer(pgTrans, newAnswer)
+  log('updating index and liquidity of Other')
+  await updateAnswer(pgTrans, otherAnswer.id, updatedOtherAnswerProps)
+
+  for (const answer of answerUpdates) {
+    log('Updating answer ', answer)
+  }
   await updateAnswers(pgTrans, contract.id, answerUpdates)
 
   allOrdersToCancel.push(...unfilledBetsOnOther)
@@ -432,7 +434,6 @@ async function convertOtherAnswerShares(
         createdTime: now,
         fees: noFees,
         isRedemption: true,
-        visibility: bets[0].visibility,
         isApi: false,
       }
       await insertBet(freeYesSharesBet, pgTrans)
@@ -465,7 +466,6 @@ async function convertOtherAnswerShares(
         createdTime: now,
         fees: noFees,
         isRedemption: true,
-        visibility: bets[0].visibility,
         isApi: false,
       }
       newBets.push(convertNoSharesBet)
@@ -491,7 +491,6 @@ async function convertOtherAnswerShares(
           createdTime: now,
           fees: noFees,
           isRedemption: true,
-          visibility: bets[0].visibility,
           isApi: false,
         }
         newBets.push(gainYesSharesBet)

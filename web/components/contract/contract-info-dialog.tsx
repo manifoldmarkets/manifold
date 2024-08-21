@@ -427,7 +427,7 @@ export const Stats = (props: {
   )
 }
 
-const CheckOrSwitch = (props: {
+export const CheckOrSwitch = (props: {
   canToggle: boolean
   disabled?: boolean
   on: boolean
@@ -474,7 +474,6 @@ export function ContractInfoDialog(props: {
           <Row className="my-2 flex-wrap gap-2">
             {!isCreator && <BoostButton contract={contract} />}
             <DuplicateContractButton contract={contract} />
-
             <ContractHistoryButton contract={contract} />
             <ShareQRButton contract={contract} />
             <ShareIRLButton contract={contract} />

@@ -1440,7 +1440,7 @@ function ReferralProgramNotification(props: {
       <span>
         Refer friends and get{' '}
         <CoinNumber
-          isSpice
+          coinType="spice"
           amount={REFERRAL_AMOUNT}
           style={{
             color: SPICE_COLOR,

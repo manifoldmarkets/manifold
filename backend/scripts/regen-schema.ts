@@ -55,6 +55,7 @@ async function getTableInfo(pg: SupabaseDirectClient, tableName: string) {
       polname AS policy_name,
       pg_get_expr(polqual, polrelid) AS expression,
       pg_get_expr(polwithcheck, polrelid) AS with_check,
+      (select r.rolname from unnest(polroles) u join pg_roles r on r.oid = u.u) AS role,
       CASE
         WHEN polcmd = '*' THEN 'ALL'
         WHEN polcmd = 'r' THEN 'SELECT'
@@ -106,7 +107,7 @@ async function getFunctions(pg: SupabaseDirectClient) {
     WHERE
       pronamespace = 'public'::regnamespace
       and prokind = 'f'
-    ORDER BY proname asc`
+    ORDER BY proname asc, pronargs asc, oid desc`
   )
   return rows.filter((f) => !f.definition.includes(`'$libdir/`))
 }
@@ -221,7 +222,9 @@ async function generateSQLFiles(pg: SupabaseDirectClient) {
     }
     for (const policy of tableInfo.policies) {
       content += `DROP POLICY IF EXISTS "${policy.policy_name}" ON ${tableInfo.tableName};\n`
-      content += `CREATE POLICY "${policy.policy_name}" ON ${tableInfo.tableName} FOR ${policy.command} `
+      content += `CREATE POLICY "${policy.policy_name}" ON ${tableInfo.tableName} `
+      if (policy.command) content += `FOR ${policy.command} `
+      if (policy.role) content += `TO ${policy.role} `
       if (policy.expression) content += `USING (${policy.expression}) `
       if (policy.with_check) content += `WITH CHECK (${policy.with_check})`
       content += ';\n\n'

@@ -4,6 +4,7 @@ import { Contract, Visibility } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
 import { Answer } from 'common/answer'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 export function broadcastUpdatedPrivateUser(userId: string) {
   // don't send private user info because it's private and anyone can listen
@@ -99,4 +100,15 @@ export function broadcastUpdatedAnswers(
   const topics = [`contract/${contractId}/updated-answers`]
   // TODO: broadcast to global
   broadcastMulti(topics, payload)
+}
+
+export function broadcastTVScheduleUpdate() {
+  broadcast('tv_schedule', {})
+}
+
+export function broadcastNewChartAnnotation(
+  contractId: string,
+  annotation: ChartAnnotation
+) {
+  broadcast(`contract/${contractId}/chart-annotation`, { annotation })
 }

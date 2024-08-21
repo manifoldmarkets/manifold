@@ -22,7 +22,7 @@ export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
 }
 
 const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
-  const { contractId, answerIds } = props
+  const { contractId, answerIds, deterministic } = props
   const { uid } = auth
   const isApi = auth.creds.kind === 'key'
 
@@ -45,8 +45,6 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     const answers = await getAnswersForContract(pgTrans, contractId)
     const answersToSell = answers.filter((a) => answerIds.includes(a.id))
     if (!answersToSell) throw new APIError(404, 'Answers not found')
-    if ('resolution' in answersToSell && answersToSell.resolution)
-      throw new APIError(403, 'Answer is resolved and cannot be bet on')
 
     const unfilledBetsAndBalances = await Promise.all(
       answersToSell.map((answer) =>
@@ -103,7 +101,8 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
           user,
           isApi,
           undefined,
-          betGroupId
+          betGroupId,
+          deterministic
         )
       )
     )

@@ -16,7 +16,6 @@ import { Input } from 'web/components/widgets/input'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { Contract } from 'common/contract'
 import { User } from 'web/lib/firebase/users'
-import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import Link from 'next/link'
@@ -47,6 +46,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import DropdownMenu from '../comments/dropdown-menu'
 import { BsThreeDotsVertical } from 'react-icons/bs'
 import { MODAL_CLASS, Modal } from '../layout/modal'
+import { unauthedApi } from 'common/util/api'
 
 type BetSort =
   | 'newest'
@@ -62,8 +62,8 @@ type BetSort =
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
-export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
-  const { user, isPolitics } = props
+export function UserBetsTable(props: { user: User }) {
+  const { user } = props
 
   const signedInUser = useUser()
   const isAuth = useIsAuthorized()
@@ -89,7 +89,6 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
       userId: user.id,
       offset: 0,
       limit: 5000,
-      isPolitics,
     }).then((res) => {
       const { data, error } = res
       if (error) {
@@ -110,15 +109,16 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
   }, [getMetrics, user.id, isAuth])
 
   useEffect(() => {
-    getOpenLimitOrdersWithContracts(user.id, 5000, isPolitics).then(
-      (betsWithContracts) => {
-        const { contracts, betsByContract } = betsWithContracts
-        setOpenLimitBetsByContract(betsByContract)
-        setInitialContracts((c) =>
-          uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
-        )
-      }
-    )
+    unauthedApi('get-user-limit-orders-with-contracts', {
+      userId: user.id,
+      count: 5000,
+    }).then((betsWithContracts) => {
+      const { contracts, betsByContract } = betsWithContracts
+      setOpenLimitBetsByContract(betsByContract)
+      setInitialContracts((c) =>
+        uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
+      )
+    })
   }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
   const [filter, setFilter] = usePersistentLocalState<BetFilter>(
@@ -608,7 +608,7 @@ function BetsTable(props: {
       <Col className={'w-full'}>
         <div
           className={clsx(
-            'grid-cols-15 bg-canvas-50 relative sticky z-10 grid w-full py-2 pr-1',
+            'grid-cols-15 bg-canvas-50 sticky z-10 grid w-full py-2 pr-1',
             isMobile ? 'top-12' : 'top-0' // Sets it below sticky user profile header on mobile
           )}
         >

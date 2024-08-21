@@ -25,6 +25,7 @@ export const addOrRemoveTopicFromContract: APIHandler<
   const { contractId, groupId, remove } = props
 
   const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
   const { data: membership } = await db
     .from('group_members')
@@ -46,9 +47,14 @@ export const addOrRemoveTopicFromContract: APIHandler<
   const group = groupQuery.data
   const contract = convertContract(contractQuery.data)
 
+  const { count: existingCount } = await db
+    .from('group_contracts')
+    .select('*', { count: 'exact', head: true })
+    .eq('contract_id', contractId)
+
   if (
     !remove &&
-    (contract.groupLinks?.length ?? 0) > MAX_GROUPS_PER_MARKET &&
+    (existingCount ?? 0) > MAX_GROUPS_PER_MARKET &&
     !isModId(auth.uid) &&
     !isAdminId(auth.uid) &&
     ![UNSUBSIDIZED_GROUP_ID, UNRANKED_GROUP_ID].includes(groupId)
@@ -71,9 +77,9 @@ export const addOrRemoveTopicFromContract: APIHandler<
   }
 
   if (remove) {
-    await removeGroupFromContract(contract, group, auth.uid)
+    await removeGroupFromContract(pg, contract, group, auth.uid)
   } else {
-    await addGroupToContract(contract, group, auth.uid)
+    await addGroupToContract(pg, contract, group, auth.uid)
   }
 
   const continuation = async () => {

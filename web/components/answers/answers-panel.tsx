@@ -4,9 +4,7 @@ import {
   ChevronDownIcon,
   DotsVerticalIcon,
   PencilIcon,
-  PlusCircleIcon,
   ScaleIcon,
-  SearchIcon,
 } from '@heroicons/react/outline'
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -20,9 +18,9 @@ import {
 import { Bet, LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import {
+  CPMMMultiContract,
   Contract,
   MultiContract,
-  SORTS,
   contractPath,
   tradingAllowed,
 } from 'common/contract'
@@ -32,7 +30,7 @@ import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
 import { groupBy, sumBy } from 'lodash'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CirclePicker } from 'react-color'
 import toast from 'react-hot-toast'
 import { Button, buttonClass } from 'web/components/buttons/button'
@@ -50,10 +48,8 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUnfilledBets } from 'web/hooks/use-bets'
-import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -67,11 +63,9 @@ import {
 import { getAnswerColor } from '../charts/contract/choice'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
-import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { UserHovercard } from '../user/user-hovercard'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { Pagination } from '../widgets/pagination'
 import {
   AnswerBar,
   AnswerPosition,
@@ -80,27 +74,17 @@ import {
   CreatorAndAnswerLabel,
 } from './answer-components'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
+import { debounce } from 'lodash'
+import { RelativeTimestamp } from '../relative-timestamp'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
+const MAX_DEFAULT_ANSWERS = 20
+const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 
-const ANSWERS_PER_PAGE = 10
-
-function getAnswersToShow(
-  query: string,
-  page: number,
-  sortedAnswers: Answer[],
-  searchedAnswers: Answer[]
-) {
-  return query
-    ? searchedAnswers.slice(
-        page * ANSWERS_PER_PAGE,
-        (page + 1) * ANSWERS_PER_PAGE
-      )
-    : sortedAnswers.slice(
-        page * ANSWERS_PER_PAGE,
-        (page + 1) * ANSWERS_PER_PAGE
-      )
-}
+// the offset in which the top of answers is visible
+const SCROLL_OFFSET = 100
+// debounce when typing a query to ensure smoother autoscrolling
+const DEBOUNCE_DELAY = 100
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
@@ -116,6 +100,7 @@ export function AnswersPanel(props: {
   showSetDefaultSort?: boolean
   setDefaultAnswerIdsToGraph?: (ids: string[]) => void
   defaultAddAnswer?: boolean
+  floatingSearchClassName?: string
 }) {
   const {
     contract,
@@ -129,7 +114,7 @@ export function AnswersPanel(props: {
     setQuery,
     showSetDefaultSort,
     setDefaultAnswerIdsToGraph,
-    defaultAddAnswer,
+    floatingSearchClassName,
   } = props
   const { outcomeType, resolutions } = contract
   const addAnswersMode =
@@ -137,21 +122,18 @@ export function AnswersPanel(props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
-  const [page, setPage] = useState(0)
-
-  useEffect(() => {
-    setPage(0)
-  }, [query, sort])
-
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
-  const answers = contract.answers
-    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({
-      ...a,
-      prob: getAnswerProbability(contract, a.id),
-    }))
-
+  const answers = !isMultipleChoice
+    ? []
+    : contract.answers.map((a) => ({
+        ...a,
+        prob: getAnswerProbability(contract, a.id),
+      }))
+  const [showAll, setShowAll] = useState(
+    (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
+      answers.length <= 5
+  )
   const sortedAnswers = useMemo(
     () => sortAnswers(contract, answers, sort),
     [answers, resolutions, shouldAnswersSumToOne, sort]
@@ -165,25 +147,38 @@ export function AnswersPanel(props: {
     )
   }, [sortedAnswers, query])
 
-  const answersToShow = getAnswersToShow(
-    query,
-    page,
-    sortedAnswers,
-    searchedAnswers
-  )
+  const allResolved =
+    (shouldAnswersSumToOne && !!contract.resolutions) ||
+    answers.every((a) => a.resolution)
 
-  const selectedAnswers = answers.filter((a) =>
-    selectedAnswerIds.includes(a.id)
-  )
+  const answersToShow = query
+    ? searchedAnswers
+    : showAll
+    ? sortedAnswers
+    : sortedAnswers
+        .filter((answer) => {
+          if (selectedAnswerIds.includes(answer.id)) {
+            return true
+          }
 
-  const [highlightedAnswer, setHighlightedAnswer] = useState<
-    string | undefined
-  >(undefined)
+          if (allResolved) return true
+          if (sort === 'prob-asc') {
+            return answer.prob < 0.99
+          } else if (sort === 'prob-desc') {
+            return answer.prob > 0.01
+          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
+            return !answer.resolution
+          }
+          return true
+        })
+        .slice(0, MAX_DEFAULT_ANSWERS)
 
-  useEffectCheckEquality(() => {
+  useEffect(() => {
     if (!selectedAnswerIds.length)
-      setDefaultAnswerIdsToGraph?.(answersToShow.map((a) => a.id))
-  }, [answersToShow])
+      setDefaultAnswerIdsToGraph?.(
+        answersToShow.map((a) => a.id).slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
+      )
+  }, [selectedAnswerIds.length, answersToShow.length])
 
   const user = useUser()
 
@@ -197,6 +192,8 @@ export function AnswersPanel(props: {
     enabled: isAdvancedTrader && shouldShowLimitOrderChart,
   })
 
+  const moreCount = answers.length - answersToShow.length
+  // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
   const setDefaultSort = async () => {
@@ -207,16 +204,8 @@ export function AnswersPanel(props: {
     })
   }
 
-  const [isSearchOpen, setIsSearchOpen] = usePersistentInMemoryState(
-    defaultAddAnswer ?? false,
-    `answers-panel-search-open-${contract.id}`
-  )
-  const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
-
   const privateUser = usePrivateUser()
-  const unresolvedAnswers = answers.filter((a) =>
-    'resolution' in a ? !a.resolution : true
-  )
+  const unresolvedAnswers = answers.filter((a) => !a.resolution)
   const canAddAnswer = Boolean(
     user &&
       !user.isBannedFromPosting &&
@@ -229,6 +218,33 @@ export function AnswersPanel(props: {
       contract.outcomeType !== 'NUMBER'
   )
 
+  const answersContainerRef = useRef<HTMLDivElement>(null)
+  const previousQueryRef = useRef(query)
+
+  const scrollToAnswers = useCallback(
+    debounce(() => {
+      if (answersContainerRef.current) {
+        const rect = answersContainerRef.current.getBoundingClientRect()
+        if (rect.top < SCROLL_OFFSET) {
+          window.scrollTo({
+            top: window.scrollY + rect.top - SCROLL_OFFSET,
+            behavior: 'smooth',
+          })
+        }
+      }
+    }, DEBOUNCE_DELAY),
+    []
+  )
+
+  useEffect(() => {
+    if (query === '' && previousQueryRef.current === '') {
+      // Don't scroll if the query is empty and there was no previous query
+      return
+    }
+    scrollToAnswers()
+    previousQueryRef.current = query
+  }, [query, scrollToAnswers])
+
   return (
     <Col>
       <SearchCreateAnswerPanel
@@ -236,127 +252,74 @@ export function AnswersPanel(props: {
         canAddAnswer={canAddAnswer}
         text={query}
         setText={setQuery}
-        isSearchOpen={isSearchOpen}
-        setIsSearchOpen={setIsSearchOpen}
-        onCreateAnswer={(newAnswer: string) => {
-          setSort('new')
-        }}
-      >
-        <Row className={'mb-1 items-center gap-4'}>
-          <DropdownMenu
-            closeOnClick
-            items={generateFilterDropdownItems(SORTS, setSort)}
-            icon={
-              <Row className="text-ink-500 items-center gap-0.5">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  Sort: {SORTS.find((s) => s.value === sort)?.label}
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Row>
-            }
-          />
-          {showSetDefaultSort && contract.sort !== sort && (
-            <Button color="gray-outline" size="2xs" onClick={setDefaultSort}>
-              Set default
-            </Button>
-          )}
-          {!isSearchOpen && (
-            <button
-              onClick={toggleSearch}
-              className="text-ink-500 hover:text-ink-300 flex items-center gap-0.5 text-sm font-medium"
-            >
-              <SearchIcon className="h-4 w-4" /> Search
-            </button>
-          )}
-          {!isSearchOpen && canAddAnswer && (
-            <button
-              onClick={toggleSearch}
-              className="text-ink-500 hover:text-ink-300 flex items-center gap-0.5 text-sm font-medium"
-            >
-              <PlusCircleIcon className="h-4 w-4" /> Add answer
-            </button>
-          )}
-        </Row>
-      </SearchCreateAnswerPanel>
-
-      {showNoAnswers ? (
-        <div className="text-ink-500 p-4 text-center">No answers yet</div>
-      ) : (
-        <Col className="mx-[2px] mt-1 gap-2">
-          {/* selected answers that are not in answersToShow */}
-          {selectedAnswers
-            .filter(
-              (answer) => !answersToShow.map((a) => a.id).includes(answer.id)
-            )
-            .map((selectedAnswer) => (
+        className={clsx(
+          'bg-canvas-0 sticky z-40',
+          floatingSearchClassName ?? 'top-[48px]'
+        )}
+        sort={sort}
+        setSort={setSort}
+        showDefaultSort={showSetDefaultSort && contract.sort !== sort}
+        setDefaultSort={setDefaultSort}
+      />
+      <Col ref={answersContainerRef}>
+        {showNoAnswers ? (
+          <div className="text-ink-500 p-4 pt-20 text-center">
+            No answers yet
+          </div>
+        ) : (
+          <Col className="mx-[2px] mt-1 gap-2">
+            {answersToShow.map((answer) => (
               <Answer
-                className={clsx('border-primary-500 rounded border')}
-                key={selectedAnswer.id}
+                className={
+                  selectedAnswerIds.length &&
+                  !selectedAnswerIds.includes(answer.id)
+                    ? 'opacity-70'
+                    : ''
+                }
+                key={answer.id}
                 user={user}
-                answer={selectedAnswer}
+                answer={answer}
                 contract={contract}
                 onCommentClick={
                   onAnswerCommentClick
-                    ? () => onAnswerCommentClick(selectedAnswer)
+                    ? () => onAnswerCommentClick(answer)
                     : undefined
                 }
                 onHover={(hovering) =>
-                  onAnswerHover?.(hovering ? selectedAnswer : undefined)
+                  onAnswerHover?.(hovering ? answer : undefined)
                 }
                 onClick={() => {
-                  onAnswerClick?.(selectedAnswer)
+                  onAnswerClick?.(answer)
                 }}
                 unfilledBets={unfilledBets?.filter(
-                  (b) => b.answerId === selectedAnswer.id
+                  (b) => b.answerId === answer.id
                 )}
-                color={getAnswerColor(selectedAnswer)}
-                userBets={userBetsByAnswer[selectedAnswer.id]}
-                shouldShowLimitOrderChart={isAdvancedTrader}
+                color={getAnswerColor(answer)}
+                userBets={userBetsByAnswer[answer.id]}
+                shouldShowLimitOrderChart={
+                  isAdvancedTrader && shouldShowLimitOrderChart
+                }
               />
             ))}
 
-          {answersToShow.map((answer) => (
-            <Answer
-              className={clsx(
-                selectedAnswerIds.length > 0
-                  ? !selectedAnswerIds.includes(answer.id)
-                    ? 'opacity-70'
-                    : 'border-primary-500 rounded border'
-                  : ''
-              )}
-              key={answer.id}
-              user={user}
-              answer={answer}
-              contract={contract}
-              onCommentClick={
-                onAnswerCommentClick
-                  ? () => onAnswerCommentClick(answer)
-                  : undefined
-              }
-              onHover={(hovering) =>
-                onAnswerHover?.(hovering ? answer : undefined)
-              }
-              onClick={() => {
-                onAnswerClick?.(answer)
-              }}
-              unfilledBets={unfilledBets?.filter(
-                (b) => b.answerId === answer.id
-              )}
-              color={getAnswerColor(answer)}
-              userBets={userBetsByAnswer[answer.id]}
-              shouldShowLimitOrderChart={
-                isAdvancedTrader && shouldShowLimitOrderChart
-              }
-            />
-          ))}
-          <Pagination
-            page={page}
-            pageSize={ANSWERS_PER_PAGE}
-            totalItems={query ? searchedAnswers.length : sortedAnswers.length}
-            setPage={setPage}
-          />
-        </Col>
-      )}
+            {moreCount > 0 &&
+              (query ? (
+                <div className="text-ink-600 pb-4 text-center">
+                  {moreCount} answers hidden by search
+                </div>
+              ) : (
+                <Button
+                  color="gray-white"
+                  onClick={() => setShowAll(true)}
+                  size="xs"
+                >
+                  <ChevronDownIcon className="mr-1 h-4 w-4" />
+                  Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
+                </Button>
+              ))}
+          </Col>
+        )}
+      </Col>
       {isAdvancedTrader && (
         <Row className="mt-2 items-center gap-2 self-end">
           <input
@@ -515,23 +478,20 @@ export const EditAnswerModal = (props: {
 
 // just the bars
 export function SimpleAnswerBars(props: {
-  contract: MultiContract
+  contract: CPMMMultiContract
   maxAnswers?: number
   barColor?: string
   feedReason?: string
 }) {
   const { contract, maxAnswers = Infinity, barColor, feedReason } = props
-  const { outcomeType } = contract
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
   const user = useUser()
-  const answers = contract.answers
-    .filter(
-      (a) =>
-        outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
-    )
-    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+  const answers = contract.answers.map((a) => ({
+    ...a,
+    prob: getAnswerProbability(contract, a.id),
+  }))
 
   const displayedAnswers = sortAnswers(contract, answers).slice(0, maxAnswers)
 
@@ -617,8 +577,6 @@ export function Answer(props: {
   const prob = getAnswerProbability(contract, answer.id)
   const [editingAnswer, setEditingAnswer] = useState<Answer>()
 
-  const isOther = 'isOther' in answer && answer.isOther
-
   const { resolution, resolutions } = contract
   const resolvedProb =
     resolution == undefined
@@ -661,9 +619,37 @@ export function Answer(props: {
   const [limitBetModalOpen, setLimitBetModalOpen] = useState(false)
 
   const hasLimitOrders = unfilledBets?.length && limitOrderVolume
+  const answerCreator = useDisplayUserByIdOrAnswer(answer)
+  const answerCreatorIsNotContractCreator =
+    !!answerCreator && answerCreator.username !== contract.creatorUsername
 
   const dropdownItems = [
-    ...(canEdit && 'poolYes' in answer && !answer.isOther
+    {
+      name: 'author info',
+      nonButtonContent: (
+        <div className="text-ink-400 select-none whitespace-pre-wrap px-4 py-1 text-xs">
+          <span>
+            {answerCreatorIsNotContractCreator ? (
+              <span>
+                <Link
+                  className="hover:text-primary-600 hover:underline"
+                  href={`/${answerCreator.username}`}
+                >
+                  {answerCreator.name}
+                </Link>
+                {' •'}
+              </span>
+            ) : (
+              <span>Created</span>
+            )}
+            <span>
+              <RelativeTimestamp time={answer.createdTime} />
+            </span>
+          </span>
+        </div>
+      ),
+    },
+    ...(canEdit && answer.poolYes != undefined && !answer.isOther
       ? [
           {
             icon: <PencilIcon className=" h-4 w-4" />,
@@ -711,20 +697,25 @@ export function Answer(props: {
         resolvedProb={resolvedProb}
         onHover={onHover}
         onClick={onClick}
-        className={clsx('group cursor-pointer', className)}
+        className={clsx(
+          'group cursor-pointer',
+          answer.isOther ? 'z-30' : 'z-20',
+          className
+        )}
         barColor={barColor}
         label={
           <Row className={'items-center gap-2'}>
-            {contract.addAnswersMode == 'ANYONE' && (
+            {answerCreatorIsNotContractCreator && (
               <AnswerAvatar answer={answer} />
             )}
             <AnswerStatus contract={contract} answer={answer} />
-            {isOther ? (
+            {answer.isOther ? (
               <span className={textColorClass}>
                 Other{' '}
                 <InfoTooltip
                   className="!text-ink-600 dark:!text-ink-700"
                   text={OTHER_TOOLTIP_TEXT}
+                  tooltipParams={{ placement: 'bottom' }}
                 />
               </span>
             ) : (
@@ -778,7 +769,7 @@ export function Answer(props: {
             {showSellButton && (
               <AnswerPosition
                 contract={contract}
-                answer={answer as Answer}
+                answer={answer}
                 userBets={userBets}
                 className="self-end"
                 user={user}
@@ -865,7 +856,6 @@ export function canEditAnswer(
 ) {
   return (
     user &&
-    'isOther' in answer &&
     !answer.isOther &&
     (isAdminId(user.id) ||
       isModId(user.id) ||

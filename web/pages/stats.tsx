@@ -18,7 +18,8 @@ import { BonusSummary } from 'web/components/stats/bonus-summary'
 import { ManaSupplySummary } from 'web/components/stats/mana-summary'
 import { Row } from 'web/components/layout/row'
 import { average } from 'common/util/math'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
+import { Button } from 'web/components/buttons/button'
 
 export const getStaticProps = async () => {
   try {
@@ -53,6 +54,7 @@ export default function Analytics(props: {
   toBankSummary: rowfor<'txn_summary_stats'>[]
 }) {
   const { stats, manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+
   if (!stats) {
     return null
   }
@@ -79,15 +81,16 @@ export function CustomAnalytics(props: {
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
 }) {
-  const { stats, manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+  const { manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+  const [stats, setStats] = useState(props.stats)
 
   const dataFor = useCallback(dataForStats(stats), [stats])
 
-  const fracDaysActiveD1ToD3 = dataFor('active_d1_to_d3').slice(0, -3)
+  const fracDaysActiveD1ToD3 = dataFor('active_d1_to_d3')
   const fracDaysActiveD1ToD3Avg7d = rollingAvg(
     dataFor('active_d1_to_d3'),
     7
-  ).slice(7, -3)
+  ).slice(7)
 
   const currentSupply = manaSupplyOverTime[manaSupplyOverTime.length - 1]
   const yesterdaySupply = manaSupplyOverTime[manaSupplyOverTime.length - 2]
@@ -110,15 +113,12 @@ export function CustomAnalytics(props: {
   const dailyDividedByWeekly = stats
     .filter((row) => row.dau && row.wau)
     .map((row) => ({ x: row.start_date, y: row.dau! / row.wau! }))
-    .slice(7)
   const dailyDividedByMonthly = stats
     .filter((row) => row.dau && row.mau)
     .map((row) => ({ x: row.start_date, y: row.dau! / row.mau! }))
-    .slice(30)
   const weeklyDividedByMonthly = stats
     .filter((row) => row.wau && row.mau)
     .map((row) => ({ x: row.start_date, y: row.wau! / row.mau! }))
-    .slice(30)
 
   const current = stats[stats.length - 1]
   const avgDAUlastWeek = average(
@@ -133,7 +133,10 @@ export function CustomAnalytics(props: {
 
   return (
     <Col className="px-4 sm:pl-6 sm:pr-16">
-      <Title>Active users</Title>
+      <div className="flex items-start justify-between">
+        <Title>Active users</Title>
+        <Button onClick={() => getStats().then(setStats)}>Reload All</Button>
+      </div>
       <p className="text-ink-500">
         An active user is a user who has traded in, commented on, or created a
         question.
@@ -272,21 +275,19 @@ export function CustomAnalytics(props: {
         tabs={[
           {
             title: 'D1',
-            content: <DailyChart values={dataFor('d1').slice(1)} pct />,
+            content: <DailyChart values={dataFor('d1')} pct />,
           },
           {
             title: 'D1 (7d avg)',
-            content: (
-              <DailyChart values={rollingAvg(dataFor('d1'), 7).slice(7)} pct />
-            ),
+            content: <DailyChart values={rollingAvg(dataFor('d1'), 7)} pct />,
           },
           {
             title: 'W1',
-            content: <DailyChart values={dataFor('w1').slice(14)} pct />,
+            content: <DailyChart values={dataFor('w1')} pct />,
           },
           {
             title: 'M1',
-            content: <DailyChart values={dataFor('m1').slice(60)} pct />,
+            content: <DailyChart values={dataFor('m1')} pct />,
           },
         ]}
       />
@@ -302,15 +303,12 @@ export function CustomAnalytics(props: {
         tabs={[
           {
             title: 'ND1',
-            content: <DailyChart values={dataFor('nd1').slice(0, -1)} pct />,
+            content: <DailyChart values={dataFor('nd1')} pct />,
           },
           {
             title: 'ND1 (7d avg)',
             content: (
-              <DailyChart
-                values={rollingAvg(dataFor('nd1'), 7).slice(7, -1)}
-                pct
-              />
+              <DailyChart values={rollingAvg(dataFor('nd1'), 7).slice(7)} pct />
             ),
           },
           {
@@ -363,7 +361,7 @@ export function CustomAnalytics(props: {
         tabs={[
           {
             title: 'Daily',
-            content: <DailyChart values={dataFor('activation').slice(1)} pct />,
+            content: <DailyChart values={dataFor('activation')} pct />,
           },
           {
             title: 'Daily (7d avg)',
@@ -394,7 +392,7 @@ export function CustomAnalytics(props: {
         tabs={[
           {
             title: 'Daily',
-            content: <DailyChart values={dataFor('d1_bet_average').slice(1)} />,
+            content: <DailyChart values={dataFor('d1_bet_average')} />,
           },
           {
             title: 'Daily (3d average)',

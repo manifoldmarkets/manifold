@@ -5,7 +5,7 @@ import { Bet } from 'common/bet'
 import { HistoryPoint, MultiPoints } from 'common/chart'
 import {
   BinaryContract,
-  CPMMStonkContract,
+  StonkContract,
   Contract,
   MultiContract,
   PseudoNumericContract,
@@ -782,7 +782,7 @@ const PseudoNumericOverview = (props: {
 }
 
 const StonkOverview = (props: {
-  contract: CPMMStonkContract
+  contract: StonkContract
   betPoints: HistoryPoint<Partial<Bet>>[]
 }) => {
   const { contract, betPoints } = props

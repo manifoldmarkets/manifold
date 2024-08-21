@@ -120,8 +120,8 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
   from users
   where
     data->>'referredByUserId' = $1
-    and (users.data->>'createdTime')::bigint > $2
-    and (users.data->>'createdTime')::bigint < $3
+    and created_time > millis_to_ts($2)
+    and created_time < millis_to_ts($3)
   `,
     [userId, quarterStart, quarterEnd]
   )

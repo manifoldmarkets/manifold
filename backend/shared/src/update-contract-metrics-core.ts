@@ -11,6 +11,7 @@ import { chunk, groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { bulkUpdateData } from './supabase/utils'
 import { convertAnswer } from 'common/supabase/contracts'
+import { bulkUpdateAnswers } from './supabase/answers'
 
 export async function updateContractMetricsCore() {
   const pg = createSupabaseDirectClient()
@@ -148,7 +149,7 @@ export async function updateContractMetricsCore() {
     log(`Finished ${i}/${allContracts.length} contracts.`)
 
     log('Writing answer updates...')
-    await bulkUpdateData(pg, 'answers', answerUpdates)
+    await bulkUpdateAnswers(pg, answerUpdates)
 
     log('Done.')
   }
@@ -162,8 +163,8 @@ const getUnfilledLimitOrders = async (
     `select contract_id, data
     from contract_bets
     where (data->'limitProb')::numeric > 0
-    and not (data->'isFilled')::boolean
-    and not (data->'isCancelled')::boolean
+    and not contract_bets.is_filled
+    and not contract_bets.is_cancelled
     and contract_id = any($1)`,
     [contractIds]
   )

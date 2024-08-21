@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { LimitBet } from 'common/bet'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   getBinaryMCProb,
@@ -43,7 +43,7 @@ import { Tooltip } from '../widgets/tooltip'
 
 export function YourOrders(props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -113,7 +113,7 @@ export function YourOrders(props: {
 export function OrderTable(props: {
   limitBets: LimitBet[]
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -195,7 +195,7 @@ export function OrderTable(props: {
 
 function OrderRow(props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -299,7 +299,7 @@ function OrderRow(props: {
 export function OrderBookButton(props: {
   limitBets: LimitBet[]
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -340,7 +340,7 @@ export function getOrderBookButtonLabel(limitBets: LimitBet[]) {
 export function OrderBookPanel(props: {
   limitBets: LimitBet[]
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract

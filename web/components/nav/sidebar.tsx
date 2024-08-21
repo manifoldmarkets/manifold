@@ -37,7 +37,6 @@ import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { DAY_MS } from 'common/util/time'
 import { LiveTVIcon } from '../tv-icon'
-import { useTVisActive } from '../tv/tv-schedule'
 import { PiRobotBold, PiTelevisionSimpleBold } from 'react-icons/pi'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { ReportsIcon } from '../reports-icon'
@@ -62,7 +61,9 @@ export default function Sidebar(props: {
   }
 
   const isNewUser = !!user && user.createdTime > Date.now() - DAY_MS
-  const isLiveTV = useTVisActive()
+
+  // temp fix
+  const isLiveTV = false
 
   const navOptions = isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
@@ -152,11 +153,11 @@ const getDesktopNav = (
         href: '/election',
         icon: GiCapitol,
       },
-      // {
-      //   name: 'TV',
-      //   href: '/tv',
-      //   icon: PiTelevisionSimpleBold,
-      // },
+      {
+        name: 'TV',
+        href: '/tv',
+        icon: PiTelevisionSimpleBold,
+      },
       {
         name: 'Messages',
         href: '/messages',

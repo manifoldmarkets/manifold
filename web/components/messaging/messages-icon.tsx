@@ -4,6 +4,7 @@ import { PrivateUser } from 'common/user'
 import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
 import { BiEnvelope, BiSolidEnvelope } from 'react-icons/bi'
 import clsx from 'clsx'
+import { usePathname } from 'next/navigation'
 
 export function UnseenMessagesBubble(props: { className?: string }) {
   const { className } = props
@@ -41,7 +42,6 @@ export function PrivateMessagesIcon(props: {
   )
 }
 
-// Note: must be authorized to use this component
 function InternalUnseenMessagesBubble(props: {
   privateUser: PrivateUser
   bubbleClassName?: string
@@ -49,12 +49,17 @@ function InternalUnseenMessagesBubble(props: {
 }) {
   const { privateUser, className, bubbleClassName } = props
 
-  const unseenMessages = useUnseenPrivateMessageChannels(privateUser.id)
+  const { unseenChannels } = useUnseenPrivateMessageChannels(
+    privateUser.id,
+    false
+  )
+  const pathName = usePathname()
 
   if (
-    unseenMessages.length === 0 ||
+    unseenChannels.length === 0 ||
     !privateUser.notificationPreferences.new_message.includes('browser') ||
-    privateUser.notificationPreferences.opt_out_all.includes('browser')
+    privateUser.notificationPreferences.opt_out_all.includes('browser') ||
+    pathName === '/messages'
   )
     return null
 
@@ -71,7 +76,7 @@ function InternalUnseenMessagesBubble(props: {
           bubbleClassName
         )}
       >
-        {unseenMessages.length}
+        {unseenChannels.length}
       </div>
     </Row>
   )

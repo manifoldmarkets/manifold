@@ -24,44 +24,6 @@ from
   );
 
 create or replace view
-  public_contracts as
-select
-  contracts.id,
-  contracts.data,
-  contracts.slug,
-  contracts.question,
-  contracts.creator_id,
-  contracts.visibility,
-  contracts.mechanism,
-  contracts.outcome_type,
-  contracts.created_time,
-  contracts.close_time,
-  contracts.resolution_time,
-  contracts.resolution_probability,
-  contracts.resolution,
-  contracts.popularity_score,
-  contracts.question_fts,
-  contracts.description_fts,
-  contracts.question_nostop_fts,
-  contracts.importance_score,
-  contracts.deleted,
-  contracts.group_slugs,
-  contracts.last_updated_time,
-  contracts.last_bet_time,
-  contracts.last_comment_time,
-  contracts.is_politics,
-  contracts.freshness_score,
-  contracts.conversion_score,
-  contracts.view_count,
-  contracts.is_spice_payout,
-  contracts.unique_bettor_count,
-  contracts.tier
-from
-  contracts
-where
-  (contracts.visibility = 'public'::text);
-
-create or replace view
   user_league_info as
 select
   leagues.season,

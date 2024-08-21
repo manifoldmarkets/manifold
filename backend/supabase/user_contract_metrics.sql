@@ -28,7 +28,7 @@ drop policy if exists "read for admin" on user_contract_metrics;
 
 create policy "read for admin" on user_contract_metrics for
 select
-  using (true);
+  to service_role using (true);
 
 -- Indexes
 drop index if exists user_contract_metrics_pkey;

@@ -105,7 +105,7 @@ const verifyUserCanUnresolve = async (
     }
 
     const answerResolutionTime = await pg.oneOrNone(
-      `select ts_to_millis(resolution_time)
+      `select ts_to_millis(resolution_time) as resolution_time
          from answers
          where id= $1
          limit 1`,
@@ -204,7 +204,7 @@ const undoResolution = async (
 
   log('reverted txns')
 
-  // old payouts
+  // mana and cash payouts
   const maxManaPayoutStartTime = await pg.oneOrNone(
     `select max((data->'data'->'payoutStartTime')::numeric) as max
       FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
@@ -227,7 +227,8 @@ const undoResolution = async (
   log('Reverting mana txns ' + manaTxns.length)
   log('With max payout start time ' + maxManaPayoutStartTime)
   const balanceUpdates: {
-    balance: number
+    balance?: number
+    cashBalance?: number
     totalDeposits: number
     id: string
   }[] = []
@@ -258,15 +259,11 @@ const undoResolution = async (
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
     // remove resolutionTime and resolverId from all answers in the contract
-    await pg.none(
-      `update answers
-      set data = data - 'resolutionTime' - 'resolverId'
-      where contract_id = $1`,
-      [contractId]
-    )
     const newAnswers = await pg.map(
       `update answers
-      set resolution_time = null
+      set
+        resolution_time = null,
+        resolver_id = null
       where contract_id = $1
       returning *`,
       [contractId],
@@ -276,7 +273,11 @@ const undoResolution = async (
   } else if (answerId) {
     const answer = await pg.one(
       `update answers
-      set data = data - '{resolution,resolutionTime,resolutionProbability,resolverId}'::text[]
+      set
+        resolution = null,
+        resolution_time = null,
+        resolution_probability = null,
+        resolver_id = null
       where id = $1
       returning *`,
       [answerId],
@@ -315,11 +316,11 @@ export function getUndoContractPayoutSpice(txnData: ContractProduceSpiceTxn) {
 export function getUndoOldContractPayout(
   txnData: ContractOldResolutionPayoutTxn
 ) {
-  const { amount, toId, data, fromId, id } = txnData
+  const { amount, toId, data, fromId, id, token } = txnData
   const { deposit } = data ?? {}
 
   const balanceUpdate = {
-    balance: -amount,
+    [token === 'CASH' ? 'cashBalance' : 'balance']: -amount,
     totalDeposits: -(deposit ?? 0),
     id: toId,
   }
@@ -331,7 +332,7 @@ export function getUndoOldContractPayout(
     fromId: toId,
     toType: 'CONTRACT',
     category: 'CONTRACT_UNDO_RESOLUTION_PAYOUT',
-    token: 'M$',
+    token,
     description: `Undo contract resolution payout from contract ${fromId}`,
     data: { revertsTxnId: id },
   }

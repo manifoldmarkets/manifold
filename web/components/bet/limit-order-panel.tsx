@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 import { clamp, sumBy } from 'lodash'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
@@ -8,7 +9,7 @@ import { getProbability } from 'common/calculate'
 import { CpmmState } from 'common/calculate-cpmm'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   getBinaryMCProb,
@@ -44,7 +45,7 @@ import { FeeDisplay } from './fees'
 
 export default function LimitOrderPanel(props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -91,7 +92,7 @@ export default function LimitOrderPanel(props: {
   const [error, setError] = useState<string | undefined>()
   const [inputError, setInputError] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
+  const betDeps = useRef<LimitBet[]>()
   // Expiring orders
   const [addExpiration, setAddExpiration] = usePersistentInMemoryState(
     false,
@@ -125,7 +126,11 @@ export default function LimitOrderPanel(props: {
   const hasLimitBet = !!limitProbInt && !!betAmount
 
   const betDisabled =
-    isSubmitting || !outcome || !betAmount || !!error || !hasLimitBet
+    isSubmitting ||
+    !outcome ||
+    !betAmount ||
+    !hasLimitBet ||
+    error === 'Insufficient balance'
 
   const preLimitProb =
     limitProbInt === undefined
@@ -176,63 +181,82 @@ export default function LimitOrderPanel(props: {
 
     const answerId = multiProps?.answerToBuy.id
 
-    await api(
-      'bet',
-      removeUndefinedProps({
-        outcome,
-        amount,
-        contractId: contract.id,
-        answerId,
-        limitProb: limitProb,
-        expiresAt,
-      })
-    )
-      .then((r) => {
-        console.log('placed bet. Result:', r)
-        setIsSubmitting(false)
-        if (onBuySuccess) onBuySuccess()
-      })
-      .catch((e) => {
-        if (e instanceof APIError) {
-          setError(e.message.toString())
-        } else {
-          console.error(e)
-          setError('Error placing bet')
+    try {
+      const bet = await toast.promise(
+        api(
+          'bet',
+          removeUndefinedProps({
+            outcome,
+            amount,
+            contractId: contract.id,
+            answerId,
+            limitProb: limitProb,
+            expiresAt,
+            deps: betDeps.current?.map((b) => b.userId),
+          })
+        ),
+        {
+          loading: 'Submitting bet...',
+          success: 'Bet submitted!',
+          error: 'Error submitting bet',
         }
-        setIsSubmitting(false)
-      })
+      )
+      console.log('placed bet. Result:', bet)
+      if (onBuySuccess) onBuySuccess()
 
-    await track('bet', {
-      location: 'bet panel',
-      outcomeType: contract.outcomeType,
-      slug: contract.slug,
-      contractId: contract.id,
-      amount,
-      outcome,
-      limitProb: limitProb,
-      isLimitOrder: true,
-      answerId: multiProps?.answerToBuy.id,
-    })
+      await track('bet', {
+        location: 'bet panel',
+        outcomeType: contract.outcomeType,
+        slug: contract.slug,
+        contractId: contract.id,
+        amount,
+        outcome,
+        limitProb: limitProb,
+        isLimitOrder: true,
+        answerId: multiProps?.answerToBuy.id,
+      })
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.message.toString())
+      } else {
+        console.error(e)
+        setError('Error placing bet')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
 
-  const {
-    currentPayout,
-    currentReturn,
-    orderAmount,
-    amount: filledAmount,
-    fees,
-  } = getBetReturns(
-    cpmmState,
-    binaryMCOutcome ?? outcome ?? 'YES',
-    amount,
-    limitProb ?? initialProb,
-    unfilledBets,
-    balanceByUserId,
-    shouldAnswersSumToOne ? multiProps : undefined
-  )
+  let currentPayout = 0
+  let currentReturn = 0
+  let orderAmount = 0
+  let filledAmount = 0
+  let fees = noFees
+  try {
+    const result = getBetReturns(
+      cpmmState,
+      binaryMCOutcome ?? outcome ?? 'YES',
+      amount,
+      limitProb ?? initialProb,
+      unfilledBets,
+      balanceByUserId,
+      shouldAnswersSumToOne ? multiProps : undefined
+    )
+    currentPayout = result.currentPayout
+    currentReturn = result.currentReturn
+    orderAmount = result.orderAmount
+    filledAmount = result.amount
+    fees = result.fees
+    betDeps.current = result.betDeps
+  } catch (err: any) {
+    console.error('Error in calculateCpmmMultiArbitrageBet:', err)
+    setError(
+      err?.message ?? 'An error occurred during bet calculation, try again.'
+    )
+  }
   const returnPercent = formatPercent(currentReturn)
   const totalFees = getFeeTotal(fees)
 
@@ -456,6 +480,7 @@ const getBetReturns = (
   let amount: number
   let shares: number
   let fees: Fees
+  let betDeps: LimitBet[]
   if (arbitrageProps) {
     const { answers, answerToBuy } = arbitrageProps
     const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
@@ -470,6 +495,11 @@ const getBetReturns = (
     )
     amount = sumBy(newBetResult.takers, 'amount')
     shares = sumBy(newBetResult.takers, 'shares')
+    betDeps = newBetResult.makers
+      .map((m) => m.bet)
+      .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
+      .concat(newBetResult.ordersToCancel)
+      .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
     fees = addObjects(
       newBetResult.totalFees,
       otherBetResults.reduce(
@@ -478,7 +508,7 @@ const getBetReturns = (
       )
     )
   } else {
-    ;({ amount, shares, fees } = computeCpmmBet(
+    const result = computeCpmmBet(
       cpmmState,
       outcome,
       betAmount,
@@ -486,7 +516,11 @@ const getBetReturns = (
       unfilledBets,
       balanceByUserId,
       !arbitrageProps && { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
-    ))
+    )
+    amount = result.amount
+    shares = result.shares
+    fees = result.fees
+    betDeps = result.makers.map((m) => m.bet).concat(result.ordersToCancel)
   }
 
   const remainingMatched = limitProb
@@ -496,5 +530,13 @@ const getBetReturns = (
   const currentPayout = shares + remainingMatched
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
 
-  return { orderAmount, amount, shares, currentPayout, currentReturn, fees }
+  return {
+    orderAmount,
+    amount,
+    shares,
+    currentPayout,
+    currentReturn,
+    fees,
+    betDeps,
+  }
 }

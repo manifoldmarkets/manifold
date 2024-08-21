@@ -6,10 +6,11 @@ import { animated } from '@react-spring/web'
 import clsx from 'clsx'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function CoinNumber(props: {
   amount?: number
-  isSpice?: boolean
+  coinType?: 'mana' | 'spice' | 'sweepies'
   numberType?: 'short' | 'animated'
   className?: string
   isInline?: boolean
@@ -18,13 +19,14 @@ export function CoinNumber(props: {
 }) {
   const {
     amount,
-    isSpice,
+    coinType = 'mana',
     numberType,
     className,
     isInline,
     coinClassName,
     style,
   } = props
+
   return (
     <Row
       className={clsx(
@@ -35,8 +37,15 @@ export function CoinNumber(props: {
       style={style}
     >
       {amount !== undefined && amount <= -1 && '-'}
-      {!!isSpice ? (
+      {coinType == 'spice' ? (
         <SpiceCoin
+          className={clsx(
+            isInline && 'absolute -left-[1.1em] top-[0.25em]',
+            coinClassName
+          )}
+        />
+      ) : coinType == 'sweepies' ? (
+        <SweepiesCoin
           className={clsx(
             isInline && 'absolute -left-[1.1em] top-[0.25em]',
             coinClassName
@@ -45,7 +54,7 @@ export function CoinNumber(props: {
       ) : (
         <ManaCoin
           className={clsx(
-            isInline && 'absolute -left-[1.1em] top-[0.25em]',
+            isInline && 'absolute -left-[1.1em] top-[0.25em] shrink-0',
             coinClassName
           )}
         />
@@ -57,7 +66,7 @@ export function CoinNumber(props: {
           +formatMoneyNoMoniker(Math.abs(amount ?? 0)).replaceAll(',', '')
         )
       ) : numberType == 'animated' ? (
-        <AnimatedNumber amount={amount} />
+        <AnimatedNumber amount={Math.abs(amount ?? 0)} />
       ) : (
         formatMoneyNoMoniker(Math.abs(amount))
       )}

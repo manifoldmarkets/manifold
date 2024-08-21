@@ -30,7 +30,7 @@ import {
 } from 'web/hooks/use-notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { usePrivateUser, useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { XIcon } from '@heroicons/react/outline'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
@@ -240,7 +240,6 @@ export function NotificationsList(props: {
     groupedNotifications,
     mostRecentNotification,
   } = props
-  const isAuthorized = useIsAuthorized()
   const [page, setPage] = useState(0)
   const user = useUser()
 
@@ -248,19 +247,15 @@ export function NotificationsList(props: {
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
     return groupedNotifications?.slice(start, end)
-  }, [groupedNotifications, page])
+  }, [JSON.stringify(groupedNotifications), page])
 
   const isPageVisible = useIsPageVisible()
 
   // Mark all notifications as seen. Rerun as new notifications come in.
   useEffect(() => {
     if (!privateUser || !isPageVisible) return
-    if (isAuthorized) markAllNotifications({ seen: true })
-    groupedNotifications
-      ?.map((ng) => ng.notifications)
-      .flat()
-      .forEach((n) => (!n.isSeen ? (n.isSeen = true) : null))
-  }, [privateUser, isPageVisible, mostRecentNotification?.id, isAuthorized])
+    markAllNotifications({ seen: true })
+  }, [privateUser?.id, isPageVisible, mostRecentNotification?.id])
 
   return (
     <Col className={'min-h-[100vh] gap-0 text-sm'}>

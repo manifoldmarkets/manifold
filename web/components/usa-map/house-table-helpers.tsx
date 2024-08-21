@@ -130,7 +130,7 @@ export function HouseBetPanel(props: {
         contract={contract}
         multiProps={{
           answers: contract.answers,
-          answerToBuy: answer as Answer,
+          answerToBuy: answer,
         }}
         initialOutcome={outcome}
         // singularView={outcome}
@@ -288,8 +288,7 @@ export const BuyPanelBody = (props: {
       })
     )
   }
-  const betDisabled =
-    isSubmitting || !betAmount || !!error || outcome === undefined
+  const betDisabled = isSubmitting || !betAmount || outcome === undefined
 
   const cpmmState = {
     pool: {

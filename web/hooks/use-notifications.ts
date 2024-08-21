@@ -5,7 +5,15 @@ import {
   notification_source_types,
   NotificationReason,
 } from 'common/notification'
-import { Dictionary, first, groupBy, sortBy } from 'lodash'
+import {
+  concat,
+  Dictionary,
+  first,
+  groupBy,
+  sortBy,
+  uniq,
+  uniqBy,
+} from 'lodash'
 import { useEffect, useMemo } from 'react'
 import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
 import { User } from 'common/user'
@@ -18,53 +26,79 @@ export type NotificationGroup = {
   notifications: Notification[]
   groupedById: string
   isSeen: boolean
+  latestCreatedTime: number
 }
 
-function useNotifications(userId: string, count = 15 * NOTIFICATIONS_PER_PAGE) {
+function useNotifications(
+  userId: string,
+  count = 15 * NOTIFICATIONS_PER_PAGE,
+  newOnly?: boolean
+) {
   const [notifications, setNotifications] = usePersistentLocalState<
     Notification[] | undefined
   >(undefined, 'notifications-' + userId)
+  const [latestCreatedTime, setLatestCreatedTime] = usePersistentLocalState<
+    number | undefined
+  >(undefined, 'latest-notification-time-' + userId)
+
   useEffect(() => {
-    if (userId)
-      api('get-notifications', { limit: count }).then((data) => {
-        setNotifications(data)
+    if (userId) {
+      const params = {
+        limit: count,
+        after: newOnly ? latestCreatedTime : undefined,
+      }
+      api('get-notifications', params).then((newData) => {
+        setNotifications((oldData) => {
+          const allNotifications = concat(newData, oldData ?? [])
+
+          const seenIds = uniq(
+            allNotifications.filter((n) => n.isSeen).map((n) => n.id)
+          )
+
+          const updatedNotifications = uniqBy(allNotifications, 'id').map(
+            (n) => ({
+              ...n,
+              isSeen: seenIds.includes(n.id) || n.isSeen,
+            })
+          )
+
+          const newLatestCreatedTime = Math.max(
+            ...updatedNotifications.map((n) => n.createdTime),
+            latestCreatedTime ?? 0
+          )
+          setLatestCreatedTime(newLatestCreatedTime)
+          return updatedNotifications
+        })
       })
-  }, [userId])
+    }
+  }, [userId, count, newOnly])
 
   useApiSubscription({
     topics: [`user-notifications/${userId}`],
     onBroadcast: ({ data }) => {
-      setNotifications((notifs) => [
-        data.notification as Notification,
-        ...(notifs ?? []),
-      ])
+      console.log('new notification', data)
+      setNotifications((notifs) => {
+        const newNotification = data.notification as Notification
+        setLatestCreatedTime((prevTime) =>
+          Math.max(prevTime ?? 0, newNotification.createdTime)
+        )
+        return [newNotification, ...(notifs ?? [])]
+      })
     },
   })
   return notifications
 }
 
-function useUnseenNotifications(
-  userId: string,
-  count = NOTIFICATIONS_PER_PAGE
-) {
-  const notifs = useNotifications(userId, count)
-  return notifs?.filter((n) => !n.isSeen)
-}
+export function useGroupedUnseenNotifications(userId: string) {
+  const unseenNotifs = useNotifications(
+    userId,
+    NOTIFICATIONS_PER_PAGE,
+    true
+  )?.filter((n) => !n.isSeen)
 
-export function useGroupedUnseenNotifications(
-  userId: string,
-  selectTypes?: notification_source_types[],
-  selectReasons?: NotificationReason[]
-) {
-  const notifications = useUnseenNotifications(userId)?.filter(
-    (n) =>
-      (selectTypes?.includes(n.sourceType) ||
-        selectReasons?.includes(n.reason)) ??
-      true
-  )
   return useMemo(() => {
-    return notifications ? groupNotificationsForIcon(notifications) : undefined
-  }, [notifications])
+    return unseenNotifs ? groupNotificationsForIcon(unseenNotifs) : undefined
+  }, [unseenNotifs?.length])
 }
 
 export function useGroupedNotifications(
@@ -117,7 +151,7 @@ export function useGroupedNotifications(
       groupedNewMarketNotifications,
       groupedMentionNotifications,
     }),
-    [notifications]
+    [JSON.stringify(notifications)]
   )
 }
 
@@ -128,6 +162,7 @@ const groupNotifications = (
     notifications: value,
     groupedById: key,
     isSeen: value.every((n) => n.isSeen),
+    latestCreatedTime: Math.max(...value.map((n) => n.createdTime)),
   }))
 }
 

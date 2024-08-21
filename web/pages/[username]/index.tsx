@@ -16,14 +16,14 @@ import { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 
 import { SEO } from 'web/components/SEO'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { TextButton } from 'web/components/buttons/text-button'
-import { UserCommentsList } from 'web/components/comments/comments-list'
+import { UserCommentsList } from 'web/components/comments/profile-comments'
 import { FollowList } from 'web/components/follow-list'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -48,7 +48,6 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
-import { useDiscoverUsers } from 'web/hooks/use-users'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
@@ -58,7 +57,7 @@ import { UserPayments } from 'web/pages/payments'
 import { UserHandles } from 'web/components/user/user-handles'
 import { BackButton } from 'web/components/contract/back-button'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { shouldIgnoreUserPage } from 'common/user'
+import { isUserLikelySpammer } from 'common/user'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
 import { isBetChange } from 'common/balance-change'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -71,6 +70,10 @@ import { FaCrown } from 'react-icons/fa6'
 import { getUserForStaticProps } from 'common/supabase/users'
 import { VerifyMe } from 'web/components/gidx/verify-me'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
+import { TwombaPortfolioValueSection } from 'web/components/portfolio/twomba-portfolio-value-section'
+import { unauthedApi } from 'common/util/api'
+import { AddFundsButton } from 'web/components/profile/add-funds-button'
+import { RedeemSpiceButton } from 'web/components/profile/redeem-spice-button'
 
 export const getStaticProps = async (props: {
   params: {
@@ -86,7 +89,7 @@ export const getStaticProps = async (props: {
   const hasCreatedQuestion = data?.length
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
-  const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user, db) : false
+  const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user) : false
 
   return {
     props: removeUndefinedProps({
@@ -127,6 +130,16 @@ export default function UserPage(props: {
     <BlockedUser user={user} privateUser={privateUser} />
   ) : (
     <UserProfile user={user} {...profileProps} />
+  )
+}
+
+const shouldIgnoreUserPage = async (user: User) => {
+  // lastBetTime isn't always reliable, so use the contract_bets table to be sure
+  const bet = await unauthedApi('bets', { userId: user.id, limit: 1 })
+  return (
+    user.userDeleted ||
+    user.isBannedFromPosting ||
+    isUserLikelySpammer(user, bet.length > 0)
   )
 }
 
@@ -326,6 +339,7 @@ function UserProfile(props: {
                 <FollowButton userId={user.id} />
               </>
             )}
+
             {!isMobile && <MoreOptionsUserButton user={user} />}
           </Row>
         </Row>
@@ -344,6 +358,17 @@ function UserProfile(props: {
               className="mt-2"
             />
           </Col>
+        )}
+
+        {isCurrentUser && TWOMBA_ENABLED && (
+          <Row className="my-2 w-full items-center gap-2 px-4">
+            <AddFundsButton userId={user.id} className="whitespace-nowrap" />
+            <RedeemSpiceButton
+              userId={user.id}
+              className="whitespace-nowrap"
+              spice={user.spiceBalance}
+            />
+          </Row>
         )}
 
         <Col className="mx-4">
@@ -376,13 +401,31 @@ function UserProfile(props: {
                     <Spacer h={2} />
                     {!isCurrentUser && (
                       <>
-                        <PortfolioValueSection
-                          user={user}
-                          defaultTimePeriod={
-                            currentUser?.id === user.id ? 'weekly' : 'monthly'
-                          }
-                          hideAddFundsButton
-                        />
+                        {TWOMBA_ENABLED ? (
+                          <>
+                            <TwombaPortfolioValueSection
+                              user={user}
+                              defaultTimePeriod={
+                                currentUser?.id === user.id
+                                  ? 'weekly'
+                                  : 'monthly'
+                              }
+                              hideAddFundsButton
+                            />
+
+                            <div className="text-ink-800 mx-2 mt-6 gap-2 border-t pt-4 text-xl font-semibold lg:mx-0">
+                              Trades
+                            </div>
+                          </>
+                        ) : (
+                          <PortfolioValueSection
+                            user={user}
+                            defaultTimePeriod={
+                              currentUser?.id === user.id ? 'weekly' : 'monthly'
+                            }
+                            hideAddFundsButton
+                          />
+                        )}
                         <Spacer h={4} />
                       </>
                     )}
@@ -560,14 +603,6 @@ function FollowsDialog(props: {
   const { user, followingIds, followerIds, defaultTab, isOpen, setIsOpen } =
     props
 
-  const currentUser = useUser()
-  const myFollowedIds = useFollows(currentUser?.id)
-  const suggestedUserIds = useDiscoverUsers(
-    isOpen ? user.id : undefined, // don't bother fetching this unless someone looks
-    myFollowedIds ?? [],
-    50
-  )
-
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
       <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">
@@ -582,10 +617,6 @@ function FollowsDialog(props: {
             {
               title: 'Followers',
               content: <FollowList userIds={followerIds} />,
-            },
-            {
-              title: 'Similar',
-              content: <FollowList userIds={suggestedUserIds} />,
             },
           ]}
           defaultIndex={defaultTab === 'following' ? 0 : 1}

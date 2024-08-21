@@ -1,17 +1,16 @@
-import { getBetPoints } from 'common/supabase/bets'
-import { db } from 'web/lib/supabase/db'
 import { HistoryPoint, maxMinBin } from 'common/chart'
 import { buildArray } from 'common/util/array'
 import { debounce } from 'lodash'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
+import { getBetPoints } from 'web/lib/supabase/bets'
 
 export async function getPointsBetween(
   contractId: string,
   min?: number,
   max?: number
 ) {
-  const points = await getBetPoints(db, contractId, {
+  const points = await getBetPoints(contractId, {
     filterRedemptions: true,
     beforeTime: max,
     afterTime: min,
@@ -50,8 +49,12 @@ export const useDataZoomFetcher = <T>(props: {
         setData(props.points)
       }
     }, 100),
-    []
+    [props.contractId]
   )
+
+  useLayoutEffect(() => {
+    setData(props.points)
+  }, [props.contractId])
 
   useEffect(() => {
     if (props.viewXScale) {

@@ -1,6 +1,6 @@
 import { Dictionary, first, groupBy, mapValues, sum, sumBy } from 'lodash'
 import { Answer } from './answer'
-import { Bet, LimitBet } from './bet'
+import { Bet, LimitBet, maker } from './bet'
 import {
   calculateAmountToBuySharesFixedP,
   getCpmmProbability,
@@ -14,6 +14,26 @@ import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 
 const DEBUG = false
 export type ArbitrageBetArray = ReturnType<typeof combineBetsOnSameAnswers>
+const noFillsReturn = (
+  outcome: string,
+  answer: Answer,
+  collectedFees: Fees
+) => ({
+  newBetResult: {
+    outcome,
+    answer,
+    takers: [],
+    makers: [] as maker[],
+    ordersToCancel: [] as LimitBet[],
+    cpmmState: {
+      pool: { YES: answer.poolYes, NO: answer.poolNo },
+      p: 0.5,
+      collectedFees,
+    },
+    totalFees: { creatorFee: 0, liquidityFee: 0, platformFee: 0 },
+  },
+  otherBetResults: [] as ArbitrageBetArray,
+})
 export function calculateCpmmMultiArbitrageBet(
   answers: Answer[],
   answerToBuy: Answer,
@@ -30,6 +50,12 @@ export function calculateCpmmMultiArbitrageBet(
       : outcome === 'YES'
       ? MAX_CPMM_PROB
       : MIN_CPMM_PROB
+  if (
+    (answerToBuy.prob < MIN_CPMM_PROB && outcome === 'NO') ||
+    (answerToBuy.prob > MAX_CPMM_PROB && outcome === 'YES')
+  ) {
+    return noFillsReturn(outcome, answerToBuy, collectedFees)
+  }
   const result =
     outcome === 'YES'
       ? calculateCpmmMultiArbitrageBetYes(
@@ -53,22 +79,7 @@ export function calculateCpmmMultiArbitrageBet(
   if (floatingEqual(sumBy(result.newBetResult.takers, 'amount'), 0)) {
     // No trades matched.
     const { outcome, answer } = result.newBetResult
-    return {
-      newBetResult: {
-        outcome,
-        answer,
-        takers: [],
-        makers: [],
-        ordersToCancel: [],
-        cpmmState: {
-          pool: { YES: answer.poolYes, NO: answer.poolNo },
-          p: 0.5,
-          collectedFees,
-        },
-        totalFees: { creatorFee: 0, liquidityFee: 0, platformFee: 0 },
-      },
-      otherBetResults: [] as ArbitrageBetArray,
-    }
+    return noFillsReturn(outcome, answer, collectedFees)
   }
   return result
 }
@@ -481,7 +492,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   const redeemedAmount = noShares * (answers.length - 2)
   const netNoAmount = totalNoAmount - redeemedAmount
   let yesBetAmount = betAmount - netNoAmount
-  if (floatingEqual(yesBetAmount, 0)) {
+  if (floatingArbitrageEqual(yesBetAmount, 0)) {
     yesBetAmount = 0
   }
   if (yesBetAmount < 0) {
@@ -667,7 +678,7 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   })
 
   let noBetAmount = betAmount - totalYesAmount
-  if (floatingEqual(noBetAmount, 0)) {
+  if (floatingArbitrageEqual(noBetAmount, 0)) {
     noBetAmount = 0
   }
   if (noBetAmount < 0) {
@@ -1384,4 +1395,8 @@ export const getSellAllRedemptionPreliminaryBets = (
       answer,
     }
   })
+}
+
+export function floatingArbitrageEqual(a: number, b: number, epsilon = 0.001) {
+  return Math.abs(a - b) < epsilon
 }

@@ -1,5 +1,8 @@
 import { Contract } from 'common/contract'
-import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
+import {
+  useGroupsWhereUserHasRole,
+  useTopicsWithContract,
+} from 'web/hooks/use-group-supabase'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
@@ -8,8 +11,7 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractTopicsList } from 'web/components/topics/contract-topics-list'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import { filterDefined } from 'common/util/array'
-import { Group, groupPath, Topic } from 'common/group'
+import { groupPath, Topic } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { removeEmojis } from 'common/util/string'
 import { Tooltip } from '../widgets/tooltip'
@@ -60,19 +62,20 @@ type TopicRowProps = {
 
 export function MarketTopics(props: TopicRowProps) {
   const [open, setOpen] = useState(false)
-  const { contract, topics, dashboards, isSpiceMarket } = props
+  const { contract, dashboards, isSpiceMarket } = props
   const user = useUser()
   const isCreator = contract.creatorId === user?.id
-  const adminGroups = useGroupsWhereUserHasRole(user?.id)
+  const myEditableGroupIds = useGroupsWhereUserHasRole(user?.id)
   const isMod = useAdminOrMod()
-  const canEdit = isMod || isCreator || (adminGroups && adminGroups.length > 0)
-  const onlyGroups = !isMod && !isCreator ? adminGroups : undefined
+  const canEdit =
+    isMod || isCreator || (myEditableGroupIds && myEditableGroupIds.length > 0)
 
-  const canEditGroup = (group: Group) =>
-    isCreator ||
-    isMod ||
-    // if user has admin role in that group
-    !!(adminGroups && adminGroups.some((g) => g.group_id === group.id))
+  const topicPickerProps = useTopicsWithContract(contract.id, props.topics)
+  const { topics } = topicPickerProps
+
+  const canEditGroup = (groupId: string) =>
+    isCreator || isMod || !!myEditableGroupIds?.includes(groupId)
+
   return (
     <>
       <div className="group mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium sm:text-sm">
@@ -121,13 +124,8 @@ export function MarketTopics(props: TopicRowProps) {
         >
           <ContractTopicsList
             canEdit={!!canEdit}
-            contract={contract}
-            onlyGroupIds={
-              onlyGroups
-                ? filterDefined(onlyGroups.map((g) => g.group_id))
-                : undefined
-            }
-            canEditGroup={canEditGroup}
+            canEditTopic={canEditGroup}
+            {...topicPickerProps}
           />
         </Col>
       </Modal>

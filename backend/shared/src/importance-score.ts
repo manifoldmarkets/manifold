@@ -1,4 +1,7 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import {
+  SupabaseDirectClient,
+  SupabaseDirectClientTimeout,
+} from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
 import {
   DAY_MS,
@@ -24,7 +27,7 @@ export const MIN_IMPORTANCE_SCORE = 0.1
 
 export async function calculateImportanceScore(
   db: SupabaseClient,
-  pg: SupabaseDirectClient,
+  pg: SupabaseDirectClientTimeout,
   readOnly = false,
   rescoreAll = false
 ) {
@@ -139,6 +142,16 @@ export async function calculateImportanceScore(
         thisWeekTradersByContract[contract.id] ?? 0
       )
 
+    if (isNaN(dailyScore)) {
+      log.error('NaN daily score for contract ' + contract.id)
+    }
+    if (isNaN(freshnessScore)) {
+      log.error('NaN freshness score for contract ' + contract.id)
+    }
+    if (isNaN(importanceScore)) {
+      log.error('NaN importance score for contract ' + contract.id)
+    }
+
     const epsilon = 0.01
     // NOTE: These scores aren't updated in firestore, so are never accurate in the data blob
     if (
@@ -172,6 +185,15 @@ export async function calculateImportanceScore(
     log(contract.importanceScore, contract.question)
   })
 
+  log('Bottom 5 contracts by score')
+  contractsWithUpdates
+    .slice()
+    .reverse()
+    .slice(0, 5)
+    .forEach((contract) => {
+      log(contract.importanceScore, contract.question)
+    })
+
   // Sort in descending order by freshness
   const freshest = sortBy(
     contractsWithUpdates,
@@ -183,13 +205,13 @@ export async function calculateImportanceScore(
     log(contract.freshnessScore, contract.question)
   })
 
-  log('Bottom 5 contracts by score')
-  contractsWithUpdates
+  log('Bottom 5 contracts by freshness')
+  freshest
     .slice()
     .reverse()
     .slice(0, 5)
     .forEach((contract) => {
-      log(contract.importanceScore, contract.question)
+      log(contract.freshnessScore, contract.question)
     })
 
   if (!readOnly) {
@@ -384,9 +406,9 @@ export const computeContractScores = (
       : normalize(rawMarketImportance, 8)
 
   const rawMarketFreshness =
-    normalize(Math.log10(contract.volume24Hours + 1), 5) +
-    normalize(traderHour, 20) +
-    0.5 * newness
+    (contract.volume24Hours / (contract.volume + 1)) *
+      normalize(Math.log10(contract.volume24Hours + 1), 5) +
+    normalize(todayScore, 10)
 
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
   const hourRatio = traderHour / (thisWeekScore - traderHour + 1)

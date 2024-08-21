@@ -101,7 +101,7 @@ import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
 import { getComments } from './get-comments'
 import { getBets } from './get-bets'
-import { getDisplayUser, getUser } from './get-user'
+import { getLiteUser, getUser } from './get-user'
 import { getUsers } from './get-users'
 import { getMarket } from './get-market'
 import { getGroup } from './get-group'
@@ -120,14 +120,12 @@ import { type APIHandler, typedEndpoint } from './helpers/endpoint'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
-import { getrelatedmarketscache } from 'api/get-related-markets'
 import { getadanalytics } from 'api/get-ad-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
 import { addOrRemoveReaction } from './reaction'
 import { likeLover } from './love/like-lover'
 import { shipLovers } from './love/ship-lovers'
 import { createManalink } from './create-manalink'
-import { requestSignupBonus } from 'api/request-signup-bonus'
 import { getLikesAndShips } from './love/get-likes-and-ships'
 import { hasFreeLike } from './love/has-free-like'
 import { starLover } from './love/star-lover'
@@ -157,6 +155,7 @@ import { getFeed } from 'api/get-feed'
 import { getManaSupply } from './get-mana-supply'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { deleteMe } from './delete-me'
+import { placeBetter } from './place-better'
 import { updateModReport } from './update-mod-report'
 import { getModReports } from './get-mod-reports'
 import { searchContractPositions } from 'api/search-contract-positions'
@@ -186,6 +185,12 @@ import {
 import { getNotifications } from 'api/get-notifications'
 import { getCheckoutSession } from 'api/gidx/get-checkout-session'
 import { completeCheckoutSession } from 'api/gidx/complete-checkout-session'
+import { getContractTopics } from './get-contract-topics'
+import { getRelatedMarkets } from 'api/get-related-markets'
+import { getRelatedMarketsByGroup } from './get-related-markets-by-group'
+import { followContract } from './follow-contract'
+import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
+import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -203,29 +208,52 @@ const ignoredEndpoints = [
   '/get-channel-seen-time',
 ]
 
-const requestMonitoring: RequestHandler = (req, _res, next) => {
+const requestMonitoring: RequestHandler = (req, res, next) => {
   const traceContext = req.get('X-Cloud-Trace-Context')
   const traceId = traceContext
     ? traceContext.split('/')[0]
     : crypto.randomUUID()
-  const context = { endpoint: req.path, traceId }
+  const { method, path: endpoint, url } = req
+  const baseEndpoint = getBaseName(endpoint)
+  const context = { endpoint, traceId, baseEndpoint }
   withMonitoringContext(context, () => {
+    if (method == 'OPTIONS') {
+      next()
+      return
+    }
     const startTs = hrtime.bigint()
     const isLocalhost = req.get('host')?.includes('localhost')
     if (
       !isLocalhost ||
-      (isLocalhost && !ignoredEndpoints.some((e) => req.path.startsWith(e)))
+      (isLocalhost && !ignoredEndpoints.some((e) => endpoint.startsWith(e)))
     ) {
-      log(`${req.method} ${req.url}`)
+      log(`${method} ${url}`)
     }
-    metrics.inc('http/request_count', { endpoint: req.path })
+    metrics.inc('http/request_count', { endpoint, baseEndpoint, method })
+    res.on('close', () => {
+      const endTs = hrtime.bigint()
+      const latencyMs = Number(endTs - startTs) / 1e6 // Convert to milliseconds
+      metrics.push('http/request_latency', latencyMs, {
+        endpoint,
+        method,
+        baseEndpoint,
+      })
+    })
     next()
-    const endTs = hrtime.bigint()
-    const latencyMs = Number(endTs - startTs) / 1e6
-    metrics.push('http/request_latency', latencyMs, { endpoint: req.path })
   })
 }
 
+const getBaseName = (path: string) => {
+  const parts = path.split('/').filter(Boolean)
+  if (parts.length < 2) return path
+  const base = parts[1]
+  if (parts.length === 2) return `/${base}`
+  const specificPaths = ['bet', 'user', 'group', 'market']
+  if (specificPaths.includes(base)) {
+    return `/${base}/*`
+  }
+  return base
+}
 const apiErrorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   if (error instanceof APIError) {
     log.info(error)
@@ -262,6 +290,8 @@ app.options('*', allowCorsUnrestricted)
 const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
   'multi-bet': placeMultiBet,
+  'bet-ter': placeBetter,
+  'follow-contract': followContract,
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
   bets: getBets,
@@ -277,6 +307,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   comments: getComments,
   market: createMarket,
   'market/:contractId/group': addOrRemoveTopicFromContract,
+  'market/:contractId/groups': getContractTopics,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
   'group/by-id/:id/markets': ({ id, limit }, ...rest) =>
@@ -298,6 +329,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:contractId/answer': createAnswerCPMM,
   'market/:contractId/block': blockMarket,
   'market/:contractId/unblock': unblockMarket,
+  'get-user-limit-orders-with-contracts': getUserLimitOrdersWithContracts,
+  'get-interesting-groups-from-views': getInterestingGroupsFromViews,
   leagues: getLeagues,
   markets: getMarkets,
   'search-markets': searchMarketsLite,
@@ -314,9 +347,9 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'me/private': getCurrentPrivateUser,
   'me/private/update': updatePrivateUser,
   'user/by-id/:id': getUser,
-  'user/by-id/:id/lite': getDisplayUser,
+  'user/by-id/:id/lite': getLiteUser,
   'user/:username': getUser,
-  'user/:username/lite': getDisplayUser,
+  'user/:username/lite': getLiteUser,
   'user/:username/bets': (...props) => getBets(...props),
   'user/by-id/:id/block': blockUser,
   'user/by-id/:id/unblock': unblockUser,
@@ -333,13 +366,13 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'fetch-link-preview': fetchLinkPreview,
   'request-loan': requestloan,
   'remove-pinned-photo': removePinnedPhoto,
-  'get-related-markets-cache': getrelatedmarketscache,
+  'get-related-markets': getRelatedMarkets,
+  'get-related-markets-by-group': getRelatedMarketsByGroup,
   'unlist-and-cancel-user-contracts': unlistAndCancelUserContracts,
   'get-ad-analytics': getadanalytics,
   'get-compatibility-questions': getCompatibilityQuestions,
   'like-lover': likeLover,
   'ship-lovers': shipLovers,
-  'request-signup-bonus': requestSignupBonus,
   'get-likes-and-ships': getLikesAndShips,
   'has-free-like': hasFreeLike,
   'star-lover': starLover,
@@ -502,10 +535,6 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
-
-// mqp: definitely don't enable this in production since there's no authorization
-// import { broadcastTest } from 'api/broadcast-test'
-// app.post('/broadcast-test', ...apiRoute(broadcastTest))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCorsUnrestricted, (req, res) => {

@@ -72,7 +72,7 @@ export const setAdjustProfitFromResolvedMarkets = async (
   const pg = createSupabaseDirectClient()
   const userIds = await pg.map(
     `
-    select user_id
+    select distinct user_id
     from user_contract_metrics
     where contract_id = $1
     `,

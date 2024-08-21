@@ -9,7 +9,7 @@ create table if not exists
     pool_yes numeric,
     pool_no numeric,
     prob numeric,
-    data jsonb not null,
+    data jsonb,
     index integer,
     total_liquidity numeric default 0,
     subsidy_pool numeric default 0,
@@ -17,41 +17,13 @@ create table if not exists
     prob_change_day numeric default 0,
     prob_change_week numeric default 0,
     prob_change_month numeric default 0,
-    resolution_time timestamp with time zone
+    resolution_time timestamp with time zone,
+    color text,
+    resolution_probability numeric,
+    resolution text,
+    resolver_id text,
+    is_other boolean default false not null
   );
-
--- Triggers
-create trigger answers_populate before insert
-or
-update on public.answers for each row
-execute function answers_populate_cols ();
-
--- Functions
-create
-or replace function public.answers_populate_cols () returns trigger language plpgsql as $function$
-begin
-    if new.data is not null then
-        new.index := ((new.data) ->> 'index')::int;
-        new.contract_id := (new.data) ->> 'contractId';
-        new.user_id := (new.data) ->> 'userId';
-        new.text := ((new.data) ->> 'text')::text;
-        new.created_time :=
-                case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
-
-        new.pool_yes := ((new.data) ->> 'poolYes')::numeric;
-        new.pool_no := ((new.data) ->> 'poolNo')::numeric;
-        new.prob := ((new.data) ->> 'prob')::numeric;
-        new.total_liquidity := ((new.data) ->> 'totalLiquidity')::numeric;
-        new.subsidy_pool := ((new.data) ->> 'subsidyPool')::numeric;
-        new.prob_change_day := ((new.data) -> 'probChanges'->>'day')::numeric;
-        new.prob_change_week := ((new.data) -> 'probChanges'->>'week')::numeric;
-        new.prob_change_month := ((new.data) -> 'probChanges'->>'month')::numeric;
-        new.resolution_time :=
-                case when new.data ? 'resolutionTime' then millis_to_ts(((new.data) ->> 'resolutionTime')::bigint) end;
-    end if;
-    return new;
-end
-$function$;
 
 -- Policies
 alter table answers enable row level security;

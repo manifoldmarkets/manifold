@@ -236,7 +236,7 @@ function augmentAnswerWithProbability(
   answer: Answer
 ): ApiAnswer {
   const probability = getAnswerProbability(contract, answer.id)
-  const { poolYes, poolNo, prob: _, ...other } = answer as Answer
+  const { poolYes, poolNo, prob: _, ...other } = answer
   const pool = {
     YES: poolYes,
     NO: poolNo,
@@ -311,13 +311,9 @@ export const createMarketProps = z
       .optional(),
     outcomeType: z.enum(CREATEABLE_OUTCOME_TYPES),
     groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
-    visibility: z.enum(VISIBILITIES).default('public'),
+    visibility: z.enum(VISIBILITIES).default('public').optional(),
     isTwitchContract: z.boolean().optional(),
     utcOffset: z.number().optional(),
-    loverUserId1: z.string().optional(),
-    loverUserId2: z.string().optional(),
-    matchCreatorId: z.string().optional(),
-    isLove: z.boolean().optional(),
     marketTier: z.enum(tiers).optional(),
   })
   .and(

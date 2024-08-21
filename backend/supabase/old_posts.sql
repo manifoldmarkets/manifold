@@ -33,17 +33,11 @@ end $function$;
 -- Policies
 alter table old_posts enable row level security;
 
-drop policy if exists "Enable read access for non private posts" on old_posts;
-
-create policy "Enable read access for non private posts" on old_posts for
-select
-  using ((visibility <> 'private'::text));
-
 drop policy if exists "admin read" on old_posts;
 
 create policy "admin read" on old_posts for
 select
-  using (true);
+  to service_role using (true);
 
 -- Indexes
 drop index if exists posts_pkey;

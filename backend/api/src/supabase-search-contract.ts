@@ -44,15 +44,18 @@ const search = async (
     topicSlug: possibleTopicSlug,
     forYou,
     creatorId,
-    isPolitics,
     marketTier,
   } = props
 
   const isPrizeMarket =
     props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
+
+  const isSweepies = props.isSweepies == 'true' || props.isSweepies == '1'
+
   if (limit === 0) {
     return []
   }
+
   const isForYou = forYou === '1'
   const isRecent = possibleTopicSlug === 'recent'
   const topicSlug =
@@ -67,7 +70,8 @@ const search = async (
     !term &&
     userId &&
     (sort === 'score' || sort === 'freshness-score') &&
-    !topicSlug
+    !topicSlug &&
+    !isSweepies
   ) {
     const forYouSql = await getForYouSQL({
       userId,
@@ -77,6 +81,7 @@ const search = async (
       offset,
       sort,
       isPrizeMarket,
+      isSweepies,
       marketTier: marketTier as TierParamsType,
     })
     const start = Date.now()
@@ -116,8 +121,8 @@ const search = async (
           uid: userId,
           isForYou,
           searchType,
-          isPolitics,
           isPrizeMarket,
+          isSweepies,
           marketTier: marketTier as TierParamsType,
         })
         return pg

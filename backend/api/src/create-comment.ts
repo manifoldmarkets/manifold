@@ -2,11 +2,10 @@ import { JSONContent } from '@tiptap/core'
 import { ContractComment } from 'common/comment'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
-import { getContract, getUser } from 'shared/utils'
+import { getContract, getUser, log } from 'shared/utils'
 import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -108,19 +107,16 @@ export const createCommentOnContractInternal = async (
     isApi,
     isRepost,
   } as ContractComment)
-
-  const db = createSupabaseClient()
-  const ret = await db.from('contract_comments').insert({
-    contract_id: contractId,
-    comment_id: comment.id,
-    user_id: creator.id,
-    created_time: millisToTs(now),
-    data: comment,
-  })
-
-  if (ret.error) {
-    throw new APIError(500, 'Failed to create comment: ' + ret.error.message)
-  }
+  await pg
+    .none(
+      `insert into contract_comments (contract_id, comment_id, user_id, created_time, data)
+              values ($1, $2, $3, $4, $5)`,
+      [contractId, comment.id, creator.id, millisToTs(now), comment]
+    )
+    .catch((e) => {
+      log.error(e)
+      throw new APIError(500, 'Failed to create comment')
+    })
   broadcastNewComment(contractId, contract.visibility, creator, comment)
 
   return {
@@ -163,11 +159,10 @@ export const createCommentOnContractInternal = async (
             : undefined,
         ...denormalizeBet(bet, bettor),
       })
-
-      await db
-        .from('contract_comments')
-        .update({ data: updatedComment })
-        .eq('comment_id', comment.id)
+      await pg.none(
+        `update contract_comments set data = $1 where comment_id = $2`,
+        [updatedComment, comment.id]
+      )
 
       await onCreateCommentOnContract({
         contract,

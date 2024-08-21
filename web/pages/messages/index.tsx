@@ -9,9 +9,9 @@ import NewMessageButton from 'web/components/messaging/new-message-button'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Title } from 'web/components/widgets/title'
 import {
-  useHasUnseenPrivateMessage,
   usePrivateMessages,
   useSortedPrivateMessageMemberships,
+  useUnseenPrivateMessageChannels,
 } from 'web/hooks/use-private-messages'
 import { useUser } from 'web/hooks/use-user'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
@@ -21,18 +21,24 @@ import { BannedBadge } from 'web/components/widgets/user-link'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 
 export default function MessagesPage() {
+  useRedirectIfSignedOut()
+
+  const currentUser = useUser()
   return (
     <Page trackPageView={'messages page'} className={'p-2'}>
-      <MessagesContent />
+      {currentUser && <MessagesContent currentUser={currentUser} />}
     </Page>
   )
 }
 
-export function MessagesContent() {
-  useRedirectIfSignedOut()
-  const currentUser = useUser()
+export function MessagesContent(props: { currentUser: User }) {
+  const { currentUser } = props
   const { channels, memberIdsByChannelId } = useSortedPrivateMessageMemberships(
-    currentUser?.id
+    currentUser.id
+  )
+  const { lastSeenChatTimeByChannelId } = useUnseenPrivateMessageChannels(
+    currentUser.id,
+    true
   )
 
   return (
@@ -42,26 +48,26 @@ export function MessagesContent() {
         <NewMessageButton />
       </Row>
       <Col className={'w-full overflow-hidden'}>
-        {currentUser && channels && channels.length === 0 && (
+        {channels && channels.length === 0 && (
           <div className={'text-ink-500 dark:text-ink-600 mt-4 text-center'}>
             You have no messages, yet.
           </div>
         )}
-        {currentUser &&
-          channels?.map((channel) => {
-            const userIds = memberIdsByChannelId?.[channel.channel_id]?.map(
-              (m) => m
-            )
-            if (!userIds) return null
-            return (
-              <MessageChannelRow
-                key={channel.channel_id}
-                otherUserIds={userIds}
-                currentUser={currentUser}
-                channel={channel}
-              />
-            )
-          })}
+        {channels?.map((channel) => {
+          const userIds = memberIdsByChannelId?.[channel.channel_id]?.map(
+            (m) => m
+          )
+          if (!userIds) return null
+          return (
+            <MessageChannelRow
+              key={channel.channel_id}
+              otherUserIds={userIds}
+              currentUser={currentUser}
+              channel={channel}
+              lastSeenTime={lastSeenChatTimeByChannelId[channel.channel_id]}
+            />
+          )
+        })}
       </Col>
     </>
   )
@@ -70,13 +76,13 @@ export const MessageChannelRow = (props: {
   otherUserIds: string[]
   currentUser: User
   channel: PrivateMessageChannel
+  lastSeenTime: string
 }) => {
-  const { otherUserIds, currentUser, channel } = props
+  const { otherUserIds, lastSeenTime, currentUser, channel } = props
   const channelId = channel.channel_id
   const otherUsers = useUsersInStore(otherUserIds, `${channelId}`, 100)
-
   const messages = usePrivateMessages(channelId, 1, currentUser.id)
-  const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
+  const unseen = (messages?.[0]?.createdTimeTs ?? '0') > lastSeenTime
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0
 

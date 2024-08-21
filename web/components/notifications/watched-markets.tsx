@@ -41,7 +41,7 @@ export const UserWatchedContractsButton = memo(
     // filter by query
     const filteredWatchedContracts = watchedContracts?.filter((c) => {
       return (
-        query === '' || c.question.toLowerCase().includes(query.toLowerCase())
+        query === '' || c.question?.toLowerCase().includes(query.toLowerCase())
       )
     })
 
@@ -86,7 +86,7 @@ export const UserWatchedContractsButton = memo(
                         onClick={async (e) => {
                           e.stopPropagation()
                           e.preventDefault()
-                          await unfollowMarket(contract.id, contract.slug, user)
+                          await unfollowMarket(contract.id, contract.slug)
                           setWatchedContracts(
                             filteredWatchedContracts?.filter(
                               (c) => c.id !== contract.id

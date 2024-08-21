@@ -6,7 +6,7 @@ import { log } from 'shared/utils'
 export const getManaSupply = async (recalculateAllUserPortfolios: boolean) => {
   const pg = createSupabaseDirectClient()
   if (recalculateAllUserPortfolios) {
-    const allBetUserIds = await pg.map(
+    const allUserIdsWithInvestments = await pg.map(
       `
           select distinct u.id from users u
            join user_contract_metrics ucm on u.id = ucm.user_id
@@ -17,12 +17,12 @@ export const getManaSupply = async (recalculateAllUserPortfolios: boolean) => {
       [],
       (r) => r.id as string
     )
-    const chunks = chunk(allBetUserIds, 1000)
+    const chunks = chunk(allUserIdsWithInvestments, 1000)
     let processed = 0
     for (const userIds of chunks) {
       await updateUserMetricsCore(userIds)
       processed += userIds.length
-      log(`Processed ${processed} of ${allBetUserIds.length} users`)
+      log(`Processed ${processed} of ${allUserIdsWithInvestments.length} users`)
     }
   }
   const userPortfolio = await pg.one(
@@ -70,7 +70,7 @@ const getAMMLiquidity = async () => {
     pg.one(
       `select sum(prob * pool_yes + (1-prob) * pool_no + subsidy_pool) from answers
         join contracts on contract_id = contracts.id
-        where resolution is null`,
+        where contracts.resolution is null`,
       [],
       (r: any) => Number(r.sum)
     ),

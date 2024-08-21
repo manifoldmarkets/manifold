@@ -1,4 +1,7 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { ITask } from 'pg-promise'
 import { chunk, mean, sum, zip } from 'lodash'
 import { bulkUpdate } from 'shared/supabase/utils'
@@ -73,6 +76,7 @@ export async function upsertGroupEmbedding(
     'insert into group_embeddings (group_id, embedding) values ($1, $2) on conflict (group_id) do update set embedding = $2',
     [groupId, embed]
   )
+  log('Upserted group embedding for', groupId)
 }
 
 export async function getAverageGroupEmbedding(
@@ -278,9 +282,8 @@ async function computeUserDisinterestEmbedding(
   )
 }
 
-export async function updateViewsAndViewersEmbeddings(
-  pg: SupabaseDirectClient
-) {
+export async function updateViewsAndViewersEmbeddings() {
+  const pg = createSupabaseDirectClient()
   const userToEmbeddingMap: { [userId: string]: number[] | null } = {}
   const viewerIds = await getMostlyActiveUserIds(pg)
   log('Found', viewerIds.length, 'viewers to update')

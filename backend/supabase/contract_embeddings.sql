@@ -11,7 +11,7 @@ alter table contract_embeddings enable row level security;
 
 drop policy if exists "admin write access" on contract_embeddings;
 
-create policy "admin write access" on contract_embeddings for all;
+create policy "admin write access" on contract_embeddings for all to service_role;
 
 drop policy if exists "public read" on contract_embeddings;
 
@@ -24,6 +24,6 @@ drop index if exists contract_embeddings_pkey;
 
 create unique index contract_embeddings_pkey on public.contract_embeddings using btree (contract_id);
 
-drop index if exists contract_embeddings_embedding_apr_2024;
+drop index if exists contract_embeddings_embedding_aug_2024;
 
-create index contract_embeddings_embedding_apr_2024 on public.contract_embeddings using hnsw (embedding vector_cosine_ops);
+create index contract_embeddings_embedding_aug_2024 on public.contract_embeddings using hnsw (embedding vector_cosine_ops);

@@ -205,8 +205,9 @@ export const AddComment = (props: { onClick: () => void }) => {
 export const MultiBettor = (props: {
   answer: Answer
   contract: CPMMMultiContract
+  buttonClassName?: string
 }) => {
-  const { answer, contract } = props
+  const { answer, contract, buttonClassName } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   return (
@@ -228,7 +229,7 @@ export const MultiBettor = (props: {
       <Button
         size="2xs"
         color="indigo-outline"
-        className="bg-primary-50"
+        className={clsx('bg-primary-50', buttonClassName)}
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
@@ -426,12 +427,21 @@ export const OpenProb = (props: {
     </Row>
   )
 }
-export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
-  const { prob, resolvedProb: resolveProb } = props
+export const ClosedProb = (props: {
+  prob: number
+  resolvedProb?: number
+  className?: string
+}) => {
+  const { prob, resolvedProb: resolveProb, className } = props
   return (
     <>
       {!!resolveProb && (
-        <span className="dark:text-ink-900 text-lg text-purple-500">
+        <span
+          className={clsx(
+            'dark:text-ink-900 text-lg text-purple-500',
+            className
+          )}
+        >
           {Math.round(resolveProb * 100)}%
         </span>
       )}
@@ -439,7 +449,8 @@ export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
         className={clsx(
           'text-ink-500 whitespace-nowrap text-lg',
           resolveProb != undefined &&
-            'inline-block min-w-[40px] text-right line-through'
+            'inline-block min-w-[40px] text-right line-through',
+          className
         )}
       >
         {formatPercent(prob)}
@@ -452,31 +463,28 @@ export const AnswerStatus = (props: {
   contract: MultiContract
   answer: Answer
   noNewIcon?: boolean
+  className?: string
 }) => {
-  const { contract, answer } = props
+  const { contract, answer, className } = props
   const { resolutions } = contract
 
-  const answerResolution =
-    'resolution' in answer ? answer.resolution : undefined
+  const answerResolution = answer.resolution
 
   const prob = getAnswerProbability(contract, answer.id)
   const resolvedProb =
-    answerResolution === 'MKT' && 'resolutionProbability' in answer
+    answerResolution === 'MKT'
       ? answer.resolutionProbability ?? answer.prob
       : resolutions
       ? (resolutions?.[answer.id] ?? 0) / 100
       : undefined
 
-  const isOpen = tradingAllowed(
-    contract,
-    'resolution' in answer ? answer : undefined
-  )
+  const isOpen = tradingAllowed(contract, answer)
 
   if (answerResolution) {
     return (
-      <Row className="items-center gap-1.5 font-semibold">
+      <Row className={clsx('items-center gap-1.5 font-semibold', className)}>
         <div className={'text-ink-800 text-base'}>Resolved</div>
-        {answerResolution === 'MKT' && 'resolutionProbability' in answer ? (
+        {answerResolution === 'MKT' && answer.resolutionProbability ? (
           <ProbPercentLabel
             prob={answer.resolutionProbability ?? answer.prob}
           />
@@ -487,9 +495,14 @@ export const AnswerStatus = (props: {
     )
   }
   return isOpen ? (
-    <OpenProb contract={contract} answer={answer} noNewIcon />
+    <OpenProb
+      className={className}
+      contract={contract}
+      answer={answer}
+      noNewIcon
+    />
   ) : (
-    <ClosedProb prob={prob} resolvedProb={resolvedProb} />
+    <ClosedProb className={className} prob={prob} resolvedProb={resolvedProb} />
   )
 }
 export const BetButtons = (props: {
@@ -500,15 +513,12 @@ export const BetButtons = (props: {
 }) => {
   const { contract, answer, fillColor, feedReason } = props
 
-  const isOpen = tradingAllowed(
-    contract,
-    'resolution' in answer ? answer : undefined
-  )
+  const isOpen = tradingAllowed(contract, answer)
   if (!isOpen) return null
   return (
     <YesNoBetButtons
       feedReason={feedReason}
-      answer={answer as Answer}
+      answer={answer}
       contract={contract as CPMMMultiContract}
       fillColor={fillColor}
     />

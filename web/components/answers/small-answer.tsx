@@ -18,23 +18,20 @@ import { Linkify } from '../widgets/linkify'
 
 // just the bars
 export function SmallAnswerBars(props: {
-  contract: MultiContract
+  contract: CPMMMultiContract
   maxAnswers?: number
   barColor?: string
   className?: string
 }) {
   const { contract, maxAnswers = Infinity, barColor, className } = props
-  const { outcomeType } = contract
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
   const user = useUser()
-  const answers = contract.answers
-    .filter(
-      (a) =>
-        outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
-    )
-    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+  const answers = contract.answers.map((a) => ({
+    ...a,
+    prob: getAnswerProbability(contract, a.id),
+  }))
 
   const displayedAnswers = sortAnswers(contract, answers).slice(0, maxAnswers)
 
@@ -119,7 +116,7 @@ export function SmallAnswer(props: {
       {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition
           contract={contract}
-          answer={answer as Answer}
+          answer={answer}
           userBets={userBets}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
           user={user}
@@ -150,7 +147,7 @@ export const SmallAnswerBar = (props: {
     answer,
   } = props
 
-  const isOther = 'isOther' in answer && answer.isOther
+  const isOther = !!answer.isOther
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
     <Col className={clsx('relative isolate h-full w-full', className)}>
@@ -207,7 +204,7 @@ export const SmallAnswerBar = (props: {
             <AnswerStatus contract={contract} answer={answer} noNewIcon />
             <MultiBettor
               contract={contract as CPMMMultiContract}
-              answer={answer as Answer}
+              answer={answer}
             />
           </Row>
         </Row>

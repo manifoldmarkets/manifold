@@ -12,7 +12,7 @@ import {
 } from 'common/api/market-types'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   Contract,
@@ -38,7 +38,6 @@ import {
 import {
   SupabaseDirectClient,
   SupabaseTransaction,
-  createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { insertLiquidity } from 'shared/supabase/liquidity'
@@ -50,21 +49,25 @@ import {
 } from 'shared/update-group-contracts-internal'
 import { getUser, getUserByUsername, htmlToRichText, log } from 'shared/utils'
 import { broadcastNewContract } from 'shared/websockets/helpers'
-import { z } from 'zod'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
+import { Row } from 'common/supabase/utils'
 import { bulkInsertAnswers } from 'shared/supabase/answers'
 import { FieldVal } from 'shared/supabase/utils'
+import { z } from 'zod'
 
-type Body = ValidatedAPIParams<'market'> & {
-  specialLiquidityPerAnswer?: number
-}
+type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
   const market = await createMarketHelper(body, auth)
+  const pg = createSupabaseDirectClient()
+  // Should have the embedding ready for the related contracts cache
+  const embedding = await generateContractEmbeddings(market, pg).catch((e) =>
+    log.error(`Failed to generate embeddings, returning ${market.id} `, e)
+  )
   return {
     result: toLiteMarket(market),
     continue: async () => {
-      await onCreateMarket(market)
+      await onCreateMarket(market, embedding)
     },
   }
 }
@@ -91,12 +94,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     shouldAnswersSumToOne,
     totalBounty,
     isAutoBounty,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     visibility,
-    specialLiquidityPerAnswer,
     marketTier,
   } = validateMarketBody(body)
 
@@ -105,28 +103,12 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   }
 
   const userId = auth.uid
-  const user = await getUser(userId)
-  if (!user) throw new APIError(401, 'Your account was not found')
 
-  if (visibility !== 'public') {
-    throw new APIError(403, 'Only public markets can be created.')
-  }
-  // if (!isVerified(user)) {
-  //   throw new APIError(
-  //     403,
-  //     'You must verify your phone number to create a market.'
-  //   )
-  // }
-
-  if (loverUserId1 || loverUserId2 || isLove) {
-    throw new Error('No more love contracts can be created')
-  }
+  const pg = createSupabaseDirectClient()
 
   const groups = groupIds
     ? await Promise.all(
-        groupIds.map(async (gId) =>
-          getGroupCheckPermissions(gId, visibility, userId)
-        )
+        groupIds.map(async (gId) => getGroupCheckPermissions(pg, gId, userId))
       )
     : null
 
@@ -134,9 +116,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
 
   const unmodifiedAnte =
-    (specialLiquidityPerAnswer ??
-      totalBounty ??
-      getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
+    (totalBounty ?? getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
 
   if (unmodifiedAnte < 1) throw new APIError(400, 'Ante must be at least 1')
 
@@ -150,26 +130,18 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   if (closeTime && closeTime < Date.now())
     throw new APIError(400, 'Question must close in the future')
 
-  const pg = createSupabaseDirectClient()
-
   const totalMarketCost = marketTier
     ? getTieredCost(unmodifiedAnte, marketTier, outcomeType)
     : unmodifiedAnte
   const ante = Math.min(unmodifiedAnte, totalMarketCost)
 
-  const contract = await pg.tx(async (tx) => {
+  return await pg.tx(async (tx) => {
     const user = await getUser(userId, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
     if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
     if (totalMarketCost > user.balance)
       throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
-
-    let answerLoverUserIds: string[] = []
-    if (isLove && answers) {
-      answerLoverUserIds = await getLoveAnswerUserIds(answers)
-      console.log('answerLoverUserIds', answerLoverUserIds)
-    }
 
     const slug = await getSlug(tx, question)
 
@@ -201,21 +173,16 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         answers: answers ?? [],
         addAnswersMode,
         shouldAnswersSumToOne,
-        loverUserId1,
-        loverUserId2,
-        matchCreatorId,
-        isLove,
-        answerLoverUserIds,
-        specialLiquidityPerAnswer,
         isAutoBounty,
         marketTier,
+        token: 'MANA',
       })
     )
 
-    await tx.none(`insert into contracts (id, data) values ($1, $2)`, [
-      contract.id,
-      JSON.stringify(contract),
-    ])
+    await tx.none(
+      `insert into contracts (id, data, token) values ($1, $2, $3)`,
+      [contract.id, JSON.stringify(contract), contract.token]
+    )
 
     await runCreateMarketTxn({
       contractId: contract.id,
@@ -225,33 +192,36 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       transaction: tx,
     })
 
+    log('created contract ', {
+      userUserName: user.username,
+      userId: user.id,
+      question,
+      ante: ante || 0,
+    })
+
+    if (answers && contract.mechanism === 'cpmm-multi-1')
+      await createAnswers(tx, contract)
+
+    if (groups) {
+      await Promise.all(
+        groups.map(async (g) => {
+          await addGroupToContract(tx, contract, g)
+        })
+      )
+    }
+
+    await generateAntes(
+      tx,
+      userId,
+      contract,
+      outcomeType,
+      ante,
+      totalMarketCost
+    )
+
+    broadcastNewContract(contract, user)
     return contract
   })
-
-  log('created contract ', {
-    userUserName: user.username,
-    userId: user.id,
-    question,
-    ante: ante || 0,
-  })
-
-  if (answers && contract.mechanism === 'cpmm-multi-1')
-    await createAnswers(pg, contract)
-
-  if (groups) {
-    await Promise.all(
-      groups.map(async (g) => {
-        await addGroupToContract(contract, g)
-      })
-    )
-  }
-
-  await generateAntes(pg, userId, contract, outcomeType, ante, totalMarketCost)
-
-  await generateContractEmbeddings(contract, pg)
-
-  broadcastNewContract(contract, user)
-  return contract
 }
 
 const runCreateMarketTxn = async (args: {
@@ -313,7 +283,7 @@ const getSlug = async (pg: SupabaseTransaction, question: string) => {
   const proposedSlug = slugify(question)
 
   const preexistingContract = await pg.oneOrNone(
-    `select 1 from contracts where slug = $1`,
+    `select 1 from contracts where slug = $1 limit 1`,
     [proposedSlug]
   )
 
@@ -335,10 +305,6 @@ function validateMarketBody(body: Body) {
     visibility = 'public',
     isTwitchContract,
     utcOffset,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     marketTier,
   } = body
 
@@ -357,8 +323,7 @@ function validateMarketBody(body: Body) {
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
     isAutoBounty: boolean | undefined,
-    extraLiquidity: number | undefined,
-    specialLiquidityPerAnswer: number | undefined
+    extraLiquidity: number | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
@@ -419,7 +384,7 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'MULTIPLE_CHOICE') {
     ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
       validateMarketType(outcomeType, createMultiSchema, body))
-    if (answers.length < 2 && addAnswersMode === 'DISABLED' && !isLove)
+    if (answers.length < 2 && addAnswersMode === 'DISABLED')
       throw new APIError(
         400,
         'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
@@ -460,11 +425,6 @@ function validateMarketBody(body: Body) {
     shouldAnswersSumToOne,
     totalBounty,
     isAutoBounty,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
-    specialLiquidityPerAnswer,
     marketTier,
   }
 }
@@ -484,26 +444,33 @@ function validateMarketType<T extends z.ZodType>(
 }
 
 async function getGroupCheckPermissions(
+  pg: SupabaseDirectClient,
   groupId: string,
-  visibility: string,
   userId: string
 ) {
-  const db = createSupabaseClient()
+  const result = await pg.one<Row<'groups'> & { member_role: string | null }>(
+    `
+    select g.*, gm.role as member_role
+    from groups g
+    left join group_members gm on g.id = gm.group_id and gm.member_id = $2
+    where g.id = $1
+  `,
+    [groupId, userId]
+  )
 
-  const groupQuery = await db.from('groups').select().eq('id', groupId).limit(1)
-  if (groupQuery.error) throw new APIError(500, groupQuery.error.message)
-  if (!groupQuery.data.length) {
+  if (!result) {
     throw new APIError(404, 'No group exists with the given group ID.')
   }
-  const group = groupQuery.data[0]
 
-  const membershipQuery = await db
-    .from('group_members')
-    .select()
-    .eq('member_id', userId)
-    .eq('group_id', groupId)
-    .limit(1)
-  const membership = membershipQuery.data?.[0]
+  const { member_role, ...group } = result
+  const membership = member_role
+    ? {
+        role: member_role,
+        group_id: group.id,
+        member_id: userId,
+        created_time: null,
+      }
+    : undefined
 
   if (
     !canUserAddGroupToMarket({
@@ -549,25 +516,7 @@ async function createAnswers(
   await bulkInsertAnswers(pg, answers)
 }
 
-async function getLoveAnswerUserIds(answers: string[]) {
-  // Get the loverUserId from the answer text.
-  return await Promise.all(
-    answers.map(async (answerText) => {
-      // Parse username from answer text.
-      const matches = answerText.match(/@(\w+)/)
-      console.log('matches', matches)
-      const loverUsername = matches ? matches[1] : null
-      if (!loverUsername)
-        throw new APIError(500, 'No lover username found ' + answerText)
-      const user = await getUserByUsername(loverUsername)
-      if (!user)
-        throw new APIError(500, 'No user found with username ' + answerText)
-      return user.id
-    })
-  )
-}
-
-async function generateAntes(
+export async function generateAntes(
   pg: SupabaseDirectClient,
   providerId: string,
   contract: Contract,
@@ -603,7 +552,7 @@ async function generateAntes(
   ) {
     const lp = getCpmmInitialLiquidity(
       providerId,
-      contract as CPMMBinaryContract | CPMMMultiContract,
+      contract as BinaryContract | CPMMMultiContract,
       ante,
       contract.createdTime
     )
@@ -615,7 +564,7 @@ async function generateAntes(
     drizzledAmount > 0 &&
     (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
   ) {
-    return await pg.tx(async (tx) => {
+    return await pg.txIf(async (tx) => {
       await runTxn(tx, {
         fromId: providerId,
         amount: drizzledAmount,

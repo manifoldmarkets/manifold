@@ -1,6 +1,6 @@
 import { JSONContent } from '@tiptap/core'
 import { getDisplayProbability } from 'common/calculate'
-import { GroupLink, Topic } from 'common/group'
+import { Topic } from 'common/group'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { sum } from 'lodash'
 import { Answer } from './answer'
@@ -96,6 +96,9 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   marketTier?: MarketTierType
 
+  token: 'MANA' | 'CASH'
+  siblingContractId?: string
+
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
@@ -104,23 +107,19 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   /** @deprecated - no more auto-subsidization */
   isSubsidized?: boolean // NOTE: not backfilled, undefined = true
-  /** @deprecated - no more auto-subsidization */
-  isPolitics?: boolean
-  /** @deprecated - not kept up-to-date */
+  /** @deprecated - try to use group-contracts table instead */
   groupSlugs?: string[]
-  /** @deprecated */
-  groupLinks?: GroupLink[]
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   popularityScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   importanceScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   dailyScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   freshnessScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   conversionScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   viewCount: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
@@ -135,18 +134,16 @@ export type MarketContract =
   | CPMMNumericContract
 
 export type BinaryContract = Contract & Binary
-export type CPMMBinaryContract = BinaryContract & CPMM
 export type PseudoNumericContract = Contract & PseudoNumeric
 export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
-export type CPMMStonkContract = StonkContract & CPMM
-export type BountiedQuestionContract = Contract & BountiedQuestion & NonBet
-export type PollContract = Contract & Poll & NonBet
+export type BountiedQuestionContract = Contract & BountiedQuestion
+export type PollContract = Contract & Poll
 
 export type BinaryOrPseudoNumericContract =
-  | CPMMBinaryContract
+  | BinaryContract
   | PseudoNumericContract
-  | CPMMStonkContract
+  | StonkContract
 
 export type CPMM = {
   mechanism: 'cpmm-1'
@@ -385,13 +382,13 @@ export const MULTI_NUMERIC_BUCKETS_MAX = 50
 export const MULTI_NUMERIC_CREATION_ENABLED = true
 
 export type Visibility = 'public' | 'unlisted'
-export const VISIBILITIES = ['public', 'unlisted'] as const
+export const VISIBILITIES = ['public' /*, 'unlisted'*/] as const
 
 export const SORTS = [
   { label: 'High %', value: 'prob-desc' },
   { label: 'Low %', value: 'prob-asc' },
-  { label: 'Old', value: 'old' },
-  { label: 'New', value: 'new' },
+  { label: 'Oldest', value: 'old' },
+  { label: 'Newest', value: 'new' },
   { label: 'Trending', value: 'liquidity' },
   { label: 'A-Z', value: 'alphabetical' },
 ] as const
@@ -400,7 +397,10 @@ export type SortType = (typeof SORTS)[number]['value']
 
 export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
 
-export function contractPath(contract: Contract) {
+export function contractPath(contract: {
+  creatorUsername: string
+  slug: string
+}) {
   return `/${contract.creatorUsername}/${contract.slug}`
 }
 
@@ -416,11 +416,18 @@ export type ContractParams = {
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]
-  relatedContractsByTopicSlug: Record<string, Contract[]>
   topics: Topic[]
   dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]
   betReplies: Bet[]
+  cash?: {
+    contract: Contract
+    pointsString: string
+    multiPointsString: { [answerId: string]: string }
+    userPositionsByOutcome: ContractMetricsByOutcome
+    totalPositions: number
+    totalBets: number
+  }
 }
 
 export type MaybeAuthedContractParams =

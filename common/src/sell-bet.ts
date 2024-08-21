@@ -147,7 +147,6 @@ export const getCpmmMultiSellBetInfo = (
     isCancelled: false,
     orderAmount: takerAmount,
     isRedemption: false,
-    visibility: contract.visibility,
   }
 
   const otherResultsWithBet = otherBetResults!.map((result) => {
@@ -171,7 +170,6 @@ export const getCpmmMultiSellBetInfo = (
       createdTime: now,
       fees: totalFees,
       isRedemption: true,
-      visibility: contract.visibility,
     })
     return {
       ...result,
@@ -235,9 +233,7 @@ export const getNewSellBetInfo = (
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
   const amount = sumBy(takers, 'amount')
   const shares = sumBy(takers, 'shares')
-  const oldAnswer = initialAnswers.find(
-    (a) => a.id === updatedAnswer.id
-  ) as Answer
+  const oldAnswer = initialAnswers.find((a) => a.id === updatedAnswer.id)!
   const isRedemption = amount === 0
   const loanPaid = loanPaidByAnswerId[oldAnswer.id] ?? 0
   const newBet: CandidateBet<Bet> = removeUndefinedProps({

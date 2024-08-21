@@ -10,24 +10,28 @@ export function ConditionalMarkets(props: {
   rawPolicyContracts: PolicyContractType[]
 }) {
   const policyContracts = props.rawPolicyContracts.map((policy) => {
-    const bidenContract =
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      useLiveContract(policy.bidenContract) ?? policy.bidenContract
-    const trumpContract =
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      useLiveContract(policy.trumpContract) ?? policy.trumpContract
+    const harrisContract = policy.harrisContract
+      ? // eslint-disable-next-line react-hooks/rules-of-hooks
+        useLiveContract(policy.harrisContract) ?? policy.harrisContract
+      : null
+    const trumpContract = policy.trumpContract
+      ? // eslint-disable-next-line react-hooks/rules-of-hooks
+        useLiveContract(policy.trumpContract) ?? policy.trumpContract
+      : null
 
     return {
       title: policy.title,
-      bidenContract,
+      harrisContract,
       trumpContract,
     }
   })
 
-  const { shortName: joeShortName, photo: joePhoto } =
-    CANDIDATE_DATA['Joe Biden'] ?? {}
   const { shortName: trumpShortName, photo: trumpPhoto } =
     CANDIDATE_DATA['Donald Trump'] ?? {}
+
+  const { shortName: harrisShortName, photo: harrisPhoto } =
+    CANDIDATE_DATA['Kamala Harris'] ?? {}
+
   return (
     <Col>
       <Col className="rounded-lg ">
@@ -38,13 +42,13 @@ export function ConditionalMarkets(props: {
           <Row className="hidden text-xs sm:flex">
             <Row className="bg-azure-700 w-[120px] items-center justify-start gap-0.5 rounded-tl-lg text-white">
               <Image
-                src={joePhoto}
-                alt={joeShortName}
+                src={harrisPhoto}
+                alt={harrisShortName}
                 width={40}
                 height={40}
                 className="h-10 w-10 object-fill "
               />
-              Biden wins
+              Harris wins
             </Row>
             <Row className="bg-sienna-700 w-[120px] items-center justify-start gap-0.5 rounded-tr-lg text-white">
               <Image

@@ -28,25 +28,22 @@ export function CandidatePanel(props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
   const user = useUser()
-  const answers = contract.answers
-    .filter(
-      (a) =>
-        outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
-    )
-    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+  const answers =
+    outcomeType !== 'MULTIPLE_CHOICE'
+      ? []
+      : contract.answers.map((a) => ({
+          ...a,
+          prob: getAnswerProbability(contract, a.id),
+        }))
 
   const sortByProb = true
   const displayedAnswers = sortBy(answers, [
     // Winners for shouldAnswersSumToOne
     (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
     // Winners for independent binary
-    (answer) =>
-      'resolution' in answer && answer.resolution
-        ? -answer.subsidyPool
-        : -Infinity,
+    (answer) => (answer.resolution ? -answer.subsidyPool : -Infinity),
     // then by prob or index
-    (answer) =>
-      !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
+    (answer) => (!sortByProb ? answer.index : -1 * answer.prob),
   ])
     .filter(
       (a) =>
@@ -67,7 +64,7 @@ export function CandidatePanel(props: {
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   return (
-    <Col className="mx-[2px]">
+    <Col className="mx-[2px] select-none">
       {showNoAnswers ? (
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
@@ -81,7 +78,7 @@ export function CandidatePanel(props: {
             {displayedAnswers.map((answer) => (
               <CandidateAnswer
                 key={answer.id}
-                answer={answer as Answer}
+                answer={answer}
                 contract={contract}
                 color={getCandidateColor(removeTextInParentheses(answer.text))}
                 user={user}
@@ -92,7 +89,7 @@ export function CandidatePanel(props: {
               <Link href={contractPath(contract)} className="my-auto h-full">
                 <Col
                   className={clsx(
-                    ' text-ink-1000 items-center justify-center overflow-hidden text-sm transition-all hover:underline '
+                    ' text-ink-1000 h-full items-center justify-center overflow-hidden text-sm transition-all hover:underline'
                   )}
                 >
                   <Col className=" items-center gap-1 whitespace-nowrap">
@@ -115,7 +112,7 @@ export function CandidatePanel(props: {
             {displayedAnswers.map((answer) => (
               <CandidateAnswer
                 key={answer.id}
-                answer={answer as Answer}
+                answer={answer}
                 contract={contract}
                 color={getCandidateColor(removeTextInParentheses(answer.text))}
                 user={user}
@@ -189,7 +186,7 @@ function CandidateAnswer(props: {
       {/* {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition
           contract={contract}
-          answer={answer as Answer}
+          answer={answer}
           userBets={userBets}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
           user={user}

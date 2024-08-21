@@ -46,20 +46,12 @@ export function getNewContract(props: {
   max: number
   isLogScale: boolean
   answers: string[]
-  addAnswersMode: add_answers_mode | undefined
-  shouldAnswersSumToOne: boolean | undefined
+  addAnswersMode?: add_answers_mode | undefined
+  shouldAnswersSumToOne?: boolean | undefined
 
-  // Manifold.love
-  loverUserId1: string | undefined
-  loverUserId2: string | undefined
-  matchCreatorId: string | undefined
-  isLove: boolean | undefined
-  answerLoverUserIds: string[] | undefined
-
-  specialLiquidityPerAnswer: number | undefined
-
-  isAutoBounty: boolean | undefined
+  isAutoBounty?: boolean | undefined
   marketTier?: MarketTierType
+  token: 'MANA' | 'CASH'
 }) {
   const {
     id,
@@ -79,15 +71,10 @@ export function getNewContract(props: {
     answers,
     addAnswersMode,
     shouldAnswersSumToOne,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     coverImageUrl,
-    specialLiquidityPerAnswer,
-    answerLoverUserIds,
     isAutoBounty,
     marketTier,
+    token,
   } = props
   const createdTime = Date.now()
 
@@ -102,9 +89,7 @@ export function getNewContract(props: {
         answers,
         addAnswersMode ?? 'DISABLED',
         shouldAnswersSumToOne ?? true,
-        ante,
-        specialLiquidityPerAnswer,
-        answerLoverUserIds
+        ante
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
@@ -154,11 +139,8 @@ export function getNewContract(props: {
     },
 
     isTwitchContract,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     marketTier,
+    token,
   })
   if (visibility === 'unlisted') {
     contract.unlistedById = creator.id
@@ -240,9 +222,7 @@ const getMultipleChoiceProps = (
   answers: string[],
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
-  ante: number,
-  specialLiquidityPerAnswer?: number,
-  answerLoverUserIds?: string[]
+  ante: number
 ) => {
   const isBinaryMulti =
     addAnswersMode === 'DISABLED' &&
@@ -259,8 +239,6 @@ const getMultipleChoiceProps = (
     shouldAnswersSumToOne,
     ante,
     answersWithOther,
-    specialLiquidityPerAnswer,
-    answerLoverUserIds,
     isBinaryMulti ? VERSUS_COLORS : undefined
   )
   const system: CPMMMulti = {
@@ -269,9 +247,8 @@ const getMultipleChoiceProps = (
     addAnswersMode: addAnswersMode ?? 'DISABLED',
     shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
     answers: answerObjects,
-    totalLiquidity: specialLiquidityPerAnswer ?? ante,
+    totalLiquidity: ante,
     subsidyPool: 0,
-    specialLiquidityPerAnswer,
   }
 
   return system
@@ -315,8 +292,6 @@ function createAnswers(
   shouldAnswersSumToOne: boolean,
   ante: number,
   answers: string[],
-  specialLiquidityPerAnswer?: number,
-  answerLoverUserIds?: string[],
   colors?: string[]
 ) {
   const ids = answers.map(() => randomString())
@@ -341,14 +316,6 @@ function createAnswers(
     // Naive solution that doesn't maximize liquidity:
     // poolYes = ante * prob
     // poolNo = ante * (prob ** 2 / (1 - prob))
-  } else if (specialLiquidityPerAnswer) {
-    // We start each answer at 2%. We want the max payout for a YES resolution to be specialLiquidityPerAnswer.
-    // I think that means it has specialLiquidityPerAnswer YES shares in the pool.
-    // Then we can solve probability identity:
-    // prob = poolNo / (poolYes + poolNo)
-    prob = 0.02
-    poolYes = specialLiquidityPerAnswer
-    poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
   }
 
   const now = Date.now()
@@ -362,7 +329,6 @@ function createAnswers(
       userId,
       text,
       createdTime: now,
-      loverUserId: answerLoverUserIds?.[i],
       color: colors?.[i],
 
       poolYes,

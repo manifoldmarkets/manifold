@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { memo, useState, useMemo } from 'react'
-import { useABTest } from 'web/hooks/use-ab-test'
+import { memo, useState } from 'react'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -9,107 +8,25 @@ import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { ContractStatusLabel } from './contracts-table'
-import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
+import { Contract, contractPath, BinaryContract } from 'common/contract'
 import Masonry from 'react-masonry-css'
 import { Button } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
-import {
-  ArrowRightIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from '@heroicons/react/outline'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { Topic } from 'common/group'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
-import { linkClass } from 'web/components/widgets/site-link'
-import { removeEmojis } from 'common/util/string'
 import { UserHovercard } from '../user/user-hovercard'
 
 export const SidebarRelatedContractsList = memo(function (props: {
   contracts: Contract[]
   loadMore?: () => Promise<boolean>
   topics?: Topic[]
-  contractsByTopicSlug?: Record<string, Contract[]>
   className?: string
 }) {
-  const { contracts, loadMore, contractsByTopicSlug, topics, className } = props
-  const MAX_CONTRACTS_PER_GROUP = 2
+  const { contracts, loadMore, className } = props
 
-  const variant = useABTest('sidebar-related-contracts', [
-    'grouped',
-    'non-grouped',
-  ])
-
-  const displayedGroupContractIds = useMemo(
-    () =>
-      Object.values(contractsByTopicSlug ?? {})
-        .map((contracts) =>
-          contracts.slice(0, MAX_CONTRACTS_PER_GROUP).map((c) => c.id)
-        )
-        .flat(),
-    [contractsByTopicSlug]
-  )
-
-  const relatedContractsByTopic = useMemo(
-    () =>
-      topics &&
-      contractsByTopicSlug &&
-      topics.filter((t) => (contractsByTopicSlug[t.slug]?.length ?? 0) > 0),
-    [topics, contractsByTopicSlug]
-  )
-
-  const renderGroupedContracts = () => (
-    <>
-      {relatedContractsByTopic?.map((topic) => (
-        <Col key={'related-topics-' + topic.id} className={'my-2'}>
-          <h2 className={clsx('text-ink-600 mb-2 text-lg')}>
-            <Link className={linkClass} href={`/browse/${topic.slug}`}>
-              <Row className={'items-center gap-1'}>
-                {removeEmojis(topic.name)} questions
-                <ArrowRightIcon className="h-4 w-4 shrink-0" />
-              </Row>
-            </Link>
-          </h2>
-          <Col className="divide-ink-300 divide-y-[0.5px]">
-            {contractsByTopicSlug?.[topic.slug]
-              .slice(0, MAX_CONTRACTS_PER_GROUP)
-              .map((contract) => (
-                <SidebarRelatedContractCard
-                  key={contract.id}
-                  contract={contract}
-                  onContractClick={(c) =>
-                    track('click related market', {
-                      contractId: c.id,
-                      variant: 'grouped',
-                    })
-                  }
-                  twoLines
-                />
-              ))}
-          </Col>
-        </Col>
-      ))}
-      <h2 className="text-ink-600 mb-2 text-xl">Related questions</h2>
-      <Col className="divide-ink-300 divide-y-[0.5px]">
-        {contracts
-          .filter((c) => !displayedGroupContractIds.includes(c.id))
-          .map((contract) => (
-            <SidebarRelatedContractCard
-              contract={contract}
-              key={contract.id}
-              onContractClick={(c) =>
-                track('click related market', {
-                  contractId: c.id,
-                  variant: 'grouped',
-                })
-              }
-            />
-          ))}
-      </Col>
-    </>
-  )
-
-  const renderNonGroupedContracts = () => (
-    <>
+  return (
+    <Col className={clsx(className, 'flex-1')}>
       <h2 className="text-ink-600 mb-2 text-xl">Related questions</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
         {contracts.map((contract) => (
@@ -125,14 +42,6 @@ export const SidebarRelatedContractsList = memo(function (props: {
           />
         ))}
       </Col>
-    </>
-  )
-
-  return (
-    <Col className={clsx(className, 'flex-1')}>
-      {variant === 'grouped'
-        ? renderGroupedContracts()
-        : renderNonGroupedContracts()}
       {contracts.length > 0 && loadMore && (
         <LoadMoreUntilNotVisible loadMore={loadMore} />
       )}
@@ -142,42 +51,16 @@ export const SidebarRelatedContractsList = memo(function (props: {
 
 export const RelatedContractsGrid = memo(function (props: {
   contracts: Contract[]
-  contractsByTopicSlug?: Record<string, Contract[]>
-  topics?: Topic[]
   loadMore?: () => Promise<boolean>
   className?: string
   showAll?: boolean
   showOnlyAfterBet?: boolean
   justBet?: boolean
 }) {
-  const {
-    contracts,
-    topics,
-    contractsByTopicSlug,
-    loadMore,
-    className,
-    showAll,
-    showOnlyAfterBet,
-    justBet,
-  } = props
+  const { contracts, loadMore, className, showAll, showOnlyAfterBet, justBet } =
+    props
 
   const [showMore, setShowMore] = useState(showAll ?? false)
-  const relatedContractsByTopic =
-    topics &&
-    contractsByTopicSlug &&
-    topics.filter((t) => (contractsByTopicSlug[t.slug]?.length ?? 0) > 0)
-
-  const hasRelatedContractByTopic =
-    relatedContractsByTopic && relatedContractsByTopic.length > 0
-  if (contracts.length === 0 && !hasRelatedContractByTopic) {
-    return null
-  }
-  const MAX_CONTRACTS_PER_GROUP = 4
-  const displayedGroupContractIds = Object.values(contractsByTopicSlug ?? {})
-    .map((contracts) =>
-      contracts.slice(0, MAX_CONTRACTS_PER_GROUP).map((c) => c.id)
-    )
-    .flat()
   const titleClass = 'text-ink-600 mb-2 text-xl'
 
   return (
@@ -188,52 +71,12 @@ export const RelatedContractsGrid = memo(function (props: {
         !justBet && showOnlyAfterBet ? 'hidden' : ''
       )}
     >
-      {relatedContractsByTopic?.map((topic) => (
-        <Col key={'related-topics-' + topic.id} className={'my-2'}>
-          <h2 className={clsx(titleClass)}>
-            <Link className={linkClass} href={`/browse/${topic.slug}`}>
-              Related in {removeEmojis(topic.name)}
-            </Link>
-          </h2>
-          <Masonry
-            breakpointCols={{ default: 2, 768: 1 }}
-            className={clsx(
-              'flex w-auto',
-              'scrollbar-hide snap-x gap-2 overflow-y-auto scroll-smooth',
-              'h-full'
-            )}
-          >
-            {contractsByTopicSlug?.[topic.slug]
-              .slice(0, MAX_CONTRACTS_PER_GROUP)
-              .map((contract) => (
-                <RelatedContractCard
-                  key={contract.id}
-                  showGraph={showAll}
-                  contract={contract}
-                  onContractClick={(c) =>
-                    track('click related market', { contractId: c.id })
-                  }
-                  twoLines
-                />
-              ))}
-          </Masonry>
-
-          <Row className={'text-ink-700 items-center justify-end'}>
-            <Link className={linkClass} href={`/browse/${topic.slug}`}>
-              <Row className={'items-center gap-1'}>
-                See more {removeEmojis(topic.name)} questions
-                <ArrowRightIcon className="h-4 w-4 shrink-0" />
-              </Row>
-            </Link>
-          </Row>
-        </Col>
-      ))}
-      <h2 className={clsx(titleClass)}>
-        {hasRelatedContractByTopic ? 'More related ' : 'Related '} questions
-      </h2>
+      <h2 className={clsx(titleClass)}>Related questions</h2>
       <Col
         className={clsx(
-          'scrollbar-hide overflow-y-auto scroll-smooth',
+          showMore
+            ? 'scrollbar-hide overflow-y-auto scroll-smooth'
+            : 'overflow-hidden',
           showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-64'
         )}
       >
@@ -241,21 +84,21 @@ export const RelatedContractsGrid = memo(function (props: {
           breakpointCols={{ default: 2, 768: 1 }}
           className={clsx('flex w-auto snap-x gap-2')}
         >
-          {contracts
-            .filter((c) => !displayedGroupContractIds.includes(c.id))
-            .map((contract) => (
-              <RelatedContractCard
-                key={contract.id}
-                showGraph={showAll}
-                contract={contract}
-                onContractClick={(c) =>
-                  track('click related market', { contractId: c.id })
-                }
-                twoLines
-              />
-            ))}
+          {contracts.map((contract) => (
+            <RelatedContractCard
+              key={contract.id}
+              showGraph={showAll}
+              contract={contract}
+              onContractClick={(c) =>
+                track('click related market', { contractId: c.id })
+              }
+              twoLines
+            />
+          ))}
         </Masonry>
-        {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
+        {loadMore && showMore && (
+          <LoadMoreUntilNotVisible loadMore={loadMore} />
+        )}
       </Col>
       {!showAll && (
         <Button
@@ -361,8 +204,8 @@ const RelatedContractCard = memo(function (props: {
     contract.outcomeType === 'BINARY' &&
     showGraph &&
     'probChanges' in contract &&
-    Math.abs((contract as CPMMBinaryContract).probChanges.day) > 0.03
-      ? (contract as CPMMBinaryContract).probChanges.day
+    Math.abs((contract as BinaryContract).probChanges.day) > 0.03
+      ? (contract as BinaryContract).probChanges.day
       : 0
 
   return (

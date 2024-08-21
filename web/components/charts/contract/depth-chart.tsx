@@ -1,6 +1,6 @@
 import { LimitBet } from 'common/bet'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   StonkContract,
 } from 'common/contract'
@@ -14,7 +14,7 @@ import { formatLargeNumber } from 'common/util/format'
 import { Answer } from 'common/answer'
 
 export function DepthChart(props: {
-  contract: CPMMBinaryContract | StonkContract | CPMMMultiContract
+  contract: BinaryContract | StonkContract | CPMMMultiContract
   answer?: Answer
   yesBets: LimitBet[]
   noBets: LimitBet[]
@@ -41,7 +41,7 @@ export function DepthChart(props: {
 
   const currentValue = answer
     ? answer.prob
-    : getDisplayProbability(contract as CPMMBinaryContract | StonkContract)
+    : getDisplayProbability(contract as BinaryContract | StonkContract)
 
   const xScale = scaleLinear().domain([0, 1]).range([0, width])
   const yScale = scaleLinear().domain([0, maxAmount]).range([height, 0])

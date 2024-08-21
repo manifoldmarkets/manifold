@@ -24,7 +24,7 @@ export function DuplicateContractButton(props: { contract: Contract }) {
 }
 
 // Pass along the Uri to create a new contract
-function duplicateContractHref(contract: Contract) {
+export function duplicateContractHref(contract: Contract) {
   const descriptionString = JSON.stringify(contract.description)
   // Don't set a closeTime that's in the past
   const closeTime =
@@ -67,8 +67,8 @@ function duplicateContractHref(contract: Contract) {
     params.shouldAnswersSumToOne = contract.shouldAnswersSumToOne
   }
 
-  if (contract.groupLinks && contract.groupLinks.length > 0) {
-    params.groupIds = contract.groupLinks.map((gl) => gl.groupId)
+  if (contract.groupSlugs && contract.groupSlugs.length > 0) {
+    params.groupSlugs = contract.groupSlugs
   }
 
   return `/create?params=` + encodeURIComponent(JSON.stringify(params))

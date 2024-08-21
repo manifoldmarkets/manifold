@@ -178,7 +178,7 @@ export const RegisterUserForm = (props: { user: User }) => {
           <br />
           You have{' '}
           <CoinNumber
-            isSpice
+            coinType="spice"
             amount={user.spiceBalance}
             style={{
               color: SPICE_COLOR,

@@ -1,19 +1,15 @@
 import { type Contract } from 'common/contract'
 import { useEffect, useState } from 'react'
-import {
-  getContract,
-  getContracts,
-  getPublicContractIdsInTopics,
-  getPublicContractsByIds,
-  getRecentPublicContractRows,
-} from 'web/lib/supabase/contracts'
+import { getContract, getContracts } from 'common/supabase/contracts'
+import { getPublicContractIdsInTopics } from 'web/lib/supabase/contracts'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { difference, uniqBy } from 'lodash'
 import { useApiSubscription } from './use-api-subscription'
 import { useAnswersCpmm } from './use-answers'
-import { convertContract } from 'common/supabase/contracts'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsPageVisible } from './use-page-visible'
+import { api } from 'web/lib/api/api'
+import { db } from 'web/lib/supabase/db'
 
 export const usePublicContracts = (
   contractIds: string[] | undefined,
@@ -36,7 +32,7 @@ export const usePublicContracts = (
         }
       )
     } else
-      getPublicContractsByIds(newIds).then((result) => {
+      getContracts(db, newIds, 'id', true).then((result) => {
         setContracts((old) => uniqBy([...result, ...(old ?? [])], 'id'))
       })
   }, [contractIds, topicSlugs, ignoreSlugs])
@@ -53,7 +49,7 @@ export const useContracts = (
 
   useEffectCheckEquality(() => {
     if (contractIds) {
-      getContracts(contractIds, pk).then((result) => {
+      getContracts(db, contractIds, pk).then((result) => {
         setContracts(result)
       })
     }
@@ -69,7 +65,7 @@ export const useContract = (contractId: string | undefined) => {
 
   useEffect(() => {
     if (contractId) {
-      getContract(contractId).then((result) => {
+      getContract(db, contractId).then((result) => {
         setContract(result)
       })
     }
@@ -82,9 +78,9 @@ export function useLiveAllNewContracts(limit: number) {
   const [contracts, setContracts] = useState<Contract[]>([])
 
   useEffect(() => {
-    getRecentPublicContractRows({ limit }).then((result) => {
-      setContracts(result.map(convertContract))
-    })
+    api('search-markets-full', { sort: 'newest', limit }).then((result) =>
+      setContracts(result)
+    )
   }, [])
 
   useApiSubscription({
@@ -107,7 +103,7 @@ export function useLiveContract<C extends Contract = Contract>(initial: C) {
 
   useEffect(() => {
     if (isPageVisible) {
-      getContract(initial.id).then((result) => {
+      getContract(db, initial.id).then((result) => {
         if (result) setContract(result as C)
       })
     }

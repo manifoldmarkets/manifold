@@ -45,7 +45,7 @@ export default function ReferralsPage() {
           <div className={'mb-4'}>
             Invite new users to Manifold and get{' '}
             <CoinNumber
-              isSpice
+              coinType="spice"
               amount={REFERRAL_AMOUNT}
               style={{
                 color: SPICE_COLOR,

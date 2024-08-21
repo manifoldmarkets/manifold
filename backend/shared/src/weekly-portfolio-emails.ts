@@ -1,5 +1,5 @@
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMContract,
   CPMMMultiContract,
 } from 'common/contract'
@@ -109,13 +109,13 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     'week'
   )
   const allWeeklyMoversContracts = (await getContracts(
+    db,
     uniq(
       Object.values(usersToContractMetrics).flatMap((cms) =>
         cms.map((cm) => cm.contractId)
       )
-    ),
-    db
-  )) as CPMMBinaryContract[]
+    )
+  )) as BinaryContract[]
   const chunks = chunk(privateUsers, 250)
   let sent = 0
   for (const chunk of chunks) {

@@ -7,7 +7,6 @@ import {
   replied_users_info,
 } from 'shared/create-notification'
 import { parseMentions, richTextToString } from 'common/util/parse'
-import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import {
@@ -16,6 +15,7 @@ import {
 } from 'shared/supabase/init'
 import { insertModReport } from 'shared/create-mod-report'
 import { updateContract } from 'shared/supabase/contracts'
+import { followContractInternal } from 'api/follow-contract'
 
 export const onCreateCommentOnContract = async (props: {
   contract: Contract
@@ -36,7 +36,7 @@ export const onCreateCommentOnContract = async (props: {
 
   const lastCommentTime = comment.createdTime
 
-  await addUserToContractFollowers(contract.id, creator.id)
+  await followContractInternal(pg, contract.id, true, creator.id)
 
   await updateContract(pg, contract.id, {
     lastCommentTime,

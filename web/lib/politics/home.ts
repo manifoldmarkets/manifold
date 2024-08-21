@@ -13,14 +13,17 @@ import { governors2024 } from 'web/public/data/governors-data'
 import { senate2024 } from 'web/public/data/senate-state-data'
 import { api } from 'web/lib/api/api'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
-import { getBetPoints } from 'common/supabase/bets'
 import { getMultiBetPoints } from 'common/contract-params'
 import { PolicyContractType, PolicyData } from 'web/public/data/policy-data'
 import { mapValues } from 'lodash'
+import { getBetPoints } from 'web/lib/supabase/bets'
+
+export const ELECTION_PARTY_CONTRACT_SLUG =
+  'which-party-will-win-the-2024-us-pr-f4158bf9278a'
 
 export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
-  const getContract = (slug: string) => getContractFromSlug(slug, adminDb)
+  const getContract = (slug: string) => getContractFromSlug(adminDb, slug)
 
   const [
     presidencyStateContracts,
@@ -43,14 +46,14 @@ export async function getElectionsPageProps() {
   const trendingDashboard = await getDashboardProps('politicsheadline')
 
   const specialContractSlugs = [
-    'which-party-will-win-the-2024-us-pr-f4158bf9278a',
+    ELECTION_PARTY_CONTRACT_SLUG,
     'who-will-win-the-2024-us-presidenti-8c1c8b2f8964',
     'who-will-win-the-2024-republican-pr-e1332cf40e59',
     'who-will-win-the-2024-democratic-pr-47576e90fa38',
     'who-will-win-the-new-hampshire-repu',
     'who-will-be-the-republican-nominee-8a36dedc6445',
     '2024-house-races-which-congressiona',
-    // 'who-will-be-the-democratic-nominee-9d4a78f63ce1',
+    'who-will-be-the-democratic-nominee-9d4a78f63ce1',
     // 'who-would-win-the-us-presidential-e-e43c62c31980',
     // 'who-would-win-the-us-presidential-e-2f4e0b318013',
     'who-would-win-the-presidential-elec',
@@ -67,7 +70,7 @@ export async function getElectionsPageProps() {
     newHampshireContract,
     republicanVPContract,
     houseContract,
-    // democraticVPContract,
+    democraticVPContract,
     democraticElectability,
     // republicanElectability,
   ] = await Promise.all(contractsPromises)
@@ -80,7 +83,7 @@ export async function getElectionsPageProps() {
     electionPartyContract &&
     electionPartyContract.mechanism == 'cpmm-multi-1'
   ) {
-    const allBetPoints = await getBetPoints(adminDb, electionPartyContract.id, {
+    const allBetPoints = await getBetPoints(electionPartyContract.id, {
       afterTime: afterTime,
     })
 
@@ -108,7 +111,7 @@ export async function getElectionsPageProps() {
     democratCandidateContract,
     newHampshireContract,
     republicanVPContract,
-    // democraticVPContract,
+    democraticVPContract,
     democraticElectability,
     // republicanElectability,
     linkPreviews,
@@ -142,14 +145,12 @@ async function getPolicyContracts(
   getContract: (slug: string) => Promise<Contract | null>
 ): Promise<PolicyContractType[]> {
   const mapContractsPromises = PolicyData.map(async (m) => {
-    const bidenContract = await getContract(m.bidenSlug)
+    const harrisContract = await getContract(m.harrisSlug)
     const trumpContract = await getContract(m.trumpSlug)
-    if (!bidenContract || !trumpContract) {
-      throw new Error('Policy contract not found')
-    }
+
     return {
       title: m.title,
-      bidenContract: bidenContract,
+      harrisContract: harrisContract,
       trumpContract: trumpContract,
     }
   })

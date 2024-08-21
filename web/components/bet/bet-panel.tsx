@@ -1,12 +1,11 @@
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { sumBy } from 'lodash'
 import toast from 'react-hot-toast'
-import { CheckIcon } from '@heroicons/react/solid'
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   isBinaryMulti,
@@ -55,6 +54,7 @@ import { FeeDisplay } from './fees'
 import { floatingEqual } from 'common/util/math'
 import { getTierFromLiquidity } from 'common/tier'
 import { getAnswerColor } from '../charts/contract/choice'
+import { LimitBet } from 'common/bet'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -66,7 +66,7 @@ export type MultiBetProps = {
 
 export function BuyPanel(props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -92,7 +92,6 @@ export function BuyPanel(props: {
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
-  const isAdvancedTrader = useIsAdvancedTrader()
 
   const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
 
@@ -131,11 +130,10 @@ export function BuyPanel(props: {
                 onOutcomeChoice(choice)
               }}
               yesLabel={
-                isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
+                isPseudoNumeric ? 'HIGHER' : isStonk ? STONK_YES : 'YES'
               }
-              noLabel={
-                isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
-              }
+              noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : 'NO'}
+              isCash={contract.token === 'CASH'}
             />
           </Row>
         </Col>
@@ -172,7 +170,7 @@ export function BuyPanel(props: {
 
 export const BuyPanelBody = (props: {
   contract:
-    | CPMMBinaryContract
+    | BinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
@@ -235,6 +233,7 @@ export const BuyPanelBody = (props: {
 
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const betDeps = useRef<LimitBet[]>()
 
   const [inputRef, focusAmountInput] = useFocus()
 
@@ -278,62 +277,65 @@ export const BuyPanelBody = (props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    const bet = await api(
-      'bet',
-      removeUndefinedProps({
-        outcome,
-        amount: betAmount,
-        contractId: contract.id,
-        answerId: multiProps?.answerToBuy.id,
-        replyToCommentId,
-      })
-    )
-      .then((r) => {
-        console.log('placed bet. Result:', r)
-        setIsSubmitting(false)
-        setBetAmount(undefined)
-        if (onBuySuccess) onBuySuccess()
-        else {
-          toast('Trade submitted!', {
-            icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
+    try {
+      const bet = await toast.promise(
+        api(
+          'bet',
+          removeUndefinedProps({
+            outcome,
+            amount: betAmount,
+            contractId: contract.id,
+            answerId: multiProps?.answerToBuy.id,
+            replyToCommentId,
+            deps: betDeps.current?.map((b) => b.userId),
           })
+        ),
+        {
+          loading: 'Submitting bet...',
+          success: 'Bet submitted!',
+          error: 'Error submitting bet',
         }
-        return r
-      })
-      .catch((e) => {
-        if (e instanceof APIError) {
-          const message = e.message.toString()
-          if (message.includes('could not serialize access')) {
-            setError('Error placing bet')
-            console.error('Error placing bet', e)
-          } else setError(message)
-        } else {
-          console.error(e)
-          setError('Error placing bet')
-        }
-        setIsSubmitting(false)
-        return undefined
-      })
-
-    track(
-      'bet',
-      removeUndefinedProps({
-        location,
-        outcomeType: contract.outcomeType,
-        slug: contract.slug,
-        contractId: contract.id,
-        amount: betAmount,
-        betGroupId: bet?.betGroupId,
-        betId: bet?.betId,
-        outcome,
-        isLimitOrder: false,
-        answerId: multiProps?.answerToBuy.id,
-        feedReason,
-      })
-    )
+      )
+      console.log('placed bet. Result:', bet)
+      setBetAmount(undefined)
+      if (onBuySuccess) onBuySuccess()
+      track(
+        'bet',
+        removeUndefinedProps({
+          location,
+          outcomeType: contract.outcomeType,
+          slug: contract.slug,
+          contractId: contract.id,
+          amount: betAmount,
+          betGroupId: bet?.betGroupId,
+          betId: bet?.betId,
+          outcome,
+          isLimitOrder: false,
+          answerId: multiProps?.answerToBuy.id,
+          feedReason,
+        })
+      )
+    } catch (e) {
+      if (e instanceof APIError) {
+        const message = e.message.toString()
+        if (message.includes('could not serialize access')) {
+          setError('Error placing bet (could not serialize access)')
+          console.error('Error placing bet', e)
+        } else setError(message)
+      } else {
+        console.error(e)
+        setError('Error placing bet')
+      }
+      return undefined
+    } finally {
+      setIsSubmitting(false)
+    }
   }
   const betDisabled =
-    isSubmitting || !betAmount || !!error || outcome === undefined
+    isSubmitting ||
+    !betAmount ||
+    outcome === undefined ||
+    error === 'Insufficient balance'
 
   const limits =
     contract.outcomeType === 'STONK'
@@ -347,61 +349,83 @@ export const BuyPanelBody = (props: {
   let probAfter: number
   let fees: number
   let filledAmount: number
-  if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
-    const { answers, answerToBuy } = multiProps
-    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
-      answers,
-      answerToBuy,
-      outcome ?? 'YES',
-      betAmount ?? 0,
-      undefined,
-      unfilledBets,
-      balanceByUserId,
-      contract.collectedFees
-    )
-    const { pool, p } = newBetResult.cpmmState
-    currentPayout = sumBy(newBetResult.takers, 'shares')
-    filledAmount = sumBy(newBetResult.takers, 'amount')
-    if (multiProps.answerToBuy.text !== multiProps.answerText && isBinaryMC) {
-      probBefore = 1 - answerToBuy.prob
-      probAfter = 1 - getCpmmProbability(pool, p)
-    } else {
-      probBefore = answerToBuy.prob
-      probAfter = getCpmmProbability(pool, p)
-    }
-    fees =
-      getFeeTotal(newBetResult.totalFees) +
-      sumBy(otherBetResults, (result) => getFeeTotal(result.totalFees))
-  } else {
-    const cpmmState = isCpmmMulti
-      ? {
-          pool: {
-            YES: multiProps!.answerToBuy.poolYes,
-            NO: multiProps!.answerToBuy.poolNo,
-          },
-          p: 0.5,
-          collectedFees: contract.collectedFees,
-        }
-      : {
-          pool: contract.pool,
-          p: contract.p,
-          collectedFees: contract.collectedFees,
-        }
 
-    const result = computeCpmmBet(
-      cpmmState,
-      outcome ?? 'YES',
-      betAmount ?? 0,
-      undefined,
-      unfilledBets,
-      balanceByUserId,
-      limits
+  try {
+    if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
+      const { answers, answerToBuy } = multiProps
+      const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+        answers,
+        answerToBuy,
+        outcome ?? 'YES',
+        betAmount ?? 0,
+        undefined,
+        unfilledBets,
+        balanceByUserId,
+        contract.collectedFees
+      )
+      const { pool, p } = newBetResult.cpmmState
+      currentPayout = sumBy(newBetResult.takers, 'shares')
+      filledAmount = sumBy(newBetResult.takers, 'amount')
+      if (multiProps.answerToBuy.text !== multiProps.answerText && isBinaryMC) {
+        probBefore = 1 - answerToBuy.prob
+        probAfter = 1 - getCpmmProbability(pool, p)
+      } else {
+        probBefore = answerToBuy.prob
+        probAfter = getCpmmProbability(pool, p)
+      }
+      fees =
+        getFeeTotal(newBetResult.totalFees) +
+        sumBy(otherBetResults, (result) => getFeeTotal(result.totalFees))
+      betDeps.current = newBetResult.makers
+        .map((m) => m.bet)
+        .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
+        .concat(newBetResult.ordersToCancel)
+        .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
+    } else {
+      const cpmmState = isCpmmMulti
+        ? {
+            pool: {
+              YES: multiProps!.answerToBuy.poolYes,
+              NO: multiProps!.answerToBuy.poolNo,
+            },
+            p: 0.5,
+            collectedFees: contract.collectedFees,
+          }
+        : {
+            pool: contract.pool,
+            p: contract.p,
+            collectedFees: contract.collectedFees,
+          }
+
+      const result = computeCpmmBet(
+        cpmmState,
+        outcome ?? 'YES',
+        betAmount ?? 0,
+        undefined,
+        unfilledBets,
+        balanceByUserId,
+        limits
+      )
+      currentPayout = result.shares
+      filledAmount = result.amount
+      probBefore = result.probBefore
+      probAfter = result.probAfter
+      fees = getFeeTotal(result.fees)
+      betDeps.current = result.makers
+        .map((m) => m.bet)
+        .concat(result.ordersToCancel)
+    }
+  } catch (err: any) {
+    console.error('Error in calculateCpmmMultiArbitrageBet:', err)
+    setError(
+      err?.message ?? 'An error occurred during bet calculation, try again.'
     )
-    currentPayout = result.shares
-    filledAmount = result.amount
-    probBefore = result.probBefore
-    probAfter = result.probAfter
-    fees = getFeeTotal(result.fees)
+    // Set default values or handle the error case as needed
+    currentPayout = 0
+    probBefore = 0
+    probAfter = 0
+    fees = 0
+    filledAmount = 0
   }
 
   const probStayedSame = formatPercent(probAfter) === formatPercent(probBefore)

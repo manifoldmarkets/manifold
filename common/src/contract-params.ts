@@ -5,12 +5,10 @@ import {
 import {
   CPMMMultiContract,
   Contract,
-  MaybeAuthedContractParams,
   CPMMNumericContract,
   ContractParams,
 } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
-import { getBetPoints, getTotalBetCount } from 'common/supabase/bets'
 import {
   getRecentTopLevelCommentsAndReplies,
   getPinnedComments,
@@ -31,11 +29,12 @@ import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
 import { MAX_ANSWERS, sortAnswers } from './answer'
 import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
+import { getBetPoints, getTotalBetCount } from 'web/lib/supabase/bets'
 
 export async function getContractParams(
   contract: Contract,
   db: SupabaseClient
-): Promise<MaybeAuthedContractParams> {
+): Promise<Omit<ContractParams, 'cash'>> {
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
   const isMulti = contract.mechanism === 'cpmm-multi-1'
@@ -63,7 +62,7 @@ export async function getContractParams(
     hasMechanism
       ? isNumber
         ? numberContractBetCount()
-        : getTotalBetCount(contract.id, db)
+        : getTotalBetCount(contract.id)
       : 0,
     hasMechanism
       ? unauthedApi('bets', {
@@ -74,7 +73,7 @@ export async function getContractParams(
         })
       : ([] as Bet[]),
     hasMechanism
-      ? getBetPoints(db, contract.id, {
+      ? getBetPoints(contract.id, {
           filterRedemptions: contract.mechanism !== 'cpmm-multi-1',
         })
       : [],
@@ -85,11 +84,9 @@ export async function getContractParams(
       : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    unauthedApi('get-related-markets-cache', {
+    unauthedApi('get-related-markets', {
       contractId: contract.id,
-      limit: 2,
-      embeddingsLimit: 10,
-      limitTopics: 4,
+      limit: 10,
     }),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
@@ -128,32 +125,28 @@ export async function getContractParams(
   const lastBet: Bet | undefined = lastBetArray[0]
   const lastBetTime = lastBet?.createdTime
 
-  return {
-    state: 'authed',
-    params: removeUndefinedProps({
-      outcomeType: contract.outcomeType,
-      contract,
-      lastBetTime,
-      betReplies,
-      pointsString,
-      multiPointsString,
-      comments,
-      userPositionsByOutcome,
-      totalPositions,
-      totalBets,
-      topContractMetrics,
-      relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
-      relatedContractsByTopicSlug: relatedContracts.marketsByTopicSlug,
-      chartAnnotations,
-      pinnedComments,
-      topics: orderBy(
-        topics,
-        (t) => t.importanceScore + (t.privacyStatus === 'public' ? 1 : 0),
-        'desc'
-      ),
-      dashboards,
-    }) as ContractParams,
-  }
+  return removeUndefinedProps({
+    outcomeType: contract.outcomeType,
+    contract,
+    lastBetTime,
+    betReplies,
+    pointsString,
+    multiPointsString,
+    comments,
+    userPositionsByOutcome,
+    totalPositions,
+    totalBets,
+    topContractMetrics,
+    relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
+    chartAnnotations,
+    pinnedComments,
+    topics: orderBy(
+      topics,
+      (t) => t.importanceScore + (t.privacyStatus === 'public' ? 1 : 0),
+      'desc'
+    ),
+    dashboards,
+  })
 }
 
 export const getSingleBetPoints = (
@@ -171,7 +164,7 @@ export const getSingleBetPoints = (
 }
 
 export const getMultiBetPoints = (
-  betPoints: { x: number; y: number; answerId: string }[],
+  betPoints: { x: number; y: number; answerId: string | undefined }[],
   contract: CPMMMultiContract
 ) => {
   const { answers } = contract

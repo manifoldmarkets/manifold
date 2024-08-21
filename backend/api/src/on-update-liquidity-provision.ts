@@ -1,10 +1,10 @@
 import { getContract, getUser, log } from 'shared/utils'
 import { createFollowOrMarketSubsidizedNotification } from 'shared/create-notification'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { addUserToContractFollowers } from 'shared/follow-market'
 import { broadcastNewSubsidy } from 'shared/websockets/helpers'
 import { type Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { followContractInternal } from 'api/follow-contract'
 
 export const onCreateLiquidityProvision = async (
   liquidity: LiquidityProvision
@@ -26,7 +26,7 @@ export const onCreateLiquidityProvision = async (
 
   const liquidityProvider = await getUser(liquidity.userId)
   if (!liquidityProvider) throw new Error('Could not find liquidity provider')
-  await addUserToContractFollowers(contract.id, liquidityProvider.id)
+  await followContractInternal(pg, contract.id, true, liquidityProvider.id)
   await createFollowOrMarketSubsidizedNotification(
     contract.id,
     'liquidity',

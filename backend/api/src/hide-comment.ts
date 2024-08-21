@@ -1,10 +1,7 @@
 import { isAdminId, isModId } from 'common/envs/constants'
 import { getContract, revalidateContractStaticProps } from 'shared/utils'
-import { getComment } from 'shared/supabase/contract_comments'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { getComment } from 'shared/supabase/contract-comments'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
 
@@ -21,7 +18,6 @@ export const hideComment: APIHandler<'hide-comment'> = async (
     )
   }
 
-  const db = createSupabaseClient()
   const pg = createSupabaseDirectClient()
 
   const contract = await getContract(pg, contractId)
@@ -36,10 +32,10 @@ export const hideComment: APIHandler<'hide-comment'> = async (
     )
   }
 
-  const comment = await getComment(db, commentId)
+  const comment = await getComment(pg, commentId)
 
   // update the comment
-  updateData(pg, 'contract_comments', 'comment_id', {
+  await updateData(pg, 'contract_comments', 'comment_id', {
     comment_id: commentId,
     hidden: !comment.hidden,
     hiddenTime: Date.now(),

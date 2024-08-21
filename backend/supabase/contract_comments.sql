@@ -7,8 +7,9 @@ create table if not exists
     visibility text,
     user_id text not null,
     created_time timestamp with time zone not null,
-    is_api boolean default false not null,
-    likes integer default 0 not null
+    likes integer default 0 not null,
+    upvotes integer default 0,
+    downvotes integer default 0
   );
 
 -- Triggers
@@ -33,15 +34,9 @@ end $function$;
 -- Policies
 alter table contract_comments enable row level security;
 
-drop policy if exists "Enable read access for non private comments" on contract_comments;
+drop policy if exists "public read" on contract_comments;
 
-create policy "Enable read access for non private comments" on contract_comments for
-select
-  using ((visibility <> 'private'::text));
-
-drop policy if exists "auth read" on contract_comments;
-
-create policy "auth read" on contract_comments for
+create policy "public read" on contract_comments for
 select
   using (true);
 

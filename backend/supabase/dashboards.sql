@@ -28,7 +28,7 @@ drop policy if exists "Enable read access for admin" on dashboards;
 
 create policy "Enable read access for admin" on dashboards for
 select
-  using (true);
+  to service_role using (true);
 
 -- Indexes
 drop index if exists dashboards_pkey;
