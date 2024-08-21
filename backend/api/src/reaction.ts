@@ -91,19 +91,13 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
       if (contentType === 'comment') {
         const count = await pg.one(
           `select count(*) from user_reactions
-           where content_id = $1 and content_type = $2 AND reaction_type = 'upvote'`,
-          [contentId, contentType],
+           where content_id = $1 and content_type = $2 and reaction_type = $3`,
+          [contentId, contentType, reactionType],
           (r) => r.count
         )
-        log('new upvote count ' + count)
-        if (contentType === 'comment') {
-          const count = await pg.one(
-            `select count(*) from user_reactions
-          where content_id = $1 and content_type = $2 AND reaction_type = 'downvote'`,
-            [contentId, contentType],
-            (r) => r.count
-          )
-          log('new downvote count ' + count)
+        log(`new ${reactionType} count ${ count }`)
+
+        if (reactionType === 'like') {
           await pg.none(
             `update contract_comments set likes = $1 where comment_id = $2`,
             [count, contentId]
