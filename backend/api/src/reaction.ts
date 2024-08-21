@@ -53,14 +53,8 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
       [contentId, contentType, userId]
     )
 
-    const existing = await pg.manyOrNone(
-      reactionType === 'like'
-        ? `select * from user_reactions where reaction_type = 'like'`
-        : `select * from user_reactions WHERE reaction_type = 'upvote' OR reaction_type = 'downvote'`
-    )
-
-    if (existing.length > 0) {
-      const existingReaction = existing[0]
+    if (existingReactions.length > 0) {
+      const existingReaction = existingReactions[0]
       if (
         (existingReaction.reaction_type === 'upvote' &&
           reactionType === 'downvote') ||
@@ -69,10 +63,10 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
       ) {
         await pg.none(
           `delete from user_reactions
-          where reaction_id = ??`,
+          where reaction_id = $1`,
           [existingReaction.reaction_id]
         )
-      } else if (existingReaction.reaction_type === 'like') {
+      } else if (reactionType === existingReaction.reaction_type) {
         log('Reaction already exists, do nothing')
         return { result: { success: true }, continue: async () => {} }
       }
@@ -80,11 +74,12 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
 
     // actually do the insert
     const reactionRow = await pg.one(
-      `insert into user_reactions
-       (content_id, content_type, content_owner_id, user_id)
-       values ($1, $2, $3, $4)
+      // To-Do this currently does not insert "likes"
+      `INSERT into user_reactions
+       (content_id, content_type, content_owner_id, user_id, reaction_type)
+       values ($1, $2, $3, $4, $5)
        returning *`,
-      [contentId, contentType, ownerId, userId]
+      [contentId, contentType, ownerId, userId, reactionType]
     )
 
     await createLikeNotification(reactionRow)
@@ -96,15 +91,24 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
       if (contentType === 'comment') {
         const count = await pg.one(
           `select count(*) from user_reactions
-           where content_id = $1 and content_type = $2`,
+           where content_id = $1 and content_type = $2 AND reaction_type = 'upvote'`,
           [contentId, contentType],
           (r) => r.count
         )
-        log('new like count ' + count)
-        await pg.none(
-          `update contract_comments set likes = $1 where comment_id = $2`,
-          [count, contentId]
-        )
+        log('new upvote count ' + count)
+        if (contentType === 'comment') {
+          const count = await pg.one(
+            `select count(*) from user_reactions
+          where content_id = $1 and content_type = $2 AND reaction_type = 'downvote'`,
+            [contentId, contentType],
+            (r) => r.count
+          )
+          log('new downvote count ' + count)
+          await pg.none(
+            `update contract_comments set likes = $1 where comment_id = $2`,
+            [count, contentId]
+          )
+        }
       }
     },
   }

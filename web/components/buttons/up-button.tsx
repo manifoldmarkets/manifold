@@ -259,7 +259,7 @@ function UserVotedFullList(props: {
       modalLabel={
         <span>
           {userUpvoted
-            ? '💖 Upvoted'
+            ? '👍 Upvoted'
             : userDownvoted
             ? '👎 Downvoted'
             : 'Voted on'}{' '}
