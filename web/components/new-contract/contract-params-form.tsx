@@ -55,6 +55,7 @@ import { SimilarContractsSection } from 'web/components/new-contract/similar-con
 import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MarketTierType } from 'common/tier'
+import { randomString } from 'common/util/random'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -97,6 +98,10 @@ export function ContractParamsForm(props: {
     params?.initValue?.toString(),
     'new-init-value' + paramsKey
   )
+
+  // Don't use the usePersistentLocalState hook for this, because there's too high a risk that it will survive in local storage
+  // longer than it should under a trivial paramsKey like '', and improperly prevent users from creating any new contracts.
+  const [idempotencyKey] = useState(randomString())
 
   // For multiple choice, init to 2 empty answers
   const defaultAnswers =
@@ -386,6 +391,7 @@ export function ContractParamsForm(props: {
           outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
         precision,
         marketTier,
+        idempotencyKey,
       })
 
       const newContract = await api('market', createProps as any)

@@ -55,6 +55,8 @@ import { floatingEqual } from 'common/util/math'
 import { getTierFromLiquidity } from 'common/tier'
 import { getAnswerColor } from '../charts/contract/choice'
 import { LimitBet } from 'common/bet'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { MoneyDisplay } from './money-display'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -134,6 +136,7 @@ export function BuyPanel(props: {
               }
               noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : 'NO'}
               isCash={contract.token === 'CASH'}
+              includeWordBet={!isStonk}
             />
           </Row>
         </Col>
@@ -142,7 +145,9 @@ export function BuyPanel(props: {
         <BuyPanelBody
           {...props}
           panelClassName={
-            outcome === 'NO'
+            TWOMBA_ENABLED
+              ? 'bg-canvas-50'
+              : outcome === 'NO'
               ? 'bg-scarlet-50'
               : outcome === 'YES'
               ? 'bg-teal-50'
@@ -460,6 +465,9 @@ export const BuyPanelBody = (props: {
   const choicesMap: { [key: string]: string } = isStonk
     ? { Buy: 'YES', Short: 'NO' }
     : { Yes: 'YES', No: 'NO' }
+
+  const isCashContract = contract.token === 'CASH'
+
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
@@ -531,6 +539,7 @@ export const BuyPanelBody = (props: {
                 binaryOutcome={isBinaryMC ? undefined : outcome}
                 showSlider={isAdvancedTrader}
                 marketTier={marketTier}
+                token={isCashContract ? 'CASH' : 'M$'}
               />
 
               {isAdvancedTrader && (
@@ -568,12 +577,18 @@ export const BuyPanelBody = (props: {
                     <div className="text-ink-700 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
                       {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
                     </div>
+
                     <span className="mr-1 whitespace-nowrap text-lg">
-                      {isStonk
-                        ? getStonkDisplayShares(contract, currentPayout, 2)
-                        : isPseudoNumeric
-                        ? Math.floor(currentPayout)
-                        : formatMoney(currentPayout)}
+                      {isStonk ? (
+                        getStonkDisplayShares(contract, currentPayout, 2)
+                      ) : isPseudoNumeric ? (
+                        Math.floor(currentPayout)
+                      ) : (
+                        <MoneyDisplay
+                          amount={currentPayout}
+                          isCashContract={isCashContract}
+                        />
+                      )}
                     </span>
                     <span className="text-green-500 ">
                       {isStonk || isPseudoNumeric
@@ -588,7 +603,10 @@ export const BuyPanelBody = (props: {
                           Refund amount
                         </div>
                         <span className="mr-1 whitespace-nowrap text-lg">
-                          {formatMoney(betAmount - filledAmount)}
+                          <MoneyDisplay
+                            amount={betAmount - filledAmount}
+                            isCashContract={isCashContract}
+                          />
                         </span>
                       </Row>
                     )}
@@ -628,19 +646,31 @@ export const BuyPanelBody = (props: {
                   (outcome === 'NO' ? 'red' : 'green')
                 }
                 actionLabel={
-                  betDisabled
-                    ? `Select ${formatOutcomeLabel(
-                        contract,
-                        'YES'
-                      )} or ${formatOutcomeLabel(contract, 'NO')}`
-                    : isStonk
-                    ? formatOutcomeLabel(contract, outcome) +
-                      ' ' +
-                      formatMoney(betAmount)
-                    : `Bet ${
-                        binaryMCOutcomeLabel ??
-                        formatOutcomeLabel(contract, outcome)
-                      } to win ${formatMoney(currentPayout)}`
+                  betDisabled ? (
+                    `Select ${formatOutcomeLabel(
+                      contract,
+                      'YES'
+                    )} or ${formatOutcomeLabel(contract, 'NO')}`
+                  ) : isStonk ? (
+                    <span>
+                      {formatOutcomeLabel(contract, outcome)}{' '}
+                      <MoneyDisplay
+                        amount={betAmount}
+                        isCashContract={isCashContract}
+                      />
+                    </span>
+                  ) : (
+                    <span>
+                      Bet{' '}
+                      {binaryMCOutcomeLabel ??
+                        formatOutcomeLabel(contract, outcome)}{' '}
+                      to win{' '}
+                      <MoneyDisplay
+                        amount={currentPayout}
+                        isCashContract={isCashContract}
+                      />
+                    </span>
+                  )
                 }
                 inModal={!!onClose}
               />
@@ -669,7 +699,10 @@ export const BuyPanelBody = (props: {
                 Your balance{' '}
               </span>
               <span className="text-ink-700 font-semibold">
-                {formatMoney(user.balance)}
+                <MoneyDisplay
+                  amount={isCashContract ? user.cashBalance : user.balance}
+                  isCashContract={isCashContract}
+                />
               </span>
             </Row>
           </Row>
@@ -734,7 +767,12 @@ export const BuyPanelBody = (props: {
 
         {betType !== 'Limit' && (
           <div className="text-ink-700 mt-1 text-sm">
-            Fees <FeeDisplay amount={betAmount} totalFees={fees} />
+            Fees{' '}
+            <FeeDisplay
+              amount={betAmount}
+              totalFees={fees}
+              isCashContract={isCashContract}
+            />
           </div>
         )}
 

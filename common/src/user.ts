@@ -20,6 +20,7 @@ export type User = {
   cashBalance: number // prize points
   spiceBalance: number
   totalDeposits: number
+  totalCashDeposits: number
   resolvedProfitAdjustment?: number
   profitCached: {
     daily: number

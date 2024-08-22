@@ -19,9 +19,15 @@ export function StateContract(props: {
   targetState?: string | null
   setTargetState: (state?: string) => void
   customTitleFunction?: (title: string) => string | undefined
+  includeHead?: boolean
 }) {
-  const { targetContract, targetState, setTargetState, customTitleFunction } =
-    props
+  const {
+    targetContract,
+    targetState,
+    setTargetState,
+    customTitleFunction,
+    includeHead,
+  } = props
   if (!targetContract) {
     return <EmptyStateContract />
   }
@@ -40,6 +46,7 @@ export function StateContract(props: {
         targetState={targetState}
         setTargetState={setTargetState}
         className="my-auto"
+        includeHead={includeHead}
       />
     </Col>
   )

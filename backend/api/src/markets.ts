@@ -65,7 +65,7 @@ export const getMarkets: APIHandler<'markets'> = async ({
     groupId && where('group_contracts.group_id = ${groupId}', { groupId }),
     userId && where('creator_id = ${userId}', { userId }),
     beforeVal !== undefined && where(`${sortColumn} < $1`, [beforeVal]),
-    orderBy(`${sortColumn} ${order ?? 'asc'} nulls last`),
+    orderBy(`${sortColumn} ${order ?? 'desc'} nulls last`),
     limit && lim(limit)
   )
   const query = renderSql(q)

@@ -72,6 +72,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
         contract={electionPartyContract as MultiContract}
         viewType="PARTY"
         customTitle="Which party will win the Presidential Election?"
+        includeHead
       />
 
       {trending}

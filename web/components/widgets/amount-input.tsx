@@ -21,6 +21,7 @@ import {
 } from './increment-button'
 import { Input } from './input'
 import { MarketTierType } from 'common/tier'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function AmountInput(
   props: {
@@ -164,7 +165,7 @@ export function BuyAmountInput(props: {
   disregardUserBalance?: boolean
   quickButtonValues?: number[] | 'large'
   disableQuickButtons?: boolean
-  token?: 'M$' | 'SPICE'
+  token?: 'M$' | 'SPICE' | 'CASH'
   marketTier?: MarketTierType | undefined
 }) {
   const {
@@ -251,7 +252,15 @@ export function BuyAmountInput(props: {
               (incrementValues.length > 2 ? 'pr-[182px]' : 'pr-[134px]'),
             inputClassName
           )}
-          label={token === 'SPICE' ? <SpiceCoin /> : <ManaCoin />}
+          label={
+            token === 'SPICE' ? (
+              <SpiceCoin />
+            ) : token == 'CASH' ? (
+              <SweepiesCoin />
+            ) : (
+              <ManaCoin />
+            )
+          }
           amount={amount}
           onChangeAmount={onChange}
           error={!!error}

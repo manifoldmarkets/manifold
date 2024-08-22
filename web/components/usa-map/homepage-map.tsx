@@ -141,6 +141,7 @@ export function HomepageMap(props: {
               targetState={targetState}
               setTargetState={setTargetState}
               customTitleFunction={extractStateFromPresidentContract}
+              includeHead
             />
           ) : (
             <SwingStateContract

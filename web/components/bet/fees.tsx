@@ -1,15 +1,20 @@
-import { formatMoneyToDecimal } from 'common/util/format'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { MoneyDisplay } from './money-display'
 
 export const FeeDisplay = (props: {
   totalFees: number
   amount: number | undefined
+  isCashContract?: boolean
 }) => {
-  const { totalFees, amount } = props
+  const { totalFees, amount, isCashContract } = props
   return (
     <span>
       <span className="text-ink-700 font-semibold">
-        {formatMoneyToDecimal(totalFees)}
+        <MoneyDisplay
+          amount={totalFees}
+          numberType="toDecimal"
+          isCashContract={!!isCashContract}
+        />
       </span>
       <InfoTooltip
         text={`${(amount ? (100 * totalFees) / amount : 0).toFixed(

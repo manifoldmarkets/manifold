@@ -2579,33 +2579,42 @@ export type Database = {
       user_portfolio_history: {
         Row: {
           balance: number | null
+          cash_balance: number
+          cash_investment_value: number
           id: number
           investment_value: number | null
           loan_total: number | null
           profit: number | null
           spice_balance: number
+          total_cash_deposits: number
           total_deposits: number | null
           ts: string | null
           user_id: string
         }
         Insert: {
           balance?: number | null
+          cash_balance?: number
+          cash_investment_value?: number
           id?: never
           investment_value?: number | null
           loan_total?: number | null
           profit?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits?: number | null
           ts?: string | null
           user_id: string
         }
         Update: {
           balance?: number | null
+          cash_balance?: number
+          cash_investment_value?: number
           id?: never
           investment_value?: number | null
           loan_total?: number | null
           profit?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits?: number | null
           ts?: string | null
           user_id?: string
@@ -2615,33 +2624,42 @@ export type Database = {
       user_portfolio_history_latest: {
         Row: {
           balance: number
+          cash_balance: number
+          cash_investment_value: number
           investment_value: number
           last_calculated: string
           loan_total: number | null
           profit: number | null
           spice_balance: number
+          total_cash_deposits: number
           total_deposits: number
           ts: string
           user_id: string
         }
         Insert: {
           balance: number
+          cash_balance?: number
+          cash_investment_value?: number
           investment_value: number
           last_calculated: string
           loan_total?: number | null
           profit?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits: number
           ts: string
           user_id: string
         }
         Update: {
           balance?: number
+          cash_balance?: number
+          cash_investment_value?: number
           investment_value?: number
           last_calculated?: string
           loan_total?: number | null
           profit?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits?: number
           ts?: string
           user_id?: string
@@ -2800,6 +2818,7 @@ export type Database = {
           name_username_vector: unknown | null
           resolved_profit_adjustment: number | null
           spice_balance: number
+          total_cash_deposits: number
           total_deposits: number
           username: string
         }
@@ -2813,6 +2832,7 @@ export type Database = {
           name_username_vector?: unknown | null
           resolved_profit_adjustment?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits?: number
           username: string
         }
@@ -2826,6 +2846,7 @@ export type Database = {
           name_username_vector?: unknown | null
           resolved_profit_adjustment?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits?: number
           username?: string
         }

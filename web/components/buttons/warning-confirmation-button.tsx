@@ -17,7 +17,7 @@ export function WarningConfirmationButton(props: {
   ButtonClassName?: string
   color: string
   size: SizeType
-  actionLabel: string
+  actionLabel: string | React.ReactNode
   userOptedOutOfWarning: boolean | undefined
   inModal: boolean
 }) {
@@ -55,7 +55,7 @@ export function WarningConfirmationButton(props: {
   const buttonText = isSubmitting
     ? 'Submitting...'
     : amount && !disabled
-    ? `${actionLabel}`
+    ? actionLabel
     : disabled && !amount
     ? 'Enter an amount'
     : actionLabel

@@ -35,6 +35,7 @@ export function StateContractCard(props: {
   customTitle?: string
   titleSize?: 'lg'
   barColor?: string
+  includeHead?: boolean
 }) {
   const {
     promotedData,
@@ -45,6 +46,7 @@ export function StateContractCard(props: {
     titleSize,
     contract,
     setTargetState,
+    includeHead,
   } = props
 
   const path = contractPath(contract)
@@ -92,7 +94,11 @@ export function StateContractCard(props: {
       </Col>
 
       <div className="w-full overflow-hidden pt-2">
-        <PartyPanel contract={contract as MultiContract} maxAnswers={3} />
+        <PartyPanel
+          contract={contract as MultiContract}
+          maxAnswers={3}
+          includeHead={includeHead}
+        />
       </div>
     </ClickFrame>
   )

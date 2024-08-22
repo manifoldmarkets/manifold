@@ -21,9 +21,11 @@ export const computeInvestmentValue = (
   bets: Bet[],
   contractsDict: { [k: string]: Contract }
 ) => {
-  return sumBy(bets, (bet) => {
+  let investmentValue = 0
+  let cashInvestmentValue = 0
+  for (const bet of bets) {
     const contract = contractsDict[bet.contractId]
-    if (!contract || contract.isResolved) return 0
+    if (!contract || contract.isResolved) continue
 
     let payout
     try {
@@ -39,9 +41,16 @@ export const computeInvestmentValue = (
       payout = 0
     }
     const value = payout - (bet.loanAmount ?? 0)
-    if (isNaN(value)) return 0
-    return value
-  })
+    if (isNaN(value)) continue
+
+    if (contract.token === 'CASH') {
+      cashInvestmentValue += value
+    } else {
+      investmentValue += value
+    }
+  }
+
+  return { investmentValue, cashInvestmentValue }
 }
 
 export const computeInvestmentValueCustomProb = (
@@ -203,13 +212,19 @@ export const calculateNewPortfolioMetrics = (
   contractsById: { [k: string]: Contract },
   unresolvedBets: Bet[]
 ) => {
-  const investmentValue = computeInvestmentValue(unresolvedBets, contractsById)
+  const { investmentValue, cashInvestmentValue } = computeInvestmentValue(
+    unresolvedBets,
+    contractsById
+  )
   const loanTotal = getLoanTotal(unresolvedBets, contractsById)
   return {
-    investmentValue: investmentValue,
+    investmentValue,
+    cashInvestmentValue,
     balance: user.balance,
+    cashBalance: user.cashBalance,
     spiceBalance: user.spiceBalance,
     totalDeposits: user.totalDeposits,
+    totalCashDeposits: user.totalCashDeposits,
     loanTotal,
     timestamp: Date.now(),
     userId: user.id,

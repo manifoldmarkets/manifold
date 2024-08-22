@@ -20,6 +20,7 @@ import {
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
   add_answers_mode,
+  contractUrl,
 } from 'common/contract'
 import { getAnte, getTieredCost } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
@@ -33,6 +34,7 @@ import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
 import {
   generateContractEmbeddings,
+  getContractsDirect,
   updateContract,
 } from 'shared/supabase/contracts'
 import {
@@ -96,6 +98,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     isAutoBounty,
     visibility,
     marketTier,
+    idempotencyKey,
   } = validateMarketBody(body)
 
   if (outcomeType === 'BOUNTIED_QUESTION') {
@@ -135,6 +138,11 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     : unmodifiedAnte
   const ante = Math.min(unmodifiedAnte, totalMarketCost)
 
+  const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(idempotencyKey, pg)
+  if (duplicateSubmissionUrl) {
+    throw new APIError(400, 'Contract has already been created at ' + duplicateSubmissionUrl)
+  }
+
   return await pg.tx(async (tx) => {
     const user = await getUser(userId, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
@@ -147,7 +155,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
     const contract = getNewContract(
       removeUndefinedProps({
-        id: randomString(),
+        id: idempotencyKey ?? randomString(),
         slug,
         creator: user,
         question,
@@ -263,6 +271,18 @@ const runCreateMarketTxn = async (args: {
   }
 }
 
+async function getDuplicateSubmissionUrl(
+  idempotencyKey: string | undefined,
+  pg: SupabaseDirectClient
+): Promise<string | undefined> {
+  if (!idempotencyKey) return undefined;
+  const contracts = await getContractsDirect([idempotencyKey], pg)
+  if (contracts.length > 0) {
+    return contractUrl(contracts[0])
+  }
+  return undefined;
+}
+
 async function getCloseTimestamp(
   closeTime: number | Date | undefined,
   question: string,
@@ -306,6 +326,7 @@ function validateMarketBody(body: Body) {
     isTwitchContract,
     utcOffset,
     marketTier,
+    idempotencyKey,
   } = body
 
   if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
@@ -426,6 +447,7 @@ function validateMarketBody(body: Body) {
     totalBounty,
     isAutoBounty,
     marketTier,
+    idempotencyKey,
   }
 }
 

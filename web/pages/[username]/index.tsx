@@ -413,7 +413,7 @@ function UserProfile(props: {
                               hideAddFundsButton
                             />
 
-                            <div className="text-ink-800 mx-2 mt-6 gap-2 border-t pt-4 text-xl font-semibold lg:mx-0">
+                            <div className="text-ink-800 border-ink-300 mx-2 mt-6 gap-2 border-t pt-4 text-xl font-semibold lg:mx-0">
                               Trades
                             </div>
                           </>
