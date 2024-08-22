@@ -700,7 +700,6 @@ export const BuyPanelBody = (props: {
                 Your balance{' '}
               </span>
               <span className="text-ink-700 font-semibold">
-                {/* {formatMoney(user.balance)} */}
                 <MoneyDisplay
                   amount={isCashContract ? user.cashBalance : user.balance}
                   isCashContract={isCashContract}
