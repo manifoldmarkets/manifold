@@ -3,8 +3,6 @@ import { ManaFlatCoin } from 'web/public/custom-components/manaFlatCoin'
 import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
 import { useSweepstakes } from 'web/components/sweestakes-context'
 
-export type TWOMBA_MODE_TYPE = 'sweepies' | 'mana'
-
 export function TwombaToggle() {
   const { isPlay, setIsPlay } = useSweepstakes()
 
@@ -16,7 +14,7 @@ export function TwombaToggle() {
           ? 'dark:border-primary-700 border-primary-500'
           : 'border-lime-500 dark:border-lime-200'
       )}
-      onClick={() => setIsPlay((state) => !state)}
+      onClick={() => setIsPlay(!isPlay)}
     >
       {/* Add a moving circle behind the active coin */}
       <div

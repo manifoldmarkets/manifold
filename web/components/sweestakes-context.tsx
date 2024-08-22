@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState } from 'react'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 
 type SweepstakesContextType = {
   isPlay: boolean
-  setIsPlay: React.Dispatch<React.SetStateAction<boolean>>
+  setIsPlay: (isPlay: boolean) => void
 }
 
 const SweepstakesContext = createContext<SweepstakesContextType | undefined>(
@@ -12,7 +13,13 @@ const SweepstakesContext = createContext<SweepstakesContextType | undefined>(
 export const SweepstakesProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isPlay, setIsPlay] = useState(true)
+  const [queryPlay, setQueryPlay] = usePersistentQueryState('play', 'true')
+
+  const isPlay = !queryPlay || queryPlay === 'true'
+  const setIsPlay = (isPlay: boolean) => {
+    setQueryPlay(isPlay ? 'true' : 'false')
+  }
+
   return (
     <SweepstakesContext.Provider value={{ isPlay, setIsPlay }}>
       {children}

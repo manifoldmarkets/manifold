@@ -73,6 +73,7 @@ import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from '../../pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweestakes-context'
+import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 
 export function TwombaContractPageContent(props: ContractParams) {
   const {
