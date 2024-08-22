@@ -1,7 +1,14 @@
 'use client'
 import clsx from 'clsx'
 import { AD_REDEEM_REWARD } from 'common/boost'
-import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
+import {
+  BETTING_STREAK_BONUS_MAX,
+  IOS_PRICES,
+  REFERRAL_AMOUNT,
+  MANA_TO_WEB_PRICES,
+  WebManaAmounts,
+  MANA_TO_CASH_BONUS,
+} from 'common/economy'
 import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 import { convertTxn } from 'common/supabase/txns'
@@ -20,7 +27,6 @@ import { getNativePlatform } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { db } from 'web/lib/supabase/db'
-import { IOS_PRICES, WEB_PRICES, WebPriceKeys } from 'web/pages/add-funds'
 import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
 import { AlertBox } from './widgets/alert-box'
@@ -72,8 +78,9 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const { onClose } = props
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
-  const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
-  const [loading, setLoading] = useState<WebPriceKeys | null>(null)
+  const prices =
+    isNative && platform === 'ios' ? IOS_PRICES : MANA_TO_WEB_PRICES
+  const [loading, setLoading] = useState<WebManaAmounts | null>(null)
   const [error, setError] = useState<string | null>(null)
   const handleIapReceipt = async <T extends nativeToWebMessageType>(
     type: T,
@@ -136,12 +143,12 @@ export function BuyManaTab(props: { onClose: () => void }) {
             <PriceTile
               key={`ios-${manaAmount}`}
               dollarAmount={dollarAmount}
-              manaAmount={manaAmount as unknown as WebPriceKeys}
+              manaAmount={manaAmount as unknown as WebManaAmounts}
               loading={loading}
               disabled={pastLimit}
               onClick={() => {
                 setError(null)
-                setLoading(manaAmount as unknown as WebPriceKeys)
+                setLoading(manaAmount as unknown as WebManaAmounts)
                 postMessageToNative('checkout', { amount: dollarAmount })
               }}
             />
@@ -153,7 +160,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
             >
               <PriceTile
                 dollarAmount={dollarAmount}
-                manaAmount={manaAmount as unknown as WebPriceKeys}
+                manaAmount={manaAmount as unknown as WebManaAmounts}
                 loading={loading}
                 disabled={pastLimit}
                 isSubmitButton
@@ -167,10 +174,10 @@ export function BuyManaTab(props: { onClose: () => void }) {
   )
 }
 
-function PriceTile(props: {
+export function PriceTile(props: {
   dollarAmount: number
-  manaAmount: WebPriceKeys
-  loading: WebPriceKeys | null
+  manaAmount: WebManaAmounts
+  loading: WebManaAmounts | null
   disabled: boolean
   onClick?: () => void
   isSubmitButton?: boolean
@@ -203,7 +210,7 @@ function PriceTile(props: {
           <CoinNumber
             coinType="sweepies"
             className="font-bold"
-            amount={manaAmount / 1000}
+            amount={MANA_TO_CASH_BONUS[manaAmount]}
             isInline
           />{' '}
           <span className="text-sm">bonus</span>
@@ -332,7 +339,7 @@ const Item = (props: { children: React.ReactNode; url?: string }) => {
   )
 }
 
-const use24hrUsdPurchases = (userId: string) => {
+export const use24hrUsdPurchases = (userId: string) => {
   const [purchases, setPurchases] = useState<Txn[]>([])
 
   useEffect(() => {

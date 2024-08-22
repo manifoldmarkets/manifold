@@ -5,26 +5,6 @@ import { Page } from 'web/components/layout/page'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { BuyManaTab } from 'web/components/add-funds-modal'
 
-export const WEB_PRICES = {
-  10000: 1399,
-  25000: 2999,
-  100000: 10999,
-  1000000: 100000,
-}
-export const GIDX_PRICES = {
-  10000: 1500,
-  25000: 3000,
-  100000: 11000,
-  1000000: 100000,
-}
-export type WebPriceKeys = keyof typeof WEB_PRICES
-
-export const IOS_PRICES = {
-  10000: 1499,
-  25000: 3599,
-  100000: 14299,
-}
-
 export default function AddFundsPage() {
   useRedirectIfSignedOut()
 

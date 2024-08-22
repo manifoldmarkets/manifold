@@ -12,7 +12,7 @@ import {
 import { getIp } from 'shared/analytics'
 import { log } from 'shared/monitoring/log'
 import { verifyReasonCodes } from 'api/gidx/register'
-import * as crypto from 'crypto'
+import { randomBytes } from 'crypto'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CreateSession'
@@ -24,11 +24,10 @@ export const getCheckoutSession: APIHandler<
     throw new APIError(400, 'GIDX registration is disabled')
   const userId = auth.uid
   await getUserRegistrationRequirements(userId)
-  const MerchantTransactionID = crypto.randomUUID()
-  const MerchantOrderID = crypto.randomUUID()
+  const MerchantTransactionID = randomString(16)
+  const MerchantOrderID = randomString(16)
   const body = {
     ...props,
-    // TODO: add back in prod
     DeviceIpAddress: getIp(req),
     MerchantCustomerID: userId,
     MerchantOrderID,
@@ -104,4 +103,8 @@ export const getCheckoutSession: APIHandler<
       },
     } as CheckoutSession,
   }
+}
+
+const randomString = (length: number): string => {
+  return randomBytes(length).toString('hex').slice(0, length)
 }

@@ -23,7 +23,7 @@ export const paymentCallbackGIDX: APIHandler<'payment-callback-gidx'> = async (
   props
 ) => {
   log('payment-callback-gidx', props)
-
+  // TODO: could be helpful to log this stuff
   // const { MerchantCustomerID } = props
   // const customerProfile = await getGIDXCustomerProfile(MerchantCustomerID)
   // log('CustomerProfile', customerProfile)

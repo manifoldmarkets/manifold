@@ -9,10 +9,28 @@ import {
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { verifyReasonCodes } from 'api/gidx/register'
-import { intersection } from 'lodash'
+import { updateUser } from 'shared/supabase/users'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { runTxn } from 'shared/txn/run-txn'
+import {
+  GIDX_MANA_TO_PRICES,
+  GIDXManaAmount,
+  MANA_TO_CASH_BONUS,
+} from 'common/economy'
+import { getIp } from 'shared/analytics'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
+
+const getManaAmountForWebPrice = (price: number) => {
+  const manaAmount = Object.entries(GIDX_MANA_TO_PRICES).find(
+    ([, p]) => p === price
+  )
+  if (!manaAmount) {
+    throw new APIError(400, 'Invalid price')
+  }
+  return parseInt(manaAmount[0]) as GIDXManaAmount
+}
 
 export const completeCheckoutSession: APIHandler<
   'complete-checkout-session-gidx'
@@ -21,22 +39,33 @@ export const completeCheckoutSession: APIHandler<
     throw new APIError(400, 'GIDX registration is disabled')
   const userId = auth.uid
   const { phoneNumberWithCode } = await getUserRegistrationRequirements(userId)
-  const { PaymentMethod, MerchantSessionID, ...rest } = props
+  const {
+    PaymentMethod,
+    MerchantSessionID,
+    PaymentAmount,
+    MerchantTransactionID,
+  } = props
+  const manaAmount = getManaAmountForWebPrice(
+    (PaymentAmount.PaymentAmount * 100) as any
+  )
+
   const { creditCard, Type, BillingAddress, NameOnAccount, SavePaymentMethod } =
     PaymentMethod
   if (Type === 'CC' && !creditCard) {
     throw new APIError(400, 'Must include credit card information')
   }
   const body = {
-    ...rest,
+    PaymentAmount,
+    DeviceIpAddress: getIp(req),
+    MerchantTransactionID,
     SavePaymentMethod,
     PaymentMethod: {
       Type,
       NameOnAccount,
       ...creditCard,
       PhoneNumber: phoneNumberWithCode,
+      BillingAddress,
     },
-    BillingAddress,
     ...getGIDXStandardParams(MerchantSessionID),
   }
   log('complete checkout session body:', body)
@@ -92,8 +121,24 @@ export const completeCheckoutSession: APIHandler<
     }
   }
 
-  const { PaymentStatusCode, PaymentStatusMessage } = PaymentDetails[0]
+  const {
+    PaymentStatusCode,
+    PaymentStatusMessage,
+    PaymentAmount: CompletedPaymentAmount,
+  } = PaymentDetails[0]
+  if (CompletedPaymentAmount !== PaymentAmount.PaymentAmount) {
+    log.error('Payment amount mismatch', {
+      CompletedPaymentAmount,
+      PaymentAmount,
+    })
+  }
   if (PaymentStatusCode === '1') {
+    await sendCoins(
+      userId,
+      manaAmount,
+      CompletedPaymentAmount,
+      MerchantTransactionID
+    )
     return {
       status: 'success',
       message: 'Payment successful',
@@ -155,93 +200,43 @@ export const completeCheckoutSession: APIHandler<
   }
 }
 
-export const verifyPaymentReasonCodes = async (ReasonCodes: string[]) => {
-  const hasAny = (codes: string[]) =>
-    intersection(codes, ReasonCodes).length > 0
+const sendCoins = async (
+  userId: string,
+  manaAmount: GIDXManaAmount,
+  paidInCents: number,
+  transactionId: string
+) => {
+  const data = { transactionId, type: 'gidx', paidInCents }
+  const pg = createSupabaseDirectClient()
+  const manaPurchaseTxn = {
+    fromId: 'EXTERNAL',
+    fromType: 'BANK',
+    toId: userId,
+    toType: 'USER',
+    data,
+    amount: manaAmount,
+    token: 'M$',
+    category: 'MANA_PURCHASE',
+    description: `Deposit for mana purchase`,
+  } as const
 
-  // High volume of payments with matching amounts to multiple merchants
-  if (hasAny(['PAY-HV-MA-QMX'])) {
-    return {
-      status: 'warning',
-      message:
-        'High volume of matching payments to multiple merchants detected.',
-    }
-  }
+  const cashBonusTxn = {
+    fromId: 'EXTERNAL',
+    fromType: 'BANK',
+    toId: userId,
+    toType: 'USER',
+    data,
+    amount: MANA_TO_CASH_BONUS[manaAmount],
+    token: 'CASH',
+    category: 'CASH_BONUS',
+    description: `Bonus for mana purchase`,
+  } as const
 
-  // High volume of payments from multiple customers/IPs to matching merchants
-  if (hasAny(['PAY-HV-CLX-IP'])) {
-    return {
-      status: 'warning',
-      message:
-        'High volume of payments from multiple sources to matching merchants detected.',
-    }
-  }
-
-  // High volume of payments matching previous amounts
-  if (hasAny(['PAY-HV-MA-PRV-A'])) {
-    return {
-      status: 'warning',
-      message: 'High volume of payments matching previous amounts detected.',
-    }
-  }
-
-  // High volume of payments to one merchant using multiple methods
-  if (hasAny(['PAY-HV-OM1-CL1-MTHD'])) {
-    return {
-      status: 'warning',
-      message:
-        'High volume of payments to one merchant using multiple methods detected.',
-    }
-  }
-
-  // Same payment method used by multiple customers
-  if (hasAny(['PAY-MTHD1-CLX'])) {
-    return {
-      status: 'warning',
-      message: 'Same payment method used by multiple customers.',
-    }
-  }
-
-  // Payment manually cancelled by customer
-  if (hasAny(['PAY-CNCL'])) {
-    return {
-      status: 'info',
-      message: 'Payment cancelled by customer.',
-    }
-  }
-
-  // High velocity payments by different customer types
-  if (hasAny(['PAY-HVEL-CL', 'PAY-HVEL-CKI', 'PAY-HVEL-CKE'])) {
-    let customerType = 'customer'
-    if (ReasonCodes.includes('PAY-HVEL-CKI'))
-      customerType = 'Fully KYC (Internally) Customer'
-    if (ReasonCodes.includes('PAY-HVEL-CKE'))
-      customerType = 'KYC Vouched (Externally) Customer'
-    return {
-      status: 'warning',
-      message: `High velocity of payments detected for ${customerType}.`,
-    }
-  }
-
-  // High velocity payments by operator/merchant
-  if (hasAny(['PAY-HVEL-OM'])) {
-    return {
-      status: 'warning',
-      message: 'High velocity of payments detected for operator/merchant.',
-    }
-  }
-
-  // Payment needs manual approval
-  if (hasAny(['PAY-MANUAL'])) {
-    return {
-      status: 'info',
-      message: 'Payment requires manual approval from merchant.',
-    }
-  }
-
-  // If no specific codes matched
-  return {
-    status: 'success',
-    message: 'Payment verified successfully.',
-  }
+  await pg.tx(async (tx) => {
+    await runTxn(tx, manaPurchaseTxn)
+    await runTxn(tx, cashBonusTxn)
+    await updateUser(tx, userId, {
+      purchasedMana: true,
+    })
+  })
 }

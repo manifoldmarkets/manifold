@@ -10,35 +10,39 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { CheckoutSession, GPSData, PaymentAmount } from 'common/gidx/gidx'
-import { formatMoney, unformatMoney } from 'common/util/format'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { GIDX_PRICES, IOS_PRICES } from 'web/pages/add-funds'
 import { api, validateIapReceipt } from 'web/lib/api/api'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 import { AlertBox } from 'web/components/widgets/alert-box'
-import {
-  FundsSelector,
-  use24hrUsdPurchases,
-} from 'web/components/add-funds-modal'
+import { PriceTile, use24hrUsdPurchases } from 'web/components/add-funds-modal'
 import router from 'next/router'
 import { LocationPanel } from 'web/components/gidx/register-user-form'
 import { getVerificationStatus } from 'common/user'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import { LogoIcon } from 'web/components/icons/logo-icon'
+import { FaStore } from 'react-icons/fa6'
+import clsx from 'clsx'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
+import {
+  IOS_PRICES,
+  WebManaAmounts,
+  MANA_TO_CASH_BONUS,
+  MANA_TO_WEB_PRICES,
+} from 'common/economy'
+import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import Image from 'next/image'
 
 const CheckoutPage = () => {
   const user = useUser()
   const [locationError, setLocationError] = useState<string | null>(null)
   const { isNative, platform } = getNativePlatform()
-  const prices = isNative && platform === 'ios' ? IOS_PRICES : GIDX_PRICES
+  const prices =
+    isNative && platform === 'ios' ? IOS_PRICES : MANA_TO_WEB_PRICES
   const [page, setPage] = useState<'checkout' | 'payment' | 'location'>(
     'checkout'
   )
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
-  const [amountSelected, setAmountSelected] = useState<number>(
-    prices[formatMoney(25000)]
-  )
+  const [amountSelected, setAmountSelected] = useState<WebManaAmounts>()
   const [productSelected, setProductSelected] = useState<PaymentAmount>()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -121,16 +125,16 @@ const CheckoutPage = () => {
 
         switch (permissionStatus.state) {
           case 'granted':
-            console.log('Permission already granted')
+            console.log('Location permission already granted')
             requestLocationBrowser()
             break
           case 'prompt':
-            console.log('Permission has not been requested yet')
+            console.log('Location permission has not been requested yet')
             setPage('location')
             setLoading(false)
             break
           case 'denied':
-            console.log('Permission has been denied')
+            console.log('Location permission has been denied')
             setPage('location')
             setLoading(false)
             break
@@ -181,6 +185,7 @@ const CheckoutPage = () => {
     if (!DeviceGPS || !amountSelected) return
     setError(null)
     setLoading(true)
+    const dollarAmount = (prices as typeof MANA_TO_WEB_PRICES)[amountSelected]
     try {
       const res = await api('get-checkout-session-gidx', {
         DeviceGPS,
@@ -188,7 +193,7 @@ const CheckoutPage = () => {
       const { session, status, message } = res
       if (session && status !== 'error') {
         const product = session.PaymentAmounts.find(
-          (a) => a.PaymentAmount === amountSelected / 100
+          (a) => a.PaymentAmount === dollarAmount / 100
         )
         if (!product) {
           setError(
@@ -196,6 +201,7 @@ const CheckoutPage = () => {
           )
           return
         }
+        console.log('Got checkout session', session, product)
         setProductSelected(product)
         setCheckoutSession(session)
         setPage('payment')
@@ -210,32 +216,20 @@ const CheckoutPage = () => {
     }
   }
   useEffect(() => {
+    if (!DeviceGPS || !amountSelected) return
     getCheckoutSession()
-  }, [DeviceGPS, amountSelected])
-  const manaGivenPrice = unformatMoney(
-    Object.entries(prices).find(
-      ([_, value]) => value === amountSelected
-    )?.[0] ?? ''
-  )
+    // checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
+  }, [DeviceGPS])
+  const onSelectAmount = (amount: WebManaAmounts) => {
+    checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
+    setAmountSelected(amount)
+  }
+
   return (
     <Page trackPageView={'checkout page'}>
       {page === 'checkout' && (
         <Col>
-          <div className="mb-4">
-            Buy <ManaCoin /> mana to trade in your favorite questions.
-          </div>
-
-          <div className="text-ink-500 mb-2 text-sm">Amount</div>
-          <FundsSelector
-            fundAmounts={prices}
-            selected={amountSelected}
-            onSelect={setAmountSelected}
-          />
-
-          <div className="mt-6">
-            <div className="text-ink-500 mb-1 text-sm">Price USD</div>
-            <div className="text-xl">${amountSelected / 100}</div>
-          </div>
+          <FundsSelector prices={prices} onSelect={onSelectAmount} />
 
           {pastLimit && (
             <AlertBox title="Purchase limit" className="my-4">
@@ -244,20 +238,6 @@ const CheckoutPage = () => {
             </AlertBox>
           )}
 
-          <div className="mt-2 flex gap-2">
-            <Button
-              color={'gradient'}
-              loading={loading}
-              disabled={pastLimit}
-              onClick={() =>
-                checkIfRegistered(
-                  isNative && platform === 'ios' ? 'ios-native' : 'web'
-                )
-              }
-            >
-              Continue
-            </Button>
-          </div>
           <Row className="text-error mt-2 text-sm">{locationError}</Row>
         </Col>
       )}
@@ -269,16 +249,116 @@ const CheckoutPage = () => {
           back={() => setPage('checkout')}
         />
       )}
-      {page === 'payment' && checkoutSession && productSelected && (
-        <PaymentSection
-          CheckoutSession={checkoutSession}
-          amountSelected={productSelected}
-          manaAmount={manaGivenPrice}
-          spiceAmount={manaGivenPrice}
-        />
-      )}
+      {page === 'payment' &&
+        checkoutSession &&
+        productSelected &&
+        amountSelected && (
+          <PaymentSection
+            CheckoutSession={checkoutSession}
+            amountSelected={productSelected}
+            manaAmount={amountSelected}
+            spiceAmount={MANA_TO_CASH_BONUS[amountSelected]}
+          />
+        )}
       <Row className="text-error mt-2 text-sm">{error}</Row>
     </Page>
+  )
+}
+
+function FundsSelector(props: {
+  prices: Record<number, number>
+  onSelect: (amount: WebManaAmounts) => void
+}) {
+  const { onSelect, prices } = props
+  const user = useUser()
+  const { isNative, platform } = getNativePlatform()
+  const [loading, setLoading] = useState<WebManaAmounts | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const handleIapReceipt = async <T extends nativeToWebMessageType>(
+    type: T,
+    data: MesageTypeMap[T]
+  ) => {
+    if (type === 'iapReceipt') {
+      const { receipt } = data as MesageTypeMap['iapReceipt']
+      try {
+        await validateIapReceipt({ receipt: receipt })
+        console.log('iap receipt validated')
+      } catch (e) {
+        console.log('iap receipt validation error', e)
+        setError('Error validating receipt')
+      }
+    } else if (type === 'iapError') {
+      setError('Error during purchase! Try again.')
+    }
+    setLoading(null)
+  }
+  useNativeMessages(['iapReceipt', 'iapError'], handleIapReceipt)
+
+  const totalPurchased = use24hrUsdPurchases(user?.id || '')
+  const pastLimit = totalPurchased >= 2500
+
+  return (
+    <>
+      <Row className="mb-2 items-center gap-1 text-2xl font-semibold">
+        <FaStore className="h-6 w-6" />
+        Mana Shop
+      </Row>
+      <div
+        className={clsx(
+          'text-ink-700 text-sm',
+          TWOMBA_ENABLED ? 'mb-5' : 'mb-4'
+        )}
+      >
+        {TWOMBA_ENABLED ? (
+          <span>
+            Buy mana to trade in your favorite questions. Always free to play,
+            no purchase necessary.
+          </span>
+        ) : (
+          <span>Buy mana to trade in your favorite questions.</span>
+        )}
+      </div>
+
+      {pastLimit && (
+        <AlertBox title="Purchase limit" className="my-4">
+          You have reached your daily purchase limit. Please try again tomorrow.
+        </AlertBox>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 gap-y-6">
+        {Object.entries(prices).map(([manaAmount, dollarAmount]) => {
+          const mana = parseInt(manaAmount) as WebManaAmounts
+          return isNative && platform === 'ios' ? (
+            <PriceTile
+              key={`ios-${mana}`}
+              dollarAmount={dollarAmount}
+              manaAmount={mana}
+              loading={loading}
+              disabled={pastLimit}
+              onClick={() => {
+                setError(null)
+                setLoading(mana)
+                postMessageToNative('checkout', { amount: dollarAmount })
+              }}
+            />
+          ) : (
+            <PriceTile
+              key={`web-${mana}`}
+              dollarAmount={dollarAmount}
+              manaAmount={mana}
+              loading={loading}
+              disabled={pastLimit}
+              onClick={() => {
+                setError(null)
+                setLoading(mana)
+                onSelect(mana)
+              }}
+            />
+          )
+        })}
+      </div>
+      <Row className="text-error mt-2 text-sm">{error}</Row>
+    </>
   )
 }
 
@@ -304,6 +384,7 @@ const PaymentSection = (props: {
   const [city, setCity] = useState(CustomerProfile.Address.City)
   const [state, setState] = useState(CustomerProfile.Address.StateCode)
   const [zipCode, setZipCode] = useState(CustomerProfile.Address.PostalCode)
+  const [complete, setComplete] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -349,8 +430,28 @@ const PaymentSection = (props: {
         setError(res.message ?? 'Error completing checkout session')
       } else {
         console.log('Checkout session completed', res)
+        setComplete(true)
       }
     }
+  }
+  if (complete) {
+    return (
+      <Col className={'gap-4'}>
+        <FullscreenConfetti />
+        <Row className="text-2xl text-indigo-700">Purchase Complete</Row>
+        <Col className="text-ink-700 w-full items-center justify-center">
+          <Image
+            src="/manachan.png"
+            width={300}
+            height={300}
+            alt={'Manachan'}
+            className={'rounded-full'}
+          />
+          <span className={'italic'}>May the bets be ever in your favor.</span>-
+          Manachan
+        </Col>
+      </Col>
+    )
   }
 
   return (
@@ -372,7 +473,7 @@ const PaymentSection = (props: {
             +{' '}
             <CoinNumber
               className={'font-semibold'}
-              isSpice
+              coinType={'sweepies'}
               amount={spiceAmount}
               isInline
             />
