@@ -101,7 +101,7 @@ export function BetsSummary(props: {
           <Col>
             <div className="text-ink-500 text-sm">Payout</div>
             <div className="whitespace-nowrap">
-              <MoneyDisplay amount={payout} isCashContract={isCashContract} />
+              <MoneyDisplay amount={payout} isCashContract={isCashContract} />{' '}
               <ProfitBadge profitPercent={profitPercent} />
             </div>
           </Col>
