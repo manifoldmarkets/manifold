@@ -21,7 +21,7 @@ import {
   StonkContract,
 } from 'common/contract'
 import { computeCpmmBet } from 'common/new-bet'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatPercent } from 'common/util/format'
 import { DAY_MS, HOUR_MS, MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
 import { User } from 'web/lib/firebase/users'

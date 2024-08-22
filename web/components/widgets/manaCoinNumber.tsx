@@ -1,6 +1,5 @@
 import {
   formatMoneyNoMoniker,
-  formatMoneyToDecimal,
   getMoneyNumberToDecimal,
 } from 'common/util/format'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'

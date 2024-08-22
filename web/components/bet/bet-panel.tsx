@@ -56,7 +56,6 @@ import { getTierFromLiquidity } from 'common/tier'
 import { getAnswerColor } from '../charts/contract/choice'
 import { LimitBet } from 'common/bet'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { CoinNumber } from '../widgets/manaCoinNumber'
 import { MoneyDisplay } from './money-display'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined

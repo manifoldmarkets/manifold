@@ -1,4 +1,3 @@
-import { formatMoneyToDecimal } from 'common/util/format'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { MoneyDisplay } from './money-display'
 
