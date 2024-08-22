@@ -108,7 +108,8 @@ export const MANA_TO_WEB_PRICES = TWOMBA_ENABLED
       1_000_000: 1_00000,
     } as const)
 export type WebManaAmounts = keyof typeof MANA_TO_WEB_PRICES
-export const IOS_PRICES = {
+export type IOSManaAmounts = Exclude<WebManaAmounts, 1_000_000>
+export const IOS_PRICES: Record<IOSManaAmounts, number> = {
   10_000: 1499,
   25_000: 3599,
   100_000: 14299,

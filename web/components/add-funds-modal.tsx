@@ -138,36 +138,37 @@ export function BuyManaTab(props: { onClose: () => void }) {
       )}
 
       <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {Object.entries(prices).map(([manaAmount, dollarAmount]) =>
-          isNative && platform === 'ios' ? (
+        {Object.entries(prices).map(([manaAmount, dollarAmount]) => {
+          const mana = parseInt(manaAmount) as WebManaAmounts // May be ios prices
+          return isNative && platform === 'ios' ? (
             <PriceTile
-              key={`ios-${manaAmount}`}
+              key={`ios-${mana}`}
               dollarAmount={dollarAmount}
-              manaAmount={manaAmount as unknown as WebManaAmounts}
+              manaAmount={mana}
               loading={loading}
               disabled={pastLimit}
               onClick={() => {
                 setError(null)
-                setLoading(manaAmount as unknown as WebManaAmounts)
+                setLoading(mana)
                 postMessageToNative('checkout', { amount: dollarAmount })
               }}
             />
           ) : (
             <form
-              key={`web-${manaAmount}`}
+              key={`web-${mana}`}
               action={checkoutURL(user?.id || '', dollarAmount, url)}
               method="POST"
             >
               <PriceTile
                 dollarAmount={dollarAmount}
-                manaAmount={manaAmount as unknown as WebManaAmounts}
+                manaAmount={mana}
                 loading={loading}
                 disabled={pastLimit}
                 isSubmitButton
               />
             </form>
           )
-        )}
+        })}
       </div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
     </>
