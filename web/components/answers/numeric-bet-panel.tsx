@@ -383,14 +383,10 @@ export const NumericBetPanel = (props: {
             <Col className={'mt-0.5'}>
               <Row className={'gap-1'}>
                 <span className={'text-ink-700'}>Max payout:</span>
-                {TWOMBA_ENABLED ? (
-                  <CoinNumber
-                    amount={potentialPayout}
-                    coinType={isCashContract ? 'sweepies' : 'mana'}
-                  />
-                ) : (
-                  formatMoney(potentialPayout)
-                )}
+                <MoneyDisplay
+                  amount={potentialPayout}
+                  isCashContract={isCashContract}
+                />
                 <span className=" text-green-500">
                   {'+' + currentReturnPercent}
                 </span>
