@@ -140,7 +140,7 @@ export function BetsSummary(props: {
                         />{' '}
                         if this question resolves {exampleOutcome} (and{' '}
                         <MoneyDisplay
-                          amount={Math.abs(position)}
+                          amount={0}
                           isCashContract={isCashContract}
                         />{' '}
                         otherwise).
