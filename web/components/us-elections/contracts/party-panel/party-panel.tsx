@@ -34,8 +34,9 @@ export function PartyPanel(props: {
   contract: MultiContract
   maxAnswers?: number
   includeNeedle?: boolean
+  includeHead?: boolean
 }) {
-  const { contract, maxAnswers = Infinity, includeNeedle } = props
+  const { contract, maxAnswers = Infinity, includeNeedle, includeHead } = props
   const { resolutions, outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -163,6 +164,7 @@ export function PartyPanel(props: {
                   color={getPartyColor(answer.text)}
                   user={user}
                   userBets={userBetsByAnswer[answer.id]}
+                  includeHead={includeHead}
                 />
               ))}
             </>
@@ -186,6 +188,7 @@ export function PartyPanel(props: {
               color={getPartyColor(answer.text)}
               user={user}
               userBets={userBetsByAnswer[answer.id]}
+              includeHead={includeHead}
             />
           ))}
         </>
@@ -211,8 +214,18 @@ function PartyAnswer(props: {
   selected?: boolean
   userBets?: Bet[]
   user?: User | null
+  includeHead?: boolean
 }) {
-  const { answer, contract, onHover, selected, color, userBets, user } = props
+  const {
+    answer,
+    contract,
+    onHover,
+    selected,
+    color,
+    userBets,
+    user,
+    includeHead,
+  } = props
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -236,6 +249,23 @@ function PartyAnswer(props: {
   const isRepublicanParty = answer.text == 'Republican Party'
   const isOther = answer.text == 'Other'
 
+  const head =
+    isOther || (!isDemocraticParty && !isRepublicanParty) ? (
+      <IoIosPerson className="text-ink-700 absolute -bottom-6 -left-4 h-16 w-16 rounded-bl" />
+    ) : (
+      <Image
+        height={80}
+        width={80} // Double the width to ensure the image is not stretched
+        src={
+          isDemocraticParty
+            ? '/political-candidates/harris.png'
+            : '/political-candidates/trump.png'
+        }
+        alt={''}
+        className={clsx('absolute -bottom-3.5 -left-3 h-14 w-14 rounded-bl')}
+      />
+    )
+
   return (
     <Col className={'w-full'}>
       <AnswerBar
@@ -249,25 +279,8 @@ function PartyAnswer(props: {
         )}
         label={
           <Row className="relative h-8">
-            {isOther ? (
-              <IoIosPerson className="text-ink-700 absolute -bottom-6 -left-4 h-16 w-16 rounded-bl" />
-            ) : (
-              <Image
-                height={80}
-                width={80} // Double the width to ensure the image is not stretched
-                src={
-                  isDemocraticParty
-                    ? '/political-candidates/harris.png'
-                    : '/political-candidates/trump.png'
-                }
-                alt={''}
-                className={clsx(
-                  'absolute -bottom-3.5 -left-3 h-14 w-14 rounded-bl'
-                )}
-              />
-            )}
-
-            <Col className="ml-12">
+            {!!includeHead && head}
+            <Col className={clsx(includeHead ? 'ml-12' : '')}>
               <CreatorAndAnswerLabel
                 text={answer.text}
                 createdTime={answer.createdTime}
