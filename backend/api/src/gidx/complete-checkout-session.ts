@@ -82,7 +82,6 @@ export const completeCheckoutSession: APIHandler<
   const data = (await res.json()) as CompleteSessionDirectCashierResponse
   log('Complete checkout session response:', data)
   const {
-    ReasonCodes,
     SessionStatusCode,
     AllowRetry,
     PaymentDetails,
