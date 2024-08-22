@@ -1,6 +1,5 @@
 import { notification_preferences } from './user-notification-preferences'
-import { ENV_CONFIG } from './envs/constants'
-import { GIDX_REGISTATION_ENABLED } from 'common/gidx/gidx'
+import { ENV_CONFIG, TWOMBA_ENABLED } from './envs/constants'
 
 export type User = {
   id: string
@@ -154,7 +153,7 @@ export const verifiedPhone = (user: User) => {
 }
 
 export const getVerificationStatus = (user: User) => {
-  if (!GIDX_REGISTATION_ENABLED) {
+  if (!TWOMBA_ENABLED) {
     return { status: 'error', message: 'GIDX registration is disabled' }
   } else if (!verifiedPhone(user)) {
     return { status: 'error', message: 'User must verify phone' }

@@ -3,18 +3,18 @@ import {
   getGIDXCustomerProfile,
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
-import { GIDX_REGISTATION_ENABLED, GIDXCustomerProfile } from 'common/gidx/gidx'
+import { GIDXCustomerProfile } from 'common/gidx/gidx'
 import { verifyReasonCodes } from 'api/gidx/register'
 import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
 import { getUser } from 'shared/utils'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const getVerificationStatus: APIHandler<
   'get-verification-status-gidx'
 > = async (_, auth) => {
-  if (!GIDX_REGISTATION_ENABLED)
-    throw new APIError(400, 'GIDX registration is disabled')
+  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const customerProfile = await getGIDXCustomerProfile(auth.uid)
   return await getVerificationStatusInternal(auth.uid, customerProfile)
 }

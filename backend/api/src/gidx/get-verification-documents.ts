@@ -1,17 +1,13 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { log } from 'shared/utils'
 import { getGIDXStandardParams } from 'shared/gidx/helpers'
-import {
-  GIDX_DOCUMENTS_REQUIRED,
-  GIDX_REGISTATION_ENABLED,
-  GIDXDocument,
-} from 'common/gidx/gidx'
+import { GIDX_DOCUMENTS_REQUIRED, GIDXDocument } from 'common/gidx/gidx'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const getVerificationDocuments: APIHandler<
   'get-verification-documents-gidx'
 > = async (_, auth) => {
-  if (!GIDX_REGISTATION_ENABLED)
-    throw new APIError(400, 'GIDX registration is disabled')
+  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const {
     documents,
     unrejectedUtilityDocuments,

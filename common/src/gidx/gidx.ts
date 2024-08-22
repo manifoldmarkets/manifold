@@ -1,7 +1,5 @@
 import { z } from 'zod'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 
-export const GIDX_REGISTATION_ENABLED = TWOMBA_ENABLED
 export const GIDX_DOCUMENTS_REQUIRED = 2
 
 export const GPSProps = z.object({

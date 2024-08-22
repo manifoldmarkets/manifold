@@ -8,7 +8,6 @@ import { useUser } from 'web/hooks/use-user'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { CheckoutSession, GPSData, PaymentAmount } from 'common/gidx/gidx'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { api, validateIapReceipt } from 'web/lib/api/api'
@@ -45,10 +44,8 @@ const CheckoutPage = () => {
   const [amountSelected, setAmountSelected] = useState<WebManaAmounts>()
   const [productSelected, setProductSelected] = useState<PaymentAmount>()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [DeviceGPS, setDeviceGPS] = usePersistentInMemoryState<
-    GPSData | undefined
-  >(undefined, 'gidx-checkout-location-user-info')
+  const [error, setError] = useState<string>()
+  const [DeviceGPS, setDeviceGPS] = useState<GPSData>()
   const goHome = () => {
     router.push('/home')
   }
@@ -56,7 +53,7 @@ const CheckoutPage = () => {
   const checkIfRegistered = async (then: 'ios-native' | 'web') => {
     // if user is not registered, they must register first
     if (!user) return
-    setError(null)
+    setError(undefined)
     setLoading(true)
     if (getVerificationStatus(user).status !== 'error') {
       if (then === 'ios-native') {
@@ -183,7 +180,7 @@ const CheckoutPage = () => {
   const pastLimit = totalPurchased >= 2500
   const getCheckoutSession = async () => {
     if (!DeviceGPS || !amountSelected) return
-    setError(null)
+    setError(undefined)
     setLoading(true)
     const dollarAmount = (prices as typeof MANA_TO_WEB_PRICES)[amountSelected]
     try {

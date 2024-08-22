@@ -1,8 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import {
-  CompleteSessionDirectCashierResponse,
-  GIDX_REGISTATION_ENABLED,
-} from 'common/gidx/gidx'
+import { CompleteSessionDirectCashierResponse } from 'common/gidx/gidx'
 import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
@@ -17,6 +14,7 @@ import {
   MANA_TO_CASH_BONUS,
 } from 'common/economy'
 import { getIp } from 'shared/analytics'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
@@ -34,8 +32,7 @@ const getManaAmountForWebPrice = (price: number) => {
 export const completeCheckoutSession: APIHandler<
   'complete-checkout-session-gidx'
 > = async (props, auth, req) => {
-  if (!GIDX_REGISTATION_ENABLED)
-    throw new APIError(400, 'GIDX registration is disabled')
+  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const userId = auth.uid
   const { phoneNumberWithCode } = await getUserRegistrationRequirements(userId)
   const {

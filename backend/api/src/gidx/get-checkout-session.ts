@@ -3,7 +3,6 @@ import {
   CheckoutSession,
   CheckoutSessionResponse,
   CustomerProfileResponse,
-  GIDX_REGISTATION_ENABLED,
 } from 'common/gidx/gidx'
 import {
   getGIDXStandardParams,
@@ -13,6 +12,7 @@ import { getIp } from 'shared/analytics'
 import { log } from 'shared/monitoring/log'
 import { verifyReasonCodes } from 'api/gidx/register'
 import { randomBytes } from 'crypto'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CreateSession'
@@ -20,8 +20,7 @@ const ENDPOINT =
 export const getCheckoutSession: APIHandler<
   'get-checkout-session-gidx'
 > = async (props, auth, req) => {
-  if (!GIDX_REGISTATION_ENABLED)
-    throw new APIError(400, 'GIDX registration is disabled')
+  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const userId = auth.uid
   await getUserRegistrationRequirements(userId)
   const MerchantTransactionID = randomString(16)

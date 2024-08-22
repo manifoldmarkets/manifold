@@ -18,19 +18,15 @@ import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
-import {
-  GIDX_REGISTATION_ENABLED,
-  GIDXRegistrationResponse,
-  ID_ERROR_MSG,
-} from 'common/gidx/gidx'
+import { GIDXRegistrationResponse, ID_ERROR_MSG } from 'common/gidx/gidx'
 import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
 
 export const register: APIHandler<'register-gidx'> = async (props, auth) => {
-  if (!GIDX_REGISTATION_ENABLED)
-    throw new APIError(400, 'GIDX registration is disabled')
+  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   await getUserRegistrationRequirements(auth.uid)
   const body = {
     // TODO: add back in prod

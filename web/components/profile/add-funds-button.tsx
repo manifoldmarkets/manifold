@@ -3,8 +3,8 @@ import { useUser } from 'web/hooks/use-user'
 import { useState } from 'react'
 import { PlusIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
-import { GIDX_REGISTATION_ENABLED } from 'common/gidx/gidx'
 import router from 'next/router'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export function AddFundsButton(props: { userId?: string; className?: string }) {
   const { userId, className } = props
@@ -16,7 +16,7 @@ export function AddFundsButton(props: { userId?: string; className?: string }) {
     <>
       <Button
         onClick={() =>
-          GIDX_REGISTATION_ENABLED ? router.push('/checkout') : setOpen(true)
+          TWOMBA_ENABLED ? router.push('/checkout') : setOpen(true)
         }
         size="md"
         color="gradient-pink"
