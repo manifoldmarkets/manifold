@@ -121,8 +121,9 @@ export async function updateUserMetricsCore(
         currentPortfolio:
           currentPortfolios[userId] ??
           userToPortfolioMetrics[userId]?.currentPortfolio,
-        dayAgoProfit: dayAgoProfits[userId],
-        weekAgoProfit: weekAgoProfits[userId],
+        dayAgoProfit: dayAgoProfits[userId].mana,
+        weekAgoProfit: weekAgoProfits[userId].mana,
+        // TODO: cash profits
         timeCachedPeriodProfits: Date.now(),
       }
     }
@@ -317,9 +318,12 @@ export async function updateUserMetricsCore(
         user_id: user.id,
         ts: new Date(newPortfolio.timestamp).toISOString(),
         investment_value: newPortfolio.investmentValue,
+        cash_investment_value: newPortfolio.cashInvestmentValue,
         balance: newPortfolio.balance,
         spice_balance: newPortfolio.spiceBalance,
+        cash_balance: newPortfolio.cashBalance,
         total_deposits: newPortfolio.totalDeposits,
+        total_cash_deposits: newPortfolio.totalCashDeposits,
         loan_total: newPortfolio.loanTotal,
         profit: leaderBoardProfit,
       })
@@ -433,7 +437,7 @@ const getPortfolioSnapshot = async (
   }
   return Object.fromEntries(
     await pg.map(
-      `select user_id, investment_value, spice_balance, balance, total_deposits, loan_total, profit
+      `select *
       from user_portfolio_history_latest
       where user_id in ($1:list)
       order by user_id, ts desc`,
@@ -451,12 +455,20 @@ const getPortfolioHistoricalProfits = async (
   // We don't load the leaderboard profit here bc these numbers are used for comparing to the daily/weekly profit from contract metrics
   return Object.fromEntries(
     await pg.map(
-      `select distinct on (user_id) user_id, spice_balance + investment_value + balance - total_deposits as profit
+      `select distinct on (user_id) user_id,
+        spice_balance + investment_value + balance - total_deposits as profit,
+        cash_balance - total_cash_deposits as cash_profit
       from user_portfolio_history
       where ts < $2 and user_id in ($1:list)
       order by user_id, ts desc`,
       [userIds, new Date(when).toISOString()],
-      (r) => [r.user_id as string, parseFloat(r.profit as string)]
+      (r) => [
+        r.user_id as string,
+        {
+          mana: parseFloat(r.profit as string),
+          cash: parseFloat(r.cash_profit as string),
+        },
+      ]
     )
   )
 }

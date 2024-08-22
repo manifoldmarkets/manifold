@@ -99,6 +99,7 @@ export const incrementBalance = async (
     cashBalance?: number
     spiceBalance?: number
     totalDeposits?: number
+    totalCashDeposits?: number
   }
 ) => {
   const updates = [
@@ -106,6 +107,7 @@ export const incrementBalance = async (
     ['cash_balance', deltas.cashBalance],
     ['spice_balance', deltas.spiceBalance],
     ['total_deposits', deltas.totalDeposits],
+    ['total_cash_deposits', deltas.totalCashDeposits],
   ].filter(([_, v]) => v) // defined and not 0
 
   if (updates.length === 0) {
@@ -126,6 +128,7 @@ export const incrementBalance = async (
     cashBalance: result.cash_balance,
     spiceBalance: result.spice_balance,
     totalDeposits: result.total_deposits,
+    totalCashDeposits: result.total_cash_deposits,
   })
 }
 
@@ -137,6 +140,7 @@ export const bulkIncrementBalances = async (
     cashBalance?: number
     spiceBalance?: number
     totalDeposits?: number
+    totalCashDeposits?: number
   }[]
 ) => {
   if (userUpdates.length === 0) return
@@ -149,6 +153,7 @@ export const bulkIncrementBalances = async (
         update.cashBalance ?? 0,
         update.spiceBalance ?? 0,
         update.totalDeposits ?? 0,
+        update.totalCashDeposits ?? 0,
       ])
     )
     .join(',\n')

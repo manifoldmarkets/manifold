@@ -91,7 +91,10 @@ export const getUserPortfolioInternal = async (userId: string) => {
   const loanTotal = sumBy(unresolvedBets, (b) => b.loanAmount ?? 0)
 
   const contractsById = keyBy(contracts, 'id')
-  const investmentValue = computeInvestmentValue(unresolvedBets, contractsById)
+  const { investmentValue } = computeInvestmentValue(
+    unresolvedBets,
+    contractsById
+  )
   const dayAgoPortfolio = first(
     await getPortfolioHistory(userId, Date.now() - DAY_MS, 1, pg)
   )

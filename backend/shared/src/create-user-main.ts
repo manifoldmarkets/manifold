@@ -117,6 +117,7 @@ export const createUserMain = async (
       cashBalance: 0,
       spiceBalance: 0,
       totalDeposits: 0,
+      totalCashDeposits: 0,
       createdTime: Date.now(),
       profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
       nextLoanCached: 0,

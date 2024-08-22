@@ -23,11 +23,9 @@ export async function getPortfolioHistory(
 
 export async function getCurrentPortfolio(userId: string, db: SupabaseClient) {
   const query = db
-    .from('user_portfolio_history')
+    .from('user_portfolio_history_latest')
     .select('*')
     .eq('user_id', userId)
-    .order('ts', { ascending: false })
-    .limit(1)
 
   const { data } = await run(query)
   const [d] = data
