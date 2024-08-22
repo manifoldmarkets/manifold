@@ -83,10 +83,6 @@ export const verifyReasonCodes = async (
 ): Promise<RegistrationReturnType> => {
   const pg = createSupabaseDirectClient()
 
-  if (ReasonCodes.some((code) => code.startsWith('PAY-'))) {
-    return verifyPaymentReasonCodes(ReasonCodes)
-  }
-
   const hasAny = (codes: string[]) =>
     intersection(codes, ReasonCodes).length > 0
 
@@ -108,6 +104,17 @@ export const verifyReasonCodes = async (
       }
     }
   }
+
+  if (hasAny(['PAY-HVEL-CL', 'PAY-HVEL-CKI'])) {
+    const userType = ReasonCodes.includes('PAY-HVEL-CKI')
+      ? 'Fully KYC (Internally) Customer'
+      : 'user'
+    return {
+      status: 'warning',
+      message: `High velocity of payments detected for ${userType}.`,
+    }
+  }
+
   // User identity not found/verified
   if (hasIdentityError(ReasonCodes)) {
     log('Registration failed, resulted in identity errors:', ReasonCodes)
@@ -205,96 +212,5 @@ export const verifyReasonCodes = async (
     status: 'error',
     message:
       'Registration failed, ask admin about codes: ' + ReasonCodes.join(', '),
-  }
-}
-
-const verifyPaymentReasonCodes = async (ReasonCodes: string[]) => {
-  const hasAny = (codes: string[]) =>
-    intersection(codes, ReasonCodes).length > 0
-
-  // High volume of payments with matching amounts to multiple merchants
-  if (hasAny(['PAY-HV-MA-QMX'])) {
-    return {
-      status: 'warning',
-      message:
-        'High volume of matching payments to multiple merchants detected.',
-    }
-  }
-
-  // High volume of payments from multiple customers/IPs to matching merchants
-  if (hasAny(['PAY-HV-CLX-IP'])) {
-    return {
-      status: 'warning',
-      message:
-        'High volume of payments from multiple sources to matching merchants detected.',
-    }
-  }
-
-  // High volume of payments matching previous amounts
-  if (hasAny(['PAY-HV-MA-PRV-A'])) {
-    return {
-      status: 'warning',
-      message: 'High volume of payments matching previous amounts detected.',
-    }
-  }
-
-  // High volume of payments to one merchant using multiple methods
-  if (hasAny(['PAY-HV-OM1-CL1-MTHD'])) {
-    return {
-      status: 'warning',
-      message:
-        'High volume of payments to one merchant using multiple methods detected.',
-    }
-  }
-
-  // Same payment method used by multiple customers
-  if (hasAny(['PAY-MTHD1-CLX'])) {
-    return {
-      status: 'warning',
-      message: 'Same payment method used by multiple customers.',
-    }
-  }
-
-  // Payment manually cancelled by customer
-  if (hasAny(['PAY-CNCL'])) {
-    return {
-      status: 'info',
-      message: 'Payment cancelled by customer.',
-    }
-  }
-
-  // High velocity payments by different customer types
-  if (hasAny(['PAY-HVEL-CL', 'PAY-HVEL-CKI', 'PAY-HVEL-CKE'])) {
-    let customerType = 'customer'
-    if (ReasonCodes.includes('PAY-HVEL-CKI'))
-      customerType = 'Fully KYC (Internally) Customer'
-    if (ReasonCodes.includes('PAY-HVEL-CKE'))
-      customerType = 'KYC Vouched (Externally) Customer'
-    return {
-      status: 'warning',
-      message: `High velocity of payments detected for ${customerType}.`,
-    }
-  }
-
-  // High velocity payments by operator/merchant
-  if (hasAny(['PAY-HVEL-OM'])) {
-    return {
-      status: 'warning',
-      message: 'High velocity of payments detected for operator/merchant.',
-    }
-  }
-
-  // Payment needs manual approval
-  if (hasAny(['PAY-MANUAL'])) {
-    return {
-      status: 'info',
-      message: 'Payment requires manual approval from merchant.',
-    }
-  }
-
-  // If no specific codes matched
-  return {
-    status: 'success',
-    message: 'Payment verified successfully.',
   }
 }

@@ -8,7 +8,6 @@ import {
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
-import { verifyReasonCodes } from 'api/gidx/register'
 import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxn } from 'shared/txn/run-txn'
@@ -181,22 +180,10 @@ export const completeCheckoutSession: APIHandler<
       gidxMessage: PaymentStatusMessage,
     }
   }
-  const { status, message } = await verifyReasonCodes(
-    auth.uid,
-    ReasonCodes,
-    undefined,
-    undefined
-  )
-  if (status === 'error') {
-    return {
-      status,
-      message,
-    }
-  }
 
   return {
-    status,
-    message,
+    status: 'error',
+    message: 'Unknown payment status',
   }
 }
 
