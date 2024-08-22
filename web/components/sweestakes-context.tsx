@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext } from 'react'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 
 type SweepstakesContextType = {
