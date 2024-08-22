@@ -396,7 +396,6 @@ export default function LimitOrderPanel(props: {
               {isBinaryMC ? 'Filled' : 'filled'} now
             </div>
             <div className="mr-2 whitespace-nowrap">
-              {/* {formatMoney(filledAmount)} of {formatMoney(orderAmount)} */}
               <MoneyDisplay
                 amount={filledAmount}
                 isCashContract={isCashContract}
