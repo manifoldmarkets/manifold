@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import { Placement } from '@floating-ui/react'
 
 export function InfoTooltip(props: {
-  text: string
+  text: string | React.ReactNode
   className?: string
   children?: React.ReactNode
   size?: 'sm' | 'md' | 'lg'
