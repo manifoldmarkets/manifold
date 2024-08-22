@@ -14,7 +14,6 @@ import { api, validateIapReceipt } from 'web/lib/api/api'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { PriceTile, use24hrUsdPurchases } from 'web/components/add-funds-modal'
-import router from 'next/router'
 import { LocationPanel } from 'web/components/gidx/register-user-form'
 import { getVerificationStatus } from 'common/user'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
@@ -30,6 +29,8 @@ import {
 } from 'common/economy'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 const CheckoutPage = () => {
   const user = useUser()
@@ -46,6 +47,21 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>()
   const [DeviceGPS, setDeviceGPS] = useState<GPSData>()
+  const router = useRouter()
+  // get query params
+  const { manaAmount } = router.query
+  useEffect(() => {
+    if (!manaAmount) return
+    if (
+      !Array.isArray(manaAmount) &&
+      Object.keys(prices).includes(manaAmount as string)
+    ) {
+      onSelectAmount(parseInt(manaAmount) as WebManaAmounts)
+    } else {
+      console.error('Invalid mana amount in query parameter')
+    }
+  }, [manaAmount])
+
   const goHome = () => {
     router.push('/home')
   }
@@ -218,13 +234,17 @@ const CheckoutPage = () => {
     // checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
   }, [DeviceGPS])
   const onSelectAmount = (amount: WebManaAmounts) => {
-    checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
     setAmountSelected(amount)
+    checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
   }
 
   return (
     <Page trackPageView={'checkout page'}>
-      {page === 'checkout' && (
+      {/*//&& (!manaAmount amountSelected)*/}
+      {page === 'checkout' &&
+      !amountSelected &&
+      !manaAmount &&
+      router.isReady ? (
         <Col>
           <FundsSelector prices={prices} onSelect={onSelectAmount} />
 
@@ -237,26 +257,26 @@ const CheckoutPage = () => {
 
           <Row className="text-error mt-2 text-sm">{locationError}</Row>
         </Col>
-      )}
-      {page === 'location' && (
+      ) : page === 'location' ? (
         <LocationPanel
           requestLocation={requestLocationBrowser}
           locationError={locationError}
           loading={loading}
           back={() => setPage('checkout')}
         />
-      )}
-      {page === 'payment' &&
+      ) : page === 'payment' &&
         checkoutSession &&
         productSelected &&
-        amountSelected && (
-          <PaymentSection
-            CheckoutSession={checkoutSession}
-            amountSelected={productSelected}
-            manaAmount={amountSelected}
-            spiceAmount={MANA_TO_CASH_BONUS[amountSelected]}
-          />
-        )}
+        amountSelected ? (
+        <PaymentSection
+          CheckoutSession={checkoutSession}
+          amountSelected={productSelected}
+          manaAmount={amountSelected}
+          spiceAmount={MANA_TO_CASH_BONUS[amountSelected]}
+        />
+      ) : (
+        <LoadingIndicator />
+      )}
       <Row className="text-error mt-2 text-sm">{error}</Row>
     </Page>
   )

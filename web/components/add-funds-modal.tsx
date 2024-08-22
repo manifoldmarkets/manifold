@@ -35,6 +35,7 @@ import { CoinNumber } from './widgets/manaCoinNumber'
 import { Col } from './layout/col'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 import { FaStore } from 'react-icons/fa6'
+import router from 'next/router'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -164,7 +165,12 @@ export function BuyManaTab(props: { onClose: () => void }) {
                 manaAmount={mana}
                 loading={loading}
                 disabled={pastLimit}
-                isSubmitButton
+                onClick={() => {
+                  if (TWOMBA_ENABLED) {
+                    router.push(`/checkout?manaAmount=${manaAmount}`)
+                  }
+                }}
+                isSubmitButton={!TWOMBA_ENABLED}
               />
             </form>
           )
