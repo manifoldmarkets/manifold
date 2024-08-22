@@ -42,6 +42,7 @@ import clsx from 'clsx'
 import { getAnswerColor } from '../charts/contract/choice'
 import { Fees, getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from './fees'
+import { MoneyDisplay } from './money-display'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -260,6 +261,8 @@ export default function LimitOrderPanel(props: {
   const returnPercent = formatPercent(currentReturn)
   const totalFees = getFeeTotal(fees)
 
+  const isCashContract = contract.token === 'CASH'
+
   return (
     <>
       <Col className="relative my-2 w-full gap-3">
@@ -286,6 +289,7 @@ export default function LimitOrderPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         showSlider
+        token={isCashContract ? 'CASH' : 'M$'}
       />
 
       <div className="my-3">
@@ -392,7 +396,15 @@ export default function LimitOrderPanel(props: {
               {isBinaryMC ? 'Filled' : 'filled'} now
             </div>
             <div className="mr-2 whitespace-nowrap">
-              {formatMoney(filledAmount)} of {formatMoney(orderAmount)}
+              <MoneyDisplay
+                amount={filledAmount}
+                isCashContract={isCashContract}
+              />{' '}
+              of{' '}
+              <MoneyDisplay
+                amount={orderAmount}
+                isCashContract={isCashContract}
+              />
             </div>
           </Row>
         )}
@@ -414,7 +426,10 @@ export default function LimitOrderPanel(props: {
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">
-                {formatMoney(currentPayout)}
+                <MoneyDisplay
+                  amount={currentPayout}
+                  isCashContract={isCashContract}
+                />
               </span>
               ({returnPercent})
             </div>
@@ -425,7 +440,11 @@ export default function LimitOrderPanel(props: {
           <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
             Fees
           </Row>
-          <FeeDisplay amount={filledAmount} totalFees={totalFees} />
+          <FeeDisplay
+            amount={filledAmount}
+            totalFees={totalFees}
+            isCashContract={isCashContract}
+          />
         </Row>
 
         <Row className="items-center justify-between gap-2">
@@ -441,21 +460,33 @@ export default function LimitOrderPanel(props: {
               }}
               onClick={submitBet}
             >
-              {isSubmitting
-                ? 'Submitting...'
-                : !outcome
-                ? 'Choose YES or NO'
-                : !limitProb
-                ? 'Enter a probability'
-                : !betAmount
-                ? 'Enter an amount'
-                : binaryMCOutcome
-                ? `Submit order for ${formatMoney(
-                    betAmount
-                  )} at ${formatPercent(preLimitProb ?? 0)}`
-                : `Submit ${outcome} order for ${formatMoney(
-                    betAmount
-                  )} at ${formatPercent(limitProb)}`}
+              {isSubmitting ? (
+                'Submitting...'
+              ) : !outcome ? (
+                'Choose YES or NO'
+              ) : !limitProb ? (
+                'Enter a probability'
+              ) : !betAmount ? (
+                'Enter an amount'
+              ) : binaryMCOutcome ? (
+                <span>
+                  Submit order for{' '}
+                  <MoneyDisplay
+                    amount={betAmount}
+                    isCashContract={isCashContract}
+                  />{' '}
+                  at {formatPercent(preLimitProb ?? 0)}
+                </span>
+              ) : (
+                <span>
+                  Submit {outcome} order for{' '}
+                  <MoneyDisplay
+                    amount={betAmount}
+                    isCashContract={isCashContract}
+                  />{' '}
+                  at {formatPercent(limitProb)}
+                </span>
+              )}
             </Button>
           )}
         </Row>

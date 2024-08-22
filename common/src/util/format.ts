@@ -53,16 +53,18 @@ export function getMoneyNumber(amount: number) {
   return Math.round(plusEpsilon) === 0 ? 0 : plusEpsilon
 }
 
+export function getMoneyNumberToDecimal(amount: number) {
+  return Math.abs(amount - Math.round(amount)) < 0.0001
+    ? Math.round(amount).toFixed(0)
+    : amount.toFixed(1)
+}
+
 export function formatMoneyWithDecimals(amount: number) {
   return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
 }
 
 export function formatMoneyToDecimal(amount: number) {
-  const amountString =
-    Math.abs(amount - Math.round(amount)) < 0.0001
-      ? Math.round(amount).toFixed(0)
-      : amount.toFixed(1)
-  return ENV_CONFIG.moneyMoniker + amountString
+  return ENV_CONFIG.moneyMoniker + getMoneyNumberToDecimal(amount)
 }
 
 export function formatWithCommas(amount: number) {

@@ -1,4 +1,8 @@
-import { formatMoneyNoMoniker } from 'common/util/format'
+import {
+  formatMoneyNoMoniker,
+  formatMoneyToDecimal,
+  getMoneyNumberToDecimal,
+} from 'common/util/format'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { Row } from '../layout/row'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
@@ -8,10 +12,12 @@ import { shortenNumber } from 'web/lib/util/formatNumber'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
+export type NumberDisplayType = 'short' | 'animated' | 'toDecimal'
+
 export function CoinNumber(props: {
   amount?: number
   coinType?: 'mana' | 'spice' | 'sweepies'
-  numberType?: 'short' | 'animated'
+  numberType?: NumberDisplayType
   className?: string
   isInline?: boolean
   coinClassName?: string
@@ -30,8 +36,8 @@ export function CoinNumber(props: {
   return (
     <Row
       className={clsx(
-        'items-center whitespace-nowrap',
-        isInline && 'relative ml-[1.1em] inline-flex items-baseline',
+        'coin-offset items-center whitespace-nowrap',
+        isInline && 'relative ml-[1.1em] inline-flex',
         className
       )}
       style={style}
@@ -40,25 +46,29 @@ export function CoinNumber(props: {
       {coinType == 'spice' ? (
         <SpiceCoin
           className={clsx(
-            isInline && 'absolute -left-[1.1em] top-[0.25em]',
+            isInline &&
+              'absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]',
             coinClassName
           )}
         />
       ) : coinType == 'sweepies' ? (
         <SweepiesCoin
           className={clsx(
-            isInline && 'absolute -left-[1.1em] top-[0.25em]',
+            isInline &&
+              'absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]',
             coinClassName
           )}
         />
       ) : (
         <ManaCoin
           className={clsx(
-            isInline && 'absolute -left-[1.1em] top-[0.25em] shrink-0',
+            isInline &&
+              'absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]',
             coinClassName
           )}
         />
       )}
+
       {amount == undefined ? (
         '---'
       ) : numberType == 'short' ? (
@@ -67,6 +77,8 @@ export function CoinNumber(props: {
         )
       ) : numberType == 'animated' ? (
         <AnimatedNumber amount={Math.abs(amount ?? 0)} />
+      ) : numberType == 'toDecimal' ? (
+        getMoneyNumberToDecimal(Math.abs(amount ?? 0))
       ) : (
         formatMoneyNoMoniker(Math.abs(amount))
       )}
