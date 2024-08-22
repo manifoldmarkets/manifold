@@ -137,6 +137,7 @@ export function BuyPanel(props: {
               }
               noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : 'NO'}
               isCash={contract.token === 'CASH'}
+              includeWordBet={!isStonk}
             />
           </Row>
         </Col>
@@ -666,7 +667,7 @@ export const BuyPanelBody = (props: {
                         formatOutcomeLabel(contract, outcome)}{' '}
                       to win{' '}
                       <MoneyDisplay
-                        amount={betAmount}
+                        amount={currentPayout}
                         isCashContract={isCashContract}
                       />
                     </span>

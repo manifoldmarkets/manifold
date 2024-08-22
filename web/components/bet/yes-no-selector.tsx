@@ -18,6 +18,7 @@ export function YesNoSelector(props: {
   disabled?: boolean
   highlight?: boolean
   isCash?: boolean
+  includeWordBet?: boolean
 }) {
   const {
     selected,
@@ -29,6 +30,7 @@ export function YesNoSelector(props: {
     disabled,
     highlight,
     isCash,
+    includeWordBet,
   } = props
 
   const getToken = () => {
@@ -55,7 +57,7 @@ export function YesNoSelector(props: {
         )}
         disabled={disabled}
       >
-        Bet {getToken()}
+        {includeWordBet ? 'Bet' : ''} {getToken()}
         {yesLabel ? yesLabel : 'YES'}
         <ArrowUpIcon className="ml-1 h-4 w-4" />
       </Button>
@@ -71,7 +73,7 @@ export function YesNoSelector(props: {
         )}
         disabled={disabled}
       >
-        Bet {getToken()}
+        {includeWordBet ? 'Bet' : ''} {getToken()}
         {noLabel ? noLabel : 'NO'}
         <ArrowDownIcon className="ml-1 h-4 w-4" />
       </Button>
