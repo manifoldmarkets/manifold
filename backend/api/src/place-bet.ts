@@ -233,9 +233,10 @@ export const fetchContractBetDataAndValidate = async (
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
     throw new APIError(400, 'This is not a market')
 
-  const { closeTime } = contract
+  const { closeTime, isResolved } = contract
   if (closeTime && Date.now() > closeTime)
     throw new APIError(403, 'Trading is closed.')
+  if (isResolved) throw new APIError(403, 'Market is resolved.')
 
   const answersPromise = getAnswersForBet(
     pgTrans,
@@ -508,7 +509,8 @@ export const executeNewBetResult = async (
 
   const apiFee = isApi ? FLAT_TRADE_FEE : 0
   await incrementBalance(pgTrans, user.id, {
-    [contract.token === 'CASH' ? 'cashBalance' : 'balance']: -newBet.amount - apiFee,
+    [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+      -newBet.amount - apiFee,
   })
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
