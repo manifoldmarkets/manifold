@@ -9,8 +9,8 @@ import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxn } from 'shared/txn/run-txn'
 import {
-  GIDX_MANA_TO_PRICES,
-  GIDXManaAmount,
+  MANA_TO_PRICES_GIDX,
+  ManaAmountGIDX,
   MANA_TO_CASH_BONUS,
 } from 'common/economy'
 import { getIp } from 'shared/analytics'
@@ -20,13 +20,13 @@ const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
 
 const getManaAmountForWebPrice = (price: number) => {
-  const manaAmount = Object.entries(GIDX_MANA_TO_PRICES).find(
+  const manaAmount = Object.entries(MANA_TO_PRICES_GIDX).find(
     ([, p]) => p === price
   )
   if (!manaAmount) {
     throw new APIError(400, 'Invalid price')
   }
-  return parseInt(manaAmount[0]) as GIDXManaAmount
+  return parseInt(manaAmount[0]) as ManaAmountGIDX
 }
 
 export const completeCheckoutSession: APIHandler<
@@ -185,7 +185,7 @@ export const completeCheckoutSession: APIHandler<
 
 const sendCoins = async (
   userId: string,
-  manaAmount: GIDXManaAmount,
+  manaAmount: ManaAmountGIDX,
   paidInCents: number,
   transactionId: string
 ) => {
