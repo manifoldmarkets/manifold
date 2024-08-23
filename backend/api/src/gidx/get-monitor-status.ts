@@ -3,15 +3,15 @@ import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
-import { GIDX_REGISTATION_ENABLED, GIDXMonitorResponse } from 'common/gidx/gidx'
+import { GIDXMonitorResponse } from 'common/gidx/gidx'
 import { log } from 'shared/utils'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   _,
   auth
 ) => {
-  if (!GIDX_REGISTATION_ENABLED)
-    throw new APIError(400, 'GIDX registration is disabled')
+  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const userId = auth.uid
   await getUserRegistrationRequirements(userId)
   const data = await getCustomerMonitorStatus(userId)

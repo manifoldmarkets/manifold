@@ -48,6 +48,7 @@ import {
   getNewFollowedMarketEmail,
   sendNewUniqueBettorsEmail,
   EmailAndTemplateEntry,
+  toDisplayResolution,
 } from './emails'
 import {
   getNotificationDestinationsForUser,
@@ -1387,7 +1388,14 @@ export const createContractResolvedNotifications = async (
   )
   await createPushNotifications(bulkPushNotifications)
   await bulkInsertNotifications(bulkNotifications, pg)
-  const subject = `Resolved ${outcome}: ${contract.question}`
+  const subjectResolution = toDisplayResolution(
+    contract,
+    outcome,
+    resolutionProbability,
+    resolutions,
+    answerId
+  )
+  const subject = `Resolved ${subjectResolution}: ${contract.question}`
   await sendBulkEmails(subject, 'market-resolved-bulk', bulkEmails)
   await sendBulkEmails(
     subject,

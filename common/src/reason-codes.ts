@@ -47,7 +47,6 @@ export const blockedCodes: string[] = [
   'ID-WL', // Identity on watchlist
   'ID-HR', // Identity High Risk
   'ID-BLOCK', // Identity Blocked
-  'ID-EX', // Identity Exists already
   'ID-HVEL-ACTV', // Identity High Velocity Activity
   'ID-DECEASED', // Identity Deceased
 
@@ -71,7 +70,10 @@ export const allowedCodes: string[] = [
   'ID-PASS', // Identity Verification Passed
   'ID-UA21', // Identity Under 21
   'LL-OUT-US', // Location Outside US
+  'ID-EX', // Identity Exists
 ]
+
+export const documentsReadyCodes: string[] = ['DOC-REV-COMPL', 'DOC-UPLOADED']
 
 export type RegistrationReturnType = {
   status: string

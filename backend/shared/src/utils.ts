@@ -17,7 +17,7 @@ import {
 } from 'common/envs/constants'
 import { convertPrivateUser, convertUser } from 'common/supabase/users'
 import { convertContract } from 'common/supabase/contracts'
-import { Row } from 'common/supabase/utils'
+import { Row, tsToMillis } from 'common/supabase/utils'
 import { log } from 'shared/monitoring/log'
 import { metrics } from 'shared/monitoring/metrics'
 
@@ -196,18 +196,29 @@ export const getPrivateUsersNotSent = async (
   pg: SupabaseDirectClient
 ) => {
   return await pg.map(
-    `select data from private_users
-         where (data->'notificationPreferences'->>'${preference}')::jsonb @> '["email"]'
+    `select pu.data, u.name,
+       u.created_time,
+       coalesce(((u.data->'creatorTraders'->>'weekly')::bigint),0) as weekly_traders,
+       coalesce(((u.data->>'currentBettingStreak')::bigint),0) as current_betting_streak
+         from private_users pu
+         join users u on pu.id = u.id
+         where (pu.data->'notificationPreferences'->>'${preference}')::jsonb @> '["email"]'
          and ${
            preference === 'trending_markets'
              ? 'weekly_trending_email_sent'
              : 'weekly_portfolio_email_sent'
          } = false
-         and (data->'notificationPreferences'->>'opt_out_all')::jsonb <> '["email"]'
-         and data->>'email' is not null
+         and (pu.data->'notificationPreferences'->>'opt_out_all')::jsonb <> '["email"]'
+         and pu.data->>'email' is not null
          limit $1`,
     [limit],
-    (row) => row.data as PrivateUser
+    (row) => ({
+      ...(row.data as PrivateUser),
+      createdTime: tsToMillis(row.created_time as string),
+      name: row.name as string,
+      weeklyTraders: row.weekly_traders as number,
+      currentBettingStreak: row.current_betting_streak as number,
+    })
   )
 }
 

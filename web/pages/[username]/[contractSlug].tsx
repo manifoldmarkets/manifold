@@ -114,6 +114,20 @@ export async function getStaticProps(ctx: {
     }
   }
 
+  if (contract.token === 'CASH') {
+    const manaContract = contract.siblingContractId
+      ? await getContract(adminDb, contract.siblingContractId)
+      : null
+    const slug = manaContract?.slug ?? contractSlug.replace('--cash', '')
+
+    return {
+      redirect: {
+        destination: `/username/${slug}?play=false`,
+        permanent: false,
+      },
+    }
+  }
+
   const props = await getContractParams(contract, adminDb)
 
   // Fetch sibling contract if it exists

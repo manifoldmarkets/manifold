@@ -166,7 +166,7 @@ import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
 import { register } from 'api/gidx/register'
 import { uploadDocument } from 'api/gidx/upload-document'
-import { callbackGIDX } from 'api/gidx/callback'
+import { identityCallbackGIDX, paymentCallbackGIDX } from 'api/gidx/callback'
 import { getVerificationStatus } from 'api/gidx/get-verification-status'
 import { getCurrentPrivateUser } from './get-current-private-user'
 import { updatePrivateUser } from './update-private-user'
@@ -183,6 +183,8 @@ import {
   setChannelLastSeenTime,
 } from 'api/get-private-messages'
 import { getNotifications } from 'api/get-notifications'
+import { getCheckoutSession } from 'api/gidx/get-checkout-session'
+import { completeCheckoutSession } from 'api/gidx/complete-checkout-session'
 import { getContractTopics } from './get-contract-topics'
 import { getRelatedMarkets } from 'api/get-related-markets'
 import { getRelatedMarketsByGroup } from './get-related-markets-by-group'
@@ -405,9 +407,12 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-txn-summary-stats': getTxnSummaryStats,
   'get-mana-summary-stats': getManaSummaryStats,
   'register-gidx': register,
+  'get-checkout-session-gidx': getCheckoutSession,
+  'complete-checkout-session-gidx': completeCheckoutSession,
   'get-verification-status-gidx': getVerificationStatus,
   'upload-document-gidx': uploadDocument,
-  'callback-gidx': callbackGIDX,
+  'identity-callback-gidx': identityCallbackGIDX,
+  'payment-callback-gidx': paymentCallbackGIDX,
   'get-verification-documents-gidx': getVerificationDocuments,
   'get-monitor-status-gidx': getMonitorStatus,
   'get-best-comments': getBestComments,

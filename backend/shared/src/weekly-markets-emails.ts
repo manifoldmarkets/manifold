@@ -1,6 +1,6 @@
 import { chunk } from 'lodash'
 
-import { getPrivateUsersNotSent, getUser, isProd, log } from 'shared/utils'
+import { getPrivateUsersNotSent, isProd, log } from 'shared/utils'
 import { sendInterestingMarketsEmail } from 'shared/emails'
 import { PrivateUser } from 'common/user'
 import { getForYouSQL } from 'shared/supabase/search-contracts'
@@ -33,9 +33,22 @@ export async function sendWeeklyMarketsEmails() {
   await buildUserInterestsCache(privateUsers.map((u) => u.id))
   for (const chunk of chunks) {
     await Promise.all(
-      chunk.map(async (pu) =>
-        sendEmailToPrivateUser(pu).catch((e) => log('error sending email', e))
-      )
+      chunk.map(async (privateUser) => {
+        const contractsToSend = await getForYouMarkets(
+          privateUser.id,
+          6,
+          privateUser
+        )
+        // TODO: bulkify this
+        await sendInterestingMarketsEmail(
+          privateUser.name,
+          privateUser,
+          contractsToSend
+        )
+        if (userIdsToAverageTopicConversionScores[privateUser.id]) {
+          delete userIdsToAverageTopicConversionScores[privateUser.id]
+        }
+      })
     )
 
     i++
@@ -44,17 +57,6 @@ export async function sendWeeklyMarketsEmails() {
         privateUsers.length
       } weekly trending emails in this batch`
     )
-  }
-}
-
-const sendEmailToPrivateUser = async (privateUser: PrivateUser) => {
-  const user = await getUser(privateUser.id)
-  if (!user) return
-
-  const contractsToSend = await getForYouMarkets(user.id, 6, privateUser)
-  await sendInterestingMarketsEmail(user, privateUser, contractsToSend)
-  if (userIdsToAverageTopicConversionScores[user.id]) {
-    delete userIdsToAverageTopicConversionScores[user.id]
   }
 }
 

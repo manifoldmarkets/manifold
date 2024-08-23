@@ -18,22 +18,15 @@ import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
-import {
-  GIDX_REGISTATION_ENABLED,
-  GIDXRegistrationResponse,
-  ID_ERROR_MSG,
-} from 'common/gidx/gidx'
+import { GIDXRegistrationResponse, ID_ERROR_MSG } from 'common/gidx/gidx'
 import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
 
-export const register: APIHandler<'register-gidx'> = async (
-  props,
-  auth,
-) => {
-  if (!GIDX_REGISTATION_ENABLED)
-    throw new APIError(400, 'GIDX registration is disabled')
+export const register: APIHandler<'register-gidx'> = async (props, auth) => {
+  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   await getUserRegistrationRequirements(auth.uid)
   const body = {
     // TODO: add back in prod
@@ -59,25 +52,30 @@ export const register: APIHandler<'register-gidx'> = async (
   const data = (await res.json()) as GIDXRegistrationResponse
   log('Registration response:', data)
   const { ReasonCodes, FraudConfidenceScore, IdentityConfidenceScore } = data
-  const { status, message } = await processUserReasonCodes(
+  const { status, message } = await verifyReasonCodes(
     auth.uid,
     ReasonCodes,
     FraudConfidenceScore,
-    IdentityConfidenceScore,
-    false
+    IdentityConfidenceScore
   )
+  if (status === 'success') {
+    // TODO: we may not want to await documents for every user, and instead just verify them
+    const pg = createSupabaseDirectClient()
+    await updateUser(pg, auth.uid, {
+      kycStatus: 'await-documents',
+    })
+  }
   return {
     status,
     message,
   }
 }
 
-export const processUserReasonCodes = async (
+export const verifyReasonCodes = async (
   userId: string,
   ReasonCodes: string[],
-  FraudConfidenceScore: number,
-  IdentityConfidenceScore: number,
-  queryForDocuments: boolean
+  FraudConfidenceScore: number | undefined,
+  IdentityConfidenceScore: number | undefined
 ): Promise<RegistrationReturnType> => {
   const pg = createSupabaseDirectClient()
 
@@ -102,6 +100,17 @@ export const processUserReasonCodes = async (
       }
     }
   }
+
+  if (hasAny(['PAY-HVEL-CL', 'PAY-HVEL-CKI'])) {
+    const userType = ReasonCodes.includes('PAY-HVEL-CKI')
+      ? 'Fully KYC (Internally) Customer'
+      : 'user'
+    return {
+      status: 'warning',
+      message: `High velocity of payments detected for ${userType}.`,
+    }
+  }
+
   // User identity not found/verified
   if (hasIdentityError(ReasonCodes)) {
     log('Registration failed, resulted in identity errors:', ReasonCodes)
@@ -168,7 +177,11 @@ export const processUserReasonCodes = async (
   }
 
   // User identity match is low confidence or attempt may be fraud
-  if (FraudConfidenceScore < 80 || IdentityConfidenceScore < 80) {
+  if (
+    FraudConfidenceScore !== undefined &&
+    IdentityConfidenceScore !== undefined &&
+    (FraudConfidenceScore < 80 || IdentityConfidenceScore < 80)
+  ) {
     log(
       'Registration failed, resulted in low confidence scores:',
       FraudConfidenceScore,
@@ -185,31 +198,6 @@ export const processUserReasonCodes = async (
   // User is not blocked and ID is verified
   if (ReasonCodes.includes('ID-VERIFIED')) {
     log('Registration passed with allowed codes:', ReasonCodes)
-    // New user, no documents yet
-    if (!queryForDocuments) {
-      await updateUser(pg, userId, {
-        kycStatus: 'await-documents',
-      })
-      return { status: 'success' }
-    }
-
-    const { isPending, isVerified, isRejected } =
-      await getIdentityVerificationDocuments(userId)
-
-    if (isVerified) {
-      // They passed the reason codes and have the required documents
-      await updateUser(pg, userId, {
-        kycStatus: 'verified',
-      })
-    } else if (isPending) {
-      await updateUser(pg, userId, {
-        kycStatus: 'pending',
-      })
-    } else if (isRejected) {
-      await updateUser(pg, userId, {
-        kycStatus: 'await-documents',
-      })
-    }
     return { status: 'success' }
   }
 

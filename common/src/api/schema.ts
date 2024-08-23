@@ -48,9 +48,11 @@ import { ModReport } from '../mod-report'
 
 import { RegistrationReturnType } from 'common/reason-codes'
 import {
+  CheckoutSession,
   GIDXDocument,
   GIDXMonitorResponse,
   GPSProps,
+  PaymentDetail,
   verificationParams,
 } from 'common/gidx/gidx'
 
@@ -1499,6 +1501,72 @@ export const API = (_apiTypeCheck = {
       DeviceGPS: GPSProps,
     }),
   },
+  'get-checkout-session-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      status: string
+      message?: string
+      session?: CheckoutSession
+    },
+    props: z.object({
+      DeviceGPS: GPSProps,
+    }),
+  },
+  'complete-checkout-session-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      status: string
+      message?: string
+      gidxMessage?: string
+      details?: PaymentDetail[]
+    },
+    props: z.object({
+      MerchantTransactionID: z.string(),
+      MerchantSessionID: z.string(),
+      PaymentAmount: z.object({
+        PaymentAmount: z.number(),
+        BonusAmount: z.number(),
+      }),
+      PaymentMethod: z.object({
+        Type: z.enum(['CC']), // TODO: add 'ApplePay', 'GooglePay'
+        NameOnAccount: z.string(),
+        SavePaymentMethod: z.boolean(),
+        BillingAddress: z.object({
+          City: z.string(),
+          AddressLine1: z.string(),
+          StateCode: z.string(),
+          PostalCode: z.string(),
+          CountryCode: z.string(),
+        }),
+        // CC specific fields,
+        creditCard: z
+          .object({
+            CardNumber: z.string(),
+            CVV: z.string(),
+            ExpirationDate: z.string(),
+          })
+          .optional(),
+        // ApplePay specific fields,
+        applePay: z
+          .object({
+            Payment: z.string().optional(),
+            WalletToken: z.string().optional(),
+          })
+          .optional(),
+        // For saved payment methods:
+        saved: z
+          .object({
+            Token: z.string(),
+            DisplayName: z.string(),
+          })
+          .optional(),
+      }),
+    }),
+  },
   'get-verification-documents-gidx': {
     method: 'POST',
     visibility: 'undocumented',
@@ -1523,7 +1591,7 @@ export const API = (_apiTypeCheck = {
       fileUrl: z.string(),
     }),
   },
-  'callback-gidx': {
+  'identity-callback-gidx': {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
@@ -1532,6 +1600,13 @@ export const API = (_apiTypeCheck = {
       MerchantCustomerID: z.string(),
       NotificationType: z.string(),
     }),
+  },
+  'payment-callback-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as { Accepted: boolean },
+    props: z.any(),
   },
   'get-best-comments': {
     method: 'GET',
