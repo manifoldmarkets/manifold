@@ -25,6 +25,8 @@ import {
   TwombaPortfolioGraph,
   TwombaProfitGraph,
 } from './twomba-portfolio-graph'
+import { getPortfolioValues } from '../twomba-portfolio-helpers'
+import { useSweepstakes } from '../sweestakes-context'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
@@ -37,7 +39,10 @@ export type GraphValueType = {
   balance?: number | null
   invested?: number | null
   profit?: number | null
-  spice?: number | null
+  cashBalance?: number | null
+  cashInvested?: number | null
+  cashProfit?: number | null
+  netCash?: number | null
 }
 
 export type PortfolioValueType = Required<GraphValueType>
@@ -48,6 +53,10 @@ export const emptyGraphValues = {
   invested: undefined,
   profit: undefined,
   spice: undefined,
+  cashBalance: undefined,
+  cashInvested: undefined,
+  cashProfit: undefined,
+  netCash: undefined,
 }
 
 export const TwombaPortfolioValueSection = memo(
@@ -97,14 +106,6 @@ export const TwombaPortfolioValueSection = memo(
       })
     }
 
-    const first = portfolioHistory?.[0]
-    const firstProfit = first
-      ? first.spiceBalance +
-        first.balance +
-        first.investmentValue -
-        first.totalDeposits
-      : 0
-
     const lastPortfolioMetrics = portfolio ?? last(portfolioHistory)
 
     const zoomParams = useZoom()
@@ -150,6 +151,8 @@ export const TwombaPortfolioValueSection = memo(
       )
     }
 
+    const { isPlay, setIsPlay } = useSweepstakes()
+
     if (!portfolioHistory || !lastPortfolioMetrics) {
       return (
         <TwombaPortfolioValueSkeleton
@@ -178,13 +181,51 @@ export const TwombaPortfolioValueSection = memo(
       )
     }
 
-    const { balance, investmentValue, totalDeposits, spiceBalance } =
-      lastPortfolioMetrics
+    const {
+      balance,
+      investmentValue,
+      totalDeposits,
+      cashBalance,
+      cashInvestmentValue,
+      totalCashDeposits,
+    } = lastPortfolioMetrics
 
-    const totalValue =
-      balance + investmentValue + spiceBalance * SPICE_TO_MANA_CONVERSION_RATE
+    const first = portfolioHistory?.[0]
 
-    const calculatedProfit = totalValue - totalDeposits - firstProfit
+    const { firstProfit, totalValue, calculatedProfit } = getPortfolioValues({
+      first: first
+        ? {
+            balance: first.balance,
+            investmentValue: first.investmentValue,
+            totalDeposits: first.totalDeposits,
+          }
+        : undefined,
+      last: {
+        balance: lastPortfolioMetrics.balance,
+        investmentValue: lastPortfolioMetrics.investmentValue,
+        totalDeposits: lastPortfolioMetrics.totalDeposits,
+      },
+    })
+
+    const {
+      firstProfit: firstCashProfit,
+      totalValue: totalCashValue,
+      calculatedProfit: calculatedCashProfit,
+    } = getPortfolioValues({
+      first: first
+        ? {
+            balance: first.cashBalance,
+            investmentValue: first.cashInvestmentValue,
+            totalDeposits: first.totalCashDeposits,
+          }
+        : undefined,
+      last: {
+        balance: lastPortfolioMetrics.cashBalance,
+        investmentValue: lastPortfolioMetrics.cashInvestmentValue,
+        totalDeposits: lastPortfolioMetrics.totalCashDeposits,
+      },
+    })
+
     const profit =
       currentTimePeriod === 'daily' && portfolio
         ? portfolio.dailyProfit
@@ -195,7 +236,10 @@ export const TwombaPortfolioValueSection = memo(
       invested: investmentValue,
       profit,
       net: totalValue,
-      spice: spiceBalance,
+      cashBalance,
+      cashInvested: cashInvestmentValue,
+      cashProfit: calculatedCashProfit,
+      netCash: totalCashValue,
     }
 
     // Add the latest portfolio data as the final point
@@ -222,6 +266,7 @@ export const TwombaPortfolioValueSection = memo(
             zoomParams={zoomParams}
             hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
             firstProfit={firstProfit}
+            firstCashProfit={firstCashProfit}
             updateGraphValues={updateGraphValues}
             portfolioFocus={portfolioFocus}
             setPortfolioFocus={onSetPortfolioFocus}
@@ -236,6 +281,7 @@ export const TwombaPortfolioValueSection = memo(
             zoomParams={zoomParams}
             hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
             firstProfit={firstProfit}
+            firstCashProfit={firstCashProfit}
             updateGraphValues={updateGraphValues}
             portfolioFocus={portfolioFocus}
             setPortfolioFocus={onSetPortfolioFocus}
@@ -319,6 +365,8 @@ function TwombaPortfolioValueSkeleton(props: {
     setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
   }
 
+  const { isPlay } = useSweepstakes()
+
   return (
     <Col>
       <Col className={clsx('gap-2')}>
@@ -332,18 +380,24 @@ function TwombaPortfolioValueSkeleton(props: {
               className={clsx(
                 'cursor-pointer select-none transition-opacity',
                 portfolioFocus == 'all'
-                  ? 'text-primary-700 dark:text-primary-600 opacity-100'
+                  ? isPlay
+                    ? 'text-primary-700 dark:text-primary-600 opacity-100'
+                    : 'text-lime-700 opacity-100 dark:text-lime-600'
                   : 'text-ink-1000 opacity-50 hover:opacity-[85%]'
               )}
               onClick={() => togglePortfolioFocus('all')}
             >
               <CoinNumber
-                amount={displayAmounts(graphValues.net, portfolioValues?.net)}
+                amount={displayAmounts(
+                  graphValues.net,
+                  isPlay ? portfolioValues?.net : portfolioValues?.netCash
+                )}
                 className={clsx(
                   'text-3xl font-bold transition-all sm:text-4xl'
                 )}
                 isInline
                 coinClassName="top-[0.25rem] sm:top-[0.1rem]"
+                coinType={isPlay ? 'mana' : 'sweepies'}
               />
               <span
                 className={clsx(
@@ -360,11 +414,15 @@ function TwombaPortfolioValueSkeleton(props: {
                 portfolioFocus={portfolioFocus}
                 displayedAmount={displayAmounts(
                   graphValues.balance,
-                  portfolioValues?.balance
+                  isPlay
+                    ? portfolioValues?.balance
+                    : portfolioValues?.cashBalance
                 )}
                 className={clsx(
                   portfolioFocus == 'balance'
-                    ? 'bg-indigo-700 text-white'
+                    ? isPlay
+                      ? 'bg-indigo-700 text-white'
+                      : 'bg-lime-700 text-white'
                     : 'bg-canvas-50 text-ink-1000'
                 )}
                 onClick={() => togglePortfolioFocus('balance')}
@@ -375,11 +433,15 @@ function TwombaPortfolioValueSkeleton(props: {
                 portfolioFocus={portfolioFocus}
                 displayedAmount={displayAmounts(
                   graphValues.invested,
-                  portfolioValues?.invested
+                  isPlay
+                    ? portfolioValues?.invested
+                    : portfolioValues?.cashInvested
                 )}
                 className={clsx(
                   portfolioFocus == 'investment'
-                    ? 'bg-indigo-700 text-white'
+                    ? isPlay
+                      ? 'bg-indigo-700 text-white'
+                      : 'bg-lime-700 text-white'
                     : 'bg-canvas-50 text-ink-1000'
                 )}
                 onClick={() => togglePortfolioFocus('investment')}
@@ -403,7 +465,7 @@ function TwombaPortfolioValueSkeleton(props: {
               <CoinNumber
                 amount={displayAmounts(
                   graphValues.profit,
-                  portfolioValues?.profit
+                  isPlay ? portfolioValues?.profit : portfolioValues?.cashProfit
                 )}
                 className={clsx(
                   'text-ink-1000 text-3xl font-bold transition-all sm:text-4xl',
@@ -413,6 +475,7 @@ function TwombaPortfolioValueSkeleton(props: {
                 )}
                 isInline
                 coinClassName="top-[0.25rem] sm:top-[0.1rem]"
+                coinType={isPlay ? 'mana' : 'sweepies'}
               />
               <span
                 className={clsx(
