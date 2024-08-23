@@ -126,7 +126,7 @@ type market_resolved_template = {
   unsubscribeUrl: string
 }
 
-const toDisplayResolution = (
+export const toDisplayResolution = (
   contract: Contract,
   resolution: string,
   resolutionProbability?: number,
