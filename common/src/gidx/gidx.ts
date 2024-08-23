@@ -32,6 +32,67 @@ export const verificationParams = z.object({
   MerchantCustomerID: z.string(),
 })
 
+export const checkoutParams = {
+  MerchantTransactionID: z.string(),
+  MerchantSessionID: z.string(),
+  PaymentAmount: z.object({
+    PaymentAmount: z.number(),
+    BonusAmount: z.number(),
+  }),
+  PaymentMethod: z.object({
+    Type: z.enum(['CC']), // TODO: add 'ACH'
+    NameOnAccount: z.string(),
+    SavePaymentMethod: z.boolean(),
+    BillingAddress: z.object({
+      City: z.string(),
+      AddressLine1: z.string(),
+      StateCode: z.string(),
+      PostalCode: z.string(),
+      CountryCode: z.string(),
+    }),
+    // CC specific fields,
+    creditCard: z.object({
+      CardNumber: z.string(),
+      CVV: z.string(),
+      ExpirationDate: z.string(),
+    }),
+    // .optional(),
+    // ach: z
+    //   .object({
+    //     AccountNumber: z.string(),
+    //     RoutingNumber: z.string(),
+    //   })
+    //   .optional(),
+    // For saved payment methods:
+    saved: z
+      .object({
+        Token: z.string(),
+        DisplayName: z.string(),
+      })
+      .optional(),
+  }),
+}
+
+export const cashoutParams = z.object({
+  ...checkoutParams,
+  PaymentMethod: z.object({
+    Type: z.enum(['ACH']),
+    NameOnAccount: z.string(),
+    SavePaymentMethod: z.boolean(),
+    BillingAddress: z.object({
+      City: z.string(),
+      AddressLine1: z.string(),
+      StateCode: z.string(),
+      PostalCode: z.string(),
+      CountryCode: z.string(),
+    }),
+    ach: z.object({
+      AccountNumber: z.string(),
+      RoutingNumber: z.string(),
+    }),
+  }),
+})
+
 export type DocumentRegistrationResponse = {
   ResponseCode: number
   ResponseMessage: string

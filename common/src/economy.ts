@@ -91,7 +91,7 @@ export const PUSH_NOTIFICATION_BONUS = 1000
 export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
 
 // Edit prices on here as well: https://portal.gidx-service.in/ServiceSettings/Payments
-export const GIDX_MANA_TO_PRICES = {
+export const MANA_TO_PRICES_GIDX = {
   // Prices are in cents
   10_000: 1500,
   25_000: 3000,
@@ -100,7 +100,7 @@ export const GIDX_MANA_TO_PRICES = {
 } as const
 
 export const MANA_TO_WEB_PRICES = TWOMBA_ENABLED
-  ? GIDX_MANA_TO_PRICES
+  ? MANA_TO_PRICES_GIDX
   : ({
       10_000: 1399,
       25_000: 2999,
@@ -115,10 +115,18 @@ export const IOS_PRICES: Record<IOSManaAmounts, number> = {
   100_000: 14299,
   // No 1M option on ios: the fees are too high
 }
-export type GIDXManaAmount = keyof typeof GIDX_MANA_TO_PRICES
-export const MANA_TO_CASH_BONUS: Record<GIDXManaAmount, number> = {
+export type ManaAmountGIDX = keyof typeof MANA_TO_PRICES_GIDX
+export const MANA_TO_CASH_BONUS: Record<ManaAmountGIDX, number> = {
   10_000: 10,
   25_000: 25,
   100_000: 100,
   1_000_000: 1_000,
 }
+// TODO what are the actual values?
+export const CASH_TO_CASH_OUT_GIDX = {
+  10_000: 10,
+  25_000: 25,
+  100_000: 100,
+  1_000_000: 1_000,
+} as const
+export type CashAmountGIDX = keyof typeof CASH_TO_CASH_OUT_GIDX
