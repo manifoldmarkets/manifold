@@ -62,11 +62,9 @@ export const TwombaPortfolioGraph = (props: {
   } = props
 
   const {
-    profitPoints,
     investmentPoints,
     balancePoints,
     networthPoints,
-    cashProfitPoints,
     cashInvestmentPoints,
     cashBalancePoints,
     cashNetworthPoints,
@@ -152,7 +150,7 @@ export const TwombaPortfolioGraph = (props: {
       xScale={xScale}
       yScale={portfolioFocus == 'spice' ? spiceYScale : yScale}
       zoomParams={zoomParams}
-      yKind={'Ṁ'}
+      yKind={isPlay ? 'Ṁ' : 'sweepies'}
       data={
         portfolioFocus == 'all'
           ? isPlay
@@ -267,7 +265,7 @@ export const TwombaProfitGraph = (props: {
       xScale={xScale}
       yScale={yScale}
       zoomParams={zoomParams}
-      yKind="Ṁ"
+      yKind={isPlay ? 'Ṁ' : 'sweepies'}
       data={isPlay ? profitPoints : cashProfitPoints}
       // eslint-disable-next-line react/prop-types
       Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
@@ -377,7 +375,7 @@ function usePortfolioPointsFromHistory(
       })
       cashBalancePoints.push({
         x: p.timestamp,
-        y: p.balance,
+        y: p.cashBalance,
         obj: p,
       })
       cashNetworthPoints.push({
