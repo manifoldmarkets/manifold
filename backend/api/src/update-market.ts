@@ -42,8 +42,12 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   if (contract.creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
   if (isSpicePayout !== undefined) {
     if (!isAdminId(auth.uid)) {
-      throw new APIError(400, 'Only admins choose prize markets')
+      throw new APIError(403, 'Only admins choose prize markets')
     }
+  }
+
+  if (contract.isResolved && closeTime !== undefined) {
+    throw new APIError(403, 'Cannot update closeTime for resolved contracts')
   }
 
   await trackPublicEvent(
