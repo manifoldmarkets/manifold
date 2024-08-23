@@ -61,7 +61,9 @@ export async function getWatchedContracts(userId: string) {
       const { data } = await run(
         db
           .from('contracts')
-          .select('id, question, slug, data->>creatorUsername')
+          .select(
+            'id, question, slug, mechanism, data->>creatorId, data->>creatorAvatarUrl'
+          )
           .in('id', ids)
           .order('created_time' as any, { ascending: false })
       )
