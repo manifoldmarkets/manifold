@@ -151,8 +151,6 @@ export const TwombaPortfolioValueSection = memo(
       )
     }
 
-    const { isPlay, setIsPlay } = useSweepstakes()
-
     if (!portfolioHistory || !lastPortfolioMetrics) {
       return (
         <TwombaPortfolioValueSkeleton
@@ -181,14 +179,8 @@ export const TwombaPortfolioValueSection = memo(
       )
     }
 
-    const {
-      balance,
-      investmentValue,
-      totalDeposits,
-      cashBalance,
-      cashInvestmentValue,
-      totalCashDeposits,
-    } = lastPortfolioMetrics
+    const { balance, investmentValue, cashBalance, cashInvestmentValue } =
+      lastPortfolioMetrics
 
     const first = portfolioHistory?.[0]
 
@@ -236,9 +228,9 @@ export const TwombaPortfolioValueSection = memo(
       invested: investmentValue,
       profit,
       net: totalValue,
-      cashBalance,
-      cashInvested: cashInvestmentValue,
-      cashProfit: calculatedCashProfit,
+      cashBalance: cashBalance ?? 0,
+      cashInvested: cashInvestmentValue ?? 0,
+      cashProfit: calculatedCashProfit ?? 0,
       netCash: totalCashValue,
     }
 
@@ -485,7 +477,7 @@ function TwombaPortfolioValueSkeleton(props: {
                 profit
               </span>
             </span>
-            <ProfitWidget user={user} portfolio={portfolio} />
+            {isPlay && <ProfitWidget user={user} portfolio={portfolio} />}
           </Col>
           {profitGraphElement && (
             <SizedContainer

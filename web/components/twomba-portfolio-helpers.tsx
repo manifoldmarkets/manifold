@@ -12,9 +12,9 @@ export function getPortfolioValues(items: {
   const firstProfit = first
     ? first.balance + first.investmentValue - first.totalDeposits
     : 0
-  const totalValue = last.balance + last.investmentValue
+  const totalValue = (last.balance ?? 0) + (last.investmentValue ?? 0)
 
-  const calculatedProfit = totalValue - last.totalDeposits - firstProfit
+  const calculatedProfit = totalValue - (last.totalDeposits ?? 0) - firstProfit
 
   return { firstProfit, totalValue, calculatedProfit }
 }
