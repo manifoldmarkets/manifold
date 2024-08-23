@@ -1,4 +1,8 @@
 export function removeEmojis(str: string) {
-  // eslint-disable-next-line no-control-regex
-  return str.replace(/[^\x00-\x7F]/g, '').trim()
+  return str
+    .replace(
+      /\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji_Modifier_Base}|\p{Emoji_Modifier}|\p{Emoji_Component}/gu,
+      ''
+    )
+    .trim()
 }
