@@ -23,7 +23,8 @@ export const paymentCallbackGIDX: APIHandler<'payment-callback-gidx'> = async (
   props
 ) => {
   log('payment-callback-gidx', props)
-  // TODO: could be helpful to log this stuff
+  // TODO: we could double check here that the txns were sent given succesful payment
+  //  and if not, resend them
   // const { MerchantCustomerID } = props
   // const customerProfile = await getGIDXCustomerProfile(MerchantCustomerID)
   // log('CustomerProfile', customerProfile)
