@@ -35,6 +35,7 @@ const bottomRowClass = 'mb-4 mt-4 w-full gap-16'
 export const RegisterUserForm = (props: { user: User }) => {
   const user = useWebsocketUser(props.user.id) ?? props.user
   const router = useRouter()
+  const { redirect } = router.query
   const [page, setPage] = useState(
     user.kycStatus === 'verified' || user.kycStatus === 'pending'
       ? 1000
@@ -434,12 +435,18 @@ export const RegisterUserForm = (props: { user: User }) => {
       <span className={'text-primary-700 text-2xl'}>
         Identity Verification Complete
       </span>
-      Thank you for verifying your identity! Now you can cash out prize points
-      for cash.
+      Thank you for verifying your identity! Now you can cash out prize points.
       <Row className={bottomRowClass}>
-        <Link className={buttonClass('md', 'indigo')} href={'/home'}>
-          Done
-        </Link>
+        {/*// TODO:  auto-redirect rather than make them click this button*/}
+        {redirect === 'checkout' ? (
+          <Link className={buttonClass('md', 'indigo')} href={'/checkout'}>
+            Get mana
+          </Link>
+        ) : (
+          <Link className={buttonClass('md', 'indigo')} href={'/home'}>
+            Done
+          </Link>
+        )}
       </Row>
     </Col>
   )

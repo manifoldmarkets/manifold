@@ -78,8 +78,7 @@ const CheckoutPage = () => {
         await checkLocationPermission()
       }
     } else {
-      // TODO: implement the redirect from the register page
-      router.push('/gidx/register?r=checkout')
+      router.push('/gidx/register?redirect=checkout')
     }
   }
 
@@ -240,7 +239,6 @@ const CheckoutPage = () => {
 
   return (
     <Page trackPageView={'checkout page'}>
-      {/*//&& (!manaAmount amountSelected)*/}
       {page === 'checkout' &&
       !amountSelected &&
       !manaAmount &&
@@ -274,10 +272,10 @@ const CheckoutPage = () => {
           manaAmount={amountSelected}
           spiceAmount={MANA_TO_CASH_BONUS[amountSelected]}
         />
-      ) : (
+      ) : error || locationError ? null : (
         <LoadingIndicator />
       )}
-      <Row className="text-error mt-2 text-sm">{error}</Row>
+      <Row className="text-error mt-2">{error}</Row>
     </Page>
   )
 }
