@@ -18,6 +18,7 @@ export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice'
 export const MANA_COLOR = '#4f46e5'
 export const SPICE_COLOR = '#f59e0b'
 
+
 export const PortfolioTooltip = (props: { date: Date }) => {
   const d = dayjs(props.date)
   return (
