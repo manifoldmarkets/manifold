@@ -35,7 +35,7 @@ import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { JSONEmpty } from 'web/components/contract/contract-description'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, SWEEPIES_NAME } from 'common/envs/constants'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Button } from 'web/components/buttons/button'
@@ -51,6 +51,7 @@ import { TopicTag } from 'web/components/topics/topic-tag'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -160,12 +161,15 @@ export function FeedContractCard(props: {
 
   const nonTextDescription = !JSONEmpty(contract.description)
   const isPrizeMarket = !!contract.isSpicePayout
+  const isCashContract = contract.token == 'CASH'
 
   return (
     <ClickFrame
       className={clsx(
         isPrizeMarket
           ? 'mt-2 ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200'
+          : isCashContract
+          ? 'mt-2 ring-1 ring-lime-400 hover:ring-lime-500 hover:dark:ring-lime-200'
           : 'ring-primary-200 hover:ring-1',
         className,
         'relative cursor-pointer rounded-xl transition-all ',
@@ -183,7 +187,7 @@ export function FeedContractCard(props: {
       }}
       ref={ref}
     >
-      {isPrizeMarket && (
+      {isPrizeMarket ? (
         <div
           className={clsx(
             'absolute right-4 top-0 z-40 -translate-y-1/2 transform bg-amber-200 text-amber-700',
@@ -194,6 +198,19 @@ export function FeedContractCard(props: {
             <SpiceCoin className="-mt-0.5" /> Prize Market
           </span>
         </div>
+      ) : isCashContract ? (
+        <div
+          className={clsx(
+            'absolute right-4 top-0 z-40 -translate-y-1/2 transform bg-lime-200 text-lime-700',
+            'rounded-full px-2 py-0.5 text-xs font-semibold'
+          )}
+        >
+          <span>
+            <SweepiesCoin className="-mt-0.5" /> {SWEEPIES_NAME} Market
+          </span>
+        </div>
+      ) : (
+        <></>
       )}
       <Col className={clsx('w-full', size === 'xs' ? '' : 'gap-1.5 ', 'pt-4')}>
         <Row className="w-full justify-between">
