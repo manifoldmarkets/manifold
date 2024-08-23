@@ -32,8 +32,8 @@ import { type User } from 'common/user'
 const userToPortfolioMetrics: {
   [userId: string]: {
     currentPortfolio: PortfolioMetrics | undefined
-    dayAgoProfit: number
-    weekAgoProfit: number
+    dayAgoProfit: number | undefined
+    weekAgoProfit: number | undefined
     timeCachedPeriodProfits: number
   }
 } = {}
@@ -121,8 +121,8 @@ export async function updateUserMetricsCore(
         currentPortfolio:
           currentPortfolios[userId] ??
           userToPortfolioMetrics[userId]?.currentPortfolio,
-        dayAgoProfit: dayAgoProfits[userId].mana,
-        weekAgoProfit: weekAgoProfits[userId].mana,
+        dayAgoProfit: dayAgoProfits[userId]?.mana,
+        weekAgoProfit: weekAgoProfits[userId]?.mana,
         // TODO: cash profits
         timeCachedPeriodProfits: Date.now(),
       }
