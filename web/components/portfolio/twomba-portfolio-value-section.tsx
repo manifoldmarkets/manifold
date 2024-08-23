@@ -1,6 +1,5 @@
 'use client'
 import clsx from 'clsx'
-import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 import { Period, periodDurations } from 'common/period'
 import { LivePortfolioMetrics } from 'common/portfolio-metrics'
 import { last } from 'lodash'
