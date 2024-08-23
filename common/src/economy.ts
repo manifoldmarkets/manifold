@@ -3,6 +3,7 @@ import {
   OutcomeType,
 } from 'common/contract'
 import { MarketTierType, tiers } from './tier'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const FIXED_ANTE = 1000
 const BASE_ANSWER_COST = FIXED_ANTE / 10
@@ -88,3 +89,36 @@ export const BETTING_STREAK_RESET_HOUR = 7
 export const MANACHAN_TWEET_COST = 2500
 export const PUSH_NOTIFICATION_BONUS = 1000
 export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
+
+// Edit prices on here as well: https://portal.gidx-service.in/ServiceSettings/Payments
+export const GIDX_MANA_TO_PRICES = {
+  // Prices are in cents
+  10_000: 1500,
+  25_000: 3000,
+  100_000: 11000,
+  1_000_000: 1_00000,
+} as const
+
+export const MANA_TO_WEB_PRICES = TWOMBA_ENABLED
+  ? GIDX_MANA_TO_PRICES
+  : ({
+      10_000: 1399,
+      25_000: 2999,
+      100_000: 10999,
+      1_000_000: 1_00000,
+    } as const)
+export type WebManaAmounts = keyof typeof MANA_TO_WEB_PRICES
+export type IOSManaAmounts = Exclude<WebManaAmounts, 1_000_000>
+export const IOS_PRICES: Record<IOSManaAmounts, number> = {
+  10_000: 1499,
+  25_000: 3599,
+  100_000: 14299,
+  // No 1M option on ios: the fees are too high
+}
+export type GIDXManaAmount = keyof typeof GIDX_MANA_TO_PRICES
+export const MANA_TO_CASH_BONUS: Record<GIDXManaAmount, number> = {
+  10_000: 10,
+  25_000: 25,
+  100_000: 100,
+  1_000_000: 1_000,
+}

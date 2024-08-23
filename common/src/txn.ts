@@ -51,6 +51,7 @@ type AnyTxnType =
   | ManifestAirDrop
   | ExtraPurchasedMana
   | ManifoldTopUp
+  | CashBonus
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -175,6 +176,21 @@ type ManaPurchase = {
         // TODO: backfill this.
         paidInCents?: number
       }
+    | {
+        transactionId: string
+        type: 'gidx'
+        paidInCents?: number
+      }
+}
+type CashBonus = {
+  fromId: 'EXTERNAL'
+  fromType: 'BANK'
+  toType: 'USER'
+  category: 'CASH_BONUS'
+  data: {
+    transactionId: string
+    type: 'gidx'
+  }
 }
 
 type SignupBonus = {
