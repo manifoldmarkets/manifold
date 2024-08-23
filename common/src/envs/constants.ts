@@ -15,6 +15,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 export const TWOMBA_ENABLED = false
 export const PRODUCT_MARKET_FIT_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = true
+export const COMMENT_UP_DOWN_VOTES_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
 export const MIN_SPICE_DONATION = 25000
 export const CHARITY_FEE = 0.05

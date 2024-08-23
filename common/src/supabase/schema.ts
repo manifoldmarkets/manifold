@@ -2694,6 +2694,7 @@ export type Database = {
           content_type: string
           created_time: string
           reaction_id: string
+          reaction_type: string
           user_id: string
         }
         Insert: {
@@ -2702,6 +2703,7 @@ export type Database = {
           content_type: string
           created_time?: string
           reaction_id?: string
+          reaction_type: string
           user_id: string
         }
         Update: {
@@ -2710,6 +2712,7 @@ export type Database = {
           content_type?: string
           created_time?: string
           reaction_id?: string
+          reaction_type?: string
           user_id?: string
         }
         Relationships: []
