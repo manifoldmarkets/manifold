@@ -493,7 +493,7 @@ export const sendNewAnswerEmail = async (
 }
 
 export const sendInterestingMarketsEmail = async (
-  user: User,
+  userName: string,
   privateUser: PrivateUser,
   contractsToSend: Contract[],
   deliveryTime?: string
@@ -506,8 +506,7 @@ export const sendInterestingMarketsEmail = async (
   )
   if (!sendToEmail) return
 
-  const { name } = user
-  const firstName = name.split(' ')[0]
+  const firstName = userName.split(' ')[0]
 
   await sendTemplateEmail(
     privateUser.email,
@@ -723,8 +722,8 @@ export const sendNewUniqueBettorsEmail = async (
   )
 }
 
-export const sendWeeklyPortfolioUpdateEmail = async (
-  user: User,
+export const getWeeklyPortfolioUpdateEmail = (
+  userName: string,
   privateUser: PrivateUser,
   investments: PerContractInvestmentsData[],
   overallPerformance: OverallPerformanceData,
@@ -739,8 +738,7 @@ export const sendWeeklyPortfolioUpdateEmail = async (
 
   if (!sendToEmail) return
 
-  const { name } = user
-  const firstName = name.split(' ')[0]
+  const firstName = userName.split(' ')[0]
   const templateData: Record<string, string> = {
     name: firstName,
     unsubscribeUrl,
@@ -760,14 +758,11 @@ export const sendWeeklyPortfolioUpdateEmail = async (
     } else templateData[`question${i + 1}Display`] = 'display: none'
   }
 
-  await sendTemplateEmail(
+  return [
     privateUser.email,
-    // 'iansphilips@gmail.com',
-    `Here's your weekly portfolio update!`,
-    'portfolio-update',
-    templateData
-  )
-  log('Sent portfolio update email to', privateUser.email)
+    // Math.random() > 0.5 ? 'iansphilips@gmail.com' : 'boawishbone@gmail.com',
+    templateData,
+  ] as EmailAndTemplateEntry
 }
 
 export const sendNewMatchEmail = async (

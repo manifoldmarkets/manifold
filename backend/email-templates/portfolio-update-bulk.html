@@ -227,7 +227,7 @@
                                                     style="line-height: 24px; margin: 10px 0; margin-top: 10px; margin-bottom: 10px;"
                                                     data-testid="4XoHRGw1Y"><span
                                                         style="color:#000000;font-family:Arial, Helvetica, sans-serif;font-size:18px;">
-                                                    </span>Hi {{name}},</p>
+                                                    </span>Hi %recipient.name%,</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -256,8 +256,8 @@
                                       </tr>
                                       <tr>
                                         <td style='padding-bottom: 30px; text-align: center'>
-                                          <p class='change' style='font-size: 24px; padding:4px; {{profit_style}}'>
-                                          {{profit}}
+                                          <p class='change' style='font-size: 24px; padding:4px; %recipient.profit_style%'>
+                                          %recipient.profit%
                                           </p>
                                         </td>
                                       </tr>
@@ -271,7 +271,7 @@
                                                         🔥 Prediction streak
                                                       </th>
                                                     <td>
-                                                        {{prediction_streak}}
+                                                        %recipient.prediction_streak%
                                                     </td>
                                                     </tr>
                                                     <tr>
@@ -279,7 +279,7 @@
                                                         🏆 League rank
                                                       </th>
                                                     <td>
-                                                        {{league_rank}}
+                                                        %recipient.league_rank%
                                                     </td>
                                                     </tr>
                                                     <tr>
@@ -287,7 +287,7 @@
                                                         💖 Likes received
                                                       </th>
                                                     <td>
-                                                        {{likes_received}}
+                                                        %recipient.likes_received%
                                                     </td>
                                                     </tr>
                                                     <tr>
@@ -295,7 +295,7 @@
                                                         📈 Markets traded
                                                       </th>
                                                       <td>
-                                                        {{markets_traded}}
+                                                        %recipient.markets_traded%
                                                       </td>
                                                     </tr>
                                                 <tr>
@@ -304,7 +304,7 @@
                                                   </th>
 
                                                     <td>
-                                                        {{markets_created}}
+                                                        %recipient.markets_created%
                                                     </td>
                                                 </tr>
                                                 <tr>
@@ -312,7 +312,7 @@
                                                       👯 Market participants
                                                     </th>
                                                   <td>
-                                                    {{unique_bettors}}
+                                                    %recipient.unique_bettors%
                                                   </td>
                                                 </tr>
 
@@ -322,7 +322,7 @@
                                         </td>
                                     </tr>
 
-                                    <tr style='{{question1Display}}'>
+                                    <tr style='%recipient.question1Display%'>
                                         <td align="left"
                                             style="font-size:0px;padding:10px 25px;padding-top:20px;padding-bottom:0px;word-break:break-word;">
                                             <div
@@ -341,107 +341,107 @@
                                             style="font-size:0; padding-left:10px;padding-top:10px;padding-bottom:0;word-break:break-word;">
                                             <table  role="presentation">
                                                 <tbody>
-                                                <tr style='{{question1Display}}'>
+                                                <tr style='%recipient.question1Display%'>
                                                     <td class='question'>
-                                                        <a class='question' href='{{question1Url}}'>
-                                                        {{question1Title}}
+                                                        <a class='question' href='%recipient.question1Url%'>
+                                                        %recipient.question1Title%
 <!--                                                            Will the US economy recover from the pandemic?-->
                                                         </a>
                                                     </td>
                                                     <td class='probs'>
                                                         <p class='prob'>
-                                                        {{question1Prob}}
+                                                        %recipient.question1Prob%
 <!--                                                        9.9%-->
-                                                        <p class='change' style='{{question1ChangeStyle}}'>
-                                                        {{question1Change}}
+                                                        <p class='change' style='%recipient.question1ChangeStyle%'>
+                                                        %recipient.question1Change%
 <!--                                                            +17%-->
                                                         </p>
                                                         </p>
                                                     </td>
                                                 </tr>
-                                                <tr style='{{question2Display}}'>
+                                                <tr style='%recipient.question2Display%'>
                                                     <td class='question'>
-                                                        <a class='question' href='{{question2Url}}'>
-                                                        {{question2Title}}
+                                                        <a class='question' href='%recipient.question2Url%'>
+                                                        %recipient.question2Title%
 <!--                                                            Will the US economy recover from the pandemic? blah blah blah-->
                                                         </a>
                                                     </td>
                                                     <td class='probs'>
                                                       <p class='prob'>
-                                                        {{question2Prob}}
+                                                        %recipient.question2Prob%
 <!--                                                        99.9%-->
-                                                        <p class='change' style='{{question2ChangeStyle}}'>
-                                                        {{question2Change}}
+                                                        <p class='change' style='%recipient.question2ChangeStyle%'>
+                                                        %recipient.question2Change%
 <!--                                                            +7%-->
                                                         </p>
                                                         </p>
                                                     </td>
                                                 </tr>
-                                                <tr style='{{question3Display}}'>
-<!--                                                    <td style="{{investment_value_style}}">-->
+                                                <tr style='%recipient.question3Display%'>
+<!--                                                    <td style="%recipient.investment_value_style%">-->
                                                     <td class='question'>
-                                                        <a class='question' href='{{question3Url}}'>
-                                                        {{question3Title}}
+                                                        <a class='question' href='%recipient.question3Url%'>
+                                                        %recipient.question3Title%
 <!--                                                            Will the US economy recover from the pandemic?-->
                                                         </a>
                                                     </td>
                                                     <td class='probs'>
                                                       <p class='prob'>
-                                                        {{question3Prob}}
+                                                        %recipient.question3Prob%
 <!--                                                        99.9%-->
-                                                        <p class='change'  style='{{question3ChangeStyle}}'>
-                                                        {{question3Change}}
+                                                        <p class='change'  style='%recipient.question3ChangeStyle%'>
+                                                        %recipient.question3Change%
 <!--                                                            +17%-->
                                                         </p>
                                                         </p>
                                                     </td>
                                                 </tr>
-                                                <tr style='{{question4Display}}'>
-<!--                                                    <td style="{{investment_value_style}}">-->
+                                                <tr style='%recipient.question4Display%'>
+<!--                                                    <td style="%recipient.investment_value_style%">-->
                                                     <td class='question'>
-                                                        <a class='question' href='{{question4Url}}'>
-                                                        {{question4Title}}
+                                                        <a class='question' href='%recipient.question4Url%'>
+                                                        %recipient.question4Title%
 <!--                                                            Will the US economy recover from the pandemic?-->
                                                         </a>
                                                     </td>
                                                     <td class='probs'>
                                                       <p class='prob'>
-                                                        {{question4Prob}}
+                                                        %recipient.question4Prob%
 <!--                                                        99.9%-->
-                                                        <p class='change' style='{{question4ChangeStyle}}'>
-                                                        {{question4Change}}
+                                                        <p class='change' style='%recipient.question4ChangeStyle%'>
+                                                        %recipient.question4Change%
 <!--                                                            +17%-->
                                                         </p>
                                                         </p>
                                                     </td>
                                                 </tr>
 
-                                                <tr style='{{question5Display}}'>
+                                                <tr style='%recipient.question5Display%'>
                                                     <td class='question'>
-                                                        <a class='question' href='{{question5Url}}'>
-                                                        {{question5Title}}
+                                                        <a class='question' href='%recipient.question5Url%'>
+                                                        %recipient.question5Title%
                                                         </a>
                                                     </td>
                                                     <td class='probs'>
                                                       <p class='prob'>
-                                                        {{question5Prob}}
-                                                        <p class='change' style='{{question5ChangeStyle}}'>
-                                                        {{question5Change}}
+                                                        %recipient.question5Prob%
+                                                        <p class='change' style='%recipient.question5ChangeStyle%'>
+                                                        %recipient.question5Change%
                                                         </p>
                                                         </p>
                                                     </td>
                                                 </tr>
-                                                <tr style='{{question6Display}}'>
+                                                <tr style='%recipient.question6Display%'>
                                                     <td class='question'>
-                                                        <a class='question' href='{{question6Url}}'>
-                                                        {{question6Title}}
+                                                        <a class='question' href='%recipient.question6Url%'>
+                                                        %recipient.question6Title%
                                                         </a>
                                                     </td>
                                                     <td class='probs'>
                                                       <p class='prob'>
-                                                        {{question6Prob}}
-                                                        <p class='change' style='{{question6ChangeStyle}}'>
-                                                        {{question6Change}}
+                                                        %recipient.question6Prob%
+                                                        <p class='change' style='%recipient.question6ChangeStyle%'>
+                                                        %recipient.question6Change%
                                                         </p>
                                                         </p>
                                                     </td>
@@ -518,8 +518,8 @@
                                     ">
                                                                                     <p style="margin: 10px 0">
                                                                                         This e-mail has been sent to
-                                                                                        {{name}},
-                                                                                        <a href="{{unsubscribeUrl}}" style="
+                                                                                        %recipient.name%,
+                                                                                        <a href="%recipient.unsubscribeUrl%" style="
                                           color: inherit;
                                           text-decoration: none;
                                         " target="_blank">click here to unsubscribe from this type of notification</a>.
