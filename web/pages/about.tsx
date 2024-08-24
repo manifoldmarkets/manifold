@@ -18,7 +18,7 @@ export default function AboutPage() {
     <Page trackPageView={'about page'}>
       <SEO
         title="About"
-        description={`Manifold is a prediction market platform. Users place ${TRADE_TERM} on an upcoming event which creates a probability of how likely it will happen. ${capitalize(
+        description={`Manifold is a prediction market platform. Users place ${TRADE_TERM}s on an upcoming event which creates a probability of how likely it will happen. ${capitalize(
           TRADE_TERM
         )} on current events, politics, tech, & AI with play money. Or create your own prediction market for others to trade on!`}
       />

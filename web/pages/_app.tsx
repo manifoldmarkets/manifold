@@ -15,7 +15,7 @@ import { postMessageToNative } from 'web/lib/native/post-message'
 import { useThemeManager } from 'web/hooks/use-theme'
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { SweepstakesProvider } from 'web/components/sweestakes-context'
-import { capitalize } from 'common/util/misc'
+import { capitalize } from 'lodash'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
