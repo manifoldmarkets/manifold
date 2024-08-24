@@ -730,6 +730,7 @@ export const API = (_apiTypeCheck = {
       .object({
         id: z.string(),
         userId: z.string().optional(),
+        answerId: z.string().optional(),
         top: z.undefined().or(z.coerce.number()),
         bottom: z.undefined().or(z.coerce.number()),
         order: z.enum(['shares', 'profit']).optional(),
