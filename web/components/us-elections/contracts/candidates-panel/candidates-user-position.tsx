@@ -9,7 +9,7 @@ import { SellSharesModal } from 'web/components/bet/sell-row'
 import { Row } from 'web/components/layout/row'
 import { sumBy } from 'lodash'
 import { FaArrowDown, FaArrowUp } from 'react-icons/fa'
-import { TRADE_TERM_PAST } from 'common/envs/constants'
+import { TRADED_TERM } from 'common/envs/constants'
 
 export function UserPosition(props: {
   contract: CPMMMultiContract
@@ -74,7 +74,7 @@ export function UserPosition(props: {
             )}
           />
         )}
-        You {TRADE_TERM_PAST} {betUp ? 'up' : 'down'}
+        You {TRADED_TERM} {betUp ? 'up' : 'down'}
       </Row>
       {openModal && (
         <>

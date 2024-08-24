@@ -20,7 +20,7 @@ import { Row } from 'web/components/layout/row'
 import { average } from 'common/util/math'
 import { useCallback, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { TRADE_TERM, TRADE_TERM_PAST } from 'common/envs/constants'
+import { TRADE_TERM, TRADED_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 
 export const getStaticProps = async () => {
@@ -425,7 +425,7 @@ export function CustomAnalytics(props: {
         ]}
       />
       <Spacer h={8} />
-      <Title>Total mana {TRADE_TERM_PAST}</Title>
+      <Title>Total mana {TRADED_TERM}</Title>
       <p className="text-ink-500">
         Sum of {TRADE_TERM} amounts. (Divided by 100 to be more readable.)
       </p>

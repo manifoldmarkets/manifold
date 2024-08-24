@@ -17,7 +17,7 @@ import { getFullUserByUsername } from 'web/lib/supabase/users'
 import Custom404 from '../404'
 import { DeletedUser } from '.'
 import { User } from 'web/lib/firebase/users'
-import { TRADE_TERM, TRADE_TERM_PAST } from 'common/envs/constants'
+import { TRADE_TERM, TRADED_TERM } from 'common/envs/constants'
 
 export const getStaticProps = async (props: {
   params: {
@@ -114,9 +114,8 @@ export default function CalibrationPage(props: {
             <b>Interpretation</b>
             <ul>
               <li>
-                The green dot at (x%, y%) means when {user.name}{' '}
-                {TRADE_TERM_PAST} YES at x%, the question resolved YES y% of the
-                time on average.
+                The green dot at (x%, y%) means when {user.name} {TRADED_TERM}{' '}
+                YES at x%, the question resolved YES y% of the time on average.
               </li>
 
               <li>

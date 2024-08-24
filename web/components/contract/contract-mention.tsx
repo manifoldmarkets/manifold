@@ -7,7 +7,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractStatusLabel } from './contracts-table'
 import { getTextColor } from './text-color'
 import { getIsNative } from 'web/lib/native/is-native'
-import { TRADE_TERM_PAST } from 'common/envs/constants'
+import { TRADED_TERM } from 'common/envs/constants'
 
 export function ContractMention(props: {
   contract: Contract
@@ -52,5 +52,5 @@ function tooltipLabel(contract: Contract) {
 
   return `By ${creatorName}. ${formatMoney(
     volume
-  )} ${TRADE_TERM_PAST}. ${dateFormat}`
+  )} ${TRADED_TERM}. ${dateFormat}`
 }

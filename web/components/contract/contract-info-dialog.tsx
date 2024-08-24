@@ -7,7 +7,7 @@ import {
   isAdminId,
   isModId,
   supabaseConsoleContractPath,
-  TRADE_TERM_PAST,
+  TRADED_TERM,
 } from 'common/envs/constants'
 import { BETTORS, User } from 'common/user'
 import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
@@ -232,10 +232,10 @@ export const Stats = (props: {
                     mechanism === 'cpmm-1'
                       ? `Log-odds change between a ${formatMoney(
                           ELASTICITY_BET_AMOUNT
-                        )} ${TRADE_TERM_PAST} on YES and NO`
+                        )} ${TRADED_TERM} on YES and NO`
                       : `Log-odds change from a ${formatMoney(
                           ELASTICITY_BET_AMOUNT
-                        )} ${TRADE_TERM_PAST}`
+                        )} ${TRADED_TERM}`
                   }
                 />
               </Row>
