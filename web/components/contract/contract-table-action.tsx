@@ -15,6 +15,8 @@ import { useUser } from 'web/hooks/use-user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import { PollPanel } from '../poll/poll-panel'
+import { TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
 
 export function Action(props: { contract: Contract }) {
   const { contract } = props
@@ -84,6 +86,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
+            // TODO: Twomba tracking bet terminology
             track('bet intent', { location: 'contract table' })
             if (!user) {
               firebaseLogin()
@@ -96,7 +99,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
             }
           }}
         >
-          Bet
+          {capitalize(TRADE_TERM)}
         </Button>
         {openMC && (
           <MultiBetDialog

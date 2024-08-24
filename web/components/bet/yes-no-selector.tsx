@@ -5,8 +5,9 @@ import { Row } from '../layout/row'
 import { resolution } from 'common/contract'
 import { Button } from '../buttons/button'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { capitalize } from 'lodash'
 
 export function YesNoSelector(props: {
   selected?: 'YES' | 'NO'
@@ -57,7 +58,7 @@ export function YesNoSelector(props: {
         )}
         disabled={disabled}
       >
-        {includeWordBet ? 'Bet' : ''} {getToken()}
+        {includeWordBet ? capitalize(TRADE_TERM) : ''} {getToken()}
         {yesLabel ? yesLabel : 'YES'}
         <ArrowUpIcon className="ml-1 h-4 w-4" />
       </Button>
@@ -73,7 +74,7 @@ export function YesNoSelector(props: {
         )}
         disabled={disabled}
       >
-        {includeWordBet ? 'Bet' : ''} {getToken()}
+        {includeWordBet ? capitalize(TRADE_TERM) : ''} {getToken()}
         {noLabel ? noLabel : 'NO'}
         <ArrowDownIcon className="ml-1 h-4 w-4" />
       </Button>

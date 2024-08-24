@@ -22,6 +22,7 @@ import { User } from 'common/user'
 import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
 import { MultiNumericSellPanel } from 'web/components/answers/numeric-sell-panel'
 import { MoneyDisplay } from './money-display'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -238,7 +239,7 @@ export function BetsSummary(props: {
               <InfoTooltip
                 text={`How much ${
                   areYourBets ? "you've" : "they've"
-                } made or lost on this question across all bets (includes both realized & unrealized profits).`}
+                } made or lost on this question across all ${TRADE_TERM}s (includes both realized & unrealized profits).`}
               />
             </div>
             <div className="whitespace-nowrap">

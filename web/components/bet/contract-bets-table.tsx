@@ -23,6 +23,7 @@ import {
 } from 'common/multi-numeric'
 import { Pagination } from '../widgets/pagination'
 import { Row } from 'web/components/layout/row'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export function ContractBetsTable(props: {
   contract: Contract
@@ -122,7 +123,7 @@ export function ContractBetsTable(props: {
             }
             onClick={() => setExpanded(true)}
           >
-            Show {normalBets.length - unexpandedBetsPerPage} more bets
+            Show {normalBets.length - unexpandedBetsPerPage} more {TRADE_TERM}s
           </button>
         )}
       </Row>

@@ -1,6 +1,7 @@
 import {
   DISCORD_BOT_INVITE_LINK,
   DISCORD_INVITE_LINK,
+  TRADE_TERM,
 } from 'common/envs/constants'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -51,7 +52,7 @@ export default function DiscordBot() {
             <img
               src={'/discord-ss.png'}
               className={'image m-2 rounded-lg object-cover'}
-              alt="Discord chat message from Manifold Bot containing an embedded link to a prediction market, then four unlabeled buttons, and finally six discord reactions to bet 5 yes, 10 yes, 25 yes, or 5 no, 10 no, 25 no."
+              alt={`Discord chat message from Manifold Bot containing an embedded link to a prediction market, then four unlabeled buttons, and finally six discord reactions to ${TRADE_TERM} 5 yes, 10 yes, 25 yes, or ${TRADE_TERM} 5 no, 10 no, 25 no.`}
             />
           </Row>
           <Row className={'text-primary-700 text-xl'}>How can I get it?</Row>

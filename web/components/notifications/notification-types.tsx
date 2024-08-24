@@ -68,6 +68,7 @@ import {
 } from './notification-helpers'
 import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { TRADE_TERM, TRADE_TERM_PAST } from 'common/envs/constants'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -1103,7 +1104,7 @@ function BetReplyNotification(props: {
           name={sourceUserName}
           username={sourceUserUsername}
         />{' '}
-        bet{' '}
+        {TRADE_TERM_PAST}{' '}
         <span
           className={
             betOutcome === 'YES' ? 'text-teal-600' : 'text-scarlet-600'
@@ -1494,7 +1495,7 @@ function FollowFromReferralNotification(props: {
             name={sourceUserName}
             username={sourceUserUsername}
           />{' '}
-          (you just bet on their question!)
+          (you just {TRADE_TERM_PAST} on their question!)
         </span>
       </>
     </NotificationFrame>

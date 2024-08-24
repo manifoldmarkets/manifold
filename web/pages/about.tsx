@@ -8,6 +8,8 @@ import { Title } from 'web/components/widgets/title'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { LabCard } from './lab'
+import { TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
 
 export default function AboutPage() {
   getNativePlatform()
@@ -16,7 +18,9 @@ export default function AboutPage() {
     <Page trackPageView={'about page'}>
       <SEO
         title="About"
-        description="Manifold is a prediction market platform. Users place bets on an upcoming event which creates a probability of how likely it will happen. Bet on current events, politics, tech, & AI with play money. Or create your own prediction market for others to trade on!"
+        description={`Manifold is a prediction market platform. Users place ${TRADE_TERM} on an upcoming event which creates a probability of how likely it will happen. ${capitalize(
+          TRADE_TERM
+        )} on current events, politics, tech, & AI with play money. Or create your own prediction market for others to trade on!`}
       />
 
       <Col className=" p-4">
@@ -25,13 +29,15 @@ export default function AboutPage() {
         <Col className="gap-4">
           <div>
             <div className="mb-1 text-lg">
-              Manifold lets you bet on upcoming events using play money. As
-              other users bet against you, it creates a probability of how
-              likely the event will happen—this is known as a prediction market.
+              Manifold lets you {TRADE_TERM} on upcoming events using play
+              money. As other users {TRADE_TERM} against you, it creates a
+              probability of how likely the event will happen—this is known as a
+              prediction market.
             </div>
             <div className=" text-lg">
-              Bet on current events, politics, tech, and AI, or create your own
-              market about an event you care about for others to trade on!
+              {capitalize(TRADE_TERM)} on current events, politics, tech, and
+              AI, or create your own market about an event you care about for
+              others to trade on!
             </div>
           </div>
 

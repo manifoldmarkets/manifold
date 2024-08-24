@@ -16,6 +16,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { track } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
 import { Answer } from 'common/answer'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export const QuickLimitOrderButtons = (props: {
   contract: CPMMContract | MultiContract
@@ -64,7 +65,7 @@ export const QuickLimitOrderButtons = (props: {
       })
     )
       .then((r) => {
-        console.log('placed bet. Result:', r)
+        console.log(`placed ${TRADE_TERM}. Result:`, r)
         setIsSubmitting(false)
         toast.success(
           `Placed order for ${formatMoney(
@@ -77,11 +78,12 @@ export const QuickLimitOrderButtons = (props: {
           setError(e.message.toString())
         } else {
           console.error(e)
-          setError('Error placing bet')
+          setError(`Error placing ${TRADE_TERM}`)
         }
         setIsSubmitting(false)
       })
 
+    // TODO: Twomba tracking bet terminology
     await track(
       'bet',
       removeUndefinedProps({
@@ -110,7 +112,7 @@ export const QuickLimitOrderButtons = (props: {
               amount
             )} YES or NO at the current market price of ${formatPercent(
               prob
-            )}. If no one takes your bet, your offer will expire in 24 hours.`}
+            )}. If no one takes your ${TRADE_TERM}, your offer will expire in 24 hours.`}
           />
         </div>
         <Button

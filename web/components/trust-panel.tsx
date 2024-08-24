@@ -1,6 +1,7 @@
 import { Col } from './layout/col'
 import { ExpandSection } from './explainer-panel'
 import { track } from 'web/lib/service/analytics'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export const TrustPanel = (props: { className?: string }) => {
   const { className } = props
@@ -30,8 +31,8 @@ export const ManipulationAndHype = ({
     <div>
       As the market prices moves further from the true probability, the odd's
       pricing becomes better for traders to correct it in the right direction.
-      Naturally, this increases the incentive to bet accurately as there is more
-      money to be made once the market resolves.
+      Naturally, this increases the incentive to {TRADE_TERM} accurately as
+      there is more money to be made once the market resolves.
     </div>
     <div className="py-2">
       Robin Hanson explores this further in his paper, {''}

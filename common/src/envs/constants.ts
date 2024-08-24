@@ -12,7 +12,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
   DEV: DEV_CONFIG,
 }
 
-export const TWOMBA_ENABLED = false
+export const TWOMBA_ENABLED = true
 export const PRODUCT_MARKET_FIT_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = true
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
@@ -24,6 +24,11 @@ export const SPICE_NAME = 'Prize Point'
 export const SWEEPIES_NAME = 'Sweepies'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
 export const SWEEPIES_MARKET_TOOLTIP = `Cash market! Earn ${SWEEPIES_NAME}s on resolution`
+
+export const TRADE_TERM = TWOMBA_ENABLED ? 'trade' : 'bet'
+export const TRADE_TERM_PAST = TWOMBA_ENABLED ? 'traded' : 'bet'
+export const TRADING_TERM = TWOMBA_ENABLED ? 'trading' : 'betting'
+export const TRADER_TERM = TWOMBA_ENABLED ? 'trader' : 'bettor'
 
 export const ENV_CONFIG = CONFIGS[ENV]
 

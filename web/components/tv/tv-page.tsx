@@ -10,6 +10,8 @@ import { TVSchedulePage } from './tv-schedule-page'
 import { db } from 'web/lib/supabase/db'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
+import { capitalize } from 'lodash'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export function TVPage(props: {
   schedule: ScheduleItem[]
@@ -35,7 +37,9 @@ export function TVPage(props: {
       <Page trackPageView="tv page">
         <SEO
           title="Manifold TV"
-          description="Bet on live video streams with Manifold TV"
+          description={`${capitalize(
+            TRADE_TERM
+          )} on live video streams with Manifold TV`}
         />
         <Title>Manifold TV</Title>
         <div className="italic">Cannot find scheduled event</div>

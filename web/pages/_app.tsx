@@ -13,7 +13,7 @@ import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { useThemeManager } from 'web/hooks/use-theme'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { SweepstakesProvider } from 'web/components/sweestakes-context'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
@@ -76,8 +76,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useThemeManager()
 
   const title = 'Manifold'
-  const description =
-    'Manifold is a social prediction game. Bet on news, politics, tech, & AI with play money. Or create your own prediction market.'
+  const description = `Manifold is a social prediction game. ${TRADE_TERM} on news, politics, tech, & AI with play money. Or create your own prediction market.`
 
   return (
     <>

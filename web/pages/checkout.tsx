@@ -20,7 +20,7 @@ import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import { LogoIcon } from 'web/components/icons/logo-icon'
 import { FaStore } from 'react-icons/fa6'
 import clsx from 'clsx'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import {
   IOS_PRICES,
   WebManaAmounts,
@@ -462,8 +462,10 @@ const PaymentSection = (props: {
             alt={'Manachan'}
             className={'rounded-full'}
           />
-          <span className={'italic'}>May the bets be ever in your favor.</span>-
-          Manachan
+          <span className={'italic'}>
+            May the {TRADE_TERM}s be ever in your favor.
+          </span>
+          - Manachan
         </Col>
       </Col>
     )

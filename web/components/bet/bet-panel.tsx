@@ -55,8 +55,9 @@ import { floatingEqual } from 'common/util/math'
 import { getTierFromLiquidity } from 'common/tier'
 import { getAnswerColor } from '../charts/contract/choice'
 import { LimitBet } from 'common/bet'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import { MoneyDisplay } from './money-display'
+import { capitalize } from 'lodash'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -111,6 +112,7 @@ export function BuyPanel(props: {
       setOutcome(undefined)
       setIsPanelBodyVisible(false)
     } else {
+      // TODO: Twomba tracking bet terminology
       track('bet intent', { location, option: outcome })
 
       setOutcome(choice)
@@ -296,14 +298,15 @@ export const BuyPanelBody = (props: {
           })
         ),
         {
-          loading: 'Submitting bet...',
-          success: 'Bet submitted!',
-          error: 'Error submitting bet',
+          loading: `Submitting ${TRADE_TERM}...`,
+          success: `${capitalize(TRADE_TERM)} submitted!`,
+          error: `Error submitting ${TRADE_TERM}`,
         }
       )
-      console.log('placed bet. Result:', bet)
+      console.log(`placed ${TRADE_TERM}. Result:`, bet)
       setBetAmount(undefined)
       if (onBuySuccess) onBuySuccess()
+      // TODO: Twomba tracking bet terminology
       track(
         'bet',
         removeUndefinedProps({
@@ -324,12 +327,12 @@ export const BuyPanelBody = (props: {
       if (e instanceof APIError) {
         const message = e.message.toString()
         if (message.includes('could not serialize access')) {
-          setError('Error placing bet (could not serialize access)')
-          console.error('Error placing bet', e)
+          setError(`Error placing ${TRADE_TERM} (could not serialize access)`)
+          console.error(`Error placing ${TRADE_TERM}`, e)
         } else setError(message)
       } else {
         console.error(e)
-        setError('Error placing bet')
+        setError(`Error placing ${TRADE_TERM}`)
       }
       return undefined
     } finally {
@@ -421,9 +424,11 @@ export const BuyPanelBody = (props: {
         .concat(result.ordersToCancel)
     }
   } catch (err: any) {
+    // TODO: Twomba tracking bet terminology
     console.error('Error in calculateCpmmMultiArbitrageBet:', err)
     setError(
-      err?.message ?? 'An error occurred during bet calculation, try again.'
+      err?.message ??
+        `An error occurred during ${TRADE_TERM} calculation, try again.`
     )
     // Set default values or handle the error case as needed
     currentPayout = 0
@@ -488,7 +493,9 @@ export const BuyPanelBody = (props: {
             </Col>
             {isAdvancedTrader && !isStonk && (
               <Col className="gap-1">
-                <div className="text-ink-700">Bet type</div>
+                <div className="text-ink-700">
+                  {capitalize(TRADE_TERM)} type
+                </div>
                 <ChoicesToggleGroup
                   currentChoice={betType}
                   choicesMap={{
@@ -519,7 +526,7 @@ export const BuyPanelBody = (props: {
         {betType === 'Market' ? (
           <>
             <Row className={clsx('text-ink-700 mb-2 items-center space-x-3')}>
-              Bet amount
+              {capitalize(TRADE_TERM)} amount
             </Row>
 
             <Row
@@ -661,7 +668,7 @@ export const BuyPanelBody = (props: {
                     </span>
                   ) : (
                     <span>
-                      Bet{' '}
+                      {capitalize(TRADE_TERM)}{' '}
                       {binaryMCOutcomeLabel ??
                         formatOutcomeLabel(contract, outcome)}{' '}
                       to win{' '}
@@ -678,6 +685,7 @@ export const BuyPanelBody = (props: {
               <Button
                 color={outcome === 'NO' ? 'red' : 'green'}
                 size="xl"
+                // TODO: Twomba tracking bet terminology
                 onClick={withTracking(firebaseLogin, 'login from bet panel')}
                 className="flex-grow"
               >
@@ -742,7 +750,7 @@ export const BuyPanelBody = (props: {
 
               {!isPseudoNumeric && !isStonk && !isBinaryMC && (
                 <InfoTooltip
-                  text={`Your bet will move the probability of Yes from ${getFormattedMappedValue(
+                  text={`Your ${TRADE_TERM} will move the probability of Yes from ${getFormattedMappedValue(
                     contract,
                     probBefore
                   )} to ${getFormattedMappedValue(contract, probAfter)}.`}
@@ -753,7 +761,7 @@ export const BuyPanelBody = (props: {
 
               {isBinaryMC && (
                 <InfoTooltip
-                  text={`Your bet will move the probability from ${getFormattedMappedValue(
+                  text={`Your ${TRADE_TERM} will move the probability from ${getFormattedMappedValue(
                     contract,
                     probBefore
                   )} to ${getFormattedMappedValue(contract, probAfter)}.`}

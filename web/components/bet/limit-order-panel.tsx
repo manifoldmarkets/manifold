@@ -43,6 +43,8 @@ import { getAnswerColor } from '../charts/contract/choice'
 import { Fees, getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from './fees'
 import { MoneyDisplay } from './money-display'
+import { TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -197,14 +199,16 @@ export default function LimitOrderPanel(props: {
           })
         ),
         {
-          loading: 'Submitting bet...',
-          success: 'Bet submitted!',
-          error: 'Error submitting bet',
+          loading: `Submitting ${TRADE_TERM}...`,
+          success: `${capitalize(TRADE_TERM)} submitted!`,
+          error: `Error submitting ${TRADE_TERM}`,
         }
       )
-      console.log('placed bet. Result:', bet)
+
+      console.log(`placed ${TRADE_TERM}. Result:`, bet)
       if (onBuySuccess) onBuySuccess()
 
+      // TODO: Twomba tracking bet terminology
       await track('bet', {
         location: 'bet panel',
         outcomeType: contract.outcomeType,
@@ -221,7 +225,7 @@ export default function LimitOrderPanel(props: {
         setError(e.message.toString())
       } else {
         console.error(e)
-        setError('Error placing bet')
+        setError(`Error placing ${TRADE_TERM}`)
       }
     } finally {
       setIsSubmitting(false)
@@ -253,9 +257,11 @@ export default function LimitOrderPanel(props: {
     fees = result.fees
     betDeps.current = result.betDeps
   } catch (err: any) {
+    // TODO: Twomba tracking bet terminology
     console.error('Error in calculateCpmmMultiArbitrageBet:', err)
     setError(
-      err?.message ?? 'An error occurred during bet calculation, try again.'
+      err?.message ??
+        `An error occurred during ${TRADE_TERM} calculation, try again.`
     )
   }
   const returnPercent = formatPercent(currentReturn)
@@ -280,7 +286,7 @@ export default function LimitOrderPanel(props: {
       </Col>
 
       <Row className={'text-ink-700 my-2 items-center space-x-3'}>
-        Bet amount
+        {capitalize(TRADE_TERM)} amount
       </Row>
       <BuyAmountInput
         amount={betAmount}

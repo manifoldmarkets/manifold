@@ -16,6 +16,7 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 import { formatPercent } from 'common/util/format'
 import { Input } from 'web/components/widgets/input'
 import { Contract } from 'common/contract'
+import { TRADE_TERM_PAST } from 'common/envs/constants'
 
 function getMostRecentViewMillis(view: rowfor<'user_contract_views'>) {
   return Math.max(
@@ -156,10 +157,10 @@ export default function Journeys() {
           </Button>
         </Row>
         <Row>
-          Fraction of (likely real) users that bet:{' '}
+          Fraction of (likely real) users that {TRADE_TERM_PAST}:{' '}
           {(userIdsThatBet.length / unlikelySpammers.length).toPrecision(2)}. If
           a user is highlighted in yellow, they're likely a spammer. If they're
-          highlighted in green, they've bet.
+          highlighted in green, they've {TRADE_TERM_PAST}.
         </Row>
         <table>
           <thead>

@@ -15,6 +15,8 @@ import { ScheduleTVModal } from './schedule-tv-modal'
 import { ScheduleItem } from './tv-schedule'
 import { useUser } from 'web/hooks/use-user'
 import { BsCircleFill } from 'react-icons/bs'
+import { capitalize } from 'lodash'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export function TVSchedulePage(props: {
   schedule: ScheduleItem[]
@@ -30,11 +32,15 @@ export function TVSchedulePage(props: {
     <Page trackPageView="tv page" className="p-4">
       <SEO
         title="Manifold TV"
-        description="Bet on live video streams with Manifold TV"
+        description={`${capitalize(
+          TRADE_TERM
+        )} on live video streams with Manifold TV`}
       />
       <Title>Manifold TV</Title>
 
-      <div>Bet on live video streams with your friends!</div>
+      <div>
+        {capitalize(TRADE_TERM)} on live video streams with your friends!
+      </div>
 
       {featured.length > 0 && (
         <>

@@ -39,6 +39,7 @@ import { XIcon } from '@heroicons/react/solid'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import { getTierFromLiquidity } from 'common/tier'
 import { MoneyDisplay } from '../bet/money-display'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
@@ -101,7 +102,7 @@ export const NumericBetPanel = (props: {
 
   const placeBet = async () => {
     if (!betAmount) {
-      setError('Please enter a bet amount')
+      setError(`Please enter a ${TRADE_TERM} amount`)
       return
     }
     setIsSubmitting(true)
@@ -117,8 +118,8 @@ export const NumericBetPanel = (props: {
           })
         ),
         {
-          loading: 'Placing bet...',
-          success: 'Bet placed!',
+          loading: `Placing ${TRADE_TERM}...`,
+          success: `${capitalize(TRADE_TERM)} placed!`,
           error: (e) => e.message,
         }
       )
