@@ -12,7 +12,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
   DEV: DEV_CONFIG,
 }
 
-export const TWOMBA_ENABLED = true
+export const TWOMBA_ENABLED = false
 export const PRODUCT_MARKET_FIT_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = true
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
@@ -21,7 +21,7 @@ export const CHARITY_FEE = 0.05
 export const SPICE_TO_CHARITY_DOLLARS = (1 / 1000) * (1 - CHARITY_FEE) // prize points -> dollars
 
 export const SPICE_NAME = 'Prize Point'
-export const SWEEPIES_NAME = 'Sweepies'
+export const SWEEPIES_NAME = 'Mana Cash'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
 export const SWEEPIES_MARKET_TOOLTIP = `Cash market! Earn ${SWEEPIES_NAME}s on resolution`
 
