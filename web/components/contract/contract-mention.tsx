@@ -7,6 +7,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractStatusLabel } from './contracts-table'
 import { getTextColor } from './text-color'
 import { getIsNative } from 'web/lib/native/is-native'
+import { TRADED_TERM } from 'common/envs/constants'
 
 export function ContractMention(props: {
   contract: Contract
@@ -49,5 +50,7 @@ function tooltipLabel(contract: Contract) {
     ? `Resolved ${fromNow(resolutionTime)}`
     : `${closeTime < Date.now() ? 'Closed' : 'Closes'} ${fromNow(closeTime)}`
 
-  return `By ${creatorName}. ${formatMoney(volume)} bet. ${dateFormat}`
+  return `By ${creatorName}. ${formatMoney(
+    volume
+  )} ${TRADED_TERM}. ${dateFormat}`
 }

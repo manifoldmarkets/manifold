@@ -30,6 +30,7 @@ import { Button } from 'web/components/buttons/button'
 import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { DisplayUser } from 'common/api/user-types'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -292,14 +293,18 @@ function BetActions(props: {
         contract={contract}
       />
       {onReply && (
-        <Tooltip text={`Reply to this bet`} placement="top" className="mr-2">
+        <Tooltip
+          text={`Reply to this ${TRADE_TERM}`}
+          placement="top"
+          className="mr-2"
+        >
           <Button
             className={'!p-1'}
             color={'gray-white'}
             size={'2xs'}
             onClick={() => {
               onReply(bet)
-              track('reply to bet', {
+              track(`reply to ${TRADE_TERM}`, {
                 slug: contract.slug,
                 amount: bet.amount,
               })

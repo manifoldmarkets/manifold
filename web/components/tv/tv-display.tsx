@@ -22,7 +22,7 @@ import { Tabs } from 'web/components/layout/tabs'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { ScheduleItem } from './tv-schedule'
 import { ScheduleTVModal } from './schedule-tv-modal'
-import { DOMAIN } from 'common/envs/constants'
+import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
 import { Presence } from './tv-page'
 import { sortBy } from 'lodash'
 import { Avatar } from '../widgets/avatar'
@@ -78,7 +78,7 @@ export function TVDisplay(props: {
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
       <SEO
         title={`${stream?.title} on Manifold TV`}
-        description={`Watch the stream and bet on ${contract.question}`}
+        description={`Watch the stream and ${TRADE_TERM} on ${contract.question}`}
         url={`/tv/${stream?.id}`}
         image={contract.coverImageUrl}
       />

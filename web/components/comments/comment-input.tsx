@@ -299,6 +299,7 @@ export function ContractCommentInput(props: {
       }
       clearReply?.()
       onSubmit?.(comment)
+      // TODO: Twomba tracking bet terminology
       await track(type, {
         location: trackingLocation,
         replyTo: isReplyToBet

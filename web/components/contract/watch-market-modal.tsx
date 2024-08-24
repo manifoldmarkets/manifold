@@ -2,6 +2,7 @@ import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { EyeIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export const WatchMarketModal = (props: {
   open: boolean
@@ -19,7 +20,7 @@ export const WatchMarketModal = (props: {
           <span className={'ml-2'}>
             Watching a question means you'll receive a notification when it
             resolves. You automatically start watching a question if you comment
-            on it, bet on it, or click the watch button.
+            on it, {TRADE_TERM} on it, or click the watch button.
           </span>
         </Col>
       </Col>

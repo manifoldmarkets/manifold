@@ -8,7 +8,11 @@ import {
   TbBrandTwitter,
 } from 'react-icons/tb'
 
-import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
+import {
+  APPLE_APP_URL,
+  GOOGLE_PLAY_APP_URL,
+  TRADE_TERM,
+} from 'common/envs/constants'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -21,6 +25,7 @@ import { useUser } from 'web/hooks/use-user'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { isIOS } from 'web/lib/util/device'
 import { LabCard } from './lab'
+import { capitalize } from 'lodash'
 
 export default function AboutPage() {
   const { isNative, platform } = getNativePlatform()
@@ -44,7 +49,9 @@ export default function AboutPage() {
     <Page trackPageView={'about page'}>
       <SEO
         title="About"
-        description="Manifold is a social prediction game. Bet on news, politics, tech, & AI with play money. Or create your own prediction market."
+        description={`Manifold is a social prediction game. ${capitalize(
+          TRADE_TERM
+        )} on news, politics, tech, & AI with play money. Or create your own prediction market.`}
       />
 
       <Col className="p-4">

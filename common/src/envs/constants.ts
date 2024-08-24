@@ -25,6 +25,11 @@ export const SWEEPIES_NAME = 'Sweepies'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
 export const SWEEPIES_MARKET_TOOLTIP = `Cash market! Earn ${SWEEPIES_NAME}s on resolution`
 
+export const TRADE_TERM = TWOMBA_ENABLED ? 'trade' : 'bet'
+export const TRADED_TERM = TWOMBA_ENABLED ? 'traded' : 'bet'
+export const TRADING_TERM = TWOMBA_ENABLED ? 'trading' : 'betting'
+export const TRADER_TERM = TWOMBA_ENABLED ? 'trader' : 'bettor'
+
 export const ENV_CONFIG = CONFIGS[ENV]
 
 export function isAdminId(id: string) {

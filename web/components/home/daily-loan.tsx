@@ -18,6 +18,7 @@ import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { Row } from 'web/components/layout/row'
 import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
 import { Col } from 'web/components/layout/col'
+import { TRADE_TERM } from 'common/envs/constants'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -98,7 +99,7 @@ export function DailyLoan(props: {
               ? 'Loan already collected'
               : notEligibleForLoan
               ? 'Daily loans'
-              : 'Collect a loan on your bets'
+              : `Collect a loan on your ${TRADE_TERM}s`
           }
           placement={'bottom'}
         >
@@ -145,7 +146,7 @@ export function DailyLoan(props: {
             ? 'Loan already collected'
             : notEligibleForLoan
             ? 'Daily loans'
-            : 'Collect a loan on your bets'
+            : `Collect a loan on your ${TRADE_TERM}s`
         }
         placement={'top'}
       >

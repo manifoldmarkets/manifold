@@ -18,6 +18,7 @@ import { UserAvatarAndBadge } from '../widgets/user-link'
 import { ManaEarnedBreakdown } from './mana-earned-breakdown'
 import { Tooltip } from '../widgets/tooltip'
 import { DisplayUser } from 'common/api/user-types'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export const CohortTable = (props: {
   season: number
@@ -77,9 +78,7 @@ export const CohortTable = (props: {
             <th className={clsx('pb-1 pl-10 pr-2')}>User</th>
             <th className={clsx('px-2 pb-1 text-right sm:pr-10')}>
               <InfoTooltip
-                text={
-                  'Includes both realized and unrealized profits from bets placed this month plus creator earnings.'
-                }
+                text={`Includes both realized and unrealized profits from ${TRADE_TERM}s placed this month plus creator earnings.`}
               >
                 Mana earned{' '}
               </InfoTooltip>

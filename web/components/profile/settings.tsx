@@ -16,6 +16,8 @@ import { useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
 import { api } from 'web/lib/api/api'
 import { DeleteYourselfButton } from './delete-yourself'
+import { capitalize } from 'lodash'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export const AccountSettings = (props: {
   user: User
@@ -42,11 +44,9 @@ export const AccountSettings = (props: {
     <Col className="gap-5">
       <div>
         <label className="mb-1 block">
-          Bet warnings{' '}
+          {capitalize(TRADE_TERM)} warnings{' '}
           <InfoTooltip
-            text={
-              'Warnings before you place a bet that is either 1. a large portion of your balance, or 2. going to move the probability by a large amount'
-            }
+            text={`Warnings before you place a ${TRADE_TERM} that is either 1. a large portion of your balance, or 2. going to move the probability by a large amount`}
           />
         </label>
         <ShortToggle

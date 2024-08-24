@@ -1,7 +1,7 @@
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { PLURAL_BETS, User } from 'common/user'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { LOAN_DAILY_RATE, overLeveraged } from 'common/loans'
 import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { useIsEligibleForLoans } from 'web/hooks/use-is-eligible-for-loans'
@@ -30,48 +30,50 @@ export function LoansModal(props: {
           <span className={'text-ink-600 text-sm italic'}>
             You're not eligible for a loan right now.{' '}
             {!user?.lastBetTime || !latestPortfolio
-              ? 'Make your first bet and come back in an hour to become eligible.'
+              ? `Make your first ${TRADE_TERM} and come back in an hour to become eligible.`
               : latestPortfolio.investmentValue <= 0
-              ? 'Your investment value is at or below 0. Place some bets to become eligible.'
+              ? `Your investment value is at or below 0. Place some ${TRADE_TERM}s to become eligible.`
               : overLeveraged(
                   latestPortfolio.loanTotal,
                   latestPortfolio.investmentValue
                 )
-              ? 'You are over-leveraged. Sell some of your positions or place some good bets to become eligible.'
+              ? `You are over-leveraged. Sell some of your positions or place some good ${TRADE_TERM}s to become eligible.`
               : latestPortfolio.loanTotal && user.nextLoanCached < 1
-              ? `We've already loaned you up to the current value of your bets. Place some more bets to become eligible again.`
+              ? `We've already loaned you up to the current value of your ${TRADE_TERM}s. Place some more ${TRADE_TERM}s to become eligible again.`
               : ''}
           </span>
         ) : null}
         <Col className={'gap-2'}>
           <span className={'text-primary-700'}>• What are loans?</span>
           <span className={'ml-2'}>
-            When you bet on long-term markets, your funds (mana) are tied up
-            until the outcome is determined, which could take years. To let you
-            continue to place bets, we offer a unique solution: 0% interest
-            loans. Each day, you're eligible to receive a loan amounting to{' '}
-            {LOAN_DAILY_RATE * 100}% of your total bet value. If the value of
-            your bet decreases, the loan amount will be {LOAN_DAILY_RATE * 100}%
-            of the current, lower value.
+            When you {TRADE_TERM} on long-term markets, your funds (mana) are
+            tied up until the outcome is determined, which could take years. To
+            let you continue to place {TRADE_TERM}s, we offer a unique solution:
+            0% interest loans. Each day, you're eligible to receive a loan
+            amounting to {LOAN_DAILY_RATE * 100}% of your total {TRADE_TERM}{' '}
+            value. If the value of your {TRADE_TERM} decreases, the loan amount
+            will be {LOAN_DAILY_RATE * 100}% of the current, lower value.
           </span>
           <span className={'text-primary-700'}>
             • Do I have to pay back a loan?
           </span>
           <span className={'ml-2'}>
             Yes, but don't worry! You will automatically pay back loans when the
-            question resolves or you sell your bet.
+            question resolves or you sell your {TRADE_TERM}.
           </span>
           <span className={'text-primary-700'}>
             • What is the purpose of loans?
           </span>
           <span className={'ml-2'}>
-            Loans make it worthwhile to bet on questions that won't resolve for
-            months or years, because your investment won't be locked up as long.
+            Loans make it worthwhile to {TRADE_TERM} on questions that won't
+            resolve for months or years, because your investment won't be locked
+            up as long.
           </span>
           <span className={'text-primary-700'}>• What is an example?</span>
           <span className={'ml-2'}>
-            For example, if you bet {ENV_CONFIG.moneyMoniker}1000 on "Will I
-            become a millionaire?", you will get {ENV_CONFIG.moneyMoniker}
+            For example, if you {TRADE_TERM} {ENV_CONFIG.moneyMoniker}1000 on
+            "Will I become a millionaire?", you will get{' '}
+            {ENV_CONFIG.moneyMoniker}
             {LOAN_DAILY_RATE * 1000} back tomorrow.
           </span>
           <span className={'ml-2'}>

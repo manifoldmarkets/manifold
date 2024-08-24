@@ -21,6 +21,8 @@ import { GoTriangleUp } from 'react-icons/go'
 import { getPercent } from 'common/util/format'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import Router from 'next/router'
+import { capitalize } from 'lodash'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export function Policy(props: {
   policy: PolicyContractType
@@ -241,11 +243,12 @@ export const BinaryBetButton = (props: { contract: BinaryContract }) => {
         className="bg-primary-50 h-fit w-fit"
         onClick={(e) => {
           e.stopPropagation()
+          // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'binary panel' })
           setOutcome('YES')
         }}
       >
-        Bet
+        {capitalize(TRADE_TERM)}
       </Button>
     </>
   )

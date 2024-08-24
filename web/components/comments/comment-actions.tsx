@@ -15,6 +15,7 @@ import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import { track } from 'web/lib/service/analytics'
 import { AwardBountyButton } from '../contract/bountied-question'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
@@ -54,13 +55,14 @@ export function CommentActions(props: {
       {user && contract.outcomeType === 'BINARY' && (
         <IconButton
           onClick={() => {
+            // TODO: Twomba tracking bet terminology
             track('bet intent', { location: 'comment on contract' })
             setOutcome('YES')
             setShowBetModal(true)
           }}
           size={'xs'}
         >
-          <Tooltip text="Reply with a bet" placement="bottom">
+          <Tooltip text={`Reply with a ${TRADE_TERM}`} placement="bottom">
             <Row className={'mt-0.5 gap-1'}>
               {diff != 0 && (
                 <span className="">{Math.round(Math.abs(diff))}</span>

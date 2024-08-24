@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { HistoryPoint } from 'common/chart'
 import { BinaryContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TRADING_TERM } from 'common/envs/constants'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { getContracts } from 'common/supabase/contracts'
 import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
@@ -223,7 +223,7 @@ export default function RangePerformancePage(props: {
             />
           </Col>
         </Col>
-        <Title>Also betting on</Title>
+        <Title>Also {TRADING_TERM} on</Title>
         {relatedMarkets ? (
           <ContractsGrid
             contracts={relatedMarkets}

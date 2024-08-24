@@ -12,6 +12,7 @@ export function BetSignUpPrompt(props: {
   const user = useUser()
 
   return user === null ? (
+    // TODO: Twomba tracking bet terminology
     <Button
       onClick={withTracking(firebaseLogin, 'sign up to bet')}
       className={className}

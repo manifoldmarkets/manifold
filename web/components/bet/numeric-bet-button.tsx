@@ -24,6 +24,7 @@ export function NumericBetButton(props: {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
+          // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'feeed card' })
           if (!user) {
             firebaseLogin()
@@ -41,6 +42,7 @@ export function NumericBetButton(props: {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
+          // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'feeed card' })
           if (!user) {
             firebaseLogin()

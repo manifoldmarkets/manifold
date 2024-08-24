@@ -47,6 +47,7 @@ import {
 import { isVerified } from 'common/user'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { TRADE_TERM } from 'common/envs/constants'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -504,7 +505,7 @@ export function UserJoinedNotification(props: {
   if (sourceSlug && reason == 'user_joined_to_bet_on_your_market') {
     reasonBlock = (
       <>
-        to bet on the question{' '}
+        to {TRADE_TERM} on the question{' '}
         <QuestionOrGroupLink
           notification={notification}
           truncatedLength={'xl'}

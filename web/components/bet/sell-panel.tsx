@@ -41,6 +41,7 @@ import { Answer } from 'common/answer'
 import { addObjects } from 'common/util/object'
 import { Fees, getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from './fees'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
@@ -158,7 +159,7 @@ export function SellPanel(props: {
               : message
           )
         } else {
-          setError('Error placing bet')
+          setError(`Error placing ${TRADE_TERM}`)
         }
         setIsSubmitting(false)
       })

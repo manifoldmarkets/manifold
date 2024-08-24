@@ -14,6 +14,8 @@ import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { searchContracts } from 'web/lib/api/api'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { useContract } from 'web/hooks/use-contract'
+import { capitalize } from 'lodash'
+import { TRADE_TERM } from 'common/envs/constants'
 
 type Company = {
   name: string
@@ -64,7 +66,7 @@ export default function YCS23Page(props: { companies: Company[] }) {
     <Page trackPageView="YC S23">
       <Title className="!mb-2 px-4 pt-3 lg:px-0">YC S23</Title>
       <div className="mb-4 ml-4 lg:ml-0">
-        Bet on the exit valuation of each YC company
+        {capitalize(TRADE_TERM)} on the exit valuation of each YC company
       </div>
 
       <Col className="bg-canvas-0 max-w-3xl pb-2">

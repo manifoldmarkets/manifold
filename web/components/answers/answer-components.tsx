@@ -232,6 +232,7 @@ export const MultiBettor = (props: {
         className={clsx('bg-primary-50', buttonClassName)}
         onClick={(e) => {
           e.stopPropagation()
+          // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'answer panel' })
           setOutcome('YES')
         }}
@@ -271,6 +272,7 @@ const YesNoBetButtons = (props: {
         className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
+          // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'answer panel' })
           setOutcome('YES')
         }}
@@ -283,6 +285,7 @@ const YesNoBetButtons = (props: {
         className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
+          // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'answer panel' })
           setOutcome('NO')
         }}

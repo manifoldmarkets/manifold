@@ -9,6 +9,7 @@ import {
   SPICE_NAME,
   SPICE_TO_CHARITY_DOLLARS,
   SPICE_TO_MANA_CONVERSION_RATE,
+  TRADE_TERM,
 } from 'common/envs/constants'
 import { User } from 'common/user'
 import Link from 'next/link'
@@ -82,7 +83,7 @@ function MainSpiceRedeemPage(props: {
           <Col>
             <div className="text-lg font-semibold">Get Mana</div>
             <div className="text-sm">
-              Use mana to make more bets to win more {SPICE_NAME}s!
+              Use mana to make more {TRADE_TERM}s to win more {SPICE_NAME}s!
             </div>
           </Col>
         </Row>
