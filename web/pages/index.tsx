@@ -19,7 +19,11 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
-import { HIDE_FROM_NEW_USER_SLUGS, TRADE_TERM, TRADING_TERM } from 'common/envs/constants'
+import {
+  HIDE_FROM_NEW_USER_SLUGS,
+  TRADE_TERM,
+  TRADING_TERM,
+} from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
 import { PillButton } from 'web/components/buttons/pill-button'
@@ -187,8 +191,8 @@ export default function LandingPage(props: {
                 Play-money markets. Real-world accuracy.
               </h1>
               <h1 className="text-lg">
-                Compete with your friends by {TRADING_TERM} on politics, tech, sports,
-                and more. It's play money and free to play.
+                Compete with your friends by {TRADING_TERM} on politics, tech,
+                sports, and more. It's play money and free to play.
               </h1>
 
               <Button
