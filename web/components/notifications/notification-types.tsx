@@ -68,7 +68,7 @@ import {
 } from './notification-helpers'
 import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { TRADE_TERM, TRADED_TERM } from 'common/envs/constants'
+import { TRADED_TERM } from 'common/envs/constants'
 
 export function NotificationItem(props: {
   notification: Notification
