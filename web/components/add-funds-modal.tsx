@@ -5,9 +5,9 @@ import {
   BETTING_STREAK_BONUS_MAX,
   IOS_PRICES,
   REFERRAL_AMOUNT,
-  MANA_TO_WEB_PRICES,
+  MANA_WEB_PRICES,
   WebManaAmounts,
-  MANA_TO_CASH_BONUS,
+  PaymentAmount,
 } from 'common/economy'
 import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
@@ -79,8 +79,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const { onClose } = props
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
-  const prices =
-    isNative && platform === 'ios' ? IOS_PRICES : MANA_TO_WEB_PRICES
+  const prices = isNative && platform === 'ios' ? IOS_PRICES : MANA_WEB_PRICES
   const [loading, setLoading] = useState<WebManaAmounts | null>(null)
   const [error, setError] = useState<string | null>(null)
   const handleIapReceipt = async <T extends nativeToWebMessageType>(
@@ -139,35 +138,32 @@ export function BuyManaTab(props: { onClose: () => void }) {
       )}
 
       <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {Object.entries(prices).map(([manaAmount, dollarAmount]) => {
-          const mana = parseInt(manaAmount) as WebManaAmounts // May be ios prices
+        {prices.map((amounts) => {
           return isNative && platform === 'ios' ? (
             <PriceTile
-              key={`ios-${mana}`}
-              dollarAmount={dollarAmount}
-              manaAmount={mana}
+              key={`ios-${amounts.mana}`}
+              amounts={amounts}
               loading={loading}
               disabled={pastLimit}
               onClick={() => {
                 setError(null)
-                setLoading(mana)
-                postMessageToNative('checkout', { amount: dollarAmount })
+                setLoading(amounts.mana)
+                postMessageToNative('checkout', { amount: amounts.price })
               }}
             />
           ) : (
             <form
-              key={`web-${mana}`}
-              action={checkoutURL(user?.id || '', dollarAmount, url)}
+              key={`web-${amounts.mana}`}
+              action={checkoutURL(user?.id || '', amounts.price, url)}
               method="POST"
             >
               <PriceTile
-                dollarAmount={dollarAmount}
-                manaAmount={mana}
+                amounts={amounts}
                 loading={loading}
                 disabled={pastLimit}
                 onClick={() => {
                   if (TWOMBA_ENABLED) {
-                    router.push(`/checkout?manaAmount=${manaAmount}`)
+                    router.push(`/checkout?manaAmount=${amounts.mana}`)
                   }
                 }}
                 isSubmitButton={!TWOMBA_ENABLED}
@@ -182,16 +178,16 @@ export function BuyManaTab(props: { onClose: () => void }) {
 }
 
 export function PriceTile(props: {
-  dollarAmount: number
-  manaAmount: WebManaAmounts
+  amounts: PaymentAmount
   loading: WebManaAmounts | null
   disabled: boolean
   onClick?: () => void
   isSubmitButton?: boolean
 }) {
-  const { dollarAmount, manaAmount, loading, onClick, isSubmitButton } = props
+  const { loading, onClick, isSubmitButton, amounts } = props
+  const { mana, price, bonus } = amounts
 
-  const isCurrentlyLoading = loading === manaAmount
+  const isCurrentlyLoading = loading === mana
   const disabled = props.disabled || (loading && !isCurrentlyLoading)
   return (
     <button
@@ -217,7 +213,7 @@ export function PriceTile(props: {
           <CoinNumber
             coinType="sweepies"
             className="font-bold"
-            amount={MANA_TO_CASH_BONUS[manaAmount]}
+            amount={bonus}
             isInline
           />{' '}
           <span className="text-sm">bonus</span>
@@ -226,24 +222,24 @@ export function PriceTile(props: {
       <Col className="bg-canvas-50 items-center rounded-t px-4 pb-2 pt-4">
         <Image
           src={
-            manaAmount == 10000
+            mana == 10000
               ? '/buy-mana-graphics/10k_mana.png'
-              : manaAmount == 25000
+              : mana == 25000
               ? '/buy-mana-graphics/25k_mana.png'
-              : manaAmount == 100000
+              : mana == 100000
               ? '/buy-mana-graphics/100k_mana.png'
-              : manaAmount == 1000000
+              : mana == 1000000
               ? '/buy-mana-graphics/1M_mana.png'
               : ''
           }
           alt={
-            manaAmount == 10000
+            mana == 10000
               ? '10k mana'
-              : manaAmount == 25000
+              : mana == 25000
               ? '25k mana'
-              : manaAmount == 100000
+              : mana == 100000
               ? '100k mana'
-              : manaAmount == 1000000
+              : mana == 1000000
               ? '1 million mana'
               : ''
           }
@@ -253,11 +249,11 @@ export function PriceTile(props: {
         />
 
         <div className="text-primary-700 -mt-1 text-xl font-semibold">
-          {shortenNumber(manaAmount)}{' '}
+          {shortenNumber(mana)}{' '}
         </div>
       </Col>
       <Col className="w-full rounded-b bg-blue-600 px-4 py-1 text-lg font-semibold text-white">
-        ${dollarAmount / 100}
+        ${price / 100}
       </Col>
     </button>
   )

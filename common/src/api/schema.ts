@@ -1513,6 +1513,7 @@ export const API = (_apiTypeCheck = {
       session?: CheckoutSession
     },
     props: z.object({
+      PayActionCode: z.enum(['PAY', 'PAYOUT']).default('PAY'),
       DeviceGPS: GPSProps,
     }),
   },

@@ -26,7 +26,7 @@ import { exampleCustomers, GPSData, ID_ERROR_MSG } from 'common/gidx/gidx'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 
 const body = {
-  ...exampleCustomers[2],
+  ...exampleCustomers[3],
 }
 
 const colClass = 'gap-3 p-4'
@@ -103,14 +103,14 @@ export const RegisterUserForm = (props: { user: User }) => {
           const { coords } = position
           setUserInfo({
             ...userInfo,
-            // DeviceGPS: {
-            //   Latitude: coords.latitude,
-            //   Longitude: coords.longitude,
-            //   Radius: coords.accuracy,
-            //   Altitude: coords.altitude ?? 0,
-            //   Speed: coords.speed ?? 0,
-            //   DateTime: new Date().toISOString(),
-            // },
+            DeviceGPS: {
+              Latitude: coords.latitude,
+              Longitude: coords.longitude,
+              Radius: coords.accuracy,
+              Altitude: coords.altitude ?? 0,
+              Speed: coords.speed ?? 0,
+              DateTime: new Date().toISOString(),
+            },
           })
           setLoading(false)
           setPage(page + 1)
