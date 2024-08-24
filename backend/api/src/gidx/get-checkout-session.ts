@@ -13,6 +13,7 @@ import { log } from 'shared/monitoring/log'
 import { verifyReasonCodes } from 'api/gidx/register'
 import { randomBytes } from 'crypto'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { PaymentAmountsGIDX } from 'common/economy'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CreateSession'
@@ -53,7 +54,6 @@ export const getCheckoutSession: APIHandler<
     ReasonCodes,
     MerchantSessionID,
     CashierLimits,
-    PaymentAmounts,
     PaymentMethods,
     PaymentMethodSettings,
   } = data
@@ -86,6 +86,7 @@ export const getCheckoutSession: APIHandler<
   const CustomerProfile = (await idRes.json()) as CustomerProfileResponse
   log('Customer profile response:', CustomerProfile)
 
+  const PaymentAmounts = PaymentAmountsGIDX
   return {
     status,
     message,

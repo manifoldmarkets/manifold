@@ -90,35 +90,82 @@ export const MANACHAN_TWEET_COST = 2500
 export const PUSH_NOTIFICATION_BONUS = 1000
 export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
 
-// Edit prices on here as well: https://portal.gidx-service.in/ServiceSettings/Payments
-export const GIDX_MANA_TO_PRICES = {
-  // Prices are in cents
-  10_000: 1500,
-  25_000: 3000,
-  100_000: 11000,
-  1_000_000: 1_00000,
-} as const
+export const PaymentAmounts = [
+  {
+    mana: 10_000,
+    price: 1399,
+    bonus: 0,
+  },
+  {
+    mana: 25_000,
+    price: 2999,
+    bonus: 0,
+  },
+  {
+    mana: 100_000,
+    price: 10999,
+    bonus: 0,
+  },
+  {
+    mana: 1_000_000,
+    price: 1_00000,
+    bonus: 0,
+  },
+]
 
-export const MANA_TO_WEB_PRICES = TWOMBA_ENABLED
-  ? GIDX_MANA_TO_PRICES
-  : ({
-      10_000: 1399,
-      25_000: 2999,
-      100_000: 10999,
-      1_000_000: 1_00000,
-    } as const)
-export type WebManaAmounts = keyof typeof MANA_TO_WEB_PRICES
-export type IOSManaAmounts = Exclude<WebManaAmounts, 1_000_000>
-export const IOS_PRICES: Record<IOSManaAmounts, number> = {
-  10_000: 1499,
-  25_000: 3599,
-  100_000: 14299,
+export const PaymentAmountsGIDX = [
+  {
+    mana: 10_000,
+    price: 1500,
+    bonus: 10_00,
+  },
+  {
+    mana: 25_000,
+    price: 3000,
+    bonus: 25_00,
+  },
+  {
+    mana: 100_000,
+    price: 11000,
+    bonus: 100_00,
+  },
+  {
+    mana: 1_000_000,
+    price: 1_00000,
+    bonus: 1000_00,
+  },
+]
+export type PaymentAmount = (typeof PaymentAmounts)[number]
+export const MANA_WEB_PRICES = TWOMBA_ENABLED
+  ? PaymentAmountsGIDX
+  : PaymentAmounts
+
+export type WebManaAmounts = (typeof PaymentAmounts)[number]['mana']
+export const IOS_PRICES = [
+  {
+    mana: 10_000,
+    price: 1499,
+    bonus: 0,
+  },
+  {
+    mana: 25_000,
+    price: 3599,
+    bonus: 0,
+  },
+  {
+    mana: 100_000,
+    price: 14299,
+    bonus: 0,
+  },
   // No 1M option on ios: the fees are too high
-}
-export type GIDXManaAmount = keyof typeof GIDX_MANA_TO_PRICES
-export const MANA_TO_CASH_BONUS: Record<GIDXManaAmount, number> = {
+]
+export type ManaAmountGIDX = (typeof PaymentAmountsGIDX)[number]['mana']
+
+// TODO what are the actual values? Probably want it to be fee tiers and not fixed numbers
+export const MANA_CASH_TO_DOLLARS_OUT_GIDX = {
   10_000: 10,
   25_000: 25,
   100_000: 100,
   1_000_000: 1_000,
-}
+} as const
+export type CashAmountGIDX = keyof typeof MANA_CASH_TO_DOLLARS_OUT_GIDX

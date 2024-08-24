@@ -32,6 +32,70 @@ export const verificationParams = z.object({
   MerchantCustomerID: z.string(),
 })
 
+export const checkoutParams = {
+  MerchantTransactionID: z.string(),
+  MerchantSessionID: z.string(),
+  PaymentAmount: z.object({
+    mana: z.number(),
+    price: z.number(),
+    bonus: z.number(),
+  }),
+  PaymentMethod: z.object({
+    Type: z.enum(['CC']), // TODO: add 'ACH'
+    NameOnAccount: z.string(),
+    SavePaymentMethod: z.boolean(),
+    BillingAddress: z.object({
+      City: z.string(),
+      AddressLine1: z.string(),
+      StateCode: z.string(),
+      PostalCode: z.string(),
+      CountryCode: z.string(),
+    }),
+    // CC specific fields,
+    creditCard: z.object({
+      CardNumber: z.string(),
+      CVV: z.string(),
+      ExpirationDate: z.string(),
+    }),
+    // .optional(),
+    // ach: z
+    //   .object({
+    //     AccountNumber: z.string(),
+    //     RoutingNumber: z.string(),
+    //   })
+    //   .optional(),
+    // For saved payment methods:
+    saved: z
+      .object({
+        Token: z.string(),
+        DisplayName: z.string(),
+      })
+      .optional(),
+  }),
+}
+
+export const cashoutParams = z.object({
+  ...checkoutParams,
+  PaymentAmount: z.object({
+    manaCash: z.number(),
+    dollars: z.number(),
+  }),
+  SavePaymentMethod: z.boolean(),
+  PaymentMethod: z.object({
+    Type: z.enum(['ACH']),
+    NameOnAccount: z.string(),
+    BillingAddress: z.object({
+      City: z.string(),
+      AddressLine1: z.string(),
+      StateCode: z.string(),
+      PostalCode: z.string(),
+      CountryCode: z.string(),
+    }),
+    AccountNumber: z.string(),
+    RoutingNumber: z.string(),
+  }),
+})
+
 export type DocumentRegistrationResponse = {
   ResponseCode: number
   ResponseMessage: string
@@ -149,8 +213,9 @@ export type CashierLimit = {
 }
 
 export type PaymentAmount = {
-  PaymentAmount: number
-  BonusAmount: number
+  mana: number
+  price: number
+  bonus: number
 }
 export type PaymentMethod = {
   Token: string
@@ -296,6 +361,29 @@ export const exampleCustomers = [
     DeviceGPS: {
       Latitude: 44.064107,
       Longitude: -72.545022,
+      Radius: 11.484,
+      Altitude: 0,
+      Speed: 0,
+      DateTime: new Date().toISOString(),
+    },
+  },
+  {
+    EmailAddress: 'playfree9800@gmail.com',
+    MobilePhoneNumber: '4042818372',
+    DeviceIpAddress: '99.100.24.160',
+    FirstName: 'Antron',
+    LastName: 'Hurt',
+    DateOfBirth: '11/06/1986',
+    CitizenshipCountryCode: 'US',
+    IdentificationTypeCode: 2,
+    IdentificationNumber: '123456789',
+    AddressLine1: '214 Rosemont Ave',
+    City: 'Modesto',
+    StateCode: 'CA',
+    PostalCode: '95351',
+    DeviceGPS: {
+      Latitude: 37.774929,
+      Longitude: -122.419418,
       Radius: 11.484,
       Altitude: 0,
       Speed: 0,

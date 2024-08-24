@@ -191,6 +191,7 @@ import { getRelatedMarketsByGroup } from './get-related-markets-by-group'
 import { followContract } from './follow-contract'
 import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
+import { completeCashoutSession } from 'api/gidx/complete-cashout-session'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -409,6 +410,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'register-gidx': register,
   'get-checkout-session-gidx': getCheckoutSession,
   'complete-checkout-session-gidx': completeCheckoutSession,
+  'complete-cashout-session-gidx': completeCashoutSession,
   'get-verification-status-gidx': getVerificationStatus,
   'upload-document-gidx': uploadDocument,
   'identity-callback-gidx': identityCallbackGIDX,

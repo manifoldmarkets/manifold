@@ -52,6 +52,7 @@ type AnyTxnType =
   | ExtraPurchasedMana
   | ManifoldTopUp
   | CashBonus
+  | CashOutPending
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -190,6 +191,18 @@ type CashBonus = {
   data: {
     transactionId: string
     type: 'gidx'
+  }
+}
+
+type CashOutPending = {
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'CASH'
+  category: 'CASH_OUT_PENDING'
+  data: {
+    transactionId: string
+    type: 'gidx'
+    payoutInDollars: number
   }
 }
 

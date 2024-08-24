@@ -5,26 +5,28 @@ import {
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
-import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxn } from 'shared/txn/run-txn'
-import { PaymentAmountsGIDX, PaymentAmount } from 'common/economy'
+import { MANA_CASH_TO_DOLLARS_OUT_GIDX, CashAmountGIDX } from 'common/economy'
 import { getIp } from 'shared/analytics'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
 
-const getPaymentAmountForWebPrice = (price: number) => {
-  const amount = PaymentAmountsGIDX.find((p) => p.price === price)
-  if (!amount) {
-    throw new APIError(400, 'Invalid price')
+const getManaCashAmountForDollars = (dollars: number) => {
+  const manaCash = Object.entries(MANA_CASH_TO_DOLLARS_OUT_GIDX).find(
+    ([, p]) => p === dollars
+  )
+  if (!manaCash) {
+    throw new APIError(400, 'Invalid cashout amount')
   }
-  return amount
+  return parseInt(manaCash[0]) as CashAmountGIDX
 }
 
-export const completeCheckoutSession: APIHandler<
-  'complete-checkout-session-gidx'
+// TODO: This is a WIP, not nearly done yet
+export const completeCashoutSession: APIHandler<
+  'complete-cashout-session-gidx'
 > = async (props, auth, req) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const userId = auth.uid
@@ -34,33 +36,22 @@ export const completeCheckoutSession: APIHandler<
     MerchantSessionID,
     PaymentAmount,
     MerchantTransactionID,
+    SavePaymentMethod,
   } = props
-  const paymentAmount = getPaymentAmountForWebPrice(PaymentAmount.price)
+  const manaCashAmount = getManaCashAmountForDollars(PaymentAmount.dollars)
 
-  const { creditCard, Type, BillingAddress, NameOnAccount, SavePaymentMethod } =
-    PaymentMethod
-  if (Type === 'CC' && !creditCard) {
-    throw new APIError(400, 'Must include credit card information')
-  }
   const body = {
-    PaymentAmount: {
-      PaymentAmount: PaymentAmount.price / 100,
-      BonusAmount: 0,
-    },
+    PaymentAmount,
+    SavePaymentMethod,
     DeviceIpAddress: getIp(req),
     MerchantTransactionID,
-    SavePaymentMethod,
     PaymentMethod: {
-      Type,
-      NameOnAccount,
-      ...creditCard,
+      ...PaymentMethod,
       PhoneNumber: phoneNumberWithCode,
-      BillingAddress,
     },
     ...getGIDXStandardParams(MerchantSessionID),
   }
-  log('complete checkout session body:', body)
-
+  log('complete cashout session body:', body)
   const res = await fetch(ENDPOINT, {
     method: 'POST',
     headers: {
@@ -116,17 +107,17 @@ export const completeCheckoutSession: APIHandler<
     PaymentStatusMessage,
     PaymentAmount: CompletedPaymentAmount,
   } = PaymentDetails[0]
-  if (CompletedPaymentAmount !== PaymentAmount.price / 100) {
+  if (CompletedPaymentAmount !== PaymentAmount.dollars) {
     log.error('Payment amount mismatch', {
       CompletedPaymentAmount,
       PaymentAmount,
     })
   }
   if (PaymentStatusCode === '1') {
-    await sendCoins(
+    await debitCoins(
       userId,
-      paymentAmount,
-      CompletedPaymentAmount,
+      manaCashAmount,
+      PaymentAmount.dollars,
       MerchantTransactionID
     )
     return {
@@ -178,43 +169,27 @@ export const completeCheckoutSession: APIHandler<
   }
 }
 
-const sendCoins = async (
+const debitCoins = async (
   userId: string,
-  amount: PaymentAmount,
-  paidInCents: number,
+  manaCashAmount: CashAmountGIDX,
+  payoutInDollars: number,
   transactionId: string
 ) => {
-  const data = { transactionId, type: 'gidx', paidInCents }
+  const data = { transactionId, type: 'gidx', payoutInDollars }
   const pg = createSupabaseDirectClient()
-  const manaPurchaseTxn = {
-    fromId: 'EXTERNAL',
-    fromType: 'BANK',
-    toId: userId,
-    toType: 'USER',
+  const manaCashoutTxn = {
+    fromId: userId,
+    fromType: 'USER',
+    toId: 'EXTERNAL',
+    toType: 'BANK',
     data,
-    amount: amount.mana,
-    token: 'M$',
-    category: 'MANA_PURCHASE',
-    description: `Deposit for mana purchase`,
-  } as const
-
-  const cashBonusTxn = {
-    fromId: 'EXTERNAL',
-    fromType: 'BANK',
-    toId: userId,
-    toType: 'USER',
-    data,
-    amount: amount.bonus,
+    amount: manaCashAmount,
     token: 'CASH',
-    category: 'CASH_BONUS',
-    description: `Bonus for mana purchase`,
+    category: 'CASH_OUT_PENDING',
+    description: `Pending cash out debit`,
   } as const
 
   await pg.tx(async (tx) => {
-    await runTxn(tx, manaPurchaseTxn)
-    await runTxn(tx, cashBonusTxn)
-    await updateUser(tx, userId, {
-      purchasedMana: true,
-    })
+    await runTxn(tx, manaCashoutTxn)
   })
 }

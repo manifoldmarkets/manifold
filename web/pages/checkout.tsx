@@ -8,7 +8,7 @@ import { useUser } from 'web/hooks/use-user'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { CheckoutSession, GPSData, PaymentAmount } from 'common/gidx/gidx'
+import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { api, validateIapReceipt } from 'web/lib/api/api'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
@@ -24,8 +24,8 @@ import { TWOMBA_ENABLED } from 'common/envs/constants'
 import {
   IOS_PRICES,
   WebManaAmounts,
-  MANA_TO_CASH_BONUS,
-  MANA_TO_WEB_PRICES,
+  MANA_WEB_PRICES,
+  PaymentAmount,
 } from 'common/economy'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import Image from 'next/image'
@@ -36,8 +36,7 @@ const CheckoutPage = () => {
   const user = useUser()
   const [locationError, setLocationError] = useState<string | null>(null)
   const { isNative, platform } = getNativePlatform()
-  const prices =
-    isNative && platform === 'ios' ? IOS_PRICES : MANA_TO_WEB_PRICES
+  const prices = isNative && platform === 'ios' ? IOS_PRICES : MANA_WEB_PRICES
   const [page, setPage] = useState<'checkout' | 'payment' | 'location'>(
     'checkout'
   )
@@ -54,11 +53,12 @@ const CheckoutPage = () => {
     if (!manaAmount) return
     if (
       !Array.isArray(manaAmount) &&
-      Object.keys(prices).includes(manaAmount as string)
+      prices.find((p) => p.mana === parseInt(manaAmount))
     ) {
       onSelectAmount(parseInt(manaAmount) as WebManaAmounts)
     } else {
       console.error('Invalid mana amount in query parameter')
+      setError('Invalid mana amount')
     }
   }, [manaAmount])
 
@@ -197,7 +197,15 @@ const CheckoutPage = () => {
     if (!DeviceGPS || !amountSelected) return
     setError(undefined)
     setLoading(true)
-    const dollarAmount = (prices as typeof MANA_TO_WEB_PRICES)[amountSelected]
+    const dollarAmount = (prices as typeof MANA_WEB_PRICES).find(
+      (a) => a.mana === amountSelected
+    )?.price
+    console.log('dollaramount', dollarAmount)
+    if (!dollarAmount) {
+      setError('Invalid mana amount')
+      setLoading(false)
+      return
+    }
     try {
       const res = await api('get-checkout-session-gidx', {
         DeviceGPS,
@@ -205,7 +213,7 @@ const CheckoutPage = () => {
       const { session, status, message } = res
       if (session && status !== 'error') {
         const product = session.PaymentAmounts.find(
-          (a) => a.PaymentAmount === dollarAmount / 100
+          (a) => a.price === dollarAmount
         )
         if (!product) {
           setError(
@@ -268,9 +276,7 @@ const CheckoutPage = () => {
         amountSelected ? (
         <PaymentSection
           CheckoutSession={checkoutSession}
-          amountSelected={productSelected}
-          manaAmount={amountSelected}
-          spiceAmount={MANA_TO_CASH_BONUS[amountSelected]}
+          amount={productSelected}
         />
       ) : error || locationError ? null : (
         <LoadingIndicator />
@@ -281,7 +287,7 @@ const CheckoutPage = () => {
 }
 
 function FundsSelector(props: {
-  prices: Record<number, number>
+  prices: PaymentAmount[]
   onSelect: (amount: WebManaAmounts) => void
 }) {
   const { onSelect, prices } = props
@@ -341,32 +347,29 @@ function FundsSelector(props: {
       )}
 
       <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {Object.entries(prices).map(([manaAmount, dollarAmount]) => {
-          const mana = parseInt(manaAmount) as WebManaAmounts
+        {prices.map((amounts) => {
           return isNative && platform === 'ios' ? (
             <PriceTile
-              key={`ios-${mana}`}
-              dollarAmount={dollarAmount}
-              manaAmount={mana}
+              key={`ios-${amounts.mana}`}
+              amounts={amounts}
               loading={loading}
               disabled={pastLimit}
               onClick={() => {
                 setError(null)
-                setLoading(mana)
-                postMessageToNative('checkout', { amount: dollarAmount })
+                setLoading(amounts.mana)
+                postMessageToNative('checkout', { amount: amounts.price })
               }}
             />
           ) : (
             <PriceTile
-              key={`web-${mana}`}
-              dollarAmount={dollarAmount}
-              manaAmount={mana}
+              key={`web-${amounts.mana}`}
+              amounts={amounts}
               loading={loading}
               disabled={pastLimit}
               onClick={() => {
                 setError(null)
-                setLoading(mana)
-                onSelect(mana)
+                setLoading(amounts.mana)
+                onSelect(amounts.mana)
               }}
             />
           )
@@ -379,11 +382,9 @@ function FundsSelector(props: {
 
 const PaymentSection = (props: {
   CheckoutSession: CheckoutSession
-  amountSelected: PaymentAmount
-  manaAmount: number
-  spiceAmount: number
+  amount: PaymentAmount
 }) => {
-  const { CheckoutSession, spiceAmount, manaAmount, amountSelected } = props
+  const { CheckoutSession, amount } = props
   const { CustomerProfile, MerchantSessionID, MerchantTransactionID } =
     CheckoutSession
 
@@ -432,7 +433,7 @@ const PaymentSection = (props: {
           NameOnAccount: name,
           SavePaymentMethod: false,
         },
-        PaymentAmount: amountSelected,
+        PaymentAmount: amount,
         MerchantTransactionID,
         MerchantSessionID,
       }).catch((e) => {
@@ -482,20 +483,20 @@ const PaymentSection = (props: {
           <span>
             <CoinNumber
               className={'font-semibold'}
-              amount={manaAmount}
+              amount={amount.mana}
               isInline
             />{' '}
             +{' '}
             <CoinNumber
               className={'font-semibold'}
               coinType={'sweepies'}
-              amount={spiceAmount}
+              amount={amount.bonus}
               isInline
             />
           </span>
         </Row>
         <Row className={'my-4 justify-center text-4xl '}>
-          <span>{formatter.format(amountSelected.PaymentAmount)}</span>
+          <span>{formatter.format(amount.price / 100)}</span>
         </Row>
         <Col className="bg-canvas-0 w-full max-w-md rounded p-8">
           <form onSubmit={handleSubmit}>
