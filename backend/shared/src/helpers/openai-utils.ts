@@ -1,6 +1,8 @@
 import OpenAI from 'openai'
 import * as dayjs from 'dayjs'
-import 'dayjs/plugin/utc'
+import { log } from 'shared/utils'
+import * as utc from 'dayjs/plugin/utc'
+dayjs.extend(utc)
 
 export const generateEmbeddings = async (question: string) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -11,14 +13,14 @@ export const generateEmbeddings = async (question: string) => {
       input: question,
     })
   } catch (e: any) {
-    console.error(
-      'Error generating embeddings',
-      !process.env.OPENAI_API_KEY ? ' (no OpenAI API key found)' : '',
-      e.message
+    log.error(
+      'Error generating embeddings ' +
+        (!process.env.OPENAI_API_KEY ? ' (no OpenAI API key found) ' : ' ') +
+        e.message
     )
     return undefined
   }
-
+  log('Made embeddings for question', question)
   return response.data[0].embedding
 }
 
@@ -28,27 +30,24 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
 
   let response
   try {
-    response = await openai.completions.create({
-      model: 'gpt-3.5-turbo-instruct',
-      prompt: `Question: Will I finish the task by 2027?\nNow: 5/2/2026 12:11 pm\nEnd date: 12/31/2026 11:59 pm\n\nQuestion: Will an AI-drawn movie have a rating >=7.0 on IMDB before 2025?\nNow: 5/2/2019 3:47 pm\nEnd date: 12/31/2024 11:59 pm\n\nQuestion: Will Bolsanaro concede the election by Nov 15?\nNow: 8/5/2022 1:20 pm\nEnd date: 11/14/2022 11:59 pm\n\nQuestion: Will Dwarf Fortress be released on Steam this year?\nNow: 2/5/2023 11:24 am\nEnd date: 12/31/2023 11:59 pm\n\nQuestion: Will eat ice cream today?\nNow: 10/2/2022 5:55 pm\nEnd date: 10/2/2022 11:59 pm\n\nQuestion: ${question}\nNow: ${now}\nEnd date:`,
-      temperature: 0.4,
+    const prompt = `Please return the user's desired end date for their question in the form: 12/31/2026 11:59 pm. The end date will serve as a reminder to decide the outcome of their question, e.g. if the question is: 'Will I go to school tomorrow?' the end date should be tomorrow.\n\nHere's their question, and remember: ONLY return the end date in the form: 12/31/2026 11:59 pm: ${question}\nNow: ${now}\nEnd date:`
+    response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [{ role: 'system', content: prompt }],
       max_tokens: 15,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0,
     })
   } catch (e: any) {
-    console.error(
-      'Error generating close date',
-      !process.env.OPENAI_API_KEY ? ' (no OpenAI API key found)' : '',
-      e.message
+    log.error(
+      'Error generating close date ' + !process.env.OPENAI_API_KEY
+        ? ' (no OpenAI API key found) '
+        : ' ' + e.message
     )
     return undefined
   }
 
-  const text = response.choices[0].text?.trim()
+  const text = response.choices[0].message.content
   if (!text) return undefined
-  console.log(
+  log(
     'AI-selected close date for question',
     question,
     ':',

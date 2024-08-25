@@ -1,4 +1,4 @@
-import { SupabaseClient, SupabaseDirectClient } from 'shared/supabase/init'
+import { SupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
@@ -7,22 +7,21 @@ import { APIError } from 'common/api/utils'
 import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 import { updateData, DataUpdate } from './utils'
 import { mapValues } from 'lodash'
+import { log } from 'shared/utils'
 
 // used for API to allow slug as param
 export const getContractIdFromSlug = async (
-  db: SupabaseClient,
+  pg: SupabaseDirectClient,
   slug?: string
 ) => {
   if (!slug) return undefined
-
-  const { data, error } = await db
-    .from('contracts')
-    .select('id')
-    .eq('slug', slug)
-    .single()
-
-  if (error) throw new APIError(404, `Contract with slug ${slug} not found`)
-  return data.id
+  const id = await pg.oneOrNone(
+    `select id from contracts where slug = $1`,
+    [slug],
+    (r) => r?.id as string
+  )
+  if (!id) throw new APIError(400, 'No contract found with that slug')
+  return id
 }
 
 export const getUniqueBettorIds = async (
@@ -61,7 +60,7 @@ export const getContractsDirect = async (
   if (contractIds.length === 0) return [] as Contract[]
 
   return await pg.map(
-    `select data, importance_score, conversion_score, freshness_score, view_count from contracts where id in ($1:list)`,
+    `select data, importance_score, conversion_score, freshness_score, view_count, token from contracts where id in ($1:list)`,
     [contractIds],
     (r) => convertContract(r)
   )
@@ -99,7 +98,7 @@ export const getContractLikerIds = async (
   pg: SupabaseDirectClient
 ) => {
   const likedUserIds = await pg.manyOrNone<{ user_id: string }>(
-    `select user_id from user_reactions 
+    `select user_id from user_reactions
                where content_id = $1
                and content_type = 'contract'`,
     [contractId]
@@ -146,7 +145,7 @@ export const getContractPrivacyWhereSQLFilter = (
   contractIdString = 'id'
 ) => {
   const otherVisibilitySQL = `
-  OR (visibility = 'unlisted' 
+  OR (visibility = 'unlisted'
     AND (
      creator_id='${uid}'
      OR ${isAdminId(uid ?? '_')}
@@ -199,11 +198,11 @@ export const updateContract = async (
   const newContract = convertContract(
     await updateData(pg, 'contracts', 'id', fullUpdate)
   )
+  log('updated contract', update)
   const updatedValues = mapValues(
     fullUpdate,
     (_, k) => newContract[k as keyof Contract] ?? null
   ) as any
-
   broadcastUpdatedContract(newContract.visibility, updatedValues)
   return newContract
 }

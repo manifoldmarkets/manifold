@@ -1,24 +1,24 @@
+import clsx from 'clsx'
+import { Bet } from 'common/bet'
+import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { Modal } from 'web/components/layout/modal'
-import { Col } from 'web/components/layout/col'
+import { useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { BiRepost } from 'react-icons/bi'
+import { Button, SizeType } from 'web/components/buttons/button'
 import {
   CommentReplyHeader,
   CommentReplyHeaderWithBet,
-  ContractCommentInput,
   FeedCommentHeader,
-} from 'web/components/feed/feed-comments'
-import { useState } from 'react'
-import { Button, SizeType } from 'web/components/buttons/button'
-import clsx from 'clsx'
-import { BiRepost } from 'react-icons/bi'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { Bet } from 'common/bet'
-import { ContractComment } from 'common/comment'
-import { Content } from 'web/components/widgets/editor'
+} from 'web/components/comments/comment-header'
+import { ContractCommentInput } from 'web/components/comments/comment-input'
+import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
 import { Avatar } from 'web/components/widgets/avatar'
-import { Row } from '../layout/row'
+import { Content } from 'web/components/widgets/editor'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { api } from 'web/lib/api/api'
-import { toast } from 'react-hot-toast'
+import { Row } from '../layout/row'
 import { UserHovercard } from '../user/user-hovercard'
 
 export const RepostButton = (props: {
@@ -26,19 +26,25 @@ export const RepostButton = (props: {
   bet?: Bet
   size: SizeType
   className?: string
+  iconClassName?: string
 }) => {
-  const { contract, bet, size, className } = props
+  const { contract, bet, size, className, iconClassName } = props
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Tooltip text="Repost with comment to followers" placement="bottom" noTap>
+      <Tooltip
+        text="Repost with comment to followers"
+        placement="bottom"
+        noTap
+        className="flex select-none items-center"
+      >
         <Button
           color={'gray-white'}
           size={size}
           className={clsx(className)}
           onClick={() => setOpen(true)}
         >
-          <BiRepost className="h-6 w-6" />
+          <BiRepost className={clsx(iconClassName, 'h-6 w-6')} />
         </Button>
       </Tooltip>
       {open && (

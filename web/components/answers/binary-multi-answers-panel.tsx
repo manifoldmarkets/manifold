@@ -86,6 +86,7 @@ const BetButton = (props: {
         style={{ backgroundColor: color }}
         className={'flex flex-1 items-center justify-between gap-1 text-white'}
         onClick={() => {
+          // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'answer panel' })
           setOutcome(outcome)
         }}

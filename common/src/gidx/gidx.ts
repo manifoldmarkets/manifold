@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-export const GIDX_REGISTATION_ENABLED = false
 export const GIDX_DOCUMENTS_REQUIRED = 2
 
 export const GPSProps = z.object({
@@ -31,6 +30,70 @@ export const verificationParams = z.object({
   DeviceIpAddress: z.string(),
   EmailAddress: z.string(),
   MerchantCustomerID: z.string(),
+})
+
+export const checkoutParams = {
+  MerchantTransactionID: z.string(),
+  MerchantSessionID: z.string(),
+  PaymentAmount: z.object({
+    mana: z.number(),
+    price: z.number(),
+    bonus: z.number(),
+  }),
+  PaymentMethod: z.object({
+    Type: z.enum(['CC']), // TODO: add 'ACH'
+    NameOnAccount: z.string(),
+    SavePaymentMethod: z.boolean(),
+    BillingAddress: z.object({
+      City: z.string(),
+      AddressLine1: z.string(),
+      StateCode: z.string(),
+      PostalCode: z.string(),
+      CountryCode: z.string(),
+    }),
+    // CC specific fields,
+    creditCard: z.object({
+      CardNumber: z.string(),
+      CVV: z.string(),
+      ExpirationDate: z.string(),
+    }),
+    // .optional(),
+    // ach: z
+    //   .object({
+    //     AccountNumber: z.string(),
+    //     RoutingNumber: z.string(),
+    //   })
+    //   .optional(),
+    // For saved payment methods:
+    saved: z
+      .object({
+        Token: z.string(),
+        DisplayName: z.string(),
+      })
+      .optional(),
+  }),
+}
+
+export const cashoutParams = z.object({
+  ...checkoutParams,
+  PaymentAmount: z.object({
+    manaCash: z.number(),
+    dollars: z.number(),
+  }),
+  SavePaymentMethod: z.boolean(),
+  PaymentMethod: z.object({
+    Type: z.enum(['ACH']),
+    NameOnAccount: z.string(),
+    BillingAddress: z.object({
+      City: z.string(),
+      AddressLine1: z.string(),
+      StateCode: z.string(),
+      PostalCode: z.string(),
+      CountryCode: z.string(),
+    }),
+    AccountNumber: z.string(),
+    RoutingNumber: z.string(),
+  }),
 })
 
 export type DocumentRegistrationResponse = {
@@ -144,6 +207,89 @@ export type GIDXMonitorResponse = {
   ResponseCode: number
   ResponseMessage: string
 }
+export type CashierLimit = {
+  MinAmount: number
+  MaxAmount: number
+}
+
+export type PaymentAmount = {
+  mana: number
+  price: number
+  bonus: number
+}
+export type PaymentMethod = {
+  Token: string
+  DisplayName: string
+  Type: 'CC' | 'ACH' | 'Paypal' | 'ApplePay' | 'GooglePay'
+  NameOnAccount: string
+  BillingAddress: {
+    AddressLine1: string
+    City: string
+    StateCode: string
+    PostalCode: string
+    CountryCode: string
+  }
+  PhoneNumber?: string
+  // CC specific fields
+  CardNumber?: string
+  CVV?: string
+  ExpirationDate?: string
+  Network?: string
+  AVSResult?: string
+  CVVResult?: string
+  ThreeDS?: {
+    CAVV: string
+    ECI: string
+    DSTransactionID: string
+  }
+  // ACH specific fields
+  AccountNumber?: string
+  RoutingNumber?: string
+  // ApplePay specific fields
+  Payment?: string
+  WalletToken?: string
+  // GooglePay specific fields
+  PaymentData?: string
+}
+export type PaymentMethodSetting =
+  | {
+      Type: 'CC' | 'ACH' | 'ApplePay'
+    }
+  | {
+      Type: 'Paypal'
+      ClientID: string
+    }
+  | {
+      Type: 'GooglePay'
+      Environment: string
+      Gateway: string
+      GatewayMerchantID: string
+      MerchantID: string
+    }
+
+export type CheckoutSession = {
+  MerchantTransactionID: string
+  MerchantSessionID: string
+  CashierLimits: CashierLimit[]
+  PaymentAmounts: PaymentAmount[]
+  PaymentMethods: PaymentMethod[]
+  PaymentMethodSettings: PaymentMethodSetting[]
+  CustomerProfile: {
+    Address: Address
+    Name: Name
+  }
+}
+
+export type CheckoutSessionResponse = {
+  ApiKey: string
+  ApiVersion: number
+  SessionID: string
+  MerchantID: string
+  MerchantSessionID: string
+  ResponseCode: number
+  ResponseMessage: string
+  ReasonCodes: string[]
+} & CheckoutSession
 
 export const ID_ERROR_MSG =
   'Registration failed, identity error. Check your identifying information.'
@@ -221,4 +367,103 @@ export const exampleCustomers = [
       DateTime: new Date().toISOString(),
     },
   },
+  {
+    EmailAddress: 'playfree9800@gmail.com',
+    MobilePhoneNumber: '4042818372',
+    DeviceIpAddress: '99.100.24.160',
+    FirstName: 'Antron',
+    LastName: 'Hurt',
+    DateOfBirth: '11/06/1986',
+    CitizenshipCountryCode: 'US',
+    IdentificationTypeCode: 2,
+    IdentificationNumber: '123456789',
+    AddressLine1: '214 Rosemont Ave',
+    City: 'Modesto',
+    StateCode: 'CA',
+    PostalCode: '95351',
+    DeviceGPS: {
+      Latitude: 37.774929,
+      Longitude: -122.419418,
+      Radius: 11.484,
+      Altitude: 0,
+      Speed: 0,
+      DateTime: new Date().toISOString(),
+    },
+  },
 ]
+
+type Action = {
+  Type: string
+  URL: string
+  ClientID: string
+  OrderID: string
+}
+export type PaymentDetail = {
+  PaymentStatusCode: string
+  PaymentStatusMessage: string
+  PaymentAmountType: string
+  PaymentAmount: number
+  CurrencyCode: string
+  PaymentAmountCode: string
+  PaymentMethodType: string
+  PaymentMethodAccount: string
+  PaymentApprovalDateTime: string
+  PaymentStatusDateTime: string
+  PaymentProcessDateTime: string
+  ProcessorName: string
+  ProcessorTransactionID: string
+  ProcessorResponseCode: number
+  ProcessorResponseMessage: string
+  Action: Action
+  FinancialConfidenceScore: number
+  Recurring: boolean
+  RecurringInterval?: string
+  NextRecurringDate?: string
+}
+export type CompleteSessionDirectCashierResponse = {
+  ReasonCodes: string[]
+  SessionID: string
+  SessionStatusCode: number
+  SessionStatusMessage: string
+  MerchantTransactionID: string
+  AllowRetry: boolean
+  Action: Action
+  FinancialConfidenceScoreString: number
+  PaymentDetails: PaymentDetail[]
+}
+type Address = {
+  AddressLine1: string
+  AddressLine2: string
+  City: string
+  State: string
+  StateCode: string
+  PostalCode: string
+  Country: string
+  IdentityConfidenceScore: number
+  Primary: boolean
+}
+
+type Name = {
+  FirstName: string
+  LastName: string
+  MiddleName: string
+  IdentityConfidenceScore: number
+  Primary: boolean
+}
+export type CustomerProfileResponse = {
+  MerchantCustomerID: string
+  ReasonCodes: string[]
+  WatchChecks: WatchCheckType[]
+  Name: Name[]
+  Address: Address[]
+  Citizenship: {
+    CountryCode: string
+    IdentityConfidenceScore: number
+    DateAcquired: string
+  }[]
+  DateOfBirth: {
+    PlaceOfBirth: string
+    DateOfBirth: string
+    IdentityConfidenceScore: number
+  }[]
+}

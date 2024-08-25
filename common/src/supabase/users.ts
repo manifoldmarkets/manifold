@@ -34,8 +34,10 @@ export function convertUser(row: Row<'users'> | null): User | null {
     username: row.username,
     name: row.name,
     balance: row.balance,
+    cashBalance: row.cash_balance,
     spiceBalance: row.spice_balance,
     totalDeposits: row.total_deposits,
+    totalCashDeposits: row.total_cash_deposits,
     resolvedProfitAdjustment: row.resolved_profit_adjustment,
   } as User
 }

@@ -8,20 +8,17 @@ import clsx from 'clsx'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
-import {
-  GIDX_REGISTATION_ENABLED,
-  GIDXDocument,
-  idNameToCategoryType,
-} from 'common/gidx/gidx'
+import { GIDXDocument, idNameToCategoryType } from 'common/gidx/gidx'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { toast } from 'react-hot-toast'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const VerifyMe = (props: { user: User }) => {
   const user = useUser() ?? props.user
 
   const [show, setShow] = useState(
-    GIDX_REGISTATION_ENABLED &&
+    TWOMBA_ENABLED &&
       user.kycStatus !== 'verified' &&
       user.kycStatus !== 'block' &&
       user.kycStatus !== 'temporary-block'

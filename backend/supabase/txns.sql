@@ -13,7 +13,14 @@ create table if not exists
     token text default 'M$'::text not null,
     constraint txns_token_check check (
       (
-        token = any (array['M$'::text, 'SHARE'::text, 'SPICE'::text])
+        token = any (
+          array[
+            'M$'::text,
+            'CASH'::text,
+            'SHARE'::text,
+            'SPICE'::text
+          ]
+        )
       )
     )
   );

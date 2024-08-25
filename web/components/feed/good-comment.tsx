@@ -1,6 +1,6 @@
 import { ContractComment } from 'common/comment'
 import { Contract, contractPath } from 'common/contract'
-import { FeedCommentHeader } from './feed-comments'
+import { FeedCommentHeader } from '../comments/comment-header'
 import { Col } from '../layout/col'
 import clsx from 'clsx'
 import { memo, useState } from 'react'
@@ -29,7 +29,6 @@ export const GoodComment = memo(function (props: {
   const { contract, user, comment } = props
   const privateUser = usePrivateUser()
   const { userUsername, userAvatarUrl, userId } = comment
-  const marketCreator = contract.creatorId === comment.userId
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
   const { ref } = useIsVisible(
     () => {

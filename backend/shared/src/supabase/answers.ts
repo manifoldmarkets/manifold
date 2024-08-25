@@ -1,10 +1,10 @@
 import { type SupabaseDirectClient } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
-import { groupBy } from 'lodash'
+import { groupBy, mapValues, sortBy } from 'lodash'
 import { Answer } from 'common/answer'
-import { bulkInsert, insert, bulkUpdate, update } from './utils'
+import { bulkInsert, bulkUpdate, insert, update } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
-import { Row, millisToTs } from 'common/supabase/utils'
+import { millisToTs, Row } from 'common/supabase/utils'
 import {
   broadcastNewAnswer,
   broadcastUpdatedAnswers,
@@ -22,14 +22,14 @@ export const getAnswersForContractsDirect = async (
   if (contractIds.length === 0) {
     return {}
   }
-  return groupBy(
-    await pg.map(
-      `select * from answers
-    where contract_id in ($1:list)`,
-      [contractIds],
-      (r) => convertAnswer(r)
-    ),
-    'contractId'
+  const answers = await pg.map(
+    `select * from answers
+            where contract_id in ($1:list)`,
+    [contractIds],
+    (r) => convertAnswer(r)
+  )
+  return mapValues(groupBy(answers, 'contractId'), (answers) =>
+    sortBy(answers, 'index')
   )
 }
 
@@ -37,8 +37,10 @@ export const getAnswersForContract = async (
   pg: SupabaseDirectClient,
   contractId: string
 ) => {
+  // Answers must be sorted by index, or you get non-deterministic results
   return await pg.map(
-    `select * from answers where contract_id = $1`,
+    `select * from answers where contract_id = $1
+            order by index`,
     [contractId],
     convertAnswer
   )
@@ -86,6 +88,14 @@ export const updateAnswers = async (
   await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
 
   broadcastUpdatedAnswers(contractId, updates)
+}
+
+// Can update answers across multiple contracts.
+export const bulkUpdateAnswers = async (
+  pg: SupabaseDirectClient,
+  updates: Partial<Answer>[]
+) => {
+  await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
 }
 
 const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({

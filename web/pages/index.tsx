@@ -19,7 +19,11 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
-import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
+import {
+  HIDE_FROM_NEW_USER_SLUGS,
+  TRADE_TERM,
+  TRADING_TERM,
+} from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
 import { PillButton } from 'web/components/buttons/pill-button'
@@ -32,6 +36,7 @@ import {
   convertContract,
   getContract,
 } from 'common/supabase/contracts'
+import { capitalize } from 'lodash'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
@@ -42,7 +47,8 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
       'in',
       `(${['STONK', 'BOUNTIED_QUESTION', 'POLL'].join(',')})`
     )
-    .is('resolution', null) // Add this line to select only unresolved contracts
+    .is('resolution', null)
+    .eq('token', 'MANA')
     .order('importance_score', { ascending: false })
     .limit(100)
 
@@ -178,13 +184,15 @@ export default function LandingPage(props: {
 
           <Row className="justify-between rounded-lg ">
             <Col className="w-full gap-2 sm:max-w-lg">
-              <h1 className="mb-4 text-4xl">Bet on politics & more</h1>
+              <h1 className="mb-4 text-4xl">
+                {capitalize(TRADE_TERM)} on politics & more
+              </h1>
               <h1 className="text-lg">
                 Play-money markets. Real-world accuracy.
               </h1>
               <h1 className="text-lg">
-                Compete with your friends by betting on politics, tech, sports,
-                and more. It's play money and free to play.
+                Compete with your friends by {TRADING_TERM} on politics, tech,
+                sports, and more. It's play money and free to play.
               </h1>
 
               <Button

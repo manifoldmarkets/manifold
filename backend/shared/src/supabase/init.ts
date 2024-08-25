@@ -18,7 +18,36 @@ export const pgp = pgPromise({
       event: e,
     })
   },
-  query(ev) {
+  disconnect() {
+    metrics.inc('pg/connections_disconnected')
+  },
+  transact(e) {
+    if (e.ctx.finish) {
+      const { ctx, query } = e
+      const { duration, success } = ctx
+      if (!duration) return
+      const successStr = success ? 'true' : 'false'
+
+      const mctx = getMonitoringContext()
+      if (mctx?.baseEndpoint) {
+        metrics.push('pg/transaction_duration', duration, {
+          baseEndpoint: mctx.baseEndpoint,
+          endpoint: mctx.endpoint,
+          query,
+          successStr,
+        })
+      } else if (mctx?.job) {
+        metrics.push('pg/transaction_duration', duration, {
+          job: mctx.job,
+          query,
+          successStr,
+        })
+      } else {
+        metrics.push('pg/transaction_duration', duration, { query, successStr })
+      }
+    }
+  },
+  query() {
     const ctx = getMonitoringContext()
     if (ctx?.endpoint) {
       metrics.inc('pg/query_count', { endpoint: ctx.endpoint })
@@ -55,7 +84,7 @@ export function getInstanceId() {
 export function getInstanceHostname(instanceId: string) {
   return `${instanceId}.supabase.co`
 }
-
+/**@deprecated: Use createSupabaseDirectClient instead. */
 export function createSupabaseClient() {
   const instanceId = getInstanceId()
   if (!instanceId) {
@@ -71,6 +100,7 @@ export function createSupabaseClient() {
   // mqp - note that if you want to pass autoRefreshToken: true, you MUST call
   // `client.auth.stopAutoRefresh` on the client when you are done or it will
   // leak the refresh interval!
+  log('Creating supabase client connection')
 
   return createClient(instanceId, key, { auth: { autoRefreshToken: false } })
 }
@@ -100,6 +130,7 @@ export function createSupabaseDirectClient(
       "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
     )
   }
+  log('Connecting to postgres')
   const client = pgp({
     host: `db.${getInstanceHostname(instanceId)}`,
     port: 5432,
@@ -113,6 +144,12 @@ export function createSupabaseDirectClient(
     // without a huge backlog of waiting connections instead of redeploying the api.
     // See queries to run during outage here: https://www.notion.so/manifoldmarkets/Backend-resources-8fba2b67cad04dd188564442c5876bfa?pvs=4#a8629a618e9e44ee9b6bbe408b10f9ff
     connectionTimeoutMillis: 10_000,
+
+    // ian: during the past few outages we've seen a lot of "idle in transaction" connections
+    // that last for approx. an hour. See: https://docs.google.com/spreadsheets/d/1GrXMQtPXRL3j3dSza7rwI4fRmFjabk0x1sJYoTRKpoE/edit?gid=801504140#gid=801504140
+    // Although we don't yet know the cause, setting this timeout will limit the damage
+    // from these connections. We should figure out the cause ASAP.
+    idle_in_transaction_session_timeout: 15_000,
     max: 20,
   })
   const pool = client.$pool

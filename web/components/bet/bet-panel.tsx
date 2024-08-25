@@ -2,7 +2,6 @@ import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
 import { sumBy } from 'lodash'
 import toast from 'react-hot-toast'
-import { CheckIcon } from '@heroicons/react/solid'
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 
 import {
@@ -56,6 +55,9 @@ import { floatingEqual } from 'common/util/math'
 import { getTierFromLiquidity } from 'common/tier'
 import { getAnswerColor } from '../charts/contract/choice'
 import { LimitBet } from 'common/bet'
+import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
+import { MoneyDisplay } from './money-display'
+import { capitalize } from 'lodash'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -110,6 +112,7 @@ export function BuyPanel(props: {
       setOutcome(undefined)
       setIsPanelBodyVisible(false)
     } else {
+      // TODO: Twomba tracking bet terminology
       track('bet intent', { location, option: outcome })
 
       setOutcome(choice)
@@ -131,11 +134,11 @@ export function BuyPanel(props: {
                 onOutcomeChoice(choice)
               }}
               yesLabel={
-                isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
+                isPseudoNumeric ? 'HIGHER' : isStonk ? STONK_YES : 'YES'
               }
-              noLabel={
-                isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
-              }
+              noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : 'NO'}
+              isCash={contract.token === 'CASH'}
+              includeWordBet={!isStonk}
             />
           </Row>
         </Col>
@@ -144,7 +147,9 @@ export function BuyPanel(props: {
         <BuyPanelBody
           {...props}
           panelClassName={
-            outcome === 'NO'
+            TWOMBA_ENABLED
+              ? 'bg-canvas-50'
+              : outcome === 'NO'
               ? 'bg-scarlet-50'
               : outcome === 'YES'
               ? 'bg-teal-50'
@@ -279,63 +284,66 @@ export const BuyPanelBody = (props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    const bet = await api(
-      'bet',
-      removeUndefinedProps({
-        outcome,
-        amount: betAmount,
-        contractId: contract.id,
-        answerId: multiProps?.answerToBuy.id,
-        replyToCommentId,
-        deps: betDeps.current?.map((b) => b.userId),
-      })
-    )
-      .then((r) => {
-        console.log('placed bet. Result:', r)
-        setIsSubmitting(false)
-        setBetAmount(undefined)
-        if (onBuySuccess) onBuySuccess()
-        else {
-          toast('Trade submitted!', {
-            icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
+    try {
+      const bet = await toast.promise(
+        api(
+          'bet',
+          removeUndefinedProps({
+            outcome,
+            amount: betAmount,
+            contractId: contract.id,
+            answerId: multiProps?.answerToBuy.id,
+            replyToCommentId,
+            deps: betDeps.current?.map((b) => b.userId),
           })
+        ),
+        {
+          loading: `Submitting ${TRADE_TERM}...`,
+          success: `${capitalize(TRADE_TERM)} submitted!`,
+          error: `Error submitting ${TRADE_TERM}`,
         }
-        return r
-      })
-      .catch((e) => {
-        if (e instanceof APIError) {
-          const message = e.message.toString()
-          if (message.includes('could not serialize access')) {
-            setError('Error placing bet')
-            console.error('Error placing bet', e)
-          } else setError(message)
-        } else {
-          console.error(e)
-          setError('Error placing bet')
-        }
-        setIsSubmitting(false)
-        return undefined
-      })
-
-    track(
-      'bet',
-      removeUndefinedProps({
-        location,
-        outcomeType: contract.outcomeType,
-        slug: contract.slug,
-        contractId: contract.id,
-        amount: betAmount,
-        betGroupId: bet?.betGroupId,
-        betId: bet?.betId,
-        outcome,
-        isLimitOrder: false,
-        answerId: multiProps?.answerToBuy.id,
-        feedReason,
-      })
-    )
+      )
+      console.log(`placed ${TRADE_TERM}. Result:`, bet)
+      setBetAmount(undefined)
+      if (onBuySuccess) onBuySuccess()
+      // TODO: Twomba tracking bet terminology
+      track(
+        'bet',
+        removeUndefinedProps({
+          location,
+          outcomeType: contract.outcomeType,
+          slug: contract.slug,
+          contractId: contract.id,
+          amount: betAmount,
+          betGroupId: bet?.betGroupId,
+          betId: bet?.betId,
+          outcome,
+          isLimitOrder: false,
+          answerId: multiProps?.answerToBuy.id,
+          feedReason,
+        })
+      )
+    } catch (e) {
+      if (e instanceof APIError) {
+        const message = e.message.toString()
+        if (message.includes('could not serialize access')) {
+          setError(`Error placing ${TRADE_TERM} (could not serialize access)`)
+          console.error(`Error placing ${TRADE_TERM}`, e)
+        } else setError(message)
+      } else {
+        console.error(e)
+        setError(`Error placing ${TRADE_TERM}`)
+      }
+      return undefined
+    } finally {
+      setIsSubmitting(false)
+    }
   }
   const betDisabled =
-    isSubmitting || !betAmount || !!error || outcome === undefined
+    isSubmitting ||
+    !betAmount ||
+    outcome === undefined ||
+    error === 'Insufficient balance'
 
   const limits =
     contract.outcomeType === 'STONK'
@@ -416,9 +424,11 @@ export const BuyPanelBody = (props: {
         .concat(result.ordersToCancel)
     }
   } catch (err: any) {
+    // TODO: Twomba tracking bet terminology
     console.error('Error in calculateCpmmMultiArbitrageBet:', err)
     setError(
-      err?.message ?? 'An error occurred during bet calculation, try again.'
+      err?.message ??
+        `An error occurred during ${TRADE_TERM} calculation, try again.`
     )
     // Set default values or handle the error case as needed
     currentPayout = 0
@@ -460,6 +470,9 @@ export const BuyPanelBody = (props: {
   const choicesMap: { [key: string]: string } = isStonk
     ? { Buy: 'YES', Short: 'NO' }
     : { Yes: 'YES', No: 'NO' }
+
+  const isCashContract = contract.token === 'CASH'
+
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
@@ -480,7 +493,9 @@ export const BuyPanelBody = (props: {
             </Col>
             {isAdvancedTrader && !isStonk && (
               <Col className="gap-1">
-                <div className="text-ink-700">Bet type</div>
+                <div className="text-ink-700">
+                  {capitalize(TRADE_TERM)} type
+                </div>
                 <ChoicesToggleGroup
                   currentChoice={betType}
                   choicesMap={{
@@ -511,7 +526,7 @@ export const BuyPanelBody = (props: {
         {betType === 'Market' ? (
           <>
             <Row className={clsx('text-ink-700 mb-2 items-center space-x-3')}>
-              Bet amount
+              {capitalize(TRADE_TERM)} amount
             </Row>
 
             <Row
@@ -531,6 +546,7 @@ export const BuyPanelBody = (props: {
                 binaryOutcome={isBinaryMC ? undefined : outcome}
                 showSlider={isAdvancedTrader}
                 marketTier={marketTier}
+                token={isCashContract ? 'CASH' : 'M$'}
               />
 
               {isAdvancedTrader && (
@@ -568,12 +584,18 @@ export const BuyPanelBody = (props: {
                     <div className="text-ink-700 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
                       {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
                     </div>
+
                     <span className="mr-1 whitespace-nowrap text-lg">
-                      {isStonk
-                        ? getStonkDisplayShares(contract, currentPayout, 2)
-                        : isPseudoNumeric
-                        ? Math.floor(currentPayout)
-                        : formatMoney(currentPayout)}
+                      {isStonk ? (
+                        getStonkDisplayShares(contract, currentPayout, 2)
+                      ) : isPseudoNumeric ? (
+                        Math.floor(currentPayout)
+                      ) : (
+                        <MoneyDisplay
+                          amount={currentPayout}
+                          isCashContract={isCashContract}
+                        />
+                      )}
                     </span>
                     <span className="text-green-500 ">
                       {isStonk || isPseudoNumeric
@@ -588,7 +610,10 @@ export const BuyPanelBody = (props: {
                           Refund amount
                         </div>
                         <span className="mr-1 whitespace-nowrap text-lg">
-                          {formatMoney(betAmount - filledAmount)}
+                          <MoneyDisplay
+                            amount={betAmount - filledAmount}
+                            isCashContract={isCashContract}
+                          />
                         </span>
                       </Row>
                     )}
@@ -628,19 +653,31 @@ export const BuyPanelBody = (props: {
                   (outcome === 'NO' ? 'red' : 'green')
                 }
                 actionLabel={
-                  betDisabled
-                    ? `Select ${formatOutcomeLabel(
-                        contract,
-                        'YES'
-                      )} or ${formatOutcomeLabel(contract, 'NO')}`
-                    : isStonk
-                    ? formatOutcomeLabel(contract, outcome) +
-                      ' ' +
-                      formatMoney(betAmount)
-                    : `Bet ${
-                        binaryMCOutcomeLabel ??
-                        formatOutcomeLabel(contract, outcome)
-                      } to win ${formatMoney(currentPayout)}`
+                  betDisabled ? (
+                    `Select ${formatOutcomeLabel(
+                      contract,
+                      'YES'
+                    )} or ${formatOutcomeLabel(contract, 'NO')}`
+                  ) : isStonk ? (
+                    <span>
+                      {formatOutcomeLabel(contract, outcome)}{' '}
+                      <MoneyDisplay
+                        amount={betAmount}
+                        isCashContract={isCashContract}
+                      />
+                    </span>
+                  ) : (
+                    <span>
+                      {capitalize(TRADE_TERM)}{' '}
+                      {binaryMCOutcomeLabel ??
+                        formatOutcomeLabel(contract, outcome)}{' '}
+                      to win{' '}
+                      <MoneyDisplay
+                        amount={currentPayout}
+                        isCashContract={isCashContract}
+                      />
+                    </span>
+                  )
                 }
                 inModal={!!onClose}
               />
@@ -648,6 +685,7 @@ export const BuyPanelBody = (props: {
               <Button
                 color={outcome === 'NO' ? 'red' : 'green'}
                 size="xl"
+                // TODO: Twomba tracking bet terminology
                 onClick={withTracking(firebaseLogin, 'login from bet panel')}
                 className="flex-grow"
               >
@@ -669,7 +707,10 @@ export const BuyPanelBody = (props: {
                 Your balance{' '}
               </span>
               <span className="text-ink-700 font-semibold">
-                {formatMoney(user.balance)}
+                <MoneyDisplay
+                  amount={isCashContract ? user.cashBalance : user.balance}
+                  isCashContract={isCashContract}
+                />
               </span>
             </Row>
           </Row>
@@ -709,7 +750,7 @@ export const BuyPanelBody = (props: {
 
               {!isPseudoNumeric && !isStonk && !isBinaryMC && (
                 <InfoTooltip
-                  text={`Your bet will move the probability of Yes from ${getFormattedMappedValue(
+                  text={`Your ${TRADE_TERM} will move the probability of Yes from ${getFormattedMappedValue(
                     contract,
                     probBefore
                   )} to ${getFormattedMappedValue(contract, probAfter)}.`}
@@ -720,7 +761,7 @@ export const BuyPanelBody = (props: {
 
               {isBinaryMC && (
                 <InfoTooltip
-                  text={`Your bet will move the probability from ${getFormattedMappedValue(
+                  text={`Your ${TRADE_TERM} will move the probability from ${getFormattedMappedValue(
                     contract,
                     probBefore
                   )} to ${getFormattedMappedValue(contract, probAfter)}.`}
@@ -734,7 +775,12 @@ export const BuyPanelBody = (props: {
 
         {betType !== 'Limit' && (
           <div className="text-ink-700 mt-1 text-sm">
-            Fees <FeeDisplay amount={betAmount} totalFees={fees} />
+            Fees{' '}
+            <FeeDisplay
+              amount={betAmount}
+              totalFees={fees}
+              isCashContract={isCashContract}
+            />
           </div>
         )}
 

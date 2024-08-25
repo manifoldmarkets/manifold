@@ -1,7 +1,7 @@
 import { HistoryPoint, maxMinBin } from 'common/chart'
 import { buildArray } from 'common/util/array'
 import { debounce } from 'lodash'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
 import { getBetPoints } from 'web/lib/supabase/bets'
 
@@ -49,8 +49,12 @@ export const useDataZoomFetcher = <T>(props: {
         setData(props.points)
       }
     }, 100),
-    []
+    [props.contractId]
   )
+
+  useLayoutEffect(() => {
+    setData(props.points)
+  }, [props.contractId])
 
   useEffect(() => {
     if (props.viewXScale) {

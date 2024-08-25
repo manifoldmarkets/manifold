@@ -49,11 +49,14 @@ function InternalUnseenMessagesBubble(props: {
 }) {
   const { privateUser, className, bubbleClassName } = props
 
-  const unseenMessages = useUnseenPrivateMessageChannels(privateUser.id)
+  const { unseenChannels } = useUnseenPrivateMessageChannels(
+    privateUser.id,
+    false
+  )
   const pathName = usePathname()
 
   if (
-    unseenMessages.length === 0 ||
+    unseenChannels.length === 0 ||
     !privateUser.notificationPreferences.new_message.includes('browser') ||
     privateUser.notificationPreferences.opt_out_all.includes('browser') ||
     pathName === '/messages'
@@ -73,7 +76,7 @@ function InternalUnseenMessagesBubble(props: {
           bubbleClassName
         )}
       >
-        {unseenMessages.length}
+        {unseenChannels.length}
       </div>
     </Row>
   )

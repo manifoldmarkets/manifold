@@ -21,7 +21,14 @@ export const CHARITY_FEE = 0.05
 export const SPICE_TO_CHARITY_DOLLARS = (1 / 1000) * (1 - CHARITY_FEE) // prize points -> dollars
 
 export const SPICE_NAME = 'Prize Point'
+export const SWEEPIES_NAME = 'Mana Cash'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
+export const SWEEPIES_MARKET_TOOLTIP = `Cash market! Earn ${SWEEPIES_NAME}s on resolution`
+
+export const TRADE_TERM = TWOMBA_ENABLED ? 'trade' : 'bet'
+export const TRADED_TERM = TWOMBA_ENABLED ? 'traded' : 'bet'
+export const TRADING_TERM = TWOMBA_ENABLED ? 'trading' : 'betting'
+export const TRADER_TERM = TWOMBA_ENABLED ? 'trader' : 'bettor'
 
 export const ENV_CONFIG = CONFIGS[ENV]
 

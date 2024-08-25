@@ -48,16 +48,21 @@ import { ModReport } from '../mod-report'
 
 import { RegistrationReturnType } from 'common/reason-codes'
 import {
+  CheckoutSession,
   GIDXDocument,
   GIDXMonitorResponse,
   GPSProps,
+  PaymentDetail,
+  checkoutParams,
   verificationParams,
+  cashoutParams,
 } from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
+import { ContractMetric } from 'common/contract-metric'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -102,6 +107,19 @@ export const API = (_apiTypeCheck = {
         replyToCommentId: z.string().optional(),
         replyToAnswerId: z.string().optional(),
         replyToBetId: z.string().optional(),
+      })
+      .strict(),
+  },
+
+  'follow-contract': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: true },
+    props: z
+      .object({
+        contractId: z.string(),
+        follow: z.boolean(),
       })
       .strict(),
   },
@@ -163,6 +181,29 @@ export const API = (_apiTypeCheck = {
         answerId: z.string().optional(),
         dryRun: z.boolean().optional(),
         deps: z.array(z.string()).optional(),
+        deterministic: z.boolean().optional(),
+      })
+      .strict(),
+  },
+  'bet-ter': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as CandidateBet & { betId: string },
+    props: z
+      .object({
+        contractId: z.string(),
+        amount: z.number().gte(1),
+        replyToCommentId: z.string().optional(),
+        limitProb: z.number().gte(0.01).lte(0.99).optional(),
+        expiresAt: z.number().optional(),
+        // Used for binary and new multiple choice contracts (cpmm-multi-1).
+        outcome: z.enum(['YES', 'NO']).default('YES'),
+        //Multi
+        answerId: z.string().optional(),
+        dryRun: z.boolean().optional(),
+        deps: z.array(z.string()).optional(),
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },
@@ -191,6 +232,7 @@ export const API = (_apiTypeCheck = {
         limitProb: z.number().gte(0).lte(1).optional(),
         expiresAt: z.number().optional(),
         answerIds: z.array(z.string()).min(1),
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },
@@ -203,6 +245,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         answerIds: z.array(z.string()).min(1),
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },
@@ -248,6 +291,7 @@ export const API = (_apiTypeCheck = {
         shares: z.number().positive().optional(), // leave it out to sell all shares
         outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
         answerId: z.string().optional(), // Required for multi binary markets
+        deterministic: z.boolean().optional(),
       })
       .strict(),
   },
@@ -402,6 +446,7 @@ export const API = (_apiTypeCheck = {
       .object({
         availableToUserId: z.string().optional(),
         beforeTime: z.coerce.number().int().optional(),
+        limit: z.coerce.number().gte(0).lte(1000).default(500),
       })
       .strict(),
   },
@@ -682,11 +727,12 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: {} as any,
+    returns: [] as ContractMetric[],
     props: z
       .object({
         id: z.string(),
         userId: z.string().optional(),
+        answerId: z.string().optional(),
         top: z.undefined().or(z.coerce.number()),
         bottom: z.undefined().or(z.coerce.number()),
         order: z.enum(['shares', 'profit']).optional(),
@@ -975,6 +1021,22 @@ export const API = (_apiTypeCheck = {
     },
     cache: 'public, max-age=3600, stale-while-revalidate=10',
   },
+  'get-related-markets-by-group': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=3600, stale-while-revalidate=10',
+    returns: {} as {
+      groupContracts: Contract[]
+    },
+    props: z
+      .object({
+        contractId: z.string(),
+        limit: z.coerce.number().gte(0).lte(100),
+        offset: z.coerce.number().gte(0),
+      })
+      .strict(),
+  },
   'unlist-and-cancel-user-contracts': {
     method: 'POST',
     visibility: 'undocumented',
@@ -1054,7 +1116,7 @@ export const API = (_apiTypeCheck = {
       status: 'success'
     },
   },
-  
+
   'get-likes-and-ships': {
     method: 'GET',
     visibility: 'public',
@@ -1309,9 +1371,9 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: z.object({
-      channelId: z.coerce.number(),
+      channelIds: z.array(z.coerce.number()),
     }),
-    returns: {} as { created_time: string },
+    returns: [] as [number, string][],
   },
   'set-channel-seen-time': {
     method: 'POST',
@@ -1442,6 +1504,44 @@ export const API = (_apiTypeCheck = {
       DeviceGPS: GPSProps,
     }),
   },
+  'get-checkout-session-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      status: string
+      message?: string
+      session?: CheckoutSession
+    },
+    props: z.object({
+      PayActionCode: z.enum(['PAY', 'PAYOUT']).default('PAY'),
+      DeviceGPS: GPSProps,
+    }),
+  },
+  'complete-checkout-session-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      status: string
+      message?: string
+      gidxMessage?: string
+      details?: PaymentDetail[]
+    },
+    props: z.object(checkoutParams),
+  },
+  'complete-cashout-session-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      status: string
+      message?: string
+      gidxMessage?: string
+      details?: PaymentDetail[]
+    },
+    props: cashoutParams,
+  },
   'get-verification-documents-gidx': {
     method: 'POST',
     visibility: 'undocumented',
@@ -1466,7 +1566,7 @@ export const API = (_apiTypeCheck = {
       fileUrl: z.string(),
     }),
   },
-  'callback-gidx': {
+  'identity-callback-gidx': {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
@@ -1475,6 +1575,13 @@ export const API = (_apiTypeCheck = {
       MerchantCustomerID: z.string(),
       NotificationType: z.string(),
     }),
+  },
+  'payment-callback-gidx': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as { Accepted: boolean },
+    props: z.any(),
   },
   'get-best-comments': {
     method: 'GET',

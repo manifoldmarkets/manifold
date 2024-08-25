@@ -1,9 +1,6 @@
 import { authEndpoint, validate } from './helpers/endpoint'
 import { z } from 'zod'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { broadcastTVScheduleUpdate } from 'shared/websockets/helpers'
@@ -12,7 +9,11 @@ const schema = z.object({
   id: z.string().optional(),
   slug: z.string(),
   streamId: z.string(),
-  source: z.union([z.literal('youtube'), z.literal('twitch')]),
+  source: z.union([
+    z.literal('youtube'),
+    z.literal('twitch'),
+    z.literal('twitter'),
+  ]),
   title: z.string(),
   startTime: z.string(),
   endTime: z.string(),
@@ -29,8 +30,7 @@ export const settv = authEndpoint(async (req, auth) => {
   const isFeatured =
     (isModId(auth.uid) || isAdminId(auth.uid)) && tvSettings.isFeatured
 
-  const db = createSupabaseClient()
-  const contractId = await getContractIdFromSlug(db, slug)
+  const contractId = await getContractIdFromSlug(pg, slug)
 
   if (id) {
     await pg.none(

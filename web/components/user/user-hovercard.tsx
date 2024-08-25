@@ -13,6 +13,7 @@ import dayjs from 'dayjs'
 import { Col } from '../layout/col'
 import { FullUser } from 'common/api/user-types'
 import { useIsClient } from 'web/hooks/use-is-client'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -110,7 +111,7 @@ const FetchUserHovercardContent = forwardRef(
         {isMod && (
           <div className="py-1">
             <div className="block px-4 py-2 text-sm text-gray-700">
-              <span className="font-semibold">Last bet:</span>{' '}
+              <span className="font-semibold">Last {TRADE_TERM}:</span>{' '}
               {user.lastBetTime ? (
                 <RelativeTimestampNoTooltip
                   time={user.lastBetTime}

@@ -41,6 +41,7 @@ import { Answer } from 'common/answer'
 import { addObjects } from 'common/util/object'
 import { Fees, getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from './fees'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
@@ -113,7 +114,8 @@ export function SellPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
-  const betDisabled = isSubmitting || !amount || error !== undefined
+  const betDisabled =
+    isSubmitting || !amount || (error && error.includes('Maximum'))
 
   // Sell all shares if remaining shares would be < 1
   const isSellingAllShares = amount === Math.floor(shares)
@@ -157,7 +159,7 @@ export function SellPanel(props: {
               : message
           )
         } else {
-          setError('Error placing bet')
+          setError(`Error placing ${TRADE_TERM}`)
         }
         setIsSubmitting(false)
       })
@@ -283,7 +285,7 @@ export function SellPanel(props: {
         )}
         <Row className="text-ink-500 items-center justify-between gap-2">
           Fees
-          <FeeDisplay totalFees={totalFees} amount={buyAmount} />
+          <FeeDisplay totalFees={totalFees} amount={saleValue + totalFees} />
         </Row>
         <Row className="text-ink-500 items-center justify-between gap-2">
           Profit
@@ -319,7 +321,7 @@ export function SellPanel(props: {
         userOptedOutOfWarning={user.optOutBetWarnings}
         isSubmitting={isSubmitting}
         onSubmit={betDisabled ? undefined : submitSell}
-        disabled={betDisabled}
+        disabled={!!betDisabled}
         size="xl"
         color="indigo"
         actionLabel={

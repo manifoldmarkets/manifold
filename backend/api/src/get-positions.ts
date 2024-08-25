@@ -1,81 +1,93 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 
-import { ContractMetric } from 'common/contract-metric'
 import {
-  getOrderedContractMetricRowsForContractId,
-  getUserContractMetrics,
-} from 'common/supabase/contract-metrics'
-import { uniqBy } from 'lodash'
-import { createSupabaseClient } from 'shared/supabase/init'
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
+import { buildArray } from 'common/util/array'
+import {
+  from,
+  limit,
+  orderBy,
+  renderSql,
+  select,
+  where,
+} from 'shared/supabase/sql-builder'
+import { log } from 'shared/utils'
+import { getIp } from 'shared/analytics'
 
 export const getPositions: APIHandler<'market/:id/positions'> = async (
-  props
+  props,
+  _,
+  req
 ) => {
-  const { id: contractId, userId } = props
+  const { id: contractId } = props
 
   if (contractId === 'U3zLgOZkGUE7cvG98961') {
     throw new APIError(404, `We're done with whales vs minnows, sorry!`)
   }
+  log('getPositions from ip:', getIp(req))
+  const pg = createSupabaseDirectClient()
+  const { top, bottom, userId, answerId, order } = props
 
-  const db = createSupabaseClient()
+  return await getOrderedContractMetricRowsForContractId(pg, contractId, {
+    top,
+    userId,
+    answerId,
+    bottom,
+    order,
+  })
+}
 
-  // Get single user's positions
+const getOrderedContractMetricRowsForContractId = async (
+  pg: SupabaseDirectClient,
+  contractId: string,
+  options: {
+    userId?: string
+    answerId?: string
+    order?: 'profit' | 'shares'
+    top?: number
+    bottom?: number
+  }
+) => {
+  const { userId, top, bottom, answerId, order = 'profit' } = options
+
+  const sharedConditions = buildArray(
+    select('data'),
+    from('user_contract_metrics'),
+    where('contract_id = ${contractId}', { contractId }),
+    userId && where('user_id = ${userId}', { userId }),
+    answerId
+      ? where('answer_id = ${answerId}', { answerId })
+      : where('answer_id is null')
+  )
+
   if (userId) {
-    try {
-      const contractMetrics = await getUserContractMetrics(
-        userId,
-        contractId,
-        db
-      )
-      return contractMetrics
-    } catch (e) {
-      throw new APIError(500, 'Error getting user contract metrics')
-    }
+    return pg.map(renderSql(...sharedConditions), [], (r) => r.data)
   }
 
-  const { top, bottom, order } = props
-
-  // Get all positions for contract
-  const contractMetricRows = await getOrderedContractMetricRowsForContractId(
-    contractId,
-    db,
-    undefined,
-    order
+  const query1 = renderSql(
+    ...sharedConditions,
+    order === 'profit' && where(`profit > 0`),
+    order === 'profit' && orderBy(`profit desc nulls last`),
+    order === 'shares' && where('has_yes_shares = true'),
+    order === 'shares' && orderBy(`total_shares_yes desc nulls last`),
+    top !== undefined && limit(top)
   )
-  const contractMetrics = contractMetricRows.map(
-    (row) => row.data as ContractMetric
+
+  const query2 = renderSql(
+    ...sharedConditions,
+    order === 'profit' && where(`profit < 0`),
+    order === 'profit' && orderBy(`profit asc nulls last`),
+    order === 'shares' && where('has_no_shares = true'),
+    order === 'shares' && orderBy(`total_shares_no desc nulls last`),
+    bottom !== undefined && limit(bottom)
   )
-  if (!top && !bottom) {
-    return contractMetrics
-  }
 
-  // Get at most `top + bottom` positions
-  let topSlice: ContractMetric[] = []
-  let bottomSlice: ContractMetric[] = []
-  if (order === 'profit') {
-    if (bottom) {
-      bottomSlice = contractMetrics.slice(-bottom)
-    }
-    if (top) {
-      topSlice = contractMetrics.slice(0, top)
-    }
-  } else if (order === 'shares') {
-    // Both YES and NO are sorted descending by shares, so we need to
-    // find the first NO share index and slice from there
-    const noSharesIndex = contractMetrics.findIndex((cm) => cm.hasNoShares)
+  const [positiveResults, negativeResults] = await Promise.all([
+    pg.map(query1, [], (r) => r.data),
+    pg.map(query2, [], (r) => r.data),
+  ])
 
-    if (bottom && noSharesIndex !== -1) {
-      bottomSlice = contractMetrics.slice(noSharesIndex, noSharesIndex + bottom)
-    }
-
-    if (top) {
-      if (noSharesIndex !== -1 && noSharesIndex < top) {
-        topSlice = contractMetrics.slice(0, noSharesIndex)
-      } else {
-        topSlice = contractMetrics.slice(0, top)
-      }
-    }
-  }
-
-  return uniqBy(topSlice.concat(bottomSlice), (cm) => cm.userId)
+  return [...positiveResults, ...negativeResults]
 }

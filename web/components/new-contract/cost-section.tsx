@@ -174,8 +174,6 @@ function Tier(props: {
   const questionType = capitalize(getContractTypeFromValue(outcomeType, 'name'))
   const tierName = getPresentedTierName(tier)
 
-  console.log(tier, isTierDisabled)
-
   if (isTierDisabled) {
     return (
       <div

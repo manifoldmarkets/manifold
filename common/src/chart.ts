@@ -5,7 +5,7 @@ import { first, last, mapValues, meanBy } from 'lodash'
 export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
 export type HistoryPoint<T = unknown> = Point<number, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
-export type ValueKind = 'Ṁ' | 'percent' | 'amount' | 'spice'
+export type ValueKind = 'Ṁ' | 'percent' | 'amount' | 'spice' | 'sweepies'
 
 export type MultiPoints = { [answerId: string]: HistoryPoint<never>[] }
 

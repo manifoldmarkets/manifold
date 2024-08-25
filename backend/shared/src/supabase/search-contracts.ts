@@ -40,6 +40,7 @@ export async function getForYouSQL(items: {
   offset: number
   sort: 'score' | 'freshness-score'
   isPrizeMarket: boolean
+  isSweepies: boolean
   marketTier: TierParamsType
   privateUser?: PrivateUser
   threshold?: number
@@ -51,6 +52,7 @@ export async function getForYouSQL(items: {
     offset,
     sort,
     isPrizeMarket,
+    isSweepies,
     marketTier,
     privateUser,
     threshold = DEFAULT_THRESHOLD,
@@ -81,7 +83,7 @@ export async function getForYouSQL(items: {
     log('No topic interests found for user', userId)
     return renderSql(
       select(
-        `data, importance_score, conversion_score, freshness_score, view_count`
+        `data, importance_score, conversion_score, freshness_score, view_count, token`
       ),
       from('contracts'),
       orderBy(`${sortByScore} desc`),
@@ -91,6 +93,7 @@ export async function getForYouSQL(items: {
         uid: userId,
         hideStonks: true,
         isPrizeMarket,
+        isSweepies,
         marketTier,
       }),
       privateUserBlocksSql(privateUser),
@@ -130,6 +133,7 @@ export async function getForYouSQL(items: {
         uid: userId,
         hideStonks: true,
         isPrizeMarket,
+        isSweepies,
         marketTier,
       }),
       offset <= threshold / 2 &&
@@ -178,6 +182,7 @@ export function getSearchContractSQL(args: {
   isForYou?: boolean
   searchType: SearchTypes
   isPrizeMarket?: boolean
+  isSweepies?: boolean
   marketTier: TierParamsType
 }) {
   const {
@@ -256,6 +261,7 @@ function getSearchContractWhereSQL(args: {
   hideStonks?: boolean
   hideLove?: boolean
   isPrizeMarket?: boolean
+  isSweepies?: boolean
   marketTier: TierParamsType
 }) {
   const {
@@ -267,6 +273,7 @@ function getSearchContractWhereSQL(args: {
     hideStonks,
     hideLove,
     isPrizeMarket,
+    isSweepies,
     marketTier,
   } = args
   type FilterSQL = Record<string, string>
@@ -301,6 +308,8 @@ function getSearchContractWhereSQL(args: {
 
   const isPrizeMarketFilter = isPrizeMarket ? 'is_spice_payout = true' : ''
 
+  const isSweepiesFilter = isSweepies ? `token = 'CASH'` : ''
+
   const tierFilters = tiers
     .map((tier: MarketTierType, index) =>
       marketTier[index] === '1' ? `tier = '${tier}'` : ''
@@ -322,6 +331,7 @@ function getSearchContractWhereSQL(args: {
     where(creatorFilter),
     where(deletedFilter),
     where(isPrizeMarketFilter),
+    where(isSweepiesFilter),
     where(combinedTierFilter),
   ]
 }

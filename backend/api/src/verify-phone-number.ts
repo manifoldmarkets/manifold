@@ -32,7 +32,11 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
       const lookup = await client.lookups.v2
         .phoneNumbers(phoneNumber)
         .fetch({ fields: 'line_type_intelligence' })
-      if (lookup.lineTypeIntelligence.type !== 'mobile') {
+      if (
+        lookup.lineTypeIntelligence.type !== 'mobile' &&
+        lookup.lineTypeIntelligence.type !== null &&
+        lookup.countryCode !== 'CA'
+      ) {
         throw new APIError(400, 'Only mobile carriers allowed')
       }
       const verification = await client.verify.v2

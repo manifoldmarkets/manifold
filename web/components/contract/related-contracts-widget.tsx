@@ -74,7 +74,9 @@ export const RelatedContractsGrid = memo(function (props: {
       <h2 className={clsx(titleClass)}>Related questions</h2>
       <Col
         className={clsx(
-          'scrollbar-hide overflow-y-auto scroll-smooth',
+          showMore
+            ? 'scrollbar-hide overflow-y-auto scroll-smooth'
+            : 'overflow-hidden',
           showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-64'
         )}
       >
@@ -94,7 +96,9 @@ export const RelatedContractsGrid = memo(function (props: {
             />
           ))}
         </Masonry>
-        {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
+        {loadMore && showMore && (
+          <LoadMoreUntilNotVisible loadMore={loadMore} />
+        )}
       </Col>
       {!showAll && (
         <Button

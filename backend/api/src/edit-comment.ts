@@ -1,16 +1,12 @@
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { z } from 'zod'
 import { validateComment } from 'api/create-comment'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
-import { run } from 'common/supabase/utils'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contentSchema } from 'common/api/zod-types'
 import { isAdminId } from 'common/envs/constants'
 import { revalidateStaticProps } from 'shared/utils'
 import { contractPath } from 'common/contract'
-import { getComment } from 'shared/supabase/contract_comments'
+import { getComment } from 'shared/supabase/contract-comments'
 import { updateData } from 'shared/supabase/utils'
 
 const editSchema = z
@@ -33,26 +29,23 @@ export const editcomment = authEndpoint(async (req, auth) => {
     contentJson,
   } = await validateComment(contractId, auth.uid, content, html, markdown)
 
-  const db = createSupabaseClient()
-  const comment = await getComment(db, commentId)
+  const pg = createSupabaseDirectClient()
+  const comment = await getComment(pg, commentId)
 
   if (editor.id !== comment.userId && !isAdminId(editor.id))
     throw new APIError(403, 'User is not the creator of the comment.')
 
-  const pg = createSupabaseDirectClient()
   await updateData(pg, 'contract_comments', 'comment_id', {
     comment_id: commentId,
     content: contentJson,
     editedTime: Date.now(),
   })
-
-  await run(
-    db.from('contract_comment_edits').insert({
-      contract_id: contract.id,
-      editor_id: editor.id,
-      comment_id: comment.id,
-      data: comment,
-    })
+  await pg.none(
+    `
+    insert into contract_comment_edits (contract_id, editor_id, comment_id, data)
+    values ($1, $2, $3, $4)
+    `,
+    [contract.id, editor.id, comment.id, comment]
   )
   await revalidateStaticProps(contractPath(contract))
 

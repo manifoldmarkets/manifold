@@ -7,7 +7,7 @@ import {
   isBinaryMulti,
   getMainBinaryMCAnswer,
 } from 'common/contract'
-import { DOMAIN } from 'common/envs/constants'
+import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
 import { getShareUrl } from 'common/util/share'
@@ -354,7 +354,7 @@ function FloatingQRCode(props: { shareUrl: string }) {
     <div className="absolute inset-0 z-10 m-auto flex items-center justify-center">
       <div className="border-ink-400 bg-canvas-50 rounded-xl border p-4 pb-2 drop-shadow">
         <QRCode url={shareUrl} />
-        <div className="mt-1 text-center text-lg">Scan to bet!</div>
+        <div className="mt-1 text-center text-lg">Scan to {TRADE_TERM}!</div>
       </div>
     </div>
   )

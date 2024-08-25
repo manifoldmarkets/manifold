@@ -47,7 +47,7 @@ export const getContracts = async (
 }
 
 export const contractFields =
-  'data, importance_score, view_count, conversion_score, freshness_score, daily_score'
+  'data, importance_score, view_count, conversion_score, freshness_score, daily_score, token'
 
 export const getUnresolvedContractsCount = async (
   creatorId: string,
@@ -78,37 +78,6 @@ export const getRecentContractIds = async (
       .gte('created_time', millisToTs(startDate))
   )
   return data.map((d) => d.id as string)
-}
-
-export const getContractsByUsers = async (
-  userIds: string[],
-  db: SupabaseClient,
-  createdTime?: number
-) => {
-  if (userIds.length === 0) {
-    return null
-  }
-  const chunks = chunk(userIds, 300)
-  const promises = chunks.map(async (chunk) => {
-    const { data } = await run(
-      db.rpc('get_contracts_by_creator_ids', {
-        creator_ids: chunk,
-        created_time: createdTime ?? 0,
-      })
-    )
-    return data
-  })
-  try {
-    const usersToContracts = {} as { [userId: string]: Contract[] }
-    const results = (await Promise.all(promises)).flat().flat()
-    results.forEach((r) => {
-      usersToContracts[r.creator_id] = r.contracts as Contract[]
-    })
-    return usersToContracts
-  } catch (e) {
-    console.log(e)
-  }
-  return null
 }
 
 export const getAnswersForContracts = async (
@@ -165,6 +134,7 @@ export const convertContract = (c: {
   conversion_score?: number | null
   freshness_score?: number | null
   daily_score?: number | null
+  token?: string
 }) =>
   removeUndefinedProps({
     ...(c.data as Contract),
@@ -174,6 +144,7 @@ export const convertContract = (c: {
     freshnessScore: c.freshness_score,
     viewCount: Number(c.view_count),
     dailyScore: c.daily_score,
+    token: c.token,
   } as Contract)
 
 export const followContract = async (
@@ -185,16 +156,4 @@ export const followContract = async (
     contract_id: contractId,
     follow_id: userId,
   })
-}
-
-export const unfollowContract = async (
-  db: SupabaseClient,
-  contractId: string,
-  userId: string
-) => {
-  return db
-    .from('contract_follows')
-    .delete()
-    .eq('contract_id', contractId)
-    .eq('follow_id', userId)
 }

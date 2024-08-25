@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 import { clamp, sumBy } from 'lodash'
 import { useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
@@ -20,7 +21,7 @@ import {
   StonkContract,
 } from 'common/contract'
 import { computeCpmmBet } from 'common/new-bet'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatPercent } from 'common/util/format'
 import { DAY_MS, HOUR_MS, MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
 import { User } from 'web/lib/firebase/users'
@@ -41,6 +42,9 @@ import clsx from 'clsx'
 import { getAnswerColor } from '../charts/contract/choice'
 import { Fees, getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from './fees'
+import { MoneyDisplay } from './money-display'
+import { TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -125,7 +129,11 @@ export default function LimitOrderPanel(props: {
   const hasLimitBet = !!limitProbInt && !!betAmount
 
   const betDisabled =
-    isSubmitting || !outcome || !betAmount || !!error || !hasLimitBet
+    isSubmitting ||
+    !outcome ||
+    !betAmount ||
+    !hasLimitBet ||
+    error === 'Insufficient balance'
 
   const preLimitProb =
     limitProbInt === undefined
@@ -176,44 +184,52 @@ export default function LimitOrderPanel(props: {
 
     const answerId = multiProps?.answerToBuy.id
 
-    await api(
-      'bet',
-      removeUndefinedProps({
-        outcome,
-        amount,
-        contractId: contract.id,
-        answerId,
-        limitProb: limitProb,
-        expiresAt,
-        deps: betDeps.current?.map((b) => b.userId),
-      })
-    )
-      .then((r) => {
-        console.log('placed bet. Result:', r)
-        setIsSubmitting(false)
-        if (onBuySuccess) onBuySuccess()
-      })
-      .catch((e) => {
-        if (e instanceof APIError) {
-          setError(e.message.toString())
-        } else {
-          console.error(e)
-          setError('Error placing bet')
+    try {
+      const bet = await toast.promise(
+        api(
+          'bet',
+          removeUndefinedProps({
+            outcome,
+            amount,
+            contractId: contract.id,
+            answerId,
+            limitProb: limitProb,
+            expiresAt,
+            deps: betDeps.current?.map((b) => b.userId),
+          })
+        ),
+        {
+          loading: `Submitting ${TRADE_TERM}...`,
+          success: `${capitalize(TRADE_TERM)} submitted!`,
+          error: `Error submitting ${TRADE_TERM}`,
         }
-        setIsSubmitting(false)
-      })
+      )
 
-    await track('bet', {
-      location: 'bet panel',
-      outcomeType: contract.outcomeType,
-      slug: contract.slug,
-      contractId: contract.id,
-      amount,
-      outcome,
-      limitProb: limitProb,
-      isLimitOrder: true,
-      answerId: multiProps?.answerToBuy.id,
-    })
+      console.log(`placed ${TRADE_TERM}. Result:`, bet)
+      if (onBuySuccess) onBuySuccess()
+
+      // TODO: Twomba tracking bet terminology
+      await track('bet', {
+        location: 'bet panel',
+        outcomeType: contract.outcomeType,
+        slug: contract.slug,
+        contractId: contract.id,
+        amount,
+        outcome,
+        limitProb: limitProb,
+        isLimitOrder: true,
+        answerId: multiProps?.answerToBuy.id,
+      })
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.message.toString())
+      } else {
+        console.error(e)
+        setError(`Error placing ${TRADE_TERM}`)
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const shouldAnswersSumToOne =
@@ -241,13 +257,17 @@ export default function LimitOrderPanel(props: {
     fees = result.fees
     betDeps.current = result.betDeps
   } catch (err: any) {
+    // TODO: Twomba tracking bet terminology
     console.error('Error in calculateCpmmMultiArbitrageBet:', err)
     setError(
-      err?.message ?? 'An error occurred during bet calculation, try again.'
+      err?.message ??
+        `An error occurred during ${TRADE_TERM} calculation, try again.`
     )
   }
   const returnPercent = formatPercent(currentReturn)
   const totalFees = getFeeTotal(fees)
+
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <>
@@ -266,7 +286,7 @@ export default function LimitOrderPanel(props: {
       </Col>
 
       <Row className={'text-ink-700 my-2 items-center space-x-3'}>
-        Bet amount
+        {capitalize(TRADE_TERM)} amount
       </Row>
       <BuyAmountInput
         amount={betAmount}
@@ -275,6 +295,7 @@ export default function LimitOrderPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         showSlider
+        token={isCashContract ? 'CASH' : 'M$'}
       />
 
       <div className="my-3">
@@ -381,7 +402,15 @@ export default function LimitOrderPanel(props: {
               {isBinaryMC ? 'Filled' : 'filled'} now
             </div>
             <div className="mr-2 whitespace-nowrap">
-              {formatMoney(filledAmount)} of {formatMoney(orderAmount)}
+              <MoneyDisplay
+                amount={filledAmount}
+                isCashContract={isCashContract}
+              />{' '}
+              of{' '}
+              <MoneyDisplay
+                amount={orderAmount}
+                isCashContract={isCashContract}
+              />
             </div>
           </Row>
         )}
@@ -403,7 +432,10 @@ export default function LimitOrderPanel(props: {
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">
-                {formatMoney(currentPayout)}
+                <MoneyDisplay
+                  amount={currentPayout}
+                  isCashContract={isCashContract}
+                />
               </span>
               ({returnPercent})
             </div>
@@ -414,7 +446,11 @@ export default function LimitOrderPanel(props: {
           <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
             Fees
           </Row>
-          <FeeDisplay amount={filledAmount} totalFees={totalFees} />
+          <FeeDisplay
+            amount={filledAmount}
+            totalFees={totalFees}
+            isCashContract={isCashContract}
+          />
         </Row>
 
         <Row className="items-center justify-between gap-2">
@@ -430,21 +466,33 @@ export default function LimitOrderPanel(props: {
               }}
               onClick={submitBet}
             >
-              {isSubmitting
-                ? 'Submitting...'
-                : !outcome
-                ? 'Choose YES or NO'
-                : !limitProb
-                ? 'Enter a probability'
-                : !betAmount
-                ? 'Enter an amount'
-                : binaryMCOutcome
-                ? `Submit order for ${formatMoney(
-                    betAmount
-                  )} at ${formatPercent(preLimitProb ?? 0)}`
-                : `Submit ${outcome} order for ${formatMoney(
-                    betAmount
-                  )} at ${formatPercent(limitProb)}`}
+              {isSubmitting ? (
+                'Submitting...'
+              ) : !outcome ? (
+                'Choose YES or NO'
+              ) : !limitProb ? (
+                'Enter a probability'
+              ) : !betAmount ? (
+                'Enter an amount'
+              ) : binaryMCOutcome ? (
+                <span>
+                  Submit order for{' '}
+                  <MoneyDisplay
+                    amount={betAmount}
+                    isCashContract={isCashContract}
+                  />{' '}
+                  at {formatPercent(preLimitProb ?? 0)}
+                </span>
+              ) : (
+                <span>
+                  Submit {outcome} order for{' '}
+                  <MoneyDisplay
+                    amount={betAmount}
+                    isCashContract={isCashContract}
+                  />{' '}
+                  at {formatPercent(limitProb)}
+                </span>
+              )}
             </Button>
           )}
         </Row>

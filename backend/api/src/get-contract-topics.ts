@@ -1,10 +1,21 @@
-import { createSupabaseClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from './helpers/endpoint'
-import { getTopicsOnContract } from 'common/supabase/groups'
+import { LiteGroup } from 'common/group'
+import { convertGroup } from 'common/supabase/groups'
 
 export const getContractTopics: APIHandler<
   'market/:contractId/groups'
 > = async ({ contractId }) => {
-  const db = createSupabaseClient()
-  return getTopicsOnContract(contractId, db)
+  const pg = createSupabaseDirectClient()
+  return await pg.map<LiteGroup>(
+    `
+    select g.id, g.slug, g.name, g.importance_score, g.privacy_status, g.total_members
+    from groups g
+    join group_contracts gc on g.id = gc.group_id
+    where gc.contract_id = $1
+    order by importance_score desc 
+    `,
+    [contractId],
+    convertGroup
+  )
 }

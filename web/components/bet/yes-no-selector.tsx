@@ -4,6 +4,10 @@ import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'
 import { resolution } from 'common/contract'
 import { Button } from '../buttons/button'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { capitalize } from 'lodash'
 
 export function YesNoSelector(props: {
   selected?: 'YES' | 'NO'
@@ -14,6 +18,8 @@ export function YesNoSelector(props: {
   noLabel?: string
   disabled?: boolean
   highlight?: boolean
+  isCash?: boolean
+  includeWordBet?: boolean
 }) {
   const {
     selected,
@@ -24,16 +30,25 @@ export function YesNoSelector(props: {
     noLabel,
     disabled,
     highlight,
+    isCash,
+    includeWordBet,
   } = props
+
+  const getToken = () => {
+    if (TWOMBA_ENABLED) {
+      return isCash ? (
+        <SweepiesCoin className="mx-1" />
+      ) : (
+        <ManaCoin className="mx-1" />
+      )
+    }
+    return null
+  }
 
   return (
     <Row className={clsx('space-x-3', className)}>
       <Button
-        color={
-          (highlight && !selected) || selected === 'YES'
-            ? 'green'
-            : 'green-outline'
-        }
+        color={'green-outline'}
         size="xl"
         onClick={() => onSelect('YES')}
         className={clsx(
@@ -43,14 +58,13 @@ export function YesNoSelector(props: {
         )}
         disabled={disabled}
       >
+        {includeWordBet ? capitalize(TRADE_TERM) : ''} {getToken()}
         {yesLabel ? yesLabel : 'YES'}
         <ArrowUpIcon className="ml-1 h-4 w-4" />
       </Button>
 
       <Button
-        color={
-          (highlight && !selected) || selected === 'NO' ? 'red' : 'red-outline'
-        }
+        color={'red-outline'}
         size="xl"
         onClick={() => onSelect('NO')}
         className={clsx(
@@ -60,6 +74,7 @@ export function YesNoSelector(props: {
         )}
         disabled={disabled}
       >
+        {includeWordBet ? capitalize(TRADE_TERM) : ''} {getToken()}
         {noLabel ? noLabel : 'NO'}
         <ArrowDownIcon className="ml-1 h-4 w-4" />
       </Button>

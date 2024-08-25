@@ -26,16 +26,14 @@ import {
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { addUserToContractFollowers } from 'shared/follow-market'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
-import { getCommentSafe } from 'shared/supabase/contract_comments'
+import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
 import { updateData } from 'shared/supabase/utils'
 import {
@@ -66,6 +64,7 @@ import { APIError } from 'common/api/utils'
 import { updateUser } from 'shared/supabase/users'
 import { broadcastNewBets } from 'shared/websockets/helpers'
 import { getAnswersForContract } from 'shared/supabase/answers'
+import { followContractInternal } from 'api/follow-contract'
 
 export const onCreateBets = async (
   bets: Bet[],
@@ -155,7 +154,8 @@ export const onCreateBets = async (
         await updateBettingStreak(bettor, bet, contract, eventId)
 
         await Promise.all([
-          bet.amount >= 0 && addUserToContractFollowers(contract.id, bettor.id),
+          bet.amount >= 0 &&
+            followContractInternal(pg, contract.id, true, bettor.id),
 
           sendUniqueBettorNotification(contract, bettor, bet, bets),
           updateUserInterestEmbedding(pg, bettor.id),
@@ -212,14 +212,16 @@ const debouncedContractUpdates = (contract: Contract) => {
     const { uniqueBettorCount } = contract
     const result = await pg.oneOrNone(
       `
-        select
-          (select sum(abs(amount)) from contract_bets where contract_id = $1) as volume,
-          (select max(created_time) from contract_bets where contract_id = $1) as time,
-          (select count(distinct user_id)::numeric from contract_bets where contract_id = $1) as count,
-          (select count(distinct user_id)::numeric from contract_bets where contract_id = $1 and created_time > now() - interval '1 day' and is_redemption = false) as count_day,
-          (select sum((data->'fees'->>'creatorFee')::numeric) from contract_bets where contract_id = $1) as creator_fee,
-          (select sum((data->'fees'->>'platformFee')::numeric) from contract_bets where contract_id = $1) as platform_fee,
-          (select sum((data->'fees'->>'liquidityFee')::numeric) from contract_bets where contract_id = $1) as liquidity_fee
+          select
+              coalesce(sum(abs(amount)), 0) as volume,
+              max(created_time) as time,
+              count(distinct user_id)::numeric as count,
+              count(distinct case when created_time > now() - interval '1 day' and not is_redemption then user_id end)::numeric as count_day,
+              coalesce(sum((data->'fees'->>'creatorFee')::numeric), 0) AS creator_fee,
+              coalesce(sum((data->'fees'->>'platformFee')::numeric), 0) AS platform_fee,
+              coalesce(sum((data->'fees'->>'liquidityFee')::numeric), 0) AS liquidity_fee
+          FROM contract_bets
+          WHERE contract_id = $1
       `,
       [contract.id]
     )
@@ -347,8 +349,7 @@ const handleBetReplyToComment = async (
 ) => {
   if (!bet.replyToCommentId) return
 
-  const db = createSupabaseClient()
-  const comment = await getCommentSafe(db, bet.replyToCommentId)
+  const comment = await getCommentSafe(pg, bet.replyToCommentId)
 
   if (!comment) return
 

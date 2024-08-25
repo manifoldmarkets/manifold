@@ -7,7 +7,12 @@ import { Row } from './layout/row'
 import { FaHandHoldingUsd, FaPercentage } from 'react-icons/fa'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
-import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import {
+  SPICE_PRODUCTION_ENABLED,
+  TRADE_TERM,
+  TRADING_TERM,
+} from 'common/envs/constants'
+import { capitalize } from 'lodash'
 
 export const ExplainerPanel = (props: {
   className?: string
@@ -74,13 +79,14 @@ const WhatIsManifold = ({
     onClick={() => onClick('What is Manifold?')}
   >
     <div className="pb-2">
-      Manifold lets you bet on upcoming events using play money. As other users
-      bet against you, it creates a probability of how likely the event will
-      happen—this is known as a prediction market.
+      Manifold lets you {TRADE_TERM} on upcoming events using play money. As
+      other users {TRADE_TERM} against you, it creates a probability of how
+      likely the event will happen—this is known as a prediction market.
     </div>
     <div className="pb-2">
-      Bet on current events, politics, tech, and AI, or create your own market
-      about an event you care about for others to trade on!
+      {capitalize(TRADE_TERM)} on current events, politics, tech, and AI, or
+      create your own market about an event you care about for others to trade
+      on!
     </div>
   </ExpandSection>
 )
@@ -89,19 +95,19 @@ const WhyBet = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
   <ExpandSection
     title={
       <>
-        <FaHandHoldingUsd className="mr-2" /> Why should I bet?
+        <FaHandHoldingUsd className="mr-2" /> Why should I {TRADE_TERM}?
       </>
     }
-    onClick={() => onClick('Why should I bet?')}
+    onClick={() => onClick(`Why should I ${TRADE_TERM}?`)}
   >
     <div className="pb-2">
-      Betting contributes to accurate answers of important, real-world
-      questions.
+      {capitalize(TRADING_TERM)} contributes to accurate answers of important,
+      real-world questions.
     </div>
     {SPICE_PRODUCTION_ENABLED && (
       <div className="pb-2">
-        Bet to win prizepoints! Redeem them and we will donate to a charity of
-        your choice. Our users have{' '}
+        {capitalize(TRADE_TERM)} to win prizepoints! Redeem them and we will
+        donate to a charity of your choice. Our users have{' '}
         <a
           className="text-primary-700 hover:underline"
           target="_blank"
@@ -149,7 +155,7 @@ const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
         outperformed all other prediction market platforms {''}
       </a>
       and were in line with FiveThirtyEight’s performance. Many people who don't
-      like betting still use Manifold to get reliable news.
+      like {TRADING_TERM} still use Manifold to get reliable news.
     </div>
     <div></div>
   </ExpandSection>

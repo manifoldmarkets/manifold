@@ -1,5 +1,5 @@
 import { notification_preferences } from './user-notification-preferences'
-import { ENV_CONFIG } from './envs/constants'
+import { ENV_CONFIG, TWOMBA_ENABLED } from './envs/constants'
 
 export type User = {
   id: string
@@ -16,8 +16,10 @@ export type User = {
   discordHandle?: string
 
   balance: number // M$
+  cashBalance: number // prize points
   spiceBalance: number
   totalDeposits: number
+  totalCashDeposits: number
   resolvedProfitAdjustment?: number
   profitCached: {
     daily: number
@@ -145,6 +147,29 @@ export const isUserLikelySpammer = (
 export const isVerified = (user: User) => {
   return user.verifiedPhone !== false || !!user.purchasedMana
 }
+
 export const verifiedPhone = (user: User) => {
   return user.verifiedPhone !== false
+}
+
+export const getVerificationStatus = (user: User) => {
+  if (!TWOMBA_ENABLED) {
+    return { status: 'error', message: 'GIDX registration is disabled' }
+  } else if (!verifiedPhone(user)) {
+    return { status: 'error', message: 'User must verify phone' }
+  } else if (user.kycStatus === 'verified') {
+    return { status: 'success', message: 'User is verified' }
+  } else if (user.kycStatus === 'block') {
+    return { status: 'error', message: 'User is blocked' }
+  } else if (user.kycStatus === 'temporary-block') {
+    return { status: 'error', message: 'User is temporary blocked' }
+  } else if (user.kycStatus === 'pending') {
+    return { status: 'error', message: 'User is pending' }
+  } else if (user.kycStatus === 'await-documents') {
+    return { status: 'error', message: 'User is awaiting documents' }
+  } else if (user.kycStatus === 'fail') {
+    return { status: 'error', message: 'User failed KYC' }
+  } else {
+    return { status: 'error', message: 'User must register' }
+  }
 }

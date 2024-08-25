@@ -15,7 +15,9 @@ create table if not exists
     balance numeric default 0 not null,
     total_deposits numeric default 0 not null,
     spice_balance numeric default 0 not null,
-    resolved_profit_adjustment numeric
+    resolved_profit_adjustment numeric,
+    cash_balance numeric default 0 not null,
+    total_cash_deposits numeric default 0 not null
   );
 
 -- Policies

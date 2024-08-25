@@ -34,6 +34,8 @@ import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
 import { removeEmojis } from 'common/util/string'
 import { unauthedApi } from 'common/util/api'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
+import { capitalize } from 'lodash'
+import { TRADE_TERM } from 'common/envs/constants'
 
 const FORCE_SHOW_WELCOME_MODAL = false
 
@@ -291,8 +293,8 @@ function WhatIsManifoldPage() {
         )}
       </div>
       <div className="mb-4 text-lg">
-        Bet with play money on politics, tech, sports, and more. Your bets
-        contribute to the wisdom of the crowd.
+        {capitalize(TRADE_TERM)} with play money on politics, tech, sports, and
+        more. Your {TRADE_TERM}s contribute to the wisdom of the crowd.
       </div>
     </>
   )
@@ -307,7 +309,7 @@ function PredictionMarketPage() {
       <div className="mt-2 text-lg">
         We've sent you{' '}
         <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
-        play money. Bet on the answer you think is right.
+        play money. {capitalize(TRADE_TERM)} on the answer you think is right.
       </div>
       <div className="mt-2 text-lg">
         Research shows wagering currency leads to more accurate predictions than

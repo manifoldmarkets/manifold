@@ -442,6 +442,7 @@ Parameters:
 - `top`: Optional. The number of top positions (ordered by `order`) to return.
 - `bottom`: Optional. The number of bottom positions (ordered by `order`) to return.
 - `userId`: Optional. The user ID to query by. If provided, only the position for this user will be returned.
+- `answerId`: Optional. The answer ID to query by. If provided, only the positions for this answer will be returned.
 
 Requires no auth.
 
@@ -903,7 +904,7 @@ Parameters:
 
 - `contractId`: Optional. The ID of the market to read comments of.
 - `contractSlug`: Optional. The slug of the market to read comments of.
-- `limit`. Optional. How many comments to return. Default 5000.
+- `limit`. Optional. How many comments to return. The default and maximum are both 1000.
 - `page`. Optional. For pagination with `limit`
 - `userId`: Optional. Get only comments created by this user.
 

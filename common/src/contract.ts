@@ -96,6 +96,9 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   marketTier?: MarketTierType
 
+  token: 'MANA' | 'CASH'
+  siblingContractId?: string
+
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
@@ -379,7 +382,7 @@ export const MULTI_NUMERIC_BUCKETS_MAX = 50
 export const MULTI_NUMERIC_CREATION_ENABLED = true
 
 export type Visibility = 'public' | 'unlisted'
-export const VISIBILITIES = ['public', 'unlisted'] as const
+export const VISIBILITIES = ['public' /*, 'unlisted'*/] as const
 
 export const SORTS = [
   { label: 'High %', value: 'prob-desc' },
@@ -417,6 +420,14 @@ export type ContractParams = {
   dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]
   betReplies: Bet[]
+  cash?: {
+    contract: Contract
+    pointsString: string
+    multiPointsString: { [answerId: string]: string }
+    userPositionsByOutcome: ContractMetricsByOutcome
+    totalPositions: number
+    totalBets: number
+  }
 }
 
 export type MaybeAuthedContractParams =

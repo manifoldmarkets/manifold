@@ -90,7 +90,7 @@ export const getChannelMessages: APIHandler<'get-channel-messages'> = async (
   const pg = createSupabaseDirectClient()
   const { channelId, limit, id } = props
   return await pg.map(
-    `select * 
+    `select *, created_time as created_time_ts
        from private_user_messages
        where channel_id = $1
        and exists (select 1 from private_user_message_channel_members pumcm
@@ -111,18 +111,18 @@ export const getLastSeenChannelTime: APIHandler<
   'get-channel-seen-time'
 > = async (props, auth) => {
   const pg = createSupabaseDirectClient()
-  const { channelId } = props
-  const r = await pg.oneOrNone(
-    `select created_time
-       from private_user_seen_message_channels
-       where channel_id = $1
+  const { channelIds } = props
+  const unseens = await pg.map(
+    `select distinct on (channel_id) channel_id, created_time
+     from private_user_seen_message_channels
+     where channel_id = any($1)
        and user_id = $2
-       order by created_time desc
-       limit 1
-      `,
-    [channelId, auth.uid]
+     order by channel_id, created_time desc
+    `,
+    [channelIds, auth.uid],
+    (r) => [r.channel_id as number, r.created_time as string]
   )
-  return { created_time: r ? (r.created_time as string) : '0' }
+  return unseens as [number, string][]
 }
 
 export const setChannelLastSeenTime: APIHandler<

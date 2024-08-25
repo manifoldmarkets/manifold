@@ -57,7 +57,7 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
   }
 }
 
-const cleanContractForStaticProps = (c: Contract) =>
+export const cleanContractForStaticProps = (c: Contract) =>
   ({
     ...c,
     description: '',
@@ -76,8 +76,6 @@ const refreshedRelatedMarkets = async (
     pg
   )
   return {
-    marketsFromEmbeddings: refreshedContracts
-      .filter((c) => cachedResults.marketIdsFromEmbeddings.includes(c.id))
-      .map(cleanContractForStaticProps),
+    marketsFromEmbeddings: refreshedContracts.map(cleanContractForStaticProps),
   }
 }

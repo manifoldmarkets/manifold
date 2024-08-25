@@ -10,7 +10,6 @@ import { Contract } from 'common/contract'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
-import { followContract, unfollowContract } from 'common/supabase/contracts'
 import { api } from 'web/lib/api/api'
 
 export const FollowMarketButton = (props: {
@@ -40,11 +39,11 @@ export const FollowMarketButton = (props: {
       onClick={async () => {
         if (!user) return firebaseLogin()
         if (following) {
-          unfollowMarket(contract.id, contract.slug, user).then(() =>
+          unfollowMarket(contract.id, contract.slug).then(() =>
             setFollowing(false)
           )
         } else {
-          followMarket(contract.id, contract.slug, user).then(() =>
+          followMarket(contract.id, contract.slug).then(() =>
             setFollowing(true)
           )
         }
@@ -74,12 +73,8 @@ export const FollowMarketButton = (props: {
   )
 }
 
-export async function unfollowMarket(
-  contractId: string,
-  contractSlug: string,
-  user: User
-) {
-  await unfollowContract(db, contractId, user.id)
+export async function unfollowMarket(contractId: string, contractSlug: string) {
+  await api('follow-contract', { contractId, follow: false })
   toast("You'll no longer receive notifications from this question", {
     icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
   })
@@ -88,12 +83,8 @@ export async function unfollowMarket(
   })
 }
 
-export async function followMarket(
-  contractid: string,
-  contractslug: string,
-  user: User
-) {
-  await followContract(db, contractid, user.id)
+export async function followMarket(contractId: string, contractslug: string) {
+  await api('follow-contract', { contractId, follow: true })
   toast("You'll now receive notifications from this question!", {
     icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
   })

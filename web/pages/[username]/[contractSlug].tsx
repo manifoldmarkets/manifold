@@ -13,7 +13,11 @@ import {
   tradingAllowed,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
+import {
+  HOUSE_BOT_USERNAME,
+  SPICE_MARKET_TOOLTIP,
+  TWOMBA_ENABLED,
+} from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
@@ -67,7 +71,7 @@ import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { Bet, LimitBet } from 'common/bet'
 import { getContractParams } from 'common/contract-params'
-import { getContractFromSlug } from 'common/supabase/contracts'
+import { getContract, getContractFromSlug } from 'common/supabase/contracts'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { DangerZone } from 'web/components/contract/danger-zone'
@@ -83,6 +87,9 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { YourOrders } from 'web/components/bet/order-book'
 import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
+import { TwombaContractPageContent } from '../../components/contract/twomba-contract-page'
+import { removeUndefinedProps } from 'common/util/object'
+import { pick } from 'lodash'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -107,8 +114,44 @@ export async function getStaticProps(ctx: {
     }
   }
 
+  if (contract.token === 'CASH') {
+    const manaContract = contract.siblingContractId
+      ? await getContract(adminDb, contract.siblingContractId)
+      : null
+    const slug = manaContract?.slug ?? contractSlug.replace('--cash', '')
+
+    return {
+      redirect: {
+        destination: `/username/${slug}?play=false`,
+        permanent: false,
+      },
+    }
+  }
+
   const props = await getContractParams(contract, adminDb)
-  return { props }
+
+  // Fetch sibling contract if it exists
+  let cash = undefined
+  if (contract.siblingContractId) {
+    const cashContract = await getContract(adminDb, contract.siblingContractId)
+    if (cashContract) {
+      const params = await getContractParams(cashContract, adminDb)
+      cash = pick(params, [
+        'contract',
+        'pointsString',
+        'multiPointsString',
+        'userPositionsByOutcome',
+        'totalPositions',
+        'totalBets',
+      ])
+    }
+  }
+  return {
+    props: {
+      state: 'authed',
+      params: removeUndefinedProps({ ...props, cash }),
+    },
+  }
 }
 
 export async function getStaticPaths() {
@@ -145,7 +188,14 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   return (
     <Page trackPageView={false} className="xl:col-span-10">
       <ContractSEO contract={contract} points={pointsString} />
-      <ContractPageContent key={contract.id} {...props.contractParams} />
+      {TWOMBA_ENABLED ? (
+        <TwombaContractPageContent
+          key={contract.id}
+          {...props.contractParams}
+        />
+      ) : (
+        <ContractPageContent key={contract.id} {...props.contractParams} />
+      )}
     </Page>
   )
 }
@@ -617,7 +667,7 @@ export function ContractPageContent(props: ContractParams) {
   )
 }
 
-function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
+export function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
   const { contract, yourNewBets } = props
   const user = useUser()
 

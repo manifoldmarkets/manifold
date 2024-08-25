@@ -20,6 +20,8 @@ import { Row } from 'web/components/layout/row'
 import { average } from 'common/util/math'
 import { useCallback, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
+import { TRADE_TERM, TRADED_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
 
 export const getStaticProps = async () => {
   try {
@@ -332,7 +334,7 @@ export function CustomAnalytics(props: {
         defaultIndex={0}
         tabs={[
           {
-            title: 'Bets',
+            title: `${capitalize(TRADE_TERM)}s`,
             content: <DailyChart values={dataFor('bet_count')} />,
           },
           {
@@ -352,7 +354,7 @@ export function CustomAnalytics(props: {
       <Spacer h={8} />
       <Title>Activation rate</Title>
       <p className="text-ink-500">
-        Out of all new users, how many placed at least one bet?
+        Out of all new users, how many placed at least one {TRADE_TERM}?
       </p>
       <Spacer h={4} />
       <Tabs
@@ -375,10 +377,10 @@ export function CustomAnalytics(props: {
         ]}
       />
       <Spacer h={8} />
-      <Title>D1 average new user bets</Title>
+      <Title>D1 average new user {TRADE_TERM}s</Title>
       <p className="text-ink-500">
-        On average for new users, how many bets did they place in the first 24
-        hours?
+        On average for new users, how many {TRADE_TERM}s did they place in the
+        first 24 hours?
       </p>
       {isAdmin && (
         <Link className={linkClass} href={'/admin/journeys'}>
@@ -423,9 +425,9 @@ export function CustomAnalytics(props: {
         ]}
       />
       <Spacer h={8} />
-      <Title>Total mana bet</Title>
+      <Title>Total mana {TRADED_TERM}</Title>
       <p className="text-ink-500">
-        Sum of bet amounts. (Divided by 100 to be more readable.)
+        Sum of {TRADE_TERM} amounts. (Divided by 100 to be more readable.)
       </p>
       <Tabs
         className="mb-4"

@@ -75,6 +75,7 @@ import {
 } from './answer-components'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { debounce } from 'lodash'
+import { RelativeTimestamp } from '../relative-timestamp'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -618,8 +619,36 @@ export function Answer(props: {
   const [limitBetModalOpen, setLimitBetModalOpen] = useState(false)
 
   const hasLimitOrders = unfilledBets?.length && limitOrderVolume
+  const answerCreator = useDisplayUserByIdOrAnswer(answer)
+  const answerCreatorIsNotContractCreator =
+    !!answerCreator && answerCreator.username !== contract.creatorUsername
 
   const dropdownItems = [
+    {
+      name: 'author info',
+      nonButtonContent: (
+        <div className="text-ink-400 select-none whitespace-pre-wrap px-4 py-1 text-xs">
+          <span>
+            {answerCreatorIsNotContractCreator ? (
+              <span>
+                <Link
+                  className="hover:text-primary-600 hover:underline"
+                  href={`/${answerCreator.username}`}
+                >
+                  {answerCreator.name}
+                </Link>
+                {' •'}
+              </span>
+            ) : (
+              <span>Created</span>
+            )}
+            <span>
+              <RelativeTimestamp time={answer.createdTime} />
+            </span>
+          </span>
+        </div>
+      ),
+    },
     ...(canEdit && answer.poolYes != undefined && !answer.isOther
       ? [
           {
@@ -668,11 +697,15 @@ export function Answer(props: {
         resolvedProb={resolvedProb}
         onHover={onHover}
         onClick={onClick}
-        className={clsx('group cursor-pointer', className)}
+        className={clsx(
+          'group cursor-pointer',
+          answer.isOther ? 'z-30' : 'z-20',
+          className
+        )}
         barColor={barColor}
         label={
           <Row className={'items-center gap-2'}>
-            {contract.addAnswersMode == 'ANYONE' && (
+            {answerCreatorIsNotContractCreator && (
               <AnswerAvatar answer={answer} />
             )}
             <AnswerStatus contract={contract} answer={answer} />
@@ -682,6 +715,7 @@ export function Answer(props: {
                 <InfoTooltip
                   className="!text-ink-600 dark:!text-ink-700"
                   text={OTHER_TOOLTIP_TEXT}
+                  tooltipParams={{ placement: 'bottom' }}
                 />
               </span>
             ) : (

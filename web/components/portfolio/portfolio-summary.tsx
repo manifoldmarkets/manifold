@@ -52,8 +52,8 @@ export const PortfolioSummary = (props: { user: User; className?: string }) => {
       )}
 
       {isCurrentUser && (
-        <Col className="mb-6 mt-2 gap-2">
-          <div className="text-ink-800 mx-2 text-xl lg:mx-0">
+        <Col className={clsx('border-ink-300 mb-6 mt-2 gap-2 border-t')}>
+          <div className="text-ink-800 mx-2 pt-4 text-xl font-semibold lg:mx-0">
             Recently viewed
           </div>
           {!isAuthed && (

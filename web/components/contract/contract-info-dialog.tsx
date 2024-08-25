@@ -7,6 +7,7 @@ import {
   isAdminId,
   isModId,
   supabaseConsoleContractPath,
+  TRADED_TERM,
 } from 'common/envs/constants'
 import { BETTORS, User } from 'common/user'
 import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
@@ -231,10 +232,10 @@ export const Stats = (props: {
                     mechanism === 'cpmm-1'
                       ? `Log-odds change between a ${formatMoney(
                           ELASTICITY_BET_AMOUNT
-                        )} bet on YES and NO`
+                        )} ${TRADED_TERM} on YES and NO`
                       : `Log-odds change from a ${formatMoney(
                           ELASTICITY_BET_AMOUNT
-                        )} bet`
+                        )} ${TRADED_TERM}`
                   }
                 />
               </Row>
@@ -427,7 +428,7 @@ export const Stats = (props: {
   )
 }
 
-const CheckOrSwitch = (props: {
+export const CheckOrSwitch = (props: {
   canToggle: boolean
   disabled?: boolean
   on: boolean
@@ -474,7 +475,6 @@ export function ContractInfoDialog(props: {
           <Row className="my-2 flex-wrap gap-2">
             {!isCreator && <BoostButton contract={contract} />}
             <DuplicateContractButton contract={contract} />
-
             <ContractHistoryButton contract={contract} />
             <ShareQRButton contract={contract} />
             <ShareIRLButton contract={contract} />

@@ -10,7 +10,6 @@ import {
   getUserBalances,
   updateMakers,
 } from './place-bet'
-import { removeUserFromContractFollowers } from 'shared/follow-market'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { onCreateBets } from 'api/on-create-bet'
 import { log } from 'shared/utils'
@@ -40,9 +39,10 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   const userId = auth.uid
   const isApi = auth.creds.kind === 'key'
   const { contractId, shares, outcome, answerId } = props
+  const pg = createSupabaseDirectClient()
   const { contract, answers, balanceByUserId, unfilledBets, userBets } =
     await fetchSellSharesDataAndValidate(
-      createSupabaseDirectClient(),
+      pg,
       contractId,
       answerId,
       userId,
@@ -71,6 +71,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   const { contractId, shares, outcome, answerId } = props
   const userId = auth.uid
   const isApi = auth.creds.kind === 'key'
+  const pg = createSupabaseDirectClient()
 
   const {
     user,
@@ -81,7 +82,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     userBets,
     unfilledBetUserIds,
   } = await fetchSellSharesDataAndValidate(
-    createSupabaseDirectClient(),
+    pg,
     contractId,
     answerId,
     userId,
@@ -137,7 +138,6 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       makers,
       ordersToCancel,
       otherResultsWithBet,
-      soldAllShares,
     } = newBetResult
 
     const actualMakerIds = getMakerIdsFromBetResult(newBetResult)
@@ -175,7 +175,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
 
     const apiFee = isApi ? FLAT_TRADE_FEE : 0
     await incrementBalance(pgTrans, user.id, {
-      balance: -newBet.amount + (newBet.loanAmount ?? 0) - apiFee,
+      [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+        -newBet.amount + (newBet.loanAmount ?? 0) - apiFee,
     })
 
     const totalCreatorFee =
@@ -183,7 +184,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       sumBy(otherResultsWithBet, (r) => r.bet.fees.creatorFee)
     if (totalCreatorFee !== 0) {
       await incrementBalance(pgTrans, contract.creatorId, {
-        balance: totalCreatorFee,
+        [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+          totalCreatorFee,
       })
 
       log(
@@ -276,7 +278,6 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       contract,
       otherResultsWithBet,
       allOrdersToCancel,
-      soldAllShares,
     }
   })
 
@@ -284,15 +285,10 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     newBet,
     betId,
     makers,
-    soldAllShares,
     otherResultsWithBet,
     fullBets,
     allOrdersToCancel,
   } = result
-
-  if (contract.mechanism === 'cpmm-1' && soldAllShares) {
-    await removeUserFromContractFollowers(contractId, auth.uid)
-  }
 
   const continuation = async () => {
     await onCreateBets(
@@ -412,8 +408,6 @@ const calculateSellResult = (
   let loanPaid = saleFrac * loanAmount
   if (!isFinite(loanPaid)) loanPaid = 0
 
-  const soldAllShares = floatingEqual(soldShares, maxShares)
-
   let answer
   if (
     mechanism === 'cpmm-1' ||
@@ -430,7 +424,6 @@ const calculateSellResult = (
     }
     return {
       otherResultsWithBet: [],
-      soldAllShares,
       ...getCpmmSellBetInfo(
         soldShares,
         chosenOutcome,
@@ -454,7 +447,6 @@ const calculateSellResult = (
 
     return {
       newP: 0.5,
-      soldAllShares,
       ...getCpmmMultiSellBetInfo(
         contract,
         answers,

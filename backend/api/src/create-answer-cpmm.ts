@@ -15,11 +15,14 @@ import { isAdminId } from 'common/envs/constants'
 import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
-import { addUserToContractFollowers } from 'shared/follow-market'
 import { getContractSupabase, getUser, log } from 'shared/utils'
 import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
-import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
 import { incrementBalance } from 'shared/supabase/users'
 import {
   bulkInsertBets,
@@ -40,6 +43,7 @@ import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { runShortTrans } from 'shared/short-transaction'
 import { LimitBet } from 'common/bet'
+import { followContractInternal } from 'api/follow-contract'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -199,7 +203,8 @@ export const createAnswerCpmmMain = async (
       text,
       contract
     )
-    await addUserToContractFollowers(contractId, creatorId)
+    const pg = createSupabaseDirectClient()
+    await followContractInternal(pg, contractId, true, creatorId)
   }
   return { result: { newAnswerId: newAnswer.id }, continue: continuation }
 }

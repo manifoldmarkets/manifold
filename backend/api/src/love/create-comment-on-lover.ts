@@ -12,10 +12,10 @@ import { getNotificationDestinationsForUser } from 'common/user-notification-pre
 import { Notification } from 'common/notification'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { User } from 'common/user'
-import { createPushNotification } from 'shared/create-push-notification'
 import { richTextToString } from 'common/util/parse'
 import * as crypto from 'crypto'
 import { sendNewEndorsementEmail } from 'shared/emails'
+import { createPushNotifications } from 'shared/create-push-notifications'
 
 const postSchema = z.object({
   userId: z.string(),
@@ -121,12 +121,14 @@ const createNewCommentOnLoverNotification = async (
     await insertNotificationToSupabase(notification, pg)
   }
   if (sendToMobile) {
-    await createPushNotification(
-      notification,
-      privateUser,
-      `${creator.name} commented on your profile`,
-      sourceText
-    )
+    await createPushNotifications([
+      [
+        privateUser,
+        notification,
+        `${creator.name} commented on your profile`,
+        sourceText,
+      ],
+    ])
   }
   if (sendToEmail) {
     await sendNewEndorsementEmail(

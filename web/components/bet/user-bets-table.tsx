@@ -22,7 +22,7 @@ import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import { Pagination } from 'web/components/widgets/pagination'
 import clsx from 'clsx'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { OrderTable } from 'web/components/bet/order-book'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
@@ -265,7 +265,7 @@ const NoBets = ({ user }: { user: User }) => {
 }
 const NoMatchingBets = () => (
   <div className="text-ink-700 py-4 text-center">
-    No bets match the current filter
+    No {TRADE_TERM}s match the current filter
   </div>
 )
 

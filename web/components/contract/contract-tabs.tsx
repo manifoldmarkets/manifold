@@ -24,7 +24,8 @@ import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { FeedBet } from '../feed/feed-bets'
-import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
+import { FeedCommentThread } from '../comments/comment-thread'
+import { ContractCommentInput } from '../comments/comment-input'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -32,7 +33,7 @@ import { ControlledTabs } from '../layout/tabs'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useSubscribeNewComments } from 'web/hooks/use-comments'
-import { ParentFeedComment } from '../feed/feed-comments'
+import { ParentFeedComment } from '../comments/comment'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
@@ -41,6 +42,7 @@ import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { api } from 'web/lib/api/api'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -217,7 +219,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const sorts = buildArray(
     bestFirst ? 'Best' : 'Newest',
     bestFirst ? 'Newest' : 'Best',
-    isBinary && 'Yes bets',
+    isBinary && `Yes bets`,
     isBinary && 'No bets'
   )
 
@@ -343,6 +345,12 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     `expand-gpt-summary-${contract.id}`
   )
 
+  function getSortLabel(sort: string) {
+    if (sort == 'Yes bets') return `Yes ${TRADE_TERM}s`
+    if (sort == 'No bets') return `No ${TRADE_TERM}s`
+    return sort
+  }
+
   return (
     <Col className={clsx(className, scrollToEnd && 'flex-col-reverse')}>
       <div ref={endOfMessagesRef} />
@@ -391,7 +399,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               <span className="text-ink-400 text-sm">Sort by:</span>
               <DropdownMenu
                 items={generateFilterDropdownItems(
-                  sorts.map((s, i) => ({ label: s, value: i + '' })),
+                  sorts.map((s, i) => ({
+                    label: getSortLabel(s),
+                    value: i + '',
+                  })),
                   (value: string) => {
                     const i = parseInt(value)
                     setSortIndex(i)
@@ -407,11 +418,13 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 )}
                 icon={
                   <Row className="text-ink-600 w-20 items-center text-sm">
-                    <span className="whitespace-nowrap">{sort}</span>
+                    <span className="whitespace-nowrap">
+                      {getSortLabel(sort)}
+                    </span>
                     <ChevronDownIcon className="h-4 w-4" />
                   </Row>
                 }
-                menuWidth={'w-24'}
+                menuWidth={'w-28'}
                 selectedItemName={sort}
                 closeOnClick
               />

@@ -32,8 +32,8 @@ import { type User } from 'common/user'
 const userToPortfolioMetrics: {
   [userId: string]: {
     currentPortfolio: PortfolioMetrics | undefined
-    dayAgoProfit: number
-    weekAgoProfit: number
+    dayAgoProfit: number | undefined
+    weekAgoProfit: number | undefined
     timeCachedPeriodProfits: number
   }
 } = {}
@@ -121,8 +121,9 @@ export async function updateUserMetricsCore(
         currentPortfolio:
           currentPortfolios[userId] ??
           userToPortfolioMetrics[userId]?.currentPortfolio,
-        dayAgoProfit: dayAgoProfits[userId],
-        weekAgoProfit: weekAgoProfits[userId],
+        dayAgoProfit: dayAgoProfits[userId]?.mana,
+        weekAgoProfit: weekAgoProfits[userId]?.mana,
+        // TODO: cash profits
         timeCachedPeriodProfits: Date.now(),
       }
     }
@@ -317,9 +318,12 @@ export async function updateUserMetricsCore(
         user_id: user.id,
         ts: new Date(newPortfolio.timestamp).toISOString(),
         investment_value: newPortfolio.investmentValue,
+        cash_investment_value: newPortfolio.cashInvestmentValue,
         balance: newPortfolio.balance,
         spice_balance: newPortfolio.spiceBalance,
+        cash_balance: newPortfolio.cashBalance,
         total_deposits: newPortfolio.totalDeposits,
+        total_cash_deposits: newPortfolio.totalCashDeposits,
         loan_total: newPortfolio.loanTotal,
         profit: leaderBoardProfit,
       })
@@ -405,7 +409,7 @@ const getUnresolvedOrRecentlyResolvedBets = async (
 ) => {
   const bets = await pg.map(
     `
-    select cb.amount, cb.shares, cb.outcome, cb.loan_amount, cb.user_id, cb.answer_id, cb.contract_id, cb.data->'createdTime' as "createdTime", cb.is_redemption
+    select cb.amount, cb.shares, cb.outcome, cb.loan_amount, cb.user_id, cb.answer_id, cb.contract_id, cb.created_time, cb.is_redemption
     from contract_bets as cb
     join contracts as c on cb.contract_id = c.id
     left join answers as a on cb.answer_id = a.id
@@ -433,7 +437,7 @@ const getPortfolioSnapshot = async (
   }
   return Object.fromEntries(
     await pg.map(
-      `select user_id, investment_value, spice_balance, balance, total_deposits, loan_total, profit
+      `select *
       from user_portfolio_history_latest
       where user_id in ($1:list)
       order by user_id, ts desc`,
@@ -451,12 +455,20 @@ const getPortfolioHistoricalProfits = async (
   // We don't load the leaderboard profit here bc these numbers are used for comparing to the daily/weekly profit from contract metrics
   return Object.fromEntries(
     await pg.map(
-      `select distinct on (user_id) user_id, spice_balance + investment_value + balance - total_deposits as profit
+      `select distinct on (user_id) user_id,
+        spice_balance + investment_value + balance - total_deposits as profit,
+        cash_balance - total_cash_deposits as cash_profit
       from user_portfolio_history
       where ts < $2 and user_id in ($1:list)
       order by user_id, ts desc`,
       [userIds, new Date(when).toISOString()],
-      (r) => [r.user_id as string, parseFloat(r.profit as string)]
+      (r) => [
+        r.user_id as string,
+        {
+          mana: parseFloat(r.profit as string),
+          cash: parseFloat(r.cash_profit as string),
+        },
+      ]
     )
   )
 }

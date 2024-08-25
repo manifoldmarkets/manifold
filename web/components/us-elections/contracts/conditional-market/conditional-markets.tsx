@@ -10,9 +10,9 @@ export function ConditionalMarkets(props: {
   rawPolicyContracts: PolicyContractType[]
 }) {
   const policyContracts = props.rawPolicyContracts.map((policy) => {
-    const bidenContract = policy.bidenContract
+    const harrisContract = policy.harrisContract
       ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useLiveContract(policy.bidenContract) ?? policy.bidenContract
+        useLiveContract(policy.harrisContract) ?? policy.harrisContract
       : null
     const trumpContract = policy.trumpContract
       ? // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -21,13 +21,17 @@ export function ConditionalMarkets(props: {
 
     return {
       title: policy.title,
-      bidenContract,
+      harrisContract,
       trumpContract,
     }
   })
 
   const { shortName: trumpShortName, photo: trumpPhoto } =
     CANDIDATE_DATA['Donald Trump'] ?? {}
+
+  const { shortName: harrisShortName, photo: harrisPhoto } =
+    CANDIDATE_DATA['Kamala Harris'] ?? {}
+
   return (
     <Col>
       <Col className="rounded-lg ">
@@ -36,7 +40,17 @@ export function ConditionalMarkets(props: {
             What will happen if...
           </Col>
           <Row className="hidden text-xs sm:flex">
-            <Row className="bg-sienna-700 w-[120px] items-center justify-start gap-0.5 rounded-t-lg text-white">
+            <Row className="bg-azure-700 w-[120px] items-center justify-start gap-0.5 rounded-tl-lg text-white">
+              <Image
+                src={harrisPhoto}
+                alt={harrisShortName}
+                width={40}
+                height={40}
+                className="h-10 w-10 object-fill "
+              />
+              Harris wins
+            </Row>
+            <Row className="bg-sienna-700 w-[120px] items-center justify-start gap-0.5 rounded-tr-lg text-white">
               <Image
                 src={trumpPhoto}
                 alt={trumpShortName}
@@ -63,7 +77,8 @@ export function ConditionalMarkets(props: {
         </div>
         <Row className=" w-full justify-end text-xs ">
           <Row className="hidden  sm:flex">
-            <Row className="bg-sienna-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-b-lg text-white" />
+            <Row className="bg-azure-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-bl-lg text-white" />
+            <Row className="bg-sienna-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-br-lg text-white" />
           </Row>
         </Row>
       </Col>

@@ -3,8 +3,8 @@ import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
-import { MAX_COMMENT_LENGTH } from 'common/comment'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { ContractComment, MAX_COMMENT_LENGTH } from 'common/comment'
 import { Avatar } from '../widgets/avatar'
 import { TextEditor, useTextEditor } from '../widgets/editor'
 import { Row } from '../layout/row'
@@ -18,6 +18,14 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
 import { APIError } from 'common/api/utils'
 import { DisplayUser } from 'common/api/user-types'
+import { Answer } from 'common/answer'
+import { Bet } from 'common/bet'
+import { Contract } from 'common/contract'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { api } from 'web/lib/api/api'
+import { CommentOnAnswer } from '../feed/comment-on-answer'
+import { ReplyToUserInfo } from './comment'
+import { ReplyToBetRow } from './comment-header'
 
 export function CommentInput(props: {
   replyToUserInfo?: DisplayUser
@@ -235,5 +243,114 @@ export function CommentInputTextArea(props: {
         )}
       </Row>
     </TextEditor>
+  )
+}
+
+export function ContractCommentInput(props: {
+  contract: Contract
+  autoFocus: boolean
+  className?: string
+  replyTo?: Answer | Bet
+  replyToUserInfo?: ReplyToUserInfo
+  parentCommentId?: string
+  clearReply?: () => void
+  trackingLocation: string
+  onSubmit?: (comment: ContractComment) => void
+  commentTypes: CommentType[]
+  onClearInput?: () => void
+}) {
+  const {
+    contract,
+    autoFocus,
+    replyTo,
+    parentCommentId,
+    className,
+    clearReply,
+    trackingLocation,
+    onSubmit,
+    commentTypes,
+    onClearInput,
+  } = props
+  const user = useUser()
+  const privateUser = usePrivateUser()
+  const isReplyToBet = replyTo && 'amount' in replyTo
+  const isReplyToAnswer = replyTo && !isReplyToBet
+  const replyToUserInfo = useDisplayUserById(replyTo?.userId) ?? undefined
+  const onSubmitComment = useEvent(
+    async (editor: Editor, type: CommentType) => {
+      if (!user) return
+
+      let comment: ContractComment | undefined
+      if (type === 'comment') {
+        comment = await api('comment', {
+          contractId: contract.id,
+          content: editor.getJSON(),
+          replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
+          replyToCommentId: parentCommentId,
+          replyToBetId: isReplyToBet ? replyTo.id : undefined,
+        })
+      } else {
+        comment = await api('post', {
+          contractId: contract.id,
+          content: editor.getJSON(),
+          betId: isReplyToBet ? replyTo.id : undefined,
+        })
+        if (comment) toast.success('Reposted to your followers!')
+      }
+      clearReply?.()
+      onSubmit?.(comment)
+      // TODO: Twomba tracking bet terminology
+      await track(type, {
+        location: trackingLocation,
+        replyTo: isReplyToBet
+          ? 'bet'
+          : isReplyToAnswer
+          ? 'answer'
+          : replyToUserInfo
+          ? 'user'
+          : undefined,
+        commentId: comment.id,
+        contractId: contract.id,
+      })
+    }
+  )
+
+  return (
+    <>
+      {isReplyToBet ? (
+        <ReplyToBetRow
+          commenterIsBettor={replyTo?.userId === user?.id}
+          betAmount={replyTo.amount}
+          betOutcome={replyTo.outcome}
+          bettorId={replyTo.userId}
+          betOrderAmount={replyTo.orderAmount}
+          betLimitProb={replyTo.limitProb}
+          betAnswerId={replyTo.answerId}
+          contract={contract}
+          clearReply={clearReply}
+        />
+      ) : replyTo ? (
+        <CommentOnAnswer answer={replyTo} clear={clearReply} />
+      ) : null}
+
+      <CommentInput
+        autoFocus={autoFocus}
+        replyToUserInfo={replyToUserInfo}
+        parentCommentId={parentCommentId}
+        onSubmitComment={onSubmitComment}
+        pageId={contract.id + commentTypes.join(', ')}
+        className={className}
+        blocked={isBlocked(privateUser, contract.creatorId)}
+        placeholder={
+          replyTo || parentCommentId
+            ? 'Write a reply ...'
+            : contract.outcomeType === 'BOUNTIED_QUESTION'
+            ? 'Write an answer or comment'
+            : undefined
+        }
+        commentTypes={commentTypes}
+        onClearInput={onClearInput}
+      />
+    </>
   )
 }

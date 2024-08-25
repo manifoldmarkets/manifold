@@ -43,6 +43,8 @@ import {
   hexToRgb,
 } from './state-election-map'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { capitalize } from 'lodash'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export const HouseStatus = (props: {
   contract: CPMMMultiContract
@@ -110,7 +112,7 @@ export const HouseBettor = (props: {
           setOpen(true)
         }}
       >
-        Bet
+        {capitalize(TRADE_TERM)}
       </Button>
     </>
   )
@@ -246,7 +248,7 @@ export const BuyPanelBody = (props: {
       })
     )
       .then((r) => {
-        console.log('placed bet. Result:', r)
+        console.log(`placed ${TRADE_TERM}. Result:`, r)
         setIsSubmitting(false)
         setBetAmount(undefined)
         if (onBuySuccess) onBuySuccess()
@@ -261,12 +263,12 @@ export const BuyPanelBody = (props: {
         if (e instanceof APIError) {
           const message = e.message.toString()
           if (message.includes('could not serialize access')) {
-            setError('Error placing bet')
-            console.error('Error placing bet', e)
+            setError(`Error placing ${TRADE_TERM}`)
+            console.error(`Error placing ${TRADE_TERM}`, e)
           } else setError(message)
         } else {
           console.error(e)
-          setError('Error placing bet')
+          setError(`Error placing ${TRADE_TERM}`)
         }
         setIsSubmitting(false)
         return undefined
@@ -288,8 +290,7 @@ export const BuyPanelBody = (props: {
       })
     )
   }
-  const betDisabled =
-    isSubmitting || !betAmount || !!error || outcome === undefined
+  const betDisabled = isSubmitting || !betAmount || outcome === undefined
 
   const cpmmState = {
     pool: {
@@ -355,7 +356,7 @@ export const BuyPanelBody = (props: {
         )}
 
         <Row className={clsx('text-ink-700 mb-2 items-center space-x-3')}>
-          Bet amount
+          {capitalize(TRADE_TERM)} amount
         </Row>
 
         <Row
@@ -390,7 +391,7 @@ export const BuyPanelBody = (props: {
               disabled={betDisabled}
               size="xl"
               color={outcome === 'NO' ? '#6989c8' : '#d16762'}
-              actionLabel={`Bet ${
+              actionLabel={`${capitalize(TRADE_TERM)} ${
                 outcome === 'NO' ? 'Democratic' : 'Republican'
               } to win ${formatMoney(currentPayout)}`}
               inModal={!!onClose}
@@ -399,6 +400,7 @@ export const BuyPanelBody = (props: {
             <Button
               color={outcome === 'NO' ? 'red' : 'green'}
               size="xl"
+              // TODO: Twomba tracking bet terminology
               onClick={withTracking(firebaseLogin, 'login from bet panel')}
               className="flex-grow"
             >
@@ -443,7 +445,7 @@ export const BuyPanelBody = (props: {
             )}
 
             <InfoTooltip
-              text={`Your bet will move the probability of ${
+              text={`Your ${TRADE_TERM} will move the probability of ${
                 outcome == 'YES' ? 'Republican' : 'Democratic'
               } from ${getFormattedMappedValue(
                 contract,

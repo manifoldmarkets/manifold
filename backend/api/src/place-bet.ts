@@ -95,7 +95,7 @@ export const placeBetMain = async (
 ) => {
   const startTime = Date.now()
 
-  const { contractId, replyToCommentId, dryRun } = body
+  const { contractId, replyToCommentId, dryRun, deterministic } = body
 
   // Fetch data outside transaction first.
   const {
@@ -190,7 +190,8 @@ export const placeBetMain = async (
       user,
       isApi,
       replyToCommentId,
-      betGroupId
+      betGroupId,
+      deterministic
     )
   })
 
@@ -232,9 +233,10 @@ export const fetchContractBetDataAndValidate = async (
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
     throw new APIError(400, 'This is not a market')
 
-  const { closeTime } = contract
+  const { closeTime, isResolved } = contract
   if (closeTime && Date.now() > closeTime)
     throw new APIError(403, 'Trading is closed.')
+  if (isResolved) throw new APIError(403, 'Market is resolved.')
 
   const answersPromise = getAnswersForBet(
     pgTrans,
@@ -297,7 +299,7 @@ const getAnswersForBet = async (
   return undefined
 }
 
-const calculateBetResult = (
+export const calculateBetResult = (
   body: ValidatedAPIParams<'bet'>,
   user: User,
   contract: MarketContract,
@@ -451,7 +453,8 @@ export const executeNewBetResult = async (
   user: User,
   isApi: boolean,
   replyToCommentId?: string,
-  betGroupId?: string
+  betGroupId?: string,
+  deterministic?: boolean
 ) => {
   const allOrdersToCancel: LimitBet[] = []
   const fullBets: Bet[] = []
@@ -506,7 +509,8 @@ export const executeNewBetResult = async (
 
   const apiFee = isApi ? FLAT_TRADE_FEE : 0
   await incrementBalance(pgTrans, user.id, {
-    balance: -newBet.amount - apiFee,
+    [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+      -newBet.amount - apiFee,
   })
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
@@ -571,7 +575,7 @@ export const executeNewBetResult = async (
             probAfter < 0.001 &&
             Math.abs(probAfter - probBefore) < 0.00001
 
-          if (!smallEnoughToIgnore || Math.random() < 0.01) {
+          if (deterministic || !smallEnoughToIgnore || Math.random() < 0.01) {
             const candidateBet = removeUndefinedProps({
               userId: user.id,
               isApi,
@@ -650,7 +654,8 @@ export const validateBet = async (
   const user = await getUser(uid, pgTrans)
   if (!user) throw new APIError(404, 'User not found.')
 
-  if (amount !== undefined && user.balance < amount)
+  const balance = contract.token === 'CASH' ? user.cashBalance : user.balance
+  if (amount !== undefined && balance < amount)
     throw new APIError(403, 'Insufficient balance.')
   if (
     (user.isBannedFromPosting || user.userDeleted) &&
@@ -768,7 +773,7 @@ export const updateMakers = async (
     pgTrans,
     Object.entries(spentByUser).map(([userId, spent]) => ({
       id: userId,
-      balance: -spent,
+      [contract.token === 'CASH' ? 'cashBalance' : 'balance']: -spent,
     }))
   )
 

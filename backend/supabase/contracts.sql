@@ -37,7 +37,18 @@ create table if not exists
     is_spice_payout boolean default false,
     unique_bettor_count bigint default 0 not null,
     tier text,
-    daily_score numeric default 0 not null
+    daily_score numeric default 0 not null,
+    token text default 'MANA'::character varying not null,
+    constraint contracts_token_check check (
+      (
+        token = any (
+          array[
+            ('MANA'::character varying)::text,
+            ('CASH'::character varying)::text
+          ]
+        )
+      )
+    )
   );
 
 -- Triggers

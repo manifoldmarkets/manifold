@@ -22,7 +22,7 @@ export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
 }
 
 const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
-  const { contractId, answerIds } = props
+  const { contractId, answerIds, deterministic } = props
   const { uid } = auth
   const isApi = auth.creds.kind === 'key'
 
@@ -32,9 +32,10 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
   const { bets, contract } = await runShortTrans(async (pgTrans) => {
     const contract = await getContract(pgTrans, contractId)
     if (!contract) throw new APIError(404, 'Contract not found')
-    const { closeTime, mechanism } = contract
+    const { closeTime, isResolved, mechanism } = contract
     if (closeTime && Date.now() > closeTime)
       throw new APIError(403, 'Trading is closed.')
+    if (isResolved) throw new APIError(403, 'Market is resolved.')
     if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract))
       throw new APIError(400, 'Contract type/mechanism not supported')
 
@@ -101,7 +102,8 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
           user,
           isApi,
           undefined,
-          betGroupId
+          betGroupId,
+          deterministic
         )
       )
     )

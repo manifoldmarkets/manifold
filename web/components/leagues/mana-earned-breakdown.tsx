@@ -23,6 +23,8 @@ import ShortToggle from '../widgets/short-toggle'
 import { useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DisplayUser } from 'common/api/user-types'
+import { TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
 
 export const ManaEarnedBreakdown = (props: {
   user: DisplayUser
@@ -219,7 +221,7 @@ const ContractBetsEntry = (props: {
           ) : (
             <ChevronDownIcon className="h-5 w-5" />
           )}
-          Bets
+          {capitalize(TRADE_TERM)}s
         </Row>
       )}
 

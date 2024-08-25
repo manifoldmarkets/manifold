@@ -3,6 +3,8 @@ import { useUser } from 'web/hooks/use-user'
 import { useState } from 'react'
 import { PlusIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
+import router from 'next/router'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export function AddFundsButton(props: { userId?: string; className?: string }) {
   const { userId, className } = props
@@ -13,7 +15,9 @@ export function AddFundsButton(props: { userId?: string; className?: string }) {
   return (
     <>
       <Button
-        onClick={() => setOpen(true)}
+        onClick={() =>
+          TWOMBA_ENABLED ? router.push('/checkout') : setOpen(true)
+        }
         size="md"
         color="gradient-pink"
         className={className}

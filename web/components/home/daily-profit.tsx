@@ -20,7 +20,7 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { Table } from '../widgets/table'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { LivePortfolioMetrics } from 'common/portfolio-metrics'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
@@ -208,7 +208,7 @@ export function ProfitChangeTable(props: {
   if (positive.length === 0 && negative.length === 0)
     return (
       <div className="text-ink-500 px-4">
-        No profit changes found. Return later after making a few bets.
+        No profit changes found. Return later after making a few {TRADE_TERM}s.
       </div>
     )
 

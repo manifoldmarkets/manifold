@@ -139,7 +139,9 @@ export const redeemShares = async (
   }
 
   if (totalAmount !== 0) {
-    await incrementBalance(pgTrans, userId, { balance: totalAmount })
+    await incrementBalance(pgTrans, userId, { 
+      [contract.token === 'CASH' ? 'cashBalance' : 'balance']: totalAmount 
+    })
   }
 
   return { status: 'success' }

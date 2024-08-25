@@ -28,10 +28,21 @@ const credentials = LOCAL_DEV
   : // No explicit credentials needed for deployed service.
     undefined
 
-loadSecretsToEnv(credentials).then(async () => {
+const DB_RESPONSE_TIMEOUT = 30_000
+
+const startupProcess = async () => {
+  await loadSecretsToEnv(credentials)
   log('Secrets loaded.')
 
-  await initCaches()
+  log('Starting server <> postgres timeout')
+  const timeoutId = setTimeout(() => {
+    log.error(
+      `Server hasn't heard from postgres in ${DB_RESPONSE_TIMEOUT}ms. Exiting.`
+    )
+    throw new Error('Server startup timed out')
+  }, DB_RESPONSE_TIMEOUT)
+
+  await initCaches(timeoutId)
   log('Caches loaded.')
 
   const PORT = process.env.PORT ?? 8088
@@ -40,4 +51,6 @@ loadSecretsToEnv(credentials).then(async () => {
   })
 
   webSocketListen(httpServer, '/ws')
-})
+  log('Server started successfully')
+}
+startupProcess()

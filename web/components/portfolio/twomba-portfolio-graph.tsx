@@ -12,11 +12,13 @@ import { findMinMax } from 'web/lib/util/minMax'
 import { HistoryPoint } from 'common/chart'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
+import { useSweepstakes } from '../sweestakes-context'
 
 export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice'
 export const MANA_COLOR = '#4f46e5'
 export const SPICE_COLOR = '#f59e0b'
+export const CASH_COLOR = '#84cc16'
 
 export const PortfolioTooltip = (props: { date: Date }) => {
   const d = dayjs(props.date)
@@ -39,6 +41,7 @@ export const TwombaPortfolioGraph = (props: {
   negativeThreshold?: number
   hideXAxis?: boolean
   firstProfit: number
+  firstCashProfit: number
   updateGraphValues: (newGraphValues: GraphValueType) => void
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
@@ -46,6 +49,7 @@ export const TwombaPortfolioGraph = (props: {
   const {
     duration,
     firstProfit,
+    firstCashProfit,
     portfolioHistory,
     width,
     height,
@@ -57,25 +61,43 @@ export const TwombaPortfolioGraph = (props: {
     setPortfolioFocus,
   } = props
 
-  const { profitPoints, investmentPoints, balancePoints, networthPoints } =
-    usePortfolioPointsFromHistory(portfolioHistory, firstProfit)
+  const {
+    investmentPoints,
+    balancePoints,
+    networthPoints,
+    cashInvestmentPoints,
+    cashBalancePoints,
+    cashNetworthPoints,
+  } = usePortfolioPointsFromHistory(
+    portfolioHistory,
+    firstProfit,
+    firstCashProfit
+  )
+
+  const { isPlay } = useSweepstakes()
 
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
-    const balanceXPoints = balancePoints.map((d) => d.x)!
+    const minMaxBalancePoints = isPlay ? balancePoints : cashBalancePoints
+    const minMaxInvestmentPoints = isPlay
+      ? investmentPoints
+      : cashInvestmentPoints
+    const minMaxNetworthPoints = isPlay ? networthPoints : cashNetworthPoints
+
+    const balanceXPoints = minMaxBalancePoints.map((d) => d.x)!
     const { min: balanceXMin, max: balanceXMax } = findMinMax(balanceXPoints)
-    const balanceYPoints = balancePoints.map((d) => d.y)!
+    const balanceYPoints = minMaxBalancePoints.map((d) => d.y)!
     const { min: balanceYMin, max: balanceYMax } = findMinMax(balanceYPoints)
 
-    const investmentXPoints = investmentPoints.map((d) => d.x)!
+    const investmentXPoints = minMaxInvestmentPoints.map((d) => d.x)!
     const { min: investmentXMin, max: investmentXMax } =
       findMinMax(investmentXPoints)
-    const investmentYPoints = investmentPoints.map((d) => d.y)!
+    const investmentYPoints = minMaxInvestmentPoints.map((d) => d.y)!
     const { min: investmentYMin, max: investmentYMax } =
       findMinMax(investmentYPoints)
 
-    const networthXPoints = networthPoints.map((d) => d.x)!
+    const networthXPoints = minMaxNetworthPoints.map((d) => d.x)!
     const { min: networthXMin, max: networthXMax } = findMinMax(networthXPoints)
-    const networthYPoints = networthPoints.map((d) => d.y)!
+    const networthYPoints = minMaxNetworthPoints.map((d) => d.y)!
     const { min: networthYMin, max: networthYMax } = findMinMax(networthYPoints)
 
     const minDate =
@@ -103,7 +125,7 @@ export const TwombaPortfolioGraph = (props: {
         ? balanceYMax
         : investmentYMax
     return { minDate, maxDate, minValue, maxValue }
-  }, [duration, portfolioFocus])
+  }, [duration, portfolioFocus, isPlay])
 
   const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
@@ -119,7 +141,7 @@ export const TwombaPortfolioGraph = (props: {
   // reset axis scale if mode or duration change (since points change)
   useLayoutEffect(() => {
     zoomParams?.setXScale(xScale)
-  }, [duration, portfolioFocus])
+  }, [duration, portfolioFocus, isPlay])
 
   return (
     <SingleValueHistoryChart
@@ -128,14 +150,21 @@ export const TwombaPortfolioGraph = (props: {
       xScale={xScale}
       yScale={portfolioFocus == 'spice' ? spiceYScale : yScale}
       zoomParams={zoomParams}
-      yKind={'Ṁ'}
+      yKind={isPlay ? 'Ṁ' : 'sweepies'}
       data={
         portfolioFocus == 'all'
-          ? networthPoints
+          ? isPlay
+            ? networthPoints
+            : cashNetworthPoints
           : portfolioFocus == 'balance'
-          ? balancePoints
-          : investmentPoints
+          ? isPlay
+            ? balancePoints
+            : cashBalancePoints
+          : isPlay
+          ? investmentPoints
+          : cashInvestmentPoints
       }
+      color={isPlay ? MANA_COLOR : CASH_COLOR}
       Tooltip={(props) => (
         // eslint-disable-next-line react/prop-types
         <PortfolioTooltip date={xScale.invert(props.x)} />
@@ -153,7 +182,6 @@ export const TwombaPortfolioGraph = (props: {
       curve={curveLinear}
       negativeThreshold={negativeThreshold}
       hideXAxis={hideXAxis}
-      color={MANA_COLOR}
       onGraphClick={() => {
         setPortfolioFocus('all')
       }}
@@ -171,6 +199,7 @@ export const TwombaProfitGraph = (props: {
   negativeThreshold?: number
   hideXAxis?: boolean
   firstProfit: number
+  firstCashProfit: number
   updateGraphValues: (newGraphValues: GraphValueType) => void
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
@@ -178,6 +207,7 @@ export const TwombaProfitGraph = (props: {
   const {
     duration,
     firstProfit,
+    firstCashProfit,
     portfolioHistory,
     width,
     height,
@@ -189,18 +219,20 @@ export const TwombaProfitGraph = (props: {
     setPortfolioFocus,
   } = props
 
-  const {
-    profitPoints,
-    investmentPoints,
-    balancePoints,
-    networthPoints,
-    spicePoints,
-  } = usePortfolioPointsFromHistory(portfolioHistory, firstProfit)
+  const { isPlay } = useSweepstakes()
+
+  const { profitPoints, cashProfitPoints } = usePortfolioPointsFromHistory(
+    portfolioHistory,
+    firstProfit,
+    firstCashProfit
+  )
 
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
-    const profitXPoints = profitPoints.map((d) => d.x)!
+    const minMaxProfitPoints = isPlay ? profitPoints : cashProfitPoints
+
+    const profitXPoints = minMaxProfitPoints.map((d) => d.x)!
     const { min: profitXMin, max: profitXMax } = findMinMax(profitXPoints)
-    const profitYPoints = profitPoints.map((d) => d.y)!
+    const profitYPoints = minMaxProfitPoints.map((d) => d.y)!
     const { min: profitYMin, max: profitYMax } = findMinMax(profitYPoints)
     return {
       minDate: profitXMin,
@@ -208,7 +240,7 @@ export const TwombaProfitGraph = (props: {
       minValue: profitYMin,
       maxValue: profitYMax,
     }
-  }, [duration, portfolioFocus])
+  }, [duration, portfolioFocus, isPlay])
 
   const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
@@ -233,8 +265,8 @@ export const TwombaProfitGraph = (props: {
       xScale={xScale}
       yScale={yScale}
       zoomParams={zoomParams}
-      yKind="Ṁ"
-      data={profitPoints}
+      yKind={isPlay ? 'Ṁ' : 'sweepies'}
+      data={isPlay ? profitPoints : cashProfitPoints}
       // eslint-disable-next-line react/prop-types
       Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
       onMouseOver={(p) => {
@@ -250,14 +282,18 @@ export const TwombaProfitGraph = (props: {
 
 function usePortfolioPointsFromHistory(
   portfolioHistory: PortfolioSnapshot[],
-  firstProfit: number
+  firstProfit: number,
+  firstCashProfit: number
 ) {
   const {
     profitPoints,
     investmentPoints,
     balancePoints,
     networthPoints,
-    spicePoints,
+    cashProfitPoints,
+    cashInvestmentPoints,
+    cashBalancePoints,
+    cashNetworthPoints,
   } = useMemo(() => {
     if (!portfolioHistory?.length) {
       return {
@@ -266,6 +302,10 @@ function usePortfolioPointsFromHistory(
         balancePoints: [],
         networthPoints: [],
         spicePoints: [],
+        cashProfitPoints: [],
+        cashInvestmentPoints: [],
+        cashBalancePoints: [],
+        cashNetworthPoints: [],
       }
     }
 
@@ -273,17 +313,34 @@ function usePortfolioPointsFromHistory(
     const investmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
     const balancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
     const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-    const spicePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+
+    const cashProfitPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+    const cashInvestmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+    const cashBalancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+    const cashNetworthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+
+    function getProfit(
+      balance: number,
+      investment: number,
+      totalDeposits: number,
+      firstProfit: number
+    ) {
+      return balance + investment - totalDeposits - firstProfit
+    }
+
+    function getNetworth(balance: number, investment: number) {
+      return balance + investment
+    }
 
     portfolioHistory.forEach((p) => {
       profitPoints.push({
         x: p.timestamp,
-        y:
-          p.spiceBalance +
-          p.balance +
-          p.investmentValue -
-          p.totalDeposits -
-          firstProfit,
+        y: getProfit(
+          p.balance,
+          p.investmentValue,
+          p.totalDeposits,
+          firstProfit
+        ),
         obj: p,
       })
       investmentPoints.push({
@@ -298,15 +355,32 @@ function usePortfolioPointsFromHistory(
       })
       networthPoints.push({
         x: p.timestamp,
-        y:
-          p.balance +
-          p.investmentValue +
-          p.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE,
+        y: getNetworth(p.balance, p.investmentValue),
         obj: p,
       })
-      spicePoints.push({
+      cashProfitPoints.push({
         x: p.timestamp,
-        y: p.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE,
+        y: getProfit(
+          p.cashBalance,
+          p.cashInvestmentValue,
+          p.totalCashDeposits,
+          firstCashProfit
+        ),
+        obj: p,
+      })
+      cashInvestmentPoints.push({
+        x: p.timestamp,
+        y: p.cashInvestmentValue,
+        obj: p,
+      })
+      cashBalancePoints.push({
+        x: p.timestamp,
+        y: p.cashBalance,
+        obj: p,
+      })
+      cashNetworthPoints.push({
+        x: p.timestamp,
+        y: getNetworth(p.cashBalance, p.cashInvestmentValue),
         obj: p,
       })
     })
@@ -315,7 +389,10 @@ function usePortfolioPointsFromHistory(
       investmentPoints,
       balancePoints,
       networthPoints,
-      spicePoints,
+      cashProfitPoints,
+      cashInvestmentPoints,
+      cashBalancePoints,
+      cashNetworthPoints,
     }
   }, [portfolioHistory])
 
@@ -324,6 +401,9 @@ function usePortfolioPointsFromHistory(
     investmentPoints,
     balancePoints,
     networthPoints,
-    spicePoints,
+    cashProfitPoints,
+    cashInvestmentPoints,
+    cashBalancePoints,
+    cashNetworthPoints,
   }
 }

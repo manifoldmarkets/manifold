@@ -64,5 +64,13 @@ export const searchProps = z
       .string()
       .regex(/^[01]{5}$/)
       .default('00000'),
+    isSweepies: z
+      .union([
+        z.literal('true'),
+        z.literal('false'),
+        z.literal('1'),
+        z.literal('0'),
+      ])
+      .default('0'),
   })
   .strict()

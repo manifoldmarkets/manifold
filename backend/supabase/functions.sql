@@ -4,7 +4,7 @@ or replace function public.add_creator_name_to_description (data jsonb) returns 
 select * from CONCAT_WS(
         ' '::text,
         data->>'creatorName',
-        extract_text_from_rich_text_json(data->'description')
+        public.extract_text_from_rich_text_json(data->'description')
     )
 $function$;
 
@@ -67,7 +67,7 @@ or replace function public.close_contract_embeddings (
     SELECT contract_id,
            similarity,
            data
-    FROM search_contract_embeddings(
+    FROM public.search_contract_embeddings(
                  (
                      SELECT embedding
                      FROM embedding
@@ -226,16 +226,6 @@ order by ((ucm.data)->'lastBetTime')::bigint desc offset start
 create
 or replace function public.get_contract_voters (this_contract_id text) returns table (data json) language sql parallel SAFE as $function$
   SELECT users.data from users join votes on votes.user_id = users.id where votes.contract_id = this_contract_id;
-$function$;
-
-create
-or replace function public.get_contracts_by_creator_ids (creator_ids text[], created_time bigint) returns table (creator_id text, contracts jsonb) language sql stable parallel SAFE as $function$
-select creator_id,
-  jsonb_agg(data) as contracts
-from contracts
-where creator_id = any(creator_ids)
-  and contracts.created_time > millis_to_ts($2)
-group by creator_id;
 $function$;
 
 create
@@ -523,62 +513,6 @@ limit max
 $function$;
 
 create
-or replace function public.get_related_contracts (cid text, lim integer, start integer) returns jsonb[] language sql immutable parallel SAFE as $function$
-select array_agg(data) from (
-  select data
-  from get_related_contract_ids(cid)
-    left join contracts
-    on contracts.id = contract_id
-    where is_valid_contract(contracts)
-  limit lim
-  offset start
-  ) as rel_contracts
-$function$;
-
-create
-or replace function public.get_related_contracts_by_group (p_contract_id text, lim integer, start integer) returns table (data jsonb) language sql stable parallel SAFE as $function$
-select distinct on (other_contracts.importance_score, other_contracts.slug) other_contracts.data
-from contracts
-     join group_contracts on contracts.id = group_contracts.contract_id
-     join contracts as other_contracts on other_contracts.id in (
-    select gc.contract_id
-    from group_contracts gc
-    where gc.group_id in (
-        select group_id
-        from group_contracts
-        where contract_id = p_contract_id
-    )
-)
-where contracts.id = p_contract_id
-  and is_valid_contract(other_contracts)
-  and other_contracts.id != p_contract_id
-order by other_contracts.importance_score desc, other_contracts.slug
-offset start limit lim
-$function$;
-
-create
-or replace function public.get_related_contracts_by_group_and_creator (p_contract_id text, lim integer, start integer) returns table (data jsonb) language sql stable parallel SAFE as $function$
-select distinct on (other_contracts.importance_score, other_contracts.slug) other_contracts.data
-from contracts
-         join group_contracts on contracts.id = group_contracts.contract_id
-         join contracts as other_contracts on other_contracts.id in (
-    select gc.contract_id
-    from group_contracts gc
-    where gc.group_id in (
-        select group_id
-        from group_contracts
-        where contract_id = p_contract_id
-    )
-)
-where contracts.id = p_contract_id
-  and is_valid_contract(other_contracts)
-  and other_contracts.id != p_contract_id
-  and other_contracts.creator_id = contracts.creator_id
-order by other_contracts.importance_score desc, other_contracts.slug
-offset start limit lim
-$function$;
-
-create
 or replace function public.get_top_market_ads (uid text, distance_threshold numeric) returns table (
   ad_id text,
   market_id text,
@@ -771,7 +705,7 @@ or replace function public.get_your_recent_contracts (uid text, n integer, start
       limit n * 10 + start * 5),
     your_liked_contracts as (
           select content_id as contract_id,
-                ts_to_millis(created_time) as ts
+                public.ts_to_millis(created_time) as ts
           from user_reactions
           where user_id = uid
           order by created_time desc
@@ -779,7 +713,7 @@ or replace function public.get_your_recent_contracts (uid text, n integer, start
     ),
     your_viewed_contracts as (
         select contract_id,
-              ts_to_millis(last_page_view_ts) as ts
+               public.ts_to_millis(last_page_view_ts) as ts
         from user_contract_views
         where user_id = uid and last_page_view_ts is not null
         order by last_page_view_ts desc
@@ -1003,7 +937,7 @@ select content_id as contract_id,
   count(*) as n
 from user_reactions
 where content_type = 'contract'
-  and ts_to_millis(created_time) > since
+  and public.ts_to_millis(created_time) > since
 group by contract_id $function$;
 
 create
@@ -1072,47 +1006,6 @@ BEGIN
         -- Handle exceptions here if needed
        WHEN others THEN
                 RAISE EXCEPTION 'An error occurred: %', SQLERRM;
-END;
-$function$;
-
-create
-or replace function public.test_empty_search_contracts (
-  contract_filter text,
-  contract_sort text,
-  offset_n integer,
-  limit_n integer,
-  group_id text default null::text,
-  creator_id text default null::text
-) returns text language plpgsql as $function$
-DECLARE base_query TEXT;
-where_clause TEXT;
-sql_query TEXT;
-BEGIN -- Common WHERE clause
--- If fuzzy search is enabled and is group search
-IF group_id is not null then base_query := FORMAT(
-  '
-SELECT contractz.data
-FROM (select contracts_rbac.*, group_contracts.group_id from contracts_rbac join group_contracts on group_contracts.contract_id = contracts_rbac.id) as contractz
-      %s
-AND contractz.group_id = %L',
-  generate_where_query(contract_filter, contract_sort, creator_id),
-  group_id
-);
--- If full text search is enabled
-ELSE base_query := FORMAT(
-  '
-  SELECT contracts_rbac.data
-  FROM contracts_rbac 
-    %s',
-  generate_where_query(contract_filter, contract_sort, creator_id)
-);
-END IF;
-sql_query := FORMAT(
-  ' %s %s ',
-  base_query,
-  generate_sort_query(contract_sort, TRUE, offset_n, limit_n, TRUE)
-);
-RETURN sql_query;
 END;
 $function$;
 

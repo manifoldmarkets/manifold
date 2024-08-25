@@ -21,6 +21,8 @@ import { SellRow } from 'web/components/bet/sell-row'
 import { User } from 'common/user'
 import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
 import { MultiNumericSellPanel } from 'web/components/answers/numeric-sell-panel'
+import { MoneyDisplay } from './money-display'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -91,6 +93,8 @@ export function BetsSummary(props: {
 
   if (metrics.invested === 0 && metrics.profit === 0) return null
 
+  const isCashContract = contract.token === 'CASH'
+
   return (
     <Col className={clsx('mb-8', className)}>
       <Row className="flex-wrap gap-6 sm:flex-nowrap">
@@ -98,7 +102,7 @@ export function BetsSummary(props: {
           <Col>
             <div className="text-ink-500 text-sm">Payout</div>
             <div className="whitespace-nowrap">
-              {formatMoney(payout)}{' '}
+              <MoneyDisplay amount={payout} isCashContract={isCashContract} />{' '}
               <ProfitBadge profitPercent={profitPercent} />
             </div>
           </Col>
@@ -116,7 +120,10 @@ export function BetsSummary(props: {
                     />
                   </div>
                   <div className="whitespace-nowrap">
-                    {formatMoney(expectation)}
+                    <MoneyDisplay
+                      amount={expectation}
+                      isCashContract={isCashContract}
+                    />
                   </div>
                 </Col>
               </Col>
@@ -125,23 +132,39 @@ export function BetsSummary(props: {
                 <div className="text-ink-500 whitespace-nowrap text-sm">
                   Payout{' '}
                   <InfoTooltip
-                    text={`${
-                      areYourBets ? "You'll get" : "They'll get"
-                    } ${formatMoney(
-                      Math.abs(position)
-                    )} if this question resolves ${exampleOutcome} (and ${formatMoney(
-                      0
-                    )} otherwise).`}
+                    text={
+                      <>
+                        {areYourBets ? "You'll get " : "They'll get "}
+                        <MoneyDisplay
+                          amount={Math.abs(position)}
+                          isCashContract={isCashContract}
+                        />{' '}
+                        if this question resolves {exampleOutcome} (and{' '}
+                        <MoneyDisplay
+                          amount={0}
+                          isCashContract={isCashContract}
+                        />{' '}
+                        otherwise).
+                      </>
+                    }
                   />
                 </div>
                 <div className="whitespace-nowrap">
                   {position > 1e-7 ? (
                     <>
-                      {formatMoney(position)} on <YesLabel />
+                      <MoneyDisplay
+                        amount={position}
+                        isCashContract={isCashContract}
+                      />{' '}
+                      on <YesLabel />
                     </>
                   ) : position < -1e-7 ? (
                     <>
-                      {formatMoney(-position)} on <NoLabel />
+                      <MoneyDisplay
+                        amount={-position}
+                        isCashContract={isCashContract}
+                      />{' '}
+                      on <NoLabel />
                     </>
                   ) : (
                     '——'
@@ -159,7 +182,12 @@ export function BetsSummary(props: {
                       } position in the question is worth right now according to the current probability.`}
                     />
                   </div>
-                  <div className="whitespace-nowrap">{formatMoney(payout)}</div>
+                  <div className="whitespace-nowrap">
+                    <MoneyDisplay
+                      amount={payout}
+                      isCashContract={isCashContract}
+                    />
+                  </div>
                 </Col>
               )
             )}
@@ -180,7 +208,9 @@ export function BetsSummary(props: {
             Spent{' '}
             <InfoTooltip text="Cost basis. Cash originally invested in this question, using average cost accounting." />
           </div>
-          <div className="whitespace-nowrap">{formatMoney(invested)}</div>
+          <div className="whitespace-nowrap">
+            <MoneyDisplay amount={invested} isCashContract={isCashContract} />
+          </div>
         </Col>
 
         {isBinary && !resolution && !hideValue && (
@@ -193,7 +223,12 @@ export function BetsSummary(props: {
                 } position in the question is worth right now according to the current probability.`}
               />
             </div>
-            <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
+            <div className="whitespace-nowrap">
+              <MoneyDisplay
+                amount={expectation}
+                isCashContract={isCashContract}
+              />
+            </div>
           </Col>
         )}
 
@@ -204,11 +239,11 @@ export function BetsSummary(props: {
               <InfoTooltip
                 text={`How much ${
                   areYourBets ? "you've" : "they've"
-                } made or lost on this question across all bets (includes both realized & unrealized profits).`}
+                } made or lost on this question across all ${TRADE_TERM}s (includes both realized & unrealized profits).`}
               />
             </div>
             <div className="whitespace-nowrap">
-              {formatMoney(profit)}
+              <MoneyDisplay amount={profit} isCashContract={isCashContract} />
               <ProfitBadge profitPercent={profitPercent} round={true} />
             </div>
           </Col>

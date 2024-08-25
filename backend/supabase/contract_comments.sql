@@ -7,7 +7,9 @@ create table if not exists
     visibility text,
     user_id text not null,
     created_time timestamp with time zone not null,
-    likes integer default 0 not null
+    likes integer default 0 not null,
+    upvotes integer default 0,
+    downvotes integer default 0
   );
 
 -- Triggers
