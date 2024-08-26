@@ -137,15 +137,6 @@ function MainSpiceRedeemPage(props: {
           </Col>
         </Col>
       )}
-      <Col className="bg-canvas-50 gap-4 rounded-lg p-4">
-        <Row className="gap-2">
-          <img alt="donate" src="/images/gift-box.png" height={80} width={80} />
-          <Col>
-            <div className="text-lg font-semibold">More prizes</div>
-            <div className="text-sm">Coming soon...</div>
-          </Col>
-        </Row>
-      </Col>
     </Col>
   )
 }
