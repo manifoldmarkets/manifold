@@ -57,6 +57,11 @@ or
 update on public.contracts for each row
 execute function contract_populate_cols ();
 
+create trigger sync_sibling_contract_trigger
+after
+update on public.contracts for each row
+execute function sync_sibling_contract ();
+
 -- Functions
 create
 or replace function public.contract_populate_cols () returns trigger language plpgsql as $function$
@@ -106,6 +111,22 @@ begin
   end if;
   return new;
 end
+$function$;
+
+create
+or replace function public.sync_sibling_contract () returns trigger language plpgsql as $function$
+begin
+  if new.token = 'MANA' and (new.data->>'siblingContractId') is not null
+    and (old.data->>'closeTime' != new.data->>'closeTime' or old.data->>'deleted' != new.data->>'deleted') then
+  update contracts
+  set data = data || jsonb_build_object(
+    'closeTime', new.data->'closeTime',
+    'deleted', new.data->'deleted'
+  )
+  where id = (new.data->>'siblingContractId')::text;
+  end if;
+  return new;
+end;
 $function$;
 
 -- Policies
