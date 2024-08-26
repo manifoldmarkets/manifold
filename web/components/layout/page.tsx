@@ -8,7 +8,7 @@ import { Col } from './col'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { ConfettiOnDemand } from '../confetti-on-demand'
 import { useTracking } from 'web/hooks/use-tracking'
-import { Banner } from '../nav/banner'
+import { DowntimeBanner } from '../nav/banner'
 import { useUser } from 'web/hooks/use-user'
 
 export function Page(props: {
@@ -31,7 +31,7 @@ export function Page(props: {
   } = props
 
   // Force enable maintainance banner.
-  const maintainanceBannerEnabled = false
+  const maintainanceBannerEnabled = true
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
@@ -66,9 +66,9 @@ export function Page(props: {
           )}
         >
           {maintainanceBannerEnabled && user && (
-            <Banner className={'py-3'}>
-              🛠️ Site is undergoing maintenance, sorry for the inconvenience.
-            </Banner>
+            <DowntimeBanner>
+              {/*🛠️ Site is undergoing maintenance, sorry for the inconvenience.*/}
+            </DowntimeBanner>
           )}
           {banner}
           {children}

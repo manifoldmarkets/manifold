@@ -95,7 +95,7 @@ export function DowntimeBanner() {
       className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b"
       link="https://status.manifold.markets/"
     >
-      ⚠️ Manifold will be down at 7PM PT for about 10 minutes, as we upgrade our
+      ⚠️ Manifold will be down at 9PM PT for about 1 hour, as we upgrade our
       financial infrastructure.
     </Banner>
   )
