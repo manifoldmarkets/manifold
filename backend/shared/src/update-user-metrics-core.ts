@@ -3,7 +3,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { getUsers, log, revalidateStaticProps } from 'shared/utils'
+import { getUsers, isProd, log, revalidateStaticProps } from 'shared/utils'
 import { chunk, groupBy, sortBy, sumBy, uniq } from 'lodash'
 import { Contract, CPMMMultiContract } from 'common/contract'
 import {
@@ -37,7 +37,7 @@ const userToPortfolioMetrics: {
     timeCachedPeriodProfits: number
   }
 } = {}
-const LIMIT = 400
+const LIMIT = isProd() ? 400 : 10
 export async function updateUserMetricsCore(
   userIds?: string[],
   since?: number
