@@ -91,7 +91,7 @@ function ConditionalPercent(props: {
     <ClickFrame
       className={clsx(
         className,
-        'text-ink-700 group flex h-full w-[120px] flex-row items-center gap-2'
+        'text-ink-700 group flex h-full w-[130px] flex-row items-center gap-2'
       )}
       onClick={() => {
         Router.push(path)
