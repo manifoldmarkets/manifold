@@ -105,103 +105,106 @@ export const EditProfile = (props: {
   }
 
   return (
-    <Col className="bg-canvas-0 max-w-lg rounded px-3 shadow-md sm:mx-auto">
-      <Col className="gap-4">
-        <Row className="items-center gap-4">
-          {avatarLoading ? (
-            <LoadingIndicator />
-          ) : (
-            <>
-              <img
-                alt={`${user.username}'s avatar`}
-                src={avatarUrl}
-                width={80}
-                height={80}
-                className="bg-ink-400 flex h-20 w-20 items-center justify-center rounded-full"
-              />
-              <input type="file" name="file" onChange={fileHandler} />
-            </>
-          )}
+    <Col className="gap-4">
+      <Row className="items-center gap-4">
+        {avatarLoading ? (
+          <LoadingIndicator />
+        ) : (
+          <>
+            <img
+              alt={`${user.username}'s avatar`}
+              src={avatarUrl}
+              width={80}
+              height={80}
+              className="bg-ink-400 h-20 w-20 rounded-full"
+            />
+            <input
+              type="file"
+              name="file"
+              onChange={fileHandler}
+              className="min-w-0 flex-1"
+            />
+          </>
+        )}
+      </Row>
+
+      <Col>
+        <label className="mb-1 block">Display name</label>
+        <Row className={'items-center gap-2'}>
+          <Input
+            disabled={loadingName}
+            type="text"
+            placeholder="Display name"
+            value={name}
+            onChange={(e) => updateUserState({ name: e.target.value || '' })}
+          />
         </Row>
-
-        <Col>
-          <label className="mb-1 block">Display name</label>
-          <Row className={'items-center gap-2'}>
-            <Input
-              disabled={loadingName}
-              type="text"
-              placeholder="Display name"
-              value={name}
-              onChange={(e) => updateUserState({ name: e.target.value || '' })}
-            />
+        {loadingName && (
+          <Row className={'mt-2 items-center gap-4'}>
+            <LoadingIndicator />
+            <span>Loading... This may take a while.</span>
           </Row>
-          {loadingName && (
-            <Row className={'mt-2 items-center gap-4'}>
-              <LoadingIndicator />
-              <span>Loading... This may take a while.</span>
-            </Row>
-          )}
-          {errorName && <span className="text-error text-sm">{errorName}</span>}
-        </Col>
-
-        <Col>
-          <label className="mb-1 block">Username</label>
-          <Row>
-            <Input
-              disabled={loadingUsername}
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) =>
-                updateUserState({ username: e.target.value || '' })
-              }
-            />
-          </Row>
-          {loadingUsername && (
-            <Row className={'mt-2 items-center gap-4'}>
-              <LoadingIndicator />
-              <span>Loading... This may take a while.</span>
-            </Row>
-          )}
-          {errorUsername && (
-            <span className="text-error text-sm">{errorUsername}</span>
-          )}
-        </Col>
-
-        <EditUserField
-          label={<label className="mb-1 block">Bio</label>}
-          field="bio"
-          value={bio}
-          setValue={setBio}
-        />
-        <EditUserField
-          label={<label className="mb-1 block">Website URL</label>}
-          field="website"
-          value={website}
-          setValue={setWebsite}
-        />
-        <EditUserField
-          label={<label className="mb-1 block">Twitter</label>}
-          field="twitterHandle"
-          value={twitterHandle}
-          setValue={setTwitterHandle}
-        />
-        <EditUserField
-          label={<label className="mb-1 block">Discord</label>}
-          field="discordHandle"
-          value={discordHandle}
-          setValue={setDiscordHandle}
-        />
-
-        <div className={'mt-2'}>
-          <label className="mb-1 block">Email</label>
-          <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
-        </div>
-
-        <Button onClick={handleSave} disabled={loading}>
-          {loading ? <LoadingIndicator /> : 'Save'}
-        </Button>
+        )}
+        {errorName && <span className="text-error text-sm">{errorName}</span>}
       </Col>
+
+      <Col>
+        <label className="mb-1 block">Username</label>
+        <Row>
+          <Input
+            disabled={loadingUsername}
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) =>
+              updateUserState({ username: e.target.value || '' })
+            }
+          />
+        </Row>
+        {loadingUsername && (
+          <Row className={'mt-2 items-center gap-4'}>
+            <LoadingIndicator />
+            <span>Loading... This may take a while.</span>
+          </Row>
+        )}
+        {errorUsername && (
+          <span className="text-error text-sm">{errorUsername}</span>
+        )}
+      </Col>
+
+      <EditUserField
+        label={<label className="mb-1 block">Bio</label>}
+        field="bio"
+        value={bio}
+        setValue={setBio}
+      />
+      <EditUserField
+        label={<label className="mb-1 block">Website URL</label>}
+        field="website"
+        value={website}
+        setValue={setWebsite}
+      />
+      <EditUserField
+        label={<label className="mb-1 block">Twitter</label>}
+        field="twitterHandle"
+        value={twitterHandle}
+        setValue={setTwitterHandle}
+      />
+      <EditUserField
+        label={<label className="mb-1 block">Discord</label>}
+        field="discordHandle"
+        value={discordHandle}
+        setValue={setDiscordHandle}
+      />
+
+      <div className={'mt-2'}>
+        <label className="mb-1 block">Email</label>
+        <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
+      </div>
+
+      <Button onClick={handleSave} disabled={loading}>
+        {loading ? <LoadingIndicator /> : 'Save'}
+      </Button>
     </Col>
   )
 }
