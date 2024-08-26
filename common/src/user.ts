@@ -152,7 +152,12 @@ export const verifiedPhone = (user: User) => {
   return user.verifiedPhone !== false
 }
 
-export const getVerificationStatus = (user: User) => {
+export const getVerificationStatus = (
+  user: User
+): {
+  status: 'success' | 'error'
+  message: string
+} => {
   if (!TWOMBA_ENABLED) {
     return { status: 'error', message: 'GIDX registration is disabled' }
   } else if (!verifiedPhone(user)) {

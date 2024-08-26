@@ -44,7 +44,6 @@ const CheckoutPage = () => {
   const [productSelected, setProductSelected] = useState<PaymentAmount>()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>()
-  const [DeviceGPS, setDeviceGPS] = useState<GPSData>()
   const router = useRouter()
   // get query params
   const { manaAmount } = router.query
@@ -105,8 +104,8 @@ const CheckoutPage = () => {
 
   const totalPurchased = use24hrUsdPurchases(user?.id || '')
   const pastLimit = totalPurchased >= 2500
-  const getCheckoutSession = async () => {
-    if (!DeviceGPS || !amountSelected) return
+  const getCheckoutSession = async (DeviceGPS: GPSData) => {
+    if (!amountSelected) return
     setError(undefined)
     setLoading(true)
     const dollarAmount = (prices as typeof MANA_WEB_PRICES).find(
@@ -148,12 +147,6 @@ const CheckoutPage = () => {
     }
   }
 
-  useEffect(() => {
-    if (!DeviceGPS || !amountSelected) return
-    getCheckoutSession()
-    // checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
-  }, [DeviceGPS])
-
   const onSelectAmount = (amount: WebManaAmounts) => {
     setAmountSelected(amount)
     checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
@@ -180,10 +173,7 @@ const CheckoutPage = () => {
       ) : page === 'location' ? (
         <LocationPanel
           setLocation={(data: GPSData) => {
-            setDeviceGPS({
-              ...data,
-            })
-            setPage('payment')
+            getCheckoutSession(data)
           }}
           setLocationError={setLocationError}
           setLoading={setLoading}

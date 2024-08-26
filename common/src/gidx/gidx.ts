@@ -31,7 +31,13 @@ export const verificationParams = z.object({
   EmailAddress: z.string(),
   MerchantCustomerID: z.string(),
 })
-
+const BillingAddress = z.object({
+  City: z.string(),
+  AddressLine1: z.string(),
+  StateCode: z.string(),
+  PostalCode: z.string(),
+  CountryCode: z.string(),
+})
 export const checkoutParams = {
   MerchantTransactionID: z.string(),
   MerchantSessionID: z.string(),
@@ -44,13 +50,7 @@ export const checkoutParams = {
     Type: z.enum(['CC']), // TODO: add 'ACH'
     NameOnAccount: z.string(),
     SavePaymentMethod: z.boolean(),
-    BillingAddress: z.object({
-      City: z.string(),
-      AddressLine1: z.string(),
-      StateCode: z.string(),
-      PostalCode: z.string(),
-      CountryCode: z.string(),
-    }),
+    BillingAddress,
     // CC specific fields,
     creditCard: z.object({
       CardNumber: z.string(),
@@ -84,15 +84,9 @@ export const cashoutParams = z.object({
   PaymentMethod: z.object({
     Type: z.enum(['ACH']),
     NameOnAccount: z.string(),
-    BillingAddress: z.object({
-      City: z.string(),
-      AddressLine1: z.string(),
-      StateCode: z.string(),
-      PostalCode: z.string(),
-      CountryCode: z.string(),
-    }),
     AccountNumber: z.string(),
     RoutingNumber: z.string(),
+    BillingAddress: BillingAddress.optional(),
   }),
 })
 
