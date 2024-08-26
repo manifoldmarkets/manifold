@@ -414,21 +414,29 @@ export function TwombaContractPageContent(props: ContractParams) {
               (outcomeType === 'PSEUDO_NUMERIC' ? (
                 <GradientContainer className="my-2">
                   <NumericResolutionPanel
-                    contract={contract}
+                    contract={
+                      !isPlay && cash
+                        ? (cash.contract as typeof contract)
+                        : contract
+                    }
                     onClose={() => setShowResolver(false)}
                   />
                 </GradientContainer>
               ) : outcomeType === 'BINARY' ? (
                 <GradientContainer className="my-2">
                   <ResolutionPanel
-                    contract={contract}
+                    contract={
+                      !isPlay && cash
+                        ? (cash.contract as typeof contract)
+                        : contract
+                    }
                     onClose={() => setShowResolver(false)}
                   />
                 </GradientContainer>
               ) : null)}
 
             <DangerZone
-              contract={contract}
+              contract={!isPlay && cash ? cash.contract : contract}
               showResolver={showResolver}
               setShowResolver={setShowResolver}
               showReview={showReview}
