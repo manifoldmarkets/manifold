@@ -405,7 +405,7 @@ export const NumericBetPanel = (props: {
               onClick={placeBet}
               disabled={isSubmitting}
             >
-              {TRADE_TERM}&nbsp;
+              {capitalize(TRADE_TERM)}&nbsp;
               <MoneyDisplay
                 amount={betAmount ?? 0}
                 isCashContract={isCashContract}
