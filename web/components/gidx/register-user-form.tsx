@@ -20,17 +20,15 @@ import {
   SPICE_TO_MANA_CONVERSION_RATE,
 } from 'common/envs/constants'
 import { useWebsocketUser } from 'web/hooks/use-user'
-import { getIsNative } from 'web/lib/native/is-native'
-import { postMessageToNative } from 'web/lib/native/post-message'
 import { exampleCustomers, GPSData, ID_ERROR_MSG } from 'common/gidx/gidx'
-import { useNativeMessages } from 'web/hooks/use-native-messages'
+import { LocationPanel } from 'web/components/gidx/location-panel'
 
 const body = {
   ...exampleCustomers[3],
 }
 
-const colClass = 'gap-3 p-4'
-const bottomRowClass = 'mb-4 mt-4 w-full gap-16'
+export const registrationColClass = 'gap-3 p-4'
+export const registrationBottomRowClass = 'mb-4 mt-4 w-full gap-16'
 
 export const RegisterUserForm = (props: { user: User }) => {
   const user = useWebsocketUser(props.user.id) ?? props.user
@@ -46,22 +44,8 @@ export const RegisterUserForm = (props: { user: User }) => {
       : 0
   )
   const [loading, setLoading] = useState(false)
-  const [locationError, setLocationError] = useState<string | null>(null)
+  const [locationError, setLocationError] = useState<string | undefined>()
   const [error, setError] = useState<string | null>(null)
-  useNativeMessages(['location'], (type, data) => {
-    console.log('Received location data from native', data)
-    if ('error' in data) {
-      setLocationError(data.error)
-      setLoading(false)
-    } else {
-      setUserInfo({
-        ...userInfo,
-        DeviceGPS: data,
-      })
-      setLoading(false)
-      setPage(page + 1)
-    }
-  })
 
   const [userInfo, setUserInfo] = usePersistentInMemoryState<{
     FirstName?: string
@@ -88,43 +72,6 @@ export const RegisterUserForm = (props: { user: User }) => {
     'gidx-registration-user-info'
   )
 
-  const requestLocationBrowser = () => {
-    setLocationError(null)
-    setLoading(true)
-    if (getIsNative()) {
-      console.log('requesting location from native')
-      postMessageToNative('locationRequested', {})
-      return
-    }
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          // TODO:re-enable in prod
-          const { coords } = position
-          setUserInfo({
-            ...userInfo,
-            DeviceGPS: {
-              Latitude: coords.latitude,
-              Longitude: coords.longitude,
-              Radius: coords.accuracy,
-              Altitude: coords.altitude ?? 0,
-              Speed: coords.speed ?? 0,
-              DateTime: new Date().toISOString(),
-            },
-          })
-          setLoading(false)
-          setPage(page + 1)
-        },
-        (error) => {
-          setLocationError(error.message)
-          setLoading(false)
-        }
-      )
-    } else {
-      setLocationError('Geolocation is not supported by your browser.')
-      setLoading(false)
-    }
-  }
   const optionalKeys = ['AddressLine2', 'StateCode']
   const unfilled = Object.entries(userInfo ?? {}).filter(
     ([key, value]) =>
@@ -167,7 +114,7 @@ export const RegisterUserForm = (props: { user: User }) => {
 
   if (page === 0) {
     return (
-      <Col className={colClass}>
+      <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>
           Identity Verification
         </span>
@@ -191,7 +138,7 @@ export const RegisterUserForm = (props: { user: User }) => {
           {user.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE} Mana or{' '}
           {user.spiceBalance * SPICE_TO_CHARITY_DOLLARS} dollars to charity.
         </span>
-        <Row className={bottomRowClass}>
+        <Row className={registrationBottomRowClass}>
           <Button color={'gray-white'} onClick={router.back}>
             Back
           </Button>
@@ -216,13 +163,20 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  // TODO: if they've already shared location permission, skip this step
   if (page === 2) {
     return (
       <LocationPanel
-        requestLocation={requestLocationBrowser}
-        locationError={locationError}
+        setLocation={(data: GPSData) => {
+          setUserInfo({
+            ...userInfo,
+            DeviceGPS: data,
+          })
+          setPage(page + 1)
+        }}
+        setLocationError={setLocationError}
+        setLoading={setLoading}
         loading={loading}
+        locationError={locationError}
         back={() => (user.verifiedPhone ? setPage(0) : setPage(page - 1))}
       />
     )
@@ -231,7 +185,7 @@ export const RegisterUserForm = (props: { user: User }) => {
   if (page === 3) {
     const sectionClass = 'gap-2 w-full sm:w-96'
     return (
-      <Col className={colClass}>
+      <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>
           Identity Verification
         </span>
@@ -354,7 +308,7 @@ export const RegisterUserForm = (props: { user: User }) => {
             )}
           </span>
         )}
-        <Row className={bottomRowClass}>
+        <Row className={registrationBottomRowClass}>
           <Button
             color={'gray-white'}
             disabled={loading}
@@ -389,13 +343,13 @@ export const RegisterUserForm = (props: { user: User }) => {
 
   if (user.kycStatus === 'pending' || user.kycStatus === 'fail') {
     return (
-      <Col className={colClass}>
+      <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>
           Verification pending
         </span>
         Thank you for submitting your identification information! Your identity
         verification is pending. Check back later to see if you're verified.
-        <Row className={bottomRowClass}>
+        <Row className={registrationBottomRowClass}>
           <Button
             color={'indigo-outline'}
             loading={loading}
@@ -417,13 +371,13 @@ export const RegisterUserForm = (props: { user: User }) => {
 
   if (user.kycStatus === 'await-documents') {
     return (
-      <Col className={colClass}>
+      <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>Document errors</span>
         <span>
           There was an error with one or more of your documents. Please upload
           new documents.
         </span>
-        <Row className={bottomRowClass}>
+        <Row className={registrationBottomRowClass}>
           <Button onClick={() => setPage(4)}>Upload documents</Button>
         </Row>
       </Col>
@@ -431,12 +385,12 @@ export const RegisterUserForm = (props: { user: User }) => {
   }
 
   return (
-    <Col className={colClass}>
+    <Col className={registrationColClass}>
       <span className={'text-primary-700 text-2xl'}>
         Identity Verification Complete
       </span>
       Thank you for verifying your identity! Now you can cash out prize points.
-      <Row className={bottomRowClass}>
+      <Row className={registrationBottomRowClass}>
         {/*// TODO:  auto-redirect rather than make them click this button*/}
         {redirect === 'checkout' ? (
           <Link className={buttonClass('md', 'indigo')} href={'/checkout'}>
@@ -448,40 +402,6 @@ export const RegisterUserForm = (props: { user: User }) => {
           </Link>
         )}
       </Row>
-    </Col>
-  )
-}
-
-export const LocationPanel = (props: {
-  requestLocation: () => void
-  locationError: string | null
-  back: () => void
-  loading: boolean
-}) => {
-  const { back, requestLocation, locationError, loading } = props
-  return (
-    <Col className={colClass}>
-      <span className={' text-primary-700 text-2xl'}>Location required</span>
-      <span>
-        You must allow location sharing to verify that you're in a participating
-        municipality.
-      </span>
-      <Row className={bottomRowClass}>
-        <Button color={'gray-white'} onClick={back}>
-          Back
-        </Button>
-        <Button loading={loading} disabled={loading} onClick={requestLocation}>
-          Share location
-        </Button>
-      </Row>
-      {locationError && (
-        <span className={'text-error'}>
-          {locationError}
-          {getIsNative()
-            ? ' Please enable location sharing in your settings.'
-            : ''}
-        </span>
-      )}
     </Col>
   )
 }

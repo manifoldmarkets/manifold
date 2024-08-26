@@ -6,7 +6,6 @@ import { Input } from '../components/widgets/input'
 import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
-import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { getNativePlatform } from 'web/lib/native/is-native'
@@ -14,7 +13,6 @@ import { api, validateIapReceipt } from 'web/lib/api/api'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { PriceTile, use24hrUsdPurchases } from 'web/components/add-funds-modal'
-import { LocationPanel } from 'web/components/gidx/register-user-form'
 import { getVerificationStatus } from 'common/user'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import { LogoIcon } from 'web/components/icons/logo-icon'
@@ -31,10 +29,11 @@ import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { LocationPanel } from 'web/components/gidx/location-panel'
 
 const CheckoutPage = () => {
   const user = useUser()
-  const [locationError, setLocationError] = useState<string | null>(null)
+  const [locationError, setLocationError] = useState<string>()
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : MANA_WEB_PRICES
   const [page, setPage] = useState<'checkout' | 'payment' | 'location'>(
@@ -75,101 +74,14 @@ const CheckoutPage = () => {
       if (then === 'ios-native') {
         postMessageToNative('checkout', { amount: amountSelected })
       } else {
-        await checkLocationPermission()
+        setPage('location')
       }
     } else {
       router.push('/gidx/register?redirect=checkout')
     }
   }
 
-  useNativeMessages(['location'], (type, data) => {
-    console.log('Received location data from native', data)
-    if ('error' in data) {
-      setLocationError(data.error)
-      setLoading(false)
-    } else {
-      setDeviceGPS(data)
-      setLoading(false)
-    }
-  })
-
-  const requestLocationBrowser = () => {
-    setLocationError(null)
-    setLoading(true)
-    if (getIsNative()) {
-      console.log('requesting location from native')
-      postMessageToNative('locationRequested', {})
-      return
-    }
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { coords } = position
-          setDeviceGPS({
-            Latitude: coords.latitude,
-            Longitude: coords.longitude,
-            Radius: coords.accuracy,
-            Altitude: coords.altitude ?? 0,
-            Speed: coords.speed ?? 0,
-            DateTime: new Date().toISOString(),
-          })
-          setLoading(false)
-          setPage('payment')
-        },
-        (error) => {
-          setLocationError(error.message)
-          setLoading(false)
-        }
-      )
-    } else {
-      setLocationError('Geolocation is not supported by your browser.')
-      setLoading(false)
-    }
-  }
-
-  const checkLocationPermission = async () => {
-    setLoading(true)
-    if ('permissions' in navigator) {
-      try {
-        const permissionStatus = await navigator.permissions.query({
-          name: 'geolocation',
-        })
-
-        switch (permissionStatus.state) {
-          case 'granted':
-            console.log('Location permission already granted')
-            requestLocationBrowser()
-            break
-          case 'prompt':
-            console.log('Location permission has not been requested yet')
-            setPage('location')
-            setLoading(false)
-            break
-          case 'denied':
-            console.log('Location permission has been denied')
-            setPage('location')
-            setLoading(false)
-            break
-        }
-
-        // Listen for changes to the permission state
-        permissionStatus.onchange = () => {
-          console.log(
-            'Geolocation permission state has changed to:',
-            permissionStatus.state
-          )
-        }
-      } catch (error) {
-        console.error('Error checking geolocation permission:', error)
-        requestLocationBrowser()
-      }
-    } else {
-      console.log('Permissions API not supported')
-      // Fallback to your original method
-      requestLocationBrowser()
-    }
-  }
-
+  // TODO: need to test if this works on ios
   const handleIapReceipt = async <T extends nativeToWebMessageType>(
     type: T,
     data: MesageTypeMap[T]
@@ -235,11 +147,13 @@ const CheckoutPage = () => {
       setLoading(false)
     }
   }
+
   useEffect(() => {
     if (!DeviceGPS || !amountSelected) return
     getCheckoutSession()
     // checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
   }, [DeviceGPS])
+
   const onSelectAmount = (amount: WebManaAmounts) => {
     setAmountSelected(amount)
     checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
@@ -265,9 +179,16 @@ const CheckoutPage = () => {
         </Col>
       ) : page === 'location' ? (
         <LocationPanel
-          requestLocation={requestLocationBrowser}
-          locationError={locationError}
+          setLocation={(data: GPSData) => {
+            setDeviceGPS({
+              ...data,
+            })
+            setPage('payment')
+          }}
+          setLocationError={setLocationError}
+          setLoading={setLoading}
           loading={loading}
+          locationError={locationError}
           back={() => setPage('checkout')}
         />
       ) : page === 'payment' &&
