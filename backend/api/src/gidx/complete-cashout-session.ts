@@ -24,7 +24,6 @@ const getManaCashAmountForDollars = (dollars: number) => {
   return parseInt(manaCash[0]) as CashAmountGIDX
 }
 
-// TODO: This is a WIP, not nearly done yet
 export const completeCashoutSession: APIHandler<
   'complete-cashout-session-gidx'
 > = async (props, auth, req) => {
@@ -38,10 +37,14 @@ export const completeCashoutSession: APIHandler<
     MerchantTransactionID,
     SavePaymentMethod,
   } = props
+  // TODO: make sure user has enough mana cash balance
   const manaCashAmount = getManaCashAmountForDollars(PaymentAmount.dollars)
 
   const body = {
-    PaymentAmount,
+    PaymentAmount: {
+      PaymentAmount: PaymentAmount.dollars,
+      BonusAmount: 0,
+    },
     SavePaymentMethod,
     DeviceIpAddress: getIp(req),
     MerchantTransactionID,
@@ -114,6 +117,7 @@ export const completeCashoutSession: APIHandler<
     })
   }
   if (PaymentStatusCode === '1') {
+    // This should always return a '0' for pending, but just in case
     await debitCoins(
       userId,
       manaCashAmount,
@@ -156,6 +160,12 @@ export const completeCashoutSession: APIHandler<
       gidxMessage: PaymentStatusMessage,
     }
   } else if (PaymentStatusCode === '0') {
+    await debitCoins(
+      userId,
+      manaCashAmount,
+      PaymentAmount.dollars,
+      MerchantTransactionID
+    )
     return {
       status: 'pending',
       message: 'Payment pending',
@@ -189,6 +199,7 @@ const debitCoins = async (
     description: `Pending cash out debit`,
   } as const
 
+  // TODO: add a row to the cash_out_receipts table with pending status
   await pg.tx(async (tx) => {
     await runTxn(tx, manaCashoutTxn)
   })

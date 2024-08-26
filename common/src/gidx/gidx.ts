@@ -86,7 +86,7 @@ export const cashoutParams = z.object({
     NameOnAccount: z.string(),
     AccountNumber: z.string(),
     RoutingNumber: z.string(),
-    BillingAddress: BillingAddress.optional(),
+    BillingAddress: BillingAddress,
   }),
 })
 

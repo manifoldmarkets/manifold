@@ -19,6 +19,19 @@ export const identityCallbackGIDX: APIHandler<
   }
 }
 
+// TODO: Save the following as a cash_out_receipts
+// //{
+// //   "MerchantTransactionID": string,
+// //   "TransactionStatusCode": number,
+// //   "TransactionStatusMessage": string,
+// //   "StatusCode": number,
+// //   "SessionID": string,
+// //   "MerchantSessionID": string,
+// //   "SessionScore": number,
+// //   "ReasonCodes": string[],
+// //   "ServiceType": string,
+// //   "StatusMessage": string,
+// // }
 export const paymentCallbackGIDX: APIHandler<'payment-callback-gidx'> = async (
   props
 ) => {

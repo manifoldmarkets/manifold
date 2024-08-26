@@ -28,6 +28,11 @@ const CashoutPage = () => {
   const [loading, setloading] = useState(false)
   const [error, setError] = useState<string>()
 
+  const [address, setAddress] = useState('')
+  const [city, setCity] = useState('')
+  const [state, setState] = useState('')
+  const [zipCode, setZipCode] = useState('')
+
   const getCashoutSession = async (DeviceGPS: GPSData) => {
     setError(undefined)
     setloading(true)
@@ -39,6 +44,14 @@ const CashoutPage = () => {
       const { session, status, message } = res
       if (session && status !== 'error') {
         console.log('Got cashout session', session)
+        const { CustomerProfile } = session
+        setNameOnAccount(
+          CustomerProfile.Name.FirstName + ' ' + CustomerProfile.Name.LastName
+        )
+        setAddress(CustomerProfile.Address.AddressLine1)
+        setCity(CustomerProfile.Address.City)
+        setState(CustomerProfile.Address.StateCode)
+        setZipCode(CustomerProfile.Address.PostalCode)
         setCheckoutSession(session)
         setPage('ach-details')
       } else if (message && status === 'error') {
@@ -63,6 +76,13 @@ const CashoutPage = () => {
           AccountNumber,
           RoutingNumber,
           NameOnAccount,
+          BillingAddress: {
+            AddressLine1: address,
+            City: city,
+            StateCode: state,
+            PostalCode: zipCode,
+            CountryCode: 'US',
+          },
         },
         SavePaymentMethod,
         PaymentAmount: {
@@ -111,17 +131,12 @@ const CashoutPage = () => {
         )}
         {page === 'ach-details' && (
           <Col className="w-full max-w-md space-y-4">
+            {/*TODO: show user cashout-able balance and cap the amount*/}
             <Input
               type="number"
               placeholder="Cashout Amount"
               value={amount}
               onChange={(e) => setAmount(Number(e.target.value))}
-            />
-            <Input
-              type="text"
-              placeholder="Account Name"
-              value={NameOnAccount}
-              onChange={(e) => setNameOnAccount(e.target.value)}
             />
             <Input
               type="text"
@@ -135,6 +150,41 @@ const CashoutPage = () => {
               value={RoutingNumber}
               onChange={(e) => setRoutingNumber(e.target.value)}
             />
+            <Input
+              type="text"
+              placeholder="Account Name"
+              value={NameOnAccount}
+              onChange={(e) => setNameOnAccount(e.target.value)}
+            />
+            <Input
+              type="text"
+              placeholder="Billing Address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+            <Row className="space-x-4">
+              <Input
+                type="text"
+                placeholder="City"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-1/2"
+              />
+              <Input
+                type="text"
+                placeholder="State"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="w-1/4"
+              />
+              <Input
+                type="text"
+                placeholder="ZIP"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value)}
+                className="w-1/4"
+              />
+            </Row>
 
             <Row className={'items-center gap-2'}>
               <input
