@@ -472,7 +472,7 @@ type AirDrop = {
   category: 'AIR_DROP'
   fromType: 'BANK'
   toType: 'USER'
-  token: 'M$'
+  token: 'M$' | 'CASH'
 }
 
 type ManifestAirDrop = {
