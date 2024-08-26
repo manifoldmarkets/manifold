@@ -91,10 +91,7 @@ export function ManifestBanner(props: { hideBanner: () => void }) {
 
 export function DowntimeBanner() {
   return (
-    <Banner
-      className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b"
-      link="https://status.manifold.markets/"
-    >
+    <Banner className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b">
       ⚠️ Manifold will be down at 9PM PT for about 1 hour, as we upgrade our
       financial infrastructure.
     </Banner>
