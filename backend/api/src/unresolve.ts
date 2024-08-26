@@ -73,7 +73,11 @@ const verifyUserCanUnresolve = async (
 ) => {
   const isMod = isModId(userId) || isAdminId(userId)
 
-  const { creatorId, mechanism } = contract
+  const { creatorId, mechanism, isSpicePayout } = contract
+
+  if (isSpicePayout) {
+    throw new APIError(400, `We no longer allow pp markets to be unresolved`)
+  }
 
   let resolutionTime: number
   if (

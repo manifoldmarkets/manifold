@@ -44,6 +44,12 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     if (!isAdminId(auth.uid)) {
       throw new APIError(403, 'Only admins choose prize markets')
     }
+    if (isSpicePayout === true) {
+      throw new APIError(
+        403,
+        `We not making spice markets anymore! If you're sure, comment this out. - Sinclair`
+      )
+    }
   }
 
   if (contract.isResolved && closeTime !== undefined) {
