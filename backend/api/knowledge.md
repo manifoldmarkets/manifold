@@ -15,7 +15,7 @@ To add a new API endpoint, follow these steps:
 
 1. Create a new file for the endpoint in the `backend/api/src` directory. Each endpoint should be in a new file.
 2. Implement the endpoint logic in the new file.
-3. Add the endpoint schema to `common/src/api/schema.ts`, including props, return type, and other information.
+3. Add the endpoint schema to `common/src/api/schema.ts`, including props, return type, and other information. Note that we only use POST and GET methods.
 4. Update `backend/api/src/app.ts`:
    - Import the handler function from the new file.
    - Add the handler to the `handlers` object.
