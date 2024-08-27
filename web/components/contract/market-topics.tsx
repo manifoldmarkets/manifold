@@ -1,4 +1,3 @@
-import { Contract } from 'common/contract'
 import {
   useGroupsWhereUserHasRole,
   useTopicsWithContract,
