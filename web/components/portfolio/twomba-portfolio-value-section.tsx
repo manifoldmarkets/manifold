@@ -373,7 +373,7 @@ function TwombaPortfolioValueSkeleton(props: {
                 portfolioFocus == 'all'
                   ? isPlay
                     ? 'text-primary-700 dark:text-primary-600 opacity-100'
-                    : 'text-lime-700 opacity-100 dark:text-lime-600'
+                    : 'text-amber-700 opacity-100 dark:text-amber-600'
                   : 'text-ink-1000 opacity-50 hover:opacity-[85%]'
               )}
               onClick={() => togglePortfolioFocus('all')}
@@ -413,7 +413,7 @@ function TwombaPortfolioValueSkeleton(props: {
                   portfolioFocus == 'balance'
                     ? isPlay
                       ? 'bg-indigo-700 text-white'
-                      : 'bg-lime-700 text-white'
+                      : 'bg-amber-700 text-white'
                     : 'bg-canvas-50 text-ink-1000'
                 )}
                 onClick={() => togglePortfolioFocus('balance')}
@@ -432,7 +432,7 @@ function TwombaPortfolioValueSkeleton(props: {
                   portfolioFocus == 'investment'
                     ? isPlay
                       ? 'bg-indigo-700 text-white'
-                      : 'bg-lime-700 text-white'
+                      : 'bg-amber-700 text-white'
                     : 'bg-canvas-50 text-ink-1000'
                 )}
                 onClick={() => togglePortfolioFocus('investment')}
