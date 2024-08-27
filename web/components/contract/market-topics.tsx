@@ -54,7 +54,7 @@ const TopicLink = (props: { topic: Topic; contractId: string }) => {
 }
 
 type TopicRowProps = {
-  contract: Contract
+  contract: { id: string; creatorId: string }
   dashboards: { slug: string; title: string }[]
   topics: Topic[]
   isSpiceMarket: boolean
