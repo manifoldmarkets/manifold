@@ -1525,7 +1525,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       status: string
       message?: string
-      gidxMessage?: string
+      gidxMessage?: string | null
       details?: PaymentDetail[]
     },
     props: z.object(checkoutParams),
@@ -1537,7 +1537,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       status: string
       message?: string
-      gidxMessage?: string
+      gidxMessage?: string | null
       details?: PaymentDetail[]
     },
     props: cashoutParams,
@@ -1580,7 +1580,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
-    returns: {} as { Accepted: boolean },
+    returns: {} as { MerchantTransactionID: string },
     props: z.any(),
   },
   'get-best-comments': {
@@ -1594,6 +1594,13 @@ export const API = (_apiTypeCheck = {
       ignoreContractIds: z.array(z.string()).optional(),
       justLikes: z.coerce.number().optional(),
     }),
+  },
+  'get-redeemable-prize-cash': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { redeemablePrizeCash: number },
+    props: z.object({}).strict(),
   },
 } as const)
 

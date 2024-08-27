@@ -204,10 +204,10 @@ export function PriceTile(props: {
       {TWOMBA_ENABLED && (
         <div
           className="absolute -right-2 -top-2
-        whitespace-nowrap rounded-full bg-lime-100 px-2 py-0.5
-         text-lime-800 shadow transition-colors group-hover:bg-lime-200
-          group-hover:text-lime-900 dark:bg-lime-700 dark:text-white
-           group-hover:dark:bg-lime-600 group-hover:dark:text-white"
+        whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5
+         text-amber-800 shadow transition-colors group-hover:bg-amber-200
+          group-hover:text-amber-900 dark:bg-amber-700 dark:text-white
+           group-hover:dark:bg-amber-600 group-hover:dark:text-white"
         >
           +
           <CoinNumber

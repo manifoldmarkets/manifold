@@ -1,5 +1,8 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { CompleteSessionDirectCashierResponse } from 'common/gidx/gidx'
+import {
+  CompleteSessionDirectCashierResponse,
+  ProcessSessionCode,
+} from 'common/gidx/gidx'
 import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
@@ -78,37 +81,22 @@ export const completeCheckoutSession: APIHandler<
     AllowRetry,
     PaymentDetails,
     SessionStatusMessage,
+    ResponseCode,
   } = data
-  if (SessionStatusCode === 1) {
+  if (ResponseCode >= 300) {
     return {
       status: 'error',
-      message: 'Your information could not be succesfully validated',
+      message: 'GIDX error',
       gidxMessage: SessionStatusMessage,
     }
-  } else if (SessionStatusCode === 2) {
-    return {
-      status: 'error',
-      message: 'Your information is incomplete',
-      gidxMessage: SessionStatusMessage,
-    }
-  } else if (SessionStatusCode === 3 && AllowRetry) {
-    return {
-      status: 'error',
-      message: 'Payment timeout, please try again',
-      gidxMessage: SessionStatusMessage,
-    }
-  } else if (SessionStatusCode === 3 && !AllowRetry) {
-    return {
-      status: 'error',
-      message: 'Payment timeout',
-      gidxMessage: SessionStatusMessage,
-    }
-  } else if (SessionStatusCode >= 4) {
-    return {
-      status: 'pending',
-      message: 'Please complete next step',
-      gidxMessage: SessionStatusMessage,
-    }
+  }
+  const { status, message, gidxMessage } = ProcessSessionCode(
+    SessionStatusCode,
+    SessionStatusMessage,
+    AllowRetry
+  )
+  if (status !== 'success') {
+    return { status, message, gidxMessage }
   }
 
   const {
