@@ -17,6 +17,7 @@ import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import { formatMoneyUSD } from 'common/util/format'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 const CashoutPage = () => {
   const user = useUser()
@@ -49,6 +50,8 @@ const CashoutPage = () => {
       setSessionStatus(StatusMessage as string)
     },
   })
+  const { data: redeemable } = useAPIGetter('get-redeemable-prize-cash', {})
+  const redeemableCash = redeemable?.redeemablePrizeCash ?? 0
 
   const getCashoutSession = async (DeviceGPS: GPSData) => {
     setError(undefined)
@@ -151,7 +154,7 @@ const CashoutPage = () => {
               {/*TODO: cap the amounts on min and max allowed side, in addition to user balance*/}
               <Row className={'justify-between font-semibold'}>
                 Available to withdraw
-                <CoinNumber amount={user.cashBalance} coinType={'sweepies'} />
+                <CoinNumber amount={redeemableCash} coinType={'sweepies'} />
               </Row>
 
               <Row className={'items-center justify-between font-semibold'}>
@@ -166,8 +169,8 @@ const CashoutPage = () => {
                       setAmount(undefined)
                       return
                     }
-                    if (newAmount > user.cashBalance) {
-                      setAmount(user.cashBalance)
+                    if (newAmount > redeemableCash) {
+                      setAmount(redeemableCash)
                     } else {
                       setAmount(newAmount)
                     }

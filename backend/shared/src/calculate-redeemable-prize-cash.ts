@@ -20,6 +20,6 @@ export async function calculateRedeemablePrizeCash(
     and category in ('CONTRACT_RESOLUTION_PAYOUT', 'CONTRACT_UNDO_RESOLUTION_PAYOUT', 'CASH_OUT')`,
     [userId]
   )
-
-  return result?.total ?? 0
+  const total = result?.total ?? 0
+  return total > 0 ? total : 0
 }

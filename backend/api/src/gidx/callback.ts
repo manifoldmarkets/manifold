@@ -77,8 +77,9 @@ export const paymentCallbackGIDX: APIHandler<'payment-callback-gidx'> = async (
     StatusCode,
     StatusMessage,
   })
+  // TODO: if cashout txn is failed, give back the mana cash
 
-  // TODO: we could double check here that the txns were sent given successful payment
+  // TODO: Double check here that the txns were sent given successful payment
   //  and if not, resend them
 
   return {

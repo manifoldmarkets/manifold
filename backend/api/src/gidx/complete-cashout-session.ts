@@ -14,6 +14,7 @@ import { getIp } from 'shared/analytics'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getUser } from 'shared/utils'
 import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
+import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
@@ -37,8 +38,13 @@ export const completeCashoutSession: APIHandler<
   } = props
 
   const manaCashAmount = PaymentAmount.manaCash
-  if (manaCashAmount > user.cashBalance) {
+  if (user.cashBalance < manaCashAmount) {
     throw new APIError(400, 'Insufficient mana cash balance')
+  }
+  const pg = createSupabaseDirectClient()
+  const redeemablePrizeCash = await calculateRedeemablePrizeCash(userId, pg)
+  if (redeemablePrizeCash < manaCashAmount) {
+    throw new APIError(400, 'Insufficient redeemable prize cash')
   }
   const dollarsToWithdraw = PaymentAmount.dollars
   const CalculatedPaymentAmount = (1 - SWEEPIES_CASHOUT_FEE) * manaCashAmount
@@ -206,6 +212,10 @@ const debitCoins = async (
     ...dataToWrite
   } = response
   await pg.tx(async (tx) => {
+    const redeemablePrizeCash = await calculateRedeemablePrizeCash(userId, tx)
+    if (redeemablePrizeCash < manaCashAmount) {
+      throw new APIError(400, 'Insufficient redeemable prize cash')
+    }
     const txn = await runTxn(tx, manaCashoutTxn)
     await tx.none(
       `

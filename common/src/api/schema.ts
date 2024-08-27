@@ -1595,6 +1595,13 @@ export const API = (_apiTypeCheck = {
       justLikes: z.coerce.number().optional(),
     }),
   },
+  'get-redeemable-prize-cash': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { redeemablePrizeCash: number },
+    props: z.object({}).strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

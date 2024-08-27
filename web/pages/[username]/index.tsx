@@ -231,7 +231,8 @@ function UserProfile(props: {
   const balanceChanges = newBalanceChanges ?? []
   const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
   const balanceChangesKey = 'balance-changes'
-
+  const { data: redeemable } = useAPIGetter('get-redeemable-prize-cash', {})
+  const redeemableCash = redeemable?.redeemablePrizeCash ?? 0
   return (
     <Page
       key={user.id}
@@ -370,10 +371,13 @@ function UserProfile(props: {
               className="whitespace-nowrap"
               spice={user.spiceBalance}
             />
-            <Button onClick={() => router.push('/cashout')}>
+            <Button
+              disabled={redeemableCash <= 0}
+              onClick={() => router.push('/cashout')}
+            >
               Cashout
               <CoinNumber
-                amount={user.cashBalance}
+                amount={redeemableCash}
                 className={'ml-1'}
                 coinType={'sweepies'}
               />
