@@ -21,10 +21,14 @@ import { MdLockClock } from 'react-icons/md'
 import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
-export function AuthorInfo(props: { contract: Contract; className?: string }) {
-  const { contract, className } = props
+export function AuthorInfo(props: {
+  contract: Contract
+  resolverId?: string // live updated
+  className?: string
+}) {
+  const { contract, resolverId, className } = props
   const { creatorId, creatorName, creatorUsername, creatorAvatarUrl } = contract
-  const resolver = useDisplayUserById(contract.resolverId)
+  const resolver = useDisplayUserById(resolverId)
   return (
     <Row className={clsx('grow flex-wrap items-center gap-2', className)}>
       <UserHovercard userId={creatorId}>
@@ -44,16 +48,14 @@ export function AuthorInfo(props: { contract: Contract; className?: string }) {
           className={'mr-1'}
         />
       </UserHovercard>
-      {contract.isResolved &&
-        contract.resolverId! !== contract.creatorId &&
-        resolver && (
-          <>
-            <span className={'ml-1'}>resolved by </span>
-            <UserHovercard userId={resolver.id}>
-              <UserLink user={resolver} />
-            </UserHovercard>
-          </>
-        )}
+      {resolver && resolver.id !== contract.creatorId && (
+        <>
+          <span className={'ml-1'}>resolved by </span>
+          <UserHovercard userId={resolver.id}>
+            <UserLink user={resolver} />
+          </UserHovercard>
+        </>
+      )}
     </Row>
   )
 }

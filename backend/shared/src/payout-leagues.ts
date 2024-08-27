@@ -5,6 +5,7 @@ import { runTxnFromBank } from './txn/run-txn'
 
 import { LeaguePrizeTxn } from 'common/txn'
 import { chunk } from 'lodash'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const sendEndOfSeasonNotificationsAndBonuses = async (
   pg: SupabaseDirectClient,
@@ -61,7 +62,7 @@ const sendEndOfSeasonNotificationAndBonus = async (
     toId: userId,
     toType: 'USER',
     amount: prize,
-    token: 'SPICE',
+    token: TWOMBA_ENABLED ? 'CASH' : 'SPICE',
     category: 'LEAGUE_PRIZE',
     data: prevRow,
   }

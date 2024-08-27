@@ -12,15 +12,15 @@ import SuperBanControl from '../SuperBanControl'
 import { Stats } from './contract-info-dialog'
 
 export function TwombaContractInfoDialog(props: {
-  contract: Contract
+  playContract: Contract
+  statsContract: Contract
   user: User | null | undefined
   open: boolean
   setOpen: (open: boolean) => void
 }) {
-  const { contract, user, open, setOpen } = props
+  const { playContract, statsContract, user, open, setOpen } = props
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
-  const isCreator = user?.id === contract.creatorId
 
   return (
     <Modal
@@ -28,19 +28,19 @@ export function TwombaContractInfoDialog(props: {
       setOpen={setOpen}
       className="bg-canvas-0 flex flex-col gap-4 rounded p-6"
     >
-      <Stats contract={contract} user={user} />
+      <Stats contract={statsContract} user={user} />
 
       {!!user && (
         <>
           <Row className="my-2 flex-wrap gap-2">
-            <ContractHistoryButton contract={contract} />
-            <ShareQRButton contract={contract} />
-            <ShareIRLButton contract={contract} />
-            <ShareEmbedButton contract={contract} />
+            <ContractHistoryButton contract={playContract} />
+            <ShareQRButton contract={playContract} />
+            <ShareIRLButton contract={playContract} />
+            <ShareEmbedButton contract={playContract} />
           </Row>
           <Row className="flex-wrap gap-2">
             {isAdmin || isTrusted ? (
-              <SuperBanControl userId={contract.creatorId} />
+              <SuperBanControl userId={playContract.creatorId} />
             ) : null}
           </Row>
         </>

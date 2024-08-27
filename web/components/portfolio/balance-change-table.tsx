@@ -1,5 +1,10 @@
 import { Col } from 'web/components/layout/col'
-import { formatMoney, formatSpice, shortFormatNumber } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyNoMoniker,
+  formatSpice,
+  shortFormatNumber,
+} from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { User } from 'common/user'
@@ -93,16 +98,27 @@ function RenderBalanceChanges(props: {
 }) {
   const { balanceChanges, user, avatarSize, simple, hideBalance } = props
   let currManaBalance = user.balance
+  let currCashBalance = user.cashBalance
   let currSpiceBalance = user.spiceBalance
   const balanceRunningTotals = [
-    { mana: currManaBalance, spice: currSpiceBalance },
+    { mana: currManaBalance, cash: currCashBalance, spice: currSpiceBalance },
     ...balanceChanges.map((change) => {
       if (isTxnChange(change) && change.token === 'SPICE') {
         currSpiceBalance -= change.amount
+      } else if (
+        isTxnChange(change)
+          ? change.token === 'CASH'
+          : change.contract.token === 'CASH'
+      ) {
+        currCashBalance -= change.amount
       } else {
         currManaBalance -= change.amount
       }
-      return { mana: currManaBalance, spice: currSpiceBalance }
+      return {
+        mana: currManaBalance,
+        cash: currCashBalance,
+        spice: currSpiceBalance,
+      }
     }),
   ]
 
@@ -114,10 +130,11 @@ function RenderBalanceChanges(props: {
             <BetBalanceChangeRow
               key={change.key}
               change={change}
-              balance={balanceRunningTotals[i].mana}
+              balance={balanceRunningTotals[i]}
               avatarSize={avatarSize}
               simple={simple}
               hideBalance={hideBalance}
+              token={change.contract.token}
             />
           )
         } else if (isTxnChange(change)) {
@@ -196,17 +213,19 @@ const betChangeToText = (change: BetBalanceChange) => {
 }
 const BetBalanceChangeRow = (props: {
   change: BetBalanceChange
-  balance: number
+  balance: { mana: number; cash: number }
   avatarSize: 'sm' | 'md'
   simple?: boolean
   hideBalance?: boolean
+  token: 'MANA' | 'CASH'
 }) => {
-  const { change, balance, avatarSize, simple, hideBalance } = props
+  const { change, balance, avatarSize, simple, hideBalance, token } = props
   const { amount, contract, answer, bet, type } = change
   const { outcome } = bet
   const { slug, question, creatorUsername } = contract
   const niceAmount =
-    ENV_CONFIG.moneyMoniker + shortFormatNumber(amount).replace('-', '')
+    (token === 'CASH' ? 'S' : ENV_CONFIG.moneyMoniker) +
+    shortFormatNumber(amount).replace('-', '')
   const direction =
     type === 'redeem_shares'
       ? 'sideways'
@@ -282,7 +301,10 @@ const BetBalanceChangeRow = (props: {
           <Row className={'text-ink-600'}>
             {!hideBalance && (
               <>
-                {formatMoney(balance)} {'·'}
+                {token === 'CASH'
+                  ? formatMoneyNoMoniker(balance.cash) + ' prize cash'
+                  : formatMoney(balance.mana)}
+                {'·'}
               </>
             )}{' '}
             {customFormatTime(change.createdTime)}
@@ -302,7 +324,7 @@ const customFormatTime = (time: number) => {
 
 const TxnBalanceChangeRow = (props: {
   change: TxnBalanceChange
-  balance: { mana: number; spice: number }
+  balance: { mana: number; cash: number; spice: number }
   avatarSize: 'sm' | 'md'
   simple?: boolean
   hideBalance?: boolean
@@ -431,6 +453,8 @@ const TxnBalanceChangeRow = (props: {
             {amount > 0 ? '+' : '-'}
             {token === 'SPICE'
               ? formatSpice(amount).replace('-', '')
+              : token === 'CASH'
+              ? formatMoneyNoMoniker(amount).replace('-', '') + ' prize cash'
               : formatMoney(amount).replace('-', '')}
           </span>
         </Row>
@@ -443,6 +467,8 @@ const TxnBalanceChangeRow = (props: {
               <>
                 {token === 'SPICE'
                   ? formatSpice(balance.spice)
+                  : token === 'CASH'
+                  ? formatMoneyNoMoniker(balance.cash) + ' prize cash'
                   : formatMoney(balance.mana)}
                 {' · '}
               </>

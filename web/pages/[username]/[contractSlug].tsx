@@ -496,7 +496,10 @@ export function ContractPageContent(props: ContractParams) {
               </Col>
 
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
-                <AuthorInfo contract={contract} />
+                <AuthorInfo
+                  contract={contract}
+                  resolverId={contract.resolverId}
+                />
 
                 <ContractSummaryStats
                   contract={contract}

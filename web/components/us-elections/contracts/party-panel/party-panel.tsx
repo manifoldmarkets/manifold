@@ -292,7 +292,7 @@ function PartyAnswer(props: {
                   answer={answer}
                   userBets={userBets}
                   user={user}
-                  className="text-ink-700 dark:text-ink-800 text-xs hover:underline"
+                  className="text-ink-700 dark:text-ink-800 text-left text-xs hover:underline"
                   greenArrowClassName="text-teal-600 dark:text-teal-300"
                   redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
                 />

@@ -166,10 +166,8 @@ export function FeedContractCard(props: {
   return (
     <ClickFrame
       className={clsx(
-        isPrizeMarket
+        isPrizeMarket || isCashContract
           ? 'mt-2 ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200'
-          : isCashContract
-          ? 'mt-2 ring-1 ring-lime-400 hover:ring-lime-500 hover:dark:ring-lime-200'
           : 'ring-primary-200 hover:ring-1',
         className,
         'relative cursor-pointer rounded-xl transition-all ',
@@ -201,7 +199,7 @@ export function FeedContractCard(props: {
       ) : isCashContract ? (
         <div
           className={clsx(
-            'absolute right-4 top-0 z-40 -translate-y-1/2 transform bg-lime-200 text-lime-700',
+            'absolute right-4 top-0 z-40 -translate-y-1/2 transform bg-amber-200 text-amber-700',
             'rounded-full px-2 py-0.5 text-xs font-semibold'
           )}
         >

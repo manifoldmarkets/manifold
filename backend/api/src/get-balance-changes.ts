@@ -76,6 +76,7 @@ const getTxnBalanceChanges = async (after: number, userId: string) => {
             visibility: contract.visibility,
             slug: contract.visibility === 'public' ? contract.slug : '',
             creatorUsername: contract.creatorUsername,
+            token: contract.token,
           }
         : undefined,
       questType: txn.data?.questType,

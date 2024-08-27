@@ -42,6 +42,8 @@ import { UserHovercard } from '../user/user-hovercard'
 import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { MultiSellerPosition, MultiSellerProfit } from '../bet/sell-panel'
+import { TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -237,7 +239,7 @@ export const MultiBettor = (props: {
           setOutcome('YES')
         }}
       >
-        Bet
+        {capitalize(TRADE_TERM)}
       </Button>
     </>
   )

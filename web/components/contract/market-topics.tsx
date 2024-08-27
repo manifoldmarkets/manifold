@@ -1,4 +1,3 @@
-import { Contract } from 'common/contract'
 import {
   useGroupsWhereUserHasRole,
   useTopicsWithContract,
@@ -54,7 +53,7 @@ const TopicLink = (props: { topic: Topic; contractId: string }) => {
 }
 
 type TopicRowProps = {
-  contract: Contract
+  contract: { id: string; creatorId: string }
   dashboards: { slug: string; title: string }[]
   topics: Topic[]
   isSpiceMarket: boolean

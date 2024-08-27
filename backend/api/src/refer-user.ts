@@ -15,6 +15,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 import { convertTxn } from 'common/supabase/txns'
 import { updateUser } from 'shared/supabase/users'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const bodySchema = z
   .object({
@@ -107,7 +108,7 @@ async function handleReferral(
       toId: referredByUserId,
       toType: 'USER',
       amount: REFERRAL_AMOUNT,
-      token: 'SPICE',
+      token: TWOMBA_ENABLED ? 'CASH' : 'SPICE',
       category: 'REFERRAL',
       description: `Referred new user id: ${user.id} for ${REFERRAL_AMOUNT}`,
     } as const

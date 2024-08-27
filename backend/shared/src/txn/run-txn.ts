@@ -96,6 +96,7 @@ export async function runTxn(
         cashBalance?: number
         spiceBalance?: number
         totalDeposits?: number
+        totalCashDeposits?: number
       } = {}
 
       if (token === 'SPICE') {
@@ -107,7 +108,11 @@ export async function runTxn(
       }
 
       if (!affectsProfit) {
-        update.totalDeposits = amount
+        if (token === 'CASH') {
+          update.totalCashDeposits = amount
+        } else {
+          update.totalDeposits = amount
+        }
       }
 
       await incrementBalance(pgTransaction, toId, update)

@@ -25,10 +25,10 @@ export const SWEEPIES_NAME = 'Mana Cash'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
 export const SWEEPIES_MARKET_TOOLTIP = `Cash market! Earn ${SWEEPIES_NAME}s on resolution`
 
-export const TRADE_TERM = TWOMBA_ENABLED ? 'trade' : 'bet'
-export const TRADED_TERM = TWOMBA_ENABLED ? 'traded' : 'bet'
-export const TRADING_TERM = TWOMBA_ENABLED ? 'trading' : 'betting'
-export const TRADER_TERM = TWOMBA_ENABLED ? 'trader' : 'bettor'
+export const TRADE_TERM = 'trade'
+export const TRADED_TERM = 'traded'
+export const TRADING_TERM = 'trading'
+export const TRADER_TERM = 'trader'
 
 export const ENV_CONFIG = CONFIGS[ENV]
 
