@@ -355,6 +355,7 @@ export function TwombaContractPageContent(props: ContractParams) {
               </div>
               <ContractOverview
                 contract={!isPlay && cash ? cash.contract : contract}
+                key={!isPlay && cash ? cash.contract.id : contract.id} // reset state when switching play vs cash
                 betPoints={betPoints}
                 showResolver={showResolver}
                 resolutionRating={
