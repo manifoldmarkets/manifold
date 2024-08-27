@@ -11,13 +11,13 @@ export async function calculateRedeemablePrizeCash(
     `select sum(case
       when category = 'CONTRACT_RESOLUTION_PAYOUT' then amount
       when category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT' then -amount
-      when category = 'CASH_OUT_PENDING' then -amount
+      when category = 'CASH_OUT' then -amount
       else 0
     end) as total
     from txns
     where token = 'CASH'
     and (to_id = $1 or from_id = $1)
-    and category in ('CONTRACT_RESOLUTION_PAYOUT', 'CONTRACT_UNDO_RESOLUTION_PAYOUT', 'CASH_OUT_PENDING')`,
+    and category in ('CONTRACT_RESOLUTION_PAYOUT', 'CONTRACT_UNDO_RESOLUTION_PAYOUT', 'CASH_OUT')`,
     [userId]
   )
 
