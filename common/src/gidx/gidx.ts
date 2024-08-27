@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MIN_CASHOUT_AMOUNT } from 'common/economy'
 
 export const GIDX_DOCUMENTS_REQUIRED = 2
 
@@ -77,7 +78,7 @@ export const checkoutParams = {
 export const cashoutParams = z.object({
   ...checkoutParams,
   PaymentAmount: z.object({
-    manaCash: z.number(),
+    manaCash: z.number().gte(MIN_CASHOUT_AMOUNT),
     dollars: z.number(),
   }),
   SavePaymentMethod: z.boolean(),

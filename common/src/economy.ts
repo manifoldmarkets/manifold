@@ -162,3 +162,4 @@ export const IOS_PRICES = [
 export type ManaAmountGIDX = (typeof PaymentAmountsGIDX)[number]['mana']
 
 export const SWEEPIES_CASHOUT_FEE = 0.05
+export const MIN_CASHOUT_AMOUNT = 25_00
