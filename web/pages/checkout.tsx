@@ -36,15 +36,14 @@ const CheckoutPage = () => {
   const [locationError, setLocationError] = useState<string>()
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : MANA_WEB_PRICES
-  const [page, setPage] = useState<'checkout' | 'payment' | 'location'>(
-    'checkout'
-  )
+  const [page, setPage] = useState<
+    'checkout' | 'payment' | 'get-session' | 'location'
+  >('checkout')
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
   const [amountSelected, setAmountSelected] = useState<WebManaAmounts>()
   const [productSelected, setProductSelected] = useState<PaymentAmount>()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>()
-  const [DeviceGPS, setDeviceGPS] = useState<GPSData>()
   const router = useRouter()
   // get query params
   const { manaAmount } = router.query
@@ -105,8 +104,8 @@ const CheckoutPage = () => {
 
   const totalPurchased = use24hrUsdPurchases(user?.id || '')
   const pastLimit = totalPurchased >= 2500
-  const getCheckoutSession = async () => {
-    if (!DeviceGPS || !amountSelected) return
+  const getCheckoutSession = async (DeviceGPS: GPSData) => {
+    if (!amountSelected) return
     setError(undefined)
     setLoading(true)
     const dollarAmount = (prices as typeof MANA_WEB_PRICES).find(
@@ -148,12 +147,6 @@ const CheckoutPage = () => {
     }
   }
 
-  useEffect(() => {
-    if (!DeviceGPS || !amountSelected) return
-    getCheckoutSession()
-    // checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
-  }, [DeviceGPS])
-
   const onSelectAmount = (amount: WebManaAmounts) => {
     setAmountSelected(amount)
     checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
@@ -180,10 +173,8 @@ const CheckoutPage = () => {
       ) : page === 'location' ? (
         <LocationPanel
           setLocation={(data: GPSData) => {
-            setDeviceGPS({
-              ...data,
-            })
-            setPage('payment')
+            setPage('get-session')
+            getCheckoutSession(data)
           }}
           setLocationError={setLocationError}
           setLoading={setLoading}
@@ -199,6 +190,8 @@ const CheckoutPage = () => {
           CheckoutSession={checkoutSession}
           amount={productSelected}
         />
+      ) : page === 'get-session' ? (
+        <LoadingIndicator />
       ) : error || locationError ? null : (
         <LoadingIndicator />
       )}

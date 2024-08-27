@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MIN_CASHOUT_AMOUNT } from 'common/economy'
 
 export const GIDX_DOCUMENTS_REQUIRED = 2
 
@@ -31,7 +32,13 @@ export const verificationParams = z.object({
   EmailAddress: z.string(),
   MerchantCustomerID: z.string(),
 })
-
+const BillingAddress = z.object({
+  City: z.string(),
+  AddressLine1: z.string(),
+  StateCode: z.string(),
+  PostalCode: z.string(),
+  CountryCode: z.string(),
+})
 export const checkoutParams = {
   MerchantTransactionID: z.string(),
   MerchantSessionID: z.string(),
@@ -44,13 +51,7 @@ export const checkoutParams = {
     Type: z.enum(['CC']), // TODO: add 'ACH'
     NameOnAccount: z.string(),
     SavePaymentMethod: z.boolean(),
-    BillingAddress: z.object({
-      City: z.string(),
-      AddressLine1: z.string(),
-      StateCode: z.string(),
-      PostalCode: z.string(),
-      CountryCode: z.string(),
-    }),
+    BillingAddress,
     // CC specific fields,
     creditCard: z.object({
       CardNumber: z.string(),
@@ -77,22 +78,16 @@ export const checkoutParams = {
 export const cashoutParams = z.object({
   ...checkoutParams,
   PaymentAmount: z.object({
-    manaCash: z.number(),
+    manaCash: z.number().gte(MIN_CASHOUT_AMOUNT),
     dollars: z.number(),
   }),
   SavePaymentMethod: z.boolean(),
   PaymentMethod: z.object({
     Type: z.enum(['ACH']),
     NameOnAccount: z.string(),
-    BillingAddress: z.object({
-      City: z.string(),
-      AddressLine1: z.string(),
-      StateCode: z.string(),
-      PostalCode: z.string(),
-      CountryCode: z.string(),
-    }),
     AccountNumber: z.string(),
     RoutingNumber: z.string(),
+    BillingAddress: BillingAddress,
   }),
 })
 
@@ -423,14 +418,24 @@ export type PaymentDetail = {
 export type CompleteSessionDirectCashierResponse = {
   ReasonCodes: string[]
   SessionID: string
-  SessionStatusCode: number
-  SessionStatusMessage: string
+  SessionStatusCode: number | null
+  SessionStatusMessage: string | null
   MerchantTransactionID: string
   AllowRetry: boolean
-  Action: Action
-  FinancialConfidenceScoreString: number
+  Action: Action | null
+  FinancialConfidenceScore: number
   PaymentDetails: PaymentDetail[]
+  ResponseCode: number
+  ResponseMessage: string
+  ApiKey: string
+  MerchantID: string
+  MerchantSessionID: string
+  SessionScore: number
+  CustomerRegistration: any | null
+  LocationDetail: any | null
+  ApiVersion: number
 }
+
 type Address = {
   AddressLine1: string
   AddressLine2: string
@@ -466,4 +471,45 @@ export type CustomerProfileResponse = {
     DateOfBirth: string
     IdentityConfidenceScore: number
   }[]
+}
+
+export const ProcessSessionCode = (
+  SessionStatusCode: number | null,
+  SessionStatusMessage: string | null,
+  AllowRetry: boolean
+) => {
+  if (SessionStatusCode === 1) {
+    return {
+      status: 'error',
+      message: 'Your information could not be succesfully validated',
+      gidxMessage: SessionStatusMessage,
+    }
+  } else if (SessionStatusCode === 2) {
+    return {
+      status: 'error',
+      message: 'Your information is incomplete',
+      gidxMessage: SessionStatusMessage,
+    }
+  } else if (SessionStatusCode === 3 && AllowRetry) {
+    return {
+      status: 'error',
+      message: 'Payment timeout, please try again',
+      gidxMessage: SessionStatusMessage,
+    }
+  } else if (SessionStatusCode === 3 && !AllowRetry) {
+    return {
+      status: 'error',
+      message: 'Payment timeout',
+      gidxMessage: SessionStatusMessage,
+    }
+  } else if (SessionStatusCode && SessionStatusCode >= 4) {
+    return {
+      status: 'pending',
+      message: 'Please complete next step',
+      gidxMessage: SessionStatusMessage,
+    }
+  }
+  return {
+    status: 'success',
+  }
 }

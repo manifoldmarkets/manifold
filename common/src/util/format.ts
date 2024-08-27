@@ -44,6 +44,10 @@ export function formatMoneyNumber(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', '')
 }
+export function formatSweepsNumber(amount: number) {
+  const newAmount = getMoneyNumber(amount / 100)
+  return formatter.format(newAmount).replace('$', 'S')
+}
 
 export function getMoneyNumber(amount: number) {
   // Handle 499.9999999999999 case

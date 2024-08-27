@@ -396,6 +396,10 @@ export const RegisterUserForm = (props: { user: User }) => {
           <Link className={buttonClass('md', 'indigo')} href={'/checkout'}>
             Get mana
           </Link>
+        ) : redirect === 'cashout' ? (
+          <Link className={buttonClass('md', 'indigo')} href={'/cashout'}>
+            Cash out
+          </Link>
         ) : (
           <Link className={buttonClass('md', 'indigo')} href={'/home'}>
             Done
