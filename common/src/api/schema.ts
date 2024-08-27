@@ -1525,7 +1525,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       status: string
       message?: string
-      gidxMessage?: string
+      gidxMessage?: string | null
       details?: PaymentDetail[]
     },
     props: z.object(checkoutParams),
@@ -1537,7 +1537,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       status: string
       message?: string
-      gidxMessage?: string
+      gidxMessage?: string | null
       details?: PaymentDetail[]
     },
     props: cashoutParams,

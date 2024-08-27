@@ -417,14 +417,24 @@ export type PaymentDetail = {
 export type CompleteSessionDirectCashierResponse = {
   ReasonCodes: string[]
   SessionID: string
-  SessionStatusCode: number
-  SessionStatusMessage: string
+  SessionStatusCode: number | null
+  SessionStatusMessage: string | null
   MerchantTransactionID: string
   AllowRetry: boolean
-  Action: Action
-  FinancialConfidenceScoreString: number
+  Action: Action | null
+  FinancialConfidenceScore: number
   PaymentDetails: PaymentDetail[]
+  ResponseCode: number
+  ResponseMessage: string
+  ApiKey: string
+  MerchantID: string
+  MerchantSessionID: string
+  SessionScore: number
+  CustomerRegistration: any | null
+  LocationDetail: any | null
+  ApiVersion: number
 }
+
 type Address = {
   AddressLine1: string
   AddressLine2: string
@@ -460,4 +470,45 @@ export type CustomerProfileResponse = {
     DateOfBirth: string
     IdentityConfidenceScore: number
   }[]
+}
+
+export const ProcessSessionCode = (
+  SessionStatusCode: number | null,
+  SessionStatusMessage: string | null,
+  AllowRetry: boolean
+) => {
+  if (SessionStatusCode === 1) {
+    return {
+      status: 'error',
+      message: 'Your information could not be succesfully validated',
+      gidxMessage: SessionStatusMessage,
+    }
+  } else if (SessionStatusCode === 2) {
+    return {
+      status: 'error',
+      message: 'Your information is incomplete',
+      gidxMessage: SessionStatusMessage,
+    }
+  } else if (SessionStatusCode === 3 && AllowRetry) {
+    return {
+      status: 'error',
+      message: 'Payment timeout, please try again',
+      gidxMessage: SessionStatusMessage,
+    }
+  } else if (SessionStatusCode === 3 && !AllowRetry) {
+    return {
+      status: 'error',
+      message: 'Payment timeout',
+      gidxMessage: SessionStatusMessage,
+    }
+  } else if (SessionStatusCode && SessionStatusCode >= 4) {
+    return {
+      status: 'pending',
+      message: 'Please complete next step',
+      gidxMessage: SessionStatusMessage,
+    }
+  }
+  return {
+    status: 'success',
+  }
 }

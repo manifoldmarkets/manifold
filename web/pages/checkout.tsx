@@ -36,9 +36,9 @@ const CheckoutPage = () => {
   const [locationError, setLocationError] = useState<string>()
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : MANA_WEB_PRICES
-  const [page, setPage] = useState<'checkout' | 'payment' | 'location'>(
-    'checkout'
-  )
+  const [page, setPage] = useState<
+    'checkout' | 'payment' | 'get-session' | 'location'
+  >('checkout')
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
   const [amountSelected, setAmountSelected] = useState<WebManaAmounts>()
   const [productSelected, setProductSelected] = useState<PaymentAmount>()
@@ -173,6 +173,7 @@ const CheckoutPage = () => {
       ) : page === 'location' ? (
         <LocationPanel
           setLocation={(data: GPSData) => {
+            setPage('get-session')
             getCheckoutSession(data)
           }}
           setLocationError={setLocationError}
@@ -189,6 +190,8 @@ const CheckoutPage = () => {
           CheckoutSession={checkoutSession}
           amount={productSelected}
         />
+      ) : page === 'get-session' ? (
+        <LoadingIndicator />
       ) : error || locationError ? null : (
         <LoadingIndicator />
       )}

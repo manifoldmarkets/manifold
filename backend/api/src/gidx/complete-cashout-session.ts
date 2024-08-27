@@ -1,5 +1,8 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { CompleteSessionDirectCashierResponse } from 'common/gidx/gidx'
+import {
+  CompleteSessionDirectCashierResponse,
+  ProcessSessionCode,
+} from 'common/gidx/gidx'
 import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
@@ -7,22 +10,13 @@ import {
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxn } from 'shared/txn/run-txn'
-import { MANA_CASH_TO_DOLLARS_OUT_GIDX, CashAmountGIDX } from 'common/economy'
 import { getIp } from 'shared/analytics'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { getUser } from 'shared/utils'
+import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
-
-const getManaCashAmountForDollars = (dollars: number) => {
-  const manaCash = Object.entries(MANA_CASH_TO_DOLLARS_OUT_GIDX).find(
-    ([, p]) => p === dollars
-  )
-  if (!manaCash) {
-    throw new APIError(400, 'Invalid cashout amount')
-  }
-  return parseInt(manaCash[0]) as CashAmountGIDX
-}
 
 export const completeCashoutSession: APIHandler<
   'complete-cashout-session-gidx'
@@ -30,6 +24,10 @@ export const completeCashoutSession: APIHandler<
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const userId = auth.uid
   const { phoneNumberWithCode } = await getUserRegistrationRequirements(userId)
+  const user = await getUser(userId)
+  if (!user) {
+    throw new APIError(404, 'User not found')
+  }
   const {
     PaymentMethod,
     MerchantSessionID,
@@ -37,12 +35,19 @@ export const completeCashoutSession: APIHandler<
     MerchantTransactionID,
     SavePaymentMethod,
   } = props
-  // TODO: make sure user has enough mana cash balance
-  const manaCashAmount = getManaCashAmountForDollars(PaymentAmount.dollars)
 
+  const manaCashAmount = PaymentAmount.manaCash
+  if (manaCashAmount > user.cashBalance) {
+    throw new APIError(400, 'Insufficient mana cash balance')
+  }
+  const dollarsToWithdraw = PaymentAmount.dollars
+  const CalculatedPaymentAmount = (1 - SWEEPIES_CASHOUT_FEE) * manaCashAmount
+  if (dollarsToWithdraw !== CalculatedPaymentAmount) {
+    throw new APIError(400, 'Payment amount mismatch')
+  }
   const body = {
     PaymentAmount: {
-      PaymentAmount: PaymentAmount.dollars,
+      PaymentAmount: CalculatedPaymentAmount,
       BonusAmount: 0,
     },
     SavePaymentMethod,
@@ -65,44 +70,30 @@ export const completeCashoutSession: APIHandler<
   if (!res.ok) {
     throw new APIError(400, 'GIDX complete checkout session failed')
   }
-  const data = (await res.json()) as CompleteSessionDirectCashierResponse
-  log('Complete checkout session response:', data)
+  const cashierResponse =
+    (await res.json()) as CompleteSessionDirectCashierResponse
+  log('Complete checkout session response:', cashierResponse)
   const {
     SessionStatusCode,
     AllowRetry,
     PaymentDetails,
     SessionStatusMessage,
-  } = data
-  if (SessionStatusCode === 1) {
+    ResponseCode,
+  } = cashierResponse
+  if (ResponseCode >= 300) {
     return {
       status: 'error',
-      message: 'Your information could not be succesfully validated',
+      message: 'GIDX error',
       gidxMessage: SessionStatusMessage,
     }
-  } else if (SessionStatusCode === 2) {
-    return {
-      status: 'error',
-      message: 'Your information is incomplete',
-      gidxMessage: SessionStatusMessage,
-    }
-  } else if (SessionStatusCode === 3 && AllowRetry) {
-    return {
-      status: 'error',
-      message: 'Payment timeout, please try again',
-      gidxMessage: SessionStatusMessage,
-    }
-  } else if (SessionStatusCode === 3 && !AllowRetry) {
-    return {
-      status: 'error',
-      message: 'Payment timeout',
-      gidxMessage: SessionStatusMessage,
-    }
-  } else if (SessionStatusCode >= 4) {
-    return {
-      status: 'pending',
-      message: 'Please complete next step',
-      gidxMessage: SessionStatusMessage,
-    }
+  }
+  const { status, message, gidxMessage } = ProcessSessionCode(
+    SessionStatusCode,
+    SessionStatusMessage,
+    AllowRetry
+  )
+  if (status !== 'success') {
+    return { status, message, gidxMessage }
   }
 
   const {
@@ -118,12 +109,7 @@ export const completeCashoutSession: APIHandler<
   }
   if (PaymentStatusCode === '1') {
     // This should always return a '0' for pending, but just in case
-    await debitCoins(
-      userId,
-      manaCashAmount,
-      PaymentAmount.dollars,
-      MerchantTransactionID
-    )
+    await debitCoins(userId, manaCashAmount, cashierResponse)
     return {
       status: 'success',
       message: 'Payment successful',
@@ -160,12 +146,7 @@ export const completeCashoutSession: APIHandler<
       gidxMessage: PaymentStatusMessage,
     }
   } else if (PaymentStatusCode === '0') {
-    await debitCoins(
-      userId,
-      manaCashAmount,
-      PaymentAmount.dollars,
-      MerchantTransactionID
-    )
+    await debitCoins(userId, manaCashAmount, cashierResponse)
     return {
       status: 'pending',
       message: 'Payment pending',
@@ -181,11 +162,30 @@ export const completeCashoutSession: APIHandler<
 
 const debitCoins = async (
   userId: string,
-  manaCashAmount: CashAmountGIDX,
-  payoutInDollars: number,
-  transactionId: string
+  manaCashAmount: number,
+  response: CompleteSessionDirectCashierResponse
 ) => {
-  const data = { transactionId, type: 'gidx', payoutInDollars }
+  const {
+    MerchantTransactionID,
+    PaymentDetails,
+    SessionStatusMessage,
+    ReasonCodes,
+    SessionID,
+    SessionStatusCode,
+  } = response
+  const {
+    CurrencyCode,
+    PaymentAmount,
+    PaymentMethodType,
+    PaymentStatusCode,
+    PaymentStatusMessage,
+    PaymentAmountType,
+  } = PaymentDetails[0]
+  const data = {
+    transactionId: MerchantTransactionID,
+    type: 'gidx',
+    payoutInDollars: PaymentDetails[0].PaymentAmount,
+  }
   const pg = createSupabaseDirectClient()
   const manaCashoutTxn = {
     fromId: userId,
@@ -198,9 +198,52 @@ const debitCoins = async (
     category: 'CASH_OUT_PENDING',
     description: `Pending cash out debit`,
   } as const
-
-  // TODO: add a row to the cash_out_receipts table with pending status
+  const {
+    ApiKey: _,
+    MerchantID: __,
+    CustomerRegistration: ___,
+    LocationDetail: ____,
+    ...dataToWrite
+  } = response
   await pg.tx(async (tx) => {
-    await runTxn(tx, manaCashoutTxn)
+    const txn = await runTxn(tx, manaCashoutTxn)
+    await tx.none(
+      `
+    insert into gidx_receipts (
+      user_id,
+      merchant_transaction_id,
+      payment_status_code,
+      payment_status_message,
+      session_id,
+      reason_codes,
+      currency,
+      amount,
+      payment_method_type,
+      payment_amount_type,
+      status,
+      status_code,
+      txn_id,
+      payment_data
+    ) values (
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+    )
+  `,
+      [
+        userId,
+        MerchantTransactionID,
+        PaymentStatusCode,
+        PaymentStatusMessage,
+        SessionID,
+        ReasonCodes,
+        CurrencyCode,
+        PaymentAmount,
+        PaymentMethodType,
+        PaymentAmountType,
+        SessionStatusMessage,
+        SessionStatusCode,
+        txn.id,
+        JSON.stringify(dataToWrite),
+      ]
+    )
   })
 }

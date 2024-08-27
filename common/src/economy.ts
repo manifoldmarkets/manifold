@@ -161,11 +161,4 @@ export const IOS_PRICES = [
 ]
 export type ManaAmountGIDX = (typeof PaymentAmountsGIDX)[number]['mana']
 
-// TODO what are the actual values? Probably want it to be fee tiers and not fixed numbers
-export const MANA_CASH_TO_DOLLARS_OUT_GIDX = {
-  10_000: 10,
-  25_000: 25,
-  100_000: 100,
-  1_000_000: 1_000,
-} as const
-export type CashAmountGIDX = keyof typeof MANA_CASH_TO_DOLLARS_OUT_GIDX
+export const SWEEPIES_CASHOUT_FEE = 0.05
