@@ -20,6 +20,11 @@ export function formatMoney(amount: number) {
   return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
 }
 
+export function formatSweepies(amount: number) {
+  const newAmount = getMoneyNumber(amount)
+  return formatter.format(newAmount).replace('$', 'S')
+}
+
 export function formatSpice(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', 'P ')
