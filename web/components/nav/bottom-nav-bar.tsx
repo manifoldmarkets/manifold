@@ -170,7 +170,7 @@ function NavBarItem(props: {
             {TWOMBA_ENABLED ? (
               <CoinNumber
                 amount={user?.cashBalance}
-                className="text-lime-600 dark:text-lime-400"
+                className="text-amber-600 dark:text-amber-400"
                 coinType="sweepies"
                 numberType="short"
                 isInline

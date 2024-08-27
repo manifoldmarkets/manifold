@@ -12,7 +12,7 @@ export function TwombaToggle() {
         'bg-ink-200 dark:bg-canvas-50 relative flex h-fit w-fit shrink-0 flex-row items-center gap-1 rounded-full border-[1.5px] p-0.5 text-2xl transition-colors',
         isPlay
           ? 'dark:border-primary-700 border-primary-500'
-          : 'border-lime-500 dark:border-lime-200'
+          : 'border-amber-500 dark:border-amber-200'
       )}
       onClick={() => setIsPlay(!isPlay)}
     >
