@@ -198,7 +198,7 @@ type CashOutPending = {
   fromType: 'USER'
   toType: 'BANK'
   token: 'CASH'
-  category: 'CASH_OUT_PENDING'
+  category: 'CASH_OUT'
   data: {
     transactionId: string
     type: 'gidx'

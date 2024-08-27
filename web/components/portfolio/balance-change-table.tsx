@@ -324,6 +324,7 @@ const TxnBalanceChangeRow = (props: {
     CONSUME_SPICE_DONE: 'bg-indigo-400',
     SIGNUP_BONUS: 'bg-yellow-200',
     MANA_PURCHASE: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
+    CASH_BONUS: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
     MARKET_BOOST_REDEEM: 'bg-purple-200',
     MARKET_BOOST_CREATE: 'bg-purple-400',
     LEAGUE_PRIZE: 'bg-indigo-400',
@@ -331,6 +332,7 @@ const TxnBalanceChangeRow = (props: {
     BOUNTY_AWARDED: 'bg-teal-600',
     MANA_PAYMENT: 'bg-teal-400',
     LOAN: 'bg-amber-500',
+    CASH_OUT: 'bg-amber-500',
     ADD_SUBSIDY: 'bg-red-100',
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
     CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
@@ -368,12 +370,13 @@ const TxnBalanceChangeRow = (props: {
               <FaArrowRightArrowLeft className={'h-4 w-4'} />
             ) : type === 'CHARITY' ? (
               '❤️'
-            ) : type === 'LOAN' ? (
+            ) : type === 'LOAN' || type === 'CASH_OUT' ? (
               '🏦'
             ) : type === 'MANA_PURCHASE' ? (
               '🤑'
             ) : [
                 'UNIQUE_BETTOR_BONUS',
+                'CASH_BONUS',
                 'BETTING_STREAK_BONUS',
                 'SIGNUP_BONUS',
                 'QUEST_REWARD',
@@ -483,6 +486,10 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'CONSUME_SPICE':
     case 'CONSUME_SPICE_DONE':
       return `Redeem prize points for mana`
+    case 'CASH_OUT':
+      return 'Cash out request'
+    case 'CASH_BONUS':
+      return 'Mana cash bonus'
     default:
       return type
   }

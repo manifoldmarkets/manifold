@@ -74,6 +74,8 @@ import { TwombaPortfolioValueSection } from 'web/components/portfolio/twomba-por
 import { unauthedApi } from 'common/util/api'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { RedeemSpiceButton } from 'web/components/profile/redeem-spice-button'
+import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { Button } from 'web/components/buttons/button'
 
 export const getStaticProps = async (props: {
   params: {
@@ -368,6 +370,14 @@ function UserProfile(props: {
               className="whitespace-nowrap"
               spice={user.spiceBalance}
             />
+            <Button onClick={() => router.push('/cashout')}>
+              Cashout
+              <CoinNumber
+                amount={user.cashBalance}
+                className={'ml-1'}
+                coinType={'sweepies'}
+              />
+            </Button>
           </Row>
         )}
 

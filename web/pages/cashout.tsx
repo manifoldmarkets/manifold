@@ -258,12 +258,10 @@ const CashoutPage = () => {
           </Row>
         )}
         {error && <Row className="text-error mt-4">{error}</Row>}
-        {sessionStatus && sessionStatus.toLowerCase().includes('timeout') ? (
+        {sessionStatus && sessionStatus.toLowerCase().includes('timeout') && (
           <Row className="text-error mt-4">
             {sessionStatus} - refresh to try again
           </Row>
-        ) : (
-          sessionStatus && <Row className="mt-4">{sessionStatus}</Row>
         )}
       </Col>
     </Page>

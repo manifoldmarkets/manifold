@@ -195,8 +195,8 @@ const debitCoins = async (
     data,
     amount: manaCashAmount,
     token: 'CASH',
-    category: 'CASH_OUT_PENDING',
-    description: `Pending cash out debit`,
+    category: 'CASH_OUT',
+    description: `Cash out debit`,
   } as const
   const {
     ApiKey: _,
