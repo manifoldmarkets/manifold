@@ -82,7 +82,5 @@ export const paymentCallbackGIDX: APIHandler<'payment-callback-gidx'> = async (
   // TODO: Double check here that the txns were sent given successful payment
   //  and if not, resend them
 
-  return {
-    Accepted: true,
-  }
+  return { MerchantTransactionID }
 }

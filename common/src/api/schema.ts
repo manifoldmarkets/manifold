@@ -1580,7 +1580,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
-    returns: {} as { Accepted: boolean },
+    returns: {} as { MerchantTransactionID: string },
     props: z.any(),
   },
   'get-best-comments': {
