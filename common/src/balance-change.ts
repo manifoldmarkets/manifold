@@ -19,6 +19,7 @@ type MinimalContract = {
   slug?: string
   visibility: Visibility
   creatorUsername: string
+  token: 'MANA' | 'CASH'
 }
 
 export const BET_BALANCE_CHANGE_TYPES = [
