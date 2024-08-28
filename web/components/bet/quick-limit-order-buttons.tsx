@@ -1,22 +1,23 @@
 import clsx from 'clsx'
-import toast from 'react-hot-toast'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 
+import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
 import { CPMMContract, MultiContract } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { TRADE_TERM } from 'common/envs/constants'
+import { formatPercent, formatWithToken } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
+import { AddFundsModal } from '../add-funds-modal'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { track } from 'web/lib/service/analytics'
-import { AddFundsModal } from '../add-funds-modal'
-import { Answer } from 'common/answer'
-import { TRADE_TERM } from 'common/envs/constants'
+import { MoneyDisplay } from './money-display'
 
 export const QuickLimitOrderButtons = (props: {
   contract: CPMMContract | MultiContract
@@ -27,6 +28,8 @@ export const QuickLimitOrderButtons = (props: {
   if (!answer && contract.mechanism === 'cpmm-multi-1') {
     throw new Error('Answer must be provided for multi contracts')
   }
+
+  const isCashContract = contract.token === 'CASH'
 
   const unroundedProb = answer ? answer.prob : (contract as CPMMContract).prob
   const prob = Math.round(unroundedProb * 100) / 100
@@ -68,8 +71,9 @@ export const QuickLimitOrderButtons = (props: {
         console.log(`placed ${TRADE_TERM}. Result:`, r)
         setIsSubmitting(false)
         toast.success(
-          `Placed order for ${formatMoney(
-            amount
+          `Placed order for ${formatWithToken(
+            amount,
+            isCashContract ? 'CASH' : 'M$'
           )} ${outcome} at ${formatPercent(prob)}`
         )
       })
@@ -108,8 +112,9 @@ export const QuickLimitOrderButtons = (props: {
         <div className="text-ink-600">
           Quick limit order{' '}
           <InfoTooltip
-            text={`Offer to buy ${formatMoney(
-              amount
+            text={`Offer to buy ${formatWithToken(
+              amount,
+              isCashContract ? 'CASH' : 'M$'
             )} YES or NO at the current market price of ${formatPercent(
               prob
             )}. If no one takes your ${TRADE_TERM}, your offer will expire in 24 hours.`}
@@ -122,7 +127,7 @@ export const QuickLimitOrderButtons = (props: {
           className="w-24 whitespace-nowrap font-semibold"
           onClick={() => submitBet('YES')}
         >
-          {formatMoney(amount)} YES
+          <MoneyDisplay amount={amount} isCashContract={isCashContract} /> YES
         </Button>
         <Button
           size="xs"
@@ -131,7 +136,7 @@ export const QuickLimitOrderButtons = (props: {
           className="w-24 whitespace-nowrap font-semibold"
           onClick={() => submitBet('NO')}
         >
-          {formatMoney(amount)} NO
+          <MoneyDisplay amount={amount} isCashContract={isCashContract} /> NO
         </Button>
       </Row>
       {error && <div className="text-red-500">{error}</div>}

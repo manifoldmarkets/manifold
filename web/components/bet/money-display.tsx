@@ -1,11 +1,5 @@
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { formatWithToken } from 'common/util/format'
 import { CoinNumber, NumberDisplayType } from '../widgets/manaCoinNumber'
-import {
-  formatMoney,
-  formatMoneyWithDecimals,
-  formatSweepies,
-  formatWithToken,
-} from 'common/util/format'
 
 export function MoneyDisplay(props: {
   amount: number

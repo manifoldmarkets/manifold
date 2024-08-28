@@ -344,6 +344,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                   question={props.contract.question}
                   financeContract={liveContract}
                   editable={isCreator || isAdmin || isMod}
+                  isCashContract={liveContract.token === 'CASH'}
                 />
               </div>
               <ContractOverview

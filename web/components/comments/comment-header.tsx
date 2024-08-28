@@ -11,11 +11,24 @@ import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { isAdminId } from 'common/envs/constants'
+import { buildArray } from 'common/util/array'
+import { formatPercent, formatWithToken } from 'common/util/format'
+import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { BiRepost } from 'react-icons/bi'
+import { PiPushPinBold } from 'react-icons/pi'
 import { TiPin } from 'react-icons/ti'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { api } from 'web/lib/api/api'
+import { PaymentsModal } from 'web/pages/payments'
+import TipJar from 'web/public/custom-components/tipJar'
+import { AnnotateChartModal } from '../annotate-chart'
+import { MoneyDisplay } from '../bet/money-display'
+import { ReportModal } from '../buttons/report-button'
 import { CommentOnAnswer } from '../feed/comment-on-answer'
 import {
   CopyLinkDateTimeComponent,
@@ -29,20 +42,8 @@ import { UserHovercard } from '../user/user-hovercard'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
-import { CommentEditHistoryButton } from './comment-edit-history-button'
 import { commenterAndBettorMatch, roundThreadColor } from './comment'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { isAdminId } from 'common/envs/constants'
-import { buildArray } from 'common/util/array'
-import { useState } from 'react'
-import toast from 'react-hot-toast'
-import { PiPushPinBold } from 'react-icons/pi'
-import { useAdminOrMod } from 'web/hooks/use-admin'
-import { api } from 'web/lib/api/api'
-import { PaymentsModal } from 'web/pages/payments'
-import TipJar from 'web/public/custom-components/tipJar'
-import { AnnotateChartModal } from '../annotate-chart'
-import { ReportModal } from '../buttons/report-button'
+import { CommentEditHistoryButton } from './comment-edit-history-button'
 import DropdownMenu from './dropdown-menu'
 import { EditCommentModal } from './edit-comment-modal'
 import { RepostModal } from './repost-modal'
@@ -75,6 +76,7 @@ export function FeedCommentHeader(props: {
     betLimitProb,
   } = comment
 
+  const isCashContract = contract.token === 'CASH'
   const marketCreator = contract.creatorId === userId
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
@@ -100,7 +102,10 @@ export function FeedCommentHeader(props: {
             <span className={'ml-1'}>
               {betAmount === betOrderAmount ? 'filled' : 'opened'} a{' '}
               <span className="text-ink-1000">
-                {formatMoney(betOrderAmount)}
+                <MoneyDisplay
+                  amount={betOrderAmount}
+                  isCashContract={isCashContract}
+                />
               </span>{' '}
               <OutcomeLabel
                 outcome={betOutcome ? betOutcome : ''}
@@ -174,7 +179,11 @@ export function FeedCommentHeader(props: {
         <Row className="gap-1">
           {bountyAwarded && bountyAwarded > 0 && (
             <span className="select-none text-teal-600">
-              +{formatMoney(bountyAwarded)}
+              +
+              <MoneyDisplay
+                amount={bountyAwarded}
+                isCashContract={isCashContract}
+              />
             </span>
           )}
           {isPinned && <TiPin className="text-primary-500 inline h-4 w-4" />}
@@ -184,12 +193,15 @@ export function FeedCommentHeader(props: {
   )
 }
 
-const getBoughtMoney = (betAmount: number | undefined) => {
+const getBoughtMoney = (
+  betAmount: number | undefined,
+  isCashContract: boolean
+) => {
   let bought: string | undefined
   let money: string | undefined
   if (betAmount != undefined) {
     bought = betAmount >= 0 ? 'bought' : 'sold'
-    money = formatMoney(Math.abs(betAmount))
+    money = formatWithToken(Math.abs(betAmount), isCashContract ? 'CASH' : 'M$')
   }
   return { bought, money }
 }
@@ -288,7 +300,8 @@ export function ReplyToBetRow(props: {
     betLimitProb,
     betOrderAmount,
   } = props
-  const { bought, money } = getBoughtMoney(betAmount)
+  const isCashContract = contract.token === 'CASH'
+  const { bought, money } = getBoughtMoney(betAmount, isCashContract)
   const user = useDisplayUserById(bettorId)
 
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
@@ -335,7 +348,12 @@ export function ReplyToBetRow(props: {
               ? 'Opened'
               : 'opened'}{' '}
             a
-            <span className="text-ink-1000">{formatMoney(betOrderAmount)}</span>{' '}
+            <span className="text-ink-1000">
+              <MoneyDisplay
+                amount={betOrderAmount}
+                isCashContract={isCashContract}
+              />
+            </span>
             <OutcomeLabel
               outcome={betOutcome ? betOutcome : ''}
               answerId={betAnswerId}

@@ -24,9 +24,11 @@ const formatterWithFraction = new Intl.NumberFormat('en-US', {
 
 export const SWEEPIES_MONIKER = 'S'
 
+export type InputTokenType = 'M$' | 'SPICE' | 'CASH'
+
 export function formatWithToken(
   amount: number,
-  token: string,
+  token: InputTokenType,
   toDecimal?: number
 ) {
   if (token === 'CASH') {

@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { formatMoneyWithDecimals } from 'common/util/format'
+import { formatMoneyWithDecimals, formatWithToken } from 'common/util/format'
 import { Tooltip } from '../widgets/tooltip'
 import clsx from 'clsx'
 
@@ -9,6 +9,7 @@ export const CreatorFeesDisplay = (props: {
 }) => {
   const { contract, className } = props
   const { collectedFees } = contract
+  const isCashContract = contract.token === 'CASH'
   return (
     <Tooltip
       text={'Fees earned from trade volume'}
@@ -16,7 +17,12 @@ export const CreatorFeesDisplay = (props: {
       noTap
       className={clsx(className, 'text-ink-600 text-sm')}
     >
-      {formatMoneyWithDecimals(collectedFees.creatorFee)} earned
+      {formatWithToken(
+        collectedFees.creatorFee,
+        isCashContract ? 'CASH' : 'M$',
+        isCashContract ? 4 : 2
+      )}{' '}
+      earned
     </Tooltip>
   )
 }

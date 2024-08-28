@@ -1,5 +1,6 @@
 import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { Contract } from 'common/contract'
+import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { shortenNumber } from '../../lib/util/formatNumber'
@@ -8,7 +9,6 @@ import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
 import { CreatorFeesDisplay } from './creator-fees-display'
-import { Contract } from 'common/contract'
 
 export function ContractSummaryStats(props: {
   contract: Contract
@@ -18,6 +18,7 @@ export function ContractSummaryStats(props: {
   const { creatorId, outcomeType, marketTier } = contract
 
   const isCreator = useUser()?.id === creatorId
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <>
@@ -43,7 +44,10 @@ export function ContractSummaryStats(props: {
 
           {!!contract.volume && (
             <Tooltip
-              text={`Trading volume: ${formatMoney(contract.volume)}`}
+              text={`Trading volume: ${formatWithToken(
+                contract.volume,
+                isCashContract ? 'CASH' : 'M$'
+              )}`}
               placement="bottom"
               noTap
               className="flex flex-row items-center gap-1"

@@ -1,6 +1,10 @@
 import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import {
+  formatWithToken,
+  shortFormatNumber,
+  SWEEPIES_MONIKER,
+} from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { shortenNumber } from '../../lib/util/formatNumber'
@@ -10,6 +14,7 @@ import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
 import { CreatorFeesDisplay } from './creator-fees-display'
 import { LikeButton } from './like-button'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function TwombaContractSummaryStats(props: {
   contractId: string
@@ -17,6 +22,7 @@ export function TwombaContractSummaryStats(props: {
   question: string
   financeContract: Contract
   editable?: boolean
+  isCashContract?: boolean
 }) {
   const {
     contractId,
@@ -24,6 +30,7 @@ export function TwombaContractSummaryStats(props: {
     question,
     financeContract: contract,
     editable,
+    isCashContract,
   } = props
   const { outcomeType, marketTier } = contract
   const isCreator = useUser()?.id === creatorId
@@ -66,12 +73,16 @@ export function TwombaContractSummaryStats(props: {
 
           {!!contract.volume && (
             <Tooltip
-              text={`Trading volume: ${formatMoney(contract.volume)}`}
+              text={`Trading volume: ${formatWithToken(
+                contract.volume,
+                isCashContract ? 'CASH' : 'M$'
+              )}`}
               placement="bottom"
               noTap
               className="flex flex-row items-center gap-0.5"
             >
-              <ChartBarIcon className="text-ink-500 h-4 w-4" />Ṁ
+              <ChartBarIcon className="text-ink-500 h-4 w-4" />
+              {isCashContract ? SWEEPIES_MONIKER : ENV_CONFIG.moneyMoniker}
               {shortenNumber(contract.volume)}
             </Tooltip>
           )}

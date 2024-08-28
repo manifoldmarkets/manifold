@@ -1,13 +1,13 @@
 import clsx from 'clsx'
 import { Contract, contractPath } from 'common/contract'
-import { formatMoney } from 'common/util/format'
+import { TRADED_TERM } from 'common/envs/constants'
+import { formatWithToken } from 'common/util/format'
 import Link from 'next/link'
-import { fromNow } from 'web/lib/util/time'
 import { useIsClient } from 'web/hooks/use-is-client'
+import { getIsNative } from 'web/lib/native/is-native'
+import { fromNow } from 'web/lib/util/time'
 import { ContractStatusLabel } from './contracts-table'
 import { getTextColor } from './text-color'
-import { getIsNative } from 'web/lib/native/is-native'
-import { TRADED_TERM } from 'common/envs/constants'
 
 export function ContractMention(props: {
   contract: Contract
@@ -46,11 +46,13 @@ export function ContractMention(props: {
 
 function tooltipLabel(contract: Contract) {
   const { resolutionTime, creatorName, volume, closeTime = 0 } = contract
+  const isCashContract = contract.token === 'CASH'
   const dateFormat = resolutionTime
     ? `Resolved ${fromNow(resolutionTime)}`
     : `${closeTime < Date.now() ? 'Closed' : 'Closes'} ${fromNow(closeTime)}`
 
-  return `By ${creatorName}. ${formatMoney(
-    volume
+  return `By ${creatorName}. ${formatWithToken(
+    volume,
+    isCashContract ? 'CASH' : 'M$'
   )} ${TRADED_TERM}. ${dateFormat}`
 }

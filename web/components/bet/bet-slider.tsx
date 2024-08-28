@@ -1,7 +1,7 @@
+import { buildArray } from 'common/util/array'
+import { formatWithToken, InputTokenType } from 'common/util/format'
 import { BinaryOutcomes } from 'web/components/bet/bet-panel'
 import { Slider } from 'web/components/widgets/slider'
-import { formatMoney, formatMoneyShort } from 'common/util/format'
-import { buildArray } from 'common/util/array'
 
 export const LARGE_SLIDER_VALUES = [
   1, 25, 50, 75, 100, 150, 250, 350, 500, 750, 1000, 1250, 1500, 2000, 2500,
@@ -30,6 +30,8 @@ export const BetSlider = (props: {
     className,
   } = props
 
+  const token = props.token ?? 'M$'
+
   const sliderAmounts = smallManaAmounts
     ? SMALL_SLIDER_VALUES
     : LARGE_SLIDER_VALUES
@@ -53,23 +55,23 @@ export const BetSlider = (props: {
       marks={buildArray(
         smallManaAmounts && {
           value: 0,
-          label: formatMoney(sliderAmounts[0]),
+          label: formatWithToken(sliderAmounts[0], token),
         },
         {
           value: hundredIndex,
-          label: formatMoney(sliderAmounts[hundredIndex]),
+          label: formatWithToken(sliderAmounts[hundredIndex], token),
         },
         !smallManaAmounts && {
           value: thousandIndex,
-          label: formatMoneyShort(sliderAmounts[thousandIndex]),
+          label: formatWithToken(sliderAmounts[thousandIndex], token),
         },
         !smallManaAmounts && {
           value: tenThousandIndex,
-          label: formatMoneyShort(sliderAmounts[tenThousandIndex]),
+          label: formatWithToken(sliderAmounts[tenThousandIndex], token),
         },
         smallManaAmounts && {
           value: maxSliderIndex,
-          label: formatMoneyShort(sliderAmounts[maxSliderIndex]),
+          label: formatWithToken(sliderAmounts[maxSliderIndex], token),
         }
       )}
       color={
