@@ -19,7 +19,6 @@ import {
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
 import { GIDXRegistrationResponse, ID_ERROR_MSG } from 'common/gidx/gidx'
-import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const ENDPOINT =
@@ -115,11 +114,6 @@ export const verifyReasonCodes = async (
   // User identity not found/verified
   if (hasIdentityError(ReasonCodes)) {
     log('Registration failed, resulted in identity errors:', ReasonCodes)
-    const { isPending } = await getIdentityVerificationDocuments(userId)
-    if (isPending) {
-      await updateUser(pg, userId, { kycStatus: 'pending' })
-      return { status: 'success' }
-    }
 
     await updateUser(pg, userId, { kycStatus: 'fail' })
     return {

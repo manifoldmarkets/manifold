@@ -35,7 +35,7 @@ export const RegisterUserForm = (props: { user: User }) => {
   const router = useRouter()
   const { redirect } = router.query
   const [page, setPage] = useState(
-    user.kycStatus === 'verified' || user.kycStatus === 'pending'
+    user.kycStatus === 'verified'
       ? 'final'
       : user.kycStatus === 'fail'
       ? 'documents'
@@ -345,7 +345,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (user.kycStatus === 'pending' || user.kycDocumentStatus === 'pending') {
+  if (user.kycDocumentStatus === 'pending') {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>

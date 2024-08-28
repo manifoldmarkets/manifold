@@ -69,8 +69,8 @@ export type User = {
   verifiedPhone?: boolean
   kycFlags?: string[]
   kycLastAttempt?: number
-  kycDocumentStatus?: 'await-documents' | 'verified' | 'pending' | 'fail'
-  kycStatus?: 'fail' | 'block' | 'temporary-block' | 'verified' | 'pending'
+  kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
+  kycStatus?: 'fail' | 'block' | 'temporary-block' | 'verified'
 }
 
 export type PrivateUser = {
@@ -160,8 +160,6 @@ export const getVerificationStatus = (
     return { status: 'error', message: 'User is blocked' }
   } else if (user.kycStatus === 'temporary-block') {
     return { status: 'error', message: 'User is temporary blocked' }
-  } else if (user.kycStatus === 'pending') {
-    return { status: 'error', message: 'User is pending' }
   } else if (user.kycStatus === 'fail') {
     return { status: 'error', message: 'User failed KYC' }
   } else if (user.kycStatus === 'verified') {
