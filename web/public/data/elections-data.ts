@@ -225,7 +225,7 @@ export const presidency2024: StateElectionMarket[] = [
   },
 ]
 
-export const swingStates = ['WI', 'MI', 'PA', 'NV', 'AZ', 'GA']
+export const swingStates = ['WI', 'MI', 'PA', 'NV', 'AZ', 'GA', 'NC']
 
 export type MapContractsDictionary = {
   [key: string]: Contract | null
