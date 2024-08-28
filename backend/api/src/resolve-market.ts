@@ -1,11 +1,15 @@
 import { sumBy } from 'lodash'
 import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
+import {
   CPMMMultiContract,
   Contract,
   CPMMNumericContract,
   canCancelContract,
 } from 'common/contract'
-import { log, getUser, getContract } from 'shared/utils'
+import { log, getUser, getContract, isProd } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
@@ -58,6 +62,17 @@ export const resolveMarketMain: APIHandler<
   if (caller.isBannedFromPosting || caller.userDeleted)
     throw new APIError(403, 'Deleted or banned user cannot resolve markets')
   if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
+
+  if (
+    contract.token === 'CASH' &&
+    auth.uid !==
+      (isProd() ? HOUSE_LIQUIDITY_PROVIDER_ID : DEV_HOUSE_LIQUIDITY_PROVIDER_ID)
+  ) {
+    throw new APIError(
+      403,
+      'Only the Manifold account can resolve prize cash markets'
+    )
+  }
 
   if (contract.resolution) throw new APIError(403, 'Contract already resolved')
 

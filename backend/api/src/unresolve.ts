@@ -10,7 +10,7 @@ import {
 } from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
-import { getContract, log } from 'shared/utils'
+import { getContract, isProd, log } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -25,6 +25,10 @@ import { convertAnswer } from 'common/supabase/contracts'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { convertTxn } from 'common/supabase/txns'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
@@ -73,10 +77,21 @@ const verifyUserCanUnresolve = async (
 ) => {
   const isMod = isModId(userId) || isAdminId(userId)
 
-  const { creatorId, mechanism, isSpicePayout } = contract
+  const { creatorId, mechanism, isSpicePayout, token } = contract
 
   if (isSpicePayout) {
     throw new APIError(400, `We no longer allow pp markets to be unresolved`)
+  }
+
+  if (
+    token === 'CASH' &&
+    userId !==
+      (isProd() ? HOUSE_LIQUIDITY_PROVIDER_ID : DEV_HOUSE_LIQUIDITY_PROVIDER_ID)
+  ) {
+    throw new APIError(
+      403,
+      `Only the Manifold account can unresolve prize cash markets`
+    )
   }
 
   let resolutionTime: number

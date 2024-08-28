@@ -36,6 +36,7 @@ export function DangerZone(props: {
     resolution,
     resolutionTime,
     uniqueBettorCount,
+    token,
   } = contract
 
   const isAdmin = useAdmin()
@@ -59,10 +60,10 @@ export function DangerZone(props: {
     (!uniqueBettorCount || uniqueBettorCount < 2)
 
   const canResolve =
-    (isCreator || isAdmin || isMod) &&
     !isResolved &&
     outcomeType !== 'STONK' &&
-    mechanism !== 'none'
+    mechanism !== 'none' &&
+    (token === 'CASH' ? isAdmin : isCreator || isAdmin || isMod)
 
   const now = dayjs().utc()
   const creatorCanUnresolve =
@@ -71,7 +72,10 @@ export function DangerZone(props: {
     now.diff(dayjs(resolutionTime), 'minute') < MINUTES_ALLOWED_TO_UNRESOLVE
 
   const canUnresolve =
-    (isAdmin || isMod || (isCreator && creatorCanUnresolve)) && isResolved
+    isResolved &&
+    (token === 'CASH'
+      ? isAdmin
+      : isAdmin || isMod || (isCreator && creatorCanUnresolve))
 
   useEffect(() => {
     if (
