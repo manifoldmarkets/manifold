@@ -10,12 +10,14 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { DisplayUser } from 'common/api/user-types'
+import { MoneyDisplay } from '../bet/money-display'
 
 export function FeedLiquidity(props: {
   className?: string
   liquidity: LiquidityProvision
+  isCashContract: boolean
 }) {
-  const { liquidity } = props
+  const { liquidity, isCashContract } = props
   const { userId, createdTime } = liquidity
 
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
@@ -43,6 +45,7 @@ export function FeedLiquidity(props: {
           liquidity={liquidity}
           isSelf={isSelf}
           bettor={bettor}
+          isCashContract={isCashContract}
         />
       </Row>
     </div>
@@ -53,12 +56,15 @@ function LiquidityStatusText(props: {
   liquidity: LiquidityProvision
   isSelf: boolean
   bettor?: DisplayUser
+  isCashContract: boolean
 }) {
-  const { liquidity, bettor, isSelf } = props
+  const { liquidity, bettor, isSelf, isCashContract } = props
   const { amount, createdTime } = liquidity
 
   const bought = amount >= 0 ? 'added' : 'withdrew'
-  const money = formatMoney(Math.abs(amount))
+  const money = (
+    <MoneyDisplay amount={Math.abs(amount)} isCashContract={isCashContract} />
+  )
 
   return (
     <div className="text-ink-1000 flex flex-wrap items-center gap-x-1 pr-4 text-sm">
