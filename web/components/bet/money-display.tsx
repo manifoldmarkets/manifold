@@ -4,6 +4,7 @@ import {
   formatMoney,
   formatMoneyWithDecimals,
   formatSweepies,
+  formatWithToken,
 } from 'common/util/format'
 
 export function MoneyDisplay(props: {
@@ -26,15 +27,11 @@ export function MoneyDisplay(props: {
       />
     )
   }
-  if (isCashContract) {
-    if (numberType === 'toDecimal') {
-      return <>{formatSweepies(amount, 4)}</>
-    }
-    return <>{formatSweepies(amount)}</>
-  }
 
-  if (numberType === 'toDecimal') {
-    return <>{formatMoneyWithDecimals(amount)}</>
-  }
-  return <>{formatMoney(amount)}</>
+  const toDecimal =
+    numberType === 'toDecimal' ? (isCashContract ? 4 : 2) : undefined
+
+  return (
+    <>{formatWithToken(amount, isCashContract ? 'CASH' : 'M$', toDecimal)}</>
+  )
 }

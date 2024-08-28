@@ -1,8 +1,8 @@
-import clsx from 'clsx'
-import { useEffect, useRef, useState } from 'react'
-import { sumBy } from 'lodash'
-import toast from 'react-hot-toast'
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
+import { sumBy } from 'lodash'
+import { useEffect, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 
 import {
   BinaryContract,
@@ -17,51 +17,51 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
+import { computeCpmmBet } from 'common/new-bet'
 import {
   formatLargeNumber,
-  formatMoney,
   formatOutcomeLabel,
   formatPercent,
+  formatWithToken,
 } from 'common/util/format'
-import { computeCpmmBet } from 'common/new-bet'
+import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { APIError, api } from 'web/lib/api/api'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 
-import { useFocus } from 'web/hooks/use-focus'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { OrderBookPanel, YourOrders } from './order-book'
-import { track, withTracking } from 'web/lib/service/analytics'
-import { YesNoSelector } from './yes-no-selector'
-import { isAndroid, isIOS } from 'web/lib/util/device'
-import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
-import { Button } from '../buttons/button'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { Answer } from 'common/answer'
-import { getCpmmProbability } from 'common/calculate-cpmm'
-import { removeUndefinedProps } from 'common/util/object'
-import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
-import LimitOrderPanel from './limit-order-panel'
-import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
-import { useUser } from 'web/hooks/use-user'
-import { getFeeTotal } from 'common/fees'
-import { FeeDisplay } from './fees'
-import { floatingEqual } from 'common/util/math'
-import { getTierFromLiquidity } from 'common/tier'
-import { getAnswerColor } from '../charts/contract/choice'
 import { LimitBet } from 'common/bet'
+import { getCpmmProbability } from 'common/calculate-cpmm'
+import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
   SWEEPIES_NAME,
   TRADE_TERM,
   TWOMBA_ENABLED,
 } from 'common/envs/constants'
-import { MoneyDisplay } from './money-display'
+import { getFeeTotal } from 'common/fees'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
+import { getTierFromLiquidity } from 'common/tier'
+import { floatingEqual } from 'common/util/math'
+import { removeUndefinedProps } from 'common/util/object'
 import { capitalize } from 'lodash'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
+import { useFocus } from 'web/hooks/use-focus'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { useUser } from 'web/hooks/use-user'
+import { track, withTracking } from 'web/lib/service/analytics'
+import { isAndroid, isIOS } from 'web/lib/util/device'
+import { Button } from '../buttons/button'
+import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
+import { getAnswerColor } from '../charts/contract/choice'
+import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { FeeDisplay } from './fees'
+import LimitOrderPanel from './limit-order-panel'
+import { MoneyDisplay } from './money-display'
+import { OrderBookPanel, YourOrders } from './order-book'
+import { YesNoSelector } from './yes-no-selector'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -453,6 +453,7 @@ export const BuyPanelBody = (props: {
     : formatPercent(probAfter)
 
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
+  const isCashContract = contract.token === 'CASH'
 
   // warnings
   const highBankrollSpend =
@@ -463,8 +464,9 @@ export const BuyPanelBody = (props: {
   const warning = highBankrollSpend
     ? `You might not want to spend ${formatPercent(
         bankrollFraction
-      )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
-        user?.balance ?? 0
+      )} of your balance on a single trade. \n\nCurrent balance: ${formatWithToken(
+        user?.balance ?? 0,
+        isCashContract ? 'CASH' : 'M$'
       )}`
     : highProbMove
     ? `Are you sure you want to move the market to ${displayedAfter}?`
@@ -473,8 +475,6 @@ export const BuyPanelBody = (props: {
   const choicesMap: { [key: string]: string } = isStonk
     ? { Buy: 'YES', Short: 'NO' }
     : { Yes: 'YES', No: 'NO' }
-
-  const isCashContract = contract.token === 'CASH'
 
   return (
     <>

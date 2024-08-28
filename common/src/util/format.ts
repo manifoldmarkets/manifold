@@ -24,6 +24,20 @@ const formatterWithFraction = new Intl.NumberFormat('en-US', {
 
 export const SWEEPIES_MONIKER = 'S'
 
+export function formatWithToken(
+  amount: number,
+  token: string,
+  toDecimal?: number
+) {
+  if (token === 'CASH') {
+    return formatSweepies(amount, toDecimal)
+  }
+  if (toDecimal) {
+    return formatMoneyWithDecimals(amount)
+  }
+  return formatMoney(amount)
+}
+
 export function formatMoney(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)

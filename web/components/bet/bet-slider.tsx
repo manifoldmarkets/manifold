@@ -19,6 +19,7 @@ export const BetSlider = (props: {
   binaryOutcome?: BinaryOutcomes
   disabled?: boolean
   className?: string
+  token?: InputTokenType
 }) => {
   const {
     amount,
