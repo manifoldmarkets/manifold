@@ -53,6 +53,7 @@ export const blockedCodes: string[] = [
   ...identityBlockedCodes,
 
   // Device
+  'DFP-VPRP-ANON', // Device Fingerprint Anon proxy
   'DFP-WL', // Device Fingerprint on watchlist
   'DFP-HVEL-MIP-WEBREG', // Device Fingerprint High Velocity Matching IP ID Registration
   'DFP-IPNM', // Device Fingerprint IP Not Matching
@@ -64,7 +65,6 @@ export const allowedFlaggedCodes: string[] = [
   'ID-AGE-UNKN', // Identity Age Unknown, typically year is correct
   'ID-ADDR-UPA', // Identity Address Unknown
   'DFP-VPRP', // Device Fingerprint VPN, Proxy, or Relay Provider
-  'DFP-VPRP-ANON', // Device Fingerprint Anon proxy
   'DFP-VPRP-CORP', // Device Fingerprint Corporate proxy
   'DFP-HR', // Device Fingerprint High Risk
 ]
