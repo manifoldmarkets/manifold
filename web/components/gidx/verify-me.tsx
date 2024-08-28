@@ -184,7 +184,7 @@ export const VerifyMe = (props: { user: User }) => {
       }
     >
       <span>
-        {getVerificationStatus(user, false).status !== 'success' &&
+        {getVerificationStatus(user).status !== 'success' &&
           'Verify your identity to collect '}
         <CoinNumber
           amount={KYC_VERIFICATION_BONUS}

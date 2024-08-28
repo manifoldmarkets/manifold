@@ -70,7 +70,7 @@ const CheckoutPage = () => {
     if (!user) return
     setError(undefined)
     setLoading(true)
-    if (getVerificationStatus(user, false).status !== 'error') {
+    if (getVerificationStatus(user).status !== 'error') {
       if (then === 'ios-native') {
         postMessageToNative('checkout', { amount: amountSelected })
       } else {

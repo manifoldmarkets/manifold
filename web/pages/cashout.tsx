@@ -122,8 +122,8 @@ const CashoutPage = () => {
 
   useEffect(() => {
     if (!user) return
-    console.log('user', getVerificationStatus(user, false))
-    if (getVerificationStatus(user, false).status !== 'success') {
+    console.log('user', getVerificationStatus(user))
+    if (getVerificationStatus(user).status !== 'success') {
       router.push('/gidx/register?redirect=cashout')
     }
   }, [user, router])

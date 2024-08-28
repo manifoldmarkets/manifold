@@ -94,7 +94,7 @@ export const getCheckoutSession: APIHandler<
     if (!user) {
       throw new APIError(400, 'User not found')
     }
-    const { status, message } = getVerificationStatus(user, false)
+    const { status, message } = getVerificationStatus(user)
     if (status !== 'success') {
       return {
         status,

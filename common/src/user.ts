@@ -146,10 +146,8 @@ export const isVerified = (user: User) => {
 export const verifiedPhone = (user: User) => {
   return user.verifiedPhone !== false
 }
-
 export const getVerificationStatus = (
-  user: User,
-  requireDocuments: boolean
+  user: User
 ): {
   status: 'success' | 'error'
   message: string
@@ -158,8 +156,6 @@ export const getVerificationStatus = (
     return { status: 'error', message: 'GIDX registration is disabled' }
   } else if (!verifiedPhone(user)) {
     return { status: 'error', message: 'User must verify phone' }
-  } else if (user.kycDocumentStatus === 'await-documents' && requireDocuments) {
-    return { status: 'error', message: 'User is awaiting documents' }
   } else if (user.kycStatus === 'block') {
     return { status: 'error', message: 'User is blocked' }
   } else if (user.kycStatus === 'temporary-block') {
