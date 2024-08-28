@@ -58,6 +58,7 @@ import { LimitBet } from 'common/bet'
 import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import { MoneyDisplay } from './money-display'
 import { capitalize } from 'lodash'
+import { blockFromSweepstakes } from 'common/user'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -92,7 +93,7 @@ export function BuyPanel(props: {
     alwaysShowOutcomeSwitcher,
     children,
   } = props
-
+  const user = useUser()
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
@@ -119,7 +120,13 @@ export function BuyPanel(props: {
       setIsPanelBodyVisible(true)
     }
   }
-
+  if (contract.token === 'CASH' && blockFromSweepstakes(user)) {
+    return (
+      <Row className={'rounded bg-amber-50 p-4'}>
+        You can't trade on sweepstakes markets if blocked.
+      </Row>
+    )
+  }
   return (
     <Col>
       {!isPanelBodyVisible && (

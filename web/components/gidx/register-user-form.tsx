@@ -41,10 +41,11 @@ export const RegisterUserForm = (props: { user: User }) => {
   const router = useRouter()
   const { redirect } = router.query
   const [page, setPage] = useState(
-    (redirect === 'checkout' || redirect === 'cashout') && !user.verifiedPhone
-      ? 'phone'
-      : user.kycStatus === 'verified'
+    user.idStatus === 'verified'
       ? 'final'
+      : (redirect === 'checkout' || redirect === 'cashout') &&
+        !user.verifiedPhone
+      ? 'phone'
       : user.verifiedPhone
       ? 'location'
       : 'intro'
@@ -114,16 +115,17 @@ export const RegisterUserForm = (props: { user: User }) => {
     })
     if (!res) return
 
-    const { status, message } = res
+    const { status, message, verified } = res
     setLoading(false)
-
-    if (message && status === 'error') {
+    if (message && status === 'error' && verified) {
+      setError(message)
+    } else if (message && status === 'error') {
       if (identityErrors >= 2 && page !== 'documents') setPage('documents')
       setIdentityErrors(identityErrors + 1)
       setError(message)
       return
     }
-    // No errors
+    // Identity verification succeeded
     setPage('final')
   }
 
@@ -404,6 +406,20 @@ export const RegisterUserForm = (props: { user: User }) => {
         <Row className={registrationBottomRowClass}>
           <Button onClick={() => setPage('documents')}>Upload documents</Button>
         </Row>
+      </Col>
+    )
+  }
+  if (
+    user.idStatus === 'verified' &&
+    (user.kycStatus === 'block' || user.kycStatus === 'temporary-block')
+  ) {
+    return (
+      <Col className={registrationColClass}>
+        <span className={'text-primary-700 text-2xl'}>Blocked location</span>
+        <span>
+          We verified your identity! But, you're currently in a blocked
+          location. Please try again later ({'>'}3 hrs) in an allowed location.
+        </span>
       </Col>
     )
   }

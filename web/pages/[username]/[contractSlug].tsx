@@ -87,9 +87,10 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { YourOrders } from 'web/components/bet/order-book'
 import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
-import { TwombaContractPageContent } from '../../components/contract/twomba-contract-page'
+import { TwombaContractPageContent } from 'web/components/contract/twomba-contract-page'
 import { removeUndefinedProps } from 'common/util/object'
 import { pick } from 'lodash'
+import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -219,7 +220,6 @@ export function ContractPageContent(props: ContractParams) {
   if (!contract.viewCount) {
     contract.viewCount = props.contract.viewCount
   }
-
   const cachedContract = useMemo(
     () => contract,
     [
@@ -231,6 +231,12 @@ export function ContractPageContent(props: ContractParams) {
   )
 
   const user = useUser()
+  const { monitorStatus, monitorStatusMessage } = useMonitorStatus(
+    contract.token === 'CASH',
+    user
+  )
+  console.log('monitorStatus', monitorStatus)
+  console.log('monitorStatusError', monitorStatusMessage)
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []

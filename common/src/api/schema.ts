@@ -50,7 +50,6 @@ import { RegistrationReturnType } from 'common/reason-codes'
 import {
   CheckoutSession,
   GIDXDocument,
-  GIDXMonitorResponse,
   GPSProps,
   PaymentDetail,
   checkoutParams,
@@ -1498,7 +1497,7 @@ export const API = (_apiTypeCheck = {
     authed: true,
     returns: {} as {
       status: string
-      data: GIDXMonitorResponse
+      message?: string
     },
     props: z.object({
       DeviceGPS: GPSProps,

@@ -3,7 +3,6 @@ import { log } from 'shared/utils'
 import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
-  allowedFlaggedCodes,
   blockedCodes,
   hasIdentityError,
   locationBlockedCodes,
@@ -69,7 +68,7 @@ export const register: APIHandler<'register-gidx'> = async (
   const data = (await res.json()) as GIDXRegistrationResponse
   log('Registration response:', data)
   const { ReasonCodes, FraudConfidenceScore, IdentityConfidenceScore } = data
-  const { status, message } = await verifyReasonCodes(
+  const { status, message, verified } = await verifyReasonCodes(
     auth.uid,
     ReasonCodes,
     FraudConfidenceScore,
@@ -85,6 +84,7 @@ export const register: APIHandler<'register-gidx'> = async (
   return {
     status,
     message,
+    verified,
   }
 }
 
@@ -98,7 +98,7 @@ export const verifyReasonCodes = async (
 
   const hasAny = (codes: string[]) =>
     intersection(codes, ReasonCodes).length > 0
-
+  const verified = ReasonCodes.includes('ID-VERIFIED')
   // Timeouts or input errors
   if (hasAny(otherErrorCodes)) {
     log('Registration failed, resulted in error codes:', ReasonCodes)
@@ -107,6 +107,7 @@ export const verifyReasonCodes = async (
       return {
         status: 'error',
         message: 'Registration timed out, please try again.',
+        verified,
       }
     }
     if (ReasonCodes.includes('LL-FAIL')) {
@@ -114,6 +115,7 @@ export const verifyReasonCodes = async (
         status: 'error',
         message:
           'Registration failed, location error. Check your location information.',
+        verified,
       }
     }
   }
@@ -125,6 +127,7 @@ export const verifyReasonCodes = async (
     return {
       status: 'warning',
       message: `High velocity of payments detected for ${userType}.`,
+      verified,
     }
   }
 
@@ -136,13 +139,16 @@ export const verifyReasonCodes = async (
     return {
       status: 'error',
       message: ID_ERROR_MSG,
+      verified,
     }
   }
-
-  // User is flagged for unknown address, vpn, unclear DOB, distance between attempts
-  const allowedFlags = intersection(allowedFlaggedCodes, ReasonCodes)
-  if (allowedFlags.length > 0) {
-    await updateUser(pg, userId, { kycFlags: allowedFlags })
+  if (ReasonCodes.length > 0) {
+    await updateUser(pg, userId, { kycFlags: ReasonCodes })
+  }
+  if (verified) {
+    await updateUser(pg, userId, { idStatus: 'verified' })
+  } else {
+    await updateUser(pg, userId, { idStatus: 'fail' })
   }
 
   // User is blocked for any number of reasons
@@ -154,21 +160,28 @@ export const verifyReasonCodes = async (
       return {
         status: 'error',
         message: 'Registration failed, location blocked or high risk.',
+        verified,
       }
     }
     if (hasAny(underageErrorCodes)) {
       return {
         status: 'error',
         message: 'Registration failed, you must be 18+, (19+ in some states).',
+        verified,
       }
     }
     if (ReasonCodes.includes('ID-EX')) {
       return {
         status: 'error',
         message: 'Registration failed, ID exists already. Contact admins.',
+        verified,
       }
     }
-    return { status: 'error', message: 'Registration failed, you are blocked.' }
+    return {
+      status: 'error',
+      message: 'Registration failed, you are blocked.',
+      verified,
+    }
   }
 
   // User is in disallowed location, but they may move
@@ -185,6 +198,7 @@ export const verifyReasonCodes = async (
       status: 'error',
       message:
         'Registration failed, location blocked. Try again in 3 hours in an allowed location.',
+      verified,
     }
   }
 
@@ -204,13 +218,14 @@ export const verifyReasonCodes = async (
       status: 'error',
       message:
         'Confidence in identity or fraud too low. Double check your information.',
+      verified,
     }
   }
 
   // User is not blocked and ID is verified
   if (ReasonCodes.includes('ID-VERIFIED')) {
     log('Registration passed with allowed codes:', ReasonCodes)
-    return { status: 'success' }
+    return { status: 'success', verified }
   }
 
   log.error(
@@ -220,5 +235,6 @@ export const verifyReasonCodes = async (
     status: 'error',
     message:
       'Registration failed, ask admin about codes: ' + ReasonCodes.join(', '),
+    verified,
   }
 }

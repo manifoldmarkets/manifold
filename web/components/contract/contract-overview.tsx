@@ -66,7 +66,7 @@ import { filterDefined } from 'common/util/array'
 import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
 import { useChartPositions } from 'web/hooks/use-chart-positions'
 import { BuyPanel } from '../bet/bet-panel'
-import { User } from 'common/user'
+import { blockFromSweepstakes, User } from 'common/user'
 import {
   ChartAnnotations,
   EditChartAnnotationsButton,
@@ -830,7 +830,13 @@ export function BinaryBetPanel(props: {
 
   return (
     <Col className="my-3 w-full">
-      <BuyPanel inModal={false} contract={contract} />
+      {contract.token === 'CASH' && blockFromSweepstakes(user) ? (
+        <Row className={'rounded bg-amber-50 p-4'}>
+          You can't trade on sweepstakes markets if blocked.
+        </Row>
+      ) : (
+        <BuyPanel inModal={false} contract={contract} />
+      )}
       <UserBetsSummary
         className="border-ink-200 !mb-2 mt-2 "
         contract={contract}

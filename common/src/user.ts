@@ -1,5 +1,7 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG, TWOMBA_ENABLED } from './envs/constants'
+import { intersection } from 'lodash'
+import { locationTemporarilyBlockedCodes } from 'common/reason-codes'
 
 export type User = {
   id: string
@@ -71,6 +73,7 @@ export type User = {
   kycLastAttempt?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
   kycStatus?: 'fail' | 'block' | 'temporary-block' | 'verified'
+  idStatus?: 'fail' | 'verified'
 }
 
 export type PrivateUser = {
@@ -141,6 +144,21 @@ export const isUserLikelySpammer = (
 
 export const isVerified = (user: User) => {
   return user.verifiedPhone !== false || !!user.purchasedMana
+}
+
+export const blockFromSweepstakes = (user: User | undefined | null) => {
+  return (
+    user &&
+    user.idStatus === 'verified' &&
+    (user.kycStatus === 'block' || user.kycStatus === 'temporary-block')
+  )
+}
+export const locationBlocked = (user: User | undefined | null) => {
+  return (
+    user &&
+    blockFromSweepstakes(user) &&
+    intersection(user.kycFlags, locationTemporarilyBlockedCodes).length > 0
+  )
 }
 
 export const verifiedPhone = (user: User) => {
