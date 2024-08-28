@@ -18,7 +18,11 @@ import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
-import { GIDXRegistrationResponse, ID_ERROR_MSG } from 'common/gidx/gidx'
+import {
+  ENABLE_FAKE_CUSTOMER,
+  GIDXRegistrationResponse,
+  ID_ERROR_MSG,
+} from 'common/gidx/gidx'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { parsePhoneNumber } from 'libphonenumber-js'
 import { getIp } from 'shared/analytics'
@@ -36,12 +40,16 @@ export const register: APIHandler<'register-gidx'> = async (
   const { privateUser, phoneNumberWithCode } =
     await getUserRegistrationRequirements(auth.uid)
   const body = {
-    // TODO: add back in prod
     EmailAddress: props.EmailAddress ?? privateUser.email,
-    MobilePhoneNumber:
-      parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ??
-      phoneNumberWithCode,
-    DeviceIpAddress: LOCAL_DEV ? '99.100.24.160' : getIp(req),
+    MobilePhoneNumber: ENABLE_FAKE_CUSTOMER
+      ? props.MobilePhoneNumber
+      : parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ??
+        phoneNumberWithCode,
+    DeviceIpAddress: ENABLE_FAKE_CUSTOMER
+      ? props.DeviceIpAddress
+      : LOCAL_DEV
+      ? '99.100.24.160'
+      : getIp(req),
     MerchantCustomerID: auth.uid,
     ...getGIDXStandardParams(),
     ...props,
@@ -137,23 +145,6 @@ export const verifyReasonCodes = async (
     await updateUser(pg, userId, { kycFlags: allowedFlags })
   }
 
-  // User is in disallowed location, but they may move
-  if (hasAny(locationTemporarilyBlockedCodes)) {
-    log(
-      'Registration failed, resulted in temporary blocked location codes:',
-      ReasonCodes
-    )
-    await updateUser(pg, userId, {
-      kycStatus: 'temporary-block',
-      kycLastAttempt: Date.now(),
-    })
-    return {
-      status: 'error',
-      message:
-        'Registration failed, location blocked. Try again in 3 hours in an allowed location.',
-    }
-  }
-
   // User is blocked for any number of reasons
   const blockedReasonCodes = intersection(blockedCodes, ReasonCodes)
   if (blockedReasonCodes.length > 0) {
@@ -177,7 +168,24 @@ export const verifyReasonCodes = async (
         message: 'Registration failed, ID exists already. Contact admins.',
       }
     }
-    return { status: 'error', message: 'Registration failed, blocked.' }
+    return { status: 'error', message: 'Registration failed, you are blocked.' }
+  }
+
+  // User is in disallowed location, but they may move
+  if (hasAny(locationTemporarilyBlockedCodes)) {
+    log(
+      'Registration failed, resulted in temporary blocked location codes:',
+      ReasonCodes
+    )
+    await updateUser(pg, userId, {
+      kycStatus: 'temporary-block',
+      kycLastAttempt: Date.now(),
+    })
+    return {
+      status: 'error',
+      message:
+        'Registration failed, location blocked. Try again in 3 hours in an allowed location.',
+    }
   }
 
   // User identity match is low confidence or attempt may be fraud

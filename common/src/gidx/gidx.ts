@@ -28,8 +28,9 @@ export const verificationParams = z.object({
   IdentificationTypeCode: z.number().gte(1).lte(4).optional(),
   IdentificationNumber: z.string().optional(),
   EmailAddress: z.string().optional(),
-  // TODO: remove below in production
-  // DeviceIpAddress: z.string(),
+  // only used when ENABLE_FAKE_CUSTOMER is true
+  DeviceIpAddress: z.string().optional(),
+  MobilePhoneNumber: z.string().optional(),
 })
 const BillingAddress = z.object({
   City: z.string(),
@@ -288,6 +289,7 @@ export type CheckoutSessionResponse = {
 export const ID_ERROR_MSG =
   'Registration failed, identity error. Check your identifying information.'
 
+export const ENABLE_FAKE_CUSTOMER = true
 export const exampleCustomers = [
   {
     EmailAddress: 'mradamgibbs@gmail.com',
@@ -328,10 +330,10 @@ export const exampleCustomers = [
     PostalCode: '01867',
     DeviceGPS: {
       // utah (blocked):
-      // Latitude: 40.7608,
-      // Longitude: -111.891,
-      Latitude: 39.615342,
-      Longitude: -112.183449,
+      Latitude: 40.7608,
+      Longitude: -111.891,
+      // Latitude: 39.615342,
+      // Longitude: -112.183449,
       Radius: 11.484,
       Altitude: 0,
       Speed: 0,

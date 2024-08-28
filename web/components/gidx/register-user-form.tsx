@@ -20,12 +20,17 @@ import {
   SPICE_TO_MANA_CONVERSION_RATE,
 } from 'common/envs/constants'
 import { useWebsocketUser } from 'web/hooks/use-user'
-import { exampleCustomers, GPSData, ID_ERROR_MSG } from 'common/gidx/gidx'
+import {
+  ENABLE_FAKE_CUSTOMER,
+  exampleCustomers,
+  GPSData,
+  ID_ERROR_MSG,
+} from 'common/gidx/gidx'
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { YEAR_MS } from 'common/util/time'
 
-const body = {
-  ...exampleCustomers[3],
+export const FAKE_CUSTOMER_BODY = {
+  ...exampleCustomers[1],
 }
 
 export const registrationColClass = 'gap-3 p-4'
@@ -65,15 +70,18 @@ export const RegisterUserForm = (props: { user: User }) => {
     DeviceGPS?: GPSData
     EmailAddress?: string
   }>(
-    {
-      // ...body,
-      FirstName: user.name.split(' ')[0],
-      LastName: user.name.split(' ')[1],
-      DateOfBirth: new Date(Date.now() - 18 * YEAR_MS)
-        .toISOString()
-        .split('T')[0],
-      CitizenshipCountryCode: 'US',
-    },
+    ENABLE_FAKE_CUSTOMER
+      ? {
+          ...FAKE_CUSTOMER_BODY,
+        }
+      : {
+          FirstName: user.name.split(' ')[0],
+          LastName: user.name.split(' ')[1],
+          DateOfBirth: new Date(Date.now() - 18 * YEAR_MS)
+            .toISOString()
+            .split('T')[0],
+          CitizenshipCountryCode: 'US',
+        },
     'gidx-registration-user-info'
   )
 
