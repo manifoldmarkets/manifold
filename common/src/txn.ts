@@ -53,6 +53,7 @@ type AnyTxnType =
   | ManifoldTopUp
   | CashBonus
   | CashOutPending
+  | KycBonus
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -214,6 +215,13 @@ type CashOutPending = {
     type: 'gidx'
     payoutInDollars: number
   }
+}
+
+type KycBonus = {
+  category: 'KYC_BONUS'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'CASH'
 }
 
 type SignupBonus = {
@@ -554,3 +562,4 @@ export type AirDropTxn = Txn & AirDrop
 export type ManifestAirDropTxn = Txn & ManifestAirDrop
 export type ExtraPurchasedManaTxn = Txn & ExtraPurchasedMana
 export type ManifoldTopUpTxn = Txn & ManifoldTopUp
+export type KycBonusTxn = Txn & KycBonus
