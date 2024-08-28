@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { User, verifiedPhone } from 'common/user'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, InputTokenType } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
@@ -165,7 +165,7 @@ export function BuyAmountInput(props: {
   disregardUserBalance?: boolean
   quickButtonValues?: number[] | 'large'
   disableQuickButtons?: boolean
-  token?: 'M$' | 'SPICE' | 'CASH'
+  token?: InputTokenType
   marketTier?: MarketTierType | undefined
 }) {
   const {
@@ -254,9 +254,9 @@ export function BuyAmountInput(props: {
           )}
           label={
             token === 'SPICE' ? (
-              <SpiceCoin />
+              <SpiceCoin className="mb-0.5 text-xl" />
             ) : token == 'CASH' ? (
-              <SweepiesCoin />
+              <SweepiesCoin className="mb-0.5 text-xl" />
             ) : (
               <ManaCoin />
             )
@@ -276,12 +276,14 @@ export function BuyAmountInput(props: {
                       key={increment}
                       amount={increment}
                       incrementBy={incrementBy}
+                      token={token}
                     />
                   ) : (
                     <IncrementButton
                       key={increment}
                       amount={increment}
                       onIncrement={() => incrementBy(increment)}
+                      token={token}
                     />
                   )
                 )}

@@ -1,6 +1,6 @@
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { formatMoney, formatSweepsNumber } from 'common/util/format'
 import { CoinNumber, NumberDisplayType } from '../widgets/manaCoinNumber'
-import { formatMoney, formatSweepies } from 'common/util/format'
 
 export function MoneyDisplay(props: {
   amount: number
@@ -24,7 +24,7 @@ export function MoneyDisplay(props: {
       )
     }
     if (isCashContract) {
-      return <>{formatSweepies(amount)}</>
+      return <>{formatSweepsNumber(amount)}</>
     }
     return <>{formatMoney(amount)}</>
   }
