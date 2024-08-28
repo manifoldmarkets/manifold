@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { Answer } from 'common/answer'
 import {
   BinaryContract,
   CPMMContract,
@@ -10,16 +11,16 @@ import {
   ContractMetric,
   ContractMetricsByOutcome,
 } from 'common/contract-metric'
+import { getStonkDisplayShares } from 'common/stonk'
 import {
   convertContractMetricRows,
   getContractMetricsCount,
   getOrderedContractMetricRowsForContractId,
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
-import { formatMoney } from 'common/util/format'
 import { countBy, first, orderBy, partition, uniqBy } from 'lodash'
-import { memo, useEffect, useMemo, useState } from 'react'
-import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
+import { memo, ReactNode, useEffect, useMemo, useState } from 'react'
+import { PillButton } from 'web/components/buttons/pill-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import {
@@ -32,18 +33,17 @@ import {
   YesLabel,
 } from 'web/components/outcome-label'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
+import { Carousel } from 'web/components/widgets/carousel'
 import { Pagination } from 'web/components/widgets/pagination'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import { db } from 'web/lib/supabase/db'
-import { getStonkDisplayShares } from 'common/stonk'
-import { PillButton } from 'web/components/buttons/pill-button'
-import { Carousel } from 'web/components/widgets/carousel'
-import { Answer } from 'common/answer'
-import { Select } from '../widgets/select'
+import { MoneyDisplay } from '../bet/money-display'
 import { UserHovercard } from '../user/user-hovercard'
+import { Select } from '../widgets/select'
 
 export const UserPositionsTable = memo(
   function UserPositionsTableContent(props: {
@@ -323,6 +323,7 @@ const BinaryUserPositionsTable = memo(
     const pageSize = 20
     const currentUser = useUser()
     const followedUsers = useFollows(currentUser?.id)
+    const isCashContract = contract.token === 'CASH'
 
     const [leftColumnPositions, rightColumnPositions] = useMemo(
       () =>
@@ -452,17 +453,28 @@ const BinaryUserPositionsTable = memo(
                       currentUser={currentUser}
                       followedUsers={followedUsers}
                       numberToShow={
-                        sortBy === 'shares'
-                          ? isStonk
-                            ? getStonkDisplayShares(
-                                contract,
-                                position.totalShares[outcome] ?? 0,
-                                2
-                              ).toString()
-                            : formatMoney(position.totalShares[outcome] ?? 0)
-                          : formatMoney(position.profit)
+                        sortBy === 'shares' ? (
+                          isStonk ? (
+                            getStonkDisplayShares(
+                              contract,
+                              position.totalShares[outcome] ?? 0,
+                              2
+                            ).toString()
+                          ) : (
+                            <MoneyDisplay
+                              amount={position.totalShares[outcome] ?? 0}
+                              isCashContract={isCashContract}
+                            />
+                          )
+                        ) : (
+                          <MoneyDisplay
+                            amount={position.profit}
+                            isCashContract={isCashContract}
+                          />
+                        )
                       }
                       invested={position.invested}
+                      isCashContract={isCashContract}
                     />
                   )
                 })}
@@ -492,17 +504,28 @@ const BinaryUserPositionsTable = memo(
                       currentUser={currentUser}
                       followedUsers={followedUsers}
                       numberToShow={
-                        sortBy === 'shares'
-                          ? isStonk
-                            ? getStonkDisplayShares(
-                                contract,
-                                position.totalShares[outcome] ?? 0,
-                                2
-                              ).toString()
-                            : formatMoney(position.totalShares[outcome] ?? 0)
-                          : formatMoney(position.profit)
+                        sortBy === 'shares' ? (
+                          isStonk ? (
+                            getStonkDisplayShares(
+                              contract,
+                              position.totalShares[outcome] ?? 0,
+                              2
+                            ).toString()
+                          ) : (
+                            <MoneyDisplay
+                              amount={position.totalShares[outcome] ?? 0}
+                              isCashContract={isCashContract}
+                            />
+                          )
+                        ) : (
+                          <MoneyDisplay
+                            amount={position.profit}
+                            isCashContract={isCashContract}
+                          />
+                        )
                       }
                       invested={position.invested}
+                      isCashContract={isCashContract}
                     />
                   )
                 })}
@@ -522,11 +545,12 @@ const BinaryUserPositionsTable = memo(
 )
 const PositionRow = memo(function PositionRow(props: {
   position: ContractMetric
-  numberToShow: string
+  numberToShow: ReactNode
   invested: number
   currentUser: User | undefined | null
   followedUsers: string[] | undefined
   colorClassName: string
+  isCashContract: boolean
 }) {
   const {
     position,
@@ -535,6 +559,7 @@ const PositionRow = memo(function PositionRow(props: {
     followedUsers,
     numberToShow,
     invested,
+    isCashContract,
   } = props
   const { userId, userName, userUsername, userAvatarUrl } = position
   const isMobile = useIsMobile(800)
@@ -578,7 +603,8 @@ const PositionRow = memo(function PositionRow(props: {
               'text-ink-500 hidden shrink-0 text-right text-xs sm:flex'
             )}
           >
-            Spent {formatMoney(invested)}
+            Spent{' '}
+            <MoneyDisplay amount={invested} isCashContract={isCashContract} />
           </span>
         )}
       </Col>

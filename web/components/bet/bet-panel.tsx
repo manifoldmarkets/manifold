@@ -55,7 +55,11 @@ import { floatingEqual } from 'common/util/math'
 import { getTierFromLiquidity } from 'common/tier'
 import { getAnswerColor } from '../charts/contract/choice'
 import { LimitBet } from 'common/bet'
-import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
+import {
+  SWEEPIES_NAME,
+  TRADE_TERM,
+  TWOMBA_ENABLED,
+} from 'common/envs/constants'
 import { MoneyDisplay } from './money-display'
 import { capitalize } from 'lodash'
 
@@ -703,7 +707,13 @@ export const BuyPanelBody = (props: {
                   isAdvancedTrader ? '' : 'min-w-[110px]'
                 )}
               >
-                Your balance{' '}
+                Your{' '}
+                {TWOMBA_ENABLED
+                  ? isCashContract
+                    ? SWEEPIES_NAME
+                    : 'mana'
+                  : ''}
+                {' balance'}
               </span>
               <span className="text-ink-700 font-semibold">
                 <MoneyDisplay

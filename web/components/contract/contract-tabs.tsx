@@ -592,6 +592,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   ).slice(start, end)
 
   const scrollRef = useRef<HTMLDivElement>(null)
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <>
@@ -611,7 +612,11 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
               bets={item.bets}
             />
           ) : (
-            <FeedLiquidity key={item.id} liquidity={item.lp} />
+            <FeedLiquidity
+              key={item.id}
+              liquidity={item.lp}
+              isCashContract={isCashContract}
+            />
           )
         )}
         {/* TODO: skeleton */}

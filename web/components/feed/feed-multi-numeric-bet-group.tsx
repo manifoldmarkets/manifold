@@ -1,17 +1,17 @@
-import { memo } from 'react'
-import { CPMMNumericContract } from 'common/contract'
+import clsx from 'clsx'
 import { Bet } from 'common/bet'
-import { Avatar, AvatarSizeType } from 'web/components/widgets/avatar'
+import { CPMMNumericContract } from 'common/contract'
+import { memo } from 'react'
+import { groupMultiNumericBets } from 'web/components/bet/contract-bets-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
-import { UserHovercard } from 'web/components/user/user-hovercard'
-import { groupMultiNumericBets } from 'web/components/bet/contract-bets-table'
-import { formatMoney } from 'common/util/format'
-import { UserLink } from 'web/components/widgets/user-link'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { UserHovercard } from 'web/components/user/user-hovercard'
+import { Avatar, AvatarSizeType } from 'web/components/widgets/avatar'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { UserLink } from 'web/components/widgets/user-link'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { MoneyDisplay } from '../bet/money-display'
 
 export const MultiNumericBetGroup = memo(function FeedBet(props: {
   contract: CPMMNumericContract
@@ -67,7 +67,10 @@ function BetGroupStatusText(props: {
   const { amount, isApi, shares } = bet
   const bought = shares >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
-  const money = formatMoney(absAmount)
+  const isCashContract = contract.token === 'CASH'
+  const money = (
+    <MoneyDisplay amount={absAmount} isCashContract={isCashContract} />
+  )
 
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>
