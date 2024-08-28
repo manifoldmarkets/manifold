@@ -1,4 +1,4 @@
-import { GPSData } from 'common/gidx/gidx'
+import { ENABLE_FAKE_CUSTOMER, GPSData } from 'common/gidx/gidx'
 import { useEffect, useState } from 'react'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { getIsNative } from 'web/lib/native/is-native'
@@ -8,6 +8,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import {
+  FAKE_CUSTOMER_BODY,
   registrationBottomRowClass,
   registrationColClass,
 } from 'web/components/gidx/register-user-form'
@@ -95,14 +96,18 @@ export const LocationPanel = (props: {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { coords } = position
-          setLocation({
-            Latitude: coords.latitude,
-            Longitude: coords.longitude,
-            Radius: coords.accuracy,
-            Altitude: coords.altitude ?? 0,
-            Speed: coords.speed ?? 0,
-            DateTime: new Date().toISOString(),
-          })
+          setLocation(
+            ENABLE_FAKE_CUSTOMER
+              ? FAKE_CUSTOMER_BODY.DeviceGPS
+              : {
+                  Latitude: coords.latitude,
+                  Longitude: coords.longitude,
+                  Radius: coords.accuracy,
+                  Altitude: coords.altitude ?? 0,
+                  Speed: coords.speed ?? 0,
+                  DateTime: new Date().toISOString(),
+                }
+          )
           setLoading(false)
           onFinishCallback?.()
         },

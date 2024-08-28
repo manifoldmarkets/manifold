@@ -1,4 +1,4 @@
-import { User } from 'common/user'
+import { getVerificationStatus, User } from 'common/user'
 import { KYC_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -13,15 +13,17 @@ import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { toast } from 'react-hot-toast'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { getDocumentsStatus } from 'common/gidx/document'
 
 export const VerifyMe = (props: { user: User }) => {
   const user = useUser() ?? props.user
 
   const [show, setShow] = useState(
     TWOMBA_ENABLED &&
-      user.kycStatus !== 'verified' &&
-      user.kycStatus !== 'block' &&
-      user.kycStatus !== 'temporary-block'
+      (user.kycStatus === undefined ||
+        user.kycStatus === 'fail' ||
+        user.kycDocumentStatus === 'fail' ||
+        user.kycDocumentStatus === 'pending')
   )
 
   const [documents, setDocuments] = useState<GIDXDocument[] | null>(null)
@@ -37,7 +39,13 @@ export const VerifyMe = (props: { user: User }) => {
     if (message) toast.error(message)
   }
   if (!show || !user) return null
-  if (user.kycStatus === 'pending') {
+  const showUploadDocsButton =
+    getDocumentsStatus(documents ?? []).isRejected && documents
+
+  if (
+    user.kycDocumentStatus === 'pending' ||
+    user.kycDocumentStatus === 'fail'
+  ) {
     return (
       <Col
         className={
@@ -45,8 +53,13 @@ export const VerifyMe = (props: { user: User }) => {
         }
       >
         <Row className={'w-full items-center justify-between'}>
-          <span>Verification pending. </span>
-          <Button loading={loading} disabled={loading} onClick={getStatus}>
+          <span>Document verification pending. </span>
+          <Button
+            color={'indigo-outline'}
+            loading={loading}
+            disabled={loading}
+            onClick={getStatus}
+          >
             Refresh status
           </Button>
         </Row>
@@ -77,6 +90,16 @@ export const VerifyMe = (props: { user: User }) => {
               </Col>
             ))}
           </Col>
+        )}
+        {showUploadDocsButton && (
+          <Row>
+            <Link
+              href={'gidx/register'}
+              className={clsx(buttonClass('md', 'indigo'))}
+            >
+              Re-upload documents
+            </Link>
+          </Row>
         )}
       </Col>
     )
@@ -110,9 +133,8 @@ export const VerifyMe = (props: { user: User }) => {
       }
     >
       <span>
-        {user.kycStatus === 'await-documents'
-          ? 'Finish verification by uploading documents to collect '
-          : 'Verify your identity to collect '}
+        {getVerificationStatus(user).status !== 'success' &&
+          'Verify your identity to collect '}
         <CoinNumber
           amount={KYC_VERIFICATION_BONUS}
           className={'font-bold'}

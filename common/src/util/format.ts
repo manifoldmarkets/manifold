@@ -15,6 +15,13 @@ const formatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 0,
 })
 
+const formatterWithFraction = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 2,
+})
+
 export function formatMoney(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
@@ -43,6 +50,9 @@ export function formatMoneyShort(amount: number) {
 export function formatMoneyUSD(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount)
+}
+export function formatSweepsToUSD(amount: number) {
+  return formatterWithFraction.format(amount / 100)
 }
 
 export function formatMoneyNumber(amount: number) {

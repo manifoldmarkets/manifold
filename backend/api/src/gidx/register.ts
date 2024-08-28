@@ -18,22 +18,39 @@ import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
-import { GIDXRegistrationResponse, ID_ERROR_MSG } from 'common/gidx/gidx'
-import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
+import {
+  ENABLE_FAKE_CUSTOMER,
+  GIDXRegistrationResponse,
+  ID_ERROR_MSG,
+} from 'common/gidx/gidx'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { parsePhoneNumber } from 'libphonenumber-js'
+import { getIp } from 'shared/analytics'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
+const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
-export const register: APIHandler<'register-gidx'> = async (props, auth) => {
+export const register: APIHandler<'register-gidx'> = async (
+  props,
+  auth,
+  req
+) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
-  await getUserRegistrationRequirements(auth.uid)
+  const { privateUser, phoneNumberWithCode } =
+    await getUserRegistrationRequirements(auth.uid)
   const body = {
-    // TODO: add back in prod
-    // MerchantCustomerID: auth.uid,
-    // EmailAddress: user.email,
-    // MobilePhoneNumber: parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ?? phoneNumberWithCode,
-    // DeviceIpAddress: getIp(req),
+    EmailAddress: props.EmailAddress ?? privateUser.email,
+    MobilePhoneNumber: ENABLE_FAKE_CUSTOMER
+      ? props.MobilePhoneNumber
+      : parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ??
+        phoneNumberWithCode,
+    DeviceIpAddress: ENABLE_FAKE_CUSTOMER
+      ? props.DeviceIpAddress
+      : LOCAL_DEV
+      ? '99.100.24.160'
+      : getIp(req),
+    MerchantCustomerID: auth.uid,
     ...getGIDXStandardParams(),
     ...props,
   }
@@ -59,10 +76,10 @@ export const register: APIHandler<'register-gidx'> = async (props, auth) => {
     IdentityConfidenceScore
   )
   if (status === 'success') {
-    // TODO: we may not want to await documents for every user, and instead just verify them
     const pg = createSupabaseDirectClient()
     await updateUser(pg, auth.uid, {
-      kycStatus: 'await-documents',
+      kycStatus: 'verified',
+      kycDocumentStatus: 'await-documents',
     })
   }
   return {
@@ -114,11 +131,6 @@ export const verifyReasonCodes = async (
   // User identity not found/verified
   if (hasIdentityError(ReasonCodes)) {
     log('Registration failed, resulted in identity errors:', ReasonCodes)
-    const { isPending } = await getIdentityVerificationDocuments(userId)
-    if (isPending) {
-      await updateUser(pg, userId, { kycStatus: 'pending' })
-      return { status: 'success' }
-    }
 
     await updateUser(pg, userId, { kycStatus: 'fail' })
     return {
@@ -131,23 +143,6 @@ export const verifyReasonCodes = async (
   const allowedFlags = intersection(allowedFlaggedCodes, ReasonCodes)
   if (allowedFlags.length > 0) {
     await updateUser(pg, userId, { kycFlags: allowedFlags })
-  }
-
-  // User is in disallowed location, but they may move
-  if (hasAny(locationTemporarilyBlockedCodes)) {
-    log(
-      'Registration failed, resulted in temporary blocked location codes:',
-      ReasonCodes
-    )
-    await updateUser(pg, userId, {
-      kycStatus: 'temporary-block',
-      kycLastAttempt: Date.now(),
-    })
-    return {
-      status: 'error',
-      message:
-        'Registration failed, location blocked. Try again in 3 hours in an allowed location.',
-    }
   }
 
   // User is blocked for any number of reasons
@@ -173,7 +168,24 @@ export const verifyReasonCodes = async (
         message: 'Registration failed, ID exists already. Contact admins.',
       }
     }
-    return { status: 'error', message: 'Registration failed, blocked.' }
+    return { status: 'error', message: 'Registration failed, you are blocked.' }
+  }
+
+  // User is in disallowed location, but they may move
+  if (hasAny(locationTemporarilyBlockedCodes)) {
+    log(
+      'Registration failed, resulted in temporary blocked location codes:',
+      ReasonCodes
+    )
+    await updateUser(pg, userId, {
+      kycStatus: 'temporary-block',
+      kycLastAttempt: Date.now(),
+    })
+    return {
+      status: 'error',
+      message:
+        'Registration failed, location blocked. Try again in 3 hours in an allowed location.',
+    }
   }
 
   // User identity match is low confidence or attempt may be fraud

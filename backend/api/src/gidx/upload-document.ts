@@ -58,7 +58,7 @@ export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
   if (isPending) {
     // They passed the reason codes and have the required documents
     await updateUser(pg, auth.uid, {
-      kycStatus: 'pending',
+      kycDocumentStatus: 'pending',
     })
   }
   return { status: 'success' }

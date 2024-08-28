@@ -14,6 +14,9 @@ import { verifyReasonCodes } from 'api/gidx/register'
 import { randomBytes } from 'crypto'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { PaymentAmountsGIDX } from 'common/economy'
+import { getVerificationStatus } from 'common/user'
+import { getUser } from 'shared/utils'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CreateSession'
@@ -85,7 +88,20 @@ export const getCheckoutSession: APIHandler<
   }
   const CustomerProfile = (await idRes.json()) as CustomerProfileResponse
   log('Customer profile response:', CustomerProfile)
-
+  if (props.PayActionCode === 'PAYOUT') {
+    const pg = createSupabaseDirectClient()
+    const user = await getUser(userId, pg)
+    if (!user) {
+      throw new APIError(400, 'User not found')
+    }
+    const { status, message } = getVerificationStatus(user)
+    if (status !== 'success') {
+      return {
+        status,
+        message,
+      }
+    }
+  }
   const PaymentAmounts = PaymentAmountsGIDX
   return {
     status,

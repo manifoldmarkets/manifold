@@ -30,6 +30,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { LocationPanel } from 'web/components/gidx/location-panel'
+import { formatSweepsToUSD } from 'common/util/format'
 
 const CheckoutPage = () => {
   const user = useUser()
@@ -412,7 +413,7 @@ const PaymentSection = (props: {
           </span>
         </Row>
         <Row className={'my-4 justify-center text-4xl '}>
-          <span>{formatter.format(amount.price / 100)}</span>
+          <span>{formatSweepsToUSD(amount.price)}</span>
         </Row>
         <Col className="bg-canvas-0 w-full max-w-md rounded p-8">
           <form onSubmit={handleSubmit}>
@@ -501,12 +502,5 @@ const PaymentSection = (props: {
     </Col>
   )
 }
-
-const formatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 2,
-  minimumFractionDigits: 2,
-})
 
 export default CheckoutPage

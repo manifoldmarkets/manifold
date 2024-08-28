@@ -6,10 +6,14 @@ import {
 import { GIDXCustomerProfile } from 'common/gidx/gidx'
 import { verifyReasonCodes } from 'api/gidx/register'
 import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
 import { getUser } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { User } from 'common/user'
 
 export const getVerificationStatus: APIHandler<
   'get-verification-status-gidx'
@@ -49,6 +53,13 @@ export const getVerificationStatusInternal = async (
       message: 'User not found in GIDX',
     }
   }
+  if (
+    user.kycStatus === 'fail' &&
+    (user.kycDocumentStatus === 'pending' || user.kycDocumentStatus === 'fail')
+  ) {
+    return await assessDocumentStatus(user, pg)
+  }
+
   const { status, message } = await verifyReasonCodes(
     userId,
     ReasonCodes,
@@ -61,21 +72,29 @@ export const getVerificationStatusInternal = async (
       message,
     }
   }
-  const { isPending, isVerified, isRejected, documents } =
-    await getIdentityVerificationDocuments(userId)
+  return await assessDocumentStatus(user, pg)
+}
 
-  if (isVerified && user.kycStatus !== 'verified') {
+const assessDocumentStatus = async (user: User, pg: SupabaseDirectClient) => {
+  const { isPending, isVerified, isRejected, documents } =
+    await getIdentityVerificationDocuments(user.id)
+
+  if (
+    isVerified &&
+    (user.kycDocumentStatus !== 'verified' || user.kycStatus !== 'verified')
+  ) {
     // They passed the reason codes and have the required documents
-    await updateUser(pg, userId, {
+    await updateUser(pg, user.id, {
+      kycDocumentStatus: 'verified',
       kycStatus: 'verified',
     })
-  } else if (isPending && user.kycStatus !== 'pending') {
-    await updateUser(pg, userId, {
-      kycStatus: 'pending',
+  } else if (isPending && user.kycDocumentStatus !== 'pending') {
+    await updateUser(pg, user.id, {
+      kycDocumentStatus: 'pending',
     })
-  } else if (isRejected && user.kycStatus !== 'await-documents') {
-    await updateUser(pg, userId, {
-      kycStatus: 'await-documents',
+  } else if (isRejected && user.kycDocumentStatus !== 'fail') {
+    await updateUser(pg, user.id, {
+      kycDocumentStatus: 'fail',
     })
   }
 

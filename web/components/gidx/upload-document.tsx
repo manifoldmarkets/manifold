@@ -120,8 +120,7 @@ export const UploadDocuments = (props: {
     (doc) => doc.CategoryType !== 7 && doc.CategoryType !== 1
   )
   return (
-    <Col className={'gap-3 p-4'}>
-      <span className={'text-primary-700 text-2xl'}>Identity Verification</span>
+    <Col className={''}>
       <Col className={'gap-2'}>
         <span className={'font-semibold'}>Please upload both:</span>
         <ul>
@@ -227,7 +226,7 @@ export const UploadDocuments = (props: {
             disabled={loading || !file}
             onClick={uploadDocument}
           >
-            Submit{' '}
+            Submit {getKeyFromValue(idNameToCategoryType, CategoryType)}
           </Button>
         ) : (
           <Button loading={loading} disabled={loading} onClick={next}>

@@ -69,13 +69,8 @@ export type User = {
   verifiedPhone?: boolean
   kycFlags?: string[]
   kycLastAttempt?: number
-  kycStatus?:
-    | 'fail'
-    | 'block'
-    | 'temporary-block'
-    | 'verified'
-    | 'pending'
-    | 'await-documents'
+  kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
+  kycStatus?: 'fail' | 'block' | 'temporary-block' | 'verified'
 }
 
 export type PrivateUser = {
@@ -151,7 +146,6 @@ export const isVerified = (user: User) => {
 export const verifiedPhone = (user: User) => {
   return user.verifiedPhone !== false
 }
-
 export const getVerificationStatus = (
   user: User
 ): {
@@ -162,18 +156,14 @@ export const getVerificationStatus = (
     return { status: 'error', message: 'GIDX registration is disabled' }
   } else if (!verifiedPhone(user)) {
     return { status: 'error', message: 'User must verify phone' }
-  } else if (user.kycStatus === 'verified') {
-    return { status: 'success', message: 'User is verified' }
   } else if (user.kycStatus === 'block') {
     return { status: 'error', message: 'User is blocked' }
   } else if (user.kycStatus === 'temporary-block') {
     return { status: 'error', message: 'User is temporary blocked' }
-  } else if (user.kycStatus === 'pending') {
-    return { status: 'error', message: 'User is pending' }
-  } else if (user.kycStatus === 'await-documents') {
-    return { status: 'error', message: 'User is awaiting documents' }
   } else if (user.kycStatus === 'fail') {
     return { status: 'error', message: 'User failed KYC' }
+  } else if (user.kycStatus === 'verified') {
+    return { status: 'success', message: 'User is verified' }
   } else {
     return { status: 'error', message: 'User must register' }
   }
