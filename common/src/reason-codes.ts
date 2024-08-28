@@ -40,8 +40,6 @@ export const underageErrorCodes = [
 ]
 
 export const identityBlockedCodes = [
-  'ID-WL', // Identity on watchlist
-  'ID-HR', // Identity High Risk
   'ID-BLOCK', // Identity Blocked
   'ID-HVEL-ACTV', // Identity High Velocity Activity
   'ID-DECEASED', // Identity Deceased
@@ -56,17 +54,19 @@ export const blockedCodes: string[] = [
 
   // Device
   'DFP-WL', // Device Fingerprint on watchlist
-  'DFP-HR', // Device Fingerprint High Risk
   'DFP-HVEL-MIP-WEBREG', // Device Fingerprint High Velocity Matching IP ID Registration
   'DFP-IPNM', // Device Fingerprint IP Not Matching
 ]
 
 export const allowedFlaggedCodes: string[] = [
+  'ID-WL', // Identity on watchlist
+  'ID-HR', // Identity High Risk
   'ID-AGE-UNKN', // Identity Age Unknown, typically year is correct
   'ID-ADDR-UPA', // Identity Address Unknown
   'DFP-VPRP', // Device Fingerprint VPN, Proxy, or Relay Provider
   'DFP-VPRP-ANON', // Device Fingerprint Anon proxy
   'DFP-VPRP-CORP', // Device Fingerprint Corporate proxy
+  'DFP-HR', // Device Fingerprint High Risk
 ]
 
 export const allowedCodes: string[] = [
