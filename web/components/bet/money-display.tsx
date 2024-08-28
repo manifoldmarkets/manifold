@@ -27,6 +27,9 @@ export function MoneyDisplay(props: {
     )
   }
   if (isCashContract) {
+    if (numberType === 'toDecimal') {
+      return <>{formatSweepies(amount, 4)}</>
+    }
     return <>{formatSweepies(amount)}</>
   }
 

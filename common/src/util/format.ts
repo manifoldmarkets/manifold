@@ -29,8 +29,8 @@ export function formatMoney(amount: number) {
   return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
 }
 
-export function formatSweepies(amount: number) {
-  return SWEEPIES_MONIKER + getMoneyNumberToDecimal(amount / 100)
+export function formatSweepies(amount: number, toDecimal?: number) {
+  return SWEEPIES_MONIKER + (amount / 100).toFixed(toDecimal ?? 2)
 }
 
 export function formatSpice(amount: number) {
