@@ -14,16 +14,17 @@ import { api } from 'web/lib/api/api'
 import { useApiSubscription } from 'web/hooks/use-api-subscription'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
-import { formatMoneyUSD, formatSweepsNumber } from 'common/util/format'
+import { formatSweepsNumber, formatSweepsToUSD } from 'common/util/format'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { UploadDocuments } from 'web/components/gidx/upload-document'
 
 const CashoutPage = () => {
   const user = useUser()
   const router = useRouter()
   const [page, setPage] = useState<
-    'location' | 'get-session' | 'ach-details' | 'waiting'
+    'location' | 'get-session' | 'ach-details' | 'waiting' | 'documents'
   >('location')
   const [NameOnAccount, setNameOnAccount] = useState('')
   const [AccountNumber, setAccountNumber] = useState('')
@@ -121,12 +122,17 @@ const CashoutPage = () => {
 
   useEffect(() => {
     if (!user) return
-    if (getVerificationStatus(user).status !== 'success') {
+    console.log('user', getVerificationStatus(user, false))
+    if (getVerificationStatus(user, false).status !== 'success') {
       router.push('/gidx/register?redirect=cashout')
     }
   }, [user, router])
 
   const handleLocationReceived = (data: GPSData) => {
+    if (user?.kycDocumentStatus === 'await-documents') {
+      setPage('documents')
+      return
+    }
     setPage('get-session')
     getCashoutSession(data)
   }
@@ -139,6 +145,11 @@ const CashoutPage = () => {
         </Row>
         {!user || page === 'get-session' ? (
           <LoadingIndicator />
+        ) : page === 'documents' ? (
+          <UploadDocuments
+            back={router.back}
+            next={() => setPage('ach-details')}
+          />
         ) : page === 'location' ? (
           <LocationPanel
             back={router.back}
@@ -249,7 +260,9 @@ const CashoutPage = () => {
                 <Row className={'gap-1'}>
                   Withdraw{' '}
                   <CoinNumber amount={amount ?? 0} coinType={'sweepies'} /> for{' '}
-                  {formatMoneyUSD((1 - SWEEPIES_CASHOUT_FEE) * (amount ?? 0))}
+                  {formatSweepsToUSD(
+                    (1 - SWEEPIES_CASHOUT_FEE) * (amount ?? 0)
+                  )}
                 </Row>
               </Button>
             </Col>

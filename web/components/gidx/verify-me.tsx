@@ -1,4 +1,4 @@
-import { User } from 'common/user'
+import { getVerificationStatus, User } from 'common/user'
 import { KYC_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -13,15 +13,18 @@ import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { toast } from 'react-hot-toast'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { getDocumentsStatus } from 'common/gidx/document'
 
 export const VerifyMe = (props: { user: User }) => {
   const user = useUser() ?? props.user
 
   const [show, setShow] = useState(
-    TWOMBA_ENABLED &&
+    (TWOMBA_ENABLED &&
       user.kycStatus !== 'verified' &&
       user.kycStatus !== 'block' &&
-      user.kycStatus !== 'temporary-block'
+      user.kycStatus !== 'temporary-block') ||
+      user.kycDocumentStatus === 'fail' ||
+      user.kycDocumentStatus === 'pending'
   )
 
   const [documents, setDocuments] = useState<GIDXDocument[] | null>(null)
@@ -37,6 +40,9 @@ export const VerifyMe = (props: { user: User }) => {
     if (message) toast.error(message)
   }
   if (!show || !user) return null
+  const showUploadDocsButton =
+    getDocumentsStatus(documents ?? []).isRejected && documents
+
   if (user.kycStatus === 'pending') {
     return (
       <Col
@@ -46,7 +52,12 @@ export const VerifyMe = (props: { user: User }) => {
       >
         <Row className={'w-full items-center justify-between'}>
           <span>Verification pending. </span>
-          <Button loading={loading} disabled={loading} onClick={getStatus}>
+          <Button
+            color={'indigo-outline'}
+            loading={loading}
+            disabled={loading}
+            onClick={getStatus}
+          >
             Refresh status
           </Button>
         </Row>
@@ -82,6 +93,69 @@ export const VerifyMe = (props: { user: User }) => {
     )
   }
 
+  if (
+    user.kycDocumentStatus === 'pending' ||
+    user.kycDocumentStatus === 'fail'
+  ) {
+    return (
+      <Col
+        className={
+          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
+        }
+      >
+        <Row className={'w-full items-center justify-between'}>
+          <span>Document verification pending. </span>
+          <Button
+            color={'indigo-outline'}
+            loading={loading}
+            disabled={loading}
+            onClick={getStatus}
+          >
+            Refresh status
+          </Button>
+        </Row>
+
+        {documents && (
+          <Col className={'gap-2'}>
+            <Row className={'w-full justify-between sm:w-72'}>
+              <span className={'font-semibold'}>Category</span>
+              <span className={'font-semibold'}>Status</span>
+            </Row>
+            {documents.map((doc) => (
+              <Col key={doc.DocumentID}>
+                <Row className={'w-full justify-between sm:w-72'}>
+                  <Col>
+                    {
+                      Object.entries(idNameToCategoryType).find(
+                        ([_, v]) => v === doc.CategoryType
+                      )?.[0]
+                    }
+                  </Col>
+                  <Col>{documentStatus[doc.DocumentStatus]}</Col>
+                </Row>
+                {doc.DocumentNotes.length > 0 && (
+                  <span className={'text-red-500'}>
+                    {doc.DocumentNotes.map((n) => n.NoteText).join('\n')}
+                  </span>
+                )}
+              </Col>
+            ))}
+          </Col>
+        )}
+        {showUploadDocsButton && (
+          <Row>
+            <Link
+              href={'gidx/register'}
+              className={clsx(buttonClass('md', 'indigo'))}
+            >
+              Re-upload documents
+            </Link>
+          </Row>
+        )}
+      </Col>
+    )
+  }
+
   if (user.kycStatus === 'verified') {
     return (
       <Col
@@ -110,9 +184,8 @@ export const VerifyMe = (props: { user: User }) => {
       }
     >
       <span>
-        {user.kycStatus === 'await-documents'
-          ? 'Finish verification by uploading documents to collect '
-          : 'Verify your identity to collect '}
+        {getVerificationStatus(user, false).status !== 'success' &&
+          'Verify your identity to collect '}
         <CoinNumber
           amount={KYC_VERIFICATION_BONUS}
           className={'font-bold'}

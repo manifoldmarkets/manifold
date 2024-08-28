@@ -27,13 +27,14 @@ const ENDPOINT =
 
 export const register: APIHandler<'register-gidx'> = async (props, auth) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
-  await getUserRegistrationRequirements(auth.uid)
+  const { privateUser: _, phoneNumberWithCode: __ } =
+    await getUserRegistrationRequirements(auth.uid)
   const body = {
     // TODO: add back in prod
-    // MerchantCustomerID: auth.uid,
-    // EmailAddress: user.email,
+    // EmailAddress: privateUser.email,
     // MobilePhoneNumber: parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ?? phoneNumberWithCode,
     // DeviceIpAddress: getIp(req),
+    MerchantCustomerID: auth.uid,
     ...getGIDXStandardParams(),
     ...props,
   }
@@ -59,10 +60,10 @@ export const register: APIHandler<'register-gidx'> = async (props, auth) => {
     IdentityConfidenceScore
   )
   if (status === 'success') {
-    // TODO: we may not want to await documents for every user, and instead just verify them
     const pg = createSupabaseDirectClient()
     await updateUser(pg, auth.uid, {
-      kycStatus: 'await-documents',
+      kycStatus: 'verified',
+      kycDocumentStatus: 'await-documents',
     })
   }
   return {

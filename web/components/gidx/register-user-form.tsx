@@ -36,16 +36,20 @@ export const RegisterUserForm = (props: { user: User }) => {
   const { redirect } = router.query
   const [page, setPage] = useState(
     user.kycStatus === 'verified' || user.kycStatus === 'pending'
-      ? 1000
-      : user.kycStatus === 'await-documents'
-      ? 4
+      ? 'final'
+      : user.kycStatus === 'fail'
+      ? 'documents'
       : user.verifiedPhone
-      ? 1
-      : 0
+      ? 'location'
+      : 'intro'
   )
   const [loading, setLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | undefined>()
   const [error, setError] = useState<string | null>(null)
+  const [identityErrors, setIdentityErrors] = usePersistentInMemoryState(
+    0,
+    'gidx-registration-identity-errors'
+  )
 
   const [userInfo, setUserInfo] = usePersistentInMemoryState<{
     FirstName?: string
@@ -105,14 +109,16 @@ export const RegisterUserForm = (props: { user: User }) => {
     setLoading(false)
 
     if (message && status === 'error') {
+      if (identityErrors >= 2 && page !== 'documents') setPage('documents')
+      setIdentityErrors(identityErrors + 1)
       setError(message)
       return
     }
     // No errors
-    setPage(page + 1)
+    setPage('final')
   }
 
-  if (page === 0) {
+  if (page === 'intro') {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>
@@ -145,7 +151,7 @@ export const RegisterUserForm = (props: { user: User }) => {
           <Button
             color={'gold'}
             disabled={user.spiceBalance === 0}
-            onClick={() => setPage(page + 1)}
+            onClick={() => setPage('phone')}
           >
             Start verification
           </Button>
@@ -154,16 +160,16 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (page === 1) {
+  if (page === 'phone') {
     return (
       <RegistrationVerifyPhone
-        cancel={() => setPage(page - 1)}
-        next={() => setPage(page + 1)}
+        cancel={() => setPage('intro')}
+        next={() => setPage('location')}
       />
     )
   }
 
-  if (page === 2) {
+  if (page === 'location') {
     return (
       <LocationPanel
         setLocation={(data: GPSData) => {
@@ -171,18 +177,18 @@ export const RegisterUserForm = (props: { user: User }) => {
             ...userInfo,
             DeviceGPS: data,
           })
-          setPage(page + 1)
+          setPage('form')
         }}
         setLocationError={setLocationError}
         setLoading={setLoading}
         loading={loading}
         locationError={locationError}
-        back={() => (user.verifiedPhone ? setPage(0) : setPage(page - 1))}
+        back={() => (user.verifiedPhone ? setPage('intro') : setPage('phone'))}
       />
     )
   }
 
-  if (page === 3) {
+  if (page === 'form') {
     const sectionClass = 'gap-2 w-full sm:w-96'
     return (
       <Col className={registrationColClass}>
@@ -294,25 +300,27 @@ export const RegisterUserForm = (props: { user: User }) => {
         </Col>
 
         {error && (
-          <span className={'text-error'}>
+          <Col className={'text-error'}>
             {error}
-            {error === ID_ERROR_MSG ? (
-              <Button
-                onClick={() => setPage(page + 1)}
-                color={'indigo-outline'}
-              >
-                Upload documents instead
-              </Button>
-            ) : (
-              ''
-            )}
-          </span>
+            <Row>
+              {error === ID_ERROR_MSG ? (
+                <Button
+                  onClick={() => setPage('documents')}
+                  color={'indigo-outline'}
+                >
+                  Upload documents instead
+                </Button>
+              ) : (
+                ''
+              )}
+            </Row>
+          </Col>
         )}
         <Row className={registrationBottomRowClass}>
           <Button
             color={'gray-white'}
             disabled={loading}
-            onClick={() => setPage(page - 1)}
+            onClick={() => setPage('intro')}
           >
             Back
           </Button>
@@ -328,20 +336,16 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (page === 4) {
+  if (page === 'documents') {
     return (
       <UploadDocuments
-        back={() =>
-          user.kycStatus === 'await-documents'
-            ? router.back()
-            : setPage(page - 1)
-        }
-        next={() => setPage(page + 1)}
+        back={() => router.back()}
+        next={() => setPage('final')}
       />
     )
   }
 
-  if (user.kycStatus === 'pending' || user.kycStatus === 'fail') {
+  if (user.kycStatus === 'pending' || user.kycDocumentStatus === 'pending') {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>
@@ -369,16 +373,16 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (user.kycStatus === 'await-documents') {
+  if (user.kycStatus === 'fail' && user.kycDocumentStatus === 'fail') {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>Document errors</span>
         <span>
-          There was an error with one or more of your documents. Please upload
-          new documents.
+          There was an error with your registration. Please upload identity
+          documents.
         </span>
         <Row className={registrationBottomRowClass}>
-          <Button onClick={() => setPage(4)}>Upload documents</Button>
+          <Button onClick={() => setPage('documents')}>Upload documents</Button>
         </Row>
       </Col>
     )

@@ -30,7 +30,6 @@ export const verificationParams = z.object({
   // TODO: remove these in production
   DeviceIpAddress: z.string(),
   EmailAddress: z.string(),
-  MerchantCustomerID: z.string(),
 })
 const BillingAddress = z.object({
   City: z.string(),
