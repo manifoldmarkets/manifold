@@ -182,7 +182,7 @@ const getBinaryCpmmProps = (initialProb: number, ante: number) => {
     initialProbability: p,
     p,
     pool: pool,
-    prob: initialProb,
+    prob: p,
     probChanges: { day: 0, week: 0, month: 0 },
   }
 
