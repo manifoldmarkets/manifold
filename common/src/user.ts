@@ -146,18 +146,20 @@ export const isVerified = (user: User) => {
   return user.verifiedPhone !== false || !!user.purchasedMana
 }
 
+const verifiedAndBlocked = (user: User | undefined | null) =>
+  user &&
+  user.idStatus === 'verified' &&
+  (user.sweepstakesStatus === 'block' ||
+    user.sweepstakesStatus === 'temporary-block')
+
 export const blockFromSweepstakes = (user: User | undefined | null) => {
-  return (
-    user &&
-    user.idStatus === 'verified' &&
-    (user.sweepstakesStatus === 'block' ||
-      user.sweepstakesStatus === 'temporary-block')
-  )
+  return user && (user.idStatus !== 'verified' || verifiedAndBlocked(user))
 }
+
 export const locationBlocked = (user: User | undefined | null) => {
   return (
     user &&
-    blockFromSweepstakes(user) &&
+    verifiedAndBlocked(user) &&
     intersection(user.kycFlags, locationTemporarilyBlockedCodes).length > 0
   )
 }
@@ -176,7 +178,7 @@ export const getVerificationStatus = (
   } else if (!verifiedPhone(user)) {
     return { status: 'error', message: 'User must verify phone' }
   } else if (user.idStatus === 'fail') {
-    return { status: 'error', message: 'User id is not verified' }
+    return { status: 'error', message: 'User has registration failed' }
   } else if (user.sweepstakesStatus === 'block') {
     return { status: 'error', message: 'User is blocked' }
   } else if (user.sweepstakesStatus === 'temporary-block') {
