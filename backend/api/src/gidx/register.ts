@@ -68,7 +68,7 @@ export const register: APIHandler<'register-gidx'> = async (
   const data = (await res.json()) as GIDXRegistrationResponse
   log('Registration response:', data)
   const { ReasonCodes, FraudConfidenceScore, IdentityConfidenceScore } = data
-  const { status, message, verified } = await verifyReasonCodes(
+  const { status, message, idVerified } = await verifyReasonCodes(
     auth.uid,
     ReasonCodes,
     FraudConfidenceScore,
@@ -84,7 +84,7 @@ export const register: APIHandler<'register-gidx'> = async (
   return {
     status,
     message,
-    verified,
+    idVerified: idVerified,
   }
 }
 
@@ -98,7 +98,7 @@ export const verifyReasonCodes = async (
 
   const hasAny = (codes: string[]) =>
     intersection(codes, ReasonCodes).length > 0
-  const verified = ReasonCodes.includes('ID-VERIFIED')
+  const idVerified = ReasonCodes.includes('ID-VERIFIED')
   // Timeouts or input errors
   if (hasAny(otherErrorCodes)) {
     log('Registration failed, resulted in error codes:', ReasonCodes)
@@ -107,7 +107,7 @@ export const verifyReasonCodes = async (
       return {
         status: 'error',
         message: 'Registration timed out, please try again.',
-        verified,
+        idVerified,
       }
     }
     if (ReasonCodes.includes('LL-FAIL')) {
@@ -115,7 +115,7 @@ export const verifyReasonCodes = async (
         status: 'error',
         message:
           'Registration failed, location error. Check your location information.',
-        verified,
+        idVerified,
       }
     }
   }
@@ -127,7 +127,7 @@ export const verifyReasonCodes = async (
     return {
       status: 'warning',
       message: `High velocity of payments detected for ${userType}.`,
-      verified,
+      idVerified,
     }
   }
 
@@ -139,13 +139,13 @@ export const verifyReasonCodes = async (
     return {
       status: 'error',
       message: ID_ERROR_MSG,
-      verified,
+      idVerified,
     }
   }
   if (ReasonCodes.length > 0) {
     await updateUser(pg, userId, { kycFlags: ReasonCodes })
   }
-  if (verified) {
+  if (idVerified) {
     await updateUser(pg, userId, { idStatus: 'verified' })
   } else {
     await updateUser(pg, userId, { idStatus: 'fail' })
@@ -160,27 +160,27 @@ export const verifyReasonCodes = async (
       return {
         status: 'error',
         message: 'Registration failed, location blocked or high risk.',
-        verified,
+        idVerified,
       }
     }
     if (hasAny(underageErrorCodes)) {
       return {
         status: 'error',
         message: 'Registration failed, you must be 18+, (19+ in some states).',
-        verified,
+        idVerified,
       }
     }
     if (ReasonCodes.includes('ID-EX')) {
       return {
         status: 'error',
         message: 'Registration failed, ID exists already. Contact admins.',
-        verified,
+        idVerified,
       }
     }
     return {
       status: 'error',
       message: 'Registration failed, you are blocked.',
-      verified,
+      idVerified,
     }
   }
 
@@ -198,7 +198,7 @@ export const verifyReasonCodes = async (
       status: 'error',
       message:
         'Registration failed, location blocked. Try again in 3 hours in an allowed location.',
-      verified,
+      idVerified,
     }
   }
 
@@ -218,14 +218,14 @@ export const verifyReasonCodes = async (
       status: 'error',
       message:
         'Confidence in identity or fraud too low. Double check your information.',
-      verified,
+      idVerified,
     }
   }
 
   // User is not blocked and ID is verified
   if (ReasonCodes.includes('ID-VERIFIED')) {
     log('Registration passed with allowed codes:', ReasonCodes)
-    return { status: 'success', verified }
+    return { status: 'success', idVerified }
   }
 
   log.error(
@@ -235,6 +235,6 @@ export const verifyReasonCodes = async (
     status: 'error',
     message:
       'Registration failed, ask admin about codes: ' + ReasonCodes.join(', '),
-    verified,
+    idVerified,
   }
 }

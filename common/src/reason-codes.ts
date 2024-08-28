@@ -78,5 +78,5 @@ export const documentsReadyCodes: string[] = ['DOC-REV-COMPL', 'DOC-UPLOADED']
 export type RegistrationReturnType = {
   status: string
   message?: string
-  verified: boolean
+  idVerified: boolean
 }

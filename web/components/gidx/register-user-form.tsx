@@ -115,9 +115,9 @@ export const RegisterUserForm = (props: { user: User }) => {
     })
     if (!res) return
 
-    const { status, message, verified } = res
+    const { status, message, idVerified } = res
     setLoading(false)
-    if (message && status === 'error' && verified) {
+    if (message && status === 'error' && idVerified) {
       setError(message)
     } else if (message && status === 'error') {
       if (identityErrors >= 2 && page !== 'documents') setPage('documents')
