@@ -1,7 +1,7 @@
 import { Col } from 'web/components/layout/col'
 import { Input } from 'web/components/widgets/input'
 import { Button, buttonClass } from 'web/components/buttons/button'
-import { User } from 'common/user'
+import { identityBlocked, locationBlocked, User } from 'common/user'
 import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -409,11 +409,18 @@ export const RegisterUserForm = (props: { user: User }) => {
       </Col>
     )
   }
-  if (
-    user.idStatus === 'verified' &&
-    (user.sweepstakesStatus === 'block' ||
-      user.sweepstakesStatus === 'temporary-block')
-  ) {
+
+  if (identityBlocked(user)) {
+    return (
+      <Col className={registrationColClass}>
+        <span className={'text-primary-700 text-2xl'}>Blocked identity</span>
+        <span>
+          We verified your identity! But, you're blocked. Unfortunately, this
+          means you can't use our sweepstakes markets.
+        </span>
+      </Col>
+    )
+  } else if (locationBlocked(user)) {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>Blocked location</span>

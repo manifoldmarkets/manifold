@@ -1,4 +1,9 @@
-import { getVerificationStatus, locationBlocked, User } from 'common/user'
+import {
+  getVerificationStatus,
+  identityBlocked,
+  locationBlocked,
+  User,
+} from 'common/user'
 import { KYC_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -21,6 +26,7 @@ export const VerifyMe = (props: { user: User }) => {
 
   const [show, setShow] = useState(
     TWOMBA_ENABLED &&
+      !identityBlocked(user) &&
       (user.sweepstakesStatus === undefined ||
         user.sweepstakesStatus === 'fail' ||
         user.kycDocumentStatus === 'fail' ||

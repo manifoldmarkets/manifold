@@ -67,17 +67,22 @@ export const register: APIHandler<'register-gidx'> = async (
 
   const data = (await res.json()) as GIDXRegistrationResponse
   log('Registration response:', data)
-  const { ReasonCodes, FraudConfidenceScore, IdentityConfidenceScore } = data
+  const { FraudConfidenceScore, IdentityConfidenceScore } = data
+  const ReasonCodes = ['ID-BLOCK', 'ID-VERIFIED']
   const { status, message, idVerified } = await verifyReasonCodes(
     auth.uid,
     ReasonCodes,
     FraudConfidenceScore,
     IdentityConfidenceScore
   )
+  const pg = createSupabaseDirectClient()
   if (status === 'success') {
-    const pg = createSupabaseDirectClient()
     await updateUser(pg, auth.uid, {
       sweepstakesStatus: 'allow',
+      kycDocumentStatus: 'await-documents',
+    })
+  } else if (idVerified) {
+    await updateUser(pg, auth.uid, {
       kycDocumentStatus: 'await-documents',
     })
   }

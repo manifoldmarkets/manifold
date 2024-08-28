@@ -39,16 +39,20 @@ export const underageErrorCodes = [
   'ID-UA19', // Identity Under 19
 ]
 
-export const blockedCodes: string[] = [
-  ...locationBlockedCodes,
-
-  // Identity
-  ...underageErrorCodes,
+export const identityBlockedCodes = [
   'ID-WL', // Identity on watchlist
   'ID-HR', // Identity High Risk
   'ID-BLOCK', // Identity Blocked
   'ID-HVEL-ACTV', // Identity High Velocity Activity
   'ID-DECEASED', // Identity Deceased
+]
+
+export const blockedCodes: string[] = [
+  ...locationBlockedCodes,
+
+  // Identity
+  ...underageErrorCodes,
+  ...identityBlockedCodes,
 
   // Device
   'DFP-WL', // Device Fingerprint on watchlist

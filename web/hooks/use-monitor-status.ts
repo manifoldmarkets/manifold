@@ -45,63 +45,75 @@ export const useMonitorStatus = (
         (position) => {
           console.log('Got location:', position)
           const { coords } = position
-          setLocation({
+          const loc = {
             Latitude: coords.latitude,
             Longitude: coords.longitude,
             Radius: coords.accuracy,
             Altitude: coords.altitude ?? 0,
             Speed: coords.speed ?? 0,
             DateTime: new Date().toISOString(),
-          })
+          }
+          setLocation(loc)
+          fetchMonitorStatusWithLocation(loc)
         },
         (error) => {
           console.error('Error getting location:', error)
           setMonitorStatusMessage(error.message)
+          setMonitorStatus('error')
         }
       )
     } else {
+      setMonitorStatus('error')
       setMonitorStatusMessage('Geolocation is not supported by your browser.')
     }
   }
 
   const fetchMonitorStatus = useEvent(async () => {
-    if (!user || user.idStatus !== 'verified')
+    if (!user || user.idStatus !== 'verified') {
+      setMonitorStatus('error')
+      setMonitorStatusMessage('User not verified')
       return {
         status: 'error',
         message: 'User not verified',
       }
+    }
     setMonitorStatusMessage(undefined)
     setLoading(true)
     if (!location) requestLocation()
-    // wait seconds for location to be available
-    await new Promise((resolve) => setTimeout(resolve, 5000))
-    if (!location) {
-      setMonitorStatusMessage(
-        'Location not available, please enable to use sweepstakes'
-      )
-      setLoading(false)
-      return {
-        status: 'error',
-        message: 'Location not available',
+    else return fetchMonitorStatusWithLocation(location)
+  })
+
+  const fetchMonitorStatusWithLocation = useEvent(
+    async (location: GPSData | undefined) => {
+      if (!location) {
+        setMonitorStatus('error')
+        setMonitorStatusMessage(
+          'Location not available, please enable and try again'
+        )
+        setLoading(false)
+        return {
+          status: 'error',
+          message: 'Location not available',
+        }
+      }
+      try {
+        const response = await api('get-monitor-status-gidx', {
+          DeviceGPS: location,
+        })
+        const { status, message } = response
+        setLoading(false)
+        setMonitorStatus(status)
+        setMonitorStatusMessage(message)
+        return response
+      } catch (error) {
+        console.error('Error fetching monitor status:', error)
+        setMonitorStatus('error')
+        setMonitorStatusMessage('Failed to fetch monitor status')
+        setLoading(false)
+        return { status: 'error', message: error }
       }
     }
-    try {
-      const response = await api('get-monitor-status-gidx', {
-        DeviceGPS: location,
-      })
-      const { status, message } = response
-      setLoading(false)
-      setMonitorStatus(status)
-      setMonitorStatusMessage(message)
-      return response
-    } catch (error) {
-      console.error('Error fetching monitor status:', error)
-      setMonitorStatus('error')
-      setMonitorStatusMessage('Failed to fetch monitor status')
-      setLoading(false)
-      return { status: 'error', message: error }
-    }
-  })
+  )
 
   useEffect(() => {
     if (!polling) return

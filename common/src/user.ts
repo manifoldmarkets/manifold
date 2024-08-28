@@ -1,7 +1,10 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG, TWOMBA_ENABLED } from './envs/constants'
 import { intersection } from 'lodash'
-import { locationTemporarilyBlockedCodes } from 'common/reason-codes'
+import {
+  identityBlockedCodes,
+  locationTemporarilyBlockedCodes,
+} from 'common/reason-codes'
 
 export type User = {
   id: string
@@ -161,6 +164,15 @@ export const locationBlocked = (user: User | undefined | null) => {
     user &&
     verifiedAndBlocked(user) &&
     intersection(user.kycFlags, locationTemporarilyBlockedCodes).length > 0
+  )
+}
+
+export const identityBlocked = (user: User | undefined | null) => {
+  return (
+    user &&
+    user.idStatus === 'verified' &&
+    user.sweepstakesStatus === 'block' &&
+    intersection(user.kycFlags, identityBlockedCodes).length > 0
   )
 }
 
