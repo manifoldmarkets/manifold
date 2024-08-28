@@ -137,7 +137,6 @@ export function BuyPanel(props: {
                 isPseudoNumeric ? 'HIGHER' : isStonk ? STONK_YES : 'YES'
               }
               noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : 'NO'}
-              isCash={contract.token === 'CASH'}
               includeWordBet={!isStonk}
             />
           </Row>
