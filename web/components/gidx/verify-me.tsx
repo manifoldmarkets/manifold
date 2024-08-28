@@ -21,8 +21,8 @@ export const VerifyMe = (props: { user: User }) => {
 
   const [show, setShow] = useState(
     TWOMBA_ENABLED &&
-      (user.kycStatus === undefined ||
-        user.kycStatus === 'fail' ||
+      (user.sweepstakesStatus === undefined ||
+        user.sweepstakesStatus === 'fail' ||
         user.kycDocumentStatus === 'fail' ||
         user.kycDocumentStatus === 'pending' ||
         locationBlocked(user))
@@ -113,7 +113,7 @@ export const VerifyMe = (props: { user: User }) => {
     )
   }
 
-  if (user.kycStatus === 'verified') {
+  if (user.sweepstakesStatus === 'allow') {
     return (
       <Col
         className={

@@ -63,9 +63,9 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
     data.IdentityConfidenceScore
   )
 
-  if (status === 'success' && user.kycStatus !== 'verified') {
+  if (status === 'success' && user.sweepstakesStatus !== 'allow') {
     await updateUser(pg, auth.uid, {
-      kycStatus: 'verified',
+      sweepstakesStatus: 'allow',
     })
   }
   return {

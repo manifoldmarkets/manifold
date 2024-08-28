@@ -72,7 +72,7 @@ export type User = {
   kycFlags?: string[]
   kycLastAttempt?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
-  kycStatus?: 'fail' | 'block' | 'temporary-block' | 'verified'
+  sweepstakesStatus?: 'fail' | 'block' | 'temporary-block' | 'allow'
   idStatus?: 'fail' | 'verified'
 }
 
@@ -150,7 +150,8 @@ export const blockFromSweepstakes = (user: User | undefined | null) => {
   return (
     user &&
     user.idStatus === 'verified' &&
-    (user.kycStatus === 'block' || user.kycStatus === 'temporary-block')
+    (user.sweepstakesStatus === 'block' ||
+      user.sweepstakesStatus === 'temporary-block')
   )
 }
 export const locationBlocked = (user: User | undefined | null) => {
@@ -174,13 +175,15 @@ export const getVerificationStatus = (
     return { status: 'error', message: 'GIDX registration is disabled' }
   } else if (!verifiedPhone(user)) {
     return { status: 'error', message: 'User must verify phone' }
-  } else if (user.kycStatus === 'block') {
+  } else if (user.idStatus === 'fail') {
+    return { status: 'error', message: 'User id is not verified' }
+  } else if (user.sweepstakesStatus === 'block') {
     return { status: 'error', message: 'User is blocked' }
-  } else if (user.kycStatus === 'temporary-block') {
+  } else if (user.sweepstakesStatus === 'temporary-block') {
     return { status: 'error', message: 'User is temporary blocked' }
-  } else if (user.kycStatus === 'fail') {
+  } else if (user.sweepstakesStatus === 'fail') {
     return { status: 'error', message: 'User failed KYC' }
-  } else if (user.kycStatus === 'verified') {
+  } else if (user.sweepstakesStatus === 'allow') {
     return { status: 'success', message: 'User is verified' }
   } else {
     return { status: 'error', message: 'User must register' }

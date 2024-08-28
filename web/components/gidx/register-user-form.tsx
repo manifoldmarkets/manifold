@@ -395,7 +395,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (user.kycStatus === 'fail' && user.kycDocumentStatus === 'fail') {
+  if (user.sweepstakesStatus === 'fail' && user.kycDocumentStatus === 'fail') {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>Document errors</span>
@@ -411,7 +411,8 @@ export const RegisterUserForm = (props: { user: User }) => {
   }
   if (
     user.idStatus === 'verified' &&
-    (user.kycStatus === 'block' || user.kycStatus === 'temporary-block')
+    (user.sweepstakesStatus === 'block' ||
+      user.sweepstakesStatus === 'temporary-block')
   ) {
     return (
       <Col className={registrationColClass}>

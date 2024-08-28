@@ -45,16 +45,18 @@ export const getVerificationStatusInternal = async (
   }
   if (ResponseCode === 501 && ResponseMessage.includes('not found')) {
     // TODO: broadcast this user update when we have that functionality
-    await pg.none(`update users set data = data - 'kycStatus' where id = $1`, [
-      userId,
-    ])
+    await pg.none(
+      `update users set data = data - 'kycFlags' - 'kycDocumentStatus' - 'sweepstakesStatus'
+             where id = $1`,
+      [userId]
+    )
     return {
       status: 'error',
       message: 'User not found in GIDX',
     }
   }
   if (
-    user.kycStatus === 'fail' &&
+    user.sweepstakesStatus === 'fail' &&
     (user.kycDocumentStatus === 'pending' || user.kycDocumentStatus === 'fail')
   ) {
     return await assessDocumentStatus(user, pg)
@@ -81,12 +83,13 @@ const assessDocumentStatus = async (user: User, pg: SupabaseDirectClient) => {
 
   if (
     isVerified &&
-    (user.kycDocumentStatus !== 'verified' || user.kycStatus !== 'verified')
+    (user.kycDocumentStatus !== 'verified' ||
+      user.sweepstakesStatus !== 'allow')
   ) {
     // They passed the reason codes and have the required documents
     await updateUser(pg, user.id, {
       kycDocumentStatus: 'verified',
-      kycStatus: 'verified',
+      sweepstakesStatus: 'allow',
     })
   } else if (isPending && user.kycDocumentStatus !== 'pending') {
     await updateUser(pg, user.id, {
