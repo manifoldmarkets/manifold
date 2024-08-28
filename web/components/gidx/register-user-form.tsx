@@ -22,6 +22,7 @@ import {
 import { useWebsocketUser } from 'web/hooks/use-user'
 import { exampleCustomers, GPSData, ID_ERROR_MSG } from 'common/gidx/gidx'
 import { LocationPanel } from 'web/components/gidx/location-panel'
+import { YEAR_MS } from 'common/util/time'
 
 const body = {
   ...exampleCustomers[3],
@@ -35,10 +36,10 @@ export const RegisterUserForm = (props: { user: User }) => {
   const router = useRouter()
   const { redirect } = router.query
   const [page, setPage] = useState(
-    user.kycStatus === 'verified'
+    (redirect === 'checkout' || redirect === 'cashout') && !user.verifiedPhone
+      ? 'phone'
+      : user.kycStatus === 'verified'
       ? 'final'
-      : user.kycStatus === 'fail'
-      ? 'documents'
       : user.verifiedPhone
       ? 'location'
       : 'intro'
@@ -62,16 +63,16 @@ export const RegisterUserForm = (props: { user: User }) => {
     StateCode?: string
     PostalCode?: string
     DeviceGPS?: GPSData
+    EmailAddress?: string
   }>(
     {
-      ...body,
-      //IdentificationTypeCode: 2,
-      // FirstName: user.name.split(' ')[0],
-      // LastName: user.name.split(' ')[1],
-      // DateOfBirth: new Date(Date.now() - 18 * YEAR_MS)
-      //   .toISOString()
-      //   .split('T')[0],
-      // CitizenshipCountryCode: 'US',
+      // ...body,
+      FirstName: user.name.split(' ')[0],
+      LastName: user.name.split(' ')[1],
+      DateOfBirth: new Date(Date.now() - 18 * YEAR_MS)
+        .toISOString()
+        .split('T')[0],
+      CitizenshipCountryCode: 'US',
     },
     'gidx-registration-user-info'
   )
@@ -260,6 +261,17 @@ export const RegisterUserForm = (props: { user: User }) => {
             type={'text'}
             onChange={(e) =>
               setUserInfo({ ...userInfo, AddressLine2: e.target.value })
+            }
+          />
+        </Col>
+        <Col className={sectionClass}>
+          <span>Email Address</span>
+          <Input
+            placeholder={'Your email address'}
+            value={userInfo.EmailAddress}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, EmailAddress: e.target.value })
             }
           />
         </Col>

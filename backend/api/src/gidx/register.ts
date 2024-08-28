@@ -20,19 +20,28 @@ import {
 } from 'shared/gidx/helpers'
 import { GIDXRegistrationResponse, ID_ERROR_MSG } from 'common/gidx/gidx'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { parsePhoneNumber } from 'libphonenumber-js'
+import { getIp } from 'shared/analytics'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
+const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
-export const register: APIHandler<'register-gidx'> = async (props, auth) => {
+export const register: APIHandler<'register-gidx'> = async (
+  props,
+  auth,
+  req
+) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
-  const { privateUser: _, phoneNumberWithCode: __ } =
+  const { privateUser, phoneNumberWithCode } =
     await getUserRegistrationRequirements(auth.uid)
   const body = {
     // TODO: add back in prod
-    // EmailAddress: privateUser.email,
-    // MobilePhoneNumber: parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ?? phoneNumberWithCode,
-    // DeviceIpAddress: getIp(req),
+    EmailAddress: props.EmailAddress ?? privateUser.email,
+    MobilePhoneNumber:
+      parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ??
+      phoneNumberWithCode,
+    DeviceIpAddress: LOCAL_DEV ? '99.100.24.160' : getIp(req),
     MerchantCustomerID: auth.uid,
     ...getGIDXStandardParams(),
     ...props,

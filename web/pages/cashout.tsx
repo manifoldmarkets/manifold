@@ -148,11 +148,15 @@ const CashoutPage = () => {
         ) : page === 'documents' ? (
           <UploadDocuments
             back={router.back}
-            next={() => setPage('ach-details')}
+            next={() => setPage('location')}
           />
         ) : page === 'location' ? (
           <LocationPanel
-            back={router.back}
+            back={() =>
+              user?.kycDocumentStatus != 'verified'
+                ? setPage('documents')
+                : router.back()
+            }
             setLocation={handleLocationReceived}
             setLocationError={setLocationError}
             setLoading={setloading}

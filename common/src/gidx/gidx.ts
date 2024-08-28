@@ -27,9 +27,9 @@ export const verificationParams = z.object({
   CountryCode: z.string().optional(),
   IdentificationTypeCode: z.number().gte(1).lte(4).optional(),
   IdentificationNumber: z.string().optional(),
-  // TODO: remove these in production
-  DeviceIpAddress: z.string(),
-  EmailAddress: z.string(),
+  EmailAddress: z.string().optional(),
+  // TODO: remove below in production
+  // DeviceIpAddress: z.string(),
 })
 const BillingAddress = z.object({
   City: z.string(),
