@@ -22,14 +22,15 @@ const formatterWithFraction = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
 })
 
+export const SWEEPIES_MONIKER = 'S'
+
 export function formatMoney(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
 }
 
 export function formatSweepies(amount: number) {
-  const newAmount = getMoneyNumber(amount)
-  return formatter.format(newAmount).replace('$', 'S')
+  return SWEEPIES_MONIKER + getMoneyNumberToDecimal(amount / 100)
 }
 
 export function formatSpice(amount: number) {
@@ -51,6 +52,7 @@ export function formatMoneyUSD(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount)
 }
+
 export function formatSweepsToUSD(amount: number) {
   return formatterWithFraction.format(amount / 100)
 }
@@ -58,10 +60,6 @@ export function formatSweepsToUSD(amount: number) {
 export function formatMoneyNumber(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', '')
-}
-export function formatSweepsNumber(amount: number) {
-  const newAmount = getMoneyNumber(amount / 100)
-  return formatter.format(newAmount).replace('$', 'S')
 }
 
 export function getMoneyNumber(amount: number) {
