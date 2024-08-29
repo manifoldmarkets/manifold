@@ -41,7 +41,7 @@ export const RegisterUserForm = (props: { user: User }) => {
   const router = useRouter()
   const { redirect } = router.query
   const [page, setPage] = useState(
-    user.idStatus === 'verified'
+    user.idStatus === 'verified' || user.kycDocumentStatus === 'pending'
       ? 'final'
       : (redirect === 'checkout' || redirect === 'cashout') &&
         !user.verifiedPhone
