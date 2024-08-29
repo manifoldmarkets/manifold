@@ -55,23 +55,43 @@ export const BetSlider = (props: {
       marks={buildArray(
         smallManaAmounts && {
           value: 0,
-          label: formatWithToken(sliderAmounts[0], token),
+          label: formatWithToken({
+            amount: sliderAmounts[0],
+            token: token,
+            short: true,
+          }),
         },
         {
           value: hundredIndex,
-          label: formatWithToken(sliderAmounts[hundredIndex], token),
+          label: formatWithToken({
+            amount: sliderAmounts[hundredIndex],
+            token: token,
+            short: true,
+          }),
         },
         !smallManaAmounts && {
           value: thousandIndex,
-          label: formatWithToken(sliderAmounts[thousandIndex], token),
+          label: formatWithToken({
+            amount: sliderAmounts[thousandIndex],
+            token: token,
+            short: true,
+          }),
         },
         !smallManaAmounts && {
           value: tenThousandIndex,
-          label: formatWithToken(sliderAmounts[tenThousandIndex], token),
+          label: formatWithToken({
+            amount: sliderAmounts[tenThousandIndex],
+            token: token,
+            short: true,
+          }),
         },
         smallManaAmounts && {
           value: maxSliderIndex,
-          label: formatWithToken(sliderAmounts[maxSliderIndex], token),
+          label: formatWithToken({
+            amount: sliderAmounts[maxSliderIndex],
+            token: token,
+            short: true,
+          }),
         }
       )}
       color={

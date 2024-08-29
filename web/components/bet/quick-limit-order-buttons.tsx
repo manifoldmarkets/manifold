@@ -71,10 +71,10 @@ export const QuickLimitOrderButtons = (props: {
         console.log(`placed ${TRADE_TERM}. Result:`, r)
         setIsSubmitting(false)
         toast.success(
-          `Placed order for ${formatWithToken(
-            amount,
-            isCashContract ? 'CASH' : 'M$'
-          )} ${outcome} at ${formatPercent(prob)}`
+          `Placed order for ${formatWithToken({
+            amount: amount,
+            token: isCashContract ? 'CASH' : 'M$',
+          })} ${outcome} at ${formatPercent(prob)}`
         )
       })
       .catch((e) => {
@@ -112,10 +112,10 @@ export const QuickLimitOrderButtons = (props: {
         <div className="text-ink-600">
           Quick limit order{' '}
           <InfoTooltip
-            text={`Offer to buy ${formatWithToken(
-              amount,
-              isCashContract ? 'CASH' : 'M$'
-            )} YES or NO at the current market price of ${formatPercent(
+            text={`Offer to buy ${formatWithToken({
+              amount: amount,
+              token: isCashContract ? 'CASH' : 'M$',
+            })} YES or NO at the current market price of ${formatPercent(
               prob
             )}. If no one takes your ${TRADE_TERM}, your offer will expire in 24 hours.`}
           />

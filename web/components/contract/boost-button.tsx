@@ -107,10 +107,10 @@ function BoostFormRow(props: {
 
   const error =
     !costPerView || costPerView < MIN_AD_COST_PER_VIEW
-      ? `Bid at least ${formatWithToken(
-          MIN_AD_COST_PER_VIEW,
-          isCashContract ? 'CASH' : 'M$'
-        )}`
+      ? `Bid at least ${formatWithToken({
+          amount: MIN_AD_COST_PER_VIEW,
+          token: isCashContract ? 'CASH' : 'M$',
+        })}`
       : undefined
 
   const onSubmit = async () => {

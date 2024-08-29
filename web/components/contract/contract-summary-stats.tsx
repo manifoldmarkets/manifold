@@ -44,10 +44,10 @@ export function ContractSummaryStats(props: {
 
           {!!contract.volume && (
             <Tooltip
-              text={`Trading volume: ${formatWithToken(
-                contract.volume,
-                isCashContract ? 'CASH' : 'M$'
-              )}`}
+              text={`Trading volume: ${formatWithToken({
+                amount: contract.volume,
+                token: isCashContract ? 'CASH' : 'M$',
+              })}`}
               placement="bottom"
               noTap
               className="flex flex-row items-center gap-1"

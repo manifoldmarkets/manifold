@@ -842,14 +842,18 @@ const NumberCell = (props: {
   const { num, change, isCashContract } = props
   const formattedNum =
     num < 1000 && num > -1000
-      ? formatWithToken(num, isCashContract ? 'CASH' : 'M$')
+      ? formatWithToken({ amount: num, token: isCashContract ? 'CASH' : 'M$' })
       : isCashContract
       ? SWEEPIES_MONIKER + shortFormatNumber(num)
       : ENV_CONFIG.moneyMoniker + shortFormatNumber(num)
   return (
     <Row className="items-start justify-end ">
       {change &&
-      formattedNum !== formatWithToken(0, isCashContract ? 'CASH' : 'M$') ? (
+      formattedNum !==
+        formatWithToken({
+          amount: 0,
+          token: isCashContract ? 'CASH' : 'M$',
+        }) ? (
         num > 0 ? (
           <span className="text-teal-500">{formattedNum}</span>
         ) : (

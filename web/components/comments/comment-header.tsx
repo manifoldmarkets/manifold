@@ -78,7 +78,7 @@ export function FeedCommentHeader(props: {
 
   const isCashContract = contract.token === 'CASH'
   const marketCreator = contract.creatorId === userId
-  const { bought, money } = getBoughtMoney(betAmount)
+  const { bought, money } = getBoughtMoney(betAmount, isCashContract)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   const isReplyToBet = betAmount !== undefined
   const commenterIsBettor = commenterAndBettorMatch(comment)
@@ -201,7 +201,10 @@ const getBoughtMoney = (
   let money: string | undefined
   if (betAmount != undefined) {
     bought = betAmount >= 0 ? 'bought' : 'sold'
-    money = formatWithToken(Math.abs(betAmount), isCashContract ? 'CASH' : 'M$')
+    money = formatWithToken({
+      amount: Math.abs(betAmount),
+      token: isCashContract ? 'CASH' : 'M$',
+    })
   }
   return { bought, money }
 }

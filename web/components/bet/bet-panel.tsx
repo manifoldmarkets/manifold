@@ -465,8 +465,10 @@ export const BuyPanelBody = (props: {
     ? `You might not want to spend ${formatPercent(
         bankrollFraction
       )} of your balance on a single trade. \n\nCurrent balance: ${formatWithToken(
-        user?.balance ?? 0,
-        isCashContract ? 'CASH' : 'M$'
+        {
+          amount: user?.balance ?? 0,
+          token: isCashContract ? 'CASH' : 'M$',
+        }
       )}`
     : highProbMove
     ? `Are you sure you want to move the market to ${displayedAfter}?`

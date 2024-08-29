@@ -26,16 +26,21 @@ export const SWEEPIES_MONIKER = 'S'
 
 export type InputTokenType = 'M$' | 'SPICE' | 'CASH'
 
-export function formatWithToken(
-  amount: number,
-  token: InputTokenType,
+export function formatWithToken(variables: {
+  amount: number
+  token: InputTokenType
   toDecimal?: number
-) {
+  short?: boolean
+}) {
+  const { amount, token, toDecimal, short } = variables
   if (token === 'CASH') {
     return formatSweepies(amount, toDecimal)
   }
   if (toDecimal) {
     return formatMoneyWithDecimals(amount)
+  }
+  if (short) {
+    return formatMoneyShort(amount)
   }
   return formatMoney(amount)
 }
@@ -46,7 +51,11 @@ export function formatMoney(amount: number) {
 }
 
 export function formatSweepies(amount: number, toDecimal?: number) {
-  return SWEEPIES_MONIKER + (amount / 100).toFixed(toDecimal ?? 2)
+  return SWEEPIES_MONIKER + formatSweepiesNumber(amount, toDecimal)
+}
+
+export function formatSweepiesNumber(amount: number, toDecimal?: number) {
+  return (amount / 100).toFixed(toDecimal ?? 2)
 }
 
 export function formatSpice(amount: number) {

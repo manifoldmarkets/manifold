@@ -26,6 +26,12 @@ export function MoneyDisplay(props: {
     numberType === 'toDecimal' ? (isCashContract ? 4 : 2) : undefined
 
   return (
-    <>{formatWithToken(amount, isCashContract ? 'CASH' : 'M$', toDecimal)}</>
+    <>
+      {formatWithToken({
+        amount: amount,
+        token: isCashContract ? 'CASH' : 'M$',
+        toDecimal,
+      })}
+    </>
   )
 }

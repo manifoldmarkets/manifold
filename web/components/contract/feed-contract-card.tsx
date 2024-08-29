@@ -479,15 +479,24 @@ export function YourMetricsFooter(props: {
         <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
         <span className="text-ink-700 font-semibold">
           {maxSharesOutcome === 'YES'
-            ? formatWithToken(yesShares, isCashContract ? 'CASH' : 'M$')
-            : formatWithToken(noShares, isCashContract ? 'CASH' : 'M$')}{' '}
+            ? formatWithToken({
+                amount: yesShares,
+                token: isCashContract ? 'CASH' : 'M$',
+              })
+            : formatWithToken({
+                amount: noShares,
+                token: isCashContract ? 'CASH' : 'M$',
+              })}{' '}
         </span>
       </Row>
       <Row className="items-center gap-2">
         <div className="text-ink-500">Profit </div>
         <div className={clsx('text-ink-700 font-semibold')}>
           {profit
-            ? formatWithToken(profit, isCashContract ? 'CASH' : 'M$')
+            ? formatWithToken({
+                amount: profit,
+                token: isCashContract ? 'CASH' : 'M$',
+              })
             : '--'}
         </div>
       </Row>

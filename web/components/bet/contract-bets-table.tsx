@@ -204,10 +204,10 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
   const ofTotalAmount =
     bet.limitProb === undefined || bet.orderAmount === undefined
       ? ''
-      : ` / ${formatWithToken(
-          bet.orderAmount,
-          contract.token == 'CASH' ? 'CASH' : 'M$'
-        )}`
+      : ` / ${formatWithToken({
+          amount: bet.orderAmount,
+          token: contract.token == 'CASH' ? 'CASH' : 'M$',
+        })}`
 
   const sharesOrShortSellShares = Math.abs(shares)
   const isCashContract = contract.token === 'CASH'
@@ -308,10 +308,10 @@ export const groupMultiNumericBets = (
   const ofTotalAmount = bets.some(
     (b) => b.orderAmount !== undefined && b.limitProb !== undefined
   )
-    ? ` / ${formatWithToken(
-        sumBy(bets, (b) => b.orderAmount ?? 0),
-        isCashContract ? 'CASH' : 'M$'
-      )}`
+    ? ` / ${formatWithToken({
+        amount: sumBy(bets, (b) => b.orderAmount ?? 0),
+        token: isCashContract ? 'CASH' : 'M$',
+      })}`
     : ''
 
   return {

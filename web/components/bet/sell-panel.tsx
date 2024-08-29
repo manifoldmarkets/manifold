@@ -341,10 +341,10 @@ export function SellPanel(props: {
         color="indigo"
         actionLabel={
           isStonk
-            ? `Sell ${formatWithToken(
-                saleValue,
-                isCashContract ? 'CASH' : 'M$'
-              )}`
+            ? `Sell ${formatWithToken({
+                amount: saleValue,
+                token: isCashContract ? 'CASH' : 'M$',
+              })}`
             : `Sell ${formatWithCommas(sellQuantity)} shares`
         }
         inModal={true}
