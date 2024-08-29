@@ -30,7 +30,8 @@ export function MoneyDisplay(props: {
       {formatWithToken({
         amount: amount,
         token: isCashContract ? 'CASH' : 'M$',
-        toDecimal,
+        toDecimal: toDecimal,
+        short: numberType === 'short',
       })}
     </>
   )
