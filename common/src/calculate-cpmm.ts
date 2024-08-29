@@ -55,7 +55,7 @@ export function getCpmmOutcomeProbabilityAfterBet(
 }
 
 // before liquidity fee
-function calculateCpmmShares(
+export function calculateCpmmShares(
   pool: {
     [outcome: string]: number
   },
