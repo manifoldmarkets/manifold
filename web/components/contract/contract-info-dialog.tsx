@@ -262,7 +262,7 @@ export const Stats = (props: {
                       </>
                     ) : (
                       <>
-                        Log-odds change from a $
+                        Log-odds change from a{' '}
                         <MoneyDisplay
                           amount={ELASTICITY_BET_AMOUNT}
                           isCashContract={isCashContract}
