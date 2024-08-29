@@ -87,10 +87,16 @@ export function AmountInput(
   }, [amount])
 
   const onAmountChange = (str: string) => {
+    // TWODO: Sweepies not as robust
     const s = str.replace(bannedChars, '')
     if (s !== amountString) {
+      if (!isSweepies) {
+        setAmountString(s)
+      }
       const amount = parse(s)
-      setAmountString(formatAmountString(amount))
+      if (isSweepies) {
+        setAmountString(formatAmountString(amount))
+      }
       const isInvalid = !s || isNaN(amount)
       onChangeAmount(isInvalid ? undefined : amount)
     }
