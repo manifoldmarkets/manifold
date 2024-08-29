@@ -5,7 +5,7 @@ select * from CONCAT_WS(
         ' '::text,
         data->>'creatorName',
         public.extract_text_from_rich_text_json(data->'description')
-    )
+              )
 $function$;
 
 create
@@ -64,23 +64,23 @@ or replace function public.close_contract_embeddings (
     FROM contract_embeddings
     WHERE contract_id = input_contract_id
 )
-    SELECT contract_id,
-           similarity,
-           data
-    FROM public.search_contract_embeddings(
-                 (
-                     SELECT embedding
-                     FROM embedding
-                 ),
-                 similarity_threshold,
-                 match_count + 500
-         )
-             join contracts on contract_id = contracts.id
-    where contract_id != input_contract_id
-      and resolution_time is null
-      and contracts.visibility = 'public'
-    order by similarity * similarity * importance_score desc
-    limit match_count;
+                                             SELECT contract_id,
+                                                    similarity,
+                                                    data
+                                             FROM public.search_contract_embeddings(
+                                                          (
+                                                              SELECT embedding
+                                                              FROM embedding
+                                                          ),
+                                                          similarity_threshold,
+                                                          match_count + 500
+                                                  )
+                                                      join contracts on contract_id = contracts.id
+                                             where contract_id != input_contract_id
+                                               and resolution_time is null
+                                               and contracts.visibility = 'public'
+                                             order by similarity * similarity * importance_score desc
+                                             limit match_count;
 $function$;
 
 create
@@ -695,48 +695,48 @@ limit n offset start $function$;
 
 create
 or replace function public.get_your_recent_contracts (uid text, n integer, start integer) returns table (data jsonb, max_ts bigint) language sql stable parallel SAFE as $function$
-  with your_bet_on_contracts as (
-      select contract_id,
-              (data->>'lastBetTime')::bigint as ts
-      from user_contract_metrics
-      where user_id = uid
-        and ((data -> 'lastBetTime')::bigint) is not null
-      order by ((data -> 'lastBetTime')::bigint) desc
-      limit n * 10 + start * 5),
-    your_liked_contracts as (
-          select content_id as contract_id,
+with your_bet_on_contracts as (
+    select contract_id,
+           (data->>'lastBetTime')::bigint as ts
+    from user_contract_metrics
+    where user_id = uid
+      and ((data -> 'lastBetTime')::bigint) is not null
+    order by ((data -> 'lastBetTime')::bigint) desc
+    limit n * 10 + start * 5),
+     your_liked_contracts as (
+         select content_id as contract_id,
                 public.ts_to_millis(created_time) as ts
-          from user_reactions
-          where user_id = uid
-          order by created_time desc
-          limit n * 10 + start * 5
-    ),
-    your_viewed_contracts as (
-        select contract_id,
-               public.ts_to_millis(last_page_view_ts) as ts
-        from user_contract_views
-        where user_id = uid and last_page_view_ts is not null
-        order by last_page_view_ts desc
-        limit n * 10 + start * 5
-    ),
-    recent_contract_ids as (
-      select contract_id, ts
-      from your_bet_on_contracts
-      union all
-      select contract_id, ts
-      from your_viewed_contracts
-      union all
-      select contract_id, ts
-      from your_liked_contracts
-    ),
-    recent_unique_contract_ids as (
-      select contract_id, max(ts) AS max_ts
-      from recent_contract_ids
-      group by contract_id
-    )
+         from user_reactions
+         where user_id = uid
+         order by created_time desc
+         limit n * 10 + start * 5
+     ),
+     your_viewed_contracts as (
+         select contract_id,
+                public.ts_to_millis(last_page_view_ts) as ts
+         from user_contract_views
+         where user_id = uid and last_page_view_ts is not null
+         order by last_page_view_ts desc
+         limit n * 10 + start * 5
+     ),
+     recent_contract_ids as (
+         select contract_id, ts
+         from your_bet_on_contracts
+         union all
+         select contract_id, ts
+         from your_viewed_contracts
+         union all
+         select contract_id, ts
+         from your_liked_contracts
+     ),
+     recent_unique_contract_ids as (
+         select contract_id, max(ts) AS max_ts
+         from recent_contract_ids
+         group by contract_id
+     )
 select data, max_ts
 from recent_unique_contract_ids
-left join contracts on contracts.id = contract_id
+         left join contracts on contracts.id = contract_id
 where data is not null
 order by max_ts desc
 limit n offset start $function$;
@@ -934,7 +934,7 @@ $function$;
 create
 or replace function public.recently_liked_contract_counts (since bigint) returns table (contract_id text, n integer) language sql stable parallel SAFE as $function$
 select content_id as contract_id,
-  count(*) as n
+       count(*) as n
 from user_reactions
 where content_type = 'contract'
   and public.ts_to_millis(created_time) > since

@@ -74,9 +74,9 @@ export const createchartannotation = authEndpoint(async (req, auth) => {
     insert into chart_annotations
         (contract_id, event_time, text, comment_id, external_url, thumbnail_url,
          creator_id, creator_name, creator_username, creator_avatar_url, answer_id,
-         user_username, user_avatar_url, user_name, user_id, prob_change
+         user_id, prob_change
          )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     returning *
         `,
     [
@@ -91,9 +91,6 @@ export const createchartannotation = authEndpoint(async (req, auth) => {
       creator.username,
       creator.avatarUrl,
       answerId,
-      comment?.userUsername ?? null,
-      comment?.userAvatarUrl ?? null,
-      comment?.userName ?? null,
       comment?.userId ?? null,
       probChange ?? null,
     ]

@@ -16,9 +16,6 @@ create table if not exists
     external_url text,
     text text,
     answer_id text,
-    user_username text,
-    user_name text,
-    user_avatar_url text,
     user_id text,
     prob_change numeric,
     constraint chart_annotations_prob_change_check check (
