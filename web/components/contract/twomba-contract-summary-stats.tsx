@@ -3,18 +3,15 @@ import { Contract } from 'common/contract'
 import {
   formatWithToken,
   shortFormatNumber,
-  SWEEPIES_MONIKER,
 } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { shortenNumber } from '../../lib/util/formatNumber'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
 import { CreatorFeesDisplay } from './creator-fees-display'
 import { LikeButton } from './like-button'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { MoneyDisplay } from '../bet/money-display'
 
 export function TwombaContractSummaryStats(props: {
