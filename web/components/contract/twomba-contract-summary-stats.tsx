@@ -15,6 +15,7 @@ import { CloseOrResolveTime } from './contract-details'
 import { CreatorFeesDisplay } from './creator-fees-display'
 import { LikeButton } from './like-button'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { MoneyDisplay } from '../bet/money-display'
 
 export function TwombaContractSummaryStats(props: {
   contractId: string
@@ -82,8 +83,11 @@ export function TwombaContractSummaryStats(props: {
               className="flex flex-row items-center gap-0.5"
             >
               <ChartBarIcon className="text-ink-500 h-4 w-4" />
-              {isCashContract ? SWEEPIES_MONIKER : ENV_CONFIG.moneyMoniker}
-              {shortenNumber(contract.volume)}
+              <MoneyDisplay
+                amount={contract.volume}
+                isCashContract={!!isCashContract}
+                numberType="short"
+              />
             </Tooltip>
           )}
 
