@@ -1,9 +1,6 @@
 import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
-import {
-  formatWithToken,
-  shortFormatNumber,
-} from 'common/util/format'
+import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { TierTooltip } from '../tiers/tier-tooltip'
