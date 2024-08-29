@@ -90,7 +90,7 @@ export function AmountInput(
     const s = str.replace(bannedChars, '')
     if (s !== amountString) {
       const amount = parse(s)
-      setAmountString(formatAmountString(parse(s)))
+      setAmountString(formatAmountString(amount))
       const isInvalid = !s || isNaN(amount)
       onChangeAmount(isInvalid ? undefined : amount)
     }
