@@ -195,7 +195,7 @@ export const verifyReasonCodes = async (
       ReasonCodes
     )
     await updateUser(pg, userId, {
-      sweepstakesStatus: 'temporary-block',
+      sweepstakesStatus: 'block',
       kycLastAttempt: Date.now(),
     })
     return {

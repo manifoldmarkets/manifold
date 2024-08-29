@@ -4,6 +4,7 @@ import { intersection } from 'lodash'
 import {
   identityBlockedCodes,
   locationTemporarilyBlockedCodes,
+  underageErrorCodes,
 } from 'common/reason-codes'
 
 export type User = {
@@ -75,7 +76,7 @@ export type User = {
   kycFlags?: string[]
   kycLastAttempt?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
-  sweepstakesStatus?: 'fail' | 'block' | 'temporary-block' | 'allow'
+  sweepstakesStatus?: 'fail' | 'block' | 'allow'
   idStatus?: 'fail' | 'verified'
 }
 
@@ -150,10 +151,7 @@ export const isVerified = (user: User) => {
 }
 
 const verifiedAndBlocked = (user: User | undefined | null) =>
-  user &&
-  user.idStatus === 'verified' &&
-  (user.sweepstakesStatus === 'block' ||
-    user.sweepstakesStatus === 'temporary-block')
+  user && user.idStatus === 'verified' && user.sweepstakesStatus === 'block'
 
 export const identityPending = (user: User | undefined | null) => {
   return (
@@ -173,11 +171,18 @@ export const locationBlocked = (user: User | undefined | null) => {
   )
 }
 
+export const ageBlocked = (user: User | undefined | null) => {
+  return (
+    user &&
+    verifiedAndBlocked(user) &&
+    intersection(user.kycFlags, underageErrorCodes).length > 0
+  )
+}
+
 export const identityBlocked = (user: User | undefined | null) => {
   return (
     user &&
     user.idStatus === 'verified' &&
-    user.sweepstakesStatus === 'block' &&
     intersection(user.kycFlags, identityBlockedCodes).length > 0
   )
 }
@@ -197,10 +202,10 @@ export const getVerificationStatus = (
     return { status: 'error', message: 'User must verify phone' }
   } else if (user.idStatus === 'fail') {
     return { status: 'error', message: 'User has registration failed' }
+  } else if (user.sweepstakesStatus === 'block' && locationBlocked(user)) {
+    return { status: 'error', message: 'User location is blocked' }
   } else if (user.sweepstakesStatus === 'block') {
     return { status: 'error', message: 'User is blocked' }
-  } else if (user.sweepstakesStatus === 'temporary-block') {
-    return { status: 'error', message: 'User is temporary blocked' }
   } else if (user.sweepstakesStatus === 'fail') {
     return { status: 'error', message: 'User failed KYC' }
   } else if (user.sweepstakesStatus === 'allow') {

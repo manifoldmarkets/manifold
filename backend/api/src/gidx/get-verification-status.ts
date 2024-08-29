@@ -85,11 +85,13 @@ const assessDocumentStatus = async (user: User, pg: SupabaseDirectClient) => {
   if (
     isVerified &&
     (user.kycDocumentStatus !== 'verified' ||
+      user.idStatus !== 'verified' ||
       user.sweepstakesStatus !== 'allow')
   ) {
     // They passed the reason codes and have the required documents
     await updateUser(pg, user.id, {
       kycDocumentStatus: 'verified',
+      idStatus: 'verified',
       sweepstakesStatus: 'allow',
     })
   } else if (isPending && user.kycDocumentStatus !== 'pending') {

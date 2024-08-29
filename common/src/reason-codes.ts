@@ -43,6 +43,7 @@ export const identityBlockedCodes = [
   'ID-BLOCK', // Identity Blocked
   'ID-HVEL-ACTV', // Identity High Velocity Activity
   'ID-DECEASED', // Identity Deceased
+  'ID-EX', // Identity Exists already
 ]
 
 export const blockedCodes: string[] = [
@@ -74,7 +75,6 @@ export const allowedCodes: string[] = [
   'ID-PASS', // Identity Verification Passed
   'ID-UA21', // Identity Under 21
   'LL-OUT-US', // Location Outside US
-  'ID-EX', // Identity Exists
 ]
 
 export const documentsReadyCodes: string[] = ['DOC-REV-COMPL', 'DOC-UPLOADED']

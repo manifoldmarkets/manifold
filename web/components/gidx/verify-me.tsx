@@ -1,4 +1,5 @@
 import {
+  ageBlocked,
   getVerificationStatus,
   identityBlocked,
   locationBlocked,
@@ -26,9 +27,9 @@ export const VerifyMe = (props: { user: User }) => {
 
   const [show, setShow] = useState(
     TWOMBA_ENABLED &&
-      !identityBlocked(user) &&
       (user.sweepstakesStatus === undefined ||
         user.sweepstakesStatus === 'fail' ||
+        user.idStatus === 'fail' ||
         user.kycDocumentStatus === 'fail' ||
         user.kycDocumentStatus === 'pending' ||
         locationBlocked(user))
@@ -136,6 +137,35 @@ export const VerifyMe = (props: { user: User }) => {
             Close
           </Button>
         </Col>
+      </Col>
+    )
+  }
+
+  if (identityBlocked(user)) {
+    return (
+      <Col
+        className={
+          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
+        }
+      >
+        <Row className={'w-full items-center justify-between'}>
+          <span>
+            Blocked from sweepstakes participation due to blocked identity.{' '}
+          </span>
+        </Row>
+      </Col>
+    )
+  }
+  if (ageBlocked(user)) {
+    return (
+      <Col
+        className={
+          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
+        }
+      >
+        <Row className={'w-full items-center justify-between'}>
+          <span>Blocked from sweepstakes participation due to underage. </span>
+        </Row>
       </Col>
     )
   }
