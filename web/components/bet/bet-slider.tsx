@@ -58,7 +58,6 @@ export const BetSlider = (props: {
           label: formatWithToken({
             amount: sliderAmounts[0],
             token: token,
-            short: true,
           }),
         },
         {
@@ -66,7 +65,6 @@ export const BetSlider = (props: {
           label: formatWithToken({
             amount: sliderAmounts[hundredIndex],
             token: token,
-            short: true,
           }),
         },
         !smallManaAmounts && {
