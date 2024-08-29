@@ -72,7 +72,7 @@ export function CoinNumber(props: {
       {amount == undefined ? (
         '---'
       ) : coinType === 'sweepies' ? (
-        // TODO: give sweepies all the variations as well
+        // TWODO: give sweepies all the variations as well
         formatSweepiesNumber(Math.abs(amount ?? 0))
       ) : numberType == 'short' ? (
         shortenNumber(
