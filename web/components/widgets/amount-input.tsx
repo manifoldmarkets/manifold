@@ -87,7 +87,6 @@ export function AmountInput(
   }, [amount])
 
   const onAmountChange = (str: string) => {
-    console.log('onAmountChange', str)
     const s = str.replace(bannedChars, '')
     if (s !== amountString) {
       const amount = parse(s)
