@@ -1,5 +1,4 @@
 import {
-  createSupabaseDirectClient,
   SupabaseDirectClient,
 } from './supabase/init'
 import { getContract, getUser, htmlToRichText, log } from './utils'
