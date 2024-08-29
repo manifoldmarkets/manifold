@@ -1,37 +1,37 @@
-import { CPMMNumericContract } from 'common/contract'
-import { Col } from 'web/components/layout/col'
-import { Answer } from 'common/answer'
-import { Button, IconButton } from 'web/components/buttons/button'
-import { useMemo, useState } from 'react'
-import { debounce, find, groupBy, mapValues, sum, sumBy } from 'lodash'
-import { floatingEqual, floatingGreater } from 'common/util/math'
-import clsx from 'clsx'
-import { formatMoney } from 'common/util/format'
-import { RangeSlider } from 'web/components/widgets/slider'
-import { api } from 'web/lib/api/api'
-import { removeUndefinedProps } from 'common/util/object'
-import { filterDefined } from 'common/util/array'
-import { toast } from 'react-hot-toast'
-import {
-  getExpectedValue,
-  answerTextToRange,
-  getRangeContainingValues,
-  answerToMidpoint,
-  formatExpectedValue,
-  NEW_GRAPH_COLOR,
-  answerToRange,
-} from 'common/multi-numeric'
-import { Bet } from 'common/bet'
-import { calculateCpmmMultiArbitrageSellYesEqually } from 'common/calculate-cpmm-arbitrage'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
-import { SizedContainer } from 'web/components/sized-container'
-import { MultiNumericDistributionChart } from 'web/components/answers/numeric-bet-panel'
-import { Row } from 'web/components/layout/row'
-import { getInvested } from 'common/calculate'
-import { DiagonalPattern } from 'web/components/charts/generic-charts'
-import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import { FeeDisplay } from 'web/components/bet/fees'
 import { XIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import { Answer } from 'common/answer'
+import { Bet } from 'common/bet'
+import { getInvested } from 'common/calculate'
+import { calculateCpmmMultiArbitrageSellYesEqually } from 'common/calculate-cpmm-arbitrage'
+import { CPMMNumericContract } from 'common/contract'
+import {
+  answerTextToRange,
+  answerToMidpoint,
+  answerToRange,
+  formatExpectedValue,
+  getExpectedValue,
+  getRangeContainingValues,
+  NEW_GRAPH_COLOR,
+} from 'common/multi-numeric'
+import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
+import { filterDefined } from 'common/util/array'
+import { floatingEqual, floatingGreater } from 'common/util/math'
+import { removeUndefinedProps } from 'common/util/object'
+import { debounce, find, groupBy, mapValues, sum, sumBy } from 'lodash'
+import { useMemo, useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { MultiNumericDistributionChart } from 'web/components/answers/numeric-bet-panel'
+import { FeeDisplay } from 'web/components/bet/fees'
+import { Button, IconButton } from 'web/components/buttons/button'
+import { DiagonalPattern } from 'web/components/charts/generic-charts'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { SizedContainer } from 'web/components/sized-container'
+import { RangeSlider } from 'web/components/widgets/slider'
+import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
+import { api } from 'web/lib/api/api'
+import { MoneyDisplay } from '../bet/money-display'
 
 export const NumericSellPanel = (props: {
   contract: CPMMNumericContract
@@ -40,6 +40,7 @@ export const NumericSellPanel = (props: {
 }) => {
   const { contract, userBets, cancel } = props
   const { answers, min: minimum, max: maximum } = contract
+  const isCashContract = contract.token === 'CASH'
   const expectedValue = getExpectedValue(contract)
   const userNonRedemptionBetsByAnswer = groupBy(
     userBets.filter((bet) => bet.shares !== 0),
@@ -284,9 +285,23 @@ export const NumericSellPanel = (props: {
           <div>Fees</div>
         </Col>
         <Col className={'text-ink-700 items-end gap-2'}>
-          <span className="text-ink-700">{formatMoney(potentialPayout)}</span>
-          {isLoanOwed && <span>{formatMoney(Math.floor(-loanPaid))}</span>}
-          <span className="text-ink-700">{formatMoney(profit)}</span>
+          <span className="text-ink-700">
+            <MoneyDisplay
+              amount={potentialPayout}
+              isCashContract={isCashContract}
+            />
+          </span>
+          {isLoanOwed && (
+            <span>
+              <MoneyDisplay
+                amount={Math.floor(-loanPaid)}
+                isCashContract={isCashContract}
+              />{' '}
+            </span>
+          )}
+          <span className="text-ink-700">
+            <MoneyDisplay amount={profit} isCashContract={isCashContract} />
+          </span>
           <div>
             {formatExpectedValue(expectedValue, contract)}
             <span className="mx-2">→</span>
@@ -295,7 +310,12 @@ export const NumericSellPanel = (props: {
               potentialContractState
             )}
           </div>
-          <span className="text-ink-700">{formatMoney(netProceeds)}</span>
+          <span className="text-ink-700">
+            <MoneyDisplay
+              amount={netProceeds}
+              isCashContract={isCashContract}
+            />
+          </span>
           <FeeDisplay totalFees={totalFee} amount={potentialPayout} />
         </Col>
       </Row>

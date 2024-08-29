@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatWithToken } from 'common/util/format'
 import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import { ReactNode, useState } from 'react'
 import { boostMarket, getAdAnalytics } from 'web/lib/api/api'
@@ -21,6 +21,7 @@ import clsx from 'clsx'
 import { ControlledTabs } from '../layout/tabs'
 import { buildArray } from 'common/util/array'
 import { APISchema } from 'common/api/schema'
+import { MoneyDisplay } from '../bet/money-display'
 
 export function BoostButton(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -101,11 +102,15 @@ function BoostFormRow(props: {
     DEFAULT_AD_COST_PER_VIEW
   )
 
+  const isCashContract = contract.token === 'CASH'
   const redeems = amount && costPerView ? Math.floor(amount / costPerView) : 0
 
   const error =
     !costPerView || costPerView < MIN_AD_COST_PER_VIEW
-      ? `Bid at least ${formatMoney(MIN_AD_COST_PER_VIEW)}`
+      ? `Bid at least ${formatWithToken({
+          amount: MIN_AD_COST_PER_VIEW,
+          token: isCashContract ? 'CASH' : 'M$',
+        })}`
       : undefined
 
   const onSubmit = async () => {
@@ -180,7 +185,12 @@ function BoostFormRow(props: {
 
         {!showBid && (
           <Row className="items-center text-sm">
-            at {formatMoney(costPerView ?? 0)} per click
+            at{' '}
+            <MoneyDisplay
+              amount={costPerView ?? 0}
+              isCashContract={isCashContract}
+            />{' '}
+            per click
             <Button
               onClick={() => setShowBid(true)}
               size="2xs"

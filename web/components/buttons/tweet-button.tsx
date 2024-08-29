@@ -1,7 +1,11 @@
 import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
-import { formatMoneyNumber, formatPercent } from 'common/util/format'
+import {
+  formatMoneyNumber,
+  formatPercent,
+  SWEEPIES_MONIKER,
+} from 'common/util/format'
 import { getShareUrl } from 'common/util/share'
 import TwitterLogo from 'web/lib/icons/twitter-logo.svg'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -56,7 +60,11 @@ export const getWinningTweet = (
   contract: Contract,
   username: string
 ) => {
-  return `I made M$${formatMoneyNumber(profit)} in profit trading on\n'${
-    contract.question
-  }'! ${getShareUrl(contract, username)}`
+  const isCashContract = contract.token === 'CASH'
+  return `I made ${isCashContract ? SWEEPIES_MONIKER : 'M$'}${formatMoneyNumber(
+    profit
+  )} in profit trading on\n'${contract.question}'! ${getShareUrl(
+    contract,
+    username
+  )}`
 }

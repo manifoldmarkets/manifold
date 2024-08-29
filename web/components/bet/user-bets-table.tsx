@@ -1,52 +1,53 @@
 'use client'
-import { Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
-import { ReactNode, useEffect, useMemo, useState } from 'react'
+import { ChevronUpIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { Bet, LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
-import { contractPath, CPMMContract } from 'common/contract'
+import { Contract, contractPath, CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
+import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
+import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import {
   formatMoney,
+  formatWithToken,
   maybePluralize,
   shortFormatNumber,
+  SWEEPIES_MONIKER,
 } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
-import { Input } from 'web/components/widgets/input'
-import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { Contract } from 'common/contract'
-import { User } from 'web/lib/firebase/users'
-import { Col } from '../layout/col'
-import { LoadingIndicator } from '../widgets/loading-indicator'
+import { Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
 import Link from 'next/link'
-import { Row } from 'web/components/layout/row'
-import { Pagination } from 'web/components/widgets/pagination'
-import clsx from 'clsx'
-import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
-import { OrderTable } from 'web/components/bet/order-book'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
+import { BsThreeDotsVertical } from 'react-icons/bs'
 import { BetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
-import { ProfitBadge } from 'web/components/profit-badge'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { api, getUserContractsMetricsWithContracts } from 'web/lib/api/api'
-import { useEvent } from 'web/hooks/use-event'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
-import { linkClass } from '../widgets/site-link'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { PillButton } from 'web/components/buttons/pill-button'
-import { Carousel } from 'web/components/widgets/carousel'
+import { OrderTable } from 'web/components/bet/order-book'
 import { Button, IconButton } from 'web/components/buttons/button'
-import { ChevronUpIcon } from '@heroicons/react/solid'
-import { OutcomeLabel } from 'web/components/outcome-label'
+import { PillButton } from 'web/components/buttons/pill-button'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
+import { Row } from 'web/components/layout/row'
+import { OutcomeLabel } from 'web/components/outcome-label'
+import { ProfitBadge } from 'web/components/profit-badge'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
+import { Carousel } from 'web/components/widgets/carousel'
+import { Input } from 'web/components/widgets/input'
+import { Pagination } from 'web/components/widgets/pagination'
+import { useEvent } from 'web/hooks/use-event'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { api, getUserContractsMetricsWithContracts } from 'web/lib/api/api'
+import { User } from 'web/lib/firebase/users'
 import DropdownMenu from '../comments/dropdown-menu'
-import { BsThreeDotsVertical } from 'react-icons/bs'
-import { MODAL_CLASS, Modal } from '../layout/modal'
-import { unauthedApi } from 'common/util/api'
+import { Col } from '../layout/col'
+import { Modal, MODAL_CLASS } from '../layout/modal'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { linkClass } from '../widgets/site-link'
 
 type BetSort =
   | 'newest'
@@ -412,7 +413,10 @@ function BetsTable(props: {
               />
             )}
             <Col className={'sm:min-w-[50px]'}>
-              <NumberCell num={metricsByContractId[c.id].payout} />
+              <NumberCell
+                num={metricsByContractId[c.id].payout}
+                isCashContract={c.token === 'CASH'}
+              />
             </Col>
           </Row>
         )
@@ -438,6 +442,7 @@ function BetsTable(props: {
             <Col className={'sm:min-w-[50px]'}>
               <NumberCell
                 num={sum(Object.values(metricsByContractId[c.id].totalShares))}
+                isCashContract={c.token === 'CASH'}
               />
             </Col>
           </Row>
@@ -452,7 +457,11 @@ function BetsTable(props: {
         const cm = metricsByContractId[c.id]
         return (
           <Row className={'justify-end gap-1'}>
-            <NumberCell num={cm.profit} change={true} />
+            <NumberCell
+              num={cm.profit}
+              change={true}
+              isCashContract={c.token === 'CASH'}
+            />
           </Row>
         )
       },
@@ -522,6 +531,7 @@ function BetsTable(props: {
         <NumberCell
           num={metricsByContractId[c.id].from?.day.profit ?? 0}
           change={true}
+          isCashContract={c.token === 'CASH'}
         />
       ),
     },
@@ -532,6 +542,7 @@ function BetsTable(props: {
         <NumberCell
           num={metricsByContractId[c.id].from?.week.profit ?? 0}
           change={true}
+          isCashContract={c.token === 'CASH'}
         />
       ),
     },
@@ -823,15 +834,26 @@ function BetsTable(props: {
   )
 }
 
-const NumberCell = (props: { num: number; change?: boolean }) => {
-  const { num, change } = props
+const NumberCell = (props: {
+  num: number
+  change?: boolean
+  isCashContract: boolean
+}) => {
+  const { num, change, isCashContract } = props
   const formattedNum =
     num < 1000 && num > -1000
-      ? formatMoney(num)
+      ? formatWithToken({ amount: num, token: isCashContract ? 'CASH' : 'M$' })
+      : isCashContract
+      ? SWEEPIES_MONIKER + shortFormatNumber(num)
       : ENV_CONFIG.moneyMoniker + shortFormatNumber(num)
   return (
     <Row className="items-start justify-end ">
-      {change && formattedNum !== formatMoney(0) ? (
+      {change &&
+      formattedNum !==
+        formatWithToken({
+          amount: 0,
+          token: isCashContract ? 'CASH' : 'M$',
+        }) ? (
         num > 0 ? (
           <span className="text-teal-500">{formattedNum}</span>
         ) : (

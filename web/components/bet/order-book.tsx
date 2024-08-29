@@ -1,5 +1,6 @@
-import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
+import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import {
   BinaryContract,
@@ -12,12 +13,16 @@ import {
   StonkContract,
 } from 'common/contract'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatPercent } from 'common/util/format'
 import { sortBy } from 'lodash'
 import { useState } from 'react'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useUser } from 'web/hooks/use-user'
-import { Avatar } from '../widgets/avatar'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { api } from 'web/lib/api/api'
+import { getCountdownString } from 'web/lib/util/time'
 import { Button } from '../buttons/button'
+import { DepthChart } from '../charts/contract/depth-chart'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -28,18 +33,14 @@ import {
   PseudoNumericOutcomeLabel,
   YesLabel,
 } from '../outcome-label'
+import { SizedContainer } from '../sized-container'
+import { UserHovercard } from '../user/user-hovercard'
+import { Avatar } from '../widgets/avatar'
+import { InfoTooltip } from '../widgets/info-tooltip'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { DepthChart } from '../charts/contract/depth-chart'
-import { SizedContainer } from '../sized-container'
-import { api } from 'web/lib/api/api'
-import { UserHovercard } from '../user/user-hovercard'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { Answer } from 'common/answer'
-import { useDisplayUserById } from 'web/hooks/use-user-supabase'
-import { getCountdownString } from 'web/lib/util/time'
 import { Tooltip } from '../widgets/tooltip'
+import { MoneyDisplay } from './money-display'
 
 export function YourOrders(props: {
   contract:
@@ -218,6 +219,8 @@ function OrderRow(props: {
     setIsCancelling(false)
   }
 
+  const isCashContract = contract.token === 'CASH'
+
   return (
     <tr>
       {!isYou && user && (
@@ -258,7 +261,12 @@ function OrderRow(props: {
           ? formatPercent(getBinaryMCProb(limitProb, outcome))
           : formatPercent(limitProb)}
       </td>
-      <td>{formatMoney(orderAmount - amount)}</td>
+      <td>
+        <MoneyDisplay
+          amount={orderAmount - amount}
+          isCashContract={isCashContract}
+        />
+      </td>
       {isYou && (
         <td>
           <Row className={'justify-between gap-1 sm:justify-start'}>

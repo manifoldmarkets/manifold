@@ -3,55 +3,55 @@ import Link from 'next/link'
 import Router from 'next/router'
 import { useEffect, useState } from 'react'
 
+import { AD_WAIT_SECONDS } from 'common/boost'
 import { Contract, contractPath, isBinaryMulti } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
+import { ENV_CONFIG, SWEEPIES_NAME } from 'common/envs/constants'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { formatWithToken, shortFormatNumber } from 'common/util/format'
+import { removeUndefinedProps } from 'common/util/object'
+import { removeEmojis } from 'common/util/string'
+import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
+import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
+import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
+import { Button } from 'web/components/buttons/button'
+import { JSONEmpty } from 'web/components/contract/contract-description'
 import {
   ContractStatusLabel,
   VisibilityIcon,
 } from 'web/components/contract/contracts-table'
+import { TopicTag } from 'web/components/topics/topic-tag'
 import { Avatar } from 'web/components/widgets/avatar'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
+import { useAdTimer } from 'web/hooks/use-ad-timer'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
+import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
+import { FeedDropdown } from '../feed/card-dropdown'
 import { CardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
+import { TierTooltip } from '../tiers/tier-tooltip'
+import { UserHovercard } from '../user/user-hovercard'
 import { ClickFrame } from '../widgets/click-frame'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
-import { FeedDropdown } from '../feed/card-dropdown'
-import { JSONEmpty } from 'web/components/contract/contract-description'
-import { ENV_CONFIG, SWEEPIES_NAME } from 'common/envs/constants'
-import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { Button } from 'web/components/buttons/button'
-import { useAdTimer } from 'web/hooks/use-ad-timer'
-import { AD_WAIT_SECONDS } from 'common/boost'
-import { getAdCanPayFunds } from 'web/lib/supabase/ads'
-import { UserHovercard } from '../user/user-hovercard'
-import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
-import { removeUndefinedProps } from 'common/util/object'
-import { removeEmojis } from 'common/util/string'
-import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
-import { TopicTag } from 'web/components/topics/topic-tag'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { TierTooltip } from '../tiers/tier-tooltip'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -345,7 +345,10 @@ export function FeedContractCard(props: {
         )}
 
         {isBinaryCpmm && metrics && metrics.hasShares && (
-          <YourMetricsFooter metrics={metrics} />
+          <YourMetricsFooter
+            metrics={metrics}
+            isCashContract={contract.token === 'CASH'}
+          />
         )}
 
         {size === 'md' && feedReason == 'freshness' && nonTextDescription && (
@@ -462,8 +465,11 @@ const BottomActionRow = (props: {
     </Row>
   )
 }
-export function YourMetricsFooter(props: { metrics: ContractMetric }) {
-  const { metrics } = props
+export function YourMetricsFooter(props: {
+  metrics: ContractMetric
+  isCashContract: boolean
+}) {
+  const { metrics, isCashContract } = props
   const { totalShares, maxSharesOutcome, profit } = metrics
   const { YES: yesShares, NO: noShares } = totalShares
 
@@ -473,14 +479,25 @@ export function YourMetricsFooter(props: { metrics: ContractMetric }) {
         <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
         <span className="text-ink-700 font-semibold">
           {maxSharesOutcome === 'YES'
-            ? formatMoney(yesShares)
-            : formatMoney(noShares)}{' '}
+            ? formatWithToken({
+                amount: yesShares,
+                token: isCashContract ? 'CASH' : 'M$',
+              })
+            : formatWithToken({
+                amount: noShares,
+                token: isCashContract ? 'CASH' : 'M$',
+              })}{' '}
         </span>
       </Row>
       <Row className="items-center gap-2">
         <div className="text-ink-500">Profit </div>
         <div className={clsx('text-ink-700 font-semibold')}>
-          {profit ? formatMoney(profit) : '--'}
+          {profit
+            ? formatWithToken({
+                amount: profit,
+                token: isCashContract ? 'CASH' : 'M$',
+              })
+            : '--'}
         </div>
       </Row>
     </Row>

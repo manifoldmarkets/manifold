@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { sum } from 'lodash'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Contract, contractPool } from 'common/contract'
 import {
@@ -9,9 +8,10 @@ import {
   supabaseConsoleContractPath,
   TRADED_TERM,
 } from 'common/envs/constants'
+import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { BETTORS, User } from 'common/user'
-import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
-import { capitalize, sumBy } from 'lodash'
+import dayjs from 'dayjs'
+import { capitalize, sum, sumBy } from 'lodash'
 import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
@@ -23,22 +23,21 @@ import {
   updateUserDisinterestEmbedding,
 } from 'web/lib/api/api'
 import { formatTime } from 'web/lib/util/time'
+import { MoneyDisplay } from '../bet/money-display'
 import { Button } from '../buttons/button'
 import { CopyLinkOrShareButton } from '../buttons/copy-link-button'
 import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { ReportButton } from '../buttons/report-button'
+import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
+import { ShareQRButton } from '../buttons/share-qr-button'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
+import SuperBanControl from '../SuperBanControl'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
-import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
-import { ContractHistoryButton } from './contract-edit-history-button'
-import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
-import { ShareQRButton } from '../buttons/share-qr-button'
-import dayjs from 'dayjs'
-import SuperBanControl from '../SuperBanControl'
 import { BoostButton } from './boost-button'
+import { ContractHistoryButton } from './contract-edit-history-button'
 import { SubsidizeButton } from './subsidize-button'
 
 export const Stats = (props: {
@@ -53,6 +52,7 @@ export const Stats = (props: {
       : false
   const addAnswersMode =
     contract.mechanism === 'cpmm-multi-1' ? contract.addAnswersMode : 'DISABLED'
+  const isCashContract = contract.token === 'CASH'
 
   const hideAdvanced = !user
   const isDev = useDev()
@@ -146,13 +146,23 @@ export const Stats = (props: {
                 Total bounty{' '}
                 <InfoTooltip text="The total bounty the creator has put up" />
               </td>
-              <td>{formatMoney(contract.totalBounty)}</td>
+              <td>
+                <MoneyDisplay
+                  amount={contract.totalBounty}
+                  isCashContract={isCashContract}
+                />
+              </td>
             </tr>
             <tr>
               <td>
                 Bounty left <InfoTooltip text="Bounty left to pay out" />
               </td>
-              <td>{formatMoney(contract.bountyLeft)}</td>
+              <td>
+                <MoneyDisplay
+                  amount={contract.bountyLeft}
+                  isCashContract={isCashContract}
+                />
+              </td>
             </tr>
           </>
         )}
@@ -188,7 +198,12 @@ export const Stats = (props: {
                 <span className="mr-1">24 hour volume</span>
                 <InfoTooltip text="Amount bought or sold in the last 24 hours" />
               </td>
-              <td>{formatMoney(contract.volume24Hours)}</td>
+              <td>
+                <MoneyDisplay
+                  amount={contract.volume24Hours}
+                  isCashContract={isCashContract}
+                />
+              </td>
             </tr>
 
             <tr>
@@ -196,7 +211,12 @@ export const Stats = (props: {
                 <span className="mr-1">Total volume</span>
                 <InfoTooltip text="Total amount bought or sold" />
               </td>
-              <td>{formatMoney(contract.volume)}</td>
+              <td>
+                <MoneyDisplay
+                  amount={contract.volume}
+                  isCashContract={isCashContract}
+                />
+              </td>
             </tr>
 
             <tr>
@@ -205,9 +225,11 @@ export const Stats = (props: {
                 <InfoTooltip text="Includes both platform and creator fees" />
               </td>
               <td>
-                {formatMoneyWithDecimals(
-                  sum(Object.values(contract.collectedFees))
-                )}
+                <MoneyDisplay
+                  amount={sum(Object.values(contract.collectedFees))}
+                  isCashContract={isCashContract}
+                  numberType="toDecimal"
+                />
               </td>
             </tr>
 
@@ -229,13 +251,25 @@ export const Stats = (props: {
                 <span className="mr-1">Elasticity</span>
                 <InfoTooltip
                   text={
-                    mechanism === 'cpmm-1'
-                      ? `Log-odds change between a ${formatMoney(
-                          ELASTICITY_BET_AMOUNT
-                        )} ${TRADED_TERM} on YES and NO`
-                      : `Log-odds change from a ${formatMoney(
-                          ELASTICITY_BET_AMOUNT
-                        )} ${TRADED_TERM}`
+                    mechanism === 'cpmm-1' ? (
+                      <>
+                        Log-odds change between a{' '}
+                        <MoneyDisplay
+                          amount={ELASTICITY_BET_AMOUNT}
+                          isCashContract={isCashContract}
+                        />{' '}
+                        {TRADED_TERM} on YES and NO
+                      </>
+                    ) : (
+                      <>
+                        Log-odds change from a{' '}
+                        <MoneyDisplay
+                          amount={ELASTICITY_BET_AMOUNT}
+                          isCashContract={isCashContract}
+                        />{' '}
+                        {TRADED_TERM}
+                      </>
+                    )
                   }
                 />
               </Row>
@@ -248,15 +282,27 @@ export const Stats = (props: {
           <tr>
             <td>Liquidity subsidies</td>
             <td>
-              {mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
-                ? `${formatMoney(
-                    contract.totalLiquidity -
+              {mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1' ? (
+                <>
+                  <MoneyDisplay
+                    amount={
+                      contract.totalLiquidity -
                       contract.subsidyPool -
                       ('answers' in contract
                         ? sumBy(contract.answers, 'subsidyPool')
                         : 0)
-                  )} / ${formatMoney(contract.totalLiquidity)}`
-                : formatMoney(100)}
+                    }
+                    isCashContract={isCashContract}
+                  />{' '}
+                  /{' '}
+                  <MoneyDisplay
+                    amount={contract.totalLiquidity}
+                    isCashContract={isCashContract}
+                  />
+                </>
+              ) : (
+                <MoneyDisplay amount={100} isCashContract={isCashContract} />
+              )}
             </td>
           </tr>
         )}

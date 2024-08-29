@@ -3,7 +3,11 @@ import clsx from 'clsx'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { User, verifiedPhone } from 'common/user'
-import { formatMoney } from 'common/util/format'
+import {
+  formatMoney,
+  formatSweepiesNumber,
+  InputTokenType,
+} from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
@@ -39,6 +43,7 @@ export function AmountInput(
     allowFloat?: boolean
     allowNegative?: boolean
     disableClearButton?: boolean
+    isSweepies?: boolean
   } & JSX.IntrinsicElements['input']
 ) {
   const {
@@ -55,10 +60,19 @@ export function AmountInput(
     allowFloat,
     allowNegative,
     disableClearButton,
+    isSweepies,
     ...rest
   } = props
 
-  const [amountString, setAmountString] = useState(amount?.toString() ?? '')
+  const [amountString, setAmountString] = useState(formatAmountString(amount))
+
+  function formatAmountString(amount: number | undefined) {
+    if (isSweepies) {
+      return amount ? formatSweepiesNumber(amount).toString() : ''
+    } else {
+      return amount?.toString() ?? ''
+    }
+  }
 
   const parse = allowFloat ? parseFloat : parseInt
 
@@ -69,14 +83,20 @@ export function AmountInput(
 
   useEffect(() => {
     if (amount !== parse(amountString))
-      setAmountString(amount?.toString() ?? '')
+      setAmountString(formatAmountString(amount))
   }, [amount])
 
   const onAmountChange = (str: string) => {
+    // TWODO: Sweepies not as robust
     const s = str.replace(bannedChars, '')
     if (s !== amountString) {
-      setAmountString(s)
+      if (!isSweepies) {
+        setAmountString(s)
+      }
       const amount = parse(s)
+      if (isSweepies) {
+        setAmountString(formatAmountString(amount))
+      }
       const isInvalid = !s || isNaN(amount)
       onChangeAmount(isInvalid ? undefined : amount)
     }
@@ -131,7 +151,10 @@ export function AmountInput(
   )
 }
 
-function ClearInputButton(props: { onClick: () => void; className?: string }) {
+export function ClearInputButton(props: {
+  onClick: () => void
+  className?: string
+}) {
   const { onClick, className } = props
   return (
     <button
@@ -165,7 +188,7 @@ export function BuyAmountInput(props: {
   disregardUserBalance?: boolean
   quickButtonValues?: number[] | 'large'
   disableQuickButtons?: boolean
-  token?: 'M$' | 'SPICE' | 'CASH'
+  token?: InputTokenType
   marketTier?: MarketTierType | undefined
 }) {
   const {
@@ -288,6 +311,7 @@ export function BuyAmountInput(props: {
               </Row>
             )
           }
+          isSweepies={token === 'CASH'}
         />
         {showSlider && (
           <BetSlider
@@ -297,6 +321,7 @@ export function BuyAmountInput(props: {
             binaryOutcome={binaryOutcome}
             disabled={disabled}
             smallManaAmounts={!hasLotsOfMana || marketTier === 'play'}
+            token={token}
           />
         )}
         {error ? (
