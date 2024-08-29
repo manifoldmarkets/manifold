@@ -38,7 +38,7 @@ import { track, withTracking } from 'web/lib/service/analytics'
 import { YesNoSelector } from './yes-no-selector'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
-import { Button } from '../buttons/button'
+import { Button, buttonClass } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { Answer } from 'common/answer'
@@ -59,6 +59,7 @@ import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import { MoneyDisplay } from './money-display'
 import { capitalize } from 'lodash'
 import { blockFromSweepstakes, identityPending } from 'common/user'
+import Link from 'next/link'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -120,15 +121,25 @@ export function BuyPanel(props: {
       setIsPanelBodyVisible(true)
     }
   }
+  // TODO: combine w/ contract-overview panels
   if (contract.token === 'CASH' && identityPending(user)) {
     return (
-      <Row className={'rounded bg-amber-50 p-4'}>
+      <Row className={'bg-canvas-50 rounded p-4'}>
         You can't trade on sweepstakes markets while your status is pending.
+      </Row>
+    )
+  } else if (contract.token === 'CASH' && user?.idStatus !== 'verified') {
+    return (
+      <Row className={'bg-canvas-50 gap-1 rounded p-4'}>
+        You can't trade on sweepstakes markets until verified.{' '}
+        <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
+          Register now
+        </Link>
       </Row>
     )
   } else if (contract.token === 'CASH' && blockFromSweepstakes(user)) {
     return (
-      <Row className={'rounded bg-amber-50 p-4'}>
+      <Row className={'bg-canvas-50 rounded p-4'}>
         You can't trade on sweepstakes markets if blocked.
       </Row>
     )

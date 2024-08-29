@@ -72,6 +72,8 @@ import {
   EditChartAnnotationsButton,
 } from '../charts/chart-annotations'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import Link from 'next/link'
+import { buttonClass } from 'web/components/buttons/button'
 
 export const ContractOverview = memo(
   (props: {
@@ -831,11 +833,18 @@ export function BinaryBetPanel(props: {
   return (
     <Col className="my-3 w-full">
       {contract.token === 'CASH' && identityPending(user) ? (
-        <Row className={'rounded bg-amber-50 p-4'}>
+        <Row className={'bg-canvas-50 rounded p-4'}>
           You can't trade on sweepstakes markets while your status is pending.
         </Row>
+      ) : contract.token === 'CASH' && user?.idStatus !== 'verified' ? (
+        <Row className={'bg-canvas-50 items-center gap-1 rounded p-4'}>
+          You can't trade on sweepstakes markets until verified.
+          <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
+            Register now
+          </Link>
+        </Row>
       ) : contract.token === 'CASH' && blockFromSweepstakes(user) ? (
-        <Row className={'rounded bg-amber-50 p-4'}>
+        <Row className={'bg-canvas-50 rounded p-4'}>
           You can't trade on sweepstakes markets if blocked.
         </Row>
       ) : (
