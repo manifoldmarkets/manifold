@@ -121,7 +121,7 @@ export const useMonitorStatus = (
 
     const interval = setInterval(fetchMonitorStatus, 20 * MINUTE_MS)
     return () => clearInterval(interval)
-  }, [fetchMonitorStatus])
+  }, [polling, fetchMonitorStatus])
 
   return { monitorStatus, monitorStatusMessage, fetchMonitorStatus, loading }
 }

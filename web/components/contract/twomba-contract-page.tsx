@@ -71,8 +71,9 @@ import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { YourTrades } from '../../pages/[username]/[contractSlug]'
+import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweestakes-context'
+import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 
 export function TwombaContractPageContent(props: ContractParams) {
   const {
@@ -89,7 +90,6 @@ export function TwombaContractPageContent(props: ContractParams) {
   } = props
 
   const { isPlay } = useSweepstakes()
-
   const livePlayContract = useLiveContractWithAnswers(props.contract)
   const liveCashContract = props.cash
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -98,8 +98,14 @@ export function TwombaContractPageContent(props: ContractParams) {
 
   const liveContract =
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
-
   const user = useUser()
+
+  const { monitorStatus, monitorStatusMessage } = useMonitorStatus(
+    liveContract.token === 'CASH',
+    user
+  )
+  console.log('monitorStatus', monitorStatus)
+  console.log('monitorStatusError', monitorStatusMessage)
   const contractMetrics = useSavedContractMetrics(props.contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []
