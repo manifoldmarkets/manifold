@@ -3,13 +3,18 @@ import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
-import { GIDXMonitorResponse } from 'common/gidx/gidx'
+import {
+  ENABLE_FAKE_CUSTOMER,
+  FAKE_CUSTOMER_BODY,
+  GIDXMonitorResponse,
+} from 'common/gidx/gidx'
 import { getUser, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getIp } from 'shared/analytics'
 import { verifyReasonCodes } from 'api/gidx/register'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
+const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
 export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   props,
@@ -37,7 +42,11 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
     'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerMonitor'
   const body = {
     MerchantCustomerID: userId,
-    DeviceIPAddress: getIp(req),
+    DeviceIpAddress: ENABLE_FAKE_CUSTOMER
+      ? FAKE_CUSTOMER_BODY.DeviceIpAddress
+      : LOCAL_DEV
+      ? '76.102.36.27'
+      : getIp(req),
     ...props,
     ...getGIDXStandardParams(),
   }
@@ -55,6 +64,7 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   }
 
   const data = (await res.json()) as GIDXMonitorResponse
+
   log('Monitor response:', data)
   const { status, message } = await verifyReasonCodes(
     userId,

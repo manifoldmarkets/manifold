@@ -57,8 +57,9 @@ export const getVerificationStatusInternal = async (
     }
   }
   if (
-    (user.sweepstakesStatus === 'fail' || user.idStatus === 'fail') &&
-    (user.kycDocumentStatus === 'pending' || user.kycDocumentStatus === 'fail')
+    user.kycDocumentStatus === 'pending' ||
+    ((user.sweepstakesStatus === 'fail' || user.idStatus === 'fail') &&
+      user.kycDocumentStatus === 'fail')
   ) {
     return await assessDocumentStatus(user, pg)
   }

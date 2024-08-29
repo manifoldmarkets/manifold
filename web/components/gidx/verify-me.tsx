@@ -57,6 +57,21 @@ export const VerifyMe = (props: { user: User }) => {
   const showUploadDocsButton =
     getDocumentsStatus(documents ?? []).isRejected && documents
 
+  if (identityBlocked(user)) {
+    return (
+      <Col
+        className={
+          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
+        }
+      >
+        <Row className={'w-full items-center justify-between'}>
+          <span>
+            Blocked from sweepstakes participation due to blocked identity.{' '}
+          </span>
+        </Row>
+      </Col>
+    )
+  }
   if (
     user.kycDocumentStatus === 'pending' ||
     user.kycDocumentStatus === 'fail'
@@ -141,21 +156,6 @@ export const VerifyMe = (props: { user: User }) => {
     )
   }
 
-  if (identityBlocked(user)) {
-    return (
-      <Col
-        className={
-          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
-        }
-      >
-        <Row className={'w-full items-center justify-between'}>
-          <span>
-            Blocked from sweepstakes participation due to blocked identity.{' '}
-          </span>
-        </Row>
-      </Col>
-    )
-  }
   if (ageBlocked(user)) {
     return (
       <Col

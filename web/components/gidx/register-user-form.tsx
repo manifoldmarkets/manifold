@@ -22,16 +22,12 @@ import {
 import { useWebsocketUser } from 'web/hooks/use-user'
 import {
   ENABLE_FAKE_CUSTOMER,
-  exampleCustomers,
+  FAKE_CUSTOMER_BODY,
   GPSData,
   ID_ERROR_MSG,
 } from 'common/gidx/gidx'
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { YEAR_MS } from 'common/util/time'
-
-export const FAKE_CUSTOMER_BODY = {
-  ...exampleCustomers[1],
-}
 
 export const registrationColClass = 'gap-3 p-4'
 export const registrationBottomRowClass = 'mb-4 mt-4 w-full gap-16'
@@ -400,7 +396,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (user.sweepstakesStatus === 'fail' && user.kycDocumentStatus === 'fail') {
+  if (user.sweepstakesStatus === 'fail' || user.kycDocumentStatus === 'fail') {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>Document errors</span>
