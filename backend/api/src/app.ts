@@ -3,7 +3,6 @@ import * as cors from 'cors'
 import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
-
 import { log, metrics } from 'shared/utils'
 import { withMonitoringContext } from 'shared/monitoring/context'
 import { APIError, pathWithPrefix } from 'common/api/utils'
@@ -172,6 +171,7 @@ import { getCurrentPrivateUser } from './get-current-private-user'
 import { updatePrivateUser } from './update-private-user'
 import { setPushToken } from './push-token'
 import { updateNotifSettings } from './update-notif-settings'
+import { createCashContract } from './create-cash-contract'
 import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { getRedeemablePrizeCash } from './get-redeemable-prize-cash'
 import { getMonitorStatus } from 'api/gidx/get-monitor-status'
@@ -290,6 +290,7 @@ app.options('*', allowCorsUnrestricted)
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 const handlers: { [k in APIPath]: APIHandler<k> } = {
+  'create-cash-contract': createCashContract,
   bet: placeBet,
   'multi-bet': placeMultiBet,
   'bet-ter': placeBetter,

@@ -93,6 +93,18 @@ const coerceBoolean = z
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
 export const API = (_apiTypeCheck = {
+  'create-cash-contract': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as LiteMarket,
+    props: z
+      .object({
+        manaContractId: z.string(),
+        subsidyAmount: z.number().positive(),
+      })
+      .strict(),
+  },
   comment: {
     method: 'POST',
     visibility: 'public',
