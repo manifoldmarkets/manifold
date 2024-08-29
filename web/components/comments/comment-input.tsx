@@ -28,7 +28,7 @@ import { ReplyToUserInfo } from './comment'
 import { ReplyToBetRow } from './comment-header'
 
 export function CommentInput(props: {
-  replyToUserInfo?: DisplayUser
+  replyToUserInfo?: ReplyToUserInfo
   // Reply to another comment
   parentCommentId?: string
   onSubmitComment: (editor: Editor, type: CommentType) => Promise<void>
@@ -275,7 +275,8 @@ export function ContractCommentInput(props: {
   const privateUser = usePrivateUser()
   const isReplyToBet = replyTo && 'amount' in replyTo
   const isReplyToAnswer = replyTo && !isReplyToBet
-  const replyToUserInfo = useDisplayUserById(replyTo?.userId) ?? undefined
+  const replyToUserInfo =
+    useDisplayUserById(replyTo?.userId) ?? props.replyToUserInfo
   const onSubmitComment = useEvent(
     async (editor: Editor, type: CommentType) => {
       if (!user) return
