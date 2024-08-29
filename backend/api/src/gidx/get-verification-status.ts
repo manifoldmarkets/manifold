@@ -11,7 +11,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { User } from 'common/user'
 
@@ -44,6 +44,7 @@ export const getVerificationStatusInternal = async (
     }
   }
   if (ResponseCode === 501 && ResponseMessage.includes('not found')) {
+    log('User not found in GIDX', { userId, ResponseMessage })
     // TODO: broadcast this user update when we have that functionality
     await pg.none(
       `update users set data = data - 'kycFlags' - 'kycDocumentStatus' - 'sweepstakesStatus'
@@ -56,7 +57,7 @@ export const getVerificationStatusInternal = async (
     }
   }
   if (
-    user.sweepstakesStatus === 'fail' &&
+    (user.sweepstakesStatus === 'fail' || user.idStatus === 'fail') &&
     (user.kycDocumentStatus === 'pending' || user.kycDocumentStatus === 'fail')
   ) {
     return await assessDocumentStatus(user, pg)

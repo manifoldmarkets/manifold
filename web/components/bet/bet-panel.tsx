@@ -58,7 +58,7 @@ import { LimitBet } from 'common/bet'
 import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import { MoneyDisplay } from './money-display'
 import { capitalize } from 'lodash'
-import { blockFromSweepstakes } from 'common/user'
+import { blockFromSweepstakes, identityPending } from 'common/user'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -120,7 +120,13 @@ export function BuyPanel(props: {
       setIsPanelBodyVisible(true)
     }
   }
-  if (contract.token === 'CASH' && blockFromSweepstakes(user)) {
+  if (contract.token === 'CASH' && identityPending(user)) {
+    return (
+      <Row className={'rounded bg-amber-50 p-4'}>
+        You can't trade on sweepstakes markets while your status is pending.
+      </Row>
+    )
+  } else if (contract.token === 'CASH' && blockFromSweepstakes(user)) {
     return (
       <Row className={'rounded bg-amber-50 p-4'}>
         You can't trade on sweepstakes markets if blocked.

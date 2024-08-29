@@ -155,6 +155,12 @@ const verifiedAndBlocked = (user: User | undefined | null) =>
   (user.sweepstakesStatus === 'block' ||
     user.sweepstakesStatus === 'temporary-block')
 
+export const identityPending = (user: User | undefined | null) => {
+  return (
+    user && user.idStatus !== 'verified' && user.kycDocumentStatus === 'pending'
+  )
+}
+
 export const blockFromSweepstakes = (user: User | undefined | null) => {
   return user && (user.idStatus !== 'verified' || verifiedAndBlocked(user))
 }

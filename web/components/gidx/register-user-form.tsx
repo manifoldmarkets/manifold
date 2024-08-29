@@ -360,10 +360,15 @@ export const RegisterUserForm = (props: { user: User }) => {
 
   if (page === 'documents') {
     return (
-      <UploadDocuments
-        back={() => router.back()}
-        next={() => setPage('final')}
-      />
+      <Col className={registrationColClass}>
+        <span className={'text-primary-700 text-2xl'}>
+          Identity Document Verification
+        </span>
+        <UploadDocuments
+          back={() => router.back()}
+          next={() => setPage('final')}
+        />
+      </Col>
     )
   }
 

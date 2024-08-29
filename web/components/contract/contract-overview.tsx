@@ -66,7 +66,7 @@ import { filterDefined } from 'common/util/array'
 import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
 import { useChartPositions } from 'web/hooks/use-chart-positions'
 import { BuyPanel } from '../bet/bet-panel'
-import { blockFromSweepstakes, User } from 'common/user'
+import { blockFromSweepstakes, identityPending, User } from 'common/user'
 import {
   ChartAnnotations,
   EditChartAnnotationsButton,
@@ -830,7 +830,11 @@ export function BinaryBetPanel(props: {
 
   return (
     <Col className="my-3 w-full">
-      {contract.token === 'CASH' && blockFromSweepstakes(user) ? (
+      {contract.token === 'CASH' && identityPending(user) ? (
+        <Row className={'rounded bg-amber-50 p-4'}>
+          You can't trade on sweepstakes markets while your status is pending.
+        </Row>
+      ) : contract.token === 'CASH' && blockFromSweepstakes(user) ? (
         <Row className={'rounded bg-amber-50 p-4'}>
           You can't trade on sweepstakes markets if blocked.
         </Row>

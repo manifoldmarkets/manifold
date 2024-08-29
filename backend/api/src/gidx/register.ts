@@ -67,8 +67,7 @@ export const register: APIHandler<'register-gidx'> = async (
 
   const data = (await res.json()) as GIDXRegistrationResponse
   log('Registration response:', data)
-  const { FraudConfidenceScore, IdentityConfidenceScore } = data
-  const ReasonCodes = ['ID-BLOCK', 'ID-VERIFIED']
+  const { ReasonCodes, FraudConfidenceScore, IdentityConfidenceScore } = data
   const { status, message, idVerified } = await verifyReasonCodes(
     auth.uid,
     ReasonCodes,
@@ -104,6 +103,14 @@ export const verifyReasonCodes = async (
   const hasAny = (codes: string[]) =>
     intersection(codes, ReasonCodes).length > 0
   const idVerified = ReasonCodes.includes('ID-VERIFIED')
+  if (ReasonCodes.length > 0) {
+    await updateUser(pg, userId, { kycFlags: ReasonCodes })
+  }
+  if (idVerified) {
+    await updateUser(pg, userId, { idStatus: 'verified' })
+  } else {
+    await updateUser(pg, userId, { idStatus: 'fail' })
+  }
   // Timeouts or input errors
   if (hasAny(otherErrorCodes)) {
     log('Registration failed, resulted in error codes:', ReasonCodes)
@@ -146,14 +153,6 @@ export const verifyReasonCodes = async (
       message: ID_ERROR_MSG,
       idVerified,
     }
-  }
-  if (ReasonCodes.length > 0) {
-    await updateUser(pg, userId, { kycFlags: ReasonCodes })
-  }
-  if (idVerified) {
-    await updateUser(pg, userId, { idStatus: 'verified' })
-  } else {
-    await updateUser(pg, userId, { idStatus: 'fail' })
   }
 
   // User is blocked for any number of reasons
