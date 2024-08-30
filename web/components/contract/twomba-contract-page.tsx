@@ -100,12 +100,7 @@ export function TwombaContractPageContent(props: ContractParams) {
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
   const user = useUser()
 
-  const { monitorStatus, monitorStatusMessage } = useMonitorStatus(
-    liveContract.token === 'CASH',
-    user
-  )
-  console.log('monitorStatus', monitorStatus)
-  console.log('monitorStatusError', monitorStatusMessage)
+  useMonitorStatus(liveContract.token === 'CASH', user)
   const contractMetrics = useSavedContractMetrics(props.contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []

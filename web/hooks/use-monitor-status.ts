@@ -25,6 +25,8 @@ export const useMonitorStatus = (
       'user-monitor-status-error'
     )
   const [loading, setLoading] = useState(false)
+  const [lastApiCallTime, setLastApiCallTime] =
+    usePersistentInMemoryState<number>(0, 'user-monitor-last-api-call-time')
 
   useNativeMessages(['location'], (type, data) => {
     if ('error' in data) {
@@ -37,13 +39,11 @@ export const useMonitorStatus = (
 
   const requestLocation = () => {
     setMonitorStatusMessage(undefined)
-    console.log('Requesting location')
     if (getIsNative()) {
       postMessageToNative('locationRequested', {})
     } else if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          console.log('Got location:', position)
           const { coords } = position
           const loc = {
             Latitude: coords.latitude,
@@ -57,7 +57,6 @@ export const useMonitorStatus = (
           fetchMonitorStatusWithLocation(loc)
         },
         (error) => {
-          console.error('Error getting location:', error)
           setMonitorStatusMessage(error.message)
           setMonitorStatus('error')
         }
@@ -104,9 +103,9 @@ export const useMonitorStatus = (
         setLoading(false)
         setMonitorStatus(status)
         setMonitorStatusMessage(message)
+        setLastApiCallTime(Date.now())
         return response
       } catch (error) {
-        console.error('Error fetching monitor status:', error)
         setMonitorStatus('error')
         setMonitorStatusMessage('Failed to fetch monitor status')
         setLoading(false)
@@ -117,11 +116,17 @@ export const useMonitorStatus = (
 
   useEffect(() => {
     if (!polling) return
-    fetchMonitorStatus()
+
+    const currentTime = Date.now()
+    const timeSinceLastCall = currentTime - lastApiCallTime
+
+    if (timeSinceLastCall > 20 * MINUTE_MS) {
+      fetchMonitorStatus()
+    }
 
     const interval = setInterval(fetchMonitorStatus, 20 * MINUTE_MS)
     return () => clearInterval(interval)
-  }, [polling, fetchMonitorStatus])
+  }, [polling, fetchMonitorStatus, lastApiCallTime])
 
   return { monitorStatus, monitorStatusMessage, fetchMonitorStatus, loading }
 }
