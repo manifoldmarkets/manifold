@@ -200,8 +200,6 @@ export const TwombaProfitGraph = (props: {
   firstProfit: number
   firstCashProfit: number
   updateGraphValues: (newGraphValues: GraphValueType) => void
-  portfolioFocus: PortfolioMode
-  setPortfolioFocus: (mode: PortfolioMode) => void
 }) => {
   const {
     duration,
@@ -214,8 +212,6 @@ export const TwombaProfitGraph = (props: {
     negativeThreshold = 0,
     hideXAxis,
     updateGraphValues,
-    portfolioFocus,
-    setPortfolioFocus,
   } = props
 
   const { isPlay } = useSweepstakes()
@@ -239,7 +235,7 @@ export const TwombaProfitGraph = (props: {
       minValue: profitYMin,
       maxValue: profitYMax,
     }
-  }, [duration, portfolioFocus, isPlay])
+  }, [duration, isPlay])
 
   const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
@@ -247,15 +243,11 @@ export const TwombaProfitGraph = (props: {
     [tinyDiff ? minValue - 50 : minValue, tinyDiff ? maxValue + 50 : maxValue],
     [height, 0]
   )
-  // New scale with domain modified to reflect division by the constant
-  const spiceYScale = scaleLinear()
-    .domain(yScale.domain().map((d) => d / SPICE_TO_MANA_CONVERSION_RATE))
-    .range([height, 0])
 
   // reset axis scale if mode or duration change (since points change)
   useLayoutEffect(() => {
     zoomParams?.setXScale(xScale)
-  }, [duration, portfolioFocus])
+  }, [duration])
 
   return (
     <SingleValueHistoryChart
