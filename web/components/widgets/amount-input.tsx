@@ -245,8 +245,11 @@ export function BuyAmountInput(props: {
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
   const portfolio = useCurrentPortfolio(user?.id)
-  const hasLotsOfMana =
-    !!portfolio && portfolio.balance + portfolio.investmentValue > 10000
+  const hasLotsOfMoney =
+    token === 'CASH'
+      ? !!portfolio &&
+        portfolio.cashBalance + portfolio.cashInvestmentValue > 10000
+      : !!portfolio && portfolio.balance + portfolio.investmentValue > 10000
 
   const amountWithDefault = amount ?? 0
 
@@ -259,9 +262,9 @@ export function BuyAmountInput(props: {
 
   const isAdvancedTrader = useIsAdvancedTrader()
   const advancedIncrementValues = (
-    hasLotsOfMana ? [50, 250, 1000] : [10, 50, 250]
+    hasLotsOfMoney ? [50, 250, 1000] : [10, 50, 250]
   ).map((v) => (marketTier === 'play' ? v / 10 : v))
-  const defaultIncrementValues = (hasLotsOfMana ? [50, 250] : [10, 100]).map(
+  const defaultIncrementValues = (hasLotsOfMoney ? [50, 250] : [10, 100]).map(
     (v) => (marketTier === 'play' ? v / 10 : v)
   )
 
@@ -307,12 +310,14 @@ export function BuyAmountInput(props: {
                       key={increment}
                       amount={increment}
                       incrementBy={incrementBy}
+                      token={token}
                     />
                   ) : (
                     <IncrementButton
                       key={increment}
                       amount={increment}
                       onIncrement={() => incrementBy(increment)}
+                      token={token}
                     />
                   )
                 )}
@@ -328,7 +333,7 @@ export function BuyAmountInput(props: {
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
             disabled={disabled}
-            smallManaAmounts={!hasLotsOfMana || marketTier === 'play'}
+            smallManaAmounts={!hasLotsOfMoney || marketTier === 'play'}
             token={token}
           />
         )}
