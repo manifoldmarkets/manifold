@@ -1,21 +1,27 @@
-import { formatMoney } from 'common/util/format'
+import { formatWithToken } from 'common/util/format'
 
-import { BETTORS, User } from 'common/user'
-import { useEffect, useState } from 'react'
 import { ContractMetric } from 'common/contract-metric'
+import { getRanking } from 'common/supabase/contract-metrics'
+import { BETTORS, User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
+import { useEffect, useState } from 'react'
 import { Leaderboard } from 'web/components/leaderboard'
 import { db } from 'web/lib/supabase/db'
-import { getRanking } from 'common/supabase/contract-metrics'
 
 export function ContractLeaderboard(props: {
   topContractMetrics: ContractMetric[]
   currentUser: User | undefined | null
   contractId: string
   currentUserMetrics: ContractMetric | undefined
+  isCashContract: boolean
 }) {
-  const { topContractMetrics, currentUser, contractId, currentUserMetrics } =
-    props
+  const {
+    topContractMetrics,
+    currentUser,
+    contractId,
+    currentUserMetrics,
+    isCashContract,
+  } = props
   const maxToShowMinusCurrentUser = 5
   const topRankedUserIds = topContractMetrics
     .slice(0, maxToShowMinusCurrentUser)
@@ -82,7 +88,11 @@ export function ContractLeaderboard(props: {
       columns={[
         {
           header: 'Total profit',
-          renderCell: (entry) => formatMoney(entry.total),
+          renderCell: (entry) =>
+            formatWithToken({
+              amount: entry.total,
+              token: isCashContract ? 'CASH' : 'M$',
+            }),
         },
       ]}
       className="mt-12"

@@ -1,7 +1,8 @@
 import { Placement } from '@floating-ui/react'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { formatMoney } from 'common/util/format'
+import { MarketTierType } from 'common/tier'
+import { formatWithToken } from 'common/util/format'
 import { capitalize } from 'lodash'
 import {
   CrystalTier,
@@ -9,9 +10,8 @@ import {
   PlusTier,
   PremiumTier,
 } from 'web/public/custom-components/tiers'
-import { Tooltip } from '../widgets/tooltip'
-import { MarketTierType } from 'common/tier'
 import { LogoIcon } from '../icons/logo-icon'
+import { Tooltip } from '../widgets/tooltip'
 
 export function TierTooltip(props: {
   tier: MarketTierType
@@ -31,11 +31,16 @@ export function TierTooltip(props: {
   } = props
   const { mechanism } = contract
 
+  const isCashContract = contract.token === 'CASH'
+
   if (mechanism !== 'cpmm-multi-1' && mechanism !== 'cpmm-1') return <></>
 
   return (
     <Tooltip
-      text={`${formatMoney(contract.totalLiquidity)} in liquidity subsidies`}
+      text={`${formatWithToken({
+        amount: contract.totalLiquidity,
+        token: isCashContract ? 'CASH' : 'M$',
+      })} in liquidity subsidies`}
       placement={placement}
       noTap
       className={clsx('flex flex-row items-center gap-0.5', className)}

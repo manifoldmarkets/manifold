@@ -5,11 +5,15 @@ import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
-  isBinaryMulti,
   MAX_CPMM_PROB,
   MIN_CPMM_PROB,
+  isBinaryMulti,
 } from 'common/contract'
-import { formatPercent, formatPercentShort } from 'common/util/format'
+import {
+  formatPercent,
+  formatPercentShort,
+  formatWithToken,
+} from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -25,12 +29,14 @@ import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 
 import { computeCpmmBet } from 'common/new-bet'
-import { formatMoney } from 'common/util/format'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { BuyAmountInput } from '../widgets/amount-input'
 
+import { TRADE_TERM } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { capitalize } from 'lodash'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { YourOrders } from '../bet/order-book'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
@@ -42,9 +48,6 @@ import {
   REP_LIGHT_HEX,
   hexToRgb,
 } from './state-election-map'
-import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { capitalize } from 'lodash'
-import { TRADE_TERM } from 'common/envs/constants'
 
 export const HouseStatus = (props: {
   contract: CPMMMultiContract
@@ -330,11 +333,16 @@ export const BuyPanelBody = (props: {
   const highProbMove =
     (betAmount ?? 0) > 10 && probChange > 0.299 && bankrollFraction <= 1
 
+  const isCashContract = contract.token === 'CASH'
+
   const warning = highBankrollSpend
     ? `You might not want to spend ${formatPercent(
         bankrollFraction
-      )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
-        user?.balance ?? 0
+      )} of your balance on a single trade. \n\nCurrent balance: ${formatWithToken(
+        {
+          amount: user?.balance ?? 0,
+          token: isCashContract ? 'CASH' : 'M$',
+        }
       )}`
     : highProbMove
     ? `Are you sure you want to move the market to ${displayedAfter}?`
@@ -393,7 +401,10 @@ export const BuyPanelBody = (props: {
               color={outcome === 'NO' ? '#6989c8' : '#d16762'}
               actionLabel={`${capitalize(TRADE_TERM)} ${
                 outcome === 'NO' ? 'Democratic' : 'Republican'
-              } to win ${formatMoney(currentPayout)}`}
+              } to win ${formatWithToken({
+                amount: currentPayout,
+                token: isCashContract ? 'CASH' : 'M$',
+              })}`}
               inModal={!!onClose}
             />
           ) : (
@@ -415,7 +426,10 @@ export const BuyPanelBody = (props: {
               <span className="text-ink-700 mt-4 whitespace-nowrap text-sm">
                 Your balance{' '}
                 <span className="text-ink-700 font-semibold">
-                  {formatMoney(user.balance)}
+                  {formatWithToken({
+                    amount: user.balance,
+                    token: isCashContract ? 'CASH' : 'M$',
+                  })}
                 </span>
               </span>
             </div>

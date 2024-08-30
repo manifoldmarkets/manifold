@@ -6,6 +6,7 @@ import { User, verifiedPhone } from 'common/user'
 import {
   formatMoney,
   formatSweepiesNumber,
+  formatWithToken,
   InputTokenType,
 } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
@@ -225,9 +226,15 @@ export function BuyAmountInput(props: {
       ) {
         setError('Insufficient balance')
       } else if (minimumAmount && amount < minimumAmount) {
-        setError('Minimum amount: ' + formatMoney(minimumAmount))
+        setError(
+          'Minimum amount: ' +
+            formatWithToken({ amount: minimumAmount, token: token })
+        )
       } else if (maximumAmount && amount > maximumAmount) {
-        setError('Maximum amount: ' + formatMoney(maximumAmount))
+        setError(
+          'Maximum amount: ' +
+            formatWithToken({ amount: maximumAmount, token: token })
+        )
       } else {
         setError(undefined)
       }
@@ -337,7 +344,9 @@ export function BuyAmountInput(props: {
           user && (
             <div className="text-ink-500 mt-4 whitespace-nowrap text-sm">
               Balance{' '}
-              <span className="text-ink-800">{formatMoney(user.balance)}</span>
+              <span className="text-ink-800">
+                {formatWithToken({ amount: user.balance, token: token })}
+              </span>
             </div>
           )
         )}

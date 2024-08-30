@@ -462,6 +462,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                   contractId={liveContract.id}
                   currentUser={user}
                   currentUserMetrics={contractMetrics}
+                  isCashContract={liveContract.token === 'CASH'}
                 />
                 <Spacer h={12} />
               </>
