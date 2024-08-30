@@ -222,7 +222,8 @@ export function BuyAmountInput(props: {
         !disregardUserBalance &&
         user &&
         ((token === 'M$' && user.balance < amount) ||
-          (token === 'SPICE' && user.spiceBalance < amount))
+          (token === 'SPICE' && user.spiceBalance < amount) ||
+          (token === 'CASH' && user.cashBalance < amount))
       ) {
         setError('Insufficient balance')
       } else if (minimumAmount && amount < minimumAmount) {
