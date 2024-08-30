@@ -146,48 +146,36 @@ export const isUserLikelySpammer = (
   )
 }
 
-export const isVerified = (user: User) => {
-  return user.verifiedPhone !== false || !!user.purchasedMana
-}
+// TODO: this can be decommissioned
+export const isVerified = (user: User) =>
+  user.verifiedPhone !== false || !!user.purchasedMana
+
+export const verifiedPhone = (user: User) => user.verifiedPhone !== false
 
 const verifiedAndBlocked = (user: User | undefined | null) =>
   user && user.idVerified && !user.sweepstakesVerified
 
-export const identityPending = (user: User | undefined | null) => {
-  return user && !user.idVerified && user.kycDocumentStatus === 'pending'
-}
+export const identityPending = (user: User | undefined | null) =>
+  user && !user.idVerified && user.kycDocumentStatus === 'pending'
 
-export const blockFromSweepstakes = (user: User | undefined | null) => {
-  return user && (!user.idVerified || verifiedAndBlocked(user))
-}
+export const blockFromSweepstakes = (user: User | undefined | null) =>
+  user && (!user.idVerified || verifiedAndBlocked(user))
 
-export const locationBlocked = (user: User | undefined | null) => {
-  return (
-    user &&
-    verifiedAndBlocked(user) &&
-    intersection(user.kycFlags, locationTemporarilyBlockedCodes).length > 0
-  )
-}
+export const locationBlocked = (user: User | undefined | null) =>
+  user &&
+  verifiedAndBlocked(user) &&
+  intersection(user.kycFlags, locationTemporarilyBlockedCodes).length > 0
 
-export const ageBlocked = (user: User | undefined | null) => {
-  return (
-    user &&
-    verifiedAndBlocked(user) &&
-    intersection(user.kycFlags, underageErrorCodes).length > 0
-  )
-}
+export const ageBlocked = (user: User | undefined | null) =>
+  user &&
+  verifiedAndBlocked(user) &&
+  intersection(user.kycFlags, underageErrorCodes).length > 0
 
-export const identityBlocked = (user: User | undefined | null) => {
-  return (
-    user &&
-    user.idVerified &&
-    intersection(user.kycFlags, identityBlockedCodes).length > 0
-  )
-}
+export const identityBlocked = (user: User | undefined | null) =>
+  user &&
+  user.idVerified &&
+  intersection(user.kycFlags, identityBlockedCodes).length > 0
 
-export const verifiedPhone = (user: User) => {
-  return user.verifiedPhone !== false
-}
 export const getVerificationStatus = (
   user: User
 ): {
