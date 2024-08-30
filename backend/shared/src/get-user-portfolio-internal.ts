@@ -91,7 +91,7 @@ export const getUserPortfolioInternal = async (userId: string) => {
   const loanTotal = sumBy(unresolvedBets, (b) => b.loanAmount ?? 0)
 
   const contractsById = keyBy(contracts, 'id')
-  const { investmentValue } = computeInvestmentValue(
+  const { cashInvestmentValue, investmentValue } = computeInvestmentValue(
     unresolvedBets,
     contractsById
   )
@@ -102,6 +102,12 @@ export const getUserPortfolioInternal = async (userId: string) => {
   const dayAgoProfit = dayAgoPortfolio
     ? dayAgoPortfolio.spiceBalance +
       dayAgoPortfolio.balance +
+      dayAgoPortfolio.investmentValue -
+      dayAgoPortfolio.totalDeposits
+    : 0
+
+  const dayAgoCashProfit = dayAgoPortfolio
+    ? dayAgoPortfolio.balance +
       dayAgoPortfolio.investmentValue -
       dayAgoPortfolio.totalDeposits
     : 0
@@ -117,15 +123,26 @@ export const getUserPortfolioInternal = async (userId: string) => {
     answers.length
   )
 
-  const { totalDeposits, spiceBalance, balance } = user
+  const {
+    totalDeposits,
+    spiceBalance,
+    balance,
+    cashBalance,
+    totalCashDeposits,
+  } = user
   return {
     loanTotal,
     investmentValue,
+    cashInvestmentValue,
     balance,
+    cashBalance,
     spiceBalance,
     totalDeposits,
+    totalCashDeposits,
     dailyProfit:
       investmentValue + balance + spiceBalance - totalDeposits - dayAgoProfit,
+    dailyCashProfit:
+      cashInvestmentValue + cashBalance - totalCashDeposits - dayAgoCashProfit,
     timestamp: Date.now(),
   } as LivePortfolioMetrics
 }
