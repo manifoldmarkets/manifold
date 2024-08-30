@@ -172,9 +172,7 @@ export const ageBlocked = (user: User | undefined | null) =>
   intersection(user.kycFlags, underageErrorCodes).length > 0
 
 export const identityBlocked = (user: User | undefined | null) =>
-  user &&
-  user.idVerified &&
-  intersection(user.kycFlags, identityBlockedCodes).length > 0
+  user && intersection(user.kycFlags, identityBlockedCodes).length > 0
 
 export const getVerificationStatus = (
   user: User

@@ -96,9 +96,20 @@ const assessDocumentStatus = async (user: User, pg: SupabaseDirectClient) => {
     await updateUser(pg, user.id, {
       kycDocumentStatus: 'pending',
     })
-  } else if (isRejected && user.kycDocumentStatus !== 'fail') {
+  } else if (
+    isRejected &&
+    documents.length &&
+    user.kycDocumentStatus !== 'fail'
+  ) {
     await updateUser(pg, user.id, {
       kycDocumentStatus: 'fail',
+    })
+  } else if (
+    !documents.length &&
+    user.kycDocumentStatus !== 'await-documents'
+  ) {
+    await updateUser(pg, user.id, {
+      kycDocumentStatus: 'await-documents',
     })
   }
 

@@ -17,7 +17,6 @@ import { useUser } from 'web/hooks/use-user'
 import { GIDXDocument, idNameToCategoryType } from 'common/gidx/gidx'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { toast } from 'react-hot-toast'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getDocumentsStatus } from 'common/gidx/document'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
@@ -49,8 +48,7 @@ export const VerifyMe = (props: { user: User }) => {
       {}
     ).finally(() => setLoading(false))
     if (documents) setDocuments(documents)
-    // TODO: if they need to re-register, show them a link to do so
-    if (message) toast.error(message)
+    if (message) console.error(message)
   }
   if (!show || !user) return null
   const showUploadDocsButton =
