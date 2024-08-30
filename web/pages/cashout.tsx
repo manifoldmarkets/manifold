@@ -29,7 +29,7 @@ const CashoutPage = () => {
   const [NameOnAccount, setNameOnAccount] = useState('')
   const [AccountNumber, setAccountNumber] = useState('')
   const [RoutingNumber, setRoutingNumber] = useState('')
-  const [SavePaymentMethod, setSavePaymentMethod] = useState(true)
+  const [SavePaymentMethod, _] = useState(false)
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
   const [amount, setAmount] = useState<number>()
   const [locationError, setLocationError] = useState<string>()
@@ -240,15 +240,15 @@ const CashoutPage = () => {
                   className="w-1/4"
                 />
               </Row>
-
-              <Row className={'items-center gap-2'}>
-                <input
-                  type={'checkbox'}
-                  checked={SavePaymentMethod}
-                  onChange={() => setSavePaymentMethod(!SavePaymentMethod)}
-                />
-                Save Payment Method
-              </Row>
+              {/*TODO: Re-enable*/}
+              {/*<Row className={'items-center gap-2'}>*/}
+              {/*  <input*/}
+              {/*    type={'checkbox'}*/}
+              {/*    checked={SavePaymentMethod}*/}
+              {/*    onChange={() => setSavePaymentMethod(!SavePaymentMethod)}*/}
+              {/*  />*/}
+              {/*  Save Payment Method*/}
+              {/*</Row>*/}
               <Button
                 size={'lg'}
                 onClick={handleSubmit}
