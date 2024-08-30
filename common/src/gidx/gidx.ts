@@ -387,6 +387,9 @@ export const exampleCustomers = [
     },
   },
 ]
+export const FAKE_CUSTOMER_BODY = {
+  ...exampleCustomers[1],
+}
 
 type Action = {
   Type: string

@@ -56,13 +56,6 @@ export const getVerificationStatusInternal = async (
       message: 'User not found in GIDX',
     }
   }
-  if (
-    user.kycDocumentStatus === 'pending' ||
-    ((user.sweepstakesStatus === 'fail' || user.idStatus === 'fail') &&
-      user.kycDocumentStatus === 'fail')
-  ) {
-    return await assessDocumentStatus(user, pg)
-  }
 
   const { status, message } = await verifyReasonCodes(
     userId,
@@ -70,30 +63,34 @@ export const getVerificationStatusInternal = async (
     FraudConfidenceScore,
     IdentityConfidenceScore
   )
-  if (status === 'error') {
-    return {
-      status: 'error',
-      message,
-    }
+
+  if (status === 'success' && user.sweepstakesStatus !== 'allow') {
+    await updateUser(pg, user.id, {
+      sweepstakesStatus: 'allow',
+    })
   }
-  return await assessDocumentStatus(user, pg)
+
+  const { documents, status: documentStatus } = await assessDocumentStatus(
+    user,
+    pg
+  )
+
+  return {
+    message,
+    status,
+    documentStatus,
+    documents,
+  }
 }
 
 const assessDocumentStatus = async (user: User, pg: SupabaseDirectClient) => {
   const { isPending, isVerified, isRejected, documents } =
     await getIdentityVerificationDocuments(user.id)
 
-  if (
-    isVerified &&
-    (user.kycDocumentStatus !== 'verified' ||
-      user.idStatus !== 'verified' ||
-      user.sweepstakesStatus !== 'allow')
-  ) {
+  if (isVerified && user.kycDocumentStatus !== 'verified') {
     // They passed the reason codes and have the required documents
     await updateUser(pg, user.id, {
       kycDocumentStatus: 'verified',
-      idStatus: 'verified',
-      sweepstakesStatus: 'allow',
     })
   } else if (isPending && user.kycDocumentStatus !== 'pending') {
     await updateUser(pg, user.id, {

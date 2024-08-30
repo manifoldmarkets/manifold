@@ -109,7 +109,10 @@ export const verifyReasonCodes = async (
   if (idVerified) {
     await updateUser(pg, userId, { idStatus: 'verified' })
   } else {
-    await updateUser(pg, userId, { idStatus: 'fail' })
+    await updateUser(pg, userId, {
+      idStatus: 'fail',
+      sweepstakesStatus: 'fail',
+    })
   }
   // Timeouts or input errors
   if (hasAny(otherErrorCodes)) {
@@ -137,7 +140,7 @@ export const verifyReasonCodes = async (
       ? 'Fully KYC (Internally) Customer'
       : 'user'
     return {
-      status: 'warning',
+      status: 'error',
       message: `High velocity of payments detected for ${userType}.`,
       idVerified,
     }
@@ -232,8 +235,10 @@ export const verifyReasonCodes = async (
     return { status: 'success', idVerified }
   }
 
-  log.error(
-    `Registration failed with unknown reason codes: ${ReasonCodes.join(', ')}`
+  log(
+    `Registration failed for ${userId} with no matched reason codes: ${ReasonCodes.join(
+      ', '
+    )}`
   )
   return {
     status: 'error',

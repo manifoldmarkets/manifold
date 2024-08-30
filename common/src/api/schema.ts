@@ -1488,6 +1488,7 @@ export const API = (_apiTypeCheck = {
       status: string
       documents?: GIDXDocument[]
       message?: string
+      documentStatus?: string
     },
     props: z.object({}),
   },
