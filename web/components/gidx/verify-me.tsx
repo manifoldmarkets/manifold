@@ -28,7 +28,7 @@ export const VerifyMe = (props: { user: User }) => {
   const [show, setShow] = useState(
     TWOMBA_ENABLED &&
       (!user.sweepstakesVerified ||
-        user.idStatus === 'fail' ||
+        !user.idVerified ||
         user.kycDocumentStatus === 'fail' ||
         user.kycDocumentStatus === 'pending' ||
         locationBlocked(user))

@@ -107,10 +107,10 @@ export const verifyReasonCodes = async (
     await updateUser(pg, userId, { kycFlags: ReasonCodes })
   }
   if (idVerified) {
-    await updateUser(pg, userId, { idStatus: 'verified' })
+    await updateUser(pg, userId, { idVerified: true })
   } else {
     await updateUser(pg, userId, {
-      idStatus: 'fail',
+      idVerified: false,
       sweepstakesVerified: false,
     })
   }

@@ -69,7 +69,7 @@ export const useMonitorStatus = (
   }
 
   const fetchMonitorStatus = useEvent(async () => {
-    if (!user || user.idStatus !== 'verified') {
+    if (!user || !user.idVerified) {
       setMonitorStatus('error')
       setMonitorStatusMessage('User not verified')
       return {

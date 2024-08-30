@@ -77,7 +77,7 @@ export type User = {
   kycLastAttempt?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
   sweepstakesVerified?: boolean
-  idStatus?: 'fail' | 'verified'
+  idVerified?: boolean
 }
 
 export type PrivateUser = {
@@ -151,16 +151,14 @@ export const isVerified = (user: User) => {
 }
 
 const verifiedAndBlocked = (user: User | undefined | null) =>
-  user && user.idStatus === 'verified' && !user.sweepstakesVerified
+  user && user.idVerified && !user.sweepstakesVerified
 
 export const identityPending = (user: User | undefined | null) => {
-  return (
-    user && user.idStatus !== 'verified' && user.kycDocumentStatus === 'pending'
-  )
+  return user && !user.idVerified && user.kycDocumentStatus === 'pending'
 }
 
 export const blockFromSweepstakes = (user: User | undefined | null) => {
-  return user && (user.idStatus !== 'verified' || verifiedAndBlocked(user))
+  return user && (!user.idVerified || verifiedAndBlocked(user))
 }
 
 export const locationBlocked = (user: User | undefined | null) => {
@@ -182,7 +180,7 @@ export const ageBlocked = (user: User | undefined | null) => {
 export const identityBlocked = (user: User | undefined | null) => {
   return (
     user &&
-    user.idStatus === 'verified' &&
+    user.idVerified &&
     intersection(user.kycFlags, identityBlockedCodes).length > 0
   )
 }
@@ -200,7 +198,7 @@ export const getVerificationStatus = (
     return { status: 'error', message: 'GIDX registration is disabled' }
   } else if (!verifiedPhone(user)) {
     return { status: 'error', message: 'User must verify phone' }
-  } else if (user.idStatus === 'fail') {
+  } else if (!user.idVerified) {
     return { status: 'error', message: 'User identification failed' }
   } else if (!user.sweepstakesVerified && locationBlocked(user)) {
     return { status: 'error', message: 'User location is blocked' }

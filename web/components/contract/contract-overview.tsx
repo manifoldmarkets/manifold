@@ -836,7 +836,7 @@ export function BinaryBetPanel(props: {
         <Row className={'bg-canvas-50 rounded p-4'}>
           You can't trade on sweepstakes markets while your status is pending.
         </Row>
-      ) : contract.token === 'CASH' && user?.idStatus !== 'verified' ? (
+      ) : contract.token === 'CASH' && user && !user.idVerified ? (
         <Row className={'bg-canvas-50 items-center gap-1 rounded p-4'}>
           You can't trade on sweepstakes markets until verified.
           <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>

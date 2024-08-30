@@ -31,7 +31,7 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
       message: 'User not found',
     }
   }
-  if (user.idStatus !== 'verified') {
+  if (!user.idVerified) {
     return {
       status: 'error',
       message: 'User must pass kyc first',

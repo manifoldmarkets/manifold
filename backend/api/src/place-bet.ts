@@ -658,7 +658,7 @@ export const validateBet = async (
   if (amount !== undefined && balance < amount)
     throw new APIError(403, 'Insufficient balance.')
   if (
-    (!user.sweepstakesVerified || !user.idStatus) &&
+    (!user.sweepstakesVerified || !user.idVerified) &&
     contract.token === 'CASH'
   ) {
     throw new APIError(

@@ -128,7 +128,7 @@ export function BuyPanel(props: {
         You can't trade on sweepstakes markets while your status is pending.
       </Row>
     )
-  } else if (contract.token === 'CASH' && user?.idStatus !== 'verified') {
+  } else if (contract.token === 'CASH' && user && !user.idVerified) {
     return (
       <Row className={'bg-canvas-50 gap-1 rounded p-4'}>
         You can't trade on sweepstakes markets until verified.{' '}
