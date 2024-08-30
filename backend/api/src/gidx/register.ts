@@ -77,7 +77,7 @@ export const register: APIHandler<'register-gidx'> = async (
   const pg = createSupabaseDirectClient()
   if (status === 'success') {
     await updateUser(pg, auth.uid, {
-      sweepstakesStatus: 'allow',
+      sweepstakesVerified: true,
       kycDocumentStatus: 'await-documents',
     })
   } else if (idVerified) {
@@ -111,13 +111,13 @@ export const verifyReasonCodes = async (
   } else {
     await updateUser(pg, userId, {
       idStatus: 'fail',
-      sweepstakesStatus: 'fail',
+      sweepstakesVerified: false,
     })
   }
   // Timeouts or input errors
   if (hasAny(otherErrorCodes)) {
     log('Registration failed, resulted in error codes:', ReasonCodes)
-    await updateUser(pg, userId, { sweepstakesStatus: 'fail' })
+    await updateUser(pg, userId, { sweepstakesVerified: false })
     if (hasAny(timeoutCodes)) {
       return {
         status: 'error',
@@ -150,7 +150,7 @@ export const verifyReasonCodes = async (
   if (hasIdentityError(ReasonCodes)) {
     log('Registration failed, resulted in identity errors:', ReasonCodes)
 
-    await updateUser(pg, userId, { sweepstakesStatus: 'fail' })
+    await updateUser(pg, userId, { sweepstakesVerified: false })
     return {
       status: 'error',
       message: ID_ERROR_MSG,
@@ -162,7 +162,7 @@ export const verifyReasonCodes = async (
   const blockedReasonCodes = intersection(blockedCodes, ReasonCodes)
   if (blockedReasonCodes.length > 0) {
     log('Registration failed, resulted in blocked codes:', blockedReasonCodes)
-    await updateUser(pg, userId, { sweepstakesStatus: 'block' })
+    await updateUser(pg, userId, { sweepstakesVerified: false })
     if (hasAny(locationBlockedCodes)) {
       return {
         status: 'error',
@@ -198,7 +198,7 @@ export const verifyReasonCodes = async (
       ReasonCodes
     )
     await updateUser(pg, userId, {
-      sweepstakesStatus: 'block',
+      sweepstakesVerified: false,
       kycLastAttempt: Date.now(),
     })
     return {
@@ -220,7 +220,7 @@ export const verifyReasonCodes = async (
       FraudConfidenceScore,
       IdentityConfidenceScore
     )
-    await updateUser(pg, userId, { sweepstakesStatus: 'fail' })
+    await updateUser(pg, userId, { sweepstakesVerified: false })
     return {
       status: 'error',
       message:

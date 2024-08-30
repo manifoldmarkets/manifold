@@ -396,7 +396,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (user.sweepstakesStatus === 'fail' || user.kycDocumentStatus === 'fail') {
+  if (user.sweepstakesVerified === false || user.kycDocumentStatus === 'fail') {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>Document errors</span>

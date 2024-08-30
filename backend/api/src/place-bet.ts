@@ -657,7 +657,10 @@ export const validateBet = async (
   const balance = contract.token === 'CASH' ? user.cashBalance : user.balance
   if (amount !== undefined && balance < amount)
     throw new APIError(403, 'Insufficient balance.')
-  if (user.sweepstakesStatus !== 'allow' && contract.token === 'CASH') {
+  if (
+    (!user.sweepstakesVerified || !user.idStatus) &&
+    contract.token === 'CASH'
+  ) {
     throw new APIError(
       403,
       'You must be kyc verified to trade on sweepstakes markets.'

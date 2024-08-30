@@ -76,7 +76,7 @@ export type User = {
   kycFlags?: string[]
   kycLastAttempt?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
-  sweepstakesStatus?: 'fail' | 'block' | 'allow'
+  sweepstakesVerified?: boolean
   idStatus?: 'fail' | 'verified'
 }
 
@@ -151,7 +151,7 @@ export const isVerified = (user: User) => {
 }
 
 const verifiedAndBlocked = (user: User | undefined | null) =>
-  user && user.idStatus === 'verified' && user.sweepstakesStatus === 'block'
+  user && user.idStatus === 'verified' && !user.sweepstakesVerified
 
 export const identityPending = (user: User | undefined | null) => {
   return (
@@ -201,14 +201,12 @@ export const getVerificationStatus = (
   } else if (!verifiedPhone(user)) {
     return { status: 'error', message: 'User must verify phone' }
   } else if (user.idStatus === 'fail') {
-    return { status: 'error', message: 'User has registration failed' }
-  } else if (user.sweepstakesStatus === 'block' && locationBlocked(user)) {
+    return { status: 'error', message: 'User identification failed' }
+  } else if (!user.sweepstakesVerified && locationBlocked(user)) {
     return { status: 'error', message: 'User location is blocked' }
-  } else if (user.sweepstakesStatus === 'block') {
+  } else if (!user.sweepstakesVerified) {
     return { status: 'error', message: 'User is blocked' }
-  } else if (user.sweepstakesStatus === 'fail') {
-    return { status: 'error', message: 'User failed KYC' }
-  } else if (user.sweepstakesStatus === 'allow') {
+  } else if (user.sweepstakesVerified) {
     return { status: 'success', message: 'User is verified' }
   } else {
     return { status: 'error', message: 'User must register' }

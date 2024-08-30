@@ -64,9 +64,9 @@ export const getVerificationStatusInternal = async (
     IdentityConfidenceScore
   )
 
-  if (status === 'success' && user.sweepstakesStatus !== 'allow') {
+  if (status === 'success' && !user.sweepstakesVerified) {
     await updateUser(pg, user.id, {
-      sweepstakesStatus: 'allow',
+      sweepstakesVerified: true,
     })
   }
 
