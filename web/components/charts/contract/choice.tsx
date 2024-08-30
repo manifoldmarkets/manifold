@@ -10,10 +10,7 @@ import {
 } from 'common/contract'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { buildArray } from 'common/util/array'
-import {
-  formatWithToken,
-  maybePluralize
-} from 'common/util/format'
+import { formatWithToken, maybePluralize } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { first, groupBy, last, mapValues, pick, sortBy, uniq } from 'lodash'
