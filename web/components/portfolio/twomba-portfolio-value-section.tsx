@@ -262,8 +262,6 @@ export const TwombaPortfolioValueSection = memo(
             firstProfit={firstProfit}
             firstCashProfit={firstCashProfit}
             updateGraphValues={updateGraphValues}
-            portfolioFocus={portfolioFocus}
-            setPortfolioFocus={onSetPortfolioFocus}
           />
         )}
         className={clsx(graphContainerClassName, !isMobile && 'mb-4')}
@@ -421,7 +419,12 @@ function TwombaPortfolioValueSkeleton(props: {
                 )}
                 className={clsx(
                   'text-ink-1000 text-3xl font-bold transition-all sm:text-4xl',
-                  (graphValues.profit ?? portfolioValues?.profit ?? 0) < 0
+                  (displayAmounts(
+                    graphValues.profit,
+                    isPlay
+                      ? portfolioValues?.profit
+                      : portfolioValues?.cashProfit
+                  ) ?? 0) < 0
                     ? 'text-scarlet-500'
                     : 'text-teal-500'
                 )}
