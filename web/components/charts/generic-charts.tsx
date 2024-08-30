@@ -1,3 +1,14 @@
+import clsx from 'clsx'
+import { DistributionPoint, HistoryPoint, Point, ValueKind } from 'common/chart'
+import { ChartPosition } from 'common/chart-position'
+import { CPMMNumericContract } from 'common/contract'
+import { getAnswerContainingValue, getPrecision } from 'common/multi-numeric'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import {
+  formatMoneyNumber,
+  formatPercent,
+  formatSweepiesNumber,
+} from 'common/util/format'
 import { bisector } from 'd3-array'
 import { axisBottom, axisRight } from 'd3-axis'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
@@ -17,9 +28,13 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { DistributionPoint, HistoryPoint, Point, ValueKind } from 'common/chart'
-import { formatMoneyNumber, formatPercent } from 'common/util/format'
+import {
+  AnnotateChartModal,
+  ReadChartAnnotationModal,
+} from 'web/components/annotate-chart'
+import { DistributionChartTooltip } from 'web/components/charts/contract/multi-numeric'
 import { useEvent } from 'web/hooks/use-event'
+import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import {
   AreaPath,
   AreaWithTopStroke,
@@ -31,18 +46,7 @@ import {
   TooltipProps,
   ZoomParams,
 } from './helpers'
-import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import { ZoomSlider } from './zoom-slider'
-import clsx from 'clsx'
-import {
-  AnnotateChartModal,
-  ReadChartAnnotationModal,
-} from 'web/components/annotate-chart'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import { DistributionChartTooltip } from 'web/components/charts/contract/multi-numeric'
-import { getAnswerContainingValue, getPrecision } from 'common/multi-numeric'
-import { CPMMNumericContract } from 'common/contract'
-import { ChartPosition } from 'common/chart-position'
 
 const interpolateY = (
   curve: CurveFactory,
@@ -772,7 +776,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         ? axisRight<number>(yScale)
             .tickValues(customTickValues)
             .tickFormat((n) => formatPct(n))
-        : yKind === 'Ṁ' || yKind === 'spice' || yKind === 'sweepies'
+        : yKind === 'Ṁ' || yKind === 'spice'
         ? negativeThreshold
           ? axisRight<number>(yScale)
               .tickValues(customTickValues)
@@ -780,6 +784,14 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
           : axisRight<number>(yScale)
               .ticks(nTicks)
               .tickFormat((n) => formatMoneyNumber(n))
+        : yKind === 'sweepies'
+        ? negativeThreshold
+          ? axisRight<number>(yScale)
+              .tickValues(customTickValues)
+              .tickFormat((n) => formatSweepiesNumber(n))
+          : axisRight<number>(yScale)
+              .ticks(nTicks)
+              .tickFormat((n) => formatSweepiesNumber(n))
         : axisRight<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])

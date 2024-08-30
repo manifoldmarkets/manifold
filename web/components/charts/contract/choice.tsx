@@ -1,32 +1,34 @@
-import { useMemo } from 'react'
-import { first, groupBy, last, mapValues, sortBy, uniq } from 'lodash'
-import { scaleTime, scaleLinear } from 'd3-scale'
-import { Bet } from 'common/bet'
 import { Answer } from 'common/answer'
+import { Bet } from 'common/bet'
+import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
+import { HistoryPoint, MultiPoints } from 'common/chart'
+import { ChartPosition } from 'common/chart-position'
 import {
   CPMMMultiContract,
   CPMMNumericContract,
   MultiContract,
 } from 'common/contract'
-import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { buildArray } from 'common/util/array'
 import {
-  TooltipProps,
-  ZoomParams,
+  formatWithToken,
+  maybePluralize
+} from 'common/util/format'
+import { floatingEqual } from 'common/util/math'
+import { scaleLinear, scaleTime } from 'd3-scale'
+import { first, groupBy, last, mapValues, pick, sortBy, uniq } from 'lodash'
+import { useMemo } from 'react'
+import { Row } from 'web/components/layout/row'
+import { MultiValueHistoryChart } from '../generic-charts'
+import {
   formatDateInRange,
   formatPct,
   getEndDate,
   getRightmostVisibleDate,
   PointerMode,
+  TooltipProps,
+  ZoomParams,
 } from '../helpers'
-import { MultiValueHistoryChart } from '../generic-charts'
-import { HistoryPoint, MultiPoints } from 'common/chart'
-import { Row } from 'web/components/layout/row'
-import { pick } from 'lodash'
-import { buildArray } from 'common/util/array'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import { formatMoney, maybePluralize } from 'common/util/format'
-import { floatingEqual } from 'common/util/math'
-import { ChartPosition } from 'common/chart-position'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -263,6 +265,8 @@ export const PositionsTooltip = (props: {
   const answerIds = uniq(bets.map((b) => b.answerId))
   const { profit } = contractMetric
 
+  const isCashContract = contract.token === 'CASH'
+
   return (
     <Row className="text-ink-600 border-ink-200 dark:border-ink-300 bg-canvas-0/70 absolute -top-3 left-0 z-10 max-w-xs justify-between gap-1 rounded border px-3 py-1.5 text-sm ">
       {hoveredPosition ? (
@@ -270,7 +274,13 @@ export const PositionsTooltip = (props: {
           <span className="">
             {hoveredPosition.amount > 0 ? 'Bought' : 'Sold'}:
           </span>
-          <span>{formatMoney(hoveredPosition.amount).replace('-', '')}</span>
+          <span>
+            {formatWithToken({
+              amount: hoveredPosition.amount,
+              token: isCashContract ? 'CASH' : 'M$',
+            }).replace('-', '')}
+          </span>
+
           <span
             className={
               hoveredPosition.outcome === 'YES'
@@ -292,7 +302,10 @@ export const PositionsTooltip = (props: {
               profit > 0 ? 'text-green-500' : profit < 0 ? 'text-red-500' : ''
             }
           >
-            {formatMoney(profit).replace('-', '')}
+            {formatWithToken({
+              amount: profit,
+              token: isCashContract ? 'CASH' : 'M$',
+            }).replace('-', '')}
           </span>
           <span>
             {answerIds.length === 1 && contractMetric.maxSharesOutcome
