@@ -4,7 +4,7 @@ import { DEFAULT_AD_COST_PER_VIEW, MIN_AD_COST_PER_VIEW } from 'common/boost'
 import { Contract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
-import { formatWithToken } from 'common/util/format'
+import { formatWithToken, SWEEPIES_MONIKER } from 'common/util/format'
 import { ReactNode, useState } from 'react'
 import toast from 'react-hot-toast'
 import { TbRocket } from 'react-icons/tb'
@@ -161,6 +161,7 @@ function BoostFormRow(props: {
           setError={(_e) => {}}
           disabled={false}
           quickButtonValues="large"
+          token={isCashContract ? 'CASH' : 'M$'}
         />
       </Row>
 
@@ -174,9 +175,12 @@ function BoostFormRow(props: {
             <AmountInput
               amount={costPerView}
               onChangeAmount={setCostPerView}
-              label={ENV_CONFIG.moneyMoniker}
+              label={
+                isCashContract ? SWEEPIES_MONIKER : ENV_CONFIG.moneyMoniker
+              }
               error={!!error}
               inputClassName="mr-2 w-36"
+              isSweepies={isCashContract}
             />
           </Row>
           {error && <div className="text-error text-right">{error}</div>}

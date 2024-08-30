@@ -101,6 +101,7 @@ export function AddLiquidityPanel(props: {
           setError={(_e) => {}}
           disabled={false}
           quickButtonValues="large"
+          token={isCashContract ? 'CASH' : 'M$'}
         />
       </Row>
       <Button

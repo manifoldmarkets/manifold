@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { Col } from '../layout/col'
+import { formatSweepiesNumber, InputTokenType } from 'common/util/format'
 
 export const IncrementButton = (props: {
   amount: number
@@ -54,8 +55,12 @@ const buttonClasses =
 export const IncrementDecrementAmountButton = (props: {
   amount: number
   incrementBy: (amount: number) => void
+  token: InputTokenType
 }) => {
-  const { amount, incrementBy } = props
+  const { amount, incrementBy, token = 'M$' } = props
+
+  const displayedAmount =
+    token === 'CASH' ? formatSweepiesNumber(amount) : amount
 
   return (
     <Col className="divide-ink-300 mt-[1px] divide-y text-xs">
@@ -63,13 +68,13 @@ export const IncrementDecrementAmountButton = (props: {
         className={clsx(buttonClasses, '')}
         onClick={() => incrementBy(amount)}
       >
-        +{amount}
+        +{displayedAmount}
       </button>
       <button
         className={clsx(buttonClasses, '')}
         onClick={() => incrementBy(-amount)}
       >
-        -{amount}
+        -{displayedAmount}
       </button>
     </Col>
   )
