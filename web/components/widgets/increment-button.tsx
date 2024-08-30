@@ -6,8 +6,13 @@ export const IncrementButton = (props: {
   amount: number
   onIncrement: () => void
   className?: string
+  token?: InputTokenType
 }) => {
-  const { amount, onIncrement, className } = props
+  const { amount, onIncrement, className, token = 'M$' } = props
+
+  const displayedAmount =
+    token === 'CASH' ? formatSweepiesNumber(amount) : amount
+
   return (
     <button
       className={clsx(
@@ -16,7 +21,7 @@ export const IncrementButton = (props: {
       )}
       onClick={onIncrement}
     >
-      <div className="pointer-events-none text-xs">+{amount}</div>
+      <div className="pointer-events-none text-xs">+{displayedAmount}</div>
     </button>
   )
 }
