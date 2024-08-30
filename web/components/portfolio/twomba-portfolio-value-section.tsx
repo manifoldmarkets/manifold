@@ -18,7 +18,7 @@ import { TwombaToggle } from '../twomba/twomba-toggle'
 import { ColorType } from '../widgets/choices-toggle-group'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
-import { GraphMode, PortfolioMode } from './portfolio-value-graph'
+import { PortfolioMode } from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
 import {
   TwombaPortfolioGraph,
