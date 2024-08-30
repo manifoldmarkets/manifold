@@ -1,3 +1,5 @@
+import clsx from 'clsx'
+import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
 import { Bet, LimitBet } from 'common/bet'
 import {
@@ -16,16 +18,21 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
 } from 'common/contract'
-import { getMappedValue, getFormattedMappedValue } from 'common/pseudo-numeric'
+import { TRADE_TERM } from 'common/envs/constants'
+import { Fees, getFeeTotal, noFees } from 'common/fees'
+import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
+import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import { User } from 'common/user'
 import {
   formatLargeNumber,
   formatPercent,
   formatWithCommas,
-  formatMoney,
+  formatWithToken,
 } from 'common/util/format'
+import { addObjects } from 'common/util/object'
 import { sumBy } from 'lodash'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -34,14 +41,8 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
-import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
-import clsx from 'clsx'
-import toast from 'react-hot-toast'
-import { Answer } from 'common/answer'
-import { addObjects } from 'common/util/object'
-import { Fees, getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from './fees'
-import { TRADE_TERM } from 'common/envs/constants'
+import { MoneyDisplay } from './money-display'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
@@ -230,6 +231,7 @@ export function SellPanel(props: {
       setError(undefined)
     }
   }
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <>
@@ -271,7 +273,10 @@ export function SellPanel(props: {
           <Row className="text-ink-500 items-center justify-between gap-2">
             Sale value
             <span className="text-ink-700">
-              {formatMoney(saleValue + totalFees)}
+              <MoneyDisplay
+                amount={saleValue + totalFees}
+                isCashContract={isCashContract}
+              />
             </span>
           </Row>
         )}
@@ -279,7 +284,10 @@ export function SellPanel(props: {
           <Row className="text-ink-500  items-center justify-between gap-2">
             Loan repayment
             <span className="text-ink-700">
-              {formatMoney(Math.floor(-loanPaid))}
+              <MoneyDisplay
+                amount={Math.floor(-loanPaid)}
+                isCashContract={isCashContract}
+              />
             </span>
           </Row>
         )}
@@ -289,7 +297,9 @@ export function SellPanel(props: {
         </Row>
         <Row className="text-ink-500 items-center justify-between gap-2">
           Profit
-          <span className="text-ink-700">{formatMoney(profit)}</span>
+          <span className="text-ink-700">
+            <MoneyDisplay amount={profit} isCashContract={isCashContract} />
+          </span>
         </Row>
         <Row className="items-center justify-between">
           <div className="text-ink-500">
@@ -308,7 +318,12 @@ export function SellPanel(props: {
 
         <Row className="text-ink-1000 mt-4 items-center justify-between gap-2 text-xl">
           Payout
-          <span className="text-ink-700">{formatMoney(netProceeds)}</span>
+          <span className="text-ink-700">
+            <MoneyDisplay
+              amount={netProceeds}
+              isCashContract={isCashContract}
+            />
+          </span>
         </Row>
       </Col>
 
@@ -326,7 +341,10 @@ export function SellPanel(props: {
         color="indigo"
         actionLabel={
           isStonk
-            ? `Sell ${formatMoney(saleValue)}`
+            ? `Sell ${formatWithToken({
+                amount: saleValue,
+                token: isCashContract ? 'CASH' : 'M$',
+              })}`
             : `Sell ${formatWithCommas(sellQuantity)} shares`
         }
         inModal={true}
@@ -461,6 +479,7 @@ export function MultiSellerProfit(props: {
     useUnfilledBetsAndBalanceByUserId(contract.id)
 
   const unfilledBets = allUnfilledBets.filter((b) => b.answerId === answerId)
+  const isCashContract = contract.token === 'CASH'
 
   let saleValue: number
 
@@ -486,5 +505,10 @@ export function MultiSellerProfit(props: {
 
   const invested = getInvested(contract, userBets)
 
-  return <>{formatMoney(saleValue - invested)}</>
+  return (
+    <MoneyDisplay
+      amount={saleValue - invested}
+      isCashContract={isCashContract}
+    />
+  )
 }

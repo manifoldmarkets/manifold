@@ -454,6 +454,7 @@ function LimitOrderCancelledNotification(props: {
     limitAt: dataLimitAt,
     outcomeType,
   } = (data as BetFillData) ?? {}
+
   const amountRemaining = formatMoney(parseInt(sourceText ?? '0'))
   const limitAt =
     dataLimitAt !== undefined

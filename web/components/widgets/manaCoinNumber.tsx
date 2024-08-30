@@ -1,5 +1,6 @@
 import {
   formatMoneyNoMoniker,
+  formatSweepiesNumber,
   getMoneyNumberToDecimal,
 } from 'common/util/format'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
@@ -70,6 +71,9 @@ export function CoinNumber(props: {
 
       {amount == undefined ? (
         '---'
+      ) : coinType === 'sweepies' ? (
+        // TWODO: give sweepies all the variations as well
+        formatSweepiesNumber(Math.abs(amount ?? 0))
       ) : numberType == 'short' ? (
         shortenNumber(
           +formatMoneyNoMoniker(Math.abs(amount ?? 0)).replaceAll(',', '')

@@ -1,26 +1,27 @@
-import { Contract } from 'common/contract'
-import { formatMoney } from 'common/util/format'
-import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
-import { ReactNode, useState } from 'react'
-import { boostMarket, getAdAnalytics } from 'web/lib/api/api'
-import { Button } from '../buttons/button'
-import toast from 'react-hot-toast'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { DEFAULT_AD_COST_PER_VIEW, MIN_AD_COST_PER_VIEW } from 'common/boost'
-import { Table } from '../widgets/table'
-import { Modal } from '../layout/modal'
-import { Col } from '../layout/col'
-import { Title } from '../widgets/title'
-import { Row } from '../layout/row'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { track } from 'web/lib/service/analytics'
-import { useQuery } from 'web/hooks/use-query'
-import { TbRocket } from 'react-icons/tb'
 import clsx from 'clsx'
-import { ControlledTabs } from '../layout/tabs'
-import { buildArray } from 'common/util/array'
 import { APISchema } from 'common/api/schema'
+import { DEFAULT_AD_COST_PER_VIEW, MIN_AD_COST_PER_VIEW } from 'common/boost'
+import { Contract } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { buildArray } from 'common/util/array'
+import { formatWithToken, SWEEPIES_MONIKER } from 'common/util/format'
+import { ReactNode, useState } from 'react'
+import toast from 'react-hot-toast'
+import { TbRocket } from 'react-icons/tb'
+import { useQuery } from 'web/hooks/use-query'
+import { boostMarket, getAdAnalytics } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
+import { MoneyDisplay } from '../bet/money-display'
+import { Button } from '../buttons/button'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
+import { Row } from '../layout/row'
+import { ControlledTabs } from '../layout/tabs'
+import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { Table } from '../widgets/table'
+import { Title } from '../widgets/title'
 
 export function BoostButton(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -76,7 +77,12 @@ export function BoostDialog(props: {
             },
             {
               title: 'Analytics',
-              content: <FeedAnalytics contractId={contract.id} />,
+              content: (
+                <FeedAnalytics
+                  contractId={contract.id}
+                  isCashContract={contract.token === 'CASH'}
+                />
+              ),
             }
           )}
           activeIndex={index}
@@ -101,11 +107,15 @@ function BoostFormRow(props: {
     DEFAULT_AD_COST_PER_VIEW
   )
 
+  const isCashContract = contract.token === 'CASH'
   const redeems = amount && costPerView ? Math.floor(amount / costPerView) : 0
 
   const error =
     !costPerView || costPerView < MIN_AD_COST_PER_VIEW
-      ? `Bid at least ${formatMoney(MIN_AD_COST_PER_VIEW)}`
+      ? `Bid at least ${formatWithToken({
+          amount: MIN_AD_COST_PER_VIEW,
+          token: isCashContract ? 'CASH' : 'M$',
+        })}`
       : undefined
 
   const onSubmit = async () => {
@@ -151,6 +161,7 @@ function BoostFormRow(props: {
           setError={(_e) => {}}
           disabled={false}
           quickButtonValues="large"
+          token={isCashContract ? 'CASH' : 'M$'}
         />
       </Row>
 
@@ -164,9 +175,12 @@ function BoostFormRow(props: {
             <AmountInput
               amount={costPerView}
               onChangeAmount={setCostPerView}
-              label={ENV_CONFIG.moneyMoniker}
+              label={
+                isCashContract ? SWEEPIES_MONIKER : ENV_CONFIG.moneyMoniker
+              }
               error={!!error}
               inputClassName="mr-2 w-36"
+              isSweepies={isCashContract}
             />
           </Row>
           {error && <div className="text-error text-right">{error}</div>}
@@ -180,7 +194,12 @@ function BoostFormRow(props: {
 
         {!showBid && (
           <Row className="items-center text-sm">
-            at {formatMoney(costPerView ?? 0)} per click
+            at{' '}
+            <MoneyDisplay
+              amount={costPerView ?? 0}
+              isCashContract={isCashContract}
+            />{' '}
+            per click
             <Button
               onClick={() => setShowBid(true)}
               size="2xs"
@@ -201,8 +220,8 @@ function BoostFormRow(props: {
   )
 }
 
-function FeedAnalytics(props: { contractId: string }) {
-  const { contractId } = props
+function FeedAnalytics(props: { contractId: string; isCashContract: boolean }) {
+  const { contractId, isCashContract } = props
   const {
     data: adAnalytics,
     error,
@@ -248,7 +267,13 @@ function FeedAnalytics(props: { contractId: string }) {
               label="Campaign start"
               value={new Date(adCreatedTime).toDateString()}
             />
-            <TableItem label="Funds left" value={formatMoney(totalFunds)} />
+            <TableItem
+              label="Funds left"
+              value={formatWithToken({
+                amount: totalFunds,
+                token: isCashContract ? 'CASH' : 'M$',
+              })}
+            />
           </>
         )}
 

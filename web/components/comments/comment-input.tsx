@@ -17,7 +17,6 @@ import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
 import { APIError } from 'common/api/utils'
-import { DisplayUser } from 'common/api/user-types'
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -28,7 +27,7 @@ import { ReplyToUserInfo } from './comment'
 import { ReplyToBetRow } from './comment-header'
 
 export function CommentInput(props: {
-  replyToUserInfo?: DisplayUser
+  replyToUserInfo?: ReplyToUserInfo
   // Reply to another comment
   parentCommentId?: string
   onSubmitComment: (editor: Editor, type: CommentType) => Promise<void>
@@ -275,7 +274,8 @@ export function ContractCommentInput(props: {
   const privateUser = usePrivateUser()
   const isReplyToBet = replyTo && 'amount' in replyTo
   const isReplyToAnswer = replyTo && !isReplyToBet
-  const replyToUserInfo = useDisplayUserById(replyTo?.userId) ?? undefined
+  const replyToUserInfo =
+    useDisplayUserById(replyTo?.userId) ?? props.replyToUserInfo
   const onSubmitComment = useEvent(
     async (editor: Editor, type: CommentType) => {
       if (!user) return

@@ -40,6 +40,9 @@ export function CommentActions(props: {
   const diff =
     (comment.betReplyAmountsByOutcome?.YES ?? 0) -
     (comment.betReplyAmountsByOutcome?.NO ?? 0)
+
+  const isCashContract = contract.token === 'CASH'
+
   return (
     <Row className="grow items-center justify-end">
       {canGiveBounty && (
@@ -52,7 +55,7 @@ export function CommentActions(props: {
           buttonClassName={'mr-1'}
         />
       )}
-      {user && contract.outcomeType === 'BINARY' && (
+      {user && contract.outcomeType === 'BINARY' && !isCashContract && (
         <IconButton
           onClick={() => {
             // TODO: Twomba tracking bet terminology

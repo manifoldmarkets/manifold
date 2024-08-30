@@ -1,6 +1,5 @@
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { formatWithToken } from 'common/util/format'
 import { CoinNumber, NumberDisplayType } from '../widgets/manaCoinNumber'
-import { formatMoney, formatSweepies } from 'common/util/format'
 
 export function MoneyDisplay(props: {
   amount: number
@@ -11,22 +10,29 @@ export function MoneyDisplay(props: {
 }) {
   const { amount, isCashContract, numberType, className, coloredCoin } = props
 
-  if (TWOMBA_ENABLED) {
-    if (coloredCoin) {
-      return (
-        <CoinNumber
-          amount={amount}
-          coinType={isCashContract ? 'sweepies' : 'mana'}
-          isInline
-          numberType={numberType}
-          className={className}
-        />
-      )
-    }
-    if (isCashContract) {
-      return <>{formatSweepies(amount)}</>
-    }
-    return <>{formatMoney(amount)}</>
+  if (coloredCoin) {
+    return (
+      <CoinNumber
+        amount={amount}
+        coinType={isCashContract ? 'sweepies' : 'mana'}
+        isInline
+        numberType={numberType}
+        className={className}
+      />
+    )
   }
-  return <>{formatMoney(amount)}</>
+
+  const toDecimal =
+    numberType === 'toDecimal' ? (isCashContract ? 4 : 2) : undefined
+
+  return (
+    <>
+      {formatWithToken({
+        amount: amount,
+        token: isCashContract ? 'CASH' : 'M$',
+        toDecimal: toDecimal,
+        short: numberType === 'short',
+      })}
+    </>
+  )
 }

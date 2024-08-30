@@ -14,7 +14,7 @@ import { api } from 'web/lib/api/api'
 import { useApiSubscription } from 'web/hooks/use-api-subscription'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
-import { formatSweepsNumber, formatSweepsToUSD } from 'common/util/format'
+import { formatSweepies, formatSweepsToUSD } from 'common/util/format'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -174,7 +174,7 @@ const CashoutPage = () => {
 
               <Row className={'items-center justify-between font-semibold'}>
                 Cashout Amount <br className={'sm:hidden'} />
-                (min {formatSweepsNumber(MIN_CASHOUT_AMOUNT)})
+                (min {formatSweepies(MIN_CASHOUT_AMOUNT)})
                 <AmountInput
                   placeholder="Cashout Amount"
                   amount={amount}

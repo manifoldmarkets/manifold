@@ -1,28 +1,27 @@
 import clsx from 'clsx'
 
-import { formatMoney } from 'common/util/format'
-import { Col } from '../layout/col'
-import { Contract } from 'common/contract'
-import { Row } from '../layout/row'
-import { YesLabel, NoLabel } from '../outcome-label'
 import { getContractBetMetrics, getProbability } from 'common/calculate'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { ProfitBadge } from '../profit-badge'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { ContractMetric } from 'common/contract-metric'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
 import {
+  Contract,
   CPMMContract,
   CPMMMultiContract,
   getMainBinaryMCAnswer,
 } from 'common/contract'
-import { SellRow } from 'web/components/bet/sell-row'
+import { ContractMetric } from 'common/contract-metric'
+import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
 import { MultiNumericSellPanel } from 'web/components/answers/numeric-sell-panel'
+import { SellRow } from 'web/components/bet/sell-row'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { NoLabel, YesLabel } from '../outcome-label'
+import { ProfitBadge } from '../profit-badge'
+import { InfoTooltip } from '../widgets/info-tooltip'
 import { MoneyDisplay } from './money-display'
-import { TRADE_TERM } from 'common/envs/constants'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -253,7 +252,9 @@ export function BetsSummary(props: {
       {!hideTweet && resolution && profit >= 1 && (
         <Row className={'mt-4 items-center gap-2'}>
           <div>
-            {areYourBets ? 'You' : 'They'} made {formatMoney(profit)} in profit!{' '}
+            {areYourBets ? 'You' : 'They'} made{' '}
+            <MoneyDisplay amount={profit} isCashContract={isCashContract} /> in
+            profit!{' '}
             <TweetButton
               tweetText={getWinningTweet(profit, contract, username)}
               className="ml-2"

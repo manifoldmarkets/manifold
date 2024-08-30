@@ -4,7 +4,6 @@ import { MultiSort } from 'common/answer'
 import { MultiContract, SORTS } from 'common/contract'
 import { getTieredAnswerCost } from 'common/economy'
 import { getTierFromLiquidity } from 'common/tier'
-import { formatMoney } from 'common/util/format'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { FaSearch, FaSearchPlus } from 'react-icons/fa'
 import { api } from 'web/lib/api/api'
@@ -16,6 +15,7 @@ import { Row } from '../layout/row'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Input } from '../widgets/input'
+import { MoneyDisplay } from '../bet/money-display'
 
 function MultiSortDropdown(props: {
   sort: MultiSort
@@ -88,6 +88,8 @@ export function SearchCreateAnswerPanel(props: {
     }
   }
 
+  const isCashContract = contract.token === 'CASH'
+
   const inputRef = useRef<HTMLInputElement>(null)
   const buttonsRef = useRef<HTMLDivElement>(null)
 
@@ -141,15 +143,16 @@ export function SearchCreateAnswerPanel(props: {
                 >
                   <span className="font-semibold">Add</span>
                   <span className="text-ink-200 dark:text-ink-800 ml-1">
-                    {formatMoney(
-                      getTieredAnswerCost(
+                    <MoneyDisplay
+                      amount={getTieredAnswerCost(
                         contract.marketTier ??
                           getTierFromLiquidity(
                             contract,
                             contract.totalLiquidity
                           )
-                      )
-                    )}
+                      )}
+                      isCashContract={isCashContract}
+                    />
                   </span>
                 </Button>
               )}

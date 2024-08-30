@@ -192,6 +192,8 @@ export function AnswersPanel(props: {
     enabled: isAdvancedTrader && shouldShowLimitOrderChart,
   })
 
+  const [shouldShowPositions, setShouldShowPositions] = useState(true)
+
   const moreCount = answers.length - answersToShow.length
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
@@ -295,7 +297,9 @@ export function AnswersPanel(props: {
                   (b) => b.answerId === answer.id
                 )}
                 color={getAnswerColor(answer)}
-                userBets={userBetsByAnswer[answer.id]}
+                userBets={
+                  shouldShowPositions ? userBetsByAnswer[answer.id] : undefined
+                }
                 shouldShowLimitOrderChart={
                   isAdvancedTrader && shouldShowLimitOrderChart
                 }
@@ -320,25 +324,44 @@ export function AnswersPanel(props: {
           </Col>
         )}
       </Col>
-      {isAdvancedTrader && (
-        <Row className="mt-2 items-center gap-2 self-end">
-          <input
-            id="limitOrderChart"
-            type="checkbox"
-            className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
-            checked={shouldShowLimitOrderChart}
-            onChange={() =>
-              setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
-            }
-          />
-          <label
-            htmlFor="limitOrderChart"
-            className="text-ink-500 text-sm font-medium"
-          >
-            Show limit orders
-          </label>
-        </Row>
-      )}
+      <Row className="justify-end gap-4">
+        {userBets.length > 0 && (
+          <Row className="mt-2 items-center gap-2">
+            <input
+              id="positions"
+              type="checkbox"
+              className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
+              checked={shouldShowPositions}
+              onChange={() => setShouldShowPositions(!shouldShowPositions)}
+            />
+            <label
+              htmlFor="positions"
+              className="text-ink-500 text-sm font-medium"
+            >
+              Show your positions
+            </label>
+          </Row>
+        )}
+        {isAdvancedTrader && (
+          <Row className="mt-2 items-center gap-2">
+            <input
+              id="limitOrderChart"
+              type="checkbox"
+              className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
+              checked={shouldShowLimitOrderChart}
+              onChange={() =>
+                setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
+              }
+            />
+            <label
+              htmlFor="limitOrderChart"
+              className="text-ink-500 text-sm font-medium"
+            >
+              Show limit orders
+            </label>
+          </Row>
+        )}
+      </Row>
     </Col>
   )
 }

@@ -19,6 +19,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Button } from '../buttons/button'
 import { PointerMode } from './helpers'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export const ChartAnnotations = (props: {
   annotations: ChartAnnotation[]
@@ -60,18 +61,9 @@ const ChartAnnotation = (props: {
   carouselRef: HTMLDivElement | null
 }) => {
   const { annotation, hovered, carouselRef, setHoveredAnnotation } = props
-  const {
-    text,
-    user_avatar_url,
-    user_id,
-    creator_id,
-    creator_avatar_url,
-    id,
-    prob_change,
-    creator_username,
-    event_time,
-    user_username,
-  } = annotation
+  const { text, user_id, creator_id, id, prob_change, event_time } = annotation
+  const displayUser = useDisplayUserById(user_id ?? creator_id)
+
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const isClient = useIsClient()
@@ -117,8 +109,8 @@ const ChartAnnotation = (props: {
         <div className={'h-16 overflow-hidden p-1 text-sm'}>
           <UserHovercard userId={user_id ?? creator_id}>
             <Avatar
-              avatarUrl={user_avatar_url ?? creator_avatar_url}
-              username={user_username ?? creator_username}
+              avatarUrl={displayUser?.avatarUrl}
+              username={displayUser?.username}
               noLink={true}
               size={'2xs'}
               className={'float-left mr-1 mt-0.5'}

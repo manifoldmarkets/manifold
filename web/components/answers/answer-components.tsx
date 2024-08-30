@@ -1,6 +1,10 @@
 import { ChatIcon } from '@heroicons/react/outline'
+import { SparklesIcon } from '@heroicons/react/solid'
+import { animated } from '@react-spring/web'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
+import { Bet } from 'common/bet'
+import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
 import {
   CPMMMultiContract,
   CPMMNumericContract,
@@ -9,16 +13,25 @@ import {
   resolution,
   tradingAllowed,
 } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
-import { ReactNode, useState } from 'react'
-import { Button } from '../buttons/button'
-import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { AnswerCpmmBetPanel } from './answer-bet-panel'
-import { useUser } from 'web/hooks/use-user'
-import { Bet } from 'common/bet'
-import { sumBy } from 'lodash'
+import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
+import { formatPercent } from 'common/util/format'
+import { HOUR_MS } from 'common/util/time'
+import { capitalize, sumBy } from 'lodash'
+import { ReactNode, useState } from 'react'
+import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
+import { useUser } from 'web/hooks/use-user'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { track } from 'web/lib/service/analytics'
+import { formatTimeShort } from 'web/lib/util/time'
+import { MoneyDisplay } from '../bet/money-display'
+import { MultiSellerPosition, MultiSellerProfit } from '../bet/sell-panel'
 import { SellSharesModal } from '../bet/sell-row'
+import { Button } from '../buttons/button'
+import { Col } from '../layout/col'
+import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
+import { Row } from '../layout/row'
 import {
   BinaryOutcomeLabel,
   NoLabel,
@@ -26,24 +39,11 @@ import {
   ProbPercentLabel,
   YesLabel,
 } from '../outcome-label'
-import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
-import { formatTimeShort } from 'web/lib/util/time'
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
+import { UserHovercard } from '../user/user-hovercard'
 import { Avatar, EmptyAvatar } from '../widgets/avatar'
 import { Linkify } from '../widgets/linkify'
 import { Tooltip } from '../widgets/tooltip'
-import { animated } from '@react-spring/web'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { HOUR_MS } from 'common/util/time'
-import { SparklesIcon } from '@heroicons/react/solid'
-import { track } from 'web/lib/service/analytics'
-import { UserHovercard } from '../user/user-hovercard'
-import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { MultiSellerPosition, MultiSellerProfit } from '../bet/sell-panel'
-import { TRADE_TERM } from 'common/envs/constants'
-import { capitalize } from 'lodash'
+import { AnswerCpmmBetPanel } from './answer-bet-panel'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -544,6 +544,7 @@ export function AnswerPosition(props: {
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
   const position = yesWinnings - noWinnings
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <Row
@@ -556,12 +557,22 @@ export function AnswerPosition(props: {
         Payout
         {position > 1e-7 ? (
           <>
-            <span className="text-ink-700">{formatMoney(position)}</span> on
+            <span className="text-ink-700">
+              <MoneyDisplay amount={position} isCashContract={isCashContract} />
+            </span>{' '}
+            on
             <YesLabel />
           </>
         ) : position < -1e-7 ? (
           <>
-            <span className="text-ink-700">{formatMoney(-position)}</span> on
+            <span className="text-ink-700">
+              {' '}
+              <MoneyDisplay
+                amount={-position}
+                isCashContract={isCashContract}
+              />
+            </span>{' '}
+            on
             <NoLabel />
           </>
         ) : (
@@ -571,7 +582,9 @@ export function AnswerPosition(props: {
       &middot;
       <Row className="gap-1">
         <div className="text-ink-500">Spent</div>
-        <div className="text-ink-700">{formatMoney(invested)}</div>
+        <div className="text-ink-700">
+          <MoneyDisplay amount={invested} isCashContract={isCashContract} />
+        </div>
       </Row>
       {(!contract.closeTime || contract.closeTime > Date.now()) &&
         !answer.resolutionTime && (

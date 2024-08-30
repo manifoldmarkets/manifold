@@ -618,6 +618,7 @@ export function ContractPageContent(props: ContractParams) {
                   contractId={contract.id}
                   currentUser={user}
                   currentUserMetrics={contractMetrics}
+                  isCashContract={contract.token === 'CASH'}
                 />
                 <Spacer h={12} />
               </>

@@ -22,14 +22,40 @@ const formatterWithFraction = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
 })
 
+export const SWEEPIES_MONIKER = 'S'
+
+export type InputTokenType = 'M$' | 'SPICE' | 'CASH'
+
+export function formatWithToken(variables: {
+  amount: number
+  token: InputTokenType
+  toDecimal?: number
+  short?: boolean
+}) {
+  const { amount, token, toDecimal, short } = variables
+  if (token === 'CASH') {
+    return formatSweepies(amount, toDecimal)
+  }
+  if (toDecimal) {
+    return formatMoneyWithDecimals(amount)
+  }
+  if (short) {
+    return formatMoneyShort(amount)
+  }
+  return formatMoney(amount)
+}
+
 export function formatMoney(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
 }
 
-export function formatSweepies(amount: number) {
-  const newAmount = getMoneyNumber(amount)
-  return formatter.format(newAmount).replace('$', 'S')
+export function formatSweepies(amount: number, toDecimal?: number) {
+  return SWEEPIES_MONIKER + formatSweepiesNumber(amount, toDecimal)
+}
+
+export function formatSweepiesNumber(amount: number, toDecimal?: number) {
+  return (amount / 100).toFixed(toDecimal ?? 2)
 }
 
 export function formatSpice(amount: number) {
@@ -51,6 +77,7 @@ export function formatMoneyUSD(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount)
 }
+
 export function formatSweepsToUSD(amount: number) {
   return formatterWithFraction.format(amount / 100)
 }
@@ -58,10 +85,6 @@ export function formatSweepsToUSD(amount: number) {
 export function formatMoneyNumber(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', '')
-}
-export function formatSweepsNumber(amount: number) {
-  const newAmount = getMoneyNumber(amount / 100)
-  return formatter.format(newAmount).replace('$', 'S')
 }
 
 export function getMoneyNumber(amount: number) {

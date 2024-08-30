@@ -132,10 +132,7 @@ export type Database = {
           text: string | null
           thumbnail_url: string | null
           up_votes: number
-          user_avatar_url: string | null
           user_id: string | null
-          user_name: string | null
-          user_username: string | null
         }
         Insert: {
           answer_id?: string | null
@@ -154,10 +151,7 @@ export type Database = {
           text?: string | null
           thumbnail_url?: string | null
           up_votes?: number
-          user_avatar_url?: string | null
           user_id?: string | null
-          user_name?: string | null
-          user_username?: string | null
         }
         Update: {
           answer_id?: string | null
@@ -176,10 +170,7 @@ export type Database = {
           text?: string | null
           thumbnail_url?: string | null
           up_votes?: number
-          user_avatar_url?: string | null
           user_id?: string | null
-          user_name?: string | null
-          user_username?: string | null
         }
         Relationships: []
       }

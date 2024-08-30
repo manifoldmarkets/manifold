@@ -1,25 +1,26 @@
+import clsx from 'clsx'
+import { Bet } from 'common/bet'
+import { getInvested } from 'common/calculate'
 import {
   CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
 } from 'common/contract'
-import { User } from 'common/user'
-import { getInvested } from 'common/calculate'
-import { useState } from 'react'
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
-import { formatMoney, formatWithCommas } from 'common/util/format'
-import { OutcomeLabel } from '../outcome-label'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
-import { Button } from '../buttons/button'
-import clsx from 'clsx'
-import { Bet } from 'common/bet'
-import { Modal } from '../layout/modal'
-import { Title } from '../widgets/title'
-import { SellPanel } from './sell-panel'
-import { TweetButton, getPositionTweet } from '../buttons/tweet-button'
 import { getStonkDisplayShares } from 'common/stonk'
+import { User } from 'common/user'
+import { formatWithCommas } from 'common/util/format'
+import { useState } from 'react'
+import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { Button } from '../buttons/button'
+import { TweetButton, getPositionTweet } from '../buttons/tweet-button'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
+import { Row } from '../layout/row'
+import { OutcomeLabel } from '../outcome-label'
+import { Title } from '../widgets/title'
+import { MoneyDisplay } from './money-display'
+import { SellPanel } from './sell-panel'
 
 export function SellRow(props: {
   contract: CPMMContract
@@ -36,6 +37,7 @@ export function SellRow(props: {
 
   const { mechanism } = contract
   const { sharesOutcome, shares } = useSaveBinaryShares(contract, userBets)
+  const isCashContract = contract.token === 'CASH'
 
   if (sharesOutcome && user && mechanism === 'cpmm-1') {
     return (
@@ -49,7 +51,14 @@ export function SellRow(props: {
                   of{' '}
                 </>
               ) : (
-                <>You'll get {formatMoney(shares)} on </>
+                <>
+                  You'll get{' '}
+                  <MoneyDisplay
+                    amount={shares}
+                    isCashContract={isCashContract}
+                  />{' '}
+                  on{' '}
+                </>
               )}
               <OutcomeLabel
                 outcome={sharesOutcome}
@@ -121,6 +130,7 @@ export function SellSharesModal(props: {
     answerId,
   } = props
   const isStonk = contract.outcomeType === 'STONK'
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <Modal open={true} setOpen={setOpen}>
@@ -133,8 +143,8 @@ export function SellSharesModal(props: {
           ) : (
             <>
               You have {formatWithCommas(shares)} shares worth{' '}
-              {formatMoney(shares)} if this {answerId ? 'answer' : 'question'}{' '}
-              resolves{' '}
+              <MoneyDisplay amount={shares} isCashContract={isCashContract} />{' '}
+              if this {answerId ? 'answer' : 'question'} resolves{' '}
             </>
           )}
           <OutcomeLabel

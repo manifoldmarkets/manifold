@@ -1,5 +1,5 @@
 import { runScript } from './run-script'
-import { createCashContract } from '../shared/src/create-cash-contract'
+import { createCashContractMain } from '../shared/src/create-cash-contract'
 
 runScript(async ({ pg }) => {
   const manaContractId = process.argv[2]
@@ -13,10 +13,10 @@ runScript(async ({ pg }) => {
   }
 
   try {
-    const cashContract = await createCashContract(
+    const cashContract = await createCashContractMain(
+      pg,
       manaContractId,
-      subsidyAmount,
-      pg
+      subsidyAmount
     )
     console.log('Success ' + cashContract.id)
   } catch (error) {

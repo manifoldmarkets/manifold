@@ -104,6 +104,8 @@ export function WhichPartyCard(props: {
       isPromoted: !!promotedData,
     })
 
+  const isCashContract = contract.token === 'CASH'
+
   return (
     <ClickFrame
       className={clsx(
@@ -179,7 +181,10 @@ export function WhichPartyCard(props: {
         )}
 
         {isBinaryCpmm && metrics && metrics.hasShares && (
-          <YourMetricsFooter metrics={metrics} />
+          <YourMetricsFooter
+            metrics={metrics}
+            isCashContract={isCashContract}
+          />
         )}
       </div>
     </ClickFrame>

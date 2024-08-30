@@ -19,6 +19,7 @@ import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { UserHovercard } from './user/user-hovercard'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export const AnnotateChartModal = (props: {
   open: boolean
@@ -118,21 +119,12 @@ export const ReadChartAnnotationModal = (props: {
   const user = useUser()
   const [loading, setLoading] = useState(false)
   const { chartAnnotation, open, setOpen } = props
-  const {
-    event_time,
-    creator_username,
-    creator_id,
-    creator_name,
-    creator_avatar_url,
-    comment_id,
-    user_username,
-    user_id,
-    user_name,
-    user_avatar_url,
-    prob_change,
-  } = chartAnnotation
+  const { event_time, creator_id, comment_id, user_id, prob_change } =
+    chartAnnotation
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const comment = comment_id ? useCommentOnContract(comment_id) : undefined
+  const author = useDisplayUserById(user_id || creator_id || undefined)
+
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS)}>
@@ -141,20 +133,14 @@ export const ReadChartAnnotationModal = (props: {
             <Row className={'items-center gap-2'}>
               <UserHovercard userId={user_id as string}>
                 <Avatar
-                  username={user_username ?? creator_username}
-                  avatarUrl={user_avatar_url ?? creator_avatar_url}
+                  username={author?.username}
+                  avatarUrl={author?.avatarUrl}
                   size={'md'}
                 />
               </UserHovercard>
               <Col>
                 <UserHovercard userId={user_id as string}>
-                  <UserLink
-                    user={{
-                      id: user_id ?? creator_id,
-                      username: user_username ?? creator_username,
-                      name: user_name ?? creator_name,
-                    }}
-                  />
+                  <UserLink user={author} />
                 </UserHovercard>
                 <span className={'text-ink-500 text-xs'}>
                   {new Date(event_time).toLocaleDateString('en-US', {

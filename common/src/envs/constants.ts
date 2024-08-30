@@ -21,7 +21,7 @@ export const CHARITY_FEE = 0.05
 export const SPICE_TO_CHARITY_DOLLARS = (1 / 1000) * (1 - CHARITY_FEE) // prize points -> dollars
 
 export const SPICE_NAME = 'Prize Point'
-export const SWEEPIES_NAME = 'Mana Cash'
+export const SWEEPIES_NAME = 'Sweepies'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
 export const SWEEPIES_MARKET_TOOLTIP = `Cash market! Earn ${SWEEPIES_NAME}s on resolution`
 
@@ -266,6 +266,7 @@ export const VERIFIED_USERNAMES = [
 export const BLESSED_BANNED_USER_IDS = [
   'wBZSAA3MrnWjz7eHrKAq43OXBtA2', // kazoo
   '4Qy6MOn8AFRTecA6FMzdljPJFsv1', //HamsterHawk
+  'fnuHBW8dHwZp2TbEt2MKJY9d28V2', // klob
 ]
 
 export const PARTNER_USER_IDS: string[] = [

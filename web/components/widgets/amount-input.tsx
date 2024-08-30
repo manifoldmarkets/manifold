@@ -3,7 +3,12 @@ import clsx from 'clsx'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { User, verifiedPhone } from 'common/user'
-import { formatMoney } from 'common/util/format'
+import {
+  formatMoney,
+  formatSweepiesNumber,
+  formatWithToken,
+  InputTokenType,
+} from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
@@ -39,6 +44,7 @@ export function AmountInput(
     allowFloat?: boolean
     allowNegative?: boolean
     disableClearButton?: boolean
+    isSweepies?: boolean
   } & JSX.IntrinsicElements['input']
 ) {
   const {
@@ -55,10 +61,19 @@ export function AmountInput(
     allowFloat,
     allowNegative,
     disableClearButton,
+    isSweepies,
     ...rest
   } = props
 
-  const [amountString, setAmountString] = useState(amount?.toString() ?? '')
+  const [amountString, setAmountString] = useState(formatAmountString(amount))
+
+  function formatAmountString(amount: number | undefined) {
+    if (isSweepies) {
+      return amount ? formatSweepiesNumber(amount).toString() : ''
+    } else {
+      return amount?.toString() ?? ''
+    }
+  }
 
   const parse = allowFloat ? parseFloat : parseInt
 
@@ -69,14 +84,20 @@ export function AmountInput(
 
   useEffect(() => {
     if (amount !== parse(amountString))
-      setAmountString(amount?.toString() ?? '')
+      setAmountString(formatAmountString(amount))
   }, [amount])
 
   const onAmountChange = (str: string) => {
+    // TWODO: Sweepies not as robust
     const s = str.replace(bannedChars, '')
     if (s !== amountString) {
-      setAmountString(s)
+      if (!isSweepies) {
+        setAmountString(s)
+      }
       const amount = parse(s)
+      if (isSweepies) {
+        setAmountString(formatAmountString(amount))
+      }
       const isInvalid = !s || isNaN(amount)
       onChangeAmount(isInvalid ? undefined : amount)
     }
@@ -131,7 +152,10 @@ export function AmountInput(
   )
 }
 
-function ClearInputButton(props: { onClick: () => void; className?: string }) {
+export function ClearInputButton(props: {
+  onClick: () => void
+  className?: string
+}) {
   const { onClick, className } = props
   return (
     <button
@@ -165,7 +189,7 @@ export function BuyAmountInput(props: {
   disregardUserBalance?: boolean
   quickButtonValues?: number[] | 'large'
   disableQuickButtons?: boolean
-  token?: 'M$' | 'SPICE' | 'CASH'
+  token?: InputTokenType
   marketTier?: MarketTierType | undefined
 }) {
   const {
@@ -198,13 +222,20 @@ export function BuyAmountInput(props: {
         !disregardUserBalance &&
         user &&
         ((token === 'M$' && user.balance < amount) ||
-          (token === 'SPICE' && user.spiceBalance < amount))
+          (token === 'SPICE' && user.spiceBalance < amount) ||
+          (token === 'CASH' && user.cashBalance < amount))
       ) {
         setError('Insufficient balance')
       } else if (minimumAmount && amount < minimumAmount) {
-        setError('Minimum amount: ' + formatMoney(minimumAmount))
+        setError(
+          'Minimum amount: ' +
+            formatWithToken({ amount: minimumAmount, token: token })
+        )
       } else if (maximumAmount && amount > maximumAmount) {
-        setError('Maximum amount: ' + formatMoney(maximumAmount))
+        setError(
+          'Maximum amount: ' +
+            formatWithToken({ amount: maximumAmount, token: token })
+        )
       } else {
         setError(undefined)
       }
@@ -214,8 +245,11 @@ export function BuyAmountInput(props: {
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
   const portfolio = useCurrentPortfolio(user?.id)
-  const hasLotsOfMana =
-    !!portfolio && portfolio.balance + portfolio.investmentValue > 10000
+  const hasLotsOfMoney =
+    token === 'CASH'
+      ? !!portfolio &&
+        portfolio.cashBalance + portfolio.cashInvestmentValue > 10000
+      : !!portfolio && portfolio.balance + portfolio.investmentValue > 10000
 
   const amountWithDefault = amount ?? 0
 
@@ -228,9 +262,9 @@ export function BuyAmountInput(props: {
 
   const isAdvancedTrader = useIsAdvancedTrader()
   const advancedIncrementValues = (
-    hasLotsOfMana ? [50, 250, 1000] : [10, 50, 250]
+    hasLotsOfMoney ? [50, 250, 1000] : [10, 50, 250]
   ).map((v) => (marketTier === 'play' ? v / 10 : v))
-  const defaultIncrementValues = (hasLotsOfMana ? [50, 250] : [10, 100]).map(
+  const defaultIncrementValues = (hasLotsOfMoney ? [50, 250] : [10, 100]).map(
     (v) => (marketTier === 'play' ? v / 10 : v)
   )
 
@@ -276,18 +310,21 @@ export function BuyAmountInput(props: {
                       key={increment}
                       amount={increment}
                       incrementBy={incrementBy}
+                      token={token}
                     />
                   ) : (
                     <IncrementButton
                       key={increment}
                       amount={increment}
                       onIncrement={() => incrementBy(increment)}
+                      token={token}
                     />
                   )
                 )}
               </Row>
             )
           }
+          isSweepies={token === 'CASH'}
         />
         {showSlider && (
           <BetSlider
@@ -296,7 +333,8 @@ export function BuyAmountInput(props: {
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
             disabled={disabled}
-            smallManaAmounts={!hasLotsOfMana || marketTier === 'play'}
+            smallManaAmounts={!hasLotsOfMoney || marketTier === 'play'}
+            token={token}
           />
         )}
         {error ? (
@@ -312,7 +350,9 @@ export function BuyAmountInput(props: {
           user && (
             <div className="text-ink-500 mt-4 whitespace-nowrap text-sm">
               Balance{' '}
-              <span className="text-ink-800">{formatMoney(user.balance)}</span>
+              <span className="text-ink-800">
+                {formatWithToken({ amount: user.balance, token: token })}
+              </span>
             </div>
           )
         )}

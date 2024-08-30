@@ -1,29 +1,30 @@
+import { Bet } from 'common/bet'
 import {
   Contract,
   CPMMNumericContract,
   getBinaryMCProb,
   isBinaryMulti,
 } from 'common/contract'
-import { Bet } from 'common/bet'
-import { groupBy, orderBy, partition, sortBy, sum, sumBy } from 'lodash'
-import {
-  formatMoney,
-  formatPercent,
-  formatWithCommas,
-} from 'common/util/format'
-import { Table } from 'web/components/widgets/table'
-import { useState } from 'react'
-import { BinaryOutcomeLabel, OutcomeLabel } from 'web/components/outcome-label'
-import { getStonkDisplayShares } from 'common/stonk'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatTimeShort } from 'web/lib/util/time'
+import { TRADE_TERM } from 'common/envs/constants'
 import {
   answerToRange,
   getMultiNumericAnswerMidpoints,
 } from 'common/multi-numeric'
-import { Pagination } from '../widgets/pagination'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { getStonkDisplayShares } from 'common/stonk'
+import {
+  formatPercent,
+  formatWithCommas,
+  formatWithToken,
+} from 'common/util/format'
+import { groupBy, orderBy, partition, sortBy, sum, sumBy } from 'lodash'
+import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { TRADE_TERM } from 'common/envs/constants'
+import { BinaryOutcomeLabel, OutcomeLabel } from 'web/components/outcome-label'
+import { Table } from 'web/components/widgets/table'
+import { formatTimeShort } from 'web/lib/util/time'
+import { Pagination } from '../widgets/pagination'
+import { MoneyDisplay } from './money-display'
 
 export function ContractBetsTable(props: {
   contract: Contract
@@ -75,6 +76,8 @@ export function ContractBetsTable(props: {
   const displayedBets = expanded
     ? normalBets.slice(page * betsPerPage, (page + 1) * betsPerPage)
     : normalBets.slice(0, unexpandedBetsPerPage)
+
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <div className="overflow-x-auto">
@@ -143,7 +146,12 @@ export function ContractBetsTable(props: {
             <div className="text-ink-500 pl-2 text-sm">
               {amountRedeemed} {isPseudoNumeric ? 'HIGHER' : 'YES'} shares and{' '}
               {amountRedeemed} {isPseudoNumeric ? 'LOWER' : 'NO'} shares
-              automatically redeemed for {formatMoney(amountRedeemed)}.
+              automatically redeemed for{' '}
+              <MoneyDisplay
+                amount={amountRedeemed}
+                isCashContract={isCashContract}
+              />
+              .
             </div>
           )}
           {!hideRedemptionAndLoanMessages &&
@@ -151,11 +159,21 @@ export function ContractBetsTable(props: {
             amountLoaned > 0 && (
               <div className="text-ink-500 mt-2 pl-2 text-sm">
                 {isYourBets ? (
-                  <>You currently have a loan of {formatMoney(amountLoaned)}.</>
+                  <>
+                    You currently have a loan of{' '}
+                    <MoneyDisplay
+                      amount={amountLoaned}
+                      isCashContract={isCashContract}
+                    />
+                  </>
                 ) : (
                   <>
                     This user currently has a loan of{' '}
-                    {formatMoney(amountLoaned)}.
+                    <MoneyDisplay
+                      amount={amountLoaned}
+                      isCashContract={isCashContract}
+                    />
+                    .
                   </>
                 )}
               </div>
@@ -186,9 +204,13 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
   const ofTotalAmount =
     bet.limitProb === undefined || bet.orderAmount === undefined
       ? ''
-      : ` / ${formatMoney(bet.orderAmount)}`
+      : ` / ${formatWithToken({
+          amount: bet.orderAmount,
+          token: contract.token == 'CASH' ? 'CASH' : 'M$',
+        })}`
 
   const sharesOrShortSellShares = Math.abs(shares)
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <tr>
@@ -210,7 +232,10 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
         )}
       </td>
       <td>
-        {formatMoney(Math.abs(amount))}
+        <MoneyDisplay
+          amount={Math.abs(amount)}
+          isCashContract={isCashContract}
+        />
         {ofTotalAmount}
       </td>
       <td>
@@ -278,11 +303,15 @@ export const groupMultiNumericBets = (
     (a) => bets.find((b) => b.answerId === a.id)?.probBefore ?? 0
   )
   const expectedValueBefore = getExpectedValueAtProbs(betProbBefores).toFixed(2)
+  const isCashContract = contract.token === 'CASH'
 
   const ofTotalAmount = bets.some(
     (b) => b.orderAmount !== undefined && b.limitProb !== undefined
   )
-    ? ` / ${formatMoney(sumBy(bets, (b) => b.orderAmount ?? 0))}`
+    ? ` / ${formatWithToken({
+        amount: sumBy(bets, (b) => b.orderAmount ?? 0),
+        token: isCashContract ? 'CASH' : 'M$',
+      })}`
     : ''
 
   return {
@@ -313,6 +342,7 @@ function MultiNumberBetRow(props: {
   if (!bet) return null
 
   const { amount, createdTime, shares } = bet
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <tr>
@@ -321,7 +351,10 @@ function MultiNumberBetRow(props: {
         {lowerRange} - {higherRange}
       </td>
       <td>
-        {formatMoney(Math.abs(amount))}
+        <MoneyDisplay
+          amount={Math.abs(amount)}
+          isCashContract={isCashContract}
+        />
         {ofTotalAmount}
       </td>
       <td>{formatWithCommas(Math.abs(shares))}</td>

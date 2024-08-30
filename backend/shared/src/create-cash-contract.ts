@@ -1,5 +1,4 @@
 import {
-  createSupabaseDirectClient,
   SupabaseDirectClient,
 } from './supabase/init'
 import { getContract, getUser, htmlToRichText, log } from './utils'
@@ -13,14 +12,12 @@ import { clamp } from 'lodash'
 
 // cribbed from backend/api/src/create-market.ts
 
-export async function createCashContract(
+export async function createCashContractMain(
+  pg: SupabaseDirectClient,
   manaContractId: string,
-  subsidyAmount: number,
-  pg?: SupabaseDirectClient
+  subsidyAmount: number
 ) {
-  const client = pg || createSupabaseDirectClient()
-
-  return await client.tx(async (tx) => {
+  return await pg.tx(async (tx) => {
     const manaContract = await getContract(tx, manaContractId)
     if (!manaContract) {
       throw new APIError(404, `Mana contract ${manaContractId} not found`)

@@ -31,6 +31,8 @@ import { AddLiquidityModal } from './subsidize-button'
 import { TwombaContractInfoDialog } from './twomba-contract-info-dialog'
 import { WatchMarketModal } from './watch-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
+import { isAdminId } from 'common/envs/constants'
+import { FaDollarSign } from 'react-icons/fa'
 
 export function TwombaHeaderActions(props: {
   playContract: Contract
@@ -40,6 +42,7 @@ export function TwombaHeaderActions(props: {
   const user = useUser()
   const privateUser = usePrivateUser()
   const isCreator = user?.id === playContract.creatorId
+  const isAdmin = user ? isAdminId(user.id) : false
 
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [repostOpen, setRepostOpen] = useState(false)
@@ -99,6 +102,19 @@ export function TwombaHeaderActions(props: {
         setFollowing((res.data?.length ?? 0) > 0)
       })
   }, [user?.id, followingOpen])
+
+  const convertToCashMarket = async () => {
+    try {
+      await api('create-cash-contract', {
+        manaContractId: currentContract.id,
+        subsidyAmount: 100, // You may want to make this configurable
+      })
+      toast.success('Market converted to cash market successfully')
+    } catch (error) {
+      toast.error('Failed to convert market to cash market')
+      console.error(error)
+    }
+  }
 
   const dropdownItems = [
     ...(user
@@ -215,6 +231,17 @@ export function TwombaHeaderActions(props: {
             className: isBlocked
               ? ''
               : 'text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-100 dark:hover:bg-ink-100',
+          },
+        ]
+      : []),
+    ...(isAdmin && !playContract.siblingContractId
+      ? [
+          {
+            name: 'Prize Cashify!',
+            onClick: convertToCashMarket,
+            icon: <FaDollarSign className="h-4 w-4" />,
+            className:
+              'text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-100 dark:hover:bg-ink-100',
           },
         ]
       : []),
