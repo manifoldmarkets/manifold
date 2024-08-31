@@ -31,6 +31,7 @@ import { useRouter } from 'next/router'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { formatSweepsToUSD } from 'common/util/format'
+import { capitalize } from 'lodash'
 
 const CheckoutPage = () => {
   const user = useUser()
@@ -303,7 +304,9 @@ const PaymentSection = (props: {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState(
-    CustomerProfile.Name.FirstName + ' ' + CustomerProfile.Name.LastName
+    capitalize(CustomerProfile.Name.FirstName.toLowerCase()) +
+      ' ' +
+      capitalize(CustomerProfile.Name.LastName.toLowerCase())
   )
   const [cardNumber, setCardNumber] = useState('')
   const [expiryDate, setExpiryDate] = useState('')
@@ -520,7 +523,7 @@ const PaymentSection = (props: {
                   loading
                 }
               >
-                Complete Purchase
+                Complete purchase
               </Button>
             </Col>
           </form>
