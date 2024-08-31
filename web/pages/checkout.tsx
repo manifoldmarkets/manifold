@@ -154,11 +154,8 @@ const CheckoutPage = () => {
   }
 
   return (
-    <Page trackPageView={'checkout page'}>
-      {page === 'checkout' &&
-      !amountSelected &&
-      !manaAmount &&
-      router.isReady ? (
+    <Page className={'p-3'} trackPageView={'checkout page'}>
+      {page === 'checkout' && !amountSelected && !manaAmount ? (
         <Col>
           <FundsSelector prices={prices} onSelect={onSelectAmount} />
 
@@ -191,11 +188,11 @@ const CheckoutPage = () => {
           CheckoutSession={checkoutSession}
           amount={productSelected}
         />
-      ) : page === 'get-session' ? (
-        <LoadingIndicator />
-      ) : error || locationError ? null : (
-        <LoadingIndicator />
-      )}
+      ) : page === 'get-session' || (!error && !locationError) ? (
+        <Col className={'gap-3 p-4'}>
+          <LoadingIndicator />
+        </Col>
+      ) : null}
       <Row className="text-error mt-2">{error}</Row>
     </Page>
   )
@@ -388,8 +385,8 @@ const PaymentSection = (props: {
   }
 
   return (
-    <Col>
-      <Col className="min-h-screen items-center justify-center py-12">
+    <Col className={'-m-3'}>
+      <Col className="min-h-screen items-center justify-center">
         <Row className={'w-full justify-center'}>
           <LogoIcon
             className="h-40 w-40 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white"
@@ -415,7 +412,7 @@ const PaymentSection = (props: {
         <Row className={'my-4 justify-center text-4xl '}>
           <span>{formatSweepsToUSD(amount.price)}</span>
         </Row>
-        <Col className="bg-canvas-0 w-full max-w-md rounded p-8">
+        <Col className="bg-canvas-0 w-full max-w-md rounded p-4">
           <form onSubmit={handleSubmit}>
             <Col className="space-y-4">
               <Input
@@ -424,12 +421,42 @@ const PaymentSection = (props: {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-              <Input
-                type="text"
-                placeholder="Card Number"
-                value={cardNumber}
-                onChange={(e) => setCardNumber(e.target.value)}
-              />
+              <Row className={'relative w-full'}>
+                <Input
+                  type="text"
+                  className={'w-full'}
+                  placeholder="1234 1234 1234 1234"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value)}
+                />
+                <Row className={'absolute right-1 top-4 gap-0.5'}>
+                  <Image
+                    height={15}
+                    width={30}
+                    src={'/payment-icons/dark/1.png'}
+                    alt={'visa'}
+                  />
+                  <Image
+                    height={15}
+                    width={30}
+                    src={'/payment-icons/dark/2.png'}
+                    alt={'mastercard'}
+                  />
+                  <Image
+                    height={15}
+                    width={30}
+                    src={'/payment-icons/dark/14.png'}
+                    alt={'discover'}
+                  />{' '}
+                  <Image
+                    height={15}
+                    width={30}
+                    src={'/payment-icons/dark/22.png'}
+                    alt={'amex'}
+                  />
+                </Row>
+              </Row>
+
               <Row className="space-x-4">
                 <Input
                   type="text"
