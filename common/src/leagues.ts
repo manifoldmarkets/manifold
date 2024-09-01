@@ -25,6 +25,7 @@ const SEASON_END_TIMES = [
   new Date('2024-06-01T11:10:19-07:00'),
   new Date('2024-07-01T18:41:35-07:00'),
   new Date('2024-08-01T22:11:54-07:00'),
+  new Date('2024-09-01T12:54:14-07:00'),
 ]
 
 export type League = {
