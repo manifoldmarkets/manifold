@@ -307,6 +307,22 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // sell shares
+  'market/:contractId/sell-old': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as CandidateBet & { betId: string },
+    props: z
+      .object({
+        contractId: z.string(),
+        shares: z.number().positive().optional(), // leave it out to sell all shares
+        outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
+        answerId: z.string().optional(), // Required for multi binary markets
+        deterministic: z.boolean().optional(),
+      })
+      .strict(),
+  },
   'get-user-limit-orders-with-contracts': {
     method: 'GET',
     visibility: 'undocumented',

@@ -10,7 +10,7 @@ import { health } from './health'
 import { updateMe } from './update-me'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
-import { sellShares } from './sell-shares'
+import { sellShares, sellSharesOld } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createMarket } from './create-market'
 import { createComment } from './create-comment'
@@ -297,6 +297,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'follow-contract': followContract,
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
+  'market/:contractId/sell-old': sellSharesOld,
   bets: getBets,
   'get-notifications': getNotifications,
   'get-channel-memberships': getChannelMemberships,

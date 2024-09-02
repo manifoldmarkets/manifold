@@ -5,6 +5,7 @@ import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { removeUndefinedProps } from 'common/util/object'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import {
+  executeNewBetResult,
   fetchContractBetDataAndValidate,
   getMakerIdsFromBetResult,
   getUserBalances,
@@ -31,7 +32,7 @@ import {
 import { Bet, LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 
-export const sellShares: APIHandler<'market/:contractId/sell'> = async (
+export const sellSharesOld: APIHandler<'market/:contractId/sell-old'> = async (
   props,
   auth,
   req
@@ -61,10 +62,13 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
   const deps = [userId, contractId, ...simulatedMakerIds]
 
-  return await betsQueue.enqueueFn(() => sellSharesMain(props, auth, req), deps)
+  return await betsQueue.enqueueFn(
+    () => sellSharesMainOld(props, auth, req),
+    deps
+  )
 }
 
-const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
+const sellSharesMainOld: APIHandler<'market/:contractId/sell-old'> = async (
   props,
   auth
 ) => {
@@ -131,14 +135,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       shares,
       userBets
     )
-    const {
-      newBet,
-      newPool,
-      newP,
-      makers,
-      ordersToCancel,
-      otherResultsWithBet,
-    } = newBetResult
+    const { newBet, newPool, newP, makers, ordersToCancel, otherBetResults } =
+      newBetResult
 
     const actualMakerIds = getMakerIdsFromBetResult(newBetResult)
     log(
@@ -181,7 +179,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
 
     const totalCreatorFee =
       newBet.fees.creatorFee +
-      sumBy(otherResultsWithBet, (r) => r.bet.fees.creatorFee)
+      sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
     if (totalCreatorFee !== 0) {
       await incrementBalance(pgTrans, contract.creatorId, {
         [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
@@ -239,7 +237,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       cpmmState,
       makers,
       ordersToCancel,
-    } of otherResultsWithBet) {
+    } of otherBetResults) {
       const candidateBet = {
         userId: user.id,
         isApi,
@@ -276,7 +274,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       betId: betRow.bet_id,
       makers,
       contract,
-      otherResultsWithBet,
+      otherBetResults,
       allOrdersToCancel,
     }
   })
@@ -285,7 +283,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     newBet,
     betId,
     makers,
-    otherResultsWithBet,
+    otherBetResults,
     fullBets,
     allOrdersToCancel,
   } = result
@@ -296,7 +294,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       contract as MarketContract,
       user,
       allOrdersToCancel,
-      [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)]
+      [...makers, ...otherBetResults.flatMap((r) => r.makers)]
     )
   }
   return { result: { ...newBet, betId }, continue: continuation }
@@ -312,7 +310,8 @@ const fetchSellSharesDataAndValidate = async (
   const userBetsPromise = pgTrans.map(
     `select * from contract_bets where user_id = $1
         and contract_id = $2
-        ${answerId ? 'and answer_id = $3' : ''}`,
+        ${answerId ? 'and answer_id = $3' : ''}
+        order by created_time desc`,
     [userId, contractId, answerId],
     convertBet
   )
@@ -423,7 +422,7 @@ const calculateSellResult = (
       }
     }
     return {
-      otherResultsWithBet: [],
+      otherBetResults: [],
       ...getCpmmSellBetInfo(
         soldShares,
         chosenOutcome,
@@ -460,4 +459,140 @@ const calculateSellResult = (
       ),
     }
   }
+}
+
+export const sellShares: APIHandler<'market/:contractId/sell'> = async (
+  props,
+  auth,
+  req
+) => {
+  const userId = auth.uid
+  const isApi = auth.creds.kind === 'key'
+  const { contractId, shares, outcome, answerId } = props
+  const pg = createSupabaseDirectClient()
+  const { contract, answers, balanceByUserId, unfilledBets, userBets } =
+    await fetchSellSharesDataAndValidate(
+      pg,
+      contractId,
+      answerId,
+      userId,
+      isApi
+    )
+  const simulatedResult = calculateSellResult(
+    contract,
+    answers,
+    unfilledBets,
+    balanceByUserId,
+    answerId,
+    outcome,
+    shares,
+    userBets
+  )
+  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
+  const deps = [userId, contractId, ...simulatedMakerIds]
+
+  return await betsQueue.enqueueFn(() => sellSharesMain(props, auth, req), deps)
+}
+
+const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
+  props,
+  auth
+) => {
+  const { contractId, shares, outcome, answerId, deterministic } = props
+  const userId = auth.uid
+  const isApi = auth.creds.kind === 'key'
+  const pg = createSupabaseDirectClient()
+
+  const {
+    user,
+    contract,
+    answers,
+    balanceByUserId,
+    unfilledBets,
+    userBets,
+    unfilledBetUserIds,
+  } = await fetchSellSharesDataAndValidate(
+    pg,
+    contractId,
+    answerId,
+    userId,
+    isApi
+  )
+  const simulatedResult = calculateSellResult(
+    contract,
+    answers,
+    unfilledBets,
+    balanceByUserId,
+    answerId,
+    outcome,
+    shares,
+    userBets
+  )
+  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
+
+  const result = await runShortTrans(async (pgTrans) => {
+    log(
+      `Inside main transaction sellshares for user ${userId} on contract id ${contractId}.`
+    )
+
+    // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
+    const balanceByUserId = await getUserBalances(pgTrans, [
+      userId,
+      ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
+    ])
+    user.balance = balanceByUserId[userId]
+
+    for (const userId of unfilledBetUserIds) {
+      if (!(userId in balanceByUserId)) {
+        // Assume other makers have infinite balance since they are not involved in this bet.
+        balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
+      }
+    }
+
+    const newBetResult = calculateSellResult(
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId,
+      answerId,
+      outcome,
+      shares,
+      userBets
+    )
+    log(`Calculated sale information for ${user.username} - auth ${userId}.`)
+
+    const actualMakerIds = getMakerIdsFromBetResult(newBetResult)
+    log(
+      'simulated makerIds',
+      simulatedMakerIds,
+      'actualMakerIds',
+      actualMakerIds
+    )
+    if (!isEqual(simulatedMakerIds, actualMakerIds)) {
+      throw new APIError(
+        503,
+        'Please try betting again. (Matched limit orders changed from simulated values.)'
+      )
+    }
+
+    const betGroupId = crypto.randomBytes(12).toString('hex')
+
+    return await executeNewBetResult(
+      pgTrans,
+      newBetResult,
+      contract,
+      user,
+      isApi,
+      undefined,
+      betGroupId,
+      deterministic
+    )
+  })
+
+  const { newBet, betId, makers, fullBets, allOrdersToCancel } = result
+
+  const continuation = async () => {
+    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
+  }
+  return { result: { ...newBet, betId }, continue: continuation }
 }
