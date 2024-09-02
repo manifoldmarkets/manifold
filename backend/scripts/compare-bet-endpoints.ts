@@ -5,6 +5,7 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { getTestUsers } from 'shared/test/users'
 import { getRandomTestBet } from 'shared/test/bets'
 import { ValidatedAPIParams } from 'common/api/schema'
+import { FullMarket } from 'common/api/market-types'
 import { ContractMetric } from 'common/contract-metric'
 import { convertContract } from 'common/supabase/contracts'
 import { floatingEqual } from 'common/util/math'
@@ -28,10 +29,12 @@ const TEST_VARIANT: APIVariant = {
 // const API_URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 const API_URL = `http://localhost:8088/v0`
 
-const BETS_PER_USER_PER_MARKET = 4
-const NUM_USERS = 4
+const BETS_PER_USER_PER_MARKET = 10
+const NUM_USERS = 10
+
 // total bets will be: 4 markets x bets per user x num users
 const ENABLE_LIMIT_ORDERS = true
+const MULTI_MARKET_ANSWER_COUNT = 50
 
 if (require.main === module) {
   runScript(async ({ pg, firestore }) => {
@@ -162,6 +165,7 @@ if (require.main === module) {
                   shares: bet.amount / 10,
                   outcome: bet.outcome,
                   answerId: bet.answerId,
+                  deterministic: true,
                 }
                 const salePlaced = await betWithRetry(() =>
                   placeTestSell(
@@ -180,7 +184,7 @@ if (require.main === module) {
               .slice(-2)
             const bet1 = latestBets[0]
             const bet2 = latestBets[1]
-            if (bet1.probAfter !== bet2.probAfter) {
+            if (bet1?.probAfter !== bet2?.probAfter) {
               log(
                 `Probabilities don't match: ${bet1.probAfter} vs ${bet2.probAfter} on contracts ${bet1.contractId} and ${bet2.contractId}`
               )
@@ -190,7 +194,7 @@ if (require.main === module) {
               .slice(-2)
             const sale1 = latestSales[0]
             const sale2 = latestSales[1]
-            if (sale1.probAfter !== sale2.probAfter) {
+            if (sale1?.probAfter !== sale2?.probAfter) {
               log(
                 `Probabilities don't match: ${sale1.probAfter} vs ${sale2.probAfter} on contracts ${sale1.contractId} and ${sale2.contractId}`
               )
@@ -229,9 +233,19 @@ if (require.main === module) {
       multiChoiceMarkets[0],
       multiChoiceMarkets[1]
     )
+    const binaryProbsMatch = await compareProbs(
+      binaryMarkets[0],
+      binaryMarkets[1]
+    )
+    const multiChoiceProbsMatch = await compareProbs(
+      multiChoiceMarkets[0],
+      multiChoiceMarkets[1]
+    )
 
     log(`Binary market positions match: ${binaryPositionsMatch}`)
+    log(`Binary market probabilities match: ${binaryProbsMatch}`)
     log(`Multi-choice market positions match: ${multiChoicePositionsMatch}`)
+    log(`Multi-choice probabilities match: ${multiChoiceProbsMatch}`)
 
     if (binaryPositionsMatch && multiChoicePositionsMatch) {
       log('All positions match between market pairs')
@@ -249,7 +263,7 @@ async function createTestMarkets(pg: SupabaseDirectClient, apiKey: string) {
 
   const multiChoiceMarketProps = {
     outcomeType: 'MULTIPLE_CHOICE',
-    answers: Array(50)
+    answers: Array(MULTI_MARKET_ANSWER_COUNT)
       .fill(0)
       .map((_, i) => 'answer ' + i),
     shouldAnswersSumToOne: true,
@@ -361,6 +375,45 @@ async function getMarketPositions(contractId: string) {
   })
 
   return (await response.json()) as ContractMetric[]
+}
+
+async function getMarketInfo(contractId: string) {
+  const response = await fetch(`${API_URL}/market/${contractId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  return (await response.json()) as FullMarket
+}
+
+async function compareProbs(market1: Contract, market2: Contract) {
+  const info1 = await getMarketInfo(market1.id)
+  const info2 = await getMarketInfo(market2.id)
+
+  if (info1.answers && info2.answers) {
+    for (let i = 0; i < info1.answers.length; i++) {
+      const a1 = info1.answers[i]
+      const a2 = info2.answers[i]
+      if (a1.probability != a2.probability) {
+        log(
+          `Unequal probability for answer ${i} for in twin markets ${market1.id} and ${market2.id}`
+        )
+        log(`Market ${market1.id} answer ${a1.id}: ${a1.probability}`)
+        log(`Market ${market2.id} answer ${a2.id}: ${a2.probability}`)
+        return false
+      }
+    }
+  } else {
+    if (info1.probability != info2.probability) {
+      log(`Unequal probability in twin markets ${market1.id} and ${market2.id}`)
+      log(`Market ${market1.id}: ${info1.probability}`)
+      log(`Market ${market2.id}: ${info2.probability}`)
+      return false
+    }
+  }
+  return true
 }
 
 async function comparePositions(market1: Contract, market2: Contract) {
