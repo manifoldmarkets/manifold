@@ -289,7 +289,7 @@ export type CheckoutSessionResponse = {
 export const ID_ERROR_MSG =
   'Registration failed, identity error. Check your identifying information.'
 
-export const ENABLE_FAKE_CUSTOMER = true
+export const ENABLE_FAKE_CUSTOMER = false
 export const exampleCustomers = [
   {
     EmailAddress: 'mradamgibbs@gmail.com',
