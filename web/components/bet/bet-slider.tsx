@@ -49,8 +49,6 @@ export const BetSlider = (props: {
     className,
   } = props
 
-  console.log('smallAmounts', smallAmounts)
-
   const token = props.token ?? 'M$'
 
   const sliderAmounts =
