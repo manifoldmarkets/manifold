@@ -24,7 +24,7 @@ import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
-import { BANNED_TRADING_USER_IDS as BANNED_TRADING_USER_IDS } from 'common/envs/constants'
+import { BANNED_TRADING_USER_IDS } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import {
@@ -658,7 +658,6 @@ export const validateBet = async (
   if (amount !== undefined && balance < amount)
     throw new APIError(403, 'Insufficient balance.')
   if (
-
     (!user.sweepstakesVerified || !user.idVerified) &&
     contract.token === 'CASH'
   ) {
@@ -667,10 +666,7 @@ export const validateBet = async (
       'You must be kyc verified to trade on sweepstakes markets.'
     )
   }
-  if (
-    (BANNED_TRADING_USER_IDS.includes(uid) || user.userDeleted)
-    
-  ) {
+  if (BANNED_TRADING_USER_IDS.includes(uid) || user.userDeleted) {
     throw new APIError(403, 'You are banned or deleted. And not #blessed.')
   }
   // if (!isVerified(user)) {
