@@ -44,6 +44,7 @@ export const identityBlockedCodes = [
   'ID-HVEL-ACTV', // Identity High Velocity Activity
   'ID-DECEASED', // Identity Deceased
   'ID-EX', // Identity Exists already
+  'ID-HR', // Identity High Risk
 ]
 
 export const blockedCodes: string[] = [
@@ -58,16 +59,15 @@ export const blockedCodes: string[] = [
   'DFP-WL', // Device Fingerprint on watchlist
   'DFP-HVEL-MIP-WEBREG', // Device Fingerprint High Velocity Matching IP ID Registration
   'DFP-IPNM', // Device Fingerprint IP Not Matching
+  'DFP-HR', // Device Fingerprint High Risk
 ]
 
 export const allowedFlaggedCodes: string[] = [
   'ID-WL', // Identity on watchlist
-  'ID-HR', // Identity High Risk
   'ID-AGE-UNKN', // Identity Age Unknown, typically year is correct
   'ID-ADDR-UPA', // Identity Address Unknown
   'DFP-VPRP', // Device Fingerprint VPN, Proxy, or Relay Provider
   'DFP-VPRP-CORP', // Device Fingerprint Corporate proxy
-  'DFP-HR', // Device Fingerprint High Risk
 ]
 
 export const allowedCodes: string[] = [
