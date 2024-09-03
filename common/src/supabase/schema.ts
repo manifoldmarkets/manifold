@@ -3138,18 +3138,6 @@ export type Database = {
         }
         Returns: Database['public']['CompositeTypes']['other_lover_answers_type'][]
       }
-      get_market_ads: {
-        Args: {
-          uid: string
-        }
-        Returns: {
-          ad_id: string
-          market_id: string
-          ad_funds: number
-          ad_cost_per_view: number
-          market_data: Json
-        }[]
-      }
       get_non_empty_private_message_channel_ids:
         | {
             Args: {
@@ -3236,19 +3224,6 @@ export type Database = {
         Returns: {
           data: Json
           importance_score: number
-        }[]
-      }
-      get_top_market_ads: {
-        Args: {
-          uid: string
-          distance_threshold: number
-        }
-        Returns: {
-          ad_id: string
-          market_id: string
-          ad_funds: number
-          ad_cost_per_view: number
-          market_data: Json
         }[]
       }
       get_user_bet_contracts: {

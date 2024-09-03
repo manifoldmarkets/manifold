@@ -30,7 +30,6 @@ import { registerdiscordid } from './register-discord-id'
 import { getuserisgroupmember } from './get-user-is-group-member'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
-import { updateUserEmbedding } from './update-user-embedding'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
 import { boostmarket } from './boost-market'
@@ -382,7 +381,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-lovers': getLovers,
   'get-lover-answers': getLoverAnswers,
   'set-news': setnews,
-  'update-user-embedding': updateUserEmbedding,
   'search-groups': supabasesearchgroups,
   'search-my-groups': supabasesearchmygroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,

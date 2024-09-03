@@ -1186,13 +1186,6 @@ export const API = (_apiTypeCheck = {
       answers: Row<'love_compatibility_answers'>[]
     },
   },
-  'update-user-embedding': {
-    method: 'POST',
-    visibility: 'undocumented',
-    authed: true,
-    props: z.object({}),
-    returns: {} as { success: true },
-  },
   'search-groups': {
     method: 'GET',
     visibility: 'undocumented',

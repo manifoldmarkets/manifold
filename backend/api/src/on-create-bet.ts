@@ -31,7 +31,6 @@ import {
 } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
@@ -157,7 +156,6 @@ export const onCreateBets = async (
             followContractInternal(pg, contract.id, true, bettor.id),
 
           sendUniqueBettorNotification(contract, bettor, bet, bets),
-          updateUserInterestEmbedding(pg, bettor.id),
 
           addToLeagueIfNotInOne(pg, bettor.id),
 

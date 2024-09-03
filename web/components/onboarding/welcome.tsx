@@ -371,11 +371,6 @@ function TopicsPage(props: {
   const closeDialog = async () => {
     setIsLoading(true)
 
-    if (user) {
-      // Don't await as this takes a long time.
-      api('update-user-embedding', {})
-    }
-
     // if user is following us politics
     if (
       intersection(selectedTopics, [
