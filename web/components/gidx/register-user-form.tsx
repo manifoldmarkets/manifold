@@ -1,7 +1,7 @@
 import { Col } from 'web/components/layout/col'
 import { Input } from 'web/components/widgets/input'
 import { Button, buttonClass } from 'web/components/buttons/button'
-import { identityBlocked, locationBlocked, User } from 'common/user'
+import { ageBlocked, identityBlocked, locationBlocked, User } from 'common/user'
 import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -12,13 +12,7 @@ import { RegistrationVerifyPhone } from 'web/components/registration-verify-phon
 import { UploadDocuments } from 'web/components/gidx/upload-document'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
-import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
-import clsx from 'clsx'
-import {
-  SPICE_TO_CHARITY_DOLLARS,
-  SPICE_TO_MANA_CONVERSION_RATE,
-} from 'common/envs/constants'
+
 import { useWebsocketUser } from 'web/hooks/use-user'
 import {
   ENABLE_FAKE_CUSTOMER,
@@ -131,35 +125,12 @@ export const RegisterUserForm = (props: { user: User }) => {
         <span className={'text-primary-700 text-2xl'}>
           Identity Verification
         </span>
-        <span>
-          <span>
-            To cash out prize points for cash, you must verify your identity.
-          </span>
-          <br />
-          <br />
-          You have{' '}
-          <CoinNumber
-            coinType="spice"
-            amount={user.spiceBalance}
-            style={{
-              color: SPICE_COLOR,
-            }}
-            className={clsx('font-bold')}
-            isInline
-          />
-          , which is equal to{' '}
-          {user.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE} Mana or{' '}
-          {user.spiceBalance * SPICE_TO_CHARITY_DOLLARS} dollars to charity.
-        </span>
+        <span>To use sweepstakes coins, you must verify your identity.</span>
         <Row className={registrationBottomRowClass}>
           <Button color={'gray-white'} onClick={router.back}>
             Back
           </Button>
-          <Button
-            color={'gold'}
-            disabled={user.spiceBalance === 0}
-            onClick={() => setPage('phone')}
-          >
+          <Button color={'indigo'} onClick={() => setPage('phone')}>
             Start verification
           </Button>
         </Row>
@@ -396,22 +367,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (user.sweepstakesVerified === false || user.kycDocumentStatus === 'fail') {
-    return (
-      <Col className={registrationColClass}>
-        <span className={'text-primary-700 text-2xl'}>Document errors</span>
-        <span>
-          There was an error with your registration. Please upload identity
-          documents.
-        </span>
-        <Row className={registrationBottomRowClass}>
-          <Button onClick={() => setPage('documents')}>Upload documents</Button>
-        </Row>
-      </Col>
-    )
-  }
-
-  if (identityBlocked(user)) {
+  if (identityBlocked(user) || ageBlocked(user)) {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>Blocked identity</span>
@@ -429,6 +385,21 @@ export const RegisterUserForm = (props: { user: User }) => {
           We verified your identity! But, you're currently in a blocked
           location. Please try again later ({'>'}3 hrs) in an allowed location.
         </span>
+      </Col>
+    )
+  }
+
+  if (user.sweepstakesVerified === false || user.kycDocumentStatus === 'fail') {
+    return (
+      <Col className={registrationColClass}>
+        <span className={'text-primary-700 text-2xl'}>Document errors</span>
+        <span>
+          There was an error with your registration. Please upload identity
+          documents.
+        </span>
+        <Row className={registrationBottomRowClass}>
+          <Button onClick={() => setPage('documents')}>Upload documents</Button>
+        </Row>
       </Col>
     )
   }
