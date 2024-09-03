@@ -1,8 +1,5 @@
 import { sumBy } from 'lodash'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import {
   CPMMMultiContract,
   Contract,
@@ -64,9 +61,9 @@ export const resolveMarketMain: APIHandler<
   if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
 
   if (
+    isProd() &&
     contract.token === 'CASH' &&
-    auth.uid !==
-      (isProd() ? HOUSE_LIQUIDITY_PROVIDER_ID : DEV_HOUSE_LIQUIDITY_PROVIDER_ID)
+    auth.uid !== HOUSE_LIQUIDITY_PROVIDER_ID
   ) {
     throw new APIError(
       403,

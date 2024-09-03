@@ -1,4 +1,10 @@
-import { getVerificationStatus, User } from 'common/user'
+import {
+  ageBlocked,
+  getVerificationStatus,
+  identityBlocked,
+  locationBlocked,
+  User,
+} from 'common/user'
 import { KYC_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -11,23 +17,30 @@ import { useUser } from 'web/hooks/use-user'
 import { GIDXDocument, idNameToCategoryType } from 'common/gidx/gidx'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { toast } from 'react-hot-toast'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getDocumentsStatus } from 'common/gidx/document'
+import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 
 export const VerifyMe = (props: { user: User }) => {
   const user = useUser() ?? props.user
 
   const [show, setShow] = useState(
     TWOMBA_ENABLED &&
-      (user.kycStatus === undefined ||
-        user.kycStatus === 'fail' ||
+      (!user.sweepstakesVerified ||
+        !user.idVerified ||
         user.kycDocumentStatus === 'fail' ||
-        user.kycDocumentStatus === 'pending')
+        user.kycDocumentStatus === 'pending' ||
+        locationBlocked(user))
   )
 
   const [documents, setDocuments] = useState<GIDXDocument[] | null>(null)
   const [loading, setLoading] = useState(false)
+  const {
+    fetchMonitorStatus,
+    loading: loadingMonitorStatus,
+    monitorStatusMessage,
+    monitorStatus,
+  } = useMonitorStatus(false, user)
   const getStatus = async () => {
     setLoading(true)
     const { documents, message } = await api(
@@ -35,13 +48,27 @@ export const VerifyMe = (props: { user: User }) => {
       {}
     ).finally(() => setLoading(false))
     if (documents) setDocuments(documents)
-    // TODO: if they need to re-register, show them a link to do so
-    if (message) toast.error(message)
+    if (message) console.error(message)
   }
   if (!show || !user) return null
   const showUploadDocsButton =
     getDocumentsStatus(documents ?? []).isRejected && documents
 
+  if (identityBlocked(user)) {
+    return (
+      <Col
+        className={
+          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
+        }
+      >
+        <Row className={'w-full items-center justify-between'}>
+          <span>
+            Blocked from sweepstakes participation due to blocked identity.{' '}
+          </span>
+        </Row>
+      </Col>
+    )
+  }
   if (
     user.kycDocumentStatus === 'pending' ||
     user.kycDocumentStatus === 'fail'
@@ -105,7 +132,7 @@ export const VerifyMe = (props: { user: User }) => {
     )
   }
 
-  if (user.kycStatus === 'verified') {
+  if (user.sweepstakesVerified) {
     return (
       <Col
         className={
@@ -122,6 +149,45 @@ export const VerifyMe = (props: { user: User }) => {
             Close
           </Button>
         </Col>
+      </Col>
+    )
+  }
+
+  if (ageBlocked(user)) {
+    return (
+      <Col
+        className={
+          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
+        }
+      >
+        <Row className={'w-full items-center justify-between'}>
+          <span>Blocked from sweepstakes participation due to underage. </span>
+        </Row>
+      </Col>
+    )
+  }
+
+  if (locationBlocked(user)) {
+    return (
+      <Col
+        className={
+          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
+        }
+      >
+        <Row className={'w-full items-center justify-between'}>
+          <span>Blocked from sweepstakes participation due to location. </span>
+          <Button
+            color={'indigo-outline'}
+            loading={loadingMonitorStatus}
+            disabled={loadingMonitorStatus}
+            onClick={fetchMonitorStatus}
+          >
+            Refresh status
+          </Button>
+        </Row>
+        {monitorStatus === 'error' && (
+          <Row className={'text-error'}>{monitorStatusMessage}</Row>
+        )}
       </Col>
     )
   }

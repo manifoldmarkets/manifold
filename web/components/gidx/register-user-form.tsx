@@ -1,7 +1,7 @@
 import { Col } from 'web/components/layout/col'
 import { Input } from 'web/components/widgets/input'
 import { Button, buttonClass } from 'web/components/buttons/button'
-import { User } from 'common/user'
+import { identityBlocked, locationBlocked, User } from 'common/user'
 import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -22,16 +22,12 @@ import {
 import { useWebsocketUser } from 'web/hooks/use-user'
 import {
   ENABLE_FAKE_CUSTOMER,
-  exampleCustomers,
+  FAKE_CUSTOMER_BODY,
   GPSData,
   ID_ERROR_MSG,
 } from 'common/gidx/gidx'
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { YEAR_MS } from 'common/util/time'
-
-export const FAKE_CUSTOMER_BODY = {
-  ...exampleCustomers[1],
-}
 
 export const registrationColClass = 'gap-3 p-4'
 export const registrationBottomRowClass = 'mb-4 mt-4 w-full gap-16'
@@ -41,10 +37,11 @@ export const RegisterUserForm = (props: { user: User }) => {
   const router = useRouter()
   const { redirect } = router.query
   const [page, setPage] = useState(
-    (redirect === 'checkout' || redirect === 'cashout') && !user.verifiedPhone
-      ? 'phone'
-      : user.kycStatus === 'verified'
+    user.idVerified || user.kycDocumentStatus === 'pending'
       ? 'final'
+      : (redirect === 'checkout' || redirect === 'cashout') &&
+        !user.verifiedPhone
+      ? 'phone'
       : user.verifiedPhone
       ? 'location'
       : 'intro'
@@ -114,16 +111,17 @@ export const RegisterUserForm = (props: { user: User }) => {
     })
     if (!res) return
 
-    const { status, message } = res
+    const { status, message, idVerified } = res
     setLoading(false)
-
-    if (message && status === 'error') {
+    if (message && status === 'error' && idVerified) {
+      setError(message)
+    } else if (message && status === 'error') {
       if (identityErrors >= 2 && page !== 'documents') setPage('documents')
       setIdentityErrors(identityErrors + 1)
       setError(message)
       return
     }
-    // No errors
+    // Identity verification succeeded
     setPage('final')
   }
 
@@ -358,10 +356,15 @@ export const RegisterUserForm = (props: { user: User }) => {
 
   if (page === 'documents') {
     return (
-      <UploadDocuments
-        back={() => router.back()}
-        next={() => setPage('final')}
-      />
+      <Col className={registrationColClass}>
+        <span className={'text-primary-700 text-2xl'}>
+          Identity Document Verification
+        </span>
+        <UploadDocuments
+          back={() => router.back()}
+          next={() => setPage('final')}
+        />
+      </Col>
     )
   }
 
@@ -393,7 +396,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (user.kycStatus === 'fail' && user.kycDocumentStatus === 'fail') {
+  if (user.sweepstakesVerified === false || user.kycDocumentStatus === 'fail') {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>Document errors</span>
@@ -404,6 +407,28 @@ export const RegisterUserForm = (props: { user: User }) => {
         <Row className={registrationBottomRowClass}>
           <Button onClick={() => setPage('documents')}>Upload documents</Button>
         </Row>
+      </Col>
+    )
+  }
+
+  if (identityBlocked(user)) {
+    return (
+      <Col className={registrationColClass}>
+        <span className={'text-primary-700 text-2xl'}>Blocked identity</span>
+        <span>
+          We verified your identity! But, you're blocked. Unfortunately, this
+          means you can't use our sweepstakes markets.
+        </span>
+      </Col>
+    )
+  } else if (locationBlocked(user)) {
+    return (
+      <Col className={registrationColClass}>
+        <span className={'text-primary-700 text-2xl'}>Blocked location</span>
+        <span>
+          We verified your identity! But, you're currently in a blocked
+          location. Please try again later ({'>'}3 hrs) in an allowed location.
+        </span>
       </Col>
     )
   }

@@ -57,7 +57,7 @@ import { UserPayments } from 'web/pages/payments'
 import { UserHandles } from 'web/components/user/user-handles'
 import { BackButton } from 'web/components/contract/back-button'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { isUserLikelySpammer } from 'common/user'
+import { blockFromSweepstakes, isUserLikelySpammer } from 'common/user'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
 import { isBetChange } from 'common/balance-change'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -371,17 +371,19 @@ function UserProfile(props: {
               className="whitespace-nowrap"
               spice={user.spiceBalance}
             />
-            <Button
-              disabled={redeemableCash <= 0}
-              onClick={() => router.push('/cashout')}
-            >
-              Cashout
-              <CoinNumber
-                amount={redeemableCash}
-                className={'ml-1'}
-                coinType={'sweepies'}
-              />
-            </Button>
+            {!blockFromSweepstakes(user) && (
+              <Button
+                disabled={redeemableCash <= 0}
+                onClick={() => router.push('/cashout')}
+              >
+                Cashout
+                <CoinNumber
+                  amount={redeemableCash}
+                  className={'ml-1'}
+                  coinType={'sweepies'}
+                />
+              </Button>
+            )}
           </Row>
         )}
 

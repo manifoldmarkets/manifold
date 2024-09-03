@@ -3,7 +3,6 @@ import { log } from 'shared/utils'
 import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
-  allowedFlaggedCodes,
   blockedCodes,
   hasIdentityError,
   locationBlockedCodes,
@@ -69,22 +68,27 @@ export const register: APIHandler<'register-gidx'> = async (
   const data = (await res.json()) as GIDXRegistrationResponse
   log('Registration response:', data)
   const { ReasonCodes, FraudConfidenceScore, IdentityConfidenceScore } = data
-  const { status, message } = await verifyReasonCodes(
+  const { status, message, idVerified } = await verifyReasonCodes(
     auth.uid,
     ReasonCodes,
     FraudConfidenceScore,
     IdentityConfidenceScore
   )
+  const pg = createSupabaseDirectClient()
   if (status === 'success') {
-    const pg = createSupabaseDirectClient()
     await updateUser(pg, auth.uid, {
-      kycStatus: 'verified',
+      sweepstakesVerified: true,
+      kycDocumentStatus: 'await-documents',
+    })
+  } else if (idVerified) {
+    await updateUser(pg, auth.uid, {
       kycDocumentStatus: 'await-documents',
     })
   }
   return {
     status,
     message,
+    idVerified: idVerified,
   }
 }
 
@@ -98,15 +102,27 @@ export const verifyReasonCodes = async (
 
   const hasAny = (codes: string[]) =>
     intersection(codes, ReasonCodes).length > 0
-
+  const idVerified = ReasonCodes.includes('ID-VERIFIED')
+  if (ReasonCodes.length > 0) {
+    await updateUser(pg, userId, { kycFlags: ReasonCodes })
+  }
+  if (idVerified) {
+    await updateUser(pg, userId, { idVerified: true })
+  } else {
+    await updateUser(pg, userId, {
+      idVerified: false,
+      sweepstakesVerified: false,
+    })
+  }
   // Timeouts or input errors
   if (hasAny(otherErrorCodes)) {
     log('Registration failed, resulted in error codes:', ReasonCodes)
-    await updateUser(pg, userId, { kycStatus: 'fail' })
+    await updateUser(pg, userId, { sweepstakesVerified: false })
     if (hasAny(timeoutCodes)) {
       return {
         status: 'error',
         message: 'Registration timed out, please try again.',
+        idVerified,
       }
     }
     if (ReasonCodes.includes('LL-FAIL')) {
@@ -114,6 +130,7 @@ export const verifyReasonCodes = async (
         status: 'error',
         message:
           'Registration failed, location error. Check your location information.',
+        idVerified,
       }
     }
   }
@@ -123,8 +140,9 @@ export const verifyReasonCodes = async (
       ? 'Fully KYC (Internally) Customer'
       : 'user'
     return {
-      status: 'warning',
+      status: 'error',
       message: `High velocity of payments detected for ${userType}.`,
+      idVerified,
     }
   }
 
@@ -132,43 +150,45 @@ export const verifyReasonCodes = async (
   if (hasIdentityError(ReasonCodes)) {
     log('Registration failed, resulted in identity errors:', ReasonCodes)
 
-    await updateUser(pg, userId, { kycStatus: 'fail' })
+    await updateUser(pg, userId, { sweepstakesVerified: false })
     return {
       status: 'error',
       message: ID_ERROR_MSG,
+      idVerified,
     }
-  }
-
-  // User is flagged for unknown address, vpn, unclear DOB, distance between attempts
-  const allowedFlags = intersection(allowedFlaggedCodes, ReasonCodes)
-  if (allowedFlags.length > 0) {
-    await updateUser(pg, userId, { kycFlags: allowedFlags })
   }
 
   // User is blocked for any number of reasons
   const blockedReasonCodes = intersection(blockedCodes, ReasonCodes)
   if (blockedReasonCodes.length > 0) {
     log('Registration failed, resulted in blocked codes:', blockedReasonCodes)
-    await updateUser(pg, userId, { kycStatus: 'block' })
+    await updateUser(pg, userId, { sweepstakesVerified: false })
     if (hasAny(locationBlockedCodes)) {
       return {
         status: 'error',
         message: 'Registration failed, location blocked or high risk.',
+        idVerified,
       }
     }
     if (hasAny(underageErrorCodes)) {
       return {
         status: 'error',
         message: 'Registration failed, you must be 18+, (19+ in some states).',
+        idVerified,
       }
     }
     if (ReasonCodes.includes('ID-EX')) {
       return {
         status: 'error',
         message: 'Registration failed, ID exists already. Contact admins.',
+        idVerified,
       }
     }
-    return { status: 'error', message: 'Registration failed, you are blocked.' }
+    return {
+      status: 'error',
+      message: 'Registration failed, you are blocked.',
+      idVerified,
+    }
   }
 
   // User is in disallowed location, but they may move
@@ -178,13 +198,14 @@ export const verifyReasonCodes = async (
       ReasonCodes
     )
     await updateUser(pg, userId, {
-      kycStatus: 'temporary-block',
+      sweepstakesVerified: false,
       kycLastAttempt: Date.now(),
     })
     return {
       status: 'error',
       message:
         'Registration failed, location blocked. Try again in 3 hours in an allowed location.',
+      idVerified,
     }
   }
 
@@ -199,26 +220,30 @@ export const verifyReasonCodes = async (
       FraudConfidenceScore,
       IdentityConfidenceScore
     )
-    await updateUser(pg, userId, { kycStatus: 'fail' })
+    await updateUser(pg, userId, { sweepstakesVerified: false })
     return {
       status: 'error',
       message:
         'Confidence in identity or fraud too low. Double check your information.',
+      idVerified,
     }
   }
 
   // User is not blocked and ID is verified
   if (ReasonCodes.includes('ID-VERIFIED')) {
     log('Registration passed with allowed codes:', ReasonCodes)
-    return { status: 'success' }
+    return { status: 'success', idVerified }
   }
 
-  log.error(
-    `Registration failed with unknown reason codes: ${ReasonCodes.join(', ')}`
+  log(
+    `Registration failed for ${userId} with no matched reason codes: ${ReasonCodes.join(
+      ', '
+    )}`
   )
   return {
     status: 'error',
     message:
       'Registration failed, ask admin about codes: ' + ReasonCodes.join(', '),
+    idVerified,
   }
 }

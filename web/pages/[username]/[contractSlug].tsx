@@ -87,7 +87,7 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { YourOrders } from 'web/components/bet/order-book'
 import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
-import { TwombaContractPageContent } from '../../components/contract/twomba-contract-page'
+import { TwombaContractPageContent } from 'web/components/contract/twomba-contract-page'
 import { removeUndefinedProps } from 'common/util/object'
 import { pick } from 'lodash'
 
@@ -219,7 +219,6 @@ export function ContractPageContent(props: ContractParams) {
   if (!contract.viewCount) {
     contract.viewCount = props.contract.viewCount
   }
-
   const cachedContract = useMemo(
     () => contract,
     [

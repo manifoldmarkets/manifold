@@ -11,7 +11,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { User } from 'common/user'
 
@@ -44,20 +44,17 @@ export const getVerificationStatusInternal = async (
     }
   }
   if (ResponseCode === 501 && ResponseMessage.includes('not found')) {
+    log('User not found in GIDX', { userId, ResponseMessage })
     // TODO: broadcast this user update when we have that functionality
-    await pg.none(`update users set data = data - 'kycStatus' where id = $1`, [
-      userId,
-    ])
+    await pg.none(
+      `update users set data = data - 'kycFlags' - 'kycDocumentStatus' - 'sweepstakesVerified' - 'idVerified'
+             where id = $1`,
+      [userId]
+    )
     return {
       status: 'error',
       message: 'User not found in GIDX',
     }
-  }
-  if (
-    user.kycStatus === 'fail' &&
-    (user.kycDocumentStatus === 'pending' || user.kycDocumentStatus === 'fail')
-  ) {
-    return await assessDocumentStatus(user, pg)
   }
 
   const { status, message } = await verifyReasonCodes(
@@ -66,35 +63,53 @@ export const getVerificationStatusInternal = async (
     FraudConfidenceScore,
     IdentityConfidenceScore
   )
-  if (status === 'error') {
-    return {
-      status: 'error',
-      message,
-    }
+
+  if (status === 'success' && !user.sweepstakesVerified) {
+    await updateUser(pg, user.id, {
+      sweepstakesVerified: true,
+    })
   }
-  return await assessDocumentStatus(user, pg)
+
+  const { documents, status: documentStatus } = await assessDocumentStatus(
+    user,
+    pg
+  )
+
+  return {
+    message,
+    status,
+    documentStatus,
+    documents,
+  }
 }
 
 const assessDocumentStatus = async (user: User, pg: SupabaseDirectClient) => {
   const { isPending, isVerified, isRejected, documents } =
     await getIdentityVerificationDocuments(user.id)
 
-  if (
-    isVerified &&
-    (user.kycDocumentStatus !== 'verified' || user.kycStatus !== 'verified')
-  ) {
+  if (isVerified && user.kycDocumentStatus !== 'verified') {
     // They passed the reason codes and have the required documents
     await updateUser(pg, user.id, {
       kycDocumentStatus: 'verified',
-      kycStatus: 'verified',
     })
   } else if (isPending && user.kycDocumentStatus !== 'pending') {
     await updateUser(pg, user.id, {
       kycDocumentStatus: 'pending',
     })
-  } else if (isRejected && user.kycDocumentStatus !== 'fail') {
+  } else if (
+    isRejected &&
+    documents.length &&
+    user.kycDocumentStatus !== 'fail'
+  ) {
     await updateUser(pg, user.id, {
       kycDocumentStatus: 'fail',
+    })
+  } else if (
+    !documents.length &&
+    user.kycDocumentStatus !== 'await-documents'
+  ) {
+    await updateUser(pg, user.id, {
+      kycDocumentStatus: 'await-documents',
     })
   }
 
