@@ -333,7 +333,7 @@ export function BuyAmountInput(props: {
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
             disabled={disabled}
-            smallManaAmounts={!hasLotsOfMoney || marketTier === 'play'}
+            smallAmounts={!hasLotsOfMoney || marketTier === 'play'}
             token={token}
           />
         )}

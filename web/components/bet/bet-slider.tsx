@@ -7,15 +7,27 @@ export const LARGE_SLIDER_VALUES = [
   1, 25, 50, 75, 100, 150, 250, 350, 500, 750, 1000, 1250, 1500, 2000, 2500,
   3000, 3500, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 15000, 20000, 25000,
 ]
+
 export const SMALL_SLIDER_VALUES = [
   1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 75, 100, 200, 300, 400, 500, 750,
   1000,
 ]
 
+export const MAX_CASH_SMALL_SLIDER_VALUE = 10000
+export const MAX_CASH_LARGE_SLIDER_VALUE = 50000
+
+export const CASH_SMALL_SLIDER_VALUES = SMALL_SLIDER_VALUES.map((a) => {
+  return a * 100
+}).filter((a) => a <= MAX_CASH_SMALL_SLIDER_VALUE)
+
+export const CASH_LARGE_SLIDER_VALUES = LARGE_SLIDER_VALUES.map((a) => {
+  return a * 100
+}).filter((a) => a <= MAX_CASH_LARGE_SLIDER_VALUE)
+
 export const BetSlider = (props: {
   amount: number | undefined
   onAmountChange: (newAmount: number | undefined) => void
-  smallManaAmounts?: boolean
+  smallAmounts?: boolean
   binaryOutcome?: BinaryOutcomes
   disabled?: boolean
   className?: string
@@ -24,7 +36,7 @@ export const BetSlider = (props: {
   const {
     amount,
     onAmountChange,
-    smallManaAmounts,
+    smallAmounts,
     binaryOutcome,
     disabled,
     className,
@@ -32,9 +44,14 @@ export const BetSlider = (props: {
 
   const token = props.token ?? 'M$'
 
-  const sliderAmounts = smallManaAmounts
-    ? SMALL_SLIDER_VALUES
-    : LARGE_SLIDER_VALUES
+  const sliderAmounts =
+    token == 'CASH'
+      ? smallAmounts
+        ? CASH_SMALL_SLIDER_VALUES
+        : CASH_LARGE_SLIDER_VALUES
+      : smallAmounts
+      ? SMALL_SLIDER_VALUES
+      : LARGE_SLIDER_VALUES
 
   const maxSliderIndex = sliderAmounts.length - 1
   const amountToSliderIndex = (amount: number) => {
@@ -53,7 +70,7 @@ export const BetSlider = (props: {
       min={0}
       max={maxSliderIndex}
       marks={buildArray(
-        smallManaAmounts && {
+        smallAmounts && {
           value: 0,
           label: formatWithToken({
             amount: sliderAmounts[0],
@@ -67,7 +84,7 @@ export const BetSlider = (props: {
             token: token,
           }),
         },
-        !smallManaAmounts && {
+        !smallAmounts && {
           value: thousandIndex,
           label: formatWithToken({
             amount: sliderAmounts[thousandIndex],
@@ -75,7 +92,7 @@ export const BetSlider = (props: {
             short: true,
           }),
         },
-        !smallManaAmounts && {
+        !smallAmounts && {
           value: tenThousandIndex,
           label: formatWithToken({
             amount: sliderAmounts[tenThousandIndex],
@@ -83,7 +100,7 @@ export const BetSlider = (props: {
             short: true,
           }),
         },
-        smallManaAmounts && {
+        smallAmounts && {
           value: maxSliderIndex,
           label: formatWithToken({
             amount: sliderAmounts[maxSliderIndex],
