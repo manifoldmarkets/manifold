@@ -60,7 +60,6 @@ import { debounce } from 'api/helpers/debounce'
 import { MONTH_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
 import { Fees } from 'common/fees'
-import { APIError } from 'common/api/utils'
 import { updateUser } from 'shared/supabase/users'
 import { broadcastNewBets } from 'shared/websockets/helpers'
 import { getAnswersForContract } from 'shared/supabase/answers'
@@ -396,7 +395,11 @@ const updateBettingStreak = async (
 
     // If they've already bet after the reset time
     if (lastBetTime > betStreakResetTime) {
-      return { status: 'error', message: 'streak already updated' }
+      return {
+        bonusAmount: 0,
+        newBettingStreak: bettor.currentBettingStreak,
+        txn: null,
+      }
     }
 
     const newBettingStreak = (bettor?.currentBettingStreak ?? 0) + 1
@@ -407,7 +410,6 @@ const updateBettingStreak = async (
 
     if (!humanish(bettor)) {
       return {
-        status: 'success',
         bonusAmount: 0,
         newBettingStreak,
         txn: { id: bet.id },
@@ -438,31 +440,10 @@ const updateBettingStreak = async (
       data: bonusTxnDetails,
     }
 
-    const { message, txn, status } = await runTxnFromBank(tx, bonusTxn)
-      .then((txn) => {
-        return { status: 'success', txn, message: undefined }
-      })
-      .catch((e) => {
-        if (e instanceof APIError) {
-          return { status: 'error', message: e.message, txn: undefined }
-        } else {
-          return {
-            status: 'error',
-            message: e?.message ?? 'Unknown Error',
-            txn: undefined,
-          }
-        }
-      })
+    const txn = await runTxnFromBank(tx, bonusTxn)
 
-    return { message, txn, status, bonusAmount, newBettingStreak }
+    return { txn, bonusAmount, newBettingStreak }
   })
-
-  if (result.status != 'success') {
-    log("betting streak bonus txn couldn't be made")
-    log('status:', result.status)
-    log('message:', result.message)
-    return
-  }
 
   if (result.txn) {
     await createBettingStreakBonusNotification(
