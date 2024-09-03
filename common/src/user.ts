@@ -1,5 +1,11 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG, TWOMBA_ENABLED } from './envs/constants'
+import { intersection } from 'lodash'
+import {
+  identityBlockedCodes,
+  locationTemporarilyBlockedCodes,
+  underageErrorCodes,
+} from 'common/reason-codes'
 
 export type User = {
   id: string
@@ -70,7 +76,8 @@ export type User = {
   kycFlags?: string[]
   kycLastAttempt?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
-  kycStatus?: 'fail' | 'block' | 'temporary-block' | 'verified'
+  sweepstakesVerified?: boolean
+  idVerified?: boolean
 }
 
 export type PrivateUser = {
@@ -139,13 +146,34 @@ export const isUserLikelySpammer = (
   )
 }
 
-export const isVerified = (user: User) => {
-  return user.verifiedPhone !== false || !!user.purchasedMana
-}
+// TODO: this can be decommissioned
+export const isVerified = (user: User) =>
+  user.verifiedPhone !== false || !!user.purchasedMana
 
-export const verifiedPhone = (user: User) => {
-  return user.verifiedPhone !== false
-}
+export const verifiedPhone = (user: User) => user.verifiedPhone !== false
+
+const verifiedAndBlocked = (user: User | undefined | null) =>
+  user && user.idVerified && !user.sweepstakesVerified
+
+export const identityPending = (user: User | undefined | null) =>
+  user && !user.idVerified && user.kycDocumentStatus === 'pending'
+
+export const blockFromSweepstakes = (user: User | undefined | null) =>
+  user && (!user.idVerified || verifiedAndBlocked(user))
+
+export const locationBlocked = (user: User | undefined | null) =>
+  user &&
+  verifiedAndBlocked(user) &&
+  intersection(user.kycFlags, locationTemporarilyBlockedCodes).length > 0
+
+export const ageBlocked = (user: User | undefined | null) =>
+  user &&
+  verifiedAndBlocked(user) &&
+  intersection(user.kycFlags, underageErrorCodes).length > 0
+
+export const identityBlocked = (user: User | undefined | null) =>
+  user && intersection(user.kycFlags, identityBlockedCodes).length > 0
+
 export const getVerificationStatus = (
   user: User
 ): {
@@ -156,13 +184,13 @@ export const getVerificationStatus = (
     return { status: 'error', message: 'GIDX registration is disabled' }
   } else if (!verifiedPhone(user)) {
     return { status: 'error', message: 'User must verify phone' }
-  } else if (user.kycStatus === 'block') {
+  } else if (!user.idVerified) {
+    return { status: 'error', message: 'User identification failed' }
+  } else if (!user.sweepstakesVerified && locationBlocked(user)) {
+    return { status: 'error', message: 'User location is blocked' }
+  } else if (!user.sweepstakesVerified) {
     return { status: 'error', message: 'User is blocked' }
-  } else if (user.kycStatus === 'temporary-block') {
-    return { status: 'error', message: 'User is temporary blocked' }
-  } else if (user.kycStatus === 'fail') {
-    return { status: 'error', message: 'User failed KYC' }
-  } else if (user.kycStatus === 'verified') {
+  } else if (user.sweepstakesVerified) {
     return { status: 'success', message: 'User is verified' }
   } else {
     return { status: 'error', message: 'User must register' }

@@ -53,7 +53,7 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { Button } from '../buttons/button'
+import { Button, buttonClass } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { getAnswerColor } from '../charts/contract/choice'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
@@ -62,6 +62,8 @@ import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
+import Link from 'next/link'
+import { blockFromSweepstakes, identityPending } from 'common/user'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -96,7 +98,7 @@ export function BuyPanel(props: {
     alwaysShowOutcomeSwitcher,
     children,
   } = props
-
+  const user = useUser()
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
@@ -123,7 +125,29 @@ export function BuyPanel(props: {
       setIsPanelBodyVisible(true)
     }
   }
-
+  // TODO: combine w/ contract-overview panels
+  if (contract.token === 'CASH' && identityPending(user)) {
+    return (
+      <Row className={'bg-canvas-50 rounded p-4'}>
+        You can't trade on sweepstakes markets while your status is pending.
+      </Row>
+    )
+  } else if (contract.token === 'CASH' && user && !user.idVerified) {
+    return (
+      <Row className={'bg-canvas-50 gap-1 rounded p-4'}>
+        You can't trade on sweepstakes markets until verified.{' '}
+        <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
+          Register now
+        </Link>
+      </Row>
+    )
+  } else if (contract.token === 'CASH' && blockFromSweepstakes(user)) {
+    return (
+      <Row className={'bg-canvas-50 rounded p-4'}>
+        You can't trade on sweepstakes markets if blocked.
+      </Row>
+    )
+  }
   return (
     <Col>
       {!isPanelBodyVisible && (

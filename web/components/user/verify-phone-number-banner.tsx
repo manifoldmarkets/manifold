@@ -8,6 +8,7 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import { useUser } from 'web/hooks/use-user'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const VerifyPhoneNumberBanner = (props: {
   user: User | null | undefined
@@ -23,7 +24,9 @@ export const VerifyPhoneNumberBanner = (props: {
       }
     >
       <span>
-        Prove that you're not a robot to collect{' '}
+        {TWOMBA_ENABLED
+          ? 'Verify your phone number to collect'
+          : `Prove that you're not a robot to collect`}{' '}
         <CoinNumber
           amount={PHONE_VERIFICATION_BONUS}
           className={'font-bold'}

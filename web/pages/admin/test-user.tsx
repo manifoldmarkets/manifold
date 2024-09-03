@@ -9,7 +9,6 @@ import {
   signInWithEmailAndPassword,
 } from 'firebase/auth'
 import { randomString } from 'common/util/random'
-import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { getCookie, setCookie } from 'web/lib/util/cookie'
 import { Input } from 'web/components/widgets/input'
 import { useRouter } from 'next/router'
@@ -103,11 +102,11 @@ export default function TestUser() {
           the proper value
         </a>{' '}
       </Row>
-      <ExpandingInput
+      <Input
+        type={'password'}
         value={createUserKey}
         onChange={(e) => setCreateUserKey(e.target.value)}
         className={'w-80'}
-        rows={5}
       />
       Email
       <Row className={'text-ink-500'}>{email}</Row>

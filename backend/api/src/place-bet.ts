@@ -183,7 +183,7 @@ export const placeBetMain = async (
         ? crypto.randomBytes(12).toString('hex')
         : undefined
 
-    return await executeNewBetResult(
+    const result = await executeNewBetResult(
       pgTrans,
       newBetResult,
       contract,
@@ -193,6 +193,10 @@ export const placeBetMain = async (
       betGroupId,
       deterministic
     )
+    log('Redeeming shares for bettor', user.username, user.id)
+    await redeemShares(pgTrans, user.id, contract)
+    log('Share redemption transaction finished.')
+    return result
   })
 
   const { newBet, fullBets, allOrdersToCancel, betId, makers, betGroupId } =
@@ -626,10 +630,6 @@ export const executeNewBetResult = async (
     )
 
     log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
-
-    log('Redeeming shares for bettor', user.username, user.id)
-    await redeemShares(pgTrans, user.id, contract)
-    log('Share redemption transaction finished.')
   }
 
   return {
@@ -658,7 +658,18 @@ export const validateBet = async (
   if (amount !== undefined && balance < amount)
     throw new APIError(403, 'Insufficient balance.')
   if (
-    (BANNED_TRADING_USER_IDS.includes(uid) || user.userDeleted) 
+
+    (!user.sweepstakesVerified || !user.idVerified) &&
+    contract.token === 'CASH'
+  ) {
+    throw new APIError(
+      403,
+      'You must be kyc verified to trade on sweepstakes markets.'
+    )
+  }
+  if (
+    (BANNED_TRADING_USER_IDS.includes(uid) || user.userDeleted)
+    
   ) {
     throw new APIError(403, 'You are banned or deleted. And not #blessed.')
   }

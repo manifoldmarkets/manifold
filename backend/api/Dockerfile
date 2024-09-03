@@ -10,7 +10,7 @@ RUN yarn install --frozen-lockfile --production
 # then copy over typescript payload
 COPY dist ./
 
-ENV PORT 80
+ENV PORT=80
 EXPOSE 80/tcp
 
 # 32 GB on the box, give 28 GB to the JS heap

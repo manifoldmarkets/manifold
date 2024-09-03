@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { MIN_CASHOUT_AMOUNT } from 'common/economy'
+import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
 
 export const GIDX_DOCUMENTS_REQUIRED = 2
 
@@ -79,7 +79,9 @@ export const cashoutParams = z.object({
   ...checkoutParams,
   PaymentAmount: z.object({
     manaCash: z.number().gte(MIN_CASHOUT_AMOUNT),
-    dollars: z.number(),
+    dollars: z
+      .number()
+      .gte((1 - SWEEPIES_CASHOUT_FEE) * (MIN_CASHOUT_AMOUNT / 100)),
   }),
   SavePaymentMethod: z.boolean(),
   PaymentMethod: z.object({
@@ -289,7 +291,8 @@ export type CheckoutSessionResponse = {
 export const ID_ERROR_MSG =
   'Registration failed, identity error. Check your identifying information.'
 
-export const ENABLE_FAKE_CUSTOMER = true
+export const ENABLE_FAKE_CUSTOMER = false
+export const LOCAL_IP = '76.102.36.27'
 export const exampleCustomers = [
   {
     EmailAddress: 'mradamgibbs@gmail.com',
@@ -387,6 +390,9 @@ export const exampleCustomers = [
     },
   },
 ]
+export const FAKE_CUSTOMER_BODY = {
+  ...exampleCustomers[1],
+}
 
 type Action = {
   Type: string
