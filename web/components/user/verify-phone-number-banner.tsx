@@ -1,4 +1,4 @@
-import { isVerified, User } from 'common/user'
+import { humanish, User } from 'common/user'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
@@ -16,7 +16,7 @@ export const VerifyPhoneNumberBanner = (props: {
   const user = useUser() ?? props.user
 
   const [showVerifyPhone, setShowVerifyPhone] = useState(false)
-  if (!user || isVerified(user)) return null
+  if (!user || humanish(user)) return null
   return (
     <Col
       className={

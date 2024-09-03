@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Image from 'next/image'
 
 import { STARTING_BALANCE } from 'common/economy'
-import { isVerified, User } from 'common/user'
+import { humanish, User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
@@ -86,14 +86,12 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       user={user}
       goBack={() => handleSetPage(page - 1)}
     />,
-    user && !isVerified(user) && (
-      <OnboardingVerifyPhone onClose={increasePage} />
-    ),
+    user && !humanish(user) && <OnboardingVerifyPhone onClose={increasePage} />,
   ])
   const showBottomButtons = page < 2
 
   useEffect(() => {
-    if (!authed || !user || !isVerified(user)) return
+    if (!authed || !user || !humanish(user)) return
     // Wait until after they've had the opportunity to change their name
     setCachedReferralInfoForUser(user)
   }, [user, authed])

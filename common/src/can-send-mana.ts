@@ -1,4 +1,4 @@
-import { isVerified, User } from './user'
+import { humanish, User } from './user'
 import { formatMoney } from 'common/util/format'
 
 export async function canSendMana(
@@ -14,7 +14,7 @@ export async function canSendMana(
       message: 'Your account is banned or deleted.',
     }
   const { investmentValue } = await getPortfolio()
-  if (!isVerified(user))
+  if (!humanish(user))
     return {
       canSend: false,
       message:

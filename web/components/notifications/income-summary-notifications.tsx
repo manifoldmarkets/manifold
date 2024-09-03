@@ -44,7 +44,7 @@ import {
   PARTNER_UNIQUE_TRADER_BONUS_MULTI,
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
-import { isVerified } from 'common/user'
+import { humanish } from 'common/user'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { TRADE_TERM } from 'common/envs/constants'
@@ -335,7 +335,7 @@ export function BettingStreakBonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        noBonus && user && !isVerified(user) ? (
+        noBonus && user && !humanish(user) ? (
           <span>
             Verify your phone number to get up to{' '}
             <CoinNumber
@@ -348,7 +348,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         ) : (
           noBonus &&
           user &&
-          isVerified(user) && (
+          humanish(user) && (
             <span>Come back and predict again tomorrow for a bonus!</span>
           )
         )

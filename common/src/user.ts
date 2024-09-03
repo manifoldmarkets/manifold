@@ -149,11 +149,8 @@ export const isUserLikelySpammer = (
   )
 }
 
-// TODO: this can be decommissioned
-export const isVerified = (user: User) =>
-  user.verifiedPhone !== false || !!user.purchasedMana
-
-export const verifiedPhone = (user: User) => user.verifiedPhone !== false
+// This grandfathers in older users who have not yet verified their phone
+export const humanish = (user: User) => user.verifiedPhone !== false
 
 const verifiedAndBlocked = (user: User | undefined | null) =>
   user && user.idVerified && !user.sweepstakesVerified
@@ -185,7 +182,7 @@ export const getVerificationStatus = (
 } => {
   if (!TWOMBA_ENABLED) {
     return { status: 'error', message: 'GIDX registration is disabled' }
-  } else if (!verifiedPhone(user)) {
+  } else if (!humanish(user)) {
     return { status: 'error', message: 'User must verify phone' }
   } else if (!user.idVerified) {
     return { status: 'error', message: 'User identification failed' }

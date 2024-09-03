@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { isVerified } from 'common/user'
+import { humanish } from 'common/user'
 import { canSendMana } from 'common/can-send-mana'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
@@ -78,7 +78,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       throw new APIError(401, 'Your account was not found')
     }
 
-    const canReceive = isVerified(toUser)
+    const canReceive = humanish(toUser)
     if (!canReceive) {
       throw new APIError(
         403,

@@ -13,7 +13,7 @@ import {
   MANIFOLD_USER_USERNAME,
   PrivateUser,
   User,
-  isVerified,
+  humanish,
 } from 'common/user'
 import {
   getNotificationDestinationsForUser,
@@ -54,7 +54,7 @@ export async function sendOnboardingNotificationsInternal() {
     'Non love users created older than 1 day, younger than 1 week:' +
       recentUsers.length
   )
-  const verifiedUsers = recentUsers.filter(isVerified)
+  const verifiedUsers = recentUsers.filter(humanish)
 
   await Promise.all(verifiedUsers.map(sendNextDayManaBonus))
   const unactivatedUsers = recentUsers.filter((user) => !user.lastBetTime)
@@ -132,7 +132,7 @@ export const sendOnboardingMarketVisitBonus = async (userId: string) => {
       throw new APIError(404, `User ${userId} not found`)
     }
 
-    if (!isVerified(user)) {
+    if (!humanish(user)) {
       throw new APIError(403, 'User not yet verified phone number.')
     }
 

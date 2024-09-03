@@ -7,7 +7,7 @@ import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { convertPrivateUser } from 'common/supabase/users'
 import { getPrivateUser, getUser } from 'shared/utils'
-import { isVerified } from 'common/user'
+import { humanish } from 'common/user'
 
 // for mobile or something?
 export const setPushToken: APIHandler<'set-push-token'> = async (
@@ -43,10 +43,7 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
   broadcastUpdatedPrivateUser(auth.uid)
   const newPrivateUser = convertPrivateUser(updatedRow)
 
-  if (
-    oldPrivateUser.pushToken != newPrivateUser.pushToken &&
-    isVerified(user)
-  ) {
+  if (oldPrivateUser.pushToken != newPrivateUser.pushToken && humanish(user)) {
     const txn = await payUserPushNotificationsBonus(
       auth.uid,
       PUSH_NOTIFICATION_BONUS

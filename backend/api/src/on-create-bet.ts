@@ -12,7 +12,7 @@ import {
   CPMMNumericContract,
   Contract,
 } from 'common/contract'
-import { isVerified, User } from 'common/user'
+import { humanish, User } from 'common/user'
 import { groupBy, keyBy, sumBy, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
@@ -405,7 +405,7 @@ const updateBettingStreak = async (
       currentBettingStreak: newBettingStreak,
     })
 
-    if (!isVerified(bettor)) {
+    if (!humanish(bettor)) {
       return {
         status: 'success',
         bonusAmount: 0,

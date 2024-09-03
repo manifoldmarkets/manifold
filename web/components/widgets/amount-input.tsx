@@ -2,7 +2,7 @@ import { XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { User, verifiedPhone } from 'common/user'
+import { User, humanish } from 'common/user'
 import {
   formatMoney,
   formatSweepiesNumber,
@@ -374,7 +374,7 @@ const BuyMoreFunds = (props: { user: User | null | undefined }) => {
       >
         Buy more?
       </button>
-      {user && !verifiedPhone(user) && (
+      {user && !humanish(user) && (
         <button
           className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
           onClick={() => setShowVerifyPhone(true)}
