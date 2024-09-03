@@ -31,7 +31,8 @@ const CashoutPage = () => {
   const [RoutingNumber, setRoutingNumber] = useState('')
   const [SavePaymentMethod, _] = useState(false)
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
-  const [amount, setAmount] = useState<number>()
+  const [amountInDollars, setAmountInDollars] = useState<number>()
+  const amountInCents = (amountInDollars ?? 0) * 100
   const [locationError, setLocationError] = useState<string>()
   const [loading, setloading] = useState(false)
   const [error, setError] = useState<string>()
@@ -88,7 +89,7 @@ const CashoutPage = () => {
   const handleSubmit = async () => {
     setloading(true)
     setError(undefined)
-    if (!checkoutSession || !amount) return
+    if (!checkoutSession || !amountInDollars) return
     // TODO: add billing address hook from checkout session
     try {
       await api('complete-cashout-session-gidx', {
@@ -107,8 +108,8 @@ const CashoutPage = () => {
         },
         SavePaymentMethod,
         PaymentAmount: {
-          dollars: (1 - SWEEPIES_CASHOUT_FEE) * amount,
-          manaCash: amount,
+          dollars: (1 - SWEEPIES_CASHOUT_FEE) * amountInDollars,
+          manaCash: amountInCents,
         },
         MerchantSessionID: checkoutSession.MerchantSessionID,
         MerchantTransactionID: checkoutSession.MerchantTransactionID,
@@ -177,18 +178,19 @@ const CashoutPage = () => {
                 (min {formatSweepies(MIN_CASHOUT_AMOUNT)})
                 <AmountInput
                   placeholder="Cashout Amount"
-                  amount={amount}
+                  amount={amountInDollars}
+                  allowFloat={true}
                   inputClassName={'w-40'}
                   label={<SweepiesCoin className={'mb-1'} />}
                   onChangeAmount={(newAmount) => {
                     if (!newAmount) {
-                      setAmount(undefined)
+                      setAmountInDollars(undefined)
                       return
                     }
                     if (newAmount > redeemableCash) {
-                      setAmount(redeemableCash)
+                      setAmountInDollars(redeemableCash)
                     } else {
-                      setAmount(newAmount)
+                      setAmountInDollars(newAmount)
                     }
                   }}
                 />
@@ -258,14 +260,15 @@ const CashoutPage = () => {
                   !NameOnAccount ||
                   !AccountNumber ||
                   !RoutingNumber ||
-                  !amount
+                  !amountInDollars
                 }
               >
                 <Row className={'gap-1'}>
                   Withdraw{' '}
-                  <CoinNumber amount={amount ?? 0} coinType={'sweepies'} /> for{' '}
+                  <CoinNumber amount={amountInCents} coinType={'sweepies'} />{' '}
+                  for{' '}
                   {formatSweepsToUSD(
-                    (1 - SWEEPIES_CASHOUT_FEE) * (amount ?? 0)
+                    (1 - SWEEPIES_CASHOUT_FEE) * amountInCents
                   )}
                 </Row>
               </Button>

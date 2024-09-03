@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { MIN_CASHOUT_AMOUNT } from 'common/economy'
+import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
 
 export const GIDX_DOCUMENTS_REQUIRED = 2
 
@@ -79,7 +79,9 @@ export const cashoutParams = z.object({
   ...checkoutParams,
   PaymentAmount: z.object({
     manaCash: z.number().gte(MIN_CASHOUT_AMOUNT),
-    dollars: z.number(),
+    dollars: z
+      .number()
+      .gte((1 - SWEEPIES_CASHOUT_FEE) * (MIN_CASHOUT_AMOUNT / 100)),
   }),
   SavePaymentMethod: z.boolean(),
   PaymentMethod: z.object({
