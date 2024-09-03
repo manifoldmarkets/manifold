@@ -1,6 +1,7 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   CompleteSessionDirectCashierResponse,
+  LOCAL_IP,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
 import {
@@ -14,6 +15,7 @@ import { runTxn } from 'shared/txn/run-txn'
 import { PaymentAmountsGIDX, PaymentAmount } from 'common/economy'
 import { getIp } from 'shared/analytics'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { LOCAL_DEV } from 'shared/utils'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
@@ -50,7 +52,7 @@ export const completeCheckoutSession: APIHandler<
       PaymentAmount: PaymentAmount.price / 100,
       BonusAmount: 0,
     },
-    DeviceIpAddress: getIp(req),
+    DeviceIpAddress: LOCAL_DEV ? LOCAL_IP : getIp(req),
     MerchantTransactionID,
     SavePaymentMethod,
     PaymentMethod: {

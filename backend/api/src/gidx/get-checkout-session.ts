@@ -3,6 +3,7 @@ import {
   CheckoutSession,
   CheckoutSessionResponse,
   CustomerProfileResponse,
+  LOCAL_IP,
 } from 'common/gidx/gidx'
 import {
   getGIDXStandardParams,
@@ -15,7 +16,7 @@ import { randomBytes } from 'crypto'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { PaymentAmountsGIDX } from 'common/economy'
 import { getVerificationStatus } from 'common/user'
-import { getUser } from 'shared/utils'
+import { getUser, LOCAL_DEV } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const ENDPOINT =
@@ -31,7 +32,7 @@ export const getCheckoutSession: APIHandler<
   const MerchantOrderID = randomString(16)
   const body = {
     ...props,
-    DeviceIpAddress: getIp(req),
+    DeviceIpAddress: LOCAL_DEV ? LOCAL_IP : getIp(req),
     MerchantCustomerID: userId,
     MerchantOrderID,
     MerchantTransactionID,

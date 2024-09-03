@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { log } from 'shared/utils'
+import { LOCAL_DEV, log } from 'shared/utils'
 import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
@@ -21,6 +21,7 @@ import {
   ENABLE_FAKE_CUSTOMER,
   GIDXRegistrationResponse,
   ID_ERROR_MSG,
+  LOCAL_IP,
 } from 'common/gidx/gidx'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { parsePhoneNumber } from 'libphonenumber-js'
@@ -28,7 +29,6 @@ import { getIp } from 'shared/analytics'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
-const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
 export const register: APIHandler<'register-gidx'> = async (
   props,
@@ -47,7 +47,7 @@ export const register: APIHandler<'register-gidx'> = async (
     DeviceIpAddress: ENABLE_FAKE_CUSTOMER
       ? props.DeviceIpAddress
       : LOCAL_DEV
-      ? '99.100.24.160'
+      ? LOCAL_IP
       : getIp(req),
     MerchantCustomerID: auth.uid,
     ...getGIDXStandardParams(),

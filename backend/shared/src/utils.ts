@@ -95,6 +95,7 @@ export async function revalidateContractStaticProps(contract: Contract) {
     revalidateStaticProps(`/embed${contractPath(contract)}`),
   ])
 }
+export const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
 // TODO: deprecate in favor of common/src/envs/is-prod.ts
 export const isProd = () => {

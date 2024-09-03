@@ -292,6 +292,7 @@ export const ID_ERROR_MSG =
   'Registration failed, identity error. Check your identifying information.'
 
 export const ENABLE_FAKE_CUSTOMER = false
+export const LOCAL_IP = '76.102.36.27'
 export const exampleCustomers = [
   {
     EmailAddress: 'mradamgibbs@gmail.com',

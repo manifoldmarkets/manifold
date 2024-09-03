@@ -1,6 +1,7 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   CompleteSessionDirectCashierResponse,
+  LOCAL_IP,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
 import {
@@ -12,7 +13,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxn } from 'shared/txn/run-txn'
 import { getIp } from 'shared/analytics'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { getUser } from 'shared/utils'
+import { getUser, LOCAL_DEV } from 'shared/utils'
 import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
 
@@ -58,7 +59,7 @@ export const completeCashoutSession: APIHandler<
       BonusAmount: 0,
     },
     SavePaymentMethod,
-    DeviceIpAddress: getIp(req),
+    DeviceIpAddress: LOCAL_DEV ? LOCAL_IP : getIp(req),
     MerchantTransactionID,
     PaymentMethod: {
       ...PaymentMethod,
