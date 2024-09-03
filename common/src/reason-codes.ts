@@ -77,6 +77,11 @@ export const allowedCodes: string[] = [
   'LL-OUT-US', // Location Outside US
 ]
 
+export const limitTo5kCashoutCodes: string[] = [
+  'LL-GEO-US-NY', // Location New York
+  'LL-GEO-US-FL', // Location Florida
+]
+
 export const documentsReadyCodes: string[] = ['DOC-REV-COMPL', 'DOC-UPLOADED']
 
 export type RegistrationReturnType = {

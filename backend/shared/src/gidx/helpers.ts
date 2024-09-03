@@ -1,8 +1,14 @@
 import * as crypto from 'crypto'
 import { APIError } from 'common/api/utils'
 import { GIDXCustomerProfile } from 'common/gidx/gidx'
-import { getPrivateUserSupabase } from 'shared/utils'
+import { getPrivateUserSupabase, LOCAL_DEV } from 'shared/utils'
 import { getPhoneNumber } from 'shared/helpers/get-phone-number'
+import { ENV_CONFIG } from 'common/envs/constants'
+
+// TODO: when in production, configure endpoint here: https://portal.gidx-service.in/Integration/Index#ProfileNotification
+export const GIDXCallbackUrl = LOCAL_DEV
+  ? 'https://enabled-bream-sharply.ngrok-free.app'
+  : ENV_CONFIG.apiEndpoint
 
 export const getGIDXStandardParams = (MerchantSessionID?: string) => ({
   // TODO: before merging into main, switch from sandbox key to production key in prod

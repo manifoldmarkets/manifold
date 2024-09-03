@@ -73,11 +73,14 @@ export type User = {
   isAdvancedTrader?: boolean
   purchasedMana?: boolean
   verifiedPhone?: boolean
+
+  // KYC related fields:
   kycFlags?: string[]
   kycLastAttempt?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
   sweepstakesVerified?: boolean
   idVerified?: boolean
+  sweepstakes5kLimit?: boolean
 }
 
 export type PrivateUser = {

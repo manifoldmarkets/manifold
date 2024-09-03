@@ -5,6 +5,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   blockedCodes,
   hasIdentityError,
+  limitTo5kCashoutCodes,
   locationBlockedCodes,
   locationTemporarilyBlockedCodes,
   otherErrorCodes,
@@ -92,6 +93,7 @@ export const register: APIHandler<'register-gidx'> = async (
   }
 }
 
+// TODO: pass user object to determine whether to update user or not
 export const verifyReasonCodes = async (
   userId: string,
   ReasonCodes: string[],
@@ -107,7 +109,10 @@ export const verifyReasonCodes = async (
     await updateUser(pg, userId, { kycFlags: ReasonCodes })
   }
   if (idVerified) {
-    await updateUser(pg, userId, { idVerified: true })
+    await updateUser(pg, userId, {
+      idVerified: true,
+      sweepstakes5kLimit: hasAny(limitTo5kCashoutCodes),
+    })
   } else {
     await updateUser(pg, userId, {
       idVerified: false,

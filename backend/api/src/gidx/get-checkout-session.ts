@@ -6,6 +6,7 @@ import {
   LOCAL_IP,
 } from 'common/gidx/gidx'
 import {
+  GIDXCallbackUrl,
   getGIDXStandardParams,
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
@@ -36,8 +37,7 @@ export const getCheckoutSession: APIHandler<
     MerchantCustomerID: userId,
     MerchantOrderID,
     MerchantTransactionID,
-    CallbackURL:
-      'https://enabled-bream-sharply.ngrok-free.app/payment-callback-gidx',
+    CallbackURL: GIDXCallbackUrl + '/payment-callback-gidx',
     ...getGIDXStandardParams(),
   }
   log('get checkout session body:', body)

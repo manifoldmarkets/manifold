@@ -293,6 +293,9 @@ export const ID_ERROR_MSG =
 
 export const ENABLE_FAKE_CUSTOMER = false
 export const LOCAL_IP = '76.102.36.27'
+export const LOCAL_IP = '76.102.36.27' // SF presidio
+// export const LOCAL_IP = '68.173.149.14' // NY city
+// export const LOCAL_IP = '73.28.110.120' // Florida
 export const exampleCustomers = [
   {
     EmailAddress: 'mradamgibbs@gmail.com',
@@ -332,9 +335,16 @@ export const exampleCustomers = [
     StateCode: 'MA',
     PostalCode: '01867',
     DeviceGPS: {
+      // new york (5k limit):
+      // Latitude: 40.82024,
+      // Longitude: -73.935944,
+      // florida (5k limit):
+      Latitude: 26.64983,
+      Longitude: -81.847878,
       // utah (blocked):
-      Latitude: 40.7608,
-      Longitude: -111.891,
+      // Latitude: 40.7608,
+      // Longitude: -111.891,
+      // Massachusetts:
       // Latitude: 39.615342,
       // Longitude: -112.183449,
       Radius: 11.484,
