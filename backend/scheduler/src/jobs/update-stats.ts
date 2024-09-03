@@ -32,7 +32,7 @@ interface StatEvent {
   userId: string
   ts: number
 }
-type StatBet = StatEvent & { amount: number }
+type StatBet = StatEvent & { amount: number; token: 'MANA' | 'CASH' }
 type StatUser = StatEvent & {
   d1BetCount: number
   freeQuestionsCreated: number | undefined
@@ -85,6 +85,7 @@ async function getDailyBets(
       'ts', ts_to_millis(created_time),
       'userId', user_id,
       'amount', amount,
+      'token': token,
       'id', bet_id
     )) as values
     from contract_bets
@@ -222,7 +223,13 @@ export const updateActivityStats = async (
     dailyBets.map((bets) => ({
       start_date: bets.day,
       bet_count: bets.values.length,
-      bet_amount: sum(bets.values.map((b) => b.amount)) / 100,
+      bet_amount:
+        sum(
+          bets.values.filter((b) => b.token === 'MANA').map((b) => b.amount)
+        ) / 100,
+      cash_bet_amount: sum(
+        bets.values.filter((b) => b.token === 'CASH').map((b) => b.amount)
+      ),
     }))
   )
 

@@ -1,6 +1,7 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { DAY_MS } from 'common/util/time'
 import { getManaSupply } from 'shared/mana-supply'
+import { insert } from './supabase/utils'
 
 type txnStats = {
   start_time: string
@@ -81,18 +82,17 @@ export const calculateManaStats = async (
   }
   const now = new Date().toISOString()
   const ms = await getManaSupply(true)
-  await pg.none(
-    `insert into mana_supply_stats (start_time, end_time, total_value, balance, spice_balance, investment_value, loan_total, amm_liquidity)
-            values ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [
-      now,
-      now,
-      ms.totalValue,
-      ms.balance,
-      ms.spiceBalance,
-      ms.investmentValue,
-      ms.loanTotal,
-      ms.ammLiquidity,
-    ]
-  )
+  await insert(pg, 'mana_supply_stats', {
+    start_time: now,
+    end_time: now,
+    total_value: ms.totalManaValue,
+    total_cash_value: ms.totalCashValue,
+    balance: ms.cashBalance,
+    spice_balance: ms.spiceBalance,
+    investment_value: ms.manaInvestmentValue,
+    cash_investment_value: ms.cashInvestmentValue,
+    loan_total: ms.loanTotal,
+    amm_liquidity: ms.ammManaLiquidity,
+    amm_cash_liquidity: ms.ammCashLiquidity,
+  })
 }

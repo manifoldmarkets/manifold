@@ -23,7 +23,8 @@ create table if not exists
     bet_amount numeric,
     d1_bet_average numeric,
     d1_bet_3_day_average numeric,
-    feed_conversion numeric
+    feed_conversion numeric,
+    cash_bet_amount numeric
   );
 
 -- Policies
