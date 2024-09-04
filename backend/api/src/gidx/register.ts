@@ -1,6 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { LOCAL_DEV, log } from 'shared/utils'
-import { updateUser } from 'shared/supabase/users'
+import { updatePrivateUser, updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   blockedCodes,
@@ -110,7 +110,7 @@ export const verifyReasonCodes = async (
     intersection(codes, ReasonCodes).length > 0
   const idVerified = ReasonCodes.includes('ID-VERIFIED')
   if (ReasonCodes.length > 0) {
-    await updateUser(pg, userId, { kycFlags: ReasonCodes })
+    await updatePrivateUser(pg, userId, { kycFlags: ReasonCodes })
   }
   if (idVerified) {
     await updateUser(pg, userId, {

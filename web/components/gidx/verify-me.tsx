@@ -13,7 +13,7 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import { api } from 'web/lib/api/api'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { GIDXDocument, idNameToCategoryType } from 'common/gidx/gidx'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
@@ -23,14 +23,13 @@ import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 
 export const VerifyMe = (props: { user: User }) => {
   const user = useUser() ?? props.user
-
+  const privateUser = usePrivateUser()
   const [show, setShow] = useState(
     TWOMBA_ENABLED &&
       (!user.sweepstakesVerified ||
         !user.idVerified ||
         user.kycDocumentStatus === 'fail' ||
-        user.kycDocumentStatus === 'pending' ||
-        locationBlocked(user))
+        user.kycDocumentStatus === 'pending')
   )
 
   const [documents, setDocuments] = useState<GIDXDocument[] | null>(null)
@@ -54,7 +53,7 @@ export const VerifyMe = (props: { user: User }) => {
   const showUploadDocsButton =
     getDocumentsStatus(documents ?? []).isRejected && documents
 
-  if (identityBlocked(user)) {
+  if (identityBlocked(user, privateUser)) {
     return (
       <Col
         className={
@@ -153,7 +152,7 @@ export const VerifyMe = (props: { user: User }) => {
     )
   }
 
-  if (ageBlocked(user)) {
+  if (ageBlocked(user, privateUser)) {
     return (
       <Col
         className={
@@ -167,7 +166,7 @@ export const VerifyMe = (props: { user: User }) => {
     )
   }
 
-  if (locationBlocked(user)) {
+  if (locationBlocked(user, privateUser)) {
     return (
       <Col
         className={

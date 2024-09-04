@@ -75,7 +75,6 @@ export type User = {
   verifiedPhone?: boolean
 
   // KYC related fields:
-  kycFlags?: string[]
   kycLastAttempt?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
   sweepstakesVerified?: boolean
@@ -112,6 +111,9 @@ export type PrivateUser = {
   installedAppPlatforms?: string[]
   discordId?: string
   paymentInfo?: string
+
+  // KYC related fields:
+  kycFlags?: string[]
 }
 
 // TODO: remove. Hardcoding the strings would be better.
@@ -161,18 +163,29 @@ export const identityPending = (user: User | undefined | null) =>
 export const blockFromSweepstakes = (user: User | undefined | null) =>
   user && (!user.idVerified || verifiedAndBlocked(user))
 
-export const locationBlocked = (user: User | undefined | null) =>
-  user &&
+export const locationBlocked = (
+  user: User | undefined | null,
+  privateUser: PrivateUser | undefined | null
+) =>
+  privateUser &&
   verifiedAndBlocked(user) &&
-  intersection(user.kycFlags, locationTemporarilyBlockedCodes).length > 0
+  intersection(privateUser.kycFlags, locationTemporarilyBlockedCodes).length > 0
 
-export const ageBlocked = (user: User | undefined | null) =>
-  user &&
+export const ageBlocked = (
+  user: User | undefined | null,
+  privateUser: PrivateUser | undefined | null
+) =>
+  privateUser &&
   verifiedAndBlocked(user) &&
-  intersection(user.kycFlags, underageErrorCodes).length > 0
+  intersection(privateUser.kycFlags, underageErrorCodes).length > 0
 
-export const identityBlocked = (user: User | undefined | null) =>
-  user && intersection(user.kycFlags, identityBlockedCodes).length > 0
+export const identityBlocked = (
+  user: User | undefined | null,
+  privateUser: PrivateUser | undefined | null
+) =>
+  privateUser &&
+  verifiedAndBlocked(user) &&
+  intersection(privateUser.kycFlags, identityBlockedCodes).length > 0
 
 export const getVerificationStatus = (
   user: User
@@ -186,8 +199,6 @@ export const getVerificationStatus = (
     return { status: 'error', message: 'User must verify phone' }
   } else if (!user.idVerified) {
     return { status: 'error', message: 'User identification failed' }
-  } else if (!user.sweepstakesVerified && locationBlocked(user)) {
-    return { status: 'error', message: 'User location is blocked' }
   } else if (!user.sweepstakesVerified) {
     return { status: 'error', message: 'User is blocked' }
   } else if (user.sweepstakesVerified) {

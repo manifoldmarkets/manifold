@@ -189,7 +189,7 @@ const CheckoutPage = () => {
           CheckoutSession={checkoutSession}
           amount={productSelected}
         />
-      ) : page === 'get-session' || (!error && !locationError) ? (
+      ) : page === 'get-session' && !error && !locationError ? (
         <Col className={'gap-3 p-4'}>
           <LoadingIndicator />
         </Col>

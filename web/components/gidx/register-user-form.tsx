@@ -13,7 +13,7 @@ import { UploadDocuments } from 'web/components/gidx/upload-document'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 
-import { useWebsocketUser } from 'web/hooks/use-user'
+import { usePrivateUser, useWebsocketUser } from 'web/hooks/use-user'
 import {
   ENABLE_FAKE_CUSTOMER,
   FAKE_CUSTOMER_BODY,
@@ -28,6 +28,7 @@ export const registrationBottomRowClass = 'mb-4 mt-4 w-full gap-16'
 
 export const RegisterUserForm = (props: { user: User }) => {
   const user = useWebsocketUser(props.user.id) ?? props.user
+  const privateUser = usePrivateUser()
   const router = useRouter()
   const { redirect } = router.query
   const [page, setPage] = useState(
@@ -367,7 +368,7 @@ export const RegisterUserForm = (props: { user: User }) => {
     )
   }
 
-  if (identityBlocked(user) || ageBlocked(user)) {
+  if (identityBlocked(user, privateUser) || ageBlocked(user, privateUser)) {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>Blocked identity</span>
@@ -377,7 +378,7 @@ export const RegisterUserForm = (props: { user: User }) => {
         </span>
       </Col>
     )
-  } else if (locationBlocked(user)) {
+  } else if (locationBlocked(user, privateUser)) {
     return (
       <Col className={registrationColClass}>
         <span className={'text-primary-700 text-2xl'}>Blocked location</span>
