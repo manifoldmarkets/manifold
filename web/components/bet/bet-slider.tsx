@@ -16,20 +16,20 @@ export const SMALL_SLIDER_VALUES = [
 
 export const SMALL_SLIDER_VALUE_LABELS = [1, 100, 1000]
 
-export const MAX_CASH_SMALL_SLIDER_VALUE = 10000
-export const MAX_CASH_LARGE_SLIDER_VALUE = 50000
+export const MAX_CASH_SMALL_SLIDER_VALUE = 100
+export const MAX_CASH_LARGE_SLIDER_VALUE = 500
 
-export const CASH_SMALL_SLIDER_VALUES = SMALL_SLIDER_VALUES.map((a) => {
-  return a * 100
-}).filter((a) => a <= MAX_CASH_SMALL_SLIDER_VALUE)
+export const CASH_SMALL_SLIDER_VALUES = SMALL_SLIDER_VALUES.filter(
+  (a) => a <= MAX_CASH_SMALL_SLIDER_VALUE
+)
 
-export const CASH_SMALL_SLIDER_VALUE_LABELS = [100, 1000, 10000]
+export const CASH_SMALL_SLIDER_VALUE_LABELS = [1, 10, 100]
 
-export const CASH_LARGE_SLIDER_VALUES = LARGE_SLIDER_VALUES.map((a) => {
-  return a * 100
-}).filter((a) => a <= MAX_CASH_LARGE_SLIDER_VALUE)
+export const CASH_LARGE_SLIDER_VALUES = LARGE_SLIDER_VALUES.filter(
+  (a) => a <= MAX_CASH_LARGE_SLIDER_VALUE
+)
 
-export const CASH_LARGE_SLIDER_VALUE_LABELS = [100, 10000, 50000]
+export const CASH_LARGE_SLIDER_VALUE_LABELS = [1, 100, 500]
 
 export const BetSlider = (props: {
   amount: number | undefined

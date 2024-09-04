@@ -55,7 +55,7 @@ export function formatSweepies(amount: number, toDecimal?: number) {
 }
 
 export function formatSweepiesNumber(amount: number, toDecimal?: number) {
-  return (amount / 100).toFixed(toDecimal ?? 2)
+  return amount.toFixed(toDecimal ?? 2)
 }
 
 export function formatSpice(amount: number) {
