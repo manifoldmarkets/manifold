@@ -1,39 +1,40 @@
-import { useEffect, useState } from 'react'
-import { Page } from '../components/layout/page'
-import { Col } from '../components/layout/col'
-import { Row } from '../components/layout/row'
-import { Input } from '../components/widgets/input'
-import { Button } from 'web/components/buttons/button'
-import { useUser } from 'web/hooks/use-user'
-import { useNativeMessages } from 'web/hooks/use-native-messages'
-import { postMessageToNative } from 'web/lib/native/post-message'
-import { CheckoutSession, GPSData } from 'common/gidx/gidx'
-import { getNativePlatform } from 'web/lib/native/is-native'
-import { api, validateIapReceipt } from 'web/lib/api/api'
-import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
-import { AlertBox } from 'web/components/widgets/alert-box'
-import { PriceTile, use24hrUsdPurchases } from 'web/components/add-funds-modal'
-import { getVerificationStatus } from 'common/user'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
-import { LogoIcon } from 'web/components/icons/logo-icon'
-import { FaStore } from 'react-icons/fa6'
 import clsx from 'clsx'
-import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import {
   IOS_PRICES,
-  WebManaAmounts,
   MANA_WEB_PRICES,
   PaymentAmount,
+  WebManaAmounts,
 } from 'common/economy'
-import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
-import Image from 'next/image'
-import { useRouter } from 'next/router'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { LocationPanel } from 'web/components/gidx/location-panel'
+import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
+import { CheckoutSession, GPSData } from 'common/gidx/gidx'
+import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
+import { getVerificationStatus } from 'common/user'
 import { formatSweepsToUSD } from 'common/util/format'
 import { capitalize } from 'lodash'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import { FaStore } from 'react-icons/fa6'
+import { Button } from 'web/components/buttons/button'
+import { LocationPanel } from 'web/components/gidx/location-panel'
+import { LogoIcon } from 'web/components/icons/logo-icon'
+import { AlertBox } from 'web/components/widgets/alert-box'
+import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { useNativeMessages } from 'web/hooks/use-native-messages'
+import { useUser } from 'web/hooks/use-user'
+import { api, validateIapReceipt } from 'web/lib/api/api'
+import { getNativePlatform } from 'web/lib/native/is-native'
+import { postMessageToNative } from 'web/lib/native/post-message'
+import { Col } from '../layout/col'
+import { Page } from '../layout/page'
+import { Row } from '../layout/row'
+import { Input } from '../widgets/input'
+import { PriceTile, use24hrUsdPurchases } from './add-funds-modal'
 
-const CheckoutPage = () => {
+export const TwombaBuyManaTab = (props: { onClose: () => void }) => {
+  const { onClose } = props
   const user = useUser()
   const [locationError, setLocationError] = useState<string>()
   const { isNative, platform } = getNativePlatform()
@@ -62,10 +63,6 @@ const CheckoutPage = () => {
     }
   }, [manaAmount])
 
-  const goHome = () => {
-    router.push('/home')
-  }
-
   const checkIfRegistered = async (then: 'ios-native' | 'web') => {
     // if user is not registered, they must register first
     if (!user) return
@@ -92,7 +89,7 @@ const CheckoutPage = () => {
       try {
         await validateIapReceipt({ receipt: receipt })
         console.log('iap receipt validated')
-        goHome()
+        onClose()
       } catch (e) {
         console.log('iap receipt validation error', e)
         setError('Error validating receipt')
@@ -155,7 +152,7 @@ const CheckoutPage = () => {
   }
 
   return (
-    <Page className={'p-3'} trackPageView={'checkout page'}>
+    <>
       {page === 'checkout' && !amountSelected && !manaAmount ? (
         <Col>
           <FundsSelector prices={prices} onSelect={onSelectAmount} />
@@ -195,7 +192,7 @@ const CheckoutPage = () => {
         </Col>
       ) : null}
       <Row className="text-error mt-2">{error}</Row>
-    </Page>
+    </>
   )
 }
 
@@ -532,5 +529,3 @@ const PaymentSection = (props: {
     </Col>
   )
 }
-
-export default CheckoutPage

@@ -336,7 +336,31 @@ function UserProfile(props: {
           )}
 
           <Row className={'items-center gap-1 sm:gap-2'}>
-            {!isCurrentUser && (
+            {isCurrentUser ? (
+              TWOMBA_ENABLED ? (
+                <Row className="my-2 hidden items-center gap-2 px-4 sm:flex">
+                  <AddFundsButton
+                    userId={user.id}
+                    className="whitespace-nowra w-full lg:hidden"
+                  />
+                  {!blockFromSweepstakes(user) && (
+                    <Button
+                      disabled={redeemableCash <= 0}
+                      onClick={() => router.push('/cashout')}
+                    >
+                      Cashout
+                      <CoinNumber
+                        amount={redeemableCash}
+                        className={'ml-1'}
+                        coinType={'sweepies'}
+                      />
+                    </Button>
+                  )}
+                </Row>
+              ) : (
+                <></>
+              )
+            ) : (
               <>
                 <SendMessageButton toUser={user} currentUser={currentUser} />
                 <FollowButton userId={user.id} />
@@ -364,13 +388,8 @@ function UserProfile(props: {
         )}
 
         {isCurrentUser && TWOMBA_ENABLED && (
-          <Row className="my-2 w-full items-center gap-2 px-4">
+          <Col className="my-2 w-full items-center gap-2 px-4 ">
             <AddFundsButton userId={user.id} className="whitespace-nowrap" />
-            <RedeemSpiceButton
-              userId={user.id}
-              className="whitespace-nowrap"
-              spice={user.spiceBalance}
-            />
             {!blockFromSweepstakes(user) && (
               <Button
                 disabled={redeemableCash <= 0}
@@ -384,7 +403,7 @@ function UserProfile(props: {
                 />
               </Button>
             )}
-          </Row>
+          </Col>
         )}
 
         <Col className="mx-4">
