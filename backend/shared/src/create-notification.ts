@@ -69,6 +69,7 @@ import {
 import * as crypto from 'crypto'
 import {
   getUniqueBettorIds,
+  getUniqueBettorIdsForAnswer,
   getUniqueVoterIds,
 } from 'shared/supabase/contracts'
 import { richTextToString } from 'common/util/parse'
@@ -985,7 +986,6 @@ export const createNewBettorNotification = async (
   creatorId: string,
   bettor: User,
   contract: Contract,
-  uniqueBettorIds: string[],
   bet: Bet,
   bets: Bet[] | undefined
 ) => {
@@ -1056,7 +1056,14 @@ export const createNewBettorNotification = async (
     await insertNotificationToSupabase(notification, pg)
   }
 
-  if (!sendToEmail) return
+  if (!sendToEmail || contract.uniqueBettorCount > 6) return
+  const { answerId } = bet
+  // For bets with answerId (multiple choice), give a bonus for the first bet on each answer.
+  // NOTE: this may miscount unique bettors if they place multiple bets quickly b/c of replication delay.
+  const uniqueBettorIds = answerId
+    ? await getUniqueBettorIdsForAnswer(contract.id, answerId, pg)
+    : await getUniqueBettorIds(contract.id, pg)
+  if (!uniqueBettorIds.includes(bettor.id)) uniqueBettorIds.push(bettor.id)
   const uniqueBettorsExcludingCreator = uniqueBettorIds.filter(
     (id) => id !== contract.creatorId
   )
