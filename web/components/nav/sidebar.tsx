@@ -40,6 +40,8 @@ import { LiveTVIcon } from '../tv-icon'
 import { PiRobotBold, PiTelevisionSimpleBold } from 'react-icons/pi'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { ReportsIcon } from '../reports-icon'
+import { AddFundsButton } from '../profile/add-funds-button'
+import { Col } from '../layout/col'
 
 export default function Sidebar(props: {
   className?: string
@@ -86,6 +88,14 @@ export default function Sidebar(props: {
     />
   )
 
+  const addFundsButton = user && (
+    <AddFundsButton
+      userId={user.id}
+      className="w-full whitespace-nowrap"
+      size="xl"
+    />
+  )
+
   return (
     <nav
       aria-label="Sidebar"
@@ -110,7 +120,10 @@ export default function Sidebar(props: {
 
         {user === null && <SidebarSignUpButton />}
 
-        {createMarketButton}
+        <Col className="gap-2">
+          {createMarketButton}
+          {addFundsButton}
+        </Col>
       </div>
       <div
         className={clsx('mb-6 mt-auto flex flex-col gap-1', isMobile && 'pb-8')}
@@ -122,10 +135,6 @@ export default function Sidebar(props: {
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
       </div>
-      <AddFundsModal
-        open={isAddFundsModalOpen}
-        setOpen={setIsAddFundsModalOpen}
-      />
     </nav>
   )
 }

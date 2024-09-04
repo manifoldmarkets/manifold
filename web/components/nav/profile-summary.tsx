@@ -42,17 +42,6 @@ export function ProfileSummary(props: { user: User; className?: string }) {
             numberType="animated"
             className="text-primary-600 mr-2"
           />
-          <button
-            className="hover:bg-primary-300 hover:dark:bg-primary-600 text-primary-600 group rounded-md p-1 ring-[1.5px] ring-inset ring-current transition-all hover:dark:text-white"
-            onClick={(e) => {
-              e.preventDefault()
-              setBuyModalOpen(true)
-            }}
-          >
-            <div className="sr-only">Get mana</div>
-            <PlusIcon className="h-2 w-2" strokeWidth="4.5" />
-          </button>
-          <AddFundsModal open={buyModalOpen} setOpen={setBuyModalOpen} />
         </div>
         {TWOMBA_ENABLED ? (
           <CoinNumber

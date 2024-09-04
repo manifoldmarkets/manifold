@@ -421,7 +421,7 @@ function PortfolioValueSkeleton(props: {
                   <Col className="hidden gap-1 sm:flex">
                     <AddFundsButton
                       userId={userId}
-                      className="h-fit whitespace-nowrap"
+                      className="h-fit whitespace-nowrap lg:hidden"
                     />
                     <RedeemSpiceButton
                       userId={userId}
