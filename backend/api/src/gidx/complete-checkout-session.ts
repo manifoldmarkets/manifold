@@ -117,7 +117,8 @@ export const completeCheckoutSession: APIHandler<
       userId,
       paymentAmount,
       CompletedPaymentAmount,
-      MerchantTransactionID
+      MerchantTransactionID,
+      MerchantSessionID
     )
     return {
       status: 'success',
@@ -172,9 +173,10 @@ const sendCoins = async (
   userId: string,
   amount: PaymentAmount,
   paidInCents: number,
-  transactionId: string
+  transactionId: string,
+  sessionId: string
 ) => {
-  const data = { transactionId, type: 'gidx', paidInCents }
+  const data = { transactionId, type: 'gidx', paidInCents, sessionId }
   const pg = createSupabaseDirectClient()
   const manaPurchaseTxn = {
     fromId: 'EXTERNAL',

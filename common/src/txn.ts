@@ -180,7 +180,8 @@ type ManaPurchase = {
     | {
         transactionId: string
         type: 'gidx'
-        paidInCents?: number
+        sessionId: string
+        paidInCents: number
       }
 }
 type CashBonus = {
@@ -200,6 +201,7 @@ type CashOutPending = {
   token: 'CASH'
   category: 'CASH_OUT'
   data: {
+    sessionId: string
     transactionId: string
     type: 'gidx'
     payoutInDollars: number

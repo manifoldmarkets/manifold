@@ -119,22 +119,22 @@ export const PaymentAmountsGIDX = [
   {
     mana: 10_000,
     price: 1500,
-    bonus: 10_00,
+    bonus: 10,
   },
   {
     mana: 25_000,
     price: 3000,
-    bonus: 25_00,
+    bonus: 25,
   },
   {
     mana: 100_000,
     price: 11000,
-    bonus: 100_00,
+    bonus: 100,
   },
   {
     mana: 1_000_000,
     price: 1_00000,
-    bonus: 1000_00,
+    bonus: 1000,
   },
 ]
 export type PaymentAmount = (typeof PaymentAmounts)[number]
@@ -164,4 +164,4 @@ export const IOS_PRICES = [
 export type ManaAmountGIDX = (typeof PaymentAmountsGIDX)[number]['mana']
 
 export const SWEEPIES_CASHOUT_FEE = 0.05
-export const MIN_CASHOUT_AMOUNT = 25_00
+export const MIN_CASHOUT_AMOUNT = 25

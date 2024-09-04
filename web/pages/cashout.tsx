@@ -32,7 +32,6 @@ const CashoutPage = () => {
   const [SavePaymentMethod, _] = useState(false)
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
   const [amountInDollars, setAmountInDollars] = useState<number>()
-  const amountInCents = (amountInDollars ?? 0) * 100
   const [locationError, setLocationError] = useState<string>()
   const [loading, setloading] = useState(false)
   const [error, setError] = useState<string>()
@@ -109,7 +108,7 @@ const CashoutPage = () => {
         SavePaymentMethod,
         PaymentAmount: {
           dollars: (1 - SWEEPIES_CASHOUT_FEE) * amountInDollars,
-          manaCash: amountInCents,
+          manaCash: amountInDollars,
         },
         MerchantSessionID: checkoutSession.MerchantSessionID,
         MerchantTransactionID: checkoutSession.MerchantTransactionID,
@@ -265,10 +264,10 @@ const CashoutPage = () => {
               >
                 <Row className={'gap-1'}>
                   Withdraw{' '}
-                  <CoinNumber amount={amountInCents} coinType={'sweepies'} />{' '}
+                  <CoinNumber amount={amountInDollars} coinType={'sweepies'} />{' '}
                   for{' '}
                   {formatSweepsToUSD(
-                    (1 - SWEEPIES_CASHOUT_FEE) * amountInCents
+                    (1 - SWEEPIES_CASHOUT_FEE) * (amountInDollars ?? 0)
                   )}
                 </Row>
               </Button>

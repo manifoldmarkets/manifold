@@ -48,8 +48,7 @@ export const completeCashoutSession: APIHandler<
     throw new APIError(400, 'Insufficient redeemable prize cash')
   }
   const dollarsToWithdraw = PaymentAmount.dollars
-  const CalculatedPaymentAmount =
-    (1 - SWEEPIES_CASHOUT_FEE) * (manaCashAmount / 100)
+  const CalculatedPaymentAmount = (1 - SWEEPIES_CASHOUT_FEE) * manaCashAmount
   if (dollarsToWithdraw !== CalculatedPaymentAmount) {
     throw new APIError(400, 'Payment amount mismatch')
   }
@@ -190,6 +189,7 @@ const debitCoins = async (
     PaymentAmountType,
   } = PaymentDetails[0]
   const data = {
+    sessionId: SessionID,
     transactionId: MerchantTransactionID,
     type: 'gidx',
     payoutInDollars: PaymentDetails[0].PaymentAmount,

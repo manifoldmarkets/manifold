@@ -79,7 +79,7 @@ export function formatMoneyUSD(amount: number) {
 }
 
 export function formatSweepsToUSD(amount: number) {
-  return formatterWithFraction.format(amount / 100)
+  return formatterWithFraction.format(amount)
 }
 
 export function formatMoneyNumber(amount: number) {
