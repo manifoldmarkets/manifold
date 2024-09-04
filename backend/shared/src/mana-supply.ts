@@ -28,12 +28,12 @@ export const getManaSupply = async (recalculateAllUserPortfolios: boolean) => {
   const userPortfolio = await pg.one(
     `select
       sum(u.balance + u.spice_balance + coalesce(uphl.investment_value, 0)) as total_mana_value,
-      sum(u.cash_balance) + coalesce(uphl.cash_investment_value, 0) as total_cash_value
+      sum(u.cash_balance + coalesce(uphl.cash_investment_value, 0)) as total_cash_value,
       sum(u.balance) as mana_balance,
       sum(u.spice_balance) as spice_balance,
       sum(u.cash_balance) as cash_balance,
       sum(coalesce(uphl.investment_value, 0)) as mana_investment_value,
-      sum(coalesce(upl.cash_investment_value, 0) as cash_investment_value,
+      sum(coalesce(uphl.cash_investment_value, 0)) as cash_investment_value,
       sum(coalesce(uphl.loan_total, 0)) as loan_total
     from users u
     left join user_portfolio_history_latest uphl on u.id = uphl.user_id
