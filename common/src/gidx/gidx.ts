@@ -44,8 +44,8 @@ export const checkoutParams = {
   MerchantSessionID: z.string(),
   PaymentAmount: z.object({
     mana: z.number(),
-    price: z.number(),
-    bonus: z.number(),
+    priceInDollars: z.number(),
+    bonusInDollars: z.number(),
   }),
   PaymentMethod: z.object({
     Type: z.enum(['CC']), // TODO: add 'ACH'
@@ -211,8 +211,8 @@ export type CashierLimit = {
 
 export type PaymentAmount = {
   mana: number
-  price: number
-  bonus: number
+  priceInDollars: number
+  bonusInDollars: number
 }
 export type PaymentMethod = {
   Token: string

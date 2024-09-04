@@ -30,7 +30,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { LocationPanel } from 'web/components/gidx/location-panel'
-import { formatSweepsToUSD } from 'common/util/format'
+import { formatMoneyUSD } from 'common/util/format'
 import { capitalize } from 'lodash'
 
 const CheckoutPage = () => {
@@ -112,7 +112,7 @@ const CheckoutPage = () => {
     setLoading(true)
     const dollarAmount = (prices as typeof MANA_WEB_PRICES).find(
       (a) => a.mana === amountSelected
-    )?.price
+    )?.priceInDollars
     console.log('dollaramount', dollarAmount)
     if (!dollarAmount) {
       setError('Invalid mana amount')
@@ -126,7 +126,7 @@ const CheckoutPage = () => {
       const { session, status, message } = res
       if (session && status !== 'error') {
         const product = session.PaymentAmounts.find(
-          (a) => a.price === dollarAmount
+          (a) => a.priceInDollars === dollarAmount
         )
         if (!product) {
           setError(
@@ -270,7 +270,10 @@ function FundsSelector(props: {
               onClick={() => {
                 setError(null)
                 setLoading(amounts.mana)
-                postMessageToNative('checkout', { amount: amounts.price })
+                // Expects cents
+                postMessageToNative('checkout', {
+                  amount: amounts.priceInDollars * 100,
+                })
               }}
             />
           ) : (
@@ -407,13 +410,13 @@ const PaymentSection = (props: {
             <CoinNumber
               className={'font-semibold'}
               coinType={'sweepies'}
-              amount={amount.bonus}
+              amount={amount.bonusInDollars}
               isInline
             />
           </span>
         </Row>
         <Row className={'my-4 justify-center text-4xl '}>
-          <span>{formatSweepsToUSD(amount.price)}</span>
+          <span>{formatMoneyUSD(amount.priceInDollars, true)}</span>
         </Row>
         <Col className="bg-canvas-0 w-full max-w-md rounded p-4">
           <form onSubmit={handleSubmit}>

@@ -95,46 +95,46 @@ export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
 export const PaymentAmounts = [
   {
     mana: 10_000,
-    price: 1399,
-    bonus: 0,
+    priceInDollars: 13.99,
+    bonusInDollars: 0,
   },
   {
     mana: 25_000,
-    price: 2999,
-    bonus: 0,
+    priceInDollars: 2999,
+    bonusInDollars: 0,
   },
   {
     mana: 100_000,
-    price: 10999,
-    bonus: 0,
+    priceInDollars: 109.99,
+    bonusInDollars: 0,
   },
   {
     mana: 1_000_000,
-    price: 1_00000,
-    bonus: 0,
+    priceInDollars: 1_000,
+    bonusInDollars: 0,
   },
 ]
 
 export const PaymentAmountsGIDX = [
   {
     mana: 10_000,
-    price: 1500,
-    bonus: 10,
+    priceInDollars: 1500,
+    bonusInDollars: 10,
   },
   {
     mana: 25_000,
-    price: 3000,
-    bonus: 25,
+    priceInDollars: 30,
+    bonusInDollars: 25,
   },
   {
     mana: 100_000,
-    price: 11000,
-    bonus: 100,
+    priceInDollars: 110,
+    bonusInDollars: 100,
   },
   {
     mana: 1_000_000,
-    price: 1_00000,
-    bonus: 1000,
+    priceInDollars: 1_000,
+    bonusInDollars: 1000,
   },
 ]
 export type PaymentAmount = (typeof PaymentAmounts)[number]
@@ -146,18 +146,18 @@ export type WebManaAmounts = (typeof PaymentAmounts)[number]['mana']
 export const IOS_PRICES = [
   {
     mana: 10_000,
-    price: 1499,
-    bonus: 0,
+    priceInDollars: 14.99,
+    bonusInDollars: 0,
   },
   {
     mana: 25_000,
-    price: 3599,
-    bonus: 0,
+    priceInDollars: 35.99,
+    bonusInDollars: 0,
   },
   {
     mana: 100_000,
-    price: 14299,
-    bonus: 0,
+    priceInDollars: 142.99,
+    bonusInDollars: 0,
   },
   // No 1M option on ios: the fees are too high
 ]

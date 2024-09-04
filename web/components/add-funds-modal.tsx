@@ -148,13 +148,21 @@ export function BuyManaTab(props: { onClose: () => void }) {
               onClick={() => {
                 setError(null)
                 setLoading(amounts.mana)
-                postMessageToNative('checkout', { amount: amounts.price })
+                // Expects cents
+                postMessageToNative('checkout', {
+                  amount: amounts.priceInDollars * 100,
+                })
               }}
             />
           ) : (
             <form
               key={`web-${amounts.mana}`}
-              action={checkoutURL(user?.id || '', amounts.price, url)}
+              // Expects cents
+              action={checkoutURL(
+                user?.id || '',
+                amounts.priceInDollars * 100,
+                url
+              )}
               method="POST"
             >
               <PriceTile
@@ -185,7 +193,7 @@ export function PriceTile(props: {
   isSubmitButton?: boolean
 }) {
   const { loading, onClick, isSubmitButton, amounts } = props
-  const { mana, price, bonus } = amounts
+  const { mana, priceInDollars, bonusInDollars } = amounts
 
   const isCurrentlyLoading = loading === mana
   const disabled = props.disabled || (loading && !isCurrentlyLoading)
@@ -213,7 +221,7 @@ export function PriceTile(props: {
           <CoinNumber
             coinType="sweepies"
             className="font-bold"
-            amount={bonus}
+            amount={bonusInDollars}
             isInline
           />{' '}
           <span className="text-sm">bonus</span>
@@ -258,7 +266,7 @@ export function PriceTile(props: {
         </div>
       </Col>
       <Col className="w-full rounded-b bg-blue-600 px-4 py-1 text-lg font-semibold text-white">
-        ${price / 100}
+        ${priceInDollars}
       </Col>
     </button>
   )

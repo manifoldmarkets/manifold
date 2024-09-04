@@ -21,7 +21,7 @@ const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
 
 const getPaymentAmountForWebPrice = (price: number) => {
-  const amount = PaymentAmountsGIDX.find((p) => p.price === price)
+  const amount = PaymentAmountsGIDX.find((p) => p.priceInDollars === price)
   if (!amount) {
     throw new APIError(400, 'Invalid price')
   }
@@ -40,7 +40,9 @@ export const completeCheckoutSession: APIHandler<
     PaymentAmount,
     MerchantTransactionID,
   } = props
-  const paymentAmount = getPaymentAmountForWebPrice(PaymentAmount.price)
+  const paymentAmount = getPaymentAmountForWebPrice(
+    PaymentAmount.priceInDollars
+  )
 
   const { creditCard, Type, BillingAddress, NameOnAccount, SavePaymentMethod } =
     PaymentMethod
@@ -49,7 +51,7 @@ export const completeCheckoutSession: APIHandler<
   }
   const body = {
     PaymentAmount: {
-      PaymentAmount: PaymentAmount.price / 100,
+      PaymentAmount: PaymentAmount.priceInDollars,
       BonusAmount: 0,
     },
     DeviceIpAddress: LOCAL_DEV ? LOCAL_IP : getIp(req),
@@ -106,7 +108,7 @@ export const completeCheckoutSession: APIHandler<
     PaymentStatusMessage,
     PaymentAmount: CompletedPaymentAmount,
   } = PaymentDetails[0]
-  if (CompletedPaymentAmount !== PaymentAmount.price / 100) {
+  if (CompletedPaymentAmount !== PaymentAmount.priceInDollars) {
     log.error('Payment amount mismatch', {
       CompletedPaymentAmount,
       PaymentAmount,
@@ -196,7 +198,7 @@ const sendCoins = async (
     toId: userId,
     toType: 'USER',
     data,
-    amount: amount.bonus,
+    amount: amount.bonusInDollars,
     token: 'CASH',
     category: 'CASH_BONUS',
     description: `Bonus for mana purchase`,
