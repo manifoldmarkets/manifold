@@ -782,6 +782,103 @@ export type Database = {
         }
         Relationships: []
       }
+      gidx_receipts: {
+        Row: {
+          amount: number | null
+          callback_data: Json | null
+          created_time: string
+          currency: string | null
+          id: number
+          merchant_session_id: string | null
+          merchant_transaction_id: string
+          payment_amount_type: string | null
+          payment_data: Json | null
+          payment_method_type: string | null
+          payment_status_code: string | null
+          payment_status_message: string | null
+          reason_codes: string[] | null
+          service_type: string | null
+          session_id: string
+          session_score: number | null
+          status: string | null
+          status_code: number | null
+          transaction_status_code: string | null
+          transaction_status_message: string | null
+          txn_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          callback_data?: Json | null
+          created_time?: string
+          currency?: string | null
+          id?: never
+          merchant_session_id?: string | null
+          merchant_transaction_id: string
+          payment_amount_type?: string | null
+          payment_data?: Json | null
+          payment_method_type?: string | null
+          payment_status_code?: string | null
+          payment_status_message?: string | null
+          reason_codes?: string[] | null
+          service_type?: string | null
+          session_id: string
+          session_score?: number | null
+          status?: string | null
+          status_code?: number | null
+          transaction_status_code?: string | null
+          transaction_status_message?: string | null
+          txn_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          callback_data?: Json | null
+          created_time?: string
+          currency?: string | null
+          id?: never
+          merchant_session_id?: string | null
+          merchant_transaction_id?: string
+          payment_amount_type?: string | null
+          payment_data?: Json | null
+          payment_method_type?: string | null
+          payment_status_code?: string | null
+          payment_status_message?: string | null
+          reason_codes?: string[] | null
+          service_type?: string | null
+          session_id?: string
+          session_score?: number | null
+          status?: string | null
+          status_code?: number | null
+          transaction_status_code?: string | null
+          transaction_status_message?: string | null
+          txn_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'gidx_receipts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'gidx_receipts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'gidx_receipts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       group_contracts: {
         Row: {
           contract_id: string

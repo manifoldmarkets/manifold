@@ -73,7 +73,10 @@ export function formatMoneyShort(amount: number) {
   return ENV_CONFIG.moneyMoniker + formatLargeNumber(newAmount)
 }
 
-export function formatMoneyUSD(amount: number) {
+export function formatMoneyUSD(amount: number, fraction?: boolean) {
+  if (fraction) {
+    return formatterWithFraction.format(amount)
+  }
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount)
 }

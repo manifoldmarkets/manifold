@@ -529,3 +529,24 @@ export const ProcessSessionCode = (
     status: 'success',
   }
 }
+
+export type CashoutStatusData = {
+  user: {
+    id: string
+    name: string
+    username: string
+    avatarUrl: string
+  }
+  txn: {
+    id: string
+    amount: number
+    createdTime: string
+    gidxStatus: string[]
+    data: {
+      sessionId: string
+      transactionId: string
+      type: 'gidx'
+      payoutInDollars: number
+    }
+  }
+}
