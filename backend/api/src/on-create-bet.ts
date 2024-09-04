@@ -30,7 +30,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
-import { BOT_USERNAMES } from 'common/envs/constants'
+import { BOT_USERNAMES, TWOMBA_ENABLED } from 'common/envs/constants'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
@@ -38,6 +38,8 @@ import { updateData } from 'shared/supabase/utils'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
+  BETTING_STREAK_SWEEPS_BONUS_AMOUNT,
+  BETTING_STREAK_SWEEPS_BONUS_MAX,
   MAX_TRADERS_FOR_BIG_BONUS,
   SMALL_UNIQUE_BETTOR_LIQUIDITY,
   UNIQUE_BETTOR_LIQUIDITY,
@@ -121,8 +123,7 @@ export const onCreateBets = async (
   !originalBettor.lastBetTime &&
     (await createFollowSuggestionNotification(originalBettor.id, contract, pg))
 
-  const eventId = originalBettor.id + '-' + earliestBet.id
-  await updateBettingStreak(originalBettor, earliestBet, contract, eventId)
+  await updateBettingStreak(originalBettor, earliestBet, contract)
 
   await Promise.all([
     replyBet &&
@@ -318,8 +319,7 @@ const handleBetReplyToComment = async (
 const updateBettingStreak = async (
   oldUser: User,
   bet: Bet,
-  contract: Contract,
-  eventId: string
+  contract: Contract
 ) => {
   const pg = createSupabaseDirectClient()
 
@@ -333,8 +333,10 @@ const updateBettingStreak = async (
     if (lastBetTime > betStreakResetTime) {
       return {
         bonusAmount: 0,
+        sweepsBonusAmount: 0,
         newBettingStreak: bettor.currentBettingStreak,
         txn: null,
+        sweepsTxn: null,
       }
     }
 
@@ -347,8 +349,10 @@ const updateBettingStreak = async (
     if (!humanish(bettor)) {
       return {
         bonusAmount: 0,
+        sweepsBonusAmount: 0,
         newBettingStreak,
         txn: { id: bet.id },
+        sweepsTxn: null,
       }
     }
 
@@ -378,7 +382,31 @@ const updateBettingStreak = async (
 
     const txn = await runTxnFromBank(tx, bonusTxn)
 
-    return { txn, bonusAmount, newBettingStreak }
+    let sweepsTxn = null
+    let sweepsBonusAmount = 0
+    if (bettor.sweepstakesVerified && TWOMBA_ENABLED) {
+      sweepsBonusAmount = Math.min(
+        BETTING_STREAK_SWEEPS_BONUS_AMOUNT * newBettingStreak,
+        BETTING_STREAK_SWEEPS_BONUS_MAX
+      )
+
+      const sweepsBonusTxn: Omit<
+        BettingStreakBonusTxn,
+        'id' | 'createdTime' | 'fromId'
+      > = {
+        fromType: 'BANK',
+        toId: bettor.id,
+        toType: 'USER',
+        amount: sweepsBonusAmount,
+        token: 'CASH',
+        category: 'BETTING_STREAK_BONUS',
+        data: bonusTxnDetails,
+      }
+
+      sweepsTxn = await runTxnFromBank(tx, sweepsBonusTxn)
+    }
+
+    return { txn, sweepsTxn, bonusAmount, sweepsBonusAmount, newBettingStreak }
   })
 
   if (result.txn) {
@@ -389,7 +417,7 @@ const updateBettingStreak = async (
       contract,
       result.bonusAmount,
       result.newBettingStreak,
-      eventId
+      result.sweepsTxn ? result.sweepsBonusAmount : undefined
     )
   }
 }

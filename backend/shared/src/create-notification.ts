@@ -785,7 +785,7 @@ export const createBettingStreakBonusNotification = async (
   contract: Contract,
   amount: number,
   streak: number,
-  idempotencyKey: string
+  cashAmount: number | undefined
 ) => {
   const privateUser = await getPrivateUser(user.id)
   if (!privateUser) return
@@ -796,7 +796,7 @@ export const createBettingStreakBonusNotification = async (
   if (!sendToBrowser) return
 
   const notification: Notification = {
-    id: idempotencyKey,
+    id: crypto.randomUUID(),
     userId: user.id,
     reason: 'betting_streaks',
     createdTime: Date.now(),
@@ -818,6 +818,7 @@ export const createBettingStreakBonusNotification = async (
     data: {
       streak: streak,
       bonusAmount: amount,
+      cashAmount,
     } as BettingStreakData,
   }
   const pg = createSupabaseDirectClient()

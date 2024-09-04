@@ -333,6 +333,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
 export type BettingStreakData = {
   streak: number
   bonusAmount: number
+  cashAmount?: number
 }
 export type LeagueChangeData = {
   previousLeague: league_user_info | undefined
