@@ -174,6 +174,14 @@ export const ageBlocked = (user: User | undefined | null) =>
 export const identityBlocked = (user: User | undefined | null) =>
   user && intersection(user.kycFlags, identityBlockedCodes).length > 0
 
+export const GIDX_DISABLED_MESSAGE = 'GIDX registration is disabled'
+export const PHONE_NOT_VERIFIED_MESSAGE = 'User must verify phone'
+export const IDENTIFICATION_FAILED_MESSAGE = 'User identification failed'
+export const LOCATION_BLOCKED_MESSAGE = 'User location is blocked'
+export const USER_BLOCKED_MESSAGE = 'User is blocked'
+export const USER_NOT_REGISTERED_MESSAGE = 'User must register'
+export const USER_VERIFIED_MESSSAGE = 'User is verified'
+
 export const getVerificationStatus = (
   user: User
 ): {
@@ -181,18 +189,18 @@ export const getVerificationStatus = (
   message: string
 } => {
   if (!TWOMBA_ENABLED) {
-    return { status: 'error', message: 'GIDX registration is disabled' }
+    return { status: 'error', message: GIDX_DISABLED_MESSAGE }
   } else if (!humanish(user)) {
-    return { status: 'error', message: 'User must verify phone' }
+    return { status: 'error', message: PHONE_NOT_VERIFIED_MESSAGE }
   } else if (!user.idVerified) {
-    return { status: 'error', message: 'User identification failed' }
+    return { status: 'error', message: IDENTIFICATION_FAILED_MESSAGE }
   } else if (!user.sweepstakesVerified && locationBlocked(user)) {
-    return { status: 'error', message: 'User location is blocked' }
+    return { status: 'error', message: LOCATION_BLOCKED_MESSAGE }
   } else if (!user.sweepstakesVerified) {
-    return { status: 'error', message: 'User is blocked' }
+    return { status: 'error', message: USER_BLOCKED_MESSAGE }
   } else if (user.sweepstakesVerified) {
-    return { status: 'success', message: 'User is verified' }
+    return { status: 'success', message: USER_VERIFIED_MESSSAGE }
   } else {
-    return { status: 'error', message: 'User must register' }
+    return { status: 'error', message: USER_NOT_REGISTERED_MESSAGE }
   }
 }

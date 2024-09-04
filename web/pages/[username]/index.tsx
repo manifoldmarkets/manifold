@@ -76,6 +76,7 @@ import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { RedeemSpiceButton } from 'web/components/profile/redeem-spice-button'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import { Button } from 'web/components/buttons/button'
+import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
 
 export const getStaticProps = async (props: {
   params: {
@@ -231,8 +232,6 @@ function UserProfile(props: {
   const balanceChanges = newBalanceChanges ?? []
   const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
   const balanceChangesKey = 'balance-changes'
-  const { data: redeemable } = useAPIGetter('get-redeemable-prize-cash', {})
-  const redeemableCash = redeemable?.redeemablePrizeCash ?? 0
   return (
     <Page
       key={user.id}
@@ -336,7 +335,19 @@ function UserProfile(props: {
           )}
 
           <Row className={'items-center gap-1 sm:gap-2'}>
-            {!isCurrentUser && (
+            {isCurrentUser ? (
+              TWOMBA_ENABLED ? (
+                <Row className="my-2 hidden items-center gap-2 px-4 sm:flex">
+                  <AddFundsButton
+                    userId={user.id}
+                    className="whitespace-nowra w-full lg:hidden"
+                  />
+                  <RedeemSweepsButtons user={user} className="shrink-0" />
+                </Row>
+              ) : (
+                <></>
+              )
+            ) : (
               <>
                 <SendMessageButton toUser={user} currentUser={currentUser} />
                 <FollowButton userId={user.id} />
@@ -364,26 +375,12 @@ function UserProfile(props: {
         )}
 
         {isCurrentUser && TWOMBA_ENABLED && (
-          <Row className="my-2 w-full items-center gap-2 px-4">
-            <AddFundsButton userId={user.id} className="whitespace-nowrap" />
-            <RedeemSpiceButton
+          <Row className="my-2 w-full items-center gap-2 px-4 sm:hidden">
+            <AddFundsButton
               userId={user.id}
-              className="whitespace-nowrap"
-              spice={user.spiceBalance}
+              className="w-1/2 whitespace-nowrap"
             />
-            {!blockFromSweepstakes(user) && (
-              <Button
-                disabled={redeemableCash <= 0}
-                onClick={() => router.push('/cashout')}
-              >
-                Cashout
-                <CoinNumber
-                  amount={redeemableCash}
-                  className={'ml-1'}
-                  coinType={'sweepies'}
-                />
-              </Button>
-            )}
+            <RedeemSweepsButtons user={user} className="w-1/2" />
           </Row>
         )}
 

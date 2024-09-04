@@ -219,7 +219,12 @@ export function PriceTile(props: {
           <span className="text-sm">bonus</span>
         </div>
       )}
-      <Col className="bg-canvas-50 items-center rounded-t px-4 pb-2 pt-4">
+      <Col
+        className={clsx(
+          TWOMBA_ENABLED ? 'bg-canvas-0' : 'bg-canvas-50',
+          'items-center rounded-t px-4 pb-2 pt-4'
+        )}
+      >
         <Image
           src={
             mana == 10000
