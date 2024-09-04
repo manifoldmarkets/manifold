@@ -1,8 +1,10 @@
 import { Col } from 'web/components/layout/col'
 import {
   formatMoney,
+  formatMoneyUSD,
   formatSpice,
   formatSweepies,
+  maybePluralize,
   shortFormatNumber,
 } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
@@ -18,7 +20,7 @@ import {
   isTxnChange,
 } from 'common/balance-change'
 import Link from 'next/link'
-import { ENV_CONFIG, SWEEPIES_NAME } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 import {
   FaBackward,
   FaArrowRightArrowLeft,
@@ -33,6 +35,9 @@ import { Input } from 'web/components/widgets/input'
 import { formatJustTime, formatTimeShort } from 'web/lib/util/time'
 import { assertUnreachable } from 'common/util/types'
 import { AnyTxnCategory } from 'common/txn'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { Button } from 'web/components/buttons/button'
+import { Modal } from '../layout/modal'
 
 export const BalanceChangeTable = (props: {
   user: User
@@ -41,10 +46,13 @@ export const BalanceChangeTable = (props: {
 }) => {
   const { user, simple } = props
   const [query, setQuery] = useState('')
+  const { data: cashouts } = useAPIGetter('get-cashouts', {
+    userId: user.id,
+  })
+  const [showCashoutModal, setShowCashoutModal] = useState(false)
   const balanceChanges = props.balanceChanges
     .filter((change) => {
       const { type } = change
-
       const contractQuestion =
         ('contract' in change && change.contract?.question) || ''
       const changeType = type
@@ -68,15 +76,28 @@ export const BalanceChangeTable = (props: {
       )
     })
     .slice(0, 1000)
+  const pendingCashouts =
+    cashouts?.filter((c) => c.txn.gidxStatus === 'Pending')?.length ?? 0
   return (
-    <Col className={' w-full justify-center'}>
+    <Col className={' w-full justify-center py-1'}>
       <Input
         type={'text'}
         placeholder={'Search your balance changes'}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <Col className={'gap-4 px-3 pt-4'}>
+      <Col className={'gap-4 px-2 pt-4'}>
+        {cashouts && cashouts.length > 0 && (
+          <Row className=" justify-end">
+            <Button
+              color="gray-outline"
+              onClick={() => setShowCashoutModal(true)}
+            >
+              View {maybePluralize('cashout', cashouts?.length ?? 0)}{' '}
+              {pendingCashouts > 0 ? `(${pendingCashouts} pending)` : ''}
+            </Button>
+          </Row>
+        )}
         <RenderBalanceChanges
           avatarSize={'md'}
           balanceChanges={balanceChanges}
@@ -85,6 +106,34 @@ export const BalanceChangeTable = (props: {
           hideBalance={!!query}
         />
       </Col>
+      <Modal open={showCashoutModal} setOpen={setShowCashoutModal}>
+        <Col className={'bg-canvas-0 gap-4 rounded-md p-4'}>
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className="text-left">Amount</th>
+                <th className="text-left">Date</th>
+                <th className="text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cashouts?.map((cashout) => (
+                <tr key={cashout.txn.id}>
+                  <td>
+                    {formatMoneyUSD(cashout.txn.data.payoutInDollars, true)}
+                  </td>
+                  <td className="whitespace-nowrap">
+                    {new Date(cashout.txn.createdTime).toLocaleString()}
+                  </td>
+                  <td className="whitespace-nowrap">
+                    {cashout.txn.gidxStatus}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Col>
+      </Modal>
     </Col>
   )
 }
@@ -302,9 +351,7 @@ const BetBalanceChangeRow = (props: {
             {!hideBalance && (
               <>
                 {token === 'CASH'
-                  ? formatSweepies(balance.cash) +
-                    ' ' +
-                    SWEEPIES_NAME.toLowerCase()
+                  ? formatSweepies(balance.cash)
                   : formatMoney(balance.mana)}
                 {'·'}
               </>
@@ -456,9 +503,7 @@ const TxnBalanceChangeRow = (props: {
             {token === 'SPICE'
               ? formatSpice(amount).replace('-', '')
               : token === 'CASH'
-              ? formatSweepies(amount).replace('-', '') +
-                ' ' +
-                SWEEPIES_NAME.toLowerCase()
+              ? formatSweepies(amount).replace('-', '')
               : formatMoney(amount).replace('-', '')}
           </span>
         </Row>
@@ -472,9 +517,7 @@ const TxnBalanceChangeRow = (props: {
                 {token === 'SPICE'
                   ? formatSpice(balance.spice)
                   : token === 'CASH'
-                  ? formatSweepies(balance.cash) +
-                    ' ' +
-                    SWEEPIES_NAME.toLowerCase()
+                  ? formatSweepies(balance.cash)
                   : formatMoney(balance.mana)}
                 {' · '}
               </>

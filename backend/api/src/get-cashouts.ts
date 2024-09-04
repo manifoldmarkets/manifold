@@ -35,7 +35,8 @@ export const getCashouts: APIHandler<'get-cashouts'> = async (props) => {
         amount: row.amount as number,
         createdTime: row.created_time as string,
         data: row.txn_data as CashoutStatusData['txn']['data'],
-        gidxStatus: (row.gidx_status ?? []).filter(Boolean) as string[],
+        gidxStatus: ((row.gidx_status ?? []).filter(Boolean)[0] ??
+          'Unknown') as string,
       },
     })
   )

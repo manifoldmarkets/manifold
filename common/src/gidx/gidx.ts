@@ -541,7 +541,7 @@ export type CashoutStatusData = {
     id: string
     amount: number
     createdTime: string
-    gidxStatus: string[]
+    gidxStatus: string
     data: {
       sessionId: string
       transactionId: string

@@ -54,7 +54,7 @@ export default function AdminCashouts() {
                       {new Date(cashout.txn.createdTime).toLocaleString()}
                     </td>
                     <td className="whitespace-nowrap">
-                      {cashout.txn.gidxStatus[0]}
+                      {cashout.txn.gidxStatus}
                     </td>
                     <td className="whitespace-nowrap">
                       <Link
