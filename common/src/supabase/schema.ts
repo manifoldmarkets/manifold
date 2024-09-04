@@ -538,6 +538,7 @@ export type Database = {
           avg_user_actions: number | null
           bet_amount: number | null
           bet_count: number | null
+          cash_bet_amount: number | null
           comment_count: number | null
           contract_count: number | null
           d1: number | null
@@ -563,6 +564,7 @@ export type Database = {
           avg_user_actions?: number | null
           bet_amount?: number | null
           bet_count?: number | null
+          cash_bet_amount?: number | null
           comment_count?: number | null
           contract_count?: number | null
           d1?: number | null
@@ -588,6 +590,7 @@ export type Database = {
           avg_user_actions?: number | null
           bet_amount?: number | null
           bet_count?: number | null
+          cash_bet_amount?: number | null
           comment_count?: number | null
           contract_count?: number | null
           d1?: number | null
@@ -781,6 +784,103 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      gidx_receipts: {
+        Row: {
+          amount: number | null
+          callback_data: Json | null
+          created_time: string
+          currency: string | null
+          id: number
+          merchant_session_id: string | null
+          merchant_transaction_id: string
+          payment_amount_type: string | null
+          payment_data: Json | null
+          payment_method_type: string | null
+          payment_status_code: string | null
+          payment_status_message: string | null
+          reason_codes: string[] | null
+          service_type: string | null
+          session_id: string
+          session_score: number | null
+          status: string | null
+          status_code: number | null
+          transaction_status_code: string | null
+          transaction_status_message: string | null
+          txn_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          callback_data?: Json | null
+          created_time?: string
+          currency?: string | null
+          id?: never
+          merchant_session_id?: string | null
+          merchant_transaction_id: string
+          payment_amount_type?: string | null
+          payment_data?: Json | null
+          payment_method_type?: string | null
+          payment_status_code?: string | null
+          payment_status_message?: string | null
+          reason_codes?: string[] | null
+          service_type?: string | null
+          session_id: string
+          session_score?: number | null
+          status?: string | null
+          status_code?: number | null
+          transaction_status_code?: string | null
+          transaction_status_message?: string | null
+          txn_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          callback_data?: Json | null
+          created_time?: string
+          currency?: string | null
+          id?: never
+          merchant_session_id?: string | null
+          merchant_transaction_id?: string
+          payment_amount_type?: string | null
+          payment_data?: Json | null
+          payment_method_type?: string | null
+          payment_status_code?: string | null
+          payment_status_message?: string | null
+          reason_codes?: string[] | null
+          service_type?: string | null
+          session_id?: string
+          session_score?: number | null
+          status?: string | null
+          status_code?: number | null
+          transaction_status_code?: string | null
+          transaction_status_message?: string | null
+          txn_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'gidx_receipts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'gidx_receipts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'gidx_receipts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       group_contracts: {
         Row: {
@@ -1387,8 +1487,11 @@ export type Database = {
       }
       mana_supply_stats: {
         Row: {
+          amm_cash_liquidity: number
           amm_liquidity: number
           balance: number
+          cash_balance: number
+          cash_investment_value: number
           created_time: string
           end_time: string
           id: number
@@ -1396,11 +1499,15 @@ export type Database = {
           loan_total: number
           spice_balance: number
           start_time: string
+          total_cash_value: number
           total_value: number
         }
         Insert: {
+          amm_cash_liquidity?: number
           amm_liquidity: number
           balance: number
+          cash_balance?: number
+          cash_investment_value?: number
           created_time?: string
           end_time: string
           id?: never
@@ -1408,11 +1515,15 @@ export type Database = {
           loan_total: number
           spice_balance: number
           start_time: string
+          total_cash_value?: number
           total_value: number
         }
         Update: {
+          amm_cash_liquidity?: number
           amm_liquidity?: number
           balance?: number
+          cash_balance?: number
+          cash_investment_value?: number
           created_time?: string
           end_time?: string
           id?: never
@@ -1420,6 +1531,7 @@ export type Database = {
           loan_total?: number
           spice_balance?: number
           start_time?: string
+          total_cash_value?: number
           total_value?: number
         }
         Relationships: []
@@ -2224,6 +2336,7 @@ export type Database = {
       }
       txn_summary_stats: {
         Row: {
+          cash_amount: number
           category: string
           created_time: string
           end_time: string
@@ -2236,6 +2349,7 @@ export type Database = {
           total_amount: number
         }
         Insert: {
+          cash_amount?: number
           category: string
           created_time?: string
           end_time: string
@@ -2248,6 +2362,7 @@ export type Database = {
           total_amount: number
         }
         Update: {
+          cash_amount?: number
           category?: string
           created_time?: string
           end_time?: string

@@ -21,6 +21,7 @@ const colors = [
   '#D4A5C2',
   '#FFB7B7',
   '#B7FFB7',
+  '#FFD700',
 ]
 
 type DateAndCategoriesToTotals = { date: string } & {
@@ -162,6 +163,7 @@ const orderAndGroupData = (data: rowFor<'mana_supply_stats'>[]) => {
       end_time: ___,
       start_time,
       total_value: ____,
+      total_cash_value: _____,
       ...rest
     } = datum
 

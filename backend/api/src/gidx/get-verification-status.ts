@@ -47,7 +47,12 @@ export const getVerificationStatusInternal = async (
     log('User not found in GIDX', { userId, ResponseMessage })
     // TODO: broadcast this user update when we have that functionality
     await pg.none(
-      `update users set data = data - 'kycFlags' - 'kycDocumentStatus' - 'sweepstakesVerified' - 'idVerified'
+      `update users set data = data - 'kycDocumentStatus' - 'sweepstakesVerified' - 'idVerified'
+             where id = $1`,
+      [userId]
+    )
+    await pg.none(
+      `update private_users set data = data - 'kycFlags'
              where id = $1`,
       [userId]
     )

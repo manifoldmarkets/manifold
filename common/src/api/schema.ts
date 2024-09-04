@@ -55,6 +55,7 @@ import {
   checkoutParams,
   verificationParams,
   cashoutParams,
+  CashoutStatusData,
 } from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
@@ -1606,6 +1607,19 @@ export const API = (_apiTypeCheck = {
     authed: true,
     returns: {} as { redeemablePrizeCash: number },
     props: z.object({}).strict(),
+  },
+  'get-cashouts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as CashoutStatusData[],
+    props: z
+      .object({
+        limit: z.coerce.number().gte(0).lte(100).default(10),
+        offset: z.coerce.number().gte(0).default(0),
+        userId: z.string().optional(),
+      })
+      .strict(),
   },
 } as const)
 

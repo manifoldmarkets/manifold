@@ -192,6 +192,7 @@ import { followContract } from './follow-contract'
 import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { completeCashoutSession } from 'api/gidx/complete-cashout-session'
+import { getCashouts } from './get-cashouts'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -420,6 +421,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-monitor-status-gidx': getMonitorStatus,
   'get-best-comments': getBestComments,
   'record-comment-view': recordCommentView,
+  'get-cashouts': getCashouts,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

@@ -10,7 +10,8 @@ create table if not exists
     token text not null,
     quest_type text,
     category text not null,
-    total_amount numeric not null
+    total_amount numeric not null,
+    cash_amount numeric default 0 not null
   );
 
 -- Policies

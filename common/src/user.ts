@@ -75,7 +75,6 @@ export type User = {
   verifiedPhone?: boolean
 
   // KYC related fields:
-  kycFlags?: string[]
   kycLastAttempt?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
   sweepstakesVerified?: boolean
@@ -112,6 +111,9 @@ export type PrivateUser = {
   installedAppPlatforms?: string[]
   discordId?: string
   paymentInfo?: string
+
+  // KYC related fields:
+  kycFlags?: string[]
 }
 
 // TODO: remove. Hardcoding the strings would be better.
@@ -161,18 +163,29 @@ export const identityPending = (user: User | undefined | null) =>
 export const blockFromSweepstakes = (user: User | undefined | null) =>
   user && (!user.idVerified || verifiedAndBlocked(user))
 
-export const locationBlocked = (user: User | undefined | null) =>
-  user &&
+export const locationBlocked = (
+  user: User | undefined | null,
+  privateUser: PrivateUser | undefined | null
+) =>
+  privateUser &&
   verifiedAndBlocked(user) &&
-  intersection(user.kycFlags, locationTemporarilyBlockedCodes).length > 0
+  intersection(privateUser.kycFlags, locationTemporarilyBlockedCodes).length > 0
 
-export const ageBlocked = (user: User | undefined | null) =>
-  user &&
+export const ageBlocked = (
+  user: User | undefined | null,
+  privateUser: PrivateUser | undefined | null
+) =>
+  privateUser &&
   verifiedAndBlocked(user) &&
-  intersection(user.kycFlags, underageErrorCodes).length > 0
+  intersection(privateUser.kycFlags, underageErrorCodes).length > 0
 
-export const identityBlocked = (user: User | undefined | null) =>
-  user && intersection(user.kycFlags, identityBlockedCodes).length > 0
+export const identityBlocked = (
+  user: User | undefined | null,
+  privateUser: PrivateUser | undefined | null
+) =>
+  privateUser &&
+  verifiedAndBlocked(user) &&
+  intersection(privateUser.kycFlags, identityBlockedCodes).length > 0
 
 export const GIDX_DISABLED_MESSAGE = 'GIDX registration is disabled'
 export const PHONE_NOT_VERIFIED_MESSAGE = 'User must verify phone'
@@ -194,8 +207,6 @@ export const getVerificationStatus = (
     return { status: 'error', message: PHONE_NOT_VERIFIED_MESSAGE }
   } else if (!user.idVerified) {
     return { status: 'error', message: IDENTIFICATION_FAILED_MESSAGE }
-  } else if (!user.sweepstakesVerified && locationBlocked(user)) {
-    return { status: 'error', message: LOCATION_BLOCKED_MESSAGE }
   } else if (!user.sweepstakesVerified) {
     return { status: 'error', message: USER_BLOCKED_MESSAGE }
   } else if (user.sweepstakesVerified) {

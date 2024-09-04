@@ -42,9 +42,6 @@ export const getUserRegistrationRequirements = async (userId: string) => {
   if (!privateUser) {
     throw new APIError(404, 'Private user not found')
   }
-  if (!privateUser.email) {
-    throw new APIError(400, 'User must have an email address')
-  }
   const phoneNumberWithCode = await getPhoneNumber(userId)
   if (!phoneNumberWithCode) {
     throw new APIError(400, 'User must have a phone number')

@@ -10,7 +10,11 @@ create table if not exists
     spice_balance numeric not null,
     investment_value numeric not null,
     loan_total numeric not null,
-    amm_liquidity numeric not null
+    amm_liquidity numeric not null,
+    total_cash_value numeric default 0 not null,
+    cash_balance numeric default 0 not null,
+    cash_investment_value numeric default 0 not null,
+    amm_cash_liquidity numeric default 0 not null
   );
 
 -- Policies
