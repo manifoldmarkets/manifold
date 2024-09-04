@@ -43,8 +43,6 @@ export function RedeemSweepsButtons(props: { user: User; className?: string }) {
   }
 
   const { status, message } = getVerificationStatus(user)
-
-  console.log('message', message)
   return (
     <>
       <Button
