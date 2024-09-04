@@ -26,55 +26,69 @@ export const getManaSupply = async (recalculateAllUserPortfolios: boolean) => {
     }
   }
   const userPortfolio = await pg.one(
-    `
-      select
-          sum(u.balance + u.spice_balance + coalesce(uphl.investment_value, 0)) as total_value,
-          sum(u.balance) as balance,
-          sum(u.spice_balance) as spice_balance,
-          sum(coalesce(uphl.investment_value, 0)) as investment_value,
-          sum(coalesce(uphl.loan_total, 0)) as loan_total
-      from users u
-      left join user_portfolio_history_latest uphl on u.id = uphl.user_id
-      where (u.balance + u.spice_balance + coalesce(uphl.investment_value, 0)) > 0.0
-          `,
+    `select
+      sum(u.balance + u.spice_balance + coalesce(uphl.investment_value, 0)) as total_mana_value,
+      sum(u.cash_balance) + coalesce(uphl.cash_investment_value, 0) as total_cash_value
+      sum(u.balance) as mana_balance,
+      sum(u.spice_balance) as spice_balance,
+      sum(u.cash_balance) as cash_balance,
+      sum(coalesce(uphl.investment_value, 0)) as mana_investment_value,
+      sum(coalesce(upl.cash_investment_value, 0) as cash_investment_value,
+      sum(coalesce(uphl.loan_total, 0)) as loan_total
+    from users u
+    left join user_portfolio_history_latest uphl on u.id = uphl.user_id
+    where (u.balance + u.spice_balance + coalesce(uphl.investment_value, 0)) > 0.0`,
     [],
     (r: any) => ({
-      totalValue: Number(r.total_value),
-      balance: Number(r.balance),
+      totalManaValue: Number(r.total_mana_value),
+      totalCashValue: Number(r.total_cash_value),
+      manaBalance: Number(r.mana_balance),
       spiceBalance: Number(r.spice_balance),
-      investmentValue: Number(r.investment_value),
+      cashBalance: Number(r.cash_balance),
+      manaInvestmentValue: Number(r.mana_investment_value),
+      cashInvestmentValue: Number(r.cash_investment_value),
       loanTotal: Number(r.loan_total),
     })
   )
 
-  const ammLiquidity = await getAMMLiquidity()
+  const liquidity = await getAMMLiquidity()
 
-  const totalValue = userPortfolio.totalValue + ammLiquidity
+  const totalManaValue = userPortfolio.totalManaValue + liquidity.mana
+  const totalCashValue = userPortfolio.totalCashValue + liquidity.cash
   return {
     ...userPortfolio,
-    ammLiquidity,
-    totalValue,
+    ammManaLiquidity: liquidity.mana,
+    ammCashLiquidity: liquidity.cash,
+    totalManaValue,
+    totalCashValue,
   }
 }
 
 const getAMMLiquidity = async () => {
   const pg = createSupabaseDirectClient()
   const [binaryLiquidity, multiLiquidity] = await Promise.all([
-    pg.one(
-      `select sum((data->>'prob')::numeric * (data->'pool'->>'YES')::numeric + (1-(data->>'prob')::numeric) *(data->'pool'->>'NO')::numeric + (data->'subsidyPool')::numeric) from contracts
-    where resolution is null
-    and mechanism = 'cpmm-1'`,
-      [],
-      (r: any) => Number(r.sum)
+    pg.many<{ sum: number; token: 'MANA' | 'CASH' }>(
+      `select sum((data->>'prob')::numeric * (data->'pool'->>'YES')::numeric + (1-(data->>'prob')::numeric) *(data->'pool'->>'NO')::numeric + (data->'subsidyPool')::numeric)
+      from contracts
+      where resolution is null and mechanism = 'cpmm-1'
+      group by token`,
+      []
     ),
-    pg.one(
+    pg.many<{ sum: number; token: 'MANA' | 'CASH' }>(
       `select sum(prob * pool_yes + (1-prob) * pool_no + subsidy_pool) from answers
         join contracts on contract_id = contracts.id
-        where contracts.resolution is null`,
-      [],
-      (r: any) => Number(r.sum)
+        where contracts.resolution is null
+        group by contracts.token`,
+      []
     ),
   ])
 
-  return binaryLiquidity + multiLiquidity
+  return {
+    mana:
+      (binaryLiquidity.find((l) => l.token === 'MANA')?.sum || 0) +
+      (multiLiquidity.find((l) => l.token === 'MANA')?.sum || 0),
+    cash:
+      (binaryLiquidity.find((l) => l.token === 'CASH')?.sum || 0) +
+      (multiLiquidity.find((l) => l.token === 'CASH')?.sum || 0),
+  }
 }

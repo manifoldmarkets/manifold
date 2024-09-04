@@ -538,6 +538,7 @@ export type Database = {
           avg_user_actions: number | null
           bet_amount: number | null
           bet_count: number | null
+          cash_bet_amount: number | null
           comment_count: number | null
           contract_count: number | null
           d1: number | null
@@ -563,6 +564,7 @@ export type Database = {
           avg_user_actions?: number | null
           bet_amount?: number | null
           bet_count?: number | null
+          cash_bet_amount?: number | null
           comment_count?: number | null
           contract_count?: number | null
           d1?: number | null
@@ -588,6 +590,7 @@ export type Database = {
           avg_user_actions?: number | null
           bet_amount?: number | null
           bet_count?: number | null
+          cash_bet_amount?: number | null
           comment_count?: number | null
           contract_count?: number | null
           d1?: number | null
@@ -1484,8 +1487,11 @@ export type Database = {
       }
       mana_supply_stats: {
         Row: {
+          amm_cash_liquidity: number
           amm_liquidity: number
           balance: number
+          cash_balance: number
+          cash_investment_value: number
           created_time: string
           end_time: string
           id: number
@@ -1493,11 +1499,15 @@ export type Database = {
           loan_total: number
           spice_balance: number
           start_time: string
+          total_cash_value: number
           total_value: number
         }
         Insert: {
+          amm_cash_liquidity?: number
           amm_liquidity: number
           balance: number
+          cash_balance?: number
+          cash_investment_value?: number
           created_time?: string
           end_time: string
           id?: never
@@ -1505,11 +1515,15 @@ export type Database = {
           loan_total: number
           spice_balance: number
           start_time: string
+          total_cash_value?: number
           total_value: number
         }
         Update: {
+          amm_cash_liquidity?: number
           amm_liquidity?: number
           balance?: number
+          cash_balance?: number
+          cash_investment_value?: number
           created_time?: string
           end_time?: string
           id?: never
@@ -1517,6 +1531,7 @@ export type Database = {
           loan_total?: number
           spice_balance?: number
           start_time?: string
+          total_cash_value?: number
           total_value?: number
         }
         Relationships: []
@@ -2321,6 +2336,7 @@ export type Database = {
       }
       txn_summary_stats: {
         Row: {
+          cash_amount: number
           category: string
           created_time: string
           end_time: string
@@ -2333,6 +2349,7 @@ export type Database = {
           total_amount: number
         }
         Insert: {
+          cash_amount?: number
           category: string
           created_time?: string
           end_time: string
@@ -2345,6 +2362,7 @@ export type Database = {
           total_amount: number
         }
         Update: {
+          cash_amount?: number
           category?: string
           created_time?: string
           end_time?: string

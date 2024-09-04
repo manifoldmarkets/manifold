@@ -18,6 +18,7 @@ export type Stats = {
   monthlyRetention: number[]
   dailyActivationRate: number[]
   manaBetDaily: number[]
+  cashBetDaily: number[]
   d1BetAverage: number[]
   d1Bet3DayAverage: number[]
   dailyNewRealUserSignups: number[]
@@ -35,13 +36,19 @@ export type DerivedStats = {
   dailyActivationRateWeeklyAvg: number[]
   manaBetWeekly: number[]
   manaBetMonthly: number[]
+  cashBetWeekly: number[]
+  cashBetMonthly: number[]
 }
 
 export type ManaSupply = {
-  balance: number
+  manaBalance: number
   spiceBalance: number
-  investmentValue: number
+  cashBalance: number
+  manaInvestmentValue: number
+  cashInvestmentValue: number
   loanTotal: number
-  ammLiquidity: number
-  totalValue: number
+  ammManaLiquidity: number
+  ammCashLiquidity: number
+  totalManaValue: number
+  totalCashValue: number
 }
