@@ -57,7 +57,7 @@ import { UserPayments } from 'web/pages/payments'
 import { UserHandles } from 'web/components/user/user-handles'
 import { BackButton } from 'web/components/contract/back-button'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { blockFromSweepstakes, isUserLikelySpammer } from 'common/user'
+import { isUserLikelySpammer } from 'common/user'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
 import { isBetChange } from 'common/balance-change'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -73,9 +73,6 @@ import { BalanceChangeTable } from 'web/components/portfolio/balance-change-tabl
 import { TwombaPortfolioValueSection } from 'web/components/portfolio/twomba-portfolio-value-section'
 import { unauthedApi } from 'common/util/api'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
-import { RedeemSpiceButton } from 'web/components/profile/redeem-spice-button'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
-import { Button } from 'web/components/buttons/button'
 import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
 
 export const getStaticProps = async (props: {

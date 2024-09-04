@@ -20,7 +20,6 @@ import { useState } from 'react'
 
 import { buildArray } from 'common/util/array'
 import { usePathname, useRouter } from 'next/navigation'
-import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
