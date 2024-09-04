@@ -16,7 +16,6 @@ import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { useUser } from 'web/hooks/use-user'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { AddFundsModal } from '../add-funds-modal'
 import { BetSlider } from '../bet/bet-slider'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -27,6 +26,7 @@ import {
 import { Input } from './input'
 import { MarketTierType } from 'common/tier'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { AddFundsModal } from '../add-funds/add-funds-modal'
 
 export function AmountInput(
   props: {

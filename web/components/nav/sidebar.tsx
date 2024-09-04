@@ -1,45 +1,45 @@
 import {
-  CashIcon,
   DeviceMobileIcon,
-  LogoutIcon,
-  MoonIcon,
-  SunIcon,
-  StarIcon,
-  QuestionMarkCircleIcon,
-  NewspaperIcon,
+  GlobeAltIcon,
   LightningBoltIcon,
   LoginIcon,
-  TemplateIcon,
-  GlobeAltIcon,
+  LogoutIcon,
+  MoonIcon,
+  NewspaperIcon,
+  QuestionMarkCircleIcon,
   SearchIcon,
+  StarIcon,
+  SunIcon,
+  TemplateIcon,
 } from '@heroicons/react/outline'
-import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
-import { GiCapitol } from 'react-icons/gi'
 import clsx from 'clsx'
 import { useState } from 'react'
+import { GiCapitol } from 'react-icons/gi'
+import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 
 import { buildArray } from 'common/util/array'
+import { DAY_MS } from 'common/util/time'
+import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { usePathname, useRouter } from 'next/navigation'
-import { AddFundsModal } from 'web/components/add-funds-modal'
+import { PiRobotBold, PiTelevisionSimpleBold } from 'react-icons/pi'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
+import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { NotificationsIcon } from 'web/components/notifications-icon'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useTheme } from 'web/hooks/use-theme'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
+import { Col } from '../layout/col'
+import { AddFundsButton } from '../profile/add-funds-button'
+import { ReportsIcon } from '../reports-icon'
+import { LiveTVIcon } from '../tv-icon'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
-import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
-import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-import { DAY_MS } from 'common/util/time'
-import { LiveTVIcon } from '../tv-icon'
-import { PiRobotBold, PiTelevisionSimpleBold } from 'react-icons/pi'
-import { useAdminOrMod } from 'web/hooks/use-admin'
-import { ReportsIcon } from '../reports-icon'
 
 export default function Sidebar(props: {
   className?: string
@@ -86,6 +86,14 @@ export default function Sidebar(props: {
     />
   )
 
+  const addFundsButton = user && (
+    <AddFundsButton
+      userId={user.id}
+      className="w-full whitespace-nowrap"
+      size="xl"
+    />
+  )
+
   return (
     <nav
       aria-label="Sidebar"
@@ -110,7 +118,10 @@ export default function Sidebar(props: {
 
         {user === null && <SidebarSignUpButton />}
 
-        {createMarketButton}
+        <Col className="gap-2">
+          {createMarketButton}
+          {addFundsButton}
+        </Col>
       </div>
       <div
         className={clsx('mb-6 mt-auto flex flex-col gap-1', isMobile && 'pb-8')}
@@ -122,10 +133,10 @@ export default function Sidebar(props: {
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
       </div>
-      <AddFundsModal
+      {/* <AddFundsModal
         open={isAddFundsModalOpen}
         setOpen={setIsAddFundsModalOpen}
-      />
+      /> */}
     </nav>
   )
 }
@@ -194,7 +205,6 @@ const getMobileNav = (
   const { isNewUser, isLiveTV, isAdminOrMod } = options
 
   return buildArray<NavItem>(
-    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     {
       name: 'US Election',
       href: '/election',

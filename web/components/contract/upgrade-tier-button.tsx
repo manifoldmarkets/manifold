@@ -14,7 +14,7 @@ import { TierIcon, getPresentedTierName } from '../tiers/tier-tooltip'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { AddFundsModal } from '../add-funds-modal'
+import { AddFundsModal } from '../add-funds/add-funds-modal'
 import { track } from 'web/lib/service/analytics'
 import toast from 'react-hot-toast'
 

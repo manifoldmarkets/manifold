@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { SPICE_PRODUCTION_ENABLED, TWOMBA_ENABLED } from 'common/envs/constants'
 import { User } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
-import { AddFundsModal } from '../add-funds-modal'
+import { AddFundsModal } from '../add-funds/add-funds-modal'
 import { Avatar } from '../widgets/avatar'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 

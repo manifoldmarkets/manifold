@@ -8,8 +8,10 @@ import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
 import { getTieredCost } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { AddFundsModal } from 'web/components/add-funds-modal'
+import { MarketTierType } from 'common/tier'
+import { capitalize } from 'lodash'
 import { Button } from 'web/components/buttons/button'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import {
   CrystalTier,
   PlayTier,
@@ -17,13 +19,11 @@ import {
   PremiumTier,
 } from 'web/public/custom-components/tiers'
 import { LogoIcon } from '../icons/logo-icon'
-import { CoinNumber } from '../widgets/manaCoinNumber'
-import { MarketTierType } from 'common/tier'
 import { getPresentedTierName } from '../tiers/tier-tooltip'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
-import { getContractTypeFromValue } from './create-contract-types'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { capitalize } from 'lodash'
+import { CoinNumber } from '../widgets/manaCoinNumber'
+import { getContractTypeFromValue } from './create-contract-types'
+import { AddFundsModal } from '../add-funds/add-funds-modal'
 
 type TIER_TYPE = { name: MarketTierType; icon: ReactNode }
 

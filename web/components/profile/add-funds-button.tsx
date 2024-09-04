@@ -1,13 +1,15 @@
-import { AddFundsModal } from '../add-funds-modal'
-import { useUser } from 'web/hooks/use-user'
-import { useState } from 'react'
 import { PlusIcon } from '@heroicons/react/solid'
-import { Button } from '../buttons/button'
-import router from 'next/router'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { useState } from 'react'
+import { useUser } from 'web/hooks/use-user'
+import { Button, SizeType } from '../buttons/button'
+import { AddFundsModal } from '../add-funds/add-funds-modal'
 
-export function AddFundsButton(props: { userId?: string; className?: string }) {
-  const { userId, className } = props
+export function AddFundsButton(props: {
+  userId?: string
+  className?: string
+  size?: SizeType
+}) {
+  const { userId, className, size } = props
   const [open, setOpen] = useState(false)
   const user = useUser()
 
@@ -15,10 +17,8 @@ export function AddFundsButton(props: { userId?: string; className?: string }) {
   return (
     <>
       <Button
-        onClick={() =>
-          TWOMBA_ENABLED ? router.push('/checkout') : setOpen(true)
-        }
-        size="md"
+        onClick={() => setOpen(true)}
+        size={size ?? 'md'}
         color="gradient-pink"
         className={className}
       >

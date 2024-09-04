@@ -27,15 +27,16 @@ import { getNativePlatform } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { db } from 'web/lib/supabase/db'
-import { Button } from './buttons/button'
-import { Modal } from './layout/modal'
-import { AlertBox } from './widgets/alert-box'
-import { AmountInput } from './widgets/amount-input'
-import { CoinNumber } from './widgets/manaCoinNumber'
-import { Col } from './layout/col'
+import { Button } from '../buttons/button'
+import { Modal } from '../layout/modal'
+import { AlertBox } from '../widgets/alert-box'
+import { AmountInput } from '../widgets/amount-input'
+import { CoinNumber } from '../widgets/manaCoinNumber'
+import { Col } from '../layout/col'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 import { FaStore } from 'react-icons/fa6'
 import router from 'next/router'
+import { TwombaBuyManaTab } from './twomba-add-funds'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -51,7 +52,11 @@ export function AddFundsModal(props: {
       setOpen={setOpen}
       className="bg-canvas-0 text-ink-1000 rounded-md p-8"
     >
-      <BuyManaTab onClose={() => setOpen(false)} />
+      {TWOMBA_ENABLED ? (
+        <TwombaBuyManaTab onClose={() => setOpen(false)} />
+      ) : (
+        <BuyManaTab onClose={() => setOpen(false)} />
+      )}
       {/* <Tabs
         trackingName="buy modal tabs"
         className="[&_svg]:hidden" // hide carousel switcher
