@@ -29,24 +29,26 @@ export const CountryCodeSelector = (props: {
     <Row className="relative">
       <Combobox value={selectedCountry} onChange={setSelectedCountry}>
         <Combobox.Input
-          className="w-full rounded-md border border-gray-300 px-4 py-3 focus:border-blue-300 focus:outline-none focus:ring md:text-sm"
+          className="bg-canvas-0 border-ink-300 w-full rounded-md border px-4 py-3 focus:border-blue-300 focus:outline-none focus:ring  dark:text-white dark:focus:border-blue-500 md:text-sm"
           onChange={(e) => setQuery(e.target.value)}
           displayValue={displayCountry}
           placeholder="The country of which you are a citizen"
         />
         {selectedCountry !== '' && (
           <button onClick={() => setSelectedCountry('')}>
-            <XIcon className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
+            <XIcon className="absolute right-3 top-3 h-5 w-5 text-gray-400 dark:text-gray-300" />
           </button>
         )}
-        <Combobox.Options className="absolute mt-1 max-h-60 overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none md:text-sm ">
+        <Combobox.Options className="bg-canvas-0 border-ink-300  absolute mt-1 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none  dark:ring-gray-700 md:text-sm">
           {filteredCountries.map(([code, country]) => (
             <Combobox.Option
               key={code}
               value={code.toUpperCase()}
               className={({ active }) =>
                 `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                  active ? 'bg-blue-600 text-white' : 'text-gray-900'
+                  active
+                    ? 'bg-canvas-50 text-indigo-600'
+                    : 'text-gray-900 dark:text-gray-100'
                 }`
               }
             >
@@ -62,7 +64,9 @@ export const CountryCodeSelector = (props: {
                   {selected ? (
                     <span
                       className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
-                        active ? 'text-white' : 'text-blue-600'
+                        active
+                          ? 'text-white'
+                          : 'text-blue-600 dark:text-blue-400'
                       }`}
                     >
                       ✓
