@@ -1,8 +1,8 @@
 import { Col } from 'web/components/layout/col'
 import {
   formatMoney,
-  formatMoneyNoMoniker,
   formatSpice,
+  formatSweepies,
   shortFormatNumber,
 } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
@@ -18,7 +18,7 @@ import {
   isTxnChange,
 } from 'common/balance-change'
 import Link from 'next/link'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, SWEEPIES_NAME } from 'common/envs/constants'
 import {
   FaBackward,
   FaArrowRightArrowLeft,
@@ -302,7 +302,9 @@ const BetBalanceChangeRow = (props: {
             {!hideBalance && (
               <>
                 {token === 'CASH'
-                  ? formatMoneyNoMoniker(balance.cash) + ' prize cash'
+                  ? formatSweepies(balance.cash) +
+                    ' ' +
+                    SWEEPIES_NAME.toLowerCase()
                   : formatMoney(balance.mana)}
                 {'·'}
               </>
@@ -454,7 +456,9 @@ const TxnBalanceChangeRow = (props: {
             {token === 'SPICE'
               ? formatSpice(amount).replace('-', '')
               : token === 'CASH'
-              ? formatMoneyNoMoniker(amount).replace('-', '') + ' prize cash'
+              ? formatSweepies(amount).replace('-', '') +
+                ' ' +
+                SWEEPIES_NAME.toLowerCase()
               : formatMoney(amount).replace('-', '')}
           </span>
         </Row>
@@ -468,7 +472,9 @@ const TxnBalanceChangeRow = (props: {
                 {token === 'SPICE'
                   ? formatSpice(balance.spice)
                   : token === 'CASH'
-                  ? formatMoneyNoMoniker(balance.cash) + ' prize cash'
+                  ? formatSweepies(balance.cash) +
+                    ' ' +
+                    SWEEPIES_NAME.toLowerCase()
                   : formatMoney(balance.mana)}
                 {' · '}
               </>
