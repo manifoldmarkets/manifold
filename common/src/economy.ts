@@ -100,7 +100,7 @@ export const PaymentAmounts = [
   },
   {
     mana: 25_000,
-    priceInDollars: 2999,
+    priceInDollars: 29.99,
     bonusInDollars: 0,
   },
   {
@@ -118,7 +118,7 @@ export const PaymentAmounts = [
 export const PaymentAmountsGIDX = [
   {
     mana: 10_000,
-    priceInDollars: 1500,
+    priceInDollars: 15,
     bonusInDollars: 10,
   },
   {
