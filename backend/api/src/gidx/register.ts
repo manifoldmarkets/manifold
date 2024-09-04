@@ -39,8 +39,12 @@ export const register: APIHandler<'register-gidx'> = async (
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const { privateUser, phoneNumberWithCode } =
     await getUserRegistrationRequirements(auth.uid)
+  const EmailAddress = props.EmailAddress ?? privateUser.email
+  if (!EmailAddress) {
+    throw new APIError(400, 'User must have an email address')
+  }
   const body = {
-    EmailAddress: props.EmailAddress ?? privateUser.email,
+    EmailAddress,
     MobilePhoneNumber: ENABLE_FAKE_CUSTOMER
       ? props.MobilePhoneNumber
       : parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ??
