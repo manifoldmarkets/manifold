@@ -56,7 +56,7 @@ export function TwombaWelcomePage() {
 
   return (
     <>
-      <div className="text-primary-700 mb-6 flex h-10 flex-row gap-2 text-center text-2xl font-normal">
+      <div className="text-primary-700 mx-auto mb-6 flex h-10 flex-row gap-2 text-center text-2xl font-normal">
         <div className="mt-2">Welcome,</div>
         {isEditingUsername || showOnHover ? (
           <div>
@@ -93,12 +93,11 @@ export function TwombaWelcomePage() {
           </div>
         )}
       </div>
-      <div className="mt-2 text-lg">
-        We've sent you{' '}
-        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
-        play money. {capitalize(TRADE_TERM)} on the answer you think is right.
+      <div>
+        We've sent you <strong>{formatMoney(STARTING_BALANCE)}</strong> in play
+        money. {capitalize(TRADE_TERM)} on the answer you think is right.
       </div>
-      <div className="mt-2 text-lg">
+      <div className="mt-2">
         Research shows wagering currency leads to more accurate predictions than
         polls.
       </div>
@@ -119,28 +118,10 @@ export function TwombaCoinsPage() {
       <div className="text-primary-700 text-center text-2xl font-normal">
         How Manifold works
       </div>
-      {/* <Row className="mx-auto w-full max-w-md gap-4">
-        <Col className="w-1/2 items-center">
-          <ManaCoin className="text-7xl" />
-          <Col>
-            <div className="text-primary-700 mt-2 text-xl font-semibold">
-              Mana ({ENV_CONFIG.moneyMoniker})
-            </div>
-            Play money
-          </Col>
-        </Col>
-        <Col className="w-1/2 items-center">
-          <SweepiesCoin className="text-7xl" />
-          <Col>
-            <div className="mt-2 text-xl font-semibold text-amber-700 dark:text-amber-300">
-              {SWEEPIES_NAME} ({SWEEPIES_MONIKER})
-            </div>
-            Redeemable for <b>real money</b>
-          </Col>
-        </Col>
-      </Row> */}
 
-      <span className="mt-4 md:mt-6">Manifold has 2 coins:</span>
+      <span className="mt-4 md:mt-6">
+        Manifold has 2 coins that you can {TRADE_TERM} with:
+      </span>
       <span className="coin-offset relative ml-[1.1em] mt-4 inline-flex items-center md:mt-6">
         <ManaCoin className="absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]" />
         <span className="text-primary-700 mr-1.5 font-semibold">
@@ -176,7 +157,7 @@ export function TwombaCoinsPage() {
         </div>
         <PlaceholderGraph className="text-ink-300 h-28" />
       </Col>
-      <div className="text-ink-500 mt-4 text-xs md:mt-6">
+      <div className="text-ink-500 my-2 text-xs">
         You must be 18+ to participate. Manifold is free to play, no purchase
         required.
       </div>
