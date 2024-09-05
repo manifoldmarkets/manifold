@@ -1,6 +1,7 @@
 import { PrivateUser, User } from 'common/user'
 
 import { ReactNode, useState } from 'react'
+import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -48,7 +49,6 @@ export const EditProfile = (props: {
   const user = useUser() ?? props.auth.user
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '')
   const [avatarLoading, setAvatarLoading] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const { userInfo, updateUserState } = useEditableUserInfo(user)
@@ -83,25 +83,35 @@ export const EditProfile = (props: {
     if (Object.keys(updates).length > 0) {
       setLoading(true)
       await api('me/update', updates)
-      setIsSaved(true)
       setLoading(false)
-      setTimeout(() => setIsSaved(false), 2000)
+    } else {
+      toast.error('No changes to save')
     }
   }
 
-  const fileHandler = async (event: any) => {
-    const file = event.target.files[0]
+  const fileHandler = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Check if the file is an image
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file.')
+      return
+    }
+
     setAvatarLoading(true)
-    await uploadPublicImage(user.username, file)
-      .then(async (url) => {
+    await toast.promise(
+      uploadPublicImage(user.username, file).then(async (url) => {
         await updateUser({ avatarUrl: url })
         setAvatarUrl(url)
-        setAvatarLoading(false)
-      })
-      .catch(() => {
-        setAvatarLoading(false)
-        setAvatarUrl(user.avatarUrl || '')
-      })
+      }),
+      {
+        loading: 'Updating profile picture...',
+        success: 'Profile picture updated successfully',
+        error: 'Failed to update profile picture',
+      }
+    )
+    setAvatarLoading(false)
   }
 
   return (
@@ -122,6 +132,7 @@ export const EditProfile = (props: {
               type="file"
               name="file"
               onChange={fileHandler}
+              accept="image/*"
               className="min-w-0 flex-1"
             />
           </>

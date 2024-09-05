@@ -29,7 +29,7 @@ import { AccountSettings } from '../profile/settings'
 import { EditProfile } from '../profile/edit-profile'
 import { useRouter } from 'next/router'
 
-export function MoreOptionsUserButton(props: { user: User }) {
+export function UserSettingButton(props: { user: User }) {
   const { user } = props
   const { id: userId, name } = user
   const currentPrivateUser = usePrivateUser()

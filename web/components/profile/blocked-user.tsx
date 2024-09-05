@@ -6,7 +6,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { BannedBadge, UserBadge } from 'web/components/widgets/user-link'
-import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
+import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { PrivateUser } from 'common/user'
 import { UserHovercard } from '../user/user-hovercard'
 
@@ -51,7 +51,7 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
                 }
               >
                 <FollowButton userId={user.id} />
-                <MoreOptionsUserButton user={user} />
+                <UserSettingButton user={user} />
               </Row>
             </div>
           </Col>

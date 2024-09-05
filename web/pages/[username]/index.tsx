@@ -21,7 +21,7 @@ import { referralQuery } from 'common/util/share'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { FollowButton } from 'web/components/buttons/follow-button'
-import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
+import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { TextButton } from 'web/components/buttons/text-button'
 import { UserCommentsList } from 'web/components/comments/profile-comments'
 import { FollowList } from 'web/components/follow-list'
@@ -268,7 +268,7 @@ function UserProfile(props: {
                 <UserLink user={user} noLink />
               </div>
 
-              <MoreOptionsUserButton user={user} />
+              <UserSettingButton user={user} />
             </>
           )}
         </Row>
@@ -351,7 +351,7 @@ function UserProfile(props: {
               </>
             )}
 
-            {!isMobile && <MoreOptionsUserButton user={user} />}
+            {!isMobile && <UserSettingButton user={user} />}
           </Row>
         </Row>
         {(expandProfileInfo || !isCurrentUser) && (
