@@ -3030,6 +3030,21 @@ export type Database = {
       }
     }
     Views: {
+      final_pp_balances: {
+        Row: {
+          amount: number | null
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       group_role: {
         Row: {
           avatar_url: string | null
