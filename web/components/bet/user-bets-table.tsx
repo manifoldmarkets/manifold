@@ -8,7 +8,9 @@ import { ContractMetric } from 'common/contract-metric'
 import {
   ENV_CONFIG,
   SWEEPIES_MARKET_TOOLTIP,
+  SWEEPIES_NAME,
   TRADE_TERM,
+  TWOMBA_ENABLED,
 } from 'common/envs/constants'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
@@ -67,6 +69,8 @@ type BetSort =
   | 'position'
 
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
+
+type BetTokenFilter = 'CASH' | 'MANA' | 'ALL'
 
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 export function UserBetsTable(props: { user: User }) {
@@ -132,12 +136,23 @@ export function UserBetsTable(props: { user: User }) {
     'open',
     'bets-list-filter'
   )
+
+  const [tokenFilter, setTokenFilter] = usePersistentLocalState<BetTokenFilter>(
+    'ALL',
+    'bets-list-token-filter'
+  )
+
   const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
 
   const [query, setQuery] = usePersistentQueryState('b', '')
 
   const onSetFilter = (f: BetFilter) => {
     setFilter(f)
+    setPage(0)
+  }
+
+  const onSetTokenFilter = (f: BetTokenFilter) => {
+    setTokenFilter(f)
     setPage(0)
   }
 
@@ -185,13 +200,21 @@ export function UserBetsTable(props: { user: User }) {
     limit_bet: (c) => FILTERS.open(c),
   }
 
-  const filteredContracts = contracts.filter(FILTERS[filter]).filter((c) => {
-    if (filter === 'all') return true
-    const { hasShares } = nullableMetricsByContract[c.id]
-    if (filter === 'sold') return !hasShares
-    if (filter === 'limit_bet') return openLimitBetsByContract[c.id]?.length > 0
-    return hasShares
-  })
+  const filteredContracts = contracts
+    .filter(FILTERS[filter])
+    .filter((c) => {
+      if (filter === 'all') return true
+      const { hasShares } = nullableMetricsByContract[c.id]
+      if (filter === 'sold') return !hasShares
+      if (filter === 'limit_bet')
+        return openLimitBetsByContract[c.id]?.length > 0
+      return hasShares
+    })
+    .filter((c) => {
+      if (tokenFilter === 'CASH') return c.token === 'CASH'
+      if (tokenFilter === 'MANA') return c.token === 'MANA'
+      return true
+    })
 
   return (
     <Col>
@@ -204,6 +227,29 @@ export function UserBetsTable(props: { user: User }) {
             onChange={(e) => setQuery(e.target.value)}
           />
           <Carousel labelsParentClassName={'gap-1'}>
+            {TWOMBA_ENABLED && (
+              <PillButton
+                selected={tokenFilter === 'CASH'}
+                onSelect={() => {
+                  if (tokenFilter == 'CASH') {
+                    onSetTokenFilter('ALL')
+                  } else {
+                    onSetTokenFilter('CASH')
+                  }
+                }}
+                type="sweepies"
+              >
+                <Row
+                  className={clsx(
+                    'items-center gap-1',
+                    tokenFilter != 'CASH' ? 'opacity-50' : 'opacity-100'
+                  )}
+                >
+                  <SweepiesCoin />
+                  {SWEEPIES_NAME}
+                </Row>
+              </PillButton>
+            )}
             {(
               [
                 'all',
