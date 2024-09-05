@@ -117,11 +117,16 @@ create
 or replace function public.sync_sibling_contract () returns trigger language plpgsql as $function$
 begin
   if new.token = 'MANA' and (new.data->>'siblingContractId') is not null
-    and (old.data->>'closeTime' != new.data->>'closeTime' or old.data->>'deleted' != new.data->>'deleted') then
+    and (
+      old.data->>'closeTime' != new.data->>'closeTime'
+      or old.data->>'deleted' != new.data->>'deleted'
+      or old.data->>'question' != new.data->>'question'
+    ) then
   update contracts
   set data = data || jsonb_build_object(
     'closeTime', new.data->'closeTime',
-    'deleted', new.data->'deleted'
+    'deleted', new.data->'deleted',
+    'question', new.data->'question'
   )
   where id = (new.data->>'siblingContractId')::text;
   end if;
