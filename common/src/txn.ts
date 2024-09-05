@@ -189,10 +189,18 @@ type CashBonus = {
   fromType: 'BANK'
   toType: 'USER'
   category: 'CASH_BONUS'
-  data: {
-    transactionId: string
-    type: 'gidx'
-  }
+  data:
+    | {
+        transactionId: string
+        type: 'gidx'
+        sessionId: string
+        paidInCents: number
+      }
+    | {
+        iapTransactionId: string
+        type: 'apple'
+        paidInCents: number
+      }
 }
 
 type CashOutPending = {

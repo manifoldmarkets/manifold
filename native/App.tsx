@@ -42,8 +42,8 @@ import { useIsConnected } from 'lib/use-is-connected'
 import { getLocation } from 'lib/location'
 
 // NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address. ie:
-// "cross-env NEXT_PUBLIC_API_URL=172.20.10.2:8088 \
-// const baseUri = 'http://192.168.1.229:3000/gidx/register'
+// "cross-env NEXT_PUBLIC_API_URL=192.168.1.229:8088 \
+// const baseUri = 'http://192.168.1.229:3000/'
 
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'

@@ -74,7 +74,10 @@ const useDevtoolsDetector = () => {
     'devtools'
   )
   useEffect(() => {
-    const isLocal = window.location.hostname === 'localhost'
+    const isLocal =
+      window.location.hostname === 'localhost' ||
+      // For ios local dev
+      window.location.hostname === '192.168.1.229'
     if (!TWOMBA_ENABLED || isLocal) {
       return
     }

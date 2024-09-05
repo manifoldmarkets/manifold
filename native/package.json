@@ -49,7 +49,7 @@
     "react-dom": "18.2.0",
     "react-native": "0.74.2",
     "react-native-gradle-plugin": "0.71.19",
-    "react-native-iap": "^12.14.1",
+    "react-native-iap": "12.15.2",
     "react-native-logs": "^5.1.0",
     "react-native-web": "~0.19.6",
     "react-native-webview": "13.8.6",

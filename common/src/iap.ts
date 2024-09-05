@@ -10,6 +10,8 @@ export type IapTransaction = {
   receipt: string
   revenue: number
   type: 'apple'
+  bonusInDollars?: number
+  paidInDollars?: number
 }
 
 // Not exhaustive, but enough for what we need

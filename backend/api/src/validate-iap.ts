@@ -6,20 +6,15 @@ import * as admin from 'firebase-admin'
 import { IapTransaction, PurchaseData } from 'common/iap'
 import { ManaPurchaseTxn } from 'common/txn'
 import { sendThankYouEmail } from 'shared/emails'
-import { runTxnFromBank } from 'shared/txn/run-txn'
+import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { IOS_PRICES } from 'common/economy'
 
 const bodySchema = z
   .object({
     receipt: z.string(),
   })
   .strict()
-
-const PRODUCTS_TO_AMOUNTS: { [key: string]: number } = {
-  mana_1000: 10000, // note: SKUs created before rate change
-  mana_2500: 25000,
-  mana_10000: 100000,
-}
 
 const IAP_TYPES_PROCESSED = 'apple'
 
@@ -43,13 +38,12 @@ export const validateiap = authEndpoint(async (req, auth) => {
     throw new APIError(500, 'iap receipt validation failed')
   })
 
-  // TODO uncomment this after app is accepted by Apple.
   log('validated data, sandbox:', validatedData.sandbox)
-  // if (isProd() && validatedData.sandbox) {
-  // Apple wants a successful response even if the receipt is from the sandbox,
-  // so we just return success here and don't transfer any mana.
-  // return { success: true }
-  // }
+  if (isProd() && validatedData.sandbox) {
+    // Apple wants a successful response even if the receipt is from the sandbox,
+    // so we just return success here and don't transfer any mana.
+    return { success: true }
+  }
 
   const options = {
     ignoreCanceled: true, // Apple ONLY (for now...): purchaseData will NOT contain canceled items
@@ -73,15 +67,22 @@ export const validateiap = authEndpoint(async (req, auth) => {
     log('transactionId', transactionId, 'already processed')
     throw new APIError(403, 'iap transaction already processed')
   }
+  const priceData = IOS_PRICES.find((p) => p.sku === productId)
+  if (!priceData) {
+    log('productId', productId, 'not found in price data')
+    throw new APIError(400, 'productId not found in price data')
+  }
+  const { priceInDollars, bonusInDollars } = priceData
+  const manaPayout = priceData.mana * quantity
+  const revenue = priceData.priceInDollars * quantity * 0.7 // Apple takes 30%
 
-  const payout = PRODUCTS_TO_AMOUNTS[productId] * quantity
-  const revenue = (payout / 1000) * 0.2 + payout / 1000 - 0.01
-
-  log('payout', payout)
+  log('payout', manaPayout)
   const iapTransRef = firestore.collection('iaps').doc()
   const iapTransaction: IapTransaction = {
     userId,
-    manaQuantity: payout, // save as number
+    manaQuantity: manaPayout,
+    bonusInDollars: bonusInDollars * quantity,
+    paidInDollars: priceInDollars * quantity,
     createdTime: Date.now(),
     purchaseTime: purchaseDateMs,
     transactionId,
@@ -100,20 +101,49 @@ export const validateiap = authEndpoint(async (req, auth) => {
     fromType: 'BANK',
     toId: userId,
     toType: 'USER',
-    amount: payout,
+    amount: manaPayout,
     token: 'M$',
     category: 'MANA_PURCHASE',
     data: {
       iapTransactionId: iapTransRef.id,
       type: IAP_TYPES_PROCESSED,
+      paidInCents: priceInDollars * 100 * quantity,
     },
-    description: `Deposit M$${payout} from BANK for mana purchase`,
+    description: `Deposit M$${manaPayout} from BANK for mana purchase`,
   } as Omit<ManaPurchaseTxn, 'id' | 'createdTime'>
+  const bonusPurchaseTxn = bonusInDollars
+    ? ({
+        fromId: 'EXTERNAL',
+        fromType: 'BANK',
+        toId: userId,
+        toType: 'USER',
+        amount: bonusInDollars,
+        token: 'CASH',
+        category: 'CASH_BONUS',
+        data: {
+          iapTransactionId: iapTransRef.id,
+          type: IAP_TYPES_PROCESSED,
+          paidInCents: priceInDollars * 100 * quantity,
+        },
+        description: `Deposit ${bonusInDollars} mana cash from BANK for mana purchase bonus`,
+      } as const)
+    : null
 
   const pg = createSupabaseDirectClient()
-  await pg.tx(async (tx) => runTxnFromBank(tx, manaPurchaseTxn))
+  // TODO: retry transactions on failure!
+  await pg
+    .tx(async (tx) => {
+      await runTxn(tx, manaPurchaseTxn)
+      if (bonusPurchaseTxn) {
+        await runTxn(tx, bonusPurchaseTxn)
+      }
+    })
+    .catch((e) => {
+      log.error('Error paying user from iap receipt', e)
+      throw new APIError(500, 'Error running transaction')
+    })
 
-  log('user', userId, 'paid M$', payout)
+  log('user', userId, 'paid M$', manaPayout)
 
   const user = await getUser(userId)
   if (!user) throw new APIError(500, 'Your account was not found')
@@ -126,7 +156,7 @@ export const validateiap = authEndpoint(async (req, auth) => {
   await trackPublicEvent(
     userId,
     'M$ purchase',
-    { amount: payout, transactionId },
+    { amount: manaPayout, transactionId },
     { revenue }
   )
   return { success: true }

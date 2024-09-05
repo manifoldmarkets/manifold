@@ -78,12 +78,12 @@ export const LocationPanel = (props: {
     console.log('Received location data from native', data)
     if ('error' in data) {
       setLocationError(data.error)
-      setLoading(false)
     } else {
       setLocation({
         ...data,
       })
     }
+    setLoading(false)
   })
 
   const requestLocation = (onFinishCallback?: () => void) => {

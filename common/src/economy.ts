@@ -143,21 +143,25 @@ export const MANA_WEB_PRICES = TWOMBA_ENABLED
   : PaymentAmounts
 
 export type WebManaAmounts = (typeof PaymentAmounts)[number]['mana']
+// TODO: these prices should be a function of whether the user is sweepstakes verified or not
 export const IOS_PRICES = [
   {
     mana: 10_000,
     priceInDollars: 14.99,
-    bonusInDollars: 0,
+    bonusInDollars: TWOMBA_ENABLED ? 10 : 0,
+    sku: 'mana_1000',
   },
   {
     mana: 25_000,
     priceInDollars: 35.99,
-    bonusInDollars: 0,
+    bonusInDollars: TWOMBA_ENABLED ? 25 : 0,
+    sku: 'mana_2500',
   },
   {
     mana: 100_000,
     priceInDollars: 142.99,
-    bonusInDollars: 0,
+    bonusInDollars: TWOMBA_ENABLED ? 100 : 0,
+    sku: 'mana_10000',
   },
   // No 1M option on ios: the fees are too high
 ]

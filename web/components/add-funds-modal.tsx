@@ -10,7 +10,7 @@ import {
   PaymentAmount,
 } from 'common/economy'
 import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
-import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
+
 import { convertTxn } from 'common/supabase/txns'
 import { run } from 'common/supabase/utils'
 import { Txn } from 'common/txn'
@@ -20,11 +20,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { useUser } from 'web/hooks/use-user'
-import { APIError, api, validateIapReceipt } from 'web/lib/api/api'
+import { APIError, api } from 'web/lib/api/api'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { postMessageToNative } from 'web/lib/native/post-message'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { db } from 'web/lib/supabase/db'
 import { Button } from './buttons/button'
@@ -36,6 +34,7 @@ import { Col } from './layout/col'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 import { FaStore } from 'react-icons/fa6'
 import router from 'next/router'
+import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -82,26 +81,11 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const prices = isNative && platform === 'ios' ? IOS_PRICES : MANA_WEB_PRICES
   const [loading, setLoading] = useState<WebManaAmounts | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const handleIapReceipt = async <T extends nativeToWebMessageType>(
-    type: T,
-    data: MesageTypeMap[T]
-  ) => {
-    if (type === 'iapReceipt') {
-      const { receipt } = data as MesageTypeMap['iapReceipt']
-      try {
-        await validateIapReceipt({ receipt: receipt })
-        console.log('iap receipt validated')
-        onClose()
-      } catch (e) {
-        console.log('iap receipt validation error', e)
-        setError('Error validating receipt')
-      }
-    } else if (type === 'iapError') {
-      setError('Error during purchase! Try again.')
-    }
-    setLoading(null)
-  }
-  useNativeMessages(['iapReceipt', 'iapError'], handleIapReceipt)
+  const { initiatePurchaseInDollars, loadingMessage } = useIosPurchases(
+    setError,
+    setLoading,
+    onClose
+  )
 
   const [url, setUrl] = useState('https://manifold.markets')
   useEffect(() => setUrl(window.location.href), [])
@@ -146,12 +130,12 @@ export function BuyManaTab(props: { onClose: () => void }) {
               loading={loading}
               disabled={pastLimit}
               onClick={() => {
-                setError(null)
-                setLoading(amounts.mana)
-                // Expects cents
-                postMessageToNative('checkout', {
-                  amount: amounts.priceInDollars * 100,
-                })
+                if (TWOMBA_ENABLED) {
+                  // The checkout page handles registration
+                  router.push(`/checkout?manaAmount=${amounts.mana}`)
+                } else {
+                  initiatePurchaseInDollars(amounts.priceInDollars)
+                }
               }}
             />
           ) : (
@@ -180,6 +164,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
           )
         })}
       </div>
+      <div className="text-ink-500 text-sm">{loadingMessage}</div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
     </>
   )

@@ -6604,10 +6604,10 @@ react-native-gradle-plugin@0.71.19:
   resolved "https://registry.yarnpkg.com/react-native-gradle-plugin/-/react-native-gradle-plugin-0.71.19.tgz#3379e28341fcd189bc1f4691cefc84c1a4d7d232"
   integrity sha512-1dVk9NwhoyKHCSxcrM6vY6cxmojeATsBobDicX0ZKr7DgUF2cBQRTKsimQFvzH8XhOVXyH8p4HyDSZNIFI8OlQ==
 
-react-native-iap@^12.14.1:
-  version "12.14.1"
-  resolved "https://registry.yarnpkg.com/react-native-iap/-/react-native-iap-12.14.1.tgz#bdf85e47e09269032d5d16d594ac3f9504075d06"
-  integrity sha512-JVvevB77JGFEgaqANArvsaJxImvYWISUlsshE4fyX7vxRrZ90+OV3xeChQpwC232OJwTfz7pLiJDAmArFSto9A==
+react-native-iap@12.15.2:
+  version "12.15.2"
+  resolved "https://registry.yarnpkg.com/react-native-iap/-/react-native-iap-12.15.2.tgz#328b84d39cb15a9c0d6cec2482cdcca39a838fa6"
+  integrity sha512-P5gIepfzXLOfpbdntMgGHu53tpMDoJlnYh0rX4qRygyYp+L7U7aFYON0cqf+lK4RKBpZmYHA4NRlBojMwz9pCQ==
 
 react-native-logs@^5.1.0:
   version "5.1.0"

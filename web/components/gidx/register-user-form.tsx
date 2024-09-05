@@ -1,7 +1,13 @@
 import { Col } from 'web/components/layout/col'
 import { Input } from 'web/components/widgets/input'
 import { Button, buttonClass } from 'web/components/buttons/button'
-import { ageBlocked, identityBlocked, locationBlocked, User } from 'common/user'
+import {
+  ageBlocked,
+  identityBlocked,
+  locationBlocked,
+  PrivateUser,
+  User,
+} from 'common/user'
 import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -26,9 +32,12 @@ import { YEAR_MS } from 'common/util/time'
 export const registrationColClass = 'gap-3 p-4'
 export const registrationBottomRowClass = 'mb-4 mt-4 w-full gap-16'
 
-export const RegisterUserForm = (props: { user: User }) => {
+export const RegisterUserForm = (props: {
+  user: User
+  privateUser: PrivateUser
+}) => {
   const user = useWebsocketUser(props.user.id) ?? props.user
-  const privateUser = usePrivateUser()
+  const privateUser = usePrivateUser() ?? props.privateUser
   const router = useRouter()
   const { redirect } = router.query
   const [page, setPage] = useState(
@@ -73,6 +82,7 @@ export const RegisterUserForm = (props: { user: User }) => {
             .toISOString()
             .split('T')[0],
           CitizenshipCountryCode: 'US',
+          EmailAddress: privateUser.email,
         },
     'gidx-registration-user-info'
   )
