@@ -243,10 +243,16 @@ export async function updateUserMetricsCore(
       })
     )
 
-    const { balance, investmentValue, totalDeposits } = newPortfolio
-    const allTimeProfit = balance + investmentValue - totalDeposits
+    const { balance, spiceBalance, investmentValue, totalDeposits } =
+      newPortfolio
+    const allTimeProfit =
+      balance + spiceBalance + investmentValue - totalDeposits
+
     const unresolvedMetrics = freshMetrics.filter((m) => {
       const contract = contractsById[m.contractId]
+
+      if (contract.token !== 'MANA') return false
+
       if (contract.mechanism === 'cpmm-multi-1') {
         // Don't double count null answer (summary) profits
         if (!m.answerId) return false
@@ -261,6 +267,9 @@ export async function updateUserMetricsCore(
     if (since === 0) {
       const resolvedMetrics = freshMetrics.filter((m) => {
         const contract = contractsById[m.contractId]
+
+        if (contract.token !== 'MANA') return false
+
         if (contract.mechanism === 'cpmm-multi-1') {
           // Don't double count null answer (summary) profits
           if (!m.answerId) return false
