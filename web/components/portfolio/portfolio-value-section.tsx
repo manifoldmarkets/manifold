@@ -21,7 +21,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 import { ColorType } from '../widgets/choices-toggle-group'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/coin-number'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
 import { PortfolioTab } from './portfolio-tabs'
 import {

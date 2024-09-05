@@ -11,7 +11,7 @@ import { Row } from 'web/components/layout/row'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 
 export function OnboardingVerifyPhone(props: { onClose: () => void }) {
   const { onClose } = props

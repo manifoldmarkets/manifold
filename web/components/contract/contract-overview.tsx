@@ -1,5 +1,6 @@
 import { ReactNode, memo, useState, useEffect } from 'react'
 import clsx from 'clsx'
+import { SWEEPS_INITIAL_BONUS } from 'common/economy'
 
 import { Bet } from 'common/bet'
 import { HistoryPoint, MultiPoints } from 'common/chart'
@@ -74,6 +75,7 @@ import {
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import Link from 'next/link'
 import { buttonClass } from 'web/components/buttons/button'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 
 export const ContractOverview = memo(
   (props: {
@@ -838,14 +840,16 @@ export function BinaryBetPanel(props: {
         </Row>
       ) : contract.token === 'CASH' && user && !user.idVerified ? (
         <Row className={'bg-canvas-50 items-center gap-1 rounded p-4'}>
-          You can't trade on sweepstakes markets until verified.
+          Verify your info to start trading on sweepstakes markets and earn a
+          bonus of{' '}
+          <CoinNumber amount={SWEEPS_INITIAL_BONUS} coinType="sweepies" />!{' '}
           <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
-            Register now
+            Verify
           </Link>
         </Row>
       ) : contract.token === 'CASH' && blockFromSweepstakes(user) ? (
         <Row className={'bg-canvas-50 rounded p-4'}>
-          You can't trade on sweepstakes markets if blocked.
+          You are not eligible to trade on sweepstakes markets.
         </Row>
       ) : (
         <BuyPanel inModal={false} contract={contract} />

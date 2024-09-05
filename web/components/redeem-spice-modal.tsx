@@ -18,7 +18,7 @@ import { Row } from 'web/components/layout/row'
 import { APIError, api } from 'web/lib/api/api'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SpiceToManaForm } from './add-funds-modal'
-import { CoinNumber } from './widgets/manaCoinNumber'
+import { CoinNumber } from './widgets/coin-number'
 
 export type RedeemSpicePageType = 'main' | 'customMana'
 

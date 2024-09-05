@@ -26,7 +26,7 @@ import { Button } from 'web/components/buttons/button'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 import {
   MIN_SPICE_DONATION,
   SPICE_TO_CHARITY_DOLLARS,

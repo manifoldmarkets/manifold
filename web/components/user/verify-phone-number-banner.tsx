@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 import { useUser } from 'web/hooks/use-user'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 

@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { PortfolioMode } from './portfolio-value-graph'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/coin-number'
 import { Col } from '../layout/col'
 import { useSweepstakes } from '../sweestakes-context'
 import { TWOMBA_ENABLED } from 'common/envs/constants'

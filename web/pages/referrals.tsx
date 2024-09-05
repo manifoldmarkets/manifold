@@ -10,7 +10,7 @@ import { InfoBox } from 'web/components/widgets/info-box'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
 import clsx from 'clsx'
 

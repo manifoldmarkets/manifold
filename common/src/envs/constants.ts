@@ -21,9 +21,9 @@ export const CHARITY_FEE = 0.05
 export const SPICE_TO_CHARITY_DOLLARS = (1 / 1000) * (1 - CHARITY_FEE) // prize points -> dollars
 
 export const SPICE_NAME = 'Prize Point'
-export const SWEEPIES_NAME = 'Sweeps Cash'
+export const SWEEPIES_NAME = 'Sweepcash'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
-export const SWEEPIES_MARKET_TOOLTIP = `Cash market! Earn ${SWEEPIES_NAME}s on resolution`
+export const SWEEPIES_MARKET_TOOLTIP = `Sweepstakes market! Win real cash prizes.`
 
 export const TRADE_TERM = 'trade'
 export const TRADED_TERM = 'traded'

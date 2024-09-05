@@ -39,6 +39,7 @@ import {
   TRADE_TERM,
   TWOMBA_ENABLED,
 } from 'common/envs/constants'
+import { SWEEPS_INITIAL_BONUS } from 'common/economy'
 import { getFeeTotal } from 'common/fees'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
@@ -64,6 +65,7 @@ import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
 import Link from 'next/link'
 import { blockFromSweepstakes, identityPending } from 'common/user'
+import { CoinNumber } from '../widgets/coin-number'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -135,16 +137,18 @@ export function BuyPanel(props: {
   } else if (contract.token === 'CASH' && user && !user.idVerified) {
     return (
       <Row className={'bg-canvas-50 gap-1 rounded p-4'}>
-        You can't trade on sweepstakes markets until verified.{' '}
+        Verify your info to start trading on sweepstakes markets and earn a
+        bonus of{' '}
+        <CoinNumber amount={SWEEPS_INITIAL_BONUS} coinType="sweepies" />!{' '}
         <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
-          Register now
+          Verify
         </Link>
       </Row>
     )
   } else if (contract.token === 'CASH' && blockFromSweepstakes(user)) {
     return (
       <Row className={'bg-canvas-50 rounded p-4'}>
-        You can't trade on sweepstakes markets if blocked.
+        You are not eligible to trade on sweepstakes markets.
       </Row>
     )
   }

@@ -8,7 +8,7 @@ import {
 import { KYC_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { Button, buttonClass } from 'web/components/buttons/button'

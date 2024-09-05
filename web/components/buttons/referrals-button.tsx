@@ -22,7 +22,7 @@ import { REFERRAL_AMOUNT } from 'common/economy'
 import { Subtitle } from '../widgets/subtitle'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 
 export const useReferralCount = (user: User) => {
   const [referralCount, setReferralCount] = useState(0)

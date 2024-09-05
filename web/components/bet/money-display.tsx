@@ -1,5 +1,5 @@
 import { formatWithToken } from 'common/util/format'
-import { CoinNumber, NumberDisplayType } from '../widgets/manaCoinNumber'
+import { CoinNumber, NumberDisplayType } from '../widgets/coin-number'
 
 export function MoneyDisplay(props: {
   amount: number

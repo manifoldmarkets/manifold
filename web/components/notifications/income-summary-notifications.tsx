@@ -46,7 +46,7 @@ import {
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
 import { humanish } from 'common/user'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { TRADE_TERM } from 'common/envs/constants'
 

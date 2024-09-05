@@ -54,7 +54,7 @@ import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Rating, ReviewPanel } from '../reviews/stars'
 import { Linkify } from '../widgets/linkify'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/coin-number'
 import { linkClass } from '../widgets/site-link'
 import {
   AvatarNotificationIcon,

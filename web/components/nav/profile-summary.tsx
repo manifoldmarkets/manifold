@@ -6,7 +6,7 @@ import { SPICE_PRODUCTION_ENABLED, TWOMBA_ENABLED } from 'common/envs/constants'
 import { User } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Avatar } from '../widgets/avatar'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/coin-number'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props

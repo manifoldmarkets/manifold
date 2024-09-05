@@ -11,7 +11,7 @@ import {
 import { Button } from '../buttons/button'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useRouter } from 'next/router'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/coin-number'
 import { useState } from 'react'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Col } from '../layout/col'

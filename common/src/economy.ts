@@ -59,6 +59,13 @@ export const getTieredCost = (
   return tieredCost
 }
 
+/* Sweeps bonuses */
+export const SWEEPS_INITIAL_BONUS = 1
+export const SWEEPS_BETTING_STREAK_BONUS_AMOUNT = 0.05
+export const SWEEPS_BETTING_STREAK_BONUS_MAX = 0.50
+
+/* Mana bonuses */
+
 export const STARTING_BALANCE = 100
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10
