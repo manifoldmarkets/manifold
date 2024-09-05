@@ -38,7 +38,7 @@ import { capitalize } from 'lodash'
 import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import { TwombaCoinsPage, TwombaWelcomePage } from './twomba-welcome'
 
-const FORCE_SHOW_WELCOME_MODAL = true
+const FORCE_SHOW_WELCOME_MODAL = false
 
 export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const { setFeedKey } = props
