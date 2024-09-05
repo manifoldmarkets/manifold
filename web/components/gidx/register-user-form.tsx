@@ -78,9 +78,7 @@ export const RegisterUserForm = (props: {
       : {
           FirstName: user.name.split(' ')[0],
           LastName: user.name.split(' ')[1],
-          DateOfBirth: new Date(Date.now() - 18 * YEAR_MS)
-            .toISOString()
-            .split('T')[0],
+          DateOfBirth: undefined,
           CitizenshipCountryCode: 'US',
           EmailAddress: privateUser.email,
         },
