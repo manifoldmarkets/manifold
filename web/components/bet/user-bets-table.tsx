@@ -5,7 +5,11 @@ import { Bet, LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
 import { Contract, contractPath, CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  SWEEPIES_MARKET_TOOLTIP,
+  TRADE_TERM,
+} from 'common/envs/constants'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import {
@@ -48,6 +52,8 @@ import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { linkClass } from '../widgets/site-link'
+import { Tooltip } from '../widgets/tooltip'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 type BetSort =
   | 'newest'
@@ -710,7 +716,19 @@ function BetsTable(props: {
                           className={''}
                         />
                       </span>
-                      <span>{contract.question}</span>
+                      <span>
+                        {contract.token == 'CASH' && (
+                          <span>
+                            <Tooltip
+                              text={SWEEPIES_MARKET_TOOLTIP}
+                              className=" relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+                            >
+                              <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
+                            </Tooltip>
+                          </span>
+                        )}
+                        {contract.question}
+                      </span>
                       <span className={'ml-2 flex min-w-[40px] items-center'}>
                         <ContractStatusLabel
                           className={'font-semibold'}

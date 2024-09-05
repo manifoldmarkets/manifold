@@ -207,7 +207,7 @@ function FundsSelector(props: {
   const pastLimit = totalPurchased >= 2500
 
   return (
-    <>
+    <Col className="mx-auto max-w-xl">
       <Row className="mb-2 items-center gap-1 text-2xl font-semibold">
         <FaStore className="h-6 w-6" />
         Mana Shop
@@ -245,7 +245,7 @@ function FundsSelector(props: {
           />
         ))}
       </div>
-    </>
+    </Col>
   )
 }
 
