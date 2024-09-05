@@ -118,7 +118,7 @@ export function TwombaCoinsPage() {
       <div className="text-primary-700 mb-6 mt-3 text-center text-2xl font-normal">
         How Manifold works
       </div>
-      <Row className="w-full gap-4">
+      <Row className="mx-auto w-full max-w-sm gap-4">
         <Col className="w-1/2 items-center">
           <ManaCoin className="text-7xl" />
           <div className="text-primary-700 text-xl font-semibold">
