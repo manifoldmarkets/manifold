@@ -118,18 +118,17 @@ export function TwombaCoinsPage() {
       <div className="text-primary-700 mb-6 mt-3 text-center text-2xl font-normal">
         How Manifold works
       </div>
-      <Spacer h={8} />
       <Row className="w-full gap-4">
         <Col className="w-1/2 items-center">
           <ManaCoin className="text-7xl" />
-          <div className="text-primary-700 text-2xl font-semibold">
+          <div className="text-primary-700 text-xl font-semibold">
             Mana ({ENV_CONFIG.moneyMoniker})
           </div>
           Play money
         </Col>
         <Col className="w-1/2 items-center">
           <SweepiesCoin className="text-7xl" />
-          <div className="text-2xl font-semibold text-amber-700 dark:text-amber-300">
+          <div className="text-xl font-semibold text-amber-700 dark:text-amber-300">
             {SWEEPIES_NAME} ({SWEEPIES_MONIKER})
           </div>
           Redeemable for <b>real money</b>
@@ -142,7 +141,7 @@ export function TwombaCoinsPage() {
         see if it's available.
       </div>
       <Spacer h={8} />
-      <Row className="bg-canvas-50 text-ink-400 w-full justify-between gap-4 rounded-lg px-4 py-6">
+      <Row className="bg-canvas-50 text-ink-400 w-full justify-between gap-4 rounded-lg px-4 py-6 text-xl">
         <div>Will it rain tomorrow?</div>
         <CosmeticTwombaToggle />
       </Row>
