@@ -22,7 +22,7 @@ const formatterWithFraction = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
 })
 
-export const SWEEPIES_MONIKER = 'S'
+export const SWEEPIES_MONIKER = '𝕊'
 
 export type InputTokenType = 'M$' | 'SPICE' | 'CASH'
 

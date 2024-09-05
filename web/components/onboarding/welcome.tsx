@@ -35,7 +35,8 @@ import { removeEmojis } from 'common/util/string'
 import { unauthedApi } from 'common/util/api'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { capitalize } from 'lodash'
-import { TRADE_TERM } from 'common/envs/constants'
+import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
+import { TwombaCoinsPage, TwombaWelcomePage } from './twomba-welcome'
 
 const FORCE_SHOW_WELCOME_MODAL = false
 
@@ -75,8 +76,8 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const [trendingTopics, setTrendingTopics] = useState<Group[]>([])
 
   const availablePages = buildArray([
-    <WhatIsManifoldPage />,
-    <PredictionMarketPage />,
+    TWOMBA_ENABLED ? <TwombaWelcomePage /> : <WhatIsManifoldPage />,
+    TWOMBA_ENABLED ? <TwombaCoinsPage /> : <PredictionMarketPage />,
     <TopicsPage
       trendingTopics={trendingTopics}
       userInterestedTopics={userInterestedTopics}
@@ -179,7 +180,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
 
   return (
     <Modal open={open} size={'lg'} position={'bottom'}>
-      <Col className="bg-canvas-0 rounded-md px-4 py-6 text-sm md:w-full md:text-lg lg:px-8">
+      <Col className="bg-canvas-0 text-md rounded-md px-4 py-6 md:w-full md:text-lg lg:px-8">
         {availablePages[page]}
         <Col>
           {showBottomButtons && (
