@@ -9,8 +9,8 @@ export async function calculateRedeemablePrizeCash(
   // TODO: add cash out cancels
   const result = await pg.oneOrNone<{ total: number }>(
     `select sum(case
-      when category = 'CONTRACT_RESOLUTION_PAYOUT' then amount
-      when category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT' then -amount
+      when category = 'CONTRACT_RESOLUTION_PAYOUT' then least(amount, 5000)
+      when category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT' then -least(amount, 5000)
       when category = 'CASH_OUT' then -amount
       else 0
     end) as total
