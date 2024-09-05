@@ -292,10 +292,14 @@ export async function updateUserMetricsCore(
     const didPortfolioChange =
       currentPortfolio === undefined ||
       currentPortfolio.balance !== newPortfolio.balance ||
-      currentPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-      currentPortfolio.investmentValue !== newPortfolio.investmentValue ||
-      currentPortfolio.loanTotal !== newPortfolio.loanTotal ||
+      currentPortfolio.cashBalance !== newPortfolio.cashBalance ||
       currentPortfolio.spiceBalance !== newPortfolio.spiceBalance ||
+      currentPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
+      currentPortfolio.totalCashDeposits !== newPortfolio.totalCashDeposits ||
+      currentPortfolio.investmentValue !== newPortfolio.investmentValue ||
+      currentPortfolio.cashInvestmentValue !==
+        newPortfolio.cashInvestmentValue ||
+      currentPortfolio.loanTotal !== newPortfolio.loanTotal ||
       currentPortfolio.profit !== leaderBoardProfit
 
     const newProfit = {
