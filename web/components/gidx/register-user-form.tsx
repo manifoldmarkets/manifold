@@ -27,7 +27,6 @@ import {
   ID_ERROR_MSG,
 } from 'common/gidx/gidx'
 import { LocationPanel } from 'web/components/gidx/location-panel'
-import { YEAR_MS } from 'common/util/time'
 
 export const registrationColClass = 'gap-3 p-4'
 export const registrationBottomRowClass = 'mb-4 mt-4 w-full gap-16'
