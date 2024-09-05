@@ -14,16 +14,17 @@ import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { updateUser } from 'web/lib/api/api'
 import { randomString } from 'common/util/random'
 import { Input } from '../widgets/input'
-import { PencilIcon } from '@heroicons/react/solid'
+import { ArrowLeftIcon, PencilIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { Spacer } from '../layout/spacer'
-import { TwombaToggle } from '../twomba/twomba-toggle'
+
 import clsx from 'clsx'
 import { ManaFlatCoin } from 'web/public/custom-components/manaFlatCoin'
 import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
+import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 
 export function TwombaWelcomePage() {
   const user = useUser()
@@ -115,38 +116,67 @@ export function TwombaWelcomePage() {
 export function TwombaCoinsPage() {
   return (
     <>
-      <div className="text-primary-700 mb-6 mt-3 text-center text-2xl font-normal">
+      <div className="text-primary-700 text-center text-2xl font-normal">
         How Manifold works
       </div>
-      <Row className="mx-auto w-full max-w-sm gap-4">
+      {/* <Row className="mx-auto w-full max-w-md gap-4">
         <Col className="w-1/2 items-center">
           <ManaCoin className="text-7xl" />
-          <div className="text-primary-700 text-xl font-semibold">
-            Mana ({ENV_CONFIG.moneyMoniker})
-          </div>
-          Play money
+          <Col>
+            <div className="text-primary-700 mt-2 text-xl font-semibold">
+              Mana ({ENV_CONFIG.moneyMoniker})
+            </div>
+            Play money
+          </Col>
         </Col>
         <Col className="w-1/2 items-center">
           <SweepiesCoin className="text-7xl" />
-          <div className="text-xl font-semibold text-amber-700 dark:text-amber-300">
-            {SWEEPIES_NAME} ({SWEEPIES_MONIKER})
-          </div>
-          Redeemable for <b>real money</b>
+          <Col>
+            <div className="mt-2 text-xl font-semibold text-amber-700 dark:text-amber-300">
+              {SWEEPIES_NAME} ({SWEEPIES_MONIKER})
+            </div>
+            Redeemable for <b>real money</b>
+          </Col>
         </Col>
-      </Row>
-      <Spacer h={4} />
-      <div className="mt-2 text-lg">
-        You can trade with 2 different coins. Not all questions allow for{' '}
-        {TRADING_TERM} in {SWEEPIES_NAME}. Look for the toggle on a question to
-        see if it's available.
+      </Row> */}
+
+      <span className="mt-4 md:mt-6">Manifold has 2 coins:</span>
+      <span className="coin-offset relative ml-[1.1em] mt-4 inline-flex items-center md:mt-6">
+        <ManaCoin className="absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]" />
+        <span className="text-primary-700 mr-1.5 font-semibold">
+          {' '}
+          Mana ({ENV_CONFIG.moneyMoniker})
+        </span>
+        is play money
+      </span>
+      <span className="coin-offset relative ml-[1.1em] mt-4 inline-flex items-center md:mt-6">
+        <SweepiesCoin className="absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]" />
+        <span className="mr-1.5 font-semibold text-amber-700 dark:text-amber-300">
+          {' '}
+          {SWEEPIES_NAME} ({SWEEPIES_MONIKER})
+        </span>
+        can be redeemed for <b className="ml-1">real money</b>
+      </span>
+
+      <div className="mt-4 md:mt-6">
+        Not all questions allow for {TRADING_TERM} in {SWEEPIES_NAME}. Look for
+        the toggle on a question to see if it's available.
       </div>
-      <Spacer h={8} />
-      <Row className="bg-canvas-50 text-ink-400 w-full justify-between gap-4 rounded-lg px-4 py-6 text-xl">
+
+      <Col className="bg-canvas-50 text-ink-400 mt-4 w-full justify-between rounded-lg px-6 py-4 text-xl md:mt-6">
+        <Row className="w-full justify-between">
+          <ArrowLeftIcon className="h-5 w-5" aria-hidden />
+          <Row>
+            <CosmeticTwombaToggle />
+          </Row>
+        </Row>
         <div>Will it rain tomorrow?</div>
-        <CosmeticTwombaToggle />
-      </Row>
-      <Spacer h={4} />
-      <div className="text-ink-500 mt-2 text-xs">
+        <div className="mt-1 text-3xl">
+          31% <span className="text-sm">chance</span>
+        </div>
+        <PlaceholderGraph className="text-ink-300 h-28" />
+      </Col>
+      <div className="text-ink-500 mt-4 text-xs md:mt-6">
         You must be 18+ to participate. Manifold is free to play, no purchase
         required.
       </div>
