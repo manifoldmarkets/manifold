@@ -19,7 +19,6 @@ import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { Spacer } from '../layout/spacer'
 
 import clsx from 'clsx'
 import { ManaFlatCoin } from 'web/public/custom-components/manaFlatCoin'
