@@ -222,7 +222,7 @@ export const verifyReasonCodes = async (
   if (
     FraudConfidenceScore !== undefined &&
     IdentityConfidenceScore !== undefined &&
-    (FraudConfidenceScore < 80 || IdentityConfidenceScore < 80)
+    (FraudConfidenceScore < 0 || IdentityConfidenceScore < 0)
   ) {
     log(
       'Registration failed, resulted in low confidence scores:',
