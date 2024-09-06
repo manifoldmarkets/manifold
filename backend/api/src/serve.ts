@@ -1,14 +1,13 @@
 import * as admin from 'firebase-admin'
 import { getLocalEnv, initAdmin } from 'shared/init-admin'
 import { loadSecretsToEnv, getServiceAccountCredentials } from 'common/secrets'
-import { log } from 'shared/utils'
+import { LOCAL_DEV, log } from 'shared/utils'
 import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
 import { initCaches } from 'shared/init-caches'
 import { listen as webSocketListen } from 'shared/websockets/server'
 
 log('Api server starting up...')
 
-const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 if (LOCAL_DEV) {
   initAdmin()
 } else {

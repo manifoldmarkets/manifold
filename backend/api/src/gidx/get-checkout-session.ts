@@ -3,12 +3,12 @@ import {
   CheckoutSession,
   CheckoutSessionResponse,
   CustomerProfileResponse,
-  LOCAL_IP,
 } from 'common/gidx/gidx'
 import {
   GIDXCallbackUrl,
   getGIDXStandardParams,
   getUserRegistrationRequirements,
+  getLocalServerIP,
 } from 'shared/gidx/helpers'
 import { getIp } from 'shared/analytics'
 import { log } from 'shared/monitoring/log'
@@ -33,7 +33,7 @@ export const getCheckoutSession: APIHandler<
   const MerchantOrderID = randomString(16)
   const body = {
     ...props,
-    DeviceIpAddress: LOCAL_DEV ? LOCAL_IP : getIp(req),
+    DeviceIpAddress: LOCAL_DEV ? await getLocalServerIP() : getIp(req),
     MerchantCustomerID: userId,
     MerchantOrderID,
     MerchantTransactionID,

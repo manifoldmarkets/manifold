@@ -1,12 +1,12 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   CompleteSessionDirectCashierResponse,
-  LOCAL_IP,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
 import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
+  getLocalServerIP,
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { updateUser } from 'shared/supabase/users'
@@ -54,7 +54,7 @@ export const completeCheckoutSession: APIHandler<
       PaymentAmount: PaymentAmount.priceInDollars,
       BonusAmount: 0,
     },
-    DeviceIpAddress: LOCAL_DEV ? LOCAL_IP : getIp(req),
+    DeviceIpAddress: LOCAL_DEV ? await getLocalServerIP() : getIp(req),
     MerchantTransactionID,
     SavePaymentMethod,
     PaymentMethod: {

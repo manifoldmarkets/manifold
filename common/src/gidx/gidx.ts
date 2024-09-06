@@ -290,11 +290,9 @@ export type CheckoutSessionResponse = {
 
 export const ID_ERROR_MSG =
   'Registration failed, identity error. Check your identifying information.'
-
+  
+export const IDENTITY_AND_FRAUD_THRESHOLD = 80
 export const ENABLE_FAKE_CUSTOMER = false
-export const LOCAL_IP = '76.102.36.27' // SF presidio
-// export const LOCAL_IP = '68.173.149.14' // NY city
-// export const LOCAL_IP = '73.28.110.120' // Florida
 export const exampleCustomers = [
   {
     EmailAddress: 'mradamgibbs@gmail.com',

@@ -17,12 +17,13 @@ import { intersection } from 'lodash'
 import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
+  getLocalServerIP,
 } from 'shared/gidx/helpers'
 import {
   ENABLE_FAKE_CUSTOMER,
   GIDXRegistrationResponse,
   ID_ERROR_MSG,
-  LOCAL_IP,
+  IDENTITY_AND_FRAUD_THRESHOLD,
 } from 'common/gidx/gidx'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { parsePhoneNumber } from 'libphonenumber-js'
@@ -52,7 +53,7 @@ export const register: APIHandler<'register-gidx'> = async (
     DeviceIpAddress: ENABLE_FAKE_CUSTOMER
       ? props.DeviceIpAddress
       : LOCAL_DEV
-      ? LOCAL_IP
+      ? await getLocalServerIP()
       : getIp(req),
     MerchantCustomerID: auth.uid,
     ...getGIDXStandardParams(),
@@ -222,7 +223,8 @@ export const verifyReasonCodes = async (
   if (
     FraudConfidenceScore !== undefined &&
     IdentityConfidenceScore !== undefined &&
-    (FraudConfidenceScore < 80 || IdentityConfidenceScore < 80)
+    (FraudConfidenceScore < IDENTITY_AND_FRAUD_THRESHOLD ||
+      IdentityConfidenceScore < IDENTITY_AND_FRAUD_THRESHOLD)
   ) {
     log(
       'Registration failed, resulted in low confidence scores:',

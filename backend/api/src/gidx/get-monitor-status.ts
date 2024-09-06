@@ -1,6 +1,7 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   getGIDXStandardParams,
+  getLocalServerIP,
   getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
 import {
@@ -8,13 +9,12 @@ import {
   FAKE_CUSTOMER_BODY,
   GIDXMonitorResponse,
 } from 'common/gidx/gidx'
-import { getUser, log } from 'shared/utils'
+import { getUser, LOCAL_DEV, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getIp } from 'shared/analytics'
 import { verifyReasonCodes } from 'api/gidx/register'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
-const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
 export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   props,
@@ -45,7 +45,7 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
     DeviceIpAddress: ENABLE_FAKE_CUSTOMER
       ? FAKE_CUSTOMER_BODY.DeviceIpAddress
       : LOCAL_DEV
-      ? '76.102.36.27'
+      ? await getLocalServerIP()
       : getIp(req),
     ...props,
     ...getGIDXStandardParams(),

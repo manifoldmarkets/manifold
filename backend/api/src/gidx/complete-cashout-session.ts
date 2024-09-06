@@ -1,12 +1,12 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   CompleteSessionDirectCashierResponse,
-  LOCAL_IP,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
 import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
+  getLocalServerIP,
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -58,7 +58,7 @@ export const completeCashoutSession: APIHandler<
       BonusAmount: 0,
     },
     SavePaymentMethod,
-    DeviceIpAddress: LOCAL_DEV ? LOCAL_IP : getIp(req),
+    DeviceIpAddress: LOCAL_DEV ? await getLocalServerIP() : getIp(req),
     MerchantTransactionID,
     PaymentMethod: {
       ...PaymentMethod,

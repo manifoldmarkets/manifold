@@ -1,7 +1,7 @@
 import * as crypto from 'crypto'
 import { APIError } from 'common/api/utils'
 import { GIDXCustomerProfile } from 'common/gidx/gidx'
-import { getPrivateUserSupabase, LOCAL_DEV } from 'shared/utils'
+import { getPrivateUserSupabase, LOCAL_DEV, log } from 'shared/utils'
 import { getPhoneNumber } from 'shared/helpers/get-phone-number'
 import { ENV_CONFIG } from 'common/envs/constants'
 
@@ -47,4 +47,19 @@ export const getUserRegistrationRequirements = async (userId: string) => {
     throw new APIError(400, 'User must have a phone number')
   }
   return { privateUser, phoneNumberWithCode }
+}
+
+// Alternative ip addresses of interest for testing
+// '68.173.149.14' // NY city
+// '73.28.110.120' // Florida
+export const getLocalServerIP = async () => {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json')
+    const data = await response.json()
+    log('Got server ip', data.ip)
+    return data.ip
+  } catch (error) {
+    log.error('Error fetching public IP:', { error })
+    return '127.0.0.1'
+  }
 }
