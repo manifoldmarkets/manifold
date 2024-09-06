@@ -4,11 +4,17 @@ import { getProbability } from 'common/calculate'
 import {
   Contract,
   contractPath,
+  ContractToken,
   MultiContract,
   renderResolution,
 } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
-import { formatLargeNumber, formatMoney } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatSweepies,
+  SWEEPIES_MONIKER,
+} from 'common/util/format'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getPrivateUser, getUser, log } from 'shared/utils'
@@ -37,6 +43,7 @@ export type PerContractInvestmentsData = {
   currentValue: number
   pastValue: number
   profit: number
+  token: ContractToken
 }
 
 export type OverallPerformanceData = {
@@ -50,7 +57,10 @@ export type OverallPerformanceData = {
   league_rank: string
 }
 
-export const emailMoneyFormat = (amount: number) => {
+export const emailMoneyFormat = (amount: number, token: ContractToken) => {
+  if (token === 'CASH') {
+    return formatSweepies(amount).replace(SWEEPIES_MONIKER, 'S')
+  }
   return formatMoney(amount).replace(ENV_CONFIG.moneyMoniker, 'M')
 }
 
@@ -84,14 +94,20 @@ export const getMarketResolutionEmail = (
 
   const creatorPayoutText =
     creatorPayout >= 1 && privateUser.id === creator.id
-      ? ` (plus ${emailMoneyFormat(creatorPayout)} in commissions)`
+      ? ` (plus ${emailMoneyFormat(
+          creatorPayout,
+          contract.token
+        )} in commissions)`
       : ''
 
   const correctedInvestment =
     Number.isNaN(investment) || investment < 0 ? 0 : investment
 
-  const displayedInvestment = emailMoneyFormat(correctedInvestment)
-  const displayedPayout = emailMoneyFormat(payout)
+  const displayedInvestment = emailMoneyFormat(
+    correctedInvestment,
+    contract.token
+  )
+  const displayedPayout = emailMoneyFormat(payout, contract.token)
 
   const templateData: market_resolved_template = {
     userId: privateUser.id,
@@ -374,7 +390,6 @@ export const sendThankYouEmail = async (
 }
 
 export const sendMarketCloseEmail = async (
-  reason: notification_reason_types,
   user: User,
   privateUser: PrivateUser,
   contract: Contract
@@ -399,7 +414,7 @@ export const sendMarketCloseEmail = async (
       unsubscribeUrl: '',
       userId,
       name: firstName,
-      volume: emailMoneyFormat(volume),
+      volume: emailMoneyFormat(volume, contract.token),
     }
   )
 }
@@ -428,7 +443,8 @@ export const getNewCommentEmail = (
   if (bet) {
     const { amount } = bet
     betDescription = `${amount < 0 ? 'sold' : 'bought'} ${emailMoneyFormat(
-      Math.abs(amount)
+      Math.abs(amount),
+      contract.token
     )}`
   }
 
@@ -706,7 +722,7 @@ export const sendNewUniqueBettorsEmail = async (
       const { amount } = bet
       templateData[`bet${i + 1}Description`] = `${
         amount < 0 ? 'sold' : 'bought'
-      } ${emailMoneyFormat(Math.abs(amount))}`
+      } ${emailMoneyFormat(Math.abs(amount), contract.token)}`
     }
   })
 
@@ -751,7 +767,8 @@ export const getWeeklyPortfolioUpdateEmail = (
       templateData[`question${i + 1}Url`] = investment.questionUrl
       templateData[`question${i + 1}Prob`] = investment.questionProb
       templateData[`question${i + 1}Change`] = emailMoneyFormat(
-        investment.profit
+        investment.profit,
+        investment.token
       )
       templateData[`question${i + 1}ChangeStyle`] = investment.profitStyle
       templateData[`question${i + 1}Display`] = 'display: table-row'

@@ -719,7 +719,7 @@ export function MarketResolvedNotification(props: {
     sourceContractTitle,
     sourceContractCreatorUsername,
   } = notification
-  const { userInvestment, userPayout, profitRank, totalShareholders } =
+  const { userInvestment, userPayout, profitRank, totalShareholders, token } =
     (data as ContractResolutionData) ?? {}
   const profit = userPayout - userInvestment
   const profitable = profit > 0 && !floatingEqual(userInvestment, 0)
@@ -730,18 +730,22 @@ export function MarketResolvedNotification(props: {
       : ''
   const secondaryTitle =
     sourceText === 'CANCEL' && userInvestment > 0 ? (
-      <>Your {formatMoney(userInvestment)} invested has been returned to you</>
+      <>
+        Your {formatMoney(userInvestment, token)} invested has been returned to
+        you
+      </>
     ) : sourceText === 'CANCEL' && Math.abs(userPayout) > 0 ? (
-      <>Your {formatMoney(-userPayout)} in profit has been removed</>
+      <>Your {formatMoney(-userPayout, token)} in profit has been removed</>
     ) : profitable ? (
       <>
-        Your {formatMoney(userInvestment)} won{' '}
-        <span className="text-teal-600">+{formatMoney(profit)}</span> in profit
+        Your {formatMoney(userInvestment, token)} won{' '}
+        <span className="text-teal-600">+{formatMoney(profit, token)}</span> in
+        profit
         {comparison ? `, and ${comparison}` : ``} 🎉🎉🎉
       </>
     ) : userInvestment > 0 ? (
       <>
-        You lost {formatMoney(Math.abs(profit))}
+        You lost {formatMoney(Math.abs(profit), token)}
         {comparison ? `, but ${comparison}` : ``}
       </>
     ) : null
@@ -907,13 +911,7 @@ export function MarketResolvedNotification(props: {
               />
 
               <NotificationIcon
-                symbol={
-                  <CoinNumber
-                    amount={profit}
-                    className="text-xs font-semibold"
-                    numberType="short"
-                  />
-                }
+                symbol={<CoinNumber hideAmount={true} coinType={token} />}
                 symbolBackgroundClass={
                   profit < 0
                     ? 'border-ink-300  border-2 ring-4 ring-ink-200'
@@ -1453,7 +1451,7 @@ function ReferralProgramNotification(props: {
         on every sign up!
       </span>
       {user && showModal && (
-        <Modal open setOpen={setShowModal}>
+        <Modal open={showModal} setOpen={setShowModal}>
           <Referrals user={user} />
         </Modal>
       )}

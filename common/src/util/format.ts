@@ -1,6 +1,7 @@
 import { ENV_CONFIG } from '../envs/constants'
 import {
   BinaryContract,
+  ContractToken,
   CPMMMultiContract,
   CPMMNumericContract,
   PseudoNumericContract,
@@ -45,7 +46,10 @@ export function formatWithToken(variables: {
   return formatMoney(amount)
 }
 
-export function formatMoney(amount: number) {
+export function formatMoney(amount: number, token?: ContractToken) {
+  if (token === 'CASH') {
+    return formatSweepies(amount)
+  }
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
 }

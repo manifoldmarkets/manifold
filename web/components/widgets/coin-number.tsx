@@ -11,21 +11,24 @@ import clsx from 'clsx'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { ContractToken } from 'common/contract'
 
 export type NumberDisplayType = 'short' | 'animated' | 'toDecimal'
 
 export function CoinNumber(props: {
   amount?: number
-  coinType?: 'mana' | 'spice' | 'sweepies'
+  coinType?: 'mana' | 'spice' | 'sweepies' | ContractToken
   numberType?: NumberDisplayType
   className?: string
   isInline?: boolean
   coinClassName?: string
+  hideAmount?: boolean
   style?: React.CSSProperties
 }) {
   const {
+    hideAmount,
     amount,
-    coinType = 'mana',
+    coinType = 'MANA',
     numberType,
     className,
     isInline,
@@ -51,7 +54,7 @@ export function CoinNumber(props: {
             coinClassName
           )}
         />
-      ) : coinType == 'sweepies' ? (
+      ) : coinType == 'sweepies' || coinType === 'CASH' ? (
         <SweepiesCoin
           className={clsx(
             isInline &&
@@ -69,9 +72,11 @@ export function CoinNumber(props: {
         />
       )}
 
-      {amount == undefined ? (
+      {hideAmount ? (
+        ''
+      ) : amount == undefined ? (
         '---'
-      ) : coinType === 'sweepies' ? (
+      ) : coinType === 'sweepies' || coinType === 'CASH' ? (
         // TWODO: give sweepies all the variations as well
         formatSweepiesNumber(Math.abs(amount ?? 0))
       ) : numberType == 'short' ? (
