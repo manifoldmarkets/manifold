@@ -16,7 +16,7 @@ import { useSweepstakes } from '../sweestakes-context'
 
 export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice'
-export const MANA_COLOR = '#4f46e5'
+export const MANA_COLOR = '#7c3aed'
 export const CASH_COLOR = '#f59e0b'
 
 export const PortfolioTooltip = (props: { date: Date }) => {

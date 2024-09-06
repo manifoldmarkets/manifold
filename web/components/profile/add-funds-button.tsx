@@ -5,6 +5,7 @@ import { AddFundsModal } from '../add-funds-modal'
 import { Button, SizeType } from '../buttons/button'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import router from 'next/router'
+import clsx from 'clsx'
 
 export function AddFundsButton(props: {
   userId?: string
@@ -26,7 +27,9 @@ export function AddFundsButton(props: {
         color="violet"
         className={className}
       >
-        <PlusIcon className="mr-1 h-3 w-3" />
+        <PlusIcon
+          className={clsx('mr-1', size == 'xl' ? 'h-4 w-4' : 'h-3 w-3')}
+        />
         Get mana
       </Button>
       <AddFundsModal open={open} setOpen={setOpen} />

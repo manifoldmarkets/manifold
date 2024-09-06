@@ -15,7 +15,6 @@ import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 
 export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice'
-// export const MANA_COLOR = '#9333ea'
 export const MANA_COLOR = '#7c3aed'
 export const SPICE_COLOR = '#f59e0b'
 
