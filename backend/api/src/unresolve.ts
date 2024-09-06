@@ -262,6 +262,7 @@ const undoResolution = async (
     const updatedAttrs = {
       isResolved: false,
       resolutionTime: FieldVal.delete(),
+      resolverId: FieldVal.delete(),
       resolution: FieldVal.delete(),
       resolutions: FieldVal.delete(),
       resolutionProbability: FieldVal.delete(),

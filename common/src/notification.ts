@@ -1,4 +1,4 @@
-import { OutcomeType } from 'common/contract'
+import { ContractToken, OutcomeType } from 'common/contract'
 import { groupPath } from './group'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
@@ -361,6 +361,7 @@ export type ContractResolutionData = {
   totalShareholders?: number
   profit?: number
   answerId?: string
+  token?: ContractToken
 }
 
 export type UniqueBettorData = {

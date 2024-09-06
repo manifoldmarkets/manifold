@@ -96,7 +96,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   marketTier?: MarketTierType
 
-  token: 'MANA' | 'CASH'
+  token: ContractToken
   siblingContractId?: string
 
   // Manifold.love
@@ -125,6 +125,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   likedByUserCount?: number
 } & T
 
+export type ContractToken = 'MANA' | 'CASH'
 export type CPMMContract = Contract & CPMM
 export type CPMMMultiContract = Contract & CPMMMulti
 export type CPMMNumericContract = Contract & CPMMMultiNumeric

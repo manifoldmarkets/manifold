@@ -49,6 +49,7 @@ import {
   sendNewUniqueBettorsEmail,
   EmailAndTemplateEntry,
   toDisplayResolution,
+  emailMoneyFormat,
 } from './emails'
 import {
   getNotificationDestinationsForUser,
@@ -1219,6 +1220,7 @@ export const createContractResolvedNotifications = async (
   }
 ) => {
   let resolutionText = outcome ?? contract.question
+  const { token } = contract
 
   const isIndependentMulti =
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
@@ -1314,6 +1316,7 @@ export const createContractResolvedNotifications = async (
         profitRank: sortedProfits.findIndex((p) => p.userId === userId) + 1,
         totalShareholders: sortedProfits.length,
         profit: userIdToContractMetrics?.[userId]?.profit ?? 0,
+        token,
       }) as ContractResolutionData,
     }
   }
@@ -1365,10 +1368,11 @@ export const createContractResolvedNotifications = async (
           : '.'
       const profit = userPayout - userInvestment
       const profitPercent = Math.round((profit / userInvestment) * 100)
-      const profitString = ` You made M${Math.round(
-        profit
+      const profitString = ` You made ${emailMoneyFormat(
+        profit,
+        token
       )} (+${profitPercent}%)`
-      const lossString = ` You lost M${Math.round(-profit)}`
+      const lossString = ` You lost ${emailMoneyFormat(-profit, token)}`
       bulkPushNotifications.push([
         privateUser,
         notification,
@@ -1440,12 +1444,7 @@ export const createMarketClosedNotification = async (
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
-  await sendMarketCloseEmail(
-    'your_contract_closed',
-    creator,
-    privateUser,
-    contract
-  )
+  await sendMarketCloseEmail(creator, privateUser, contract)
 }
 export const createWeeklyPortfolioUpdateNotification = async (
   privateUser: PrivateUser,

@@ -35,7 +35,8 @@ export const DEV_CONFIG: EnvConfig = {
   },
   adminIds: [
     'pfKxvtgSEua5DxoIfiPXxR4fAWd2',
-    '6hHpzvRG0pMq8PNJs7RZj2qlZGn2',
+    '6hHpzvRG0pMq8PNJs7RZj2qlZGn2', // Ian
+    'MxyCh2xvsFMFywwjg3Az0w4xP5B3', // Dev Manifold
     '2cO953kN1sTBpfbhPVnTjRNqLJh2', // Sinclair
   ],
 }

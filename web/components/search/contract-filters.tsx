@@ -51,7 +51,7 @@ import {
   PremiumTier,
 } from 'web/public/custom-components/tiers'
 import { LiteGroup } from 'common/group'
-import { SWEEPIES_NAME, TWOMBA_ENABLED } from 'common/envs/constants'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function ContractFilters(props: {
@@ -174,7 +174,7 @@ export function ContractFilters(props: {
               )}
             >
               <SweepiesCoin />
-              {SWEEPIES_NAME}
+              Sweepstakes
             </Row>
           </FilterPill>
         )}
