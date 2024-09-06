@@ -162,7 +162,7 @@ function NavBarItem(props: {
           <Row className="gap-1">
             <CoinNumber
               amount={user?.balance}
-              className="text-purple-600 dark:text-purple-400"
+              className="text-violet-600 dark:text-violet-400"
               numberType="short"
               isInline
               coinClassName="!top-[0.15em]"

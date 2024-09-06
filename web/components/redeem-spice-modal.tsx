@@ -176,7 +176,7 @@ function AllSpiceToManaButton(props: {
         className="w-full whitespace-nowrap text-xs sm:text-sm"
         loading={loading}
         disabled={disableAllButtons}
-        color="purple"
+        color="violet"
       >
         Redeem all for mana
       </Button>
@@ -184,7 +184,7 @@ function AllSpiceToManaButton(props: {
         <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
           <CoinNumber
             amount={user.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE}
-            className="font-semibold text-purple-600 dark:text-purple-400"
+            className="font-semibold text-violet-600 dark:text-violet-400"
           />
           mana value
         </Row>

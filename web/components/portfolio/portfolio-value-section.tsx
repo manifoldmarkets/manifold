@@ -312,7 +312,7 @@ function PortfolioValueSkeleton(props: {
         >
           <CoinNumber
             amount={portfolioValues?.net ?? undefined}
-            className="text-xs text-purple-600 dark:text-purple-400 sm:text-sm"
+            className="text-xs text-violet-600 dark:text-violet-400 sm:text-sm"
             numberType="short"
           />
         </PortfolioTab>
@@ -324,7 +324,7 @@ function PortfolioValueSkeleton(props: {
         >
           <CoinNumber
             amount={portfolioValues?.profit ?? undefined}
-            className="text-xs text-purple-600 dark:text-purple-400 sm:text-sm"
+            className="text-xs text-violet-600 dark:text-violet-400 sm:text-sm"
             numberType="short"
           />
         </PortfolioTab>
@@ -343,7 +343,7 @@ function PortfolioValueSkeleton(props: {
                     className={clsx(
                       'cursor-pointer select-none transition-opacity',
                       portfolioFocus == 'all'
-                        ? 'text-purple-700 opacity-100 dark:text-purple-400'
+                        ? 'text-violet-700 opacity-100 dark:text-violet-400'
                         : 'text-ink-1000 opacity-50 hover:opacity-[85%]'
                     )}
                     onClick={() => togglePortfolioFocus('all')}
