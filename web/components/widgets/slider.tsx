@@ -10,6 +10,7 @@ const colors = {
   ],
   red: ['bg-scarlet-400', 'focus:outline-scarlet-600/30 bg-scarlet-600'],
   indigo: ['bg-primary-300', 'focus:outline-primary-500/30 bg-primary-500'],
+  violet: ['bg-violet-300', 'focus:outline-violet-500/30 bg-violet-500'],
   // light: ['primary-200', 'primary-300']
 } as const
 export type Mark = { value: number; label: string }
@@ -35,7 +36,7 @@ export function Slider(props: {
     marks,
     className,
     disabled,
-    color = 'indigo',
+    color = 'violet',
     inverted,
   } = props
 
