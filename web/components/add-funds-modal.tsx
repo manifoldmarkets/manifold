@@ -246,7 +246,7 @@ export function PriceTile(props: {
           height={400}
         />
 
-        <div className="-mt-1 text-xl font-semibold text-purple-600 dark:text-purple-400">
+        <div className="-mt-1 text-xl font-semibold text-violet-600 dark:text-violet-400">
           {shortenNumber(mana)}{' '}
         </div>
       </Col>

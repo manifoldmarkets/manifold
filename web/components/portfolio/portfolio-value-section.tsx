@@ -378,7 +378,7 @@ function PortfolioValueSkeleton(props: {
                       )}
                       className={clsx(
                         portfolioFocus == 'balance'
-                          ? 'bg-indigo-700 text-white'
+                          ? 'bg-violet-700 text-white'
                           : 'bg-canvas-50 text-ink-1000'
                       )}
                       onClick={() => togglePortfolioFocus('balance')}
@@ -393,7 +393,7 @@ function PortfolioValueSkeleton(props: {
                       )}
                       className={clsx(
                         portfolioFocus == 'investment'
-                          ? 'bg-indigo-700 text-white'
+                          ? 'bg-violet-700 text-white'
                           : 'bg-canvas-50 text-ink-1000'
                       )}
                       onClick={() => togglePortfolioFocus('investment')}
