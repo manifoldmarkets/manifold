@@ -36,7 +36,7 @@ export function Slider(props: {
     marks,
     className,
     disabled,
-    color = 'violet',
+    color = 'indigo',
     inverted,
   } = props
 
