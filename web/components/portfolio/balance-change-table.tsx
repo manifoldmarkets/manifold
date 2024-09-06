@@ -394,6 +394,7 @@ const TxnBalanceChangeRow = (props: {
     CONSUME_SPICE: 'bg-indigo-400',
     CONSUME_SPICE_DONE: 'bg-indigo-400',
     SIGNUP_BONUS: 'bg-yellow-200',
+    KYC_BONUS: 'bg-yellow-200',
     MANA_PURCHASE: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
     CASH_BONUS: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
     MARKET_BOOST_REDEEM: 'bg-purple-200',
@@ -450,6 +451,7 @@ const TxnBalanceChangeRow = (props: {
                 'CASH_BONUS',
                 'BETTING_STREAK_BONUS',
                 'SIGNUP_BONUS',
+                'KYC_BONUS',
                 'QUEST_REWARD',
                 'MARKET_BOOST_REDEEM',
                 'LEAGUE_PRIZE',
@@ -565,6 +567,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Cash out request'
     case 'CASH_BONUS':
       return 'Mana cash bonus'
+    case 'KYC_BONUS':
+      return 'ID verification bonus'
     default:
       return type
   }
@@ -584,6 +588,7 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'BETTING_STREAK_BONUS':
       return 'Quests'
     case 'SIGNUP_BONUS':
+    case 'KYC_BONUS':
       return 'New user bonuses'
     case 'QUEST_REWARD':
       return 'Quests'
