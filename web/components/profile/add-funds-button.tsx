@@ -23,7 +23,7 @@ export function AddFundsButton(props: {
           TWOMBA_ENABLED ? router.push('/checkout') : setOpen(true)
         }
         size={size ?? 'md'}
-        color="gradient-pink"
+        color="purple"
         className={className}
       >
         <PlusIcon className="mr-1 h-3 w-3" />
