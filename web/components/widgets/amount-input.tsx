@@ -2,12 +2,12 @@ import { XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { User, humanish } from 'common/user'
+import { MarketTierType } from 'common/tier'
+import { humanish, User } from 'common/user'
 import {
   formatMoney,
-  formatSweepiesNumber,
   formatWithToken,
-  InputTokenType,
+  InputTokenType
 } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
@@ -16,6 +16,7 @@ import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { useUser } from 'web/hooks/use-user'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { AddFundsModal } from '../add-funds-modal'
 import { BetSlider } from '../bet/bet-slider'
 import { Col } from '../layout/col'
@@ -25,8 +26,6 @@ import {
   IncrementDecrementAmountButton,
 } from './increment-button'
 import { Input } from './input'
-import { MarketTierType } from 'common/tier'
-import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function AmountInput(
   props: {
@@ -58,7 +57,6 @@ export function AmountInput(
     inputStyle,
     inputRef,
     quickAddMoreButton,
-    allowFloat,
     allowNegative,
     disableClearButton,
     isSweepies,
@@ -67,12 +65,10 @@ export function AmountInput(
 
   const [amountString, setAmountString] = useState(formatAmountString(amount))
 
+  const allowFloat = isSweepies || !!props.allowFloat
+
   function formatAmountString(amount: number | undefined) {
-    if (isSweepies) {
-      return amount ? formatSweepiesNumber(amount).toString() : ''
-    } else {
-      return amount?.toString() ?? ''
-    }
+    return amount?.toString() ?? ''
   }
 
   const parse = allowFloat ? parseFloat : parseInt
@@ -88,16 +84,10 @@ export function AmountInput(
   }, [amount])
 
   const onAmountChange = (str: string) => {
-    // TWODO: Sweepies not as robust
     const s = str.replace(bannedChars, '')
     if (s !== amountString) {
-      if (!isSweepies) {
-        setAmountString(s)
-      }
+      setAmountString(s)
       const amount = parse(s)
-      if (isSweepies) {
-        setAmountString(formatAmountString(amount))
-      }
       const isInvalid = !s || isNaN(amount)
       onChangeAmount(isInvalid ? undefined : amount)
     }
