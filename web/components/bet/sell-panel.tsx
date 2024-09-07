@@ -26,7 +26,7 @@ import { User } from 'common/user'
 import {
   formatLargeNumber,
   formatPercent,
-  formatWithCommas,
+  formatShares,
   formatWithToken,
 } from 'common/util/format'
 import { addObjects } from 'common/util/object'
@@ -226,7 +226,9 @@ export function SellPanel(props: {
 
     // Check for errors.
     if (realAmount !== undefined && realAmount > shares) {
-      setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
+      setError(
+        `Maximum ${formatShares(Math.floor(shares), isCashContract)} shares`
+      )
     } else {
       setError(undefined)
     }
@@ -345,7 +347,7 @@ export function SellPanel(props: {
                 amount: saleValue,
                 token: isCashContract ? 'CASH' : 'M$',
               })}`
-            : `Sell ${formatWithCommas(sellQuantity)} shares`
+            : `Sell ${formatShares(sellQuantity, isCashContract)} shares`
         }
         inModal={true}
       />
