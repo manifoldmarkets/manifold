@@ -7,7 +7,7 @@ import { humanish, User } from 'common/user'
 import {
   formatMoney,
   formatWithToken,
-  InputTokenType
+  InputTokenType,
 } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
