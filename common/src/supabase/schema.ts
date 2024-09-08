@@ -1068,6 +1068,52 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_bonus_rewards: {
+        Row: {
+          claim_time: string | null
+          claimed: boolean | null
+          created_time: string | null
+          reward_amount: number
+          user_id: string
+        }
+        Insert: {
+          claim_time?: string | null
+          claimed?: boolean | null
+          created_time?: string | null
+          reward_amount: number
+          user_id: string
+        }
+        Update: {
+          claim_time?: string | null
+          claimed?: boolean | null
+          created_time?: string | null
+          reward_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'kyc_bonus_rewards_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'user_referrals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'kyc_bonus_rewards_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'kyc_bonus_rewards_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       league_chats: {
         Row: {
           channel_id: string

@@ -28,6 +28,7 @@ import {
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { parsePhoneNumber } from 'libphonenumber-js'
 import { getIp } from 'shared/analytics'
+import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
 
 const ENDPOINT =
   'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
@@ -118,6 +119,8 @@ export const verifyReasonCodes = async (
       idVerified: true,
       sweepstakes5kLimit: hasAny(limitTo5kCashoutCodes),
     })
+
+    await distributeKycBonus(pg, userId)
   } else {
     await updateUser(pg, userId, {
       idVerified: false,
