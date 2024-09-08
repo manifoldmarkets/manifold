@@ -241,6 +241,8 @@ type ContractOldResolutionPayout = {
     deposit?: number
     payoutStartTime?: number
     answerId?: string
+    cashoutable?: boolean
+    isCashout5kLimit?: boolean
   }
 }
 
