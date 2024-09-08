@@ -32,12 +32,12 @@ export async function distributeKycBonus(
 
     if (data) {
       await tx.none(
-        'update kyc_bonus_rewards set claimed = true where user_id = $1',
+        'update kyc_bonus_rewards set claimed = true, claim_time = now() where user_id = $1',
         [userId]
       )
     } else {
       await tx.none(
-        'insert into kyc_bonus_rewards (user_id, reward_amount, claimed) values ($1, $2, true)',
+        'insert into kyc_bonus_rewards (user_id, reward_amount, claimed, claim_time) values ($1, $2, true, now())',
         [userId, reward]
       )
     }

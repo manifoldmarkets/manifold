@@ -4,7 +4,8 @@ create table if not exists
     user_id text not null,
     reward_amount numeric not null,
     created_time timestamp with time zone default now(),
-    claimed boolean default false
+    claimed boolean default false,
+    claim_time timestamp with time zone
   );
 
 -- Foreign Keys

@@ -1070,18 +1070,21 @@ export type Database = {
       }
       kyc_bonus_rewards: {
         Row: {
+          claim_time: string | null
           claimed: boolean | null
           created_time: string | null
           reward_amount: number
           user_id: string
         }
         Insert: {
+          claim_time?: string | null
           claimed?: boolean | null
           created_time?: string | null
           reward_amount: number
           user_id: string
         }
         Update: {
+          claim_time?: string | null
           claimed?: boolean | null
           created_time?: string | null
           reward_amount?: number
