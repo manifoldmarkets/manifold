@@ -80,18 +80,18 @@ async function getDailyBets(
 ) {
   const bets = await pg.manyOrNone(
     `select
-    date_trunc('day', created_time at time zone 'america/los_angeles')::date as day,
+    date_trunc('day', b.created_time at time zone 'america/los_angeles')::date as day,
     json_agg(json_build_object(
-      'ts', ts_to_millis(created_time),
+      'ts', ts_to_millis(b.created_time),
       'userId', user_id,
+      'token', c.token,
       'amount', amount,
-      'token': token,
       'id', bet_id
     )) as values
-    from contract_bets
+    from contract_bets b join contracts c on b.contract_id = c.id
     where
-      created_time >= date_to_midnight_pt($1)
-      and created_time < date_to_midnight_pt($2)
+      b.created_time >= date_to_midnight_pt($1)
+      and b.created_time < date_to_midnight_pt($2)
       and is_redemption = false
     group by day
     order by day asc`,
@@ -274,7 +274,7 @@ export const updateActivityStats = async (
       contractUsersByDay,
       betUsersByDay,
       commentUsersByDay,
-      (a, b) => a.concat(b)
+      (a, b) => (a && b ? a.concat(b) : a || b)
     )
 
     const medianDailyUserActions = mapValues(allIds, (ids) => {
