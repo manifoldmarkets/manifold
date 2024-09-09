@@ -18,11 +18,11 @@ ENV=${1:-dev}
 
 case $ENV in
     dev)
-        ENVIRONMENT=DEV
+        NEXT_PUBLIC_FIREBASE_ENV=DEV
         GCLOUD_PROJECT=dev-mantic-markets
         MACHINE_TYPE=n2-standard-2 ;;
     prod)
-        ENVIRONMENT=PROD
+        NEXT_PUBLIC_FIREBASE_ENV=PROD
         GCLOUD_PROJECT=mantic-markets
         MACHINE_TYPE=n2-standard-8 ;;
     *)
@@ -119,7 +119,7 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --image-family "cos-109-lts" \
        --container-image ${IMAGE_URL} \
        --machine-type ${MACHINE_TYPE} \
-       --container-env ENVIRONMENT=${ENVIRONMENT},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
+       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
        --no-user-output-enabled \
        --scopes default,cloud-platform \
        --tags lb-health-check \

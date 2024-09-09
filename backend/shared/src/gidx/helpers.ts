@@ -27,7 +27,7 @@ import { User } from 'common/user'
 // TODO: when in production, configure endpoint here: https://portal.gidx-service.in/Integration/Index#ProfileNotification
 export const GIDXCallbackUrl = LOCAL_DEV
   ? 'https://enabled-bream-sharply.ngrok-free.app'
-  : ENV_CONFIG.apiEndpoint
+  : 'https://' + ENV_CONFIG.apiEndpoint
 
 export const getGIDXStandardParams = (MerchantSessionID?: string) => ({
   // TODO: before merging into main, switch from sandbox key to production key in prod

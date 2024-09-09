@@ -1587,7 +1587,20 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     returns: {} as { MerchantTransactionID: string },
-    props: z.any(),
+    props: z
+      .object({
+        MerchantTransactionID: z.string(),
+        TransactionStatusCode: z.coerce.number(),
+        TransactionStatusMessage: z.string(),
+        StatusCode: z.coerce.number(),
+        SessionID: z.string(),
+        MerchantSessionID: z.string(),
+        SessionScore: z.coerce.number(),
+        ReasonCodes: z.array(z.string()).optional(),
+        ServiceType: z.string(),
+        StatusMessage: z.string(),
+      })
+      .strict(),
   },
   'get-best-comments': {
     method: 'GET',
