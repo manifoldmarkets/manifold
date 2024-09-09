@@ -11,6 +11,7 @@ import {
   SWEEPIES_NAME,
 } from 'common/envs/constants'
 import { AmountInput } from '../widgets/amount-input'
+import { MIN_CASHOUT_AMOUNT } from 'common/economy'
 
 export function AllCashToManaButton(props: {
   user: User
@@ -28,9 +29,8 @@ export function AllCashToManaButton(props: {
   } = props
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const spiceBalance = user.spiceBalance
   const onSubmit = async () => {
-    if (!spiceBalance) return
+    if (!redeemableCash || redeemableCash < MIN_CASHOUT_AMOUNT) return
     setLoading(true)
     setDisableAllButtons(true)
     try {
@@ -61,7 +61,7 @@ export function AllCashToManaButton(props: {
       {!error && (
         <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
           <CoinNumber
-            amount={user.spiceBalance * CASH_TO_MANA_CONVERSION_RATE}
+            amount={redeemableCash * CASH_TO_MANA_CONVERSION_RATE}
             className="font-semibold text-violet-600 dark:text-violet-400"
           />
           mana value
