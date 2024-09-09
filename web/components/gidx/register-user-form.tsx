@@ -19,7 +19,7 @@ import { UploadDocuments } from 'web/components/gidx/upload-document'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 
-import { usePrivateUser, useWebsocketUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
   ENABLE_FAKE_CUSTOMER,
   FAKE_CUSTOMER_BODY,
@@ -27,6 +27,8 @@ import {
   ID_ERROR_MSG,
 } from 'common/gidx/gidx'
 import { LocationPanel } from 'web/components/gidx/location-panel'
+import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 
 export const registrationColClass = 'gap-3 p-4'
 export const registrationBottomRowClass = 'mb-4 mt-4 w-full gap-16'
@@ -35,7 +37,7 @@ export const RegisterUserForm = (props: {
   user: User
   privateUser: PrivateUser
 }) => {
-  const user = useWebsocketUser(props.user.id) ?? props.user
+  const user = useUser() ?? props.user
   const privateUser = usePrivateUser() ?? props.privateUser
   const router = useRouter()
   const { redirect } = router.query
@@ -400,13 +402,14 @@ export const RegisterUserForm = (props: {
   if (user.sweepstakesVerified === false || user.kycDocumentStatus === 'fail') {
     return (
       <Col className={registrationColClass}>
-        <span className={'text-primary-700 text-2xl'}>Document errors</span>
+        <span className={'text-primary-700 text-2xl'}>Document upload</span>
         <span>
-          There was an error with your registration. Please upload identity
-          documents.
+          {user.kycDocumentStatus === 'fail' &&
+            'There were errors with your documents. '}
+          Please upload identity documents to continue.
         </span>
         <Row className={registrationBottomRowClass}>
-          <Button onClick={() => setPage('documents')}>Upload documents</Button>
+          <Button onClick={() => setPage('documents')}>Continue</Button>
         </Row>
       </Col>
     )
@@ -417,7 +420,16 @@ export const RegisterUserForm = (props: {
       <span className={'text-primary-700 text-2xl'}>
         Identity Verification Complete
       </span>
-      Thank you for verifying your identity! Now you can cash out prize points.
+      <span>
+        Hooray! Now you can participate in sweepstakes markets. We sent you{' '}
+        <CoinNumber
+          amount={KYC_VERIFICATION_BONUS_CASH}
+          className={'font-bold'}
+          coinType={'CASH'}
+          isInline={true}
+        />{' '}
+        to get started.
+      </span>
       <Row className={registrationBottomRowClass}>
         {/*// TODO:  auto-redirect rather than make them click this button*/}
         {redirect === 'checkout' ? (
