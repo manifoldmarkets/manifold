@@ -80,6 +80,37 @@ GROUP_PAGE_URL="https://console.cloud.google.com/compute/instanceGroups/details/
 # where container OS versions >= 113 drop TCP packets, maybe due to an issue related
 # to upgrading from iptables-legacy to iptables-nft
 
+# ian: GambleId requires a static IP address for the API
+STATIC_IP_NAME="${SERVICE_NAME}-static-ip"
+MAX_IPS=4  # Maximum number of static IPs to cycle through
+
+for i in $(seq 1 $MAX_IPS); do
+    CURRENT_IP_NAME="${STATIC_IP_NAME}-${i}"
+    STATIC_IP_ADDRESS=$(gcloud compute addresses describe ${CURRENT_IP_NAME} --region=${REGION} --project=${GCLOUD_PROJECT} --format='get(address)' 2>/dev/null || echo "")
+
+    if [ -z "${STATIC_IP_ADDRESS}" ]; then
+        echo "Creating new static IP address ${CURRENT_IP_NAME}..."
+        gcloud compute addresses create ${CURRENT_IP_NAME} --region=${REGION} --project=${GCLOUD_PROJECT}
+        STATIC_IP_ADDRESS=$(gcloud compute addresses describe ${CURRENT_IP_NAME} --region=${REGION} --project=${GCLOUD_PROJECT} --format='get(address)')
+    fi
+
+    # Check if any instance is using this IP
+    INSTANCE_USING_IP=$(gcloud compute instances list --project=${GCLOUD_PROJECT} --filter="networkInterfaces.accessConfigs.natIP:${STATIC_IP_ADDRESS}" --format="value(name)")
+
+    if [ -z "${INSTANCE_USING_IP}" ]; then
+        echo "Using available static IP address: ${STATIC_IP_ADDRESS}"
+        break
+    else
+        echo "IP ${STATIC_IP_ADDRESS} is currently in use by instance ${INSTANCE_USING_IP}. Trying next IP."
+    fi
+done
+
+if [ -z "${STATIC_IP_ADDRESS}" ]; then
+    echo "Error: No available static IPs found. Are there too many concurrent deploys? Check your GCP virtual machine dashboard."
+    exit 1
+fi
+
+echo "Using static IP address: ${STATIC_IP_ADDRESS}"
 echo
 echo "Creating new instance template ${TEMPLATE_NAME} using Docker image https://${IMAGE_URL}..."
 gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
@@ -91,7 +122,8 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --container-env ENVIRONMENT=${ENVIRONMENT},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
        --no-user-output-enabled \
        --scopes default,cloud-platform \
-       --tags lb-health-check
+       --tags lb-health-check \
+       --address ${STATIC_IP_ADDRESS}
 
 echo "Updating ${SERVICE_GROUP} to ${TEMPLATE_NAME}. See status here: ${GROUP_PAGE_URL}"
 gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GROUP} \
