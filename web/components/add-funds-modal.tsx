@@ -1,10 +1,7 @@
 'use client'
 import clsx from 'clsx'
-import { AD_REDEEM_REWARD } from 'common/boost'
 import {
-  BETTING_STREAK_BONUS_MAX,
   IOS_PRICES,
-  REFERRAL_AMOUNT,
   MANA_WEB_PRICES,
   WebManaAmounts,
   PaymentAmount,
@@ -17,7 +14,6 @@ import { Txn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
 import { sum } from 'lodash'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
@@ -257,26 +253,6 @@ export function PriceTile(props: {
   )
 }
 
-export const OtherWaysToGetMana = () => {
-  return (
-    <ul className="border-ink-100 border-t">
-      <Item>
-        🚀 Browse feed for <CoinNumber amount={AD_REDEEM_REWARD} isInline />{' '}
-        from each boosted question
-      </Item>
-      <Item>
-        🔥 Streak bonus (up to{' '}
-        <CoinNumber amount={BETTING_STREAK_BONUS_MAX} isInline /> per day)
-      </Item>
-      <Item url="/referrals">
-        👋 Refer a friend for{' '}
-        <CoinNumber amount={REFERRAL_AMOUNT} coinType={'spice'} isInline />{' '}
-        after their first trade
-      </Item>
-    </ul>
-  )
-}
-
 export const SpiceToManaForm = (props: {
   onBack: () => void
   onClose: () => void
@@ -322,21 +298,6 @@ export const SpiceToManaForm = (props: {
       </div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
     </>
-  )
-}
-
-const Item = (props: { children: React.ReactNode; url?: string }) => {
-  const { children, url } = props
-  return (
-    <li className="border-ink-100 border-b">
-      {url ? (
-        <Link href={url}>
-          <div className="hover:bg-primary-100 py-3">{children}</div>
-        </Link>
-      ) : (
-        <div className="py-3">{children}</div>
-      )}
-    </li>
   )
 }
 

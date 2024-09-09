@@ -16,7 +16,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { ExclamationCircleIcon } from '@heroicons/react/outline'
 import { referUser } from 'web/lib/api/api'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
 import { canSetReferrer } from 'web/lib/firebase/users'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { Subtitle } from '../widgets/subtitle'
@@ -60,7 +60,7 @@ export function Referrals(props: { user: User }) {
             Refer a friend for{' '}
             <span className={'text-teal-500'}>
               <CoinNumber
-                coinType="spice"
+                coinType={TWOMBA_ENABLED ? 'MANA' : 'spice'}
                 amount={REFERRAL_AMOUNT}
                 style={{
                   color: SPICE_COLOR,

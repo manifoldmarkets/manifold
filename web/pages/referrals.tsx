@@ -5,13 +5,12 @@ import { useUser } from 'web/hooks/use-user'
 import { Page } from 'web/components/layout/page'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
 import { InfoBox } from 'web/components/widgets/info-box'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { CoinNumber } from 'web/components/widgets/coin-number'
-import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
 import clsx from 'clsx'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
@@ -45,11 +44,8 @@ export default function ReferralsPage() {
           <div className={'mb-4'}>
             Invite new users to Manifold and get{' '}
             <CoinNumber
-              coinType="spice"
+              coinType={TWOMBA_ENABLED ? 'MANA' : 'spice'}
               amount={REFERRAL_AMOUNT}
-              style={{
-                color: SPICE_COLOR,
-              }}
               className={clsx('font-bold')}
               isInline
             />{' '}

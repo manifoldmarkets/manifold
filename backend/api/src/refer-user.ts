@@ -108,7 +108,7 @@ async function handleReferral(
       toId: referredByUserId,
       toType: 'USER',
       amount: REFERRAL_AMOUNT,
-      token: TWOMBA_ENABLED ? 'CASH' : 'SPICE',
+      token: TWOMBA_ENABLED ? 'M$' : 'SPICE',
       category: 'REFERRAL',
       description: `Referred new user id: ${user.id} for ${REFERRAL_AMOUNT}`,
     } as const

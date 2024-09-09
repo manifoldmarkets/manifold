@@ -66,9 +66,8 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { TRADED_TERM } from 'common/envs/constants'
+import { TRADED_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -1446,11 +1445,8 @@ function ReferralProgramNotification(props: {
       <span>
         Refer friends and get{' '}
         <CoinNumber
-          coinType="spice"
+          coinType={TWOMBA_ENABLED ? 'MANA' : 'spice'}
           amount={REFERRAL_AMOUNT}
-          style={{
-            color: SPICE_COLOR,
-          }}
           className={clsx('mr-1 font-bold')}
           isInline
         />
