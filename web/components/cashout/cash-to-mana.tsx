@@ -1,6 +1,6 @@
 import { User } from 'common/user'
 import { useState } from 'react'
-import { api, APIError } from 'web/lib/api/api'
+import { APIError } from 'web/lib/api/api'
 import { Col } from '../layout/col'
 import { Button } from '../buttons/button'
 import { Row } from '../layout/row'
