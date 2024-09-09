@@ -3,7 +3,6 @@ import {
   MIN_CASHOUT_AMOUNT,
   SWEEPIES_CASHOUT_FEE,
 } from 'common/economy'
-import { SWEEPIES_NAME } from 'common/envs/constants'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import {
   ageBlocked,
@@ -15,12 +14,10 @@ import {
   USER_NOT_REGISTERED_MESSAGE,
 } from 'common/user'
 import { formatSweepies, formatSweepsToUSD } from 'common/util/format'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { MdOutlineNotInterested } from 'react-icons/md'
-import { RiUserForbidLine } from 'react-icons/ri'
 import { Button } from 'web/components/buttons/button'
+import { SelectCashoutOptions } from 'web/components/cashout/select-cashout-options'
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { UploadDocuments } from 'web/components/gidx/upload-document'
 import { AmountInput } from 'web/components/widgets/amount-input'
@@ -31,19 +28,65 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useApiSubscription } from 'web/hooks/use-api-subscription'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
-import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
-import { RegisterIcon } from 'web/public/custom-components/registerIcon'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
+import { CashToManaForm } from 'web/components/cashout/cash-to-mana'
+import { SWEEPIES_NAME, TRADED_TERM, TRADING_TERM } from 'common/envs/constants'
+import { RegisterIcon } from 'web/public/custom-components/registerIcon'
+import Link from 'next/link'
+import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
+import { RiUserForbidLine } from 'react-icons/ri'
+import { MdOutlineNotInterested } from 'react-icons/md'
+import clsx from 'clsx'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+
+export type CashoutPagesType =
+  | 'select-cashout-method'
+  | MoneyCashoutPagesType
+  | ManaCashoutPagesType
+
+type MoneyCashoutPagesType =
+  | 'location'
+  | 'get-session'
+  | 'ach-details'
+  | 'waiting'
+  | 'documents'
+
+type ManaCashoutPagesType = 'custom-mana'
+
+function SweepiesStats(props: {
+  redeemableCash: number
+  cashBalance: number
+  className?: string
+}) {
+  const { redeemableCash, cashBalance, className } = props
+  return (
+    <Col className={clsx('w-full items-start', className)}>
+      <div className="text-ink-500 whitespace-nowrap text-sm">
+        Redeemable {SWEEPIES_NAME}
+        <span>
+          <InfoTooltip
+            text={`Redeemable ${SWEEPIES_NAME} are obtained when questions you've ${TRADED_TERM} ${SWEEPIES_NAME} on resolve`}
+            size={'sm'}
+            className=" ml-0.5"
+          />
+        </span>
+      </div>
+      <CoinNumber
+        amount={redeemableCash}
+        className={'text-3xl font-bold'}
+        coinType={'sweepies'}
+      />
+    </Col>
+  )
+}
 
 const CashoutPage = () => {
   const user = useUser()
   const router = useRouter()
-  const [page, setPage] = useState<
-    'location' | 'get-session' | 'ach-details' | 'waiting' | 'documents'
-  >('location')
+  const [page, setPage] = useState<CashoutPagesType>('select-cashout-method')
   const [NameOnAccount, setNameOnAccount] = useState('')
   const [AccountNumber, setAccountNumber] = useState('')
   const [RoutingNumber, setRoutingNumber] = useState('')
@@ -242,51 +285,33 @@ const CashoutPage = () => {
     )
   }
 
-  if (redeemableCash == 0) {
-    return (
-      <Page trackPageView={'cashout page'}>
-        <Col className="mx-auto max-w-lg items-center gap-2 px-6 py-4">
-          <div className="text-2xl">
-            You don't have any redeemable {SWEEPIES_NAME}
-          </div>
-          <Row className="mx-auto gap-8">
-            <Col>
-              <div className="text-ink-500 text-xs">
-                Redeemable {SWEEPIES_NAME}
-              </div>
-              <CoinNumber
-                amount={redeemableCash}
-                className={'text-2xl font-bold'}
-                coinType={'sweepies'}
-              />
-            </Col>
-            <Col>
-              <div className="text-ink-500 text-xs">Total {SWEEPIES_NAME}</div>
-              <CoinNumber
-                amount={user.cashBalance}
-                className={'text-2xl font-bold'}
-                coinType={'sweepies'}
-              />
-            </Col>
-          </Row>
-          <p className="text-ink-700 text-sm">
-            You can only redeem {SWEEPIES_NAME} that you win trading in a market
-            that resolves.
-          </p>
-        </Col>
-      </Page>
-    )
-  }
-
   return (
     <Page trackPageView={'cashout page'}>
       <Col className="mx-auto max-w-lg items-center gap-2 px-6 py-4">
-        <Row className="text-primary-600 mb-8 w-full justify-start text-3xl">
-          Cash Out
+        <Row className="text-primary-600 mb-4 w-full justify-start text-3xl">
+          Redeem {SWEEPIES_NAME}
         </Row>
+        <SweepiesStats
+          redeemableCash={redeemableCash}
+          cashBalance={user.cashBalance}
+          className="mb-4"
+        />
         {!user || page === 'get-session' ? (
           <LoadingIndicator />
-        ) : page === 'documents' ? (
+        ) : page == 'select-cashout-method' ? (
+          <>
+            <SelectCashoutOptions
+              user={user}
+              redeemableCash={redeemableCash}
+              setPage={setPage}
+            />
+          </>
+        ) : page == 'custom-mana' ? (
+          <CashToManaForm
+            onBack={() => setPage('select-cashout-method')}
+            redeemableCash={redeemableCash}
+          />
+        ) : page == 'documents' ? (
           <UploadDocuments
             back={router.back}
             next={() => setPage('location')}
