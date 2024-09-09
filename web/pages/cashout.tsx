@@ -6,6 +6,7 @@ import {
 import { SWEEPIES_NAME } from 'common/envs/constants'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import {
+  ageBlocked,
   blockFromSweepstakes,
   getVerificationStatus,
   IDENTIFICATION_FAILED_MESSAGE,
@@ -29,7 +30,7 @@ import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useApiSubscription } from 'web/hooks/use-api-subscription'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
 import { RegisterIcon } from 'web/public/custom-components/registerIcon'
@@ -37,6 +38,7 @@ import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
+import { locationBlocked } from 'common/user'
 
 const CashoutPage = () => {
   const user = useUser()
@@ -103,6 +105,7 @@ const CashoutPage = () => {
       setloading(false)
     }
   }
+
   const handleSubmit = async () => {
     setloading(true)
     setError(undefined)
@@ -147,18 +150,59 @@ const CashoutPage = () => {
     getCashoutSession(data)
   }
 
-  if (!user) {
+  const privateUser = usePrivateUser()
+
+  if (!user || !privateUser) {
     return
   }
 
   const { status, message } = getVerificationStatus(user)
 
+  const isLocationBlocked = locationBlocked(user, privateUser)
+  const isAgeBlocked = ageBlocked(user, privateUser)
+
+  if (isLocationBlocked) {
+    return (
+      <Page trackPageView={'cashout page'}>
+        <Col className="mx-auto max-w-lg px-6 py-4">
+          <Col className="items-center gap-2">
+            <div className="h-40 w-40">
+              <LocationBlockedIcon height={40} className="fill-ink-700" />
+            </div>
+            <div className="text-2xl">Your location is blocked</div>
+            <p className="text-ink-700 text-sm">
+              You are unable to cash out at the moment.
+            </p>
+          </Col>
+        </Col>
+      </Page>
+    )
+  }
+
+  if (isAgeBlocked) {
+    return (
+      <Page trackPageView={'cashout page'}>
+        <Col className="mx-auto max-w-lg px-6 py-4">
+          <Col className="items-center gap-2">
+            <LocationBlockedIcon height={40} className="fill-ink-700" />
+            <div className="text-2xl">You must be 18 or older to cash out</div>
+            <p className="text-ink-700 text-sm">
+              You are unable to cash out at the moment.
+            </p>
+          </Col>
+        </Col>
+      </Page>
+    )
+  }
+
+  // redirects to registration page if user if identification failed
   if (status !== 'success') {
     return (
       <Page trackPageView={'cashout page'}>
         <Col className="mx-auto max-w-lg px-6 py-4">
           {message == USER_NOT_REGISTERED_MESSAGE ||
-          message == PHONE_NOT_VERIFIED_MESSAGE ? (
+          message == PHONE_NOT_VERIFIED_MESSAGE ||
+          message == IDENTIFICATION_FAILED_MESSAGE ? (
             <Col className="items-center gap-2">
               <RegisterIcon height={40} className="fill-ink-700" />
               <div className="text-2xl">You're not registered yet...</div>
@@ -177,16 +221,7 @@ const CashoutPage = () => {
                 />
               </Link>
             </Col>
-          ) : message == LOCATION_BLOCKED_MESSAGE ? (
-            <Col className="items-center gap-2">
-              <LocationBlockedIcon height={40} className="fill-ink-700" />
-              <div className="text-2xl">Your location is blocked</div>
-              <p className="text-ink-700 text-sm">
-                You are unable to cash out at the moment.
-              </p>
-            </Col>
-          ) : message == IDENTIFICATION_FAILED_MESSAGE ||
-            message == USER_BLOCKED_MESSAGE ? (
+          ) : message == USER_BLOCKED_MESSAGE ? (
             <Col className="items-center gap-2">
               <RiUserForbidLine className="fill-ink-700 h-40 w-40" />
               <div className="text-2xl">Your registration failed</div>
@@ -245,7 +280,7 @@ const CashoutPage = () => {
   }
   return (
     <Page trackPageView={'cashout page'}>
-      <Col className=" px-2 py-4 sm:px-4">
+      <Col className="mx-auto max-w-lg items-center gap-2 px-6 py-4">
         <Row className="mb-8 w-full justify-start text-3xl text-indigo-700">
           Cash Out
         </Row>
