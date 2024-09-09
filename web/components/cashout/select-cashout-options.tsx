@@ -1,25 +1,24 @@
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
+import clsx from 'clsx'
+import { MIN_CASHOUT_AMOUNT } from 'common/economy'
 import {
-  baseButtonClasses,
-  Button,
-  buttonClass,
-} from 'web/components/buttons/button'
+    CASH_TO_MANA_CONVERSION_RATE,
+    SWEEPIES_NAME
+} from 'common/envs/constants'
 import { User } from 'common/user'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
-import { CashoutPagesType } from 'web/pages/cashout'
-import { AllCashToManaButton } from './cash-to-mana'
+import Link from 'next/link'
 import { useState } from 'react'
 import {
-  CASH_TO_MANA_CONVERSION_RATE,
-  SPICE_NAME,
-  SWEEPIES_NAME,
-} from 'common/envs/constants'
-import Link from 'next/link'
-import clsx from 'clsx'
+    baseButtonClasses,
+    Button,
+    buttonClass,
+} from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { MIN_CASHOUT_AMOUNT } from 'common/economy'
+import { CashoutPagesType } from 'web/pages/cashout'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { CoinNumber } from '../widgets/coin-number'
+import { AllCashToManaButton } from './cash-to-mana'
 
 export function SelectCashoutOptions(props: {
   user: User
