@@ -120,6 +120,16 @@ export function formatWithCommas(amount: number) {
   return formatter.format(Math.floor(amount)).replace('$', '')
 }
 
+export function formatShares(amount: number, isCashContract: boolean) {
+  if (isCashContract) {
+    return amount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  } else {
+    return formatWithCommas(amount)
+  }
+}
 export function manaToUSD(mana: number) {
   return (mana / 1000).toLocaleString('en-US', {
     style: 'currency',

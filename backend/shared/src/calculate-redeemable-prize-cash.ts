@@ -8,16 +8,28 @@ export async function calculateRedeemablePrizeCash(
 ) {
   // TODO: add cash out cancels
   const result = await pg.oneOrNone<{ total: number }>(
-    `select sum(case
-      when category = 'CONTRACT_RESOLUTION_PAYOUT' then least(amount, 5000)
-      when category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT' then -least(amount, 5000)
-      when category = 'CASH_OUT' then -amount
-      else 0
-    end) as total
-    from txns
-    where token = 'CASH'
-    and (to_id = $1 or from_id = $1)
-    and category in ('CONTRACT_RESOLUTION_PAYOUT', 'CONTRACT_UNDO_RESOLUTION_PAYOUT', 'CASH_OUT')`,
+    `select sum(
+      case
+        when t.category = 'CONTRACT_RESOLUTION_PAYOUT' then (
+          case 
+              when (t.data->'data'->>'isCashout5kLimit')::boolean then least(t.amount, 5000)
+              else t.amount
+          end
+        )
+        when t.category = 'CASH_OUT' then -t.amount
+        else 0
+      end
+    ) as total
+    from txns t
+    left join txns cancels on t.id = cancels.data->'data'->>'revertsTxnId' and 
+                              cancels.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+    where t.token = 'CASH'
+    and cancels.id is null
+    and (t.to_id = $1 or t.from_id = $1)
+    and (
+      t.category = 'CASH_OUT' or
+      t.category = 'CONTRACT_RESOLUTION_PAYOUT'
+    )`,
     [userId]
   )
   const total = result?.total ?? 0

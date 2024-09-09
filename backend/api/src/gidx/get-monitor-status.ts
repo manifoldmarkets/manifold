@@ -2,17 +2,18 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   getGIDXStandardParams,
   getLocalServerIP,
-  getUserRegistrationRequirements,
+  getUserSweepstakesRequirements,
+  throwIfIPNotWhitelisted,
+  verifyReasonCodes,
 } from 'shared/gidx/helpers'
 import {
   ENABLE_FAKE_CUSTOMER,
   FAKE_CUSTOMER_BODY,
   GIDXMonitorResponse,
 } from 'common/gidx/gidx'
-import { getUser, LOCAL_DEV, log } from 'shared/utils'
+import { LOCAL_DEV, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getIp } from 'shared/analytics'
-import { verifyReasonCodes } from 'api/gidx/register'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
 
@@ -24,20 +25,7 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const userId = auth.uid
   const pg = createSupabaseDirectClient()
-  const user = await getUser(userId, pg)
-  if (!user) {
-    return {
-      status: 'error',
-      message: 'User not found',
-    }
-  }
-  if (!user.idVerified) {
-    return {
-      status: 'error',
-      message: 'User must pass kyc first',
-    }
-  }
-  await getUserRegistrationRequirements(userId)
+  const user = await getUserSweepstakesRequirements(userId)
   const ENDPOINT =
     'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerMonitor'
   const body = {
@@ -66,8 +54,9 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   const data = (await res.json()) as GIDXMonitorResponse
 
   log('Monitor response:', data)
+  throwIfIPNotWhitelisted(data.ResponseCode, data.ResponseMessage)
   const { status, message } = await verifyReasonCodes(
-    userId,
+    user,
     data.ReasonCodes,
     data.FraudConfidenceScore,
     data.IdentityConfidenceScore

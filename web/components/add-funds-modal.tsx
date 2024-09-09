@@ -221,13 +221,13 @@ export function PriceTile(props: {
         <Image
           src={
             mana == 10000
-              ? '/buy-mana-graphics/10k_mana.png'
+              ? '/buy-mana-graphics/10k.png'
               : mana == 25000
-              ? '/buy-mana-graphics/25k_mana.png'
+              ? '/buy-mana-graphics/25k.png'
               : mana == 100000
-              ? '/buy-mana-graphics/100k_mana.png'
+              ? '/buy-mana-graphics/100k.png'
               : mana == 1000000
-              ? '/buy-mana-graphics/1M_mana.png'
+              ? '/buy-mana-graphics/1M.png'
               : ''
           }
           alt={
@@ -246,7 +246,7 @@ export function PriceTile(props: {
           height={400}
         />
 
-        <div className="text-primary-700 -mt-1 text-xl font-semibold">
+        <div className="-mt-1 text-xl font-semibold text-violet-600 dark:text-violet-400">
           {shortenNumber(mana)}{' '}
         </div>
       </Col>

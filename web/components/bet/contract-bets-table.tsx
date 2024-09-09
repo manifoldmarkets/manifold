@@ -14,7 +14,7 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares } from 'common/stonk'
 import {
   formatPercent,
-  formatWithCommas,
+  formatShares,
   formatWithToken,
 } from 'common/util/format'
 import { groupBy, orderBy, partition, sortBy, sum, sumBy } from 'lodash'
@@ -209,8 +209,8 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
           token: contract.token == 'CASH' ? 'CASH' : 'M$',
         })}`
 
-  const sharesOrShortSellShares = Math.abs(shares)
   const isCashContract = contract.token === 'CASH'
+  const sharesOrShortSellShares = Math.abs(shares)
 
   return (
     <tr>
@@ -241,7 +241,7 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
       <td>
         {isStonk
           ? getStonkDisplayShares(contract, sharesOrShortSellShares, 2)
-          : formatWithCommas(sharesOrShortSellShares)}
+          : formatShares(sharesOrShortSellShares, isCashContract)}
       </td>
 
       <td>
@@ -357,7 +357,7 @@ function MultiNumberBetRow(props: {
         />
         {ofTotalAmount}
       </td>
-      <td>{formatWithCommas(Math.abs(shares))}</td>
+      <td>{formatShares(Math.abs(shares), isCashContract)}</td>
 
       <td>
         {expectedValueBefore} → {expectedValueAfter}

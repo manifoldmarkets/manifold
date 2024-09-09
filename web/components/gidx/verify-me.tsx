@@ -5,7 +5,7 @@ import {
   locationBlocked,
   User,
 } from 'common/user'
-import { KYC_VERIFICATION_BONUS } from 'common/economy'
+import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { CoinNumber } from 'web/components/widgets/coin-number'
@@ -201,8 +201,9 @@ export const VerifyMe = (props: { user: User }) => {
         {getVerificationStatus(user).status !== 'success' &&
           'Verify your identity to collect '}
         <CoinNumber
-          amount={KYC_VERIFICATION_BONUS}
+          amount={KYC_VERIFICATION_BONUS_CASH}
           className={'font-bold'}
+          coinType={'CASH'}
           isInline
         />
         .{' '}
@@ -211,7 +212,7 @@ export const VerifyMe = (props: { user: User }) => {
         href={'gidx/register'}
         className={clsx(buttonClass('md', 'indigo'))}
       >
-        Claim {formatMoney(KYC_VERIFICATION_BONUS)}
+        Claim {formatMoney(KYC_VERIFICATION_BONUS_CASH, 'CASH')}
       </Link>
     </Col>
   )

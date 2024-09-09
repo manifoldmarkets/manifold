@@ -38,7 +38,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
           <CoinNumber
             amount={user?.balance}
             numberType="animated"
-            className="text-primary-600 mr-2"
+            className="mr-2 text-violet-600 dark:text-violet-400"
           />
         </div>
         {TWOMBA_ENABLED ? (

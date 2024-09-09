@@ -24,6 +24,7 @@ export type ColorType =
   | 'none'
   | 'white-outline'
   | 'purple'
+  | 'violet'
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -62,6 +63,7 @@ export function buttonClass(size: SizeType, color: ColorType) {
     ],
     color === 'blue' && [solid, 'bg-blue-400 hover:bg-blue-500'],
     color === 'purple' && [solid, 'bg-purple-500 hover:bg-purple-700'],
+    color === 'violet' && [solid, 'bg-violet-500 hover:bg-violet-700'],
     color === 'sky-outline' && [outline, 'text-sky-500 hover:bg-sky-500'],
     color === 'indigo' && [solid, 'bg-primary-500 hover:bg-primary-600'],
     color === 'indigo-outline' && [

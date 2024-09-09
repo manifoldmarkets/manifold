@@ -60,10 +60,9 @@ export const getTieredCost = (
 }
 
 /* Sweeps bonuses */
-export const SWEEPS_INITIAL_BONUS = 1
-export const SWEEPS_BETTING_STREAK_BONUS_AMOUNT = 0.05
-export const SWEEPS_BETTING_STREAK_BONUS_MAX = 0.50
-
+export const KYC_VERIFICATION_BONUS_CASH = 1
+export const BETTING_STREAK_SWEEPS_BONUS_AMOUNT = 0.05
+export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
 /* Mana bonuses */
 
 export const STARTING_BALANCE = 100
@@ -71,7 +70,6 @@ export const STARTING_BALANCE = 100
 export const SUS_STARTING_BALANCE = 10
 
 export const PHONE_VERIFICATION_BONUS = 1000
-export const KYC_VERIFICATION_BONUS = 1000
 
 export const REFERRAL_AMOUNT = 1000
 
@@ -91,8 +89,7 @@ export const SUBSIDY_FEE = 0
 
 export const BETTING_STREAK_BONUS_AMOUNT = 50
 export const BETTING_STREAK_BONUS_MAX = 250
-export const BETTING_STREAK_SWEEPS_BONUS_AMOUNT = 0.05
-export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
+
 export const BETTING_STREAK_RESET_HOUR = 7
 
 export const MANACHAN_TWEET_COST = 2500
@@ -172,7 +169,6 @@ export const IOS_PRICES = [
   },
   // No 1M option on ios: the fees are too high
 ]
-export type ManaAmountGIDX = (typeof PaymentAmountsGIDX)[number]['mana']
 
 export const SWEEPIES_CASHOUT_FEE = 0.05
 export const MIN_CASHOUT_AMOUNT = 25

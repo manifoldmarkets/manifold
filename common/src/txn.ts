@@ -53,6 +53,7 @@ type AnyTxnType =
   | ManifoldTopUp
   | CashBonus
   | CashOutPending
+  | KycBonus
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -216,6 +217,13 @@ type CashOutPending = {
   }
 }
 
+type KycBonus = {
+  category: 'KYC_BONUS'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'CASH'
+}
+
 type SignupBonus = {
   fromType: 'BANK'
   toType: 'USER'
@@ -233,6 +241,8 @@ type ContractOldResolutionPayout = {
     deposit?: number
     payoutStartTime?: number
     answerId?: string
+    cashoutable?: boolean
+    isCashout5kLimit?: boolean
   }
 }
 
@@ -554,3 +564,4 @@ export type AirDropTxn = Txn & AirDrop
 export type ManifestAirDropTxn = Txn & ManifestAirDrop
 export type ExtraPurchasedManaTxn = Txn & ExtraPurchasedMana
 export type ManifoldTopUpTxn = Txn & ManifoldTopUp
+export type KycBonusTxn = Txn & KycBonus
