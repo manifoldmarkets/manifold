@@ -288,7 +288,7 @@ const CashoutPage = () => {
   return (
     <Page trackPageView={'cashout page'}>
       <Col className="mx-auto max-w-lg items-center gap-2 px-6 py-4">
-        <Row className="text-primary-600 mb-4 w-full justify-start text-3xl">
+        <Row className="text-primary-600 w-full justify-start text-3xl">
           Redeem {SWEEPIES_NAME}
         </Row>
         <SweepiesStats
