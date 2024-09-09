@@ -2,9 +2,9 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   getGIDXCustomerProfile,
   getUserRegistrationRequirements,
+  verifyReasonCodes,
 } from 'shared/gidx/helpers'
 import { GIDXCustomerProfile } from 'common/gidx/gidx'
-import { verifyReasonCodes } from 'api/gidx/register'
 import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
 import {
   createSupabaseDirectClient,
@@ -14,6 +14,7 @@ import { updateUser } from 'shared/supabase/users'
 import { getUser, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { User } from 'common/user'
+import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
 
 export const getVerificationStatus: APIHandler<
   'get-verification-status-gidx'
@@ -63,7 +64,7 @@ export const getVerificationStatusInternal = async (
   }
 
   const { status, message } = await verifyReasonCodes(
-    userId,
+    user,
     ReasonCodes,
     FraudConfidenceScore,
     IdentityConfidenceScore
@@ -73,6 +74,7 @@ export const getVerificationStatusInternal = async (
     await updateUser(pg, user.id, {
       sweepstakesVerified: true,
     })
+    await distributeKycBonus(pg, user.id)
   }
 
   const { documents, status: documentStatus } = await assessDocumentStatus(
