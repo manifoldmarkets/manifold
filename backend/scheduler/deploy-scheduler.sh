@@ -12,11 +12,11 @@ ENV=${1:-dev}
 
 case $ENV in
     dev)
-      ENVIRONMENT=DEV
+      NEXT_PUBLIC_FIREBASE_ENV=DEV
       GCLOUD_PROJECT=dev-mantic-markets
       MACHINE_TYPE=n2-standard-2 ;;
     prod)
-      ENVIRONMENT=PROD
+      NEXT_PUBLIC_FIREBASE_ENV=PROD
       GCLOUD_PROJECT=mantic-markets
       MACHINE_TYPE=n2-standard-4 ;;
     *)
@@ -74,7 +74,7 @@ if [ "${INITIALIZE}" = true ]; then
            --address ${IP_ADDRESS_NAME} \
            --container-image ${IMAGE_URL} \
            --machine-type ${MACHINE_TYPE} \
-           --container-env ENVIRONMENT=${ENVIRONMENT} \
+           --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV} \
            --container-env GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
            --scopes default,cloud-platform \
            --tags http-server
