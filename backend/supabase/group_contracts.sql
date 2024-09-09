@@ -6,9 +6,10 @@ create table if not exists
 alter table group_contracts
 add constraint group_contracts_group_id_fke foreign key (group_id) references groups (id) not valid;
 
--- Policies
+-- Row Level Security
 alter table group_contracts enable row level security;
 
+-- Policies
 drop policy if exists "Enable read access for bets on markets user can access" on group_contracts;
 
 create policy "Enable read access for bets on markets user can access" on group_contracts for

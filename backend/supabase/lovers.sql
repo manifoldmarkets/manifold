@@ -45,9 +45,10 @@ create table if not exists
     age integer default 18 not null
   );
 
--- Policies
+-- Row Level Security
 alter table lovers enable row level security;
 
+-- Policies
 drop policy if exists "public read" on lovers;
 
 create policy "public read" on lovers for

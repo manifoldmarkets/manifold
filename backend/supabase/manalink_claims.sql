@@ -2,9 +2,10 @@
 create table if not exists
   manalink_claims (manalink_id text not null, txn_id text not null);
 
--- Policies
+-- Row Level Security
 alter table manalink_claims enable row level security;
 
+-- Policies
 drop policy if exists "public read" on manalink_claims;
 
 create policy "public read" on manalink_claims for

@@ -10,9 +10,10 @@ create table if not exists
     multiple_choice_options jsonb
   );
 
--- Policies
+-- Row Level Security
 alter table love_questions enable row level security;
 
+-- Policies
 drop policy if exists "public read" on love_questions;
 
 create policy "public read" on love_questions for all using (true);

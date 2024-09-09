@@ -26,9 +26,10 @@ create table if not exists
     )
   );
 
--- Policies
+-- Row Level Security
 alter table chart_annotations enable row level security;
 
+-- Policies
 drop policy if exists "public read" on chart_annotations;
 
 create policy "public read" on chart_annotations for all using (true);

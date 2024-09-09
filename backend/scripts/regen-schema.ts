@@ -49,6 +49,13 @@ async function getTableInfo(pg: SupabaseDirectClient, tableName: string) {
       AND NOT tgisinternal`,
     [tableName]
   )
+  const rlsEnabled = await pg.one(
+    `SELECT relrowsecurity
+    FROM pg_class
+    WHERE oid = $1::regclass`,
+    [tableName]
+  )
+  const rls = !!rlsEnabled.relrowsecurity
 
   const policies = await pg.any(
     `SELECT
@@ -89,6 +96,7 @@ async function getTableInfo(pg: SupabaseDirectClient, tableName: string) {
     tableName,
     foreignKeys,
     triggers,
+    rls,
     policies,
     indexes,
   }
@@ -215,10 +223,13 @@ async function generateSQLFiles(pg: SupabaseDirectClient) {
         functions.splice(i, 1) // remove from list so we don't duplicate
       }
     }
+    if (tableInfo.rls) {
+      content += `-- Row Level Security\n`
+      content += `ALTER TABLE ${tableInfo.tableName} ENABLE ROW LEVEL SECURITY;\n`
+    }
 
     if (tableInfo.policies.length > 0) {
       content += `-- Policies\n`
-      content += `ALTER TABLE ${tableInfo.tableName} ENABLE ROW LEVEL SECURITY;\n\n`
     }
     for (const policy of tableInfo.policies) {
       content += `DROP POLICY IF EXISTS "${policy.policy_name}" ON ${tableInfo.tableName};\n`

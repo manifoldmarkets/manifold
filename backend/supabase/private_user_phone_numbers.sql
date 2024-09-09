@@ -8,6 +8,9 @@ create table if not exists
     phone_number text not null
   );
 
+-- Row Level Security
+alter table private_user_phone_numbers enable row level security;
+
 -- Indexes
 drop index if exists private_user_phone_numbers_pkey;
 

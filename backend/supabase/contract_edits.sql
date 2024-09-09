@@ -10,9 +10,10 @@ create table if not exists
     updated_keys text[]
   );
 
--- Policies
+-- Row Level Security
 alter table contract_edits enable row level security;
 
+-- Policies
 drop policy if exists "public read" on contract_edits;
 
 create policy "public read" on contract_edits for

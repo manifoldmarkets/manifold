@@ -29,6 +29,9 @@ create table if not exists
 alter table gidx_receipts
 add constraint gidx_receipts_user_id_fkey foreign key (user_id) references users (id);
 
+-- Row Level Security
+alter table gidx_receipts enable row level security;
+
 -- Indexes
 drop index if exists gidx_receipts_pkey;
 

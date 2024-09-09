@@ -10,9 +10,10 @@ create table if not exists
     username text
   );
 
--- Policies
+-- Row Level Security
 alter table manachan_tweets enable row level security;
 
+-- Policies
 drop policy if exists "Enable read access for all users" on manachan_tweets;
 
 create policy "Enable read access for all users" on manachan_tweets for

@@ -6,9 +6,10 @@ create table if not exists
     data jsonb not null
   );
 
--- Policies
+-- Row Level Security
 alter table user_notifications enable row level security;
 
+-- Policies
 drop policy if exists "public read" on user_notifications;
 
 create policy "public read" on user_notifications for

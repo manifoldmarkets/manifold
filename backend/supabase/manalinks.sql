@@ -10,9 +10,10 @@ create table if not exists
     message text
   );
 
--- Policies
+-- Row Level Security
 alter table manalinks enable row level security;
 
+-- Policies
 drop policy if exists "Enable read access for admin" on manalinks;
 
 create policy "Enable read access for admin" on manalinks for

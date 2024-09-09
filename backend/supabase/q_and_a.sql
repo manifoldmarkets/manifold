@@ -10,9 +10,10 @@ create table if not exists
     deleted boolean default false not null
   );
 
--- Policies
+-- Row Level Security
 alter table q_and_a enable row level security;
 
+-- Policies
 drop policy if exists "public read" on q_and_a;
 
 create policy "public read" on q_and_a for

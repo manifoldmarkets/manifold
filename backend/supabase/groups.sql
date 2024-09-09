@@ -30,9 +30,10 @@ or replace function public.group_populate_cols () returns trigger language plpgs
     return new;
 end $function$;
 
--- Policies
+-- Row Level Security
 alter table groups enable row level security;
 
+-- Policies
 drop policy if exists "public read" on groups;
 
 create policy "public read" on groups for

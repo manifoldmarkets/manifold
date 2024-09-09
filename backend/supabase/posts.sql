@@ -12,9 +12,10 @@ create table if not exists
     bet_id text
   );
 
--- Policies
+-- Row Level Security
 alter table posts enable row level security;
 
+-- Policies
 drop policy if exists "public read" on posts;
 
 create policy "public read" on posts for

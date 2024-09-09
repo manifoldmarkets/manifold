@@ -25,9 +25,10 @@ create table if not exists
     is_other boolean default false not null
   );
 
--- Policies
+-- Row Level Security
 alter table answers enable row level security;
 
+-- Policies
 drop policy if exists "public read" on answers;
 
 create policy "public read" on answers for

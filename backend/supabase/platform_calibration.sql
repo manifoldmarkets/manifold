@@ -6,9 +6,10 @@ create table if not exists
     data jsonb not null
   );
 
--- Policies
+-- Row Level Security
 alter table platform_calibration enable row level security;
 
+-- Policies
 drop policy if exists "public read" on platform_calibration;
 
 create policy "public read" on platform_calibration for

@@ -2,9 +2,10 @@
 create table if not exists
   stats (title text not null, daily_values numeric[]);
 
--- Policies
+-- Row Level Security
 alter table stats enable row level security;
 
+-- Policies
 drop policy if exists "public read" on stats;
 
 create policy "public read" on stats for

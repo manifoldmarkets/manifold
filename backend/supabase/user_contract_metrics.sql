@@ -15,9 +15,10 @@ create table if not exists
     profit_adjustment numeric
   );
 
--- Policies
+-- Row Level Security
 alter table user_contract_metrics enable row level security;
 
+-- Policies
 drop policy if exists "public read" on user_contract_metrics;
 
 create policy "public read" on user_contract_metrics for

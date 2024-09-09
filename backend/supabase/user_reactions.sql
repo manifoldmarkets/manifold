@@ -10,9 +10,10 @@ create table if not exists
     reaction_type character varying(20)
   );
 
--- Policies
+-- Row Level Security
 alter table user_reactions enable row level security;
 
+-- Policies
 drop policy if exists "public read" on user_reactions;
 
 create policy "public read" on user_reactions for

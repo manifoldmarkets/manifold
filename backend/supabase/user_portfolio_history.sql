@@ -10,9 +10,9 @@ create table if not exists
     id bigint not null,
     spice_balance numeric default 0 not null,
     profit numeric,
-    cash_balance numeric default 0 not null,
     cash_investment_value numeric default 0 not null,
-    total_cash_deposits numeric default 0 not null
+    total_cash_deposits numeric default 0 not null,
+    cash_balance numeric default 0 not null
   );
 
 -- Triggers
@@ -43,9 +43,10 @@ begin
 end;
 $function$;
 
--- Policies
+-- Row Level Security
 alter table user_portfolio_history enable row level security;
 
+-- Policies
 drop policy if exists "public read" on user_portfolio_history;
 
 create policy "public read" on user_portfolio_history for

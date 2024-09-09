@@ -7,6 +7,9 @@ create table if not exists
     created_time timestamp with time zone default now() not null
   );
 
+-- Row Level Security
+alter table sent_emails enable row level security;
+
 -- Indexes
 drop index if exists sent_emails_pkey;
 

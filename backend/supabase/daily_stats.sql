@@ -27,9 +27,10 @@ create table if not exists
     cash_bet_amount numeric
   );
 
--- Policies
+-- Row Level Security
 alter table daily_stats enable row level security;
 
+-- Policies
 drop policy if exists "public read" on daily_stats;
 
 create policy "public read" on daily_stats for

@@ -30,9 +30,10 @@ or replace function public.post_populate_cols () returns trigger language plpgsq
     return new;
 end $function$;
 
--- Policies
+-- Row Level Security
 alter table old_posts enable row level security;
 
+-- Policies
 drop policy if exists "admin read" on old_posts;
 
 create policy "admin read" on old_posts for

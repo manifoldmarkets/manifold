@@ -10,9 +10,10 @@ create table if not exists
     data jsonb
   );
 
--- Policies
+-- Row Level Security
 alter table audit_events enable row level security;
 
+-- Policies
 drop policy if exists "public read" on audit_events;
 
 create policy "public read" on audit_events for

@@ -16,9 +16,10 @@ create table if not exists
     group_ids text[]
   );
 
--- Policies
+-- Row Level Security
 alter table news enable row level security;
 
+-- Policies
 drop policy if exists "public read" on news;
 
 create policy "public read" on news for

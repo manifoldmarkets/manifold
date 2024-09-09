@@ -7,9 +7,10 @@ create table if not exists
     created_time timestamp with time zone default now() not null
   );
 
--- Policies
+-- Row Level Security
 alter table private_user_seen_message_channels enable row level security;
 
+-- Policies
 drop policy if exists "private member insert" on private_user_seen_message_channels;
 
 create policy "private member insert" on private_user_seen_message_channels for insert

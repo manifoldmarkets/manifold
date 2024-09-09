@@ -7,9 +7,10 @@ create table if not exists
     topics text[] not null
   );
 
--- Policies
+-- Row Level Security
 alter table user_topics enable row level security;
 
+-- Policies
 drop policy if exists "public read" on user_topics;
 
 create policy "public read" on user_topics for

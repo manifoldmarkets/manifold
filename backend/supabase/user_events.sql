@@ -11,15 +11,10 @@ create table if not exists
     ad_id text
   );
 
--- Policies
+-- Row Level Security
 alter table user_events enable row level security;
 
-drop policy if exists "user can insert" on user_events;
-
-create policy "user can insert" on user_events for insert
-with
-  check (true);
-
+-- Policies
 drop policy if exists "self and admin read" on user_events;
 
 create policy "self and admin read" on user_events for
@@ -30,6 +25,12 @@ select
       or is_admin (firebase_uid ())
     )
   );
+
+drop policy if exists "user can insert" on user_events;
+
+create policy "user can insert" on user_events for insert
+with
+  check (true);
 
 -- Indexes
 drop index if exists user_events_pkey;

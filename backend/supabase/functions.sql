@@ -320,7 +320,6 @@ BEGIN
 END;
 $function$;
 
-
 create
 or replace function public.get_non_empty_private_message_channel_ids (
   p_user_id text,
@@ -434,7 +433,6 @@ where
 order by last_updated_time desc
 limit max
 $function$;
-
 
 create
 or replace function public.get_user_bet_contracts (this_user_id text, this_limit integer) returns table (data json) language sql immutable parallel SAFE as $function$

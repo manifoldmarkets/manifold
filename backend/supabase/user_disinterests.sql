@@ -10,9 +10,10 @@ create table if not exists
     feed_id bigint
   );
 
--- Policies
+-- Row Level Security
 alter table user_disinterests enable row level security;
 
+-- Policies
 drop policy if exists "public read" on user_disinterests;
 
 create policy "public read" on user_disinterests for
