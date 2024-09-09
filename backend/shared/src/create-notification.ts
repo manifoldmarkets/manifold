@@ -562,6 +562,7 @@ export const createBetFillNotification = async (
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
+      token: contract.token,
     } as BetFillData,
   }
   const pg = createSupabaseDirectClient()
@@ -615,6 +616,7 @@ export const createLimitBetCanceledNotification = async (
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
+      token: contract.token,
     } as BetFillData,
   }
   const pg = createSupabaseDirectClient()
@@ -665,6 +667,7 @@ export const createLimitBetExpiredNotification = async (
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
+      token: contract.token,
     } as BetFillData,
   }
   const pg = createSupabaseDirectClient()
@@ -1053,6 +1056,7 @@ export const createNewBettorNotification = async (
         outcomeType,
         ...pseudoNumericData,
         totalAmountBet: sumBy(bets, 'amount'),
+        token: contract.token,
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)

@@ -351,6 +351,7 @@ export type BetFillData = {
   limitOrderRemaining?: number
   limitAt?: string
   outcomeType?: OutcomeType
+  token?: ContractToken
 }
 
 export type ContractResolutionData = {
@@ -374,6 +375,7 @@ export type UniqueBettorData = {
   isPartner?: boolean
   totalUniqueBettors?: number
   totalAmountBet?: number
+  token?: ContractToken
 }
 
 export type ReviewNotificationData = {

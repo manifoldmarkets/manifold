@@ -453,9 +453,10 @@ function LimitOrderCancelledNotification(props: {
     probability,
     limitAt: dataLimitAt,
     outcomeType,
+    token,
   } = (data as BetFillData) ?? {}
 
-  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'))
+  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'), token)
   const limitAt =
     dataLimitAt !== undefined
       ? dataLimitAt
@@ -515,8 +516,9 @@ function LimitOrderExpiredNotification(props: {
     probability,
     limitAt: dataLimitAt,
     outcomeType,
+    token,
   } = (data as BetFillData) ?? {}
-  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'))
+  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'), token)
   const limitAt =
     dataLimitAt !== undefined
       ? dataLimitAt
@@ -587,8 +589,9 @@ function BetFillNotification(props: {
     limitAt: dataLimitAt,
     outcomeType,
     betAnswer,
+    token,
   } = (data as BetFillData) ?? {}
-  const amount = formatMoney(parseInt(sourceText ?? '0'))
+  const amount = formatMoney(parseInt(sourceText ?? '0'), token)
   const limitAt =
     dataLimitAt !== undefined
       ? dataLimitAt
@@ -623,15 +626,15 @@ function BetFillNotification(props: {
       {limitOrderRemaining === 0 && (
         <>
           Your limit order{' '}
-          {limitOrderTotal && <>for {formatMoney(limitOrderTotal)}</>} is
+          {limitOrderTotal && <>for {formatMoney(limitOrderTotal, token)}</>} is
           complete
         </>
       )}
       {!!limitOrderRemaining && (
         <>
-          You have {formatMoney(limitOrderRemaining)}
-          {limitOrderTotal && <>/{formatMoney(limitOrderTotal)}</>} remaining in
-          your order
+          You have {formatMoney(limitOrderRemaining, token)}
+          {limitOrderTotal && <>/{formatMoney(limitOrderTotal, token)}</>}{' '}
+          remaining in your order
         </>
       )}
     </>
@@ -1369,6 +1372,7 @@ function LiquidityNotification(props: {
     sourceUserUsername,
     sourceText,
     sourceContractTitle,
+    data,
   } = notification
   return (
     <NotificationFrame
@@ -1388,7 +1392,9 @@ function LiquidityNotification(props: {
           username={sourceUserUsername}
         />{' '}
         added{' '}
-        {sourceText && <span>{formatMoney(parseInt(sourceText))} of</span>}{' '}
+        {sourceText && (
+          <span>{formatMoney(parseInt(sourceText), data?.token)} of</span>
+        )}{' '}
         liquidity{' '}
         {!isChildOfGroup && (
           <span>
