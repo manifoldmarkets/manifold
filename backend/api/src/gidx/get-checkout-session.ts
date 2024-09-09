@@ -3,9 +3,9 @@ import {
   CheckoutSession,
   CheckoutSessionResponse,
   CustomerProfileResponse,
-  GIDXCallbackUrl,
 } from 'common/gidx/gidx'
 import {
+  GIDXCallbackUrl,
   getGIDXStandardParams,
   getLocalServerIP,
   verifyReasonCodes,
