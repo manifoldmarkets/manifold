@@ -2,6 +2,7 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   getGIDXCustomerProfile,
   getUserRegistrationRequirements,
+  throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
 import { GIDXCustomerProfile } from 'common/gidx/gidx'
@@ -21,6 +22,10 @@ export const getVerificationStatus: APIHandler<
 > = async (_, auth) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const customerProfile = await getGIDXCustomerProfile(auth.uid)
+  throwIfIPNotWhitelisted(
+    customerProfile.ResponseCode,
+    customerProfile.ResponseMessage
+  )
   return await getVerificationStatusInternal(auth.uid, customerProfile)
 }
 
@@ -36,6 +41,7 @@ export const getVerificationStatusInternal = async (
     FraudConfidenceScore,
     IdentityConfidenceScore,
   } = customerProfile
+  throwIfIPNotWhitelisted(ResponseCode, ResponseMessage)
   const pg = createSupabaseDirectClient()
   const user = await getUser(userId, pg)
   if (!user) {

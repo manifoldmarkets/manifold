@@ -94,6 +94,15 @@ export const getLocalServerIP = async () => {
   }
 }
 
+export const throwIfIPNotWhitelisted = (code: number, message: string) => {
+  if (code === 501 && message.includes('IP Address whitelist.')) {
+    throw new APIError(
+      400,
+      'GIDX request failed, add your IP address to the allowlist.'
+    )
+  }
+}
+
 export const verifyReasonCodes = async (
   user: User,
   ReasonCodes: string[],

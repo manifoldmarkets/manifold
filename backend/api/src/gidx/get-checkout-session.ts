@@ -8,6 +8,7 @@ import {
   GIDXCallbackUrl,
   getGIDXStandardParams,
   getLocalServerIP,
+  throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
 import { getIp } from 'shared/analytics'
@@ -63,7 +64,10 @@ export const getCheckoutSession: APIHandler<
     CashierLimits,
     PaymentMethods,
     PaymentMethodSettings,
+    ResponseMessage,
+    ResponseCode,
   } = data
+  throwIfIPNotWhitelisted(ResponseCode, ResponseMessage)
   log('Checkout session response:', data)
 
   const { status, message } = await verifyReasonCodes(

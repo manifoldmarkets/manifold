@@ -3,6 +3,7 @@ import {
   getGIDXStandardParams,
   getLocalServerIP,
   getUserSweepstakesRequirements,
+  throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
 import {
@@ -53,6 +54,7 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   const data = (await res.json()) as GIDXMonitorResponse
 
   log('Monitor response:', data)
+  throwIfIPNotWhitelisted(data.ResponseCode, data.ResponseMessage)
   const { status, message } = await verifyReasonCodes(
     user,
     data.ReasonCodes,

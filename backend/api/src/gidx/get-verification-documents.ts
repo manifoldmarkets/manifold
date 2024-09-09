@@ -1,6 +1,9 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { log } from 'shared/utils'
-import { getGIDXStandardParams } from 'shared/gidx/helpers'
+import {
+  getGIDXStandardParams,
+  throwIfIPNotWhitelisted,
+} from 'shared/gidx/helpers'
 import { GIDXDocument } from 'common/gidx/gidx'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getDocumentsStatus } from 'common/gidx/document'
@@ -41,6 +44,7 @@ export const getIdentityVerificationDocuments = async (userId: string) => {
   }
 
   const data = (await res.json()) as DocumentCheck
+  throwIfIPNotWhitelisted(data.ResponseCode, data.ResponseMessage)
   log(
     'Registration response:',
     data.ResponseMessage,
