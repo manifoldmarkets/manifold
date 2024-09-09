@@ -6,6 +6,7 @@ import {
   getGIDXStandardParams,
   getLocalServerIP,
   getUserRegistrationRequirements,
+  throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
 import {
@@ -65,7 +66,14 @@ export const register: APIHandler<'register-gidx'> = async (
   }
   const data = (await res.json()) as GIDXRegistrationResponse
   log('Registration response:', data)
-  const { ReasonCodes, FraudConfidenceScore, IdentityConfidenceScore } = data
+  const {
+    ReasonCodes,
+    FraudConfidenceScore,
+    IdentityConfidenceScore,
+    ResponseCode,
+    ResponseMessage,
+  } = data
+  throwIfIPNotWhitelisted(ResponseCode, ResponseMessage)
   const { status, message, idVerified } = await verifyReasonCodes(
     user,
     ReasonCodes,
