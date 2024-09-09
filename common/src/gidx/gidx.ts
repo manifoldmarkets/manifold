@@ -1,5 +1,12 @@
 import { z } from 'zod'
 import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { LOCAL_DEV } from 'shared/lib/utils'
+
+// The identity callback is configured here: https://portal.gidx-service.in/Integration/Index#ProfileNotification
+export const GIDXCallbackUrl = LOCAL_DEV
+  ? 'https://enabled-bream-sharply.ngrok-free.app'
+  : ENV_CONFIG.apiEndpoint
 
 export const GIDX_DOCUMENTS_REQUIRED = 2
 
@@ -290,7 +297,7 @@ export type CheckoutSessionResponse = {
 
 export const ID_ERROR_MSG =
   'Registration failed, identity error. Check your identifying information.'
-  
+
 export const IDENTITY_AND_FRAUD_THRESHOLD = 80
 export const ENABLE_FAKE_CUSTOMER = false
 export const exampleCustomers = [

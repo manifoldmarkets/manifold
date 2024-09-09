@@ -5,9 +5,8 @@ import {
   ID_ERROR_MSG,
   IDENTITY_AND_FRAUD_THRESHOLD,
 } from 'common/gidx/gidx'
-import { getPrivateUserSupabase, getUser, LOCAL_DEV, log } from 'shared/utils'
+import { getPrivateUserSupabase, getUser, log } from 'shared/utils'
 import { getPhoneNumber } from 'shared/helpers/get-phone-number'
-import { ENV_CONFIG } from 'common/envs/constants'
 import {
   blockedCodes,
   hasIdentityError,
@@ -23,11 +22,6 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { intersection } from 'lodash'
 import { updatePrivateUser, updateUser } from 'shared/supabase/users'
 import { User } from 'common/user'
-
-// TODO: when in production, configure endpoint here: https://portal.gidx-service.in/Integration/Index#ProfileNotification
-export const GIDXCallbackUrl = LOCAL_DEV
-  ? 'https://enabled-bream-sharply.ngrok-free.app'
-  : ENV_CONFIG.apiEndpoint
 
 export const getGIDXStandardParams = (MerchantSessionID?: string) => ({
   // TODO: before merging into main, switch from sandbox key to production key in prod
