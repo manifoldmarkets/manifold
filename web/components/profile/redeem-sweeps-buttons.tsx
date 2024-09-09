@@ -17,7 +17,7 @@ import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Col } from '../layout/col'
 import Link from 'next/link'
 import { Row } from '../layout/row'
-import { KYC_VERIFICATION_BONUS } from 'common/economy'
+import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { RegisterIcon } from 'web/public/custom-components/registerIcon'
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
 import { RiUserForbidLine } from 'react-icons/ri'
@@ -41,7 +41,7 @@ export function RedeemSweepsButtons(props: { user: User; className?: string }) {
     }
   }
 
-  const { status, message } = getVerificationStatus(user)
+  const { message } = getVerificationStatus(user)
   return (
     <>
       <Button
@@ -75,8 +75,9 @@ export function RedeemSweepsButtons(props: { user: User; className?: string }) {
               >
                 Register and get{' '}
                 <CoinNumber
-                  amount={KYC_VERIFICATION_BONUS}
+                  amount={KYC_VERIFICATION_BONUS_CASH}
                   className={'font-bold'}
+                  coinType={'CASH'}
                   isInline
                 />
               </Link>

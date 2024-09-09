@@ -1,6 +1,6 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnFromBank } from 'shared/txn/run-txn'
-import { SWEEPS_INITIAL_BONUS } from 'common/economy'
+import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 
 export async function distributeKycBonus(
   pg: SupabaseDirectClient,
@@ -19,7 +19,10 @@ export async function distributeKycBonus(
       return
     }
 
-    const reward = Math.max(data?.reward_amount ?? 0, SWEEPS_INITIAL_BONUS)
+    const reward = Math.max(
+      data?.reward_amount ?? 0,
+      KYC_VERIFICATION_BONUS_CASH
+    )
 
     await runTxnFromBank(tx, {
       category: 'KYC_BONUS',

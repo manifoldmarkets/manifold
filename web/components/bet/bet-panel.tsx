@@ -39,7 +39,7 @@ import {
   TRADE_TERM,
   TWOMBA_ENABLED,
 } from 'common/envs/constants'
-import { SWEEPS_INITIAL_BONUS } from 'common/economy'
+import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { getFeeTotal } from 'common/fees'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
@@ -139,7 +139,7 @@ export function BuyPanel(props: {
       <Row className={'bg-canvas-50 gap-1 rounded p-4'}>
         Verify your info to start trading on sweepstakes markets and earn a
         bonus of{' '}
-        <CoinNumber amount={SWEEPS_INITIAL_BONUS} coinType="sweepies" />!{' '}
+        <CoinNumber amount={KYC_VERIFICATION_BONUS_CASH} coinType="sweepies" />!{' '}
         <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
           Verify
         </Link>

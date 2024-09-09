@@ -1,6 +1,6 @@
 import { ReactNode, memo, useState, useEffect } from 'react'
 import clsx from 'clsx'
-import { SWEEPS_INITIAL_BONUS } from 'common/economy'
+import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 
 import { Bet } from 'common/bet'
 import { HistoryPoint, MultiPoints } from 'common/chart'
@@ -842,7 +842,11 @@ export function BinaryBetPanel(props: {
         <Row className={'bg-canvas-50 items-center gap-1 rounded p-4'}>
           Verify your info to start trading on sweepstakes markets and earn a
           bonus of{' '}
-          <CoinNumber amount={SWEEPS_INITIAL_BONUS} coinType="sweepies" />!{' '}
+          <CoinNumber
+            amount={KYC_VERIFICATION_BONUS_CASH}
+            coinType="sweepies"
+          />
+          !{' '}
           <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
             Verify
           </Link>
