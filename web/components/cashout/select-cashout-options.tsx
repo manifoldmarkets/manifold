@@ -1,16 +1,16 @@
 import clsx from 'clsx'
 import { MIN_CASHOUT_AMOUNT } from 'common/economy'
 import {
-    CASH_TO_MANA_CONVERSION_RATE,
-    SWEEPIES_NAME
+  CASH_TO_MANA_CONVERSION_RATE,
+  SWEEPIES_NAME,
 } from 'common/envs/constants'
 import { User } from 'common/user'
 import Link from 'next/link'
 import { useState } from 'react'
 import {
-    baseButtonClasses,
-    Button,
-    buttonClass,
+  baseButtonClasses,
+  Button,
+  buttonClass,
 } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
