@@ -12,7 +12,7 @@ export async function calculateRedeemablePrizeCash(
       case
         when t.category = 'CONTRACT_RESOLUTION_PAYOUT' then (
           case 
-              when (t.data->>'isCashout5kLimit')::boolean then least(t.amount, 5000)
+              when (t.data->'data'->>'isCashout5kLimit')::boolean then least(t.amount, 5000)
               else t.amount
           end
         )
