@@ -1,5 +1,5 @@
 import {
-  KYC_VERIFICATION_BONUS,
+  KYC_VERIFICATION_BONUS_CASH,
   MIN_CASHOUT_AMOUNT,
   SWEEPIES_CASHOUT_FEE,
 } from 'common/economy'
@@ -7,10 +7,9 @@ import { SWEEPIES_NAME } from 'common/envs/constants'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import {
   ageBlocked,
-  blockFromSweepstakes,
   getVerificationStatus,
   IDENTIFICATION_FAILED_MESSAGE,
-  LOCATION_BLOCKED_MESSAGE,
+  locationBlocked,
   PHONE_NOT_VERIFIED_MESSAGE,
   USER_BLOCKED_MESSAGE,
   USER_NOT_REGISTERED_MESSAGE,
@@ -38,7 +37,6 @@ import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
-import { locationBlocked } from 'common/user'
 
 const CashoutPage = () => {
   const user = useUser()
@@ -166,9 +164,7 @@ const CashoutPage = () => {
       <Page trackPageView={'cashout page'}>
         <Col className="mx-auto max-w-lg px-6 py-4">
           <Col className="items-center gap-2">
-            <div className="h-40 w-40">
-              <LocationBlockedIcon height={40} className="fill-ink-700" />
-            </div>
+            <LocationBlockedIcon height={40} className="fill-ink-700" />
             <div className="text-2xl">Your location is blocked</div>
             <p className="text-ink-700 text-sm">
               You are unable to cash out at the moment.
@@ -184,7 +180,9 @@ const CashoutPage = () => {
       <Page trackPageView={'cashout page'}>
         <Col className="mx-auto max-w-lg px-6 py-4">
           <Col className="items-center gap-2">
-            <LocationBlockedIcon height={40} className="fill-ink-700" />
+            <Col className="text-ink-700 ju h-40 w-40 items-center text-8xl font-bold">
+              18+
+            </Col>
             <div className="text-2xl">You must be 18 or older to cash out</div>
             <p className="text-ink-700 text-sm">
               You are unable to cash out at the moment.
@@ -215,9 +213,10 @@ const CashoutPage = () => {
               >
                 Register and get{' '}
                 <CoinNumber
-                  amount={KYC_VERIFICATION_BONUS}
+                  amount={KYC_VERIFICATION_BONUS_CASH}
                   className={'font-bold'}
                   isInline
+                  coinType={'CASH'}
                 />
               </Link>
             </Col>
@@ -265,7 +264,7 @@ const CashoutPage = () => {
               <div className="text-ink-500 text-xs">Total {SWEEPIES_NAME}</div>
               <CoinNumber
                 amount={user.cashBalance}
-                className={'text-ink-600 text-2xl font-bold'}
+                className={'text-2xl font-bold'}
                 coinType={'sweepies'}
               />
             </Col>
