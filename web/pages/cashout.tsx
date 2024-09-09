@@ -277,10 +277,11 @@ const CashoutPage = () => {
       </Page>
     )
   }
+
   return (
     <Page trackPageView={'cashout page'}>
       <Col className="mx-auto max-w-lg items-center gap-2 px-6 py-4">
-        <Row className="mb-8 w-full justify-start text-3xl text-indigo-700">
+        <Row className="text-primary-600 mb-8 w-full justify-start text-3xl">
           Cash Out
         </Row>
         {!user || page === 'get-session' ? (
