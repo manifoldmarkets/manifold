@@ -43,7 +43,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { MoneyDisplay } from './money-display'
 import { MultipleOrSingleAvatars } from '../multiple-or-single-avatars'
 import { DisplayUser } from 'common/api/user-types'
-import { UserAvatarAndBadge, UserLink } from '../widgets/user-link'
+import { UserLink } from '../widgets/user-link'
 
 export function YourOrders(props: {
   contract:
