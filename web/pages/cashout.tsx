@@ -1,8 +1,10 @@
+import clsx from 'clsx'
 import {
   KYC_VERIFICATION_BONUS_CASH,
   MIN_CASHOUT_AMOUNT,
   SWEEPIES_CASHOUT_FEE,
 } from 'common/economy'
+import { SWEEPIES_NAME, TRADED_TERM } from 'common/envs/constants'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import {
   ageBlocked,
@@ -14,33 +16,35 @@ import {
   USER_NOT_REGISTERED_MESSAGE,
 } from 'common/user'
 import { formatSweepies, formatSweepsToUSD } from 'common/util/format'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { Button } from 'web/components/buttons/button'
+import { MdOutlineNotInterested } from 'react-icons/md'
+import { RiUserForbidLine } from 'react-icons/ri'
+import {
+  baseButtonClasses,
+  Button,
+  buttonClass,
+} from 'web/components/buttons/button'
+import { CashToManaForm } from 'web/components/cashout/cash-to-mana'
 import { SelectCashoutOptions } from 'web/components/cashout/select-cashout-options'
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { UploadDocuments } from 'web/components/gidx/upload-document'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { CoinNumber } from 'web/components/widgets/coin-number'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useApiSubscription } from 'web/hooks/use-api-subscription'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
+import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
+import { RegisterIcon } from 'web/public/custom-components/registerIcon'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
-import { CashToManaForm } from 'web/components/cashout/cash-to-mana'
-import { SWEEPIES_NAME, TRADED_TERM } from 'common/envs/constants'
-import { RegisterIcon } from 'web/public/custom-components/registerIcon'
-import Link from 'next/link'
-import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
-import { RiUserForbidLine } from 'react-icons/ri'
-import { MdOutlineNotInterested } from 'react-icons/md'
-import clsx from 'clsx'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -63,23 +67,34 @@ function SweepiesStats(props: {
 }) {
   const { redeemableCash, cashBalance, className } = props
   return (
-    <Col className={clsx('w-full items-start', className)}>
-      <div className="text-ink-500 whitespace-nowrap text-sm">
-        Redeemable {SWEEPIES_NAME}
-        <span>
-          <InfoTooltip
-            text={`Redeemable ${SWEEPIES_NAME} are obtained when questions you've ${TRADED_TERM} ${SWEEPIES_NAME} on resolve`}
-            size={'sm'}
-            className=" ml-0.5"
-          />
-        </span>
-      </div>
-      <CoinNumber
-        amount={redeemableCash}
-        className={'text-3xl font-bold'}
-        coinType={'sweepies'}
-      />
-    </Col>
+    <Row className="w-full gap-4 text-2xl md:text-3xl">
+      <Col className={clsx('w-1/2 items-start', className)}>
+        <div className="text-ink-500 whitespace-nowrap text-sm">
+          Redeemable
+          <span>
+            <InfoTooltip
+              text={`Redeemable ${SWEEPIES_NAME} are obtained when questions you've ${TRADED_TERM} ${SWEEPIES_NAME} on resolve`}
+              size={'sm'}
+              className=" ml-0.5"
+            />
+          </span>
+        </div>
+        <CoinNumber
+          amount={redeemableCash}
+          className={'font-bold'}
+          coinType={'sweepies'}
+        />
+      </Col>
+      <div className="bg-ink-300 mb-4 mt-1 w-[1px]" />
+      <Col className={clsx('w-1/2 items-start', className)}>
+        <div className="text-ink-500 whitespace-nowrap text-sm">Total</div>
+        <CoinNumber
+          amount={cashBalance}
+          className={'font-bold'}
+          coinType={'sweepies'}
+        />
+      </Col>
+    </Row>
   )
 }
 
@@ -202,84 +217,97 @@ const CashoutPage = () => {
   const isLocationBlocked = locationBlocked(user, privateUser)
   const isAgeBlocked = ageBlocked(user, privateUser)
 
-  if (isLocationBlocked) {
-    return (
-      <Page trackPageView={'cashout page'}>
-        <Col className="mx-auto max-w-lg px-6 py-4">
-          <Col className="items-center gap-2">
-            <LocationBlockedIcon height={40} className="fill-ink-700" />
-            <div className="text-2xl">Your location is blocked</div>
-            <p className="text-ink-700 text-sm">
-              You are unable to cash out at the moment.
-            </p>
-          </Col>
-        </Col>
-      </Page>
-    )
-  }
-
-  if (isAgeBlocked) {
-    return (
-      <Page trackPageView={'cashout page'}>
-        <Col className="mx-auto max-w-lg px-6 py-4">
-          <Col className="items-center gap-2">
-            <Col className="text-ink-700 ju h-40 w-40 items-center text-8xl font-bold">
-              18+
-            </Col>
-            <div className="text-2xl">You must be 18 or older to cash out</div>
-            <p className="text-ink-700 text-sm">
-              You are unable to cash out at the moment.
-            </p>
-          </Col>
-        </Col>
-      </Page>
-    )
-  }
-
   // redirects to registration page if user if identification failed
-  if (status !== 'success') {
+  if (status !== 'success' || isLocationBlocked || isAgeBlocked) {
     return (
       <Page trackPageView={'cashout page'}>
-        <Col className="mx-auto max-w-lg px-6 py-4">
-          {message == USER_NOT_REGISTERED_MESSAGE ||
-          message == PHONE_NOT_VERIFIED_MESSAGE ||
-          message == IDENTIFICATION_FAILED_MESSAGE ? (
-            <Col className="items-center gap-2">
-              <RegisterIcon height={40} className="fill-ink-700" />
-              <div className="text-2xl">You're not registered yet...</div>
-              <p className="text-ink-700 text-sm">
-                Registration is required to cash out.
-              </p>
+        <Col className="mx-auto max-w-lg gap-4 px-6 py-4">
+          {isLocationBlocked ? (
+            <Row className="items-center gap-4">
+              <LocationBlockedIcon height={16} className="fill-red-500" />
+              <Col className="gap-2">
+                <div className="text-2xl">Your location is blocked!</div>
+                <p className="text-ink-700 text-sm">
+                  You are unable to cash out at the moment.
+                </p>
+              </Col>
+            </Row>
+          ) : isAgeBlocked ? (
+            <Row className="items-center gap-4">
+              <RiUserForbidLine className="h-16 w-16 shrink-0 fill-red-500" />
+              <Col className="gap-2">
+                <div className="text-2xl">You must be 18+</div>
+                <p className="text-ink-700 text-sm">
+                  You are unable to cash out at the moment.
+                </p>
+              </Col>
+            </Row>
+          ) : message == USER_NOT_REGISTERED_MESSAGE ||
+            message == PHONE_NOT_VERIFIED_MESSAGE ||
+            message == IDENTIFICATION_FAILED_MESSAGE ? (
+            <Col className="mb-4 gap-4">
+              <Row className="w-full items-center gap-4">
+                <RegisterIcon
+                  height={16}
+                  className="fill-ink-700 hidden sm:inline"
+                />
+                <Col className="w-full gap-2">
+                  <div className="text-2xl">You're not registered yet...</div>
+                  <p className="text-ink-700 text-sm">
+                    Registration is required to cash out.
+                  </p>
+                </Col>
+              </Row>
               <Link
                 href={'/gidx/register'}
-                className="bg-primary-500 hover:bg-primary-600 whitespace-nowrap rounded-lg px-4 py-2 text-white"
+                className={clsx(
+                  baseButtonClasses,
+                  buttonClass('lg', 'gradient-pink')
+                )}
               >
-                Register and get{' '}
+                Register and get<span> </span>
                 <CoinNumber
                   amount={KYC_VERIFICATION_BONUS_CASH}
-                  className={'font-bold'}
+                  className={'ml-1 font-bold'}
                   isInline
                   coinType={'CASH'}
                 />
               </Link>
             </Col>
           ) : message == USER_BLOCKED_MESSAGE ? (
-            <Col className="items-center gap-2">
-              <RiUserForbidLine className="fill-ink-700 h-40 w-40" />
-              <div className="text-2xl">Your registration failed</div>
-              <p className="text-ink-700 text-sm">
-                You are unable to cash out at the moment.
-              </p>
-            </Col>
+            <Row className="items-center gap-4">
+              <RiUserForbidLine className="hidden h-16 w-16 fill-red-500 sm:inline" />
+              <Col className="gap-2">
+                <div className="text-2xl">Your registration failed</div>
+                <p className="text-ink-700 text-sm">
+                  You are unable to cash out at the moment.
+                </p>
+              </Col>
+            </Row>
           ) : (
-            <Col className="items-center gap-2">
-              <MdOutlineNotInterested className="fill-ink-700 h-40 w-40" />
-              <div className="text-2xl">Cashout unavailable</div>
-              <p className="text-ink-700 text-sm">
-                You are unable to cash out at the moment.
-              </p>
-            </Col>
+            <Row className="items-center gap-4">
+              <MdOutlineNotInterested className="hidden h-16 w-16 fill-red-500 sm:inline" />
+              <Col className="gap-2">
+                <div className="text-2xl">Cashout unavailable</div>
+                <p className="text-ink-700 text-sm">
+                  You are unable to cash out at the moment.
+                </p>
+              </Col>
+            </Row>
           )}
+          {(isLocationBlocked || isAgeBlocked) && (
+            <SweepiesStats
+              redeemableCash={redeemableCash}
+              cashBalance={user.cashBalance}
+              className="text-ink-700 mb-4"
+            />
+          )}
+          <SelectCashoutOptions
+            user={user}
+            redeemableCash={redeemableCash}
+            setPage={setPage}
+            allDisabled={true}
+          />
         </Col>
       </Page>
     )
