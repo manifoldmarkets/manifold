@@ -92,7 +92,7 @@ type Donation = {
   fromType: 'USER'
   toType: 'CHARITY'
   category: 'CHARITY'
-  token: 'SPICE' | 'M$'
+  token: 'SPICE' | 'M$' | 'CASH'
 }
 
 type Tip = {
@@ -154,7 +154,7 @@ type CharityFee = {
   fromType: 'USER'
   toType: 'BANK'
   category: 'CHARITY_FEE'
-  token: 'SPICE'
+  token: 'SPICE' | 'CASH'
   data: {
     charityId: string
   }
