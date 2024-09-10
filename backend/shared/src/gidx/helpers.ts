@@ -122,7 +122,7 @@ export const verifyReasonCodes = async (
     const updates = {
       idVerified: true,
       sweepstakes5kLimit: hasAny(limitTo5kCashoutCodes),
-    }
+    } as Partial<User>
     if (
       user.idVerified !== updates.idVerified ||
       user.sweepstakes5kLimit !== updates.sweepstakes5kLimit
@@ -133,7 +133,7 @@ export const verifyReasonCodes = async (
     const updates = {
       idVerified: false,
       sweepstakesVerified: false,
-    }
+    } as Partial<User>
     if (
       user.idVerified !== updates.idVerified ||
       user.sweepstakesVerified !== updates.sweepstakesVerified
@@ -231,11 +231,11 @@ export const verifyReasonCodes = async (
     )
     const updates = {
       sweepstakesVerified: false,
-      kycLastAttempt: Date.now(),
-    }
+      kycLastAttemptTime: Date.now(),
+    } as Partial<User>
     if (
       user.sweepstakesVerified !== updates.sweepstakesVerified ||
-      user.kycLastAttempt !== updates.kycLastAttempt
+      user.kycLastAttemptTime !== updates.kycLastAttemptTime
     ) {
       await updateUser(pg, userId, updates)
     }

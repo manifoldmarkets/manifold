@@ -53,7 +53,12 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
 
   const data = (await res.json()) as GIDXMonitorResponse
 
-  log('Monitor response:', data)
+  const { ApiKey: _, ...dataToLog } = data
+  log('Monitor response:', dataToLog)
+  await pg.none(
+    'insert into user_monitor_status (user_id, data) values ($1, $2)',
+    [userId, dataToLog]
+  )
   throwIfIPNotWhitelisted(data.ResponseCode, data.ResponseMessage)
   const { status, message } = await verifyReasonCodes(
     user,

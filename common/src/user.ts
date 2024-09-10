@@ -75,7 +75,7 @@ export type User = {
   verifiedPhone?: boolean
 
   // KYC related fields:
-  kycLastAttempt?: number
+  kycLastAttemptTime?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
   sweepstakesVerified?: boolean
   idVerified?: boolean
