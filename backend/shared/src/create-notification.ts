@@ -10,6 +10,7 @@ import {
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
   NotificationReason,
+  PaymentCompletedData,
   ReviewNotificationData,
   UniqueBettorData,
 } from 'common/notification'
@@ -2077,6 +2078,30 @@ export const createExtraPurchasedManaNotification = async (
     data: {
       amount,
     },
+  }
+
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
+
+export const createPaymentSuccessNotification = async (
+  paymentData: PaymentCompletedData,
+  transactionId: string
+) => {
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: paymentData.userId,
+    reason: 'payment_status',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: transactionId,
+    sourceType: 'payment_status',
+    sourceUpdateType: 'created',
+    sourceUserName: '',
+    sourceUserUsername: '',
+    sourceUserAvatarUrl: '',
+    sourceText: '',
+    data: paymentData,
   }
 
   const pg = createSupabaseDirectClient()

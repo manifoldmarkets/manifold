@@ -13,7 +13,7 @@ create table if not exists
     transaction_status_code text,
     transaction_status_message text,
     merchant_session_id text,
-    amount bigint,
+    amount numeric(20, 2),
     currency text,
     payment_method_type text,
     payment_amount_type text,

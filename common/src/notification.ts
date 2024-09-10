@@ -78,6 +78,7 @@ export type notification_source_types =
   | 'airdrop'
   | 'manifest_airdrop'
   | 'extra_purchased_mana'
+  | 'payment_status'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -328,6 +329,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'You just received 9x your purchased mana in 2024',
     detailed: 'Manifold has sent you a gift of 9x your purchased mana in 2024.',
   },
+  payment_status: {
+    simple: 'Payment updates',
+    detailed: 'Updates on your payment statuses',
+  },
 }
 
 export type BettingStreakData = {
@@ -399,6 +404,14 @@ export type AirdropData = {
 
 export type ExtraPurchasedManaData = {
   amount: number
+}
+
+export type PaymentCompletedData = {
+  userId: string
+  amount: number
+  currency: string
+  paymentMethodType: string
+  paymentAmountType: string
 }
 
 export function getSourceIdForLinkComponent(
