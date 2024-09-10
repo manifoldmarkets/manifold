@@ -147,6 +147,7 @@ import { createuser } from 'api/create-user'
 import { verifyPhoneNumber } from 'api/verify-phone-number'
 import { requestOTP } from 'api/request-phone-otp'
 import { multiSell } from 'api/multi-sell'
+import { convertCashToMana } from './convert-cash-to-mana'
 import { convertSpiceToMana } from './convert-sp-to-mana'
 import { donate } from './donate'
 import { getFeed } from 'api/get-feed'
@@ -342,6 +343,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   managrams: getManagrams,
   manalink: createManalink,
   donate: donate,
+  'convert-cash-to-mana': convertCashToMana,
   'convert-sp-to-mana': convertSpiceToMana,
   'market/:id/positions': getPositions,
   me: getMe,

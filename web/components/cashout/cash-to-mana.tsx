@@ -4,7 +4,7 @@ import {
   SWEEPIES_NAME,
 } from 'common/envs/constants'
 import { useState } from 'react'
-import { APIError } from 'web/lib/api/api'
+import { APIError, api } from 'web/lib/api/api'
 import { Button } from '../buttons/button'
 import { Row } from '../layout/row'
 import { AmountInput } from '../widgets/amount-input'
@@ -24,8 +24,9 @@ export const CashToManaForm = (props: {
     if (!amount) return
     setLoading(true)
     try {
-      // TWODO: Implement sweepies to mana
-      throw new Error('This function has not been implemented yet.')
+      await api('convert-cash-to-mana', {
+        amount: amount / CASH_TO_MANA_CONVERSION_RATE,
+      })
       setLoading(false)
       setAmount(amount)
       setError(null)
@@ -45,7 +46,7 @@ export const CashToManaForm = (props: {
       <div className="text-ink-500 mb-2 text-sm">Amount</div>
       <AmountInput amount={amount} onChangeAmount={setAmount} />
       <div className="mt-4 flex gap-2">
-        <Button color="gray" onClick={props.onBack}>
+        <Button color="gray" onClick={onBack}>
           Back
         </Button>
         <Button

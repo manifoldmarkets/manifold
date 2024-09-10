@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { pickBy, debounce } from 'lodash'
+import { pickBy, debounce, mapValues } from 'lodash'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 type UrlParams = Record<string, string | undefined>
@@ -21,14 +21,19 @@ export const usePersistentQueriesState = <T extends UrlParams>(
   // On page load, initialize the state to the current query params once.
   useEffect(() => {
     if (router.isReady) {
-      setState({ ...defaultValue, ...router.query })
+      setState({
+        ...defaultValue,
+        ...mapValues(router.query, (v) =>
+          typeof v === 'string' ? decodeURIComponent(v) : v
+        ),
+      })
       setReady(true)
     }
   }, [router.isReady])
 
   const setRouteQuery = debounce((newQuery: string) => {
     const { pathname } = router
-    const q = newQuery ? '?' + encodeURI(newQuery) : ''
+    const q = newQuery ? '?' + newQuery : ''
     router.replace(pathname + q, undefined, { shallow: true })
   }, 200)
 
@@ -37,8 +42,8 @@ export const usePersistentQueriesState = <T extends UrlParams>(
     const newState = { ...state, ...router.query, ...update } as T
     setState(newState)
     const query = pickBy(newState, (v) => v)
-    const newQuery = Object.keys(query)
-      .map((key) => `${key}=${query[key]}`)
+    const newQuery = Object.entries(query)
+      .map(([key, val]) => `${key}=${encodeURIComponent(val!)}`)
       .join('&')
     setRouteQuery(newQuery)
   }

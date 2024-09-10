@@ -21,6 +21,8 @@ type AnyTxnType =
   | ContractUndoProduceSpice
   | ConsumeSpice
   | ConsumeSpiceDone
+  | ConvertCash
+  | ConvertCashDone
   | QfPayment
   | QfAddPool
   | QfDividend
@@ -266,7 +268,7 @@ type ConsumeSpice = {
   category: 'CONSUME_SPICE'
   token: 'SPICE'
   data: {
-    siblingId: string
+    insertTime: number
   }
 }
 type ConsumeSpiceDone = {
@@ -275,7 +277,28 @@ type ConsumeSpiceDone = {
   category: 'CONSUME_SPICE_DONE'
   token: 'M$'
   data: {
-    siblingId: string
+    insertTime: number
+  }
+}
+
+// these come in pairs to convert cash to mana
+type ConvertCash = {
+  fromType: 'USER'
+  toType: 'BANK'
+  category: 'CONVERT_CASH'
+  token: 'CASH'
+  data: {
+    insertTime: number
+  }
+}
+
+type ConvertCashDone = {
+  fromType: 'BANK'
+  toType: 'USER'
+  category: 'CONVERT_CASH_DONE'
+  token: 'M$'
+  data: {
+    insertTime: number
   }
 }
 
@@ -534,7 +557,8 @@ export type ContractProduceSpiceTxn = Txn & ContractProduceSpice
 export type ContractUndoProduceSpiceTxn = Txn & ContractUndoProduceSpice
 export type ConsumeSpiceTxn = Txn & ConsumeSpice
 export type ConsumeSpiceDoneTxn = Txn & ConsumeSpiceDone
-
+export type ConvertCashTxn = Txn & ConvertCash
+export type ConvertCashDoneTxn = Txn & ConvertCashDone
 export type QfTxn = Txn & QfId
 export type QfPaymentTxn = QfTxn & QfPayment
 export type QfAddPoolTxn = QfTxn & QfAddPool
