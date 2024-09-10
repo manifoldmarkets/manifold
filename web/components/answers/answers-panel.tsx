@@ -838,7 +838,6 @@ export function Answer(props: {
               contract={contract}
               answer={answer}
               showTitle
-              expanded
             />
           </Col>
         </Modal>
