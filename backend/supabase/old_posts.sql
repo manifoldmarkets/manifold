@@ -34,11 +34,11 @@ end $function$;
 alter table old_posts enable row level security;
 
 -- Policies
-drop policy if exists "admin read" on old_posts;
+drop policy if exists "public read" on old_posts;
 
-create policy "admin read" on old_posts for
+create policy "public read" on old_posts for
 select
-  to service_role using (true);
+  using (true);
 
 -- Indexes
 drop index if exists posts_pkey;
