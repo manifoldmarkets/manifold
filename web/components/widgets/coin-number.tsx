@@ -78,11 +78,10 @@ export function CoinNumber(props: {
         '---'
       ) : coinType === 'sweepies' || coinType === 'CASH' ? (
         // TWODO: give sweepies all the variations as well
-        formatSweepiesNumber(
-          Math.abs(amount ?? 0),
-          numberType == 'toDecimal' ? 2 : undefined,
-          numberType == 'short' ? true : false
-        )
+        formatSweepiesNumber(Math.abs(amount ?? 0), {
+          toDecimal: numberType == 'toDecimal' ? 2 : undefined,
+          short: numberType == 'short' ? true : false,
+        })
       ) : numberType == 'short' ? (
         shortenNumber(
           +formatMoneyNoMoniker(Math.abs(amount ?? 0)).replaceAll(',', '')

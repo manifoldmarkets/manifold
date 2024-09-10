@@ -35,7 +35,7 @@ export function formatWithToken(variables: {
 }) {
   const { amount, token, toDecimal, short } = variables
   if (token === 'CASH') {
-    return formatSweepies(amount, toDecimal, short)
+    return formatSweepies(amount, { toDecimal, short })
   }
   if (toDecimal) {
     return formatMoneyWithDecimals(amount)
@@ -56,17 +56,22 @@ export function formatMoney(amount: number, token?: ContractToken) {
 
 export function formatSweepies(
   amount: number,
-  toDecimal?: number,
-  short?: boolean
+  parameters?: {
+    toDecimal?: number
+    short?: boolean
+  }
 ) {
-  return SWEEPIES_MONIKER + formatSweepiesNumber(amount, toDecimal, short)
+  return SWEEPIES_MONIKER + formatSweepiesNumber(amount, parameters)
 }
 
 export function formatSweepiesNumber(
   amount: number,
-  toDecimal?: number,
-  short?: boolean
+  parameters?: {
+    toDecimal?: number
+    short?: boolean
+  }
 ) {
+  const { toDecimal, short } = parameters ?? {}
   const toDecimalPlace = toDecimal ?? 2
   if (short && amount > 1000) {
     return formatLargeNumber(amount)
