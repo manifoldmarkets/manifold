@@ -86,6 +86,7 @@ export const completeCheckoutSession: APIHandler<
     PaymentDetails,
     SessionStatusMessage,
     ResponseCode,
+    SessionID,
   } = data
   if (ResponseCode >= 300) {
     return {
@@ -120,7 +121,7 @@ export const completeCheckoutSession: APIHandler<
       paymentAmount,
       CompletedPaymentAmount,
       MerchantTransactionID,
-      MerchantSessionID
+      SessionID
     )
     return {
       status: 'success',
