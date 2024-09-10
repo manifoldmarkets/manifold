@@ -1,20 +1,20 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { PaymentAmount, PaymentAmountsGIDX } from 'common/economy'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 import {
   CompleteSessionDirectCashierResponse,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
+import { getIp } from 'shared/analytics'
 import {
   getGIDXStandardParams,
-  getUserRegistrationRequirements,
   getLocalServerIP,
+  getUserRegistrationRequirements,
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
-import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateUser } from 'shared/supabase/users'
 import { runTxn } from 'shared/txn/run-txn'
-import { PaymentAmountsGIDX, PaymentAmount } from 'common/economy'
-import { getIp } from 'shared/analytics'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { LOCAL_DEV } from 'shared/utils'
 
 const ENDPOINT =
@@ -66,7 +66,20 @@ export const completeCheckoutSession: APIHandler<
     },
     ...getGIDXStandardParams(MerchantSessionID),
   }
-  log('complete checkout session body:', body)
+  const {
+    PaymentMethod: {
+      CardNumber: _,
+      ExpirationDate: __,
+      CVV: ___,
+      ...paymentMethodWithoutCCInfo
+    },
+    ...bodyWithoutPaymentMethod
+  } = body
+  const bodyToLog = {
+    ...bodyWithoutPaymentMethod,
+    PaymentMethod: paymentMethodWithoutCCInfo,
+  }
+  log('Complete checkout session body:', bodyToLog)
 
   const res = await fetch(ENDPOINT, {
     method: 'POST',
