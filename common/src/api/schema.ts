@@ -712,6 +712,12 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({ amount: z.number().positive().finite().safe() }).strict(),
   },
+  'convert-cash-to-mana': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ amount: z.number().positive().finite().safe() }).strict(),
+  },
   'request-loan': {
     method: 'GET',
     visibility: 'undocumented',

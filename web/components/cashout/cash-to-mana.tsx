@@ -1,6 +1,6 @@
 import { User } from 'common/user'
 import { useState } from 'react'
-import { APIError } from 'web/lib/api/api'
+import { APIError, api } from 'web/lib/api/api'
 import { Col } from '../layout/col'
 import { Button } from '../buttons/button'
 import { Row } from '../layout/row'
@@ -34,8 +34,7 @@ export function AllCashToManaButton(props: {
     setLoading(true)
     setDisableAllButtons(true)
     try {
-      // TWODO: Implement sweepies to mana
-      throw new Error('This function has not been implemented yet.')
+      await api('convert-cash-to-mana', { amount: redeemableCash })
       setLoading(false)
       setError(null)
       setDisableAllButtons(false)
@@ -91,8 +90,9 @@ export const CashToManaForm = (props: {
     if (!amount) return
     setLoading(true)
     try {
-      // TWODO: Implement sweepies to mana
-      throw new Error('This function has not been implemented yet.')
+      await api('convert-cash-to-mana', {
+        amount: amount / CASH_TO_MANA_CONVERSION_RATE,
+      })
       setLoading(false)
       setAmount(amount)
       setError(null)
