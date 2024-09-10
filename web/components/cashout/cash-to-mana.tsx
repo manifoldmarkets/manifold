@@ -1,80 +1,13 @@
-import { User } from 'common/user'
-import { useState } from 'react'
-import { APIError } from 'web/lib/api/api'
-import { Col } from '../layout/col'
-import { Button } from '../buttons/button'
-import { Row } from '../layout/row'
-import { CoinNumber } from '../widgets/coin-number'
 import {
   CASH_TO_MANA_CONVERSION_RATE,
   ENV_CONFIG,
   SWEEPIES_NAME,
 } from 'common/envs/constants'
+import { useState } from 'react'
+import { APIError } from 'web/lib/api/api'
+import { Button } from '../buttons/button'
+import { Row } from '../layout/row'
 import { AmountInput } from '../widgets/amount-input'
-import { MIN_CASHOUT_AMOUNT } from 'common/economy'
-
-export function AllCashToManaButton(props: {
-  user: User
-  disableAllButtons: boolean
-  setDisableAllButtons: (disabled: boolean) => void
-  redeemableCash: number
-  disabled: boolean
-}) {
-  const {
-    user,
-    disableAllButtons,
-    setDisableAllButtons,
-    redeemableCash,
-    disabled,
-  } = props
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const onSubmit = async () => {
-    if (!redeemableCash || redeemableCash < MIN_CASHOUT_AMOUNT) return
-    setLoading(true)
-    setDisableAllButtons(true)
-    try {
-      // TWODO: Implement sweepies to mana
-      throw new Error('This function has not been implemented yet.')
-      setLoading(false)
-      setError(null)
-      setDisableAllButtons(false)
-    } catch (e) {
-      console.error(e)
-      setError(e instanceof APIError ? e.message : 'Error converting')
-      setLoading(false)
-      setDisableAllButtons(false)
-    }
-  }
-  return (
-    <Col className="w-1/2 gap-0.5">
-      <Button
-        onClick={onSubmit}
-        size="xs"
-        className="w-full whitespace-nowrap text-xs sm:text-sm"
-        loading={loading}
-        disabled={disableAllButtons || disabled}
-        color="violet"
-      >
-        Redeem all for mana
-      </Button>
-      {!error && (
-        <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
-          <CoinNumber
-            amount={redeemableCash * CASH_TO_MANA_CONVERSION_RATE}
-            className="font-semibold text-violet-600 dark:text-violet-400"
-          />
-          mana value
-        </Row>
-      )}
-      {!!error && (
-        <Row className="text-scarlet-700 w-full justify-end gap-1 whitespace-nowrap  text-xs sm:text-sm">
-          {error}
-        </Row>
-      )}
-    </Col>
-  )
-}
 
 export const CashToManaForm = (props: {
   onBack: () => void

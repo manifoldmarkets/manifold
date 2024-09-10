@@ -2,11 +2,11 @@ import clsx from 'clsx'
 import { MIN_CASHOUT_AMOUNT } from 'common/economy'
 import {
   CASH_TO_MANA_CONVERSION_RATE,
+  CHARITY_FEE,
   SWEEPIES_NAME,
 } from 'common/envs/constants'
 import { User } from 'common/user'
 import Link from 'next/link'
-import { useState } from 'react'
 import {
   baseButtonClasses,
   Button,
@@ -18,64 +18,72 @@ import { getNativePlatform } from 'web/lib/native/is-native'
 import { CashoutPagesType } from 'web/pages/cashout'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { CoinNumber } from '../widgets/coin-number'
-import { AllCashToManaButton } from './cash-to-mana'
 
 export function SelectCashoutOptions(props: {
   user: User
   redeemableCash: number
   setPage: (page: CashoutPagesType) => void
+  allDisabled?: boolean
 }) {
-  const { user, redeemableCash, setPage } = props
-  const [disableAllButtons, setDisableAllButtons] = useState(false)
+  const { user, setPage, allDisabled, redeemableCash } = props
   const { isNative, platform } = getNativePlatform()
   const isNativeIOS = isNative && platform === 'ios'
 
   const noHasMinRedeemableCash = redeemableCash < MIN_CASHOUT_AMOUNT
-
-  const hasNoRedeemableCash = redeemableCash == 0
+  const hasNoRedeemableCash = redeemableCash === 0
 
   return (
-    <Col className="gap-4">
-      <Col className="bg-canvas-0 w-full gap-4 rounded-lg  p-4 pb-1">
-        <Row className="gap-2">
-          <ManaCoin className="text-7xl" />
+    <Col className={clsx('gap-4', allDisabled && 'text-ink-700 opacity-80')}>
+      <Col className="bg-canvas-0 w-full gap-4 rounded-lg p-4 pb-1">
+        <Row className="gap-4">
+          <ManaCoin className={clsx('text-7xl', allDisabled && 'grayscale')} />
           <Col>
             <div className="text-lg font-semibold">Get Mana</div>
-            <div className="text-sm">
+            <div className="text-ink-700 text-sm">
               Trade your {SWEEPIES_NAME} for mana. You'll get{' '}
               {CASH_TO_MANA_CONVERSION_RATE} mana for every 1 {SWEEPIES_NAME}.
             </div>
           </Col>
         </Row>
-        <Row className="w-full gap-2">
+        <Col className="gap-0.5">
           <Button
             onClick={() => {
               setPage('custom-mana')
             }}
             size="xs"
-            color="gray-outline"
-            className="h-fit w-1/2 whitespace-nowrap text-xs sm:text-sm"
-            disabled={disableAllButtons || hasNoRedeemableCash}
+            color="violet"
+            className="whitespace-nowrap text-xs sm:text-sm"
+            disabled={!!allDisabled || hasNoRedeemableCash}
           >
-            Redeem custom amount
+            Redeem for mana
           </Button>
-          <AllCashToManaButton
-            user={user}
-            redeemableCash={redeemableCash}
-            setDisableAllButtons={setDisableAllButtons}
-            disableAllButtons={disableAllButtons}
-            disabled={hasNoRedeemableCash}
-          />
-        </Row>
+          <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
+            <CoinNumber
+              amount={redeemableCash * CASH_TO_MANA_CONVERSION_RATE}
+              className={clsx(
+                'font-semibold',
+                allDisabled ? '' : 'text-violet-600 dark:text-violet-400'
+              )}
+              coinClassName={clsx(allDisabled && 'grayscale')}
+            />
+            mana value
+          </Row>
+        </Col>
       </Col>
       {!isNativeIOS && (
         <Col className="bg-canvas-0 gap-4 rounded-lg p-4 pb-1">
-          <Row className="gap-2">
-            <img alt="donate" src="/images/donate.png" height={80} width={80} />
+          <Row className="gap-4">
+            <img
+              alt="donate"
+              src="/images/donate.png"
+              height={80}
+              width={80}
+              className={clsx(allDisabled && 'grayscale')}
+            />
             <Col>
               <div className="text-lg font-semibold">Donate to Charity</div>
-              <div className="text-sm">
-                Donate your {SWEEPIES_NAME} as USD to a charitable cause!
+              <div className="text-ink-700 text-sm">
+                Donate your {SWEEPIES_NAME} as USD to a charitable cause.
               </div>
             </Col>
           </Row>
@@ -83,35 +91,66 @@ export function SelectCashoutOptions(props: {
             <Link
               className={clsx(
                 baseButtonClasses,
-                buttonClass('xs', 'indigo'),
-                'text-xs sm:text-sm'
+                buttonClass(
+                  'xs',
+                  noHasMinRedeemableCash || allDisabled ? 'gray' : 'indigo'
+                ),
+                'text-xs sm:text-sm',
+                noHasMinRedeemableCash || allDisabled ? 'text-white' : ''
               )}
               href="/charity"
             >
               Visit charity page
             </Link>
-            <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
-              <span className="font-semibold text-green-600 dark:text-green-500">
-                ${redeemableCash.toFixed(2)}
+            <Row className="text-ink-500 w-full justify-between gap-1 whitespace-nowrap text-xs sm:text-sm ">
+              <span>
+                {noHasMinRedeemableCash && !allDisabled ? (
+                  <span className="text-red-600 dark:text-red-400">
+                    You need at least{' '}
+                    <CoinNumber
+                      amount={MIN_CASHOUT_AMOUNT}
+                      isInline
+                      coinType="sweepies"
+                      className="font-semibold text-amber-600 dark:text-amber-400"
+                    />{' '}
+                    to donate
+                  </span>
+                ) : null}
               </span>
-              value
+              <span>
+                <span
+                  className={clsx(
+                    'font-semibold',
+                    allDisabled ? '' : 'text-green-600 dark:text-green-500'
+                  )}
+                >
+                  ${redeemableCash.toFixed(2)}
+                </span>{' '}
+                value
+              </span>
             </Row>
           </Col>
         </Col>
       )}
 
       <Col className="bg-canvas-0 w-full gap-4 rounded-lg p-4 pb-1">
-        <Row className=" gap-2">
+        <Row className=" gap-4">
           <img
             alt="donate"
             src="/images/cash-icon.png"
             height={80}
             width={80}
-            className="h-[80px] w-[80px] object-contain"
+            className={clsx(
+              'h-[80px] w-[80px] object-contain',
+              allDisabled && 'grayscale'
+            )}
           />
           <Col>
             <div className="text-lg font-semibold">Redeem for USD</div>
-            <div className="text-sm">Redeem your {SWEEPIES_NAME} for USD</div>
+            <div className="text-ink-700 text-sm">
+              Redeem your {SWEEPIES_NAME} for USD. There will be a{' '}
+              <b>{CHARITY_FEE * 100}% fee</b> charged.
+            </div>
           </Col>
         </Row>
         <Col className="gap-0.5">
@@ -120,28 +159,33 @@ export function SelectCashoutOptions(props: {
             onClick={() => {
               setPage('documents')
             }}
-            disabled={disableAllButtons || noHasMinRedeemableCash}
+            disabled={!!allDisabled || noHasMinRedeemableCash}
           >
             Redeem for USD
           </Button>
           <Row className="text-ink-500 w-full justify-between gap-1 whitespace-nowrap text-xs sm:text-sm ">
-            {noHasMinRedeemableCash ? (
-              <span className="text-red-600 dark:text-red-400">
-                You need at least{' '}
-                <CoinNumber
-                  amount={MIN_CASHOUT_AMOUNT}
-                  isInline
-                  coinType="sweepies"
-                  className="font-semibold text-amber-600 dark:text-amber-400"
-                />{' '}
-                to cash out
-              </span>
-            ) : (
-              <></>
-            )}
             <span>
-              <span className="font-semibold text-green-600 dark:text-green-500">
-                ${redeemableCash.toFixed(2)}
+              {noHasMinRedeemableCash && !allDisabled ? (
+                <span className="text-red-600 dark:text-red-400">
+                  You need at least{' '}
+                  <CoinNumber
+                    amount={MIN_CASHOUT_AMOUNT}
+                    isInline
+                    coinType="sweepies"
+                    className="font-semibold text-amber-600 dark:text-amber-400"
+                  />{' '}
+                  to cash out
+                </span>
+              ) : null}
+            </span>
+            <span>
+              <span
+                className={clsx(
+                  'font-semibold',
+                  allDisabled ? '' : 'text-green-600 dark:text-green-500'
+                )}
+              >
+                ${((1 - CHARITY_FEE) * redeemableCash).toFixed(2)}
               </span>{' '}
               value
             </span>
