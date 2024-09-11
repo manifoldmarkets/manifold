@@ -23,12 +23,7 @@ export function CashoutLimitWarning(props: {
   const [open, setOpen] = useState(false)
   const EXAMPLE_AMOUNT = 6000
 
-  if (
-    !user ||
-    !isCashContract
-    // ||
-    // !user.sweepstakes5kLimit
-  ) {
+  if (!user || !isCashContract || !user.sweepstakes5kLimit) {
     return <></>
   }
 
@@ -57,7 +52,7 @@ export function CashoutLimitWarning(props: {
           </span>
 
           <Col className="gap-1">
-            <div className="font-semibold">
+            <div className="text-ink-600 font-semibold">
               {SWEEPIES_NAME} to Cash Conversion
             </div>
             <span>
@@ -80,7 +75,7 @@ export function CashoutLimitWarning(props: {
             </span>
           </Col>
           <Col className="gap-1">
-            <div className="font-semibold">Cashout Limit</div>
+            <div className="text-ink-600 font-semibold">Cashout Limit</div>
             <span>
               Any Sweepies exceeding this{' '}
               <CoinNumber
@@ -95,7 +90,9 @@ export function CashoutLimitWarning(props: {
           </Col>
 
           <Col className="gap-1">
-            <div className="font-semibold">Multi-Choice Markets</div>
+            <div className="text-ink-600 font-semibold">
+              Multi-Choice Markets
+            </div>
             <span>
               In multi-choice markets, the cashout limit applies separately to
               each answer. This means you can redeem up to{' '}
