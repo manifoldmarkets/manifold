@@ -1,0 +1,116 @@
+import clsx from 'clsx'
+import { Contract } from 'common/contract'
+import {
+  CHARITY_FEE,
+  NY_FL_CASHOUT_LIMIT,
+  SWEEPIES_NAME,
+} from 'common/envs/constants'
+import { User } from 'common/user'
+import { formatMoneyUSD, formatPercent } from 'common/util/format'
+import { useState } from 'react'
+import { IoIosWarning } from 'react-icons/io'
+import { Col } from '../layout/col'
+import { Modal, MODAL_CLASS } from '../layout/modal'
+import { CoinNumber } from '../widgets/coin-number'
+
+export function CashoutLimitWarning(props: {
+  user: User | null | undefined
+  contract: Contract
+  className?: string
+}) {
+  const { user, contract, className } = props
+  const isCashContract = contract.token === 'CASH'
+  const [open, setOpen] = useState(false)
+  const EXAMPLE_AMOUNT = 6000
+
+  if (
+    !user ||
+    !isCashContract
+    // ||
+    // !user.sweepstakes5kLimit
+  ) {
+    return <></>
+  }
+
+  return (
+    <>
+      <div className={clsx('text-ink-700 w-full text-sm', className)}>
+        <IoIosWarning className="mr-1 inline-block h-4 w-4 align-text-bottom text-orange-500" />
+        <b>New York</b> and <b>Florida</b> have a{' '}
+        <b>{formatMoneyUSD(NY_FL_CASHOUT_LIMIT)}</b> cashout limit.{' '}
+        <button
+          className="text-primary-600 font-semibold underline"
+          onClick={() => setOpen(true)}
+        >
+          Learn more
+        </button>
+      </div>
+      <Modal open={open} setOpen={setOpen}>
+        <Col className={MODAL_CLASS}>
+          <div className="text-primary-700 text-xl font-semibold">
+            Cashout Limit
+          </div>
+          <span>
+            <b>New York</b> and <b>Florida</b> have a{' '}
+            <b>{formatMoneyUSD(NY_FL_CASHOUT_LIMIT)}</b> cashout limit per
+            market.
+          </span>
+
+          <Col className="gap-1">
+            <div className="font-semibold">
+              {SWEEPIES_NAME} to Cash Conversion
+            </div>
+            <span>
+              <CoinNumber
+                amount={1}
+                coinType="CASH"
+                className="font-semibold text-amber-700 dark:text-amber-300"
+                isInline
+              />{' '}
+              = <b>$1</b>, with a <b>{formatPercent(CHARITY_FEE)} fee</b>. To
+              receive the full {formatMoneyUSD(NY_FL_CASHOUT_LIMIT)} in cash
+              after the fee, you would need to redeem approximately{' '}
+              <CoinNumber
+                amount={NY_FL_CASHOUT_LIMIT / (1 - CHARITY_FEE)}
+                coinType="CASH"
+                className="font-semibold text-amber-700 dark:text-amber-300"
+                isInline
+              />{' '}
+              worth of {SWEEPIES_NAME}.
+            </span>
+          </Col>
+          <Col className="gap-1">
+            <div className="font-semibold">Cashout Limit</div>
+            <span>
+              Any Sweepies exceeding this{' '}
+              <CoinNumber
+                amount={NY_FL_CASHOUT_LIMIT / (1 - CHARITY_FEE)}
+                coinType="CASH"
+                className="font-semibold text-amber-700 dark:text-amber-300"
+                isInline
+              />{' '}
+              limit remain in your account for trading in other markets, but
+              they cannot be redeemed for cash.
+            </span>
+          </Col>
+
+          <Col className="gap-1">
+            <div className="font-semibold">Multi-Choice Markets</div>
+            <span>
+              In multi-choice markets, the cashout limit applies separately to
+              each answer. This means you can redeem up to{' '}
+              <CoinNumber
+                amount={NY_FL_CASHOUT_LIMIT / (1 - CHARITY_FEE)}
+                coinType="CASH"
+                className="font-semibold text-amber-700 dark:text-amber-300"
+                isInline
+              />{' '}
+              (to recieve {formatMoneyUSD(NY_FL_CASHOUT_LIMIT)}) for each
+              answer.
+            </span>
+          </Col>
+        </Col>
+      </Modal>
+    </>
+  )
+}
