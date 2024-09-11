@@ -14,7 +14,6 @@ import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { Welcome } from 'web/components/onboarding/welcome'
-import { WatchPartyBanner } from 'web/components/nav/banner'
 
 export async function getStaticProps() {
   try {
@@ -48,7 +47,6 @@ export default function Home(props: { headlines: Headline[] }) {
         hideEmoji
         notSticky
       />
-      <WatchPartyBanner />
       <DailyStats
         className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
         user={user}
