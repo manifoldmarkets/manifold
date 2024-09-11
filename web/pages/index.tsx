@@ -21,8 +21,10 @@ import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 import {
   HIDE_FROM_NEW_USER_SLUGS,
+  SWEEPIES_NAME,
   TRADE_TERM,
   TRADING_TERM,
+  TWOMBA_ENABLED,
 } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
@@ -37,6 +39,9 @@ import {
   getContract,
 } from 'common/supabase/contracts'
 import { capitalize } from 'lodash'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { SweepsExplainer } from 'web/components/sweeps-explainer'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
@@ -187,13 +192,26 @@ export default function LandingPage(props: {
               <h1 className="mb-4 text-4xl">
                 {capitalize(TRADE_TERM)} on politics & more
               </h1>
-              <h1 className="text-lg">
-                Play-money markets. Real-world accuracy.
-              </h1>
-              <h1 className="text-lg">
-                Compete with your friends by {TRADING_TERM} on politics, tech,
-                sports, and more. It's play money and free to play.
-              </h1>
+              {TWOMBA_ENABLED ? (
+                <>
+                  <h1 className="text-lg">
+                    Free to play markets. Real-world accuracy.
+                  </h1>
+                  <h1 className="text-lg">
+                    Trade on politics, tech, sports, or anything else.
+                  </h1>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-lg">
+                    Play-money markets. Real-world accuracy.
+                  </h1>
+                  <h1 className="text-lg">
+                    Compete with your friends by {TRADING_TERM} on politics,
+                    tech, sports, and more. It's play money and free to play.
+                  </h1>
+                </>
+              )}
 
               <Button
                 color="gradient"
@@ -214,6 +232,7 @@ export default function LandingPage(props: {
             </Col>
           </Row>
         </Col>
+        {TWOMBA_ENABLED && <SweepsExplainer />}
         <Col>
           <Row className={'mb-3 text-xl'}>🔥 Trending Topics</Row>
           <Carousel labelsParentClassName={'gap-2'} className="mx-1">
