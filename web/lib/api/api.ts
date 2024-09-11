@@ -4,7 +4,6 @@ import { JSONContent } from '@tiptap/core'
 import { Group, PrivacyStatusType } from 'common/group'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { ContractComment } from 'common/comment'
-import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
 import { BaseDashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
@@ -205,27 +204,6 @@ export function leagueActivity(params: { season: number; cohort: string }) {
 
 export function cancelBounty(params: { contractId: string }) {
   return call(getApiUrl('cancel-bounty'), 'POST', params)
-}
-
-export function createPortfolio(params: {
-  name: string
-  items: PortfolioItem[]
-}) {
-  return call(getApiUrl('createportfolio'), 'POST', params)
-}
-
-export function updatePortfolio(params: { id: string } & Partial<Portfolio>) {
-  return call(getApiUrl('updateportfolio'), 'POST', params)
-}
-
-export function buyPortfolio(
-  params: {
-    portfolioId: string
-    amount: number
-    buyOpposite?: boolean
-  } & Partial<Portfolio>
-) {
-  return call(getApiUrl('buyportfolio'), 'POST', params)
 }
 
 export function searchGiphy(params: { term: string; limit: number }) {
