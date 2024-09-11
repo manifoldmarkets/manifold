@@ -409,6 +409,7 @@ function CollapsedOrderRow(props: {
       <div className="self-center pr-1 text-right">
         <MoneyDisplay
           amount={total}
+          numberType="short"
           isCashContract={contract.token === 'CASH'}
         />
       </div>
@@ -512,7 +513,7 @@ export function OrderBookPanel(props: {
   if (limitBets.length === 0) return <></>
 
   return (
-    <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 p-4">
+    <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 px-2 py-4 sm:px-4">
       <Subtitle className="!my-0">
         Order book{' '}
         <InfoTooltip
@@ -523,7 +524,7 @@ export function OrderBookPanel(props: {
 
       {showTitle && isCPMMMulti && answer && <div>{answer.text}</div>}
 
-      <Row className="items-start justify-around gap-2">
+      <Row className="items-start justify-around gap-4">
         <CollatedOrderTable
           limitBets={yesBets}
           contract={contract}
