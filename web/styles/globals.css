@@ -203,7 +203,7 @@ text {
 
 .coin-offset {
   --coin-offset: calc(1.1em);
-  --coin-top-offset: calc(0.25em);
+  --coin-top-offset: calc(0.13em);
 }
 
 .text-xs .coin-offset {
