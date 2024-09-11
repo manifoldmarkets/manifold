@@ -23,6 +23,9 @@ create extension if not exists pg_trgm;
 /* for UUID generation */
 create extension if not exists pgcrypto;
 
+/* for accent-insensitive search */
+create extension if not exists unaccent;
+
 /* enable `explain` via the HTTP API for convenience */
 alter role authenticator
 set
@@ -54,5 +57,17 @@ hword,
 hword_part,
 word
 with
+  unaccent,
   english_stem_nostop,
   english_prefix;
+
+create text search configuration public.english_extended (
+  copy = english
+);
+
+alter text search configuration public.english_extended
+alter mapping for hword,
+hword_part,
+word
+with
+  unaccent;

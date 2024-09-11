@@ -13,7 +13,7 @@ create table if not exists
     index integer,
     total_liquidity numeric default 0,
     subsidy_pool numeric default 0,
-    text_fts tsvector generated always as (to_tsvector('english'::regconfig, text)) stored,
+    text_fts tsvector generated always as (to_tsvector('english_extended'::regconfig, text)) stored,
     prob_change_day numeric default 0,
     prob_change_week numeric default 0,
     prob_change_month numeric default 0,
