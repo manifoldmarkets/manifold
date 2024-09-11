@@ -76,6 +76,7 @@ import {
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { debounce } from 'lodash'
 import { RelativeTimestamp } from '../relative-timestamp'
+import { buildArray } from 'common/util/array'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -645,8 +646,7 @@ export function Answer(props: {
   const answerCreator = useDisplayUserByIdOrAnswer(answer)
   const answerCreatorIsNotContractCreator =
     !!answerCreator && answerCreator.username !== contract.creatorUsername
-
-  const dropdownItems = [
+  const dropdownItems = buildArray(
     {
       name: 'author info',
       nonButtonContent: (
@@ -672,24 +672,19 @@ export function Answer(props: {
         </div>
       ),
     },
-    ...(canEdit && answer.poolYes != undefined && !answer.isOther
-      ? [
-          {
-            icon: <PencilIcon className=" h-4 w-4" />,
-            name: 'Edit',
-            onClick: () => setEditingAnswer(answer),
-          },
-        ]
-      : []),
-    ...(onCommentClick
-      ? [
-          {
-            icon: <ChatIcon className=" h-4 w-4" />,
-            name: 'Comment',
-            onClick: onCommentClick,
-          },
-        ]
-      : []),
+    canEdit &&
+      answer.poolYes != undefined &&
+      !answer.isOther && {
+        icon: <PencilIcon className=" h-4 w-4" />,
+        name: 'Edit',
+        onClick: () => setEditingAnswer(answer),
+      },
+
+    onCommentClick && {
+      icon: <ChatIcon className=" h-4 w-4" />,
+      name: 'Comment',
+      onClick: onCommentClick,
+    },
     {
       icon: <UserIcon className="h-4 w-4" />,
       name: 'Trades',
@@ -701,16 +696,12 @@ export function Answer(props: {
       ),
       onClick: () => setTradesModalOpen(true),
     },
-    ...(hasLimitOrders
-      ? [
-          {
-            icon: <ScaleIcon className="h-4 w-4" />,
-            name: getOrderBookButtonLabel(unfilledBets),
-            onClick: () => setLimitBetModalOpen(true),
-          },
-        ]
-      : []),
-  ]
+    hasLimitOrders && {
+      icon: <ScaleIcon className="h-4 w-4" />,
+      name: getOrderBookButtonLabel(unfilledBets),
+      onClick: () => setLimitBetModalOpen(true),
+    }
+  )
 
   return (
     <Col className={'full rounded'}>
@@ -765,8 +756,6 @@ export function Answer(props: {
               icon={<DotsVerticalIcon className="h-5 w-5" aria-hidden />}
               items={dropdownItems}
               withinOverflowContainer
-              menuItemsClass="!z-50"
-              className="!z-50"
             />
           </Row>
         }
@@ -820,12 +809,14 @@ export function Answer(props: {
           user={user}
         />
       )}
-      <TradesModal
-        contract={contract}
-        modalOpen={tradesModalOpen}
-        setModalOpen={setTradesModalOpen}
-        answer={answer}
-      />
+      {tradesModalOpen && (
+        <TradesModal
+          contract={contract}
+          modalOpen={tradesModalOpen}
+          setModalOpen={setTradesModalOpen}
+          answer={answer}
+        />
+      )}
       {!!hasLimitOrders && (
         <Modal
           open={limitBetModalOpen}
