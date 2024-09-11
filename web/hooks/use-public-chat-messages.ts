@@ -21,7 +21,7 @@ export function usePublicChat(channelId: string, limit: number) {
       .select('*')
       .eq('channel_id', channelId)
       .order('created_time', { ascending: false })
-      .gt('id', newestId)
+      .gt('id', newestId ?? 0)
       .limit(limit)
 
     if (data) {
