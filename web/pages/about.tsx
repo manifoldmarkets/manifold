@@ -6,7 +6,10 @@ import { PrivacyTermsLab } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { ExplainerPanel } from 'web/components/explainer-panel'
+import {
+  ExplainerPanel,
+  WhatIsManifoldContent,
+} from 'web/components/explainer-panel'
 import { LabCard } from './lab'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
@@ -27,19 +30,7 @@ export default function AboutPage() {
         <Title className="hidden sm:flex">About</Title>
         <ManifoldLogo className="mb-4 flex sm:hidden" />
         <Col className="gap-4">
-          <div>
-            <div className="mb-1 text-lg">
-              Manifold lets you {TRADE_TERM} on upcoming events using play
-              money. As other users {TRADE_TERM} against you, it creates a
-              probability of how likely the event will happen—this is known as a
-              prediction market.
-            </div>
-            <div className=" text-lg">
-              {capitalize(TRADE_TERM)} on current events, politics, tech, and
-              AI, or create your own market about an event you care about for
-              others to trade on!
-            </div>
-          </div>
+          <WhatIsManifoldContent className="text-lg" />
 
           <ExplainerPanel className={'max-w-full'} showWhatIsManifold={false} />
 

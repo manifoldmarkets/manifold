@@ -9,10 +9,14 @@ import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
 import {
   SPICE_PRODUCTION_ENABLED,
+  SWEEPIES_NAME,
   TRADE_TERM,
   TRADING_TERM,
+  TWOMBA_ENABLED,
 } from 'common/envs/constants'
 import { capitalize } from 'lodash'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { SWEEPIES_MONIKER } from 'common/util/format'
 
 export const ExplainerPanel = (props: {
   className?: string
@@ -78,17 +82,35 @@ const WhatIsManifold = ({
     }
     onClick={() => onClick('What is Manifold?')}
   >
-    <div className="pb-2">
-      Manifold lets you {TRADE_TERM} on upcoming events using play money. As
-      other users {TRADE_TERM} against you, it creates a probability of how
-      likely the event will happen—this is known as a prediction market.
-    </div>
-    <div className="pb-2">
+    <WhatIsManifoldContent />
+  </ExpandSection>
+)
+
+export const WhatIsManifoldContent = ({
+  className,
+}: {
+  className?: string
+}) => (
+  <>
+    {TWOMBA_ENABLED ? (
+      <div className={clsx('pb-2', className)}>
+        Manifold lets you {TRADE_TERM} on upcoming events. As other users{' '}
+        {TRADE_TERM} against you, it creates a probability of how likely the
+        event will happen—this is known as a prediction market.
+      </div>
+    ) : (
+      <div className={clsx('pb-2', className)}>
+        Manifold lets you {TRADE_TERM} on upcoming events using play money. As
+        other users {TRADE_TERM} against you, it creates a probability of how
+        likely the event will happen—this is known as a prediction market.
+      </div>
+    )}
+    <div className={clsx('pb-2', className)}>
       {capitalize(TRADE_TERM)} on current events, politics, tech, and AI, or
       create your own market about an event you care about for others to trade
       on!
     </div>
-  </ExpandSection>
+  </>
 )
 
 const WhyBet = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
@@ -104,7 +126,7 @@ const WhyBet = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
       {capitalize(TRADING_TERM)} contributes to accurate answers of important,
       real-world questions.
     </div>
-    {SPICE_PRODUCTION_ENABLED && (
+    {!TWOMBA_ENABLED && SPICE_PRODUCTION_ENABLED && (
       <div className="pb-2">
         {capitalize(TRADE_TERM)} to win prizepoints! Redeem them and we will
         donate to a charity of your choice. Our users have{' '}
@@ -117,6 +139,22 @@ const WhyBet = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
         </a>{' '}
         so far!
       </div>
+    )}
+    {TWOMBA_ENABLED && (
+      <>
+        <div className="pb-2">
+          {capitalize(TRADE_TERM)} for a chance to win <b>real cash prizes</b>{' '}
+          when you trade with{' '}
+          <span className="coin-offset relative ml-[1.2em] whitespace-nowrap">
+            <SweepiesCoin className="absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]" />
+            <span className=" font-semibold text-amber-700 dark:text-amber-300 ">
+              {' '}
+              {SWEEPIES_NAME} ({SWEEPIES_MONIKER})
+            </span>
+          </span>
+          .
+        </div>
+      </>
     )}
 
     <div className="pb-2">Get started for free! No credit card required.</div>
