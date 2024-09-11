@@ -98,6 +98,17 @@ export function DowntimeBanner() {
   )
 }
 
+export function WatchPartyBanner() {
+  return (
+    <Banner
+      className="border-primary-300 from-primary-100 to-primary-200 my-2 border bg-gradient-to-b py-2"
+      link="/tv"
+    >
+      🇺🇸 Join the presidential debate watch party on Manifold TV! 🇺🇸
+    </Banner>
+  )
+}
+
 export const useBanner = (name: string) => {
   const [bannerSeen, setBannerSeen] = usePersistentLocalState<number>(
     0,
