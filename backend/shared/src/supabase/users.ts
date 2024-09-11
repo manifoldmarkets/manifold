@@ -8,6 +8,7 @@ import {
   broadcastUpdatedPrivateUser,
 } from 'shared/websockets/helpers'
 import { removeUndefinedProps } from 'common/util/object'
+import { getBettingStreakResetTimeBeforeNow } from 'shared/utils'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
@@ -132,6 +133,42 @@ export const incrementBalance = async (
       totalCashDeposits: result.total_cash_deposits,
     })
   )
+}
+
+export const incrementStreak = async (
+  db: SupabaseDirectClient,
+  user: User,
+  newBetTime: number
+) => {
+  const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
+  const result = (await db.one(
+    `update users set 
+      data = jsonb_set(
+        jsonb_set(data, '{currentBettingStreak}', 
+        CASE
+          WHEN (data->>'lastBetTime')::bigint < $2
+          THEN ((coalesce(data->>'currentBettingStreak', '0'))::int + 1)::text::jsonb
+          ELSE (data->>'currentBettingStreak')::jsonb
+        END),
+        '{lastBetTime}', $3::text::jsonb
+      )
+    where id = $1
+    returning id, (data->>'currentBettingStreak')::int as updated_betting_streak`,
+    [user.id, betStreakResetTime, newBetTime]
+  )) as { id: string; updated_betting_streak: number }
+  const incremented =
+    result.updated_betting_streak === (user.currentBettingStreak ?? 0) + 1
+  broadcastUpdatedUser(
+    removeUndefinedProps({
+      id: user.id,
+      currentBettingStreak: incremented
+        ? result.updated_betting_streak
+        : undefined,
+      lastBetTime: newBetTime,
+    })
+  )
+
+  return incremented
 }
 
 export const bulkIncrementBalances = async (

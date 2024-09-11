@@ -24,7 +24,11 @@ import {
   SupabaseDirectClient,
   SupabaseTransaction,
 } from 'shared/supabase/init'
-import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
+import {
+  bulkIncrementBalances,
+  incrementBalance,
+  incrementStreak,
+} from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
 import {
@@ -189,14 +193,28 @@ export const placeBetMain = async (
     return result
   })
 
-  const { newBet, fullBets, allOrdersToCancel, betId, makers, betGroupId } =
-    result
+  const {
+    newBet,
+    fullBets,
+    allOrdersToCancel,
+    betId,
+    makers,
+    betGroupId,
+    streakIncremented,
+  } = result
 
   log(`Main transaction finished - auth ${uid}.`)
   metrics.inc('app/bet_count', { contract_id: contractId })
 
   const continuation = async () => {
-    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
+    await onCreateBets(
+      fullBets,
+      contract,
+      user,
+      allOrdersToCancel,
+      makers,
+      streakIncremented
+    )
   }
 
   const time = Date.now() - startTime
@@ -520,6 +538,11 @@ export const executeNewBetResult = async (
     [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
       -newBet.amount - apiFee,
   })
+  const streakIncremented = await incrementStreak(
+    pgTrans,
+    user,
+    newBet.createdTime
+  )
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
   const totalCreatorFee =
@@ -645,6 +668,7 @@ export const executeNewBetResult = async (
     fullBets,
     user,
     betGroupId,
+    streakIncremented,
   }
 }
 
