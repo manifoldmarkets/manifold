@@ -20,7 +20,7 @@ export function Banner(props: {
         'text-ink-900 bg-primary-100 z-10 justify-between gap-4'
       )}
     >
-      <a href={link} className="pl-4" target="_blank" rel="noopener noreferrer">
+      <a href={link} className="pl-4" rel="noopener noreferrer">
         {children}
       </a>
 
