@@ -146,9 +146,9 @@ export const incrementStreak = async (
       data = jsonb_set(
         jsonb_set(data, '{currentBettingStreak}', 
         CASE
-          WHEN (data->>'lastBetTime')::bigint < $2
+          WHEN coalesce((data->>'lastBetTime')::bigint, 0) < $2
           THEN ((coalesce(data->>'currentBettingStreak', '0'))::int + 1)::text::jsonb
-          ELSE (data->>'currentBettingStreak')::jsonb
+          ELSE coalesce((data->>'currentBettingStreak')::int,'0')::text::jsonb
         END),
         '{lastBetTime}', $3::text::jsonb
       )
