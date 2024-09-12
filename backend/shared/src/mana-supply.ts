@@ -132,15 +132,17 @@ const getAMMLiquidity = async () => {
   const pg = createSupabaseDirectClient()
   const [binaryLiquidity, multiLiquidity] = await Promise.all([
     pg.many<{ sum: number; token: 'MANA' | 'CASH' }>(
-      `select sum((data->>'prob')::numeric * (data->'pool'->>'YES')::numeric + (1-(data->>'prob')::numeric) *(data->'pool'->>'NO')::numeric + (data->'subsidyPool')::numeric)
+      `select
+        sum((data->>'prob')::numeric * (data->'pool'->>'YES')::numeric + (1-(data->>'prob')::numeric) *(data->'pool'->>'NO')::numeric + (data->'subsidyPool')::numeric),
+        token
       from contracts
       where resolution is null and mechanism = 'cpmm-1'
       group by token`,
       []
     ),
     pg.many<{ sum: number; token: 'MANA' | 'CASH' }>(
-      `select sum(prob * pool_yes + (1-prob) * pool_no + subsidy_pool) from answers
-        join contracts on contract_id = contracts.id
+      `select sum(prob * pool_yes + (1-prob) * pool_no + subsidy_pool), contracts.token
+        from answers join contracts on contract_id = contracts.id
         where contracts.resolution is null
         group by contracts.token`,
       []
