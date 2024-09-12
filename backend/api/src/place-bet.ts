@@ -241,7 +241,7 @@ export const fetchContractBetDataAndValidate = async (
   const answerIds =
     'answerIds' in body
       ? body.answerIds
-      : 'answerId' in body
+      : 'answerId' in body && body.answerId !== undefined
       ? [body.answerId]
       : undefined
 
