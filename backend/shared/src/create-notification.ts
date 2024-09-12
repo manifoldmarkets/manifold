@@ -1451,23 +1451,19 @@ export const createMarketClosedNotification = async (
   await insertNotificationToSupabase(notification, pg)
   await sendMarketCloseEmail(creator, privateUser, contract)
 }
+
+// assumes user has notification for this enabled
 export const createWeeklyPortfolioUpdateNotification = async (
-  privateUser: PrivateUser,
+  userId: string,
   userUsername: string,
   weeklyProfit: number,
   rangeEndDateSlug: string
 ) => {
-  const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
-    'profit_loss_updates'
-  )
-  if (!sendToBrowser) return
-
   const id = rangeEndDateSlug + 'weekly_portfolio_update'
 
   const notification: Notification = {
     id,
-    userId: privateUser.id,
+    userId: userId,
     reason: 'profit_loss_updates',
     createdTime: Date.now(),
     isSeen: false,
