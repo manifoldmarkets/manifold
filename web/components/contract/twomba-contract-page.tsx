@@ -309,10 +309,12 @@ export function TwombaContractPageContent(props: ContractParams) {
               />
             </Row>
           )}
-          <ToggleVerifyCallout
-            className="mx-4 mb-4 mt-1.5 w-[calc(100%-2rem)] sm:hidden"
-            caratClassName="right-[81px]"
-          />
+          {!!liveContract.siblingContractId && (
+            <ToggleVerifyCallout
+              className="mx-4 mb-4 mt-1.5 w-[calc(100%-2rem)] sm:hidden"
+              caratClassName="right-[81px]"
+            />
+          )}
           <Col className={clsx('mb-4 p-4 pt-0 md:pb-8 lg:px-8')}>
             <Col className="w-full gap-3 lg:gap-4">
               <Col>
