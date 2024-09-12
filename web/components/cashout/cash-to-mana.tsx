@@ -12,6 +12,7 @@ import { Col } from '../layout/col'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import clsx from 'clsx'
+import { CoinNumber } from '../widgets/coin-number'
 
 export const CashToManaForm = (props: {
   onBack: () => void
