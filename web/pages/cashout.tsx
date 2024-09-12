@@ -9,12 +9,9 @@ import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import {
   ageBlocked,
   getVerificationStatus,
-  IDENTIFICATION_FAILED_MESSAGE,
   locationBlocked,
-  PHONE_NOT_VERIFIED_MESSAGE,
   PROMPT_VERIFICATION_MESSAGES,
   USER_BLOCKED_MESSAGE,
-  USER_NOT_REGISTERED_MESSAGE,
 } from 'common/user'
 import { formatSweepies, formatSweepsToUSD } from 'common/util/format'
 import Link from 'next/link'

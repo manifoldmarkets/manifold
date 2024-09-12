@@ -26,7 +26,6 @@ import {
 } from './twomba-portfolio-graph'
 import { getPortfolioValues } from '../twomba-portfolio-helpers'
 import { useSweepstakes } from '../sweestakes-context'
-import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
