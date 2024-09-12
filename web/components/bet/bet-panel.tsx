@@ -138,9 +138,16 @@ export function BuyPanel(props: {
   } else if (contract.token === 'CASH' && user && !user.idVerified) {
     return (
       <Row className={'bg-canvas-50 gap-1 rounded p-4'}>
-        Verify your info to start trading on sweepstakes markets and earn a
-        bonus of{' '}
-        <CoinNumber amount={KYC_VERIFICATION_BONUS_CASH} coinType="sweepies" />!{' '}
+        <span>
+          Verify your info to start trading on sweepstakes markets and earn a
+          bonus of{' '}
+          <CoinNumber
+            amount={KYC_VERIFICATION_BONUS_CASH}
+            coinType="sweepies"
+            isInline
+          />
+          !
+        </span>
         <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
           Verify
         </Link>

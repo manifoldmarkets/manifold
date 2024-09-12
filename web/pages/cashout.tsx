@@ -12,6 +12,7 @@ import {
   IDENTIFICATION_FAILED_MESSAGE,
   locationBlocked,
   PHONE_NOT_VERIFIED_MESSAGE,
+  PROMPT_VERIFICATION_MESSAGES,
   USER_BLOCKED_MESSAGE,
   USER_NOT_REGISTERED_MESSAGE,
 } from 'common/user'
@@ -242,9 +243,7 @@ const CashoutPage = () => {
                 </p>
               </Col>
             </Row>
-          ) : message == USER_NOT_REGISTERED_MESSAGE ||
-            message == PHONE_NOT_VERIFIED_MESSAGE ||
-            message == IDENTIFICATION_FAILED_MESSAGE ? (
+          ) : PROMPT_VERIFICATION_MESSAGES.includes(message) ? (
             <Col className="mb-4 gap-4">
               <Row className="w-full items-center gap-4">
                 <RegisterIcon
@@ -252,9 +251,9 @@ const CashoutPage = () => {
                   className="fill-ink-700 hidden sm:inline"
                 />
                 <Col className="w-full gap-2">
-                  <div className="text-2xl">You're not registered yet...</div>
+                  <div className="text-2xl">You're not verified yet...</div>
                   <p className="text-ink-700 text-sm">
-                    Registration is required to cash out.
+                    Verification is required to cash out.
                   </p>
                 </Col>
               </Row>
@@ -265,20 +264,22 @@ const CashoutPage = () => {
                   buttonClass('lg', 'gradient-pink')
                 )}
               >
-                Register and get<span> </span>
-                <CoinNumber
-                  amount={KYC_VERIFICATION_BONUS_CASH}
-                  className={'ml-1 font-bold'}
-                  isInline
-                  coinType={'CASH'}
-                />
+                Verify and get
+                <span className="ml-1">
+                  <CoinNumber
+                    amount={KYC_VERIFICATION_BONUS_CASH}
+                    className={'font-bold'}
+                    isInline
+                    coinType={'CASH'}
+                  />
+                </span>
               </Link>
             </Col>
           ) : message == USER_BLOCKED_MESSAGE ? (
             <Row className="items-center gap-4">
               <RiUserForbidLine className="hidden h-16 w-16 fill-red-500 sm:inline" />
               <Col className="gap-2">
-                <div className="text-2xl">Your registration failed</div>
+                <div className="text-2xl">Your verification failed</div>
                 <p className="text-ink-700 text-sm">
                   You are unable to cash out at the moment.
                 </p>
