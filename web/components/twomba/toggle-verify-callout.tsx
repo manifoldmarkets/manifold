@@ -6,18 +6,32 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { buttonClass } from '../buttons/button'
 import { formatMoney } from 'common/util/format'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
+import { CoinNumber } from '../widgets/coin-number'
+import { useUser } from 'web/hooks/use-user'
+import { getVerificationStatus } from 'common/user'
+import {
+  USER_NOT_REGISTERED_MESSAGE,
+  PROMPT_VERIFICATION_MESSAGES,
+} from 'common/user'
 
 export function ToggleVerifyCallout(props: {
   className?: string
   caratClassName?: string
 }) {
   const { className, caratClassName } = props
+  const user = useUser()
   const [dismissed, setDismissed] = usePersistentLocalState(
     false,
     'toggle-verify-callout-dismissed'
   )
 
-  if (dismissed) return null
+  console.log('dismissed', dismissed, 'user', user)
+  if (dismissed || !user) return null
+
+  const { status, message } = getVerificationStatus(user)
+  console.log(message)
+
+  if (!PROMPT_VERIFICATION_MESSAGES.includes(message)) return null
 
   return (
     <div className={className}>
@@ -28,8 +42,8 @@ export function ToggleVerifyCallout(props: {
         >
           <XIcon className="h-4 w-4" />
         </button>
-        Why stop at play money? Verify your identity and start earning real cash
-        prizes today.
+        Why stop at play money? Verify your identity and start earning{' '}
+        <b>real cash prizes</b> today.
         <div
           className={clsx(
             'absolute -top-[10px] right-4 h-0 w-0',
@@ -43,11 +57,16 @@ export function ToggleVerifyCallout(props: {
         <Link
           href={'gidx/register'}
           className={clsx(
-            buttonClass('md', 'amber'),
+            buttonClass('md', 'gradient-pink'),
             'mt-2 w-full font-semibold'
           )}
         >
-          Verify and claim {formatMoney(KYC_VERIFICATION_BONUS_CASH, 'CASH')}
+          Verify and claim
+          <CoinNumber
+            amount={KYC_VERIFICATION_BONUS_CASH}
+            coinType="CASH"
+            className="ml-1"
+          />
         </Link>
       </div>
     </div>
