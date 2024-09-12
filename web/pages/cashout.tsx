@@ -90,7 +90,7 @@ function SweepiesStats(props: {
         <div className="text-ink-500 whitespace-nowrap text-sm">Total</div>
         <CoinNumber
           amount={cashBalance}
-          className={'font-bold'}
+          className={'text-ink-500 font-bold'}
           coinType={'sweepies'}
         />
       </Col>
