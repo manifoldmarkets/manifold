@@ -1,18 +1,15 @@
 import { XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import Link from 'next/link'
-import { useState } from 'react'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { buttonClass } from '../buttons/button'
-import { formatMoney } from 'common/util/format'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
-import { CoinNumber } from '../widgets/coin-number'
-import { useUser } from 'web/hooks/use-user'
-import { getVerificationStatus } from 'common/user'
 import {
-  USER_NOT_REGISTERED_MESSAGE,
+  getVerificationStatus,
   PROMPT_VERIFICATION_MESSAGES,
 } from 'common/user'
+import Link from 'next/link'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useUser } from 'web/hooks/use-user'
+import { buttonClass } from '../buttons/button'
+import { CoinNumber } from '../widgets/coin-number'
 
 export function ToggleVerifyCallout(props: {
   className?: string
@@ -25,11 +22,9 @@ export function ToggleVerifyCallout(props: {
     'toggle-verify-callout-dismissed'
   )
 
-  console.log('dismissed', dismissed, 'user', user)
   if (dismissed || !user) return null
 
-  const { status, message } = getVerificationStatus(user)
-  console.log(message)
+  const { message } = getVerificationStatus(user)
 
   if (!PROMPT_VERIFICATION_MESSAGES.includes(message)) return null
 
