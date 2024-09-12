@@ -51,14 +51,14 @@ export const CashToManaForm = (props: {
   const notEnoughCashError = !!sweepiesAmount && sweepiesAmount > redeemableCash
 
   const onSubmit = async () => {
-    if (!manaAmount) return
+    if (!sweepiesAmount) return
     setLoading(true)
     try {
       await api('convert-cash-to-mana', {
-        amount: manaAmount / CASH_TO_MANA_CONVERSION_RATE,
+        amount: sweepiesAmount,
       })
       setLoading(false)
-      updateAmounts(manaAmount, 'mana')
+      updateAmounts(sweepiesAmount, 'sweepies')
       setError(null)
     } catch (e) {
       console.error(e)
