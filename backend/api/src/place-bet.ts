@@ -24,7 +24,7 @@ import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
-import { BANNED_TRADING_USER_IDS } from 'common/envs/constants'
+import { BANNED_TRADING_USER_IDS, isAdminId } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import {
@@ -653,6 +653,10 @@ export const validateBet = async (
 ) => {
   const user = await getUser(uid, pgTrans)
   if (!user) throw new APIError(404, 'User not found.')
+
+  if (isAdminId(uid) && contract.token === 'CASH') {
+    throw new APIError(403, 'Admins cannot trade on sweepstakes markets.')
+  }
 
   const balance = contract.token === 'CASH' ? user.cashBalance : user.balance
   if (amount !== undefined && balance < amount)
