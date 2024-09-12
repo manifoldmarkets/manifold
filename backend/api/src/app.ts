@@ -73,7 +73,7 @@ import {
 } from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
 import { referuser } from 'api/refer-user'
-import { banUserFromPosting } from 'api/ban-user'
+import { banUserFromPosting } from 'api/ban-user-from-posting'
 import { updateMarket } from 'api/update-market'
 import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
