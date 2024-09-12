@@ -253,7 +253,7 @@ export const fetchContractBetDataAndValidate = async (
           ($3 is null or id in ($3:list)) or
           (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
           );
-    select b.*, u.balance from contract_bets b join users u on b.user_id = u.id
+    select b.*, u.balance, u.cash_balance from contract_bets b join users u on b.user_id = u.id
         where b.contract_id = $2 and (
            ($3 is null or b.answer_id in ($3:list)) or
            (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
@@ -271,6 +271,7 @@ export const fetchContractBetDataAndValidate = async (
   const answers = results[2].map(convertAnswer)
   const unfilledBets = results[3].map(convertBet) as (LimitBet & {
     balance: number
+    cash_balance: number
   })[]
 
   if (!user) throw new APIError(404, 'User not found.')
@@ -286,7 +287,7 @@ export const fetchContractBetDataAndValidate = async (
   const balanceByUserId = Object.fromEntries(
     uniqBy(unfilledBets, (b) => b.userId).map((bet) => [
       bet.userId,
-      bet.balance,
+      contract.token === 'CASH' ? bet.cash_balance : bet.balance,
     ])
   )
   const unfilledBetUserIds = Object.keys(balanceByUserId)
