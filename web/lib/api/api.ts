@@ -338,12 +338,19 @@ export function banUserFromPosting(params: {
   userId: string
   unban?: boolean
 }) {
-  return call(getApiUrl('ban-user'), 'POST', params)
+  return call(getApiUrl('ban-user-from-posting'), 'POST', params)
 }
 export function createPrivateMessageChannelWithUsers(params: {
   userIds: string[]
 }) {
   return call(getApiUrl('create-private-user-message-channel'), 'POST', params)
+}
+
+export function banUserFromTrading(params: {
+  userId: string
+  unban?: boolean
+}) {
+  return call(getApiUrl('ban-user-from-trading'), 'POST', params)
 }
 
 export function sendUserPrivateMessage(params: {

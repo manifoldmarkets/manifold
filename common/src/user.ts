@@ -63,6 +63,7 @@ export type User = {
   hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
   isBannedFromPosting?: boolean
+  isBannedFromTrading?: boolean
   userDeleted?: boolean
   optOutBetWarnings?: boolean
   freeQuestionsCreated?: number
