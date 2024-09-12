@@ -334,7 +334,10 @@ export const updateMarket = curriedAPI('market/:contractId/update')
 
 export const updateUser = curriedAPI('me/update')
 
-export function banUser(params: { userId: string; unban?: boolean }) {
+export function banUserFromPosting(params: {
+  userId: string
+  unban?: boolean
+}) {
   return call(getApiUrl('ban-user'), 'POST', params)
 }
 export function createPrivateMessageChannelWithUsers(params: {

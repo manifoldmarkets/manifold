@@ -14,7 +14,7 @@ const bodySchema = z
   })
   .strict()
 
-export const banuser = authEndpoint(async (req, auth) => {
+export const banUserFromPosting = authEndpoint(async (req, auth) => {
   const { userId, unban } = validate(bodySchema, req.body)
   const db = createSupabaseDirectClient()
   await throwErrorIfNotMod(auth.uid)
