@@ -53,7 +53,7 @@ export function SelectCashoutOptions(props: {
             size="xs"
             color="violet"
             className="whitespace-nowrap text-xs sm:text-sm"
-            disabled={!!allDisabled || hasNoRedeemableCash}
+            // disabled={!!allDisabled || hasNoRedeemableCash}
           >
             Redeem for mana
           </Button>
