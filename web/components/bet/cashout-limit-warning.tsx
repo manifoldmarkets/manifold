@@ -15,15 +15,12 @@ import { CoinNumber } from '../widgets/coin-number'
 
 export function CashoutLimitWarning(props: {
   user: User | null | undefined
-  contract: Contract
   className?: string
 }) {
-  const { user, contract, className } = props
-  const isCashContract = contract.token === 'CASH'
+  const { user, className } = props
   const [open, setOpen] = useState(false)
-  const EXAMPLE_AMOUNT = 6000
 
-  if (!user || !isCashContract || !user.sweepstakes5kLimit) {
+  if (!user || !user.sweepstakes5kLimit) {
     return <></>
   }
 
@@ -32,7 +29,7 @@ export function CashoutLimitWarning(props: {
       <div className={clsx('text-ink-700 w-full text-sm', className)}>
         <IoIosWarning className="mr-1 inline-block h-4 w-4 align-text-bottom text-orange-500" />
         <b>New York</b> and <b>Florida</b> have a{' '}
-        <b>{formatMoneyUSD(NY_FL_CASHOUT_LIMIT)}</b> cashout limit.{' '}
+        <b>{formatMoneyUSD(NY_FL_CASHOUT_LIMIT)}</b> cashout limit per market.{' '}
         <button
           className="text-primary-600 font-semibold underline"
           onClick={() => setOpen(true)}
@@ -46,7 +43,7 @@ export function CashoutLimitWarning(props: {
             Cashout Limit
           </div>
           <span>
-            Residents of<b>New York</b> and <b>Florida</b> have a{' '}
+            Residents of <b>New York</b> and <b>Florida</b> have a{' '}
             <b>{formatMoneyUSD(NY_FL_CASHOUT_LIMIT)}</b> cashout limit per
             market.
           </span>

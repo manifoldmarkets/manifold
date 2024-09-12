@@ -30,6 +30,7 @@ import { LocationPanel } from 'web/components/gidx/location-panel'
 import { formatMoneyUSD } from 'common/util/format'
 import { capitalize } from 'lodash'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
+import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
 
 const CheckoutPage = () => {
   const user = useUser()
@@ -219,21 +220,22 @@ function FundsSelector(props: {
         )}
       >
         {TWOMBA_ENABLED ? (
-          <span>
-            Buy mana to trade in your favorite questions. Always free to play,
-            no purchase necessary.
-          </span>
+          <div>
+            <span>
+              Buy mana to trade in your favorite questions. Always free to play,
+              no purchase necessary.
+            </span>
+            <CashoutLimitWarning user={user} className="mt-2" />
+          </div>
         ) : (
           <span>Buy mana to trade in your favorite questions.</span>
         )}
       </div>
-
       {pastLimit && (
         <AlertBox title="Purchase limit" className="my-4">
           You have reached your daily purchase limit. Please try again tomorrow.
         </AlertBox>
       )}
-
       <div className="grid grid-cols-2 gap-4 gap-y-6">
         {prices.map((amounts) => (
           <PriceTile

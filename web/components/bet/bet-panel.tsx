@@ -735,8 +735,7 @@ export const BuyPanelBody = (props: {
             )}
           </Col>
         )}
-
-        <CashoutLimitWarning user={user} contract={contract} className="mt-2" />
+        {isCashContract && <CashoutLimitWarning user={user} className="mt-2" />}
 
         {user && (
           <Row className="mt-5 items-start justify-between text-sm">
