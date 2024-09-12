@@ -17,9 +17,7 @@ export const CashToManaForm = (props: {
   onBack: () => void
   redeemableCash: number
 }) => {
-  // const { redeemableCash, onBack } = props
-  const redeemableCash = 100
-  const { onBack } = props
+  const { redeemableCash, onBack } = props
 
   const [sweepiesAmount, setSweepiesAmount] = useState<number | undefined>(
     redeemableCash
