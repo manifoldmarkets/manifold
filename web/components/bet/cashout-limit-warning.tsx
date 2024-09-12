@@ -46,7 +46,7 @@ export function CashoutLimitWarning(props: {
             Cashout Limit
           </div>
           <span>
-            <b>New York</b> and <b>Florida</b> have a{' '}
+            Residents of<b>New York</b> and <b>Florida</b> have a{' '}
             <b>{formatMoneyUSD(NY_FL_CASHOUT_LIMIT)}</b> cashout limit per
             market.
           </span>
@@ -84,8 +84,8 @@ export function CashoutLimitWarning(props: {
                 className="font-semibold text-amber-700 dark:text-amber-300"
                 isInline
               />{' '}
-              limit remain in your account for trading in other markets, but
-              they cannot be redeemed for cash.
+              limit remain in your account for participating in other
+              sweepstakes markets, but they cannot be redeemed for cash.
             </span>
           </Col>
 
