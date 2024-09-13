@@ -144,7 +144,7 @@ export function TwombaContractPageContent(props: ContractParams) {
     contractId: cash?.contract.id ?? '',
     outcomeType: cash?.contract.outcomeType,
     userId: user?.id,
-    lastBetTime: props.lastBetTime,
+    lastBetTime: cash?.lastBetTime,
     totalBets: cash?.totalBets ?? 0,
     pointsString: cash?.pointsString,
     multiPointsString: cash?.multiPointsString,

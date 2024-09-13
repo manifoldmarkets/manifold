@@ -138,6 +138,7 @@ export async function getStaticProps(ctx: {
       const params = await getContractParams(cashContract, adminDb)
       cash = pick(params, [
         'contract',
+        'lastBetTime',
         'pointsString',
         'multiPointsString',
         'userPositionsByOutcome',
