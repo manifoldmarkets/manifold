@@ -165,22 +165,22 @@ export const RegisterUserForm = (props: {
   }
 
   if (page === 'location') {
-  return (
-    <LocationPanel
-      setLocation={(data: GPSData) => {
-        setUserInfo({
-          ...userInfo,
-          DeviceGPS: data,
-        })
-        setPage('form')
-      }}
-      setLocationError={setLocationError}
-      setLoading={setLoading}
-      loading={loading}
-      locationError={locationError}
-      back={() => (user.verifiedPhone ? setPage('intro') : setPage('phone'))}
-    />
-  )
+    return (
+      <LocationPanel
+        setLocation={(data: GPSData) => {
+          setUserInfo({
+            ...userInfo,
+            DeviceGPS: data,
+          })
+          setPage('form')
+        }}
+        setLocationError={setLocationError}
+        setLoading={setLoading}
+        loading={loading}
+        locationError={locationError}
+        back={() => (user.verifiedPhone ? setPage('intro') : setPage('phone'))}
+      />
+    )
   }
 
   if (page === 'form') {
@@ -346,103 +346,107 @@ export const RegisterUserForm = (props: {
   }
 
   if (page === 'documents') {
-  return (
-    <>
-      <span className={'mx-auto text-2xl'}>Identity Document Verification</span>
-      <UploadDocuments
-        back={() => router.back()}
-        next={() => setPage('final')}
-      />
-    </>
-  )
+    return (
+      <>
+        <span className={'mx-auto text-2xl'}>
+          Identity Document Verification
+        </span>
+        <UploadDocuments
+          back={() => router.back()}
+          next={() => setPage('final')}
+        />
+      </>
+    )
   }
 
   if (user.kycDocumentStatus === 'pending') {
-  return (
-    <>
-      <PiClockCountdown className="fill-ink-700 mx-auto h-40 w-40" />
-      <span className={'mx-auto text-2xl'}>Verification pending</span>
-      <span className="text-ink-700">
-        Thank you for submitting your identification information! Your identity
-        verification is pending. Check back later to see if you're verified.
-      </span>
-      <BottomRow>
-        <Button
-          color={'indigo-outline'}
-          loading={loading}
-          onClick={async () => {
-            setLoading(true)
-            await api('get-verification-status-gidx', {})
-            setLoading(false)
-          }}
-        >
-          Refresh status
-        </Button>
-        <Link className={buttonClass('md', 'indigo')} href={'/home'}>
-          Done
-        </Link>
-      </BottomRow>
-    </>
-  )
+    return (
+      <>
+        <PiClockCountdown className="fill-ink-700 mx-auto h-40 w-40" />
+        <span className={'mx-auto text-2xl'}>Verification pending</span>
+        <span className="text-ink-700">
+          Thank you for submitting your identification information! Your
+          identity verification is pending. Check back later to see if you're
+          verified.
+        </span>
+        <BottomRow>
+          <Button
+            color={'indigo-outline'}
+            loading={loading}
+            onClick={async () => {
+              setLoading(true)
+              await api('get-verification-status-gidx', {})
+              setLoading(false)
+            }}
+          >
+            Refresh status
+          </Button>
+          <Link className={buttonClass('md', 'indigo')} href={'/home'}>
+            Done
+          </Link>
+        </BottomRow>
+      </>
+    )
   }
 
   if (identityBlocked(user, privateUser) || ageBlocked(user, privateUser)) {
-  return (
-    <>
-      <RiUserForbidLine className="fill-ink-700 mx-auto h-40 w-40" />
-      <span className={'mx-auto text-2xl'}>Blocked identity</span>
-      <span className="text-ink-700">
-        We verified your identity! But, you're blocked. Unfortunately, this
-        means you can't use our sweepstakes markets.
-      </span>
-      <Row className="mx-auto">
-        <Link className={buttonClass('md', 'indigo')} href={'/home'}>
-          Go home
-        </Link>
-      </Row>
-    </>
-  )
+    return (
+      <>
+        <RiUserForbidLine className="fill-ink-700 mx-auto h-40 w-40" />
+        <span className={'mx-auto text-2xl'}>Blocked identity</span>
+        <span className="text-ink-700">
+          We verified your identity! But, you're blocked. Unfortunately, this
+          means you can't use our sweepstakes markets.
+        </span>
+        <Row className="mx-auto">
+          <Link className={buttonClass('md', 'indigo')} href={'/home'}>
+            Go home
+          </Link>
+        </Row>
+      </>
+    )
   } else if (locationBlocked(user, privateUser)) {
-  return (
-    <>
-      <LocationBlockedIcon height={40} className="fill-ink-700 mx-auto" />
-      <span className={'mx-auto text-2xl'}>Blocked location</span>
-      <span className="text-ink-700">
-        We verified your identity! But, you're currently in a blocked location.
-        Please try again later (more than 3 hrs) in an allowed location.
-      </span>
-      <Row className="mx-auto">
-        <Link className={buttonClass('md', 'indigo')} href={'/home'}>
-          Go home
-        </Link>
-      </Row>
-    </>
-  )
+    return (
+      <>
+        <LocationBlockedIcon height={40} className="fill-ink-700 mx-auto" />
+        <span className={'mx-auto text-2xl'}>Blocked location</span>
+        <span className="text-ink-700">
+          We verified your identity! But, you're currently in a blocked
+          location. Please try again later (more than 3 hrs) in an allowed
+          location.
+        </span>
+        <Row className="mx-auto">
+          <Link className={buttonClass('md', 'indigo')} href={'/home'}>
+            Go home
+          </Link>
+        </Row>
+      </>
+    )
   }
 
   if (user.sweepstakesVerified === false || user.kycDocumentStatus === 'fail') {
-  return (
-    <>
-      <DocumentUploadIcon
-        className="fill-ink-700 mx-auto my-auto -mb-6"
-        height={40}
-      />
-      <span className={'mx-auto text-2xl'}>Document upload</span>
-      <span className="text-ink-700 mx-auto">
-        {user.kycDocumentStatus === 'fail' &&
-          'There were errors with your documents. '}
-        Please upload identity documents to continue.
-      </span>
-      <Row className="mx-auto">
-        <Button onClick={() => setPage('documents')}>Continue</Button>
-      </Row>
-    </>
-  )
+    return (
+      <>
+        <DocumentUploadIcon
+          className="fill-ink-700 mx-auto my-auto -mb-6"
+          height={40}
+        />
+        <span className={'mx-auto text-2xl'}>Document upload</span>
+        <span className="text-ink-700 mx-auto">
+          {user.kycDocumentStatus === 'fail' &&
+            'There were errors with your documents. '}
+          Please upload identity documents to continue.
+        </span>
+        <Row className="mx-auto">
+          <Button onClick={() => setPage('documents')}>Continue</Button>
+        </Row>
+      </>
+    )
   }
 
   return (
     <>
-      <div className="mx-auto text-[140px] leading-none">🎉</div>
+      <div className="mx-auto text-[130px] ">🎉</div>
       <span className={'mx-auto text-2xl'}>
         Identity Verification Complete!
       </span>
