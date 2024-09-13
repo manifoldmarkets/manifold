@@ -75,6 +75,7 @@ import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweestakes-context'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
+import { useRouter } from 'next/router'
 
 export function TwombaContractPageContent(props: ContractParams) {
   const {
@@ -90,7 +91,14 @@ export function TwombaContractPageContent(props: ContractParams) {
     cash,
   } = props
 
-  const { isPlay } = useSweepstakes()
+  const { isPlay, setIsPlay } = useSweepstakes()
+  const router = useRouter()
+  useEffect(() => {
+    if (router.isReady) {
+      setIsPlay(router.query.play !== 'false')
+    }
+  }, [router.isReady])
+
   const livePlayContract = useLiveContractWithAnswers(props.contract)
   const liveCashContract = props.cash
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
