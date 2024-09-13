@@ -7,7 +7,7 @@ import {
   Contract,
 } from 'common/contract'
 import { humanish, User } from 'common/user'
-import { groupBy, keyBy, sortBy, sumBy, uniqBy } from 'lodash'
+import { groupBy, keyBy, sortBy, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
   createBetFillNotification,
@@ -92,14 +92,6 @@ export const onCreateBets = async (
       usersToRefreshMetrics.push(...(notifiedUsers ?? []))
     })
   )
-  if (usersToRefreshMetrics.length > 0) {
-    await updateUserContractMetrics(
-      contract,
-      uniqBy(usersToRefreshMetrics, 'id'),
-      pg
-    )
-    log(`Contract metrics updated for ${usersToRefreshMetrics.length} users.`)
-  }
 
   const replyBet = bets.find((bet) => bet.replyToCommentId)
 
