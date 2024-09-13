@@ -545,6 +545,10 @@ export function AnswerPosition(props: {
   const noWinnings = totalShares.NO ?? 0
   const position = yesWinnings - noWinnings
   const isCashContract = contract.token === 'CASH'
+  const canSell = tradingAllowed(contract, answer)
+  const won =
+    (position > 1e-7 && answer.resolution === 'YES') ||
+    (position < -1e-7 && answer.resolution === 'NO')
 
   return (
     <Row
@@ -554,7 +558,7 @@ export function AnswerPosition(props: {
       )}
     >
       <Row className="gap-1">
-        Payout
+        {canSell ? 'Payout' : won ? 'Paid out' : 'Held out for'}
         {position > 1e-7 ? (
           <>
             <span className="text-ink-700">
@@ -586,18 +590,17 @@ export function AnswerPosition(props: {
           <MoneyDisplay amount={invested} isCashContract={isCashContract} />
         </div>
       </Row>
-      {(!contract.closeTime || contract.closeTime > Date.now()) &&
-        !answer.resolutionTime && (
-          <>
-            &middot;
-            <MultiSeller
-              answer={answer}
-              contract={contract}
-              userBets={userBets}
-              user={user}
-            />
-          </>
-        )}
+      {canSell && (
+        <>
+          &middot;
+          <MultiSeller
+            answer={answer}
+            contract={contract}
+            userBets={userBets}
+            user={user}
+          />
+        </>
+      )}
     </Row>
   )
 }
