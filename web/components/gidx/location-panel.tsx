@@ -10,6 +10,7 @@ import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { BottomRow } from './register-component-helpers'
+import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
 
 export const LocationPanel = (props: {
   setLocation: (data: GPSData) => void
@@ -128,7 +129,8 @@ export const LocationPanel = (props: {
 
   return (
     <>
-      <span className={'text-2xl'}>Location required</span>
+      <LocationBlockedIcon height={40} className="fill-ink-700 mx-auto" />
+      <span className={'mx-auto text-2xl'}>Location required</span>
       <span className="text-ink-700">
         You must allow location sharing to verify that you're in a participating
         municipality.
