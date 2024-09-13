@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
 import {
   CHARITY_FEE,
   NY_FL_CASHOUT_LIMIT,
