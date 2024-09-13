@@ -69,7 +69,14 @@ export default function Reports(props: { reports: LiteReport[] }) {
                           size="sm"
                         />
                         <UserLink user={owner} className="text-ink-800 ml-2" />
-                        {owner.isBannedFromPosting && <BannedBadge />}
+                        <BannedBadge
+                          isBannedFromPosting={
+                            owner.isBannedFromPosting ?? false
+                          }
+                          isBannedFromTrading={
+                            owner.isBannedFromTrading ?? false
+                          }
+                        />
                       </div>
                     </UserHovercard>
 
