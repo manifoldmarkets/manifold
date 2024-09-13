@@ -303,13 +303,12 @@ export const StackedUserNames = (props: {
             fresh={isFresh(user.createdTime)}
           />
         }
-      </div>
-      <div className={'mb-1'}>
         <BannedBadge
           isBannedFromPosting={user.isBannedFromPosting ?? false}
           isBannedFromTrading={user.isBannedFromTrading ?? false}
         />
       </div>
+
       <Row className={'flex-shrink flex-wrap gap-x-2'}>
         <span className={clsx('text-ink-400 text-sm', usernameClassName)}>
           @{user.username}{' '}
