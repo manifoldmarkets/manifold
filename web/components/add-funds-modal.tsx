@@ -32,6 +32,13 @@ import { FaStore } from 'react-icons/fa6'
 import router from 'next/router'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 
+const BUY_MANA_GRAPHICS = [
+  '/buy-mana-graphics/10k.png',
+  '/buy-mana-graphics/25k.png',
+  '/buy-mana-graphics/100k.png',
+  '/buy-mana-graphics/1M.png',
+]
+
 export function AddFundsModal(props: {
   open: boolean
   setOpen(open: boolean): void
@@ -118,10 +125,11 @@ export function BuyManaTab(props: { onClose: () => void }) {
       )}
 
       <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {prices.map((amounts) => {
+        {prices.map((amounts, index) => {
           return isNative && platform === 'ios' ? (
             <PriceTile
               key={`ios-${amounts.mana}`}
+              index={index}
               amounts={amounts}
               loading={loading}
               disabled={pastLimit}
@@ -147,6 +155,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
             >
               <PriceTile
                 amounts={amounts}
+                index={index}
                 loading={loading}
                 disabled={pastLimit}
                 onClick={() => {
@@ -168,12 +177,13 @@ export function BuyManaTab(props: { onClose: () => void }) {
 
 export function PriceTile(props: {
   amounts: PaymentAmount
+  index: number
   loading: WebManaAmounts | null
   disabled: boolean
   onClick?: () => void
   isSubmitButton?: boolean
 }) {
-  const { loading, onClick, isSubmitButton, amounts } = props
+  const { loading, onClick, isSubmitButton, amounts, index } = props
   const { mana, priceInDollars, bonusInDollars } = amounts
 
   const isCurrentlyLoading = loading === mana
@@ -215,28 +225,8 @@ export function PriceTile(props: {
         )}
       >
         <Image
-          src={
-            mana == 10000
-              ? '/buy-mana-graphics/10k.png'
-              : mana == 25000
-              ? '/buy-mana-graphics/25k.png'
-              : mana == 100000
-              ? '/buy-mana-graphics/100k.png'
-              : mana == 1000000
-              ? '/buy-mana-graphics/1M.png'
-              : ''
-          }
-          alt={
-            mana == 10000
-              ? '10k mana'
-              : mana == 25000
-              ? '25k mana'
-              : mana == 100000
-              ? '100k mana'
-              : mana == 1000000
-              ? '1 million mana'
-              : ''
-          }
+          src={BUY_MANA_GRAPHICS[Math.min(index, BUY_MANA_GRAPHICS.length - 1)]}
+          alt={`${shortenNumber(mana)} mana`}
           className="w-2/3"
           width={460}
           height={400}
