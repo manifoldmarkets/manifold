@@ -1,16 +1,15 @@
-import { Col } from 'web/components/layout/col'
-import { Button } from 'web/components/buttons/button'
-import { api } from 'web/lib/api/api'
 import { useEffect, useState } from 'react'
-import { Input } from 'web/components/widgets/input'
-import { PhoneInput } from 'react-international-phone'
 import { toast } from 'react-hot-toast'
+import { PhoneInput } from 'react-international-phone'
 import 'react-international-phone/style.css'
+import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
-import { track } from 'web/lib/service/analytics'
+import { Input } from 'web/components/widgets/input'
 import { useUser } from 'web/hooks/use-user'
-import { registrationBottomRowClass } from './gidx/register-user-form'
+import { api } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 import { PhoneIcon } from 'web/public/custom-components/phoneIcon'
+import { BottomRow } from './gidx/register-component-helpers'
 
 export function RegistrationVerifyPhone(props: {
   cancel: () => void
@@ -77,7 +76,7 @@ export function RegistrationVerifyPhone(props: {
             placeholder={'Phone Number'}
             className={'mx-auto'}
           />
-          <Row className={registrationBottomRowClass}>
+          <BottomRow>
             <Button color={'gray-white'} onClick={cancel}>
               Back
             </Button>
@@ -88,7 +87,7 @@ export function RegistrationVerifyPhone(props: {
             >
               Request code
             </Button>
-          </Row>
+          </BottomRow>
         </>
       )}
       {page === 1 && (
@@ -101,7 +100,7 @@ export function RegistrationVerifyPhone(props: {
             onChange={(e) => setOtp(e.target.value)}
             placeholder="123456"
           />
-          <Row className={registrationBottomRowClass}>
+          <BottomRow>
             <Button color={'gray-white'} onClick={() => setPage(0)}>
               Back
             </Button>
@@ -112,7 +111,7 @@ export function RegistrationVerifyPhone(props: {
             >
               Verify
             </Button>
-          </Row>
+          </BottomRow>
         </>
       )}
     </>
