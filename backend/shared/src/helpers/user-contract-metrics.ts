@@ -40,8 +40,10 @@ export async function updateContractMetricsForUsers(
   await bulkUpdateContractMetrics(metrics)
 }
 
-export async function bulkUpdateContractMetrics(metrics: ContractMetric[]) {
-  const pg = createSupabaseDirectClient()
+export async function bulkUpdateContractMetrics(
+  metrics: Omit<ContractMetric, 'id'>[],
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) {
   return bulkUpsert(
     pg,
     'user_contract_metrics',

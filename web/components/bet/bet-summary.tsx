@@ -22,6 +22,7 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import { ProfitBadge } from '../profit-badge'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { MoneyDisplay } from './money-display'
+import { useUser } from 'web/hooks/use-user'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -66,7 +67,7 @@ export function BetsSummary(props: {
   } = props
   const { resolution, outcomeType } = contract
   const userBets = useUserContractBets(metrics.userId, contract.id)
-  const username = metrics.userUsername
+  const user = useUser()
 
   // TODO: get payout from txns, to determine if spice
 
@@ -249,14 +250,14 @@ export function BetsSummary(props: {
         )}
       </Row>
 
-      {!hideTweet && resolution && profit >= 1 && (
+      {!hideTweet && resolution && profit >= 1 && user?.username && (
         <Row className={'mt-4 items-center gap-2'}>
           <div>
             {areYourBets ? 'You' : 'They'} made{' '}
             <MoneyDisplay amount={profit} isCashContract={isCashContract} /> in
             profit!{' '}
             <TweetButton
-              tweetText={getWinningTweet(profit, contract, username)}
+              tweetText={getWinningTweet(profit, contract, user.username)}
               className="ml-2"
             />
           </div>

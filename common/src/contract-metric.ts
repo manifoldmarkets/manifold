@@ -26,9 +26,9 @@ export type ContractMetric = {
     [outcome: string]: number
   }
   userId: string
-  userUsername: string
-  userName: string
-  userAvatarUrl: string
+  userUsername?: string
+  userName?: string
+  userAvatarUrl?: string
   lastBetTime: number
   answerId: string | null
   profitAdjustment?: number

@@ -21,6 +21,7 @@ import { Col } from 'web/components/layout/col'
 import { BsFillArrowThroughHeartFill } from 'react-icons/bs'
 import { LuCrown } from 'react-icons/lu'
 import { UserHovercard } from '../user/user-hovercard'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
@@ -40,13 +41,14 @@ export function shortenName(name: string) {
 }
 
 export function UserAvatarAndBadge(props: {
-  user: { id: string; name: string; username: string; avatarUrl?: string }
+  user: { id: string; name?: string; username?: string; avatarUrl?: string }
   noLink?: boolean
   className?: string
+  short?: boolean
 }) {
-  const { user, noLink, className } = props
+  const { noLink, className, short } = props
+  const user = useDisplayUserById(props.user.id) ?? props.user
   const { username, avatarUrl } = user
-
   return (
     <UserHovercard userId={user.id}>
       <Row className={clsx('items-center gap-2', className)}>
@@ -56,14 +58,14 @@ export function UserAvatarAndBadge(props: {
           size={'sm'}
           noLink={noLink}
         />
-        <UserLink user={user} noLink={noLink} />
+        <UserLink short={short} user={user} noLink={noLink} />
       </Row>
     </UserHovercard>
   )
 }
 
 export function UserLink(props: {
-  user?: { id: string; name: string; username: string } | undefined | null
+  user?: { id: string; name?: string; username?: string } | undefined | null
   className?: string
   short?: boolean
   noLink?: boolean
@@ -81,7 +83,7 @@ export function UserLink(props: {
     marketCreator,
   } = props
 
-  if (!user) {
+  if (!user || !user.name || !user.username) {
     // skeleton
     return (
       <div className="bg-ink-100 dark:bg-ink-800 text-ink-200 dark:text-ink-400 h-5 w-20 animate-pulse rounded-full" />

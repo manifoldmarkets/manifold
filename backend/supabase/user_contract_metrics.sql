@@ -11,7 +11,7 @@ create table if not exists
     profit numeric,
     has_shares boolean,
     answer_id text,
-    id bigint not null,
+    id bigint generated always as identity,
     profit_adjustment numeric
   );
 
