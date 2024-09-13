@@ -9,6 +9,8 @@ import 'react-international-phone/style.css'
 import { Row } from 'web/components/layout/row'
 import { track } from 'web/lib/service/analytics'
 import { useUser } from 'web/hooks/use-user'
+import { registrationBottomRowClass } from './gidx/register-user-form'
+import { PhoneIcon } from 'web/public/custom-components/phoneIcon'
 
 export function RegistrationVerifyPhone(props: {
   cancel: () => void
@@ -63,20 +65,19 @@ export function RegistrationVerifyPhone(props: {
   }, [user?.verifiedPhone])
 
   return (
-    <Col className="p-4 text-lg">
+    <>
       {page === 0 && (
-        <Col className="gap-3">
-          <span className={'text-primary-700 mb-3 mt-2 text-2xl'}>
-            Verify your phone number
-          </span>
+        <>
+          <PhoneIcon height={40} className="fill-ink-700 mx-auto" />
+          <span className={'mx-auto text-2xl'}>Verify your phone number</span>
           <PhoneInput
             defaultCountry={'us'}
             value={phoneNumber}
             onChange={(phone) => setPhoneNumber(phone)}
             placeholder={'Phone Number'}
-            className={'ml-3'}
+            className={'mx-auto'}
           />
-          <Row className={' mb-4 mt-4 w-full gap-12'}>
+          <Row className={registrationBottomRowClass}>
             <Button color={'gray-white'} onClick={cancel}>
               Back
             </Button>
@@ -88,22 +89,19 @@ export function RegistrationVerifyPhone(props: {
               Request code
             </Button>
           </Row>
-        </Col>
+        </>
       )}
       {page === 1 && (
-        <Col className="h-full justify-between gap-2 sm:justify-start">
-          <Col className={'gap-2'}>
-            <span className={'text-primary-700 mb-3 mt-2 text-2xl'}>
-              Enter verification code
-            </span>
-            <Input
-              className={'ml-3 w-36 text-base'}
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="123456"
-            />
-          </Col>
-          <Row className={' mb-4 mt-4 w-full gap-12'}>
+        <>
+          <PhoneIcon height={40} className="fill-ink-700 mx-auto" />
+          <span className={'mx-auto text-2xl'}>Enter verification code</span>
+          <Input
+            className={'mx-auto w-36 text-base'}
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            placeholder="123456"
+          />
+          <Row className={registrationBottomRowClass}>
             <Button color={'gray-white'} onClick={() => setPage(0)}>
               Back
             </Button>
@@ -115,8 +113,8 @@ export function RegistrationVerifyPhone(props: {
               Verify
             </Button>
           </Row>
-        </Col>
+        </>
       )}
-    </Col>
+    </>
   )
 }

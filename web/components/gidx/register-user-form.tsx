@@ -134,7 +134,9 @@ export const RegisterUserForm = (props: {
       <>
         <RegisterIcon height={40} className="fill-ink-700 mx-auto" />
         <div className={'mx-auto text-2xl'}>Identity Verification</div>
-        <span>To use sweepstakes coins, you must verify your identity.</span>
+        <span className="text-ink-700">
+          To use sweepstakes coins, you must verify your identity.
+        </span>
         <Row className={registrationBottomRowClass}>
           <Button color={'gray-white'} onClick={router.back}>
             Back
@@ -178,10 +180,8 @@ export const RegisterUserForm = (props: {
   if (page === 'form') {
     const sectionClass = 'gap-2 w-full sm:w-96'
     return (
-      <Col className={registrationColClass}>
-        <span className={'text-primary-700 text-2xl'}>
-          Identity Verification
-        </span>
+      <>
+        <span className={'mx-auto text-2xl'}>Identity Verification</span>
 
         <Col className={sectionClass}>
           <span>First Name</span>
@@ -331,13 +331,13 @@ export const RegisterUserForm = (props: {
             Submit
           </Button>
         </Row>
-      </Col>
+      </>
     )
   }
 
   if (page === 'documents') {
     return (
-      <Col className={registrationColClass}>
+      <>
         <span className={'text-primary-700 text-2xl'}>
           Identity Document Verification
         </span>
@@ -345,13 +345,13 @@ export const RegisterUserForm = (props: {
           back={() => router.back()}
           next={() => setPage('final')}
         />
-      </Col>
+      </>
     )
   }
 
   if (user.kycDocumentStatus === 'pending') {
     return (
-      <Col className={registrationColClass}>
+      <>
         <span className={'text-primary-700 text-2xl'}>
           Verification pending
         </span>
@@ -373,35 +373,35 @@ export const RegisterUserForm = (props: {
             Done
           </Link>
         </Row>
-      </Col>
+      </>
     )
   }
 
   if (identityBlocked(user, privateUser) || ageBlocked(user, privateUser)) {
     return (
-      <Col className={registrationColClass}>
+      <>
         <span className={'text-primary-700 text-2xl'}>Blocked identity</span>
         <span>
           We verified your identity! But, you're blocked. Unfortunately, this
           means you can't use our sweepstakes markets.
         </span>
-      </Col>
+      </>
     )
   } else if (locationBlocked(user, privateUser)) {
     return (
-      <Col className={registrationColClass}>
+      <>
         <span className={'text-primary-700 text-2xl'}>Blocked location</span>
         <span>
           We verified your identity! But, you're currently in a blocked
           location. Please try again later ({'>'}3 hrs) in an allowed location.
         </span>
-      </Col>
+      </>
     )
   }
 
   if (user.sweepstakesVerified === false || user.kycDocumentStatus === 'fail') {
     return (
-      <Col className={registrationColClass}>
+      <>
         <span className={'text-primary-700 text-2xl'}>Document upload</span>
         <span>
           {user.kycDocumentStatus === 'fail' &&
@@ -411,12 +411,12 @@ export const RegisterUserForm = (props: {
         <Row className={registrationBottomRowClass}>
           <Button onClick={() => setPage('documents')}>Continue</Button>
         </Row>
-      </Col>
+      </>
     )
   }
 
   return (
-    <Col className={registrationColClass}>
+    <>
       <span className={'text-primary-700 text-2xl'}>
         Identity Verification Complete
       </span>
@@ -446,6 +446,6 @@ export const RegisterUserForm = (props: {
           </Link>
         )}
       </Row>
-    </Col>
+    </>
   )
 }

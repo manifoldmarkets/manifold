@@ -12,7 +12,7 @@ const HomePage = () => {
   if (!TWOMBA_ENABLED) return null
   return (
     <Page trackPageView={'register user gidx'}>
-      <Col className="mx-auto max-w-lg gap-4 px-6 py-4">
+      <Col className="bg-canvas-0 mx-auto w-full max-w-lg gap-4 px-6 py-4">
         {!user || !privateUser ? (
           <LoadingIndicator />
         ) : (
