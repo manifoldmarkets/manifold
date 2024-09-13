@@ -237,10 +237,11 @@ function FundsSelector(props: {
         </AlertBox>
       )}
       <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {prices.map((amounts) => (
+        {prices.map((amounts, index) => (
           <PriceTile
             key={`price-tile-${amounts.mana}`}
             amounts={amounts}
+            index={index}
             loading={loading}
             disabled={pastLimit}
             onClick={() => onSelect(amounts.mana)}
