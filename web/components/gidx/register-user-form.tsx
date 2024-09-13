@@ -29,9 +29,9 @@ import {
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { CoinNumber } from 'web/components/widgets/coin-number'
+import { RegisterIcon } from 'web/public/custom-components/registerIcon'
 
-export const registrationColClass = 'gap-3 p-4'
-export const registrationBottomRowClass = 'mb-4 mt-4 w-full gap-16'
+export const registrationBottomRowClass = 'justify-between w-full'
 
 export const RegisterUserForm = (props: {
   user: User
@@ -131,10 +131,9 @@ export const RegisterUserForm = (props: {
 
   if (page === 'intro') {
     return (
-      <Col className={registrationColClass}>
-        <span className={'text-primary-700 text-2xl'}>
-          Identity Verification
-        </span>
+      <>
+        <RegisterIcon height={40} className="fill-ink-700 mx-auto" />
+        <div className={'mx-auto text-2xl'}>Identity Verification</div>
         <span>To use sweepstakes coins, you must verify your identity.</span>
         <Row className={registrationBottomRowClass}>
           <Button color={'gray-white'} onClick={router.back}>
@@ -144,7 +143,7 @@ export const RegisterUserForm = (props: {
             Start verification
           </Button>
         </Row>
-      </Col>
+      </>
     )
   }
 
@@ -183,6 +182,7 @@ export const RegisterUserForm = (props: {
         <span className={'text-primary-700 text-2xl'}>
           Identity Verification
         </span>
+
         <Col className={sectionClass}>
           <span>First Name</span>
           <Input
