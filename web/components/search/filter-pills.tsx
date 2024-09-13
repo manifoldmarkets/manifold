@@ -125,6 +125,16 @@ export function TierDropdownPill(props: {
           onToggle: () => toggleTier('plus'),
           checked: currentTiers[tiers.indexOf('plus')] == '1',
         },
+        {
+          name: 'Basic',
+          content: (
+            <Row className="items-center text-sm text-ink-900">
+              Basic
+            </Row>
+          ),
+          onToggle: () => toggleTier('basic'),
+          checked: currentTiers[tiers.indexOf('basic')] == '1',
+        },
       ]}
       buttonContent={(open) => (
         <div
