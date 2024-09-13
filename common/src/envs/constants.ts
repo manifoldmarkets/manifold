@@ -265,13 +265,6 @@ export const VERIFIED_USERNAMES = [
   'DanHendrycks',
 ]
 
-export const BANNED_TRADING_USER_IDS = [
-  'zgCIqq8AmRUYVu6AdQ9vVEJN8On1', //firstuserhere aka _deleted_
-  'LIBAoi7tpqeNLYM1xxJ1QJBQqW32', //lastuserhere
-  'p3ADzwIUS3fk0ka80XYEE3OM3S32', //PC
-  '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
-]
-
 export const PARTNER_USER_IDS: string[] = [
   'sTUV8ejuM2byukNZp7qKP2OKXMx2', // NFL
   'rFJu0EIdR6RP8d1vHKSh62pbnbH2', // SimonGrayson

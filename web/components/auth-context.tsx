@@ -7,11 +7,7 @@ import { createUser } from 'web/lib/api/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
-import {
-  AUTH_COOKIE_NAME,
-  BANNED_TRADING_USER_IDS,
-  TEN_YEARS_SECS,
-} from 'common/envs/constants'
+import { AUTH_COOKIE_NAME, TEN_YEARS_SECS } from 'common/envs/constants'
 import { getCookie, setCookie } from 'web/lib/util/cookie'
 import {
   type PrivateUser,
@@ -114,12 +110,13 @@ export function AuthProvider(props: {
   useEffect(() => {
     if (authUser) {
       if (
-        BANNED_TRADING_USER_IDS.includes(authUser.user.id) ||
+        (authUser.user.isBannedFromPosting &&
+          authUser.user.isBannedFromTrading) ||
         authUser.user.userDeleted
       ) {
         const message = authUser.user.userDeleted
           ? 'You have deleted the account associated with this email. To restore your account please email info@manifold.markets'
-          : 'You are banned from trading. To learn more please email info@manifold.markets'
+          : 'You are banned from Manifold. To learn more please email info@manifold.markets'
 
         firebaseLogout().then(() => {
           alert(message)
