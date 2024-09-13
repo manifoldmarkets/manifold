@@ -50,8 +50,17 @@ const ModReportItem: React.FC<ReportItemProps> = ({
                   avatarUrl={report.owner_avatar_url || ''}
                   size="sm"
                 />
+
                 <UserLink user={owner} className="text-ink-800 ml-2" />
-                {report.owner_is_banned_from_posting && <BannedBadge />}
+                {(report.owner_is_banned_from_posting ||
+                  report.owner_is_banned_from_trading) && (
+                  <span className="ml-1.5">
+                    <BannedBadge
+                      isBannedFromPosting={report.owner_is_banned_from_posting}
+                      isBannedFromTrading={report.owner_is_banned_from_trading}
+                    />
+                  </span>
+                )}
               </div>
             </UserHovercard>
             <Row className="ml-2">commented:</Row>

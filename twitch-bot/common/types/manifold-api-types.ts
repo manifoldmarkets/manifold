@@ -66,6 +66,7 @@ export type LiteUser = {
   isTrustworthy: boolean;
 
   isBannedFromPosting?: boolean;
+  isBannedFromTrading?: boolean;
   userDeleted?: boolean;
 
   followerCountCached: number;

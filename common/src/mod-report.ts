@@ -17,5 +17,6 @@ export type ModReport = {
   owner_username: string
   owner_avatar_url: string
   owner_is_banned_from_posting: boolean
+  owner_is_banned_from_trading: boolean
   owner_name: string
 }

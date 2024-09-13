@@ -136,14 +136,39 @@ function BotBadge() {
   )
 }
 
-export function BannedBadge() {
+export function BannedBadge({
+  isBannedFromPosting,
+  isBannedFromTrading,
+  className,
+}: {
+  isBannedFromPosting: boolean
+  isBannedFromTrading: boolean
+  className?: string
+}) {
+  let badgeText = ''
+  let tooltipText = ''
+
+  if (isBannedFromPosting && isBannedFromTrading) {
+    badgeText = 'Banned from posting & trading'
+    tooltipText = "Can't create comments, messages, questions, or trade"
+  } else if (isBannedFromPosting) {
+    badgeText = 'Banned from posting'
+    tooltipText = "Can't create comments, messages, or questions"
+  } else if (isBannedFromTrading) {
+    badgeText = 'Banned from trading'
+    tooltipText = "Can't participate in trading"
+  }
+
+  if (!badgeText) return null
+
   return (
-    <Tooltip
-      text="Can't create comments, messages, or questions"
-      placement="bottom"
-    >
-      <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
-        Banned
+    <Tooltip text={tooltipText} placement="bottom">
+      <span
+        className={
+          'rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100'
+        }
+      >
+        {badgeText}
       </span>
     </Tooltip>
   )
@@ -260,6 +285,7 @@ export const StackedUserNames = (props: {
     username: string
     createdTime: number
     isBannedFromPosting?: boolean
+    isBannedFromTrading?: boolean
   }
   followsYou?: boolean
   className?: string
@@ -277,7 +303,12 @@ export const StackedUserNames = (props: {
             fresh={isFresh(user.createdTime)}
           />
         }
-        {user.isBannedFromPosting && <BannedBadge />}
+      </div>
+      <div className={'mb-1'}>
+        <BannedBadge
+          isBannedFromPosting={user.isBannedFromPosting ?? false}
+          isBannedFromTrading={user.isBannedFromTrading ?? false}
+        />
       </div>
       <Row className={'flex-shrink flex-wrap gap-x-2'}>
         <span className={clsx('text-ink-400 text-sm', usernameClassName)}>

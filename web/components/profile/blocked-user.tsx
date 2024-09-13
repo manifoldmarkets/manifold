@@ -39,7 +39,12 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
                   {user.name}
                   {' (Blocked) '}
                   {<UserBadge userId={user.id} username={user.username} />}
-                  {user.isBannedFromPosting && <BannedBadge />}
+                  <span className="ml-1.5">
+                    <BannedBadge
+                      isBannedFromPosting={user.isBannedFromPosting ?? false}
+                      isBannedFromTrading={user.isBannedFromTrading ?? false}
+                    />
+                  </span>
                 </span>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-ink-400'}>@{user.username}</span>

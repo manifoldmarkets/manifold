@@ -8,6 +8,7 @@ export type DisplayUser = {
   username: string
   avatarUrl: string
   isBannedFromPosting?: boolean
+  isBannedFromTrading?: boolean
 }
 
 export type FullUser = User & {

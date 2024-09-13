@@ -86,7 +86,6 @@ export const MessageChannelRow = (props: {
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0
 
-  const isBanned = otherUsers?.length == 1 && otherUsers[0].isBannedFromPosting
   return (
     <Link
       className="hover:bg-canvas-0 rounded p-2 transition-colors"
@@ -113,7 +112,19 @@ export const MessageChannelRow = (props: {
                   {otherUsers.length > 2 && ` & ${otherUsers.length - 2} more`}
                 </span>
               )}
-              {isBanned && <BannedBadge />}
+
+              {otherUsers?.[0] && (
+                <span className="ml-1.5">
+                  <BannedBadge
+                    isBannedFromPosting={
+                      otherUsers[0].isBannedFromPosting ?? false
+                    }
+                    isBannedFromTrading={
+                      otherUsers[0].isBannedFromTrading ?? false
+                    }
+                  />
+                </span>
+              )}
             </span>
             <span className={'text-ink-400 dark:text-ink-500 text-xs'}>
               {chat && <RelativeTimestamp time={chat.createdTime} />}

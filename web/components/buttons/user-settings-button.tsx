@@ -22,7 +22,7 @@ import {
   Referrals,
   useReferralCount,
 } from 'web/components/buttons/referrals-button'
-import { banUserFromPosting } from 'web/lib/api/api'
+import { banUserFromPosting, banUserFromTrading } from 'web/lib/api/api'
 import SuperBanControl from '../SuperBanControl'
 import { buildArray } from 'common/util/array'
 import { AccountSettings } from '../profile/settings'
@@ -92,7 +92,24 @@ export function UserSettingButton(props: { user: User }) {
                       })
                     }}
                   >
-                    {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
+                    {user.isBannedFromPosting
+                      ? 'Banned (posting)'
+                      : 'Ban Posting'}
+                  </Button>
+
+                  <Button
+                    color={'red'}
+                    size="xs"
+                    onClick={() => {
+                      banUserFromTrading({
+                        userId,
+                        unban: user.isBannedFromTrading ?? false,
+                      })
+                    }}
+                  >
+                    {user.isBannedFromTrading
+                      ? 'Banned (trading)'
+                      : 'Ban Trading'}
                   </Button>
                 </Row>
               )}

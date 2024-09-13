@@ -15,7 +15,8 @@ export const getModReports: APIHandler<'get-mod-reports'> = async () => {
       owner.username as owner_username,
       owner.data->>'avatarUrl' as owner_avatar_url,
       owner.name as owner_name,
-      (owner.data->>'isBannedFromPosting')::boolean as owner_is_banned_from_posting
+      (owner.data->>'isBannedFromPosting')::boolean as owner_is_banned_from_posting,
+      (owner.data->>'isBannedFromTrading')::boolean as owner_is_banned_from_trading
     from mod_reports mr
     join contract_comments cc on cc.comment_id = mr.comment_id
     join contracts c on c.id = mr.contract_id

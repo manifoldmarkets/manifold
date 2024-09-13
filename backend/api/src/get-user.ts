@@ -22,9 +22,15 @@ export const getLiteUser = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const liteUser = await pg.oneOrNone(
-    `select id, name, username, data->>'avatarUrl' as "avatarUrl", data->'isBannedFromPosting' as "isBannedFromPosting"
-            from users
-            where ${'id' in props ? 'id' : 'username'} = $1`,
+    `select
+      id,
+      name,
+      username,
+      data->>'avatarUrl' as "avatarUrl",
+      (data->>'isBannedFromPosting')::boolean as "isBannedFromPosting",
+      (data->>'isBannedFromTrading')::boolean as "isBannedFromTrading"
+    from users
+    where ${'id' in props ? 'id' : 'username'} = $1`,
     ['id' in props ? props.id : props.username]
   )
   if (!liteUser) throw new APIError(404, 'User not found')

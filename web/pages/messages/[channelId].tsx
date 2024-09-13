@@ -218,9 +218,13 @@ export const PrivateChat = (props: {
             {members.length > 2 && ` & ${members.length - 2} more`}
           </span>
         )}
-        {members?.length == 1 && members[0].isBannedFromPosting && (
-          <BannedBadge />
+        {members?.length >= 1 && (
+          <BannedBadge
+            isBannedFromPosting={members[0].isBannedFromPosting ?? false}
+            isBannedFromTrading={members[0].isBannedFromTrading ?? false}
+          />
         )}
+
         <DropdownMenu
           className={'ml-auto [&_button]:p-4'}
           menuWidth={'w-44'}
