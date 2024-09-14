@@ -1,5 +1,5 @@
 export type ContractMetric = {
-  // These we can calculate during the bet
+  // These we can calculate during the bet:
   id: number
   userId: string
   contractId: string
@@ -11,7 +11,7 @@ export type ContractMetric = {
   invested: number
   loan: number
   maxSharesOutcome: string | null
-
+  payout: number
   totalShares: {
     [outcome: string]: number
   }
@@ -33,7 +33,6 @@ export type ContractMetric = {
         }
       }
     | undefined
-  payout: number
   profit: number
   profitPercent: number
   userUsername?: string
