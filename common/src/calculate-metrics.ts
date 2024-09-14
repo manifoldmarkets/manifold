@@ -301,8 +301,8 @@ export const calculateUserMetricsWithNewBetsOnly = (
     } else if (um.hasYesShares && !um.hasNoShares) {
       initialTotalSpent.YES = um.invested
     } else {
-      initialTotalSpent.NO = 0
-      initialTotalSpent.YES = 0
+      initialTotalSpent.NO = um.invested / 2
+      initialTotalSpent.YES = um.invested / 2
     }
   }
 
