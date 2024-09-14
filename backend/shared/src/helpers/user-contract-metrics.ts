@@ -215,6 +215,8 @@ const getDefaultMetric = (
   maxSharesOutcome: null,
   lastBetTime: 0,
   from: undefined,
+  totalAmountInvested: 0,
+  totalAmountSold: 0,
 })
 
 export const bulkUpdateUserMetricsWithNewBetsOnly = async (

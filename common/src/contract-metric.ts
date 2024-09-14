@@ -1,5 +1,4 @@
 export type ContractMetric = {
-  // These we can calculate during the bet:
   id: number
   userId: string
   contractId: string
@@ -11,16 +10,19 @@ export type ContractMetric = {
   invested: number
   loan: number
   maxSharesOutcome: string | null
-  payout: number
   totalShares: {
     [outcome: string]: number
   }
-  totalSpent:
-    | {
+  totalSpent: // This is what's currently spent by outcome
+  | {
         [outcome: string]: number
       }
     | undefined
-  // TODO: Calculate this from the api endpoint
+  payout: number
+  totalAmountSold: number // This is the sum of all negative amounts/redemptions
+  totalAmountInvested: number // This is the sum of all positive amounts
+  profit: number
+  profitPercent: number
   from:
     | {
         // Monthly is not updated atm bc it's not used
@@ -33,12 +35,13 @@ export type ContractMetric = {
         }
       }
     | undefined
-  profit: number
-  profitPercent: number
-  userUsername?: string
-  userName?: string
-  userAvatarUrl?: string
   profitAdjustment?: number
+  /*@deprecated join with users table*/
+  userUsername?: string
+  /*@deprecated join with users table*/
+  userName?: string
+  /*@deprecated join with user table*/
+  userAvatarUrl?: string
 }
 
 export type ContractMetricsByOutcome = Record<string, ContractMetric[]>

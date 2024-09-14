@@ -290,7 +290,7 @@ export type MarginalBet = Pick<
 >
 
 export const calculateUserMetricsWithNewBetsOnly = (
-  marginalBets: MarginalBet[],
+  newBets: MarginalBet[],
   um: Omit<ContractMetric, 'id'>
 ) => {
   const needsTotalSpentBackfilled = !um.totalSpent
@@ -310,13 +310,13 @@ export const calculateUserMetricsWithNewBetsOnly = (
   const initialTotalShares = { ...um.totalShares }
 
   const { totalSpent, totalShares } = calculateTotalSpentAndShares(
-    marginalBets,
+    newBets,
     initialTotalSpent,
     initialTotalShares
   )
 
   const invested = sum(Object.values(totalSpent))
-  const loan = sumBy(marginalBets, (b) => b.loanAmount ?? 0) + um.loan
+  const loan = sumBy(newBets, (b) => b.loanAmount ?? 0) + um.loan
 
   const hasShares = Object.values(totalShares).some(
     (shares) => !floatingEqual(shares, 0)
@@ -329,13 +329,29 @@ export const calculateUserMetricsWithNewBetsOnly = (
     : (totalShares.NO ?? 0) > (totalShares.YES ?? 0)
     ? 'NO'
     : 'YES'
-  const lastBet = orderBy(marginalBets, (b) => b.createdTime, 'desc')[0]
+  const lastBet = orderBy(newBets, (b) => b.createdTime, 'desc')[0]
   const payout = soldOut
     ? 0
     : maxSharesOutcome
     ? totalShares[maxSharesOutcome] *
       (maxSharesOutcome === 'NO' ? 1 - lastBet.probAfter : lastBet.probAfter)
     : 0
+  const totalAmountSold =
+    (um.totalAmountSold ?? 0) +
+    sumBy(
+      newBets.filter((b) => b.isRedemption || b.amount < 0),
+      (b) => -b.amount
+    )
+  const totalAmountInvested =
+    (um.totalAmountInvested ?? 0) +
+    sumBy(
+      newBets.filter((b) => b.amount > 0 && !b.isRedemption),
+      (b) => b.amount
+    )
+  const profit = payout + totalAmountSold - totalAmountInvested
+  const profitPercent =
+    totalAmountInvested === 0 ? 0 : (profit / totalAmountInvested) * 100
+
   return {
     ...um,
     loan,
@@ -348,5 +364,9 @@ export const calculateUserMetricsWithNewBetsOnly = (
     lastBetTime: lastBet.createdTime,
     totalSpent,
     payout,
+    totalAmountSold,
+    totalAmountInvested,
+    profit,
+    profitPercent,
   }
 }
