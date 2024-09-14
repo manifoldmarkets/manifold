@@ -744,12 +744,9 @@ export const updateMakers = async (
     const totalAmount = sumBy(fills, 'amount')
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
     fillsAsNewBets.push({
-      userId: bet.userId,
-      answerId: bet.answerId,
-      contractId: bet.contractId,
+      ...bet,
       amount: sumBy(newFills, 'amount'),
       shares: sumBy(newFills, 'shares'),
-      outcome: bet.outcome,
       createdTime: orderBy(newFills, 'timestamp', 'desc')[0].timestamp,
       loanAmount: 0, // limit order fills don't repay loans
       isRedemption: false,

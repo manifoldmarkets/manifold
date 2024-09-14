@@ -1,4 +1,4 @@
-import { Dictionary, maxBy, min, sum, sumBy, uniq } from 'lodash'
+import { Dictionary, min, orderBy, sum, sumBy, uniq } from 'lodash'
 import {
   calculatePayout,
   calculateTotalSpentAndShares,
@@ -286,6 +286,7 @@ export type MarginalBet = Pick<
   | 'createdTime'
   | 'loanAmount'
   | 'isRedemption'
+  | 'probAfter'
 >
 
 export const calculateUserMetricsWithNewBetsOnly = (
@@ -322,9 +323,19 @@ export const calculateUserMetricsWithNewBetsOnly = (
   )
   const hasYesShares = (totalShares.YES ?? 0) >= 1
   const hasNoShares = (totalShares.NO ?? 0) >= 1
-  const maxSharesOutcome =
-    (totalShares.NO ?? 0) > (totalShares.YES ?? 0) ? 'NO' : 'YES'
-  const lastBetTime = maxBy(marginalBets, (b) => b.createdTime)!.createdTime
+  const soldOut = !hasNoShares && !hasYesShares
+  const maxSharesOutcome = soldOut
+    ? null
+    : (totalShares.NO ?? 0) > (totalShares.YES ?? 0)
+    ? 'NO'
+    : 'YES'
+  const lastBet = orderBy(marginalBets, (b) => b.createdTime, 'desc')[0]
+  const payout = soldOut
+    ? 0
+    : maxSharesOutcome
+    ? totalShares[maxSharesOutcome] *
+      (maxSharesOutcome === 'NO' ? 1 - lastBet.probAfter : lastBet.probAfter)
+    : 0
   return {
     ...um,
     loan,
@@ -334,7 +345,8 @@ export const calculateUserMetricsWithNewBetsOnly = (
     hasYesShares,
     hasShares,
     maxSharesOutcome,
-    lastBetTime,
+    lastBetTime: lastBet.createdTime,
     totalSpent,
+    payout,
   }
 }

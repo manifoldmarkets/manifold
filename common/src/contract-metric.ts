@@ -1,6 +1,25 @@
 export type ContractMetric = {
+  // These we can calculate during the bet
   id: number
+  userId: string
   contractId: string
+  answerId: string | null
+  lastBetTime: number
+  hasNoShares: boolean
+  hasShares: boolean
+  hasYesShares: boolean
+  invested: number
+  loan: number
+  maxSharesOutcome: string | null
+
+  totalShares: {
+    [outcome: string]: number
+  }
+  totalSpent:
+    | {
+        [outcome: string]: number
+      }
+    | undefined
   // TODO: Calculate this from the api endpoint
   from:
     | {
@@ -14,30 +33,12 @@ export type ContractMetric = {
         }
       }
     | undefined
-  hasNoShares: boolean
-  hasShares: boolean
-  hasYesShares: boolean
-  invested: number
-  loan: number
-  maxSharesOutcome: string | null
-  // Payout and profit will have to be calculated at the api endpoint, they're out of date now
   payout: number
   profit: number
   profitPercent: number
-  totalShares: {
-    [outcome: string]: number
-  }
-  totalSpent:
-    | {
-        [outcome: string]: number
-      }
-    | undefined
-  userId: string
   userUsername?: string
   userName?: string
   userAvatarUrl?: string
-  lastBetTime: number
-  answerId: string | null
   profitAdjustment?: number
 }
 
