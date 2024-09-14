@@ -49,21 +49,28 @@ export function ToggleVerifyCallout(props: {
             <div className="border-b-canvas-50 absolute -left-[9px] top-[1px] h-0 w-0 border-b-[9px] border-l-[9px] border-r-[9px] border-l-transparent border-r-transparent"></div>
           </div>
         </div>
-        <Link
-          href={'gidx/register'}
-          className={clsx(
-            buttonClass('md', 'gradient-pink'),
-            'mt-2 w-full font-semibold'
-          )}
-        >
-          Verify and claim
-          <CoinNumber
-            amount={KYC_VERIFICATION_BONUS_CASH}
-            coinType="CASH"
-            className="ml-1"
-          />
-        </Link>
+        <VerifyButton />
       </div>
     </div>
+  )
+}
+
+export function VerifyButton(props: { className?: string }) {
+  const { className } = props
+  return (
+    <Link
+      href={'gidx/register'}
+      className={clsx(
+        buttonClass('md', 'gradient-pink'),
+        'mt-2 w-full font-semibold'
+      )}
+    >
+      Verify and claim
+      <CoinNumber
+        amount={KYC_VERIFICATION_BONUS_CASH}
+        coinType="CASH"
+        className="ml-1"
+      />
+    </Link>
   )
 }
