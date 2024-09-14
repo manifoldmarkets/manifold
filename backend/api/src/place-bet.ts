@@ -546,23 +546,6 @@ export const executeNewBetResult = async (
   )
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
-  const totalCreatorFee =
-    newBet.fees.creatorFee +
-    sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
-  if (totalCreatorFee !== 0) {
-    await incrementBalance(pgTrans, contract.creatorId, {
-      balance: totalCreatorFee,
-      totalDeposits: totalCreatorFee,
-    })
-
-    log(
-      `Updated creator ${
-        contract.creatorUsername
-      } with fee gain ${formatMoneyWithDecimals(totalCreatorFee)} - ${
-        contract.creatorId
-      }.`
-    )
-  }
 
   const answerUpdates: {
     id: string
