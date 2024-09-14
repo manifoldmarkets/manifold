@@ -22,6 +22,7 @@ export const redeemShares = async (
 ) => {
   if (!userIds.length) return
 
+  // TODO: just load user_contract_metrics instead of contract_bets here
   const bets = await pgTrans.map(
     `select * from contract_bets where contract_id = $1 and user_id = any($2);`,
     [contract.id, userIds],
