@@ -840,21 +840,6 @@ export function BinaryBetPanel(props: {
           You can't trade on sweepstakes markets while your status is pending.
         </Row>
       ) : contract.token === 'CASH' && user && !user.idVerified ? (
-        // <Row className={'bg-canvas-50 items-center gap-1 rounded p-4'}>
-        //   <span>
-        //     Verify your info to start trading on sweepstakes markets and earn a
-        //     bonus of{' '}
-        //     <CoinNumber
-        //       amount={KYC_VERIFICATION_BONUS_CASH}
-        //       coinType="sweepies"
-        //       isInline
-        //     />
-        //     !
-        //   </span>
-        //   <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
-        //     Verify
-        //   </Link>
-        // </Row>
         <Col className="bg-canvas-50 gap-2 rounded-lg p-4">
           <div className="mx-auto text-lg font-semibold">
             Must be verified to {TRADE_TERM}
