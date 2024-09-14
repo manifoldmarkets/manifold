@@ -33,7 +33,6 @@ import { ContractMetric } from 'common/contract-metric'
 import { Answer } from './answer'
 import { DAY_MS } from 'common/util/time'
 import { computeInvestmentValueCustomProb } from 'common/calculate-metrics'
-import { CandidateBet } from 'common/new-bet'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
@@ -140,11 +139,7 @@ export function calculateSharesBought(
   }
 }
 
-export function calculatePayout(
-  contract: Contract,
-  bet: Bet | CandidateBet,
-  outcome: string
-) {
+export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
   const { mechanism } = contract
   return mechanism === 'cpmm-1'
     ? calculateFixedPayout(contract, bet, outcome)
@@ -164,7 +159,7 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
     : bet?.amount ?? 0
 }
 
-function getCpmmInvested(yourBets: Bet[] | CandidateBet[]) {
+function getCpmmInvested(yourBets: Bet[]) {
   const totalShares: { [outcome: string]: number } = {}
   const totalSpent: { [outcome: string]: number } = {}
 
@@ -199,10 +194,7 @@ export function getSimpleCpmmInvested(yourBets: Bet[]) {
   return total
 }
 
-export function getInvested(
-  contract: Contract,
-  yourBets: Bet[] | CandidateBet[]
-) {
+export function getInvested(contract: Contract, yourBets: Bet[]) {
   const { mechanism } = contract
   if (mechanism === 'cpmm-1') return getCpmmInvested(yourBets)
   if (mechanism === 'cpmm-multi-1') {
@@ -215,7 +207,7 @@ export function getInvested(
 
 function getCpmmOrDpmProfit(
   contract: Contract,
-  yourBets: CandidateBet[] | Bet[],
+  yourBets: Bet[],
   answer?: Answer
 ) {
   const resolution = answer?.resolution ?? contract.resolution
@@ -252,10 +244,7 @@ function getCpmmOrDpmProfit(
   }
 }
 
-export function getProfitMetrics(
-  contract: Contract,
-  yourBets: CandidateBet[] | Bet[]
-) {
+export function getProfitMetrics(contract: Contract, yourBets: Bet[]) {
   const { mechanism } = contract
   if (mechanism === 'cpmm-multi-1') {
     const betsByAnswerId = groupBy(yourBets, 'answerId')
@@ -280,7 +269,7 @@ export function getProfitMetrics(
   return getCpmmOrDpmProfit(contract, yourBets)
 }
 
-export function getCpmmShares(yourBets: Bet[] | CandidateBet[]) {
+export function getCpmmShares(yourBets: Bet[]) {
   const totalShares: { [outcome: string]: number } = {}
   for (const bet of yourBets) {
     const { shares, outcome } = bet
@@ -303,7 +292,7 @@ export function getCpmmShares(yourBets: Bet[] | CandidateBet[]) {
   }
 }
 
-export function getCpmmMultiShares(yourBets: Bet[] | CandidateBet[]) {
+export function getCpmmMultiShares(yourBets: Bet[]) {
   const betsByAnswerId = groupBy(yourBets, 'answerId')
   const sharesByAnswerId = mapValues(betsByAnswerId, (bets) =>
     getCpmmShares(bets)
@@ -321,7 +310,7 @@ export function getCpmmMultiShares(yourBets: Bet[] | CandidateBet[]) {
 
 export const getContractBetMetrics = (
   contract: Contract,
-  yourBets: CandidateBet[] | Bet[],
+  yourBets: Bet[],
   answerId?: string
 ) => {
   const { mechanism } = contract
@@ -354,7 +343,7 @@ export const getContractBetMetrics = (
 }
 export const getContractBetMetricsPerAnswer = (
   contract: Contract,
-  bets: CandidateBet[] | Bet[],
+  bets: Bet[],
   answers?: Answer[]
 ) => {
   const betsPerAnswer = groupBy(bets, 'answerId')
@@ -428,7 +417,7 @@ export const getContractBetMetricsPerAnswer = (
 
 const calculatePeriodProfit = (
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
-  bets: Bet[] | CandidateBet[],
+  bets: Bet[],
   period: 'day' | 'week' | 'month',
   answer?: Answer
 ) => {

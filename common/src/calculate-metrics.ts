@@ -8,7 +8,7 @@ import {
   getAdjustedProfit,
 } from './contract'
 import { User } from './user'
-import { CandidateBet, computeFills } from './new-bet'
+import { computeFills } from './new-bet'
 import { CpmmState, getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { floatingEqual, floatingGreaterEqual, logit } from './util/math'
@@ -54,7 +54,7 @@ export const computeInvestmentValue = (
 }
 
 export const computeInvestmentValueCustomProb = (
-  bets: Bet[] | CandidateBet[],
+  bets: Bet[],
   contract: Contract,
   p: number
 ) => {
@@ -246,7 +246,7 @@ export const calculateMetricsByContractAndAnswer = (
 
 export const calculateUserMetrics = (
   contract: Contract,
-  bets: CandidateBet[] | Bet[],
+  bets: Bet[],
   user: DisplayUser,
   answers: Answer[]
 ) => {

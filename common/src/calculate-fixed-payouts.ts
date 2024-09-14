@@ -6,11 +6,10 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
 } from './contract'
-import { CandidateBet } from 'common/new-bet'
 
 export function calculateFixedPayout(
   contract: CPMMContract,
-  bet: Bet | CandidateBet,
+  bet: Bet,
   outcome: string
 ) {
   if (outcome === 'CANCEL') return calculateFixedCancelPayout(bet)
@@ -19,24 +18,18 @@ export function calculateFixedPayout(
   return calculateStandardFixedPayout(bet, outcome)
 }
 
-export function calculateFixedCancelPayout(bet: Bet | CandidateBet) {
+export function calculateFixedCancelPayout(bet: Bet) {
   return bet.amount
 }
 
-export function calculateStandardFixedPayout(
-  bet: Bet | CandidateBet,
-  outcome: string
-) {
+export function calculateStandardFixedPayout(bet: Bet, outcome: string) {
   const { outcome: betOutcome, shares } = bet
 
   if (betOutcome !== outcome) return 0
   return shares
 }
 
-function calculateFixedMktPayout(
-  contract: CPMMContract,
-  bet: Bet | CandidateBet
-) {
+function calculateFixedMktPayout(contract: CPMMContract, bet: Bet) {
   const { resolutionProbability } = contract
   const prob =
     resolutionProbability !== undefined
@@ -50,7 +43,7 @@ function calculateFixedMktPayout(
 
 function calculateBetPayoutMulti(
   contract: CPMMMultiContract | CPMMNumericContract,
-  bet: Bet | CandidateBet
+  bet: Bet
 ) {
   let prob = 0
   const { answerId } = bet
@@ -76,7 +69,7 @@ function calculateBetPayoutMulti(
 
 export function calculateFixedPayoutMulti(
   contract: CPMMMultiContract | CPMMNumericContract,
-  bet: Bet | CandidateBet,
+  bet: Bet,
   outcome: string
 ) {
   if (outcome === 'CANCEL') return calculateFixedCancelPayout(bet)
