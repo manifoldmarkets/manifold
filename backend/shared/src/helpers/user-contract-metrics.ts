@@ -1,11 +1,15 @@
-import { groupBy } from 'lodash'
+import { groupBy, uniq } from 'lodash'
 import {
   Contract,
   DPM_CUTOFF_TIMESTAMP,
   PROFIT_CUTOFF_TIME,
 } from 'common/contract'
 import { Bet } from 'common/bet'
-import { calculateUserMetrics } from 'common/calculate-metrics'
+import {
+  calculateUserMetrics,
+  calculateUserMetricsWithNewBetsOnly,
+  MarginalBet,
+} from 'common/calculate-metrics'
 import { bulkUpsert } from 'shared/supabase/utils'
 import {
   SupabaseDirectClient,
@@ -15,6 +19,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { Tables } from 'common/supabase/utils'
 import { getUsers, log } from 'shared/utils'
 import { getAnswersForContract } from 'shared/supabase/answers'
+import { filterDefined } from 'common/util/array'
 
 export async function updateContractMetricsForUsers(
   pg: SupabaseDirectClient,
@@ -186,4 +191,63 @@ export const rerankContractMetricsManually = async (
   if (resolutionTime !== undefined) {
     await setAdjustProfitFromResolvedMarkets(contractId)
   }
+}
+
+const getDefaultMetric = (
+  userId: string,
+  contractId: string,
+  answerId: string | null
+): Omit<ContractMetric, 'id'> => ({
+  userId,
+  contractId,
+  answerId,
+  loan: 0,
+  invested: 0,
+  totalShares: { NO: 0, YES: 0 },
+  totalSpent: { NO: 0, YES: 0 },
+  payout: 0,
+  profit: 0,
+  profitPercent: 0,
+  profitAdjustment: 0,
+  hasNoShares: false,
+  hasShares: false,
+  hasYesShares: false,
+  maxSharesOutcome: null,
+  lastBetTime: 0,
+  from: undefined,
+})
+
+export const bulkUpdateUserMetricsWithNewBetsOnly = async (
+  pgTrans: SupabaseDirectClient,
+  marginalBets: MarginalBet[]
+) => {
+  if (marginalBets.every((b) => b.shares === 0 && b.amount === 0)) {
+    return
+  }
+  const userIds = uniq(marginalBets.map((b) => b.userId))
+  const answerIds = uniq(filterDefined(marginalBets.map((b) => b.answerId)))
+  const contractId = marginalBets[0].contractId
+  const userMetrics = await pgTrans.map<ContractMetric>(
+    `select data from user_contract_metrics
+    where contract_id = $1 and user_id = any($2)
+    and ($3 is null or answer_id = any($3))
+    `,
+    [contractId, userIds, answerIds.length > 0 ? answerIds : null],
+    (row) => row.data
+  )
+  const betsByUser = groupBy(marginalBets, 'userId')
+  const updatedMetrics = Object.entries(betsByUser).map(([userId, bets]) => {
+    const userBetsByAnswer = groupBy(bets, 'answerId')
+    return Object.entries(userBetsByAnswer).map(([answerIdString, bets]) => {
+      const answerId = answerIdString === 'undefined' ? null : answerIdString
+      const defaultMetric = getDefaultMetric(userId, contractId, answerId)
+      const userMetric =
+        userMetrics.find(
+          (m) => m.userId === userId && m.answerId === answerId
+        ) ?? defaultMetric
+
+      return calculateUserMetricsWithNewBetsOnly(bets, userMetric)
+    })
+  })
+  await bulkUpdateContractMetrics(filterDefined(updatedMetrics.flat()), pgTrans)
 }

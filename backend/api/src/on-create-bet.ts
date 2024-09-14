@@ -92,7 +92,14 @@ export const onCreateBets = async (
       usersToRefreshMetrics.push(...(notifiedUsers ?? []))
     })
   )
-
+  // if (usersToRefreshMetrics.length > 0) {
+  //   await updateUserContractMetrics(
+  //     contract,
+  //     uniqBy(usersToRefreshMetrics, 'id'),
+  //     pg
+  //   )
+  //   log(`Contract metrics updated for ${usersToRefreshMetrics.length} users.`)
+  // }
   const replyBet = bets.find((bet) => bet.replyToCommentId)
 
   const nonRedemptionNonApiBets = sortBy(

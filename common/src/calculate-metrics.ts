@@ -1,4 +1,4 @@
-import { Dictionary, min, sumBy, uniq } from 'lodash'
+import { Dictionary, maxBy, min, sum, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetricsPerAnswer } from './calculate'
 import { Bet, LimitBet } from './bet'
 import {
@@ -11,7 +11,7 @@ import { User } from './user'
 import { CandidateBet, computeFills } from './new-bet'
 import { CpmmState, getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
-import { logit } from './util/math'
+import { floatingEqual, floatingGreaterEqual, logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer } from 'common/answer'
 import { noFees } from './fees'
@@ -269,4 +269,96 @@ export const calculateUserMetrics = (
       ),
     } as ContractMetric)
   })
+}
+
+export type MarginalBet = Pick<
+  Bet,
+  | 'userId'
+  | 'answerId'
+  | 'contractId'
+  | 'amount'
+  | 'shares'
+  | 'outcome'
+  | 'createdTime'
+  | 'loanAmount'
+>
+
+export const calculateUserMetricsWithNewBetsOnly = (
+  marginalBets: MarginalBet[],
+  um: Omit<ContractMetric, 'id'>
+) => {
+  const totalSpentUndefined = !um.totalSpent
+  const totalSpentNo = totalSpentUndefined
+    ? um.hasNoShares && !um.hasYesShares
+      ? um.invested
+      : 0
+    : um.totalSpent?.NO ?? 0
+  const totalSpentYes = totalSpentUndefined
+    ? um.hasYesShares && !um.hasNoShares
+      ? um.invested
+      : 0
+    : um.totalSpent?.YES ?? 0
+  const previousTotalNoShares = um.totalShares?.NO ?? 0
+  const previousTotalYesShares = um.totalShares?.YES ?? 0
+  const totalSpent: { [key: string]: number } = {
+    NO:
+      totalSpentNo +
+      sumBy(
+        marginalBets.filter((b) => b.outcome === 'NO'),
+        (b) =>
+          floatingGreaterEqual(b.amount, 0)
+            ? b.amount
+            : (totalSpentNo / previousTotalNoShares) * b.shares
+      ),
+    YES:
+      totalSpentYes +
+      sumBy(
+        marginalBets.filter((b) => b.outcome === 'YES'),
+        (b) =>
+          floatingGreaterEqual(b.amount, 0)
+            ? b.amount
+            : (totalSpentYes / previousTotalYesShares) * b.shares
+      ),
+  }
+
+  const invested = sum(Object.values(totalSpent))
+  const loan = sumBy(marginalBets, (b) => b.loanAmount ?? 0) + um.loan
+
+  const totalNoShares =
+    previousTotalNoShares +
+    sumBy(
+      marginalBets.filter((b) => b.outcome === 'NO'),
+      'shares'
+    )
+  const totalYesShares =
+    previousTotalYesShares +
+    sumBy(
+      marginalBets.filter((b) => b.outcome === 'YES'),
+      'shares'
+    )
+  const totalShares = {
+    NO: floatingEqual(totalNoShares, 0) ? 0 : totalNoShares,
+    YES: floatingEqual(totalYesShares, 0) ? 0 : totalYesShares,
+  }
+
+  const { YES: yesShares, NO: noShares } = totalShares
+  const hasShares = Object.values(totalShares).some(
+    (shares) => !floatingEqual(shares, 0)
+  )
+  const hasYesShares = yesShares >= 1
+  const hasNoShares = noShares >= 1
+  const maxSharesOutcome = noShares > yesShares ? 'NO' : 'YES'
+  const lastBetTime = maxBy(marginalBets, (b) => b.createdTime)!.createdTime
+  return {
+    ...um,
+    loan,
+    invested,
+    totalShares,
+    hasNoShares,
+    hasYesShares,
+    hasShares,
+    maxSharesOutcome,
+    lastBetTime,
+    totalSpent,
+  }
 }
