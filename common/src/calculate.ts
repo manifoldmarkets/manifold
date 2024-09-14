@@ -32,7 +32,10 @@ import { floatingEqual, floatingGreaterEqual } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer } from './answer'
 import { DAY_MS } from 'common/util/time'
-import { computeInvestmentValueCustomProb } from 'common/calculate-metrics'
+import {
+  computeInvestmentValueCustomProb,
+  MarginalBet,
+} from 'common/calculate-metrics'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
@@ -160,10 +163,19 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
 }
 
 function getCpmmInvested(yourBets: Bet[]) {
-  const totalShares: { [outcome: string]: number } = {}
-  const totalSpent: { [outcome: string]: number } = {}
+  const { totalSpent } = calculateTotalSpentAndShares(yourBets)
+  return sum(Object.values(totalSpent))
+}
 
-  const sharePurchases = sortBy(yourBets, [
+export function calculateTotalSpentAndShares(
+  bets: MarginalBet[],
+  initialTotalSpent: { [outcome: string]: number } = {},
+  initialTotalShares: { [outcome: string]: number } = {}
+) {
+  const totalShares: { [outcome: string]: number } = { ...initialTotalShares }
+  const totalSpent: { [outcome: string]: number } = { ...initialTotalSpent }
+
+  const sharePurchases = sortBy(bets, [
     'createdTime',
     (bet) => (bet.isRedemption ? 1 : 0),
   ])
@@ -185,7 +197,7 @@ function getCpmmInvested(yourBets: Bet[]) {
     }
   }
 
-  return sum(Object.values(totalSpent))
+  return { totalSpent, totalShares }
 }
 
 export function getSimpleCpmmInvested(yourBets: Bet[]) {
