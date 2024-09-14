@@ -1,6 +1,5 @@
 import { ReactNode, memo, useState, useEffect } from 'react'
 import clsx from 'clsx'
-import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 
 import { Bet } from 'common/bet'
 import { HistoryPoint, MultiPoints } from 'common/chart'
@@ -73,9 +72,6 @@ import {
   EditChartAnnotationsButton,
 } from '../charts/chart-annotations'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
-import Link from 'next/link'
-import { buttonClass } from 'web/components/buttons/button'
-import { CoinNumber } from 'web/components/widgets/coin-number'
 import { VerifyButton } from '../twomba/toggle-verify-callout'
 
 export const ContractOverview = memo(
