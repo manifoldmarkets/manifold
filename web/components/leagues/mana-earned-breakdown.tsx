@@ -239,5 +239,5 @@ const ContractBetsEntry = (props: {
 
 const MANA_EARNED_CATEGORY_LABELS = {
   PROFIT: 'Profit',
-  CREATOR_FEE: 'Creator earnings',
+  UNIQUE_BETTOR_BONUS: 'Trader bonuses',
 } as { [key: string]: string }
