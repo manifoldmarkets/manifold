@@ -294,7 +294,7 @@ export const calculateUserMetricsWithNewBetsOnly = (
 ) => {
   const needsTotalSpentBackfilled = !um.totalSpent
   const initialTotalSpent: { [key: string]: number } = um.totalSpent ?? {}
-
+  // TODO: remove this after backfilling
   if (needsTotalSpentBackfilled) {
     if (um.hasNoShares && !um.hasYesShares) {
       initialTotalSpent.NO = um.invested
