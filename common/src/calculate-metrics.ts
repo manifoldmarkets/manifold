@@ -287,6 +287,7 @@ export const calculateUserMetricsWithNewBetsOnly = (
   marginalBets: MarginalBet[],
   um: Omit<ContractMetric, 'id'>
 ) => {
+  // Using totalSpentUndefined to backfill old contract metrics that don't have totalSpent
   const totalSpentUndefined = !um.totalSpent
   const totalSpentNo = totalSpentUndefined
     ? um.hasNoShares && !um.hasYesShares
