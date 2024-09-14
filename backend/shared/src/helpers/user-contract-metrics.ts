@@ -236,18 +236,20 @@ export const bulkUpdateUserMetricsWithNewBetsOnly = async (
     (row) => row.data
   )
   const betsByUser = groupBy(marginalBets, 'userId')
-  const updatedMetrics = Object.entries(betsByUser).map(([userId, bets]) => {
-    const userBetsByAnswer = groupBy(bets, 'answerId')
-    return Object.entries(userBetsByAnswer).map(([answerIdString, bets]) => {
-      const answerId = answerIdString === 'undefined' ? null : answerIdString
-      const defaultMetric = getDefaultMetric(userId, contractId, answerId)
-      const userMetric =
-        userMetrics.find(
-          (m) => m.userId === userId && m.answerId === answerId
-        ) ?? defaultMetric
+  const updatedMetrics = Object.entries(betsByUser).flatMap(
+    ([userId, bets]) => {
+      const userBetsByAnswer = groupBy(bets, 'answerId')
+      return Object.entries(userBetsByAnswer).map(([answerIdString, bets]) => {
+        const answerId = answerIdString === 'undefined' ? null : answerIdString
+        const defaultMetric = getDefaultMetric(userId, contractId, answerId)
+        const userMetric =
+          userMetrics.find(
+            (m) => m.userId === userId && m.answerId === answerId
+          ) ?? defaultMetric
 
-      return calculateUserMetricsWithNewBetsOnly(bets, userMetric)
-    })
-  })
-  await bulkUpdateContractMetrics(filterDefined(updatedMetrics.flat()), pgTrans)
+        return calculateUserMetricsWithNewBetsOnly(bets, userMetric)
+      })
+    }
+  )
+  await bulkUpdateContractMetrics(updatedMetrics, pgTrans)
 }
