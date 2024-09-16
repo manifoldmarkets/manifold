@@ -1,7 +1,7 @@
 import { log } from 'shared/monitoring/log'
-import { incrementBalance } from 'shared/supabase/users'
+import { incrementBalance, updateUser } from 'shared/supabase/users'
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { randomString } from 'common/util/random'
+import { randomString, secureRandomString } from 'common/util/random'
 import * as admin from 'firebase-admin'
 import { createUserMain } from 'shared/create-user-main'
 
@@ -22,7 +22,7 @@ export const getTestUsers = async (
     Array.from({ length: missing }).map(async () => {
       const userCredential = await auth.createUser({
         email: 'manifoldTestNewUser+' + randomString() + '@gmail.com',
-        password: randomString(),
+        password: secureRandomString(16),
         emailVerified: true,
         displayName: 'Manifold Test User',
       })
@@ -59,12 +59,21 @@ export const getTestUsers = async (
   )
   log('got private users')
   await Promise.all(
-    privateUsers.map((pu) =>
-      incrementBalance(pg, pu.id, {
+    privateUsers.map(async (pu) => {
+      await incrementBalance(pg, pu.id, {
         balance: 10_000,
+        cashBalance: 1_000,
+        totalCashDeposits: 1_000,
         totalDeposits: 10_000,
       })
-    )
+      await updateUser(pg, pu.id, {
+        sweepstakesVerified: true,
+        idVerified: true,
+        sweepstakes5kLimit: false,
+        kycDocumentStatus: 'verified',
+        kycLastAttemptTime: Date.now(),
+      })
+    })
   )
   const apiKeysMissing = privateUsers.filter((p) => !p.apiKey)
   log(`${privateUsers.length} user balances incremented by 10k`)
@@ -85,7 +94,7 @@ export const getTestUsers = async (
       [apiKeysMissing.map((p) => p.id)],
       (r) => ({ id: r.id as string, apiKey: r.api_key as string })
     )
-    return [...refetchedUsers, ...privateUsers.filter((p) => !p.apiKey)]
+    return [...refetchedUsers, ...privateUsers.filter((p) => p.apiKey)]
   }
   return privateUsers
 }
