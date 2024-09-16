@@ -1,17 +1,19 @@
-import { XIcon } from '@heroicons/react/solid'
+import { Placement } from '@floating-ui/react'
 import clsx from 'clsx'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
+import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
 import {
   getVerificationStatus,
   PROMPT_VERIFICATION_MESSAGES,
 } from 'common/user'
+import { capitalize } from 'lodash'
 import Link from 'next/link'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useUser } from 'web/hooks/use-user'
 import { buttonClass } from '../buttons/button'
+import { Row } from '../layout/row'
 import { CoinNumber } from '../widgets/coin-number'
-import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
-import { capitalize } from 'lodash'
+import { Tooltip } from '../widgets/tooltip'
 
 export function ToggleVerifyCallout(props: {
   className?: string
@@ -34,7 +36,13 @@ export function ToggleVerifyCallout(props: {
         setDismissed={setDismissed}
         caratClassName={caratClassName}
       >
-        <div className="text-sm">
+        <Row className="w-full justify-between gap-2">
+          <div className=" font-semibold">
+            {capitalize(TRADE_TERM)} with {SWEEPIES_NAME}!
+          </div>
+          <InBeta className="mb-2" tooltipPlacement={'bottom'} />
+        </Row>
+        <div className="text-ink-700 text-sm">
           This is a <b>{SWEEPIES_NAME} market</b>! {capitalize(TRADE_TERM)} with{' '}
           {SWEEPIES_NAME} for the chance to win real cash prizes.
         </div>
@@ -52,8 +60,13 @@ export function ToggleVerifyCallout(props: {
       setDismissed={setDismissed}
       caratClassName={caratClassName}
     >
-      Why stop at play money? Verify your identity and start earning{' '}
-      <b>real cash prizes</b> today.
+      <Row className="w-full justify-between gap-2">
+        <div className=" font-semibold">
+          {capitalize(TRADE_TERM)} with {SWEEPIES_NAME}!
+        </div>
+        <InBeta className="mb-2" tooltipPlacement={'bottom'} />
+      </Row>
+      Verify your identity and start earning <b>real cash prizes</b> today.
       <div
         className={clsx('absolute -top-[10px] right-4 h-0 w-0', caratClassName)}
       >
@@ -61,11 +74,32 @@ export function ToggleVerifyCallout(props: {
           <div className="border-b-canvas-50 absolute -left-[9px] top-[1px] h-0 w-0 border-b-[9px] border-l-[9px] border-r-[9px] border-l-transparent border-r-transparent"></div>
         </div>
       </div>
-      <VerifyButton />
+      <VerifyButton className="mt-2" />
     </CalloutFrame>
   )
 }
 
+export function InBeta(props: {
+  className?: string
+  tooltipPlacement?: Placement
+}) {
+  const { className, tooltipPlacement } = props
+  return (
+    <Row
+      className={clsx(
+        ' bg-ink-200 text-ink-700 w-fit select-none items-center rounded-sm px-1.5 py-0.5 text-xs font-semibold',
+        className
+      )}
+    >
+      <Tooltip
+        text={`${SWEEPIES_NAME} is currently in beta, which means we’re still fine-tuning it. You may encounter some bugs or imperfections as we continue to improve it.`}
+        placement={tooltipPlacement}
+      >
+        IN BETA
+      </Tooltip>
+    </Row>
+  )
+}
 function CalloutFrame(props: {
   children: React.ReactNode
   className?: string
@@ -76,13 +110,17 @@ function CalloutFrame(props: {
   return (
     <div className={className}>
       <div className="border-ink-300 bg-canvas-50 text-ink-800 relative rounded-lg border px-5 py-4 text-sm shadow-lg">
-        <button
-          onClick={() => setDismissed(true)}
-          className="text-ink-300 hover:text-ink-600 absolute right-1 top-1"
-        >
-          <XIcon className="h-4 w-4" />
-        </button>
         {children}
+
+        <Row className="mt-1 w-full">
+          <button
+            onClick={() => setDismissed(true)}
+            className="text-ink-500 hover:text-ink-600 mx-auto underline"
+          >
+            Dismiss
+          </button>
+        </Row>
+
         <div
           className={clsx(
             'absolute -top-[10px] right-4 h-0 w-0',
