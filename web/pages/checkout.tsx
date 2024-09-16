@@ -259,7 +259,8 @@ function FundsSelector(props: {
           and{' '}
           <Link href="/sweepstakes-rules" target="_blank" className="underline">
             Sweepstakes Rules
-          </Link>. All sales are final. No refunds.
+          </Link>
+          . All sales are final. No refunds.
         </div>
       )}
     </Col>
