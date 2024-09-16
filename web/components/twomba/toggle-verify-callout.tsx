@@ -105,7 +105,8 @@ export function VerifyButton(props: { className?: string }) {
       href={'gidx/register'}
       className={clsx(
         buttonClass('md', 'gradient-pink'),
-        'mt-2 w-full font-semibold'
+        'w-full font-semibold',
+        className
       )}
     >
       Verify and claim
