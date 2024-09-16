@@ -204,7 +204,7 @@ const debitCoins = async (
     amount: manaCashAmount,
     token: 'CASH',
     category: 'CASH_OUT',
-    description: `Cash out debit`,
+    description: `Redemption debit`,
   } as const
   const {
     ApiKey: _,

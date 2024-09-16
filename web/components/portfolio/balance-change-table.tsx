@@ -93,7 +93,7 @@ export const BalanceChangeTable = (props: {
               color="gray-outline"
               onClick={() => setShowCashoutModal(true)}
             >
-              View {maybePluralize('cashout', cashouts?.length ?? 0)}{' '}
+              View {maybePluralize('redemption', cashouts?.length ?? 0)}{' '}
               {pendingCashouts > 0 ? `(${pendingCashouts} pending)` : ''}
             </Button>
           </Row>
@@ -564,7 +564,7 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'CONSUME_SPICE_DONE':
       return `Redeem prize points for mana`
     case 'CASH_OUT':
-      return 'Cash out request'
+      return 'Redemption request'
     case 'CASH_BONUS':
       return 'Mana cash bonus'
     case 'KYC_BONUS':
