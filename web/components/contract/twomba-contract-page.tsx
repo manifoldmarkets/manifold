@@ -327,11 +327,6 @@ export function TwombaContractPageContent(props: ContractParams) {
             <Col className="w-full gap-3 lg:gap-4">
               <Col>
                 <div ref={titleRef}>
-                  <AuthorInfo
-                    contract={props.contract}
-                    resolverId={liveContract.resolverId}
-                    className="text-ink-600 mb-0.5"
-                  />
                   <VisibilityIcon
                     contract={props.contract}
                     isLarge
@@ -342,17 +337,14 @@ export function TwombaContractPageContent(props: ContractParams) {
                     canEdit={isAdmin || isCreator || isMod}
                   />
                 </div>
-                <Row className="items-center gap-2">
-                  <MarketTopics
-                    contract={props.contract}
-                    dashboards={dashboards}
-                    topics={topics}
-                    isSpiceMarket={isSpiceMarket}
-                  />
-                </Row>
               </Col>
 
-              <div className="text-ink-600 flex flex-wrap items-center justify-end gap-y-1 text-sm">
+              <Row className="text-ink-600  items-center justify-between gap-y-1 text-sm">
+                <AuthorInfo
+                  contract={props.contract}
+                  resolverId={liveContract.resolverId}
+                  userNameClass={'hidden sm:block'}
+                />
                 <TwombaContractSummaryStats
                   contractId={props.contract.id}
                   creatorId={props.contract.creatorId}
@@ -361,7 +353,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                   editable={isCreator || isAdmin || isMod}
                   isCashContract={liveContract.token === 'CASH'}
                 />
-              </div>
+              </Row>
               <ContractOverview
                 contract={liveContract}
                 key={liveContract.id} // reset state when switching play vs cash
@@ -390,14 +382,6 @@ export function TwombaContractPageContent(props: ContractParams) {
 
               <YourTrades contract={liveContract} yourNewBets={yourNewBets} />
             </Col>
-            {showRelatedMarketsBelowBet && (
-              <RelatedContractsGrid
-                contracts={relatedMarkets}
-                loadMore={loadMore}
-                showOnlyAfterBet={true}
-                justBet={justBet}
-              />
-            )}
             {showReview && user && (
               <div className="relative my-2">
                 <ReviewPanel
@@ -444,6 +428,15 @@ export function TwombaContractPageContent(props: ContractParams) {
               hasReviewed={!!userHasReviewed}
             />
             <ContractDescription contract={livePlayContract} />
+            <Row className="items-center gap-2">
+              <MarketTopics
+                contract={props.contract}
+                dashboards={dashboards}
+                topics={topics}
+                isSpiceMarket={isSpiceMarket}
+              />
+            </Row>
+
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
             {!!user && (
@@ -455,19 +448,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                 contract={props.contract}
               />
             )}
-            {showExplainerPanel && (
-              <div className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden">
-                <h2 className={clsx('text-ink-600  text-xl')}>What is this?</h2>
-                <ExplainerPanel />
-              </div>
-            )}
-            {comments.length > 3 && (
-              <RelatedContractsGrid
-                contracts={relatedMarkets}
-                loadMore={loadMore}
-                justBet={!showRelatedMarketsBelowBet && justBet}
-              />
-            )}
+
             {isResolved && resolution !== 'CANCEL' && (
               <>
                 <ContractLeaderboard
@@ -507,6 +488,12 @@ export function TwombaContractPageContent(props: ContractParams) {
                 betReplies={betReplies}
               />
             </div>
+            {showExplainerPanel && (
+              <div className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden">
+                <h2 className={clsx('text-ink-600  text-xl')}>What is this?</h2>
+                <ExplainerPanel />
+              </div>
+            )}
             <RelatedContractsGrid
               contracts={relatedMarkets}
               loadMore={loadMore}
