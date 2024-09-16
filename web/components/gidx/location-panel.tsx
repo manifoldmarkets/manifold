@@ -11,6 +11,7 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { BottomRow } from './register-component-helpers'
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
+import { MINUTE_MS } from 'common/util/time'
 
 export const LocationPanel = (props: {
   setLocation: (data: GPSData) => void
@@ -120,6 +121,11 @@ export const LocationPanel = (props: {
           }
           setLoading(false)
           onFinishCallback?.()
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 20 * MINUTE_MS,
         }
       )
     } else {
