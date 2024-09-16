@@ -7,6 +7,7 @@ import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
   getLocalServerIP,
+  GIDX_BASE_URL,
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -17,8 +18,7 @@ import { getUser, LOCAL_DEV } from 'shared/utils'
 import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
 
-const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
+const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 
 export const completeCashoutSession: APIHandler<
   'complete-cashout-session-gidx'
