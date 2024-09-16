@@ -50,7 +50,7 @@ export const RegisterUserForm = (props: {
   const [page, setPage] = useState(
     user.idVerified || user.kycDocumentStatus === 'pending'
       ? 'final'
-      : (redirect === 'checkout' || redirect === 'cashout') &&
+      : (redirect === 'checkout' || redirect === 'redeem') &&
         !user.verifiedPhone
       ? 'phone'
       : user.verifiedPhone
@@ -466,9 +466,9 @@ export const RegisterUserForm = (props: {
           <Link className={buttonClass('md', 'indigo')} href={'/checkout'}>
             Get mana
           </Link>
-        ) : redirect === 'cashout' ? (
-          <Link className={buttonClass('md', 'indigo')} href={'/cashout'}>
-            Cash out
+        ) : redirect === 'redeem' ? (
+          <Link className={buttonClass('md', 'indigo')} href={'/redeem'}>
+            Redeem
           </Link>
         ) : (
           <Link className={buttonClass('md', 'indigo')} href={'/home'}>

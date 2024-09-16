@@ -843,7 +843,7 @@ export function BinaryBetPanel(props: {
           <p className="text-ink-700 mx-auto">
             Verify your info to start trading on sweepstakes markets!
           </p>
-          <VerifyButton />
+          <VerifyButton className="mt-2" />
         </Col>
       ) : contract.token === 'CASH' && blockFromSweepstakes(user) ? (
         <Row className={'bg-canvas-50 rounded p-4'}>

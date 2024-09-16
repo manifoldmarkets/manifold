@@ -142,7 +142,7 @@ export function BuyPanel(props: {
         <p className="text-ink-700 mx-auto">
           Verify your info to start trading on sweepstakes markets!
         </p>
-        <VerifyButton />
+        <VerifyButton className="mt-2" />
       </Col>
     )
   } else if (contract.token === 'CASH' && blockFromSweepstakes(user)) {

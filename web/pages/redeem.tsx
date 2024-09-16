@@ -43,6 +43,7 @@ import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
+import { capitalize } from 'lodash'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -105,7 +106,7 @@ const CashoutPage = () => {
   const [RoutingNumber, setRoutingNumber] = useState('')
   const [SavePaymentMethod, _] = useState(false)
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
-  const [amountInDollars, setAmountInDollars] = useState<number>()
+  const [sweepCashAmount, setSweepCashAmount] = useState<number>()
   const [locationError, setLocationError] = useState<string>()
   const [loading, setloading] = useState(false)
   const [error, setError] = useState<string>()
@@ -115,6 +116,7 @@ const CashoutPage = () => {
   const [state, setState] = useState('')
   const [zipCode, setZipCode] = useState('')
   const [sessionStatus, setSessionStatus] = useState<string>()
+  const [completedCashout, setCompletedCashout] = useState(0)
   useApiSubscription({
     topics: [
       `gidx-checkout-session/${checkoutSession?.MerchantSessionID ?? '_'}`,
@@ -126,7 +128,8 @@ const CashoutPage = () => {
     },
   })
   const { data: redeemable } = useAPIGetter('get-redeemable-prize-cash', {})
-  const redeemableCash = redeemable?.redeemablePrizeCash ?? 0
+  const redeemableCash =
+    (redeemable?.redeemablePrizeCash ?? 0) - completedCashout
 
   const getCashoutSession = async (DeviceGPS: GPSData) => {
     setError(undefined)
@@ -141,7 +144,9 @@ const CashoutPage = () => {
         console.log('Got cashout session', session)
         const { CustomerProfile } = session
         setNameOnAccount(
-          CustomerProfile.Name.FirstName + ' ' + CustomerProfile.Name.LastName
+          capitalize(CustomerProfile.Name.FirstName.toLowerCase()) +
+            ' ' +
+            capitalize(CustomerProfile.Name.LastName.toLowerCase())
         )
         setAddress(CustomerProfile.Address.AddressLine1)
         setCity(CustomerProfile.Address.City)
@@ -154,8 +159,8 @@ const CashoutPage = () => {
         setloading(false)
       }
     } catch (e) {
-      console.error('Error getting cashout session', e)
-      setError('Error getting cashout session')
+      console.error('Error getting redemption session', e)
+      setError('Error getting redemption session')
       setloading(false)
     }
   }
@@ -163,8 +168,7 @@ const CashoutPage = () => {
   const handleSubmit = async () => {
     setloading(true)
     setError(undefined)
-    if (!checkoutSession || !amountInDollars) return
-    // TODO: add billing address hook from checkout session
+    if (!checkoutSession || !sweepCashAmount) return
     try {
       await api('complete-cashout-session-gidx', {
         PaymentMethod: {
@@ -182,15 +186,17 @@ const CashoutPage = () => {
         },
         SavePaymentMethod,
         PaymentAmount: {
-          dollars: (1 - SWEEPIES_CASHOUT_FEE) * amountInDollars,
-          manaCash: amountInDollars,
+          dollars: (1 - SWEEPIES_CASHOUT_FEE) * sweepCashAmount,
+          manaCash: sweepCashAmount,
         },
         MerchantSessionID: checkoutSession.MerchantSessionID,
         MerchantTransactionID: checkoutSession.MerchantTransactionID,
       })
       setPage('waiting')
+      setCompletedCashout(sweepCashAmount)
     } catch (err) {
-      setError('Failed to initiate cashout. Please try again.')
+      console.error('Error completing cashout session', err)
+      setError('Failed to initiate redemption. Please try again.')
     }
     setloading(false)
   }
@@ -218,7 +224,7 @@ const CashoutPage = () => {
   // redirects to registration page if user if identification failed
   if (status !== 'success' || isLocationBlocked || isAgeBlocked) {
     return (
-      <Page trackPageView={'cashout page'}>
+      <Page trackPageView={'redeem sweeps page'}>
         <Col className="mx-auto max-w-lg gap-4 px-6 py-4">
           {isLocationBlocked ? (
             <Row className="items-center gap-4">
@@ -226,7 +232,7 @@ const CashoutPage = () => {
               <Col className="gap-2">
                 <div className="text-2xl">Your location is blocked!</div>
                 <p className="text-ink-700 text-sm">
-                  You are unable to cash out at the moment.
+                  You are unable to redeem at the moment.
                 </p>
               </Col>
             </Row>
@@ -236,7 +242,7 @@ const CashoutPage = () => {
               <Col className="gap-2">
                 <div className="text-2xl">You must be 18+</div>
                 <p className="text-ink-700 text-sm">
-                  You are unable to cash out at the moment.
+                  You are unable to redeem at the moment.
                 </p>
               </Col>
             </Row>
@@ -250,7 +256,7 @@ const CashoutPage = () => {
                 <Col className="w-full gap-2">
                   <div className="text-2xl">You're not verified yet...</div>
                   <p className="text-ink-700 text-sm">
-                    Verification is required to cash out.
+                    Verification is required to redeem {SWEEPIES_NAME}.
                   </p>
                 </Col>
               </Row>
@@ -278,7 +284,7 @@ const CashoutPage = () => {
               <Col className="gap-2">
                 <div className="text-2xl">Your verification failed</div>
                 <p className="text-ink-700 text-sm">
-                  You are unable to cash out at the moment.
+                  You are unable to redeem at the moment.
                 </p>
               </Col>
             </Row>
@@ -286,9 +292,9 @@ const CashoutPage = () => {
             <Row className="items-center gap-4">
               <MdOutlineNotInterested className="hidden h-16 w-16 fill-red-500 sm:inline" />
               <Col className="gap-2">
-                <div className="text-2xl">Cashout unavailable</div>
+                <div className="text-2xl">Redemptions unavailable</div>
                 <p className="text-ink-700 text-sm">
-                  You are unable to cash out at the moment.
+                  You are unable to redeem at the moment.
                 </p>
               </Col>
             </Row>
@@ -312,7 +318,7 @@ const CashoutPage = () => {
   }
 
   return (
-    <Page trackPageView={'cashout page'}>
+    <Page trackPageView={'redemptions page'}>
       <Col className="mx-auto max-w-lg items-center gap-2 px-6 py-4">
         <Row className="text-primary-600 w-full justify-start text-3xl">
           Redeem {SWEEPIES_NAME}
@@ -358,30 +364,30 @@ const CashoutPage = () => {
         ) : (
           page === 'ach-details' && (
             <Col className="w-full max-w-md space-y-4">
-              {/*TODO: cap the amounts on min and max allowed side, in addition to user balance*/}
               <Row className={'justify-between font-semibold'}>
-                Available to withdraw
+                Available to redeem
                 <CoinNumber amount={redeemableCash} coinType={'sweepies'} />
               </Row>
 
               <Row className={'items-center justify-between font-semibold'}>
-                Cashout Amount <br className={'sm:hidden'} />
+                Amount to redeem <br className={'sm:hidden'} />
                 (min {formatSweepies(MIN_CASHOUT_AMOUNT)})
                 <AmountInput
-                  placeholder="Cashout Amount"
-                  amount={amountInDollars}
+                  placeholder="Redeem Amount"
+                  amount={sweepCashAmount}
                   allowFloat={true}
+                  min={MIN_CASHOUT_AMOUNT}
                   inputClassName={'w-40'}
                   label={<SweepiesCoin className={'mb-1'} />}
                   onChangeAmount={(newAmount) => {
                     if (!newAmount) {
-                      setAmountInDollars(undefined)
+                      setSweepCashAmount(undefined)
                       return
                     }
                     if (newAmount > redeemableCash) {
-                      setAmountInDollars(redeemableCash)
+                      setSweepCashAmount(redeemableCash)
                     } else {
-                      setAmountInDollars(newAmount)
+                      setSweepCashAmount(newAmount)
                     }
                   }}
                 />
@@ -451,15 +457,16 @@ const CashoutPage = () => {
                   !NameOnAccount ||
                   !AccountNumber ||
                   !RoutingNumber ||
-                  !amountInDollars
+                  !sweepCashAmount ||
+                  sweepCashAmount < MIN_CASHOUT_AMOUNT
                 }
               >
                 <Row className={'gap-1'}>
-                  Withdraw{' '}
-                  <CoinNumber amount={amountInDollars} coinType={'sweepies'} />{' '}
+                  Redeem{' '}
+                  <CoinNumber amount={sweepCashAmount} coinType={'sweepies'} />{' '}
                   for{' '}
                   {formatSweepsToUSD(
-                    (1 - SWEEPIES_CASHOUT_FEE) * (amountInDollars ?? 0)
+                    (1 - SWEEPIES_CASHOUT_FEE) * (sweepCashAmount ?? 0)
                   )}
                 </Row>
               </Button>
@@ -468,7 +475,7 @@ const CashoutPage = () => {
         )}
         {page === 'waiting' && (
           <Row className="space-y-4">
-            Your cashout request is being processed. We'll notify you in 3-5
+            Your redemption request is being processed. We'll notify you in 3-5
             business days once it's approved.
           </Row>
         )}

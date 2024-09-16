@@ -1,37 +1,48 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
+import { APIError } from 'common/api/utils'
 
 // Gets the total amount of prize cash that a user can redeem for usd, before fees
 // You still have to Math.min with user cash balance btw
 export async function calculateRedeemablePrizeCash(
-  userId: string,
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  userId: string
 ) {
   // TODO: add cash out cancels
-  const result = await pg.oneOrNone<{ total: number }>(
-    `select sum(
-      case
-        when t.category = 'CONTRACT_RESOLUTION_PAYOUT' then (
-          case 
-              when (t.data->'data'->>'isCashout5kLimit')::boolean then least(t.amount, 5000)
-              else t.amount
-          end
+  const result = await pg.one<{ total: number; cash_balance: number | null }>(
+    `with user_info as (
+      select cash_balance, coalesce((data->'sweepstakes5kLimit')::boolean, false) as five_k_limit
+      from users
+      where id = $1
+    ),
+    redeemable as (
+      select sum(case
+        when category = 'CONTRACT_RESOLUTION_PAYOUT' then (
+          case when (select five_k_limit from user_info) then least(amount, 5000) else amount end
         )
-        when t.category = 'CASH_OUT' then -t.amount
-        else 0
-      end
-    ) as total
-    from txns t
-    left join txns cancels on t.id = cancels.data->'data'->>'revertsTxnId' and 
-                              cancels.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
-    where t.token = 'CASH'
-    and cancels.id is null
-    and (t.to_id = $1 or t.from_id = $1)
-    and (
-      t.category = 'CASH_OUT' or
-      t.category = 'CONTRACT_RESOLUTION_PAYOUT'
-    )`,
+        when category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT' then (
+          case when (select five_k_limit from user_info) then -least(amount, 5000) else -amount end
+        )
+        else -amount
+      end) as total
+      from txns
+      where token = 'CASH'
+      and (to_id = $1 or from_id = $1)
+      and category in (
+        'CONTRACT_RESOLUTION_PAYOUT',
+        'CONTRACT_UNDO_RESOLUTION_PAYOUT',
+        'CASH_OUT',
+        'CONVERT_CASH',
+        'CHARITY'
+      )
+    )
+    select user_info.cash_balance, redeemable.total
+    from user_info, redeemable`,
     [userId]
   )
-  const total = result?.total ?? 0
-  return total > 0 ? total : 0
+
+  if (result.cash_balance == null) {
+    throw new APIError(401, 'Account not found')
+  }
+
+  return Math.min(result.total, result.cash_balance)
 }
