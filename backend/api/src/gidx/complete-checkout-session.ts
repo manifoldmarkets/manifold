@@ -1,24 +1,24 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { PaymentAmount, PaymentAmountsGIDX } from 'common/economy'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 import {
   CompleteSessionDirectCashierResponse,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
+import { getIp } from 'shared/analytics'
 import {
   getGIDXStandardParams,
-  getUserRegistrationRequirements,
   getLocalServerIP,
+  getUserRegistrationRequirements,
+  GIDX_BASE_URL,
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
-import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateUser } from 'shared/supabase/users'
 import { runTxn } from 'shared/txn/run-txn'
-import { PaymentAmountsGIDX, PaymentAmount } from 'common/economy'
-import { getIp } from 'shared/analytics'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { LOCAL_DEV } from 'shared/utils'
+import { getUser, LOCAL_DEV } from 'shared/utils'
 
-const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
+const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 
 const getPaymentAmountForWebPrice = (price: number) => {
   const amount = PaymentAmountsGIDX.find((p) => p.priceInDollars === price)
@@ -32,7 +32,11 @@ export const completeCheckoutSession: APIHandler<
   'complete-checkout-session-gidx'
 > = async (props, auth, req) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
+
   const userId = auth.uid
+  const user = await getUser(userId)
+  if (!user) throw new APIError(500, 'Your account was not found')
+
   const { phoneNumberWithCode } = await getUserRegistrationRequirements(userId)
   const {
     PaymentMethod,
@@ -66,7 +70,20 @@ export const completeCheckoutSession: APIHandler<
     },
     ...getGIDXStandardParams(MerchantSessionID),
   }
-  log('complete checkout session body:', body)
+  const {
+    PaymentMethod: {
+      CardNumber: _,
+      ExpirationDate: __,
+      CVV: ___,
+      ...paymentMethodWithoutCCInfo
+    },
+    ...bodyWithoutPaymentMethod
+  } = body
+  const bodyToLog = {
+    ...bodyWithoutPaymentMethod,
+    PaymentMethod: paymentMethodWithoutCCInfo,
+  }
+  log('Complete checkout session body:', bodyToLog)
 
   const res = await fetch(ENDPOINT, {
     method: 'POST',
@@ -86,6 +103,7 @@ export const completeCheckoutSession: APIHandler<
     PaymentDetails,
     SessionStatusMessage,
     ResponseCode,
+    SessionID,
   } = data
   if (ResponseCode >= 300) {
     return {
@@ -120,7 +138,8 @@ export const completeCheckoutSession: APIHandler<
       paymentAmount,
       CompletedPaymentAmount,
       MerchantTransactionID,
-      MerchantSessionID
+      SessionID,
+      user.sweepstakesVerified ?? false
     )
     return {
       status: 'success',
@@ -176,7 +195,8 @@ const sendCoins = async (
   amount: PaymentAmount,
   paidInCents: number,
   transactionId: string,
-  sessionId: string
+  sessionId: string,
+  isSweepsVerified: boolean
 ) => {
   const data = { transactionId, type: 'gidx', paidInCents, sessionId }
   const pg = createSupabaseDirectClient()
@@ -206,7 +226,9 @@ const sendCoins = async (
 
   await pg.tx(async (tx) => {
     await runTxn(tx, manaPurchaseTxn)
-    await runTxn(tx, cashBonusTxn)
+    if (isSweepsVerified) {
+      await runTxn(tx, cashBonusTxn)
+    }
     await updateUser(tx, userId, {
       purchasedMana: true,
     })

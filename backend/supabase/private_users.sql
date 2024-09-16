@@ -7,9 +7,10 @@ create table if not exists
     weekly_portfolio_email_sent boolean default false
   );
 
--- Policies
+-- Row Level Security
 alter table private_users enable row level security;
 
+-- Policies
 drop policy if exists "private read" on private_users;
 
 create policy "private read" on private_users for

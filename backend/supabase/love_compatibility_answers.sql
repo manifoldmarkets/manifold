@@ -11,9 +11,10 @@ create table if not exists
     importance integer not null
   );
 
--- Policies
+-- Row Level Security
 alter table love_compatibility_answers enable row level security;
 
+-- Policies
 drop policy if exists "public read" on love_compatibility_answers;
 
 create policy "public read" on love_compatibility_answers for

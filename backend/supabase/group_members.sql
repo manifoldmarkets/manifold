@@ -32,9 +32,10 @@ or replace function public.increment_group_members () returns trigger language p
     return new;
 end $function$;
 
--- Policies
+-- Row Level Security
 alter table group_members enable row level security;
 
+-- Policies
 drop policy if exists "public read" on group_members;
 
 create policy "public read" on group_members for

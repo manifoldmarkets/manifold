@@ -7,6 +7,9 @@ create table if not exists
     group_ids_to_activity jsonb not null
   );
 
+-- Row Level Security
+alter table user_topic_interests enable row level security;
+
 -- Indexes
 drop index if exists user_topic_interests_pkey;
 

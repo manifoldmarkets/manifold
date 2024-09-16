@@ -10,6 +10,7 @@ import {
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
   NotificationReason,
+  PaymentCompletedData,
   ReviewNotificationData,
   UniqueBettorData,
 } from 'common/notification'
@@ -562,6 +563,7 @@ export const createBetFillNotification = async (
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
+      token: contract.token,
     } as BetFillData,
   }
   const pg = createSupabaseDirectClient()
@@ -615,6 +617,7 @@ export const createLimitBetCanceledNotification = async (
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
+      token: contract.token,
     } as BetFillData,
   }
   const pg = createSupabaseDirectClient()
@@ -665,6 +668,7 @@ export const createLimitBetExpiredNotification = async (
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
+      token: contract.token,
     } as BetFillData,
   }
   const pg = createSupabaseDirectClient()
@@ -1053,6 +1057,7 @@ export const createNewBettorNotification = async (
         outcomeType,
         ...pseudoNumericData,
         totalAmountBet: sumBy(bets, 'amount'),
+        token: contract.token,
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)
@@ -2073,6 +2078,30 @@ export const createExtraPurchasedManaNotification = async (
     data: {
       amount,
     },
+  }
+
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
+
+export const createPaymentSuccessNotification = async (
+  paymentData: PaymentCompletedData,
+  transactionId: string
+) => {
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: paymentData.userId,
+    reason: 'payment_status',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: transactionId,
+    sourceType: 'payment_status',
+    sourceUpdateType: 'created',
+    sourceUserName: '',
+    sourceUserUsername: '',
+    sourceUserAvatarUrl: '',
+    sourceText: '',
+    data: paymentData,
   }
 
   const pg = createSupabaseDirectClient()

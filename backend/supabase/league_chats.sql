@@ -10,9 +10,10 @@ create table if not exists
     owner_id text
   );
 
--- Policies
+-- Row Level Security
 alter table league_chats enable row level security;
 
+-- Policies
 drop policy if exists "public read" on league_chats;
 
 create policy "public read" on league_chats for

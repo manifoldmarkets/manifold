@@ -28,8 +28,11 @@ import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import {
+  CASH_TO_CHARITY_DOLLARS,
+  MIN_CASH_DONATION,
   MIN_SPICE_DONATION,
   SPICE_TO_CHARITY_DOLLARS,
+  TWOMBA_ENABLED,
 } from 'common/envs/constants'
 
 type DonationItem = { user: User; ts: number; amount: number }
@@ -121,7 +124,14 @@ function CharityPage(props: {
             user={user}
             charity={charity}
             onDonated={(user, ts, amount) => {
-              pagination.prepend({ user, ts, amount: amount / 1000 })
+              pagination.prepend({
+                user,
+                ts,
+                amount:
+                  (TWOMBA_ENABLED
+                    ? CASH_TO_CHARITY_DOLLARS
+                    : SPICE_TO_CHARITY_DOLLARS) * amount,
+              })
               setShowConfetti(true)
             }}
           />
@@ -170,8 +180,8 @@ function DonationBox(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
 
-  const donateDisabled =
-    isSubmitting || !amount || !!error || amount < MIN_SPICE_DONATION
+  const min = TWOMBA_ENABLED ? MIN_CASH_DONATION : MIN_SPICE_DONATION
+  const donateDisabled = isSubmitting || !amount || !!error || amount < min
 
   const onSubmit: React.FormEventHandler = async (e) => {
     if (!user || donateDisabled) return
@@ -197,19 +207,23 @@ function DonationBox(props: {
       <label className="text-ink-700 mb-2 block text-sm">Amount</label>
       <BuyAmountInput
         inputClassName="donate-input"
-        minimumAmount={MIN_SPICE_DONATION}
+        minimumAmount={min}
         amount={amount}
         onChange={setAmount}
         error={error}
         setError={setError}
-        token={'SPICE'}
+        token={TWOMBA_ENABLED ? 'CASH' : 'SPICE'}
       />
 
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center text-sm xl:justify-between">
           <span className="text-ink-500 mr-1">{charity.name} receives</span>
           <span>
-            {formatMoneyUSD(SPICE_TO_CHARITY_DOLLARS * (amount || 0))}
+            {formatMoneyUSD(
+              (TWOMBA_ENABLED
+                ? CASH_TO_CHARITY_DOLLARS
+                : SPICE_TO_CHARITY_DOLLARS) * (amount || 0)
+            )}
           </span>
         </Row>
       </Col>
@@ -231,7 +245,11 @@ function DonationBox(props: {
       )}
 
       <div className="mt-2 text-xs">
-        <CoinNumber amount={MIN_SPICE_DONATION} isInline coinType={'spice'} />{' '}
+        <CoinNumber
+          amount={min}
+          isInline
+          coinType={TWOMBA_ENABLED ? 'sweepies' : 'spice'}
+        />{' '}
         donation minimum
       </div>
     </div>

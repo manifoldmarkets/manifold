@@ -3,6 +3,7 @@ import {
   getGIDXStandardParams,
   getLocalServerIP,
   getUserSweepstakesRequirements,
+  GIDX_BASE_URL,
   throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
@@ -26,8 +27,7 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   const userId = auth.uid
   const pg = createSupabaseDirectClient()
   const user = await getUserSweepstakesRequirements(userId)
-  const ENDPOINT =
-    'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerMonitor'
+  const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerMonitor'
   const body = {
     MerchantCustomerID: userId,
     DeviceIpAddress: ENABLE_FAKE_CUSTOMER
@@ -53,7 +53,18 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
 
   const data = (await res.json()) as GIDXMonitorResponse
 
-  log('Monitor response:', data)
+  const { ApiKey: _, ...dataToLog } = data
+  log('Monitor response:', dataToLog)
+  await pg.none(
+    'insert into user_monitor_status (user_id, data, reason_codes, fraud_confidence_score, identity_confidence_score) values ($1, $2, $3, $4, $5)',
+    [
+      userId,
+      dataToLog,
+      data.ReasonCodes,
+      data.FraudConfidenceScore,
+      data.IdentityConfidenceScore,
+    ]
+  )
   throwIfIPNotWhitelisted(data.ResponseCode, data.ResponseMessage)
   const { status, message } = await verifyReasonCodes(
     user,

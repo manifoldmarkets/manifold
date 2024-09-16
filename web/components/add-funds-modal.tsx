@@ -1,10 +1,7 @@
 'use client'
 import clsx from 'clsx'
-import { AD_REDEEM_REWARD } from 'common/boost'
 import {
-  BETTING_STREAK_BONUS_MAX,
   IOS_PRICES,
-  REFERRAL_AMOUNT,
   MANA_WEB_PRICES,
   WebManaAmounts,
   PaymentAmount,
@@ -17,7 +14,6 @@ import { Txn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
 import { sum } from 'lodash'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
@@ -35,6 +31,13 @@ import { shortenNumber } from 'web/lib/util/formatNumber'
 import { FaStore } from 'react-icons/fa6'
 import router from 'next/router'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
+
+const BUY_MANA_GRAPHICS = [
+  '/buy-mana-graphics/10k.png',
+  '/buy-mana-graphics/25k.png',
+  '/buy-mana-graphics/100k.png',
+  '/buy-mana-graphics/1M.png',
+]
 
 export function AddFundsModal(props: {
   open: boolean
@@ -122,10 +125,11 @@ export function BuyManaTab(props: { onClose: () => void }) {
       )}
 
       <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {prices.map((amounts) => {
+        {prices.map((amounts, index) => {
           return isNative && platform === 'ios' ? (
             <PriceTile
               key={`ios-${amounts.mana}`}
+              index={index}
               amounts={amounts}
               loading={loading}
               disabled={pastLimit}
@@ -151,6 +155,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
             >
               <PriceTile
                 amounts={amounts}
+                index={index}
                 loading={loading}
                 disabled={pastLimit}
                 onClick={() => {
@@ -172,12 +177,13 @@ export function BuyManaTab(props: { onClose: () => void }) {
 
 export function PriceTile(props: {
   amounts: PaymentAmount
+  index: number
   loading: WebManaAmounts | null
   disabled: boolean
   onClick?: () => void
   isSubmitButton?: boolean
 }) {
-  const { loading, onClick, isSubmitButton, amounts } = props
+  const { loading, onClick, isSubmitButton, amounts, index } = props
   const { mana, priceInDollars, bonusInDollars } = amounts
 
   const isCurrentlyLoading = loading === mana
@@ -219,28 +225,8 @@ export function PriceTile(props: {
         )}
       >
         <Image
-          src={
-            mana == 10000
-              ? '/buy-mana-graphics/10k.png'
-              : mana == 25000
-              ? '/buy-mana-graphics/25k.png'
-              : mana == 100000
-              ? '/buy-mana-graphics/100k.png'
-              : mana == 1000000
-              ? '/buy-mana-graphics/1M.png'
-              : ''
-          }
-          alt={
-            mana == 10000
-              ? '10k mana'
-              : mana == 25000
-              ? '25k mana'
-              : mana == 100000
-              ? '100k mana'
-              : mana == 1000000
-              ? '1 million mana'
-              : ''
-          }
+          src={BUY_MANA_GRAPHICS[Math.min(index, BUY_MANA_GRAPHICS.length - 1)]}
+          alt={`${shortenNumber(mana)} mana`}
           className="w-2/3"
           width={460}
           height={400}
@@ -254,26 +240,6 @@ export function PriceTile(props: {
         ${priceInDollars}
       </Col>
     </button>
-  )
-}
-
-export const OtherWaysToGetMana = () => {
-  return (
-    <ul className="border-ink-100 border-t">
-      <Item>
-        🚀 Browse feed for <CoinNumber amount={AD_REDEEM_REWARD} isInline />{' '}
-        from each boosted question
-      </Item>
-      <Item>
-        🔥 Streak bonus (up to{' '}
-        <CoinNumber amount={BETTING_STREAK_BONUS_MAX} isInline /> per day)
-      </Item>
-      <Item url="/referrals">
-        👋 Refer a friend for{' '}
-        <CoinNumber amount={REFERRAL_AMOUNT} coinType={'spice'} isInline />{' '}
-        after their first trade
-      </Item>
-    </ul>
   )
 }
 
@@ -322,21 +288,6 @@ export const SpiceToManaForm = (props: {
       </div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
     </>
-  )
-}
-
-const Item = (props: { children: React.ReactNode; url?: string }) => {
-  const { children, url } = props
-  return (
-    <li className="border-ink-100 border-b">
-      {url ? (
-        <Link href={url}>
-          <div className="hover:bg-primary-100 py-3">{children}</div>
-        </Link>
-      ) : (
-        <div className="py-3">{children}</div>
-      )}
-    </li>
   )
 }
 

@@ -12,9 +12,10 @@ add constraint dashboard_groups_dashboard_id_fkey foreign key (dashboard_id) ref
 alter table dashboard_groups
 add constraint public_dashboard_groups_group_id_fkey foreign key (group_id) references groups (id) on update cascade on delete cascade;
 
--- Policies
+-- Row Level Security
 alter table dashboard_groups enable row level security;
 
+-- Policies
 drop policy if exists "Enable read access for admin" on dashboard_groups;
 
 create policy "Enable read access for admin" on dashboard_groups for

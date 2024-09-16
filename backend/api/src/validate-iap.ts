@@ -9,6 +9,7 @@ import { sendThankYouEmail } from 'shared/emails'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { IOS_PRICES } from 'common/economy'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const bodySchema = z
   .object({
@@ -72,6 +73,10 @@ export const validateiap = authEndpoint(async (req, auth) => {
     log('productId', productId, 'not found in price data')
     throw new APIError(400, 'productId not found in price data')
   }
+
+  const user = await getUser(userId)
+  if (!user) throw new APIError(500, 'Your account was not found')
+
   const { priceInDollars, bonusInDollars } = priceData
   const manaPayout = priceData.mana * quantity
   const revenue = priceData.priceInDollars * quantity * 0.7 // Apple takes 30%
@@ -111,7 +116,10 @@ export const validateiap = authEndpoint(async (req, auth) => {
     },
     description: `Deposit M$${manaPayout} from BANK for mana purchase`,
   } as Omit<ManaPurchaseTxn, 'id' | 'createdTime'>
-  const bonusPurchaseTxn = bonusInDollars
+
+  const isBonusEligible = TWOMBA_ENABLED && user.sweepstakesVerified
+
+  const bonusPurchaseTxn = isBonusEligible && bonusInDollars
     ? ({
         fromId: 'EXTERNAL',
         fromType: 'BANK',
@@ -144,9 +152,6 @@ export const validateiap = authEndpoint(async (req, auth) => {
     })
 
   log('user', userId, 'paid M$', manaPayout)
-
-  const user = await getUser(userId)
-  if (!user) throw new APIError(500, 'Your account was not found')
 
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) throw new APIError(500, 'Private user not found')

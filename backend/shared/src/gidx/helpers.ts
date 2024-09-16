@@ -5,7 +5,7 @@ import {
   ID_ERROR_MSG,
   IDENTITY_AND_FRAUD_THRESHOLD,
 } from 'common/gidx/gidx'
-import { getPrivateUserSupabase, getUser, LOCAL_DEV, log } from 'shared/utils'
+import { getPrivateUserSupabase, getUser, isProd, log } from 'shared/utils'
 import { getPhoneNumber } from 'shared/helpers/get-phone-number'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
@@ -24,10 +24,13 @@ import { intersection } from 'lodash'
 import { updatePrivateUser, updateUser } from 'shared/supabase/users'
 import { User } from 'common/user'
 
-// TODO: when in production, configure endpoint here: https://portal.gidx-service.in/Integration/Index#ProfileNotification
-export const GIDXCallbackUrl = LOCAL_DEV
-  ? 'https://enabled-bream-sharply.ngrok-free.app'
-  : 'https://' + ENV_CONFIG.apiEndpoint
+export const GIDXCallbackUrl = 'https://' + ENV_CONFIG.apiEndpoint
+// If you want to test your local endpoint, use ngrok or similar service
+// LOCAL_DEV ? 'https://enabled-bream-sharply.ngrok-free.app' : ENV_CONFIG.apiEndpoint
+
+export const GIDX_BASE_URL = isProd()
+  ? 'https://api.gidx-service.com'
+  : 'https://api.gidx-service.in'
 
 export const getGIDXStandardParams = (MerchantSessionID?: string) => ({
   // TODO: before merging into main, switch from sandbox key to production key in prod
@@ -40,8 +43,7 @@ export const getGIDXStandardParams = (MerchantSessionID?: string) => ({
 })
 
 export const getGIDXCustomerProfile = async (userId: string) => {
-  const ENDPOINT =
-    'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerProfile'
+  const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerProfile'
   const body = {
     ...getGIDXStandardParams(),
     MerchantCustomerID: userId,
@@ -122,7 +124,7 @@ export const verifyReasonCodes = async (
     const updates = {
       idVerified: true,
       sweepstakes5kLimit: hasAny(limitTo5kCashoutCodes),
-    }
+    } as Partial<User>
     if (
       user.idVerified !== updates.idVerified ||
       user.sweepstakes5kLimit !== updates.sweepstakes5kLimit
@@ -133,7 +135,7 @@ export const verifyReasonCodes = async (
     const updates = {
       idVerified: false,
       sweepstakesVerified: false,
-    }
+    } as Partial<User>
     if (
       user.idVerified !== updates.idVerified ||
       user.sweepstakesVerified !== updates.sweepstakesVerified
@@ -231,11 +233,11 @@ export const verifyReasonCodes = async (
     )
     const updates = {
       sweepstakesVerified: false,
-      kycLastAttempt: Date.now(),
-    }
+      kycLastAttemptTime: Date.now(),
+    } as Partial<User>
     if (
       user.sweepstakesVerified !== updates.sweepstakesVerified ||
-      user.kycLastAttempt !== updates.kycLastAttempt
+      user.kycLastAttemptTime !== updates.kycLastAttemptTime
     ) {
       await updateUser(pg, userId, updates)
     }

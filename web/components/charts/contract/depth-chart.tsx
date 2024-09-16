@@ -8,7 +8,7 @@ import { getDisplayProbability } from 'common/calculate'
 import { HistoryPoint } from 'common/chart'
 import { scaleLinear } from 'd3-scale'
 import { AreaWithTopStroke, SVGChart, formatPct } from '../helpers'
-import { curveStepBefore, line } from 'd3-shape'
+import { curveStepAfter } from 'd3-shape'
 import { axisBottom, axisRight } from 'd3-axis'
 import { formatLargeNumber } from 'common/util/format'
 import { Answer } from 'common/answer'
@@ -45,28 +45,23 @@ export function DepthChart(props: {
 
   const xScale = scaleLinear().domain([0, 1]).range([0, width])
   const yScale = scaleLinear().domain([0, maxAmount]).range([height, 0])
-  const dl = line<HistoryPoint>()
-    .x((p) => xScale(p.x))
-    .y((p) => yScale(p.y))
-    .curve(curveStepBefore)
 
   const yAxis = axisRight<number>(yScale).ticks(8).tickFormat(formatLargeNumber)
   const xAxis = axisBottom<number>(xScale).ticks(6).tickFormat(formatPct)
 
-  const dYes = dl(yesData)
-  const dNo = dl(noData)
-
-  if (dYes === null || dNo === null) return null
+  if (yesData.length === 0 || noData.length === 0) {
+    return null
+  }
 
   return (
-    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis}>
+    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} noWatermark>
       <AreaWithTopStroke
         color="#11b981"
         data={yesData}
         px={(p) => xScale(p.x)}
         py0={yScale(0)}
         py1={(p) => yScale(p.y)}
-        curve={curveStepBefore}
+        curve={curveStepAfter}
       />
       <AreaWithTopStroke
         color="red"
@@ -74,7 +69,7 @@ export function DepthChart(props: {
         px={(p) => xScale(p.x)}
         py0={yScale(0)}
         py1={(p) => yScale(p.y)}
-        curve={curveStepBefore}
+        curve={curveStepAfter}
       />
 
       {/* line at current value */}
@@ -92,7 +87,8 @@ export function DepthChart(props: {
 }
 
 // Converts a list of LimitBets into a list of coordinates to render into a depth chart.
-// Going in order of probability, the y value accumulates each order's amount.
+// The y value accumulates each order's amount.
+// Note this means YES bets are in reverse probability order
 function cumulative(bets: LimitBet[]): HistoryPoint[] {
   const result: HistoryPoint[] = []
   let totalAmount = 0

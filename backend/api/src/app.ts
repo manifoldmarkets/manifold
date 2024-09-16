@@ -47,8 +47,6 @@ import { awardBounty } from './award-bounty'
 import { addBounty } from './add-bounty'
 import { cancelbounty } from './cancel-bounty'
 import { createAnswerCPMM } from './create-answer-cpmm'
-import { createportfolio } from './create-portfolio'
-import { updateportfolio } from './update-portfolio'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { managram } from './managram'
@@ -147,6 +145,7 @@ import { createuser } from 'api/create-user'
 import { verifyPhoneNumber } from 'api/verify-phone-number'
 import { requestOTP } from 'api/request-phone-otp'
 import { multiSell } from 'api/multi-sell'
+import { convertCashToMana } from './convert-cash-to-mana'
 import { convertSpiceToMana } from './convert-sp-to-mana'
 import { donate } from './donate'
 import { getFeed } from 'api/get-feed'
@@ -342,6 +341,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   managrams: getManagrams,
   manalink: createManalink,
   donate: donate,
+  'convert-cash-to-mana': convertCashToMana,
   'convert-sp-to-mana': convertSpiceToMana,
   'market/:id/positions': getPositions,
   me: getMe,
@@ -484,8 +484,6 @@ app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
-app.post('/createportfolio', ...apiRoute(createportfolio))
-app.post('/updateportfolio', ...apiRoute(updateportfolio))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/refer-user', ...apiRoute(referuser))

@@ -1,10 +1,4 @@
-import {
-  log,
-  getUsers,
-  revalidateContractStaticProps,
-  getBettingStreakResetTimeBeforeNow,
-  getUser,
-} from 'shared/utils'
+import { log, getUsers, revalidateContractStaticProps } from 'shared/utils'
 import { Bet, LimitBet, maker } from 'common/bet'
 import {
   CPMMContract,
@@ -55,7 +49,6 @@ import {
 } from 'shared/helpers/add-house-subsidy'
 import { debounce } from 'api/helpers/debounce'
 import { Fees } from 'common/fees'
-import { updateUser } from 'shared/supabase/users'
 import { broadcastNewBets } from 'shared/websockets/helpers'
 import { getAnswersForContract } from 'shared/supabase/answers'
 import { followContractInternal } from 'api/follow-contract'
@@ -65,7 +58,8 @@ export const onCreateBets = async (
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   originalBettor: User,
   ordersToCancel: LimitBet[] | undefined,
-  makers: maker[] | undefined
+  makers: maker[] | undefined,
+  streakIncremented: boolean
 ) => {
   const pg = createSupabaseDirectClient()
   broadcastNewBets(contract.id, contract.visibility, bets)
@@ -119,13 +113,15 @@ export const onCreateBets = async (
 
   const earliestBet = nonRedemptionNonApiBets[0]
 
-  // Follow suggestion should be before betting streak update (which updates lastBetTime)
-  !originalBettor.lastBetTime &&
-    (await createFollowSuggestionNotification(originalBettor.id, contract, pg))
-
-  await updateBettingStreak(originalBettor, earliestBet, contract)
-
   await Promise.all([
+    !originalBettor.lastBetTime &&
+      (await createFollowSuggestionNotification(
+        originalBettor.id,
+        contract,
+        pg
+      )),
+    streakIncremented &&
+      (await payBettingStreak(originalBettor, earliestBet, contract)),
     replyBet &&
       (await handleBetReplyToComment(replyBet, contract, originalBettor, pg)),
     followContractInternal(pg, contract.id, true, originalBettor.id),
@@ -136,9 +132,6 @@ export const onCreateBets = async (
       nonRedemptionNonApiBets
     ),
     addToLeagueIfNotInOne(pg, originalBettor.id),
-    updateUser(pg, originalBettor.id, {
-      lastBetTime: earliestBet.createdTime,
-    }),
   ])
 }
 
@@ -316,37 +309,15 @@ const handleBetReplyToComment = async (
   )
 }
 
-const updateBettingStreak = async (
+const payBettingStreak = async (
   oldUser: User,
   bet: Bet,
   contract: Contract
 ) => {
   const pg = createSupabaseDirectClient()
-
   const result = await pg.tx(async (tx) => {
-    // refetch user to prevent race conditions
-    const bettor = (await getUser(oldUser.id, tx)) ?? oldUser
-    const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
-    const lastBetTime = bettor.lastBetTime ?? 0
-
-    // If they've already bet after the reset time
-    if (lastBetTime > betStreakResetTime) {
-      return {
-        bonusAmount: 0,
-        sweepsBonusAmount: 0,
-        newBettingStreak: bettor.currentBettingStreak,
-        txn: null,
-        sweepsTxn: null,
-      }
-    }
-
-    const newBettingStreak = (bettor?.currentBettingStreak ?? 0) + 1
-    // Otherwise, add 1 to their betting streak
-    await updateUser(tx, bettor.id, {
-      currentBettingStreak: newBettingStreak,
-    })
-
-    if (!humanish(bettor)) {
+    const newBettingStreak = (oldUser.currentBettingStreak ?? 0) + 1
+    if (!humanish(oldUser)) {
       return {
         bonusAmount: 0,
         sweepsBonusAmount: 0,
@@ -372,7 +343,7 @@ const updateBettingStreak = async (
       'id' | 'createdTime' | 'fromId'
     > = {
       fromType: 'BANK',
-      toId: bettor.id,
+      toId: oldUser.id,
       toType: 'USER',
       amount: bonusAmount,
       token: 'M$',
@@ -384,7 +355,7 @@ const updateBettingStreak = async (
 
     let sweepsTxn = null
     let sweepsBonusAmount = 0
-    if (bettor.sweepstakesVerified && TWOMBA_ENABLED) {
+    if (oldUser.sweepstakesVerified && TWOMBA_ENABLED) {
       sweepsBonusAmount = Math.min(
         BETTING_STREAK_SWEEPS_BONUS_AMOUNT * newBettingStreak,
         BETTING_STREAK_SWEEPS_BONUS_MAX
@@ -395,7 +366,7 @@ const updateBettingStreak = async (
         'id' | 'createdTime' | 'fromId'
       > = {
         fromType: 'BANK',
-        toId: bettor.id,
+        toId: oldUser.id,
         toType: 'USER',
         amount: sweepsBonusAmount,
         token: 'CASH',
@@ -409,17 +380,15 @@ const updateBettingStreak = async (
     return { txn, sweepsTxn, bonusAmount, sweepsBonusAmount, newBettingStreak }
   })
 
-  if (result.txn) {
-    await createBettingStreakBonusNotification(
-      oldUser,
-      result.txn.id,
-      bet,
-      contract,
-      result.bonusAmount,
-      result.newBettingStreak,
-      result.sweepsTxn ? result.sweepsBonusAmount : undefined
-    )
-  }
+  await createBettingStreakBonusNotification(
+    oldUser,
+    result.txn.id,
+    bet,
+    contract,
+    result.bonusAmount,
+    result.newBettingStreak,
+    result.sweepsTxn ? result.sweepsBonusAmount : undefined
+  )
 }
 
 export const sendUniqueBettorNotificationToCreator = async (

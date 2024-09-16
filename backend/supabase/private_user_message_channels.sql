@@ -7,9 +7,10 @@ create table if not exists
     title text
   );
 
--- Policies
+-- Row Level Security
 alter table private_user_message_channels enable row level security;
 
+-- Policies
 drop policy if exists "public read" on private_user_message_channels;
 
 create policy "public read" on private_user_message_channels for all using (true);

@@ -25,9 +25,10 @@ or replace function public.post_comment_populate_cols () returns trigger languag
   return new;
 end $function$;
 
--- Policies
+-- Row Level Security
 alter table old_post_comments enable row level security;
 
+-- Policies
 drop policy if exists "auth read" on old_post_comments;
 
 create policy "auth read" on old_post_comments for

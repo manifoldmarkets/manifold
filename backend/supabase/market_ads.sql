@@ -14,9 +14,10 @@ create table if not exists
 alter table market_ads
 add constraint market_ads_market_id_fkey foreign key (market_id) references contracts (id);
 
--- Policies
+-- Row Level Security
 alter table market_ads enable row level security;
 
+-- Policies
 drop policy if exists "admin write access" on market_ads;
 
 create policy "admin write access" on market_ads for all to service_role;

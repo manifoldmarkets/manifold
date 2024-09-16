@@ -6,9 +6,10 @@ create table if not exists
     embedding vector (1536) not null
   );
 
--- Policies
+-- Row Level Security
 alter table topic_embeddings enable row level security;
 
+-- Policies
 drop policy if exists "admin write access" on topic_embeddings;
 
 create policy "admin write access" on topic_embeddings for all to service_role;

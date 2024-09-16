@@ -342,6 +342,7 @@ export const API = (_apiTypeCheck = {
     returns: [] as Bet[],
     props: z
       .object({
+        id: z.string().optional(),
         userId: z.string().optional(),
         username: z.string().optional(),
         contractId: z.string().or(z.array(z.string())).optional(),
@@ -707,6 +708,12 @@ export const API = (_apiTypeCheck = {
       .strict(),
   },
   'convert-sp-to-mana': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ amount: z.number().positive().finite().safe() }).strict(),
+  },
+  'convert-cash-to-mana': {
     method: 'POST',
     visibility: 'public',
     authed: true,

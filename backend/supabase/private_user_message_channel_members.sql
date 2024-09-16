@@ -10,6 +10,9 @@ create table if not exists
     notify_after_time timestamp with time zone default now() not null
   );
 
+-- Row Level Security
+alter table private_user_message_channel_members enable row level security;
+
 -- Indexes
 drop index if exists private_user_message_channel_members_pkey;
 

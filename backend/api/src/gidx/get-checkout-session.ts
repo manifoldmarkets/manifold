@@ -6,6 +6,7 @@ import {
 } from 'common/gidx/gidx'
 import {
   GIDXCallbackUrl,
+  GIDX_BASE_URL,
   getGIDXStandardParams,
   getLocalServerIP,
   throwIfIPNotWhitelisted,
@@ -20,8 +21,7 @@ import { getVerificationStatus } from 'common/user'
 import { getUser, LOCAL_DEV } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
-const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/DirectCashier/CreateSession'
+const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CreateSession'
 
 export const getCheckoutSession: APIHandler<
   'get-checkout-session-gidx'
@@ -83,7 +83,7 @@ export const getCheckoutSession: APIHandler<
     }
   }
   const ID_ENDPOINT =
-    'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerProfile'
+    GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerProfile'
   const idBody = {
     MerchantCustomerID: userId,
     ...getGIDXStandardParams(),

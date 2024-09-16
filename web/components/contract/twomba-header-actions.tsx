@@ -33,6 +33,7 @@ import { WatchMarketModal } from './watch-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
 import { isAdminId } from 'common/envs/constants'
 import { FaDollarSign } from 'react-icons/fa'
+import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
 
 export function TwombaHeaderActions(props: {
   playContract: Contract
@@ -250,7 +251,15 @@ export function TwombaHeaderActions(props: {
   return (
     // make tooltip children stretch
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
-      {!!currentContract.siblingContractId && <TwombaToggle />}
+      {!!currentContract.siblingContractId && (
+        <div className="relative">
+          <TwombaToggle />
+          <ToggleVerifyCallout
+            className="absolute -right-[60px] top-full z-10 mt-3 hidden w-80 sm:flex"
+            caratClassName="right-[84px]"
+          />
+        </div>
+      )}
       {!playContract.coverImageUrl && isCreator && (
         <ChangeBannerButton
           contract={playContract}

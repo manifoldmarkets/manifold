@@ -9,6 +9,7 @@ import {
   ExtraPurchasedManaData,
   getSourceUrl,
   Notification,
+  PaymentCompletedData,
   ReactionNotificationTypes,
   ReviewNotificationData,
 } from 'common/notification'
@@ -17,7 +18,7 @@ import {
   MANIFOLD_USER_NAME,
   MANIFOLD_USER_USERNAME,
 } from 'common/user'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyUSD } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { sortBy } from 'lodash'
@@ -66,9 +67,9 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { TRADED_TERM } from 'common/envs/constants'
+import { TRADED_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
+import { BsBank } from 'react-icons/bs'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -137,6 +138,14 @@ export function NotificationItem(props: {
   } else if (reason === 'mana_payment_received') {
     return (
       <ManaPaymentReceivedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'payment_status') {
+    return (
+      <PaymentSuccessNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -453,9 +462,10 @@ function LimitOrderCancelledNotification(props: {
     probability,
     limitAt: dataLimitAt,
     outcomeType,
+    token,
   } = (data as BetFillData) ?? {}
 
-  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'))
+  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'), token)
   const limitAt =
     dataLimitAt !== undefined
       ? dataLimitAt
@@ -515,8 +525,9 @@ function LimitOrderExpiredNotification(props: {
     probability,
     limitAt: dataLimitAt,
     outcomeType,
+    token,
   } = (data as BetFillData) ?? {}
-  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'))
+  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'), token)
   const limitAt =
     dataLimitAt !== undefined
       ? dataLimitAt
@@ -587,8 +598,9 @@ function BetFillNotification(props: {
     limitAt: dataLimitAt,
     outcomeType,
     betAnswer,
+    token,
   } = (data as BetFillData) ?? {}
-  const amount = formatMoney(parseInt(sourceText ?? '0'))
+  const amount = formatMoney(parseInt(sourceText ?? '0'), token)
   const limitAt =
     dataLimitAt !== undefined
       ? dataLimitAt
@@ -623,15 +635,15 @@ function BetFillNotification(props: {
       {limitOrderRemaining === 0 && (
         <>
           Your limit order{' '}
-          {limitOrderTotal && <>for {formatMoney(limitOrderTotal)}</>} is
+          {limitOrderTotal && <>for {formatMoney(limitOrderTotal, token)}</>} is
           complete
         </>
       )}
       {!!limitOrderRemaining && (
         <>
-          You have {formatMoney(limitOrderRemaining)}
-          {limitOrderTotal && <>/{formatMoney(limitOrderTotal)}</>} remaining in
-          your order
+          You have {formatMoney(limitOrderRemaining, token)}
+          {limitOrderTotal && <>/{formatMoney(limitOrderTotal, token)}</>}{' '}
+          remaining in your order
         </>
       )}
     </>
@@ -1369,6 +1381,7 @@ function LiquidityNotification(props: {
     sourceUserUsername,
     sourceText,
     sourceContractTitle,
+    data,
   } = notification
   return (
     <NotificationFrame
@@ -1388,7 +1401,9 @@ function LiquidityNotification(props: {
           username={sourceUserUsername}
         />{' '}
         added{' '}
-        {sourceText && <span>{formatMoney(parseInt(sourceText))} of</span>}{' '}
+        {sourceText && (
+          <span>{formatMoney(parseInt(sourceText), data?.token)} of</span>
+        )}{' '}
         liquidity{' '}
         {!isChildOfGroup && (
           <span>
@@ -1440,11 +1455,8 @@ function ReferralProgramNotification(props: {
       <span>
         Refer friends and get{' '}
         <CoinNumber
-          coinType="spice"
+          coinType={TWOMBA_ENABLED ? 'MANA' : 'spice'}
           amount={REFERRAL_AMOUNT}
-          style={{
-            color: SPICE_COLOR,
-          }}
           className={clsx('mr-1 font-bold')}
           isInline
         />
@@ -1915,6 +1927,36 @@ function ExtraPurchasedManaNotification(props: {
       Thank you for buying mana in 2024! You just received{' '}
       <span className="font-semibold">{formatMoney(amount)}</span>, which is 9
       times what you purchased, as a gift from Manifold!
+    </NotificationFrame>
+  )
+}
+
+export function PaymentSuccessNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { amount, currency, paymentMethodType } =
+    notification.data as PaymentCompletedData
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<BsBank className="text-primary-500 h-8 w-8" />}
+      subtitle={
+        <span className="text-ink-600">
+          You should receive your funds within the next couple days.
+        </span>
+      }
+    >
+      <span>
+        Your {paymentMethodType} payment for {formatMoneyUSD(amount)} {currency}{' '}
+        was approved!
+      </span>
     </NotificationFrame>
   )
 }

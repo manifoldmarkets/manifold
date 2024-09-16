@@ -43,9 +43,10 @@ BEGIN
 END;
 $function$;
 
--- Policies
+-- Row Level Security
 alter table group_invites enable row level security;
 
+-- Policies
 drop policy if exists "Enable read access for admin" on group_invites;
 
 create policy "Enable read access for admin" on group_invites for

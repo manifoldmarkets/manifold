@@ -12,6 +12,9 @@ create table if not exists
 alter table kyc_bonus_rewards
 add constraint kyc_bonus_rewards_user_id_fkey foreign key (user_id) references users (id);
 
+-- Row Level Security
+alter table kyc_bonus_rewards enable row level security;
+
 -- Indexes
 drop index if exists kyc_bonus_rewards_pkey;
 

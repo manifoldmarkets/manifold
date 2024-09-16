@@ -7,9 +7,10 @@ create table if not exists
     idempotency_key text
   );
 
--- Policies
+-- Row Level Security
 alter table user_quest_metrics enable row level security;
 
+-- Policies
 drop policy if exists "public read" on user_quest_metrics;
 
 create policy "public read" on user_quest_metrics for

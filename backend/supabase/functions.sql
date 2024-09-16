@@ -277,9 +277,12 @@ or replace function public.get_donations_by_charity () returns table (
 ) language sql as $function$
     select to_id as charity_id,
       count(distinct from_id) as num_supporters,
-      sum(case when token = 'M$'
-        then amount / 100
-        else amount / 1000 end
+      sum(case
+        when token = 'M$' then amount / 100
+        when token = 'SPICE' then amount / 1000
+        when token = 'CASH' then amount
+        else 0
+        end
       ) as total
     from txns
     where category = 'CHARITY'
@@ -319,7 +322,6 @@ BEGIN
     order by love_answers.created_time desc;
 END;
 $function$;
-
 
 create
 or replace function public.get_non_empty_private_message_channel_ids (
@@ -434,7 +436,6 @@ where
 order by last_updated_time desc
 limit max
 $function$;
-
 
 create
 or replace function public.get_user_bet_contracts (this_user_id text, this_limit integer) returns table (data json) language sql immutable parallel SAFE as $function$

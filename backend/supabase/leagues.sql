@@ -12,9 +12,10 @@ create table if not exists
     id uuid default gen_random_uuid () not null
   );
 
--- Policies
+-- Row Level Security
 alter table leagues enable row level security;
 
+-- Policies
 drop policy if exists "public read" on leagues;
 
 create policy "public read" on leagues for

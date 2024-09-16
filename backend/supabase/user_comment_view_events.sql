@@ -8,6 +8,9 @@ create table if not exists
     comment_id text not null
   );
 
+-- Row Level Security
+alter table user_comment_view_events enable row level security;
+
 -- Indexes
 drop index if exists user_comment_view_events_pkey;
 

@@ -194,6 +194,7 @@ type LocationDetailType = {
 }
 
 export type GIDXMonitorResponse = {
+  ApiKey: string
   MerchantCustomerID: string
   ReasonCodes: string[]
   WatchChecks: WatchCheckType[]

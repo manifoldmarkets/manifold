@@ -81,6 +81,7 @@ export function DailyChart(props: { values: Point[]; pct?: boolean }) {
           curve={curveLinear}
           zoomParams={zoomParams}
           showZoomer
+          noWatermark
         />
       )}
     </SizedContainer>

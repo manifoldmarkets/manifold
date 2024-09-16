@@ -3,7 +3,12 @@ import { charities } from 'common/charity'
 import { APIError } from 'api/helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { CHARITY_FEE, MIN_SPICE_DONATION } from 'common/envs/constants'
+import {
+  MIN_CASH_DONATION,
+  MIN_SPICE_DONATION,
+  CHARITY_FEE,
+  TWOMBA_ENABLED,
+} from 'common/envs/constants'
 import { getUser } from 'shared/utils'
 
 export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
@@ -16,12 +21,20 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
     const user = await getUser(auth.uid, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
 
-    if (user.spiceBalance < amount) {
-      throw new APIError(403, 'Insufficient prize points')
+    const balance = TWOMBA_ENABLED ? user.cashBalance : user.spiceBalance
+    if (balance < amount) {
+      throw new APIError(
+        403,
+        `Insufficient ${TWOMBA_ENABLED ? 'cash' : 'prize points'} balance`
+      )
     }
 
-    if (amount < MIN_SPICE_DONATION) {
-      throw new APIError(400, 'Minimum donation is 25,000 prize points')
+    const min = TWOMBA_ENABLED ? MIN_CASH_DONATION : MIN_SPICE_DONATION
+    if (amount < min) {
+      throw new APIError(
+        400,
+        `Minimum donation is ${min} ${TWOMBA_ENABLED ? 'cash' : 'prize points'}`
+      )
     }
 
     // add donation to charity
@@ -35,7 +48,7 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
       toType: 'BANK',
       toId: 'BANK',
       amount: fee,
-      token: 'SPICE',
+      token: TWOMBA_ENABLED ? 'CASH' : 'SPICE',
       data: {
         charityId: charity.id,
       },
@@ -48,7 +61,7 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
       toType: 'CHARITY',
       toId: charity.id,
       amount: donation,
-      token: 'SPICE',
+      token: TWOMBA_ENABLED ? 'CASH' : 'SPICE',
     } as const
 
     await runTxn(tx, feeTxn)

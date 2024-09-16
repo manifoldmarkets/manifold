@@ -63,12 +63,11 @@ export const getTieredCost = (
 export const KYC_VERIFICATION_BONUS_CASH = 1
 export const BETTING_STREAK_SWEEPS_BONUS_AMOUNT = 0.05
 export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
-/* Mana bonuses */
 
+/* Mana bonuses */
 export const STARTING_BALANCE = 100
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10
-
 export const PHONE_VERIFICATION_BONUS = 1000
 
 export const REFERRAL_AMOUNT = 1000
@@ -121,54 +120,77 @@ export const PaymentAmounts = [
 
 export const PaymentAmountsGIDX = [
   {
-    mana: 10_000,
+    mana: 1_000,
     priceInDollars: 15,
     bonusInDollars: 10,
   },
   {
-    mana: 25_000,
+    mana: 2_500,
     priceInDollars: 30,
     bonusInDollars: 25,
   },
   {
-    mana: 100_000,
+    mana: 10_000,
     priceInDollars: 110,
     bonusInDollars: 100,
   },
   {
-    mana: 1_000_000,
+    mana: 100_000,
     priceInDollars: 1_000,
     bonusInDollars: 1000,
   },
 ]
 export type PaymentAmount = (typeof PaymentAmounts)[number]
+
 export const MANA_WEB_PRICES = TWOMBA_ENABLED
   ? PaymentAmountsGIDX
   : PaymentAmounts
 
 export type WebManaAmounts = (typeof PaymentAmounts)[number]['mana']
 // TODO: these prices should be a function of whether the user is sweepstakes verified or not
-export const IOS_PRICES = [
-  {
-    mana: 10_000,
-    priceInDollars: 14.99,
-    bonusInDollars: TWOMBA_ENABLED ? 10 : 0,
-    sku: 'mana_1000',
-  },
-  {
-    mana: 25_000,
-    priceInDollars: 35.99,
-    bonusInDollars: TWOMBA_ENABLED ? 25 : 0,
-    sku: 'mana_2500',
-  },
-  {
-    mana: 100_000,
-    priceInDollars: 142.99,
-    bonusInDollars: TWOMBA_ENABLED ? 100 : 0,
-    sku: 'mana_10000',
-  },
-  // No 1M option on ios: the fees are too high
-]
+export const IOS_PRICES = !TWOMBA_ENABLED
+  ? [
+      {
+        mana: 10_000,
+        priceInDollars: 14.99,
+        bonusInDollars: 0,
+        sku: 'mana_1000',
+      },
+      {
+        mana: 25_000,
+        priceInDollars: 35.99,
+        bonusInDollars: 0,
+        sku: 'mana_2500',
+      },
+      {
+        mana: 100_000,
+        priceInDollars: 142.99,
+        bonusInDollars: 0,
+        sku: 'mana_10000',
+      },
+      // No 1M option on ios: the fees are too high
+    ]
+  : [
+      {
+        mana: 1_000,
+        priceInDollars: 14.99,
+        bonusInDollars: 10,
+        sku: 'mana_1000',
+      },
+      {
+        mana: 2_500,
+        priceInDollars: 35.99,
+        bonusInDollars: 25,
+        sku: 'mana_2500',
+      },
+      {
+        mana: 10_000,
+        priceInDollars: 142.99,
+        bonusInDollars: 100,
+        sku: 'mana_10000',
+      },
+      // No 1M option on ios: the fees are too high
+    ]
 
 export const SWEEPIES_CASHOUT_FEE = 0.05
 export const MIN_CASHOUT_AMOUNT = 25

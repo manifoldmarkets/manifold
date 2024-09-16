@@ -22,10 +22,14 @@ import {
 import { bulkUpsert } from 'shared/supabase/utils'
 import { saveCalibrationData } from 'shared/calculate-calibration'
 import { MANA_PURCHASE_RATE_CHANGE_DATE } from 'common/envs/constants'
-import { calculateManaStats } from 'shared/calculate-mana-stats'
+import {
+  updateTxnStats,
+  insertLatestManaStats,
+} from 'shared/calculate-mana-stats'
 import { getFeedConversionScores } from 'shared/feed-analytics'
 import { buildArray } from 'common/util/array'
 import { type Tables } from 'common/supabase/utils'
+import { recalculateAllUserPortfolios } from 'shared/mana-supply'
 
 interface StatEvent {
   id: string
@@ -53,7 +57,9 @@ export const updateStatsCore = async (daysAgo: number) => {
   await updateStatsBetween(pg, start, end)
 
   const startOfYesterday = endDay.subtract(1, 'day').startOf('day').valueOf()
-  await calculateManaStats(startOfYesterday, 1)
+  await updateTxnStats(pg, startOfYesterday, 1)
+  await recalculateAllUserPortfolios(pg)
+  await insertLatestManaStats(pg)
 
   await saveCalibrationData(pg)
 

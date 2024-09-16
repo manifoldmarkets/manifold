@@ -1,5 +1,8 @@
-import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
-import { Row } from 'common/supabase/utils'
+import {
+  pgp,
+  SupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
 import { WEEK_MS } from 'common/util/time'
 import { APIError } from 'common/api/utils'
 import { User } from 'common/user'
@@ -8,6 +11,8 @@ import {
   broadcastUpdatedUser,
   broadcastUpdatedPrivateUser,
 } from 'shared/websockets/helpers'
+import { removeUndefinedProps } from 'common/util/object'
+import { getBettingStreakResetTimeBeforeNow } from 'shared/utils'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
@@ -118,18 +123,72 @@ export const incrementBalance = async (
     `update users set ${updates
       .map(([k, v]) => `${k} = ${k} + ${v}`)
       .join(',')} where id = $1
-    returning *`,
+    returning id, ${updates.map(([k]) => k).join(', ')}`,
     [id]
   )
 
-  broadcastUpdatedUser({
-    id,
-    balance: result.balance,
-    cashBalance: result.cash_balance,
-    spiceBalance: result.spice_balance,
-    totalDeposits: result.total_deposits,
-    totalCashDeposits: result.total_cash_deposits,
-  })
+  broadcastUpdatedUser(
+    removeUndefinedProps({
+      id,
+      balance: result.balance,
+      cashBalance: result.cash_balance,
+      spiceBalance: result.spice_balance,
+      totalDeposits: result.total_deposits,
+      totalCashDeposits: result.total_cash_deposits,
+    })
+  )
+}
+
+export const incrementStreak = async (
+  tx: SupabaseTransaction,
+  user: User,
+  newBetTime: number
+) => {
+  const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
+
+  const incremented = await tx.one(
+    `
+      WITH old_data AS (
+        SELECT 
+          coalesce((data->>'lastBetTime')::bigint, 0) AS lastBetTime,
+          coalesce((data->>'currentBettingStreak')::int, 0) AS currentBettingStreak
+        FROM users
+        WHERE id = $1
+      )
+      UPDATE users SET 
+        data = jsonb_set(
+          jsonb_set(data, '{currentBettingStreak}', 
+            CASE
+              WHEN old_data.lastBetTime < $2
+              THEN (old_data.currentBettingStreak + 1)::text::jsonb
+              ELSE old_data.currentBettingStreak::text::jsonb
+            END
+          ),
+          '{lastBetTime}', to_jsonb($3)::jsonb
+        )
+      FROM old_data
+      WHERE users.id = $1
+      RETURNING 
+        CASE
+          WHEN old_data.lastBetTime < $2 THEN true
+          ELSE false
+        END AS streak_incremented
+      `,
+    [user.id, betStreakResetTime, newBetTime],
+    (r) => r.streak_incremented
+  )
+
+  broadcastUpdatedUser(
+    removeUndefinedProps({
+      id: user.id,
+      currentBettingStreak: incremented
+        ? (user?.currentBettingStreak ?? 0) + 1
+        : undefined,
+      lastBetTime: newBetTime,
+    })
+  )
+
+  return incremented
 }
 
 export const bulkIncrementBalances = async (
@@ -147,7 +206,7 @@ export const bulkIncrementBalances = async (
 
   const values = userUpdates
     .map((update) =>
-      pgp.as.format(`($1, $2, $3, $4, $5)`, [
+      pgp.as.format(`($1, $2, $3, $4, $5, $6)`, [
         update.id,
         update.balance ?? 0,
         update.cashBalance ?? 0,
@@ -163,22 +222,21 @@ export const bulkIncrementBalances = async (
         balance = u.balance + v.balance,
         cash_balance = u.cash_balance + v.cash_balance,
         spice_balance = u.spice_balance + v.spice_balance,
-        total_deposits = u.total_deposits + v.total_deposits
-    from (values ${values}) as v(id, balance, cash_balance, spice_balance, total_deposits)
+        total_deposits = u.total_deposits + v.total_deposits,
+        total_cash_deposits = u.total_cash_deposits + v.total_cash_deposits
+    from (values ${values}) as v(id, balance, cash_balance, spice_balance, total_deposits, total_cash_deposits)
     where u.id = v.id
-    returning u.*
+    returning u.id, u.balance, u.cash_balance, u.spice_balance, u.total_deposits, u.total_cash_deposits
   `)
 
-  for (const row of results as Pick<
-    Row<'users'>,
-    'id' | 'balance' | 'cash_balance' | 'spice_balance' | 'total_deposits'
-  >[]) {
+  for (const row of results) {
     broadcastUpdatedUser({
       id: row.id,
       balance: row.balance,
       cashBalance: row.cash_balance,
       spiceBalance: row.spice_balance,
       totalDeposits: row.total_deposits,
+      totalCashDeposits: row.total_cash_deposits,
     })
   }
 }

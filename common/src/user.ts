@@ -75,7 +75,7 @@ export type User = {
   verifiedPhone?: boolean
 
   // KYC related fields:
-  kycLastAttempt?: number
+  kycLastAttemptTime?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
   sweepstakesVerified?: boolean
   idVerified?: boolean
@@ -194,6 +194,12 @@ export const LOCATION_BLOCKED_MESSAGE = 'User location is blocked'
 export const USER_BLOCKED_MESSAGE = 'User is blocked'
 export const USER_NOT_REGISTERED_MESSAGE = 'User must register'
 export const USER_VERIFIED_MESSSAGE = 'User is verified'
+
+export const PROMPT_VERIFICATION_MESSAGES = [
+  USER_NOT_REGISTERED_MESSAGE,
+  PHONE_NOT_VERIFIED_MESSAGE,
+  IDENTIFICATION_FAILED_MESSAGE,
+]
 
 export const getVerificationStatus = (
   user: User

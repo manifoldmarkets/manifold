@@ -8,9 +8,10 @@ create table if not exists
     disinterest_embedding vector (1536)
   );
 
--- Policies
+-- Row Level Security
 alter table user_embeddings enable row level security;
 
+-- Policies
 drop policy if exists "admin write access" on user_embeddings;
 
 create policy "admin write access" on user_embeddings for all to service_role;

@@ -6,6 +6,9 @@ create table if not exists
     user_id text not null
   );
 
+-- Row Level Security
+alter table discord_users enable row level security;
+
 -- Indexes
 drop index if exists discord_users_pkey;
 

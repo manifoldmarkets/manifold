@@ -17,9 +17,10 @@ create table if not exists
     amm_cash_liquidity numeric default 0 not null
   );
 
--- Policies
+-- Row Level Security
 alter table mana_supply_stats enable row level security;
 
+-- Policies
 drop policy if exists "public read" on mana_supply_stats;
 
 create policy "public read" on mana_supply_stats for
