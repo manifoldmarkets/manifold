@@ -20,8 +20,8 @@ export function UpdatedTermsModal() {
   const isExceptionPage = ['/terms', '/privacy', '/rules'].some((path) =>
     actualPath.includes(path)
   )
-  // Add a constant for the cutoff date
-  const TERMS_UPDATE_DATE = new Date('2024-09-15') // Replace with actual update date
+  // Add a constant for the cutoff date, UPDATE WHEN FLIP TWOMBA_SWITCH
+  const TERMS_UPDATE_DATE = new Date('2024-09-17') // Replace with actual update date
 
   // Check if the user was created after the terms update
   const isNewUser = user && new Date(user.createdTime) > TERMS_UPDATE_DATE
