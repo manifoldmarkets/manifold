@@ -509,7 +509,7 @@ export const BuyPanelBody = (props: {
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
-        <InBeta className="my-2" />
+        {isCashContract && <InBeta className="my-2" />}
         {children}
         {(isAdvancedTrader || alwaysShowOutcomeSwitcher) && (
           <Row className={'mb-2 mr-8 justify-between'}>
