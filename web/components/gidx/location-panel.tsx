@@ -111,7 +111,13 @@ export const LocationPanel = (props: {
           onFinishCallback?.()
         },
         (error) => {
-          setLocationError(error.message)
+          if (error.PERMISSION_DENIED) {
+            setLocationError(
+              'Location permission denied. Please enable location sharing in your browser settings.'
+            )
+          } else {
+            setLocationError(error.message)
+          }
           setLoading(false)
           onFinishCallback?.()
         }
