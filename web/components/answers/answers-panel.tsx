@@ -193,7 +193,7 @@ export function AnswersPanel(props: {
     enabled: isAdvancedTrader && shouldShowLimitOrderChart,
   })
 
-  const [shouldShowPositions, setShouldShowPositions] = useState(true)
+  const [shouldShowPositions, setShouldShowPositions] = useState(!allResolved)
 
   const moreCount = answers.length - answersToShow.length
   // Note: Hide answers if there is just one "Other" answer.
@@ -624,12 +624,7 @@ export function Answer(props: {
     resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   )
 
-  const showSellButton =
-    !resolution &&
-    hasBets &&
-    user &&
-    (!contract.closeTime || contract.closeTime > Date.now()) &&
-    !answer.resolutionTime
+  const showPosition = hasBets && user
 
   const userHasLimitOrders =
     shouldShowLimitOrderChart && (yourUnfilledBets ?? []).length > 0
@@ -778,7 +773,7 @@ export function Answer(props: {
           }
         >
           <Row className="text-ink-500 gap-1.5">
-            {showSellButton && (
+            {showPosition && (
               <AnswerPosition
                 contract={contract}
                 answer={answer}
@@ -787,7 +782,7 @@ export function Answer(props: {
                 user={user}
               />
             )}
-            {userHasLimitOrders && showSellButton && <>&middot;</>}
+            {userHasLimitOrders && showPosition && <>&middot;</>}
             {userHasLimitOrders && (
               <AnswerOrdersButton
                 contract={contract}

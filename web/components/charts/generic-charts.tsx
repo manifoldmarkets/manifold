@@ -728,6 +728,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   hideXAxis?: boolean
   onGraphClick?: () => void
   areaClassName?: string
+  noWatermark?: boolean
   className?: string
 }) => {
   const {
@@ -749,6 +750,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     hideXAxis,
     onGraphClick,
     areaClassName,
+    noWatermark,
   } = props
 
   useLayoutEffect(() => {
@@ -873,6 +875,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         pointerMode={pointerMode}
         hideXAxis={hideXAxis}
         yKind={yKind}
+        noWatermark={noWatermark}
       >
         {typeof color !== 'string' && (
           <defs>

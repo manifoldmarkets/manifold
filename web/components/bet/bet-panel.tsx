@@ -39,7 +39,6 @@ import {
   TRADE_TERM,
   TWOMBA_ENABLED,
 } from 'common/envs/constants'
-import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { getFeeTotal } from 'common/fees'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
@@ -54,7 +53,7 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { Button, buttonClass } from '../buttons/button'
+import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { getAnswerColor } from '../charts/contract/choice'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
@@ -63,10 +62,9 @@ import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
-import Link from 'next/link'
 import { blockFromSweepstakes, identityPending } from 'common/user'
-import { CoinNumber } from '../widgets/coin-number'
 import { CashoutLimitWarning } from './cashout-limit-warning'
+import { VerifyButton } from '../twomba/toggle-verify-callout'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -137,21 +135,15 @@ export function BuyPanel(props: {
     )
   } else if (contract.token === 'CASH' && user && !user.idVerified) {
     return (
-      <Row className={'bg-canvas-50 gap-1 rounded p-4'}>
-        <span>
-          Verify your info to start trading on sweepstakes markets and earn a
-          bonus of{' '}
-          <CoinNumber
-            amount={KYC_VERIFICATION_BONUS_CASH}
-            coinType="sweepies"
-            isInline
-          />
-          !
-        </span>
-        <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
-          Verify
-        </Link>
-      </Row>
+      <Col className="bg-canvas-50 gap-2 rounded-lg p-4">
+        <div className="mx-auto text-lg font-semibold">
+          Must be verified to {TRADE_TERM}
+        </div>
+        <p className="text-ink-700 mx-auto">
+          Verify your info to start trading on sweepstakes markets!
+        </p>
+        <VerifyButton />
+      </Col>
     )
   } else if (contract.token === 'CASH' && blockFromSweepstakes(user)) {
     return (
