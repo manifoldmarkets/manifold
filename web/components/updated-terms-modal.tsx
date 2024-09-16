@@ -20,8 +20,14 @@ export function UpdatedTermsModal() {
   const isExceptionPage = ['/terms', '/privacy', '/rules'].some((path) =>
     actualPath.includes(path)
   )
+  // Add a constant for the cutoff date
+  const TERMS_UPDATE_DATE = new Date('2024-09-15') // Replace with actual update date
 
-  if (agreedToTerms || !user || !TWOMBA_ENABLED || isExceptionPage) return null
+  // Check if the user was created after the terms update
+  const isNewUser = user && new Date(user.createdTime) > TERMS_UPDATE_DATE
+
+  if (agreedToTerms || !user || !TWOMBA_ENABLED || isExceptionPage || isNewUser)
+    return null
   return (
     <Modal open={true} onClose={() => {}}>
       <Col className={MODAL_CLASS}>
