@@ -372,6 +372,7 @@ const CashoutPage = () => {
                   placeholder="Redeem Amount"
                   amount={amountInDollars}
                   allowFloat={true}
+                  min={MIN_CASHOUT_AMOUNT}
                   inputClassName={'w-40'}
                   label={<SweepiesCoin className={'mb-1'} />}
                   onChangeAmount={(newAmount) => {
@@ -452,7 +453,8 @@ const CashoutPage = () => {
                   !NameOnAccount ||
                   !AccountNumber ||
                   !RoutingNumber ||
-                  !amountInDollars
+                  !amountInDollars ||
+                  amountInDollars < MIN_CASHOUT_AMOUNT
                 }
               >
                 <Row className={'gap-1'}>
