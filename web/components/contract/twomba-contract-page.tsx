@@ -76,6 +76,7 @@ import { useSweepstakes } from '../sweestakes-context'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
 import { useRouter } from 'next/router'
+import { IoIosWarning } from 'react-icons/io'
 
 export function TwombaContractPageContent(props: ContractParams) {
   const {
@@ -218,6 +219,7 @@ export function TwombaContractPageContent(props: ContractParams) {
     parseJsonContentToText(props.contract.description).trim().length >= 200
 
   const isSpiceMarket = !!liveContract.isSpicePayout
+  const isCashContract = liveContract.token === 'CASH'
 
   return (
     <>
@@ -268,6 +270,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                 />
               </div>
             )}
+
             <Row
               className={clsx(
                 'sticky -top-px z-50 h-12 w-full transition-colors',
@@ -351,7 +354,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                   question={props.contract.question}
                   financeContract={liveContract}
                   editable={isCreator || isAdmin || isMod}
-                  isCashContract={liveContract.token === 'CASH'}
+                  isCashContract={isCashContract}
                 />
               </Row>
               <ContractOverview
@@ -458,7 +461,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                   contractId={liveContract.id}
                   currentUser={user}
                   currentUserMetrics={contractMetrics}
-                  isCashContract={liveContract.token === 'CASH'}
+                  isCashContract={isCashContract}
                 />
                 <Spacer h={12} />
               </>
