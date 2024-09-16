@@ -20,25 +20,26 @@ export const VerifyPhoneNumberBanner = (props: {
   return (
     <Col
       className={
-        'border-ink-400 m-2 items-center justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700 sm:flex-row'
+        'border-primary-500 bg-primary-100 items-center justify-between gap-2 rounded border p-2 px-4 sm:flex-row'
       }
     >
       <span>
         {TWOMBA_ENABLED
-          ? 'Verify your phone number to collect'
-          : `Prove that you're not a robot to collect`}{' '}
+          ? 'Verify your phone number'
+          : `Prove that you're not a robot`}
+        .{' '}
+      </span>
+      <Button
+        className={'w-full whitespace-nowrap font-semibold sm:w-fit'}
+        onClick={() => setShowVerifyPhone(true)}
+        color="violet"
+      >
+        Verify and claim&nbsp;
         <CoinNumber
           amount={PHONE_VERIFICATION_BONUS}
           className={'font-bold'}
           isInline
         />
-        .{' '}
-      </span>
-      <Button
-        className={'whitespace-nowrap'}
-        onClick={() => setShowVerifyPhone(true)}
-      >
-        Claim {formatMoney(PHONE_VERIFICATION_BONUS)}
       </Button>
       <VerifyPhoneModal open={showVerifyPhone} setOpen={setShowVerifyPhone} />
     </Col>
