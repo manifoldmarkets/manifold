@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { BottomNavBar } from '../nav/bottom-nav-bar'
 import Sidebar from '../nav/sidebar'
 import { Toaster } from 'react-hot-toast'
@@ -10,6 +10,12 @@ import { ConfettiOnDemand } from '../confetti-on-demand'
 import { useTracking } from 'web/hooks/use-tracking'
 import { DowntimeBanner } from '../nav/banner'
 import { useUser } from 'web/hooks/use-user'
+import { Modal, MODAL_CLASS } from './modal'
+
+import { Button } from '../buttons/button'
+import Link from 'next/link'
+import { ManifoldLogo } from '../nav/manifold-logo'
+import { UpdatedTermsModal } from '../updated-terms-modal'
 
 export function Page(props: {
   trackPageView: string | false
@@ -74,6 +80,7 @@ export function Page(props: {
           {children}
         </main>
       </Col>
+      <UpdatedTermsModal />
       {!hideBottomBar && <BottomNavBar />}
     </>
   )
