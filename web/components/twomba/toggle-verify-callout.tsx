@@ -1,21 +1,19 @@
-import { XIcon } from '@heroicons/react/solid'
+import { Placement } from '@floating-ui/react'
 import clsx from 'clsx'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
+import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
 import {
   getVerificationStatus,
   PROMPT_VERIFICATION_MESSAGES,
 } from 'common/user'
+import { capitalize } from 'lodash'
 import Link from 'next/link'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useUser } from 'web/hooks/use-user'
 import { buttonClass } from '../buttons/button'
-import { CoinNumber } from '../widgets/coin-number'
-import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
-import { capitalize } from 'lodash'
-import { IoIosWarning } from 'react-icons/io'
 import { Row } from '../layout/row'
-import { Tooltip, TooltipParams } from '../widgets/tooltip'
-import { Placement } from '@floating-ui/react'
+import { CoinNumber } from '../widgets/coin-number'
+import { Tooltip } from '../widgets/tooltip'
 
 export function ToggleVerifyCallout(props: {
   className?: string
