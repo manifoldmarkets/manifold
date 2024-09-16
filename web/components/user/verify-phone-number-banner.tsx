@@ -1,6 +1,5 @@
 import { humanish, User } from 'common/user'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
-import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { useState } from 'react'
 import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
