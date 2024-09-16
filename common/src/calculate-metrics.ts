@@ -349,13 +349,14 @@ export const calculateUserMetricsWithNewBetsOnly = (
       (b) => b.amount
     )
   const profit = payout + totalAmountSold - totalAmountInvested
-  const profitPercent =
-    totalAmountInvested === 0 ? 0 : (profit / totalAmountInvested) * 100
+  const profitPercent = floatingEqual(totalAmountInvested, 0)
+    ? 0
+    : (profit / totalAmountInvested) * 100
 
   return {
     ...um,
-    loan,
-    invested,
+    loan: floatingEqual(loan, 0) ? 0 : loan,
+    invested: floatingEqual(invested, 0) ? 0 : invested,
     totalShares,
     hasNoShares,
     hasYesShares,
@@ -363,9 +364,11 @@ export const calculateUserMetricsWithNewBetsOnly = (
     maxSharesOutcome,
     lastBetTime: lastBet.createdTime,
     totalSpent,
-    payout,
-    totalAmountSold,
-    totalAmountInvested,
+    payout: floatingEqual(payout, 0) ? 0 : payout,
+    totalAmountSold: floatingEqual(totalAmountSold, 0) ? 0 : totalAmountSold,
+    totalAmountInvested: floatingEqual(totalAmountInvested, 0)
+      ? 0
+      : totalAmountInvested,
     profit,
     profitPercent,
   }

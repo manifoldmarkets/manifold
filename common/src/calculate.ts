@@ -169,8 +169,8 @@ function getCpmmInvested(yourBets: Bet[]) {
 
 export function calculateTotalSpentAndShares(
   bets: MarginalBet[],
-  initialTotalSpent: { [outcome: string]: number } = {},
-  initialTotalShares: { [outcome: string]: number } = {}
+  initialTotalSpent: { [outcome: string]: number } = { YES: 0, NO: 0 },
+  initialTotalShares: { [outcome: string]: number } = { YES: 0, NO: 0 }
 ) {
   const totalShares: { [outcome: string]: number } = { ...initialTotalShares }
   const totalSpent: { [outcome: string]: number } = { ...initialTotalSpent }

@@ -20,6 +20,7 @@ import { Tables } from 'common/supabase/utils'
 import { getUsers, log } from 'shared/utils'
 import { getAnswersForContract } from 'shared/supabase/answers'
 import { filterDefined } from 'common/util/array'
+import { floatingEqual } from 'common/util/math'
 
 export async function updateContractMetricsForUsers(
   pg: SupabaseDirectClient,
@@ -208,7 +209,7 @@ const getDefaultMetric = (
   payout: 0,
   profit: 0,
   profitPercent: 0,
-  profitAdjustment: 0,
+  profitAdjustment: undefined,
   hasNoShares: false,
   hasShares: false,
   hasYesShares: false,
@@ -219,6 +220,14 @@ const getDefaultMetric = (
   totalAmountSold: 0,
 })
 
+const defaultTimeScaleValues = {
+  profit: 0,
+  profitPercent: 0,
+  invested: 0,
+  prevValue: 0,
+  value: 0,
+}
+
 export const bulkUpdateUserMetricsWithNewBetsOnly = async (
   pgTrans: SupabaseDirectClient,
   marginalBets: MarginalBet[]
@@ -228,30 +237,113 @@ export const bulkUpdateUserMetricsWithNewBetsOnly = async (
   }
   const userIds = uniq(marginalBets.map((b) => b.userId))
   const answerIds = uniq(filterDefined(marginalBets.map((b) => b.answerId)))
+  const isMultiMarket = answerIds.length > 0
   const contractId = marginalBets[0].contractId
   const userMetrics = await pgTrans.map<ContractMetric>(
     `select data from user_contract_metrics
     where contract_id = $1 and user_id = any($2)
-    and ($3 is null or answer_id = any($3))
+    and ($3 is null or answer_id = any($3) or answer_id is null)
     `,
-    [contractId, userIds, answerIds.length > 0 ? answerIds : null],
+    [contractId, userIds, isMultiMarket ? answerIds : null],
     (row) => row.data
   )
   const betsByUser = groupBy(marginalBets, 'userId')
+
   const updatedMetrics = Object.entries(betsByUser).flatMap(
     ([userId, bets]) => {
+      // If it's a multi market, we need to summarize the stats for the null answer
+      const oldSummary = userMetrics.find(
+        (m) =>
+          m.answerId === null &&
+          m.userId === userId &&
+          m.contractId === contractId
+      )
       const userBetsByAnswer = groupBy(bets, 'answerId')
-      return Object.entries(userBetsByAnswer).map(([answerIdString, bets]) => {
-        const answerId = answerIdString === 'undefined' ? null : answerIdString
-        const defaultMetric = getDefaultMetric(userId, contractId, answerId)
-        const userMetric =
-          userMetrics.find(
-            (m) => m.userId === userId && m.answerId === answerId
-          ) ?? defaultMetric
+      const newMetrics = Object.entries(userBetsByAnswer).map(
+        ([answerIdString, bets]) => {
+          const answerId =
+            answerIdString === 'undefined' ? null : answerIdString
+          const oldMetric = userMetrics.find(
+            (m) =>
+              m.answerId === answerId &&
+              m.userId === userId &&
+              m.contractId === contractId
+          )
+          if (oldSummary && oldMetric && isMultiMarket) {
+            // Subtract the old stats from the old summary metric
+            applyMetricToSummary(oldMetric, oldSummary, false)
+          }
+          const userMetric =
+            oldMetric ?? getDefaultMetric(userId, contractId, answerId)
 
-        return calculateUserMetricsWithNewBetsOnly(bets, userMetric)
-      })
+          return calculateUserMetricsWithNewBetsOnly(bets, userMetric)
+        }
+      )
+      if (!isMultiMarket) {
+        return newMetrics
+      }
+      // Then add the new metric row stats to it
+      const newSummary =
+        oldSummary ?? getDefaultMetric(userId, contractId, null)
+      newMetrics.forEach((m) => applyMetricToSummary(m, newSummary, true))
+      return [...newMetrics, newSummary]
     }
   )
   await bulkUpdateContractMetrics(updatedMetrics, pgTrans)
+}
+
+// We could do this all in the database trigger, but the logic gets hairy
+const applyMetricToSummary = (
+  metric: Omit<ContractMetric, 'id'>,
+  summary: Omit<ContractMetric, 'id'>,
+  add: boolean
+) => {
+  const sign = add ? 1 : -1
+  summary.totalShares['NO'] += sign * (metric.totalShares['NO'] ?? 0)
+  summary.totalShares['YES'] += sign * (metric.totalShares['YES'] ?? 0)
+  if (!summary.totalSpent) {
+    summary.totalSpent = { NO: 0, YES: 0 }
+  }
+  if (metric.totalSpent) {
+    summary.totalSpent['NO'] += sign * (metric.totalSpent['NO'] ?? 0)
+    summary.totalSpent['YES'] += sign * (metric.totalSpent['YES'] ?? 0)
+  }
+  if (metric.profitAdjustment) {
+    summary.profitAdjustment =
+      (summary.profitAdjustment ?? 0) + sign * metric.profitAdjustment
+  }
+  summary.loan += sign * metric.loan
+  summary.invested += sign * metric.invested
+  summary.payout += sign * metric.payout
+  summary.profit += sign * metric.profit
+  summary.totalAmountInvested += sign * metric.totalAmountInvested
+  summary.totalAmountSold += sign * metric.totalAmountSold
+  summary.profitPercent = floatingEqual(summary.totalAmountInvested, 0)
+    ? 0
+    : (summary.profit / summary.totalAmountInvested) * 100
+
+  summary.lastBetTime = Math.max(summary.lastBetTime, metric.lastBetTime)
+  if (metric.from) {
+    const timeScales = Object.keys(metric.from)
+    summary.from = Object.fromEntries(
+      timeScales.map((timeScale) => {
+        const m = metric.from![timeScale]
+        const s = summary.from?.[timeScale] ?? defaultTimeScaleValues
+        const update = {
+          profit: s.profit + sign * m.profit,
+          invested: s.invested + sign * m.invested,
+          prevValue: s.prevValue + sign * m.prevValue,
+          value: s.value + sign * m.value,
+        }
+        const profitPercent =
+          update.invested === 0 ? 0 : (update.profit / update.invested) * 100
+        return [timeScale, { ...update, profitPercent }]
+      })
+    )
+  }
+  // These are set by the trigger:
+  // summaryMetric.hasNoShares
+  // summaryMetric.hasYesShares
+  // summaryMetric.hasShares
+  return summary
 }
