@@ -106,7 +106,7 @@ const CashoutPage = () => {
   const [RoutingNumber, setRoutingNumber] = useState('')
   const [SavePaymentMethod, _] = useState(false)
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
-  const [amountInDollars, setAmountInDollars] = useState<number>()
+  const [sweepCashAmount, setSweepCashAmount] = useState<number>()
   const [locationError, setLocationError] = useState<string>()
   const [loading, setloading] = useState(false)
   const [error, setError] = useState<string>()
@@ -116,6 +116,7 @@ const CashoutPage = () => {
   const [state, setState] = useState('')
   const [zipCode, setZipCode] = useState('')
   const [sessionStatus, setSessionStatus] = useState<string>()
+  const [completedCashout, setCompletedCashout] = useState(0)
   useApiSubscription({
     topics: [
       `gidx-checkout-session/${checkoutSession?.MerchantSessionID ?? '_'}`,
@@ -127,7 +128,8 @@ const CashoutPage = () => {
     },
   })
   const { data: redeemable } = useAPIGetter('get-redeemable-prize-cash', {})
-  const redeemableCash = redeemable?.redeemablePrizeCash ?? 0
+  const redeemableCash =
+    (redeemable?.redeemablePrizeCash ?? 0) - completedCashout
 
   const getCashoutSession = async (DeviceGPS: GPSData) => {
     setError(undefined)
@@ -166,7 +168,7 @@ const CashoutPage = () => {
   const handleSubmit = async () => {
     setloading(true)
     setError(undefined)
-    if (!checkoutSession || !amountInDollars) return
+    if (!checkoutSession || !sweepCashAmount) return
     try {
       await api('complete-cashout-session-gidx', {
         PaymentMethod: {
@@ -184,14 +186,16 @@ const CashoutPage = () => {
         },
         SavePaymentMethod,
         PaymentAmount: {
-          dollars: (1 - SWEEPIES_CASHOUT_FEE) * amountInDollars,
-          manaCash: amountInDollars,
+          dollars: (1 - SWEEPIES_CASHOUT_FEE) * sweepCashAmount,
+          manaCash: sweepCashAmount,
         },
         MerchantSessionID: checkoutSession.MerchantSessionID,
         MerchantTransactionID: checkoutSession.MerchantTransactionID,
       })
       setPage('waiting')
+      setCompletedCashout(sweepCashAmount)
     } catch (err) {
+      console.error('Error completing cashout session', err)
       setError('Failed to initiate redemption. Please try again.')
     }
     setloading(false)
@@ -370,20 +374,20 @@ const CashoutPage = () => {
                 (min {formatSweepies(MIN_CASHOUT_AMOUNT)})
                 <AmountInput
                   placeholder="Redeem Amount"
-                  amount={amountInDollars}
+                  amount={sweepCashAmount}
                   allowFloat={true}
                   min={MIN_CASHOUT_AMOUNT}
                   inputClassName={'w-40'}
                   label={<SweepiesCoin className={'mb-1'} />}
                   onChangeAmount={(newAmount) => {
                     if (!newAmount) {
-                      setAmountInDollars(undefined)
+                      setSweepCashAmount(undefined)
                       return
                     }
                     if (newAmount > redeemableCash) {
-                      setAmountInDollars(redeemableCash)
+                      setSweepCashAmount(redeemableCash)
                     } else {
-                      setAmountInDollars(newAmount)
+                      setSweepCashAmount(newAmount)
                     }
                   }}
                 />
@@ -453,16 +457,16 @@ const CashoutPage = () => {
                   !NameOnAccount ||
                   !AccountNumber ||
                   !RoutingNumber ||
-                  !amountInDollars ||
-                  amountInDollars < MIN_CASHOUT_AMOUNT
+                  !sweepCashAmount ||
+                  sweepCashAmount < MIN_CASHOUT_AMOUNT
                 }
               >
                 <Row className={'gap-1'}>
                   Redeem{' '}
-                  <CoinNumber amount={amountInDollars} coinType={'sweepies'} />{' '}
+                  <CoinNumber amount={sweepCashAmount} coinType={'sweepies'} />{' '}
                   for{' '}
                   {formatSweepsToUSD(
-                    (1 - SWEEPIES_CASHOUT_FEE) * (amountInDollars ?? 0)
+                    (1 - SWEEPIES_CASHOUT_FEE) * (sweepCashAmount ?? 0)
                   )}
                 </Row>
               </Button>
