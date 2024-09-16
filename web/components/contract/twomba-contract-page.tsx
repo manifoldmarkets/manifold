@@ -76,7 +76,6 @@ import { useSweepstakes } from '../sweestakes-context'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
 import { useRouter } from 'next/router'
-import { IoIosWarning } from 'react-icons/io'
 
 export function TwombaContractPageContent(props: ContractParams) {
   const {
