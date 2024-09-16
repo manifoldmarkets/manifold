@@ -248,6 +248,7 @@ export async function updateUserMetricsCore(
 
     const { balance, spiceBalance, investmentValue, totalDeposits } =
       newPortfolio
+    // TODO: we are double counting investmentValue and unresolvedMetrics.profit
     const allTimeProfit =
       balance + spiceBalance + investmentValue - totalDeposits
 
