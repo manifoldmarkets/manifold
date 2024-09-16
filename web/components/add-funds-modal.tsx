@@ -31,6 +31,7 @@ import { shortenNumber } from 'web/lib/util/formatNumber'
 import { FaStore } from 'react-icons/fa6'
 import router from 'next/router'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
+import Link from 'next/link'
 
 const BUY_MANA_GRAPHICS = [
   '/buy-mana-graphics/10k.png',
@@ -171,6 +172,20 @@ export function BuyManaTab(props: { onClose: () => void }) {
       </div>
       <div className="text-ink-500 text-sm">{loadingMessage}</div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
+
+      {TWOMBA_ENABLED && (
+        <div className="text-ink-500 mt-4 text-sm">
+          Please see our{' '}
+          <Link href="/terms" target="_blank" className="underline">
+            Terms & Conditions
+          </Link>{' '}
+          and{' '}
+          <Link href="/sweepstakes-rules" target="_blank" className="underline">
+            Sweepstakes Rules
+          </Link>
+          . All sales are final. No refunds.
+        </div>
+      )}
     </>
   )
 }

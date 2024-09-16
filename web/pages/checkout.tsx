@@ -31,6 +31,7 @@ import { formatMoneyUSD } from 'common/util/format'
 import { capitalize } from 'lodash'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
+import Link from 'next/link'
 
 const CheckoutPage = () => {
   const user = useUser()
@@ -248,6 +249,19 @@ function FundsSelector(props: {
           />
         ))}
       </div>
+
+      {TWOMBA_ENABLED && (
+        <div className="text-ink-500 mt-4 text-sm">
+          Please see our{' '}
+          <Link href="/terms" target="_blank" className="underline">
+            Terms & Conditions
+          </Link>{' '}
+          and{' '}
+          <Link href="/sweepstakes-rules" target="_blank" className="underline">
+            Sweepstakes Rules
+          </Link>. All sales are final. No refunds.
+        </div>
+      )}
     </Col>
   )
 }
