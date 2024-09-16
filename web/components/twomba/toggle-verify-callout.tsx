@@ -21,11 +21,12 @@ export function ToggleVerifyCallout(props: {
   const user = useUser()
   const [dismissed, setDismissed] = usePersistentLocalState(
     false,
-    'toggle-verify-callout-dismissed'
+    `toggle-verify-callout-dismissed-${user?.id ?? 'logged-out'}`
   )
 
   if (dismissed) return null
 
+  // TWODO: Add a link to about here
   if (!user) {
     return (
       <CalloutFrame
