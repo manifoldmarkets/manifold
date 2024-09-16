@@ -24,9 +24,11 @@ export const completeCashoutSession: APIHandler<
   'complete-cashout-session-gidx'
 > = async (props, auth, req) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
+  const pg = createSupabaseDirectClient()
   const userId = auth.uid
   const { phoneNumberWithCode } = await getUserRegistrationRequirements(userId)
-  const user = await getUser(userId)
+
+  const user = await getUser(userId, pg)
   if (!user) {
     throw new APIError(404, 'User not found')
   }
@@ -39,11 +41,8 @@ export const completeCashoutSession: APIHandler<
   } = props
 
   const manaCashAmount = PaymentAmount.manaCash
-  if (user.cashBalance < manaCashAmount) {
-    throw new APIError(400, 'Insufficient mana cash balance')
-  }
-  const pg = createSupabaseDirectClient()
-  const redeemablePrizeCash = await calculateRedeemablePrizeCash(userId, pg)
+  const redeemablePrizeCash = await calculateRedeemablePrizeCash(pg, userId)
+
   if (redeemablePrizeCash < manaCashAmount) {
     throw new APIError(400, 'Insufficient redeemable prize cash')
   }
@@ -214,11 +213,24 @@ const debitCoins = async (
     ...dataToWrite
   } = response
   await pg.tx(async (tx) => {
-    const redeemablePrizeCash = await calculateRedeemablePrizeCash(userId, tx)
-    if (redeemablePrizeCash < manaCashAmount) {
-      throw new APIError(400, 'Insufficient redeemable prize cash')
+    let redeemablePrizeCash: number
+    try {
+      redeemablePrizeCash = await calculateRedeemablePrizeCash(tx, userId)
+    } catch (e) {
+      log.error('Indeterminate state, may need to refund', { response })
+      throw e
     }
+
+    if (redeemablePrizeCash < manaCashAmount) {
+      throw new APIError(
+        500,
+        'Insufficient redeemable prize cash. Indeterminate state, may need to refund',
+        { response }
+      )
+    }
+    log('run cashout txn')
     const txn = await runTxn(tx, manaCashoutTxn)
+    log('insert gidx receipt')
     await tx.none(
       `
     insert into gidx_receipts (
