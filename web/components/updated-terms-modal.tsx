@@ -16,9 +16,9 @@ export function UpdatedTermsModal() {
   )
 
   const router = useRouter()
-
-  const isExceptionPage = ['/terms', '/privacy', '/rules'].includes(
-    router.pathname
+  const actualPath = router.asPath
+  const isExceptionPage = ['/terms', '/privacy', '/rules'].some((path) =>
+    actualPath.includes(path)
   )
 
   if (agreedToTerms || !user || !TWOMBA_ENABLED || isExceptionPage) return null
