@@ -52,7 +52,10 @@ export function calculateCpmmMultiArbitrageBet(
       : MIN_CPMM_PROB
   if (
     (answerToBuy.prob < MIN_CPMM_PROB && outcome === 'NO') ||
-    (answerToBuy.prob > MAX_CPMM_PROB && outcome === 'YES')
+    (answerToBuy.prob > MAX_CPMM_PROB && outcome === 'YES') ||
+    // Fixes the tiny limit order fills at current price when limitProb is set to a diff price
+    (answerToBuy.prob > limitProb && outcome === 'YES') ||
+    (answerToBuy.prob < limitProb && outcome === 'NO')
   ) {
     return noFillsReturn(outcome, answerToBuy, collectedFees)
   }

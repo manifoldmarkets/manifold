@@ -14,20 +14,29 @@ import { bulkInsertBets } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
+import { MarginalBet } from 'common/calculate-metrics'
 
 export const redeemShares = async (
   pgTrans: SupabaseDirectClient,
   userIds: string[],
-  contract: Contract
+  contract: Contract,
+  newBets?: MarginalBet[] // used when uncommenting contract metrics logic
 ) => {
   if (!userIds.length) return
 
-  // TODO: just load user_contract_metrics instead of contract_bets here
+  // TODO: move this to just the NUMBER redemption logic
   const bets = await pgTrans.map(
     `select * from contract_bets where contract_id = $1 and user_id = any($2);`,
     [contract.id, userIds],
     convertBet
   )
+  // const answerIds = uniq(filterDefined((newBets ?? []).map((b) => b.answerId)))
+  // const metrics = await pgTrans.map(
+  //   `select data from user_contract_metrics where contract_id = $1 and user_id = any($2)
+  //   and ($3 is null or answer_id = any($3))`,
+  //   [contract.id, userIds, answerIds?.length ? answerIds : null],
+  //   (row) => row.data as ContractMetric
+  // )
 
   const betsToInsert: Omit<Bet, 'id'>[] = []
   const balanceUpdates: {
@@ -109,6 +118,59 @@ export const redeemShares = async (
         return
       }
 
+      // // If using user_contract_metrics:
+      // let totalCMAmount = 0
+      // for (const metric of metrics.filter((m) => m.userId === userId)) {
+      //   const bet = newBets?.find(
+      //     (b) => b.answerId === metric.answerId && b.userId === userId
+      //   )
+      //   if (!bet) {
+      //     log.error('New bet not found for contract metric', { metric })
+      //     continue
+      //   }
+
+      //   const { shares, loanPayment, netAmount } =
+      //     getBinaryRedeemableAmountFromContractMetric(metric)
+      //   if (floatingEqual(shares, 0)) {
+      //     continue
+      //   }
+      //   if (!isFinite(netAmount)) {
+      //     throw new APIError(
+      //       500,
+      //       'Invalid redemption amount, no clue what happened here.'
+      //     )
+      //   }
+      //   totalCMAmount += netAmount
+      //   const answerId = metric.answerId ?? undefined
+      //   const lastProb = bet.probAfter
+      //   const [yesBet, noBet] = getRedemptionBets(
+      //     contract,
+      //     shares,
+      //     loanPayment,
+      //     lastProb,
+      //     answerId
+      //   )
+      //   const redemptionBets = [yesBet, noBet].map((b) => ({
+      //     userId,
+      //     ...b,
+      //   }))
+      //   betsToInsert.push(...redemptionBets)
+
+      //   log('redeemed', {
+      //     shares,
+      //     netAmount,
+      //   })
+      // }
+
+      // if (totalCMAmount !== 0) {
+      //   balanceUpdates.push({
+      //     id: userId,
+      //     [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+      //       totalCMAmount,
+      //   })
+      // }
+
+      // TODO: remove this when using contract metrics
       let totalAmount = 0
       for (const [answerIdString, nonRedemptionBets] of Object.entries(
         userNonRedemptionBetsByAnswer

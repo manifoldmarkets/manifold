@@ -198,7 +198,12 @@ export const placeBetMain = async (
       deterministic
     )
     log('Redeeming shares for bettor', user.username, user.id)
-    await redeemShares(pgTrans, [user.id], contract)
+    await redeemShares(pgTrans, [user.id], contract, [
+      {
+        ...newBetResult.newBet,
+        userId: user.id,
+      },
+    ])
     log('Share redemption transaction finished.')
     return result
   })
@@ -793,7 +798,7 @@ export const updateMakers = async (
   const makerIds = Object.keys(spentByUser)
 
   log('Redeeming shares for makers', makerIds)
-  await redeemShares(pgTrans, makerIds, contract)
+  await redeemShares(pgTrans, makerIds, contract, fillsAsNewBets)
 }
 
 export const getRoundedLimitProb = (limitProb: number | undefined) => {
