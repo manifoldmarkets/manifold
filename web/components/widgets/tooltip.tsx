@@ -16,15 +16,6 @@ import { ReactNode, useRef, useState } from 'react'
 
 // See https://floating-ui.com/docs/react-dom
 
-export type TooltipParams = {
-  className?: string
-  placement?: Placement
-  noTap?: boolean
-  noFade?: boolean
-  hasSafePolygon?: boolean
-  suppressHydrationWarning?: boolean
-}
-
 export function Tooltip(props: {
   text: string | false | undefined | null | ReactNode
   children: ReactNode
