@@ -342,6 +342,7 @@ export const API = (_apiTypeCheck = {
     returns: [] as Bet[],
     props: z
       .object({
+        id: z.string().optional(),
         userId: z.string().optional(),
         username: z.string().optional(),
         contractId: z.string().or(z.array(z.string())).optional(),
