@@ -131,11 +131,11 @@ export const TwombaBanner = () => {
   if (!showBanner) return null
   return (
     <Banner
-      className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b"
+      className="bg-primary-100 hover:bg-primary-200  dark:text-primary-800 text-primary-700 hover:text-primary-900 items-center py-2 transition-colors"
       link="https://manifoldmarkets.notion.site/Sweepstakes-Beta-Announcement-10454492ea7a80c1abd8ee0eb67102b9?pvs=4"
       setShowBanner={hideBanner}
     >
-      <Row className="gap-2">
+      <Row className=" items-center gap-2">
         <LogoIcon
           className="h-6 w-6 flex-shrink-0 text-black dark:text-white"
           height={24}
