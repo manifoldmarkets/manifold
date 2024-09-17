@@ -247,8 +247,12 @@ export const formatOutcomeLabel = (
     | StonkContract
     | CPMMMultiContract
     | CPMMNumericContract,
-  outcomeLabel: 'YES' | 'NO'
+  outcomeLabel: 'YES' | 'NO',
+  outcomePseudonym?: string
 ) => {
+  if (outcomePseudonym) {
+    return outcomePseudonym
+  }
   if (
     contract.outcomeType === 'BINARY' ||
     contract.mechanism === 'cpmm-multi-1'

@@ -17,6 +17,7 @@ import { track } from 'web/lib/service/analytics'
 import { PollPanel } from '../poll/poll-panel'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
+import { BinaryOutcomes } from '../bet/bet-panel'
 
 export function Action(props: { contract: Contract }) {
   const { contract } = props
@@ -68,8 +69,12 @@ const VoteButton = (props: { contract: Contract }) => {
   return <></>
 }
 
-export function BetButton(props: { contract: Contract; user?: User | null }) {
-  const { contract } = props
+export function BetButton(props: {
+  contract: Contract
+  user?: User | null
+  initialOutcome?: BinaryOutcomes
+}) {
+  const { contract, initialOutcome } = props
   const user = useUser()
   const [open, setOpen] = useState(false)
   const [openMC, setOpenMC] = useState(false)
@@ -114,6 +119,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
             open={open}
             setOpen={setOpen}
             trackingLocation="contract table"
+            initialOutcome={initialOutcome}
           />
         )}
       </>

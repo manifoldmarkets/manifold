@@ -19,7 +19,8 @@ import { mapValues } from 'lodash'
 import { getBetPoints } from 'web/lib/supabase/bets'
 
 export const ELECTION_PARTY_CONTRACT_SLUG =
-  'which-party-will-win-the-2024-us-pr-f4158bf9278a'
+  // 'which-party-will-win-the-2024-us-pr-f4158bf9278a'
+  'will-trump-win-the-2024-election'
 
 export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()

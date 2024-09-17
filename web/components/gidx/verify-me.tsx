@@ -215,7 +215,7 @@ export const VerifyMe = (props: { user: User }) => {
         {getVerificationStatus(user).status !== 'success' &&
           `You are not yet verified! Verify to start trading on ${SWEEPIES_NAME} markets.`}
       </span>
-      <VerifyButton className={'w-full whitespace-nowrap sm:w-fit'} />
+      <VerifyButton className={'w-full shrink-0 whitespace-nowrap sm:w-fit'} />
     </Col>
   )
 }
