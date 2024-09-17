@@ -131,7 +131,7 @@ export const TwombaBanner = () => {
   if (!showBanner) return null
   return (
     <Banner
-      className="bg-primary-200 hover:bg-primary-300 text-primary-600 hover:text-primary-800 items-center py-2 transition-colors"
+      className="bg-primary-100 hover:bg-primary-200  dark:text-primary-800 text-primary-700 hover:text-primary-900 items-center py-2 transition-colors"
       link="https://manifoldmarkets.notion.site/Sweepstakes-Beta-Announcement-10454492ea7a80c1abd8ee0eb67102b9?pvs=4"
       setShowBanner={hideBanner}
     >
