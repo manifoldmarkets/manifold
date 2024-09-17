@@ -1,5 +1,10 @@
 import clsx from 'clsx'
-import { MultiContract, contractPath } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  MultiContract,
+  contractPath,
+} from 'common/contract'
 import Link from 'next/link'
 import Router from 'next/router'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
@@ -11,9 +16,10 @@ import { track } from 'web/lib/service/analytics'
 import { CandidatePanel } from './candidates-panel/candidates-panel'
 import { SmallCandidatePanel } from './candidates-panel/small-candidate-panel'
 import { PartyPanel } from './party-panel/party-panel'
+import { BinaryPartyPanel } from './party-panel/binary-party-panel'
 
 export function PoliticsCard(props: {
-  contract: MultiContract
+  contract: Contract
   children?: React.ReactNode
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
@@ -22,7 +28,7 @@ export function PoliticsCard(props: {
   customTitle?: string
   titleSize?: 'lg'
   maxAnswers?: number
-  viewType: 'PARTY' | 'CANDIDATE' | 'STATE' | 'SMALL CANDIDATE'
+  viewType: 'PARTY' | 'CANDIDATE' | 'STATE' | 'SMALL CANDIDATE' | 'BINARY_PARTY'
   excludeAnswers?: string[]
   panelClassName?: string
   includeHead?: boolean
@@ -92,9 +98,43 @@ export function PoliticsCard(props: {
           }}
         >
           <PartyPanel
-            contract={contract}
-            maxAnswers={maxAnswers ?? 2}
+            contract={contract as MultiContract}
             includeNeedle
+            includeHead={includeHead}
+          />
+        </ClickFrame>
+      </Col>
+    )
+  }
+  if (viewType == 'BINARY_PARTY') {
+    return (
+      <Col
+        className={clsx(
+          className,
+          'fade-in bg-canvas-0 group relative cursor-pointer gap-4 rounded-lg p-4'
+        )}
+      >
+        <Link
+          className={clsx(
+            'hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg',
+            titleSize === 'lg' && ' sm:text-3xl'
+          )}
+          href={path}
+          onClick={trackClick}
+        >
+          {customTitle ?? contract.question}
+        </Link>
+
+        {children}
+        <ClickFrame
+          onClick={(e) => {
+            trackClick()
+            Router.push(path)
+            e.currentTarget.focus() // focus the div like a button, for style
+          }}
+        >
+          <BinaryPartyPanel
+            contract={contract as BinaryContract}
             includeHead={includeHead}
           />
         </ClickFrame>
@@ -117,7 +157,7 @@ export function PoliticsCard(props: {
           {customTitle ? customTitle : extractPhrase(contract.question)}
         </Link>
         <CandidatePanel
-          contract={contract}
+          contract={contract as MultiContract}
           maxAnswers={8}
           excludeAnswers={excludeAnswers}
         />
@@ -149,7 +189,7 @@ export function PoliticsCard(props: {
         </Link>
         <Spacer h={4} />
         <SmallCandidatePanel
-          contract={contract}
+          contract={contract as MultiContract}
           maxAnswers={maxAnswers ?? 6}
           excludeAnswers={excludeAnswers}
           panelClassName={panelClassName}

@@ -61,6 +61,16 @@ export default function LimitOrderPanel(props: {
   onBuySuccess?: () => void
   className?: string
   outcome: 'YES' | 'NO' | undefined
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
   const {
     contract,
@@ -70,7 +80,10 @@ export default function LimitOrderPanel(props: {
     user,
     outcome,
     onBuySuccess,
+    pseudonym,
   } = props
+  const { pseudonymName, pseudonymColor } =
+    pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCColors = isBinaryMC
     ? (contract as MultiContract).answers.map(getAnswerColor)
@@ -269,6 +282,8 @@ export default function LimitOrderPanel(props: {
 
   const isCashContract = contract.token === 'CASH'
 
+  const hideYesNo = isBinaryMC || !!pseudonym
+
   return (
     <>
       <Col className="relative my-2 w-full gap-3">
@@ -296,6 +311,7 @@ export default function LimitOrderPanel(props: {
         disabled={isSubmitting}
         showSlider
         token={isCashContract ? 'CASH' : 'M$'}
+        sliderColor={pseudonymColor}
       />
 
       <div className="my-3">
@@ -397,9 +413,9 @@ export default function LimitOrderPanel(props: {
               {isPseudoNumeric ? (
                 <PseudoNumericOutcomeLabel outcome={outcome} />
               ) : (
-                !isBinaryMC && <BinaryOutcomeLabel outcome={outcome} />
+                !hideYesNo && <BinaryOutcomeLabel outcome={outcome} />
               )}{' '}
-              {isBinaryMC ? 'Filled' : 'filled'} now
+              {hideYesNo ? 'Filled' : 'filled'} now
             </div>
             <div className="mr-2 whitespace-nowrap">
               <MoneyDisplay
@@ -423,8 +439,7 @@ export default function LimitOrderPanel(props: {
                   'Shares'
                 ) : (
                   <>
-                    Max{' '}
-                    {!isBinaryMC && <BinaryOutcomeLabel outcome={outcome} />}{' '}
+                    Max {!hideYesNo && <BinaryOutcomeLabel outcome={outcome} />}{' '}
                     payout
                   </>
                 )}
@@ -458,7 +473,10 @@ export default function LimitOrderPanel(props: {
             <Button
               size="xl"
               disabled={betDisabled || inputError}
-              color={isBinaryMC ? 'none' : outcome === 'YES' ? 'green' : 'red'}
+              color={
+                (pseudonymColor as any) ??
+                (isBinaryMC ? 'none' : outcome === 'YES' ? 'green' : 'red')
+              }
               loading={isSubmitting}
               className={clsx('flex-1 text-white')}
               style={{
@@ -474,7 +492,7 @@ export default function LimitOrderPanel(props: {
                 'Enter a probability'
               ) : !betAmount ? (
                 'Enter an amount'
-              ) : binaryMCOutcome ? (
+              ) : binaryMCOutcome || pseudonymName ? (
                 <span>
                   Submit order for{' '}
                   <MoneyDisplay

@@ -12,6 +12,16 @@ import { curveStepAfter } from 'd3-shape'
 import { axisBottom, axisRight } from 'd3-axis'
 import { formatLargeNumber } from 'common/util/format'
 import { Answer } from 'common/answer'
+import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
+
+function getColor(color: string) {
+  if (color === 'azure') {
+    return DEM_COLOR
+  } else if (color === 'sienna') {
+    return REP_COLOR
+  }
+  return color
+}
 
 export function DepthChart(props: {
   contract: BinaryContract | StonkContract | CPMMMultiContract
@@ -20,8 +30,18 @@ export function DepthChart(props: {
   noBets: LimitBet[]
   width: number
   height: number
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
-  const { contract, answer, yesBets, noBets, width, height } = props
+  const { contract, answer, yesBets, noBets, width, height, pseudonym } = props
 
   const yesData = cumulative(yesBets)
   const noData = cumulative(noBets)
@@ -53,10 +73,13 @@ export function DepthChart(props: {
     return null
   }
 
+  const yesColor = pseudonym?.YES?.pseudonymColor ?? '#11b981'
+  const noColor = pseudonym?.NO?.pseudonymColor ?? '#ef4444'
+
   return (
     <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} noWatermark>
       <AreaWithTopStroke
-        color="#11b981"
+        color={getColor(yesColor)}
         data={yesData}
         px={(p) => xScale(p.x)}
         py0={yScale(0)}
@@ -64,7 +87,7 @@ export function DepthChart(props: {
         curve={curveStepAfter}
       />
       <AreaWithTopStroke
-        color="red"
+        color={getColor(noColor)}
         data={noData}
         px={(p) => xScale(p.x)}
         py0={yScale(0)}

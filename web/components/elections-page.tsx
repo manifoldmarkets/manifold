@@ -1,4 +1,4 @@
-import { MultiContract } from 'common/contract'
+import { BinaryContract, MultiContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
 import Custom404 from 'web/pages/404'
@@ -69,8 +69,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
       </Col>
 
       <PoliticsCard
-        contract={electionPartyContract as MultiContract}
-        viewType="PARTY"
+        contract={electionPartyContract}
+        viewType="BINARY_PARTY"
         customTitle="Which party will win the Presidential Election?"
         includeHead
       />
