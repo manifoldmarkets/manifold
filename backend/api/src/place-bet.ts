@@ -292,8 +292,11 @@ export const fetchContractBetDataAndValidate = async (
   )
 
   const unfilledBetUserIds = Object.keys(balanceByUserId)
-  if (isAdminId(uid) && contract.token === 'CASH') {
-    throw new APIError(403, 'Admins cannot trade on sweepstakes markets.')
+  if (
+    (isAdminId(uid) && contract.token === 'CASH') ||
+    (user.isBannedFromSweepcash && contract.token === 'CASH')
+  ) {
+    throw new APIError(403, 'Banned from trading on sweepstakes markets.')
   }
 
   const balance = contract.token === 'CASH' ? user.cashBalance : user.balance
@@ -321,7 +324,7 @@ export const fetchContractBetDataAndValidate = async (
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
   )
   if (user.isBannedFromMana && contract.token !== 'CASH') {
-    throw new APIError(403, 'You are banned or deleted.')
+    throw new APIError(403, 'You are banned from trading mana (or deleted).')
   }
   log(
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
