@@ -14,6 +14,7 @@ import { Col } from '../layout/col'
 import { FullUser } from 'common/api/user-types'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { TRADE_TERM } from 'common/envs/constants'
+import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -104,6 +105,14 @@ const FetchUserHovercardContent = forwardRef(
               <div className="text-ink-400">
                 Joined {dayjs(user.createdTime).format('MMM DD, YYYY')}
               </div>
+              {isMod && (
+                <SimpleCopyTextButton
+                  text={user.id}
+                  tooltip="Copy user id"
+                  className="!px-1 !py-px"
+                  eventTrackingName={'admin copy user id'}
+                />
+              )}
             </Row>
           </Col>
         </div>

@@ -316,8 +316,18 @@ export function CollatedOrderTable(props: {
     | CPMMMultiContract
     | MultiContract
   side: 'YES' | 'NO'
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
-  const { limitBets, contract, side } = props
+  const { limitBets, contract, side, pseudonym } = props
   const isBinaryMC = isBinaryMulti(contract)
   const groupedBets = groupBy(limitBets, (b) => b.limitProb)
 
@@ -325,8 +335,13 @@ export function CollatedOrderTable(props: {
     <div>
       <Row>
         <span className="mr-2">Buy</span>
-        {isBinaryMC ? (
-          <OutcomeLabel contract={contract} outcome={side} truncate={'short'} />
+        {isBinaryMC || !!pseudonym ? (
+          <OutcomeLabel
+            contract={contract}
+            outcome={side}
+            truncate={'short'}
+            pseudonym={pseudonym}
+          />
         ) : side === 'YES' ? (
           <YesLabel />
         ) : (
@@ -409,6 +424,7 @@ function CollapsedOrderRow(props: {
       <div className="self-center pr-1 text-right">
         <MoneyDisplay
           amount={total}
+          numberType="short"
           isCashContract={contract.token === 'CASH'}
         />
       </div>
@@ -492,8 +508,18 @@ export function OrderBookPanel(props: {
     | MultiContract
   answer?: Answer
   showTitle?: boolean
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
-  const { limitBets, contract, answer, showTitle } = props
+  const { limitBets, contract, answer, showTitle, pseudonym } = props
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),
@@ -512,7 +538,7 @@ export function OrderBookPanel(props: {
   if (limitBets.length === 0) return <></>
 
   return (
-    <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 p-4">
+    <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 px-2 py-4 sm:px-4">
       <Subtitle className="!my-0">
         Order book{' '}
         <InfoTooltip
@@ -523,13 +549,19 @@ export function OrderBookPanel(props: {
 
       {showTitle && isCPMMMulti && answer && <div>{answer.text}</div>}
 
-      <Row className="items-start justify-around gap-2">
+      <Row className="items-start justify-around gap-4">
         <CollatedOrderTable
           limitBets={yesBets}
           contract={contract}
           side="YES"
+          pseudonym={pseudonym}
         />
-        <CollatedOrderTable limitBets={noBets} contract={contract} side="NO" />
+        <CollatedOrderTable
+          limitBets={noBets}
+          contract={contract}
+          side="NO"
+          pseudonym={pseudonym}
+        />
       </Row>
 
       {!isPseudoNumeric && yesBets.length >= 2 && noBets.length >= 2 && (
@@ -546,6 +578,7 @@ export function OrderBookPanel(props: {
                 noBets={noBets}
                 width={w}
                 height={h}
+                pseudonym={pseudonym}
               />
             )}
           </SizedContainer>

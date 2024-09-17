@@ -423,6 +423,7 @@ export type ContractParams = {
   betReplies: Bet[]
   cash?: {
     contract: Contract
+    lastBetTime?: number
     pointsString: string
     multiPointsString: { [answerId: string]: string }
     userPositionsByOutcome: ContractMetricsByOutcome

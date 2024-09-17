@@ -3,12 +3,18 @@ import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
 dayjs.extend(utc)
 dayjs.extend(timezone)
-
 import { runScript } from './run-script'
-import { calculateManaStats } from 'shared/calculate-mana-stats'
+import {
+  updateTxnStats,
+  updateManaStatsBetween,
+} from 'shared/calculate-mana-stats'
+import { revalidateStaticProps } from 'shared/utils'
 
-runScript(async () => {
+runScript(async ({ pg }) => {
   const endDay = dayjs().tz('America/Los_Angeles')
-  const startOfYesterday = endDay.subtract(1, 'day').startOf('day').valueOf()
-  await calculateManaStats(startOfYesterday, 1)
+  const start = endDay.subtract(7, 'day').startOf('day').valueOf()
+  await updateTxnStats(pg, start, 7)
+  await updateManaStatsBetween(pg, start, 7)
+
+  await revalidateStaticProps('/stats')
 })

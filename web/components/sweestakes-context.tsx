@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react'
-import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 type SweepstakesContextType = {
   isPlay: boolean
@@ -13,7 +13,7 @@ const SweepstakesContext = createContext<SweepstakesContextType | undefined>(
 export const SweepstakesProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [queryPlay, setQueryPlay] = usePersistentQueryState('play', 'true')
+  const [queryPlay, setQueryPlay] = usePersistentLocalState('play', 'true')
 
   const isPlay = !queryPlay || queryPlay === 'true'
   const setIsPlay = (isPlay: boolean) => {

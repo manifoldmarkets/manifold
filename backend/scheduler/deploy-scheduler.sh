@@ -64,23 +64,24 @@ fi
 
 echo "Current time: $(date "+%Y-%m-%d %I:%M:%S %p")"
 
+COMMON_ARGS=(
+  --project ${GCLOUD_PROJECT}
+  --zone ${ZONE}
+  --container-image ${IMAGE_URL}
+  --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT}
+)
+
 # If you augment the instance, be sure to increase --max-old-space-size in the Dockerfile
 if [ "${INITIALIZE}" = true ]; then
 #    If you just deleted the instance you don't need this line
 #    gcloud compute addresses create ${SERVICE_NAME} --project ${GCLOUD_PROJECT} --region ${REGION}
     gcloud compute instances create-with-container ${SERVICE_NAME} \
-           --project ${GCLOUD_PROJECT} \
-           --zone ${ZONE} \
+           "${COMMON_ARGS[@]}" \
            --address ${IP_ADDRESS_NAME} \
-           --container-image ${IMAGE_URL} \
            --machine-type ${MACHINE_TYPE} \
-           --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV} \
-           --container-env GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
            --scopes default,cloud-platform \
            --tags http-server
 else
     gcloud compute instances update-container ${SERVICE_NAME} \
-           --project ${GCLOUD_PROJECT} \
-           --zone ${ZONE} \
-           --container-image ${IMAGE_URL}
+           "${COMMON_ARGS[@]}"
 fi

@@ -213,7 +213,7 @@ export function getSearchContractSQL(args: {
   const answersSubQuery = renderSql(
     select('distinct a.contract_id'),
     from('answers a'),
-    where(`a.text_fts @@ websearch_to_tsquery('english', $1)`, [term])
+    where(`a.text_fts @@ websearch_to_tsquery('english_extended', $1)`, [term])
   )
 
   // Normal full text search
@@ -233,18 +233,24 @@ export function getSearchContractSQL(args: {
     term.length && [
       searchType === 'prefix' &&
         where(
-          `question_fts @@ to_tsquery('english', $1)`,
+          `question_fts @@ to_tsquery('english_extended', $1)`,
           constructPrefixTsQuery(term)
         ),
       searchType === 'without-stopwords' &&
-        where(`question_fts @@ websearch_to_tsquery('english', $1)`, term),
+        where(
+          `question_fts @@ websearch_to_tsquery('english_extended', $1)`,
+          term
+        ),
       searchType === 'with-stopwords' &&
         where(
           `question_nostop_fts @@ websearch_to_tsquery('english_nostop_with_prefix', $1)`,
           term
         ),
       searchType === 'description' &&
-        where(`description_fts @@ websearch_to_tsquery('english', $1)`, term),
+        where(
+          `description_fts @@ websearch_to_tsquery('english_extended', $1)`,
+          term
+        ),
     ],
 
     orderBy(getSearchContractSortSQL(sort)),

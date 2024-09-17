@@ -13,7 +13,7 @@ export function RedeemSweepsButtons(props: { user: User; className?: string }) {
   const canRedeem = redeemableCash > 0 && !blockFromSweepstakes(user)
 
   const onClick = () => {
-    router.push('/cashout')
+    router.push('/redeem')
   }
 
   return (
@@ -23,7 +23,7 @@ export function RedeemSweepsButtons(props: { user: User; className?: string }) {
         color={canRedeem ? 'yellow' : 'gray'}
         className={className}
       >
-        Cashout
+        Redeem
         <CoinNumber
           amount={redeemableCash}
           className={'ml-1'}

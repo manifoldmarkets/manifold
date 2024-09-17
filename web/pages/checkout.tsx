@@ -30,6 +30,8 @@ import { LocationPanel } from 'web/components/gidx/location-panel'
 import { formatMoneyUSD } from 'common/util/format'
 import { capitalize } from 'lodash'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
+import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
+import Link from 'next/link'
 
 const CheckoutPage = () => {
   const user = useUser()
@@ -219,32 +221,48 @@ function FundsSelector(props: {
         )}
       >
         {TWOMBA_ENABLED ? (
-          <span>
-            Buy mana to trade in your favorite questions. Always free to play,
-            no purchase necessary.
-          </span>
+          <div>
+            <span>
+              Buy mana to trade in your favorite questions. Always free to play,
+              no purchase necessary.
+            </span>
+            <CashoutLimitWarning user={user} className="mt-2" />
+          </div>
         ) : (
           <span>Buy mana to trade in your favorite questions.</span>
         )}
       </div>
-
       {pastLimit && (
         <AlertBox title="Purchase limit" className="my-4">
           You have reached your daily purchase limit. Please try again tomorrow.
         </AlertBox>
       )}
-
       <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {prices.map((amounts) => (
+        {prices.map((amounts, index) => (
           <PriceTile
             key={`price-tile-${amounts.mana}`}
             amounts={amounts}
+            index={index}
             loading={loading}
             disabled={pastLimit}
             onClick={() => onSelect(amounts.mana)}
           />
         ))}
       </div>
+
+      {TWOMBA_ENABLED && (
+        <div className="text-ink-500 mt-4 text-sm">
+          Please see our{' '}
+          <Link href="/terms" target="_blank" className="underline">
+            Terms & Conditions
+          </Link>{' '}
+          and{' '}
+          <Link href="/sweepstakes-rules" target="_blank" className="underline">
+            Sweepstakes Rules
+          </Link>
+          . All sales are final. No refunds.
+        </div>
+      )}
     </Col>
   )
 }

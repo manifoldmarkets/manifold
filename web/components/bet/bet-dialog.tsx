@@ -9,7 +9,7 @@ import {
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
-import { BuyPanel } from './bet-panel'
+import { BinaryOutcomes, BuyPanel } from './bet-panel'
 import { Subtitle } from '../widgets/subtitle'
 import { getDefaultSort, MultiSort } from 'common/answer'
 import Link from 'next/link'
@@ -26,8 +26,27 @@ export function BetDialog(props: {
   open: boolean
   setOpen: (open: boolean) => void
   trackingLocation: string
+  initialOutcome?: BinaryOutcomes
+  binaryPseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
+  questionPseudonym?: string
 }) {
-  const { contract, open, setOpen, trackingLocation } = props
+  const {
+    contract,
+    open,
+    setOpen,
+    trackingLocation,
+    initialOutcome,
+    questionPseudonym,
+  } = props
   const { question } = contract
 
   return (
@@ -40,14 +59,17 @@ export function BetDialog(props: {
       )}
     >
       <Col>
-        <Subtitle className="!mb-4 !mt-0 !text-xl">{question}</Subtitle>
+        <Subtitle className="!mb-4 !mt-0 !text-xl">
+          {questionPseudonym ?? question}
+        </Subtitle>
         <BuyPanel
           contract={contract}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
           location={trackingLocation}
           inModal={true}
-          initialOutcome="YES"
+          initialOutcome={initialOutcome ?? 'YES'}
           alwaysShowOutcomeSwitcher
+          pseudonym={props.binaryPseudonym}
         />
       </Col>
     </Modal>

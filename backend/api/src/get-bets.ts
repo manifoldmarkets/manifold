@@ -6,7 +6,8 @@ import {
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
 import { getUserIdFromUsername } from 'shared/supabase/users'
 import { getBetsWithFilter } from 'shared/supabase/bets'
-import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
+import { convertBet, NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
+import { filterDefined } from 'common/util/array'
 
 export const getBets: APIHandler<'bets'> = async (props) => {
   const {
@@ -24,6 +25,7 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     includeZeroShareRedemptions,
     count,
     points,
+    id,
   } = props
   if (limit === 0) {
     return []
@@ -34,6 +36,14 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     )
   }
   const pg = createSupabaseDirectClient()
+  if (id) {
+    const bet = await pg.map(
+      `select * from contract_bets where bet_id = $1`,
+      [id],
+      (r) => (r ? convertBet(r) : undefined)
+    )
+    return filterDefined(bet)
+  }
 
   const userId = props.userId ?? (await getUserIdFromUsername(pg, username))
   const contractId =

@@ -1,6 +1,5 @@
 import {
   CASH_TO_MANA_CONVERSION_RATE,
-  ENV_CONFIG,
   SWEEPIES_NAME,
 } from 'common/envs/constants'
 import { useState } from 'react'
@@ -8,28 +7,64 @@ import { APIError, api } from 'web/lib/api/api'
 import { Button } from '../buttons/button'
 import { Row } from '../layout/row'
 import { AmountInput } from '../widgets/amount-input'
+import { Col } from '../layout/col'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import clsx from 'clsx'
+import { CoinNumber } from 'web/components/widgets/coin-number'
+import toast from 'react-hot-toast'
+import { useUser } from 'web/hooks/use-user'
 
 export const CashToManaForm = (props: {
   onBack: () => void
   redeemableCash: number
 }) => {
   const { redeemableCash, onBack } = props
-  const [amount, setAmount] = useState<number | undefined>(
+
+  const [sweepiesAmount, setSweepiesAmount] = useState<number | undefined>(
+    redeemableCash
+  )
+  const [manaAmount, setManaAmount] = useState<number | undefined>(
     redeemableCash * CASH_TO_MANA_CONVERSION_RATE
+  )
+  const [activeInput, setActiveInput] = useState<'sweepies' | 'mana'>(
+    'sweepies'
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const user = useUser()
+
+  const updateAmounts = (
+    newAmount: number | undefined,
+    type: 'sweepies' | 'mana'
+  ) => {
+    if (type === 'sweepies') {
+      setSweepiesAmount(newAmount)
+      setManaAmount(
+        newAmount ? newAmount * CASH_TO_MANA_CONVERSION_RATE : undefined
+      )
+    } else {
+      setManaAmount(newAmount)
+      setSweepiesAmount(
+        newAmount ? newAmount / CASH_TO_MANA_CONVERSION_RATE : undefined
+      )
+    }
+  }
+  const notEnoughCashError = !!sweepiesAmount && sweepiesAmount > redeemableCash
+
   const onSubmit = async () => {
-    if (!amount) return
+    if (!sweepiesAmount) return
     setLoading(true)
     try {
       await api('convert-cash-to-mana', {
-        amount: amount / CASH_TO_MANA_CONVERSION_RATE,
+        amount: sweepiesAmount,
       })
       setLoading(false)
-      setAmount(amount)
+      updateAmounts(sweepiesAmount, 'sweepies')
       setError(null)
+      toast.success(`Successfully converted your ${SWEEPIES_NAME} to mana!`)
+      onBack()
     } catch (e) {
       console.error(e)
       setError(e instanceof APIError ? e.message : 'Error converting')
@@ -38,28 +73,67 @@ export const CashToManaForm = (props: {
   }
 
   return (
-    <>
-      <div className="my-4">
-        Convert at a rate of {CASH_TO_MANA_CONVERSION_RATE} {SWEEPIES_NAME} to 1
-        mana.
-      </div>
-      <div className="text-ink-500 mb-2 text-sm">Amount</div>
-      <AmountInput amount={amount} onChangeAmount={setAmount} />
-      <div className="mt-4 flex gap-2">
+    <Col className="gap-4">
+      Convert at a rate of {CASH_TO_MANA_CONVERSION_RATE} {SWEEPIES_NAME} to 1
+      mana.
+      <Col>
+        <div className="text-ink-500 text-sm">Redeem</div>
+        <AmountInput
+          amount={sweepiesAmount}
+          onChangeAmount={(newAmount) => {
+            updateAmounts(newAmount, 'sweepies')
+            setActiveInput('sweepies')
+          }}
+          isSweepies
+          label={<SweepiesCoin />}
+          className={activeInput === 'mana' ? 'opacity-50' : ''}
+          inputClassName={clsx(
+            activeInput === 'mana' ? 'cursor-pointer' : '',
+            'w-full'
+          )}
+          onClick={() => setActiveInput('sweepies')}
+        />
+        <div className="h-2">
+          {notEnoughCashError && (
+            <div className="text-sm text-red-600 dark:text-red-400">
+              You don't have enough redeemable {SWEEPIES_NAME}
+            </div>
+          )}
+        </div>
+      </Col>
+      <Col>
+        <div className="text-ink-500 text-sm">For</div>
+        <AmountInput
+          amount={manaAmount}
+          onChangeAmount={(newAmount) => {
+            updateAmounts(newAmount, 'mana')
+            setActiveInput('mana')
+          }}
+          label={<ManaCoin />}
+          className={activeInput === 'sweepies' ? 'opacity-50' : ''}
+          inputClassName={clsx(
+            activeInput === 'sweepies' ? 'cursor-pointer' : '',
+            'w-full'
+          )}
+          onClick={() => setActiveInput('mana')}
+        />
+      </Col>
+      <Row className=" mt-2 w-full gap-2">
         <Button color="gray" onClick={onBack}>
           Back
         </Button>
         <Button
-          color="gradient"
-          disabled={!amount}
+          color="violet"
+          disabled={!manaAmount || notEnoughCashError}
           loading={loading}
           onClick={onSubmit}
+          className="w-full"
         >
-          Convert to {ENV_CONFIG.moneyMoniker}
-          {amount}
+          Redeem for &nbsp;
+          <CoinNumber amount={sweepiesAmount} coinType="mana" isInline />
         </Button>
-      </div>
+      </Row>
       <Row className="text-error mt-2 text-sm">{error}</Row>
-    </>
+    </Col>
   )
 }

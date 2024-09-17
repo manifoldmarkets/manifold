@@ -1,5 +1,7 @@
 // max 10 length string. For longer, concat multiple
 // Often used as a unique identifier.
+import { randomBytes } from 'crypto'
+
 export const randomString = (length = 10) =>
   Math.random()
     .toString(36)
@@ -56,4 +58,8 @@ export const shuffle = (array: unknown[], rand: () => number) => {
     const swapIndex = i + Math.floor(rand() * (array.length - i))
     ;[array[i], array[swapIndex]] = [array[swapIndex], array[i]]
   }
+}
+
+export const secureRandomString = (length: number): string => {
+  return randomBytes(length).toString('hex').slice(0, length)
 }

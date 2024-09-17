@@ -11,7 +11,7 @@ export const IncrementButton = (props: {
   const { amount, onIncrement, className, token = 'M$' } = props
 
   const displayedAmount =
-    token === 'CASH' ? formatSweepiesNumber(amount) : amount
+    token === 'CASH' ? formatSweepiesNumber(amount, { short: true }) : amount
 
   return (
     <button
@@ -65,7 +65,7 @@ export const IncrementDecrementAmountButton = (props: {
   const { amount, incrementBy, token = 'M$' } = props
 
   const displayedAmount =
-    token === 'CASH' ? formatSweepiesNumber(amount) : amount
+    token === 'CASH' ? formatSweepiesNumber(amount, { short: true }) : amount
 
   return (
     <Col className="divide-ink-300 mt-[1px] divide-y text-xs">

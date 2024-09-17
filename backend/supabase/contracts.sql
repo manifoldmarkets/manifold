@@ -15,10 +15,12 @@ create table if not exists
     resolution_probability numeric,
     resolution text,
     popularity_score numeric default 0 not null,
-    question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
+    question_fts tsvector generated always as (
+      to_tsvector('english_extended'::regconfig, question)
+    ) stored,
     description_fts tsvector generated always as (
       to_tsvector(
-        'english'::regconfig,
+        'english_extended'::regconfig,
         add_creator_name_to_description (data)
       )
     ) stored,

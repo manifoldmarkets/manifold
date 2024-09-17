@@ -4,17 +4,14 @@ import {
   GPSData,
 } from 'common/gidx/gidx'
 import { useEffect, useState } from 'react'
+import { Button } from 'web/components/buttons/button'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { Col } from 'web/components/layout/col'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Row } from 'web/components/layout/row'
-import { Button } from 'web/components/buttons/button'
-import {
-  registrationBottomRowClass,
-  registrationColClass,
-} from 'web/components/gidx/register-user-form'
+import { BottomRow } from './register-component-helpers'
+import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
+import { MINUTE_MS } from 'common/util/time'
 
 export const LocationPanel = (props: {
   setLocation: (data: GPSData) => void
@@ -34,6 +31,7 @@ export const LocationPanel = (props: {
   } = props
 
   const [checkedPermissions, setCheckedPermissions] = useState(false)
+  const [timeout, setTimeout] = useState(10000)
 
   useEffect(() => {
     if (!checkedPermissions) checkLocationPermission()
@@ -115,9 +113,24 @@ export const LocationPanel = (props: {
           onFinishCallback?.()
         },
         (error) => {
-          setLocationError(error.message)
+          console.log('Error requesting location', error)
+          if (error.message.includes('denied')) {
+            setLocationError(
+              'Location permission denied. Please enable location sharing in your browser settings.'
+            )
+          } else {
+            if (error.message.includes('timeout')) {
+              setTimeout(timeout + 5000)
+            }
+            setLocationError(error.message)
+          }
           setLoading(false)
           onFinishCallback?.()
+        },
+        {
+          enableHighAccuracy: true,
+          timeout,
+          maximumAge: 20 * MINUTE_MS,
         }
       )
     } else {
@@ -128,21 +141,18 @@ export const LocationPanel = (props: {
   }
 
   if (!checkedPermissions) {
-    return (
-      <Col className={registrationColClass}>
-        <LoadingIndicator />
-      </Col>
-    )
+    return <LoadingIndicator />
   }
 
   return (
-    <Col className={registrationColClass}>
-      <span className={' text-primary-700 text-2xl'}>Location required</span>
-      <span>
+    <>
+      <LocationBlockedIcon height={40} className="fill-ink-700 mx-auto" />
+      <span className={'mx-auto text-2xl'}>Location required</span>
+      <span className="text-ink-700">
         You must allow location sharing to verify that you're in a participating
         municipality.
       </span>
-      <Row className={registrationBottomRowClass}>
+      <BottomRow>
         <Button color={'gray-white'} onClick={back}>
           Back
         </Button>
@@ -153,7 +163,7 @@ export const LocationPanel = (props: {
         >
           Share location
         </Button>
-      </Row>
+      </BottomRow>
       {locationError && (
         <span className={'text-error'}>
           {locationError}
@@ -162,6 +172,6 @@ export const LocationPanel = (props: {
             : ''}
         </span>
       )}
-    </Col>
+    </>
   )
 }
