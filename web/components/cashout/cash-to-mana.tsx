@@ -1,6 +1,5 @@
 import {
   CASH_TO_MANA_CONVERSION_RATE,
-  ENV_CONFIG,
   SWEEPIES_NAME,
 } from 'common/envs/constants'
 import { useState } from 'react'
@@ -14,7 +13,6 @@ import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import clsx from 'clsx'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import toast from 'react-hot-toast'
-import router from 'next/router'
 import { useUser } from 'web/hooks/use-user'
 
 export const CashToManaForm = (props: {
