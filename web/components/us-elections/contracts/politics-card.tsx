@@ -17,6 +17,9 @@ import { CandidatePanel } from './candidates-panel/candidates-panel'
 import { SmallCandidatePanel } from './candidates-panel/small-candidate-panel'
 import { PartyPanel } from './party-panel/party-panel'
 import { BinaryPartyPanel } from './party-panel/binary-party-panel'
+import { TwombaToggle } from 'web/components/twomba/twomba-toggle'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { Row } from 'web/components/layout/row'
 
 export function PoliticsCard(props: {
   contract: Contract
@@ -111,19 +114,22 @@ export function PoliticsCard(props: {
       <Col
         className={clsx(
           className,
-          'fade-in bg-canvas-0 group relative cursor-pointer gap-4 rounded-lg p-4'
+          'fade-in bg-canvas-0 group relative relative cursor-pointer gap-4 rounded-lg p-4'
         )}
       >
-        <Link
-          className={clsx(
-            'hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg',
-            titleSize === 'lg' && ' sm:text-3xl'
-          )}
-          href={path}
-          onClick={trackClick}
-        >
-          {customTitle ?? contract.question}
-        </Link>
+        <Row className="justify-between">
+          <Link
+            className={clsx(
+              'hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg',
+              titleSize === 'lg' && ' sm:text-3xl'
+            )}
+            href={path}
+            onClick={trackClick}
+          >
+            {customTitle ?? contract.question}
+          </Link>
+          {TWOMBA_ENABLED && <TwombaToggle />}
+        </Row>
 
         {children}
         <ClickFrame

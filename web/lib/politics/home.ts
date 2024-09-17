@@ -48,6 +48,7 @@ export async function getElectionsPageProps() {
 
   const specialContractSlugs = [
     ELECTION_PARTY_CONTRACT_SLUG,
+    `${ELECTION_PARTY_CONTRACT_SLUG}--cash`,
     'who-will-win-the-2024-us-presidenti-8c1c8b2f8964',
     'who-will-win-the-2024-republican-pr-e1332cf40e59',
     'who-will-win-the-2024-democratic-pr-47576e90fa38',
@@ -65,6 +66,7 @@ export async function getElectionsPageProps() {
 
   const [
     electionPartyContract,
+    electionPartyCashContract,
     electionCandidateContract,
     republicanCandidateContract,
     democratCandidateContract,
@@ -107,6 +109,7 @@ export async function getElectionsPageProps() {
     rawGovernorStateContracts: governorStateContracts,
     rawPolicyContracts: policyContracts,
     electionPartyContract,
+    electionPartyCashContract,
     electionCandidateContract,
     republicanCandidateContract,
     democratCandidateContract,
