@@ -82,7 +82,7 @@ const useDevtoolsDetector = () => {
     }
     const detectDevTools = () => {
       const threshold = 160
-      const adjustedHeightThreshold = isMobile ? 190 : threshold
+      const adjustedHeightThreshold = isMobile ? 200 : threshold
 
       const widthThreshold = window.outerWidth - window.innerWidth > threshold
       const heightThreshold =
