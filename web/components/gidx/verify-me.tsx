@@ -86,191 +86,193 @@ export const VerifyMe = (props: { user: User }) => {
     return null
   }
 
-  // if (identityBlocked(user, privateUser)) {
-  // return (
-  //   <Col
-  //     className={
-  //       'border-ink-400 bg-ink-200 text-ink-700 justify-between gap-2 rounded border p-2 px-4'
-  //     }
-  //   >
-  //     <Row className={'w-full items-center justify-between gap-1'}>
-  //       <span>
-  //         <MdBlock className="mb-0.5 mr-1 inline-block h-4 w-4" />
-  //         Blocked from sweepstakes participation due to blocked identity.{' '}
-  //       </span>
-  //       <HideVerifyMeButton
-  //         hideVerifyMe={hideVerifyMe}
-  //         setHideVerifyMe={setHideVerifyMe}
-  //         className="-mr-2 -mt-1  sm:mt-0 "
-  //       />
-  //     </Row>
-  //   </Col>
-  // )
-  // }
-  // if (
-  //   user.kycDocumentStatus === 'pending' ||
-  //   user.kycDocumentStatus === 'fail'
-  // ) {
-  // return (
-  //   <Col
-  //     className={
-  //       'border-primary-500  bg-primary-100 justify-between gap-2 rounded border p-2 px-4 dark:bg-indigo-700'
-  //     }
-  //   >
-  //     <Col className={'w-full items-center justify-between gap-2 sm:flex-row'}>
-  //       <Row className="w-full justify-between">
-  //         <span>Document verification pending... </span>
-  //         <HideVerifyMeButton
-  //           hideVerifyMe={hideVerifyMe}
-  //           setHideVerifyMe={setHideVerifyMe}
-  //           className=" -mr-2 -mt-1 sm:hidden"
-  //         />
-  //       </Row>
-  //       <Row className={'w-full justify-end gap-1'}>
-  //         <Button
-  //           color={'indigo-outline'}
-  //           loading={loading}
-  //           disabled={loading}
-  //           onClick={getStatus}
-  //           className="w-full sm:w-fit"
-  //         >
-  //           Refresh status
-  //         </Button>
-  //         <HideVerifyMeButton
-  //           hideVerifyMe={hideVerifyMe}
-  //           setHideVerifyMe={setHideVerifyMe}
-  //           className="-mr-2 hidden sm:block"
-  //         />
-  //       </Row>
-  //     </Col>
+  if (identityBlocked(user, privateUser)) {
+    return (
+      <Col
+        className={
+          'border-ink-400 bg-ink-200 text-ink-700 justify-between gap-2 rounded border p-2 px-4'
+        }
+      >
+        <Row className={'w-full items-center justify-between gap-1'}>
+          <span>
+            <MdBlock className="mb-0.5 mr-1 inline-block h-4 w-4" />
+            Blocked from sweepstakes participation due to blocked identity.{' '}
+          </span>
+          <HideVerifyMeButton
+            hideVerifyMe={hideVerifyMe}
+            setHideVerifyMe={setHideVerifyMe}
+            className="-mr-2 -mt-1  sm:mt-0 "
+          />
+        </Row>
+      </Col>
+    )
+  }
+  if (
+    user.kycDocumentStatus === 'pending' ||
+    user.kycDocumentStatus === 'fail'
+  ) {
+    return (
+      <Col
+        className={
+          'border-primary-500  bg-primary-100 justify-between gap-2 rounded border p-2 px-4 dark:bg-indigo-700'
+        }
+      >
+        <Col
+          className={'w-full items-center justify-between gap-2 sm:flex-row'}
+        >
+          <Row className="w-full justify-between">
+            <span>Document verification pending... </span>
+            <HideVerifyMeButton
+              hideVerifyMe={hideVerifyMe}
+              setHideVerifyMe={setHideVerifyMe}
+              className=" -mr-2 -mt-1 sm:hidden"
+            />
+          </Row>
+          <Row className={'w-full justify-end gap-1'}>
+            <Button
+              color={'indigo-outline'}
+              loading={loading}
+              disabled={loading}
+              onClick={getStatus}
+              className="w-full sm:w-fit"
+            >
+              Refresh status
+            </Button>
+            <HideVerifyMeButton
+              hideVerifyMe={hideVerifyMe}
+              setHideVerifyMe={setHideVerifyMe}
+              className="-mr-2 hidden sm:block"
+            />
+          </Row>
+        </Col>
 
-  //     {documents && (
-  //       <Col className={'gap-2'}>
-  //         <Row className={'w-full justify-between sm:w-72'}>
-  //           <span className={'font-semibold'}>Category</span>
-  //           <span className={'font-semibold'}>Status</span>
-  //         </Row>
-  //         {documents.map((doc) => (
-  //           <Col key={doc.DocumentID}>
-  //             <Row className={'w-full justify-between sm:w-72'}>
-  //               <Col>
-  //                 {
-  //                   Object.entries(idNameToCategoryType).find(
-  //                     ([_, v]) => v === doc.CategoryType
-  //                   )?.[0]
-  //                 }
-  //               </Col>
-  //               <Col>{documentStatus[doc.DocumentStatus]}</Col>
-  //             </Row>
-  //             {doc.DocumentNotes.length > 0 && (
-  //               <span className={'text-red-500'}>
-  //                 {doc.DocumentNotes.map((n) => n.NoteText).join('\n')}
-  //               </span>
-  //             )}
-  //           </Col>
-  //         ))}
-  //       </Col>
-  //     )}
-  //     {showUploadDocsButton && (
-  //       <Row>
-  //         <Link
-  //           href={'gidx/register'}
-  //           className={clsx(buttonClass('md', 'indigo'))}
-  //         >
-  //           Re-upload documents
-  //         </Link>
-  //       </Row>
-  //     )}
-  //   </Col>
-  // )
-  // }
+        {documents && (
+          <Col className={'gap-2'}>
+            <Row className={'w-full justify-between sm:w-72'}>
+              <span className={'font-semibold'}>Category</span>
+              <span className={'font-semibold'}>Status</span>
+            </Row>
+            {documents.map((doc) => (
+              <Col key={doc.DocumentID}>
+                <Row className={'w-full justify-between sm:w-72'}>
+                  <Col>
+                    {
+                      Object.entries(idNameToCategoryType).find(
+                        ([_, v]) => v === doc.CategoryType
+                      )?.[0]
+                    }
+                  </Col>
+                  <Col>{documentStatus[doc.DocumentStatus]}</Col>
+                </Row>
+                {doc.DocumentNotes.length > 0 && (
+                  <span className={'text-red-500'}>
+                    {doc.DocumentNotes.map((n) => n.NoteText).join('\n')}
+                  </span>
+                )}
+              </Col>
+            ))}
+          </Col>
+        )}
+        {showUploadDocsButton && (
+          <Row>
+            <Link
+              href={'gidx/register'}
+              className={clsx(buttonClass('md', 'indigo'))}
+            >
+              Re-upload documents
+            </Link>
+          </Row>
+        )}
+      </Col>
+    )
+  }
 
-  // if (user.sweepstakesVerified) {
-  // return (
-  //   <Row
-  //     className={
-  //       ' bg-primary-100 border-primary-500 justify-between gap-2 rounded border p-2 px-4 '
-  //     }
-  //   >
-  //     <span>
-  //       <span className={'text-lg'}>🎉</span> Congrats, you've been verified!{' '}
-  //     </span>
-  //     <button
-  //       onClick={() => setShow(false)}
-  //       className="hover:bg-primary-200 text-primary-500 -mr-2 rounded p-1 px-2 transition-all"
-  //     >
-  //       <XIcon className={'h-4 w-4'} />
-  //     </button>
-  //   </Row>
-  // )
-  // }
+  if (user.sweepstakesVerified) {
+    return (
+      <Row
+        className={
+          ' bg-primary-100 border-primary-500 justify-between gap-2 rounded border p-2 px-4 '
+        }
+      >
+        <span>
+          <span className={'text-lg'}>🎉</span> Congrats, you've been verified!{' '}
+        </span>
+        <button
+          onClick={() => setShow(false)}
+          className="hover:bg-primary-200 text-primary-500 -mr-2 rounded p-1 px-2 transition-all"
+        >
+          <XIcon className={'h-4 w-4'} />
+        </button>
+      </Row>
+    )
+  }
 
-  // if (ageBlocked(user, privateUser)) {
-  // return (
-  //   <Col
-  //     className={
-  //       'border-ink-400 bg-ink-200 text-ink-700 gap-2 rounded border p-2 px-4'
-  //     }
-  //   >
-  //     <Row className={'w-full items-center justify-between gap-1'}>
-  //       <span>
-  //         <MdBlock className="mb-0.5 mr-1 inline-block h-4 w-4" />
-  //         Blocked from sweepstakes participation due to underage.{' '}
-  //       </span>
-  //       <HideVerifyMeButton
-  //         hideVerifyMe={hideVerifyMe}
-  //         setHideVerifyMe={setHideVerifyMe}
-  //         className="-mr-2 -mt-1  sm:mt-0 "
-  //       />
-  //     </Row>
-  //   </Col>
-  // )
-  // }
+  if (ageBlocked(user, privateUser)) {
+    return (
+      <Col
+        className={
+          'border-ink-400 bg-ink-200 text-ink-700 gap-2 rounded border p-2 px-4'
+        }
+      >
+        <Row className={'w-full items-center justify-between gap-1'}>
+          <span>
+            <MdBlock className="mb-0.5 mr-1 inline-block h-4 w-4" />
+            Blocked from sweepstakes participation due to underage.{' '}
+          </span>
+          <HideVerifyMeButton
+            hideVerifyMe={hideVerifyMe}
+            setHideVerifyMe={setHideVerifyMe}
+            className="-mr-2 -mt-1  sm:mt-0 "
+          />
+        </Row>
+      </Col>
+    )
+  }
 
-  // if (locationBlocked(user, privateUser)) {
-  // return (
-  //   <Col
-  //     className={
-  //       'border-ink-400 bg-ink-200 justify-between gap-2 rounded border p-2 px-4'
-  //     }
-  //   >
-  //     <div
-  //       className={
-  //         'flex w-full flex-col items-center justify-between gap-2 sm:flex-row'
-  //       }
-  //     >
-  //       <Row className="w-full justify-between">
-  //         <span>
-  //           <MdBlock className="mb-0.5 mr-1 inline-block h-4 w-4" />
-  //           Blocked from sweepstakes participation due to location.{' '}
-  //         </span>
-  //         <HideVerifyMeButton
-  //           hideVerifyMe={hideVerifyMe}
-  //           setHideVerifyMe={setHideVerifyMe}
-  //           className=" -mr-2 -mt-1 sm:hidden"
-  //         />
-  //       </Row>
-  //       <Button
-  //         color={'indigo-outline'}
-  //         loading={loadingMonitorStatus}
-  //         disabled={loadingMonitorStatus}
-  //         onClick={fetchMonitorStatus}
-  //         className={'w-full whitespace-nowrap sm:w-fit'}
-  //       >
-  //         Refresh status
-  //       </Button>
-  //       <HideVerifyMeButton
-  //         hideVerifyMe={hideVerifyMe}
-  //         setHideVerifyMe={setHideVerifyMe}
-  //         className="-mr-2 hidden sm:block"
-  //       />
-  //     </div>
-  //     {monitorStatus === 'error' && (
-  //       <Row className={'text-error'}>{monitorStatusMessage}</Row>
-  //     )}
-  //   </Col>
-  // )
-  // }
+  if (locationBlocked(user, privateUser)) {
+    return (
+      <Col
+        className={
+          'border-ink-400 bg-ink-200 justify-between gap-2 rounded border p-2 px-4'
+        }
+      >
+        <div
+          className={
+            'flex w-full flex-col items-center justify-between gap-2 sm:flex-row'
+          }
+        >
+          <Row className="w-full justify-between">
+            <span>
+              <MdBlock className="mb-0.5 mr-1 inline-block h-4 w-4" />
+              Blocked from sweepstakes participation due to location.{' '}
+            </span>
+            <HideVerifyMeButton
+              hideVerifyMe={hideVerifyMe}
+              setHideVerifyMe={setHideVerifyMe}
+              className=" -mr-2 -mt-1 sm:hidden"
+            />
+          </Row>
+          <Button
+            color={'indigo-outline'}
+            loading={loadingMonitorStatus}
+            disabled={loadingMonitorStatus}
+            onClick={fetchMonitorStatus}
+            className={'w-full whitespace-nowrap sm:w-fit'}
+          >
+            Refresh status
+          </Button>
+          <HideVerifyMeButton
+            hideVerifyMe={hideVerifyMe}
+            setHideVerifyMe={setHideVerifyMe}
+            className="-mr-2 hidden sm:block"
+          />
+        </div>
+        {monitorStatus === 'error' && (
+          <Row className={'text-error'}>{monitorStatusMessage}</Row>
+        )}
+      </Col>
+    )
+  }
 
   return (
     <Col
