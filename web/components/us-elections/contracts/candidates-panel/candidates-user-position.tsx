@@ -100,8 +100,18 @@ export function BinaryUserPosition(props: {
   userBets: Bet[]
   user: User
   className?: string
+  binaryPseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
-  const { contract, user, userBets, className } = props
+  const { contract, user, userBets, className, binaryPseudonym } = props
 
   const { totalShares } = getContractBetMetrics(contract, userBets)
 
@@ -143,6 +153,7 @@ export function BinaryUserPosition(props: {
             shares={Math.abs(sharesSum)}
             sharesOutcome={sharesSum > 0 ? 'YES' : 'NO'}
             setOpen={setOpenModal}
+            binaryPseudonym={binaryPseudonym}
           />
         </>
       )}

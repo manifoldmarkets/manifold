@@ -33,11 +33,11 @@ export function OutcomeLabel(props: {
   const { outcomeType, mechanism } = contract
   const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
   const { pseudonymName, pseudonymColor } =
-    props.pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
+    pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
 
   if (pseudonymName && pseudonymColor) {
     return (
-      <div
+      <span
         className={clsx(
           pseudonymColor == 'azure'
             ? 'text-azure-600 dark:text-azure-400'
@@ -47,7 +47,7 @@ export function OutcomeLabel(props: {
         )}
       >
         {pseudonymName}
-      </div>
+      </span>
     )
   }
 

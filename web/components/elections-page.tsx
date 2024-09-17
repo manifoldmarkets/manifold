@@ -71,7 +71,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
       <PoliticsCard
         contract={electionPartyContract}
         viewType="BINARY_PARTY"
-        customTitle="Which party will win the Presidential Election?"
+        customTitle="Who win the Presidential Election?"
         includeHead
       />
 

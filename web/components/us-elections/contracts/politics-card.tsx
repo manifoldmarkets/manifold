@@ -133,10 +133,7 @@ export function PoliticsCard(props: {
             e.currentTarget.focus() // focus the div like a button, for style
           }}
         >
-          <BinaryPartyPanel
-            contract={contract as BinaryContract}
-            includeHead={includeHead}
-          />
+          <BinaryPartyPanel contract={contract as BinaryContract} />
         </ClickFrame>
       </Col>
     )

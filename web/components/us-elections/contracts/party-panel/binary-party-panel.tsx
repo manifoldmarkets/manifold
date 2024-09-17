@@ -51,19 +51,25 @@ import {
 } from '../candidates-panel/candidates-user-position'
 import { ProbPercentLabel } from 'web/components/outcome-label'
 
+const politicsBinaryPseudonym = {
+  YES: {
+    pseudonymName: 'TRUMP',
+    pseudonymColor: 'sienna',
+  },
+  NO: {
+    pseudonymName: 'HARRIS',
+    pseudonymColor: 'azure',
+  },
+}
+
 // just the bars
-export function BinaryPartyPanel(props: {
-  contract: BinaryContract
-  maxAnswers?: number
-  includeHead?: boolean
-}) {
-  const { contract, maxAnswers = Infinity, includeHead } = props
-  const { resolution, outcomeType } = contract
+export function BinaryPartyPanel(props: { contract: BinaryContract }) {
+  const { contract } = props
   const user = useUser()
 
   const userBets = useUserContractBets(user?.id, contract.id)
 
-  const { sharesOutcome, shares } = useSaveBinaryShares(contract, userBets)
+  const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
 
   const republicanProb = getDisplayProbability(contract)
   const democraticProb = 1 - republicanProb
@@ -218,6 +224,7 @@ function BinaryPartyAnswer(props: {
                   className={clsx(
                     'text-ink-500 dark:text-ink-700 absolute -bottom-[22px] text-xs hover:underline'
                   )}
+                  binaryPseudonym={politicsBinaryPseudonym}
                 />
               )}
             </Col>
@@ -264,6 +271,7 @@ function BinaryPartyAnswer(props: {
                   className={clsx(
                     'text-ink-500 dark:text-ink-700 absolute -bottom-2 text-xs hover:underline'
                   )}
+                  binaryPseudonym={politicsBinaryPseudonym}
                 />
               )}
             </Col>
@@ -325,11 +333,11 @@ function BinaryPartyAnswerSnippet(props: {
       )}
     >
       <div className="text-ink-700">
-        {isDemocraticParty ? 'Kamala' : 'Trump'}
+        {isDemocraticParty ? 'Harris' : 'Trump'}
       </div>
       <Spacer h={1} />
       <Row className={isDemocraticParty ? 'flex-row-reverse' : ''}>
-        <div className="!text-5xl">{formatPercent(probability)}</div>
+        <div className="!text-5xl font-bold">{formatPercent(probability)}</div>
         {(isDemocraticParty && probChangesToday < 0) ||
           (!isDemocraticParty && probChangesToday > 0 && (
             <BubblePercentChange
@@ -345,6 +353,7 @@ function BinaryPartyAnswerSnippet(props: {
           contract={contract}
           user={user}
           initialOutcome={isDemocraticParty ? 'NO' : 'YES'}
+          className="w-20"
         />
 
         {!resolution && betUp && user && (
@@ -356,6 +365,7 @@ function BinaryPartyAnswerSnippet(props: {
               'text-ink-500 dark:text-ink-700 absolute -bottom-[22px] text-xs hover:underline',
               isDemocraticParty ? 'right-0' : 'left-0'
             )}
+            binaryPseudonym={politicsBinaryPseudonym}
           />
         )}
       </div>
@@ -407,16 +417,7 @@ export function BinaryBetButton(props: {
             setOpen={setOpen}
             trackingLocation="contract table"
             initialOutcome={initialOutcome}
-            binaryPseudonym={{
-              YES: {
-                pseudonymName: 'TRUMP',
-                pseudonymColor: 'sienna',
-              },
-              NO: {
-                pseudonymName: 'Kamala',
-                pseudonymColor: 'azure',
-              },
-            }}
+            binaryPseudonym={politicsBinaryPseudonym}
           />
         )}
       </>
