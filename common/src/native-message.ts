@@ -37,7 +37,6 @@ export type webToNativeMessageType =
   | 'log'
   | 'startedListening'
   | 'locationRequested'
-  | 'openUrl'
 
 export const IS_NATIVE_KEY = 'is-native'
 export const PLATFORM_KEY = 'native-platform'
