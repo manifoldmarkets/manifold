@@ -39,29 +39,29 @@ export function UpdatedTermsModal() {
         <div className="text-2xl font-semibold">Sweepstakes are here!</div>
         <p className="text-ink-700">
           As part of our launch of sweepstakes, we've updated our{' '}
-          <Link
+          <a
             href="/terms"
             className="text-primary-700 font-semibold underline"
             target="_blank"
           >
             Terms & Conditions
-          </Link>
+          </a>
           ,{' '}
-          <Link
+          <a
             className="text-primary-700 font-semibold underline"
             href="/privacy"
             target="_blank"
           >
             Privacy Policy
-          </Link>
+          </a>
           , and{' '}
-          <Link
+          <a
             href="/sweepstakes-rules"
             className="text-primary-700 font-semibold underline"
             target="_blank"
           >
             Sweepstakes Rules
-          </Link>
+          </a>
           .
         </p>
         <p className="text-ink-700">
