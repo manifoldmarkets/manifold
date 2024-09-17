@@ -109,23 +109,17 @@ const WhyBet = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
       predictions.
     </div>
     {TWOMBA_ENABLED && (
-      <div className="pb-2">
-        Trade on sweepstakes markets to win withdrawable sweepcash!{' '}
-      </div>
-    )}
-    {TWOMBA_ENABLED && (
       <>
         <div className="pb-2">
-          {capitalize(TRADE_TERM)} for a chance to win <b>real cash prizes</b>{' '}
-          when you trade with{' '}
+          {capitalize(TRADE_TERM)} with{' '}
           <span className="coin-offset relative ml-[1.2em] whitespace-nowrap">
             <SweepiesCoin className="absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]" />
             <span className=" font-semibold text-amber-700 dark:text-amber-300 ">
               {' '}
               {SWEEPIES_NAME} ({SWEEPIES_MONIKER})
-            </span>
+            </span>{' '}
           </span>
-          .
+          for a chance to win withdrawable <b>cash prizes</b>.
         </div>
       </>
     )}
