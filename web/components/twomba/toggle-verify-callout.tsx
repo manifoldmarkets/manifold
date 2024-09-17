@@ -136,7 +136,7 @@ export function VerifyButton(props: { className?: string }) {
   const { className } = props
   return (
     <Link
-      href={'gidx/register'}
+      href={'/gidx/register'}
       className={clsx(
         buttonClass('md', 'gradient-pink'),
         'w-full font-semibold',
