@@ -40,7 +40,7 @@ export function UpdatedTermsModal() {
         <p className="text-ink-700">
           As part of our launch of sweepstakes, we have updated our{' '}
           <a
-            href="https://manifold.markets/terms"
+            href="https://manifold.markets/terms-and-conditions.html"
             className="text-primary-700 font-semibold underline"
             target="_blank"
           >
@@ -48,15 +48,15 @@ export function UpdatedTermsModal() {
           </a>
           ,{' '}
           <a
+            href="https://manifold.markets/privacy-policy.html"
             className="text-primary-700 font-semibold underline"
-            href="https://manifold.markets/privacy"
             target="_blank"
           >
             Privacy Policy
           </a>
           , and{' '}
           <a
-            href="https://manifold.markets/sweepstakes-rules"
+            href="https://manifold.markets/sweepstakes-rules.html"
             className="text-primary-700 font-semibold underline"
             target="_blank"
           >
