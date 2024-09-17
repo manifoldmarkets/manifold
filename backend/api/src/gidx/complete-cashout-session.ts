@@ -17,6 +17,7 @@ import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getUser, LOCAL_DEV } from 'shared/utils'
 import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
+import { floatingEqual } from 'common/util/math'
 
 const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 
@@ -41,9 +42,9 @@ export const completeCashoutSession: APIHandler<
   } = props
 
   const manaCashAmount = PaymentAmount.manaCash
-  const redeemablePrizeCash = await calculateRedeemablePrizeCash(pg, userId)
+  const { redeemable } = await calculateRedeemablePrizeCash(pg, userId)
 
-  if (redeemablePrizeCash < manaCashAmount) {
+  if (redeemable < manaCashAmount) {
     throw new APIError(400, 'Insufficient redeemable prize cash')
   }
   const dollarsToWithdraw = PaymentAmount.dollars
@@ -85,11 +86,12 @@ export const completeCashoutSession: APIHandler<
     PaymentDetails,
     SessionStatusMessage,
     ResponseCode,
+    ResponseMessage,
   } = cashierResponse
   if (ResponseCode >= 300) {
     return {
       status: 'error',
-      message: 'GIDX error',
+      message: 'Error: ' + ResponseMessage,
       gidxMessage: SessionStatusMessage,
     }
   }
@@ -212,10 +214,16 @@ const debitCoins = async (
     LocationDetail: ____,
     ...dataToWrite
   } = response
-  await pg.tx(async (tx) => {
+  const cash = await pg.tx(async (tx) => {
     let redeemablePrizeCash: number
+    let cash: number
     try {
-      redeemablePrizeCash = await calculateRedeemablePrizeCash(tx, userId)
+      const { redeemable, cashBalance } = await calculateRedeemablePrizeCash(
+        tx,
+        userId
+      )
+      redeemablePrizeCash = redeemable
+      cash = cashBalance
     } catch (e) {
       log.error('Indeterminate state, may need to refund', { response })
       throw e
@@ -228,9 +236,21 @@ const debitCoins = async (
         { response }
       )
     }
-    log('run cashout txn')
+    log('Run cashout txn, redeemable:', redeemablePrizeCash)
+    log('Cash balance for user prior to txn', cash)
     const txn = await runTxn(tx, manaCashoutTxn)
-    log('insert gidx receipt')
+    const balanceAfter = await tx.one(
+      `select cash_balance from users where id = $1`,
+      [userId],
+      (r) => r.cash_balance
+    )
+    log('Run cashout txn, cash balance for user after txn', balanceAfter)
+    if (cash - manaCashAmount !== balanceAfter) {
+      log.error(
+        'Cash balance after txn does not match expected. Admin should take a look.'
+      )
+    }
+    log('Insert gidx receipt')
     await tx.none(
       `
     insert into gidx_receipts (
@@ -269,5 +289,23 @@ const debitCoins = async (
         JSON.stringify(dataToWrite),
       ]
     )
+    return cash
   })
+  const balanceAfter = await pg.one(
+    `select cash_balance from users where id = $1`,
+    [userId],
+    (r) => r.cash_balance
+  )
+  const expectedBalance = cash - manaCashAmount
+  log(
+    'Double checking cash balance after txn',
+    balanceAfter,
+    'should be',
+    expectedBalance
+  )
+  if (!floatingEqual(expectedBalance, balanceAfter)) {
+    log.error(
+      'Cash balance after txn does not match expected. Admin should take a look.'
+    )
+  }
 }

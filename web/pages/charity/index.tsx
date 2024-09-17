@@ -17,6 +17,8 @@ import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export async function getStaticProps() {
   try {
@@ -119,8 +121,17 @@ export default function Charity(props: {
           <Title>Manifold for Charity</Title>
 
           <div className="text-ink-500">
-            Convert your <SpiceCoin /> prize points into real charitable
-            donations.
+            Convert your{' '}
+            {TWOMBA_ENABLED ? (
+              <>
+                <SweepiesCoin /> sweepcash
+              </>
+            ) : (
+              <>
+                <SpiceCoin /> prize points
+              </>
+            )}{' '}
+            into real charitable donations.
           </div>
 
           <DonatedStats

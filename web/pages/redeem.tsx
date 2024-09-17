@@ -36,7 +36,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useApiSubscription } from 'web/hooks/use-api-subscription'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
 import { RegisterIcon } from 'web/public/custom-components/registerIcon'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
@@ -170,7 +170,7 @@ const CashoutPage = () => {
     setError(undefined)
     if (!checkoutSession || !sweepCashAmount) return
     try {
-      await api('complete-cashout-session-gidx', {
+      const { status, message } = await api('complete-cashout-session-gidx', {
         PaymentMethod: {
           Type: 'ACH',
           AccountNumber,
@@ -192,11 +192,19 @@ const CashoutPage = () => {
         MerchantSessionID: checkoutSession.MerchantSessionID,
         MerchantTransactionID: checkoutSession.MerchantTransactionID,
       })
-      setPage('waiting')
-      setCompletedCashout(sweepCashAmount)
+      if (status === 'error') {
+        setError(message)
+      } else {
+        setPage('waiting')
+        setCompletedCashout(sweepCashAmount)
+      }
     } catch (err) {
-      console.error('Error completing cashout session', err)
-      setError('Failed to initiate redemption. Please try again.')
+      if (err instanceof APIError) {
+        setError((err as APIError).message)
+      } else {
+        console.error('Error completing cashout session', err)
+        setError('Failed to initiate redemption. Please try again.')
+      }
     }
     setloading(false)
   }

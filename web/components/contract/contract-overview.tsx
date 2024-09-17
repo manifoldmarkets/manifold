@@ -73,6 +73,7 @@ import {
 } from '../charts/chart-annotations'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import { VerifyButton } from '../twomba/toggle-verify-callout'
+import { InBeta } from '../twomba/toggle-verify-callout'
 
 export const ContractOverview = memo(
   (props: {
@@ -836,7 +837,10 @@ export function BinaryBetPanel(props: {
           You can't trade on sweepstakes markets while your status is pending.
         </Row>
       ) : contract.token === 'CASH' && user && !user.idVerified ? (
-        <Col className="bg-canvas-50 gap-2 rounded-lg p-4">
+        <Col className="bg-canvas-50 relative gap-2 rounded-lg p-4">
+          <Row className="w-full justify-end">
+            <InBeta className="sm:absolute sm:right-4 sm:top-4" />
+          </Row>
           <div className="mx-auto text-lg font-semibold">
             Must be verified to {TRADE_TERM}
           </div>
