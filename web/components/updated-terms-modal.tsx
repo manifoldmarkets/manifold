@@ -26,8 +26,8 @@ export function UpdatedTermsModal() {
   // Check if the user was created after the terms update
   const isNewUser = user && new Date(user.createdTime) > TERMS_UPDATE_DATE
 
-  if (agreedToTerms || !user || !TWOMBA_ENABLED || isExceptionPage || isNewUser)
-    return null
+  // if (agreedToTerms || !user || !TWOMBA_ENABLED || isExceptionPage || isNewUser)
+  //   return null
 
   return (
     <Modal open={true} onClose={() => {}}>
@@ -38,9 +38,9 @@ export function UpdatedTermsModal() {
         />
         <div className="text-2xl font-semibold">Sweepstakes are here!</div>
         <p className="text-ink-700">
-          As part of our launch of sweepstakes, we've updated our{' '}
+          As part of our launch of sweepstakes, we have updated our{' '}
           <a
-            href="external:https://manifold.markets/terms"
+            href="https://manifold.markets/terms"
             className="text-primary-700 font-semibold underline"
             target="_blank"
           >
@@ -49,14 +49,14 @@ export function UpdatedTermsModal() {
           ,{' '}
           <a
             className="text-primary-700 font-semibold underline"
-            href="external:https://manifold.markets/privacy"
+            href="https://manifold.markets/privacy"
             target="_blank"
           >
             Privacy Policy
           </a>
           , and{' '}
           <a
-            href="external:https://manifold.markets/sweepstakes-rules"
+            href="https://manifold.markets/sweepstakes-rules"
             className="text-primary-700 font-semibold underline"
             target="_blank"
           >
