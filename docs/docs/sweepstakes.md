@@ -1,35 +1,55 @@
 # Sweepstakes FAQ
 
-Answers to questions about sweepstakes markets, buying mana, withdrawals, taxes on winnings etc.
+Answers to questions about sweepstakes markets, eligibility, buying mana, withdrawals, taxes on winnings etc.
+
+### Who is eligible to participate in sweepstakes markets?
+
+- 18 years and older.
+- US residents in select states are eligible to participate in sweepstakes markets:
+  - States eligible for sweepstakes (46 states): Alabama, Alaska, Arizona, Arkansas, California, Colorado, Connecticut, Florida, Georgia, Hawaii, Illinois, Indiana, Iowa, Kansas, Kentucky, Louisiana, Maine, Maryland, Massachusetts, Minnesota, Mississippi, Missouri, Montana, Nebraska, Nevada, New Hampshire, New Jersey, New Mexico, New York, North Carolina, North Dakota, Ohio, Oklahoma, Oregon, Pennsylvania, Rhode Island, South Carolina, South Dakota, Tennessee, Texas, Utah, Vermont, Virginia, West Virginia, Wisconsin, Wyoming.
+  - States NOT eligible (4 states): Delaware, Idaho, Michigan, and Washington.
+  - Residents of Washington D.C. are NOT eligible.
+  - Additional restrictions apply to some states:
+    - Residents of New York and Florida may not win and withdraw more than $5,000 per market.
+- International users are not eligible to participate in sweepstakes markets, although we are working on expanding as soon as possible.
+- Users must complete KYC to participate in sweepstakes markets. This requires your full legal name, date of birth, phone number, and address. Some users may be required to upload a document proving their residence.
 
 ### How do sweepstakes markets differ from the play-money markets on Manifold?
 
-This will create a second contract, which will share the same page, question, description and comments as the original mana market
+All markets on Manifold are by default play-money and use our play-money called mana. Selected markets will have a second sweepstakes version created which will use sweepcash. This will share the same page, question, description and comments as the original play-money market, but will have seperate entries (trades) and prizes using Sweepcash. Users may switch back and forth between the two markets using the tab found on the market page.
 
 ### How do I enter a sweepstakes market?
-Users may participate in a sweepstakes market by using Manicash. It is free to enter and users can receive Manicash by:
+
+Users may participate in a sweepstakes market by using sweepcash. It is free to enter and users can receive Manicash by:
+
 - Verifying their phone number and personal details for a welcome gift.
-- Achieving their daily streak.
-- Posting a letter to Manifold Sweepstakes Inc.
-- As a free gift when purchasing mana.
+- Completing their daily streak for a free bonus.
+- As a free gift with some purchases.
 
+### How do I withdraw my Sweepcash winnings?
 
-### How do I cash out my Sweepcash to real-money?
-Sweepcash won from a market resolving can be redeemed for a real-money payout. Simply go to your withdrawals dashboard and fill out your bank details and request the amount of Sweepcash you wish to redeem for real-money.
+Only sweepcash won from a market resolution can be withdrawn. Sweepcash received from gifts, bonuses, or exiting a market early can not be withdrawn and you must use it to win a resolved market first. Visit your withdrawals dashboard to view how much sweepcash you have won and can withdraw. Then, fill out your bank details and request the amount of sweepcash you wish to redeem for real-money. There is a $25.00 minimum withdrawal.
 
-Sweepcash won by exiting a market early (eg. by selling shares) will not be eligible to be redeemed. You must use sweepcash to enter a sweepstakes market and wait for it to resolve in your favor to be able to redeem them. You may view how much sweepcash you are eligible to withdraw on your withdrawals dashboard.
+### Withdrawal processing time
+
+Please expect to wait 5-7 business days after withdrawal as we process it.
+
+### Can I cash out my mana winnings or turn mana to Sweepcash?
+
+No, mana is purely a play-money and not exchangeable for sweepcash, money, or any other goods and items.
 
 ### Do I need to pay taxes on my winnings?
-Users do not have to pay taxes on any Sweepcash won.
-U.S. customers will need to pay taxes on any money that has been cashed out from that Sweepcash.
 
-Customers from other countries should consult their countries' tax laws.
+Manifold cannot provide tax advice to customers. Please consult with your state's tax laws and consult with a lawyer.
+
+Users who cash out more than $600 may be issued a 1099 form showing their total winnings.
 
 ### How can I get one of my markets to be made in sweepstakes?
 
-The Manifold staff may choose any user-created market to have sweepstakes. Manifold will fund the initial subsidisation of the sweepstakes market. Creators will continue to manage the market and resolve the play-money market, however Manifold will resolve the sweepstakes market.
+The Manifold staff may elect, in its sole discretion, to transform any user-created question to have both a mana and sweepcash market. Creators will continue to manage the market and resolve the mana market, however Manifold will resolve the sweepstakes market.
 
 To increase the chances of having your market selected for sweepstakes:
+
 - It should be a binary market
 - It should have clear, unambiguous criteria
 - It should be actively managed
@@ -39,15 +59,10 @@ To increase the chances of having your market selected for sweepstakes:
 
 ### What happens if I think a sweepstakes market has been resolved incorrectly?
 
-Only Manifold staff will resolve a sweepstakes market. When a market is selected to have sweepstakes, we will work with the creator and traders to ensure robust, unambiguous criteria. Inevitably, there will be situations where unexpected events occurs leading to mixed interpretation on how the market should be resolved. In these situations Manifold will make an ultimate decision but will take in as much community feedback as possible to remain unbiased.
+Only Manifold staff may resolve a sweepstakes market. Staff will adhere to the resolution criteria outlined in the description. When a market is selected to add sweepstakes functionality, Manifold may work with the creator and traders to ensure robust, unambiguous resolution criteria. Manifold, in its sole discretion, will determine sweepstakes market settlement.
 
 If you believe a sweepstakes market has been incorrectly resolved, please email info@manifold.markets
 
-### Who is eligible to participate in sweepstakes markets?
+### Do sweepstake markets contribute towards leagues?
 
-Age: 18 and over
-Locations with full access:
-Locations with some restrictions:
-Locations with no access:
-
-### Are Sweepstake markets regulated?
+No, for the time-being we are sticking with mana and play money markets for leagues. Leagues will continue to award mana to users who perform the best on our play money markets.

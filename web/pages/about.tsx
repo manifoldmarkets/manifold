@@ -8,8 +8,9 @@ import { Title } from 'web/components/widgets/title'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { LabCard } from './lab'
-import { TRADE_TERM } from 'common/envs/constants'
+import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import { capitalize } from 'lodash'
+import { AboutManifold } from 'web/components/about-manifold'
 
 export default function AboutPage() {
   getNativePlatform()
@@ -28,17 +29,7 @@ export default function AboutPage() {
         <ManifoldLogo className="mb-4 flex sm:hidden" />
         <Col className="gap-4">
           <div>
-            <div className="mb-1 text-lg">
-              Manifold lets you {TRADE_TERM} on upcoming events using play
-              money. As other users {TRADE_TERM} against you, it creates a
-              probability of how likely the event will happen—this is known as a
-              prediction market.
-            </div>
-            <div className=" text-lg">
-              {capitalize(TRADE_TERM)} on current events, politics, tech, and
-              AI, or create your own market about an event you care about for
-              others to trade on!
-            </div>
+            <AboutManifold className="text-lg" />
           </div>
 
           <ExplainerPanel className={'max-w-full'} showWhatIsManifold={false} />
@@ -77,33 +68,38 @@ export default function AboutPage() {
 
             <div className="mt-4 grid gap-x-2 md:grid-cols-3">
               <LabCard
-                title="📚 FAQ"
+                title="FAQ"
                 href="https://docs.manifold.markets/faq"
                 target="_blank"
                 description="For a more comprehensive overview"
               />
+              {TWOMBA_ENABLED && (<LabCard
+                title="Sweepstakes FAQ"
+                href="https://docs.manifold.markets/sweepstakes"
+                target="_blank"
+                description="For questions about sweepstakes"
+              />)}
               <LabCard
-                title="📜 Community guidelines"
+                title="Community guidelines"
                 href="https://manifoldmarkets.notion.site/New-WIP-Community-Guidelines-2b986d33f0c646478d4921667c272f21"
                 target="_blank"
                 description="Rules, norms, and expectations"
               />
-
               <LabCard
-                title="Discord"
+                title="Join our Discord"
                 href="https://discord.com/invite/eHQBNBqXuh"
                 target="_blank"
                 icon={<TbBrandDiscord className="h-6 w-6" />}
                 description="For the fastest help"
               />
               <LabCard
-                title="📧 Email us"
+                title="Email us"
                 href="mailto:info@manifold.markets"
                 target="_blank"
-                description="If Discord didn't help"
+                description="info@manifold.markets"
               />
               <LabCard
-                title="🗺️ Sitemap"
+                title="Sitemap"
                 href="/sitemap"
                 description="I can't find something"
               />

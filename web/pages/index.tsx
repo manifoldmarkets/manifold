@@ -37,6 +37,7 @@ import {
   getContract,
 } from 'common/supabase/contracts'
 import { capitalize } from 'lodash'
+import { AboutManifold } from 'web/components/about-manifold'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
@@ -187,13 +188,7 @@ export default function LandingPage(props: {
               <h1 className="mb-4 text-4xl">
                 {capitalize(TRADE_TERM)} on politics & more
               </h1>
-              <h1 className="text-lg">
-                Play-money markets. Real-world accuracy.
-              </h1>
-              <h1 className="text-lg">
-                Compete with your friends by {TRADING_TERM} on politics, tech,
-                sports, and more. It's play money and free to play.
-              </h1>
+              <AboutManifold className="text-lg" />
 
               <Button
                 color="gradient"
