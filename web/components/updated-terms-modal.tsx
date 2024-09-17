@@ -28,6 +28,7 @@ export function UpdatedTermsModal() {
 
   if (agreedToTerms || !user || !TWOMBA_ENABLED || isExceptionPage || isNewUser)
     return null
+
   return (
     <Modal open={true} onClose={() => {}}>
       <Col className={MODAL_CLASS}>
@@ -35,10 +36,9 @@ export function UpdatedTermsModal() {
           className="h-24 w-24 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white dark:stroke-white"
           aria-hidden
         />
-        <div className="text-2xl font-semibold">An Important Update</div>
+        <div className="text-2xl font-semibold">Sweepstakes are here!</div>
         <p className="text-ink-700">
-          To continue using Manifold Markets, we kindly ask all users to review
-          our updated{' '}
+          As part of our launch of sweepstakes, we've updated our{' '}
           <Link
             href="/terms"
             className="text-primary-700 font-semibold underline"
@@ -56,11 +56,11 @@ export function UpdatedTermsModal() {
           </Link>
           , and{' '}
           <Link
-            href="/rules"
+            href="/sweepstakes-rules"
             className="text-primary-700 font-semibold underline"
             target="_blank"
           >
-            Rules
+            Sweepstakes Rules
           </Link>
           .
         </p>
