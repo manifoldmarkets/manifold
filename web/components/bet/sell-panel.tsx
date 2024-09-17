@@ -52,6 +52,16 @@ export function SellPanel(props: {
   user: User
   onSellSuccess?: () => void
   answerId?: string
+  binaryPseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
   const {
     contract,

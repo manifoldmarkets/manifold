@@ -1,4 +1,4 @@
-import { MultiContract } from 'common/contract'
+import { BinaryContract, MultiContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
 import Custom404 from 'web/pages/404'
@@ -8,6 +8,9 @@ import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
 import { ConditionalMarkets } from './us-elections/contracts/conditional-market/conditional-markets'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
+
+export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
+  'Who win the Presidential Election?'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const {
@@ -69,9 +72,9 @@ export function USElectionsPage(props: ElectionsPageProps) {
       </Col>
 
       <PoliticsCard
-        contract={electionPartyContract as MultiContract}
-        viewType="PARTY"
-        customTitle="Which party will win the Presidential Election?"
+        contract={electionPartyContract}
+        viewType="BINARY_PARTY"
+        customTitle={ELECTIONS_PARTY_QUESTION_PSEUDONYM}
         includeHead
       />
 

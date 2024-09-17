@@ -3,6 +3,8 @@ import { StateElectionMarket } from 'web/public/data/elections-data'
 
 export const DEM_LIGHT_HEX = '#cedcef'
 export const REP_LIGHT_HEX = '#f4dad7'
+export const DEM_COLOR = '#5671ba'
+export const REP_COLOR = '#c25555'
 export const DEM_DARK_HEX = '#4a5fa8'
 export const REP_DARK_HEX = '#9d3336'
 

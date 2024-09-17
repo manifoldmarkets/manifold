@@ -20,7 +20,7 @@ function ElectionNeedle({ electionPartyContract }: ElectionNeedleProps) {
   return (
     <PoliticsCard
       contract={electionPartyContract}
-      viewType="PARTY"
+      viewType="BINARY_PARTY"
       customTitle="Which party will win the Presidential Election?"
     />
   )
