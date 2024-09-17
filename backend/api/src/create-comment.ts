@@ -15,8 +15,9 @@ import { millisToTs } from 'common/supabase/utils'
 import { convertBet } from 'common/supabase/bets'
 import { Bet } from 'common/bet'
 import { runTxn } from 'shared/txn/run-txn'
-import { DisplayUser } from 'common/api/user-types'
 import { broadcastNewComment } from 'shared/websockets/helpers'
+import { buildArray } from 'common/util/array'
+import { type Contract } from 'common/contract'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -80,8 +81,6 @@ export const createCommentOnContractInternal = async (
         .then(convertBet)
     : undefined
 
-  const bettor = bet && (await getUser(bet.userId))
-
   const isApi = auth.creds.kind === 'key'
 
   const comment = removeUndefinedProps({
@@ -103,7 +102,8 @@ export const createCommentOnContractInternal = async (
     answerOutcome: replyToAnswerId,
     visibility: contract.visibility,
 
-    ...denormalizeBet(bet, bettor),
+    ...denormalizeBet(bet, contract),
+
     isApi,
     isRepost,
   } as ContractComment)
@@ -137,14 +137,14 @@ export const createCommentOnContractInternal = async (
       }
       if (replyToBetId) return
 
+      console.log('finding most recent bet')
       const bet = await getMostRecentCommentableBet(
         pg,
-        contract.id,
+        buildArray([contract.id, contract.siblingContractId]),
         creator.id,
         now,
         replyToAnswerId
       )
-      const bettor = bet && (await getUser(bet.userId))
 
       const position = await getLargestPosition(pg, contract.id, creator.id)
 
@@ -157,7 +157,7 @@ export const createCommentOnContractInternal = async (
           position && contract.mechanism === 'cpmm-1'
             ? contract.prob
             : undefined,
-        ...denormalizeBet(bet, bettor),
+        ...denormalizeBet(bet, contract),
       })
       await pg.none(
         `update contract_comments set data = $1 where comment_id = $2`,
@@ -175,16 +175,27 @@ export const createCommentOnContractInternal = async (
 }
 const denormalizeBet = (
   bet: Bet | undefined,
-  bettor: DisplayUser | undefined | null
+  contract: Contract | undefined
 ) => {
   return {
     betAmount: bet?.amount,
     betOutcome: bet?.outcome,
     betAnswerId: bet?.answerId,
-    bettorId: bettor?.id,
+    bettorId: bet?.userId,
     betOrderAmount: bet?.orderAmount,
     betLimitProb: bet?.limitProb,
     betId: bet?.id,
+
+    betToken:
+      !bet || !contract
+        ? undefined
+        : bet.contractId === contract.id
+        ? contract.token
+        : bet.contractId === contract.siblingContractId
+        ? contract.token === 'MANA'
+          ? 'CASH'
+          : 'MANA'
+        : undefined,
   }
 }
 
@@ -204,6 +215,12 @@ export const validateComment = async (
   if (you.userDeleted) throw new APIError(403, 'Your account is deleted')
 
   if (!contract) throw new APIError(404, 'Contract not found')
+  if (contract.token !== 'MANA') {
+    throw new APIError(
+      400,
+      `Can't comment on cash contract. Please do comment on the sibling mana contract ${contract.siblingContractId}`
+    )
+  }
 
   const contentJson = content || anythingToRichText({ html, markdown })
 
@@ -222,7 +239,7 @@ export const validateComment = async (
 
 async function getMostRecentCommentableBet(
   pg: SupabaseDirectClient,
-  contractId: string,
+  contractIds: string[],
   userId: string,
   commentCreatedTime: number,
   answerOutcome?: string
@@ -232,7 +249,7 @@ async function getMostRecentCommentableBet(
     .map(
       `with prior_user_comments_with_bets as (
       select created_time, data->>'betId' as bet_id from contract_comments
-      where contract_id = $1 and user_id = $2
+      where contract_id in ($1:list) and user_id = $2
       and created_time < millis_to_ts($3)
       and data ->> 'betId' is not null
       and created_time > millis_to_ts($3) - interval $5
@@ -246,7 +263,7 @@ async function getMostRecentCommentableBet(
       as cutoff
     )
     select * from contract_bets
-      where contract_id = $1
+      where contract_id in ($1:list)
       and user_id = $2
       and ($4 is null or answer_id = $4)
       and created_time < millis_to_ts($3)
@@ -255,7 +272,7 @@ async function getMostRecentCommentableBet(
       order by created_time desc
       limit 1
     `,
-      [contractId, userId, commentCreatedTime, answerOutcome, maxAge],
+      [contractIds, userId, commentCreatedTime, answerOutcome, maxAge],
       convertBet
     )
     .catch((e) => console.error('Failed to get bet: ' + e))
