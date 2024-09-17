@@ -66,7 +66,7 @@ export function CommentActions(props: {
           size={'xs'}
         >
           <Tooltip text={`Reply with a ${TRADE_TERM}`} placement="bottom">
-            <Row className={'mt-0.5 gap-1'}>
+            <Row className="gap-1">
               {diff != 0 && (
                 <span className="">{Math.round(Math.abs(diff))}</span>
               )}
