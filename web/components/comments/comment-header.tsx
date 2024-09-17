@@ -11,7 +11,7 @@ import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { isAdminId } from 'common/envs/constants'
+import { CASH_SUFFIX, isAdminId } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { formatPercent, formatWithToken } from 'common/util/format'
 import { useState } from 'react'
@@ -74,11 +74,13 @@ export function FeedCommentHeader(props: {
     isRepost,
     betOrderAmount,
     betLimitProb,
+    contractSlug,
   } = comment
 
+  const betOnCashContract = contractSlug.endsWith(CASH_SUFFIX)
   const isCashContract = contract.token === 'CASH'
   const marketCreator = contract.creatorId === userId
-  const { bought, money } = getBoughtMoney(betAmount, isCashContract)
+  const { bought, money } = getBoughtMoney(betAmount, betOnCashContract)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   const isReplyToBet = betAmount !== undefined
   const commenterIsBettor = commenterAndBettorMatch(comment)
@@ -104,7 +106,7 @@ export function FeedCommentHeader(props: {
               <span className="text-ink-1000">
                 <MoneyDisplay
                   amount={betOrderAmount}
-                  isCashContract={isCashContract}
+                  isCashContract={betOnCashContract}
                 />
               </span>{' '}
               <OutcomeLabel
