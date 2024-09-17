@@ -74,17 +74,16 @@ export function FeedCommentHeader(props: {
     isRepost,
     betOrderAmount,
     betLimitProb,
-    contractSlug,
   } = comment
 
-  const betOnCashContract = contractSlug.endsWith(CASH_SUFFIX)
   const isCashContract = contract.token === 'CASH'
   const marketCreator = contract.creatorId === userId
-  const { bought, money } = getBoughtMoney(betAmount, betOnCashContract)
+  const { bought, money } = getBoughtMoney(betAmount, false)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   const isReplyToBet = betAmount !== undefined
   const commenterIsBettor = commenterAndBettorMatch(comment)
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
+
   return (
     <Col className={clsx('text-ink-600 text-sm', className)}>
       <Row className="justify-between">
@@ -104,10 +103,8 @@ export function FeedCommentHeader(props: {
             <span className={'ml-1'}>
               {betAmount === betOrderAmount ? 'filled' : 'opened'} a{' '}
               <span className="text-ink-1000">
-                <MoneyDisplay
-                  amount={betOrderAmount}
-                  isCashContract={betOnCashContract}
-                />
+                {/* assumes bets are never in sweeps */}
+                <MoneyDisplay amount={betOrderAmount} isCashContract={false} />
               </span>{' '}
               <OutcomeLabel
                 outcome={betOutcome ? betOutcome : ''}
