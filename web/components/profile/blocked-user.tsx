@@ -42,7 +42,8 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
                   <span className="ml-1.5">
                     <BannedBadge
                       isBannedFromPosting={user.isBannedFromPosting ?? false}
-                      isBannedFromTrading={user.isBannedFromTrading ?? false}
+                      isBannedFromMana={user.isBannedFromMana ?? false}
+                      isBannedFromSweepcash={user.isBannedFromSweepcash ?? false}
                     />
                   </span>
                 </span>

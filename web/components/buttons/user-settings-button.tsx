@@ -22,7 +22,11 @@ import {
   Referrals,
   useReferralCount,
 } from 'web/components/buttons/referrals-button'
-import { banUserFromPosting, banUserFromTrading } from 'web/lib/api/api'
+import {
+  banUserFromPosting,
+  banUserFromMana,
+  banUserFromSweepcash,
+} from 'web/lib/api/api'
 import SuperBanControl from '../SuperBanControl'
 import { buildArray } from 'common/util/array'
 import { AccountSettings } from '../profile/settings'
@@ -80,7 +84,7 @@ export function UserSettingButton(props: { user: User }) {
             <div className="mb-2 flex flex-wrap justify-between">
               <Title className={'!mb-0'}>{name}</Title>
               {(isAdmin || isTrusted) && (
-                <Row className="gap-2">
+                <Row className="mt-2 gap-2">
                   <SuperBanControl userId={userId} />
                   <Button
                     color={'red'}
@@ -101,15 +105,29 @@ export function UserSettingButton(props: { user: User }) {
                     color={'red'}
                     size="xs"
                     onClick={() => {
-                      banUserFromTrading({
+                      banUserFromMana({
                         userId,
-                        unban: user.isBannedFromTrading ?? false,
+                        unban: user.isBannedFromMana ?? false,
                       })
                     }}
                   >
-                    {user.isBannedFromTrading
-                      ? 'Banned (trading)'
-                      : 'Ban Trading'}
+                    {user.isBannedFromMana
+                      ? 'Banned (mana)'
+                      : 'Ban Mana Trading'}
+                  </Button>
+                  <Button
+                    color={'red'}
+                    size="xs"
+                    onClick={() => {
+                      banUserFromSweepcash({
+                        userId,
+                        unban: user.isBannedFromSweepcash ?? false,
+                      })
+                    }}
+                  >
+                    {user.isBannedFromSweepcash
+                      ? 'Banned (sweepcash)'
+                      : 'Ban Sweepcash Trading'}
                   </Button>
                 </Row>
               )}

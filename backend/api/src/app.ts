@@ -72,7 +72,7 @@ import {
 import { unresolve } from './unresolve'
 import { referuser } from 'api/refer-user'
 import { banUserFromPosting } from 'api/ban-user-from-posting'
-import { banUserFromTrading } from './ban-user-from-trading'
+import { banUserFromMana } from './ban-user-from-mana'
 import { updateMarket } from 'api/update-market'
 import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
@@ -193,6 +193,7 @@ import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { completeCashoutSession } from 'api/gidx/complete-cashout-session'
 import { getCashouts } from './get-cashouts'
+import { banUserFromSweepcash } from './ban-user-from-sweepcash'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -514,7 +515,8 @@ app.post('/delete-dashboard', ...apiRoute(deletedashboard))
 app.get('/get-news-dashboards', ...apiRoute(getnews))
 app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
 app.post('/ban-user-from-posting', ...apiRoute(banUserFromPosting))
-app.post('/ban-user-from-trading', ...apiRoute(banUserFromTrading))
+app.post('/ban-user-from-mana', ...apiRoute(banUserFromMana))
+app.post('/ban-user-from-sweepcash', ...apiRoute(banUserFromSweepcash))
 app.post('/create-private-user-message', ...apiRoute(createprivateusermessage))
 app.post(
   '/create-private-user-message-channel',

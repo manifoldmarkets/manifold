@@ -55,7 +55,8 @@ export async function getDisplayUsers(userIds: string[]) {
       'users',
       ...defaultFields,
       'isBannedFromPosting',
-      'isBannedFromTrading'
+      'isBannedFromMana',
+      'isBannedFromSweepcash'
     ).in('id', userIds)
   )
 

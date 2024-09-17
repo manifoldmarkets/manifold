@@ -308,7 +308,7 @@ export const fetchContractBetDataAndValidate = async (
       'You must be kyc verified to trade on sweepstakes markets.'
     )
   }
-  if (user.isBannedFromTrading || user.userDeleted) {
+  if (user.userDeleted) {
     throw new APIError(403, 'You are banned or deleted.')
   }
   log(
@@ -320,7 +320,12 @@ export const fetchContractBetDataAndValidate = async (
   log(
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
   )
-
+  if (user.isBannedFromMana && contract.token !== 'CASH') {
+    throw new APIError(403, 'You are banned or deleted.')
+  }
+  log(
+    `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
+  )
   return {
     user,
     contract,

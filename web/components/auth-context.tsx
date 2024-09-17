@@ -111,7 +111,7 @@ export function AuthProvider(props: {
     if (authUser) {
       if (
         (authUser.user.isBannedFromPosting &&
-          authUser.user.isBannedFromTrading) ||
+          authUser.user.isBannedFromMana) && authUser.user.isBannedFromSweepcash ||
         authUser.user.userDeleted
       ) {
         const message = authUser.user.userDeleted

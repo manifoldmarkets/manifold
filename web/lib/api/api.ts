@@ -324,11 +324,15 @@ export function createPrivateMessageChannelWithUsers(params: {
   return call(getApiUrl('create-private-user-message-channel'), 'POST', params)
 }
 
-export function banUserFromTrading(params: {
+export function banUserFromMana(params: { userId: string; unban?: boolean }) {
+  return call(getApiUrl('ban-user-from-mana'), 'POST', params)
+}
+
+export function banUserFromSweepcash(params: {
   userId: string
   unban?: boolean
 }) {
-  return call(getApiUrl('ban-user-from-trading'), 'POST', params)
+  return call(getApiUrl('ban-user-from-sweepcash'), 'POST', params)
 }
 
 export function sendUserPrivateMessage(params: {

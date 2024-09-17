@@ -73,8 +73,11 @@ export default function Reports(props: { reports: LiteReport[] }) {
                           isBannedFromPosting={
                             owner.isBannedFromPosting ?? false
                           }
-                          isBannedFromTrading={
-                            owner.isBannedFromTrading ?? false
+                          isBannedFromMana={
+                            owner.isBannedFromMana ?? false
+                          }
+                          isBannedFromSweepcash={
+                            owner.isBannedFromSweepcash ?? false
                           }
                         />
                       </div>

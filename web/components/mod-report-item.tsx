@@ -53,11 +53,12 @@ const ModReportItem: React.FC<ReportItemProps> = ({
 
                 <UserLink user={owner} className="text-ink-800 ml-2" />
                 {(report.owner_is_banned_from_posting ||
-                  report.owner_is_banned_from_trading) && (
+                  report.owner_is_banned_from_mana) || report.owner_is_banned_from_sweepcash && (
                   <span className="ml-1.5">
                     <BannedBadge
                       isBannedFromPosting={report.owner_is_banned_from_posting}
-                      isBannedFromTrading={report.owner_is_banned_from_trading}
+                      isBannedFromMana={report.owner_is_banned_from_mana}
+                      isBannedFromSweepcash={report.owner_is_banned_from_sweepcash}
                     />
                   </span>
                 )}

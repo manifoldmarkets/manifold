@@ -221,7 +221,8 @@ export const PrivateChat = (props: {
         {members?.length >= 1 && (
           <BannedBadge
             isBannedFromPosting={members[0].isBannedFromPosting ?? false}
-            isBannedFromTrading={members[0].isBannedFromTrading ?? false}
+            isBannedFromMana={members[0].isBannedFromMana ?? false}
+            isBannedFromSweepcash={members[0].isBannedFromSweepcash ?? false}
           />
         )}
 

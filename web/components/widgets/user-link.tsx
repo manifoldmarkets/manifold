@@ -138,25 +138,40 @@ function BotBadge() {
 
 export function BannedBadge({
   isBannedFromPosting,
-  isBannedFromTrading,
-  className,
+  isBannedFromMana,
+  isBannedFromSweepcash,
 }: {
   isBannedFromPosting: boolean
-  isBannedFromTrading: boolean
-  className?: string
+  isBannedFromMana: boolean
+  isBannedFromSweepcash: boolean
 }) {
   let badgeText = ''
   let tooltipText = ''
 
-  if (isBannedFromPosting && isBannedFromTrading) {
+  if (isBannedFromPosting && isBannedFromMana && isBannedFromSweepcash) {
     badgeText = 'Banned from posting & trading'
-    tooltipText = "Can't create comments, messages, questions, or trade"
+    tooltipText =
+      "Can't create comments, messages, questions, or trade with mana or sweepcash"
+  } else if (isBannedFromPosting && isBannedFromMana) {
+    badgeText = 'Banned from posting & mana'
+    tooltipText =
+      "Can't create comments, messages, questions, or trade with mana"
+  } else if (isBannedFromPosting && isBannedFromSweepcash) {
+    badgeText = 'Banned from posting & sweepcash'
+    tooltipText =
+      "Can't create comments, messages, questions, or trade with sweepcash"
+  } else if (isBannedFromMana && isBannedFromSweepcash) {
+    badgeText = 'Banned from trading'
+    tooltipText = "Can't participate in trading mana or sweepcash"
   } else if (isBannedFromPosting) {
     badgeText = 'Banned from posting'
     tooltipText = "Can't create comments, messages, or questions"
-  } else if (isBannedFromTrading) {
-    badgeText = 'Banned from trading'
-    tooltipText = "Can't participate in trading"
+  } else if (isBannedFromMana) {
+    badgeText = 'Banned from mana'
+    tooltipText = "Can't participate in trading mana"
+  } else if (isBannedFromSweepcash) {
+    badgeText = 'Banned from sweepcash'
+    tooltipText = "Can't participate in trading sweepcash"
   }
 
   if (!badgeText) return null
@@ -285,7 +300,8 @@ export const StackedUserNames = (props: {
     username: string
     createdTime: number
     isBannedFromPosting?: boolean
-    isBannedFromTrading?: boolean
+    isBannedFromMana?: boolean
+    isBannedFromSweepcash?: boolean
   }
   followsYou?: boolean
   className?: string
@@ -305,7 +321,8 @@ export const StackedUserNames = (props: {
         }
         <BannedBadge
           isBannedFromPosting={user.isBannedFromPosting ?? false}
-          isBannedFromTrading={user.isBannedFromTrading ?? false}
+          isBannedFromMana={user.isBannedFromMana ?? false}
+          isBannedFromSweepcash={user.isBannedFromSweepcash ?? false}
         />
       </div>
 

@@ -28,7 +28,8 @@ export const getLiteUser = async (
       username,
       data->>'avatarUrl' as "avatarUrl",
       (data->>'isBannedFromPosting')::boolean as "isBannedFromPosting",
-      (data->>'isBannedFromTrading')::boolean as "isBannedFromTrading"
+      (data->>'isBannedFromMana')::boolean as "isBannedFromMana",
+      (data->>'isBannedFromSweepcash')::boolean as "isBannedFromSweepcash"
     from users
     where ${'id' in props ? 'id' : 'username'} = $1`,
     ['id' in props ? props.id : props.username]

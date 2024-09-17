@@ -119,8 +119,9 @@ export const MessageChannelRow = (props: {
                     isBannedFromPosting={
                       otherUsers[0].isBannedFromPosting ?? false
                     }
-                    isBannedFromTrading={
-                      otherUsers[0].isBannedFromTrading ?? false
+                    isBannedFromMana={otherUsers[0].isBannedFromMana ?? false}
+                    isBannedFromSweepcash={
+                      otherUsers[0].isBannedFromSweepcash ?? false
                     }
                   />
                 </span>
