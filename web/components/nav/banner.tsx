@@ -20,7 +20,7 @@ export function Banner(props: {
         'text-ink-900 bg-primary-100 z-10 justify-between gap-4'
       )}
     >
-      <a href={link} className="pl-4" target="_blank" rel="noopener noreferrer">
+      <a href={link} className="pl-4" rel="noopener noreferrer">
         {children}
       </a>
 
@@ -94,6 +94,17 @@ export function DowntimeBanner() {
     <Banner className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b">
       ⚠️ Manifold will be down at 9PM PT for about 1 hour, as we upgrade our
       financial infrastructure.
+    </Banner>
+  )
+}
+
+export function WatchPartyBanner() {
+  return (
+    <Banner
+      className="border-primary-300 from-primary-100 to-primary-200 my-2 border bg-gradient-to-b py-2"
+      link="/tv"
+    >
+      🇺🇸 Join the presidential debate watch party on Manifold TV! 🇺🇸
     </Banner>
   )
 }

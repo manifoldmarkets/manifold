@@ -64,6 +64,7 @@ export function AddLiquidityPanel(props: {
         amount: payAmount,
         contractId,
       })
+      setAmount(undefined)
       setIsSuccess(true)
       setError(undefined)
       track('add liquidity', { amount, contractId, slug })
@@ -79,8 +80,8 @@ export function AddLiquidityPanel(props: {
       <div className="text-ink-600">
         {/* The higher the stakes, the more winners make!
         <br /> */}
-        Add to the subsidy pool to incentivize traders to make the probability
-        more precise.
+        Add to the subsidy pool to incentivize traders to make the question
+        probability more precise.
       </div>
 
       <div className="my-4">
@@ -98,7 +99,7 @@ export function AddLiquidityPanel(props: {
           amount={amount}
           onChange={setAmount}
           error={error}
-          setError={(_e) => {}}
+          setError={setError}
           disabled={false}
           quickButtonValues="large"
           token={isCashContract ? 'CASH' : 'M$'}
@@ -114,10 +115,10 @@ export function AddLiquidityPanel(props: {
       </Button>
 
       {isSuccess && amount && (
-        <div>
+        <div className="text-center">
           Success! Added{' '}
-          <MoneyDisplay amount={amount} isCashContract={isCashContract} /> to
-          the subsidy pool.
+          <MoneyDisplay amount={amount} isCashContract={isCashContract} />{' '}
+          subsidy.
         </div>
       )}
 

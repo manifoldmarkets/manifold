@@ -152,7 +152,7 @@ export function createJobs() {
     // Monthly jobs:
     createJob(
       'increment-streak-forgiveness',
-      '0 0 0 1 * *', // 1st day of the month at 12am PST
+      '0 0 3 1 * *', // 3am PST on the 1st day of the month
       incrementStreakForgiveness
     ),
     createJob(

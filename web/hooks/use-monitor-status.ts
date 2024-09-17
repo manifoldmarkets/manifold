@@ -59,6 +59,11 @@ export const useMonitorStatus = (
         (error) => {
           setMonitorStatusMessage(error.message)
           setMonitorStatus('error')
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 20 * MINUTE_MS,
         }
       )
     } else {

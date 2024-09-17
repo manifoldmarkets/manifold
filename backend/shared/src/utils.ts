@@ -107,13 +107,14 @@ export const isProd = () => {
     return admin.app().options.projectId === 'mantic-markets'
   }
 }
+export const contractColumnsToSelect = `data, importance_score, conversion_score, view_count, token`
 
 export const getContract = async (
   pg: SupabaseDirectClient,
   contractId: string
 ) => {
   const res = await pg.map(
-    `select data, importance_score, conversion_score, view_count, token from contracts where id = $1
+    `select ${contractColumnsToSelect} from contracts where id = $1
             limit 1`,
     [contractId],
     (row) => convertContract(row)
@@ -129,7 +130,7 @@ export const getContractSupabase = async (contractId: string) => {
 export const getContractFromSlugSupabase = async (contractSlug: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
-    `select data, importance_score, conversion_score, view_count, token from contracts where slug = $1
+    `select ${contractColumnsToSelect} from contracts where slug = $1
             limit 1`,
     [contractSlug],
     (row) => convertContract(row)

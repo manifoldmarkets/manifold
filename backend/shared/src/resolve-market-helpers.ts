@@ -225,7 +225,6 @@ export const resolveMarketHelper = async (
       await payUsersTransactions(tx, payouts, contractId, answerId, {
         payoutSpice: !!contract.isSpicePayout && outcome !== 'CANCEL',
         payoutCash: contract.token === 'CASH',
-        cashoutable: outcome !== 'CANCEL',
       })
 
       // TODO: we may want to support clawing back trader bonuses on MC markets too
@@ -441,10 +440,9 @@ export const payUsersTransactions = async (
   options?: {
     payoutSpice: boolean
     payoutCash: boolean
-    cashoutable: boolean
   }
 ) => {
-  const { payoutSpice, payoutCash, cashoutable } = options ?? {}
+  const { payoutSpice, payoutCash } = options ?? {}
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutStartTime = Date.now()
 
@@ -502,20 +500,6 @@ export const payUsersTransactions = async (
         description: 'Contract payout for resolution: ' + contractId,
       })
     }
-  }
-
-  if (payoutCash && cashoutable) {
-    const limits = await pg.manyOrNone(
-      `select id, (data->'sweepstakes5kLimit')::boolean as is_limited from users where id = any($1)`,
-      [mergedPayouts.map((p) => p.userId)]
-    )
-    const limitsById = Object.fromEntries(
-      limits.map((l) => [l.id, l.is_limited])
-    )
-    txns.forEach((t) => {
-      t.data!.cashoutable = true
-      t.data!.isCashout5kLimit = limitsById[t.toId] || false
-    })
   }
 
   await bulkIncrementBalances(pg, balanceUpdates)

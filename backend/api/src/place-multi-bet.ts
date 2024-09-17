@@ -99,7 +99,14 @@ export const placeMultiBetMain = async (
     )
     const makers = results.flatMap((result) => result.makers ?? [])
     const user = results[0].user
-    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
+    await onCreateBets(
+      fullBets,
+      contract,
+      user,
+      allOrdersToCancel,
+      makers,
+      results.some((r) => r.streakIncremented)
+    )
   }
 
   return {

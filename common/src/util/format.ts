@@ -72,10 +72,11 @@ export function formatSweepiesNumber(
   }
 ) {
   const { toDecimal, short } = parameters ?? {}
-  const toDecimalPlace = toDecimal ?? 2
-  if (short && amount > 1000) {
+  if (short && amount >= 1000) {
     return formatLargeNumber(amount)
   }
+  console.log(amount, parameters)
+  const toDecimalPlace = toDecimal ?? 2
   // return amount.toFixed(toDecimal ?? 2)
   return amount.toLocaleString('en-US', {
     minimumFractionDigits: toDecimalPlace,

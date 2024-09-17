@@ -10,7 +10,7 @@ import { TestimonialsPanel } from 'web/components/testimonials-panel'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
-import { AboutPrivacyTerms } from 'web/components/privacy-terms'
+import { Footer } from 'web/components/footer'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { LogoSEO } from 'web/components/LogoSEO'
@@ -242,7 +242,7 @@ export default function LandingPage(props: {
         </Col>
         <TestimonialsPanel />
 
-        <AboutPrivacyTerms />
+        <Footer showAbout />
       </Col>
     </Page>
   )

@@ -10,6 +10,10 @@ export const CreatorFeesDisplay = (props: {
   const { contract, className } = props
   const { collectedFees } = contract
   const isCashContract = contract.token === 'CASH'
+
+  // cash contracts have no creator fees
+  if (isCashContract) return null
+
   return (
     <Tooltip
       text={'Fees earned from trade volume'}
@@ -19,8 +23,8 @@ export const CreatorFeesDisplay = (props: {
     >
       {formatWithToken({
         amount: collectedFees.creatorFee,
-        token: isCashContract ? 'CASH' : 'M$',
-        toDecimal: isCashContract ? 4 : 2,
+        token: 'M$',
+        toDecimal: 2,
       })}{' '}
       earned
     </Tooltip>

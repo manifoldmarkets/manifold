@@ -11,6 +11,8 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { DowntimeBanner } from '../nav/banner'
 import { useUser } from 'web/hooks/use-user'
 
+import { UpdatedTermsModal } from '../updated-terms-modal'
+
 export function Page(props: {
   trackPageView: string | false
   trackPageProps?: Record<string, any>
@@ -74,6 +76,7 @@ export function Page(props: {
           {children}
         </main>
       </Col>
+      <UpdatedTermsModal />
       {!hideBottomBar && <BottomNavBar />}
     </>
   )

@@ -47,8 +47,6 @@ import { awardBounty } from './award-bounty'
 import { addBounty } from './add-bounty'
 import { cancelbounty } from './cancel-bounty'
 import { createAnswerCPMM } from './create-answer-cpmm'
-import { createportfolio } from './create-portfolio'
-import { updateportfolio } from './update-portfolio'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { managram } from './managram'
@@ -487,8 +485,6 @@ app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
-app.post('/createportfolio', ...apiRoute(createportfolio))
-app.post('/updateportfolio', ...apiRoute(updateportfolio))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/refer-user', ...apiRoute(referuser))

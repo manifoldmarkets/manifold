@@ -2,6 +2,7 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { log } from 'shared/utils'
 import {
   getGIDXStandardParams,
+  GIDX_BASE_URL,
   throwIfIPNotWhitelisted,
 } from 'shared/gidx/helpers'
 import { GIDXDocument } from 'common/gidx/gidx'
@@ -29,8 +30,7 @@ export const getVerificationDocuments: APIHandler<
 }
 
 export const getIdentityVerificationDocuments = async (userId: string) => {
-  const ENDPOINT =
-    'https://api.gidx-service.in/v3.0/api/DocumentLibrary/CustomerDocuments'
+  const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DocumentLibrary/CustomerDocuments'
   const body = {
     MerchantCustomerID: userId,
     ...getGIDXStandardParams(),
