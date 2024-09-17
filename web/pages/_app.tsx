@@ -17,6 +17,7 @@ import { ENV_CONFIG, TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import { SweepstakesProvider } from 'web/components/sweestakes-context'
 import { capitalize } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -73,19 +74,19 @@ const useDevtoolsDetector = () => {
     false,
     'devtools'
   )
+  const isMobile = useIsMobile()
   useEffect(() => {
-    const isLocal =
-      window.location.hostname === 'localhost' ||
-      // For ios local dev
-      window.location.hostname === '192.168.1.229'
+    const isLocal = window.location.hostname === 'localhost'
     if (!TWOMBA_ENABLED || isLocal) {
       return
     }
     const detectDevTools = () => {
       const threshold = 160
+      const adjustedHeightThreshold = isMobile ? 190 : threshold
+
       const widthThreshold = window.outerWidth - window.innerWidth > threshold
       const heightThreshold =
-        window.outerHeight - window.innerHeight > threshold
+        window.outerHeight - window.innerHeight > adjustedHeightThreshold
 
       if ((widthThreshold || heightThreshold) && !devtoolsOpen) {
         setDevtoolsOpen(true)
@@ -97,7 +98,7 @@ const useDevtoolsDetector = () => {
     }, 1000)
 
     return () => clearInterval(intervalId)
-  }, [])
+  }, [isMobile])
 
   return devtoolsOpen
 }
