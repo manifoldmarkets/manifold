@@ -9,7 +9,6 @@ import { APIError } from 'common/api/utils'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
