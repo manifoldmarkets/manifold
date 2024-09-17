@@ -126,7 +126,7 @@ export const CashToManaForm = (props: {
         </Button>
         <Button
           color="violet"
-          // disabled={!manaAmount || notEnoughCashError}
+          disabled={!manaAmount || notEnoughCashError}
           loading={loading}
           onClick={onSubmit}
           className="w-full"
