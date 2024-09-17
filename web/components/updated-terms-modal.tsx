@@ -40,37 +40,25 @@ export function UpdatedTermsModal() {
         <p className="text-ink-700">
           As part of our launch of sweepstakes, we've updated our{' '}
           <a
-            href="/terms"
+            href="external:https://manifold.markets/terms"
             className="text-primary-700 font-semibold underline"
             target="_blank"
-            onClick={(e) => {
-              e.stopPropagation()
-              window.open('/terms', '_blank')
-            }}
           >
             Terms & Conditions
           </a>
           ,{' '}
           <a
             className="text-primary-700 font-semibold underline"
-            href="/privacy"
+            href="external:https://manifold.markets/privacy"
             target="_blank"
-            onClick={(e) => {
-              e.stopPropagation()
-              window.open('/privacy', '_blank')
-            }}
           >
             Privacy Policy
           </a>
           , and{' '}
           <a
-            href="/sweepstakes-rules"
+            href="external:https://manifold.markets/sweepstakes-rules"
             className="text-primary-700 font-semibold underline"
             target="_blank"
-            onClick={(e) => {
-              e.stopPropagation()
-              window.open('/sweepstakes-rules', '_blank')
-            }}
           >
             Sweepstakes Rules
           </a>
