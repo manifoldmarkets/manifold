@@ -12,6 +12,7 @@ import {
   SafeAreaView,
   Dimensions,
   Share,
+  Linking as ReactNativeLinking,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { User as FirebaseUser } from 'firebase/auth'
@@ -40,11 +41,11 @@ import { clearData, getData, storeData } from 'lib/auth'
 import { SplashAuth } from 'components/splash-auth'
 import { useIsConnected } from 'lib/use-is-connected'
 import { getLocation } from 'lib/location'
-import * as Sentry from '@sentry/react-native';
+import * as Sentry from '@sentry/react-native'
 Sentry.init({
   dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
-  debug: ENV === 'DEV', 
-});
+  debug: ENV === 'DEV',
+})
 // NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address. ie:
 // "cross-env NEXT_PUBLIC_API_URL=192.168.1.229:8088 \
 // const baseUri = 'http://192.168.1.229:3000/'
@@ -374,6 +375,8 @@ const App = () => {
       log('Location requested from web')
       const location = await getLocation()
       communicateWithWebview('location', location)
+    } else if (type === 'openUrl') {
+      ReactNativeLinking.openURL(payload.url)
     } else {
       log('Unhandled message from web type: ', type)
       log('Unhandled message from web data: ', data)

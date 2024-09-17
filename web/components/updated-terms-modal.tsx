@@ -6,6 +6,35 @@ import { LogoIcon } from './icons/logo-icon'
 import { Button } from './buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { useRouter } from 'next/router'
+import Link from 'next/link'
+import { getNativePlatform } from 'web/lib/native/is-native'
+import { postMessageToNative } from 'web/lib/native/post-message'
+
+const CustomLink = (props: {
+  linkHref: string
+  children: React.ReactNode
+  className?: string
+}) => {
+  const { linkHref, children, className } = props
+  const { isNative } = getNativePlatform()
+
+  if (isNative) {
+    return (
+      <button
+        onClick={() => postMessageToNative('openUrl', { url: linkHref })}
+        className={className}
+      >
+        {children}
+      </button>
+    )
+  }
+
+  return (
+    <Link href={linkHref} target="_blank" className={className}>
+      {children}
+    </Link>
+  )
+}
 
 export function UpdatedTermsModal() {
   const user = useUser()
@@ -38,30 +67,27 @@ export function UpdatedTermsModal() {
         />
         <div className="text-2xl font-semibold">Sweepstakes are here!</div>
         <p className="text-ink-700">
-          As part of our launch of sweepstakes, we have updated our{' '}
-          <a
-            href="https://manifold.markets/terms-and-conditions.html"
+          As part of our launch of sweepstakes, we've updated our{' '}
+          <CustomLink
+            linkHref="https://manifold.markets/terms"
             className="text-primary-700 font-semibold underline"
-            target="_blank"
           >
             Terms & Conditions
-          </a>
+          </CustomLink>
           ,{' '}
-          <a
-            href="https://manifold.markets/privacy-policy.html"
+          <CustomLink
             className="text-primary-700 font-semibold underline"
-            target="_blank"
+            linkHref="https://manifold.markets/privacy"
           >
             Privacy Policy
-          </a>
+          </CustomLink>
           , and{' '}
-          <a
-            href="https://manifold.markets/sweepstakes-rules.html"
+          <CustomLink
+            linkHref="https://manifold.markets/sweepstakes-rules"
             className="text-primary-700 font-semibold underline"
-            target="_blank"
           >
             Sweepstakes Rules
-          </a>
+          </CustomLink>
           .
         </p>
         <p className="text-ink-700">
