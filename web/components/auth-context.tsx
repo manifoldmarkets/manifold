@@ -9,7 +9,7 @@ import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 import {
   AUTH_COOKIE_NAME,
-  BLESSED_BANNED_USER_IDS,
+  BANNED_TRADING_USER_IDS,
   TEN_YEARS_SECS,
 } from 'common/envs/constants'
 import { getCookie, setCookie } from 'web/lib/util/cookie'
@@ -114,10 +114,16 @@ export function AuthProvider(props: {
   useEffect(() => {
     if (authUser) {
       if (
-        authUser.user.isBannedFromPosting &&
-        !BLESSED_BANNED_USER_IDS.includes(authUser.user.id)
+        BANNED_TRADING_USER_IDS.includes(authUser.user.id) ||
+        authUser.user.userDeleted
       ) {
-        firebaseLogout()
+        const message = authUser.user.userDeleted
+          ? 'You have deleted the account associated with this email. To restore your account please email info@manifold.markets'
+          : 'You are banned from trading. To learn more please email info@manifold.markets'
+
+        firebaseLogout().then(() => {
+          alert(message)
+        })
         return
       }
       // Persist to local storage, to reduce login blink next time.

@@ -5,7 +5,13 @@ import { Bet, LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
 import { Contract, contractPath, CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  SWEEPIES_MARKET_TOOLTIP,
+  SWEEPIES_NAME,
+  TRADE_TERM,
+  TWOMBA_ENABLED,
+} from 'common/envs/constants'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import {
@@ -48,6 +54,8 @@ import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { linkClass } from '../widgets/site-link'
+import { Tooltip } from '../widgets/tooltip'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 type BetSort =
   | 'newest'
@@ -61,6 +69,8 @@ type BetSort =
   | 'position'
 
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
+
+type BetTokenFilter = 'CASH' | 'MANA' | 'ALL'
 
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 export function UserBetsTable(props: { user: User }) {
@@ -126,12 +136,23 @@ export function UserBetsTable(props: { user: User }) {
     'open',
     'bets-list-filter'
   )
+
+  const [tokenFilter, setTokenFilter] = usePersistentLocalState<BetTokenFilter>(
+    'ALL',
+    'bets-list-token-filter'
+  )
+
   const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
 
   const [query, setQuery] = usePersistentQueryState('b', '')
 
   const onSetFilter = (f: BetFilter) => {
     setFilter(f)
+    setPage(0)
+  }
+
+  const onSetTokenFilter = (f: BetTokenFilter) => {
+    setTokenFilter(f)
     setPage(0)
   }
 
@@ -179,13 +200,21 @@ export function UserBetsTable(props: { user: User }) {
     limit_bet: (c) => FILTERS.open(c),
   }
 
-  const filteredContracts = contracts.filter(FILTERS[filter]).filter((c) => {
-    if (filter === 'all') return true
-    const { hasShares } = nullableMetricsByContract[c.id]
-    if (filter === 'sold') return !hasShares
-    if (filter === 'limit_bet') return openLimitBetsByContract[c.id]?.length > 0
-    return hasShares
-  })
+  const filteredContracts = contracts
+    .filter(FILTERS[filter])
+    .filter((c) => {
+      if (filter === 'all') return true
+      const { hasShares } = nullableMetricsByContract[c.id]
+      if (filter === 'sold') return !hasShares
+      if (filter === 'limit_bet')
+        return openLimitBetsByContract[c.id]?.length > 0
+      return hasShares
+    })
+    .filter((c) => {
+      if (tokenFilter === 'CASH') return c.token === 'CASH'
+      if (tokenFilter === 'MANA') return c.token === 'MANA'
+      return true
+    })
 
   return (
     <Col>
@@ -198,6 +227,29 @@ export function UserBetsTable(props: { user: User }) {
             onChange={(e) => setQuery(e.target.value)}
           />
           <Carousel labelsParentClassName={'gap-1'}>
+            {TWOMBA_ENABLED && (
+              <PillButton
+                selected={tokenFilter === 'CASH'}
+                onSelect={() => {
+                  if (tokenFilter == 'CASH') {
+                    onSetTokenFilter('ALL')
+                  } else {
+                    onSetTokenFilter('CASH')
+                  }
+                }}
+                type="sweepies"
+              >
+                <Row
+                  className={clsx(
+                    'items-center gap-1',
+                    tokenFilter != 'CASH' ? 'opacity-50' : 'opacity-100'
+                  )}
+                >
+                  <SweepiesCoin />
+                  {SWEEPIES_NAME}
+                </Row>
+              </PillButton>
+            )}
             {(
               [
                 'all',
@@ -710,7 +762,19 @@ function BetsTable(props: {
                           className={''}
                         />
                       </span>
-                      <span>{contract.question}</span>
+                      <span>
+                        {contract.token == 'CASH' && (
+                          <span>
+                            <Tooltip
+                              text={SWEEPIES_MARKET_TOOLTIP}
+                              className=" relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+                            >
+                              <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
+                            </Tooltip>
+                          </span>
+                        )}
+                        {contract.question}
+                      </span>
                       <span className={'ml-2 flex min-w-[40px] items-center'}>
                         <ContractStatusLabel
                           className={'font-semibold'}

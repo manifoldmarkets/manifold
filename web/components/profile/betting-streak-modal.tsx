@@ -6,7 +6,7 @@ import {
   BETTING_STREAK_RESET_HOUR,
 } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { isVerified, User } from 'common/user'
+import { humanish, User } from 'common/user'
 import dayjs from 'dayjs'
 import clsx from 'clsx'
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
@@ -47,7 +47,7 @@ export function BettingStreakModal(props: {
         <Col className={'gap-2'}>
           <span className={'text-primary-700'}>• What are they?</span>
           <span className={'ml-2'}>
-            {currentUser && !isVerified(currentUser) ? (
+            {currentUser && !humanish(currentUser) ? (
               <span className={'font-semibold'}>Verified users</span>
             ) : (
               'You'

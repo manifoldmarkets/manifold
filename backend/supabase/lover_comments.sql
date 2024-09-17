@@ -13,9 +13,10 @@ create table if not exists
     hidden boolean default false not null
   );
 
--- Policies
+-- Row Level Security
 alter table lover_comments enable row level security;
 
+-- Policies
 drop policy if exists "public read" on lover_comments;
 
 create policy "public read" on lover_comments for all using (true);

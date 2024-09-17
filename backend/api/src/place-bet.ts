@@ -1,14 +1,6 @@
-import {
-  groupBy,
-  isEqual,
-  mapValues,
-  sortBy,
-  sumBy,
-  uniq,
-  uniqBy,
-} from 'lodash'
+import { groupBy, isEqual, mapValues, sumBy, uniq, uniqBy } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { Contract, CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
+import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
 import {
   BetInfo,
@@ -19,12 +11,12 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet, maker } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { getContract, getUser, log, metrics } from 'shared/utils'
+import { contractColumnsToSelect, log, metrics } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
-import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
+import { BANNED_TRADING_USER_IDS, TWOMBA_ENABLED } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import {
@@ -32,7 +24,11 @@ import {
   SupabaseDirectClient,
   SupabaseTransaction,
 } from 'shared/supabase/init'
-import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
+import {
+  bulkIncrementBalances,
+  incrementBalance,
+  incrementStreak,
+} from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
 import {
@@ -44,13 +40,11 @@ import { broadcastOrders } from 'shared/websockets/helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
-import {
-  getAnswer,
-  getAnswersForContract,
-  updateAnswers,
-} from 'shared/supabase/answers'
+import { updateAnswers } from 'shared/supabase/answers'
 import { updateContract } from 'shared/supabase/contracts'
 import { filterDefined } from 'common/util/array'
+import { convertUser } from 'common/supabase/users'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -183,7 +177,7 @@ export const placeBetMain = async (
         ? crypto.randomBytes(12).toString('hex')
         : undefined
 
-    return await executeNewBetResult(
+    const result = await executeNewBetResult(
       pgTrans,
       newBetResult,
       contract,
@@ -193,16 +187,34 @@ export const placeBetMain = async (
       betGroupId,
       deterministic
     )
+    log('Redeeming shares for bettor', user.username, user.id)
+    await redeemShares(pgTrans, user.id, contract)
+    log('Share redemption transaction finished.')
+    return result
   })
 
-  const { newBet, fullBets, allOrdersToCancel, betId, makers, betGroupId } =
-    result
+  const {
+    newBet,
+    fullBets,
+    allOrdersToCancel,
+    betId,
+    makers,
+    betGroupId,
+    streakIncremented,
+  } = result
 
   log(`Main transaction finished - auth ${uid}.`)
   metrics.inc('app/bet_count', { contract_id: contractId })
 
   const continuation = async () => {
-    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
+    await onCreateBets(
+      fullBets,
+      contract,
+      user,
+      allOrdersToCancel,
+      makers,
+      streakIncremented
+    )
   }
 
   const time = Date.now() - startTime
@@ -226,9 +238,43 @@ export const fetchContractBetDataAndValidate = async (
   isApi: boolean
 ) => {
   const { amount, contractId } = body
-  const answerId = 'answerId' in body ? body.answerId : undefined
+  const answerIds =
+    'answerIds' in body
+      ? body.answerIds
+      : 'answerId' in body && body.answerId !== undefined
+      ? [body.answerId]
+      : undefined
 
-  const contract = await getContract(pgTrans, contractId)
+  const queries = `
+    select * from users where id = $1;
+    select ${contractColumnsToSelect} from contracts where id = $2;
+    select * from answers
+      where contract_id = $2 and (
+          ($3 is null or id in ($3:list)) or
+          (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
+          );
+    select b.*, u.balance, u.cash_balance from contract_bets b join users u on b.user_id = u.id
+        where b.contract_id = $2 and (
+           ($3 is null or b.answer_id in ($3:list)) or
+           (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
+           )
+        and not b.is_filled and not b.is_cancelled;
+  `
+
+  const results = await pgTrans.multi(queries, [
+    uid,
+    contractId,
+    answerIds ?? null,
+  ])
+  const user = convertUser(results[0][0])
+  const contract = convertContract(results[1][0])
+  const answers = results[2].map(convertAnswer)
+  const unfilledBets = results[3].map(convertBet) as (LimitBet & {
+    balance: number
+    cash_balance: number
+  })[]
+
+  if (!user) throw new APIError(404, 'User not found.')
   if (!contract) throw new APIError(404, 'Contract not found.')
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
     throw new APIError(400, 'This is not a market')
@@ -238,29 +284,37 @@ export const fetchContractBetDataAndValidate = async (
     throw new APIError(403, 'Trading is closed.')
   if (isResolved) throw new APIError(403, 'Market is resolved.')
 
-  const answersPromise = getAnswersForBet(
-    pgTrans,
-    contract,
-    answerId,
-    'answerIds' in body ? body.answerIds : undefined
+  const balanceByUserId = Object.fromEntries(
+    uniqBy(unfilledBets, (b) => b.userId).map((bet) => [
+      bet.userId,
+      contract.token === 'CASH' ? bet.cash_balance : bet.balance,
+    ])
   )
-
-  const unfilledBets = await getUnfilledBets(
-    pgTrans,
-    contractId,
-    // Fetch all limit orders if answers should sum to one.
-    'shouldAnswersSumToOne' in contract && contract.shouldAnswersSumToOne
-      ? undefined
-      : answerId
+  const unfilledBetUserIds = Object.keys(balanceByUserId)
+  const balance = contract.token === 'CASH' ? user.cashBalance : user.balance
+  if (amount !== undefined && balance < amount)
+    throw new APIError(403, 'Insufficient balance.')
+  if (
+    (!user.sweepstakesVerified || !user.idVerified) &&
+    contract.token === 'CASH'
+  ) {
+    throw new APIError(
+      403,
+      'You must be kyc verified to trade on sweepstakes markets.'
+    )
+  }
+  if (BANNED_TRADING_USER_IDS.includes(user.id) || user.userDeleted) {
+    throw new APIError(403, 'You are banned or deleted. And not #blessed.')
+  }
+  log(
+    `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
   )
-  const unfilledBetUserIds = uniq(unfilledBets.map((bet) => bet.userId))
-
-  const [user, balanceByUserId] = await Promise.all([
-    validateBet(pgTrans, uid, amount, contract, isApi),
-    getUserBalances(pgTrans, unfilledBetUserIds),
-  ])
-
-  const answers = await answersPromise
+  if (contract.outcomeType === 'STONK' && isApi) {
+    throw new APIError(403, 'API users cannot bet on STONK contracts.')
+  }
+  log(
+    `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
+  )
 
   return {
     user,
@@ -270,33 +324,6 @@ export const fetchContractBetDataAndValidate = async (
     balanceByUserId,
     unfilledBetUserIds,
   }
-}
-
-const getAnswersForBet = async (
-  pgTrans: SupabaseDirectClient,
-  contract: Contract,
-  answerId: string | undefined,
-  answerIds: string[] | undefined
-) => {
-  const { mechanism } = contract
-  const contractId = contract.id
-
-  if (answerId && mechanism === 'cpmm-multi-1') {
-    if (contract.shouldAnswersSumToOne) {
-      return await getAnswersForContract(pgTrans, contractId)
-    } else {
-      // Only fetch the one answer if it's independent multi.
-      const answer = await getAnswer(pgTrans, answerId)
-      if (answer)
-        return sortBy(
-          uniqBy([answer, ...contract.answers], (a) => a.id),
-          (a) => a.index
-        )
-    }
-  } else if (answerIds) {
-    return await getAnswersForContract(pgTrans, contractId)
-  }
-  return undefined
 }
 
 export const calculateBetResult = (
@@ -512,24 +539,31 @@ export const executeNewBetResult = async (
     [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
       -newBet.amount - apiFee,
   })
+  const streakIncremented = await incrementStreak(
+    pgTrans,
+    user,
+    newBet.createdTime
+  )
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
-  const totalCreatorFee =
-    newBet.fees.creatorFee +
-    sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
-  if (totalCreatorFee !== 0) {
-    await incrementBalance(pgTrans, contract.creatorId, {
-      balance: totalCreatorFee,
-      totalDeposits: totalCreatorFee,
-    })
+  if (!TWOMBA_ENABLED) {
+    const totalCreatorFee =
+      newBet.fees.creatorFee +
+      sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
+    if (totalCreatorFee !== 0) {
+      await incrementBalance(pgTrans, contract.creatorId, {
+        balance: totalCreatorFee,
+        totalDeposits: totalCreatorFee,
+      })
 
-    log(
-      `Updated creator ${
-        contract.creatorUsername
-      } with fee gain ${formatMoneyWithDecimals(totalCreatorFee)} - ${
-        contract.creatorId
-      }.`
-    )
+      log(
+        `Updated creator ${
+          contract.creatorUsername
+        } with fee gain ${formatMoneyWithDecimals(totalCreatorFee)} - ${
+          contract.creatorId
+        }.`
+      )
+    }
   }
 
   const answerUpdates: {
@@ -626,10 +660,6 @@ export const executeNewBetResult = async (
     )
 
     log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
-
-    log('Redeeming shares for bettor', user.username, user.id)
-    await redeemShares(pgTrans, user.id, contract)
-    log('Share redemption transaction finished.')
   }
 
   return {
@@ -641,42 +671,8 @@ export const executeNewBetResult = async (
     fullBets,
     user,
     betGroupId,
+    streakIncremented,
   }
-}
-
-export const validateBet = async (
-  pgTrans: SupabaseTransaction | SupabaseDirectClient,
-  uid: string,
-  amount: number | undefined,
-  contract: Contract,
-  isApi: boolean
-) => {
-  const user = await getUser(uid, pgTrans)
-  if (!user) throw new APIError(404, 'User not found.')
-
-  const balance = contract.token === 'CASH' ? user.cashBalance : user.balance
-  if (amount !== undefined && balance < amount)
-    throw new APIError(403, 'Insufficient balance.')
-  if (
-    (user.isBannedFromPosting || user.userDeleted) &&
-    !BLESSED_BANNED_USER_IDS.includes(uid)
-  ) {
-    throw new APIError(403, 'You are banned or deleted. And not #blessed.')
-  }
-  // if (!isVerified(user)) {
-  //   throw new APIError(403, 'You must verify your phone number to bet.')
-  // }
-  log(
-    `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
-  )
-  if (contract.outcomeType === 'STONK' && isApi) {
-    throw new APIError(403, 'API users cannot bet on STONK contracts.')
-  }
-  log(
-    `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
-  )
-
-  return user
 }
 
 export async function bulkUpdateLimitOrders(

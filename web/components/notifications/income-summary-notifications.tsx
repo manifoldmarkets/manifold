@@ -1,5 +1,6 @@
 import { BETTING_STREAK_BONUS_MAX } from 'common/economy'
 import {
+  BettingStreakData,
   getSourceUrl,
   LeagueChangeData,
   Notification,
@@ -44,8 +45,8 @@ import {
   PARTNER_UNIQUE_TRADER_BONUS_MULTI,
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
-import { isVerified } from 'common/user'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { humanish } from 'common/user'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { TRADE_TERM } from 'common/envs/constants'
 
@@ -326,7 +327,11 @@ export function BettingStreakBonusIncomeNotification(props: {
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
   const user = useUser()
-  const streakInDays = notification.data?.streak
+  const {
+    streak: streakInDays,
+    cashAmount,
+    bonusAmount,
+  } = notification.data as BettingStreakData
   const noBonus = sourceText === '0'
   return (
     <NotificationFrame
@@ -335,7 +340,7 @@ export function BettingStreakBonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        noBonus && user && !isVerified(user) ? (
+        noBonus && user && !humanish(user) ? (
           <span>
             Verify your phone number to get up to{' '}
             <CoinNumber
@@ -348,7 +353,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         ) : (
           noBonus &&
           user &&
-          isVerified(user) && (
+          humanish(user) && (
             <span>Come back and predict again tomorrow for a bonus!</span>
           )
         )
@@ -370,7 +375,25 @@ export function BettingStreakBonusIncomeNotification(props: {
         </span>
       ) : (
         <span className="line-clamp-3">
-          <IncomeNotificationLabel notification={notification} />{' '}
+          {cashAmount && (
+            <>
+              <CoinNumber
+                className={'text-amber-500'}
+                isInline={true}
+                amount={cashAmount}
+                coinType={'sweepies'}
+              />
+              {' + '}
+            </>
+          )}
+          {bonusAmount && (
+            <CoinNumber
+              className={'text-teal-600'}
+              isInline={true}
+              amount={bonusAmount}
+              coinType={'mana'}
+            />
+          )}{' '}
           {sourceText && +sourceText === BETTING_STREAK_BONUS_MAX && (
             <span>(max) </span>
           )}
@@ -655,7 +678,7 @@ function IncomeNotificationLabel(props: {
 }
 
 const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
-  const { bet, outcomeType, answerText, totalAmountBet } =
+  const { bet, outcomeType, answerText, totalAmountBet, token } =
     props.uniqueBettorData
   const { amount, outcome } = bet
   const showProb =
@@ -666,7 +689,7 @@ const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
   return (
     <span className={'line-clamp-1 gap-1'}>
       <span className="text-ink-600">
-        {formatMoney(totalAmountBet ?? amount)}
+        {formatMoney(totalAmountBet ?? amount, token)}
       </span>{' '}
       {showOutcome && `${outcome} `}
       on{' '}

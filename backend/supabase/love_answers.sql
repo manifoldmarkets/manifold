@@ -10,9 +10,10 @@ create table if not exists
     integer integer
   );
 
--- Policies
+-- Row Level Security
 alter table love_answers enable row level security;
 
+-- Policies
 drop policy if exists "public read" on love_answers;
 
 create policy "public read" on love_answers for

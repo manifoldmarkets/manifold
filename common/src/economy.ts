@@ -59,12 +59,16 @@ export const getTieredCost = (
   return tieredCost
 }
 
+/* Sweeps bonuses */
+export const KYC_VERIFICATION_BONUS_CASH = 1
+export const BETTING_STREAK_SWEEPS_BONUS_AMOUNT = 0.05
+export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
+
+/* Mana bonuses */
 export const STARTING_BALANCE = 100
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10
-
 export const PHONE_VERIFICATION_BONUS = 1000
-export const KYC_VERIFICATION_BONUS = 1000
 
 export const REFERRAL_AMOUNT = 1000
 
@@ -84,6 +88,7 @@ export const SUBSIDY_FEE = 0
 
 export const BETTING_STREAK_BONUS_AMOUNT = 50
 export const BETTING_STREAK_BONUS_MAX = 250
+
 export const BETTING_STREAK_RESET_HOUR = 7
 
 export const MANACHAN_TWEET_COST = 2500
@@ -93,73 +98,99 @@ export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
 export const PaymentAmounts = [
   {
     mana: 10_000,
-    price: 1399,
-    bonus: 0,
+    priceInDollars: 13.99,
+    bonusInDollars: 0,
   },
   {
     mana: 25_000,
-    price: 2999,
-    bonus: 0,
+    priceInDollars: 29.99,
+    bonusInDollars: 0,
   },
   {
     mana: 100_000,
-    price: 10999,
-    bonus: 0,
+    priceInDollars: 109.99,
+    bonusInDollars: 0,
   },
   {
     mana: 1_000_000,
-    price: 1_00000,
-    bonus: 0,
+    priceInDollars: 1_000,
+    bonusInDollars: 0,
   },
 ]
 
 export const PaymentAmountsGIDX = [
   {
-    mana: 10_000,
-    price: 1500,
-    bonus: 10_00,
+    mana: 1_000,
+    priceInDollars: 15,
+    bonusInDollars: 10,
   },
   {
-    mana: 25_000,
-    price: 3000,
-    bonus: 25_00,
+    mana: 2_500,
+    priceInDollars: 30,
+    bonusInDollars: 25,
+  },
+  {
+    mana: 10_000,
+    priceInDollars: 110,
+    bonusInDollars: 100,
   },
   {
     mana: 100_000,
-    price: 11000,
-    bonus: 100_00,
-  },
-  {
-    mana: 1_000_000,
-    price: 1_00000,
-    bonus: 1000_00,
+    priceInDollars: 1_000,
+    bonusInDollars: 1000,
   },
 ]
 export type PaymentAmount = (typeof PaymentAmounts)[number]
+
 export const MANA_WEB_PRICES = TWOMBA_ENABLED
   ? PaymentAmountsGIDX
   : PaymentAmounts
 
 export type WebManaAmounts = (typeof PaymentAmounts)[number]['mana']
-export const IOS_PRICES = [
-  {
-    mana: 10_000,
-    price: 1499,
-    bonus: 0,
-  },
-  {
-    mana: 25_000,
-    price: 3599,
-    bonus: 0,
-  },
-  {
-    mana: 100_000,
-    price: 14299,
-    bonus: 0,
-  },
-  // No 1M option on ios: the fees are too high
-]
-export type ManaAmountGIDX = (typeof PaymentAmountsGIDX)[number]['mana']
+// TODO: these prices should be a function of whether the user is sweepstakes verified or not
+export const IOS_PRICES = !TWOMBA_ENABLED
+  ? [
+      {
+        mana: 10_000,
+        priceInDollars: 14.99,
+        bonusInDollars: 0,
+        sku: 'mana_1000',
+      },
+      {
+        mana: 25_000,
+        priceInDollars: 35.99,
+        bonusInDollars: 0,
+        sku: 'mana_2500',
+      },
+      {
+        mana: 100_000,
+        priceInDollars: 142.99,
+        bonusInDollars: 0,
+        sku: 'mana_10000',
+      },
+      // No 1M option on ios: the fees are too high
+    ]
+  : [
+      {
+        mana: 1_000,
+        priceInDollars: 14.99,
+        bonusInDollars: 10,
+        sku: 'mana_1000',
+      },
+      {
+        mana: 2_500,
+        priceInDollars: 35.99,
+        bonusInDollars: 25,
+        sku: 'mana_2500',
+      },
+      {
+        mana: 10_000,
+        priceInDollars: 142.99,
+        bonusInDollars: 100,
+        sku: 'mana_10000',
+      },
+      // No 1M option on ios: the fees are too high
+    ]
 
 export const SWEEPIES_CASHOUT_FEE = 0.05
-export const MIN_CASHOUT_AMOUNT = 25_00
+export const MIN_CASHOUT_AMOUNT = 25

@@ -1,7 +1,7 @@
 import { Server as HttpServer } from 'node:http'
 import { Server as WebSocketServer, RawData, WebSocket } from 'ws'
 import { isError } from 'lodash'
-import { log, metrics } from 'shared/utils'
+import { LOCAL_DEV, log, metrics } from 'shared/utils'
 import { Switchboard } from './switchboard'
 import {
   BroadcastPayload,
@@ -14,8 +14,6 @@ const SWITCHBOARD = new Switchboard()
 
 // if a connection doesn't ping for this long, we assume the other side is toast
 const CONNECTION_TIMEOUT_MS = 60 * 1000
-
-const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
 export class MessageParseError extends Error {
   details?: unknown

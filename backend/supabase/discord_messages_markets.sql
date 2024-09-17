@@ -9,6 +9,9 @@ create table if not exists
     thread_id text
   );
 
+-- Row Level Security
+alter table discord_messages_markets enable row level security;
+
 -- Indexes
 drop index if exists discord_messages_markets_pkey;
 

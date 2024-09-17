@@ -1,4 +1,4 @@
-import { OutcomeType } from 'common/contract'
+import { ContractToken, OutcomeType } from 'common/contract'
 import { groupPath } from './group'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
@@ -78,6 +78,7 @@ export type notification_source_types =
   | 'airdrop'
   | 'manifest_airdrop'
   | 'extra_purchased_mana'
+  | 'payment_status'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -328,11 +329,16 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'You just received 9x your purchased mana in 2024',
     detailed: 'Manifold has sent you a gift of 9x your purchased mana in 2024.',
   },
+  payment_status: {
+    simple: 'Payment updates',
+    detailed: 'Updates on your payment statuses',
+  },
 }
 
 export type BettingStreakData = {
   streak: number
   bonusAmount: number
+  cashAmount?: number
 }
 export type LeagueChangeData = {
   previousLeague: league_user_info | undefined
@@ -350,6 +356,7 @@ export type BetFillData = {
   limitOrderRemaining?: number
   limitAt?: string
   outcomeType?: OutcomeType
+  token?: ContractToken
 }
 
 export type ContractResolutionData = {
@@ -360,6 +367,7 @@ export type ContractResolutionData = {
   totalShareholders?: number
   profit?: number
   answerId?: string
+  token?: ContractToken
 }
 
 export type UniqueBettorData = {
@@ -372,6 +380,7 @@ export type UniqueBettorData = {
   isPartner?: boolean
   totalUniqueBettors?: number
   totalAmountBet?: number
+  token?: ContractToken
 }
 
 export type ReviewNotificationData = {
@@ -395,6 +404,14 @@ export type AirdropData = {
 
 export type ExtraPurchasedManaData = {
   amount: number
+}
+
+export type PaymentCompletedData = {
+  userId: string
+  amount: number
+  currency: string
+  paymentMethodType: string
+  paymentAmountType: string
 }
 
 export function getSourceIdForLinkComponent(

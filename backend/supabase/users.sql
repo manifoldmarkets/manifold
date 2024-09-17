@@ -20,9 +20,10 @@ create table if not exists
     total_cash_deposits numeric default 0 not null
   );
 
--- Policies
+-- Row Level Security
 alter table users enable row level security;
 
+-- Policies
 drop policy if exists "public read" on users;
 
 create policy "public read" on users for

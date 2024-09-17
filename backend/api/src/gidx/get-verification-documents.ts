@@ -1,6 +1,10 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { log } from 'shared/utils'
-import { getGIDXStandardParams } from 'shared/gidx/helpers'
+import {
+  getGIDXStandardParams,
+  GIDX_BASE_URL,
+  throwIfIPNotWhitelisted,
+} from 'shared/gidx/helpers'
 import { GIDXDocument } from 'common/gidx/gidx'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getDocumentsStatus } from 'common/gidx/document'
@@ -26,8 +30,7 @@ export const getVerificationDocuments: APIHandler<
 }
 
 export const getIdentityVerificationDocuments = async (userId: string) => {
-  const ENDPOINT =
-    'https://api.gidx-service.in/v3.0/api/DocumentLibrary/CustomerDocuments'
+  const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DocumentLibrary/CustomerDocuments'
   const body = {
     MerchantCustomerID: userId,
     ...getGIDXStandardParams(),
@@ -41,6 +44,7 @@ export const getIdentityVerificationDocuments = async (userId: string) => {
   }
 
   const data = (await res.json()) as DocumentCheck
+  throwIfIPNotWhitelisted(data.ResponseCode, data.ResponseMessage)
   log(
     'Registration response:',
     data.ResponseMessage,

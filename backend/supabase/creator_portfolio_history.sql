@@ -10,9 +10,10 @@ create table if not exists
     views integer not null
   );
 
--- Policies
+-- Row Level Security
 alter table creator_portfolio_history enable row level security;
 
+-- Policies
 drop policy if exists "public read" on creator_portfolio_history;
 
 create policy "public read" on creator_portfolio_history for

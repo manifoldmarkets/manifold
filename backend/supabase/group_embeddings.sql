@@ -10,9 +10,10 @@ create table if not exists
 alter table group_embeddings
 add constraint public_group_embeddings_group_id_fkey foreign key (group_id) references groups (id) on update cascade on delete cascade;
 
--- Policies
+-- Row Level Security
 alter table group_embeddings enable row level security;
 
+-- Policies
 drop policy if exists "admin write access" on group_embeddings;
 
 create policy "admin write access" on group_embeddings for all to service_role;

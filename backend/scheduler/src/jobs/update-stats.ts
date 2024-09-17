@@ -22,17 +22,21 @@ import {
 import { bulkUpsert } from 'shared/supabase/utils'
 import { saveCalibrationData } from 'shared/calculate-calibration'
 import { MANA_PURCHASE_RATE_CHANGE_DATE } from 'common/envs/constants'
-import { calculateManaStats } from 'shared/calculate-mana-stats'
+import {
+  updateTxnStats,
+  insertLatestManaStats,
+} from 'shared/calculate-mana-stats'
 import { getFeedConversionScores } from 'shared/feed-analytics'
 import { buildArray } from 'common/util/array'
 import { type Tables } from 'common/supabase/utils'
+import { recalculateAllUserPortfolios } from 'shared/mana-supply'
 
 interface StatEvent {
   id: string
   userId: string
   ts: number
 }
-type StatBet = StatEvent & { amount: number }
+type StatBet = StatEvent & { amount: number; token: 'MANA' | 'CASH' }
 type StatUser = StatEvent & {
   d1BetCount: number
   freeQuestionsCreated: number | undefined
@@ -53,7 +57,9 @@ export const updateStatsCore = async (daysAgo: number) => {
   await updateStatsBetween(pg, start, end)
 
   const startOfYesterday = endDay.subtract(1, 'day').startOf('day').valueOf()
-  await calculateManaStats(startOfYesterday, 1)
+  await updateTxnStats(pg, startOfYesterday, 1)
+  await recalculateAllUserPortfolios(pg)
+  await insertLatestManaStats(pg)
 
   await saveCalibrationData(pg)
 
@@ -80,17 +86,18 @@ async function getDailyBets(
 ) {
   const bets = await pg.manyOrNone(
     `select
-    date_trunc('day', created_time at time zone 'america/los_angeles')::date as day,
+    date_trunc('day', b.created_time at time zone 'america/los_angeles')::date as day,
     json_agg(json_build_object(
-      'ts', ts_to_millis(created_time),
+      'ts', ts_to_millis(b.created_time),
       'userId', user_id,
+      'token', c.token,
       'amount', amount,
       'id', bet_id
     )) as values
-    from contract_bets
+    from contract_bets b join contracts c on b.contract_id = c.id
     where
-      created_time >= date_to_midnight_pt($1)
-      and created_time < date_to_midnight_pt($2)
+      b.created_time >= date_to_midnight_pt($1)
+      and b.created_time < date_to_midnight_pt($2)
       and is_redemption = false
     group by day
     order by day asc`,
@@ -222,7 +229,13 @@ export const updateActivityStats = async (
     dailyBets.map((bets) => ({
       start_date: bets.day,
       bet_count: bets.values.length,
-      bet_amount: sum(bets.values.map((b) => b.amount)) / 100,
+      bet_amount:
+        sum(
+          bets.values.filter((b) => b.token === 'MANA').map((b) => b.amount)
+        ) / 100,
+      cash_bet_amount: sum(
+        bets.values.filter((b) => b.token === 'CASH').map((b) => b.amount)
+      ),
     }))
   )
 
@@ -267,7 +280,7 @@ export const updateActivityStats = async (
       contractUsersByDay,
       betUsersByDay,
       commentUsersByDay,
-      (a, b) => a.concat(b)
+      (a, b) => (a && b ? a.concat(b) : a || b)
     )
 
     const medianDailyUserActions = mapValues(allIds, (ids) => {

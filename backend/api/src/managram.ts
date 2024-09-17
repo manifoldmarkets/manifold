@@ -1,4 +1,4 @@
-import { isVerified } from 'common/user'
+import { humanish } from 'common/user'
 import { canSendMana } from 'common/can-send-mana'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { insertTxns } from 'shared/txn/run-txn'
@@ -42,7 +42,7 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
         throw new APIError(401, `User ${fromId} not found`)
       }
 
-      if (!isVerified(fromUser)) {
+      if (!humanish(fromUser)) {
         throw new APIError(
           403,
           'You must verify your phone number to send mana.'
@@ -91,7 +91,7 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
       if (toUsers.length !== toIds.length) {
         throw new APIError(404, 'Some destination users not found.')
       }
-      if (toUsers.some((toUser) => !isVerified(toUser))) {
+      if (toUsers.some((toUser) => !humanish(toUser))) {
         throw new APIError(403, 'All destination users must be verified.')
       }
 

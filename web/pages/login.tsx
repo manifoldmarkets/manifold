@@ -1,7 +1,7 @@
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { AboutPrivacyTerms } from 'web/components/privacy-terms'
+import { Footer } from 'web/components/footer'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { LogoSEO } from 'web/components/LogoSEO'
@@ -102,7 +102,7 @@ export default function LoginPage() {
             )}
           </Col>
         </Col>
-        <AboutPrivacyTerms />
+        <Footer />
       </Col>
     </Page>
   )

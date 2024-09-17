@@ -21,9 +21,10 @@ create table if not exists
 alter table dashboards
 add constraint dashboards_creator_id_fkey foreign key (creator_id) references users (id);
 
--- Policies
+-- Row Level Security
 alter table dashboards enable row level security;
 
+-- Policies
 drop policy if exists "Enable read access for admin" on dashboards;
 
 create policy "Enable read access for admin" on dashboards for

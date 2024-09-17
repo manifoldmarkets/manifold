@@ -30,7 +30,6 @@ import { registerdiscordid } from './register-discord-id'
 import { getuserisgroupmember } from './get-user-is-group-member'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
-import { updateUserEmbedding } from './update-user-embedding'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
 import { boostmarket } from './boost-market'
@@ -48,8 +47,6 @@ import { awardBounty } from './award-bounty'
 import { addBounty } from './add-bounty'
 import { cancelbounty } from './cancel-bounty'
 import { createAnswerCPMM } from './create-answer-cpmm'
-import { createportfolio } from './create-portfolio'
-import { updateportfolio } from './update-portfolio'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { managram } from './managram'
@@ -148,6 +145,7 @@ import { createuser } from 'api/create-user'
 import { verifyPhoneNumber } from 'api/verify-phone-number'
 import { requestOTP } from 'api/request-phone-otp'
 import { multiSell } from 'api/multi-sell'
+import { convertCashToMana } from './convert-cash-to-mana'
 import { convertSpiceToMana } from './convert-sp-to-mana'
 import { donate } from './donate'
 import { getFeed } from 'api/get-feed'
@@ -193,6 +191,7 @@ import { followContract } from './follow-contract'
 import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { completeCashoutSession } from 'api/gidx/complete-cashout-session'
+import { getCashouts } from './get-cashouts'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -342,6 +341,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   managrams: getManagrams,
   manalink: createManalink,
   donate: donate,
+  'convert-cash-to-mana': convertCashToMana,
   'convert-sp-to-mana': convertSpiceToMana,
   'market/:id/positions': getPositions,
   me: getMe,
@@ -382,7 +382,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-lovers': getLovers,
   'get-lover-answers': getLoverAnswers,
   'set-news': setnews,
-  'update-user-embedding': updateUserEmbedding,
   'search-groups': supabasesearchgroups,
   'search-my-groups': supabasesearchmygroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
@@ -422,6 +421,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-monitor-status-gidx': getMonitorStatus,
   'get-best-comments': getBestComments,
   'record-comment-view': recordCommentView,
+  'get-cashouts': getCashouts,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -484,8 +484,6 @@ app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
-app.post('/createportfolio', ...apiRoute(createportfolio))
-app.post('/updateportfolio', ...apiRoute(updateportfolio))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/refer-user', ...apiRoute(referuser))

@@ -2,7 +2,7 @@ import { useUser } from 'web/hooks/use-user'
 import { useState } from 'react'
 import { Button } from '../buttons/button'
 import { RedeemSpiceModal } from '../redeem-spice-modal'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/coin-number'
 import { Row } from '../layout/row'
 import clsx from 'clsx'
 

@@ -28,7 +28,6 @@ import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
 import { scoreContracts } from './score-contracts'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateLeague } from './update-league'
-import { updateViewsAndViewersEmbeddings } from 'shared/helpers/embeddings'
 
 export function createJobs() {
   return [
@@ -153,18 +152,13 @@ export function createJobs() {
     // Monthly jobs:
     createJob(
       'increment-streak-forgiveness',
-      '0 0 0 1 * *', // 1st day of the month at 12am PST
+      '0 0 3 1 * *', // 3am PST on the 1st day of the month
       incrementStreakForgiveness
     ),
     createJob(
       'update-league-ranks',
       '0 0 0 * * *', // every day at midnight
       updateLeagueRanks
-    ),
-    createJob(
-      'update-contract-view-embeddings',
-      '0 0 0 1 * *', // 1st day of the month
-      updateViewsAndViewersEmbeddings
     ),
   ]
 }

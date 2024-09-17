@@ -22,7 +22,14 @@ export const deleteMarket = authEndpoint(async (req, auth) => {
   if (creatorId !== auth.uid && !isAdminId(auth.uid))
     throw new APIError(403, 'User is not creator of contract')
 
-  const { resolution, uniqueBettorCount } = contract
+  const { resolution, uniqueBettorCount, siblingContractId } = contract
+
+  if (contract.token === 'CASH')
+    throw new APIError(
+      403,
+      `Can't delete cash market directly. Delete the sibling mana contract ${siblingContractId} to delete this market.`
+    )
+
   if (resolution !== 'CANCEL')
     throw new APIError(403, 'Contract must be resolved N/A to be deleted')
 
@@ -31,6 +38,30 @@ export const deleteMarket = authEndpoint(async (req, auth) => {
       403,
       'Contract must have less than 2 bettors to be deleted'
     )
+
+  // duplicate checks for sibling contract
+  if (siblingContractId) {
+    if (!isAdminId(auth.uid))
+      throw new APIError(403, 'Only Manifold admins can delete cash markets')
+
+    const cashContract = await getContract(pg, siblingContractId)
+    if (!cashContract)
+      throw new APIError(404, 'Sibling cash contract not found')
+
+    if (cashContract.resolution !== 'CANCEL')
+      throw new APIError(
+        403,
+        'Sibling contract must be resolved N/A to be deleted'
+      )
+
+    if (cashContract.uniqueBettorCount && cashContract.uniqueBettorCount >= 2)
+      throw new APIError(
+        403,
+        'Sibling contract must have less than 2 bettors to be deleted'
+      )
+
+    // cash contract gets auto deleted via db trigger
+  }
 
   await updateContract(pg, contractId, { deleted: true })
   await revalidateStaticProps(contractPath(contract))

@@ -87,14 +87,14 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { YourOrders } from 'web/components/bet/order-book'
 import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
-import { TwombaContractPageContent } from '../../components/contract/twomba-contract-page'
+import { TwombaContractPageContent } from 'web/components/contract/twomba-contract-page'
 import { removeUndefinedProps } from 'common/util/object'
 import { pick } from 'lodash'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
-  const { contractSlug } = ctx.params
+  const { username, contractSlug } = ctx.params
   const adminDb = await initSupabaseAdmin()
   const contract = await getContractFromSlug(adminDb, contractSlug)
 
@@ -122,7 +122,7 @@ export async function getStaticProps(ctx: {
 
     return {
       redirect: {
-        destination: `/username/${slug}?play=false`,
+        destination: `/${username}/${slug}?play=false`,
         permanent: false,
       },
     }
@@ -138,6 +138,7 @@ export async function getStaticProps(ctx: {
       const params = await getContractParams(cashContract, adminDb)
       cash = pick(params, [
         'contract',
+        'lastBetTime',
         'pointsString',
         'multiPointsString',
         'userPositionsByOutcome',
@@ -219,7 +220,6 @@ export function ContractPageContent(props: ContractParams) {
   if (!contract.viewCount) {
     contract.viewCount = props.contract.viewCount
   }
-
   const cachedContract = useMemo(
     () => contract,
     [

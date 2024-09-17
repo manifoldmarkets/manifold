@@ -243,10 +243,16 @@ export async function updateUserMetricsCore(
       })
     )
 
-    const { balance, investmentValue, totalDeposits } = newPortfolio
-    const allTimeProfit = balance + investmentValue - totalDeposits
+    const { balance, spiceBalance, investmentValue, totalDeposits } =
+      newPortfolio
+    const allTimeProfit =
+      balance + spiceBalance + investmentValue - totalDeposits
+
     const unresolvedMetrics = freshMetrics.filter((m) => {
       const contract = contractsById[m.contractId]
+
+      if (contract.token !== 'MANA') return false
+
       if (contract.mechanism === 'cpmm-multi-1') {
         // Don't double count null answer (summary) profits
         if (!m.answerId) return false
@@ -261,6 +267,9 @@ export async function updateUserMetricsCore(
     if (since === 0) {
       const resolvedMetrics = freshMetrics.filter((m) => {
         const contract = contractsById[m.contractId]
+
+        if (contract.token !== 'MANA') return false
+
         if (contract.mechanism === 'cpmm-multi-1') {
           // Don't double count null answer (summary) profits
           if (!m.answerId) return false
@@ -292,10 +301,14 @@ export async function updateUserMetricsCore(
     const didPortfolioChange =
       currentPortfolio === undefined ||
       currentPortfolio.balance !== newPortfolio.balance ||
-      currentPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-      currentPortfolio.investmentValue !== newPortfolio.investmentValue ||
-      currentPortfolio.loanTotal !== newPortfolio.loanTotal ||
+      currentPortfolio.cashBalance !== newPortfolio.cashBalance ||
       currentPortfolio.spiceBalance !== newPortfolio.spiceBalance ||
+      currentPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
+      currentPortfolio.totalCashDeposits !== newPortfolio.totalCashDeposits ||
+      currentPortfolio.investmentValue !== newPortfolio.investmentValue ||
+      currentPortfolio.cashInvestmentValue !==
+        newPortfolio.cashInvestmentValue ||
+      currentPortfolio.loanTotal !== newPortfolio.loanTotal ||
       currentPortfolio.profit !== leaderBoardProfit
 
     const newProfit = {

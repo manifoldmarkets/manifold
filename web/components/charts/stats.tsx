@@ -53,6 +53,10 @@ export function DailyChart(props: { values: Point[]; pct?: boolean }) {
   const zoomParams = useZoom()
   const [xMin, xMax] = zoomParams.viewXScale.domain()
 
+  if (data.length === 0) {
+    return <div className="text-ink-300">No data</div>
+  }
+
   const first = data[0].x
   const last = data[data.length - 1].x
 
@@ -77,6 +81,7 @@ export function DailyChart(props: { values: Point[]; pct?: boolean }) {
           curve={curveLinear}
           zoomParams={zoomParams}
           showZoomer
+          noWatermark
         />
       )}
     </SizedContainer>

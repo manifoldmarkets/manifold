@@ -1,8 +1,10 @@
 import { Col } from 'web/components/layout/col'
 import {
   formatMoney,
-  formatMoneyNoMoniker,
+  formatMoneyUSD,
   formatSpice,
+  formatSweepies,
+  maybePluralize,
   shortFormatNumber,
 } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
@@ -33,6 +35,9 @@ import { Input } from 'web/components/widgets/input'
 import { formatJustTime, formatTimeShort } from 'web/lib/util/time'
 import { assertUnreachable } from 'common/util/types'
 import { AnyTxnCategory } from 'common/txn'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { Button } from 'web/components/buttons/button'
+import { Modal } from '../layout/modal'
 
 export const BalanceChangeTable = (props: {
   user: User
@@ -41,10 +46,13 @@ export const BalanceChangeTable = (props: {
 }) => {
   const { user, simple } = props
   const [query, setQuery] = useState('')
+  const { data: cashouts } = useAPIGetter('get-cashouts', {
+    userId: user.id,
+  })
+  const [showCashoutModal, setShowCashoutModal] = useState(false)
   const balanceChanges = props.balanceChanges
     .filter((change) => {
       const { type } = change
-
       const contractQuestion =
         ('contract' in change && change.contract?.question) || ''
       const changeType = type
@@ -68,15 +76,28 @@ export const BalanceChangeTable = (props: {
       )
     })
     .slice(0, 1000)
+  const pendingCashouts =
+    cashouts?.filter((c) => c.txn.gidxStatus === 'Pending')?.length ?? 0
   return (
-    <Col className={' w-full justify-center'}>
+    <Col className={' w-full justify-center py-1'}>
       <Input
         type={'text'}
         placeholder={'Search your balance changes'}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <Col className={'gap-4 px-3 pt-4'}>
+      <Col className={'gap-4 px-2 pt-4'}>
+        {cashouts && cashouts.length > 0 && (
+          <Row className=" justify-end">
+            <Button
+              color="gray-outline"
+              onClick={() => setShowCashoutModal(true)}
+            >
+              View {maybePluralize('redemption', cashouts?.length ?? 0)}{' '}
+              {pendingCashouts > 0 ? `(${pendingCashouts} pending)` : ''}
+            </Button>
+          </Row>
+        )}
         <RenderBalanceChanges
           avatarSize={'md'}
           balanceChanges={balanceChanges}
@@ -85,6 +106,34 @@ export const BalanceChangeTable = (props: {
           hideBalance={!!query}
         />
       </Col>
+      <Modal open={showCashoutModal} setOpen={setShowCashoutModal}>
+        <Col className={'bg-canvas-0 gap-4 rounded-md p-4'}>
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className="text-left">Amount</th>
+                <th className="text-left">Date</th>
+                <th className="text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cashouts?.map((cashout) => (
+                <tr key={cashout.txn.id}>
+                  <td>
+                    {formatMoneyUSD(cashout.txn.data.payoutInDollars, true)}
+                  </td>
+                  <td className="whitespace-nowrap">
+                    {new Date(cashout.txn.createdTime).toLocaleString()}
+                  </td>
+                  <td className="whitespace-nowrap">
+                    {cashout.txn.gidxStatus}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Col>
+      </Modal>
     </Col>
   )
 }
@@ -302,7 +351,7 @@ const BetBalanceChangeRow = (props: {
             {!hideBalance && (
               <>
                 {token === 'CASH'
-                  ? formatMoneyNoMoniker(balance.cash) + ' prize cash'
+                  ? formatSweepies(balance.cash)
                   : formatMoney(balance.mana)}
                 {'·'}
               </>
@@ -344,7 +393,10 @@ const TxnBalanceChangeRow = (props: {
     CONTRACT_UNDO_PRODUCE_SPICE: 'bg-ink-1000',
     CONSUME_SPICE: 'bg-indigo-400',
     CONSUME_SPICE_DONE: 'bg-indigo-400',
+    CONVERT_CASH: 'bg-indigo-400',
+    CONVERT_CASH_DONE: 'bg-indigo-400',
     SIGNUP_BONUS: 'bg-yellow-200',
+    KYC_BONUS: 'bg-yellow-200',
     MANA_PURCHASE: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
     CASH_BONUS: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
     MARKET_BOOST_REDEEM: 'bg-purple-200',
@@ -388,7 +440,10 @@ const TxnBalanceChangeRow = (props: {
               <FaBackward className={'h-5 w-5 text-white'} />
             ) : type === 'CREATE_CONTRACT_ANTE' || type === 'BOUNTY_POSTED' ? (
               <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
-            ) : type === 'CONSUME_SPICE' || type === 'CONSUME_SPICE_DONE' ? (
+            ) : type === 'CONSUME_SPICE' ||
+              type === 'CONSUME_SPICE_DONE' ||
+              type === 'CONVERT_CASH' ||
+              type === 'CONVERT_CASH_DONE' ? (
               <FaArrowRightArrowLeft className={'h-4 w-4'} />
             ) : type === 'CHARITY' ? (
               '❤️'
@@ -401,6 +456,7 @@ const TxnBalanceChangeRow = (props: {
                 'CASH_BONUS',
                 'BETTING_STREAK_BONUS',
                 'SIGNUP_BONUS',
+                'KYC_BONUS',
                 'QUEST_REWARD',
                 'MARKET_BOOST_REDEEM',
                 'LEAGUE_PRIZE',
@@ -454,7 +510,7 @@ const TxnBalanceChangeRow = (props: {
             {token === 'SPICE'
               ? formatSpice(amount).replace('-', '')
               : token === 'CASH'
-              ? formatMoneyNoMoniker(amount).replace('-', '') + ' prize cash'
+              ? formatSweepies(amount).replace('-', '')
               : formatMoney(amount).replace('-', '')}
           </span>
         </Row>
@@ -468,7 +524,7 @@ const TxnBalanceChangeRow = (props: {
                 {token === 'SPICE'
                   ? formatSpice(balance.spice)
                   : token === 'CASH'
-                  ? formatMoneyNoMoniker(balance.cash) + ' prize cash'
+                  ? formatSweepies(balance.cash)
                   : formatMoney(balance.mana)}
                 {' · '}
               </>
@@ -512,10 +568,15 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'CONSUME_SPICE':
     case 'CONSUME_SPICE_DONE':
       return `Redeem prize points for mana`
+    case 'CONVERT_CASH':
+    case 'CONVERT_CASH_DONE':
+      return 'Redeem sweepcash for mana'
     case 'CASH_OUT':
-      return 'Cash out request'
+      return 'Redemption request'
     case 'CASH_BONUS':
       return 'Mana cash bonus'
+    case 'KYC_BONUS':
+      return 'ID verification bonus'
     default:
       return type
   }
@@ -535,6 +596,7 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'BETTING_STREAK_BONUS':
       return 'Quests'
     case 'SIGNUP_BONUS':
+    case 'KYC_BONUS':
       return 'New user bonuses'
     case 'QUEST_REWARD':
       return 'Quests'
@@ -543,6 +605,8 @@ const txnTypeToDescription = (txnCategory: string) => {
       return 'Unresolve'
     case 'CONSUME_SPICE':
     case 'CONSUME_SPICE_DONE':
+    case 'CONVERT_CASH':
+    case 'CONVERT_CASH_DONE':
       return ''
     case 'MANA_PURCHASE':
       return ''

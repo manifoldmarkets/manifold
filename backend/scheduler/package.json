@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/index.ts --ext '*'",
-    "start": "ENVIRONMENT=PROD nodemon src/index.ts --ext '*'",
+    "start": "NEXT_PUBLIC_FIREBASE_ENV=PROD nodemon src/index.ts --ext '*'",
     "build": "tsc -b && (cd ../../common && tsc-alias) && (cd ../shared && tsc-alias) && tsc-alias && yarn dist:prepare && yarn dist:copy",
     "dist:prepare": "rm -rf dist && mkdir -p dist/common/lib dist/backend/shared/lib dist/backend/scheduler/lib",
     "dist:copy": "cp -R ../../common/lib/* dist/common/lib && cp -R ../shared/lib/* dist/backend/shared/lib && cp -R ./lib/* dist/backend/scheduler/lib && cp ../../yarn.lock dist && cp package.json dist && cp -R src/templates dist/backend/scheduler/lib",

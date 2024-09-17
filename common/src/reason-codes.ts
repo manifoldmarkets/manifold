@@ -39,29 +39,34 @@ export const underageErrorCodes = [
   'ID-UA19', // Identity Under 19
 ]
 
+export const identityBlockedCodes = [
+  'ID-BLOCK', // Identity Blocked
+  'ID-HVEL-ACTV', // Identity High Velocity Activity
+  'ID-DECEASED', // Identity Deceased
+  'ID-EX', // Identity Exists already
+  'ID-HR', // Identity High Risk
+]
+
 export const blockedCodes: string[] = [
   ...locationBlockedCodes,
 
   // Identity
   ...underageErrorCodes,
-  'ID-WL', // Identity on watchlist
-  'ID-HR', // Identity High Risk
-  'ID-BLOCK', // Identity Blocked
-  'ID-HVEL-ACTV', // Identity High Velocity Activity
-  'ID-DECEASED', // Identity Deceased
+  ...identityBlockedCodes,
 
   // Device
+  'DFP-VPRP-ANON', // Device Fingerprint Anon proxy
   'DFP-WL', // Device Fingerprint on watchlist
-  'DFP-HR', // Device Fingerprint High Risk
   'DFP-HVEL-MIP-WEBREG', // Device Fingerprint High Velocity Matching IP ID Registration
   'DFP-IPNM', // Device Fingerprint IP Not Matching
+  'DFP-HR', // Device Fingerprint High Risk
 ]
 
 export const allowedFlaggedCodes: string[] = [
+  'ID-WL', // Identity on watchlist
   'ID-AGE-UNKN', // Identity Age Unknown, typically year is correct
   'ID-ADDR-UPA', // Identity Address Unknown
   'DFP-VPRP', // Device Fingerprint VPN, Proxy, or Relay Provider
-  'DFP-VPRP-ANON', // Device Fingerprint Anon proxy
   'DFP-VPRP-CORP', // Device Fingerprint Corporate proxy
 ]
 
@@ -70,7 +75,11 @@ export const allowedCodes: string[] = [
   'ID-PASS', // Identity Verification Passed
   'ID-UA21', // Identity Under 21
   'LL-OUT-US', // Location Outside US
-  'ID-EX', // Identity Exists
+]
+
+export const limitTo5kCashoutCodes: string[] = [
+  'LL-GEO-US-NY', // Location New York
+  'LL-GEO-US-FL', // Location Florida
 ]
 
 export const documentsReadyCodes: string[] = ['DOC-REV-COMPL', 'DOC-UPLOADED']
@@ -78,4 +87,5 @@ export const documentsReadyCodes: string[] = ['DOC-REV-COMPL', 'DOC-UPLOADED']
 export type RegistrationReturnType = {
   status: string
   message?: string
+  idVerified: boolean
 }

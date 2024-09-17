@@ -8,7 +8,7 @@ import {
 } from 'common/contract'
 import { getStonkDisplayShares } from 'common/stonk'
 import { User } from 'common/user'
-import { formatWithCommas } from 'common/util/format'
+import { formatShares } from 'common/util/format'
 import { useState } from 'react'
 import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -142,7 +142,7 @@ export function SellSharesModal(props: {
             <>You have {getStonkDisplayShares(contract, shares)} shares of </>
           ) : (
             <>
-              You have {formatWithCommas(shares)} shares worth{' '}
+              You have {formatShares(shares, isCashContract)} shares worth{' '}
               <MoneyDisplay amount={shares} isCashContract={isCashContract} />{' '}
               if this {answerId ? 'answer' : 'question'} resolves{' '}
             </>

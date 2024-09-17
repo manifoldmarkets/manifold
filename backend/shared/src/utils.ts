@@ -95,24 +95,26 @@ export async function revalidateContractStaticProps(contract: Contract) {
     revalidateStaticProps(`/embed${contractPath(contract)}`),
   ])
 }
+export const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
 // TODO: deprecate in favor of common/src/envs/is-prod.ts
 export const isProd = () => {
-  // mqp: kind of hacky rn. the first clause is for cloud run API service,
+  // ian: The first clause is for the API server, and the
   // second clause is for local scripts and cloud functions
-  if (process.env.ENVIRONMENT) {
-    return process.env.ENVIRONMENT == 'PROD'
+  if (process.env.NEXT_PUBLIC_FIREBASE_ENV) {
+    return process.env.NEXT_PUBLIC_FIREBASE_ENV === 'PROD'
   } else {
     return admin.app().options.projectId === 'mantic-markets'
   }
 }
+export const contractColumnsToSelect = `data, importance_score, conversion_score, view_count, token`
 
 export const getContract = async (
   pg: SupabaseDirectClient,
   contractId: string
 ) => {
   const res = await pg.map(
-    `select data, importance_score, conversion_score, view_count, token from contracts where id = $1
+    `select ${contractColumnsToSelect} from contracts where id = $1
             limit 1`,
     [contractId],
     (row) => convertContract(row)
@@ -128,7 +130,7 @@ export const getContractSupabase = async (contractId: string) => {
 export const getContractFromSlugSupabase = async (contractSlug: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
-    `select data, importance_score, conversion_score, view_count, token from contracts where slug = $1
+    `select ${contractColumnsToSelect} from contracts where slug = $1
             limit 1`,
     [contractSlug],
     (row) => convertContract(row)

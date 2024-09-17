@@ -15,10 +15,12 @@ create table if not exists
     resolution_probability numeric,
     resolution text,
     popularity_score numeric default 0 not null,
-    question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
+    question_fts tsvector generated always as (
+      to_tsvector('english_extended'::regconfig, question)
+    ) stored,
     description_fts tsvector generated always as (
       to_tsvector(
-        'english'::regconfig,
+        'english_extended'::regconfig,
         add_creator_name_to_description (data)
       )
     ) stored,
@@ -117,11 +119,16 @@ create
 or replace function public.sync_sibling_contract () returns trigger language plpgsql as $function$
 begin
   if new.token = 'MANA' and (new.data->>'siblingContractId') is not null
-    and (old.data->>'closeTime' != new.data->>'closeTime' or old.data->>'deleted' != new.data->>'deleted') then
+    and (
+      old.data->>'closeTime' != new.data->>'closeTime'
+      or old.data->>'deleted' != new.data->>'deleted'
+      or old.data->>'question' != new.data->>'question'
+    ) then
   update contracts
   set data = data || jsonb_build_object(
     'closeTime', new.data->'closeTime',
-    'deleted', new.data->'deleted'
+    'deleted', new.data->'deleted',
+    'question', new.data->'question'
   )
   where id = (new.data->>'siblingContractId')::text;
   end if;
@@ -129,9 +136,10 @@ begin
 end;
 $function$;
 
--- Policies
+-- Row Level Security
 alter table contracts enable row level security;
 
+-- Policies
 drop policy if exists "public read" on contracts;
 
 create policy "public read" on contracts for
@@ -154,6 +162,10 @@ create index contracts_created_time on public.contracts using btree (created_tim
 drop index if exists contracts_creator_id;
 
 create index contracts_creator_id on public.contracts using btree (creator_id, created_time);
+
+drop index if exists contracts_daily_score;
+
+create index contracts_daily_score on public.contracts using btree (daily_score desc);
 
 drop index if exists contracts_elasticity;
 
@@ -219,6 +231,10 @@ drop index if exists description_fts;
 
 create index description_fts on public.contracts using gin (description_fts);
 
+drop index if exists market_tier_idx;
+
+create index market_tier_idx on public.contracts using btree (tier);
+
 drop index if exists question_fts;
 
 create index question_fts on public.contracts using gin (question_fts);
@@ -226,11 +242,3 @@ create index question_fts on public.contracts using gin (question_fts);
 drop index if exists question_nostop_fts;
 
 create index question_nostop_fts on public.contracts using gin (question_nostop_fts);
-
-drop index if exists market_tier_idx;
-
-create index market_tier_idx on public.contracts using btree (tier);
-
-drop index if exists contracts_daily_score;
-
-create index contracts_daily_score on public.contracts using btree (daily_score desc);

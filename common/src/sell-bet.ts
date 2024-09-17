@@ -149,7 +149,7 @@ export const getCpmmMultiSellBetInfo = (
     isRedemption: false,
   }
 
-  const otherResultsWithBet = otherBetResults!.map((result) => {
+  const updatedOtherBetResults = otherBetResults!.map((result) => {
     const { answer, takers, cpmmState, outcome, totalFees } = result
     const probBefore = answer.prob
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -182,7 +182,7 @@ export const getCpmmMultiSellBetInfo = (
     newPool: cpmmState.pool,
     makers,
     ordersToCancel,
-    otherResultsWithBet,
+    otherBetResults: updatedOtherBetResults,
   }
 }
 export const getCpmmMultiSellSharesInfo = (

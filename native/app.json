@@ -4,7 +4,7 @@
     "slug": "manifold-markets",
     "owner": "iansp",
     "jsEngine": "hermes",
-    "version": "2.0.50",
+    "version": "2.0.52",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -15,8 +15,16 @@
       "expo-notifications",
       {
         "icon":"./assets/logo-96.png"
-      }
-    ]],
+      }],
+       [
+       "@sentry/react-native/expo",
+        {
+          "organization": "manifold-markets",
+          "project": "react-native",
+          "url": "https://sentry.io/"
+        }
+      ]
+    ],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
@@ -56,7 +64,7 @@
         "backgroundColor": "#4337C9"
       },
       "package": "com.markets.manifold",
-      "versionCode": 58
+      "versionCode": 60
     },
     "ios": {
       "infoPlist": {
@@ -69,7 +77,7 @@
         "applinks:manifold.markets",
         "webcredentials:manifold.markets"
       ],
-      "buildNumber": "1.0.45"
+      "buildNumber": "1.0.47"
     }
   }
 }

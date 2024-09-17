@@ -13,9 +13,10 @@ import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { useThemeManager } from 'web/hooks/use-theme'
-import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
+import { ENV_CONFIG, TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import { SweepstakesProvider } from 'web/components/sweestakes-context'
 import { capitalize } from 'lodash'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -66,6 +67,41 @@ function printBuildInfo() {
   }
 }
 
+// ian: Required by GambleId
+const useDevtoolsDetector = () => {
+  const [devtoolsOpen, setDevtoolsOpen] = usePersistentInMemoryState(
+    false,
+    'devtools'
+  )
+  useEffect(() => {
+    const isLocal =
+      window.location.hostname === 'localhost' ||
+      // For ios local dev
+      window.location.hostname === '192.168.1.229'
+    if (!TWOMBA_ENABLED || isLocal) {
+      return
+    }
+    const detectDevTools = () => {
+      const threshold = 160
+      const widthThreshold = window.outerWidth - window.innerWidth > threshold
+      const heightThreshold =
+        window.outerHeight - window.innerHeight > threshold
+
+      if ((widthThreshold || heightThreshold) && !devtoolsOpen) {
+        setDevtoolsOpen(true)
+      }
+    }
+
+    const intervalId = setInterval(() => {
+      detectDevTools()
+    }, 1000)
+
+    return () => clearInterval(intervalId)
+  }, [])
+
+  return devtoolsOpen
+}
+
 // specially treated props that may be present in the server/static props
 type ManifoldPageProps = { auth?: AuthUser }
 
@@ -73,7 +109,8 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
   useRefreshAllClients()
-
+  // ian: Required by GambleId
+  const devToolsOpen = useDevtoolsDetector()
   useThemeManager()
 
   const title = 'Manifold'
@@ -132,12 +169,25 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           mainFont.variable
         )}
       >
-        <AuthProvider serverUser={pageProps.auth}>
-          <SweepstakesProvider>
-            <NativeMessageListener />
-            <Component {...pageProps} />
-          </SweepstakesProvider>
-        </AuthProvider>
+        {/*
+        ian: It would be nice to find a way to let people take screenshots of a crash + console log.
+        One idea: just disable them for !user.sweepstakesVerified users.
+        */}
+        {devToolsOpen ? (
+          <div
+            className={'flex h-screen flex-col items-center justify-center p-4'}
+          >
+            You cannot use developer tools with manifold. Please close them and
+            refresh.
+          </div>
+        ) : (
+          <AuthProvider serverUser={pageProps.auth}>
+            <SweepstakesProvider>
+              <NativeMessageListener />
+              <Component {...pageProps} />
+            </SweepstakesProvider>
+          </AuthProvider>
+        )}
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
         <div id="headlessui-portal-root">
           <div />

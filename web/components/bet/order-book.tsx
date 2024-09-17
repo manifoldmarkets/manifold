@@ -14,11 +14,11 @@ import {
 } from 'common/contract'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatPercent } from 'common/util/format'
-import { sortBy } from 'lodash'
+import { groupBy, keyBy, sortBy, sumBy } from 'lodash'
 import { useState } from 'react'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useUser } from 'web/hooks/use-user'
-import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
 import { getCountdownString } from 'web/lib/util/time'
 import { Button } from '../buttons/button'
@@ -41,6 +41,9 @@ import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { Tooltip } from '../widgets/tooltip'
 import { MoneyDisplay } from './money-display'
+import { MultipleOrSingleAvatars } from '../multiple-or-single-avatars'
+import { DisplayUser } from 'common/api/user-types'
+import { UserLink } from '../widgets/user-link'
 
 export function YourOrders(props: {
   contract:
@@ -304,6 +307,142 @@ function OrderRow(props: {
   )
 }
 
+export function CollatedOrderTable(props: {
+  limitBets: LimitBet[]
+  contract:
+    | BinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
+    | MultiContract
+  side: 'YES' | 'NO'
+}) {
+  const { limitBets, contract, side } = props
+  const isBinaryMC = isBinaryMulti(contract)
+  const groupedBets = groupBy(limitBets, (b) => b.limitProb)
+
+  return (
+    <div>
+      <Row>
+        <span className="mr-2">Buy</span>
+        {isBinaryMC ? (
+          <OutcomeLabel contract={contract} outcome={side} truncate={'short'} />
+        ) : side === 'YES' ? (
+          <YesLabel />
+        ) : (
+          <NoLabel />
+        )}
+      </Row>
+
+      <div className="grid grid-cols-[32px_auto_1fr] gap-1">
+        {Object.entries(groupedBets).map(([prob, bets]) => (
+          <CollapsedOrderRow
+            contract={contract}
+            key={prob}
+            limitProb={Number(prob)}
+            bets={bets}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CollapsedOrderRow(props: {
+  contract:
+    | BinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
+    | MultiContract
+  limitProb: number
+  bets: LimitBet[]
+}) {
+  const { contract, limitProb, bets } = props
+  const { outcome } = bets[0]
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+  const isBinaryMC = isBinaryMulti(contract)
+
+  const total = sumBy(bets, (b) => b.orderAmount - b.amount)
+
+  const allUsers = useUsers(bets.map((b) => b.userId))?.filter(
+    (a) => a != null
+  ) as DisplayUser[] | undefined
+  const usersById = keyBy(allUsers, (u) => u.id)
+
+  // find 3 largest users
+  const userBets = groupBy(bets, (b) => b.userId)
+  const userSums = Object.entries(userBets).map(
+    ([userId, bets]) =>
+      [userId, sumBy(bets, (b) => b.orderAmount - b.amount)] as const
+  )
+  const largest = sortBy(userSums, ([, sum]) => -sum)
+    .slice(0, 3)
+    .map(([userId]) => usersById[userId])
+    .filter((u) => u != null)
+    .reverse()
+
+  const [collapsed, setCollapsed] = useState(true)
+
+  return (
+    <>
+      <div className="self-center">
+        {isPseudoNumeric
+          ? getFormattedMappedValue(contract, limitProb)
+          : isBinaryMC
+          ? formatPercent(getBinaryMCProb(limitProb, outcome))
+          : formatPercent(limitProb)}
+      </div>
+
+      <div className="relative justify-start p-1">
+        <MultipleOrSingleAvatars
+          className="!items-end"
+          avatars={largest}
+          total={userSums.length}
+          size="xs"
+          spacing={0.3}
+          startLeft={0.6}
+          onClick={() => setCollapsed((c) => !c)}
+        />
+      </div>
+
+      <div className="self-center pr-1 text-right">
+        <MoneyDisplay
+          amount={total}
+          numberType="short"
+          isCashContract={contract.token === 'CASH'}
+        />
+      </div>
+
+      {!collapsed &&
+        bets.map((b) => {
+          const u = usersById[b.userId]
+          return (
+            <div
+              className="bg-canvas-50 col-span-3 flex justify-between p-1"
+              key={b.id}
+            >
+              <div className="flex items-center gap-2">
+                <Avatar
+                  avatarUrl={u.avatarUrl}
+                  username={u.username}
+                  size="xs"
+                />
+                <UserLink user={u} short />
+              </div>
+              <div className="text-right">
+                <MoneyDisplay
+                  amount={b.orderAmount - b.amount}
+                  isCashContract={contract.token === 'CASH'}
+                />
+              </div>
+            </div>
+          )
+        })}
+    </>
+  )
+}
+
 export function OrderBookButton(props: {
   limitBets: LimitBet[]
   contract:
@@ -331,7 +470,6 @@ export function OrderBookButton(props: {
             contract={contract}
             answer={answer}
             showTitle
-            expanded
           />
         </Col>
       </Modal>
@@ -354,10 +492,9 @@ export function OrderBookPanel(props: {
     | CPMMMultiContract
     | MultiContract
   answer?: Answer
-  expanded?: boolean
   showTitle?: boolean
 }) {
-  const { limitBets, contract, expanded, answer, showTitle } = props
+  const { limitBets, contract, answer, showTitle } = props
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),
@@ -373,19 +510,10 @@ export function OrderBookPanel(props: {
   const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const maxShownNotExpanded = 3
-  const moreOrdersCountYes = Math.max(0, yesBets.length - maxShownNotExpanded)
-  const moreOrdersCountNo = Math.max(0, noBets.length - maxShownNotExpanded)
-  const moreOrdersCount = moreOrdersCountYes + moreOrdersCountNo
-  const [isExpanded, setIsExpanded] = usePersistentInMemoryState(
-    expanded ?? false,
-    `${contract.id}-orderbook-expanded`
-  )
-
   if (limitBets.length === 0) return <></>
 
   return (
-    <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 p-4">
+    <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 px-2 py-4 sm:px-4">
       <Subtitle className="!my-0">
         Order book{' '}
         <InfoTooltip
@@ -396,41 +524,14 @@ export function OrderBookPanel(props: {
 
       {showTitle && isCPMMMulti && answer && <div>{answer.text}</div>}
 
-      <Row className="items-start justify-around gap-2">
-        <OrderTable
-          limitBets={
-            isExpanded ? yesBets : yesBets.slice(0, maxShownNotExpanded)
-          }
+      <Row className="items-start justify-around gap-4">
+        <CollatedOrderTable
+          limitBets={yesBets}
           contract={contract}
-          isYou={false}
           side="YES"
         />
-        <OrderTable
-          limitBets={isExpanded ? noBets : noBets.slice(0, maxShownNotExpanded)}
-          contract={contract}
-          isYou={false}
-          side="NO"
-        />
+        <CollatedOrderTable limitBets={noBets} contract={contract} side="NO" />
       </Row>
-
-      {moreOrdersCount > 0 && (
-        <Button
-          className="w-full"
-          color="gray-white"
-          onClick={() => setIsExpanded((b) => !b)}
-        >
-          {isExpanded ? (
-            <>
-              <ChevronUpIcon className="mr-1 h-4 w-4" /> {`Show fewer orders`}
-            </>
-          ) : (
-            <>
-              <ChevronDownIcon className="mr-1 h-4 w-4" />{' '}
-              {`Show ${moreOrdersCount} more orders`}
-            </>
-          )}
-        </Button>
-      )}
 
       {!isPseudoNumeric && yesBets.length >= 2 && noBets.length >= 2 && (
         <>

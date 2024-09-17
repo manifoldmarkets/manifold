@@ -1,6 +1,6 @@
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { PrivateUser, User, isVerified } from 'common/user'
+import { PrivateUser, User, humanish } from 'common/user'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { postMessageToNative } from 'web/lib/native/post-message'
@@ -73,7 +73,7 @@ export function PushNotificationsModal(props: {
   useEffect(() => {
     postMessageToNative('tryToGetPushTokenWithoutPrompt', {})
   }, [showSettingsDescription])
-  const verified = isVerified(user)
+  const verified = humanish(user)
 
   if (!getIsNative()) return <div />
 

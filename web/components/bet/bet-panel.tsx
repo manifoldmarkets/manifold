@@ -62,6 +62,9 @@ import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
+import { blockFromSweepstakes, identityPending } from 'common/user'
+import { CashoutLimitWarning } from './cashout-limit-warning'
+import { InBeta, VerifyButton } from '../twomba/toggle-verify-callout'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -96,7 +99,7 @@ export function BuyPanel(props: {
     alwaysShowOutcomeSwitcher,
     children,
   } = props
-
+  const user = useUser()
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
@@ -123,7 +126,32 @@ export function BuyPanel(props: {
       setIsPanelBodyVisible(true)
     }
   }
-
+  // TODO: combine w/ contract-overview panels
+  if (contract.token === 'CASH' && identityPending(user)) {
+    return (
+      <Row className={'bg-canvas-50 rounded p-4'}>
+        You can't trade on sweepstakes markets while your status is pending.
+      </Row>
+    )
+  } else if (contract.token === 'CASH' && user && !user.idVerified) {
+    return (
+      <Col className="bg-canvas-50 gap-2 rounded-lg p-4">
+        <div className="mx-auto text-lg font-semibold">
+          Must be verified to {TRADE_TERM}
+        </div>
+        <p className="text-ink-700 mx-auto">
+          Verify your info to start trading on sweepstakes markets!
+        </p>
+        <VerifyButton className="mt-2" />
+      </Col>
+    )
+  } else if (contract.token === 'CASH' && blockFromSweepstakes(user)) {
+    return (
+      <Row className={'bg-canvas-50 rounded p-4'}>
+        You are not eligible to trade on sweepstakes markets.
+      </Row>
+    )
+  }
   return (
     <Col>
       {!isPanelBodyVisible && (
@@ -481,8 +509,8 @@ export const BuyPanelBody = (props: {
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
+        {isCashContract && <InBeta className="my-2" />}
         {children}
-
         {(isAdvancedTrader || alwaysShowOutcomeSwitcher) && (
           <Row className={'mb-2 mr-8 justify-between'}>
             <Col className={clsx(' gap-1', isBinaryMC && 'invisible')}>
@@ -699,6 +727,7 @@ export const BuyPanelBody = (props: {
             )}
           </Col>
         )}
+        {isCashContract && <CashoutLimitWarning user={user} className="mt-2" />}
 
         {user && (
           <Row className="mt-5 items-start justify-between text-sm">

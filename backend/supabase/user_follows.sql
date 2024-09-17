@@ -6,9 +6,10 @@ create table if not exists
     created_time timestamp with time zone default now() not null
   );
 
--- Policies
+-- Row Level Security
 alter table user_follows enable row level security;
 
+-- Policies
 drop policy if exists "public read" on user_follows;
 
 create policy "public read" on user_follows for

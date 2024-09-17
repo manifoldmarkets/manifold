@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getGIDXStandardParams } from 'shared/gidx/helpers'
+import { getGIDXStandardParams, GIDX_BASE_URL } from 'shared/gidx/helpers'
 import { isProd, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { PROD_CONFIG } from 'common/envs/prod'
@@ -11,7 +11,7 @@ import { updateUser } from 'shared/supabase/users'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/DocumentLibrary/DocumentRegistration'
+  GIDX_BASE_URL + '/v3.0/api/DocumentLibrary/DocumentRegistration'
 export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
   props,
   auth

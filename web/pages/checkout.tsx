@@ -5,16 +5,13 @@ import { Row } from '../components/layout/row'
 import { Input } from '../components/widgets/input'
 import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
-import { useNativeMessages } from 'web/hooks/use-native-messages'
-import { postMessageToNative } from 'web/lib/native/post-message'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { api, validateIapReceipt } from 'web/lib/api/api'
-import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
+import { api } from 'web/lib/api/api'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { PriceTile, use24hrUsdPurchases } from 'web/components/add-funds-modal'
 import { getVerificationStatus } from 'common/user'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 import { LogoIcon } from 'web/components/icons/logo-icon'
 import { FaStore } from 'react-icons/fa6'
 import clsx from 'clsx'
@@ -30,13 +27,18 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { LocationPanel } from 'web/components/gidx/location-panel'
-import { formatSweepsToUSD } from 'common/util/format'
+import { formatMoneyUSD } from 'common/util/format'
+import { capitalize } from 'lodash'
+import { useIosPurchases } from 'web/hooks/use-ios-purchases'
+import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
+import Link from 'next/link'
 
 const CheckoutPage = () => {
   const user = useUser()
   const [locationError, setLocationError] = useState<string>()
   const { isNative, platform } = getNativePlatform()
-  const prices = isNative && platform === 'ios' ? IOS_PRICES : MANA_WEB_PRICES
+  const isIOS = platform === 'ios' && isNative
+  const prices = isIOS ? IOS_PRICES : MANA_WEB_PRICES
   const [page, setPage] = useState<
     'checkout' | 'payment' | 'get-session' | 'location'
   >('checkout')
@@ -44,35 +46,42 @@ const CheckoutPage = () => {
   const [amountSelected, setAmountSelected] = useState<WebManaAmounts>()
   const [productSelected, setProductSelected] = useState<PaymentAmount>()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string>()
+  const [priceLoading, setPriceLoading] = useState<WebManaAmounts | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  // get query params
-  const { manaAmount } = router.query
+  const [showConfetti, setShowConfetti] = useState(false)
+  const { initiatePurchaseInDollars, loadingMessage } = useIosPurchases(
+    setError,
+    setPriceLoading,
+    () => setShowConfetti(true)
+  )
+
+  const { manaAmount: manaAmountFromQuery } = router.query
   useEffect(() => {
-    if (!manaAmount) return
+    if (!manaAmountFromQuery) return
     if (
-      !Array.isArray(manaAmount) &&
-      prices.find((p) => p.mana === parseInt(manaAmount))
+      !Array.isArray(manaAmountFromQuery) &&
+      prices.find((p) => p.mana === parseInt(manaAmountFromQuery))
     ) {
-      onSelectAmount(parseInt(manaAmount) as WebManaAmounts)
+      onSelectAmount(parseInt(manaAmountFromQuery) as WebManaAmounts)
     } else {
       console.error('Invalid mana amount in query parameter')
       setError('Invalid mana amount')
     }
-  }, [manaAmount])
+  }, [manaAmountFromQuery])
 
-  const goHome = () => {
-    router.push('/home')
-  }
-
-  const checkIfRegistered = async (then: 'ios-native' | 'web') => {
-    // if user is not registered, they must register first
+  const checkIfRegistered = async (
+    then: 'ios-native' | 'web',
+    amount: number
+  ) => {
     if (!user) return
-    setError(undefined)
+    setError(null)
     setLoading(true)
     if (getVerificationStatus(user).status !== 'error') {
       if (then === 'ios-native') {
-        postMessageToNative('checkout', { amount: amountSelected })
+        initiatePurchaseInDollars(
+          prices.find((p) => p.mana === amount)!.priceInDollars
+        )
       } else {
         setPage('location')
       }
@@ -81,37 +90,15 @@ const CheckoutPage = () => {
     }
   }
 
-  // TODO: need to test if this works on ios
-  const handleIapReceipt = async <T extends nativeToWebMessageType>(
-    type: T,
-    data: MesageTypeMap[T]
-  ) => {
-    if (type === 'iapReceipt') {
-      const { receipt } = data as MesageTypeMap['iapReceipt']
-      try {
-        await validateIapReceipt({ receipt: receipt })
-        console.log('iap receipt validated')
-        goHome()
-      } catch (e) {
-        console.log('iap receipt validation error', e)
-        setError('Error validating receipt')
-      }
-    } else if (type === 'iapError') {
-      setError('Error during purchase! Try again.')
-    }
-    setLoading(false)
-  }
-  useNativeMessages(['iapReceipt', 'iapError'], handleIapReceipt)
-
   const totalPurchased = use24hrUsdPurchases(user?.id || '')
   const pastLimit = totalPurchased >= 2500
   const getCheckoutSession = async (DeviceGPS: GPSData) => {
     if (!amountSelected) return
-    setError(undefined)
+    setError(null)
     setLoading(true)
     const dollarAmount = (prices as typeof MANA_WEB_PRICES).find(
       (a) => a.mana === amountSelected
-    )?.price
+    )?.priceInDollars
     console.log('dollaramount', dollarAmount)
     if (!dollarAmount) {
       setError('Invalid mana amount')
@@ -125,7 +112,7 @@ const CheckoutPage = () => {
       const { session, status, message } = res
       if (session && status !== 'error') {
         const product = session.PaymentAmounts.find(
-          (a) => a.price === dollarAmount
+          (a) => a.priceInDollars === dollarAmount
         )
         if (!product) {
           setError(
@@ -149,18 +136,24 @@ const CheckoutPage = () => {
   }
 
   const onSelectAmount = (amount: WebManaAmounts) => {
+    setShowConfetti(false)
+    setError(null)
     setAmountSelected(amount)
-    checkIfRegistered(isNative && platform === 'ios' ? 'ios-native' : 'web')
+    setPriceLoading(amount)
+    checkIfRegistered(isIOS ? 'ios-native' : 'web', amount)
   }
 
   return (
-    <Page trackPageView={'checkout page'}>
+    <Page className={'p-3'} trackPageView={'checkout page'}>
+      {showConfetti && <FullscreenConfetti />}
       {page === 'checkout' &&
-      !amountSelected &&
-      !manaAmount &&
-      router.isReady ? (
+      (isIOS ? true : !amountSelected && !manaAmountFromQuery) ? (
         <Col>
-          <FundsSelector prices={prices} onSelect={onSelectAmount} />
+          <FundsSelector
+            prices={prices}
+            onSelect={onSelectAmount}
+            loading={priceLoading}
+          />
 
           {pastLimit && (
             <AlertBox title="Purchase limit" className="my-4">
@@ -191,12 +184,15 @@ const CheckoutPage = () => {
           CheckoutSession={checkoutSession}
           amount={productSelected}
         />
-      ) : page === 'get-session' ? (
-        <LoadingIndicator />
-      ) : error || locationError ? null : (
-        <LoadingIndicator />
-      )}
+      ) : page === 'get-session' && !error && !locationError ? (
+        <Col className={'gap-3 p-4'}>
+          <LoadingIndicator />
+        </Col>
+      ) : null}
       <Row className="text-error mt-2">{error}</Row>
+      {loadingMessage && (
+        <Row className="text-ink-500 mt-2 text-sm">{loadingMessage}</Row>
+      )}
     </Page>
   )
 }
@@ -204,37 +200,16 @@ const CheckoutPage = () => {
 function FundsSelector(props: {
   prices: PaymentAmount[]
   onSelect: (amount: WebManaAmounts) => void
+  loading: WebManaAmounts | null
 }) {
-  const { onSelect, prices } = props
+  const { onSelect, prices, loading } = props
   const user = useUser()
-  const { isNative, platform } = getNativePlatform()
-  const [loading, setLoading] = useState<WebManaAmounts | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const handleIapReceipt = async <T extends nativeToWebMessageType>(
-    type: T,
-    data: MesageTypeMap[T]
-  ) => {
-    if (type === 'iapReceipt') {
-      const { receipt } = data as MesageTypeMap['iapReceipt']
-      try {
-        await validateIapReceipt({ receipt: receipt })
-        console.log('iap receipt validated')
-      } catch (e) {
-        console.log('iap receipt validation error', e)
-        setError('Error validating receipt')
-      }
-    } else if (type === 'iapError') {
-      setError('Error during purchase! Try again.')
-    }
-    setLoading(null)
-  }
-  useNativeMessages(['iapReceipt', 'iapError'], handleIapReceipt)
 
   const totalPurchased = use24hrUsdPurchases(user?.id || '')
   const pastLimit = totalPurchased >= 2500
 
   return (
-    <>
+    <Col className="mx-auto max-w-xl">
       <Row className="mb-2 items-center gap-1 text-2xl font-semibold">
         <FaStore className="h-6 w-6" />
         Mana Shop
@@ -246,52 +221,49 @@ function FundsSelector(props: {
         )}
       >
         {TWOMBA_ENABLED ? (
-          <span>
-            Buy mana to trade in your favorite questions. Always free to play,
-            no purchase necessary.
-          </span>
+          <div>
+            <span>
+              Buy mana to trade in your favorite questions. Always free to play,
+              no purchase necessary.
+            </span>
+            <CashoutLimitWarning user={user} className="mt-2" />
+          </div>
         ) : (
           <span>Buy mana to trade in your favorite questions.</span>
         )}
       </div>
-
       {pastLimit && (
         <AlertBox title="Purchase limit" className="my-4">
           You have reached your daily purchase limit. Please try again tomorrow.
         </AlertBox>
       )}
-
       <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {prices.map((amounts) => {
-          return isNative && platform === 'ios' ? (
-            <PriceTile
-              key={`ios-${amounts.mana}`}
-              amounts={amounts}
-              loading={loading}
-              disabled={pastLimit}
-              onClick={() => {
-                setError(null)
-                setLoading(amounts.mana)
-                postMessageToNative('checkout', { amount: amounts.price })
-              }}
-            />
-          ) : (
-            <PriceTile
-              key={`web-${amounts.mana}`}
-              amounts={amounts}
-              loading={loading}
-              disabled={pastLimit}
-              onClick={() => {
-                setError(null)
-                setLoading(amounts.mana)
-                onSelect(amounts.mana)
-              }}
-            />
-          )
-        })}
+        {prices.map((amounts, index) => (
+          <PriceTile
+            key={`price-tile-${amounts.mana}`}
+            amounts={amounts}
+            index={index}
+            loading={loading}
+            disabled={pastLimit}
+            onClick={() => onSelect(amounts.mana)}
+          />
+        ))}
       </div>
-      <Row className="text-error mt-2 text-sm">{error}</Row>
-    </>
+
+      {TWOMBA_ENABLED && (
+        <div className="text-ink-500 mt-4 text-sm">
+          Please see our{' '}
+          <Link href="/terms" target="_blank" className="underline">
+            Terms & Conditions
+          </Link>{' '}
+          and{' '}
+          <Link href="/sweepstakes-rules" target="_blank" className="underline">
+            Sweepstakes Rules
+          </Link>
+          . All sales are final. No refunds.
+        </div>
+      )}
+    </Col>
   )
 }
 
@@ -306,7 +278,9 @@ const PaymentSection = (props: {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState(
-    CustomerProfile.Name.FirstName + ' ' + CustomerProfile.Name.LastName
+    capitalize(CustomerProfile.Name.FirstName.toLowerCase()) +
+      ' ' +
+      capitalize(CustomerProfile.Name.LastName.toLowerCase())
   )
   const [cardNumber, setCardNumber] = useState('')
   const [expiryDate, setExpiryDate] = useState('')
@@ -388,8 +362,8 @@ const PaymentSection = (props: {
   }
 
   return (
-    <Col>
-      <Col className="min-h-screen items-center justify-center py-12">
+    <Col className={'-m-3'}>
+      <Col className="min-h-screen items-center justify-center">
         <Row className={'w-full justify-center'}>
           <LogoIcon
             className="h-40 w-40 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white"
@@ -407,15 +381,15 @@ const PaymentSection = (props: {
             <CoinNumber
               className={'font-semibold'}
               coinType={'sweepies'}
-              amount={amount.bonus}
+              amount={amount.bonusInDollars}
               isInline
             />
           </span>
         </Row>
         <Row className={'my-4 justify-center text-4xl '}>
-          <span>{formatSweepsToUSD(amount.price)}</span>
+          <span>{formatMoneyUSD(amount.priceInDollars, true)}</span>
         </Row>
-        <Col className="bg-canvas-0 w-full max-w-md rounded p-8">
+        <Col className="bg-canvas-0 w-full max-w-md rounded p-4">
           <form onSubmit={handleSubmit}>
             <Col className="space-y-4">
               <Input
@@ -424,12 +398,42 @@ const PaymentSection = (props: {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-              <Input
-                type="text"
-                placeholder="Card Number"
-                value={cardNumber}
-                onChange={(e) => setCardNumber(e.target.value)}
-              />
+              <Row className={'relative w-full'}>
+                <Input
+                  type="text"
+                  className={'w-full'}
+                  placeholder="1234 1234 1234 1234"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value)}
+                />
+                <Row className={'absolute right-1 top-4 gap-0.5'}>
+                  <Image
+                    height={15}
+                    width={30}
+                    src={'/payment-icons/dark/1.png'}
+                    alt={'visa'}
+                  />
+                  <Image
+                    height={15}
+                    width={30}
+                    src={'/payment-icons/dark/2.png'}
+                    alt={'mastercard'}
+                  />
+                  <Image
+                    height={15}
+                    width={30}
+                    src={'/payment-icons/dark/14.png'}
+                    alt={'discover'}
+                  />{' '}
+                  <Image
+                    height={15}
+                    width={30}
+                    src={'/payment-icons/dark/22.png'}
+                    alt={'amex'}
+                  />
+                </Row>
+              </Row>
+
               <Row className="space-x-4">
                 <Input
                   type="text"
@@ -493,7 +497,7 @@ const PaymentSection = (props: {
                   loading
                 }
               >
-                Complete Purchase
+                Complete purchase
               </Button>
             </Col>
           </form>

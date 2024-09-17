@@ -13,9 +13,10 @@ create table if not exists
 alter table weekly_update
 add constraint weekly_update_user_id_fkey foreign key (user_id) references users (id);
 
--- Policies
+-- Row Level Security
 alter table weekly_update enable row level security;
 
+-- Policies
 drop policy if exists "public read" on weekly_update;
 
 create policy "public read" on weekly_update for

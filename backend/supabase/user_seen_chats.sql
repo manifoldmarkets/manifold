@@ -7,9 +7,10 @@ create table if not exists
     created_time timestamp with time zone default now() not null
   );
 
--- Policies
+-- Row Level Security
 alter table user_seen_chats enable row level security;
 
+-- Policies
 drop policy if exists "public read" on user_seen_chats;
 
 create policy "public read" on user_seen_chats for

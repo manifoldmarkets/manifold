@@ -7,6 +7,8 @@ export const getDocumentsStatus = (documents: GIDXDocument[]) => {
     doc.DocumentNotes.length > 0 &&
     !doc.DocumentNotes.some((n) => n.NoteText == acceptDocText)
 
+  // There is a slight weirdness here: if a doc is accepted, but then later rejected, this
+  // won't handle that case. It will think it's still accepted.
   const acceptedDocuments = documents.filter(
     (doc) =>
       doc.DocumentStatus === 3 &&

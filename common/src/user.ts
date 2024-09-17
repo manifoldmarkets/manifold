@@ -1,5 +1,11 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG, TWOMBA_ENABLED } from './envs/constants'
+import { intersection } from 'lodash'
+import {
+  identityBlockedCodes,
+  locationTemporarilyBlockedCodes,
+  underageErrorCodes,
+} from 'common/reason-codes'
 
 export type User = {
   id: string
@@ -67,10 +73,13 @@ export type User = {
   isAdvancedTrader?: boolean
   purchasedMana?: boolean
   verifiedPhone?: boolean
-  kycFlags?: string[]
-  kycLastAttempt?: number
+
+  // KYC related fields:
+  kycLastAttemptTime?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
-  kycStatus?: 'fail' | 'block' | 'temporary-block' | 'verified'
+  sweepstakesVerified?: boolean
+  idVerified?: boolean
+  sweepstakes5kLimit?: boolean
 }
 
 export type PrivateUser = {
@@ -102,6 +111,9 @@ export type PrivateUser = {
   installedAppPlatforms?: string[]
   discordId?: string
   paymentInfo?: string
+
+  // KYC related fields:
+  kycFlags?: string[]
 }
 
 // TODO: remove. Hardcoding the strings would be better.
@@ -139,13 +151,56 @@ export const isUserLikelySpammer = (
   )
 }
 
-export const isVerified = (user: User) => {
-  return user.verifiedPhone !== false || !!user.purchasedMana
-}
+// This grandfathers in older users who have not yet verified their phone
+export const humanish = (user: User) => user.verifiedPhone !== false
 
-export const verifiedPhone = (user: User) => {
-  return user.verifiedPhone !== false
-}
+const verifiedAndBlocked = (user: User | undefined | null) =>
+  user && user.idVerified && !user.sweepstakesVerified
+
+export const identityPending = (user: User | undefined | null) =>
+  user && !user.idVerified && user.kycDocumentStatus === 'pending'
+
+export const blockFromSweepstakes = (user: User | undefined | null) =>
+  user && (!user.idVerified || verifiedAndBlocked(user))
+
+export const locationBlocked = (
+  user: User | undefined | null,
+  privateUser: PrivateUser | undefined | null
+) =>
+  privateUser &&
+  verifiedAndBlocked(user) &&
+  intersection(privateUser.kycFlags, locationTemporarilyBlockedCodes).length > 0
+
+export const ageBlocked = (
+  user: User | undefined | null,
+  privateUser: PrivateUser | undefined | null
+) =>
+  privateUser &&
+  verifiedAndBlocked(user) &&
+  intersection(privateUser.kycFlags, underageErrorCodes).length > 0
+
+export const identityBlocked = (
+  user: User | undefined | null,
+  privateUser: PrivateUser | undefined | null
+) =>
+  privateUser &&
+  verifiedAndBlocked(user) &&
+  intersection(privateUser.kycFlags, identityBlockedCodes).length > 0
+
+export const GIDX_DISABLED_MESSAGE = 'GIDX registration is disabled'
+export const PHONE_NOT_VERIFIED_MESSAGE = 'User must verify phone'
+export const IDENTIFICATION_FAILED_MESSAGE = 'User identification failed'
+export const LOCATION_BLOCKED_MESSAGE = 'User location is blocked'
+export const USER_BLOCKED_MESSAGE = 'User is blocked'
+export const USER_NOT_REGISTERED_MESSAGE = 'User must register'
+export const USER_VERIFIED_MESSSAGE = 'User is verified'
+
+export const PROMPT_VERIFICATION_MESSAGES = [
+  USER_NOT_REGISTERED_MESSAGE,
+  PHONE_NOT_VERIFIED_MESSAGE,
+  IDENTIFICATION_FAILED_MESSAGE,
+]
+
 export const getVerificationStatus = (
   user: User
 ): {
@@ -153,18 +208,16 @@ export const getVerificationStatus = (
   message: string
 } => {
   if (!TWOMBA_ENABLED) {
-    return { status: 'error', message: 'GIDX registration is disabled' }
-  } else if (!verifiedPhone(user)) {
-    return { status: 'error', message: 'User must verify phone' }
-  } else if (user.kycStatus === 'block') {
-    return { status: 'error', message: 'User is blocked' }
-  } else if (user.kycStatus === 'temporary-block') {
-    return { status: 'error', message: 'User is temporary blocked' }
-  } else if (user.kycStatus === 'fail') {
-    return { status: 'error', message: 'User failed KYC' }
-  } else if (user.kycStatus === 'verified') {
-    return { status: 'success', message: 'User is verified' }
+    return { status: 'error', message: GIDX_DISABLED_MESSAGE }
+  } else if (!humanish(user)) {
+    return { status: 'error', message: PHONE_NOT_VERIFIED_MESSAGE }
+  } else if (!user.idVerified) {
+    return { status: 'error', message: IDENTIFICATION_FAILED_MESSAGE }
+  } else if (!user.sweepstakesVerified) {
+    return { status: 'error', message: USER_BLOCKED_MESSAGE }
+  } else if (user.sweepstakesVerified) {
+    return { status: 'success', message: USER_VERIFIED_MESSSAGE }
   } else {
-    return { status: 'error', message: 'User must register' }
+    return { status: 'error', message: USER_NOT_REGISTERED_MESSAGE }
   }
 }

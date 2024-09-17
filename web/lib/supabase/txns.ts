@@ -39,7 +39,14 @@ export function getDonationsPageQuery(charityId: string) {
     const donations = txnData.map((t) => ({
       user: usersById[t.from_id!],
       ts: tsToMillis(t.created_time),
-      amount: t.token == 'M$' ? t.amount / 100 : t.amount / 1000,
+      amount:
+        t.token == 'M$'
+          ? t.amount / 100
+          : t.token == 'SPICE'
+          ? t.amount / 1000
+          : t.token == 'CASH'
+          ? t.amount
+          : 0,
     }))
     return donations
   }

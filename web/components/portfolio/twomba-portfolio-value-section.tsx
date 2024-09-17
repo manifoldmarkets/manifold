@@ -16,9 +16,9 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { TwombaToggle } from '../twomba/twomba-toggle'
 import { ColorType } from '../widgets/choices-toggle-group'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/coin-number'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
-import { GraphMode, PortfolioMode } from './portfolio-value-graph'
+import { PortfolioMode } from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
 import {
   TwombaPortfolioGraph,
@@ -63,17 +63,13 @@ export const TwombaPortfolioValueSection = memo(
     user: User
     defaultTimePeriod: Period
     portfolio?: LivePortfolioMetrics
-    hideAddFundsButton?: boolean
-    onlyShowProfit?: boolean
     graphContainerClassName?: string
     size?: 'sm' | 'md'
   }) {
     const {
       user,
-      hideAddFundsButton,
       defaultTimePeriod,
       portfolio,
-      onlyShowProfit,
       graphContainerClassName,
       size = 'md',
     } = props
@@ -82,7 +78,6 @@ export const TwombaPortfolioValueSection = memo(
 
     const portfolioHistory = usePortfolioHistory(user.id, currentTimePeriod)
 
-    const [graphMode, setGraphMode] = useState<GraphMode>('portfolio')
     const [portfolioFocus, setPortfolioFocus] = useState<PortfolioMode>('all')
 
     const [graphValues, setGraphValues] =
@@ -153,9 +148,7 @@ export const TwombaPortfolioValueSection = memo(
     if (!portfolioHistory || !lastPortfolioMetrics) {
       return (
         <TwombaPortfolioValueSkeleton
-          hideAddFundsButton={hideAddFundsButton}
           userId={user.id}
-          graphMode={graphMode}
           hideSwitcher={true}
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
@@ -166,9 +159,7 @@ export const TwombaPortfolioValueSection = memo(
           portfolioGraphElement={noHistoryGraphElement}
           profitGraphElement={noHistoryGraphElement}
           disabled={true}
-          placement={isMobile ? 'bottom' : undefined}
           size={size}
-          setGraphMode={setGraphMode}
           portfolio={portfolio}
           user={user}
           portfolioFocus={portfolioFocus}
@@ -240,12 +231,9 @@ export const TwombaPortfolioValueSection = memo(
 
     return (
       <TwombaPortfolioValueSkeleton
-        hideAddFundsButton={hideAddFundsButton}
         userId={user.id}
-        graphMode={graphMode}
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
-        switcherColor={graphMode === 'profit' ? 'green' : 'indigo'}
         portfolioFocus={portfolioFocus}
         setPortfolioFocus={onSetPortfolioFocus}
         portfolioGraphElement={(width, height) => (
@@ -274,17 +262,12 @@ export const TwombaPortfolioValueSection = memo(
             firstProfit={firstProfit}
             firstCashProfit={firstCashProfit}
             updateGraphValues={updateGraphValues}
-            portfolioFocus={portfolioFocus}
-            setPortfolioFocus={onSetPortfolioFocus}
           />
         )}
-        onlyShowProfit={onlyShowProfit}
-        placement={isMobile && !onlyShowProfit ? 'bottom' : undefined}
         className={clsx(graphContainerClassName, !isMobile && 'mb-4')}
         size={size}
         portfolioValues={portfolioValues}
         graphValues={graphValues}
-        setGraphMode={setGraphMode}
         portfolio={portfolio}
         user={user}
       />
@@ -292,7 +275,6 @@ export const TwombaPortfolioValueSection = memo(
   }
 )
 function TwombaPortfolioValueSkeleton(props: {
-  graphMode: GraphMode
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
   portfolioGraphElement:
@@ -304,53 +286,30 @@ function TwombaPortfolioValueSkeleton(props: {
   switcherColor?: ColorType
   userId?: string
   disabled?: boolean
-  placement?: 'bottom'
-  hideAddFundsButton?: boolean
-  onlyShowProfit?: boolean
   size?: 'sm' | 'md'
   portfolioValues?: PortfolioValueType
   graphValues: GraphValueType
-  setGraphMode: (mode: GraphMode) => void
   portfolio: PortfolioSnapshot | undefined
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
   user: User
 }) {
   const {
-    graphMode,
     currentTimePeriod,
     setCurrentTimePeriod,
     portfolioGraphElement,
     profitGraphElement,
     hideSwitcher,
     switcherColor,
-    userId,
     disabled,
     className,
-    hideAddFundsButton,
-    onlyShowProfit,
-    size = 'md',
     portfolioValues,
     graphValues,
-    setGraphMode,
     portfolioFocus,
     setPortfolioFocus,
     portfolio,
     user,
   } = props
-  const profitLabel = onlyShowProfit
-    ? {
-        daily: 'Daily profit',
-        weekly: 'Weekly profit',
-        monthly: 'Monthly profit',
-        allTime: 'All-time profit',
-      }[currentTimePeriod]
-    : {
-        daily: 'Profit 1D',
-        weekly: 'Profit 1W',
-        monthly: 'Profit 1M',
-        allTime: 'Profit',
-      }[currentTimePeriod]
 
   function togglePortfolioFocus(toggleTo: PortfolioMode) {
     setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
@@ -372,7 +331,7 @@ function TwombaPortfolioValueSkeleton(props: {
                 'cursor-pointer select-none transition-opacity',
                 portfolioFocus == 'all'
                   ? isPlay
-                    ? 'text-primary-700 dark:text-primary-600 opacity-100'
+                    ? 'text-violet-600 opacity-100 dark:text-violet-400'
                     : 'text-amber-700 opacity-100 dark:text-amber-600'
                   : 'text-ink-1000 opacity-50 hover:opacity-[85%]'
               )}
@@ -412,7 +371,7 @@ function TwombaPortfolioValueSkeleton(props: {
                 className={clsx(
                   portfolioFocus == 'balance'
                     ? isPlay
-                      ? 'bg-indigo-700 text-white'
+                      ? 'bg-violet-700 text-white'
                       : 'bg-amber-700 text-white'
                     : 'bg-canvas-50 text-ink-1000'
                 )}
@@ -431,7 +390,7 @@ function TwombaPortfolioValueSkeleton(props: {
                 className={clsx(
                   portfolioFocus == 'investment'
                     ? isPlay
-                      ? 'bg-indigo-700 text-white'
+                      ? 'bg-violet-700 text-white'
                       : 'bg-amber-700 text-white'
                     : 'bg-canvas-50 text-ink-1000'
                 )}
@@ -460,7 +419,12 @@ function TwombaPortfolioValueSkeleton(props: {
                 )}
                 className={clsx(
                   'text-ink-1000 text-3xl font-bold transition-all sm:text-4xl',
-                  (graphValues.profit ?? portfolioValues?.profit ?? 0) < 0
+                  (displayAmounts(
+                    graphValues.profit,
+                    isPlay
+                      ? portfolioValues?.profit
+                      : portfolioValues?.cashProfit
+                  ) ?? 0) < 0
                     ? 'text-scarlet-500'
                     : 'text-teal-500'
                 )}

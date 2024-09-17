@@ -25,9 +25,10 @@ create table if not exists
     )
   );
 
--- Policies
+-- Row Level Security
 alter table txns enable row level security;
 
+-- Policies
 drop policy if exists "public read" on txns;
 
 create policy "public read" on txns for
@@ -43,6 +44,14 @@ drop index if exists txns_category_native;
 
 create index txns_category_native on public.txns using btree (category);
 
+drop index if exists txns_category_to_id;
+
+create index txns_category_to_id on public.txns using btree (category, to_id);
+
+drop index if exists txns_category_to_id_from_id;
+
+create index txns_category_to_id_from_id on public.txns using btree (category, to_id, from_id);
+
 drop index if exists txns_from_created_time;
 
 create index txns_from_created_time on public.txns using btree (from_id, created_time);
@@ -50,11 +59,3 @@ create index txns_from_created_time on public.txns using btree (from_id, created
 drop index if exists txns_to_created_time;
 
 create index txns_to_created_time on public.txns using btree (to_id, created_time);
-
-drop index if exists txns_category_to_id_from_id;
-
-create index txns_category_to_id_from_id on public.txns using btree (category, to_id, from_id);
-
-drop index if exists txns_category_to_id;
-
-create index txns_category_to_id on public.txns using btree (category, to_id);

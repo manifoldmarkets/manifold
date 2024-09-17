@@ -31,9 +31,10 @@ or replace function public.comment_populate_cols () returns trigger language plp
     return new;
 end $function$;
 
--- Policies
+-- Row Level Security
 alter table contract_comments enable row level security;
 
+-- Policies
 drop policy if exists "public read" on contract_comments;
 
 create policy "public read" on contract_comments for

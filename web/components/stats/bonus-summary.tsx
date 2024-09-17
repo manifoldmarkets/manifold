@@ -161,6 +161,7 @@ export const BonusSummary = (props: {
           background: 'black',
           borderRadius: '8px',
           pointerEvents: 'none',
+          opacity: 0,
         }}
       ></div>
     </div>

@@ -45,6 +45,7 @@ export type notification_preferences = {
   airdrop: notification_destination_types[]
   manifest_airdrop: notification_destination_types[]
   extra_purchased_mana: notification_destination_types[]
+  payment_status: notification_destination_types[]
 
   // Leagues
   league_changed: notification_destination_types[]
@@ -140,6 +141,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     airdrop: constructPref(true, false, false),
     manifest_airdrop: constructPref(true, false, false),
     extra_purchased_mana: constructPref(true, false, false),
+    payment_status: constructPref(true, false, false),
 
     // Leagues
     league_changed: constructPref(true, false, false),
@@ -213,7 +215,11 @@ export const getNotificationDestinationsForUser = (
   const unsubscribeEndpoint = getApiUrl('unsubscribe')
   try {
     const notificationPreference = getNotificationPreference(reason)
-    const destinations = notificationSettings[notificationPreference] ?? []
+    // Get default destinations if user has no settings for this preference
+    // TODO: write the default notif preferences to the user's settings when missing
+    const destinations =
+      notificationSettings[notificationPreference] ??
+      getDefaultNotificationPreferences()[notificationPreference]
     const optOutOfAllSettings = notificationSettings.opt_out_all
     // Your market closure notifications are high priority, opt-out doesn't affect their delivery
     const optedOutOfEmail =

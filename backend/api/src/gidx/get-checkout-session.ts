@@ -5,38 +5,43 @@ import {
   CustomerProfileResponse,
 } from 'common/gidx/gidx'
 import {
+  GIDXCallbackUrl,
+  GIDX_BASE_URL,
   getGIDXStandardParams,
-  getUserRegistrationRequirements,
+  getLocalServerIP,
+  throwIfIPNotWhitelisted,
+  verifyReasonCodes,
 } from 'shared/gidx/helpers'
 import { getIp } from 'shared/analytics'
 import { log } from 'shared/monitoring/log'
-import { verifyReasonCodes } from 'api/gidx/register'
 import { randomBytes } from 'crypto'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { PaymentAmountsGIDX } from 'common/economy'
 import { getVerificationStatus } from 'common/user'
-import { getUser } from 'shared/utils'
+import { getUser, LOCAL_DEV } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
-const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/DirectCashier/CreateSession'
+const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CreateSession'
 
 export const getCheckoutSession: APIHandler<
   'get-checkout-session-gidx'
 > = async (props, auth, req) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
+  const pg = createSupabaseDirectClient()
   const userId = auth.uid
-  await getUserRegistrationRequirements(userId)
+  const user = await getUser(userId, pg)
+  if (!user) {
+    throw new APIError(400, 'User not found')
+  }
   const MerchantTransactionID = randomString(16)
   const MerchantOrderID = randomString(16)
   const body = {
     ...props,
-    DeviceIpAddress: getIp(req),
+    DeviceIpAddress: LOCAL_DEV ? await getLocalServerIP() : getIp(req),
     MerchantCustomerID: userId,
     MerchantOrderID,
     MerchantTransactionID,
-    CallbackURL:
-      'https://enabled-bream-sharply.ngrok-free.app/payment-callback-gidx',
+    CallbackURL: GIDXCallbackUrl + '/payment-callback-gidx',
     ...getGIDXStandardParams(),
   }
   log('get checkout session body:', body)
@@ -59,11 +64,14 @@ export const getCheckoutSession: APIHandler<
     CashierLimits,
     PaymentMethods,
     PaymentMethodSettings,
+    ResponseMessage,
+    ResponseCode,
   } = data
+  throwIfIPNotWhitelisted(ResponseCode, ResponseMessage)
   log('Checkout session response:', data)
 
   const { status, message } = await verifyReasonCodes(
-    auth.uid,
+    user,
     ReasonCodes,
     undefined,
     undefined
@@ -75,7 +83,7 @@ export const getCheckoutSession: APIHandler<
     }
   }
   const ID_ENDPOINT =
-    'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerProfile'
+    GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerProfile'
   const idBody = {
     MerchantCustomerID: userId,
     ...getGIDXStandardParams(),
@@ -89,11 +97,6 @@ export const getCheckoutSession: APIHandler<
   const CustomerProfile = (await idRes.json()) as CustomerProfileResponse
   log('Customer profile response:', CustomerProfile)
   if (props.PayActionCode === 'PAYOUT') {
-    const pg = createSupabaseDirectClient()
-    const user = await getUser(userId, pg)
-    if (!user) {
-      throw new APIError(400, 'User not found')
-    }
     const { status, message } = getVerificationStatus(user)
     if (status !== 'success') {
       return {

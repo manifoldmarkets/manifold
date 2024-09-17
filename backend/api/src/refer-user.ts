@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { isVerified, MINUTES_ALLOWED_TO_REFER } from 'common/user'
+import { humanish, MINUTES_ALLOWED_TO_REFER } from 'common/user'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { REFERRAL_AMOUNT } from 'common/economy'
@@ -48,7 +48,7 @@ export const referuser = authEndpoint(async (req, auth) => {
   if (!newUser) {
     throw new APIError(401, `User ${auth.uid} not found`)
   }
-  if (!isVerified(newUser)) {
+  if (!humanish(newUser)) {
     throw new APIError(403, 'You must verify your phone number first.')
   }
   let referredByContract: Contract | undefined
@@ -108,7 +108,7 @@ async function handleReferral(
       toId: referredByUserId,
       toType: 'USER',
       amount: REFERRAL_AMOUNT,
-      token: TWOMBA_ENABLED ? 'CASH' : 'SPICE',
+      token: TWOMBA_ENABLED ? 'M$' : 'SPICE',
       category: 'REFERRAL',
       description: `Referred new user id: ${user.id} for ${REFERRAL_AMOUNT}`,
     } as const

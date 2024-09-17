@@ -10,12 +10,14 @@ create table if not exists
     token text not null,
     quest_type text,
     category text not null,
-    total_amount numeric not null
+    total_amount numeric not null,
+    cash_amount numeric default 0 not null
   );
 
--- Policies
+-- Row Level Security
 alter table txn_summary_stats enable row level security;
 
+-- Policies
 drop policy if exists "public read" on txn_summary_stats;
 
 create policy "public read" on txn_summary_stats for

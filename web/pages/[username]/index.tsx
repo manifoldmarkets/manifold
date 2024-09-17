@@ -21,7 +21,7 @@ import { referralQuery } from 'common/util/share'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { FollowButton } from 'web/components/buttons/follow-button'
-import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
+import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { TextButton } from 'web/components/buttons/text-button'
 import { UserCommentsList } from 'web/components/comments/profile-comments'
 import { FollowList } from 'web/components/follow-list'
@@ -73,9 +73,7 @@ import { BalanceChangeTable } from 'web/components/portfolio/balance-change-tabl
 import { TwombaPortfolioValueSection } from 'web/components/portfolio/twomba-portfolio-value-section'
 import { unauthedApi } from 'common/util/api'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
-import { RedeemSpiceButton } from 'web/components/profile/redeem-spice-button'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
-import { Button } from 'web/components/buttons/button'
+import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
 
 export const getStaticProps = async (props: {
   params: {
@@ -231,8 +229,6 @@ function UserProfile(props: {
   const balanceChanges = newBalanceChanges ?? []
   const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
   const balanceChangesKey = 'balance-changes'
-  const { data: redeemable } = useAPIGetter('get-redeemable-prize-cash', {})
-  const redeemableCash = redeemable?.redeemablePrizeCash ?? 0
   return (
     <Page
       key={user.id}
@@ -272,7 +268,7 @@ function UserProfile(props: {
                 <UserLink user={user} noLink />
               </div>
 
-              <MoreOptionsUserButton user={user} />
+              <UserSettingButton user={user} />
             </>
           )}
         </Row>
@@ -336,14 +332,26 @@ function UserProfile(props: {
           )}
 
           <Row className={'items-center gap-1 sm:gap-2'}>
-            {!isCurrentUser && (
+            {isCurrentUser ? (
+              TWOMBA_ENABLED ? (
+                <Row className="my-2 hidden items-center gap-2 px-4 sm:flex">
+                  <AddFundsButton
+                    userId={user.id}
+                    className="whitespace-nowra w-full lg:hidden"
+                  />
+                  <RedeemSweepsButtons user={user} className="shrink-0" />
+                </Row>
+              ) : (
+                <></>
+              )
+            ) : (
               <>
                 <SendMessageButton toUser={user} currentUser={currentUser} />
                 <FollowButton userId={user.id} />
               </>
             )}
 
-            {!isMobile && <MoreOptionsUserButton user={user} />}
+            {!isMobile && <UserSettingButton user={user} />}
           </Row>
         </Row>
         {(expandProfileInfo || !isCurrentUser) && (
@@ -364,24 +372,12 @@ function UserProfile(props: {
         )}
 
         {isCurrentUser && TWOMBA_ENABLED && (
-          <Row className="my-2 w-full items-center gap-2 px-4">
-            <AddFundsButton userId={user.id} className="whitespace-nowrap" />
-            <RedeemSpiceButton
+          <Row className="my-2 w-full items-center gap-2 px-4 sm:hidden">
+            <AddFundsButton
               userId={user.id}
-              className="whitespace-nowrap"
-              spice={user.spiceBalance}
+              className="w-1/2 whitespace-nowrap"
             />
-            <Button
-              disabled={redeemableCash <= 0}
-              onClick={() => router.push('/cashout')}
-            >
-              Cashout
-              <CoinNumber
-                amount={redeemableCash}
-                className={'ml-1'}
-                coinType={'sweepies'}
-              />
-            </Button>
+            <RedeemSweepsButtons user={user} className="w-1/2" />
           </Row>
         )}
 
@@ -400,8 +396,10 @@ function UserProfile(props: {
                 stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
                 content: (
                   <>
-                    {currentUser && <VerifyMe user={currentUser} />}
-                    <VerifyPhoneNumberBanner user={currentUser} />
+                    <Col className="mt-2 gap-2">
+                      {currentUser && <VerifyMe user={currentUser} />}
+                      <VerifyPhoneNumberBanner user={currentUser} />
+                    </Col>
                     <PortfolioSummary className="mt-4" user={user} />
                   </>
                 ),
@@ -424,7 +422,6 @@ function UserProfile(props: {
                                   ? 'weekly'
                                   : 'monthly'
                               }
-                              hideAddFundsButton
                             />
 
                             <div className="text-ink-800 border-ink-300 mx-2 mt-6 gap-2 border-t pt-4 text-xl font-semibold lg:mx-0">

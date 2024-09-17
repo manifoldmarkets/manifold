@@ -25,10 +25,7 @@ import { convertAnswer } from 'common/supabase/contracts'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { convertTxn } from 'common/supabase/txns'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
@@ -83,11 +80,7 @@ const verifyUserCanUnresolve = async (
     throw new APIError(400, `We no longer allow pp markets to be unresolved`)
   }
 
-  if (
-    token === 'CASH' &&
-    userId !==
-      (isProd() ? HOUSE_LIQUIDITY_PROVIDER_ID : DEV_HOUSE_LIQUIDITY_PROVIDER_ID)
-  ) {
+  if (isProd() && token === 'CASH' && userId !== HOUSE_LIQUIDITY_PROVIDER_ID) {
     throw new APIError(
       403,
       `Only the Manifold account can unresolve prize cash markets`
@@ -269,6 +262,7 @@ const undoResolution = async (
     const updatedAttrs = {
       isResolved: false,
       resolutionTime: FieldVal.delete(),
+      resolverId: FieldVal.delete(),
       resolution: FieldVal.delete(),
       resolutions: FieldVal.delete(),
       resolutionProbability: FieldVal.delete(),

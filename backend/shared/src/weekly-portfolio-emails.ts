@@ -120,11 +120,13 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     const redBg = 'rgba(160,0,0,0.2)'
     const clearBg = 'rgba(255,255,255,0)'
     const usersMetrics = usersToContractMetrics[privateUser.id]
+    // TODO: group the contract metrics by contract token and show both profits
     const profit = sum(usersMetrics.map((cm) => cm.from?.week.profit ?? 0))
     const roundedProfit = Math.round(profit) === 0 ? 0 : Math.floor(profit)
     const marketsCreated = usersToContractsCreated?.[privateUser.id] ?? 0
     const performanceData = {
-      profit: emailMoneyFormat(profit),
+      // TODO: don't just show mana profit
+      profit: emailMoneyFormat(profit, 'MANA'),
       profit_style: `background-color: ${
         roundedProfit > 0 ? greenBg : roundedProfit === 0 ? clearBg : redBg
       }`,
@@ -166,6 +168,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
               : resolution
           return {
             currentValue,
+            token: contract.token,
             pastValue: fromWeek.prevValue,
             profit,
             contractSlug: contract.slug,

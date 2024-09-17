@@ -1,6 +1,7 @@
 import { ENV_CONFIG } from '../envs/constants'
 import {
   BinaryContract,
+  ContractToken,
   CPMMMultiContract,
   CPMMNumericContract,
   PseudoNumericContract,
@@ -22,7 +23,7 @@ const formatterWithFraction = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
 })
 
-export const SWEEPIES_MONIKER = 'S'
+export const SWEEPIES_MONIKER = '𝕊'
 
 export type InputTokenType = 'M$' | 'SPICE' | 'CASH'
 
@@ -34,7 +35,7 @@ export function formatWithToken(variables: {
 }) {
   const { amount, token, toDecimal, short } = variables
   if (token === 'CASH') {
-    return formatSweepies(amount, toDecimal)
+    return formatSweepies(amount, { toDecimal, short })
   }
   if (toDecimal) {
     return formatMoneyWithDecimals(amount)
@@ -45,17 +46,41 @@ export function formatWithToken(variables: {
   return formatMoney(amount)
 }
 
-export function formatMoney(amount: number) {
+export function formatMoney(amount: number, token?: ContractToken) {
+  if (token === 'CASH') {
+    return formatSweepies(amount)
+  }
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
 }
 
-export function formatSweepies(amount: number, toDecimal?: number) {
-  return SWEEPIES_MONIKER + formatSweepiesNumber(amount, toDecimal)
+export function formatSweepies(
+  amount: number,
+  parameters?: {
+    toDecimal?: number
+    short?: boolean
+  }
+) {
+  return SWEEPIES_MONIKER + formatSweepiesNumber(amount, parameters)
 }
 
-export function formatSweepiesNumber(amount: number, toDecimal?: number) {
-  return (amount / 100).toFixed(toDecimal ?? 2)
+export function formatSweepiesNumber(
+  amount: number,
+  parameters?: {
+    toDecimal?: number
+    short?: boolean
+  }
+) {
+  const { toDecimal, short } = parameters ?? {}
+  const toDecimalPlace = toDecimal ?? 2
+  if (short && amount > 1000) {
+    return formatLargeNumber(amount)
+  }
+  // return amount.toFixed(toDecimal ?? 2)
+  return amount.toLocaleString('en-US', {
+    minimumFractionDigits: toDecimalPlace,
+    maximumFractionDigits: toDecimalPlace,
+  })
 }
 
 export function formatSpice(amount: number) {
@@ -73,13 +98,16 @@ export function formatMoneyShort(amount: number) {
   return ENV_CONFIG.moneyMoniker + formatLargeNumber(newAmount)
 }
 
-export function formatMoneyUSD(amount: number) {
+export function formatMoneyUSD(amount: number, fraction?: boolean) {
+  if (fraction) {
+    return formatterWithFraction.format(amount)
+  }
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount)
 }
 
 export function formatSweepsToUSD(amount: number) {
-  return formatterWithFraction.format(amount / 100)
+  return formatterWithFraction.format(amount)
 }
 
 export function formatMoneyNumber(amount: number) {
@@ -113,6 +141,16 @@ export function formatWithCommas(amount: number) {
   return formatter.format(Math.floor(amount)).replace('$', '')
 }
 
+export function formatShares(amount: number, isCashContract: boolean) {
+  if (isCashContract) {
+    return amount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  } else {
+    return formatWithCommas(amount)
+  }
+}
 export function manaToUSD(mana: number) {
   return (mana / 1000).toLocaleString('en-US', {
     style: 'currency',

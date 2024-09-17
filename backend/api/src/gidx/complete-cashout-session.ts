@@ -6,26 +6,29 @@ import {
 import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
+  getLocalServerIP,
+  GIDX_BASE_URL,
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxn } from 'shared/txn/run-txn'
 import { getIp } from 'shared/analytics'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { getUser } from 'shared/utils'
+import { getUser, LOCAL_DEV } from 'shared/utils'
 import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
 
-const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
+const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 
 export const completeCashoutSession: APIHandler<
   'complete-cashout-session-gidx'
 > = async (props, auth, req) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
+  const pg = createSupabaseDirectClient()
   const userId = auth.uid
   const { phoneNumberWithCode } = await getUserRegistrationRequirements(userId)
-  const user = await getUser(userId)
+
+  const user = await getUser(userId, pg)
   if (!user) {
     throw new APIError(404, 'User not found')
   }
@@ -38,11 +41,8 @@ export const completeCashoutSession: APIHandler<
   } = props
 
   const manaCashAmount = PaymentAmount.manaCash
-  if (user.cashBalance < manaCashAmount) {
-    throw new APIError(400, 'Insufficient mana cash balance')
-  }
-  const pg = createSupabaseDirectClient()
-  const redeemablePrizeCash = await calculateRedeemablePrizeCash(userId, pg)
+  const redeemablePrizeCash = await calculateRedeemablePrizeCash(pg, userId)
+
   if (redeemablePrizeCash < manaCashAmount) {
     throw new APIError(400, 'Insufficient redeemable prize cash')
   }
@@ -57,7 +57,7 @@ export const completeCashoutSession: APIHandler<
       BonusAmount: 0,
     },
     SavePaymentMethod,
-    DeviceIpAddress: getIp(req),
+    DeviceIpAddress: LOCAL_DEV ? await getLocalServerIP() : getIp(req),
     MerchantTransactionID,
     PaymentMethod: {
       ...PaymentMethod,
@@ -188,6 +188,7 @@ const debitCoins = async (
     PaymentAmountType,
   } = PaymentDetails[0]
   const data = {
+    sessionId: SessionID,
     transactionId: MerchantTransactionID,
     type: 'gidx',
     payoutInDollars: PaymentDetails[0].PaymentAmount,
@@ -202,7 +203,7 @@ const debitCoins = async (
     amount: manaCashAmount,
     token: 'CASH',
     category: 'CASH_OUT',
-    description: `Cash out debit`,
+    description: `Redemption debit`,
   } as const
   const {
     ApiKey: _,
@@ -212,11 +213,24 @@ const debitCoins = async (
     ...dataToWrite
   } = response
   await pg.tx(async (tx) => {
-    const redeemablePrizeCash = await calculateRedeemablePrizeCash(userId, tx)
-    if (redeemablePrizeCash < manaCashAmount) {
-      throw new APIError(400, 'Insufficient redeemable prize cash')
+    let redeemablePrizeCash: number
+    try {
+      redeemablePrizeCash = await calculateRedeemablePrizeCash(tx, userId)
+    } catch (e) {
+      log.error('Indeterminate state, may need to refund', { response })
+      throw e
     }
+
+    if (redeemablePrizeCash < manaCashAmount) {
+      throw new APIError(
+        500,
+        'Insufficient redeemable prize cash. Indeterminate state, may need to refund',
+        { response }
+      )
+    }
+    log('run cashout txn')
     const txn = await runTxn(tx, manaCashoutTxn)
+    log('insert gidx receipt')
     await tx.none(
       `
     insert into gidx_receipts (

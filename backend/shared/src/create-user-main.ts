@@ -130,7 +130,7 @@ export const createUserMain = async (
       ),
       fromLove,
       signupBonusPaid: 0,
-      verifiedPhone: testUserAKAEmailPasswordUser,
+      verifiedPhone: false,
     })
 
     const privateUser: PrivateUser = {

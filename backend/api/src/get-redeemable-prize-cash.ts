@@ -4,8 +4,9 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const getRedeemablePrizeCash: APIHandler<
   'get-redeemable-prize-cash'
-> = async (props, auth) => {
+> = async (_, auth) => {
   const pg = createSupabaseDirectClient()
-  const redeemablePrizeCash = await calculateRedeemablePrizeCash(auth.uid, pg)
-  return { redeemablePrizeCash }
+  const value = await calculateRedeemablePrizeCash(pg, auth.uid)
+
+  return { redeemablePrizeCash: Math.max(value, 0) }
 }

@@ -112,6 +112,7 @@ export function formatExpectedValue(
   // There are a few NaN & undefined values on dev
   if (isNaN(value) || min === undefined || max === undefined || max === min)
     return 'N/A'
+  if (answers.length == 0) return '' // probably from static props
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',

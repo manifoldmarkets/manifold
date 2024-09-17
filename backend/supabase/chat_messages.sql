@@ -8,9 +8,10 @@ create table if not exists
     created_time timestamp with time zone default now() not null
   );
 
--- Policies
+-- Row Level Security
 alter table chat_messages enable row level security;
 
+-- Policies
 drop policy if exists "public read" on chat_messages;
 
 create policy "public read" on chat_messages for

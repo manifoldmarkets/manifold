@@ -50,12 +50,12 @@ import { RegistrationReturnType } from 'common/reason-codes'
 import {
   CheckoutSession,
   GIDXDocument,
-  GIDXMonitorResponse,
   GPSProps,
   PaymentDetail,
   checkoutParams,
   verificationParams,
   cashoutParams,
+  CashoutStatusData,
 } from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
@@ -342,6 +342,7 @@ export const API = (_apiTypeCheck = {
     returns: [] as Bet[],
     props: z
       .object({
+        id: z.string().optional(),
         userId: z.string().optional(),
         username: z.string().optional(),
         contractId: z.string().or(z.array(z.string())).optional(),
@@ -707,6 +708,12 @@ export const API = (_apiTypeCheck = {
       .strict(),
   },
   'convert-sp-to-mana': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ amount: z.number().positive().finite().safe() }).strict(),
+  },
+  'convert-cash-to-mana': {
     method: 'POST',
     visibility: 'public',
     authed: true,
@@ -1187,13 +1194,6 @@ export const API = (_apiTypeCheck = {
       answers: Row<'love_compatibility_answers'>[]
     },
   },
-  'update-user-embedding': {
-    method: 'POST',
-    visibility: 'undocumented',
-    authed: true,
-    props: z.object({}),
-    returns: {} as { success: true },
-  },
   'search-groups': {
     method: 'GET',
     visibility: 'undocumented',
@@ -1501,6 +1501,7 @@ export const API = (_apiTypeCheck = {
       status: string
       documents?: GIDXDocument[]
       message?: string
+      documentStatus?: string
     },
     props: z.object({}),
   },
@@ -1510,7 +1511,7 @@ export const API = (_apiTypeCheck = {
     authed: true,
     returns: {} as {
       status: string
-      data: GIDXMonitorResponse
+      message?: string
     },
     props: z.object({
       DeviceGPS: GPSProps,
@@ -1593,7 +1594,20 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     returns: {} as { MerchantTransactionID: string },
-    props: z.any(),
+    props: z
+      .object({
+        MerchantTransactionID: z.string(),
+        TransactionStatusCode: z.coerce.number(),
+        TransactionStatusMessage: z.string(),
+        StatusCode: z.coerce.number(),
+        SessionID: z.string(),
+        MerchantSessionID: z.string(),
+        SessionScore: z.coerce.number(),
+        ReasonCodes: z.array(z.string()).optional(),
+        ServiceType: z.string(),
+        StatusMessage: z.string(),
+      })
+      .strict(),
   },
   'get-best-comments': {
     method: 'GET',
@@ -1613,6 +1627,19 @@ export const API = (_apiTypeCheck = {
     authed: true,
     returns: {} as { redeemablePrizeCash: number },
     props: z.object({}).strict(),
+  },
+  'get-cashouts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as CashoutStatusData[],
+    props: z
+      .object({
+        limit: z.coerce.number().gte(0).lte(100).default(10),
+        offset: z.coerce.number().gte(0).default(0),
+        userId: z.string().optional(),
+      })
+      .strict(),
   },
 } as const)
 

@@ -1,6 +1,10 @@
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { SupabaseDirectClient } from 'shared/supabase/init'
 import { DAY_MS } from 'common/util/time'
-import { getManaSupply } from 'shared/mana-supply'
+import {
+  getManaSupply,
+  getManaSupplyEachDayBetweeen as getManaSupplyEachDay,
+} from 'shared/mana-supply'
+import { bulkInsert, insert } from './supabase/utils'
 
 type txnStats = {
   start_time: string
@@ -13,11 +17,11 @@ type txnStats = {
   total_amount: number
 }
 
-export const calculateManaStats = async (
+export const updateTxnStats = async (
+  pg: SupabaseDirectClient,
   startDate: number,
   numberOfDays: number
 ) => {
-  const pg = createSupabaseDirectClient()
   for (let i = 0; i < numberOfDays; i++) {
     const startTime = new Date(startDate + i * DAY_MS).toISOString()
     const endTime = new Date(startDate + (i + 1) * DAY_MS).toISOString()
@@ -56,43 +60,63 @@ export const calculateManaStats = async (
       [startTime, endTime],
       (row) => (row.platform_fees ? (row.platform_fees as number) : 0)
     )
-    await Promise.all(
-      [
-        ...txnSummaries,
-        {
-          start_time: startTime,
-          end_time: endTime,
-          from_type: 'USER',
-          to_type: 'BANK',
-          token: 'M$',
-          quest_type: null,
-          category: 'BET_FEES',
-          total_amount: fees,
-        },
-      ].map(async (txnData) => {
-        await pg.none(
-          `insert into txn_summary_stats (start_time, end_time, from_type, to_type, token, quest_type, category, total_amount)
-                    values ($1, $2, $3, $4, $5, $6, $7, $8)
-                  `,
-          [...Object.values(txnData)]
-        )
-      })
-    )
+    await bulkInsert(pg, 'txn_summary_stats', [
+      ...txnSummaries,
+      {
+        start_time: startTime,
+        end_time: endTime,
+        from_type: 'USER',
+        to_type: 'BANK',
+        token: 'M$',
+        quest_type: null,
+        category: 'BET_FEES',
+        total_amount: fees,
+      },
+    ])
   }
+}
+
+export const insertLatestManaStats = async (pg: SupabaseDirectClient) => {
   const now = new Date().toISOString()
-  const ms = await getManaSupply(true)
-  await pg.none(
-    `insert into mana_supply_stats (start_time, end_time, total_value, balance, spice_balance, investment_value, loan_total, amm_liquidity)
-            values ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [
-      now,
-      now,
-      ms.totalValue,
-      ms.balance,
-      ms.spiceBalance,
-      ms.investmentValue,
-      ms.loanTotal,
-      ms.ammLiquidity,
-    ]
+  const ms = await getManaSupply(pg)
+  await insert(pg, 'mana_supply_stats', {
+    start_time: now,
+    end_time: now,
+    total_value: ms.totalManaValue,
+    total_cash_value: ms.totalCashValue,
+    balance: ms.manaBalance,
+    cash_balance: ms.cashBalance,
+    spice_balance: ms.spiceBalance,
+    investment_value: ms.manaInvestmentValue,
+    cash_investment_value: ms.cashInvestmentValue,
+    loan_total: ms.loanTotal,
+    amm_liquidity: ms.ammManaLiquidity,
+    amm_cash_liquidity: ms.ammCashLiquidity,
+  })
+}
+
+export const updateManaStatsBetween = async (
+  pg: SupabaseDirectClient,
+  startDate: number,
+  numberOfDays: number
+) => {
+  const stats = await getManaSupplyEachDay(pg, startDate, numberOfDays)
+  await bulkInsert(
+    pg,
+    'mana_supply_stats',
+    stats.map((ms) => ({
+      start_time: ms.day,
+      end_time: ms.day,
+      total_value: ms.totalManaValue,
+      total_cash_value: ms.totalCashValue,
+      balance: ms.manaBalance,
+      cash_balance: ms.cashBalance,
+      spice_balance: ms.spiceBalance,
+      investment_value: ms.manaInvestmentValue,
+      cash_investment_value: ms.cashInvestmentValue,
+      loan_total: ms.loanTotal,
+      amm_liquidity: 0,
+      amm_cash_liquidity: 0,
+    }))
   )
 }

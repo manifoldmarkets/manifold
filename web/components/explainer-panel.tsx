@@ -9,6 +9,7 @@ import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
 import {
   SPICE_PRODUCTION_ENABLED,
+  SWEEPIES_NAME,
   TRADE_TERM,
   TRADING_TERM,
   TWOMBA_ENABLED,
@@ -17,6 +18,8 @@ import { capitalize } from 'lodash'
 import { AboutManifold } from './about-manifold'
 import { GoGraph } from 'react-icons/go'
 import Link from 'next/link'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { SWEEPIES_MONIKER } from 'common/util/format'
 
 export const ExplainerPanel = (props: {
   className?: string
@@ -110,6 +113,23 @@ const WhyBet = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
         Trade on sweepstakes markets to win withdrawable sweepcash!{' '}
       </div>
     )}
+    {TWOMBA_ENABLED && (
+      <>
+        <div className="pb-2">
+          {capitalize(TRADE_TERM)} for a chance to win <b>real cash prizes</b>{' '}
+          when you trade with{' '}
+          <span className="coin-offset relative ml-[1.2em] whitespace-nowrap">
+            <SweepiesCoin className="absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]" />
+            <span className=" font-semibold text-amber-700 dark:text-amber-300 ">
+              {' '}
+              {SWEEPIES_NAME} ({SWEEPIES_MONIKER})
+            </span>
+          </span>
+          .
+        </div>
+      </>
+    )}
+
     <div className="pb-2">Get started for free! No credit card required.</div>
   </ExpandSection>
 )

@@ -6,9 +6,10 @@ create table if not exists
     created_time timestamp with time zone default now() not null
   );
 
--- Policies
+-- Row Level Security
 alter table love_waitlist enable row level security;
 
+-- Policies
 drop policy if exists "anon insert" on love_waitlist;
 
 create policy "anon insert" on love_waitlist for insert

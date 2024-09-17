@@ -4,6 +4,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type ColorType =
+  | 'amber'
   | 'amber-outline'
   | 'green'
   | 'green-outline'
@@ -24,6 +25,7 @@ export type ColorType =
   | 'none'
   | 'white-outline'
   | 'purple'
+  | 'violet'
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -48,6 +50,7 @@ export function buttonClass(size: SizeType, color: ColorType) {
     baseButtonClasses,
     sizeClasses[size],
     color === 'amber-outline' && [outline, 'text-amber-500 hover:bg-amber-500'],
+    color === 'amber' && [solid, 'bg-amber-600 hover:bg-amber-700'],
     color === 'green' && [solid, 'bg-teal-500 hover:bg-teal-600'],
     color === 'green-outline' && [outline, 'text-teal-500 hover:bg-teal-500'],
     color === 'red' && [solid, 'bg-scarlet-500 hover:bg-scarlet-600'],
@@ -62,6 +65,7 @@ export function buttonClass(size: SizeType, color: ColorType) {
     ],
     color === 'blue' && [solid, 'bg-blue-400 hover:bg-blue-500'],
     color === 'purple' && [solid, 'bg-purple-500 hover:bg-purple-700'],
+    color === 'violet' && [solid, 'bg-violet-500 hover:bg-violet-700'],
     color === 'sky-outline' && [outline, 'text-sky-500 hover:bg-sky-500'],
     color === 'indigo' && [solid, 'bg-primary-500 hover:bg-primary-600'],
     color === 'indigo-outline' && [

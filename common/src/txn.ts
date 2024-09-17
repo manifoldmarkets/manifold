@@ -21,6 +21,8 @@ type AnyTxnType =
   | ContractUndoProduceSpice
   | ConsumeSpice
   | ConsumeSpiceDone
+  | ConvertCash
+  | ConvertCashDone
   | QfPayment
   | QfAddPool
   | QfDividend
@@ -53,6 +55,7 @@ type AnyTxnType =
   | ManifoldTopUp
   | CashBonus
   | CashOutPending
+  | KycBonus
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -91,7 +94,7 @@ type Donation = {
   fromType: 'USER'
   toType: 'CHARITY'
   category: 'CHARITY'
-  token: 'SPICE' | 'M$'
+  token: 'SPICE' | 'M$' | 'CASH'
 }
 
 type Tip = {
@@ -153,7 +156,7 @@ type CharityFee = {
   fromType: 'USER'
   toType: 'BANK'
   category: 'CHARITY_FEE'
-  token: 'SPICE'
+  token: 'SPICE' | 'CASH'
   data: {
     charityId: string
   }
@@ -180,7 +183,8 @@ type ManaPurchase = {
     | {
         transactionId: string
         type: 'gidx'
-        paidInCents?: number
+        sessionId: string
+        paidInCents: number
       }
 }
 type CashBonus = {
@@ -188,10 +192,18 @@ type CashBonus = {
   fromType: 'BANK'
   toType: 'USER'
   category: 'CASH_BONUS'
-  data: {
-    transactionId: string
-    type: 'gidx'
-  }
+  data:
+    | {
+        transactionId: string
+        type: 'gidx'
+        sessionId: string
+        paidInCents: number
+      }
+    | {
+        iapTransactionId: string
+        type: 'apple'
+        paidInCents: number
+      }
 }
 
 type CashOutPending = {
@@ -200,10 +212,18 @@ type CashOutPending = {
   token: 'CASH'
   category: 'CASH_OUT'
   data: {
+    sessionId: string
     transactionId: string
     type: 'gidx'
     payoutInDollars: number
   }
+}
+
+type KycBonus = {
+  category: 'KYC_BONUS'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'CASH'
 }
 
 type SignupBonus = {
@@ -246,7 +266,7 @@ type ConsumeSpice = {
   category: 'CONSUME_SPICE'
   token: 'SPICE'
   data: {
-    siblingId: string
+    insertTime: number
   }
 }
 type ConsumeSpiceDone = {
@@ -255,7 +275,28 @@ type ConsumeSpiceDone = {
   category: 'CONSUME_SPICE_DONE'
   token: 'M$'
   data: {
-    siblingId: string
+    insertTime: number
+  }
+}
+
+// these come in pairs to convert cash to mana
+type ConvertCash = {
+  fromType: 'USER'
+  toType: 'BANK'
+  category: 'CONVERT_CASH'
+  token: 'CASH'
+  data: {
+    insertTime: number
+  }
+}
+
+type ConvertCashDone = {
+  fromType: 'BANK'
+  toType: 'USER'
+  category: 'CONVERT_CASH_DONE'
+  token: 'M$'
+  data: {
+    insertTime: number
   }
 }
 
@@ -514,7 +555,8 @@ export type ContractProduceSpiceTxn = Txn & ContractProduceSpice
 export type ContractUndoProduceSpiceTxn = Txn & ContractUndoProduceSpice
 export type ConsumeSpiceTxn = Txn & ConsumeSpice
 export type ConsumeSpiceDoneTxn = Txn & ConsumeSpiceDone
-
+export type ConvertCashTxn = Txn & ConvertCash
+export type ConvertCashDoneTxn = Txn & ConvertCashDone
 export type QfTxn = Txn & QfId
 export type QfPaymentTxn = QfTxn & QfPayment
 export type QfAddPoolTxn = QfTxn & QfAddPool
@@ -544,3 +586,4 @@ export type AirDropTxn = Txn & AirDrop
 export type ManifestAirDropTxn = Txn & ManifestAirDrop
 export type ExtraPurchasedManaTxn = Txn & ExtraPurchasedMana
 export type ManifoldTopUpTxn = Txn & ManifoldTopUp
+export type KycBonusTxn = Txn & KycBonus

@@ -1,7 +1,13 @@
 import { Col } from 'web/components/layout/col'
 import { Input } from 'web/components/widgets/input'
 import { Button, buttonClass } from 'web/components/buttons/button'
-import { User } from 'common/user'
+import {
+  ageBlocked,
+  identityBlocked,
+  locationBlocked,
+  PrivateUser,
+  User,
+} from 'common/user'
 import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -12,39 +18,41 @@ import { RegistrationVerifyPhone } from 'web/components/registration-verify-phon
 import { UploadDocuments } from 'web/components/gidx/upload-document'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
-import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
-import clsx from 'clsx'
-import {
-  SPICE_TO_CHARITY_DOLLARS,
-  SPICE_TO_MANA_CONVERSION_RATE,
-} from 'common/envs/constants'
-import { useWebsocketUser } from 'web/hooks/use-user'
+
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
   ENABLE_FAKE_CUSTOMER,
-  exampleCustomers,
+  FAKE_CUSTOMER_BODY,
   GPSData,
   ID_ERROR_MSG,
 } from 'common/gidx/gidx'
 import { LocationPanel } from 'web/components/gidx/location-panel'
-import { YEAR_MS } from 'common/util/time'
+import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
+import { CoinNumber } from 'web/components/widgets/coin-number'
+import { RegisterIcon } from 'web/public/custom-components/registerIcon'
+import {
+  BottomRow,
+  InputTitle,
+} from 'web/components/gidx/register-component-helpers'
+import { DocumentUploadIcon } from 'web/public/custom-components/documentUploadIcon'
+import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
+import { RiUserForbidLine } from 'react-icons/ri'
+import { PiClockCountdown } from 'react-icons/pi'
 
-export const FAKE_CUSTOMER_BODY = {
-  ...exampleCustomers[1],
-}
-
-export const registrationColClass = 'gap-3 p-4'
-export const registrationBottomRowClass = 'mb-4 mt-4 w-full gap-16'
-
-export const RegisterUserForm = (props: { user: User }) => {
-  const user = useWebsocketUser(props.user.id) ?? props.user
+export const RegisterUserForm = (props: {
+  user: User
+  privateUser: PrivateUser
+}) => {
+  const user = useUser() ?? props.user
+  const privateUser = usePrivateUser() ?? props.privateUser
   const router = useRouter()
   const { redirect } = router.query
   const [page, setPage] = useState(
-    (redirect === 'checkout' || redirect === 'cashout') && !user.verifiedPhone
-      ? 'phone'
-      : user.kycStatus === 'verified'
+    user.idVerified || user.kycDocumentStatus === 'pending'
       ? 'final'
+      : (redirect === 'checkout' || redirect === 'redeem') &&
+        !user.verifiedPhone
+      ? 'phone'
       : user.verifiedPhone
       ? 'location'
       : 'intro'
@@ -77,10 +85,9 @@ export const RegisterUserForm = (props: { user: User }) => {
       : {
           FirstName: user.name.split(' ')[0],
           LastName: user.name.split(' ')[1],
-          DateOfBirth: new Date(Date.now() - 18 * YEAR_MS)
-            .toISOString()
-            .split('T')[0],
+          DateOfBirth: undefined,
           CitizenshipCountryCode: 'US',
+          EmailAddress: privateUser.email,
         },
     'gidx-registration-user-info'
   )
@@ -114,58 +121,37 @@ export const RegisterUserForm = (props: { user: User }) => {
     })
     if (!res) return
 
-    const { status, message } = res
+    const { status, message, idVerified } = res
     setLoading(false)
-
-    if (message && status === 'error') {
+    if (message && status === 'error' && idVerified) {
+      setError(message)
+    } else if (message && status === 'error') {
       if (identityErrors >= 2 && page !== 'documents') setPage('documents')
       setIdentityErrors(identityErrors + 1)
       setError(message)
       return
     }
-    // No errors
+    // Identity verification succeeded
     setPage('final')
   }
 
   if (page === 'intro') {
     return (
-      <Col className={registrationColClass}>
-        <span className={'text-primary-700 text-2xl'}>
-          Identity Verification
+      <>
+        <RegisterIcon height={40} className="fill-ink-700 mx-auto" />
+        <div className={'mx-auto text-2xl'}>Identity Verification</div>
+        <span className="text-ink-700">
+          To use sweepstakes coins, you must verify your identity.
         </span>
-        <span>
-          <span>
-            To cash out prize points for cash, you must verify your identity.
-          </span>
-          <br />
-          <br />
-          You have{' '}
-          <CoinNumber
-            coinType="spice"
-            amount={user.spiceBalance}
-            style={{
-              color: SPICE_COLOR,
-            }}
-            className={clsx('font-bold')}
-            isInline
-          />
-          , which is equal to{' '}
-          {user.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE} Mana or{' '}
-          {user.spiceBalance * SPICE_TO_CHARITY_DOLLARS} dollars to charity.
-        </span>
-        <Row className={registrationBottomRowClass}>
+        <BottomRow>
           <Button color={'gray-white'} onClick={router.back}>
             Back
           </Button>
-          <Button
-            color={'gold'}
-            disabled={user.spiceBalance === 0}
-            onClick={() => setPage('phone')}
-          >
+          <Button color={'indigo'} onClick={() => setPage('phone')}>
             Start verification
           </Button>
-        </Row>
-      </Col>
+        </BottomRow>
+      </>
     )
   }
 
@@ -198,38 +184,40 @@ export const RegisterUserForm = (props: { user: User }) => {
   }
 
   if (page === 'form') {
-    const sectionClass = 'gap-2 w-full sm:w-96'
+    const sectionClass = 'gap-0.5 w-full'
     return (
-      <Col className={registrationColClass}>
-        <span className={'text-primary-700 text-2xl'}>
-          Identity Verification
-        </span>
+      <>
+        <span className={'mx-auto text-2xl'}>Identity Verification</span>
+
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <Col className={sectionClass}>
+            <InputTitle>First Name</InputTitle>
+            <Input
+              placeholder={'Your first name'}
+              value={userInfo.FirstName}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, FirstName: e.target.value })
+              }
+            />
+          </Col>
+
+          <Col className={sectionClass}>
+            <InputTitle>Last Name</InputTitle>
+            <Input
+              placeholder={'Your last name'}
+              value={userInfo.LastName}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, LastName: e.target.value })
+              }
+            />
+          </Col>
+        </div>
         <Col className={sectionClass}>
-          <span>First Name</span>
+          <InputTitle>Date of Birth</InputTitle>
           <Input
-            placeholder={'Your first name'}
-            value={userInfo.FirstName}
-            type={'text'}
-            onChange={(e) =>
-              setUserInfo({ ...userInfo, FirstName: e.target.value })
-            }
-          />
-        </Col>
-        <Col className={sectionClass}>
-          <span>Last Name</span>
-          <Input
-            placeholder={'Your last name'}
-            value={userInfo.LastName}
-            type={'text'}
-            onChange={(e) =>
-              setUserInfo({ ...userInfo, LastName: e.target.value })
-            }
-          />
-        </Col>
-        <Col className={sectionClass}>
-          <span>Date of Birth</span>
-          <Input
-            className={'w-40'}
+            className={'w-full'}
             type={'date'}
             value={
               userInfo.DateOfBirth && userInfo.DateOfBirth.includes('/')
@@ -242,7 +230,21 @@ export const RegisterUserForm = (props: { user: User }) => {
           />
         </Col>
         <Col className={sectionClass}>
-          <span>Citizenship Country</span>
+          <InputTitle>Email Address</InputTitle>
+          <Input
+            placeholder={'Your email address'}
+            value={userInfo.EmailAddress}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, EmailAddress: e.target.value })
+            }
+          />
+        </Col>
+
+        <div className="bg-ink-200 my-4 h-[1px] w-full" />
+
+        <Col className={sectionClass}>
+          <InputTitle>Citizenship Country</InputTitle>
           <CountryCodeSelector
             selectedCountry={userInfo.CitizenshipCountryCode}
             setSelectedCountry={(val) =>
@@ -250,8 +252,9 @@ export const RegisterUserForm = (props: { user: User }) => {
             }
           />
         </Col>
+
         <Col className={sectionClass}>
-          <span>Address Line 1</span>
+          <InputTitle>Address Line 1</InputTitle>
           <Input
             placeholder={'Your address'}
             value={userInfo.AddressLine1}
@@ -262,7 +265,7 @@ export const RegisterUserForm = (props: { user: User }) => {
           />
         </Col>
         <Col className={sectionClass}>
-          <span>Address Line 2</span>
+          <InputTitle>Address Line 2</InputTitle>
           <Input
             placeholder={'Suite, apartment, etc. (optional)'}
             value={userInfo.AddressLine2}
@@ -273,30 +276,17 @@ export const RegisterUserForm = (props: { user: User }) => {
           />
         </Col>
         <Col className={sectionClass}>
-          <span>Email Address</span>
+          <InputTitle>City</InputTitle>
           <Input
-            placeholder={'Your email address'}
-            value={userInfo.EmailAddress}
+            placeholder={'Your city'}
+            value={userInfo.City}
             type={'text'}
-            onChange={(e) =>
-              setUserInfo({ ...userInfo, EmailAddress: e.target.value })
-            }
+            onChange={(e) => setUserInfo({ ...userInfo, City: e.target.value })}
           />
         </Col>
-        <Row className={'gap-2 sm:gap-8'}>
-          <Col className={'w-1/2 sm:w-44'}>
-            <span>City</span>
-            <Input
-              placeholder={'Your city'}
-              value={userInfo.City}
-              type={'text'}
-              onChange={(e) =>
-                setUserInfo({ ...userInfo, City: e.target.value })
-              }
-            />
-          </Col>
-          <Col className={'w-1/2 pr-2 sm:w-44 sm:pr-0'}>
-            <span>State</span>
+        <Row className={'gap-4'}>
+          <Col className={'w-1/2 '}>
+            <InputTitle>State</InputTitle>
             <Input
               placeholder={'Your state'}
               value={userInfo.StateCode}
@@ -306,19 +296,18 @@ export const RegisterUserForm = (props: { user: User }) => {
               }
             />
           </Col>
+          <Col className={'w-1/2 '}>
+            <InputTitle>Postal Code</InputTitle>
+            <Input
+              placeholder={'Your postal code'}
+              value={userInfo.PostalCode}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, PostalCode: e.target.value })
+              }
+            />
+          </Col>
         </Row>
-        <Col className={'w-1/2 sm:w-44'}>
-          <span>Postal Code</span>
-          <Input
-            placeholder={'Your postal code'}
-            value={userInfo.PostalCode}
-            type={'text'}
-            onChange={(e) =>
-              setUserInfo({ ...userInfo, PostalCode: e.target.value })
-            }
-          />
-        </Col>
-
         {error && (
           <Col className={'text-error'}>
             {error}
@@ -336,7 +325,7 @@ export const RegisterUserForm = (props: { user: User }) => {
             </Row>
           </Col>
         )}
-        <Row className={registrationBottomRowClass}>
+        <BottomRow>
           <Button
             color={'gray-white'}
             disabled={loading}
@@ -351,29 +340,36 @@ export const RegisterUserForm = (props: { user: User }) => {
           >
             Submit
           </Button>
-        </Row>
-      </Col>
+        </BottomRow>
+      </>
     )
   }
 
   if (page === 'documents') {
     return (
-      <UploadDocuments
-        back={() => router.back()}
-        next={() => setPage('final')}
-      />
+      <>
+        <span className={'mx-auto text-2xl'}>
+          Identity Document Verification
+        </span>
+        <UploadDocuments
+          back={() => router.back()}
+          next={() => setPage('final')}
+        />
+      </>
     )
   }
 
   if (user.kycDocumentStatus === 'pending') {
     return (
-      <Col className={registrationColClass}>
-        <span className={'text-primary-700 text-2xl'}>
-          Verification pending
+      <>
+        <PiClockCountdown className="fill-ink-700 mx-auto h-40 w-40" />
+        <span className={'mx-auto text-2xl'}>Verification pending</span>
+        <span className="text-ink-700">
+          Thank you for submitting your identification information! Your
+          identity verification is pending. Check back later to see if you're
+          verified.
         </span>
-        Thank you for submitting your identification information! Your identity
-        verification is pending. Check back later to see if you're verified.
-        <Row className={registrationBottomRowClass}>
+        <BottomRow>
           <Button
             color={'indigo-outline'}
             loading={loading}
@@ -388,48 +384,98 @@ export const RegisterUserForm = (props: { user: User }) => {
           <Link className={buttonClass('md', 'indigo')} href={'/home'}>
             Done
           </Link>
-        </Row>
-      </Col>
+        </BottomRow>
+      </>
     )
   }
 
-  if (user.kycStatus === 'fail' && user.kycDocumentStatus === 'fail') {
+  if (identityBlocked(user, privateUser) || ageBlocked(user, privateUser)) {
     return (
-      <Col className={registrationColClass}>
-        <span className={'text-primary-700 text-2xl'}>Document errors</span>
-        <span>
-          There was an error with your registration. Please upload identity
-          documents.
+      <>
+        <RiUserForbidLine className="fill-ink-700 mx-auto h-40 w-40" />
+        <span className={'mx-auto text-2xl'}>Blocked identity</span>
+        <span className="text-ink-700">
+          We verified your identity! But, you're blocked. Unfortunately, this
+          means you can't use our sweepstakes markets.
         </span>
-        <Row className={registrationBottomRowClass}>
-          <Button onClick={() => setPage('documents')}>Upload documents</Button>
+        <Row className="mx-auto">
+          <Link className={buttonClass('md', 'indigo')} href={'/home'}>
+            Go home
+          </Link>
         </Row>
-      </Col>
+      </>
+    )
+  } else if (locationBlocked(user, privateUser)) {
+    return (
+      <>
+        <LocationBlockedIcon height={40} className="fill-ink-700 mx-auto" />
+        <span className={'mx-auto text-2xl'}>Blocked location</span>
+        <span className="text-ink-700">
+          We verified your identity! But, you're currently in a blocked
+          location. Please try again later (more than 3 hrs) in an allowed
+          location.
+        </span>
+        <Row className="mx-auto">
+          <Link className={buttonClass('md', 'indigo')} href={'/home'}>
+            Go home
+          </Link>
+        </Row>
+      </>
+    )
+  }
+
+  if (user.sweepstakesVerified === false || user.kycDocumentStatus === 'fail') {
+    return (
+      <>
+        <DocumentUploadIcon
+          className="fill-ink-700 mx-auto my-auto -mb-6"
+          height={40}
+        />
+        <span className={'mx-auto text-2xl'}>Document upload</span>
+        <span className="text-ink-700 mx-auto">
+          {user.kycDocumentStatus === 'fail' &&
+            'There were errors with your documents. '}
+          Please upload identity documents to continue.
+        </span>
+        <Row className="mx-auto">
+          <Button onClick={() => setPage('documents')}>Continue</Button>
+        </Row>
+      </>
     )
   }
 
   return (
-    <Col className={registrationColClass}>
-      <span className={'text-primary-700 text-2xl'}>
-        Identity Verification Complete
+    <>
+      <div className="mx-auto text-[130px] ">🎉</div>
+      <span className={'mx-auto text-2xl'}>
+        Identity Verification Complete!
       </span>
-      Thank you for verifying your identity! Now you can cash out prize points.
-      <Row className={registrationBottomRowClass}>
+      <span className="text-ink-700">
+        Hooray! Now you can participate in sweepstakes markets. We sent you{' '}
+        <CoinNumber
+          amount={KYC_VERIFICATION_BONUS_CASH}
+          className={'font-bold'}
+          coinType={'CASH'}
+          isInline={true}
+        />{' '}
+        to get started.
+      </span>
+      <div className="mx-auto">
         {/*// TODO:  auto-redirect rather than make them click this button*/}
         {redirect === 'checkout' ? (
           <Link className={buttonClass('md', 'indigo')} href={'/checkout'}>
             Get mana
           </Link>
-        ) : redirect === 'cashout' ? (
-          <Link className={buttonClass('md', 'indigo')} href={'/cashout'}>
-            Cash out
+        ) : redirect === 'redeem' ? (
+          <Link className={buttonClass('md', 'indigo')} href={'/redeem'}>
+            Redeem
           </Link>
         ) : (
           <Link className={buttonClass('md', 'indigo')} href={'/home'}>
             Done
           </Link>
         )}
-      </Row>
-    </Col>
+      </div>
+    </>
   )
 }

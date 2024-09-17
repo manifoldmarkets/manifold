@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Image from 'next/image'
 
 import { STARTING_BALANCE } from 'common/economy'
-import { isVerified, User } from 'common/user'
+import { humanish, User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
@@ -35,7 +35,8 @@ import { removeEmojis } from 'common/util/string'
 import { unauthedApi } from 'common/util/api'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { capitalize } from 'lodash'
-import { TRADE_TERM } from 'common/envs/constants'
+import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
+import { TwombaCoinsPage, TwombaWelcomePage } from './twomba-welcome'
 
 const FORCE_SHOW_WELCOME_MODAL = false
 
@@ -75,8 +76,8 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const [trendingTopics, setTrendingTopics] = useState<Group[]>([])
 
   const availablePages = buildArray([
-    <WhatIsManifoldPage />,
-    <PredictionMarketPage />,
+    TWOMBA_ENABLED ? <TwombaWelcomePage /> : <WhatIsManifoldPage />,
+    TWOMBA_ENABLED ? <TwombaCoinsPage /> : <PredictionMarketPage />,
     <TopicsPage
       trendingTopics={trendingTopics}
       userInterestedTopics={userInterestedTopics}
@@ -86,14 +87,12 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       user={user}
       goBack={() => handleSetPage(page - 1)}
     />,
-    user && !isVerified(user) && (
-      <OnboardingVerifyPhone onClose={increasePage} />
-    ),
+    user && !humanish(user) && <OnboardingVerifyPhone onClose={increasePage} />,
   ])
   const showBottomButtons = page < 2
 
   useEffect(() => {
-    if (!authed || !user || !isVerified(user)) return
+    if (!authed || !user || !humanish(user)) return
     // Wait until after they've had the opportunity to change their name
     setCachedReferralInfoForUser(user)
   }, [user, authed])
@@ -181,7 +180,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
 
   return (
     <Modal open={open} size={'lg'} position={'bottom'}>
-      <Col className="bg-canvas-0 rounded-md px-4 py-6 text-sm md:w-full md:text-lg lg:px-8">
+      <Col className="bg-canvas-0 text-md rounded-md px-4 py-6 md:w-full md:text-lg lg:px-8">
         {availablePages[page]}
         <Col>
           {showBottomButtons && (
@@ -372,11 +371,6 @@ function TopicsPage(props: {
 
   const closeDialog = async () => {
     setIsLoading(true)
-
-    if (user) {
-      // Don't await as this takes a long time.
-      api('update-user-embedding', {})
-    }
 
     // if user is following us politics
     if (

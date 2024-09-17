@@ -174,7 +174,7 @@ export function ContractFilters(props: {
               )}
             >
               <SweepiesCoin />
-              Sweepies
+              Sweepstakes
             </Row>
           </FilterPill>
         )}

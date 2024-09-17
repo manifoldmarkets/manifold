@@ -21,7 +21,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 import { ColorType } from '../widgets/choices-toggle-group'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/coin-number'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
 import { PortfolioTab } from './portfolio-tabs'
 import {
@@ -312,7 +312,7 @@ function PortfolioValueSkeleton(props: {
         >
           <CoinNumber
             amount={portfolioValues?.net ?? undefined}
-            className="text-primary-600 text-xs sm:text-sm"
+            className="text-xs text-violet-600 dark:text-violet-400 sm:text-sm"
             numberType="short"
           />
         </PortfolioTab>
@@ -324,7 +324,7 @@ function PortfolioValueSkeleton(props: {
         >
           <CoinNumber
             amount={portfolioValues?.profit ?? undefined}
-            className="text-primary-600 text-xs sm:text-sm"
+            className="text-xs text-violet-600 dark:text-violet-400 sm:text-sm"
             numberType="short"
           />
         </PortfolioTab>
@@ -343,7 +343,7 @@ function PortfolioValueSkeleton(props: {
                     className={clsx(
                       'cursor-pointer select-none transition-opacity',
                       portfolioFocus == 'all'
-                        ? 'text-primary-700 dark:text-primary-600 opacity-100'
+                        ? 'text-violet-700 opacity-100 dark:text-violet-400'
                         : 'text-ink-1000 opacity-50 hover:opacity-[85%]'
                     )}
                     onClick={() => togglePortfolioFocus('all')}
@@ -378,7 +378,7 @@ function PortfolioValueSkeleton(props: {
                       )}
                       className={clsx(
                         portfolioFocus == 'balance'
-                          ? 'bg-indigo-700 text-white'
+                          ? 'bg-violet-700 text-white'
                           : 'bg-canvas-50 text-ink-1000'
                       )}
                       onClick={() => togglePortfolioFocus('balance')}
@@ -393,7 +393,7 @@ function PortfolioValueSkeleton(props: {
                       )}
                       className={clsx(
                         portfolioFocus == 'investment'
-                          ? 'bg-indigo-700 text-white'
+                          ? 'bg-violet-700 text-white'
                           : 'bg-canvas-50 text-ink-1000'
                       )}
                       onClick={() => togglePortfolioFocus('investment')}
@@ -421,7 +421,7 @@ function PortfolioValueSkeleton(props: {
                   <Col className="hidden gap-1 sm:flex">
                     <AddFundsButton
                       userId={userId}
-                      className="h-fit whitespace-nowrap"
+                      className="h-fit whitespace-nowrap lg:hidden"
                     />
                     <RedeemSpiceButton
                       userId={userId}

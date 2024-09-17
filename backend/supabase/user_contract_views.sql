@@ -25,9 +25,10 @@ create table if not exists
     constraint user_contract_views_promoted_views_check check ((promoted_views >= 0))
   );
 
--- Policies
+-- Row Level Security
 alter table user_contract_views enable row level security;
 
+-- Policies
 drop policy if exists "self and admin read" on user_contract_views;
 
 create policy "self and admin read" on user_contract_views for
@@ -48,10 +49,6 @@ drop index if exists user_contract_views_contract_id;
 
 create index user_contract_views_contract_id on public.user_contract_views using btree (contract_id, user_id);
 
-drop index if exists user_contract_views_user_id;
-
-create unique index user_contract_views_user_id on public.user_contract_views using btree (user_id, contract_id) nulls not distinct;
-
 drop index if exists user_contract_views_user_contract_ts;
 
 create index user_contract_views_user_contract_ts on public.user_contract_views using btree (user_id, contract_id) include (
@@ -59,3 +56,7 @@ create index user_contract_views_user_contract_ts on public.user_contract_views 
   last_promoted_view_ts,
   last_card_view_ts
 );
+
+drop index if exists user_contract_views_user_id;
+
+create unique index user_contract_views_user_id on public.user_contract_views using btree (user_id, contract_id) nulls not distinct;

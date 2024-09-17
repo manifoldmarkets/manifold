@@ -6,7 +6,11 @@ import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getStats } from 'web/lib/supabase/stats'
 import { orderBy, sum, sumBy } from 'lodash'
-import { formatLargeNumber, formatMoney } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatSweepies,
+} from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
 import { SEO } from 'web/components/SEO'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -16,12 +20,11 @@ import { api } from '../lib/api/api'
 import { Column, Row as rowfor } from 'common/supabase/utils'
 import { BonusSummary } from 'web/components/stats/bonus-summary'
 import { ManaSupplySummary } from 'web/components/stats/mana-summary'
-import { Row } from 'web/components/layout/row'
 import { average } from 'common/util/math'
 import { useCallback, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { TRADE_TERM, TRADED_TERM } from 'common/envs/constants'
-import { capitalize } from 'lodash'
+import { capitalize, partition } from 'lodash'
 
 export const getStaticProps = async () => {
   try {
@@ -98,19 +101,44 @@ export function CustomAnalytics(props: {
   const yesterdaySupply = manaSupplyOverTime[manaSupplyOverTime.length - 2]
   const differenceInSupplySinceYesterday =
     currentSupply.total_value - yesterdaySupply.total_value
+  const differenceInCashSinceYesterday =
+    currentSupply.total_cash_value - yesterdaySupply.total_cash_value
+
+  const [fromBankSummaryCash, fromBankSummaryMana] = partition(
+    fromBankSummary,
+    (f) => f.token === 'CASH'
+  )
+  const [toBankSummaryCash, toBankSummaryMana] = partition(
+    toBankSummary,
+    (f) => f.token === 'CASH'
+  )
+
   const latestRecordingTime = orderBy(fromBankSummary, 'start_time', 'desc')[0]
     .start_time
-  const fromBankSum = sumBy(
-    fromBankSummary.filter((txn) => txn.start_time === latestRecordingTime),
+  const fromBankManaSum = sumBy(
+    fromBankSummaryMana.filter((txn) => txn.start_time === latestRecordingTime),
     'total_amount'
   )
-  const toBankSum = sumBy(
-    toBankSummary.filter((txn) => txn.start_time === latestRecordingTime),
+  const fromBankCashSum = sumBy(
+    fromBankSummaryCash.filter((txn) => txn.start_time === latestRecordingTime),
     'total_amount'
   )
-  const netBankTransactions = fromBankSum - toBankSum
+
+  const toBankManaSum = sumBy(
+    toBankSummaryMana.filter((txn) => txn.start_time === latestRecordingTime),
+    'total_amount'
+  )
+  const toBankCashSum = sumBy(
+    toBankSummaryCash.filter((txn) => txn.start_time === latestRecordingTime),
+    'total_amount'
+  )
+
+  const netBankManaTrans = fromBankManaSum - toBankManaSum
+  const netBankCashTrans = fromBankCashSum - toBankCashSum
   const unaccountedDifference =
-    differenceInSupplySinceYesterday - netBankTransactions
+    differenceInSupplySinceYesterday - netBankManaTrans
+  const cashUnaccountedDifference =
+    differenceInCashSinceYesterday - netBankCashTrans
 
   const dailyDividedByWeekly = stats
     .filter((row) => row.dau && row.wau)
@@ -185,60 +213,74 @@ export function CustomAnalytics(props: {
       <DailyChart values={dataFor('engaged_users')} />
       <Spacer h={8} />
       <Title>Mana supply</Title>
-      <Col className="mb-6 max-w-sm gap-2">
-        Supply Today
-        <Row className="justify-between">
-          <div className="text-ink-700">Balances</div>
-          <div className="text-ink-700 font-semibold">
-            {formatMoney(currentSupply.balance)}
-          </div>
-        </Row>
-        <Row className="justify-between">
-          <div className="text-ink-700">Prize point balances</div>
-          <div className="text-ink-700 font-semibold">
-            ₽{formatWithCommas(currentSupply.spice_balance)}
-          </div>
-        </Row>
-        <Row className="justify-between">
-          <div className="text-ink-700">Investment</div>
-          <div className="text-ink-700 font-semibold">
-            {formatMoney(currentSupply.investment_value)}
-          </div>
-        </Row>
-        {/* <Row className="justify-between">
-          <div className="text-ink-700">Loans</div>
-          <div className="text-ink-700 font-semibold">
-            {formatMoney(manaSupply.loanTotal)}
-          </div>
-        </Row> */}
-        <Row className="justify-between">
-          <div className="text-ink-700">AMM liquidity</div>
-          <div className="text-ink-700 font-semibold">
-            {formatMoney(currentSupply.amm_liquidity)}
-          </div>
-        </Row>
-        <Row className="mt-6 justify-between">
-          <div className="text-ink-700">Unaccounted for since yesterday</div>
-          <div className="text-ink-700 font-semibold">
-            {formatMoney(unaccountedDifference)}
-          </div>
-        </Row>
-        <Row className="mt-2 justify-between">
-          <div className="text-ink-700">Total</div>
-          <div className="text-ink-700 font-semibold">
-            {formatMoney(currentSupply.total_value)}
-          </div>
-        </Row>
-      </Col>
-      <Title>Mana supply over time</Title>
+      <div className="text-ink-700 mb-4 grid grid-cols-3 gap-y-1">
+        <div className="text-ink-800 mb-2">Supply Today</div>
+        <div className="text-ink-800 mb-2">Mana</div>
+        <div className="text-ink-800 mb-2">Prize Cash</div>
+
+        <div>Balances</div>
+        <div className="font-semibold">
+          {formatMoney(currentSupply.balance)}
+        </div>
+        <div className="font-semibold">
+          {formatSweepies(currentSupply.cash_balance)}
+        </div>
+
+        <div>Prize point balances</div>
+        <div className="col-span-2 font-semibold">
+          ₽{formatWithCommas(currentSupply.spice_balance)}
+        </div>
+
+        <div>Investment</div>
+        <div className="font-semibold">
+          {formatMoney(currentSupply.investment_value)}
+        </div>
+        <div className="font-semibold">
+          {formatSweepies(currentSupply.cash_investment_value)}
+        </div>
+
+        {/*
+        <div >Loans</div>
+        <div className="col-span-2 font-semibold">
+          {formatMoney(manaSupply.loanTotal)}
+        </div>
+        */}
+
+        <div>AMM liquidity</div>
+        <div className="font-semibold">
+          {formatMoney(currentSupply.amm_liquidity)}
+        </div>
+        <div className="font-semibold">
+          {formatSweepies(currentSupply.amm_cash_liquidity)}
+        </div>
+
+        <div className="col-span-full h-2" />
+        <div>Unaccounted since yesterday</div>
+        <div className="font-semibold">
+          {formatMoney(unaccountedDifference)}
+        </div>
+        <div className="font-semibold">
+          {formatSweepies(cashUnaccountedDifference)}
+        </div>
+
+        <div>Total</div>
+        <div className="font-semibold">
+          {formatMoney(currentSupply.total_value)}
+        </div>
+        <div className="font-semibold">
+          {formatSweepies(currentSupply.total_cash_value)}
+        </div>
+      </div>
       <ManaSupplySummary manaSupplyStats={manaSupplyOverTime} />
       <Spacer h={8} />
       <Title>Transactions from Manifold</Title>
-      <BonusSummary txnSummaryStats={fromBankSummary} />
+      <BonusSummary txnSummaryStats={fromBankSummaryMana} />
+      <BonusSummary txnSummaryStats={fromBankSummaryCash} />
       <Spacer h={8} />
       <Title>Transactions to Manifold</Title>
-      <span className={'text-ink-700'}>(Ignores mana purchases)</span>
-      <BonusSummary txnSummaryStats={toBankSummary} />
+      <span>(Ignores mana purchases)</span>
+      <BonusSummary txnSummaryStats={toBankSummaryMana} />
+      <BonusSummary txnSummaryStats={toBankSummaryCash} />
       <Spacer h={8} />
       <Title>Mana sales</Title>
       <p className="text-ink-500">
@@ -447,6 +489,31 @@ export function CustomAnalytics(props: {
             title: 'Monthly',
             content: (
               <DailyChart values={rollingSum(dataFor('bet_amount'), 30)} />
+            ),
+          },
+        ]}
+      />
+      <Spacer h={8} />
+      <Title>Total prize cash {TRADED_TERM}</Title>
+      <p className="text-ink-500">Sum of cash {TRADE_TERM} amounts.</p>
+      <Tabs
+        className="mb-4"
+        defaultIndex={1}
+        tabs={[
+          {
+            title: 'Daily',
+            content: <DailyChart values={dataFor('cash_bet_amount')} />,
+          },
+          {
+            title: 'Weekly',
+            content: (
+              <DailyChart values={rollingSum(dataFor('cash_bet_amount'), 7)} />
+            ),
+          },
+          {
+            title: 'Monthly',
+            content: (
+              <DailyChart values={rollingSum(dataFor('cash_bet_amount'), 30)} />
             ),
           },
         ]}

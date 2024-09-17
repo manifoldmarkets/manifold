@@ -21,7 +21,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { Avatar } from '../widgets/avatar'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/coin-number'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
 import { Row } from '../layout/row'
@@ -162,7 +162,7 @@ function NavBarItem(props: {
           <Row className="gap-1">
             <CoinNumber
               amount={user?.balance}
-              className="text-primary-600"
+              className="text-violet-600 dark:text-violet-400"
               numberType="short"
               isInline
               coinClassName="!top-[0.15em]"

@@ -10,6 +10,9 @@ create table if not exists
     receipt_error text
   );
 
+-- Row Level Security
+alter table push_notification_tickets enable row level security;
+
 -- Indexes
 drop index if exists push_notification_tickets_pkey;
 

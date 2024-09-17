@@ -40,10 +40,14 @@ import { clearData, getData, storeData } from 'lib/auth'
 import { SplashAuth } from 'components/splash-auth'
 import { useIsConnected } from 'lib/use-is-connected'
 import { getLocation } from 'lib/location'
-
+import * as Sentry from '@sentry/react-native';
+Sentry.init({
+  dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
+  debug: ENV === 'DEV', 
+});
 // NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address. ie:
-// "cross-env NEXT_PUBLIC_API_URL=172.20.10.2:8088 \
-// const baseUri = 'http://192.168.1.229:3000/gidx/register'
+// "cross-env NEXT_PUBLIC_API_URL=192.168.1.229:8088 \
+// const baseUri = 'http://192.168.1.229:3000/'
 
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
@@ -479,4 +483,4 @@ const App = () => {
     </>
   )
 }
-export default withIAPContext(App)
+export default Sentry.wrap(withIAPContext(App))

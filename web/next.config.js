@@ -101,6 +101,11 @@ module.exports = {
         permanent: true,
       },
       {
+        source: '/sweepstakes-rules',
+        destination: '/sweepstakes-rules.html',
+        permanent: true,
+      },
+      {
         source: '/umami',
         destination:
           'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets',
@@ -142,9 +147,9 @@ module.exports = {
         permanent: true,
       },
       {
-        source: '/post/:slug*',
-        destination: '/old-posts/:slug*',
-        permanent: false,
+        source: '/old-posts/:slug*',
+        destination: '/post/:slug*',
+        permanent: true,
       },
       {
         source: '/questions:slug*',
@@ -167,7 +172,7 @@ module.exports = {
       {
         source: '/dashboard/:slug',
         destination: '/news/:slug',
-        permanent: false, // TODO: after 1/7/2024 change this and below to true
+        permanent: true,
       },
       {
         source: '/home:slug*',

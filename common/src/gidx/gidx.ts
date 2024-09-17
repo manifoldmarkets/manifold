@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { MIN_CASHOUT_AMOUNT } from 'common/economy'
+import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
 
 export const GIDX_DOCUMENTS_REQUIRED = 2
 
@@ -44,8 +44,8 @@ export const checkoutParams = {
   MerchantSessionID: z.string(),
   PaymentAmount: z.object({
     mana: z.number(),
-    price: z.number(),
-    bonus: z.number(),
+    priceInDollars: z.number(),
+    bonusInDollars: z.number(),
   }),
   PaymentMethod: z.object({
     Type: z.enum(['CC']), // TODO: add 'ACH'
@@ -79,7 +79,9 @@ export const cashoutParams = z.object({
   ...checkoutParams,
   PaymentAmount: z.object({
     manaCash: z.number().gte(MIN_CASHOUT_AMOUNT),
-    dollars: z.number(),
+    dollars: z
+      .number()
+      .gte((1 - SWEEPIES_CASHOUT_FEE) * (MIN_CASHOUT_AMOUNT / 100)),
   }),
   SavePaymentMethod: z.boolean(),
   PaymentMethod: z.object({
@@ -192,6 +194,7 @@ type LocationDetailType = {
 }
 
 export type GIDXMonitorResponse = {
+  ApiKey: string
   MerchantCustomerID: string
   ReasonCodes: string[]
   WatchChecks: WatchCheckType[]
@@ -209,8 +212,8 @@ export type CashierLimit = {
 
 export type PaymentAmount = {
   mana: number
-  price: number
-  bonus: number
+  priceInDollars: number
+  bonusInDollars: number
 }
 export type PaymentMethod = {
   Token: string
@@ -289,7 +292,8 @@ export type CheckoutSessionResponse = {
 export const ID_ERROR_MSG =
   'Registration failed, identity error. Check your identifying information.'
 
-export const ENABLE_FAKE_CUSTOMER = true
+export const IDENTITY_AND_FRAUD_THRESHOLD = 80
+export const ENABLE_FAKE_CUSTOMER = false
 export const exampleCustomers = [
   {
     EmailAddress: 'mradamgibbs@gmail.com',
@@ -329,9 +333,16 @@ export const exampleCustomers = [
     StateCode: 'MA',
     PostalCode: '01867',
     DeviceGPS: {
+      // new york (5k limit):
+      // Latitude: 40.82024,
+      // Longitude: -73.935944,
+      // florida (5k limit):
+      Latitude: 26.64983,
+      Longitude: -81.847878,
       // utah (blocked):
-      Latitude: 40.7608,
-      Longitude: -111.891,
+      // Latitude: 40.7608,
+      // Longitude: -111.891,
+      // Massachusetts:
       // Latitude: 39.615342,
       // Longitude: -112.183449,
       Radius: 11.484,
@@ -387,6 +398,9 @@ export const exampleCustomers = [
     },
   },
 ]
+export const FAKE_CUSTOMER_BODY = {
+  ...exampleCustomers[1],
+}
 
 type Action = {
   Type: string
@@ -512,5 +526,26 @@ export const ProcessSessionCode = (
   }
   return {
     status: 'success',
+  }
+}
+
+export type CashoutStatusData = {
+  user: {
+    id: string
+    name: string
+    username: string
+    avatarUrl: string
+  }
+  txn: {
+    id: string
+    amount: number
+    createdTime: string
+    gidxStatus: string
+    data: {
+      sessionId: string
+      transactionId: string
+      type: 'gidx'
+      payoutInDollars: number
+    }
   }
 }

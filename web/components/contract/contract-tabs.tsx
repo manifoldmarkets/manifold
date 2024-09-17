@@ -134,6 +134,7 @@ export function ContractTabs(props: {
             title: positionsTitle,
             content: (
               <UserPositionsTable
+                key={contract.id}
                 positions={
                   // If contract is resolved, will have to refetch positions by profit
                   Object.values(userPositionsByOutcome).length > 0 &&
@@ -151,6 +152,7 @@ export function ContractTabs(props: {
           content: (
             <Col className={'gap-4'}>
               <BetsTabContent
+                key={contract.id}
                 contract={contract}
                 bets={bets}
                 totalBets={totalBets}

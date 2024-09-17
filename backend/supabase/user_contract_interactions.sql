@@ -13,6 +13,9 @@ create table if not exists
     feed_type text
   );
 
+-- Row Level Security
+alter table user_contract_interactions enable row level security;
+
 -- Indexes
 drop index if exists user_contract_interactions_pkey;
 

@@ -2,7 +2,6 @@ import { escapeRegExp } from 'lodash'
 import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 
-// Valid in web client & Vercel deployments only.
 export const ENV = (process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD') as
   | 'PROD'
   | 'DEV'
@@ -16,14 +15,18 @@ export const TWOMBA_ENABLED = true
 export const PRODUCT_MARKET_FIT_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = true
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
+export const CASH_TO_MANA_CONVERSION_RATE = 100
+export const MIN_CASH_DONATION = 25
 export const MIN_SPICE_DONATION = 25000
 export const CHARITY_FEE = 0.05
+export const CASH_TO_CHARITY_DOLLARS = 1
 export const SPICE_TO_CHARITY_DOLLARS = (1 / 1000) * (1 - CHARITY_FEE) // prize points -> dollars
+export const NY_FL_CASHOUT_LIMIT = 5000
 
 export const SPICE_NAME = 'Prize Point'
-export const SWEEPIES_NAME = 'Sweepies'
+export const SWEEPIES_NAME = 'Sweepcash'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
-export const SWEEPIES_MARKET_TOOLTIP = `Cash market! Earn ${SWEEPIES_NAME}s on resolution`
+export const SWEEPIES_MARKET_TOOLTIP = `Sweepstakes market! Win real cash prizes.`
 
 export const TRADE_TERM = 'trade'
 export const TRADED_TERM = 'traded'
@@ -263,10 +266,11 @@ export const VERIFIED_USERNAMES = [
   'DanHendrycks',
 ]
 
-export const BLESSED_BANNED_USER_IDS = [
-  'wBZSAA3MrnWjz7eHrKAq43OXBtA2', // kazoo
-  '4Qy6MOn8AFRTecA6FMzdljPJFsv1', //HamsterHawk
-  'fnuHBW8dHwZp2TbEt2MKJY9d28V2', // klob
+export const BANNED_TRADING_USER_IDS = [
+  'zgCIqq8AmRUYVu6AdQ9vVEJN8On1', //firstuserhere aka _deleted_
+  'LIBAoi7tpqeNLYM1xxJ1QJBQqW32', //lastuserhere
+  'p3ADzwIUS3fk0ka80XYEE3OM3S32', //PC
+  '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
 ]
 
 export const PARTNER_USER_IDS: string[] = [
