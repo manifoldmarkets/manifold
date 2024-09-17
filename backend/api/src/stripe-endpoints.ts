@@ -9,6 +9,7 @@ import { APIError } from 'common/api/utils'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -54,50 +55,52 @@ const mappedDollarAmounts = {
 } as { [key: string]: number }
 
 export const createcheckoutsession = async (req: Request, res: Response) => {
-  res.status(400).send('Stripe purchases are disabled')
-  return
-  // const userId = req.query.userId?.toString()
+  if (TWOMBA_ENABLED) {
+    res.status(400).send('Stripe purchases are disabled')
+    return
+  }
+  const userId = req.query.userId?.toString()
 
-  // const manticDollarQuantity = req.query.manticDollarQuantity?.toString()
+  const manticDollarQuantity = req.query.manticDollarQuantity?.toString()
 
-  // if (!userId) {
-  //   res.status(400).send('Invalid user ID')
-  //   return
-  // }
+  if (!userId) {
+    res.status(400).send('Invalid user ID')
+    return
+  }
 
-  // if (
-  //   !manticDollarQuantity ||
-  //   !Object.keys(manticDollarStripePrice).includes(manticDollarQuantity)
-  // ) {
-  //   res.status(400).send('Invalid Mantic Dollar quantity')
-  //   return
-  // }
+  if (
+    !manticDollarQuantity ||
+    !Object.keys(manticDollarStripePrice).includes(manticDollarQuantity)
+  ) {
+    res.status(400).send('Invalid Mantic Dollar quantity')
+    return
+  }
 
-  // const referrer =
-  //   req.query.referer || req.headers.referer || 'https://manifold.markets'
+  const referrer =
+    req.query.referer || req.headers.referer || 'https://manifold.markets'
 
-  // const stripe = initStripe()
-  // const session = await stripe.checkout.sessions.create({
-  //   metadata: {
-  //     userId,
-  //     manticDollarQuantity,
-  //   },
-  //   line_items: [
-  //     {
-  //       price:
-  //         manticDollarStripePrice[
-  //           manticDollarQuantity as unknown as keyof typeof manticDollarStripePrice
-  //         ],
-  //       quantity: 1,
-  //     },
-  //   ],
-  //   mode: 'payment',
-  //   allow_promotion_codes: true,
-  //   success_url: `${referrer}?funding-success`,
-  //   cancel_url: `${referrer}?funding-failure`,
-  // })
+  const stripe = initStripe()
+  const session = await stripe.checkout.sessions.create({
+    metadata: {
+      userId,
+      manticDollarQuantity,
+    },
+    line_items: [
+      {
+        price:
+          manticDollarStripePrice[
+            manticDollarQuantity as unknown as keyof typeof manticDollarStripePrice
+          ],
+        quantity: 1,
+      },
+    ],
+    mode: 'payment',
+    allow_promotion_codes: true,
+    success_url: `${referrer}?funding-success`,
+    cancel_url: `${referrer}?funding-failure`,
+  })
 
-  // res.redirect(303, session.url || '')
+  res.redirect(303, session.url || '')
 }
 
 export const stripewebhook = async (req: Request, res: Response) => {
