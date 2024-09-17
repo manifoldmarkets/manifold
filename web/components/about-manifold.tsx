@@ -1,7 +1,10 @@
-import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
-import { capitalize } from 'lodash'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
-export const AboutManifold = ({ className = '' }) => {
+type AboutManifoldProps = {
+  className?: string
+}
+
+export const AboutManifold = ({ className = '' }: AboutManifoldProps) => {
   return (
     <div className={`${className}`}>
       <div className="mb-2">
