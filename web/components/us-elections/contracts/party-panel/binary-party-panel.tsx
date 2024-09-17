@@ -29,6 +29,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { BubblePercentChange } from '../candidates-panel/candidate-bar'
 import { BinaryUserPosition } from '../candidates-panel/candidates-user-position'
 import { ELECTIONS_PARTY_QUESTION_PSEUDONYM } from 'web/components/elections-page'
+import { TwombaToggle } from 'web/components/twomba/twomba-toggle'
 
 const politicsBinaryPseudonym = {
   YES: {
@@ -54,7 +55,7 @@ export function BinaryPartyPanel(props: { contract: BinaryContract }) {
   const democraticProb = 1 - republicanProb
 
   return (
-    <Col className="mx-[2px] gap-2">
+    <Col className=" mx-[2px] gap-2">
       <div className="relative hidden md:flex md:items-center md:justify-between">
         <div
           style={{ overflow: 'hidden' }}
