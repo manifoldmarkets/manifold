@@ -37,13 +37,11 @@ export function ToggleVerifyCallout(props: {
         caratClassName={caratClassName}
       >
         <Row className="w-full justify-between gap-2">
-          <div className=" font-semibold">
-            {capitalize(TRADE_TERM)} with {SWEEPIES_NAME}!
-          </div>
+          <div className=" font-semibold">Sweepstakes are here</div>
           <InBeta className="mb-2" tooltipPlacement={'bottom'} />
         </Row>
         <div className="text-ink-700 text-sm">
-          This is a <b>{SWEEPIES_NAME} market</b>! {capitalize(TRADE_TERM)} with{' '}
+          This is a <b>sweepstakes market</b>! {capitalize(TRADE_TERM)} with{' '}
           {SWEEPIES_NAME} for the chance to win real cash prizes.
         </div>
       </CalloutFrame>
@@ -61,9 +59,7 @@ export function ToggleVerifyCallout(props: {
       caratClassName={caratClassName}
     >
       <Row className="w-full justify-between gap-2">
-        <div className=" font-semibold">
-          {capitalize(TRADE_TERM)} with {SWEEPIES_NAME}!
-        </div>
+        <div className="font-semibold">Sweepstakes are here</div>
         <InBeta className="mb-2" tooltipPlacement={'bottom'} />
       </Row>
       Verify your identity and start earning <b>real cash prizes</b> today.
