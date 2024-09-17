@@ -453,7 +453,7 @@ export const RegisterUserForm = (props: {
       <span className="text-ink-700">
         Hooray! Now you can participate in sweepstakes markets. We sent you{' '}
         <CoinNumber
-          amount={KYC_VERIFICATION_BONUS_CASH}
+          amount={Math.max(user.cashBalance, KYC_VERIFICATION_BONUS_CASH)}
           className={'font-bold'}
           coinType={'CASH'}
           isInline={true}
