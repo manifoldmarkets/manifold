@@ -1,4 +1,4 @@
-import { BinaryContract, MultiContract } from 'common/contract'
+import { MultiContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
 import Custom404 from 'web/pages/404'

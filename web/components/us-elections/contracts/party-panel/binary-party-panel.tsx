@@ -1,31 +1,23 @@
 import { track } from 'web/lib/service/analytics'
 import clsx from 'clsx'
-import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import {
-  getAnswerProbability,
   getDisplayProbability,
   getProbability,
 } from 'common/calculate'
 import {
   BinaryContract,
   Contract,
-  CPMMMultiContract,
-  MultiContract,
 } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
-import { floatingEqual } from 'common/util/math'
-import { capitalize, sumBy } from 'lodash'
+import { capitalize } from 'lodash'
 import Image from 'next/image'
 import { useState } from 'react'
-import { IoIosPerson } from 'react-icons/io'
 import {
   AnswerBar,
-  AnswerStatus,
   CreatorAndAnswerLabel,
-  MultiBettor,
 } from 'web/components/answers/answer-components'
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { BinaryOutcomes } from 'web/components/bet/bet-panel'
@@ -36,20 +28,16 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { SizedContainer } from 'web/components/sized-container'
 import { ProbabilityNeedle } from 'web/components/us-elections/probability-needle'
-import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
 import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import {
   BubblePercentChange,
-  PercentChangeToday,
 } from '../candidates-panel/candidate-bar'
 import {
   BinaryUserPosition,
-  UserPosition,
 } from '../candidates-panel/candidates-user-position'
-import { ProbPercentLabel } from 'web/components/outcome-label'
 import { ELECTIONS_PARTY_QUESTION_PSEUDONYM } from 'web/components/elections-page'
 
 const politicsBinaryPseudonym = {
