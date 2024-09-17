@@ -50,6 +50,7 @@ import {
   UserPosition,
 } from '../candidates-panel/candidates-user-position'
 import { ProbPercentLabel } from 'web/components/outcome-label'
+import { ELECTIONS_PARTY_QUESTION_PSEUDONYM } from 'web/components/elections-page'
 
 const politicsBinaryPseudonym = {
   YES: {
@@ -245,6 +246,7 @@ function BinaryPartyAnswer(props: {
               contract={contract}
               user={user}
               initialOutcome={'YES'}
+              questionPseudonym={ELECTIONS_PARTY_QUESTION_PSEUDONYM}
             />
           </Row>
         }
@@ -292,6 +294,7 @@ function BinaryPartyAnswer(props: {
               contract={contract}
               user={user}
               initialOutcome={'NO'}
+              questionPseudonym={ELECTIONS_PARTY_QUESTION_PSEUDONYM}
             />
           </Row>
         }
@@ -354,6 +357,7 @@ function BinaryPartyAnswerSnippet(props: {
           user={user}
           initialOutcome={isDemocraticParty ? 'NO' : 'YES'}
           className="w-20"
+          questionPseudonym={ELECTIONS_PARTY_QUESTION_PSEUDONYM}
         />
 
         {!resolution && betUp && user && (
@@ -378,8 +382,9 @@ export function BinaryBetButton(props: {
   user?: User | null
   initialOutcome?: BinaryOutcomes
   className?: string
+  questionPseudonym?: string
 }) {
-  const { contract, initialOutcome, className } = props
+  const { contract, initialOutcome, className, questionPseudonym } = props
   const user = useUser()
   const [open, setOpen] = useState(false)
 
@@ -418,6 +423,7 @@ export function BinaryBetButton(props: {
             trackingLocation="contract table"
             initialOutcome={initialOutcome}
             binaryPseudonym={politicsBinaryPseudonym}
+            questionPseudonym={questionPseudonym}
           />
         )}
       </>

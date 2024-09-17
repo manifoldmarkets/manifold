@@ -9,6 +9,9 @@ import Link from 'next/link'
 import { ConditionalMarkets } from './us-elections/contracts/conditional-market/conditional-markets'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 
+export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
+  'Who win the Presidential Election?'
+
 export function USElectionsPage(props: ElectionsPageProps) {
   const {
     rawPresidencyStateContracts,
@@ -71,7 +74,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
       <PoliticsCard
         contract={electionPartyContract}
         viewType="BINARY_PARTY"
-        customTitle="Who win the Presidential Election?"
+        customTitle={ELECTIONS_PARTY_QUESTION_PSEUDONYM}
         includeHead
       />
 

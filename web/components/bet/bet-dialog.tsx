@@ -37,8 +37,16 @@ export function BetDialog(props: {
       pseudonymColor: string
     }
   }
+  questionPseudonym?: string
 }) {
-  const { contract, open, setOpen, trackingLocation, initialOutcome } = props
+  const {
+    contract,
+    open,
+    setOpen,
+    trackingLocation,
+    initialOutcome,
+    questionPseudonym,
+  } = props
   const { question } = contract
 
   return (
@@ -51,7 +59,9 @@ export function BetDialog(props: {
       )}
     >
       <Col>
-        <Subtitle className="!mb-4 !mt-0 !text-xl">{question}</Subtitle>
+        <Subtitle className="!mb-4 !mt-0 !text-xl">
+          {questionPseudonym ?? question}
+        </Subtitle>
         <BuyPanel
           contract={contract}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
