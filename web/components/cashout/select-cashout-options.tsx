@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { MIN_CASHOUT_AMOUNT } from 'common/economy'
 import {
-  CASH_TO_CHARITY_DOLLARS,
   CASH_TO_MANA_CONVERSION_RATE,
   CHARITY_FEE,
   SWEEPIES_NAME,
