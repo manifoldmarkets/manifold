@@ -8,10 +8,11 @@ import { Col } from './col'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { ConfettiOnDemand } from '../confetti-on-demand'
 import { useTracking } from 'web/hooks/use-tracking'
-import { DowntimeBanner } from '../nav/banner'
+import { DowntimeBanner, TwombaBanner } from '../nav/banner'
 import { useUser } from 'web/hooks/use-user'
 
 import { UpdatedTermsModal } from '../updated-terms-modal'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export function Page(props: {
   trackPageView: string | false
@@ -67,6 +68,7 @@ export function Page(props: {
             className
           )}
         >
+          {TWOMBA_ENABLED && <TwombaBanner />}
           {maintainanceBannerEnabled && user && (
             <DowntimeBanner>
               {/*🛠️ Site is undergoing maintenance, sorry for the inconvenience.*/}
