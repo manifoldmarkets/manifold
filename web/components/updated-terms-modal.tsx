@@ -12,7 +12,7 @@ export function UpdatedTermsModal() {
   const user = useUser()
   const [agreedToTerms, setAgreedToTerms] = usePersistentLocalState(
     false,
-    `agreedToTerms-${user?.id}`
+    `agreedToSweepsTerms`
   )
 
   const router = useRouter()
