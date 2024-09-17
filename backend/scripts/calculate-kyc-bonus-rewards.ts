@@ -2,7 +2,7 @@ import { runScript } from './run-script'
 import { type SupabaseDirectClient } from 'shared/supabase/init'
 import { bulkUpsert } from 'shared/supabase/utils'
 
-const TIMESTAMP = '2024-09-16 20:00:00-07'
+const TIMESTAMP = '2024-09-17 09:50:00-07'
 
 async function calculateKycBonusRewards(pg: SupabaseDirectClient) {
   const allBalances = await pg.manyOrNone<{
