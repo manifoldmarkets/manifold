@@ -28,7 +28,7 @@ async function calculateKycBonusRewards(pg: SupabaseDirectClient) {
     )
     select
       user_id,
-      (investment_value + balance + spice_balance - loan_total) / 1000 as reward_amount
+      (investment_value + balance + spice_balance) / 1000 as reward_amount
     from last_entries`,
     [TIMESTAMP]
   )
