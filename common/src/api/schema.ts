@@ -183,7 +183,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string(),
-        amount: z.number().gte(1),
+        amount: z.number().gte(0.01),
         replyToCommentId: z.string().optional(),
         limitProb: z.number().gte(0.01).lte(0.99).optional(),
         expiresAt: z.number().optional(),
@@ -342,6 +342,7 @@ export const API = (_apiTypeCheck = {
     returns: [] as Bet[],
     props: z
       .object({
+        id: z.string().optional(),
         userId: z.string().optional(),
         username: z.string().optional(),
         contractId: z.string().or(z.array(z.string())).optional(),

@@ -101,6 +101,11 @@ module.exports = {
         permanent: true,
       },
       {
+        source: '/sweepstakes-rules',
+        destination: '/sweepstakes-rules.html',
+        permanent: true,
+      },
+      {
         source: '/umami',
         destination:
           'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets',

@@ -19,12 +19,12 @@ export default function AdminCashouts() {
     limit: 10,
     offset: page * 10,
   })
-  console.log('cashouts', cashouts)
+  console.log('redemptions', cashouts)
 
   return (
-    <Page trackPageView="admin-cashouts">
+    <Page trackPageView="admin-redemptions">
       <Col className="gap-4">
-        <Title>Cashouts</Title>
+        <Title>Redemptions</Title>
         <Col className="overflow-auto">
           <table className="w-full ">
             <thead>

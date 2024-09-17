@@ -16,7 +16,7 @@ import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
-import { BANNED_TRADING_USER_IDS } from 'common/envs/constants'
+import { BANNED_TRADING_USER_IDS, TWOMBA_ENABLED } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import {
@@ -248,7 +248,7 @@ export const fetchContractBetDataAndValidate = async (
   const queries = `
     select * from users where id = $1;
     select ${contractColumnsToSelect} from contracts where id = $2;
-    select * from answers 
+    select * from answers
       where contract_id = $2 and (
           ($3 is null or id in ($3:list)) or
           (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
@@ -546,22 +546,24 @@ export const executeNewBetResult = async (
   )
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
-  const totalCreatorFee =
-    newBet.fees.creatorFee +
-    sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
-  if (totalCreatorFee !== 0) {
-    await incrementBalance(pgTrans, contract.creatorId, {
-      balance: totalCreatorFee,
-      totalDeposits: totalCreatorFee,
-    })
+  if (!TWOMBA_ENABLED) {
+    const totalCreatorFee =
+      newBet.fees.creatorFee +
+      sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
+    if (totalCreatorFee !== 0) {
+      await incrementBalance(pgTrans, contract.creatorId, {
+        balance: totalCreatorFee,
+        totalDeposits: totalCreatorFee,
+      })
 
-    log(
-      `Updated creator ${
-        contract.creatorUsername
-      } with fee gain ${formatMoneyWithDecimals(totalCreatorFee)} - ${
-        contract.creatorId
-      }.`
-    )
+      log(
+        `Updated creator ${
+          contract.creatorUsername
+        } with fee gain ${formatMoneyWithDecimals(totalCreatorFee)} - ${
+          contract.creatorId
+        }.`
+      )
+    }
   }
 
   const answerUpdates: {

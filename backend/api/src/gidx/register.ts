@@ -6,6 +6,7 @@ import {
   getGIDXStandardParams,
   getLocalServerIP,
   getUserRegistrationRequirements,
+  GIDX_BASE_URL,
   throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
@@ -19,7 +20,7 @@ import { getIp } from 'shared/analytics'
 import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
 
 const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
+  GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerRegistration'
 
 export const register: APIHandler<'register-gidx'> = async (
   props,

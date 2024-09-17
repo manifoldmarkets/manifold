@@ -9,6 +9,7 @@ import { APIError } from 'common/api/utils'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -54,6 +55,10 @@ const mappedDollarAmounts = {
 } as { [key: string]: number }
 
 export const createcheckoutsession = async (req: Request, res: Response) => {
+  if (TWOMBA_ENABLED) {
+    res.status(400).send('Stripe purchases are disabled')
+    return
+  }
   const userId = req.query.userId?.toString()
 
   const manticDollarQuantity = req.query.manticDollarQuantity?.toString()

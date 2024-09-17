@@ -181,6 +181,7 @@ export function BuyAmountInput(props: {
   disableQuickButtons?: boolean
   token?: InputTokenType
   marketTier?: MarketTierType | undefined
+  sliderColor?: string
 }) {
   const {
     amount,
@@ -202,6 +203,7 @@ export function BuyAmountInput(props: {
     quickButtonValues,
     disableQuickButtons,
     token = 'M$',
+    sliderColor,
   } = props
   const user = useUser()
 
@@ -325,6 +327,7 @@ export function BuyAmountInput(props: {
             disabled={disabled}
             smallAmounts={!hasLotsOfMoney || marketTier === 'play'}
             token={token}
+            sliderColor={sliderColor}
           />
         )}
         {error ? (

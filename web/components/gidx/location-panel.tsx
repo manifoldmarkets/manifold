@@ -11,6 +11,7 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { BottomRow } from './register-component-helpers'
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
+import { MINUTE_MS } from 'common/util/time'
 
 export const LocationPanel = (props: {
   setLocation: (data: GPSData) => void
@@ -30,6 +31,7 @@ export const LocationPanel = (props: {
   } = props
 
   const [checkedPermissions, setCheckedPermissions] = useState(false)
+  const [timeout, setTimeout] = useState(10000)
 
   useEffect(() => {
     if (!checkedPermissions) checkLocationPermission()
@@ -111,9 +113,24 @@ export const LocationPanel = (props: {
           onFinishCallback?.()
         },
         (error) => {
-          setLocationError(error.message)
+          console.log('Error requesting location', error)
+          if (error.message.includes('denied')) {
+            setLocationError(
+              'Location permission denied. Please enable location sharing in your browser settings.'
+            )
+          } else {
+            if (error.message.includes('timeout')) {
+              setTimeout(timeout + 5000)
+            }
+            setLocationError(error.message)
+          }
           setLoading(false)
           onFinishCallback?.()
+        },
+        {
+          enableHighAccuracy: true,
+          timeout,
+          maximumAge: 20 * MINUTE_MS,
         }
       )
     } else {

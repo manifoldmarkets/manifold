@@ -15,7 +15,7 @@ import {
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { CashoutPagesType } from 'web/pages/cashout'
+import { CashoutPagesType } from 'web/pages/redeem'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { CoinNumber } from '../widgets/coin-number'
 
@@ -25,7 +25,7 @@ export function SelectCashoutOptions(props: {
   setPage: (page: CashoutPagesType) => void
   allDisabled?: boolean
 }) {
-  const { user, setPage, allDisabled, redeemableCash } = props
+  const { setPage, allDisabled, redeemableCash } = props
   const { isNative, platform } = getNativePlatform()
   const isNativeIOS = isNative && platform === 'ios'
 
@@ -40,7 +40,7 @@ export function SelectCashoutOptions(props: {
           <Col>
             <div className="text-lg font-semibold">Get Mana</div>
             <div className="text-ink-700 text-sm">
-              Trade your {SWEEPIES_NAME} for mana. You'll get{' '}
+              Redeem your {SWEEPIES_NAME} for mana. You'll get{' '}
               {CASH_TO_MANA_CONVERSION_RATE} mana for every 1 {SWEEPIES_NAME}.
             </div>
           </Col>
@@ -83,7 +83,7 @@ export function SelectCashoutOptions(props: {
             <Col>
               <div className="text-lg font-semibold">Donate to Charity</div>
               <div className="text-ink-700 text-sm">
-                Donate your {SWEEPIES_NAME} as USD to a charitable cause.
+                Redeem your {SWEEPIES_NAME} as a donation to a charitable cause.
               </div>
             </Col>
           </Row>
@@ -148,8 +148,8 @@ export function SelectCashoutOptions(props: {
           <Col>
             <div className="text-lg font-semibold">Redeem for USD</div>
             <div className="text-ink-700 text-sm">
-              Redeem your {SWEEPIES_NAME} for USD. There will be a{' '}
-              <b>{CHARITY_FEE * 100}% fee</b> charged.
+              Redeem your {SWEEPIES_NAME} for USD with a{' '}
+              <b>{CHARITY_FEE * 100}% fee</b>.
             </div>
           </Col>
         </Row>
@@ -174,7 +174,7 @@ export function SelectCashoutOptions(props: {
                     coinType="sweepies"
                     className="font-semibold text-amber-600 dark:text-amber-400"
                   />{' '}
-                  to cash out
+                  to redeem
                 </span>
               ) : null}
             </span>

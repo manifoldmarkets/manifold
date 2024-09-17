@@ -94,7 +94,7 @@ import { pick } from 'lodash'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
-  const { contractSlug } = ctx.params
+  const { username, contractSlug } = ctx.params
   const adminDb = await initSupabaseAdmin()
   const contract = await getContractFromSlug(adminDb, contractSlug)
 
@@ -122,7 +122,7 @@ export async function getStaticProps(ctx: {
 
     return {
       redirect: {
-        destination: `/username/${slug}?play=false`,
+        destination: `/${username}/${slug}?play=false`,
         permanent: false,
       },
     }
@@ -138,6 +138,7 @@ export async function getStaticProps(ctx: {
       const params = await getContractParams(cashContract, adminDb)
       cash = pick(params, [
         'contract',
+        'lastBetTime',
         'pointsString',
         'multiPointsString',
         'userPositionsByOutcome',

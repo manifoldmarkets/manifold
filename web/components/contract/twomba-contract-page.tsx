@@ -75,6 +75,7 @@ import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweestakes-context'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
+import { useRouter } from 'next/router'
 
 export function TwombaContractPageContent(props: ContractParams) {
   const {
@@ -90,7 +91,14 @@ export function TwombaContractPageContent(props: ContractParams) {
     cash,
   } = props
 
-  const { isPlay } = useSweepstakes()
+  const { isPlay, setIsPlay } = useSweepstakes()
+  const router = useRouter()
+  useEffect(() => {
+    if (router.isReady) {
+      setIsPlay(router.query.play !== 'false')
+    }
+  }, [router.isReady])
+
   const livePlayContract = useLiveContractWithAnswers(props.contract)
   const liveCashContract = props.cash
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -144,7 +152,7 @@ export function TwombaContractPageContent(props: ContractParams) {
     contractId: cash?.contract.id ?? '',
     outcomeType: cash?.contract.outcomeType,
     userId: user?.id,
-    lastBetTime: props.lastBetTime,
+    lastBetTime: cash?.lastBetTime,
     totalBets: cash?.totalBets ?? 0,
     pointsString: cash?.pointsString,
     multiPointsString: cash?.multiPointsString,
@@ -210,6 +218,7 @@ export function TwombaContractPageContent(props: ContractParams) {
     parseJsonContentToText(props.contract.description).trim().length >= 200
 
   const isSpiceMarket = !!liveContract.isSpicePayout
+  const isCashContract = liveContract.token === 'CASH'
 
   return (
     <>
@@ -260,6 +269,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                 />
               </div>
             )}
+
             <Row
               className={clsx(
                 'sticky -top-px z-50 h-12 w-full transition-colors',
@@ -319,11 +329,6 @@ export function TwombaContractPageContent(props: ContractParams) {
             <Col className="w-full gap-3 lg:gap-4">
               <Col>
                 <div ref={titleRef}>
-                  <AuthorInfo
-                    contract={props.contract}
-                    resolverId={liveContract.resolverId}
-                    className="text-ink-600 mb-0.5"
-                  />
                   <VisibilityIcon
                     contract={props.contract}
                     isLarge
@@ -334,26 +339,23 @@ export function TwombaContractPageContent(props: ContractParams) {
                     canEdit={isAdmin || isCreator || isMod}
                   />
                 </div>
-                <Row className="items-center gap-2">
-                  <MarketTopics
-                    contract={props.contract}
-                    dashboards={dashboards}
-                    topics={topics}
-                    isSpiceMarket={isSpiceMarket}
-                  />
-                </Row>
               </Col>
 
-              <div className="text-ink-600 flex flex-wrap items-center justify-end gap-y-1 text-sm">
+              <Row className="text-ink-600  items-center justify-between gap-y-1 text-sm">
+                <AuthorInfo
+                  contract={props.contract}
+                  resolverId={liveContract.resolverId}
+                  userNameClass={'hidden sm:block'}
+                />
                 <TwombaContractSummaryStats
                   contractId={props.contract.id}
                   creatorId={props.contract.creatorId}
                   question={props.contract.question}
                   financeContract={liveContract}
                   editable={isCreator || isAdmin || isMod}
-                  isCashContract={liveContract.token === 'CASH'}
+                  isCashContract={isCashContract}
                 />
-              </div>
+              </Row>
               <ContractOverview
                 contract={liveContract}
                 key={liveContract.id} // reset state when switching play vs cash
@@ -382,14 +384,6 @@ export function TwombaContractPageContent(props: ContractParams) {
 
               <YourTrades contract={liveContract} yourNewBets={yourNewBets} />
             </Col>
-            {showRelatedMarketsBelowBet && (
-              <RelatedContractsGrid
-                contracts={relatedMarkets}
-                loadMore={loadMore}
-                showOnlyAfterBet={true}
-                justBet={justBet}
-              />
-            )}
             {showReview && user && (
               <div className="relative my-2">
                 <ReviewPanel
@@ -436,6 +430,15 @@ export function TwombaContractPageContent(props: ContractParams) {
               hasReviewed={!!userHasReviewed}
             />
             <ContractDescription contract={livePlayContract} />
+            <Row className="items-center gap-2">
+              <MarketTopics
+                contract={props.contract}
+                dashboards={dashboards}
+                topics={topics}
+                isSpiceMarket={isSpiceMarket}
+              />
+            </Row>
+
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
             {!!user && (
@@ -447,19 +450,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                 contract={props.contract}
               />
             )}
-            {showExplainerPanel && (
-              <div className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden">
-                <h2 className={clsx('text-ink-600  text-xl')}>What is this?</h2>
-                <ExplainerPanel />
-              </div>
-            )}
-            {comments.length > 3 && (
-              <RelatedContractsGrid
-                contracts={relatedMarkets}
-                loadMore={loadMore}
-                justBet={!showRelatedMarketsBelowBet && justBet}
-              />
-            )}
+
             {isResolved && resolution !== 'CANCEL' && (
               <>
                 <ContractLeaderboard
@@ -469,7 +460,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                   contractId={liveContract.id}
                   currentUser={user}
                   currentUserMetrics={contractMetrics}
-                  isCashContract={liveContract.token === 'CASH'}
+                  isCashContract={isCashContract}
                 />
                 <Spacer h={12} />
               </>
@@ -499,6 +490,12 @@ export function TwombaContractPageContent(props: ContractParams) {
                 betReplies={betReplies}
               />
             </div>
+            {showExplainerPanel && (
+              <div className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden">
+                <h2 className={clsx('text-ink-600  text-xl')}>What is this?</h2>
+                <ExplainerPanel />
+              </div>
+            )}
             <RelatedContractsGrid
               contracts={relatedMarkets}
               loadMore={loadMore}
