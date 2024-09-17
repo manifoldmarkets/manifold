@@ -16,9 +16,10 @@ export function UpdatedTermsModal() {
 
   const router = useRouter()
   const actualPath = router.asPath
-  const isExceptionPage = ['/terms', '/privacy', '/rules'].some((path) =>
-    actualPath.includes(path)
+  const isExceptionPage = ['/terms', '/privacy', '/sweepstakes-rules'].some(
+    (path) => actualPath.includes(path)
   )
+
   // Add a constant for the cutoff date, UPDATE WHEN FLIP TWOMBA_SWITCH
   const TERMS_UPDATE_DATE = new Date('2024-09-17') // Replace with actual update date
 
@@ -32,7 +33,7 @@ export function UpdatedTermsModal() {
     <Modal open={true} onClose={() => {}}>
       <Col className={MODAL_CLASS}>
         <LogoIcon
-          className="h-24 w-24 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white dark:stroke-white"
+          className="h-24 w-24 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white "
           aria-hidden
         />
         <div className="text-2xl font-semibold">Sweepstakes are here!</div>
@@ -42,6 +43,10 @@ export function UpdatedTermsModal() {
             href="/terms"
             className="text-primary-700 font-semibold underline"
             target="_blank"
+            onClick={(e) => {
+              e.stopPropagation()
+              window.open('/terms', '_blank')
+            }}
           >
             Terms & Conditions
           </a>
@@ -50,6 +55,10 @@ export function UpdatedTermsModal() {
             className="text-primary-700 font-semibold underline"
             href="/privacy"
             target="_blank"
+            onClick={(e) => {
+              e.stopPropagation()
+              window.open('/privacy', '_blank')
+            }}
           >
             Privacy Policy
           </a>
@@ -58,6 +67,10 @@ export function UpdatedTermsModal() {
             href="/sweepstakes-rules"
             className="text-primary-700 font-semibold underline"
             target="_blank"
+            onClick={(e) => {
+              e.stopPropagation()
+              window.open('/sweepstakes-rules', '_blank')
+            }}
           >
             Sweepstakes Rules
           </a>
