@@ -8,7 +8,6 @@ import { FaHandHoldingUsd, FaPercentage } from 'react-icons/fa'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
 import {
-  SPICE_PRODUCTION_ENABLED,
   SWEEPIES_NAME,
   TRADE_TERM,
   TRADING_TERM,
