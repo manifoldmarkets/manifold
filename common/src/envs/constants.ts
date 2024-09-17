@@ -27,6 +27,7 @@ export const SPICE_NAME = 'Prize Point'
 export const SWEEPIES_NAME = 'Sweepcash'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
 export const SWEEPIES_MARKET_TOOLTIP = `Sweepstakes market! Win real cash prizes.`
+export const CASH_SUFFIX = '--cash'
 
 export const TRADE_TERM = 'trade'
 export const TRADED_TERM = 'traded'
