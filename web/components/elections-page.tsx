@@ -10,7 +10,7 @@ import { ConditionalMarkets } from './us-elections/contracts/conditional-market/
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 
 export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
-  'Who win the Presidential Election?'
+  'Who will win the Presidential Election?'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const {
