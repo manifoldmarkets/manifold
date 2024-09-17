@@ -16,13 +16,13 @@ const bodySchema = z
 
 export const banUserFromTrading = authEndpoint(async (req, auth) => {
   const { userId, unban } = validate(bodySchema, req.body)
-  const db = createSupabaseDirectClient()
+  const pg = createSupabaseDirectClient()
   await throwErrorIfNotMod(auth.uid)
   if (isAdminId(userId)) throw new APIError(403, 'Cannot ban admin')
   await trackPublicEvent(auth.uid, 'ban user from trading', {
     userId,
   })
-  await updateUser(db, userId, {
+  await updateUser(pg, userId, {
     isBannedFromTrading: !unban,
   })
   log(`Updated trading ban status for user ${userId}`)
