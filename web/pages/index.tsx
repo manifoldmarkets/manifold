@@ -19,10 +19,7 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
-import {
-  HIDE_FROM_NEW_USER_SLUGS,
-  TRADE_TERM,
-} from 'common/envs/constants'
+import { HIDE_FROM_NEW_USER_SLUGS, TRADE_TERM } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
 import { PillButton } from 'web/components/buttons/pill-button'
