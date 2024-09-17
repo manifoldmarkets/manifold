@@ -304,6 +304,7 @@ function usePortfolioPointsFromHistory(
     const investmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
     const balancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
     const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+    const spicePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
 
     const cashProfitPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
     const cashInvestmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
@@ -319,8 +320,16 @@ function usePortfolioPointsFromHistory(
       return balance + investment - totalDeposits - firstProfit
     }
 
-    function getNetworth(balance: number, investment: number) {
-      return balance + investment
+    function getNetworth(
+      balance: number,
+      investment: number,
+      spiceBalance?: number
+    ) {
+      return (
+        balance +
+        investment +
+        (spiceBalance ?? 0) * SPICE_TO_MANA_CONVERSION_RATE
+      )
     }
 
     portfolioHistory.forEach((p) => {
@@ -346,7 +355,7 @@ function usePortfolioPointsFromHistory(
       })
       networthPoints.push({
         x: p.timestamp,
-        y: getNetworth(p.balance, p.investmentValue),
+        y: getNetworth(p.balance, p.investmentValue, p.spiceBalance),
         obj: p,
       })
       cashProfitPoints.push({
