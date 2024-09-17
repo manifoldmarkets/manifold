@@ -18,6 +18,7 @@ import { SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { Row } from '../layout/row'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import clsx from 'clsx'
+import { TopicTag } from '../topics/topic-tag'
 
 const DashboardLink = (props: {
   dashboard: { slug: string; title: string }
@@ -25,7 +26,10 @@ const DashboardLink = (props: {
   const { dashboard } = props
   return (
     <Link
-      className="text-teal-700 hover:underline active:underline"
+      className={clsx(
+        'group items-center gap-1 text-teal-500 hover:bg-teal-100 hover:text-teal-700' +
+          ' whitespace-nowrap rounded px-1 py-0.5 text-sm transition-colors'
+      )}
       href={`/news/${dashboard.slug}`}
     >
       {dashboard.title}
@@ -77,7 +81,7 @@ export function MarketTopics(props: TopicRowProps) {
 
   return (
     <>
-      <div className="group mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium sm:text-sm">
+      <div className="group mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs font-medium sm:text-sm">
         {isSpiceMarket && (
           <Link href="/browse?p=1&f=open">
             <Tooltip text={SPICE_MARKET_TOOLTIP}>
@@ -91,7 +95,17 @@ export function MarketTopics(props: TopicRowProps) {
           <DashboardLink key={d.slug} dashboard={d} />
         ))}
         {topics.map((t) => (
-          <TopicLink key={t.id} topic={t} contractId={contract.id} />
+          <TopicTag
+            key={t.id}
+            topic={t}
+            location="market page"
+            onClick={() => {
+              track('click category pill on market', {
+                contractId: contract.id,
+                categoryName: t.name,
+              })
+            }}
+          />
         ))}
         {user && canEdit && (
           <button

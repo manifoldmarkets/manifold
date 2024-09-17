@@ -16,6 +16,7 @@ export function TopicTag(props: {
     | 'dashboard page'
   className?: string
   children?: React.ReactNode // end element - usually for a remove button
+  onClick?: () => void
 }) {
   const { topic, location, className, children } = props
 
@@ -34,10 +35,14 @@ export function TopicTag(props: {
         href={groupPath(topic.slug)}
         onClick={(e) => {
           e.stopPropagation()
-          track(`click category tag`, {
-            categoryName: topic.name,
-            location,
-          })
+          if (props.onClick) {
+            props.onClick()
+          } else {
+            track(`click category tag`, {
+              categoryName: topic.name,
+              location,
+            })
+          }
         }}
         className={'max-w-[200px] truncate sm:max-w-[250px]'}
       >
