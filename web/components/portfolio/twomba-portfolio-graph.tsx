@@ -304,7 +304,6 @@ function usePortfolioPointsFromHistory(
     const investmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
     const balancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
     const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-    const spicePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
 
     const cashProfitPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
     const cashInvestmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
