@@ -81,7 +81,7 @@ export function MarketTopics(props: TopicRowProps) {
 
   return (
     <>
-      <div className="group mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs font-medium sm:text-sm">
+      <div className="group mt-1 flex flex-wrap gap-x-1 gap-y-1 text-xs font-medium sm:text-sm">
         {isSpiceMarket && (
           <Link href="/browse?p=1&f=open">
             <Tooltip text={SPICE_MARKET_TOOLTIP}>
