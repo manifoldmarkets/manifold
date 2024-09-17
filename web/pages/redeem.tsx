@@ -1,9 +1,5 @@
 import clsx from 'clsx'
-import {
-  KYC_VERIFICATION_BONUS_CASH,
-  MIN_CASHOUT_AMOUNT,
-  SWEEPIES_CASHOUT_FEE,
-} from 'common/economy'
+import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import { SWEEPIES_NAME, TRADED_TERM } from 'common/envs/constants'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import {
@@ -44,6 +40,7 @@ import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
 import { capitalize } from 'lodash'
+import { useKYCGiftAmount } from 'web/components/twomba/toggle-verify-callout'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -117,6 +114,8 @@ const CashoutPage = () => {
   const [zipCode, setZipCode] = useState('')
   const [sessionStatus, setSessionStatus] = useState<string>()
   const [completedCashout, setCompletedCashout] = useState(0)
+  const kycAmount = useKYCGiftAmount(user)
+
   useApiSubscription({
     topics: [
       `gidx-checkout-session/${checkoutSession?.MerchantSessionID ?? '_'}`,
@@ -277,12 +276,16 @@ const CashoutPage = () => {
               >
                 Verify and get
                 <span className="ml-1">
-                  <CoinNumber
-                    amount={KYC_VERIFICATION_BONUS_CASH}
-                    className={'font-bold'}
-                    isInline
-                    coinType={'CASH'}
-                  />
+                  {kycAmount == undefined ? (
+                    ' a sweepcash gift!'
+                  ) : (
+                    <CoinNumber
+                      amount={kycAmount}
+                      className={'font-bold'}
+                      isInline
+                      coinType={'CASH'}
+                    />
+                  )}
                 </span>
               </Link>
             </Col>
