@@ -20,7 +20,7 @@ export function RedeemSweepsButtons(props: { user: User; className?: string }) {
     <>
       <Button
         onClick={onClick}
-        color={canRedeem ? 'yellow' : 'gray'}
+        color={canRedeem ? 'amber' : 'gray'}
         className={className}
       >
         Redeem
