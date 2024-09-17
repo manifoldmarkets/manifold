@@ -629,7 +629,8 @@ export function ContractPageContent(props: ContractParams) {
             <div ref={tabsContainerRef} className="mb-4">
               <ContractTabs
                 // Pass cached contract so it won't rerender so many times.
-                contract={cachedContract}
+                mainContract={cachedContract}
+                liveContract={cachedContract}
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}
