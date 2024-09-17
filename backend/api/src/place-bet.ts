@@ -290,7 +290,12 @@ export const fetchContractBetDataAndValidate = async (
       contract.token === 'CASH' ? bet.cash_balance : bet.balance,
     ])
   )
+
   const unfilledBetUserIds = Object.keys(balanceByUserId)
+  if (isAdminId(uid) && contract.token === 'CASH') {
+    throw new APIError(403, 'Admins cannot trade on sweepstakes markets.')
+  }
+
   const balance = contract.token === 'CASH' ? user.cashBalance : user.balance
   if (amount !== undefined && balance < amount)
     throw new APIError(403, 'Insufficient balance.')
@@ -303,8 +308,8 @@ export const fetchContractBetDataAndValidate = async (
       'You must be kyc verified to trade on sweepstakes markets.'
     )
   }
-  if (BANNED_TRADING_USER_IDS.includes(user.id) || user.userDeleted) {
-    throw new APIError(403, 'You are banned or deleted. And not #blessed.')
+  if (user.isBannedFromTrading || user.userDeleted) {
+    throw new APIError(403, 'You are banned or deleted.')
   }
   log(
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
