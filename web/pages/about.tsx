@@ -6,9 +6,7 @@ import { Footer } from 'web/components/footer'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import {
-  ExplainerPanel,
-} from 'web/components/explainer-panel'
+import { ExplainerPanel } from 'web/components/explainer-panel'
 import { LabCard } from './lab'
 import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
 import { capitalize } from 'lodash'
@@ -75,12 +73,14 @@ export default function AboutPage() {
                 target="_blank"
                 description="For a more comprehensive overview"
               />
-              {TWOMBA_ENABLED && (<LabCard
-                title="Sweepstakes FAQ"
-                href="https://docs.manifold.markets/sweepstakes"
-                target="_blank"
-                description="For questions about sweepstakes"
-              />)}
+              {TWOMBA_ENABLED && (
+                <LabCard
+                  title="Sweepstakes FAQ"
+                  href="https://docs.manifold.markets/sweepstakes"
+                  target="_blank"
+                  description="For questions about sweepstakes"
+                />
+              )}
               <LabCard
                 title="Community guidelines"
                 href="https://manifoldmarkets.notion.site/New-WIP-Community-Guidelines-2b986d33f0c646478d4921667c272f21"
