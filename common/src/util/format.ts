@@ -75,7 +75,6 @@ export function formatSweepiesNumber(
   if (short && amount >= 1000) {
     return formatLargeNumber(amount)
   }
-  console.log(amount, parameters)
   const toDecimalPlace = toDecimal ?? 2
   // return amount.toFixed(toDecimal ?? 2)
   return amount.toLocaleString('en-US', {
