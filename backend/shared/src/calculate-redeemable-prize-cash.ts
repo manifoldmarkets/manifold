@@ -1,5 +1,6 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
+import { log } from './utils'
 
 // Gets the total amount of prize cash that a user can redeem for usd, before fees
 // You still have to Math.min with user cash balance btw
@@ -8,7 +9,7 @@ export async function calculateRedeemablePrizeCash(
   userId: string
 ) {
   // TODO: add cash out cancels
-  const result = await pg.one<{ total: number; cash_balance: number | null }>(
+  const result = await pg.oneOrNone<{ total: number; cash_balance: number }>(
     `with user_info as (
       select cash_balance, coalesce((data->'sweepstakes5kLimit')::boolean, false) as five_k_limit
       from users
@@ -40,9 +41,13 @@ export async function calculateRedeemablePrizeCash(
     [userId]
   )
 
-  if (result.cash_balance == null) {
+  if (result == null) {
     throw new APIError(401, 'Account not found')
   }
+  log('Cashoutable sweepcash for', userId, result)
 
-  return Math.min(result.total, result.cash_balance)
+  return {
+    redeemable: Math.min(result.total, result.cash_balance),
+    cashBalance: result.cash_balance,
+  }
 }

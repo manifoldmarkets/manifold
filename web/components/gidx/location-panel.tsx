@@ -31,6 +31,7 @@ export const LocationPanel = (props: {
   } = props
 
   const [checkedPermissions, setCheckedPermissions] = useState(false)
+  const [timeout, setTimeout] = useState(10000)
 
   useEffect(() => {
     if (!checkedPermissions) checkLocationPermission()
@@ -112,11 +113,15 @@ export const LocationPanel = (props: {
           onFinishCallback?.()
         },
         (error) => {
-          if (error.PERMISSION_DENIED) {
+          console.log('Error requesting location', error)
+          if (error.message.includes('denied')) {
             setLocationError(
               'Location permission denied. Please enable location sharing in your browser settings.'
             )
           } else {
+            if (error.message.includes('timeout')) {
+              setTimeout(timeout + 5000)
+            }
             setLocationError(error.message)
           }
           setLoading(false)
@@ -124,7 +129,7 @@ export const LocationPanel = (props: {
         },
         {
           enableHighAccuracy: true,
-          timeout: 5000,
+          timeout,
           maximumAge: 20 * MINUTE_MS,
         }
       )

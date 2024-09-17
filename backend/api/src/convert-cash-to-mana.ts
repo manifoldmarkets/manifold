@@ -11,7 +11,7 @@ export const convertCashToMana: APIHandler<'convert-cash-to-mana'> = async (
   const pg = createSupabaseDirectClient()
 
   await pg.tx(async (tx) => {
-    const redeemable = await calculateRedeemablePrizeCash(tx, auth.uid)
+    const { redeemable } = await calculateRedeemablePrizeCash(tx, auth.uid)
 
     if (redeemable < amount) {
       throw new APIError(403, 'Not enough redeemable balance')
