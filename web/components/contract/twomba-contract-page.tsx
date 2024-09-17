@@ -468,7 +468,8 @@ export function TwombaContractPageContent(props: ContractParams) {
 
             <div ref={tabsContainerRef} className="mb-4">
               <ContractTabs
-                contract={liveContract}
+                mainContract={props.contract}
+                liveContract={liveContract}
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}
