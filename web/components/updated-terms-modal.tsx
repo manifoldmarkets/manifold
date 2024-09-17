@@ -26,8 +26,8 @@ export function UpdatedTermsModal() {
   // Check if the user was created after the terms update
   const isNewUser = user && new Date(user.createdTime) > TERMS_UPDATE_DATE
 
-  // if (agreedToTerms || !user || !TWOMBA_ENABLED || isExceptionPage || isNewUser)
-  //   return null
+  if (agreedToTerms || !user || !TWOMBA_ENABLED || isExceptionPage || isNewUser)
+    return null
 
   return (
     <Modal open={true} onClose={() => {}}>
