@@ -1,14 +1,8 @@
 import { track } from 'web/lib/service/analytics'
 import clsx from 'clsx'
 import { Bet } from 'common/bet'
-import {
-  getDisplayProbability,
-  getProbability,
-} from 'common/calculate'
-import {
-  BinaryContract,
-  Contract,
-} from 'common/contract'
+import { getDisplayProbability, getProbability } from 'common/calculate'
+import { BinaryContract, Contract } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
@@ -32,12 +26,8 @@ import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import {
-  BubblePercentChange,
-} from '../candidates-panel/candidate-bar'
-import {
-  BinaryUserPosition,
-} from '../candidates-panel/candidates-user-position'
+import { BubblePercentChange } from '../candidates-panel/candidate-bar'
+import { BinaryUserPosition } from '../candidates-panel/candidates-user-position'
 import { ELECTIONS_PARTY_QUESTION_PSEUDONYM } from 'web/components/elections-page'
 
 const politicsBinaryPseudonym = {
