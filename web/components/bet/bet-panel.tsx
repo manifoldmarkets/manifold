@@ -190,7 +190,7 @@ export function BuyPanel(props: {
         <BuyPanelBody
           {...props}
           panelClassName={
-            TWOMBA_ENABLED
+            TWOMBA_ENABLED || !!pseudonym
               ? 'bg-canvas-50'
               : outcome === 'NO'
               ? 'bg-scarlet-50'
