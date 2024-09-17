@@ -20,7 +20,7 @@ All markets on Manifold are by default play-money and use our play-money called 
 
 ### How do I enter a sweepstakes market?
 
-Users may participate in a sweepstakes market by using sweepcash. It is free to enter and users can receive Manicash by:
+Users may participate in a sweepstakes market by using sweepcash. It is free to enter and users can receive sweepcash by:
 
 - Verifying their phone number and personal details for a welcome gift.
 - Completing their daily streak for a free bonus.
