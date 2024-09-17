@@ -76,7 +76,9 @@ const useDevtoolsDetector = () => {
   )
   const isMobile = useIsMobile()
   useEffect(() => {
-    const isLocal = window.location.hostname === 'localhost'
+    const isLocal =
+      window.location.hostname === 'localhost' ||
+      window.location.href.includes('embed')
     if (!TWOMBA_ENABLED || isLocal) {
       return
     }
