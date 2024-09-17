@@ -475,7 +475,7 @@ export default function LimitOrderPanel(props: {
               disabled={betDisabled || inputError}
               color={
                 (pseudonymColor as any) ??
-                (isBinaryMC ? 'none' : outcome === 'YES' ? 'green' : 'red')
+                (hideYesNo ? 'none' : outcome === 'YES' ? 'green' : 'red')
               }
               loading={isSubmitting}
               className={clsx('flex-1 text-white')}
