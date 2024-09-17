@@ -113,7 +113,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useHasLoaded()
   useRefreshAllClients()
   // ian: Required by GambleId
-  const devToolsOpen = useDevtoolsDetector()
+  const devToolsOpen = false //useDevtoolsDetector()
   useThemeManager()
 
   const title = 'Manifold'
