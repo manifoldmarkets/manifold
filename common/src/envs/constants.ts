@@ -11,7 +11,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
   DEV: DEV_CONFIG,
 }
 
-export const TWOMBA_ENABLED = false
+export const TWOMBA_ENABLED = true
 export const PRODUCT_MARKET_FIT_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = true
 export const SPICE_TO_MANA_CONVERSION_RATE = 1

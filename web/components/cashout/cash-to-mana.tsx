@@ -12,6 +12,10 @@ import { Col } from '../layout/col'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import clsx from 'clsx'
+import { CoinNumber } from 'web/components/widgets/coin-number'
+import toast from 'react-hot-toast'
+import router from 'next/router'
+import { useUser } from 'web/hooks/use-user'
 
 export const CashToManaForm = (props: {
   onBack: () => void
@@ -30,6 +34,8 @@ export const CashToManaForm = (props: {
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const user = useUser()
 
   const updateAmounts = (
     newAmount: number | undefined,
@@ -59,6 +65,8 @@ export const CashToManaForm = (props: {
       setLoading(false)
       updateAmounts(sweepiesAmount, 'sweepies')
       setError(null)
+      toast.success(`Successfully converted your ${SWEEPIES_NAME} to mana!`)
+      onBack()
     } catch (e) {
       console.error(e)
       setError(e instanceof APIError ? e.message : 'Error converting')
@@ -71,7 +79,7 @@ export const CashToManaForm = (props: {
       Convert at a rate of {CASH_TO_MANA_CONVERSION_RATE} {SWEEPIES_NAME} to 1
       mana.
       <Col>
-        <div className="text-ink-500 text-sm">Trade</div>
+        <div className="text-ink-500 text-sm">Redeem</div>
         <AmountInput
           amount={sweepiesAmount}
           onChangeAmount={(newAmount) => {
@@ -118,13 +126,13 @@ export const CashToManaForm = (props: {
         </Button>
         <Button
           color="violet"
-          disabled={!manaAmount || notEnoughCashError}
+          // disabled={!manaAmount || notEnoughCashError}
           loading={loading}
           onClick={onSubmit}
           className="w-full"
         >
-          Convert to {ENV_CONFIG.moneyMoniker}
-          {manaAmount ?? 0}
+          Redeem for &nbsp;
+          <CoinNumber amount={sweepiesAmount} coinType="mana" isInline />
         </Button>
       </Row>
       <Row className="text-error mt-2 text-sm">{error}</Row>
