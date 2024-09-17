@@ -29,7 +29,6 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { BubblePercentChange } from '../candidates-panel/candidate-bar'
 import { BinaryUserPosition } from '../candidates-panel/candidates-user-position'
 import { ELECTIONS_PARTY_QUESTION_PSEUDONYM } from 'web/components/elections-page'
-import { TwombaToggle } from 'web/components/twomba/twomba-toggle'
 
 const politicsBinaryPseudonym = {
   YES: {
