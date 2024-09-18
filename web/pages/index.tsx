@@ -38,7 +38,6 @@ import { useUser } from 'web/hooks/use-user'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
-import { AboutManifold } from 'web/components/about-manifold'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
