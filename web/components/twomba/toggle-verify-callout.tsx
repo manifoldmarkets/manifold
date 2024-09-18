@@ -152,7 +152,11 @@ export function VerifyButton(props: { className?: string }) {
     >
       Verify and claim
       {amount == undefined ? (
-        ' a prizecash gift!'
+        <CoinNumber
+          amount={KYC_VERIFICATION_BONUS_CASH}
+          coinType="CASH"
+          className="ml-1"
+        />
       ) : (
         <CoinNumber amount={amount} coinType="CASH" className="ml-1" />
       )}
