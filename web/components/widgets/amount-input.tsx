@@ -111,6 +111,7 @@ export function AmountInput(
             inputMode={allowFloat ? 'decimal' : 'numeric'}
             placeholder="0"
             maxLength={9}
+            step={0.01}
             value={amountString}
             error={error}
             disabled={disabled}

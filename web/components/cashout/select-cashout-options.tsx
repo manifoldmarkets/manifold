@@ -35,7 +35,7 @@ export function SelectCashoutOptions(props: {
 
   return (
     <Col className={clsx('gap-4', allDisabled && 'text-ink-700 opacity-80')}>
-      <Col className="bg-canvas-0 w-full gap-4 rounded-lg p-4 pb-1">
+      <Col className="bg-canvas-50 w-full gap-4 rounded-lg p-4 pb-1">
         <Row className="gap-4">
           <ManaCoin className={clsx('text-7xl', allDisabled && 'grayscale')} />
           <Col>
@@ -76,7 +76,7 @@ export function SelectCashoutOptions(props: {
         </Col>
       </Col>
       {!isNativeIOS && (
-        <Col className="bg-canvas-0 gap-4 rounded-lg p-4 pb-1">
+        <Col className="bg-canvas-50 gap-4 rounded-lg p-4 pb-1">
           <Row className="gap-4">
             <img
               alt="donate"
@@ -138,7 +138,7 @@ export function SelectCashoutOptions(props: {
         </Col>
       )}
 
-      <Col className="bg-canvas-0 w-full gap-4 rounded-lg p-4 pb-1">
+      <Col className="bg-canvas-50 w-full gap-4 rounded-lg p-4 pb-1">
         <Row className=" gap-4">
           <img
             alt="donate"
