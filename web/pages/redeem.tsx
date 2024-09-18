@@ -67,7 +67,7 @@ function SweepiesStats(props: {
 }) {
   const { redeemableCash, cashBalance, className } = props
   return (
-    <Row className="w-full gap-4 text-2xl md:text-3xl">
+    <Row className="w-full max-w-lg gap-4 text-2xl md:text-3xl">
       <Col className={clsx('w-1/2 items-start', className)}>
         <div className="text-ink-500 whitespace-nowrap text-sm">
           Redeemable
