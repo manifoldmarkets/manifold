@@ -21,7 +21,6 @@ import { ContractMetric } from 'common/contract-metric'
 import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
-import { parseJsonContentToText } from 'common/util/parse'
 import { DAY_MS } from 'common/util/time'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
@@ -207,14 +206,6 @@ export function TwombaContractPageContent(props: ContractParams) {
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(props.contract.id, user?.id)
   const userHasReviewed = userReview || justNowReview
-  const [justBet, setJustBet] = useState(false)
-  useEffect(() => {
-    if (!user || !user.lastBetTime) return
-    const hasJustBet = user.lastBetTime > Date.now() - 3000
-    setJustBet(hasJustBet)
-  }, [user?.lastBetTime])
-  const showRelatedMarketsBelowBet =
-    parseJsonContentToText(props.contract.description).trim().length >= 200
 
   const isSpiceMarket = !!liveContract.isSpicePayout
   const isCashContract = liveContract.token === 'CASH'
@@ -520,7 +511,7 @@ export function TwombaContractPageContent(props: ContractParams) {
       </Row>
 
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
-      <LocationModal user={user} />
+      <LocationModal contract={liveContract} user={user} />
     </>
   )
 }

@@ -5,9 +5,13 @@ import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 import { useEvent } from 'web/hooks/use-event'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
+import { Contract } from 'common/contract'
 
-export const LocationModal = (props: { user: User | undefined | null }) => {
-  const { user } = props
+export const LocationModal = (props: {
+  contract: Contract
+  user: User | undefined | null
+}) => {
+  const { user, contract } = props
   const [isOpen, setIsOpen] = useState(false)
   const {
     fetchMonitorStatus,
@@ -15,7 +19,7 @@ export const LocationModal = (props: { user: User | undefined | null }) => {
     loading,
     monitorStatus,
     monitorStatusMessage,
-  } = useMonitorStatus(true, user, () => setIsOpen(true))
+  } = useMonitorStatus(contract.token === 'CASH', user, () => setIsOpen(true))
   const getLocation = useEvent(() => {
     requestLocation((location) => {
       if (!location) {
