@@ -14,6 +14,7 @@ import {
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import {
+  CASH_SUFFIX,
   HOUSE_BOT_USERNAME,
   SPICE_MARKET_TOOLTIP,
   TWOMBA_ENABLED,
@@ -118,7 +119,7 @@ export async function getStaticProps(ctx: {
     const manaContract = contract.siblingContractId
       ? await getContract(adminDb, contract.siblingContractId)
       : null
-    const slug = manaContract?.slug ?? contractSlug.replace('--cash', '')
+    const slug = manaContract?.slug ?? contractSlug.replace(CASH_SUFFIX, '')
 
     return {
       redirect: {
@@ -628,7 +629,8 @@ export function ContractPageContent(props: ContractParams) {
             <div ref={tabsContainerRef} className="mb-4">
               <ContractTabs
                 // Pass cached contract so it won't rerender so many times.
-                contract={cachedContract}
+                mainContract={cachedContract}
+                liveContract={cachedContract}
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}

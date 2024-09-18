@@ -74,15 +74,17 @@ export function FeedCommentHeader(props: {
     isRepost,
     betOrderAmount,
     betLimitProb,
+    betToken,
   } = comment
 
-  const isCashContract = contract.token === 'CASH'
+  const betOnCashContract = betToken === 'CASH'
   const marketCreator = contract.creatorId === userId
-  const { bought, money } = getBoughtMoney(betAmount, isCashContract)
+  const { bought, money } = getBoughtMoney(betAmount, betOnCashContract)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   const isReplyToBet = betAmount !== undefined
   const commenterIsBettor = commenterAndBettorMatch(comment)
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
+
   return (
     <Col className={clsx('text-ink-600 text-sm', className)}>
       <Row className="justify-between">
@@ -104,7 +106,7 @@ export function FeedCommentHeader(props: {
               <span className="text-ink-1000">
                 <MoneyDisplay
                   amount={betOrderAmount}
-                  isCashContract={isCashContract}
+                  isCashContract={betOnCashContract}
                 />
               </span>{' '}
               <OutcomeLabel
@@ -182,7 +184,7 @@ export function FeedCommentHeader(props: {
               +
               <MoneyDisplay
                 amount={bountyAwarded}
-                isCashContract={isCashContract}
+                isCashContract={contract.token === 'CASH'}
               />
             </span>
           )}

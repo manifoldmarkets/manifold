@@ -11,12 +11,20 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet, maker } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { contractColumnsToSelect, log, metrics } from 'shared/utils'
+import { contractColumnsToSelect, isProd, log, metrics } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
+<<<<<<< trading-ban
 import { isAdminId, TWOMBA_ENABLED } from 'common/envs/constants'
+=======
+import {
+  BANNED_TRADING_USER_IDS,
+  isAdminId,
+  TWOMBA_ENABLED,
+} from 'common/envs/constants'
+>>>>>>> main
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import {
@@ -311,8 +319,16 @@ export const fetchContractBetDataAndValidate = async (
       'You must be kyc verified to trade on sweepstakes markets.'
     )
   }
+<<<<<<< trading-ban
   if (user.userDeleted) {
     throw new APIError(403, 'You are banned or deleted.')
+=======
+  if (isAdminId(user.id) && contract.token === 'CASH' && isProd()) {
+    throw new APIError(403, 'Admins cannot trade on sweepstakes markets.')
+  }
+  if (BANNED_TRADING_USER_IDS.includes(user.id) || user.userDeleted) {
+    throw new APIError(403, 'You are banned or deleted. And not #blessed.')
+>>>>>>> main
   }
   log(
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`

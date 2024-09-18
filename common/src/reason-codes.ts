@@ -82,6 +82,11 @@ export const limitTo5kCashoutCodes: string[] = [
   'LL-GEO-US-FL', // Location Florida
 ]
 
+export const uploadedDocsToVerifyIdentity = (reasonCodes: string[]) =>
+  ['DOC-REV-COMPL', 'ID-FAIL', 'ID-VERIFIED'].every((code) =>
+    reasonCodes.includes(code)
+  )
+
 export const documentsReadyCodes: string[] = ['DOC-REV-COMPL', 'DOC-UPLOADED']
 
 export type RegistrationReturnType = {

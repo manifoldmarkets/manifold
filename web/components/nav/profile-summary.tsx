@@ -33,7 +33,6 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
-        {!SPICE_PRODUCTION_ENABLED && <div>{user.name}</div>}
         <div className="flex items-center text-sm">
           <CoinNumber
             amount={user?.balance}

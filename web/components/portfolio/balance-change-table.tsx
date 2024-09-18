@@ -4,8 +4,8 @@ import {
   formatMoneyUSD,
   formatSpice,
   formatSweepies,
+  formatWithToken,
   maybePluralize,
-  shortFormatNumber,
 } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
@@ -20,7 +20,6 @@ import {
   isTxnChange,
 } from 'common/balance-change'
 import Link from 'next/link'
-import { ENV_CONFIG } from 'common/envs/constants'
 import {
   FaBackward,
   FaArrowRightArrowLeft,
@@ -272,9 +271,11 @@ const BetBalanceChangeRow = (props: {
   const { amount, contract, answer, bet, type } = change
   const { outcome } = bet
   const { slug, question, creatorUsername } = contract
-  const niceAmount =
-    (token === 'CASH' ? 'S' : ENV_CONFIG.moneyMoniker) +
-    shortFormatNumber(amount).replace('-', '')
+  const niceAmount = formatWithToken({
+    amount: Math.abs(amount),
+    token: token === 'MANA' ? 'M$' : 'CASH',
+    short: true,
+  })
   const direction =
     type === 'redeem_shares'
       ? 'sideways'

@@ -3,7 +3,6 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Modal, MODAL_CLASS } from './layout/modal'
 import { Col } from './layout/col'
 import { LogoIcon } from './icons/logo-icon'
-import Link from 'next/link'
 import { Button } from './buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { useRouter } from 'next/router'
@@ -12,14 +11,15 @@ export function UpdatedTermsModal() {
   const user = useUser()
   const [agreedToTerms, setAgreedToTerms] = usePersistentLocalState(
     false,
-    `agreedToTerms-${user?.id}`
+    `agreedToSweepsTerms`
   )
 
   const router = useRouter()
   const actualPath = router.asPath
-  const isExceptionPage = ['/terms', '/privacy', '/rules'].some((path) =>
-    actualPath.includes(path)
+  const isExceptionPage = ['/terms', '/privacy', '/sweepstakes-rules'].some(
+    (path) => actualPath.includes(path)
   )
+
   // Add a constant for the cutoff date, UPDATE WHEN FLIP TWOMBA_SWITCH
   const TERMS_UPDATE_DATE = new Date('2024-09-17') // Replace with actual update date
 
@@ -28,40 +28,40 @@ export function UpdatedTermsModal() {
 
   if (agreedToTerms || !user || !TWOMBA_ENABLED || isExceptionPage || isNewUser)
     return null
+
   return (
     <Modal open={true} onClose={() => {}}>
       <Col className={MODAL_CLASS}>
         <LogoIcon
-          className="h-24 w-24 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white dark:stroke-white"
+          className="h-24 w-24 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white "
           aria-hidden
         />
-        <div className="text-2xl font-semibold">An Important Update</div>
+        <div className="text-2xl font-semibold">Sweepstakes are here!</div>
         <p className="text-ink-700">
-          To continue using Manifold Markets, we kindly ask all users to review
-          our updated{' '}
-          <Link
-            href="/terms"
+          As part of our launch of sweepstakes, we have updated our{' '}
+          <a
+            href="https://docs.manifold.markets/terms-and-conditions"
             className="text-primary-700 font-semibold underline"
             target="_blank"
           >
             Terms & Conditions
-          </Link>
+          </a>
           ,{' '}
-          <Link
+          <a
+            href="https://docs.manifold.markets/privacy-policy"
             className="text-primary-700 font-semibold underline"
-            href="/privacy"
             target="_blank"
           >
             Privacy Policy
-          </Link>
+          </a>
           , and{' '}
-          <Link
-            href="/rules"
+          <a
+            href="https://docs.manifold.markets/rules"
             className="text-primary-700 font-semibold underline"
             target="_blank"
           >
-            Rules
-          </Link>
+            Sweepstakes Rules
+          </a>
           .
         </p>
         <p className="text-ink-700">

@@ -62,7 +62,11 @@ export function WarningConfirmationButton(props: {
 
   const realColor = warning
     ? 'yellow'
-    : color == 'indigo' || color == 'green' || color == 'red'
+    : color == 'indigo' ||
+      color == 'green' ||
+      color == 'red' ||
+      color == 'azure' ||
+      color == 'sienna'
     ? color
     : 'none'
 

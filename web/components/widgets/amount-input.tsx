@@ -111,6 +111,7 @@ export function AmountInput(
             inputMode={allowFloat ? 'decimal' : 'numeric'}
             placeholder="0"
             maxLength={9}
+            step={0.01}
             value={amountString}
             error={error}
             disabled={disabled}
@@ -123,6 +124,7 @@ export function AmountInput(
                 onChangeAmount(Math.max(0, (amount ?? 0) - 5))
               }
             }}
+            min={isSweepies ? 1 : 0}
           />
           <Row className="divide-ink-300 absolute right-[1px] h-full divide-x">
             {!disableClearButton && (
@@ -181,6 +183,7 @@ export function BuyAmountInput(props: {
   disableQuickButtons?: boolean
   token?: InputTokenType
   marketTier?: MarketTierType | undefined
+  sliderColor?: string
 }) {
   const {
     amount,
@@ -202,6 +205,7 @@ export function BuyAmountInput(props: {
     quickButtonValues,
     disableQuickButtons,
     token = 'M$',
+    sliderColor,
   } = props
   const user = useUser()
 
@@ -325,6 +329,7 @@ export function BuyAmountInput(props: {
             disabled={disabled}
             smallAmounts={!hasLotsOfMoney || marketTier === 'play'}
             token={token}
+            sliderColor={sliderColor}
           />
         )}
         {error ? (

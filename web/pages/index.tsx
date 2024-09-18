@@ -1,42 +1,44 @@
-import { useState } from 'react'
-import Link from 'next/link'
 import clsx from 'clsx'
+import Link from 'next/link'
+import { useState } from 'react'
 
-import { Page } from 'web/components/layout/page'
-import { Col } from 'web/components/layout/col'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { Row } from 'web/components/layout/row'
-import { TestimonialsPanel } from 'web/components/testimonials-panel'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { Button } from 'web/components/buttons/button'
-import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
-import { Footer } from 'web/components/footer'
-import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
-import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { LogoSEO } from 'web/components/LogoSEO'
-import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
-import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Contract } from 'common/contract'
-import { db } from 'web/lib/supabase/db'
 import {
   HIDE_FROM_NEW_USER_SLUGS,
   TRADE_TERM,
-  TRADING_TERM,
+  TWOMBA_ENABLED,
 } from 'common/envs/constants'
-import { useUser } from 'web/hooks/use-user'
-import { some } from 'd3-array'
-import { PillButton } from 'web/components/buttons/pill-button'
-import { Carousel } from 'web/components/widgets/carousel'
-import { removeEmojis } from 'common/util/string'
-import { filterDefined } from 'common/util/array'
-import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
 import {
   contractFields,
   convertContract,
   getContract,
 } from 'common/supabase/contracts'
+import { filterDefined } from 'common/util/array'
+import { removeEmojis } from 'common/util/string'
+import { some } from 'd3-array'
 import { capitalize } from 'lodash'
+import { LogoSEO } from 'web/components/LogoSEO'
+import { Button } from 'web/components/buttons/button'
+import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
+import { PillButton } from 'web/components/buttons/pill-button'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { Footer } from 'web/components/footer'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { SweepsExplainer } from 'web/components/sweeps-explainer'
+import { TestimonialsPanel } from 'web/components/testimonials-panel'
+import { Carousel } from 'web/components/widgets/carousel'
+import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
+import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useUser } from 'web/hooks/use-user'
+import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { db } from 'web/lib/supabase/db'
+import { AboutManifold } from 'web/components/about-manifold'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
@@ -187,18 +189,12 @@ export default function LandingPage(props: {
               <h1 className="mb-4 text-4xl">
                 {capitalize(TRADE_TERM)} on politics & more
               </h1>
-              <h1 className="text-lg">
-                Play-money markets. Real-world accuracy.
-              </h1>
-              <h1 className="text-lg">
-                Compete with your friends by {TRADING_TERM} on politics, tech,
-                sports, and more. It's play money and free to play.
-              </h1>
+              <AboutManifold className="text-lg" />
 
               <Button
                 color="gradient"
                 size="2xl"
-                className="mt-8"
+                className="mt-4"
                 onClick={firebaseLogin}
               >
                 Start predicting
@@ -214,8 +210,9 @@ export default function LandingPage(props: {
             </Col>
           </Row>
         </Col>
+        {TWOMBA_ENABLED && <SweepsExplainer />}
         <Col>
-          <Row className={'mb-3 text-xl'}>🔥 Trending Topics</Row>
+          <Row className={'mb-3 mt-2 text-xl'}>🔥 Trending Topics</Row>
           <Carousel labelsParentClassName={'gap-2'} className="mx-1">
             {topics.map((topic) => (
               <PillButton

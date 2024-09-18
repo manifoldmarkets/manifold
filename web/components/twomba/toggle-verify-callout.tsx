@@ -14,6 +14,9 @@ import { buttonClass } from '../buttons/button'
 import { Row } from '../layout/row'
 import { CoinNumber } from '../widgets/coin-number'
 import { Tooltip } from '../widgets/tooltip'
+import { useEffect, useState } from 'react'
+import { db } from 'web/lib/supabase/db'
+import { type User } from 'common/user'
 
 export function ToggleVerifyCallout(props: {
   className?: string
@@ -37,13 +40,11 @@ export function ToggleVerifyCallout(props: {
         caratClassName={caratClassName}
       >
         <Row className="w-full justify-between gap-2">
-          <div className=" font-semibold">
-            {capitalize(TRADE_TERM)} with {SWEEPIES_NAME}!
-          </div>
+          <div className=" font-semibold">Sweepstakes are here</div>
           <InBeta className="mb-2" tooltipPlacement={'bottom'} />
         </Row>
         <div className="text-ink-700 text-sm">
-          This is a <b>{SWEEPIES_NAME} market</b>! {capitalize(TRADE_TERM)} with{' '}
+          This is a <b>sweepstakes market</b>! {capitalize(TRADE_TERM)} with{' '}
           {SWEEPIES_NAME} for the chance to win real cash prizes.
         </div>
       </CalloutFrame>
@@ -61,9 +62,7 @@ export function ToggleVerifyCallout(props: {
       caratClassName={caratClassName}
     >
       <Row className="w-full justify-between gap-2">
-        <div className=" font-semibold">
-          {capitalize(TRADE_TERM)} with {SWEEPIES_NAME}!
-        </div>
+        <div className="font-semibold">Sweepstakes are here</div>
         <InBeta className="mb-2" tooltipPlacement={'bottom'} />
       </Row>
       Verify your identity and start earning <b>real cash prizes</b> today.
@@ -138,9 +137,13 @@ function CalloutFrame(props: {
 
 export function VerifyButton(props: { className?: string }) {
   const { className } = props
+
+  const user = useUser()
+  const amount = useKYCGiftAmount(user)
+
   return (
     <Link
-      href={'gidx/register'}
+      href={'/gidx/register'}
       className={clsx(
         buttonClass('md', 'gradient-pink'),
         'w-full font-semibold',
@@ -148,11 +151,38 @@ export function VerifyButton(props: { className?: string }) {
       )}
     >
       Verify and claim
-      <CoinNumber
-        amount={KYC_VERIFICATION_BONUS_CASH}
-        coinType="CASH"
-        className="ml-1"
-      />
+      {amount == undefined ? (
+        <CoinNumber
+          amount={KYC_VERIFICATION_BONUS_CASH}
+          coinType="CASH"
+          className="ml-1"
+        />
+      ) : (
+        <CoinNumber amount={amount} coinType="CASH" className="ml-1" />
+      )}
     </Link>
   )
+}
+
+export function useKYCGiftAmount(user: User | undefined | null) {
+  const [amount, setAmount] = useState<number>()
+  useEffect(() => {
+    if (!user) return
+    db.from('kyc_bonus_rewards')
+      .select('reward_amount')
+      .eq('user_id', user.id)
+      .then(({ data, error }) => {
+        if (error) {
+          console.error(error)
+          return
+        }
+        if (data && data.length > 0) {
+          setAmount(
+            Math.max(KYC_VERIFICATION_BONUS_CASH, data[0].reward_amount)
+          )
+        }
+      })
+  }, [user?.id])
+
+  return amount
 }

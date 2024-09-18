@@ -92,12 +92,12 @@ module.exports = {
       },
       {
         source: '/privacy',
-        destination: '/privacy.html',
+        destination: '/privacy-policy.html',
         permanent: true,
       },
       {
         source: '/terms',
-        destination: '/terms.html',
+        destination: '/terms-and-conditions.html',
         permanent: true,
       },
       {
