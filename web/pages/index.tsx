@@ -6,7 +6,6 @@ import { Contract } from 'common/contract'
 import {
   HIDE_FROM_NEW_USER_SLUGS,
   TRADE_TERM,
-  TRADING_TERM,
   TWOMBA_ENABLED,
 } from 'common/envs/constants'
 import {
