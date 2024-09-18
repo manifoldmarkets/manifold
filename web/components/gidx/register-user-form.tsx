@@ -285,8 +285,8 @@ export const RegisterUserForm = (props: {
             onChange={(e) => setUserInfo({ ...userInfo, City: e.target.value })}
           />
         </Col>
-        <Row className={'gap-4'}>
-          <Col className={'w-1/2 gap-0.5'}>
+        <div className={'flex flex-col gap-4 sm:flex-row'}>
+          <Col className={'w-full gap-0.5 sm:w-1/2'}>
             <InputTitle>State</InputTitle>
             <Input
               placeholder={'Your state'}
@@ -297,7 +297,7 @@ export const RegisterUserForm = (props: {
               }
             />
           </Col>
-          <Col className={'w-1/2 gap-0.5'}>
+          <Col className={'w-full gap-0.5 sm:w-1/2'}>
             <InputTitle>Postal Code</InputTitle>
             <Input
               placeholder={'Your postal code'}
@@ -308,7 +308,7 @@ export const RegisterUserForm = (props: {
               }
             />
           </Col>
-        </Row>
+        </div>
         {error && (
           <Col className={'text-error'}>
             {error}
