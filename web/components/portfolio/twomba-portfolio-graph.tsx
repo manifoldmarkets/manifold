@@ -337,7 +337,7 @@ function usePortfolioPointsFromHistory(
       profitPoints.push({
         x: p.timestamp,
         y: getProfit(
-          p.balance,
+          p.balance + (p.spiceBalance ?? 0) * SPICE_TO_MANA_CONVERSION_RATE,
           p.investmentValue,
           p.totalDeposits,
           firstProfit
