@@ -39,6 +39,7 @@ export const BetSlider = (props: {
   disabled?: boolean
   className?: string
   token?: InputTokenType
+  sliderColor?: string
 }) => {
   const {
     amount,
@@ -47,6 +48,7 @@ export const BetSlider = (props: {
     binaryOutcome,
     disabled,
     className,
+    sliderColor,
   } = props
 
   const token = props.token ?? 'M$'
@@ -95,7 +97,9 @@ export const BetSlider = (props: {
       max={maxSliderIndex}
       marks={marks}
       color={
-        binaryOutcome === 'YES'
+        sliderColor
+          ? (sliderColor as any)
+          : binaryOutcome === 'YES'
           ? 'green'
           : binaryOutcome === 'NO'
           ? 'red'

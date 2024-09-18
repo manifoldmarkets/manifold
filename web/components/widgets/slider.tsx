@@ -12,7 +12,7 @@ const colors = {
   indigo: ['bg-primary-300', 'focus:outline-primary-500/30 bg-primary-500'],
   violet: ['bg-violet-300', 'focus:outline-violet-500/30 bg-violet-500'],
   azure: ['bg-azure-300', 'focus:outline-azure-500/30 bg-azure-500'],
-  sienn: ['bg-sienna-300', 'focus:outline-sienna-500/30 bg-sienna-500'],
+  sienna: ['bg-sienna-300', 'focus:outline-sienna-500/30 bg-sienna-500'],
   // light: ['primary-200', 'primary-300']
 } as const
 export type Mark = { value: number; label: string }
