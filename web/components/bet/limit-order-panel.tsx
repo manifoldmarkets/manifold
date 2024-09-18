@@ -101,7 +101,9 @@ export default function LimitOrderPanel(props: {
   }
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const defaultBetAmount = 1000
+  const isCashContract = contract.token === 'CASH'
+  const defaultBetAmount = isCashContract ? 50 : 1000
+
   const [betAmount, setBetAmount] = useState<number | undefined>(
     defaultBetAmount
   )
@@ -279,8 +281,6 @@ export default function LimitOrderPanel(props: {
   }
   const returnPercent = formatPercent(currentReturn)
   const totalFees = getFeeTotal(fees)
-
-  const isCashContract = contract.token === 'CASH'
 
   const hideYesNo = isBinaryMC || !!pseudonym
 
