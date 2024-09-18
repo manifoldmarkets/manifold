@@ -125,7 +125,7 @@ export function SelectCashoutOptions(props: {
                                 {cashout.txn.gidxStatus}
                               </span>
                             </td>
-                            <td className="text-ink-600 whitespace-nowrap px-3 py-2">
+                            <td className="text-ink-500 whitespace-nowrap px-3 py-2">
                               <DateTimeTooltip time={createdDate}>
                                 {shortenedFromNow(createdDate)}
                               </DateTimeTooltip>
