@@ -42,7 +42,6 @@ import { Row } from '../components/layout/row'
 import { capitalize } from 'lodash'
 import { useKYCGiftAmount } from 'web/components/twomba/toggle-verify-callout'
 import {
-  BottomRow,
   Divider,
   InputTitle,
 } from 'web/components/gidx/register-component-helpers'
