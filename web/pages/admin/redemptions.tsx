@@ -19,7 +19,6 @@ export default function AdminCashouts() {
     limit: 10,
     offset: page * 10,
   })
-  console.log('redemptions', cashouts)
 
   return (
     <Page trackPageView="admin-redemptions">
