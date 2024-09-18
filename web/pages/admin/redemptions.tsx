@@ -11,6 +11,7 @@ import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { getStatusColor } from 'web/components/cashout/select-cashout-options'
 
 export default function AdminCashouts() {
   const [page, setPage] = useState(0)
@@ -53,7 +54,13 @@ export default function AdminCashouts() {
                       {new Date(cashout.txn.createdTime).toLocaleString()}
                     </td>
                     <td className="whitespace-nowrap">
-                      {cashout.txn.gidxStatus}
+                      <span
+                        className={`rounded-full px-2 py-1 text-xs ${getStatusColor(
+                          cashout.txn.gidxStatus
+                        )}`}
+                      >
+                        {cashout.txn.gidxStatus}
+                      </span>
                     </td>
                     <td className="whitespace-nowrap">
                       <Link
