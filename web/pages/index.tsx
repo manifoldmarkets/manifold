@@ -56,7 +56,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
 
   const contracts = (data ?? []).map(convertContract)
 
-  const prezContract = await getContract(db, 'ikSUiiNS8MwAI75RwEJf')
+  const prezContract = await getContract(db, 'icotel6eaq')
 
   const filteredContracts = contracts.filter(
     (c) =>
