@@ -14,7 +14,6 @@ export const useLocation = (
   setLoading: (loading: boolean) => void
 ) => {
   const [checkedPermissions, setCheckedPermissions] = useState(false)
-  const [timeout, setTimeoutState] = useState(10000)
 
   const checkLocationPermission = async () => {
     setLoading(true)
@@ -84,9 +83,6 @@ export const useLocation = (
               'Location permission denied. Please enable location sharing in your browser settings.'
             )
           } else {
-            if (error.message.includes('timeout')) {
-              setTimeoutState(timeout + 5000)
-            }
             setLocationError(error.message)
           }
           setLoading(false)
@@ -94,7 +90,6 @@ export const useLocation = (
         },
         {
           enableHighAccuracy: true,
-          timeout,
           maximumAge: 20 * MINUTE_MS,
         }
       )

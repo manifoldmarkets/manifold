@@ -8,10 +8,10 @@ import { Contract } from 'common/contract'
 export const LocationMonitor = (props: {
   contract: Contract
   user: User | undefined | null
-  setIsOpen: (isOpen: boolean) => void
-  isOpen: boolean
+  setShowPanel: (isOpen: boolean) => void
+  showPanel: boolean
 }) => {
-  const { user, contract, setIsOpen, isOpen } = props
+  const { user, contract, setShowPanel, showPanel } = props
 
   const {
     fetchMonitorStatus,
@@ -19,7 +19,9 @@ export const LocationMonitor = (props: {
     loading,
     monitorStatus,
     monitorStatusMessage,
-  } = useMonitorStatus(contract.token === 'CASH', user, () => setIsOpen(true))
+  } = useMonitorStatus(contract.token === 'CASH', user, () =>
+    setShowPanel(true)
+  )
   const getLocation = useEvent(() => {
     requestLocation((location) => {
       if (!location) {
@@ -27,10 +29,10 @@ export const LocationMonitor = (props: {
       }
       // may need to pass location to fetchMonitorStatus
       fetchMonitorStatus()
-      setIsOpen(false)
+      setShowPanel(false)
     })
   })
-  if (!user || !isOpen || !user.idVerified) {
+  if (!user || !showPanel || !user.idVerified) {
     return null
   }
   return (

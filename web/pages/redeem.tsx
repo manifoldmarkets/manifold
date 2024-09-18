@@ -45,6 +45,7 @@ import {
   Divider,
   InputTitle,
 } from 'web/components/gidx/register-component-helpers'
+import { UsOnlyDisclaimer } from 'web/components/twomba/us-only-disclaimer'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -241,6 +242,9 @@ const CashoutPage = () => {
     return (
       <Page trackPageView={'redeem sweeps page'}>
         <Col className="bg-canvas-0 mx-auto max-w-lg gap-4 px-6 py-4">
+          <Row className="w-full justify-end">
+            <UsOnlyDisclaimer />
+          </Row>
           {isLocationBlocked ? (
             <Row className="items-center gap-4">
               <LocationBlockedIcon height={16} className="fill-red-500" />
@@ -342,13 +346,16 @@ const CashoutPage = () => {
   return (
     <Page trackPageView={'redemptions page'}>
       <Col className="bg-canvas-0 mx-auto max-w-lg items-center gap-2 px-6 py-4">
-        <Row className="text-primary-600 w-full justify-start text-3xl">
+        <Row className="w-full justify-end">
+          <UsOnlyDisclaimer />
+        </Row>
+        <Row className="text-ink-1000 w-full justify-center text-3xl">
           Redeem {SWEEPIES_NAME}
         </Row>
         <SweepiesStats
           redeemableCash={redeemableCash}
           cashBalance={user.cashBalance}
-          className="mb-4"
+          className="my-4"
         />
         {!user || page === 'get-session' ? (
           <LoadingIndicator />

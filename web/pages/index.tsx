@@ -38,7 +38,6 @@ import { useUser } from 'web/hooks/use-user'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
-import { AboutManifold } from 'web/components/about-manifold'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
@@ -56,7 +55,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
 
   const contracts = (data ?? []).map(convertContract)
 
-  const prezContract = await getContract(db, 'ikSUiiNS8MwAI75RwEJf')
+  const prezContract = await getContract(db, 'icotel6eaq')
 
   const filteredContracts = contracts.filter(
     (c) =>
@@ -189,7 +188,23 @@ export default function LandingPage(props: {
               <h1 className="mb-4 text-4xl">
                 {capitalize(TRADE_TERM)} on politics & more
               </h1>
-              <AboutManifold className="text-lg" />
+
+              <div className="text-lg">
+                <div className="mb-2">
+                  The largest social prediction market.
+                </div>
+                {TWOMBA_ENABLED ? (
+                  <div className="mb-2">
+                    Get real-time odds on politics, tech, and sports. Win cash
+                    prizes for your predictions!
+                  </div>
+                ) : (
+                  <div className="mb-2">
+                    Bet against others on our play money markets to progress up
+                    the leaderboards and contribute to the market's probability!
+                  </div>
+                )}
+              </div>
 
               <Button
                 color="gradient"

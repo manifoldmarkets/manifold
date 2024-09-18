@@ -1,7 +1,7 @@
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import Script from 'next/script'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import { NativeMessageListener } from 'web/components/native-message-listener'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
@@ -12,13 +12,11 @@ import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
 import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { useThemeManager } from 'web/hooks/use-theme'
-import { ENV_CONFIG, TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
+import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { SweepstakesProvider } from 'web/components/sweestakes-context'
 import { capitalize } from 'lodash'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-
+import { useThemeManager } from 'web/hooks/use-theme'
+import { DevtoolsDetector, setupDevtoolsDetector } from 'web/lib/util/devtools'
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
 
@@ -70,39 +68,33 @@ function printBuildInfo() {
 
 // ian: Required by GambleId
 const useDevtoolsDetector = () => {
-  const [devtoolsOpen, setDevtoolsOpen] = usePersistentInMemoryState(
-    false,
-    'devtools'
-  )
-  const isMobile = useIsMobile()
+  const [_, setDetector] = useState<DevtoolsDetector | null>(null)
+  const [isDevtoolsOpen, setIsDevtoolsOpen] = useState(false)
+
   useEffect(() => {
-    const disable =
-      window.location.hostname === 'localhost' ||
-      window.location.pathname.includes('/embed/')
-    if (!TWOMBA_ENABLED || disable) {
+    const ignore =
+      window.location.host === 'localhost:3000' ||
+      process.env.NEXT_PUBLIC_FIREBASE_ENV === 'DEV'
+
+    if (ignore) {
       return
     }
-    const detectDevTools = () => {
-      const threshold = 160
-      const adjustedHeightThreshold = isMobile ? 200 : threshold
+    const devtoolsDetector = setupDevtoolsDetector()
+    setDetector(devtoolsDetector)
 
-      const widthThreshold = window.outerWidth - window.innerWidth > threshold
-      const heightThreshold =
-        window.outerHeight - window.innerHeight > adjustedHeightThreshold
-
-      if ((widthThreshold || heightThreshold) && !devtoolsOpen) {
-        setDevtoolsOpen(true)
-      }
+    devtoolsDetector.config.onDetectOpen = () => {
+      setIsDevtoolsOpen(true)
     }
 
-    const intervalId = setInterval(() => {
-      detectDevTools()
-    }, 1000)
+    // Start detecting right away
+    devtoolsDetector.paused = false
 
-    return () => clearInterval(intervalId)
-  }, [isMobile])
-
-  return devtoolsOpen
+    return () => {
+      // Pause the detector when component unmounts
+      devtoolsDetector.paused = true
+    }
+  }, [])
+  return isDevtoolsOpen
 }
 
 // specially treated props that may be present in the server/static props
@@ -113,7 +105,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useHasLoaded()
   useRefreshAllClients()
   // ian: Required by GambleId
-  const devToolsOpen = false //useDevtoolsDetector()
+  const devToolsOpen = useDevtoolsDetector()
   useThemeManager()
 
   const title = 'Manifold'
