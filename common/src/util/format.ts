@@ -72,7 +72,7 @@ export function formatSweepiesNumber(
   }
 ) {
   const { toDecimal, short } = parameters ?? {}
-  if (short && amount >= 1000) {
+  if (short) {
     return formatLargeNumber(amount)
   }
   const toDecimalPlace = toDecimal ?? 2

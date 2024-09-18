@@ -123,6 +123,7 @@ export function AmountInput(
                 onChangeAmount(Math.max(0, (amount ?? 0) - 5))
               }
             }}
+            min={isSweepies ? 1 : 0}
           />
           <Row className="divide-ink-300 absolute right-[1px] h-full divide-x">
             {!disableClearButton && (

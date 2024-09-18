@@ -16,20 +16,20 @@ export const SMALL_SLIDER_VALUES = [
 
 export const SMALL_SLIDER_VALUE_LABELS = [1, 100, 1000]
 
-export const MAX_CASH_SMALL_SLIDER_VALUE = 100
-export const MAX_CASH_LARGE_SLIDER_VALUE = 500
+export const MAX_CASH_SMALL_SLIDER_VALUE = 500
+export const MAX_CASH_LARGE_SLIDER_VALUE = 1000
 
 export const CASH_SMALL_SLIDER_VALUES = SMALL_SLIDER_VALUES.filter(
   (a) => a <= MAX_CASH_SMALL_SLIDER_VALUE
 )
 
-export const CASH_SMALL_SLIDER_VALUE_LABELS = [1, 10, 100]
+export const CASH_SMALL_SLIDER_VALUE_LABELS = [1, 100, 500]
 
 export const CASH_LARGE_SLIDER_VALUES = LARGE_SLIDER_VALUES.filter(
   (a) => a <= MAX_CASH_LARGE_SLIDER_VALUE
 )
 
-export const CASH_LARGE_SLIDER_VALUE_LABELS = [1, 100, 500]
+export const CASH_LARGE_SLIDER_VALUE_LABELS = [1, 100, 1000]
 
 export const BetSlider = (props: {
   amount: number | undefined
@@ -39,7 +39,6 @@ export const BetSlider = (props: {
   disabled?: boolean
   className?: string
   token?: InputTokenType
-  sliderColor?: string
 }) => {
   const {
     amount,
@@ -48,7 +47,6 @@ export const BetSlider = (props: {
     binaryOutcome,
     disabled,
     className,
-    sliderColor,
   } = props
 
   const token = props.token ?? 'M$'
@@ -77,7 +75,7 @@ export const BetSlider = (props: {
       label: formatWithToken({
         amount: a,
         token: token,
-        short: token === 'CASH' ? false : true,
+        short: true,
       }),
     }
   })
@@ -97,9 +95,7 @@ export const BetSlider = (props: {
       max={maxSliderIndex}
       marks={marks}
       color={
-        sliderColor
-          ? (sliderColor as any)
-          : binaryOutcome === 'YES'
+        binaryOutcome === 'YES'
           ? 'green'
           : binaryOutcome === 'NO'
           ? 'red'
