@@ -18,6 +18,7 @@ import {
   RegistrationReturnType,
   timeoutCodes,
   underageErrorCodes,
+  uploadedDocsToVerifyIdentity,
 } from 'common/reason-codes'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { intersection } from 'lodash'
@@ -254,7 +255,13 @@ export const verifyReasonCodes = async (
     FraudConfidenceScore !== undefined &&
     IdentityConfidenceScore !== undefined &&
     (FraudConfidenceScore < IDENTITY_AND_FRAUD_THRESHOLD ||
-      IdentityConfidenceScore < IDENTITY_AND_FRAUD_THRESHOLD)
+      IdentityConfidenceScore < IDENTITY_AND_FRAUD_THRESHOLD) &&
+    // If they uploaded docs to verify their identity, their ID score is meaningless
+    !(
+      uploadedDocsToVerifyIdentity(ReasonCodes) &&
+      FraudConfidenceScore >= IDENTITY_AND_FRAUD_THRESHOLD &&
+      IdentityConfidenceScore === 0
+    )
   ) {
     log(
       'Registration failed, resulted in low confidence scores:',
