@@ -1,5 +1,4 @@
 import { LiaFlagUsaSolid } from 'react-icons/lia'
-import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import clsx from 'clsx'
 

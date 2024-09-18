@@ -5,9 +5,7 @@ import { RegisterUserForm } from 'web/components/gidx/register-user-form'
 
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
-import { LiaFlagUsaSolid } from 'react-icons/lia'
 import { UsOnlyDisclaimer } from 'web/components/twomba/us-only-disclaimer'
 
 const HomePage = () => {
