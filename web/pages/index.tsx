@@ -191,7 +191,9 @@ export default function LandingPage(props: {
               </h1>
 
               <div className="text-lg">
-                <div className="mb-2">The largest social prediction market.</div>
+                <div className="mb-2">
+                  The largest social prediction market.
+                </div>
                 {TWOMBA_ENABLED ? (
                   <div className="mb-2">
                     Get real-time odds on politics, tech, and sports. Win cash
