@@ -1,7 +1,6 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
 import { orderBy } from 'lodash'
 import { BetBalanceChange, TxnBalanceChange } from 'common/balance-change'
 import { Txn } from 'common/txn'

@@ -1,13 +1,11 @@
 import { Col } from 'web/components/layout/col'
 import {
-  SWEEPIES_MONIKER,
   formatMoney,
   formatMoneyUSD,
   formatSpice,
   formatSweepies,
   formatWithToken,
   maybePluralize,
-  shortFormatNumber,
 } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
@@ -22,7 +20,6 @@ import {
   isTxnChange,
 } from 'common/balance-change'
 import Link from 'next/link'
-import { ENV_CONFIG } from 'common/envs/constants'
 import {
   FaBackward,
   FaArrowRightArrowLeft,
