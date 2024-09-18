@@ -21,11 +21,14 @@ export const CashToManaForm = (props: {
 }) => {
   const { redeemableCash, onBack } = props
 
+  const roundedRedeemableCash = Math.floor(redeemableCash * 100) / 100
+
   const [sweepiesAmount, setSweepiesAmount] = useState<number | undefined>(
-    redeemableCash
+    roundedRedeemableCash
   )
+
   const [manaAmount, setManaAmount] = useState<number | undefined>(
-    redeemableCash * CASH_TO_MANA_CONVERSION_RATE
+    roundedRedeemableCash * CASH_TO_MANA_CONVERSION_RATE
   )
   const [activeInput, setActiveInput] = useState<'sweepies' | 'mana'>(
     'sweepies'
@@ -51,7 +54,8 @@ export const CashToManaForm = (props: {
       )
     }
   }
-  const notEnoughCashError = !!sweepiesAmount && sweepiesAmount > redeemableCash
+  const notEnoughCashError =
+    !!sweepiesAmount && sweepiesAmount > roundedRedeemableCash
 
   const onSubmit = async () => {
     if (!sweepiesAmount) return
@@ -73,7 +77,7 @@ export const CashToManaForm = (props: {
   }
 
   return (
-    <Col className="gap-4">
+    <Col className="w-full shrink-0 gap-4">
       Convert at a rate of {CASH_TO_MANA_CONVERSION_RATE} {SWEEPIES_NAME} to 1
       mana.
       <Col>
