@@ -174,7 +174,7 @@ export const BinaryOverview = (props: {
   chartAnnotations: ChartAnnotation[]
 }) => {
   const { contract, resolutionRating } = props
-  const [isOpen, setIsOpen] = useState(false)
+  const [showLocationPane, setShowLocationPane] = useState(false)
   const user = useUser()
 
   const [showZoomer, setShowZoomer] = useState(false)
@@ -234,10 +234,10 @@ export const BinaryOverview = (props: {
       <LocationMonitor
         contract={contract}
         user={user}
-        setIsOpen={setIsOpen}
-        isOpen={isOpen}
+        setShowPanel={setShowLocationPane}
+        showPanel={showLocationPane}
       />
-      {tradingAllowed(contract) && !isOpen && (
+      {tradingAllowed(contract) && !showLocationPane && (
         <BinaryBetPanel contract={contract} user={user} />
       )}
     </>
