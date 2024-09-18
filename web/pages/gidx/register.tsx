@@ -19,7 +19,7 @@ const HomePage = () => {
       <Col className="bg-canvas-0 relative mx-auto w-full max-w-lg gap-4 px-6 py-4">
         <Row className="text-ink-600 w-full select-none  justify-end gap-1 rounded">
           <Tooltip
-            className=" flex flex-row items-center gap-1  "
+            className="flex flex-row items-center gap-1  "
             text="Sweepstakes are limited to 18+ in all US states except WA, MI, ID, DE"
           >
             <LiaFlagUsaSolid className="h-6 w-6" /> US only
