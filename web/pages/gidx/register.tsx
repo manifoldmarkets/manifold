@@ -7,7 +7,6 @@ import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LiaFlagUsaSolid } from 'react-icons/lia'
 
 const HomePage = () => {
