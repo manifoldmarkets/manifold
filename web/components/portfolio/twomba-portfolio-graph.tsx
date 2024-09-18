@@ -185,6 +185,7 @@ export const TwombaPortfolioGraph = (props: {
         setPortfolioFocus('all')
       }}
       areaClassName="hover:opacity-50 opacity-[0.2] transition-opacity"
+      noWatermark
     />
   )
 }
@@ -267,6 +268,7 @@ export const TwombaProfitGraph = (props: {
       color={['#14b8a6', '#F75836']}
       negativeThreshold={negativeThreshold}
       hideXAxis={hideXAxis}
+      noWatermark
     />
   )
 }
