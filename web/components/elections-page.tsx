@@ -8,9 +8,10 @@ import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
 import { ConditionalMarkets } from './us-elections/contracts/conditional-market/conditional-markets'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
+import { useSweepstakes } from './sweestakes-context'
 
 export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
-  'Who win the Presidential Election?'
+  'Who will win the Presidential Election?'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const {
@@ -20,14 +21,17 @@ export function USElectionsPage(props: ElectionsPageProps) {
     rawPolicyContracts,
     electionCandidateContract,
     electionPartyContract,
+    electionPartyCashContract,
     republicanCandidateContract,
     democratCandidateContract,
     houseContract,
     trendingDashboard,
   } = props
 
+  const { isPlay, setIsPlay } = useSweepstakes()
   if (
     !electionPartyContract ||
+    !electionPartyCashContract ||
     !electionCandidateContract ||
     !republicanCandidateContract ||
     !democratCandidateContract ||
@@ -60,6 +64,11 @@ export function USElectionsPage(props: ElectionsPageProps) {
       </Col>
     )
 
+  const currentElectionPartyContract =
+    !isPlay && electionPartyContract
+      ? electionPartyCashContract
+      : electionPartyContract
+
   return (
     <Col className="mb-8 gap-6 px-1 sm:gap-8 sm:px-2">
       <Col>
@@ -72,7 +81,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
       </Col>
 
       <PoliticsCard
-        contract={electionPartyContract}
+        contract={currentElectionPartyContract}
         viewType="BINARY_PARTY"
         customTitle={ELECTIONS_PARTY_QUESTION_PSEUDONYM}
         includeHead

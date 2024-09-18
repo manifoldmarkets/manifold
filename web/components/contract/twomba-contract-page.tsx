@@ -21,7 +21,6 @@ import { ContractMetric } from 'common/contract-metric'
 import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
-import { parseJsonContentToText } from 'common/util/parse'
 import { DAY_MS } from 'common/util/time'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
@@ -73,7 +72,6 @@ import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweestakes-context'
-import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
 import { useRouter } from 'next/router'
 
@@ -109,7 +107,6 @@ export function TwombaContractPageContent(props: ContractParams) {
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
   const user = useUser()
 
-  useMonitorStatus(liveContract.token === 'CASH', user)
   const contractMetrics = useSavedContractMetrics(props.contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []
@@ -208,14 +205,6 @@ export function TwombaContractPageContent(props: ContractParams) {
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(props.contract.id, user?.id)
   const userHasReviewed = userReview || justNowReview
-  const [justBet, setJustBet] = useState(false)
-  useEffect(() => {
-    if (!user || !user.lastBetTime) return
-    const hasJustBet = user.lastBetTime > Date.now() - 3000
-    setJustBet(hasJustBet)
-  }, [user?.lastBetTime])
-  const showRelatedMarketsBelowBet =
-    parseJsonContentToText(props.contract.description).trim().length >= 200
 
   const isSpiceMarket = !!liveContract.isSpicePayout
   const isCashContract = liveContract.token === 'CASH'
@@ -340,7 +329,6 @@ export function TwombaContractPageContent(props: ContractParams) {
                   />
                 </div>
               </Col>
-
               <Row className="text-ink-600  items-center justify-between gap-y-1 text-sm">
                 <AuthorInfo
                   contract={props.contract}
@@ -374,14 +362,12 @@ export function TwombaContractPageContent(props: ContractParams) {
                 onAnswerCommentClick={setReplyTo}
                 chartAnnotations={chartAnnotations}
               />
-
               {!tradingAllowed(liveContract) && (
                 <UserBetsSummary
                   className="border-ink-200 !mb-2 "
                   contract={liveContract}
                 />
               )}
-
               <YourTrades contract={liveContract} yourNewBets={yourNewBets} />
             </Col>
             {showReview && user && (
@@ -468,7 +454,8 @@ export function TwombaContractPageContent(props: ContractParams) {
 
             <div ref={tabsContainerRef} className="mb-4">
               <ContractTabs
-                contract={liveContract}
+                mainContract={props.contract}
+                liveContract={liveContract}
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}

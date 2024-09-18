@@ -16,6 +16,7 @@ import {
   MdOutlineCheckBox,
   MdOutlineCheckBoxOutlineBlank,
 } from 'react-icons/md'
+import { BottomRow } from './register-component-helpers'
 
 export const UploadDocuments = (props: {
   back: () => void
@@ -216,7 +217,7 @@ export const UploadDocuments = (props: {
           </Row>
         </Col>
       )}
-      <Row className={'mb-4 mt-4 w-full gap-16'}>
+      <BottomRow className="mt-4">
         <Button color={'gray-white'} disabled={loading} onClick={back}>
           Back
         </Button>
@@ -233,7 +234,7 @@ export const UploadDocuments = (props: {
             Continue
           </Button>
         )}
-      </Row>
+      </BottomRow>
     </Col>
   )
 }

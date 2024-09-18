@@ -45,7 +45,8 @@ import { api } from 'web/lib/api/api'
 import { TRADE_TERM } from 'common/envs/constants'
 
 export function ContractTabs(props: {
-  contract: Contract
+  mainContract: Contract
+  liveContract: Contract
   bets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
@@ -62,7 +63,8 @@ export function ContractTabs(props: {
   appRouter?: boolean
 }) {
   const {
-    contract,
+    mainContract,
+    liveContract,
     comments,
     bets,
     replyTo,
@@ -115,7 +117,7 @@ export function ContractTabs(props: {
           title: commentsTitle,
           content: (
             <CommentsTabContent
-              contract={contract}
+              contract={mainContract}
               comments={comments}
               pinnedComments={pinnedComments}
               setCommentsLength={setTotalComments}
@@ -129,20 +131,20 @@ export function ContractTabs(props: {
           ),
         },
         totalBets > 0 &&
-          (contract.mechanism === 'cpmm-1' ||
-            contract.mechanism === 'cpmm-multi-1') && {
+          (liveContract.mechanism === 'cpmm-1' ||
+            liveContract.mechanism === 'cpmm-multi-1') && {
             title: positionsTitle,
             content: (
               <UserPositionsTable
-                key={contract.id}
+                key={liveContract.id}
                 positions={
                   // If contract is resolved, will have to refetch positions by profit
                   Object.values(userPositionsByOutcome).length > 0 &&
-                  !contract.isResolved
+                  !liveContract.isResolved
                     ? userPositionsByOutcome
                     : undefined
                 }
-                contract={contract as BinaryContract}
+                contract={liveContract as BinaryContract}
                 setTotalPositions={setTotalPositions}
               />
             ),
@@ -152,8 +154,8 @@ export function ContractTabs(props: {
           content: (
             <Col className={'gap-4'}>
               <BetsTabContent
-                key={contract.id}
-                contract={contract}
+                key={liveContract.id}
+                contract={liveContract}
                 bets={bets}
                 totalBets={totalBets}
                 setReplyToBet={setReplyTo}

@@ -13,7 +13,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 
 export const TWOMBA_ENABLED = true
 export const PRODUCT_MARKET_FIT_ENABLED = false
-export const SPICE_PRODUCTION_ENABLED = true
+export const SPICE_PRODUCTION_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
 export const CASH_TO_MANA_CONVERSION_RATE = 100
 export const MIN_CASH_DONATION = 25
@@ -27,6 +27,7 @@ export const SPICE_NAME = 'Prize Point'
 export const SWEEPIES_NAME = 'Sweepcash'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
 export const SWEEPIES_MARKET_TOOLTIP = `Sweepstakes market! Win real cash prizes.`
+export const CASH_SUFFIX = '--cash'
 
 export const TRADE_TERM = 'trade'
 export const TRADED_TERM = 'traded'

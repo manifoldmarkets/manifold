@@ -1,9 +1,5 @@
 import clsx from 'clsx'
-import {
-  KYC_VERIFICATION_BONUS_CASH,
-  MIN_CASHOUT_AMOUNT,
-  SWEEPIES_CASHOUT_FEE,
-} from 'common/economy'
+import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import { SWEEPIES_NAME, TRADED_TERM } from 'common/envs/constants'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import {
@@ -44,6 +40,11 @@ import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
 import { capitalize } from 'lodash'
+import { useKYCGiftAmount } from 'web/components/twomba/toggle-verify-callout'
+import {
+  Divider,
+  InputTitle,
+} from 'web/components/gidx/register-component-helpers'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -106,7 +107,9 @@ const CashoutPage = () => {
   const [RoutingNumber, setRoutingNumber] = useState('')
   const [SavePaymentMethod, _] = useState(false)
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
-  const [sweepCashAmount, setSweepCashAmount] = useState<number>()
+  const [sweepCashAmount, setSweepCashAmount] = useState<number | undefined>(
+    MIN_CASHOUT_AMOUNT
+  )
   const [locationError, setLocationError] = useState<string>()
   const [loading, setloading] = useState(false)
   const [error, setError] = useState<string>()
@@ -117,6 +120,8 @@ const CashoutPage = () => {
   const [zipCode, setZipCode] = useState('')
   const [sessionStatus, setSessionStatus] = useState<string>()
   const [completedCashout, setCompletedCashout] = useState(0)
+  const kycAmount = useKYCGiftAmount(user)
+
   useApiSubscription({
     topics: [
       `gidx-checkout-session/${checkoutSession?.MerchantSessionID ?? '_'}`,
@@ -130,6 +135,8 @@ const CashoutPage = () => {
   const { data: redeemable } = useAPIGetter('get-redeemable-prize-cash', {})
   const redeemableCash =
     (redeemable?.redeemablePrizeCash ?? 0) - completedCashout
+
+  const roundedRedeemableCash = Math.floor(redeemableCash * 100) / 100
 
   const getCashoutSession = async (DeviceGPS: GPSData) => {
     setError(undefined)
@@ -233,7 +240,7 @@ const CashoutPage = () => {
   if (status !== 'success' || isLocationBlocked || isAgeBlocked) {
     return (
       <Page trackPageView={'redeem sweeps page'}>
-        <Col className="mx-auto max-w-lg gap-4 px-6 py-4">
+        <Col className="bg-canvas-0 mx-auto max-w-lg gap-4 px-6 py-4">
           {isLocationBlocked ? (
             <Row className="items-center gap-4">
               <LocationBlockedIcon height={16} className="fill-red-500" />
@@ -277,12 +284,16 @@ const CashoutPage = () => {
               >
                 Verify and get
                 <span className="ml-1">
-                  <CoinNumber
-                    amount={KYC_VERIFICATION_BONUS_CASH}
-                    className={'font-bold'}
-                    isInline
-                    coinType={'CASH'}
-                  />
+                  {kycAmount == undefined ? (
+                    ' a sweepcash gift!'
+                  ) : (
+                    <CoinNumber
+                      amount={kycAmount}
+                      className={'font-bold'}
+                      isInline
+                      coinType={'CASH'}
+                    />
+                  )}
                 </span>
               </Link>
             </Col>
@@ -325,9 +336,12 @@ const CashoutPage = () => {
     )
   }
 
+  const lessThanMinRedeemable =
+    !sweepCashAmount || sweepCashAmount < MIN_CASHOUT_AMOUNT
+
   return (
     <Page trackPageView={'redemptions page'}>
-      <Col className="mx-auto max-w-lg items-center gap-2 px-6 py-4">
+      <Col className="bg-canvas-0 mx-auto max-w-lg items-center gap-2 px-6 py-4">
         <Row className="text-primary-600 w-full justify-start text-3xl">
           Redeem {SWEEPIES_NAME}
         </Row>
@@ -371,82 +385,107 @@ const CashoutPage = () => {
           />
         ) : (
           page === 'ach-details' && (
-            <Col className="w-full max-w-md space-y-4">
-              <Row className={'justify-between font-semibold'}>
-                Available to redeem
-                <CoinNumber amount={redeemableCash} coinType={'sweepies'} />
-              </Row>
-
-              <Row className={'items-center justify-between font-semibold'}>
-                Amount to redeem <br className={'sm:hidden'} />
-                (min {formatSweepies(MIN_CASHOUT_AMOUNT)})
+            <Col className="w-full space-y-4">
+              <Col className={'w-full gap-0.5'}>
+                <InputTitle>Redeem</InputTitle>
                 <AmountInput
                   placeholder="Redeem Amount"
                   amount={sweepCashAmount}
                   allowFloat={true}
                   min={MIN_CASHOUT_AMOUNT}
-                  inputClassName={'w-40'}
+                  inputClassName={'w-full'}
                   label={<SweepiesCoin className={'mb-1'} />}
                   onChangeAmount={(newAmount) => {
                     if (!newAmount) {
                       setSweepCashAmount(undefined)
                       return
                     }
-                    if (newAmount > redeemableCash) {
-                      setSweepCashAmount(redeemableCash)
+                    if (newAmount > roundedRedeemableCash) {
+                      setSweepCashAmount(roundedRedeemableCash)
                     } else {
                       setSweepCashAmount(newAmount)
                     }
                   }}
                 />
-              </Row>
-              <Input
-                type="text"
-                placeholder="Account Number"
-                value={AccountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
-              />
-              <Input
-                type="text"
-                placeholder="Routing Number"
-                value={RoutingNumber}
-                onChange={(e) => setRoutingNumber(e.target.value)}
-              />
-              <Input
-                type="text"
-                placeholder="Account Name"
-                value={NameOnAccount}
-                onChange={(e) => setNameOnAccount(e.target.value)}
-              />
-              <Input
-                type="text"
-                placeholder="Billing Address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-              <Row className="space-x-4">
+                <div className="h-2">
+                  {lessThanMinRedeemable && (
+                    <div className="text-sm text-red-600 dark:text-red-400">
+                      The minimum redeemable amount is{' '}
+                      {formatSweepies(MIN_CASHOUT_AMOUNT)}
+                    </div>
+                  )}
+                </div>
+              </Col>
+              <Divider />
+              <Col className={'w-full gap-0.5'}>
+                <InputTitle>Name</InputTitle>
                 <Input
                   type="text"
-                  placeholder="City"
+                  placeholder="Name associated with account"
+                  value={NameOnAccount}
+                  onChange={(e) => setNameOnAccount(e.target.value)}
+                />
+              </Col>
+              <Col className={'w-full gap-0.5'}>
+                <InputTitle>Account Number</InputTitle>
+                <Input
+                  type="text"
+                  placeholder="Your account #"
+                  value={AccountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                />
+              </Col>
+              <Col className={'w-full gap-0.5'}>
+                <InputTitle>Routing Number</InputTitle>
+                <Input
+                  type="text"
+                  placeholder="Your bank's routing #"
+                  value={RoutingNumber}
+                  onChange={(e) => setRoutingNumber(e.target.value)}
+                />
+              </Col>
+              <Divider />
+              <Col className={'w-full gap-0.5'}>
+                <InputTitle>Billing Address</InputTitle>
+                <Input
+                  type="text"
+                  placeholder="Billing Address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </Col>
+              <Col className={'w-full gap-0.5'}>
+                <InputTitle>City</InputTitle>
+                <Input
+                  type="text"
+                  placeholder="Your city"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-1/2"
+                  className="w-full"
                 />
-                <Input
-                  type="text"
-                  placeholder="State"
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  className="w-1/4"
-                />
-                <Input
-                  type="text"
-                  placeholder="ZIP"
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
-                  className="w-1/4"
-                />
-              </Row>
+              </Col>
+
+              <div className={'flex w-full flex-col gap-4 sm:flex-row'}>
+                <Col className={'w-full gap-0.5 sm:w-1/2'}>
+                  <InputTitle>State</InputTitle>
+                  <Input
+                    type="text"
+                    placeholder="Your state"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                  />
+                </Col>
+
+                <Col className={'w-full gap-0.5 sm:w-1/2'}>
+                  <InputTitle>Postal Code</InputTitle>
+                  <Input
+                    type="text"
+                    placeholder="Your postal code"
+                    value={zipCode}
+                    onChange={(e) => setZipCode(e.target.value)}
+                  />
+                </Col>
+              </div>
               {/*TODO: Re-enable*/}
               {/*<Row className={'items-center gap-2'}>*/}
               {/*  <input*/}
@@ -456,28 +495,35 @@ const CashoutPage = () => {
               {/*  />*/}
               {/*  Save Payment Method*/}
               {/*</Row>*/}
-              <Button
-                size={'lg'}
-                onClick={handleSubmit}
-                loading={loading}
-                disabled={
-                  loading ||
-                  !NameOnAccount ||
-                  !AccountNumber ||
-                  !RoutingNumber ||
-                  !sweepCashAmount ||
-                  sweepCashAmount < MIN_CASHOUT_AMOUNT
-                }
-              >
-                <Row className={'gap-1'}>
-                  Redeem{' '}
-                  <CoinNumber amount={sweepCashAmount} coinType={'sweepies'} />{' '}
-                  for{' '}
-                  {formatSweepsToUSD(
-                    (1 - SWEEPIES_CASHOUT_FEE) * (sweepCashAmount ?? 0)
-                  )}
-                </Row>
-              </Button>
+              <Row className=" mt-2 w-full gap-2">
+                <Button
+                  color="gray"
+                  onClick={() => setPage('select-cashout-method')}
+                >
+                  Back
+                </Button>
+                <Button
+                  size={'lg'}
+                  onClick={handleSubmit}
+                  loading={loading}
+                  disabled={
+                    loading ||
+                    !NameOnAccount ||
+                    !AccountNumber ||
+                    !RoutingNumber ||
+                    !sweepCashAmount ||
+                    lessThanMinRedeemable
+                  }
+                  className="flex-1"
+                >
+                  <Row className={'gap-1'}>
+                    Redeem for{' '}
+                    {formatSweepsToUSD(
+                      (1 - SWEEPIES_CASHOUT_FEE) * (sweepCashAmount ?? 0)
+                    )}
+                  </Row>
+                </Button>
+              </Row>
             </Col>
           )
         )}

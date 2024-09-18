@@ -14,6 +14,9 @@ import { buttonClass } from '../buttons/button'
 import { Row } from '../layout/row'
 import { CoinNumber } from '../widgets/coin-number'
 import { Tooltip } from '../widgets/tooltip'
+import { useEffect, useState } from 'react'
+import { db } from 'web/lib/supabase/db'
+import { type User } from 'common/user'
 
 export function ToggleVerifyCallout(props: {
   className?: string
@@ -134,6 +137,10 @@ function CalloutFrame(props: {
 
 export function VerifyButton(props: { className?: string }) {
   const { className } = props
+
+  const user = useUser()
+  const amount = useKYCGiftAmount(user)
+
   return (
     <Link
       href={'/gidx/register'}
@@ -144,11 +151,38 @@ export function VerifyButton(props: { className?: string }) {
       )}
     >
       Verify and claim
-      <CoinNumber
-        amount={KYC_VERIFICATION_BONUS_CASH}
-        coinType="CASH"
-        className="ml-1"
-      />
+      {amount == undefined ? (
+        <CoinNumber
+          amount={KYC_VERIFICATION_BONUS_CASH}
+          coinType="CASH"
+          className="ml-1"
+        />
+      ) : (
+        <CoinNumber amount={amount} coinType="CASH" className="ml-1" />
+      )}
     </Link>
   )
+}
+
+export function useKYCGiftAmount(user: User | undefined | null) {
+  const [amount, setAmount] = useState<number>()
+  useEffect(() => {
+    if (!user) return
+    db.from('kyc_bonus_rewards')
+      .select('reward_amount')
+      .eq('user_id', user.id)
+      .then(({ data, error }) => {
+        if (error) {
+          console.error(error)
+          return
+        }
+        if (data && data.length > 0) {
+          setAmount(
+            Math.max(KYC_VERIFICATION_BONUS_CASH, data[0].reward_amount)
+          )
+        }
+      })
+  }, [user?.id])
+
+  return amount
 }

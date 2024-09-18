@@ -6,7 +6,7 @@ export function SweepiesFlatCoin(props: { className?: string }) {
   const { className } = props
   return (
     <img
-      src="/sweepiesFlat.svg"
+      src="/SweepiesFlat.svg"
       alt={ENV_CONFIG.moneyMoniker}
       className={clsx('inline-block', className)}
       style={{

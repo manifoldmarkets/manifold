@@ -54,7 +54,7 @@ export function BinaryPartyPanel(props: { contract: BinaryContract }) {
   const democraticProb = 1 - republicanProb
 
   return (
-    <Col className="mx-[2px] gap-2">
+    <Col className=" mx-[2px] gap-2">
       <div className="relative hidden md:flex md:items-center md:justify-between">
         <div
           style={{ overflow: 'hidden' }}

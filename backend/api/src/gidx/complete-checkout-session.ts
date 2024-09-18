@@ -136,7 +136,7 @@ export const completeCheckoutSession: APIHandler<
     await sendCoins(
       userId,
       paymentAmount,
-      CompletedPaymentAmount,
+      CompletedPaymentAmount * 100,
       MerchantTransactionID,
       SessionID,
       user.sweepstakesVerified ?? false

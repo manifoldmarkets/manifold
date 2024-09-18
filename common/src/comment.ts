@@ -1,6 +1,6 @@
-import type { JSONContent } from '@tiptap/core'
-import { Visibility } from './contract'
-import { OnLover } from 'common/love/love-comment'
+import { type JSONContent } from '@tiptap/core'
+import { type OnLover } from 'common/love/love-comment'
+import { type ContractToken, type Visibility } from './contract'
 
 export const MAX_COMMENT_LENGTH = 10000
 
@@ -42,7 +42,7 @@ export type OnContract = {
   answerOutcome?: string // reply to answer.id
   betId?: string
 
-  // denormalized from contract
+  // denormalized from main contract
   contractSlug: string
   contractQuestion: string
 
@@ -50,6 +50,8 @@ export type OnContract = {
   betAmount?: number
   betOutcome?: string
   betAnswerId?: string
+  // denormalized from the contract you are betting on (may be cash)
+  betToken?: ContractToken
 
   // Used to respond to another user's bet
   bettorUsername?: string
