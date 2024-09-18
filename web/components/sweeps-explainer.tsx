@@ -27,9 +27,11 @@ export function SweepsExplainer() {
             'relative z-30 h-[40%] w-full rounded-t-xl bg-indigo-200 p-4 sm:h-full sm:w-[50%] sm:rounded-l-xl sm:rounded-r-none sm:p-8 '
           )}
         >
-          <Row className="h-full w-full items-center gap-4 pt-6 text-black sm:pt-0">
+          <Row className="h-full w-full items-center gap-4 pt-6 font-semibold text-indigo-700 sm:pt-0">
             <ManaCoin className="text-7xl md:text-8xl" />
-            Compete with your friends by {TRADING_TERM} with play money
+            <span className="mb-2 sm:mb-0">
+              Compete with your friends by {TRADING_TERM} with play money
+            </span>
           </Row>
         </div>
         <div className="relative h-[60%] w-full rounded-b-xl bg-indigo-700 p-4 align-bottom sm:h-full sm:w-[50%] sm:rounded-l-none sm:rounded-r-xl sm:p-8 sm:pl-16">
@@ -46,9 +48,10 @@ export function SweepsExplainer() {
               />
             </div>
           )}
-          <Row className=" h-full w-full items-end gap-4  text-white sm:items-center">
-            Or {TRADE_TERM} with {SWEEPIES_NAME} for a chance to win real
-            prizes!
+          <Row className=" h-full w-full items-end gap-4 font-semibold text-white sm:items-center">
+            <span className="mb-2 sm:mb-0 sm:text-right">
+              Or {TRADE_TERM} with {SWEEPIES_NAME} and win real prizes!
+            </span>
             <SweepiesCoin className="text-7xl md:text-8xl" />
           </Row>
         </div>
