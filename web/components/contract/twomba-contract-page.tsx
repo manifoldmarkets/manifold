@@ -74,7 +74,6 @@ import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweestakes-context'
 import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
 import { useRouter } from 'next/router'
-import { LocationModal } from '../gidx/location-modal'
 
 export function TwombaContractPageContent(props: ContractParams) {
   const {
@@ -330,7 +329,6 @@ export function TwombaContractPageContent(props: ContractParams) {
                   />
                 </div>
               </Col>
-
               <Row className="text-ink-600  items-center justify-between gap-y-1 text-sm">
                 <AuthorInfo
                   contract={props.contract}
@@ -364,14 +362,12 @@ export function TwombaContractPageContent(props: ContractParams) {
                 onAnswerCommentClick={setReplyTo}
                 chartAnnotations={chartAnnotations}
               />
-
               {!tradingAllowed(liveContract) && (
                 <UserBetsSummary
                   className="border-ink-200 !mb-2 "
                   contract={liveContract}
                 />
               )}
-
               <YourTrades contract={liveContract} yourNewBets={yourNewBets} />
             </Col>
             {showReview && user && (
@@ -511,7 +507,6 @@ export function TwombaContractPageContent(props: ContractParams) {
       </Row>
 
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
-      <LocationModal contract={liveContract} user={user} />
     </>
   )
 }
