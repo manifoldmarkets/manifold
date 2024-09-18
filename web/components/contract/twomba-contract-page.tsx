@@ -73,9 +73,9 @@ import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweestakes-context'
-import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
 import { useRouter } from 'next/router'
+import { LocationModal } from '../gidx/location-modal'
 
 export function TwombaContractPageContent(props: ContractParams) {
   const {
@@ -109,7 +109,6 @@ export function TwombaContractPageContent(props: ContractParams) {
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
   const user = useUser()
 
-  useMonitorStatus(liveContract.token === 'CASH', user)
   const contractMetrics = useSavedContractMetrics(props.contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []
@@ -521,6 +520,7 @@ export function TwombaContractPageContent(props: ContractParams) {
       </Row>
 
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
+      <LocationModal user={user} />
     </>
   )
 }
