@@ -25,7 +25,7 @@ export function SweepsExplainer() {
           <Row className="h-full w-full items-center gap-4 pt-6 font-semibold text-indigo-700 sm:pt-0">
             <ManaCoin className="text-7xl md:text-8xl" />
             <span className="mb-2 sm:mb-0">
-              Compete with your friends by {TRADING_TERM} with play money
+              Compete with your friends by {TRADING_TERM} with play money...
             </span>
           </Row>
         </div>
@@ -45,7 +45,7 @@ export function SweepsExplainer() {
           )}
           <Row className=" h-full w-full items-end gap-4 font-semibold text-white sm:items-center">
             <span className="mb-2 sm:mb-0 sm:text-right">
-              Or {TRADE_TERM} with {SWEEPIES_NAME} and win real prizes!
+              Or {TRADE_TERM} with {SWEEPIES_NAME} and win real cash prizes!
             </span>
             <SweepiesCoin className="text-7xl md:text-8xl" />
           </Row>

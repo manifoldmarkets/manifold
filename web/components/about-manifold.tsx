@@ -8,13 +8,14 @@ export const AboutManifold = ({ className = '' }: AboutManifoldProps) => {
   return (
     <div className={`${className}`}>
       <div className="mb-2">
-        Manifold is a social prediction market with real-time odds on wide
-        ranging news such as politics, tech, sports and more!
+        Manifold is the world's largest social prediction market.
+      </div>
+      <div className="mb-2">
+        Get accurate real-time odds on politics, tech, sports, and more.
       </div>
       {TWOMBA_ENABLED ? (
         <div className="mb-2">
-          Participate for free in sweepstakes markets to win sweepcash which can
-          be withdrawn for real money!{' '}
+          Win cash prizes for your predictions on our sweepstakes markets!
         </div>
       ) : (
         <div className="mb-2">

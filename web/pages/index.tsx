@@ -189,7 +189,21 @@ export default function LandingPage(props: {
               <h1 className="mb-4 text-4xl">
                 {capitalize(TRADE_TERM)} on politics & more
               </h1>
-              <AboutManifold className="text-lg" />
+
+              <div className="text-lg">
+                <div className="mb-2">The largest social prediction market.</div>
+                {TWOMBA_ENABLED ? (
+                  <div className="mb-2">
+                    Get real-time odds on politics, tech, and sports. Win cash
+                    prizes for your predictions!
+                  </div>
+                ) : (
+                  <div className="mb-2">
+                    Bet against others on our play money markets to progress up
+                    the leaderboards and contribute to the market's probability!
+                  </div>
+                )}
+              </div>
 
               <Button
                 color="gradient"
