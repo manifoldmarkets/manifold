@@ -41,6 +41,8 @@ import { SplashAuth } from 'components/splash-auth'
 import { useIsConnected } from 'lib/use-is-connected'
 import { checkLocationPermission, getLocation } from 'lib/location'
 import * as Sentry from '@sentry/react-native'
+import * as StoreReview from 'expo-store-review'
+
 Sentry.init({
   dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
   debug: ENV === 'DEV', 
@@ -377,6 +379,14 @@ const App = () => {
       log('Location requested from web')
       const location = await getLocation()
       communicateWithWebview('location', location)
+    } else if (type === 'storeReviewRequested') {
+      log('Store review requested from web')
+      StoreReview.requestReview()
+    } else if (type === 'hasReviewActionRequested') {
+      log('Has review action requested from web')
+      const isAvailable = await StoreReview.isAvailableAsync()
+      const hasAction = await StoreReview.hasAction()
+      communicateWithWebview('hasReviewAction', { hasAction, isAvailable })
     } else {
       log('Unhandled message from web type: ', type)
       log('Unhandled message from web data: ', data)

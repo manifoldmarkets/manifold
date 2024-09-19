@@ -11,6 +11,7 @@ export type nativeToWebMessageType =
   | 'link'
   | 'location'
   | 'locationPermissionStatus'
+  | 'hasReviewAction'
 export type nativeToWebMessage = {
   type: nativeToWebMessageType
   data: any
@@ -38,11 +39,16 @@ export type webToNativeMessageType =
   | 'startedListening'
   | 'locationRequested'
   | 'locationPermissionStatusRequested'
-
+  | 'storeReviewRequested'
+  | 'hasReviewActionRequested'
 export const IS_NATIVE_KEY = 'is-native'
 export const PLATFORM_KEY = 'native-platform'
 
 export type MesageTypeMap = {
+  hasReviewAction: {
+    hasAction: boolean
+    isAvailable: boolean
+  }
   locationPermissionStatus: {
     status: 'granted' | 'denied' | 'undetermined'
   }
