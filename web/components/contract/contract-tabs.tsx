@@ -10,7 +10,14 @@ import {
 } from 'common/antes'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { BinaryContract, Contract, CPMMNumericContract } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+  PseudoNumericContract,
+  StonkContract,
+} from 'common/contract'
 import { buildArray } from 'common/util/array'
 import { shortFormatNumber, maybePluralize } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
@@ -43,6 +50,8 @@ import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { api } from 'web/lib/api/api'
 import { TRADE_TERM } from 'common/envs/constants'
+import { useUnfilledBets } from 'web/hooks/use-bets'
+import { OrderBookPanel } from '../bet/order-book'
 
 export function ContractTabs(props: {
   mainContract: Contract
@@ -94,6 +103,8 @@ export function ContractTabs(props: {
     (totalPositions > 0 ? `${shortFormatNumber(totalPositions)} ` : '') +
     maybePluralize('Holder', totalPositions)
 
+  const unfilledBets = useUnfilledBets(liveContract.id) ?? []
+
   return (
     <ControlledTabs
       className="mb-4"
@@ -108,6 +119,8 @@ export function ContractTabs(props: {
               ? 'trades'
               : title === positionsTitle
               ? 'positions'
+              : title === 'Order book'
+              ? 'orderbook'
               : 'contract'
           } tab`
         )
@@ -162,7 +175,24 @@ export function ContractTabs(props: {
               />
             </Col>
           ),
-        }
+        },
+        totalBets > 0 &&
+          liveContract.mechanism === 'cpmm-1' && {
+            title: 'Order book',
+            className: 'hidden md:block',
+            content: (
+              <OrderBookPanel
+                contract={
+                  liveContract as
+                    | BinaryContract
+                    | PseudoNumericContract
+                    | StonkContract
+                    | CPMMNumericContract
+                }
+                limitBets={unfilledBets}
+              />
+            ),
+          }
       )}
     />
   )
