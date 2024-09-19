@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { api } from 'web/lib/api/api'
-import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { GPSData } from 'common/gidx/gidx'
 import { MINUTE_MS } from 'common/util/time'
 import { User } from 'common/user'
@@ -8,14 +7,14 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { useEvent } from 'web/hooks/use-event'
 import { useLocation } from './use-location'
 
+//
+
 export const useMonitorStatus = (
   polling: boolean,
   user: User | undefined | null,
-  promptUserToShareLocation?: () => void
+  promptUserToShareLocation?: () => void,
+  onFinishLocationRequest?: (location?: GPSData) => void
 ) => {
-  const [location, setLocation] = usePersistentInMemoryState<
-    GPSData | undefined
-  >(undefined, 'user-monitor-location')
   const [monitorStatus, setMonitorStatus] = usePersistentInMemoryState<
     string | undefined
   >(undefined, 'user-monitor-status')
@@ -28,22 +27,28 @@ export const useMonitorStatus = (
   const [lastApiCallTime, setLastApiCallTime] =
     usePersistentInMemoryState<number>(0, 'user-monitor-last-api-call-time')
 
-  useNativeMessages(['location'], (type, data) => {
-    if ('error' in data) {
-      setMonitorStatus('error')
-      setMonitorStatusMessage(data.error)
-    } else {
-      setLocation(data as GPSData)
-    }
-  })
   const setLocationError = (error: string | undefined) => {
     setMonitorStatus('error')
     setMonitorStatusMessage(error)
   }
-  const { checkedPermissions, requestLocation, checkLocationPermission } =
-    useLocation(setLocation, setLocationError, setLoading)
+  const { requestLocation, checkLocationPermission } = useLocation(
+    setLocationError,
+    setLoading,
+    (location) => {
+      if (location) {
+        fetchMonitorStatusWithLocation(location)
+        return
+      }
+      if (promptUserToShareLocation) {
+        promptUserToShareLocation()
+      } else {
+        requestLocation()
+      }
+    },
+    onFinishLocationRequest
+  )
 
-  const fetchMonitorStatus = useEvent(async () => {
+  const fetchMonitorStatus = useEvent(async (location?: GPSData) => {
     if (!user) {
       return
     }
@@ -61,18 +66,6 @@ export const useMonitorStatus = (
       checkLocationPermission()
     } else return fetchMonitorStatusWithLocation(location)
   })
-
-  useEffect(() => {
-    if (checkedPermissions && !location) {
-      if (promptUserToShareLocation) {
-        promptUserToShareLocation()
-      } else {
-        requestLocation()
-      }
-    } else if (checkedPermissions && location) {
-      fetchMonitorStatusWithLocation(location)
-    }
-  }, [checkedPermissions, location])
 
   const fetchMonitorStatusWithLocation = useEvent(
     async (location: GPSData | undefined) => {
@@ -118,7 +111,7 @@ export const useMonitorStatus = (
 
     const interval = setInterval(fetchMonitorStatus, 20 * MINUTE_MS)
     return () => clearInterval(interval)
-  }, [polling, fetchMonitorStatus, lastApiCallTime, user?.idVerified])
+  }, [polling, user?.idVerified])
 
   return {
     monitorStatus,

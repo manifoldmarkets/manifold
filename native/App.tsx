@@ -151,10 +151,7 @@ const App = () => {
       .data as Notification
 
     if (hasLoadedWebView && listeningToNative.current) {
-      communicateWithWebview(
-        'notification',
-        response.notification.request.content.data as Notification
-      )
+      communicateWithWebview('notification', notification)
       setLastLinkInMemory(getSourceUrl(notification))
     } else setEndpointWithNativeQuery(getSourceUrl(notification))
   }

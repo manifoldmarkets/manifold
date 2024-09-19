@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   ENABLE_FAKE_CUSTOMER,
   FAKE_CUSTOMER_BODY,
@@ -7,17 +6,18 @@ import {
 import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { MINUTE_MS } from 'common/util/time'
+import { useNativeMessages } from './use-native-messages'
 
 export const useLocation = (
-  setLocation: (data: GPSData) => void,
   setLocationError: (error: string | undefined) => void,
-  setLoading: (loading: boolean) => void
+  setLoading: (loading: boolean) => void,
+  onFinishPermissionCheck: (location?: GPSData) => void,
+  onFinishLocationCheck?: (location?: GPSData) => void
 ) => {
-  const [checkedPermissions, setCheckedPermissions] = useState(false)
-
   const checkLocationPermission = async () => {
     setLoading(true)
-
+    // TODO: If native ask if we have permission
+    console.log('checking location permission')
     if ('permissions' in navigator) {
       try {
         const permissionStatus = await navigator.permissions.query({
@@ -26,36 +26,51 @@ export const useLocation = (
         switch (permissionStatus.state) {
           case 'granted':
             console.log('Location permission already granted')
-            requestLocation(() => setCheckedPermissions(true))
+            requestLocation(onFinishPermissionCheck)
             break
           case 'prompt':
             console.log('Location permission has not been requested yet')
-            setCheckedPermissions(true)
             setLoading(false)
+            onFinishPermissionCheck()
             break
           case 'denied':
             console.log('Location permission has been denied')
-            setCheckedPermissions(true)
             setLoading(false)
+            onFinishPermissionCheck()
             break
         }
       } catch (error) {
         console.error('Error checking geolocation permission:', error)
-        setCheckedPermissions(true)
+        setLoading(false)
+        onFinishPermissionCheck()
       }
     } else {
       console.error('Permissions API not supported')
-      setCheckedPermissions(true)
+      setLoading(false)
+      onFinishPermissionCheck()
     }
   }
 
-  const requestLocation = (onFinishCallback?: (location?: GPSData) => void) => {
+  useNativeMessages(['location'], (type, data) => {
+    if ('error' in data) {
+      setLoading(false)
+      setLocationError(data.error)
+      onFinishLocationCheck?.()
+    } else {
+      setLoading(false)
+      onFinishLocationCheck?.(data as GPSData)
+    }
+  })
+
+  const requestLocation = (
+    overrideOnFinishCallback?: (location?: GPSData) => void
+  ) => {
+    const onFinish = overrideOnFinishCallback ?? onFinishLocationCheck
     setLocationError(undefined)
     setLoading(true)
     if (getIsNative()) {
       console.log('requesting location from native')
       postMessageToNative('locationRequested', {})
-      onFinishCallback?.()
       return
     }
     if ('geolocation' in navigator) {
@@ -70,11 +85,10 @@ export const useLocation = (
             Speed: coords.speed ?? 0,
             DateTime: new Date().toISOString(),
           }
-          setLocation(
+          setLoading(false)
+          onFinish?.(
             ENABLE_FAKE_CUSTOMER ? FAKE_CUSTOMER_BODY.DeviceGPS : location
           )
-          setLoading(false)
-          onFinishCallback?.(location)
         },
         (error) => {
           console.error('Error requesting location', error)
@@ -86,7 +100,7 @@ export const useLocation = (
             setLocationError(error.message)
           }
           setLoading(false)
-          onFinishCallback?.()
+          onFinish?.()
         },
         {
           enableHighAccuracy: true,
@@ -96,9 +110,9 @@ export const useLocation = (
     } else {
       setLocationError('Geolocation is not supported by your browser.')
       setLoading(false)
-      onFinishCallback?.()
+      onFinish?.()
     }
   }
 
-  return { checkedPermissions, requestLocation, checkLocationPermission }
+  return { requestLocation, checkLocationPermission }
 }

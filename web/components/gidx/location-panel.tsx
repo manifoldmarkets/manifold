@@ -24,16 +24,22 @@ export const LocationPanel = (props: {
     back,
   } = props
 
-  const { checkedPermissions, requestLocation, checkLocationPermission } =
-    useLocation(setLocation, setLocationError, setLoading)
+  const { requestLocation, checkLocationPermission } = useLocation(
+    setLocationError,
+    setLoading,
+    (location) => {
+      if (location) setLocation(location)
+    },
+    (location) => {
+      if (location) setLocation(location)
+    }
+  )
 
   useEffect(() => {
-    if (!checkedPermissions) {
-      checkLocationPermission()
-    }
+    checkLocationPermission()
   }, [])
 
-  if (!checkedPermissions) {
+  if (loading) {
     return <LoadingIndicator />
   }
 

@@ -1,6 +1,5 @@
 import { Button } from 'web/components/buttons/button'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
-import { useEvent } from 'web/hooks/use-event'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
 import { Contract } from 'common/contract'
@@ -19,19 +18,17 @@ export const LocationMonitor = (props: {
     loading,
     monitorStatus,
     monitorStatusMessage,
-  } = useMonitorStatus(contract.token === 'CASH', user, () =>
-    setShowPanel(true)
-  )
-  const getLocation = useEvent(() => {
-    requestLocation((location) => {
-      if (!location) {
-        return
+  } = useMonitorStatus(
+    contract.token === 'CASH',
+    user,
+    () => setShowPanel(true),
+    (location) => {
+      if (location) {
+        fetchMonitorStatus(location)
+        setShowPanel(false)
       }
-      // may need to pass location to fetchMonitorStatus
-      fetchMonitorStatus()
-      setShowPanel(false)
-    })
-  })
+    }
+  )
   if (!user || !showPanel || !user.idVerified) {
     return null
   }
@@ -43,7 +40,11 @@ export const LocationMonitor = (props: {
         location sharing.
       </p>
       <div className="mt-2 flex justify-end">
-        <Button loading={loading} onClick={getLocation} className="ml-2">
+        <Button
+          loading={loading}
+          onClick={() => requestLocation()}
+          className="ml-2"
+        >
           Share Location
         </Button>
       </div>

@@ -256,7 +256,7 @@ export const VerifyMe = (props: { user: User }) => {
             color={'indigo-outline'}
             loading={loadingMonitorStatus}
             disabled={loadingMonitorStatus}
-            onClick={fetchMonitorStatus}
+            onClick={() => fetchMonitorStatus()}
             className={'w-full whitespace-nowrap sm:w-fit'}
           >
             Refresh status
