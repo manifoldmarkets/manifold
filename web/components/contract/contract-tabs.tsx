@@ -103,7 +103,91 @@ export function ContractTabs(props: {
     (totalPositions > 0 ? `${shortFormatNumber(totalPositions)} ` : '') +
     maybePluralize('Holder', totalPositions)
 
-  const unfilledBets = useUnfilledBets(liveContract.id) ?? []
+  const tabs = buildArray(
+    {
+      title: commentsTitle,
+      content: (
+        <CommentsTabContent
+          contract={mainContract}
+          comments={comments}
+          pinnedComments={pinnedComments}
+          setCommentsLength={setTotalComments}
+          blockedUserIds={blockedUserIds}
+          replyTo={replyTo}
+          clearReply={() => setReplyTo?.(undefined)}
+          className="-ml-2 -mr-1"
+          bets={uniqBy(bets.concat(betReplies), (b) => b.id)}
+          appRouter={appRouter}
+        />
+      ),
+    },
+    totalBets > 0 &&
+      (liveContract.mechanism === 'cpmm-1' ||
+        liveContract.mechanism === 'cpmm-multi-1') && {
+        title: positionsTitle,
+        content: (
+          <UserPositionsTable
+            key={liveContract.id}
+            positions={
+              // If contract is resolved, will have to refetch positions by profit
+              Object.values(userPositionsByOutcome).length > 0 &&
+              !liveContract.isResolved
+                ? userPositionsByOutcome
+                : undefined
+            }
+            contract={liveContract as BinaryContract}
+            setTotalPositions={setTotalPositions}
+          />
+        ),
+      },
+    totalBets > 0 && {
+      title: tradesTitle,
+      content: (
+        <Col className={'gap-4'}>
+          <BetsTabContent
+            key={liveContract.id}
+            contract={liveContract}
+            bets={bets}
+            totalBets={totalBets}
+            setReplyToBet={setReplyTo}
+          />
+        </Col>
+      ),
+    },
+    totalBets > 0 &&
+      liveContract.mechanism === 'cpmm-1' && {
+        title: 'Order book',
+        className: 'hidden md:block',
+        content: null,
+      }
+  )
+
+  const filteredTabs = tabs.filter(Boolean)
+
+  const orderBookTabIndex = filteredTabs.findIndex(
+    (tab) => tab.title === 'Order book'
+  )
+
+  const isOrderBookTabActive =
+    orderBookTabIndex >= 0 && activeIndex === orderBookTabIndex
+
+  const unfilledBets =
+    useUnfilledBets(liveContract.id, { enabled: isOrderBookTabActive }) ?? []
+
+  if (orderBookTabIndex >= 0) {
+    filteredTabs[orderBookTabIndex].content = (
+      <OrderBookPanel
+        contract={
+          liveContract as
+            | BinaryContract
+            | PseudoNumericContract
+            | StonkContract
+            | CPMMNumericContract
+        }
+        limitBets={unfilledBets}
+      />
+    )
+  }
 
   return (
     <ControlledTabs
@@ -125,75 +209,7 @@ export function ContractTabs(props: {
           } tab`
         )
       }}
-      tabs={buildArray(
-        {
-          title: commentsTitle,
-          content: (
-            <CommentsTabContent
-              contract={mainContract}
-              comments={comments}
-              pinnedComments={pinnedComments}
-              setCommentsLength={setTotalComments}
-              blockedUserIds={blockedUserIds}
-              replyTo={replyTo}
-              clearReply={() => setReplyTo?.(undefined)}
-              className="-ml-2 -mr-1"
-              bets={uniqBy(bets.concat(betReplies), (b) => b.id)}
-              appRouter={appRouter}
-            />
-          ),
-        },
-        totalBets > 0 &&
-          (liveContract.mechanism === 'cpmm-1' ||
-            liveContract.mechanism === 'cpmm-multi-1') && {
-            title: positionsTitle,
-            content: (
-              <UserPositionsTable
-                key={liveContract.id}
-                positions={
-                  // If contract is resolved, will have to refetch positions by profit
-                  Object.values(userPositionsByOutcome).length > 0 &&
-                  !liveContract.isResolved
-                    ? userPositionsByOutcome
-                    : undefined
-                }
-                contract={liveContract as BinaryContract}
-                setTotalPositions={setTotalPositions}
-              />
-            ),
-          },
-        totalBets > 0 && {
-          title: tradesTitle,
-          content: (
-            <Col className={'gap-4'}>
-              <BetsTabContent
-                key={liveContract.id}
-                contract={liveContract}
-                bets={bets}
-                totalBets={totalBets}
-                setReplyToBet={setReplyTo}
-              />
-            </Col>
-          ),
-        },
-        totalBets > 0 &&
-          liveContract.mechanism === 'cpmm-1' && {
-            title: 'Order book',
-            className: 'hidden md:block',
-            content: (
-              <OrderBookPanel
-                contract={
-                  liveContract as
-                    | BinaryContract
-                    | PseudoNumericContract
-                    | StonkContract
-                    | CPMMNumericContract
-                }
-                limitBets={unfilledBets}
-              />
-            ),
-          }
-      )}
+      tabs={filteredTabs}
     />
   )
 }
