@@ -110,7 +110,7 @@ export function CloseDate(props: {
     dayjs.duration(900, 'year')
   )
   const neverCloses =
-    !closeTime ??
+    !closeTime ||
     (NO_CLOSE_TIME_TYPES.includes(contract.outcomeType) &&
       dayjs(closeTime).isAfter(almostForeverTime))
 

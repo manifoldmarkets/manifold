@@ -42,6 +42,8 @@ jobs:
         if: ${{ success() || failure() }}
         working-directory: backend/shared
         run: yarn build
+      - name: Check TypeScript Version
+        run: tsc --version
       - name: Run Typescript checker on API
         working-directory: backend/api
         run: tsc --noEmit --skipLibCheck --pretty
