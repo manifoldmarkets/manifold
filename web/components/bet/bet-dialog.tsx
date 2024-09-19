@@ -149,7 +149,7 @@ const NumericBetDialog = (props: { contract: CPMMNumericContract }) => {
       <Row className={'mb-2 justify-between'}>
         <Link
           href={contractPath(contract)}
-          className={clsx('mb-4 text-xl text-indigo-700', linkClass)}
+          className={clsx('text-primary-700 mb-4 text-xl', linkClass)}
         >
           {question}
         </Link>

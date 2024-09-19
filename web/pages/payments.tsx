@@ -413,7 +413,7 @@ export const QRModal = (props: {
   return (
     <Modal open={show} setOpen={setShow} className="bg-canvas-0 rounded-lg">
       <div className="flex flex-col items-center p-8">
-        <div className="mb-4 text-2xl text-indigo-700">
+        <div className="text-primary-700 mb-4 text-2xl">
           Scan to send mana to {user.name}
         </div>
 

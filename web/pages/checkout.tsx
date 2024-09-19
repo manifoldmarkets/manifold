@@ -343,7 +343,7 @@ const PaymentSection = (props: {
     return (
       <Col className={'gap-4'}>
         <FullscreenConfetti />
-        <Row className="text-2xl text-indigo-700">Purchase Complete</Row>
+        <Row className="text-primary-700 text-2xl">Purchase Complete</Row>
         <Col className="text-ink-700 w-full items-center justify-center">
           <Image
             src="/manachan.png"

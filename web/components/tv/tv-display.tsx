@@ -163,7 +163,7 @@ export function TVDisplay(props: {
               <Watchers watchers={watchers} limit={10} />
             </div>
           )}
-          <div className={'border-b-2 py-2 text-xl text-indigo-700'}>
+          <div className={'text-primary-700 border-b-2 py-2 text-xl'}>
             Live chat
           </div>
           <PublicChat
