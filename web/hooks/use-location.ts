@@ -18,6 +18,10 @@ export const useLocation = (
     setLoading(true)
     // TODO: If native ask if we have permission
     console.log('checking location permission')
+    if (getIsNative()) {
+      postMessageToNative('locationPermissionStatusRequested', {})
+      return
+    }
     if ('permissions' in navigator) {
       try {
         const permissionStatus = await navigator.permissions.query({
@@ -51,7 +55,19 @@ export const useLocation = (
     }
   }
 
+  useNativeMessages(['locationPermissionStatus'], (type, data) => {
+    const { status } = data
+    console.log('Native location permission status', status)
+    if (status === 'granted') {
+      requestLocation(onFinishPermissionCheck)
+    } else {
+      onFinishPermissionCheck()
+      setLoading(false)
+    }
+  })
+
   useNativeMessages(['location'], (type, data) => {
+    console.log('Native location', data)
     if ('error' in data) {
       setLoading(false)
       setLocationError(data.error)

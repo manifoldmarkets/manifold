@@ -1,14 +1,33 @@
 import * as Location from 'expo-location'
 import { GPSData } from 'common/gidx/gidx'
+import { MINUTE_MS } from 'common/util/time'
+
+export const checkLocationPermission = async () => {
+  let { status } = await Location.getForegroundPermissionsAsync()
+  return status
+}
 
 export const getLocation = async () => {
-  let { status } = await Location.requestForegroundPermissionsAsync()
-  if (status !== 'granted') {
+  const error =
+    'Permission to access location was denied, please enable it in settings.'
+  const status = await checkLocationPermission()
+  if (status === 'denied') {
     console.log('Permission to access location was denied')
-    return { error: 'Permission to access location was denied' }
+    return {
+      error,
+    }
   }
 
-  let location = await Location.getLastKnownPositionAsync({})
+  if (status === 'undetermined') {
+    let { status } = await Location.requestForegroundPermissionsAsync()
+    if (status !== 'granted') {
+      return { error }
+    }
+  }
+
+  let location = await Location.getLastKnownPositionAsync({
+    maxAge: 20 * MINUTE_MS,
+  })
   if (!location) location = await Location.getCurrentPositionAsync({})
 
   return {

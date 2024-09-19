@@ -10,7 +10,7 @@ export type nativeToWebMessageType =
   | 'notification'
   | 'link'
   | 'location'
-
+  | 'locationPermissionStatus'
 export type nativeToWebMessage = {
   type: nativeToWebMessageType
   data: any
@@ -37,11 +37,15 @@ export type webToNativeMessageType =
   | 'log'
   | 'startedListening'
   | 'locationRequested'
+  | 'locationPermissionStatusRequested'
 
 export const IS_NATIVE_KEY = 'is-native'
 export const PLATFORM_KEY = 'native-platform'
 
 export type MesageTypeMap = {
+  locationPermissionStatus: {
+    status: 'granted' | 'denied' | 'undetermined'
+  }
   location: GPSData | { error: string }
   iapReceipt: { receipt: string }
   iapError: object

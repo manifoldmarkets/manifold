@@ -39,12 +39,12 @@ import { NativeShareData } from 'common/native-share-data'
 import { clearData, getData, storeData } from 'lib/auth'
 import { SplashAuth } from 'components/splash-auth'
 import { useIsConnected } from 'lib/use-is-connected'
-import { getLocation } from 'lib/location'
-import * as Sentry from '@sentry/react-native';
+import { checkLocationPermission, getLocation } from 'lib/location'
+import * as Sentry from '@sentry/react-native'
 Sentry.init({
   dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
   debug: ENV === 'DEV', 
-});
+})
 // NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address. ie:
 // "cross-env NEXT_PUBLIC_API_URL=192.168.1.229:8088 \
 // const baseUri = 'http://192.168.1.229:3000/'
@@ -149,6 +149,8 @@ const App = () => {
     // Perhaps this isn't current if the webview is killed for memory collection? Not sure
     const notification = response.notification.request.content
       .data as Notification
+    log('notification', notification)
+    if (notification == undefined) return
 
     if (hasLoadedWebView && listeningToNative.current) {
       communicateWithWebview('notification', notification)
@@ -367,6 +369,10 @@ const App = () => {
       log('Client started listening')
       listeningToNative.current = true
       if (fbUser) sendWebviewAuthInfo(fbUser)
+    } else if (type === 'locationPermissionStatusRequested') {
+      log('Location permission status requested from web')
+      const status = await checkLocationPermission()
+      communicateWithWebview('locationPermissionStatus', { status })
     } else if (type === 'locationRequested') {
       log('Location requested from web')
       const location = await getLocation()
