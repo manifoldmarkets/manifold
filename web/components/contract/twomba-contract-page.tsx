@@ -146,7 +146,7 @@ export function TwombaContractPageContent(props: ContractParams) {
   })
 
   const cashBetData = useBetData({
-    contractId: cash?.contract.id ?? '',
+    contractId: cash?.contract.id ?? '_',
     outcomeType: cash?.contract.outcomeType,
     userId: user?.id,
     lastBetTime: cash?.lastBetTime,
