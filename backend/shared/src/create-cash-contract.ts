@@ -1,7 +1,11 @@
+import { SupabaseDirectClient } from './supabase/init'
 import {
-  SupabaseDirectClient,
-} from './supabase/init'
-import { getContract, getUser, htmlToRichText, log } from './utils'
+  getContract,
+  getUser,
+  htmlToRichText,
+  log,
+  revalidateContractStaticProps,
+} from './utils'
 import { runTxnFromBank } from './txn/run-txn'
 import { APIError } from 'common/api/utils'
 import { updateContract } from './supabase/contracts'
@@ -17,7 +21,7 @@ export async function createCashContractMain(
   manaContractId: string,
   subsidyAmount: number
 ) {
-  return await pg.tx(async (tx) => {
+  const { cashContract, manaContract } = await pg.tx(async (tx) => {
     const manaContract = await getContract(tx, manaContractId)
     if (!manaContract) {
       throw new APIError(404, `Mana contract ${manaContractId} not found`)
@@ -94,6 +98,9 @@ export async function createCashContractMain(
       `Created cash contract ${cashContract.id} for mana contract ${manaContractId}`
     )
 
-    return cashContract
+    return { cashContract, manaContract }
   })
+
+  await revalidateContractStaticProps(manaContract)
+  return cashContract
 }
