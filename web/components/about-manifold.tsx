@@ -16,6 +16,7 @@ export const AboutManifold = ({ className = '' }: AboutManifoldProps) => {
       {TWOMBA_ENABLED ? (
         <div className="mb-2">
           Win cash prizes for your predictions on our sweepstakes markets!
+          Always free to play. No purchase necessary.
         </div>
       ) : (
         <div className="mb-2">
