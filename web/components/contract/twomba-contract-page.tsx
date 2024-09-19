@@ -229,7 +229,8 @@ export function TwombaContractPageContent(props: ContractParams) {
 
   const [showOrderBook, setShowOrderBook] = useState(false)
 
-  const unfilledBets = useUnfilledBets(liveContract.id) ?? []
+  const unfilledBets =
+    useUnfilledBets(liveContract.id, { enabled: showOrderBook }) ?? []
 
   return (
     <>
@@ -460,7 +461,11 @@ export function TwombaContractPageContent(props: ContractParams) {
                       <Button
                         color="indigo-outline"
                         size="lg"
-                        onClick={() => setShowOrderBook((prev) => !prev)}
+                        onClick={() => {
+                          setShowOrderBook((prev) => !prev)
+                          if (!showOrderBook) {
+                          }
+                        }}
                         className={clsx(
                           'w-full rounded-md px-4 py-2 text-indigo-500',
                           showOrderBook &&
