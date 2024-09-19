@@ -73,7 +73,6 @@ export const PROD_CONFIG: EnvConfig = {
 
   adminIds: [
     'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
-    '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
     'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
     '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
     'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold

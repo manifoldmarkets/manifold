@@ -290,7 +290,6 @@ export const PARTNER_USER_IDS: string[] = [
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'X1xu1kvOxuevx09xuR2urWfzf7i1', // KeenenWatts
   '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
-  '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
   '8WEiWcxUd7QLeiveyI8iqbSIffU2', // goblinodds
   'Iua2KQvL6KYcfGLGNI6PVeGkseo1', // Ziddletwix
   'GRaWlYn2fNah0bvr6OW28l28nFn1', // cash
@@ -317,7 +316,6 @@ export const NEW_USER_HERLPER_IDS = [
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'rQPOELuW5zaapaNPnBYQBMoonk92', // Tumbles
   'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
-  '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
   'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
   '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
   'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
