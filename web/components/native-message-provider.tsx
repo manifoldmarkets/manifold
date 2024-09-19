@@ -6,29 +6,64 @@ import {
   setPushToken,
 } from 'web/lib/supabase/notifications'
 import { useRouter } from 'next/router'
-import { setInstalledAppPlatform, setIsNative } from 'web/lib/native/is-native'
+import {
+  setInstalledAppPlatform,
+  setIsNativeOld,
+} from 'web/lib/native/is-native'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
-import { useEffect } from 'react'
+import { createContext, useContext, useEffect } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { useEvent } from 'web/hooks/use-event'
 import { auth } from 'web/lib/firebase/users'
 import { User as FirebaseUser } from 'firebase/auth'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
-export const NativeMessageListener = () => {
+type NativeContextType = {
+  isNative: boolean
+  platform: string
+  version: string
+}
+
+export const NativeContext = createContext<NativeContextType | undefined>(
+  undefined
+)
+
+export const NativeMessageProvider = (props: { children: React.ReactNode }) => {
+  const { children } = props
   const router = useRouter()
   const privateUser = usePrivateUser()
+  const [isNative, setIsNative] = usePersistentLocalState(false, 'is-native-v2')
+  const [platform, setPlatform] = usePersistentLocalState(
+    '',
+    'native-platform-v2'
+  )
+  const [version, setVersion] = usePersistentLocalState('', 'native-version')
 
   useEffect(() => {
     postMessageToNative('startedListening', {})
   }, [])
 
   useEffect(() => {
+    postMessageToNative('versionRequested', {})
+  }, [])
+
+  useNativeMessages(['version'], (type, data) => {
+    const { version } = data
+    console.log('Native version', version)
+    if (version) {
+      setVersion(version)
+    }
+  })
+
+  useEffect(() => {
     const { nativePlatform } = router.query
     if (nativePlatform !== undefined) {
       const platform = nativePlatform as string
-      setIsNative(true, platform)
+      setIsNativeOld(true, platform)
+      setIsNative(true)
+      setPlatform(platform)
       if (privateUser) setInstalledAppPlatform(privateUser, platform)
     }
   }, [privateUser, router.query])
@@ -83,5 +118,17 @@ export const NativeMessageListener = () => {
     handleNativeMessage
   )
 
-  return <div />
+  return (
+    <NativeContext.Provider value={{ isNative, platform, version }}>
+      {children}
+    </NativeContext.Provider>
+  )
+}
+
+export const useNativeInfo = () => {
+  const context = useContext(NativeContext)
+  if (context === undefined) {
+    throw new Error('useNativeInfo must be used within a NativeMessageListener')
+  }
+  return context
 }

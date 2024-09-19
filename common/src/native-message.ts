@@ -12,6 +12,7 @@ export type nativeToWebMessageType =
   | 'location'
   | 'locationPermissionStatus'
   | 'hasReviewAction'
+  | 'version'
 export type nativeToWebMessage = {
   type: nativeToWebMessageType
   data: any
@@ -41,10 +42,14 @@ export type webToNativeMessageType =
   | 'locationPermissionStatusRequested'
   | 'storeReviewRequested'
   | 'hasReviewActionRequested'
+  | 'versionRequested'
 export const IS_NATIVE_KEY = 'is-native'
 export const PLATFORM_KEY = 'native-platform'
 
 export type MesageTypeMap = {
+  version: {
+    version: string | undefined
+  }
   hasReviewAction: {
     hasAction: boolean
     isAvailable: boolean

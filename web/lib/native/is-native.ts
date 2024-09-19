@@ -4,12 +4,13 @@ import { uniq } from 'lodash'
 import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
 import { api } from '../api/api'
 
+/**@deprecated, use useNativeInfo() instead */
 export const getIsNative = () => {
-  // TODO cache the result of this in memory
   const { isNative } = getNativeInfo()
   return isNative
 }
 
+/**@deprecated, use useNativeInfo() instead */
 export const getNativePlatform = () => {
   return getNativeInfo()
 }
@@ -23,7 +24,7 @@ const getNativeInfo = () => {
   return { isNative: isNative === 'true', platform }
 }
 
-export const setIsNative = (isNative: boolean, platform: string) => {
+export const setIsNativeOld = (isNative: boolean, platform: string) => {
   const local = safeLocalStorage
   const ss = safeSessionStorage
   local?.setItem(IS_NATIVE_KEY, isNative ? 'true' : 'false')

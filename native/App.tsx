@@ -387,6 +387,10 @@ const App = () => {
       const isAvailable = await StoreReview.isAvailableAsync()
       const hasAction = await StoreReview.hasAction()
       communicateWithWebview('hasReviewAction', { hasAction, isAvailable })
+    } else if (type === 'versionRequested') {
+      log('Version requested from web')
+      const version = Constants.expoConfig?.version
+      communicateWithWebview('version', { version })
     } else {
       log('Unhandled message from web type: ', type)
       log('Unhandled message from web data: ', data)
