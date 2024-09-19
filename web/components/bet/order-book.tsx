@@ -535,7 +535,21 @@ export function OrderBookPanel(props: {
   const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  if (limitBets.length === 0) return <></>
+  if (limitBets.length === 0)
+    return (
+      <>
+        <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 px-2 py-4 sm:px-4">
+          <Subtitle className="!my-0">
+            Order book{' '}
+            <InfoTooltip
+              text="List of active limit orders by traders wishing to buy YES or NO at a given probability"
+              className="ml-1"
+            />
+          </Subtitle>
+          Currently no unfilled limit orders.
+        </Col>
+      </>
+    )
 
   return (
     <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 px-2 py-4 sm:px-4">
