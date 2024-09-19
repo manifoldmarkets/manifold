@@ -20,7 +20,6 @@ export const deleteMe: APIHandler<'me/delete'> = async (body, auth) => {
   const pg = createSupabaseDirectClient()
   await updateUser(pg, auth.uid, {
     userDeleted: true,
-    isBannedFromPosting: true,
   })
   await updatePrivateUser(pg, auth.uid, {
     email: FieldVal.delete(),

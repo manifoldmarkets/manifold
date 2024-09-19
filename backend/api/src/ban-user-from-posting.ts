@@ -14,15 +14,15 @@ const bodySchema = z
   })
   .strict()
 
-export const banuser = authEndpoint(async (req, auth) => {
+export const banUserFromPosting = authEndpoint(async (req, auth) => {
   const { userId, unban } = validate(bodySchema, req.body)
-  const db = createSupabaseDirectClient()
+  const pg = createSupabaseDirectClient()
   await throwErrorIfNotMod(auth.uid)
   if (isAdminId(userId)) throw new APIError(403, 'Cannot ban admin')
   await trackPublicEvent(auth.uid, 'ban user', {
     userId,
   })
-  await updateUser(db, userId, {
+  await updateUser(pg, userId, {
     isBannedFromPosting: !unban,
   })
   log('updated user')

@@ -1,11 +1,11 @@
-import { api, banUser } from 'web/lib/api/api'
+import { api, banUserFromPosting } from 'web/lib/api/api'
 
 async function superBanUser(userId: string) {
   let marketsStatus = "could not be unlisted nor N/A'd due to an unknown error"
   let commentsStatus = 'could not be hidden due to an unknown error'
 
   try {
-    await banUser({ userId })
+    await banUserFromPosting({ userId })
     await api('unlist-and-cancel-user-contracts', { userId })
     marketsStatus = "successfully unlisted & NA'd"
   } catch (error) {

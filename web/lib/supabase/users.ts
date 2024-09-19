@@ -50,10 +50,14 @@ export async function searchUsers(prompt: string, limit: number) {
 export async function getDisplayUsers(userIds: string[]) {
   // note: random order
   const { data } = await run(
-    selectFrom(db, 'users', ...defaultFields, 'isBannedFromPosting').in(
-      'id',
-      userIds
-    )
+    selectFrom(
+      db,
+      'users',
+      ...defaultFields,
+      'isBannedFromPosting',
+      'isBannedFromMana',
+      'isBannedFromSweepcash'
+    ).in('id', userIds)
   )
 
   return data
