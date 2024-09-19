@@ -1,11 +1,11 @@
-import { PlusIcon } from '@heroicons/react/solid'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { AddFundsModal } from '../add-funds-modal'
 import { Button, SizeType } from '../buttons/button'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import router from 'next/router'
-import clsx from 'clsx'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function AddFundsButton(props: {
   userId?: string
@@ -27,10 +27,7 @@ export function AddFundsButton(props: {
         color="violet"
         className={className}
       >
-        <PlusIcon
-          className={clsx('mr-1', size == 'xl' ? 'h-4 w-4' : 'h-3 w-3')}
-        />
-        Get mana
+        Get <ManaCoin className="ml-1" /> / <SweepiesCoin className="ml-1" />
       </Button>
       <AddFundsModal open={open} setOpen={setOpen} />
     </>

@@ -1,5 +1,4 @@
 import {
-  CashIcon,
   DeviceMobileIcon,
   LogoutIcon,
   MoonIcon,
@@ -202,7 +201,6 @@ const getMobileNav = (
   const { isNewUser, isLiveTV, isAdminOrMod } = options
 
   return buildArray<NavItem>(
-    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     {
       name: 'US Election',
       href: '/election',
