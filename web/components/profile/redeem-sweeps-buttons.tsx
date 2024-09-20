@@ -5,6 +5,7 @@ import { Button } from '../buttons/button'
 import { CoinNumber } from '../widgets/coin-number'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { useKYCGiftAmount } from '../twomba/toggle-verify-callout'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function RedeemSweepsButtons(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -25,12 +26,14 @@ export function RedeemSweepsButtons(props: { user: User; className?: string }) {
       {canRedeem ? (
         <Button onClick={onClick} color={'amber'} className={className}>
           Redeem
-          {redeemableCash && (
+          {redeemableCash > 0 ? (
             <CoinNumber
               amount={redeemableCash}
-              className={'ml-1'}
-              coinType={'sweepies'}
+              className="ml-1"
+              coinType="sweepies"
             />
+          ) : (
+            <SweepiesCoin className="ml-1" />
           )}
         </Button>
       ) : (
