@@ -6,6 +6,8 @@ import { useLocation } from 'web/hooks/use-location'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useEffect } from 'react'
 import { useNativeInfo } from '../native-message-provider'
+import { useShowAfterLoadingTime } from './location-monitor'
+import { Col } from '../layout/col'
 
 export const LocationPanel = (props: {
   setLocation: (data: GPSData) => void
@@ -24,6 +26,8 @@ export const LocationPanel = (props: {
     back,
   } = props
   const { isNative } = useNativeInfo()
+  const showLoadingNote = useShowAfterLoadingTime(loading, 5)
+
   const { requestLocation, checkLocationPermission } = useLocation(
     setLocationError,
     setLoading,
@@ -40,7 +44,16 @@ export const LocationPanel = (props: {
   }, [])
 
   if (loading) {
-    return <LoadingIndicator />
+    return (
+      <Col>
+        <LoadingIndicator />
+        {showLoadingNote && (
+          <span className="text-warning mt-2">
+            Loading location may take a while, hold on!
+          </span>
+        )}
+      </Col>
+    )
   }
 
   return (

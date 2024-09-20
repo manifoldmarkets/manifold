@@ -4,6 +4,7 @@ import { User } from 'common/user'
 import { Col } from '../layout/col'
 import { Contract } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
+import { useState, useEffect } from 'react'
 
 export const LocationMonitor = (props: {
   contract: Contract
@@ -30,6 +31,9 @@ export const LocationMonitor = (props: {
       }
     }
   )
+
+  const showLoadingNote = useShowAfterLoadingTime(loading, 5)
+
   if (!user || !showPanel || !user.idVerified) {
     return null
   }
@@ -43,9 +47,42 @@ export const LocationMonitor = (props: {
           Share location to {TRADE_TERM}
         </Button>
       </div>
+      {showLoadingNote && (
+        <span className="text-warning mt-2">
+          Loading location may take a while, hold on!
+        </span>
+      )}
       {monitorStatus === 'error' && (
         <span className="mt-2 text-red-500">{monitorStatusMessage}</span>
       )}
     </Col>
   )
+}
+
+export const useShowAfterLoadingTime = (
+  loading: boolean,
+  thresholdMS: number
+) => {
+  const [loadingTime, setLoadingTime] = useState(0)
+  const [showLoadingNote, setShowLoadingNote] = useState(false)
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (loading) {
+      timer = setInterval(() => {
+        setLoadingTime((prev) => prev + 1)
+      }, 1000)
+    } else {
+      setLoadingTime(0)
+      setShowLoadingNote(false)
+    }
+
+    if (loadingTime > thresholdMS) {
+      setShowLoadingNote(true)
+    }
+
+    return () => clearInterval(timer)
+  }, [loading, loadingTime, thresholdMS])
+
+  return showLoadingNote
 }
