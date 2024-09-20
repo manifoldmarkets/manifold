@@ -31,14 +31,12 @@ export const ExplainerPanel = (props: {
   className?: string
   showWhatIsManifold?: boolean
   showAccuracy?: boolean
-  showWhyBet?: boolean
   showSweepstakes?: boolean
 }) => {
   const {
     className,
     showWhatIsManifold = true,
     showAccuracy = true,
-    showWhyBet = true,
     showSweepstakes = true,
   } = props
   const handleSectionClick = (sectionTitle: string) => {
