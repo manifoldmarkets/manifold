@@ -333,7 +333,6 @@ export function TwombaContractPageContent(props: ContractParams) {
                 <AuthorInfo
                   contract={props.contract}
                   resolverId={liveContract.resolverId}
-                  userNameClass={'hidden sm:block'}
                 />
                 <TwombaContractSummaryStats
                   contractId={props.contract.id}
