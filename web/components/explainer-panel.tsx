@@ -26,6 +26,7 @@ import {
 } from 'common/util/format'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { CoinNumber } from './widgets/coin-number'
+import { GiTakeMyMoney } from 'react-icons/gi'
 
 export const ExplainerPanel = (props: {
   className?: string
@@ -86,10 +87,9 @@ const WhatIsManifold = ({
 }) => (
   <ExpandSection
     title={
-      <Row className="items-start">
-        <FaPercentage className="mr-2 mt-[0.25em] flex-shrink-0 align-text-bottom" />{' '}
-        What is Manifold?
-      </Row>
+      <>
+        <GoGraph className="mr-2  " /> What is Manifold?
+      </>
     }
     onClick={() => onClick('What is Manifold?')}
   >
@@ -143,7 +143,7 @@ const Sweepstakes = ({
   <ExpandSection
     title={
       <>
-        <GoGraph className="mr-2" /> How do I win cash prizes?
+        <GiTakeMyMoney className="mr-2" /> How do I win cash prizes?
       </>
     }
     onClick={() => onClick('Are our forecasts accurate?')}
@@ -152,13 +152,14 @@ const Sweepstakes = ({
       Manifold offers two market types: play money and sweepstakes.
     </div>
     <div className="pb-2">
-      All questions include a play money market which uses mana <ManaCoin /> and can't be cashed out.
+      All questions include a play money market which uses mana <ManaCoin /> and
+      can't be cashed out.
     </div>
     <div className="pb-2">
       Selected markets will have a sweepstakes toggle. These require sweepcash{' '}
       <SweepiesCoin />
-      &nbsp;to participate and winners can withdraw
-      sweepcash as a cash prize. You can filter for sweepstakes markets on the browse page.
+      &nbsp;to participate and winners can withdraw sweepcash as a cash prize.
+      You can filter for sweepstakes markets on the browse page.
     </div>
     <div className="pb-2">
       Redeem your {SWEEPIES_NAME} won from markets at{' '}
