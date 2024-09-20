@@ -56,6 +56,18 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     throw new APIError(403, 'Cannot update closeTime for resolved contracts')
   }
 
+  if (
+    contract.siblingContractId &&
+    (description != undefined || question != undefined) &&
+    !isAdminId(auth.uid) &&
+    contract.creatorId !== auth.uid
+  ) {
+    throw new APIError(
+      403,
+      'Only Manifold team or the question creator can update title/description of sweepcash questions'
+    )
+  }
+
   await trackPublicEvent(
     auth.uid,
     'update market',
