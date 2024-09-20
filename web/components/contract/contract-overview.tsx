@@ -833,8 +833,9 @@ export function BinaryBetPanel(props: {
   return (
     <Col className="my-3 w-full">
       {contract.token === 'CASH' && identityPending(user) ? (
-        <Row className={'bg-canvas-50 rounded p-4'}>
-          You can't trade on sweepstakes markets while your status is pending.
+        <Row className={'bg-canvas-50 text-ink-700 rounded p-4 italic'}>
+          We're still reviewing your info for sweepstakes. You can still trade
+          in Play mode.
         </Row>
       ) : contract.token === 'CASH' && user && !user.idVerified ? (
         <Col className="bg-canvas-50 relative gap-2 rounded-lg p-4">
@@ -845,13 +846,13 @@ export function BinaryBetPanel(props: {
             Must be verified to {TRADE_TERM}
           </div>
           <p className="text-ink-700 mx-auto">
-            Verify your info to start trading on sweepstakes markets!
+            Verify your info to start trading on sweepstakes questions!
           </p>
           <VerifyButton className="mt-2" />
         </Col>
       ) : contract.token === 'CASH' && blockFromSweepstakes(user) ? (
-        <Row className={'bg-canvas-50 rounded p-4'}>
-          You are not eligible to trade on sweepstakes markets.
+        <Row className={'bg-canvas-50 text-ink-700 rounded p-4 italic'}>
+          You are not eligible to trade on sweepstakes.
         </Row>
       ) : (
         <BuyPanel inModal={false} contract={contract} />
