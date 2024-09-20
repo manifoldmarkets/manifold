@@ -162,6 +162,8 @@ export function TwombaContractPageContent(props: ContractParams) {
     liveContract
   const { coverImageUrl } = livePlayContract
 
+  const description = livePlayContract.description
+
   const isAdmin = useAdmin()
   const isMod = useTrusted()
   const isCreator = creatorId === user?.id
@@ -414,7 +416,10 @@ export function TwombaContractPageContent(props: ContractParams) {
               userHasBet={!!contractMetrics}
               hasReviewed={!!userHasReviewed}
             />
-            <ContractDescription contract={livePlayContract} />
+            <ContractDescription
+              contract={liveContract}
+              description={description}
+            />
             <Row className="items-center gap-2">
               <MarketTopics
                 contract={props.contract}
