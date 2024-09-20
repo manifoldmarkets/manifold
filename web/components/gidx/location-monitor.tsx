@@ -34,7 +34,7 @@ export const LocationMonitor = (props: {
     return null
   }
   return (
-    <Col className=" p-2">
+    <Col className="py-2">
       <span className="text-xl font-semibold">
         Location required to participate in sweepstakes
       </span>
