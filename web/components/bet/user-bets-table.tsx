@@ -1,7 +1,7 @@
 'use client'
 import { ChevronUpIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Bet, LimitBet } from 'common/bet'
+import { LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
 import { Contract, contractPath, CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -22,7 +22,7 @@ import {
   SWEEPIES_MONIKER,
 } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
-import { Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
+import { Dictionary, max, sortBy, sum, uniqBy } from 'lodash'
 import Link from 'next/link'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
@@ -47,7 +47,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { api, getUserContractsMetricsWithContracts } from 'web/lib/api/api'
+import { getUserContractsMetricsWithContracts } from 'web/lib/api/api'
 import { User } from 'web/lib/firebase/users'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
@@ -56,6 +56,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { linkClass } from '../widgets/site-link'
 import { Tooltip } from '../widgets/tooltip'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { useContractBets } from 'web/hooks/use-bets'
 
 type BetSort =
   | 'newest'
@@ -630,22 +631,8 @@ function BetsTable(props: {
       : 'col-span-1'
 
   const [expandedIds, setExpandedIds] = useState<string[]>([])
-  const [userBets, setUserBets] = useState<Dictionary<Bet[]>>({})
-  const hideBetsBefore = areYourBets ? 0 : JUNE_1_2022
 
   const setNewExpandedId = async (id: string) => {
-    if (!userBets[id]) {
-      api('bets', {
-        contractId: id,
-        userId: user.id,
-        afterTime: hideBetsBefore,
-      }).then((newBets) =>
-        setUserBets((oldBets) => ({
-          ...oldBets,
-          ...groupBy(newBets, 'contractId'),
-        }))
-      )
-    }
     setExpandedIds((oldIds) =>
       oldIds.includes(id)
         ? oldIds.filter((oldId) => oldId !== id)
@@ -717,18 +704,6 @@ function BetsTable(props: {
         {contracts
           .slice(currentSlice, currentSlice + rowsPerSection)
           .map((contract) => {
-            const bets: Bet[] | undefined = userBets[contract.id]
-            const limitBets = (bets ?? []).filter(
-              (bet) =>
-                bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
-            ) as LimitBet[]
-            const includeSellButtonForUser =
-              areYourBets &&
-              !contract.isResolved &&
-              (contract.closeTime ?? 0) > Date.now() &&
-              contract.mechanism === 'cpmm-1'
-                ? signedInUser
-                : undefined
             return (
               <Row
                 key={contract.id + 'bets-table-row'}
@@ -801,45 +776,15 @@ function BetsTable(props: {
                     ))}
                   </div>
                   <Col className={'-mt-2 w-full'}>
-                    {expandedIds.includes(contract.id) &&
-                      (bets === undefined ? (
-                        <Col className={'w-full items-center justify-center'}>
-                          <LoadingIndicator />
-                        </Col>
-                      ) : (
-                        <Col className={'mt-1 w-full gap-1'}>
-                          <BetsSummary
-                            className="!mb-6 mt-6 flex"
-                            contract={contract}
-                            metrics={metricsByContractId[contract.id]}
-                            hideTweet
-                            includeSellButton={includeSellButtonForUser}
-                            hideProfit={true}
-                            hideValue={true}
-                            areYourBets={areYourBets}
-                          />
-                          {contract.mechanism === 'cpmm-1' &&
-                            limitBets.length > 0 && (
-                              <div className="max-w-md">
-                                <div className="bg-canvas-50 mt-4 p-2">
-                                  Limit orders
-                                </div>
-                                <OrderTable
-                                  contract={contract}
-                                  limitBets={limitBets}
-                                  isYou={areYourBets}
-                                />
-                              </div>
-                            )}
-                          <ContractBetsTable
-                            key={contract.id + 'bets-table'}
-                            contract={contract}
-                            bets={bets}
-                            isYourBets={areYourBets}
-                            paginate
-                          />
-                        </Col>
-                      ))}
+                    {expandedIds.includes(contract.id) && (
+                      <ExpandedBetRow
+                        contract={contract}
+                        user={user}
+                        signedInUser={signedInUser}
+                        contractMetrics={metricsByContractId[contract.id]}
+                        areYourBets={areYourBets}
+                      />
+                    )}
                   </Col>
                 </Col>
               </Row>
@@ -886,6 +831,70 @@ function BetsTable(props: {
           <Button onClick={() => setModalOpen(false)}>Done</Button>
         </div>
       </Modal>
+    </Col>
+  )
+}
+
+const ExpandedBetRow = (props: {
+  contract: Contract
+  user: User
+  signedInUser: User | null | undefined
+  contractMetrics: ContractMetric
+  areYourBets: boolean
+}) => {
+  const { contract, user, signedInUser, contractMetrics, areYourBets } = props
+  const hideBetsBefore = areYourBets ? 0 : JUNE_1_2022
+  const bets = useContractBets(contract.id, {
+    userId: user.id,
+    afterTime: hideBetsBefore,
+  })
+  const limitBets = bets?.filter(
+    (bet) => bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
+  ) as LimitBet[]
+
+  const includeSellButtonForUser =
+    areYourBets &&
+    !contract.isResolved &&
+    (contract.closeTime ?? 0) > Date.now() &&
+    contract.mechanism === 'cpmm-1'
+      ? signedInUser
+      : undefined
+  if (bets === undefined) {
+    return (
+      <Col className={'w-full items-center justify-center'}>
+        <LoadingIndicator />
+      </Col>
+    )
+  }
+  return (
+    <Col className={'mt-1 w-full gap-1'}>
+      <BetsSummary
+        className="!mb-6 mt-6 flex"
+        contract={contract}
+        metrics={contractMetrics}
+        hideTweet
+        includeSellButton={includeSellButtonForUser}
+        hideProfit={true}
+        hideValue={true}
+        areYourBets={areYourBets}
+      />
+      {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
+        <div className="max-w-md">
+          <div className="bg-canvas-50 mt-4 p-2">Limit orders</div>
+          <OrderTable
+            contract={contract}
+            limitBets={limitBets}
+            isYou={areYourBets}
+          />
+        </div>
+      )}
+      <ContractBetsTable
+        key={contract.id + 'bets-table'}
+        contract={contract}
+        bets={bets}
+        isYourBets={areYourBets}
+        paginate
+      />
     </Col>
   )
 }
