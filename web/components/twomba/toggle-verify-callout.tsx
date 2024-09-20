@@ -26,13 +26,13 @@ export function ToggleVerifyCallout(props: {
   const user = useUser()
   const [dismissed, setDismissed] = usePersistentLocalState(
     false,
-    `toggle-verify-callout-dismissed-${user?.id ?? 'logged-out'}`
+    `toggle-verify-callout-dismissed`
   )
 
-  if (dismissed) return null
+  if (dismissed || user === undefined) return null
 
   // TWODO: Add a link to about here
-  if (!user) {
+  if (user === null) {
     return (
       <CalloutFrame
         className={className}
@@ -52,7 +52,6 @@ export function ToggleVerifyCallout(props: {
   }
 
   const { message } = getVerificationStatus(user)
-
   if (!PROMPT_VERIFICATION_MESSAGES.includes(message)) return null
 
   return (
