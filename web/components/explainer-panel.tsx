@@ -149,18 +149,16 @@ const Sweepstakes = ({
     onClick={() => onClick('Are our forecasts accurate?')}
   >
     <div className="pb-2">
-      There are two types of markets on Manifold: play money and sweepstakes.
+      Manifold offers two market types: play money and sweepstakes.
     </div>
     <div className="pb-2">
-      By default all markets are play money and use mana <ManaCoin />. These
-      markets allow you to win more mana but do not award any prizes which can
-      be cashed out.
+      All questions include a play money market which uses mana <ManaCoin /> and can't be cashed out.
     </div>
     <div className="pb-2">
       Selected markets will have a sweepstakes toggle. These require sweepcash{' '}
       <SweepiesCoin />
-      &nbsp;to participate and allow winners who predict correctly to withdraw
-      sweepcash won to real money. You can filter for sweepstakes markets on the browse page.
+      &nbsp;to participate and winners can withdraw
+      sweepcash as a cash prize. You can filter for sweepstakes markets on the browse page.
     </div>
     <div className="pb-2">
       Redeem your {SWEEPIES_NAME} won from markets at{' '}
