@@ -88,6 +88,7 @@ export function TwombaContractPageContent(props: ContractParams) {
     cash,
   } = props
 
+  // sync query state with context
   const { isPlay, setIsPlay } = useSweepstakes()
   const router = useRouter()
   useEffect(() => {
@@ -95,6 +96,13 @@ export function TwombaContractPageContent(props: ContractParams) {
       setIsPlay(router.query.play !== 'false')
     }
   }, [router.isReady])
+  useEffect(() => {
+    router.replace(
+      { query: { ...router.query, play: isPlay ? 'true' : 'false' } },
+      undefined,
+      { shallow: true }
+    )
+  }, [isPlay])
 
   const livePlayContract = useLiveContractWithAnswers(props.contract)
   const liveCashContract = props.cash
