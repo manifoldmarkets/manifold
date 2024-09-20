@@ -76,12 +76,6 @@ export const RegisterUserForm = (props: {
     }
   }, [user.idVerified, user.kycDocumentStatus, initialUserState, router])
 
-  useEffect(() => {
-    track('register user gidx page change', {
-      page,
-    })
-  }, [page])
-
   const [loading, setLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | undefined>()
   const [error, setError] = useState<string | null>(null)
@@ -116,6 +110,13 @@ export const RegisterUserForm = (props: {
         },
     'gidx-registration-user-info'
   )
+
+  useEffect(() => {
+    track('register user gidx page change', {
+      page,
+      citizenshipCountryCode: userInfo.CitizenshipCountryCode,
+    })
+  }, [page])
 
   const optionalKeys = ['AddressLine2', 'StateCode']
   const unfilled = Object.entries(userInfo ?? {}).filter(

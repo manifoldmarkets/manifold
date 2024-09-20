@@ -95,6 +95,7 @@ export const register: APIHandler<'register-gidx'> = async (
   track(auth.uid, 'register user gidx attempt', {
     status,
     message,
+    citizenshipCountryCode: body.CitizenshipCountryCode,
     idVerified,
   })
   return {
