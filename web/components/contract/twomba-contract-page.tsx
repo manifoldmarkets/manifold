@@ -56,7 +56,6 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { useContractBets } from 'web/hooks/use-bets'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
-import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
@@ -122,7 +121,6 @@ export function TwombaContractPageContent(props: ContractParams) {
   }, [liveContract.resolution, liveContract.id, topContractMetrics.length])
 
   useSaveCampaign()
-  useGoogleAnalytics()
   useTracking(
     'view market',
     {

@@ -30,7 +30,6 @@ import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { SweepsExplainer } from 'web/components/sweeps-explainer'
 import { TestimonialsPanel } from 'web/components/testimonials-panel'
 import { Carousel } from 'web/components/widgets/carousel'
-import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -111,7 +110,6 @@ export default function LandingPage(props: {
   useSaveReferral(user)
   useSaveCampaign()
   useRedirectIfSignedIn()
-  useGoogleAnalytics()
 
   const [selectedTopicSlug, setSelectedTopicSlug] = useState<string>()
   const [isModalOpen, setIsModalOpen] = useState(false)
