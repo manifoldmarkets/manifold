@@ -4,7 +4,7 @@
     "slug": "manifold-markets",
     "owner": "iansp",
     "jsEngine": "hermes",
-    "version": "2.0.53",
+    "version": "2.0.54",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -59,7 +59,7 @@
         "backgroundColor": "#4337C9"
       },
       "package": "com.markets.manifold",
-      "versionCode": 61
+      "versionCode": 62
     },
     "ios": {
       "infoPlist": {
@@ -72,7 +72,7 @@
         "applinks:manifold.markets",
         "webcredentials:manifold.markets"
       ],
-      "buildNumber": "1.0.48"
+      "buildNumber": "1.0.49"
     }
   }
 }
