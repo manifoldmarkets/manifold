@@ -25,6 +25,7 @@ import { useCallback, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { TRADE_TERM, TRADED_TERM } from 'common/envs/constants'
 import { capitalize, partition } from 'lodash'
+import { KYCStats } from 'web/components/stats/kyc-stats'
 
 export const getStaticProps = async () => {
   try {
@@ -308,6 +309,9 @@ export function CustomAnalytics(props: {
         ]}
       />
       <Spacer h={8} />
+      <KYCStats />
+      <Spacer h={8} />
+
       <Title>Retention</Title>
       <p className="text-ink-500">
         What fraction of active users are still active after the given time

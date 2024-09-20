@@ -1641,6 +1641,26 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-kyc-stats': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({}),
+    returns: {} as {
+      initialVerifications: {
+        count: number
+        day: string
+      }[]
+      phoneVerifications: {
+        count: number
+        day: string
+      }[]
+      documentStatuses: {
+        count: number
+        status: string
+      }[]
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
