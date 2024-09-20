@@ -290,6 +290,16 @@ const PaymentSection = (props: {
   const [state, setState] = useState(CustomerProfile.Address.StateCode)
   const [zipCode, setZipCode] = useState(CustomerProfile.Address.PostalCode)
   const [complete, setComplete] = useState(false)
+  const router = useRouter()
+  // Used for ads conversion tracking
+  useEffect(() => {
+    if (!router.query.complete && complete) {
+      router.push({
+        pathname: router.pathname,
+        query: { ...router.query, complete: 'true' },
+      })
+    }
+  }, [complete, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
