@@ -17,7 +17,6 @@ import { GoGraph } from 'react-icons/go'
 import Link from 'next/link'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
-
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { CoinNumber } from './widgets/coin-number'
 import { GiTakeMyMoney } from 'react-icons/gi'
