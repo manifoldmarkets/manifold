@@ -24,10 +24,10 @@ export function AddFundsButton(props: {
           TWOMBA_ENABLED ? router.push('/checkout') : setOpen(true)
         }
         size={size ?? 'md'}
-        color="violet"
+        color="gradient-pink"
         className={className}
       >
-        Get <ManaCoin className="ml-1" /> / <SweepiesCoin className="ml-1" />
+        Get <ManaCoin className="ml-1" /> and <SweepiesCoin className="ml-1" />
       </Button>
       <AddFundsModal open={open} setOpen={setOpen} />
     </>
