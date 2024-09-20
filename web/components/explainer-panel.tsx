@@ -4,26 +4,20 @@ import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
 import { Card } from './widgets/card'
 import React from 'react'
 import { Row } from './layout/row'
-import { FaHandHoldingUsd, FaPercentage } from 'react-icons/fa'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
 import {
   CHARITY_FEE,
   SWEEPIES_NAME,
-  TRADE_TERM,
   TRADING_TERM,
   TWOMBA_ENABLED,
 } from 'common/envs/constants'
-import { capitalize } from 'lodash'
 import { AboutManifold } from './about-manifold'
 import { GoGraph } from 'react-icons/go'
 import Link from 'next/link'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import {
-  SWEEPIES_MONIKER,
-  formatMoneyUSD,
-  formatSweepies,
-} from 'common/util/format'
+
+
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { CoinNumber } from './widgets/coin-number'
 import { GiTakeMyMoney } from 'react-icons/gi'
