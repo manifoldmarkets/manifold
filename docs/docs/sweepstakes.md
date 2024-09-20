@@ -26,6 +26,10 @@ Users may participate in a sweepstakes market by using sweepcash. It is free to 
 - Completing their daily streak for a free bonus.
 - As a free gift with some purchases.
 
+### How much can I withdraw my Sweepcash winnings for?
+
+When eligible to be withdrawn, sweepcash can be redeemed at a rate of 1.00 sweepcash to 1.00 USD, minus a 5% fee.
+
 ### How do I withdraw my Sweepcash winnings?
 
 Only sweepcash won from a market resolution can be withdrawn. Sweepcash received from gifts, bonuses, or exiting a market early can not be withdrawn and you must use it to win a resolved market first. Visit your withdrawals dashboard to view how much sweepcash you have won and can withdraw. Then, fill out your bank details and request the amount of sweepcash you wish to redeem for real-money. There is a $25.00 minimum withdrawal.

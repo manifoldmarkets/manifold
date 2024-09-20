@@ -8,6 +8,7 @@ import { FaHandHoldingUsd, FaPercentage } from 'react-icons/fa'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
 import {
+  CHARITY_FEE,
   SWEEPIES_NAME,
   TRADE_TERM,
   TRADING_TERM,
@@ -18,20 +19,25 @@ import { AboutManifold } from './about-manifold'
 import { GoGraph } from 'react-icons/go'
 import Link from 'next/link'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { SWEEPIES_MONIKER } from 'common/util/format'
+import {
+  SWEEPIES_MONIKER,
+  formatMoneyUSD,
+  formatSweepies,
+} from 'common/util/format'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { CoinNumber } from './widgets/coin-number'
+import { GiTakeMyMoney } from 'react-icons/gi'
 
 export const ExplainerPanel = (props: {
   className?: string
   showWhatIsManifold?: boolean
   showAccuracy?: boolean
-  showWhyBet?: boolean
   showSweepstakes?: boolean
 }) => {
   const {
     className,
     showWhatIsManifold = true,
     showAccuracy = true,
-    showWhyBet = true,
     showSweepstakes = true,
   } = props
   const handleSectionClick = (sectionTitle: string) => {
@@ -41,7 +47,6 @@ export const ExplainerPanel = (props: {
     <Col className={clsx(className)}>
       {showWhatIsManifold && <WhatIsManifold onClick={handleSectionClick} />}
       {showAccuracy && <Accuracy onClick={handleSectionClick} />}
-      {showWhyBet && <WhyBet onClick={handleSectionClick} />}
       {showSweepstakes && TWOMBA_ENABLED && (
         <Sweepstakes onClick={handleSectionClick} />
       )}
@@ -82,48 +87,13 @@ const WhatIsManifold = ({
 }) => (
   <ExpandSection
     title={
-      <Row className="items-start">
-        <FaPercentage className="mr-2 mt-[0.25em] flex-shrink-0 align-text-bottom" />{' '}
-        What is Manifold?
-      </Row>
+      <>
+        <GoGraph className="mr-2  " /> What is Manifold?
+      </>
     }
     onClick={() => onClick('What is Manifold?')}
   >
     <AboutManifold />
-  </ExpandSection>
-)
-
-const WhyBet = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
-  <ExpandSection
-    title={
-      <>
-        <FaHandHoldingUsd className="mr-2" /> Why should I {TRADE_TERM}?
-      </>
-    }
-    onClick={() => onClick(`Why should I ${TRADE_TERM}?`)}
-  >
-    <div className="pb-2">
-      {capitalize(TRADING_TERM)} contributes to accurate answers of important,
-      real-world questions and helps you stay more accountable as you make
-      predictions.
-    </div>
-    {TWOMBA_ENABLED && (
-      <>
-        <div className="pb-2">
-          {capitalize(TRADE_TERM)} with{' '}
-          <span className="coin-offset relative ml-[1.2em] whitespace-nowrap">
-            <SweepiesCoin className="absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]" />
-            <span className=" font-semibold text-amber-700 dark:text-amber-300 ">
-              {' '}
-              {SWEEPIES_NAME} ({SWEEPIES_MONIKER})
-            </span>{' '}
-          </span>
-          for a chance to win withdrawable <b>cash prizes</b>.
-        </div>
-      </>
-    )}
-
-    <div className="pb-2">Get started for free! No credit card required.</div>
   </ExpandSection>
 )
 
@@ -173,28 +143,33 @@ const Sweepstakes = ({
   <ExpandSection
     title={
       <>
-        <GoGraph className="mr-2" /> What are sweepstakes markets?
+        <GiTakeMyMoney className="mr-2" /> How do I win cash prizes?
       </>
     }
     onClick={() => onClick('Are our forecasts accurate?')}
   >
     <div className="pb-2">
-      There are two types of markets on Manifold: play money and sweepstakes.
+      Manifold offers two market types: play money and sweepstakes.
     </div>
     <div className="pb-2">
-      By default all markets are play money and use mana. These markets allow
-      you to win more mana but do not award any prizes which can be cashed out.
+      All questions include a play money market which uses mana <ManaCoin /> and
+      can't be cashed out.
     </div>
     <div className="pb-2">
-      Selected markets will have a sweepstakes toggle. These require sweepcash
-      to participate and allow winners to withdraw any sweepcash won to real
-      money.
+      Selected markets will have a sweepstakes toggle. These require sweepcash{' '}
+      <SweepiesCoin />
+      &nbsp;to participate and winners can withdraw sweepcash as a cash prize.
+      You can filter for sweepstakes markets on the browse page.
     </div>
     <div className="pb-2">
-      As play money and sweepstakes markets are independent of each other, they
-      may have different odds even though they share the same question and
-      comments.
+      Redeem your {SWEEPIES_NAME} won from markets at{' '}
+      <b>
+        <CoinNumber amount={1} coinType="sweepies" isInline={true} /> {'→'}{' '}
+        $1.00
+      </b>
+      , minus a {CHARITY_FEE * 100}% fee.
     </div>
+
     <Link
       href="https://docs.manifold.markets/sweepstakes"
       className="hover:text-primary-700 text-primary-600 hover:underline"
