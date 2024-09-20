@@ -4,6 +4,11 @@ import {
   type Contract,
   type ContractParams,
   tradingAllowed,
+  BinaryContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+  PseudoNumericContract,
+  StonkContract,
 } from 'common/contract'
 import { mergeWith, uniqBy } from 'lodash'
 import Head from 'next/head'
@@ -54,7 +59,7 @@ import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-import { useContractBets } from 'web/hooks/use-bets'
+import { useContractBets, useUnfilledBets } from 'web/hooks/use-bets'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import { useGoogleAnalytics } from 'web/hooks/use-google-analytics'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
@@ -74,6 +79,8 @@ import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweestakes-context'
 import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
 import { useRouter } from 'next/router'
+import { Button } from '../buttons/button'
+import { OrderBookPanel } from '../bet/order-book'
 
 export function TwombaContractPageContent(props: ContractParams) {
   const {
@@ -208,6 +215,11 @@ export function TwombaContractPageContent(props: ContractParams) {
 
   const isSpiceMarket = !!liveContract.isSpicePayout
   const isCashContract = liveContract.token === 'CASH'
+
+  const [showOrderBook, setShowOrderBook] = useState(false)
+
+  const unfilledBets =
+    useUnfilledBets(liveContract.id, { enabled: showOrderBook }) ?? []
 
   return (
     <>
@@ -428,13 +440,49 @@ export function TwombaContractPageContent(props: ContractParams) {
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
             {!!user && (
-              <ContractSharePanel
-                isClosed={isClosed}
-                isCreator={isCreator}
-                showResolver={showResolver}
-                // TODO: upgrade tier
-                contract={props.contract}
-              />
+              <Col>
+                <Row className="items-center gap-2">
+                  {totalBets > 0 && (
+                    <div className="flex sm:hidden">
+                      <Button
+                        color="indigo-outline"
+                        size="lg"
+                        onClick={() => {
+                          setShowOrderBook((prev) => !prev)
+                          if (!showOrderBook) {
+                          }
+                        }}
+                        className={clsx(
+                          'w-full rounded-md px-4 py-2 text-indigo-500',
+                          showOrderBook &&
+                            'bg-primary-600 !text-ink-0 ring-transparent'
+                        )}
+                      >
+                        Order Book
+                      </Button>
+                    </div>
+                  )}
+                  <ContractSharePanel
+                    isClosed={isClosed}
+                    isCreator={isCreator}
+                    showResolver={showResolver}
+                    // TODO: upgrade tier
+                    contract={props.contract}
+                  />
+                </Row>
+                {showOrderBook && (
+                  <OrderBookPanel
+                    contract={
+                      liveContract as
+                        | BinaryContract
+                        | PseudoNumericContract
+                        | StonkContract
+                        | CPMMNumericContract
+                    }
+                    limitBets={unfilledBets}
+                  />
+                )}
+              </Col>
             )}
 
             {isResolved && resolution !== 'CANCEL' && (
