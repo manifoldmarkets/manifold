@@ -11,38 +11,51 @@ import { JSONContent } from '@tiptap/core'
 import { updateMarket } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 
-export function ContractDescription(props: { contract: Contract }) {
-  const { contract } = props
+export function ContractDescription(props: {
+  contract: Contract
+  description: string | JSONContent
+}) {
+  const { contract, description } = props
 
   const isAdmin = useAdmin()
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
 
   return (
-    <div className="mt-2">
-      {isCreator || isAdmin ? (
-        <EditableDescription contract={contract} />
-      ) : (
-        <CollapsibleContent
-          content={contract.description}
-          stateKey={`isCollapsed-contract-${contract.id}`}
-          hideCollapse={!user}
-        />
+    <>
+      {contract.token === 'CASH' && (
+        <div className="text-ink-900 font-semibold">
+          This market is managed and resolved by Manifold.
+        </div>
       )}
-    </div>
+      <div className="mt-6">
+        {isCreator || isAdmin ? (
+          <EditableDescription contract={contract} description={description} />
+        ) : (
+          <CollapsibleContent
+            content={description}
+            stateKey={`isCollapsed-contract-${contract.id}`}
+            hideCollapse={!user}
+          />
+        )}
+      </div>
+    </>
   )
 }
 
-function EditableDescription(props: { contract: Contract }) {
-  const { contract } = props
+function EditableDescription(props: {
+  contract: Contract
+  description: string | JSONContent
+}) {
+  const { contract, description } = props
   const [editing, setEditing] = useState(false)
 
   const editor = useTextEditor({
     max: MAX_DESCRIPTION_LENGTH,
-    defaultValue: contract.description,
+    defaultValue: description,
   })
 
-  const emptyDescription = editor?.isEmpty
+  const isDescriptionEmpty = JSONEmpty(description)
   const [saving, setSaving] = useState(false)
 
   async function saveDescription() {
@@ -80,9 +93,9 @@ function EditableDescription(props: { contract: Contract }) {
     </>
   ) : (
     <>
-      {!emptyDescription && (
+      {!isDescriptionEmpty && (
         <CollapsibleContent
-          content={contract.description}
+          content={description}
           stateKey={`isCollapsed-contract-${contract.id}`}
         />
       )}
@@ -95,7 +108,7 @@ function EditableDescription(props: { contract: Contract }) {
             editor?.commands.focus('end')
           }}
         >
-          {emptyDescription ? (
+          {isDescriptionEmpty ? (
             <>
               <PlusIcon className="mr-1 inline h-4 w-4" /> Add description
             </>
@@ -113,12 +126,12 @@ function EditableDescription(props: { contract: Contract }) {
 export function JSONEmpty(text: string | JSONContent) {
   if (!text) return true
   if (typeof text === 'string') {
-    return text === ''
+    return text.trim() === ''
   } else if ('content' in text) {
     return !(
-      !!text.content &&
+      text.content &&
       text.content.length > 0 &&
-      (!!text.content[0].content || !!text.content[0].attrs)
+      (text.content[0].content || text.content[0].attrs)
     )
   }
   return true
