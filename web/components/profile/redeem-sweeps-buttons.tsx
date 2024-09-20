@@ -12,9 +12,9 @@ export function RedeemSweepsButtons(props: { user: User; className?: string }) {
   const redeemableCash = redeemable?.redeemablePrizeCash ?? 0
   const router = useRouter()
 
-  const canRedeem = redeemableCash > 0 && !blockFromSweepstakes(user)
+  const canRedeem = user.sweepstakesVerified && !blockFromSweepstakes(user)
 
-  const amount = useKYCGiftAmount(user)
+  const kycGift = useKYCGiftAmount(user)
 
   const onClick = () => {
     router.push('/redeem')
@@ -25,23 +25,23 @@ export function RedeemSweepsButtons(props: { user: User; className?: string }) {
       {canRedeem ? (
         <Button onClick={onClick} color={'amber'} className={className}>
           Redeem
-          <CoinNumber
+          {redeemableCash && <CoinNumber
             amount={redeemableCash}
             className={'ml-1'}
             coinType={'sweepies'}
-          />
+          />}
         </Button>
       ) : (
         <Button onClick={onClick} color={'amber'} className={className}>
           Claim
-          {amount == undefined ? (
+          {kycGift == undefined ? (
             <CoinNumber
               amount={KYC_VERIFICATION_BONUS_CASH}
               coinType="CASH"
               className="ml-1"
             />
           ) : (
-            <CoinNumber amount={amount} coinType="CASH" className="ml-1" />
+            <CoinNumber amount={kycGift} coinType="CASH" className="ml-1" />
           )}
         </Button>
       )}
