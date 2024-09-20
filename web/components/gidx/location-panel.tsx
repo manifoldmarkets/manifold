@@ -1,11 +1,11 @@
 import { GPSData } from 'common/gidx/gidx'
 import { Button } from 'web/components/buttons/button'
-import { getIsNative } from 'web/lib/native/is-native'
 import { BottomRow } from './register-component-helpers'
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
 import { useLocation } from 'web/hooks/use-location'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useEffect } from 'react'
+import { useNativeInfo } from '../native-message-provider'
 
 export const LocationPanel = (props: {
   setLocation: (data: GPSData) => void
@@ -23,7 +23,7 @@ export const LocationPanel = (props: {
     locationError,
     back,
   } = props
-
+  const { isNative } = useNativeInfo()
   const { requestLocation, checkLocationPermission } = useLocation(
     setLocationError,
     setLoading,
@@ -66,9 +66,7 @@ export const LocationPanel = (props: {
       {locationError && (
         <span className={'text-error'}>
           {locationError}
-          {getIsNative()
-            ? ' Please enable location sharing in your settings.'
-            : ''}
+          {isNative ? ' Please enable location sharing in your settings.' : ''}
         </span>
       )}
     </>
