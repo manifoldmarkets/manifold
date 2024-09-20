@@ -132,8 +132,7 @@ export function BuyPanel(props: {
       setOutcome(undefined)
       setIsPanelBodyVisible(false)
     } else {
-      // TODO: Twomba tracking bet terminology
-      track('bet intent', { location, option: outcome })
+      track('bet intent', { location, option: outcome, token: contract.token })
 
       setOutcome(choice)
       setIsPanelBodyVisible(true)
@@ -361,12 +360,12 @@ export const BuyPanelBody = (props: {
       console.log(`placed ${TRADE_TERM}. Result:`, bet)
       setBetAmount(undefined)
       if (onBuySuccess) onBuySuccess()
-      // TODO: Twomba tracking bet terminology
       track(
         'bet',
         removeUndefinedProps({
           location,
           outcomeType: contract.outcomeType,
+          token: contract.token,
           slug: contract.slug,
           contractId: contract.id,
           amount: betAmount,
@@ -482,7 +481,6 @@ export const BuyPanelBody = (props: {
         .concat(result.ordersToCancel)
     }
   } catch (err: any) {
-    // TODO: Twomba tracking bet terminology
     console.error('Error in calculateCpmmMultiArbitrageBet:', err)
     setError(
       err?.message ??
@@ -768,8 +766,9 @@ export const BuyPanelBody = (props: {
               <Button
                 color={outcome === 'NO' ? 'red' : 'green'}
                 size="xl"
-                // TODO: Twomba tracking bet terminology
-                onClick={withTracking(firebaseLogin, 'login from bet panel')}
+                onClick={withTracking(firebaseLogin, 'login from bet panel', {
+                  token: contract.token,
+                })}
                 className="flex-grow"
               >
                 Sign up to predict

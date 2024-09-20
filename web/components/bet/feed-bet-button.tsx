@@ -31,8 +31,11 @@ export function BetButton(props: {
       firebaseLogin()
       return
     }
-    // TODO: Twomba tracking bet terminology
-    track('bet intent', { location: 'feed card', outcome })
+    track('bet intent', {
+      location: 'feed card',
+      outcome,
+      token: contract.token,
+    })
     setDialogueThatIsOpen(outcome)
   }
 
