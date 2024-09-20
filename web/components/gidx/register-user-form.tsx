@@ -39,6 +39,7 @@ import { DocumentUploadIcon } from 'web/public/custom-components/documentUploadI
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
 import { RiUserForbidLine } from 'react-icons/ri'
 import { PiClockCountdown } from 'react-icons/pi'
+import { track } from 'web/lib/service/analytics'
 
 export const RegisterUserForm = (props: {
   user: User
@@ -74,6 +75,12 @@ export const RegisterUserForm = (props: {
       })
     }
   }, [user.idVerified, user.kycDocumentStatus, initialUserState, router])
+
+  useEffect(() => {
+    track('register user gidx page change', {
+      page,
+    })
+  }, [page])
 
   const [loading, setLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | undefined>()

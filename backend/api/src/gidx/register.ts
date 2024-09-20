@@ -16,7 +16,7 @@ import {
 } from 'common/gidx/gidx'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { parsePhoneNumber } from 'libphonenumber-js'
-import { getIp } from 'shared/analytics'
+import { getIp, track } from 'shared/analytics'
 import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
 
 const ENDPOINT =
@@ -92,6 +92,11 @@ export const register: APIHandler<'register-gidx'> = async (
       kycDocumentStatus: 'await-documents',
     })
   }
+  track(auth.uid, 'register user gidx attempt', {
+    status,
+    message,
+    idVerified,
+  })
   return {
     status,
     message,

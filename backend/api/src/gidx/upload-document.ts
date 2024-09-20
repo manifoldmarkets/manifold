@@ -9,6 +9,7 @@ import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-docu
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { track } from 'shared/analytics'
 
 const ENDPOINT =
   GIDX_BASE_URL + '/v3.0/api/DocumentLibrary/DocumentRegistration'
@@ -61,6 +62,10 @@ export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
       kycDocumentStatus: 'pending',
     })
   }
+  track(auth.uid, 'gidx document uploaded', {
+    needsMoreDocuments: !isPending,
+    fileName,
+  })
   return { status: 'success' }
 }
 
