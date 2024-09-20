@@ -237,7 +237,7 @@ export function CommentInputTextArea(props: {
           <LoadingIndicator
             size={'md'}
             className={'px-4'}
-            spinnerClassName="border-ink-500"
+            spinnerColor="border-ink-500"
           />
         )}
       </Row>

@@ -204,7 +204,9 @@ export const BinaryOverview = (props: {
           {resolutionRating}
         </Col>
         <Row className={'gap-1'}>
-          {loading && <LoadingIndicator size="sm" />}
+          {loading && (
+            <LoadingIndicator spinnerColor="border-ink-400" size="sm" />
+          )}
           {enableAdd && (
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
