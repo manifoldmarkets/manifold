@@ -279,27 +279,33 @@ const CashoutPage = () => {
                   </p>
                 </Col>
               </Row>
-              <Link
-                href={'/gidx/register'}
-                className={clsx(
-                  baseButtonClasses,
-                  buttonClass('lg', 'gradient-pink')
-                )}
-              >
-                Verify and get
-                <span className="ml-1">
-                  {kycAmount == undefined ? (
-                    ' a sweepcash gift!'
-                  ) : (
-                    <CoinNumber
-                      amount={kycAmount}
-                      className={'font-bold'}
-                      isInline
-                      coinType={'CASH'}
-                    />
+              <Col>
+                <Link
+                  href={'/gidx/register'}
+                  className={clsx(
+                    baseButtonClasses,
+                    buttonClass('lg', 'gradient-pink')
                   )}
-                </span>
-              </Link>
+                >
+                  Verify and get
+                  <span className="ml-1">
+                    {kycAmount == undefined ? (
+                      ' a sweepcash gift!'
+                    ) : (
+                      <CoinNumber
+                        amount={kycAmount}
+                        className={'font-bold'}
+                        isInline
+                        coinType={'CASH'}
+                      />
+                    )}
+                  </span>
+                </Link>
+                <div className="text-ink-500 mt-1 text-center text-sm">
+                  {' '}
+                  Only for eligible US residents
+                </div>
+              </Col>
             </Col>
           ) : message == USER_BLOCKED_MESSAGE ? (
             <Row className="items-center gap-4">
