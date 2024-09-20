@@ -287,7 +287,8 @@ export function TwombaHeaderActions(props: {
       />
       {repostOpen && (
         <RepostModal
-          contract={currentContract}
+          playContract={playContract}
+          liveContract={currentContract}
           open={repostOpen}
           setOpen={setRepostOpen}
         />
