@@ -11,7 +11,7 @@ import {
 import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, APIError } from 'web/lib/api/api'
 import { RegistrationVerifyPhone } from 'web/components/registration-verify-phone'
 
@@ -58,6 +58,23 @@ export const RegisterUserForm = (props: {
       ? 'location'
       : 'intro'
   )
+  const [initialUserState, _] = useState(props.user)
+
+  // Used for ads conversion tracking
+  useEffect(() => {
+    if (
+      !initialUserState.idVerified &&
+      initialUserState.kycDocumentStatus === 'await-documents' &&
+      (user.idVerified || user.kycDocumentStatus === 'pending') &&
+      !router.query.complete
+    ) {
+      router.push({
+        pathname: router.pathname,
+        query: { ...router.query, complete: 'true' },
+      })
+    }
+  }, [user.idVerified, user.kycDocumentStatus, initialUserState, router])
+
   const [loading, setLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | undefined>()
   const [error, setError] = useState<string | null>(null)
