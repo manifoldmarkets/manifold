@@ -237,7 +237,6 @@ const CashoutPage = () => {
   const isLocationBlocked = locationBlocked(user, privateUser)
   const isAgeBlocked = ageBlocked(user, privateUser)
 
-  // redirects to registration page if user if identification failed
   if (status !== 'success' || isLocationBlocked || isAgeBlocked) {
     return (
       <Page trackPageView={'redeem sweeps page'}>
