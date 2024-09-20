@@ -41,7 +41,6 @@ import {
   FilterPill,
   TopicDropdownPill,
 } from './filter-pills'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { TierDropdownPill } from './filter-pills'
 import { useUser } from 'web/hooks/use-user'
@@ -68,7 +67,6 @@ export function ContractFilters(props: {
     s: sort,
     f: filter,
     ct: contractType,
-    p: isPrizeMarketString,
     mt: currentTiers,
     tf: topicFilter,
     sw: isSweepiesString,
@@ -108,12 +106,6 @@ export function ContractFilters(props: {
     track('select contract type', { contractType: selection })
   }
 
-  const togglePrizeMarket = () => {
-    updateParams({
-      p: isPrizeMarketString == '1' ? '0' : '1',
-    })
-  }
-
   const toggleSweepies = () => {
     updateParams({
       sw: isSweepiesString == '1' ? '0' : '1',
@@ -125,7 +117,6 @@ export function ContractFilters(props: {
     sort === 'close-date' ||
     contractType === 'BOUNTIED_QUESTION'
 
-  const filterLabel = getLabelFromValue(FILTERS, filter)
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
 
@@ -244,21 +235,6 @@ export function ContractFilters(props: {
           selectFilter={selectFilter}
           currentFilter={filter}
         />
-        {isPrizeMarketString === '1' && (
-          <FilterPill
-            selected={isPrizeMarketString === '1'}
-            onSelect={togglePrizeMarket}
-            type="spice"
-            className="gap-1"
-          >
-            <div className="flex w-4 items-center">
-              <SpiceCoin
-                className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
-              />
-            </div>
-            Prize
-          </FilterPill>
-        )}
         {!hideFilter && currentTiers !== DEFAULT_TIER && (
           <AdditionalFilterPill
             type="filter"
@@ -338,7 +314,7 @@ export function ContractFilters(props: {
         selectFilter={selectFilter}
         selectSort={selectSort}
         selectContractType={selectContractType}
-        togglePrizeMarket={togglePrizeMarket}
+        toggleSweepies={toggleSweepies}
         toggleTier={toggleTier}
         hideFilter={hideFilter}
       />
@@ -353,7 +329,7 @@ function FilterModal(props: {
   selectFilter: (selection: Filter) => void
   selectSort: (selection: Sort) => void
   selectContractType: (selection: ContractTypeType) => void
-  togglePrizeMarket: () => void
+  toggleSweepies: () => void
   toggleTier: (tier: MarketTierType) => void
   hideFilter: boolean
 }) {
@@ -364,7 +340,7 @@ function FilterModal(props: {
     selectFilter,
     selectContractType,
     selectSort,
-    togglePrizeMarket,
+    toggleSweepies,
     toggleTier,
     hideFilter,
   } = props
@@ -372,7 +348,7 @@ function FilterModal(props: {
     s: sort,
     f: filter,
     ct: contractType,
-    p: isPrizeMarketString,
+    sw: isSweepiesString,
     mt: currentTiers,
   } = params
 
@@ -396,15 +372,15 @@ function FilterModal(props: {
             </Row>
             <Row className="flex-wrap gap-1">
               <FilterPill
-                selected={isPrizeMarketString === '1'}
-                onSelect={togglePrizeMarket}
-                type="spice"
+                selected={isSweepiesString === '1'}
+                onSelect={toggleSweepies}
+                type="sweepies"
               >
                 <Row className="items-center gap-1">
-                  <SpiceCoin
-                    className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
+                  <SweepiesCoin
+                    className={isSweepiesString !== '1' ? 'opacity-50' : ''}
                   />
-                  Prize
+                  Sweepstakes
                 </Row>
               </FilterPill>
               <TierDropdownPill
