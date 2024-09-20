@@ -16,7 +16,7 @@ Answers to questions about sweepstakes markets, eligibility, buying mana, withdr
 
 ### How do sweepstakes markets differ from the play-money markets on Manifold?
 
-All markets on Manifold are by default play-money and use our play-money called mana. Selected markets will have a second sweepstakes version created which will use sweepcash. This will share the same page, question, description and comments as the original play-money market, but will have seperate entries (trades) and prizes using Sweepcash. Users may switch back and forth between the two markets using the tab found on the market page.
+All markets on Manifold are by default play-money and use our play-money called mana. Selected markets will have a second sweepstakes version created which will use sweepcash. This will share the same page, question, description and comments as the original play-money market, but will have separate entries (trades) and prizes using Sweepcash. Users may switch back and forth between the two markets using the tab found on the market page.
 
 ### How do I enter a sweepstakes market?
 
@@ -34,7 +34,7 @@ Only sweepcash won from a market resolution can be withdrawn. Sweepcash received
 
 Please expect to wait 5-7 business days after withdrawal as we process it.
 
-### Can I cash out my mana winnings or turn mana to Sweepcash?
+### Can I withdraw my mana winnings or turn mana to Sweepcash?
 
 No, mana is purely a play-money and not exchangeable for sweepcash, money, or any other goods and items.
 
@@ -57,9 +57,13 @@ To increase the chances of having your market selected for sweepstakes:
 - Markets created by a user with a strong track record of creating and managing markets well will be prioritised.
 - Markets with shorter resolution dates will be prioritised
 
+### Who manages and resolves sweepstakes markets?
+
+Manifold the company will manage and resolve sweepstakes market at its sole discretion. Creators of the mana version of a market may still resolve mana markets as outlined in our community guidelines but will not manage or resolve sweepstakes markets.
+
 ### What happens if I think a sweepstakes market has been resolved incorrectly?
 
-Only Manifold staff may resolve a sweepstakes market. Staff will adhere to the resolution criteria outlined in the description. When a market is selected to add sweepstakes functionality, Manifold may work with the creator and traders to ensure robust, unambiguous resolution criteria. Manifold, in its sole discretion, will determine sweepstakes market settlement.
+Manifold staff resolving markets will adhere to the resolution criteria outlined in the description. When a market is selected to add sweepstakes functionality, Manifold will work to ensure robust, unambiguous resolution criteria. Manifold, in its sole discretion, will determine sweepstakes market settlement.
 
 If you believe a sweepstakes market has been incorrectly resolved, please email info@manifold.markets
 
