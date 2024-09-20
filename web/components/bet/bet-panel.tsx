@@ -65,6 +65,7 @@ import { YesNoSelector } from './yes-no-selector'
 import { blockFromSweepstakes, identityPending } from 'common/user'
 import { CashoutLimitWarning } from './cashout-limit-warning'
 import { InBeta, VerifyButton } from '../twomba/toggle-verify-callout'
+import { LocationMonitor } from '../gidx/location-monitor'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -393,11 +394,14 @@ export const BuyPanelBody = (props: {
       setIsSubmitting(false)
     }
   }
+  const [showLocationMonitor, setShowLocationMonitor] = useState(false)
+
   const betDisabled =
     isSubmitting ||
     !betAmount ||
     outcome === undefined ||
-    error === 'Insufficient balance'
+    error === 'Insufficient balance' ||
+    showLocationMonitor
 
   const limits =
     contract.outcomeType === 'STONK'
@@ -703,55 +707,63 @@ export const BuyPanelBody = (props: {
         {betType !== 'Limit' && (
           <Col className="gap-2">
             {user ? (
-              <WarningConfirmationButton
-                marketType="binary"
-                amount={betAmount}
-                warning={warning}
-                userOptedOutOfWarning={user.optOutBetWarnings}
-                onSubmit={submitBet}
-                ButtonClassName={clsx('flex-grow')}
-                actionLabelClassName={'line-clamp-1'}
-                isSubmitting={isSubmitting}
-                disabled={betDisabled}
-                size="xl"
-                color={
-                  pseudonymColor ??
-                  binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
-                  (outcome === 'NO' ? 'red' : 'green')
-                }
-                actionLabel={
-                  betDisabled ? (
-                    `Select ${formatOutcomeLabel(
-                      contract,
-                      'YES'
-                    )} or ${formatOutcomeLabel(contract, 'NO')}`
-                  ) : isStonk ? (
-                    <span>
-                      {formatOutcomeLabel(contract, outcome, pseudonymName)}{' '}
-                      <MoneyDisplay
-                        amount={betAmount}
-                        isCashContract={isCashContract}
-                      />
-                    </span>
-                  ) : (
-                    <span>
-                      {capitalize(TRADE_TERM)}{' '}
-                      {binaryMCOutcomeLabel ??
-                        formatOutcomeLabel(
-                          contract,
-                          outcome,
-                          pseudonymName
-                        )}{' '}
-                      to win{' '}
-                      <MoneyDisplay
-                        amount={currentPayout}
-                        isCashContract={isCashContract}
-                      />
-                    </span>
-                  )
-                }
-                inModal={!!onClose}
-              />
+              <>
+                <LocationMonitor
+                  contract={contract}
+                  user={user}
+                  setShowPanel={setShowLocationMonitor}
+                  showPanel={showLocationMonitor}
+                />
+                <WarningConfirmationButton
+                  marketType="binary"
+                  amount={betAmount}
+                  warning={warning}
+                  userOptedOutOfWarning={user.optOutBetWarnings}
+                  onSubmit={submitBet}
+                  ButtonClassName={clsx('flex-grow')}
+                  actionLabelClassName={'line-clamp-1'}
+                  isSubmitting={isSubmitting}
+                  disabled={betDisabled}
+                  size="xl"
+                  color={
+                    pseudonymColor ??
+                    binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
+                    (outcome === 'NO' ? 'red' : 'green')
+                  }
+                  actionLabel={
+                    betDisabled && !outcome ? (
+                      `Select ${formatOutcomeLabel(
+                        contract,
+                        'YES'
+                      )} or ${formatOutcomeLabel(contract, 'NO')}`
+                    ) : isStonk ? (
+                      <span>
+                        {formatOutcomeLabel(contract, outcome, pseudonymName)}{' '}
+                        <MoneyDisplay
+                          amount={betAmount ?? 0}
+                          isCashContract={isCashContract}
+                        />
+                      </span>
+                    ) : (
+                      <span>
+                        {capitalize(TRADE_TERM)}{' '}
+                        {binaryMCOutcomeLabel ??
+                          formatOutcomeLabel(
+                            contract,
+                            outcome,
+                            pseudonymName
+                          )}{' '}
+                        to win{' '}
+                        <MoneyDisplay
+                          amount={currentPayout}
+                          isCashContract={isCashContract}
+                        />
+                      </span>
+                    )
+                  }
+                  inModal={!!onClose}
+                />
+              </>
             ) : (
               <Button
                 color={outcome === 'NO' ? 'red' : 'green'}

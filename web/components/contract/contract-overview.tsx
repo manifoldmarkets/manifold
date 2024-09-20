@@ -74,7 +74,6 @@ import {
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import { VerifyButton } from '../twomba/toggle-verify-callout'
 import { InBeta } from '../twomba/toggle-verify-callout'
-import { LocationMonitor } from '../gidx/location-monitor'
 
 export const ContractOverview = memo(
   (props: {
@@ -174,7 +173,6 @@ export const BinaryOverview = (props: {
   chartAnnotations: ChartAnnotation[]
 }) => {
   const { contract, resolutionRating } = props
-  const [showLocationPane, setShowLocationPane] = useState(false)
   const user = useUser()
 
   const [showZoomer, setShowZoomer] = useState(false)
@@ -233,13 +231,7 @@ export const BinaryOverview = (props: {
         pointerMode={pointerMode}
         chartAnnotations={chartAnnotations}
       />
-      <LocationMonitor
-        contract={contract}
-        user={user}
-        setShowPanel={setShowLocationPane}
-        showPanel={showLocationPane}
-      />
-      {tradingAllowed(contract) && !showLocationPane && (
+      {tradingAllowed(contract) && (
         <BinaryBetPanel contract={contract} user={user} />
       )}
     </>

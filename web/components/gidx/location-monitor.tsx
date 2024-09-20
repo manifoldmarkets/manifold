@@ -3,6 +3,7 @@ import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
 import { Contract } from 'common/contract'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export const LocationMonitor = (props: {
   contract: Contract
@@ -33,19 +34,13 @@ export const LocationMonitor = (props: {
     return null
   }
   return (
-    <Col className="gap-2 p-2">
-      <span className="text-xl font-semibold">Location Required</span>
-      <p>
-        You must share your location to participate in sweepstakes. Please allow
-        location sharing.
-      </p>
-      <div className="mt-2 flex justify-end">
-        <Button
-          loading={loading}
-          onClick={() => requestLocation()}
-          className="ml-2"
-        >
-          Share Location
+    <Col className=" p-2">
+      <span className="text-xl font-semibold">
+        Location required to participate in sweepstakes
+      </span>
+      <div className="mt-2 flex">
+        <Button size="xl" loading={loading} onClick={() => requestLocation()}>
+          Share location to {TRADE_TERM}
         </Button>
       </div>
       {monitorStatus === 'error' && (
