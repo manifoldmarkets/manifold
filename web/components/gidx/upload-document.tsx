@@ -12,10 +12,6 @@ import { last } from 'lodash'
 import { Select } from 'web/components/widgets/select'
 import clsx from 'clsx'
 import { GIDXDocument, idNameToCategoryType } from 'common/gidx/gidx'
-import {
-  MdOutlineCheckBox,
-  MdOutlineCheckBoxOutlineBlank,
-} from 'react-icons/md'
 import { BottomRow } from './register-component-helpers'
 
 export const UploadDocuments = (props: {
@@ -34,6 +30,7 @@ export const UploadDocuments = (props: {
   const [error, setError] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [CategoryType, setCategoryType] = useState(2)
+  const [currentStep, setCurrentStep] = useState<'id' | 'utility'>('id')
 
   const uploadDocument = async () => {
     if (!user) return
@@ -98,7 +95,6 @@ export const UploadDocuments = (props: {
         })
         .finally(() => setLoading(false))
     if (!documents) return
-    console.log(documents)
     setDocs({
       documents,
       rejectedDocuments,
@@ -106,135 +102,104 @@ export const UploadDocuments = (props: {
       idDocuments,
     })
     setFile(null)
+    if (currentStep === 'id' && idDocuments.length > 0) {
+      if (utilityDocuments.length > 0) {
+        next()
+      } else {
+        setCategoryType(7)
+        setCurrentStep('utility')
+      }
+    } else if (currentStep === 'utility' && utilityDocuments.length > 0) {
+      next()
+    }
   }
 
   useEffect(() => {
     getAndSetDocuments()
   }, [])
 
-  const hasIdDoc = (docs?.idDocuments ?? []).length > 0
-  const hasUtilityDoc = (docs?.utilityDocuments ?? []).length > 0
   const hasRejectedUtilityDoc = (docs?.rejectedDocuments ?? []).some(
     (doc) => doc.CategoryType === 7 || doc.CategoryType === 1
   )
   const hasRejectedIdDoc = (docs?.rejectedDocuments ?? []).some(
     (doc) => doc.CategoryType !== 7 && doc.CategoryType !== 1
   )
+  const documentsToAccept = Object.entries(idNameToCategoryType).filter(
+    ([_, value]) =>
+      currentStep === 'id'
+        ? value !== 7 && value !== 1
+        : value === 7 || value === 1
+  )
+
   return (
     <Col className={''}>
-      <Col className={'gap-2'}>
-        <span className={'font-semibold'}>Please upload both:</span>
-        <ul>
-          <li className={'mb-2'}>
-            {hasIdDoc ? (
-              <span className={'text-teal-600'}>
-                <MdOutlineCheckBox
-                  className={'mb-0.5 mr-1 inline-block h-4 w-4'}
-                />
-                Identity document such as passport or driver's license
-              </span>
-            ) : (
-              <Col>
-                <span>
-                  <MdOutlineCheckBoxOutlineBlank
-                    className={'mb-0.5 mr-1 inline-block h-4 w-4'}
-                  />
-                  Identity document such as passport or driver's license
-                </span>
-                {hasRejectedIdDoc && (
-                  <span className={'ml-5 text-red-500'}>
-                    Your previous id document was rejected, please try again.
-                  </span>
-                )}
-              </Col>
+      <Col className={'gap-3'}>
+        <span className={'font-semibold'}>
+          Please upload one of the following:
+        </span>
+        <Select
+          className={''}
+          value={CategoryType}
+          onChange={(e) => setCategoryType(Number(e.target.value))}
+        >
+          {documentsToAccept.map(([type, number]) => (
+            <option key={type} value={number}>
+              {type}
+            </option>
+          ))}
+        </Select>
+        {file && (
+          <img
+            alt={'Document'}
+            src={file ? URL.createObjectURL(file) : ''}
+            width={500}
+            height={500}
+            className="bg-ink-400 flex items-center justify-center"
+          />
+        )}
+        {file ? <span>{file.name}</span> : null}
+        <Row>
+          <FileUploadButton
+            accept={['.pdf', '.jpg', '.jpeg', '.png', '.webp']}
+            onFiles={(files) => setFile(files[0])}
+            className={clsx(
+              !file
+                ? buttonClass('md', 'indigo')
+                : buttonClass('md', 'gray-outline')
             )}
-          </li>
-          <li>
-            {hasUtilityDoc ? (
-              <span className={'text-teal-600'}>
-                <MdOutlineCheckBox
-                  className={'mb-0.5 mr-1 inline-block h-4 w-4'}
-                />
-                A utility bill or similar showing your name and address
-              </span>
-            ) : (
-              <Col>
-                <span>
-                  <MdOutlineCheckBoxOutlineBlank
-                    className={'mb-0.5 mr-1 inline-block h-4 w-4'}
-                  />
-                  A utility bill or similar showing your name and address
-                </span>
-                {hasRejectedUtilityDoc && (
-                  <span className={'ml-5 text-red-500'}>
-                    Your previous utility document was rejected, please try
-                    again.
-                  </span>
-                )}
-              </Col>
-            )}
-          </li>
-        </ul>
-      </Col>
-      {error && <span className={'text-red-500'}>{error}</span>}
-
-      {(!hasIdDoc || !hasUtilityDoc) && (
-        <Col className={'gap-3'}>
-          <span className={'font-semibold'}>Document type</span>
-          <Select
-            className={''}
-            value={CategoryType}
-            onChange={(e) => setCategoryType(Number(e.target.value))}
           >
-            {Object.entries(idNameToCategoryType).map(([type, number]) => (
-              <option key={type} value={number}>
-                {type}
-              </option>
-            ))}
-          </Select>
-          {file && (
-            <img
-              alt={'Document'}
-              src={file ? URL.createObjectURL(file) : ''}
-              width={500}
-              height={500}
-              className="bg-ink-400 flex items-center justify-center"
-            />
-          )}
-          {file ? <span>{file.name}</span> : null}
-          <Row>
-            <FileUploadButton
-              accept={['.pdf', '.jpg', '.jpeg', '.png', '.webp']}
-              onFiles={(files) => setFile(files[0])}
-              className={clsx(
-                !file
-                  ? buttonClass('md', 'indigo')
-                  : buttonClass('md', 'indigo-outline')
-              )}
-            >
-              Select a {file ? 'different ' : ''}file
-            </FileUploadButton>
-          </Row>
-        </Col>
-      )}
+            Select a {file ? 'different ' : ''}{' '}
+            {getKeyFromValue(idNameToCategoryType, CategoryType)} file
+          </FileUploadButton>
+        </Row>
+      </Col>
       <BottomRow className="mt-4">
         <Button color={'gray-white'} disabled={loading} onClick={back}>
           Back
         </Button>
-        {!hasIdDoc || !hasUtilityDoc ? (
-          <Button
-            loading={loading}
-            disabled={loading || !file}
-            onClick={uploadDocument}
-          >
-            Submit {getKeyFromValue(idNameToCategoryType, CategoryType)}
-          </Button>
-        ) : (
-          <Button loading={loading} disabled={loading} onClick={next}>
-            Continue
-          </Button>
-        )}
+        <Button
+          loading={loading}
+          disabled={loading || !file}
+          onClick={uploadDocument}
+        >
+          Submit {getKeyFromValue(idNameToCategoryType, CategoryType)}
+        </Button>
       </BottomRow>
+      <Col className={'py-2'}>
+        {currentStep === 'id' && hasRejectedIdDoc ? (
+          <span className={' text-red-500'}>
+            Your previous id document was rejected, please try again.
+          </span>
+        ) : (
+          currentStep === 'utility' &&
+          hasRejectedUtilityDoc && (
+            <span className={' text-red-500'}>
+              Your previous utility document was rejected, please try again.
+            </span>
+          )
+        )}
+        {error && <span className={'text-red-500'}>{error}</span>}
+      </Col>
     </Col>
   )
 }
