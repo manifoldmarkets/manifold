@@ -86,7 +86,9 @@ function CommentsDialog(props: {
       </div>
       <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
         <CommentsTabContent
-          contract={contract}
+          // TODO: fix
+          playContract={contract}
+          liveContract={contract}
           comments={comments}
           blockedUserIds={blockedUserIds}
           highlightCommentId={highlightCommentId}

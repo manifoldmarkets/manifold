@@ -22,13 +22,15 @@ import { Row } from '../layout/row'
 import { UserHovercard } from '../user/user-hovercard'
 
 export const RepostButton = (props: {
-  contract: Contract
+  playContract: Contract
+  liveContract: Contract
   bet?: Bet
   size: SizeType
   className?: string
   iconClassName?: string
 }) => {
-  const { contract, bet, size, className, iconClassName } = props
+  const { playContract, liveContract, bet, size, className, iconClassName } =
+    props
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -50,7 +52,8 @@ export const RepostButton = (props: {
       {open && (
         <RepostModal
           bet={bet}
-          contract={contract}
+          playContract={playContract}
+          liveContract={liveContract}
           open={open}
           setOpen={setOpen}
         />
@@ -60,17 +63,18 @@ export const RepostButton = (props: {
 }
 
 export const RepostModal = (props: {
-  contract: Contract
+  playContract: Contract
+  liveContract: Contract
   bet?: Bet
   comment?: ContractComment
   open: boolean
   setOpen: (open: boolean) => void
 }) => {
-  const { contract, comment, bet, open, setOpen } = props
+  const { playContract, liveContract, comment, bet, open, setOpen } = props
   const [loading, setLoading] = useState(false)
   const repost = async () =>
     api('post', {
-      contractId: contract.id,
+      contractId: playContract.id,
       commentId: comment?.id,
       betId: bet?.id,
     })
@@ -97,11 +101,14 @@ export const RepostModal = (props: {
               (bet ? (
                 <CommentReplyHeaderWithBet
                   comment={comment}
-                  contract={contract}
+                  liveContract={liveContract}
                   bet={bet}
                 />
               ) : (
-                <CommentReplyHeader comment={comment} contract={contract} />
+                <CommentReplyHeader
+                  comment={comment}
+                  liveContract={liveContract}
+                />
               ))}
             <Row className={'gap-1'}>
               <UserHovercard userId={comment.userId}>
@@ -120,7 +127,8 @@ export const RepostModal = (props: {
               >
                 <FeedCommentHeader
                   comment={comment}
-                  contract={contract}
+                  playContract={playContract}
+                  liveContract={liveContract}
                   inTimeline={false}
                   isParent={true}
                 />
@@ -151,7 +159,8 @@ export const RepostModal = (props: {
           <ContractCommentInput
             autoFocus
             replyTo={bet}
-            contract={contract}
+            playContract={playContract}
+            liveContract={liveContract}
             trackingLocation={'contract page'}
             commentTypes={['repost']}
             onClearInput={() => setOpen(false)}

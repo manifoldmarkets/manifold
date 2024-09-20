@@ -653,14 +653,6 @@ function BetsTable(props: {
     )
   }
 
-  const getChange = (c: CPMMContract): string | undefined => {
-    const probChange = Math.round((c as CPMMContract).probChanges.day * 100)
-    return probChange !== 0
-      ? (probChange > 0 ? '+' : '') +
-          probChange +
-          (c.outcomeType === 'BINARY' ? '' : '%')
-      : ''
-  }
   const MAX_SHOWN_MOBILE = 5
   const columnsToDisplay = dataColumns
     .filter((c) => isEnabled(c.header.sort))

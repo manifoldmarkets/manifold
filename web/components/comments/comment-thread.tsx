@@ -18,7 +18,8 @@ import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
 
 export function FeedCommentThread(props: {
-  contract: Contract
+  playContract: Contract
+  liveContract: Contract
   threadComments: ContractComment[]
   parentComment: ContractComment
   trackingLocation: string
@@ -31,7 +32,8 @@ export function FeedCommentThread(props: {
   bets?: Bet[]
 }) {
   const {
-    contract,
+    playContract,
+    liveContract,
     threadComments,
     parentComment,
     collapseMiddle,
@@ -67,7 +69,8 @@ export function FeedCommentThread(props: {
     <Col className={clsx('mt-3 items-stretch gap-3', className)}>
       <ParentFeedComment
         key={parentComment.id}
-        contract={contract}
+        playContract={playContract}
+        liveContract={liveContract}
         comment={parentComment}
         highlighted={idInUrl === parentComment.id}
         seeReplies={seeReplies}
@@ -85,7 +88,8 @@ export function FeedCommentThread(props: {
           .map((comment, i) => (
             <FeedComment
               key={comment.id}
-              contract={contract}
+              playContract={playContract}
+              liveContract={liveContract}
               comment={comment}
               highlighted={idInUrl === comment.id}
               onReplyClick={onReplyClick}
@@ -126,7 +130,8 @@ export function FeedCommentThread(props: {
         />
         {replyToUserInfo && (
           <ContractCommentInput
-            contract={contract}
+            playContract={playContract}
+            liveContract={liveContract}
             parentCommentId={parentComment.id}
             replyToUserInfo={replyToUserInfo}
             clearReply={clearReply}

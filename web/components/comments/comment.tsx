@@ -28,7 +28,8 @@ export const roundThreadColor = 'border-ink-100 dark:border-ink-300'
 const straightThreadColor = 'bg-ink-100 dark:bg-ink-300'
 
 export const FeedComment = memo(function FeedComment(props: {
-  contract: Contract
+  playContract: Contract
+  liveContract: Contract
   comment: ContractComment
   trackingLocation: string
   highlighted?: boolean
@@ -42,7 +43,8 @@ export const FeedComment = memo(function FeedComment(props: {
   showParentLine?: boolean
 }) {
   const {
-    contract,
+    playContract,
+    liveContract,
     highlighted,
     onReplyClick,
     children,
@@ -118,7 +120,7 @@ export const FeedComment = memo(function FeedComment(props: {
       <CommentReplyHeader
         hideBetHeader={commenterAndBettorMatch(comment)}
         comment={comment}
-        contract={contract}
+        liveContract={liveContract}
       />
       <Row ref={ref} className={clsx(isParent ? 'gap-2' : 'gap-1')}>
         <Row className="relative">
@@ -176,7 +178,8 @@ export const FeedComment = memo(function FeedComment(props: {
           <FeedCommentHeader
             comment={comment}
             updateComment={updateComment}
-            contract={contract}
+            playContract={playContract}
+            liveContract={liveContract}
             inTimeline={inTimeline}
             isParent={isParent}
             isPinned={isPinned}
@@ -189,7 +192,7 @@ export const FeedComment = memo(function FeedComment(props: {
               onReplyClick={onReplyClick}
               onAward={(total) => updateComment({ bountyAwarded: total })}
               comment={comment}
-              contract={contract}
+              liveContract={liveContract}
               trackingLocation={trackingLocation}
             />
           </Row>
@@ -224,7 +227,8 @@ export const FeedComment = memo(function FeedComment(props: {
                   <FeedReplyBet
                     className={'bg-canvas-50'}
                     avatarSize={'2xs'}
-                    contract={contract}
+                    // TODO: condition to toggle
+                    contract={playContract}
                     bets={bets}
                   />
                 </Row>
@@ -238,7 +242,8 @@ export const FeedComment = memo(function FeedComment(props: {
 })
 
 export const ParentFeedComment = memo(function ParentFeedComment(props: {
-  contract: Contract
+  playContract: Contract
+  liveContract: Contract
   comment: ContractComment
   highlighted?: boolean
   seeReplies: boolean
@@ -252,7 +257,8 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   isPinned?: boolean
 }) {
   const {
-    contract,
+    playContract,
+    liveContract,
     comment,
     highlighted,
     onReplyClick,
@@ -268,7 +274,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   const { ref } = useIsVisible(
     () =>
       track('view comment thread', {
-        contractId: contract.id,
+        contractId: playContract.id,
         commentId: comment.id,
       } as CommentView),
     false
@@ -276,7 +282,8 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
 
   return (
     <FeedComment
-      contract={contract}
+      playContract={playContract}
+      liveContract={liveContract}
       comment={comment}
       onReplyClick={onReplyClick}
       highlighted={highlighted}

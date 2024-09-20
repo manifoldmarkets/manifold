@@ -97,7 +97,9 @@ export const ScoredFeedRepost = memo(function (props: {
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <FeedCommentHeader
                     comment={comment}
-                    contract={contract}
+                    // TODO: fix
+                    playContract={contract}
+                    liveContract={contract}
                     inTimeline={true}
                     className="truncate"
                   />
@@ -174,7 +176,7 @@ function RepostLabel(props: {
         {bet && (
           <CommentReplyHeaderWithBet
             comment={comment}
-            contract={contract}
+            liveContract={contract}
             bet={bet}
           />
         )}
@@ -208,7 +210,7 @@ function RepostLabel(props: {
         {!commenterIsBettor && bet && (
           <CommentReplyHeaderWithBet
             comment={comment}
-            contract={contract}
+            liveContract={contract}
             bet={bet}
           />
         )}

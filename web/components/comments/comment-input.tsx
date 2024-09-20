@@ -246,7 +246,8 @@ export function CommentInputTextArea(props: {
 }
 
 export function ContractCommentInput(props: {
-  contract: Contract
+  playContract: Contract
+  liveContract: Contract
   autoFocus: boolean
   className?: string
   replyTo?: Answer | Bet
@@ -259,7 +260,8 @@ export function ContractCommentInput(props: {
   onClearInput?: () => void
 }) {
   const {
-    contract,
+    playContract,
+    liveContract,
     autoFocus,
     replyTo,
     parentCommentId,
@@ -283,7 +285,7 @@ export function ContractCommentInput(props: {
       let comment: ContractComment | undefined
       if (type === 'comment') {
         comment = await api('comment', {
-          contractId: contract.id,
+          contractId: playContract.id,
           content: editor.getJSON(),
           replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
           replyToCommentId: parentCommentId,
@@ -291,7 +293,7 @@ export function ContractCommentInput(props: {
         })
       } else {
         comment = await api('post', {
-          contractId: contract.id,
+          contractId: playContract.id,
           content: editor.getJSON(),
           betId: isReplyToBet ? replyTo.id : undefined,
         })
@@ -310,7 +312,7 @@ export function ContractCommentInput(props: {
           ? 'user'
           : undefined,
         commentId: comment.id,
-        contractId: contract.id,
+        contractId: playContract.id,
       })
     }
   )
@@ -326,7 +328,7 @@ export function ContractCommentInput(props: {
           betOrderAmount={replyTo.orderAmount}
           betLimitProb={replyTo.limitProb}
           betAnswerId={replyTo.answerId}
-          contract={contract}
+          liveContract={liveContract}
           clearReply={clearReply}
         />
       ) : replyTo ? (
@@ -338,13 +340,13 @@ export function ContractCommentInput(props: {
         replyToUserInfo={replyToUserInfo}
         parentCommentId={parentCommentId}
         onSubmitComment={onSubmitComment}
-        pageId={contract.id + commentTypes.join(', ')}
+        pageId={playContract.id + commentTypes.join(', ')}
         className={className}
-        blocked={isBlocked(privateUser, contract.creatorId)}
+        blocked={isBlocked(privateUser, playContract.creatorId)}
         placeholder={
           replyTo || parentCommentId
             ? 'Write a reply ...'
-            : contract.outcomeType === 'BOUNTIED_QUESTION'
+            : playContract.outcomeType === 'BOUNTIED_QUESTION'
             ? 'Write an answer or comment'
             : undefined
         }
