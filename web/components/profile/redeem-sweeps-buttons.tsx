@@ -25,11 +25,13 @@ export function RedeemSweepsButtons(props: { user: User; className?: string }) {
       {canRedeem ? (
         <Button onClick={onClick} color={'amber'} className={className}>
           Redeem
-          {redeemableCash && <CoinNumber
-            amount={redeemableCash}
-            className={'ml-1'}
-            coinType={'sweepies'}
-          />}
+          {redeemableCash && (
+            <CoinNumber
+              amount={redeemableCash}
+              className={'ml-1'}
+              coinType={'sweepies'}
+            />
+          )}
         </Button>
       ) : (
         <Button onClick={onClick} color={'amber'} className={className}>
