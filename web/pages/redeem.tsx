@@ -46,6 +46,7 @@ import {
   InputTitle,
 } from 'web/components/gidx/register-component-helpers'
 import { UsOnlyDisclaimer } from 'web/components/twomba/us-only-disclaimer'
+import { useEvent } from 'web/hooks/use-event'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -123,6 +124,16 @@ const CashoutPage = () => {
   const [completedCashout, setCompletedCashout] = useState(0)
   const kycAmount = useKYCGiftAmount(user)
 
+  const { data: documentData } = useAPIGetter(
+    'get-verification-documents-gidx',
+    {}
+  )
+  const { utilityDocuments, idDocuments } = documentData ?? {}
+  const mustUploadDocs =
+    user?.kycDocumentStatus === 'await-documents' ||
+    (utilityDocuments?.length ?? 0) <= 0 ||
+    (idDocuments?.length ?? 0) <= 0
+
   useApiSubscription({
     topics: [
       `gidx-checkout-session/${checkoutSession?.MerchantSessionID ?? '_'}`,
@@ -164,13 +175,11 @@ const CashoutPage = () => {
         setPage('ach-details')
       } else if (message && status === 'error') {
         setError(message)
-        setloading(false)
       }
     } catch (e) {
       console.error('Error getting redemption session', e)
-      setError('Error getting redemption session')
-      setloading(false)
     }
+    setloading(false)
   }
 
   const handleSubmit = async () => {
@@ -217,14 +226,10 @@ const CashoutPage = () => {
     setloading(false)
   }
 
-  const handleLocationReceived = (data: GPSData) => {
-    if (user?.kycDocumentStatus === 'await-documents') {
-      setPage('documents')
-      return
-    }
+  const handleLocationReceived = useEvent((data: GPSData) => {
     setPage('get-session')
     getCashoutSession(data)
-  }
+  })
 
   const privateUser = usePrivateUser()
 
@@ -335,6 +340,7 @@ const CashoutPage = () => {
             />
           )}
           <SelectCashoutOptions
+            redeemForUSDPageName={mustUploadDocs ? 'documents' : 'location'}
             user={user}
             redeemableCash={redeemableCash}
             setPage={setPage}
@@ -350,7 +356,7 @@ const CashoutPage = () => {
 
   return (
     <Page trackPageView={'redemptions page'}>
-      <Col className="bg-canvas-0 mx-auto max-w-lg items-center gap-2 px-6 py-4">
+      <Col className="bg-canvas-0 w-full max-w-lg items-center gap-2 self-center px-6 py-4">
         <Row className="w-full justify-end">
           <UsOnlyDisclaimer />
         </Row>
@@ -367,6 +373,7 @@ const CashoutPage = () => {
         ) : page == 'select-cashout-method' ? (
           <>
             <SelectCashoutOptions
+              redeemForUSDPageName={mustUploadDocs ? 'documents' : 'location'}
               user={user}
               redeemableCash={redeemableCash}
               setPage={setPage}
@@ -381,14 +388,11 @@ const CashoutPage = () => {
           <UploadDocuments
             back={router.back}
             next={() => setPage('location')}
+            requireUtilityDoc={true}
           />
         ) : page === 'location' ? (
           <LocationPanel
-            back={() =>
-              user?.kycDocumentStatus != 'verified'
-                ? setPage('documents')
-                : router.back()
-            }
+            back={() => (mustUploadDocs ? setPage('documents') : router.back())}
             setLocation={handleLocationReceived}
             setLocationError={setLocationError}
             setLoading={setloading}

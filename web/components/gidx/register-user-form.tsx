@@ -380,6 +380,7 @@ export const RegisterUserForm = (props: {
         <UploadDocuments
           back={() => router.back()}
           next={() => setPage('final')}
+          requireUtilityDoc={false}
         />
       </>
     )
@@ -461,7 +462,7 @@ export const RegisterUserForm = (props: {
         <span className="text-ink-700 mx-auto">
           {user.kycDocumentStatus === 'fail' &&
             'There were errors with your documents. '}
-          Please upload identity documents to continue.
+          Please upload a photo of your id to continue.
         </span>
         <Row className="mx-auto">
           <Button onClick={() => setPage('documents')}>Continue</Button>

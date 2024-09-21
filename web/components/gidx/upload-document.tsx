@@ -17,8 +17,9 @@ import { BottomRow } from './register-component-helpers'
 export const UploadDocuments = (props: {
   back: () => void
   next: () => void
+  requireUtilityDoc: boolean
 }) => {
-  const { back, next } = props
+  const { back, next, requireUtilityDoc } = props
   const user = useUser()
   const [docs, setDocs] = useState<{
     documents: GIDXDocument[]
@@ -103,11 +104,11 @@ export const UploadDocuments = (props: {
     })
     setFile(null)
     if (currentStep === 'id' && idDocuments.length > 0) {
-      if (utilityDocuments.length > 0) {
-        next()
-      } else {
+      if (requireUtilityDoc && utilityDocuments.length === 0) {
         setCategoryType(7)
         setCurrentStep('utility')
+      } else {
+        next()
       }
     } else if (currentStep === 'utility' && utilityDocuments.length > 0) {
       next()

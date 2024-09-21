@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { log } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import {
   getGIDXStandardParams,
   GIDX_BASE_URL,
@@ -8,17 +8,24 @@ import {
 import { GIDXDocument } from 'common/gidx/gidx'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getDocumentsStatus } from 'common/gidx/document'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { assessDocumentStatus } from './get-verification-status'
 
 export const getVerificationDocuments: APIHandler<
   'get-verification-documents-gidx'
 > = async (_, auth) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
+  const pg = createSupabaseDirectClient()
+  const user = await getUser(auth.uid, pg)
+  if (!user) {
+    throw new APIError(400, 'User not found')
+  }
   const {
     documents,
     unrejectedUtilityDocuments,
     unrejectedIdDocuments,
     rejectedDocuments,
-  } = await getIdentityVerificationDocuments(auth.uid)
+  } = await assessDocumentStatus(user, pg)
 
   return {
     status: 'success',
@@ -54,7 +61,7 @@ export const getIdentityVerificationDocuments = async (userId: string) => {
     data.MerchantCustomerID
   )
   const { Documents: documents } = data
-  return getDocumentsStatus(documents)
+  return getDocumentsStatus(documents ?? [])
 }
 
 type DocumentCheck = {
@@ -62,5 +69,5 @@ type DocumentCheck = {
   ResponseMessage: string
   MerchantCustomerID: string
   DocumentCount: number
-  Documents: GIDXDocument[]
+  Documents: GIDXDocument[] | null
 }

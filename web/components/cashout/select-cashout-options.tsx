@@ -14,7 +14,6 @@ import {
 } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { getNativePlatform } from 'web/lib/native/is-native'
 import { CashoutPagesType } from 'web/pages/redeem'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { CoinNumber } from '../widgets/coin-number'
@@ -28,6 +27,7 @@ import { PaginationNextPrev } from '../widgets/pagination'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { Spacer } from '../layout/spacer'
+import { useNativeInfo } from '../native-message-provider'
 
 export const CASHOUTS_PER_PAGE = 10
 
@@ -47,6 +47,7 @@ export function getStatusColor(status: string) {
 export function SelectCashoutOptions(props: {
   user: User
   redeemableCash: number
+  redeemForUSDPageName: CashoutPagesType
   setPage: (page: CashoutPagesType) => void
   allDisabled?: boolean
 }) {
@@ -158,11 +159,12 @@ export function SelectCashoutOptions(props: {
 function CashoutOptionsContent(props: {
   user: User
   redeemableCash: number
+  redeemForUSDPageName: CashoutPagesType
   setPage: (page: CashoutPagesType) => void
   allDisabled?: boolean
 }) {
-  const { setPage, allDisabled, redeemableCash } = props
-  const { isNative, platform } = getNativePlatform()
+  const { setPage, allDisabled, redeemableCash, redeemForUSDPageName } = props
+  const { isNative, platform } = useNativeInfo()
   const isNativeIOS = isNative && platform === 'ios'
 
   const noHasMinRedeemableCash = redeemableCash < MIN_CASHOUT_AMOUNT
@@ -299,7 +301,7 @@ function CashoutOptionsContent(props: {
           <Button
             className={clsx('text-xs sm:text-sm')}
             onClick={() => {
-              setPage('documents')
+              setPage(redeemForUSDPageName)
             }}
             disabled={!!allDisabled || noHasMinRedeemableCash}
           >

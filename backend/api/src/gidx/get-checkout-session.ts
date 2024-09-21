@@ -95,7 +95,11 @@ export const getCheckoutSession: APIHandler<
     throw new APIError(400, 'GIDX customer profile failed')
   }
   const CustomerProfile = (await idRes.json()) as CustomerProfileResponse
-  log('Customer profile response:', CustomerProfile)
+  log(
+    'Customer profile response:',
+    CustomerProfile.MerchantCustomerID,
+    CustomerProfile.ReasonCodes
+  )
   if (props.PayActionCode === 'PAYOUT') {
     const { status, message } = getVerificationStatus(user)
     if (status !== 'success') {
