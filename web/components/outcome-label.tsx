@@ -18,10 +18,38 @@ export function OutcomeLabel(props: {
   outcome: resolution | string
   truncate: 'short' | 'long' | 'none'
   answerId?: string
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
-  const { outcome, contract, truncate, answerId } = props
+  const { outcome, contract, truncate, answerId, pseudonym } = props
   const { outcomeType, mechanism } = contract
   const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+  const { pseudonymName, pseudonymColor } =
+    pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
+
+  if (pseudonymName && pseudonymColor) {
+    return (
+      <span
+        className={clsx(
+          pseudonymColor == 'azure'
+            ? 'text-azure-600 dark:text-azure-400'
+            : pseudonymColor == 'sienna'
+            ? 'text-sienna-600 dark:text-sienna-400'
+            : 'text-primary-600'
+        )}
+      >
+        {pseudonymName}
+      </span>
+    )
+  }
 
   if (mainBinaryMCAnswer && mechanism === 'cpmm-multi-1') {
     return (

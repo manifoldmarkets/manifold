@@ -37,22 +37,30 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
       )
     }
 
-    // add donation to charity
-    const fee = CHARITY_FEE * amount
-    const donation = amount - fee
+    let donation: number
 
-    const feeTxn = {
-      category: 'CHARITY_FEE',
-      fromType: 'USER',
-      fromId: auth.uid,
-      toType: 'BANK',
-      toId: 'BANK',
-      amount: fee,
-      token: TWOMBA_ENABLED ? 'CASH' : 'SPICE',
-      data: {
-        charityId: charity.id,
-      },
-    } as const
+    if (TWOMBA_ENABLED) {
+      donation = amount
+    } else {
+      // add donation to charity
+      const fee = CHARITY_FEE * amount
+      donation = amount - fee
+
+      const feeTxn = {
+        category: 'CHARITY_FEE',
+        fromType: 'USER',
+        fromId: auth.uid,
+        toType: 'BANK',
+        toId: 'BANK',
+        amount: fee,
+        token: TWOMBA_ENABLED ? 'CASH' : 'SPICE',
+        data: {
+          charityId: charity.id,
+        },
+      } as const
+
+      await runTxn(tx, feeTxn)
+    }
 
     const donationTxn = {
       category: 'CHARITY',
@@ -64,7 +72,6 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
       token: TWOMBA_ENABLED ? 'CASH' : 'SPICE',
     } as const
 
-    await runTxn(tx, feeTxn)
     await runTxn(tx, donationTxn)
   })
 }

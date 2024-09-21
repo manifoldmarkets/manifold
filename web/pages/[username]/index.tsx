@@ -14,12 +14,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
-
 import { SEO } from 'web/components/SEO'
-import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
-import { referralQuery } from 'common/util/share'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { TextButton } from 'web/components/buttons/text-button'
@@ -396,8 +393,10 @@ function UserProfile(props: {
                 stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
                 content: (
                   <>
-                    {currentUser && <VerifyMe user={currentUser} />}
-                    <VerifyPhoneNumberBanner user={currentUser} />
+                    <Col className="mt-2 gap-2">
+                      {currentUser && <VerifyMe user={currentUser} />}
+                      <VerifyPhoneNumberBanner user={currentUser} />
+                    </Col>
                     <PortfolioSummary className="mt-4" user={user} />
                   </>
                 ),
@@ -571,32 +570,6 @@ function ProfilePublicStats(props: {
         isOpen={followsOpen}
         setIsOpen={setFollowsOpen}
       />
-    </Row>
-  )
-}
-
-const ShareButton = (props: {
-  user: User
-  currentUser: User | undefined | null
-}) => {
-  const { user, currentUser } = props
-  const isSameUser = currentUser?.id === user.id
-  const url = `https://${ENV_CONFIG.domain}/${user.username}${
-    !isSameUser && currentUser ? referralQuery(currentUser.username) : ''
-  }`
-
-  return (
-    <Row className={'items-center'}>
-      <CopyLinkOrShareButton
-        url={url}
-        iconClassName={'h-3 !stroke-[3]'}
-        className={'-mx-1 gap-1 !px-1 !py-0.5'}
-        eventTrackingName={'share user page'}
-        tooltip={'Copy link to profile'}
-        size={'2xs'}
-      >
-        <span className={'text-sm'}>Share</span>
-      </CopyLinkOrShareButton>
     </Row>
   )
 }

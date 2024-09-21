@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
 
-export const GIDX_DOCUMENTS_REQUIRED = 2
+export const GIDX_REGISTATION_DOCUMENTS_REQUIRED = 1
 
 export const GPSProps = z.object({
   Latitude: z.number(),

@@ -185,6 +185,7 @@ export const TwombaPortfolioGraph = (props: {
         setPortfolioFocus('all')
       }}
       areaClassName="hover:opacity-50 opacity-[0.2] transition-opacity"
+      noWatermark
     />
   )
 }
@@ -267,6 +268,7 @@ export const TwombaProfitGraph = (props: {
       color={['#14b8a6', '#F75836']}
       negativeThreshold={negativeThreshold}
       hideXAxis={hideXAxis}
+      noWatermark
     />
   )
 }
@@ -319,15 +321,23 @@ function usePortfolioPointsFromHistory(
       return balance + investment - totalDeposits - firstProfit
     }
 
-    function getNetworth(balance: number, investment: number) {
-      return balance + investment
+    function getNetworth(
+      balance: number,
+      investment: number,
+      spiceBalance?: number
+    ) {
+      return (
+        balance +
+        investment +
+        (spiceBalance ?? 0) * SPICE_TO_MANA_CONVERSION_RATE
+      )
     }
 
     portfolioHistory.forEach((p) => {
       profitPoints.push({
         x: p.timestamp,
         y: getProfit(
-          p.balance,
+          p.balance + (p.spiceBalance ?? 0) * SPICE_TO_MANA_CONVERSION_RATE,
           p.investmentValue,
           p.totalDeposits,
           firstProfit
@@ -346,7 +356,7 @@ function usePortfolioPointsFromHistory(
       })
       networthPoints.push({
         x: p.timestamp,
-        y: getNetworth(p.balance, p.investmentValue),
+        y: getNetworth(p.balance, p.investmentValue, p.spiceBalance),
         obj: p,
       })
       cashProfitPoints.push({

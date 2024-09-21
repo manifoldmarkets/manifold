@@ -6,6 +6,7 @@ import {
   getGIDXStandardParams,
   getLocalServerIP,
   getUserRegistrationRequirements,
+  GIDX_BASE_URL,
   throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
@@ -15,11 +16,11 @@ import {
 } from 'common/gidx/gidx'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { parsePhoneNumber } from 'libphonenumber-js'
-import { getIp } from 'shared/analytics'
+import { getIp, track } from 'shared/analytics'
 import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
 
 const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
+  GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerRegistration'
 
 export const register: APIHandler<'register-gidx'> = async (
   props,
@@ -91,6 +92,12 @@ export const register: APIHandler<'register-gidx'> = async (
       kycDocumentStatus: 'await-documents',
     })
   }
+  track(auth.uid, 'register user gidx attempt', {
+    status,
+    message,
+    citizenshipCountryCode: body.CitizenshipCountryCode,
+    idVerified,
+  })
   return {
     status,
     message,

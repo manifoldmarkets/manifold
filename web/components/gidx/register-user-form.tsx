@@ -11,7 +11,7 @@ import {
 import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, APIError } from 'web/lib/api/api'
 import { RegistrationVerifyPhone } from 'web/components/registration-verify-phone'
 
@@ -32,12 +32,14 @@ import { CoinNumber } from 'web/components/widgets/coin-number'
 import { RegisterIcon } from 'web/public/custom-components/registerIcon'
 import {
   BottomRow,
+  Divider,
   InputTitle,
 } from 'web/components/gidx/register-component-helpers'
 import { DocumentUploadIcon } from 'web/public/custom-components/documentUploadIcon'
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
 import { RiUserForbidLine } from 'react-icons/ri'
 import { PiClockCountdown } from 'react-icons/pi'
+import { track } from 'web/lib/service/analytics'
 
 export const RegisterUserForm = (props: {
   user: User
@@ -50,13 +52,30 @@ export const RegisterUserForm = (props: {
   const [page, setPage] = useState(
     user.idVerified || user.kycDocumentStatus === 'pending'
       ? 'final'
-      : (redirect === 'checkout' || redirect === 'cashout') &&
+      : (redirect === 'checkout' || redirect === 'redeem') &&
         !user.verifiedPhone
       ? 'phone'
       : user.verifiedPhone
       ? 'location'
       : 'intro'
   )
+  const [initialUserState, _] = useState(props.user)
+
+  // Used for ads conversion tracking
+  useEffect(() => {
+    if (
+      !initialUserState.idVerified &&
+      initialUserState.kycDocumentStatus === 'await-documents' &&
+      (user.idVerified || user.kycDocumentStatus === 'pending') &&
+      !router.query.complete
+    ) {
+      router.push({
+        pathname: router.pathname,
+        query: { ...router.query, complete: 'true' },
+      })
+    }
+  }, [user.idVerified, user.kycDocumentStatus, initialUserState, router])
+
   const [loading, setLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | undefined>()
   const [error, setError] = useState<string | null>(null)
@@ -91,6 +110,13 @@ export const RegisterUserForm = (props: {
         },
     'gidx-registration-user-info'
   )
+
+  useEffect(() => {
+    track('register user gidx page change', {
+      page,
+      citizenshipCountryCode: userInfo.CitizenshipCountryCode,
+    })
+  }, [page])
 
   const optionalKeys = ['AddressLine2', 'StateCode']
   const unfilled = Object.entries(userInfo ?? {}).filter(
@@ -241,7 +267,7 @@ export const RegisterUserForm = (props: {
           />
         </Col>
 
-        <div className="bg-ink-200 my-4 h-[1px] w-full" />
+        <Divider />
 
         <Col className={sectionClass}>
           <InputTitle>Citizenship Country</InputTitle>
@@ -284,8 +310,8 @@ export const RegisterUserForm = (props: {
             onChange={(e) => setUserInfo({ ...userInfo, City: e.target.value })}
           />
         </Col>
-        <Row className={'gap-4'}>
-          <Col className={'w-1/2 '}>
+        <div className={'flex flex-col gap-4 sm:flex-row'}>
+          <Col className={'w-full gap-0.5 sm:w-1/2'}>
             <InputTitle>State</InputTitle>
             <Input
               placeholder={'Your state'}
@@ -296,7 +322,7 @@ export const RegisterUserForm = (props: {
               }
             />
           </Col>
-          <Col className={'w-1/2 '}>
+          <Col className={'w-full gap-0.5 sm:w-1/2'}>
             <InputTitle>Postal Code</InputTitle>
             <Input
               placeholder={'Your postal code'}
@@ -307,7 +333,7 @@ export const RegisterUserForm = (props: {
               }
             />
           </Col>
-        </Row>
+        </div>
         {error && (
           <Col className={'text-error'}>
             {error}
@@ -354,6 +380,7 @@ export const RegisterUserForm = (props: {
         <UploadDocuments
           back={() => router.back()}
           next={() => setPage('final')}
+          requireUtilityDoc={false}
         />
       </>
     )
@@ -435,7 +462,7 @@ export const RegisterUserForm = (props: {
         <span className="text-ink-700 mx-auto">
           {user.kycDocumentStatus === 'fail' &&
             'There were errors with your documents. '}
-          Please upload identity documents to continue.
+          Please upload a photo of your id to continue.
         </span>
         <Row className="mx-auto">
           <Button onClick={() => setPage('documents')}>Continue</Button>
@@ -453,7 +480,7 @@ export const RegisterUserForm = (props: {
       <span className="text-ink-700">
         Hooray! Now you can participate in sweepstakes markets. We sent you{' '}
         <CoinNumber
-          amount={KYC_VERIFICATION_BONUS_CASH}
+          amount={Math.max(user.cashBalance, KYC_VERIFICATION_BONUS_CASH)}
           className={'font-bold'}
           coinType={'CASH'}
           isInline={true}
@@ -465,10 +492,6 @@ export const RegisterUserForm = (props: {
         {redirect === 'checkout' ? (
           <Link className={buttonClass('md', 'indigo')} href={'/checkout'}>
             Get mana
-          </Link>
-        ) : redirect === 'cashout' ? (
-          <Link className={buttonClass('md', 'indigo')} href={'/cashout'}>
-            Cash out
           </Link>
         ) : (
           <Link className={buttonClass('md', 'indigo')} href={'/home'}>

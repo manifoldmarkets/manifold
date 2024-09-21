@@ -31,6 +31,7 @@ import { formatMoneyUSD } from 'common/util/format'
 import { capitalize } from 'lodash'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
+import Link from 'next/link'
 
 const CheckoutPage = () => {
   const user = useUser()
@@ -248,6 +249,20 @@ function FundsSelector(props: {
           />
         ))}
       </div>
+
+      {TWOMBA_ENABLED && (
+        <div className="text-ink-500 mt-4 text-sm">
+          Please see our{' '}
+          <Link href="/terms" target="_blank" className="underline">
+            Terms & Conditions
+          </Link>{' '}
+          and{' '}
+          <Link href="/sweepstakes-rules" target="_blank" className="underline">
+            Sweepstakes Rules
+          </Link>
+          . All sales are final. No refunds.
+        </div>
+      )}
     </Col>
   )
 }
@@ -275,6 +290,16 @@ const PaymentSection = (props: {
   const [state, setState] = useState(CustomerProfile.Address.StateCode)
   const [zipCode, setZipCode] = useState(CustomerProfile.Address.PostalCode)
   const [complete, setComplete] = useState(false)
+  const router = useRouter()
+  // Used for ads conversion tracking
+  useEffect(() => {
+    if (!router.query.complete && complete) {
+      router.push({
+        pathname: router.pathname,
+        query: { ...router.query, complete: 'true' },
+      })
+    }
+  }, [complete, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -328,7 +353,7 @@ const PaymentSection = (props: {
     return (
       <Col className={'gap-4'}>
         <FullscreenConfetti />
-        <Row className="text-2xl text-indigo-700">Purchase Complete</Row>
+        <Row className="text-primary-700 text-2xl">Purchase Complete</Row>
         <Col className="text-ink-700 w-full items-center justify-center">
           <Image
             src="/manachan.png"

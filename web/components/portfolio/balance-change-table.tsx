@@ -4,8 +4,8 @@ import {
   formatMoneyUSD,
   formatSpice,
   formatSweepies,
+  formatWithToken,
   maybePluralize,
-  shortFormatNumber,
 } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
@@ -20,7 +20,6 @@ import {
   isTxnChange,
 } from 'common/balance-change'
 import Link from 'next/link'
-import { ENV_CONFIG } from 'common/envs/constants'
 import {
   FaBackward,
   FaArrowRightArrowLeft,
@@ -93,7 +92,7 @@ export const BalanceChangeTable = (props: {
               color="gray-outline"
               onClick={() => setShowCashoutModal(true)}
             >
-              View {maybePluralize('cashout', cashouts?.length ?? 0)}{' '}
+              View {maybePluralize('redemption', cashouts?.length ?? 0)}{' '}
               {pendingCashouts > 0 ? `(${pendingCashouts} pending)` : ''}
             </Button>
           </Row>
@@ -272,9 +271,11 @@ const BetBalanceChangeRow = (props: {
   const { amount, contract, answer, bet, type } = change
   const { outcome } = bet
   const { slug, question, creatorUsername } = contract
-  const niceAmount =
-    (token === 'CASH' ? 'S' : ENV_CONFIG.moneyMoniker) +
-    shortFormatNumber(amount).replace('-', '')
+  const niceAmount = formatWithToken({
+    amount: Math.abs(amount),
+    token: token === 'MANA' ? 'M$' : 'CASH',
+    short: true,
+  })
   const direction =
     type === 'redeem_shares'
       ? 'sideways'
@@ -393,6 +394,8 @@ const TxnBalanceChangeRow = (props: {
     CONTRACT_UNDO_PRODUCE_SPICE: 'bg-ink-1000',
     CONSUME_SPICE: 'bg-indigo-400',
     CONSUME_SPICE_DONE: 'bg-indigo-400',
+    CONVERT_CASH: 'bg-indigo-400',
+    CONVERT_CASH_DONE: 'bg-indigo-400',
     SIGNUP_BONUS: 'bg-yellow-200',
     KYC_BONUS: 'bg-yellow-200',
     MANA_PURCHASE: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
@@ -438,7 +441,10 @@ const TxnBalanceChangeRow = (props: {
               <FaBackward className={'h-5 w-5 text-white'} />
             ) : type === 'CREATE_CONTRACT_ANTE' || type === 'BOUNTY_POSTED' ? (
               <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
-            ) : type === 'CONSUME_SPICE' || type === 'CONSUME_SPICE_DONE' ? (
+            ) : type === 'CONSUME_SPICE' ||
+              type === 'CONSUME_SPICE_DONE' ||
+              type === 'CONVERT_CASH' ||
+              type === 'CONVERT_CASH_DONE' ? (
               <FaArrowRightArrowLeft className={'h-4 w-4'} />
             ) : type === 'CHARITY' ? (
               '❤️'
@@ -563,8 +569,11 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'CONSUME_SPICE':
     case 'CONSUME_SPICE_DONE':
       return `Redeem prize points for mana`
+    case 'CONVERT_CASH':
+    case 'CONVERT_CASH_DONE':
+      return 'Redeem sweepcash for mana'
     case 'CASH_OUT':
-      return 'Cash out request'
+      return 'Redemption request'
     case 'CASH_BONUS':
       return 'Mana cash bonus'
     case 'KYC_BONUS':
@@ -597,6 +606,8 @@ const txnTypeToDescription = (txnCategory: string) => {
       return 'Unresolve'
     case 'CONSUME_SPICE':
     case 'CONSUME_SPICE_DONE':
+    case 'CONVERT_CASH':
+    case 'CONVERT_CASH_DONE':
       return ''
     case 'MANA_PURCHASE':
       return ''

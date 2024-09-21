@@ -628,7 +628,6 @@ DECLARE
 -- @Austin, @JamesGrugett, @SG, @DavidChee, @Alice, @ian, @IngaWei, @mqp, @Sinclair, @ManifoldPolitics, @baraki
     strings TEXT[] := ARRAY[
         'igi2zGXsfxYPgB0DJTXVJVmwCOr2',
-        '5LZ4LgYuySdL1huCWe7bti02ghx2', 
         'tlmGNz9kjXc2EteizMORes4qvWl2', 
         'uglwf3YKOZNGjjEXKc5HampOFRE2', 
         'qJHrvvGfGsYiHZkGY6XjVfIMj233', 

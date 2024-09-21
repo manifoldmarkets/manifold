@@ -22,6 +22,7 @@ import { getNativePlatform } from 'web/lib/native/is-native'
 import { useBrowserOS } from 'web/hooks/use-browser-os'
 import { ShareIcon } from '@heroicons/react/outline'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { useNativeInfo } from '../native-message-provider'
 
 export function CopyLinkOrShareButton(props: {
   url: string
@@ -47,8 +48,7 @@ export function CopyLinkOrShareButton(props: {
     color,
     trackingInfo,
   } = props
-  // NOTE: this results in hydration errors on mobile dev
-  const { isNative, platform } = getNativePlatform()
+  const { isNative, platform } = useNativeInfo()
   const { os } = useBrowserOS()
 
   const onClick = () => {

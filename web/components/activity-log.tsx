@@ -121,7 +121,7 @@ export function ActivityLog(props: {
       !blockedContractIds.includes(c.id) &&
       !blockedUserIds.includes(c.creatorId) &&
       c.visibility === 'public' &&
-      (!c.groupSlugs?.some((slug) => blockedGroupSlugs.includes(slug)) ??
+      (!c.groupSlugs?.some((slug) => blockedGroupSlugs.includes(slug)) ||
         true) &&
       (topicSlugs?.some((s) => c.groupSlugs?.includes(s)) ?? true)
   )

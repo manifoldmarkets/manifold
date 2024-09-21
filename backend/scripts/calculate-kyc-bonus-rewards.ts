@@ -2,7 +2,7 @@ import { runScript } from './run-script'
 import { type SupabaseDirectClient } from 'shared/supabase/init'
 import { bulkUpsert } from 'shared/supabase/utils'
 
-const TIMESTAMP = '2023-08-26 09:00:00'
+const TIMESTAMP = '2024-09-17 09:50:00-07'
 
 async function calculateKycBonusRewards(pg: SupabaseDirectClient) {
   const allBalances = await pg.manyOrNone<{
@@ -10,20 +10,25 @@ async function calculateKycBonusRewards(pg: SupabaseDirectClient) {
     reward_amount: number
   }>(
     `with last_entries as (
-      select distinct on (user_id)
+      select
         user_id,
-        investment_value,
-        balance,
-        spice_balance,
-        loan_total,
-        ts
-      from user_portfolio_history
-      where ts <= $1
-      order by user_id, ts desc
+        uph.investment_value,
+        uph.balance,
+        uph.spice_balance,
+        uph.loan_total,
+        uph.ts
+      from
+      users u left join lateral (
+        select * from user_portfolio_history
+        where user_id = u.id
+        and ts <= $1
+        order by ts desc
+        limit 1
+      ) uph on true
     )
     select
       user_id,
-      (investment_value + balance + spice_balance - loan_total) / 1000 as reward_amount
+      (investment_value + balance + spice_balance) / 1000 as reward_amount
     from last_entries`,
     [TIMESTAMP]
   )

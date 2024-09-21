@@ -1,21 +1,20 @@
 import { useEffect, useState } from 'react'
 import { api } from 'web/lib/api/api'
-import { useNativeMessages } from 'web/hooks/use-native-messages'
-import { getIsNative } from 'web/lib/native/is-native'
-import { postMessageToNative } from 'web/lib/native/post-message'
 import { GPSData } from 'common/gidx/gidx'
 import { MINUTE_MS } from 'common/util/time'
 import { User } from 'common/user'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useEvent } from 'web/hooks/use-event'
+import { useLocation } from './use-location'
+
+//
 
 export const useMonitorStatus = (
   polling: boolean,
-  user: User | undefined | null
+  user: User | undefined | null,
+  promptUserToShareLocation?: () => void,
+  onFinishLocationRequest?: (location?: GPSData) => void
 ) => {
-  const [location, setLocation] = usePersistentInMemoryState<
-    GPSData | undefined
-  >(undefined, 'user-monitor-location')
   const [monitorStatus, setMonitorStatus] = usePersistentInMemoryState<
     string | undefined
   >(undefined, 'user-monitor-status')
@@ -28,47 +27,32 @@ export const useMonitorStatus = (
   const [lastApiCallTime, setLastApiCallTime] =
     usePersistentInMemoryState<number>(0, 'user-monitor-last-api-call-time')
 
-  useNativeMessages(['location'], (type, data) => {
-    if ('error' in data) {
-      setMonitorStatus('error')
-      setMonitorStatusMessage(data.error)
-    } else {
-      setLocation(data as GPSData)
-    }
-  })
-
-  const requestLocation = () => {
-    setMonitorStatusMessage(undefined)
-    if (getIsNative()) {
-      postMessageToNative('locationRequested', {})
-    } else if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { coords } = position
-          const loc = {
-            Latitude: coords.latitude,
-            Longitude: coords.longitude,
-            Radius: coords.accuracy,
-            Altitude: coords.altitude ?? 0,
-            Speed: coords.speed ?? 0,
-            DateTime: new Date().toISOString(),
-          }
-          setLocation(loc)
-          fetchMonitorStatusWithLocation(loc)
-        },
-        (error) => {
-          setMonitorStatusMessage(error.message)
-          setMonitorStatus('error')
-        }
-      )
-    } else {
-      setMonitorStatus('error')
-      setMonitorStatusMessage('Geolocation is not supported by your browser.')
-    }
+  const setLocationError = (error: string | undefined) => {
+    setMonitorStatus('error')
+    setMonitorStatusMessage(error)
   }
+  const { requestLocation, checkLocationPermission } = useLocation(
+    setLocationError,
+    setLoading,
+    (location) => {
+      if (location) {
+        fetchMonitorStatusWithLocation(location)
+        return
+      }
+      if (promptUserToShareLocation) {
+        promptUserToShareLocation()
+      } else {
+        requestLocation()
+      }
+    },
+    onFinishLocationRequest
+  )
 
-  const fetchMonitorStatus = useEvent(async () => {
-    if (!user || !user.idVerified) {
+  const fetchMonitorStatus = useEvent(async (location?: GPSData) => {
+    if (!user) {
+      return
+    }
+    if (!user.idVerified) {
       setMonitorStatus('error')
       setMonitorStatusMessage('User not verified')
       return {
@@ -78,8 +62,9 @@ export const useMonitorStatus = (
     }
     setMonitorStatusMessage(undefined)
     setLoading(true)
-    if (!location) requestLocation()
-    else return fetchMonitorStatusWithLocation(location)
+    if (!location) {
+      checkLocationPermission()
+    } else return fetchMonitorStatusWithLocation(location)
   })
 
   const fetchMonitorStatusWithLocation = useEvent(
@@ -115,7 +100,7 @@ export const useMonitorStatus = (
   )
 
   useEffect(() => {
-    if (!polling) return
+    if (!polling || !user) return
 
     const currentTime = Date.now()
     const timeSinceLastCall = currentTime - lastApiCallTime
@@ -126,7 +111,13 @@ export const useMonitorStatus = (
 
     const interval = setInterval(fetchMonitorStatus, 20 * MINUTE_MS)
     return () => clearInterval(interval)
-  }, [polling, fetchMonitorStatus, lastApiCallTime])
+  }, [polling, user?.idVerified])
 
-  return { monitorStatus, monitorStatusMessage, fetchMonitorStatus, loading }
+  return {
+    monitorStatus,
+    monitorStatusMessage,
+    fetchMonitorStatus,
+    loading,
+    requestLocation,
+  }
 }

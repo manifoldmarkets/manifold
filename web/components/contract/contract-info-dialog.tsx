@@ -449,26 +449,6 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
-        {!hideAdvanced && isBettingContract && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
-            <td>
-              💰 Prize market{' '}
-              <InfoTooltip
-                text={'Whether this market issue prizes points on resolution'}
-              />
-            </td>
-            <td>
-              <CheckOrSwitch
-                canToggle={isAdmin}
-                disabled={!isAdmin}
-                on={!!isSpicePayout}
-                setOn={(val) =>
-                  updateMarket({ contractId: contract.id, isSpicePayout: val })
-                }
-              />
-            </td>
-          </tr>
-        )}
       </tbody>
     </Table>
   )

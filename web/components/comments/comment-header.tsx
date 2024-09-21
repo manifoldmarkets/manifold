@@ -50,15 +50,23 @@ import { RepostModal } from './repost-modal'
 
 export function FeedCommentHeader(props: {
   comment: ContractComment
-  contract: Contract
+  playContract: Contract
+  liveContract: Contract
   updateComment?: (comment: Partial<ContractComment>) => void
   inTimeline?: boolean
   isParent?: boolean
   isPinned?: boolean
   className?: string
 }) {
-  const { comment, updateComment, contract, inTimeline, isPinned, className } =
-    props
+  const {
+    comment,
+    updateComment,
+    playContract,
+    liveContract,
+    inTimeline,
+    isPinned,
+    className,
+  } = props
   const {
     userUsername,
     userName,
@@ -74,15 +82,17 @@ export function FeedCommentHeader(props: {
     isRepost,
     betOrderAmount,
     betLimitProb,
+    betToken,
   } = comment
 
-  const isCashContract = contract.token === 'CASH'
-  const marketCreator = contract.creatorId === userId
-  const { bought, money } = getBoughtMoney(betAmount, isCashContract)
+  const betOnCashContract = betToken === 'CASH'
+  const marketCreator = playContract.creatorId === userId
+  const { bought, money } = getBoughtMoney(betAmount, betOnCashContract)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
   const isReplyToBet = betAmount !== undefined
   const commenterIsBettor = commenterAndBettorMatch(comment)
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
+
   return (
     <Col className={clsx('text-ink-600 text-sm', className)}>
       <Row className="justify-between">
@@ -104,13 +114,13 @@ export function FeedCommentHeader(props: {
               <span className="text-ink-1000">
                 <MoneyDisplay
                   amount={betOrderAmount}
-                  isCashContract={isCashContract}
+                  isCashContract={betOnCashContract}
                 />
               </span>{' '}
               <OutcomeLabel
                 outcome={betOutcome ? betOutcome : ''}
                 answerId={betAnswerId}
-                contract={contract}
+                contract={liveContract}
                 truncate="short"
               />{' '}
               at {formatPercent(betLimitProb)} order
@@ -121,7 +131,7 @@ export function FeedCommentHeader(props: {
               <OutcomeLabel
                 outcome={betOutcome ? betOutcome : ''}
                 answerId={betAnswerId}
-                contract={contract}
+                contract={liveContract}
                 truncate="short"
               />
             </span>
@@ -137,7 +147,7 @@ export function FeedCommentHeader(props: {
           {/* Hide my status if replying to a bet, it's too much clutter*/}
           {!isReplyToBet && !inTimeline && (
             <span className="text-ink-500">
-              <CommentStatus contract={contract} comment={comment} />
+              <CommentStatus contract={liveContract} comment={comment} />
               {bought} {money}
               {shouldDisplayOutcome && (
                 <>
@@ -146,7 +156,7 @@ export function FeedCommentHeader(props: {
                   <OutcomeLabel
                     outcome={betOutcome ? betOutcome : ''}
                     answerId={betAnswerId}
-                    contract={contract}
+                    contract={liveContract}
                     truncate="short"
                   />
                 </>
@@ -157,8 +167,8 @@ export function FeedCommentHeader(props: {
             <CommentEditHistoryButton comment={comment} />
           ) : (
             <CopyLinkDateTimeComponent
-              prefix={contract.creatorUsername}
-              slug={contract.slug}
+              prefix={playContract.creatorUsername}
+              slug={playContract.slug}
               createdTime={editedTime ? editedTime : createdTime}
               elementId={comment.id}
               size={'sm'}
@@ -172,7 +182,8 @@ export function FeedCommentHeader(props: {
             <DotMenu
               updateComment={updateComment}
               comment={comment}
-              contract={contract}
+              playContract={playContract}
+              liveContract={liveContract}
             />
           )}
         </Row>
@@ -182,7 +193,7 @@ export function FeedCommentHeader(props: {
               +
               <MoneyDisplay
                 amount={bountyAwarded}
-                isCashContract={isCashContract}
+                isCashContract={liveContract.token === 'CASH'}
               />
             </span>
           )}
@@ -212,9 +223,9 @@ const getBoughtMoney = (
 export function CommentReplyHeaderWithBet(props: {
   comment: ContractComment
   bet: Bet
-  contract: Contract
+  liveContract: Contract
 }) {
-  const { comment, bet, contract } = props
+  const { comment, bet, liveContract } = props
   const { outcome, answerId, amount, orderAmount, limitProb } = bet
   return (
     <CommentReplyHeader
@@ -226,17 +237,17 @@ export function CommentReplyHeaderWithBet(props: {
         betLimitProb: limitProb,
         answerOutcome: answerId,
       }}
-      contract={contract}
+      liveContract={liveContract}
     />
   )
 }
 
 export function CommentReplyHeader(props: {
   comment: ContractComment
-  contract: Contract
+  liveContract: Contract
   hideBetHeader?: boolean
 }) {
-  const { comment, contract, hideBetHeader } = props
+  const { comment, liveContract, hideBetHeader } = props
   const {
     bettorName,
     bettorId,
@@ -265,12 +276,12 @@ export function CommentReplyHeader(props: {
         betAmount={betAmount}
         betOrderAmount={betOrderAmount}
         betLimitProb={betLimitProb}
-        contract={contract}
+        liveContract={liveContract}
       />
     )
   }
-  if (answerOutcome && 'answers' in contract) {
-    const answer = contract.answers.find((a) => a.id === answerOutcome)
+  if (answerOutcome && 'answers' in liveContract) {
+    const answer = liveContract.answers.find((a) => a.id === answerOutcome)
     if (answer) return <CommentOnAnswer answer={answer} />
   }
 
@@ -278,7 +289,7 @@ export function CommentReplyHeader(props: {
 }
 
 export function ReplyToBetRow(props: {
-  contract: Contract
+  liveContract: Contract
   commenterIsBettor: boolean
   betOutcome: string
   betAmount: number
@@ -298,7 +309,7 @@ export function ReplyToBetRow(props: {
     bettorName,
     bettorId,
     betAnswerId,
-    contract,
+    liveContract: contract,
     clearReply,
     betLimitProb,
     betOrderAmount,
@@ -430,14 +441,15 @@ function CommentStatus(props: {
 export function DotMenu(props: {
   comment: ContractComment
   updateComment: (update: Partial<ContractComment>) => void
-  contract: Contract
+  playContract: Contract
+  liveContract: Contract
 }) {
-  const { comment, updateComment, contract } = props
+  const { comment, updateComment, playContract, liveContract } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
   const privateUser = usePrivateUser()
   const isMod = useAdminOrMod()
-  const isContractCreator = privateUser?.id === contract.creatorId
+  const isContractCreator = privateUser?.id === playContract.creatorId
   const [editingComment, setEditingComment] = useState(false)
   const [tipping, setTipping] = useState(false)
   const [reposting, setReposting] = useState(false)
@@ -449,7 +461,7 @@ export function DotMenu(props: {
           contentOwnerId: comment.userId,
           contentId: comment.id,
           contentType: 'comment',
-          parentId: contract.id,
+          parentId: playContract.id,
           parentType: 'contract',
         }}
         setIsModalOpen={setIsModalOpen}
@@ -470,8 +482,8 @@ export function DotMenu(props: {
             icon: <LinkIcon className="h-5 w-5" />,
             onClick: () => {
               copyLinkToComment(
-                contract.creatorUsername,
-                contract.slug,
+                playContract.creatorUsername,
+                playContract.slug,
                 comment.id
               )
             },
@@ -511,7 +523,7 @@ export function DotMenu(props: {
             name: comment.hidden ? 'Unhide' : 'Hide',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
             onClick: async () => {
-              const commentPath = `contracts/${contract.id}/comments/${comment.id}`
+              const commentPath = `contracts/${playContract.id}/comments/${comment.id}`
               const wasHidden = comment.hidden
               updateComment({ hidden: !wasHidden })
 
@@ -530,7 +542,7 @@ export function DotMenu(props: {
             name: comment.pinned ? 'Unpin' : 'Pin',
             icon: <PiPushPinBold className="text-primary-500 h-5 w-5" />,
             onClick: async () => {
-              const commentPath = `contracts/${contract.id}/comments/${comment.id}`
+              const commentPath = `contracts/${playContract.id}/comments/${comment.id}`
               const wasPinned = comment.pinned
               updateComment({ pinned: !wasPinned })
 
@@ -551,14 +563,15 @@ export function DotMenu(props: {
         <AnnotateChartModal
           open={annotating}
           setOpen={setAnnotating}
-          contractId={contract.id}
+          contractId={liveContract.id}
           atTime={comment.createdTime}
           comment={comment}
         />
       )}
       {user && reposting && (
         <RepostModal
-          contract={contract}
+          playContract={playContract}
+          liveContract={liveContract}
           open={reposting}
           setOpen={setReposting}
           comment={comment}
@@ -580,7 +593,7 @@ export function DotMenu(props: {
           user={user}
           comment={comment}
           setContent={(content) => updateComment({ content })}
-          contract={contract}
+          contract={playContract}
           open={editingComment}
           setOpen={setEditingComment}
         />
@@ -598,10 +611,10 @@ export function DotMenu(props: {
           show={tipping}
           groupId={comment.id}
           defaultMessage={`Tip for comment on ${
-            contract.question
+            playContract.question
           } ${getCommentLink(
-            contract.creatorUsername,
-            contract.slug,
+            playContract.creatorUsername,
+            playContract.slug,
             comment.id
           )}`}
         />

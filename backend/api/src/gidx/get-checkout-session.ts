@@ -6,6 +6,7 @@ import {
 } from 'common/gidx/gidx'
 import {
   GIDXCallbackUrl,
+  GIDX_BASE_URL,
   getGIDXStandardParams,
   getLocalServerIP,
   throwIfIPNotWhitelisted,
@@ -14,19 +15,21 @@ import {
 import { getIp } from 'shared/analytics'
 import { log } from 'shared/monitoring/log'
 import { randomBytes } from 'crypto'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { TWOMBA_CASHOUT_ENABLED, TWOMBA_ENABLED } from 'common/envs/constants'
 import { PaymentAmountsGIDX } from 'common/economy'
 import { getVerificationStatus } from 'common/user'
 import { getUser, LOCAL_DEV } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
-const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/DirectCashier/CreateSession'
+const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CreateSession'
 
 export const getCheckoutSession: APIHandler<
   'get-checkout-session-gidx'
 > = async (props, auth, req) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
+  if (!TWOMBA_CASHOUT_ENABLED && props.PayActionCode === 'PAYOUT') {
+    throw new APIError(400, 'Cashouts will be enabled soon!')
+  }
   const pg = createSupabaseDirectClient()
   const userId = auth.uid
   const user = await getUser(userId, pg)
@@ -83,7 +86,7 @@ export const getCheckoutSession: APIHandler<
     }
   }
   const ID_ENDPOINT =
-    'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerProfile'
+    GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerProfile'
   const idBody = {
     MerchantCustomerID: userId,
     ...getGIDXStandardParams(),
@@ -95,7 +98,11 @@ export const getCheckoutSession: APIHandler<
     throw new APIError(400, 'GIDX customer profile failed')
   }
   const CustomerProfile = (await idRes.json()) as CustomerProfileResponse
-  log('Customer profile response:', CustomerProfile)
+  log(
+    'Customer profile response:',
+    CustomerProfile.MerchantCustomerID,
+    CustomerProfile.ReasonCodes
+  )
   if (props.PayActionCode === 'PAYOUT') {
     const { status, message } = getVerificationStatus(user)
     if (status !== 'success') {

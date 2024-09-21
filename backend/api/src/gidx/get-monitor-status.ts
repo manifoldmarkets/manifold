@@ -3,6 +3,7 @@ import {
   getGIDXStandardParams,
   getLocalServerIP,
   getUserSweepstakesRequirements,
+  GIDX_BASE_URL,
   throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
@@ -26,8 +27,7 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   const userId = auth.uid
   const pg = createSupabaseDirectClient()
   const user = await getUserSweepstakesRequirements(userId)
-  const ENDPOINT =
-    'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerMonitor'
+  const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerMonitor'
   const body = {
     MerchantCustomerID: userId,
     DeviceIpAddress: ENABLE_FAKE_CUSTOMER

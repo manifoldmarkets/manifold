@@ -10,6 +10,7 @@ import {
   getGIDXStandardParams,
   getLocalServerIP,
   getUserRegistrationRequirements,
+  GIDX_BASE_URL,
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -17,8 +18,7 @@ import { updateUser } from 'shared/supabase/users'
 import { runTxn } from 'shared/txn/run-txn'
 import { getUser, LOCAL_DEV } from 'shared/utils'
 
-const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
+const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 
 const getPaymentAmountForWebPrice = (price: number) => {
   const amount = PaymentAmountsGIDX.find((p) => p.priceInDollars === price)
@@ -136,7 +136,7 @@ export const completeCheckoutSession: APIHandler<
     await sendCoins(
       userId,
       paymentAmount,
-      CompletedPaymentAmount,
+      CompletedPaymentAmount * 100,
       MerchantTransactionID,
       SessionID,
       user.sweepstakesVerified ?? false

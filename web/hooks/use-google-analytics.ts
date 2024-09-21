@@ -2,6 +2,7 @@ import { useRouter } from 'next/router'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { useEffect } from 'react'
 
+/** @deprecated */
 export const useGoogleAnalytics = () => {
   const router = useRouter()
 

@@ -15,6 +15,13 @@ add constraint kyc_bonus_rewards_user_id_fkey foreign key (user_id) references u
 -- Row Level Security
 alter table kyc_bonus_rewards enable row level security;
 
+-- Policies
+drop policy if exists "public read" on kyc_bonus_rewards;
+
+create policy "public read" on kyc_bonus_rewards for
+select
+  using (true);
+
 -- Indexes
 drop index if exists kyc_bonus_rewards_pkey;
 

@@ -51,7 +51,9 @@ export function LeagueFeed(props: { season: number; cohort: string }) {
               ) : (
                 <FeedComment
                   key={item.id}
-                  contract={contract}
+                  // TODO: fix
+                  playContract={contract}
+                  liveContract={contract}
                   comment={item}
                   trackingLocation={`league-S${season}-${cohort}`}
                 />

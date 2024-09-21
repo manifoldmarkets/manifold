@@ -17,13 +17,20 @@ export function LoadingIndicator(props: {
   className?: string
   spinnerClassName?: string
   size?: SpinnerSize
+  spinnerColor?: string
 }) {
-  const { className, spinnerClassName, size = 'lg' } = props
+  const {
+    className,
+    spinnerClassName,
+    size = 'lg',
+    spinnerColor = 'border-primary-500',
+  } = props
   return (
     <div className={clsx('flex items-center justify-center', className)}>
       <div
         className={clsx(
-          'border-primary-500 inline-block animate-spin rounded-full border-solid border-r-transparent',
+          spinnerColor,
+          'inline-block animate-spin rounded-full border-solid border-r-transparent',
           getSizeClass(size),
           spinnerClassName
         )}

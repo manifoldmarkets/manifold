@@ -25,8 +25,9 @@ export function AuthorInfo(props: {
   contract: Contract
   resolverId?: string // live updated
   className?: string
+  userNameClass?: string
 }) {
-  const { contract, resolverId, className } = props
+  const { contract, resolverId, className, userNameClass } = props
   const { creatorId, creatorName, creatorUsername, creatorAvatarUrl } = contract
   const resolver = useDisplayUserById(resolverId)
   return (
@@ -38,7 +39,7 @@ export function AuthorInfo(props: {
           size={'xs'}
         />
       </UserHovercard>
-      <UserHovercard userId={creatorId}>
+      <UserHovercard userId={creatorId} className={userNameClass}>
         <UserLink
           user={{
             id: creatorId,
@@ -109,7 +110,7 @@ export function CloseDate(props: {
     dayjs.duration(900, 'year')
   )
   const neverCloses =
-    !closeTime ??
+    !closeTime ||
     (NO_CLOSE_TIME_TYPES.includes(contract.outcomeType) &&
       dayjs(closeTime).isAfter(almostForeverTime))
 

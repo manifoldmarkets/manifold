@@ -10,7 +10,8 @@ import { getRandomTestBet } from 'shared/test/bets'
 
 const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 // const URL = `http://localhost:8088/v0`
-const USE_OLD_MARKET = true
+const OLD_MARKET_SLUG = 'chaos-sweeps--cash'
+const USE_OLD_MARKET = !!OLD_MARKET_SLUG
 const ENABLE_LIMIT_ORDERS = true
 
 if (require.main === module) {
@@ -20,48 +21,51 @@ if (require.main === module) {
       return
     }
     const privateUsers = await getTestUsers(firestore, pg, 100)
-    const marketCreations = [
-      {
-        question: 'test ' + Math.random().toString(36).substring(7),
-        outcomeType: 'MULTIPLE_CHOICE',
-        answers: Array(50)
-          .fill(0)
-          .map((_, i) => 'answer ' + i),
-        shouldAnswersSumToOne: true,
-      },
-      // {
-      //   question: 'test ' + Math.random().toString(36).substring(7),
-      //   outcomeType: 'BINARY',
-      // },
-      // {
-      //   question: 'test ' + Math.random().toString(36).substring(7),
-      //   outcomeType: 'MULTIPLE_CHOICE',
-      //   answers: Array(50)
-      //     .fill(0)
-      //     .map((_, i) => 'answer ' + i),
-      //   shouldAnswersSumToOne: false,
-      // },
-    ]
-    log('creating markets')
-    const markets = await Promise.all(
-      marketCreations.map(async (market) => {
-        const resp = await fetch(URL + `/market`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Key ${privateUsers[0].apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(market),
+    let markets = []
+    if (!USE_OLD_MARKET) {
+      const marketCreations = [
+        {
+          question: 'test ' + Math.random().toString(36).substring(7),
+          outcomeType: 'MULTIPLE_CHOICE',
+          answers: Array(50)
+            .fill(0)
+            .map((_, i) => 'answer ' + i),
+          shouldAnswersSumToOne: true,
+        },
+        // {
+        //   question: 'test ' + Math.random().toString(36).substring(7),
+        //   outcomeType: 'BINARY',
+        // },
+        // {
+        //   question: 'test ' + Math.random().toString(36).substring(7),
+        //   outcomeType: 'MULTIPLE_CHOICE',
+        //   answers: Array(50)
+        //     .fill(0)
+        //     .map((_, i) => 'answer ' + i),
+        //   shouldAnswersSumToOne: false,
+        // },
+      ]
+      log('creating markets')
+      markets = await Promise.all(
+        marketCreations.map(async (market) => {
+          const resp = await fetch(URL + `/market`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Key ${privateUsers[0].apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(market),
+          })
+          if (resp.status !== 200) {
+            console.error('Failed to create market', await resp.text())
+          }
+          return resp.json()
         })
-        if (resp.status !== 200) {
-          console.error('Failed to create market', await resp.text())
-        }
-        return resp.json()
-      })
-    )
+      )
+    }
     const contracts = await pg.map(
       `select * from contracts where slug in ($1:list)`,
-      USE_OLD_MARKET ? [['test-ubyxer']] : [markets.map((m: any) => m.slug)],
+      USE_OLD_MARKET ? [[OLD_MARKET_SLUG]] : [markets.map((m: any) => m.slug)],
       convertContract
     )
     log(`Found ${contracts.length} contracts`)

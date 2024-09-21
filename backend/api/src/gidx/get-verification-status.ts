@@ -96,9 +96,19 @@ export const getVerificationStatusInternal = async (
   }
 }
 
-const assessDocumentStatus = async (user: User, pg: SupabaseDirectClient) => {
-  const { isPending, isVerified, isRejected, documents } =
-    await getIdentityVerificationDocuments(user.id)
+export const assessDocumentStatus = async (
+  user: User,
+  pg: SupabaseDirectClient
+) => {
+  const {
+    documents,
+    rejectedDocuments,
+    unrejectedUtilityDocuments,
+    unrejectedIdDocuments,
+    isPending,
+    isVerified,
+    isRejected,
+  } = await getIdentityVerificationDocuments(user.id)
 
   if (isVerified && user.kycDocumentStatus !== 'verified') {
     // They passed the reason codes and have the required documents
@@ -129,5 +139,11 @@ const assessDocumentStatus = async (user: User, pg: SupabaseDirectClient) => {
   return {
     status: 'success',
     documents,
+    rejectedDocuments,
+    unrejectedUtilityDocuments,
+    unrejectedIdDocuments,
+    isPending,
+    isVerified,
+    isRejected,
   }
 }

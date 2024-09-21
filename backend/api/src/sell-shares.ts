@@ -259,10 +259,14 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     )
 
     // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
-    const balanceByUserId = await getUserBalances(pgTrans, [
-      userId,
-      ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
-    ])
+    const balanceByUserId = await getUserBalances(
+      pgTrans,
+      [
+        userId,
+        ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
+      ],
+      contract.token
+    )
     user.balance = balanceByUserId[userId]
 
     for (const userId of unfilledBetUserIds) {

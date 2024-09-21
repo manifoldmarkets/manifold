@@ -5,6 +5,7 @@ import { IconButton } from '../buttons/button'
 import { Row } from '../layout/row'
 import { LogoIcon } from '../icons/logo-icon'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import Link from 'next/link'
 
 export function Banner(props: {
   setShowBanner?: (show: boolean) => void
@@ -20,9 +21,16 @@ export function Banner(props: {
         'text-ink-900 bg-primary-100 z-10 justify-between gap-4'
       )}
     >
-      <a href={link} className="pl-4" rel="noopener noreferrer">
-        {children}
-      </a>
+      {link && (
+        <Link
+          target="_blank"
+          href={link}
+          className="pl-4"
+          rel="noopener noreferrer"
+        >
+          {children}
+        </Link>
+      )}
 
       {setShowBanner && (
         <IconButton
@@ -116,4 +124,27 @@ export const useBanner = (name: string) => {
   )
 
   return [!bannerSeen, () => setBannerSeen(1)] as const
+}
+
+export const TwombaBanner = () => {
+  const [showBanner, hideBanner] = useBanner('twomba')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="bg-primary-100 hover:bg-primary-200  dark:text-primary-800 text-primary-700 hover:text-primary-900 items-center py-2 transition-colors"
+      link="https://manifoldmarkets.notion.site/Sweepstakes-Beta-Announcement-10454492ea7a80c1abd8ee0eb67102b9?pvs=4"
+      setShowBanner={hideBanner}
+    >
+      <Row className=" items-center gap-2">
+        <LogoIcon
+          className="h-6 w-6 flex-shrink-0 text-black dark:text-white"
+          height={24}
+          width={24}
+          aria-hidden
+          strokeWidth={1}
+        />
+        <div>Sweepstakes cash prizes are here! Read more</div>
+      </Row>
+    </Banner>
+  )
 }
