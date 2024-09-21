@@ -6,8 +6,8 @@ import {
   CrystalTier,
   PlusTier,
   PremiumTier,
+  BasicTier,
 } from 'web/public/custom-components/tiers'
-import { LogoIcon } from '../icons/logo-icon'
 import { Row } from '../layout/row'
 import CheckedDropdownMenu from '../widgets/checked-dropdown'
 import {
@@ -130,14 +130,7 @@ export function TierDropdownPill(props: {
           name: 'Basic',
           content: (
             <Row className="items-center text-sm text-ink-900">
-              <LogoIcon
-                className="text-ink-900 flex-inline shrink-0 stroke-[1.5px]"
-                style={{
-                  width: '1em',
-                  height: '1em',
-                  marginRight: '0.1em',
-                  }}
-                />
+              <BasicTier />
               Basic
             </Row>
           ),
@@ -160,16 +153,7 @@ export function TierDropdownPill(props: {
               : currentTiers.split('').map((tier, index) => {
                   if (tier === '1') {
                     if (tiers[index] == 'basic') {
-                      return (
-                        <LogoIcon
-                          className="text-ink-900 flex-inline shrink-0 stroke-[1.5px]"
-                          style={{
-                            width: '1em',
-                            height: '1em',
-                            marginRight: '0.1em',
-                            }}
-                          />
-                        )
+                      return <BasicTier key={index} />
                     }
                     if (tiers[index] == 'plus') {
                       return <PlusTier key={index} />
