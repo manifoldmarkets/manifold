@@ -162,7 +162,7 @@ export function TierDropdownPill(props: {
                     if (tiers[index] == 'basic') {
                       return (
                         <LogoIcon
-                          className="inline-block text-ink-900 flex-inline shrink-0 stroke-[1.5px]"
+                          className="text-ink-900 flex-inline shrink-0 stroke-[1.5px]"
                           style={{
                             width: '1em',
                             height: '1em',
