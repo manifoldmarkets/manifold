@@ -160,14 +160,16 @@ export function TierDropdownPill(props: {
               : currentTiers.split('').map((tier, index) => {
                   if (tier === '1') {
                     if (tiers[index] == 'basic') {
-                      return <LogoIcon
-                               className="text-ink-900 flex-inline shrink-0 stroke-[1.5px]"
-                               style={{
-                                 width: '1em',
-                                 height: '1em',
-                                 marginRight: '0.1em',
-                                 }}
-                               />
+                      return (
+                        <LogoIcon
+                          className="inline-block text-ink-900 flex-inline shrink-0 stroke-[1.5px]"
+                          style={{
+                            width: '1em',
+                            height: '1em',
+                            marginRight: '0.1em',
+                            }}
+                          />
+                        )
                     }
                     if (tiers[index] == 'plus') {
                       return <PlusTier key={index} />
