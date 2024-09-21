@@ -48,6 +48,7 @@ import {
   CrystalTier,
   PlusTier,
   PremiumTier,
+  BasicTier,
 } from 'web/public/custom-components/tiers'
 import { LiteGroup } from 'common/group'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
@@ -245,6 +246,9 @@ export function ContractFilters(props: {
             <Row className="items-center py-[3px]">
               {currentTiers.split('').map((tier, index) => {
                 if (tier === '1') {
+                  if (tiers[index] == 'basic') {
+                    return <BasicTier className="text-white" key={index} />
+                  }
                   if (tiers[index] == 'plus') {
                     return <PlusTier key={index} />
                   }
