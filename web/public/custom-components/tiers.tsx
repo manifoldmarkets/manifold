@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { BiGame } from 'react-icons/bi'
 import { PiDiamond, PiDiamondFill } from 'react-icons/pi'
 import { IoTriangle, IoTriangleOutline } from 'react-icons/io5'
-import { LogoIcon } from '../icons/logo-icon'
+import { LogoIcon } from 'web/components/icons/logo-icon'
 
 export function PlayTier(props: { className?: string }) {
   const { className } = props
