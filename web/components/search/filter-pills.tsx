@@ -153,7 +153,7 @@ export function TierDropdownPill(props: {
               : currentTiers.split('').map((tier, index) => {
                   if (tier === '1') {
                     if (tiers[index] == 'basic') {
-                      return <BasicTier key={index} />
+                      return <BasicTier className="text-white" key={index} />
                     }
                     if (tiers[index] == 'plus') {
                       return <PlusTier key={index} />
