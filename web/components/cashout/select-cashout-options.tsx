@@ -4,6 +4,7 @@ import {
   CASH_TO_MANA_CONVERSION_RATE,
   CHARITY_FEE,
   SWEEPIES_NAME,
+  TWOMBA_CASHOUT_ENABLED,
 } from 'common/envs/constants'
 import { User } from 'common/user'
 import Link from 'next/link'
@@ -303,10 +304,17 @@ function CashoutOptionsContent(props: {
             onClick={() => {
               setPage(redeemForUSDPageName)
             }}
-            disabled={!!allDisabled || noHasMinRedeemableCash}
+            disabled={
+              !!allDisabled || noHasMinRedeemableCash || !TWOMBA_CASHOUT_ENABLED
+            }
           >
             Redeem for USD
           </Button>
+          {!TWOMBA_CASHOUT_ENABLED && (
+            <div className="text-ink-500 text-sm">
+              Cashouts should be enabled in less than a week
+            </div>
+          )}
           <Row className="text-ink-500 w-full justify-between gap-1 whitespace-nowrap text-xs sm:text-sm ">
             <span>
               {noHasMinRedeemableCash && !allDisabled ? (

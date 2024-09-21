@@ -15,7 +15,7 @@ import {
 import { getIp } from 'shared/analytics'
 import { log } from 'shared/monitoring/log'
 import { randomBytes } from 'crypto'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { TWOMBA_CASHOUT_ENABLED, TWOMBA_ENABLED } from 'common/envs/constants'
 import { PaymentAmountsGIDX } from 'common/economy'
 import { getVerificationStatus } from 'common/user'
 import { getUser, LOCAL_DEV } from 'shared/utils'
@@ -27,6 +27,9 @@ export const getCheckoutSession: APIHandler<
   'get-checkout-session-gidx'
 > = async (props, auth, req) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
+  if (!TWOMBA_CASHOUT_ENABLED && props.PayActionCode === 'PAYOUT') {
+    throw new APIError(400, 'Cashouts will be enabled soon!')
+  }
   const pg = createSupabaseDirectClient()
   const userId = auth.uid
   const user = await getUser(userId, pg)
