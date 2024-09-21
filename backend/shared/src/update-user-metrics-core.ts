@@ -10,11 +10,9 @@ import {
   calculateMetricsByContractAndAnswer,
   calculateNewPortfolioMetrics,
 } from 'common/calculate-metrics'
-import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { buildArray } from 'common/util/array'
 import {
-  hasChanges,
   hasSignificantDeepChanges,
   removeUndefinedProps,
 } from 'common/util/object'
@@ -243,10 +241,16 @@ export async function updateUserMetricsCore(
       })
     )
 
-    const { balance, spiceBalance, investmentValue, totalDeposits } =
-      newPortfolio
+    const {
+      balance,
+      investmentValue,
+      totalDeposits,
+    } = newPortfolio
+
     const allTimeProfit =
-      balance + spiceBalance + investmentValue - totalDeposits
+      balance +
+      investmentValue -
+      totalDeposits -
 
     const unresolvedMetrics = freshMetrics.filter((m) => {
       const contract = contractsById[m.contractId]
@@ -295,7 +299,9 @@ export async function updateUserMetricsCore(
       resolvedProfitAdjustment +
       // Resolved profits are already included in the user's balance - deposits
       sumBy(unresolvedMetrics, (m) => (m.profitAdjustment ?? 0) + m.profit) +
-      allTimeProfit
+      balance -
+      totalDeposits
+
     newPortfolio.profit = leaderBoardProfit
 
     const didPortfolioChange =
@@ -322,9 +328,9 @@ export async function updateUserMetricsCore(
       allTime: allTimeProfit,
     }
 
-    const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
-      ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
-      : 0
+    // const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
+    //   ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
+    //   : 0
 
     if (didPortfolioChange) {
       portfolioUpdates.push({
@@ -344,15 +350,19 @@ export async function updateUserMetricsCore(
     }
 
     if (
-      hasChanges(user, {
-        profitCached: newProfit,
-        nextLoanCached: nextLoanPayout,
-      })
+      hasSignificantDeepChanges(
+        user,
+        {
+          profitCached: newProfit,
+          // nextLoanCached: nextLoanPayout,
+        },
+        1
+      )
     ) {
       userUpdates.push({
         ...user,
         profitCached: newProfit,
-        nextLoanCached: nextLoanPayout,
+        // nextLoanCached: nextLoanPayout,
       })
     }
   }
