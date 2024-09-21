@@ -205,7 +205,7 @@ export const MOD_IDS = [
   'tO4DwIsujySUwtSnrr2hnU1WJtJ3', // WieDan
 ]
 
-export const MVP = ['Eliza', 'Gabrielle']
+export const MVP = ['Eliza', 'Gabrielle', 'jacksonpolack']
 
 export const VERIFIED_USERNAMES = [
   'EliezerYudkowsky',
