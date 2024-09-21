@@ -241,16 +241,9 @@ export async function updateUserMetricsCore(
       })
     )
 
-    const {
-      balance,
-      investmentValue,
-      totalDeposits,
-    } = newPortfolio
+    const { balance, investmentValue, totalDeposits } = newPortfolio
 
-    const allTimeProfit =
-      balance +
-      investmentValue -
-      totalDeposits -
+    const allTimeProfit = balance + investmentValue - totalDeposits
 
     const unresolvedMetrics = freshMetrics.filter((m) => {
       const contract = contractsById[m.contractId]
