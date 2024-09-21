@@ -297,7 +297,7 @@ async function createAnswerAndSumAnswersToOne(
     updatedOtherAnswer,
   ]
   const { unfilledBets, balanceByUserId } =
-    await getUnfilledBetsAndUserBalances(pgTrans, contract.id)
+    await getUnfilledBetsAndUserBalances(pgTrans, contract)
 
   // Cancel limit orders on Other answer.
   const [unfilledBetsOnOther, unfilledBetsExcludingOther] = partition(

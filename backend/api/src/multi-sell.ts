@@ -49,7 +49,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
 
     const unfilledBetsAndBalances = await Promise.all(
       answersToSell.map((answer) =>
-        getUnfilledBetsAndUserBalances(pgTrans, contractId, answer.id)
+        getUnfilledBetsAndUserBalances(pgTrans, contract, answer.id)
       )
     )
     const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)

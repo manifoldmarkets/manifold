@@ -1,6 +1,11 @@
 import { groupBy, isEqual, mapValues, sumBy, uniq, uniqBy } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
+import {
+  Contract,
+  ContractToken,
+  CPMM_MIN_POOL_QTY,
+  MarketContract,
+} from 'common/contract'
 import { User } from 'common/user'
 import {
   BetInfo,
@@ -133,10 +138,14 @@ export const placeBetMain = async (
   const result = await runShortTrans(async (pgTrans) => {
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)
     // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
-    const balanceByUserId = await getUserBalances(pgTrans, [
-      uid,
-      ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
-    ])
+    const balanceByUserId = await getUserBalances(
+      pgTrans,
+      [
+        uid,
+        ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
+      ],
+      contract.token
+    )
     user.balance = balanceByUserId[uid]
     if (user.balance < body.amount)
       throw new APIError(403, 'Insufficient balance.')
@@ -442,13 +451,16 @@ export const getUnfilledBets = async (
 
 export const getUserBalances = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
-  userIds: string[]
+  userIds: string[],
+  token: ContractToken
 ) => {
   const users =
     userIds.length === 0
       ? []
       : await pgTrans.map(
-          `select balance, id from users where id = any($1)`,
+          `select ${
+            token === 'CASH' ? 'cash_balance' : 'balance'
+          } as balance, id from users where id = any($1)`,
           [userIds],
           (r) => r as { balance: number; id: string }
         )
@@ -458,12 +470,16 @@ export const getUserBalances = async (
 
 export const getUnfilledBetsAndUserBalances = async (
   pgTrans: SupabaseTransaction,
-  contractId: string,
+  contract: Contract,
   answerId?: string
 ) => {
-  const unfilledBets = await getUnfilledBets(pgTrans, contractId, answerId)
+  const unfilledBets = await getUnfilledBets(pgTrans, contract.id, answerId)
   const userIds = uniq(unfilledBets.map((bet) => bet.userId))
-  const balanceByUserId = await getUserBalances(pgTrans, userIds)
+  const balanceByUserId = await getUserBalances(
+    pgTrans,
+    userIds,
+    contract.token
+  )
 
   return { unfilledBets, balanceByUserId }
 }
