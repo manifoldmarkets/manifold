@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions'
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { mapAsync } from 'common/util/promise'
 import { APIError } from 'common/api/utils'
@@ -23,7 +22,6 @@ import {
   updateAnswers,
 } from 'shared/supabase/answers'
 import { runShortTrans } from 'shared/short-transaction'
-import { secrets } from 'common/secrets'
 import { getContract, log } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
 
@@ -48,11 +46,6 @@ export const drizzleLiquidity = async () => {
 
   await mapAsync(answers, (answer) => drizzleAnswer(pg, answer.id), 10)
 }
-
-export const drizzleLiquidityScheduler = functions
-  .runWith({ memory: '1GB', timeoutSeconds: 540, secrets })
-  .pubsub.schedule('*/7 * * * *')
-  .onRun(drizzleLiquidity)
 
 const drizzleMarket = async (contractId: string) => {
   await runShortTrans(async (pgTrans) => {
