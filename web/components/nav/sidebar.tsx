@@ -35,7 +35,7 @@ import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { DAY_MS } from 'common/util/time'
 import { LiveTVIcon } from '../tv-icon'
-import { PiRobotBold, PiTelevisionSimpleBold } from 'react-icons/pi'
+import { PiTelevisionSimpleBold } from 'react-icons/pi'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
@@ -206,21 +206,17 @@ const getMobileNav = (
       href: '/election',
       icon: GiCapitol,
     },
-    {
-      name: 'AI',
-      href: '/ai',
-      icon: PiRobotBold,
-    },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    {
-      name: 'TV',
-      href: '/tv',
-      icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
-    },
+
     {
       name: 'Messages',
       href: '/messages',
       icon: PrivateMessagesIcon,
+    },
+    {
+      name: 'TV',
+      href: '/tv',
+      icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
     },
     isAdminOrMod && {
       name: 'Reports',
