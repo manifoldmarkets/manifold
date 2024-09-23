@@ -25,7 +25,6 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   const userId = auth.uid
   const pg = createSupabaseDirectClient()
   const userAndPrivateUser = await getUserAndPrivateUserOrThrow(userId, pg)
-  const { user } = userAndPrivateUser
 
   const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerMonitor'
   const body = {
