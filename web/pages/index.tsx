@@ -22,7 +22,6 @@ import { Button } from 'web/components/buttons/button'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
-import { Footer } from 'web/components/footer'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -251,8 +250,6 @@ export default function LandingPage(props: {
           ))}
         </Col>
         <TestimonialsPanel />
-
-        <Footer showAbout />
       </Col>
     </Page>
   )
