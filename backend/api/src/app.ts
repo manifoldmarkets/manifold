@@ -193,6 +193,7 @@ import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-v
 import { completeCashoutSession } from 'api/gidx/complete-cashout-session'
 import { getCashouts } from './get-cashouts'
 import { getKYCStats } from './get-kyc-stats'
+import { getTxns } from './get-txns'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -424,6 +425,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'record-comment-view': recordCommentView,
   'get-cashouts': getCashouts,
   'get-kyc-stats': getKYCStats,
+  txns: getTxns,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

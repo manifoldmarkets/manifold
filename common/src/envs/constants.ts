@@ -365,6 +365,11 @@ export function supabaseConsoleContractPath(contractId: string) {
   return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}?filter=id%3Aeq%3A${contractId}`
 }
 
+export function supabaseConsoleTxnPath(txnId: string) {
+  const tableId = ENV === 'DEV' ? 20014 : 25940
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}?filter=id%3Aeq%3A${txnId}`
+}
+
 export const GOOGLE_PLAY_APP_URL =
   'https://play.google.com/store/apps/details?id=com.markets.manifold'
 export const APPLE_APP_URL =

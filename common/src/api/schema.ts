@@ -726,6 +726,7 @@ export const API = (_apiTypeCheck = {
     props: z.object({}),
     returns: {} as { payout: number },
   },
+  // deprecated. use /txns instead
   managrams: {
     method: 'GET',
     visibility: 'public',
@@ -1656,6 +1657,24 @@ export const API = (_apiTypeCheck = {
         day: string
       }[]
     },
+  },
+  txns: {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        token: z.string().optional(),
+        offset: z.coerce.number().default(0),
+        limit: z.coerce.number().gte(0).lte(100).default(100),
+        before: z.coerce.number().optional(),
+        after: z.coerce.number().optional(),
+        toId: z.string().optional(),
+        fromId: z.string().optional(),
+        category: z.string().optional(),
+      })
+      .strict(),
+    returns: [] as Txn[],
   },
 } as const)
 
