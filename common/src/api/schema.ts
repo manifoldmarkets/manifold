@@ -1655,10 +1655,6 @@ export const API = (_apiTypeCheck = {
         count: number
         day: string
       }[]
-      documentStatuses: {
-        count: number
-        status: string
-      }[]
     },
   },
 } as const)

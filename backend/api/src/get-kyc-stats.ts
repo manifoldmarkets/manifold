@@ -22,14 +22,5 @@ export const getKYCStats: APIHandler<'get-kyc-stats'> = async () => {
     group by date_trunc('day', created_time)
     order by day asc`)
 
-  const documentStatuses = await pg.manyOrNone<{
-    count: number
-    status: string
-  }>(`
-    select count(*), data->>'kycDocumentStatus' as status
-    from users
-    group by data->>'kycDocumentStatus'
-  `)
-
-  return { initialVerifications, phoneVerifications, documentStatuses }
+  return { initialVerifications, phoneVerifications }
 }
