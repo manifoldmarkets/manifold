@@ -50,7 +50,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useFocus } from 'web/hooks/use-focus'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { Button } from '../buttons/button'
@@ -62,10 +62,10 @@ import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
-import { blockFromSweepstakes, identityPending } from 'common/user'
 import { CashoutLimitWarning } from './cashout-limit-warning'
-import { InBeta, VerifyButton } from '../twomba/toggle-verify-callout'
+import { InBeta } from '../twomba/toggle-verify-callout'
 import { LocationMonitor } from '../gidx/location-monitor'
+import { getVerificationStatus } from 'common/gidx/user'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -138,32 +138,6 @@ export function BuyPanel(props: {
       setOutcome(choice)
       setIsPanelBodyVisible(true)
     }
-  }
-  // TODO: combine w/ contract-overview panels
-  if (contract.token === 'CASH' && identityPending(user)) {
-    return (
-      <Row className={'bg-canvas-50 rounded p-4'}>
-        You can't trade on sweepstakes markets while your status is pending.
-      </Row>
-    )
-  } else if (contract.token === 'CASH' && user && !user.idVerified) {
-    return (
-      <Col className="bg-canvas-50 gap-2 rounded-lg p-4">
-        <div className="mx-auto text-lg font-semibold">
-          Must be verified to {TRADE_TERM}
-        </div>
-        <p className="text-ink-700 mx-auto">
-          Verify your info to start trading on sweepstakes markets!
-        </p>
-        <VerifyButton className="mt-2" />
-      </Col>
-    )
-  } else if (contract.token === 'CASH' && blockFromSweepstakes(user)) {
-    return (
-      <Row className={'bg-canvas-50 rounded p-4'}>
-        You are not eligible to trade on sweepstakes markets.
-      </Row>
-    )
   }
   return (
     <Col>
@@ -265,7 +239,7 @@ export const BuyPanelBody = (props: {
   } = props
 
   const user = useUser()
-
+  const privateUser = usePrivateUser()
   const marketTier =
     contract.marketTier ??
     getTierFromLiquidity(contract, contract.totalLiquidity)
@@ -395,13 +369,20 @@ export const BuyPanelBody = (props: {
     }
   }
   const [showLocationMonitor, setShowLocationMonitor] = useState(false)
+  const isCashContract = contract.token === 'CASH'
+
+  const { status: verificationStatus, message: verificationMessage } =
+    user && privateUser
+      ? getVerificationStatus(user, privateUser)
+      : { status: 'error', message: 'sign in to trade' }
 
   const betDisabled =
     isSubmitting ||
     !betAmount ||
     outcome === undefined ||
     error === 'Insufficient balance' ||
-    showLocationMonitor
+    showLocationMonitor ||
+    (isCashContract && verificationStatus !== 'success')
 
   const limits =
     contract.outcomeType === 'STONK'
@@ -508,7 +489,6 @@ export const BuyPanelBody = (props: {
     : formatPercent(probAfter)
 
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
-  const isCashContract = contract.token === 'CASH'
 
   // warnings
   const highBankrollSpend =
@@ -700,6 +680,11 @@ export const BuyPanelBody = (props: {
               balanceByUserId={balanceByUserId}
               outcome={outcome}
               pseudonym={props.pseudonym}
+              kycError={
+                isCashContract && verificationStatus !== 'success'
+                  ? verificationMessage
+                  : undefined
+              }
             />
           </>
         )}
@@ -714,6 +699,9 @@ export const BuyPanelBody = (props: {
                   setShowPanel={setShowLocationMonitor}
                   showPanel={showLocationMonitor}
                 />
+                {isCashContract && verificationStatus !== 'success' && (
+                  <div className="text-error">{verificationMessage}</div>
+                )}
                 <WarningConfirmationButton
                   marketType="binary"
                   amount={betAmount}

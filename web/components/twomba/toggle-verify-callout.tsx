@@ -2,14 +2,10 @@ import { Placement } from '@floating-ui/react'
 import clsx from 'clsx'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
-import {
-  getVerificationStatus,
-  PROMPT_VERIFICATION_MESSAGES,
-} from 'common/user'
 import { capitalize } from 'lodash'
 import Link from 'next/link'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { buttonClass } from '../buttons/button'
 import { Row } from '../layout/row'
 import { CoinNumber } from '../widgets/coin-number'
@@ -17,6 +13,10 @@ import { Tooltip } from '../widgets/tooltip'
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { type User } from 'common/user'
+import {
+  getVerificationStatus,
+  PROMPT_USER_VERIFICATION_MESSAGES,
+} from 'common/gidx/user'
 
 export function ToggleVerifyCallout(props: {
   className?: string
@@ -24,15 +24,16 @@ export function ToggleVerifyCallout(props: {
 }) {
   const { className, caratClassName } = props
   const user = useUser()
+  const privateUser = usePrivateUser()
   const [dismissed, setDismissed] = usePersistentLocalState(
     false,
     `toggle-verify-callout-dismissed`
   )
 
-  if (dismissed || user === undefined) return null
+  if (dismissed || user === undefined || privateUser === undefined) return null
 
   // TWODO: Add a link to about here
-  if (user === null) {
+  if (user === null || privateUser === null) {
     return (
       <CalloutFrame
         className={className}
@@ -51,8 +52,8 @@ export function ToggleVerifyCallout(props: {
     )
   }
 
-  const { message } = getVerificationStatus(user)
-  if (!PROMPT_VERIFICATION_MESSAGES.includes(message)) return null
+  const { message } = getVerificationStatus(user, privateUser)
+  if (!PROMPT_USER_VERIFICATION_MESSAGES.includes(message)) return null
 
   return (
     <CalloutFrame

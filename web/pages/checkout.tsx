@@ -4,13 +4,12 @@ import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { Input } from '../components/widgets/input'
 import { Button } from 'web/components/buttons/button'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { api } from 'web/lib/api/api'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { PriceTile, use24hrUsdPurchases } from 'web/components/add-funds-modal'
-import { getVerificationStatus } from 'common/user'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import { LogoIcon } from 'web/components/icons/logo-icon'
 import { FaStore } from 'react-icons/fa6'
@@ -32,9 +31,11 @@ import { capitalize } from 'lodash'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
 import Link from 'next/link'
+import { getVerificationStatus } from 'common/gidx/user'
 
 const CheckoutPage = () => {
   const user = useUser()
+  const privateUser = usePrivateUser()
   const [locationError, setLocationError] = useState<string>()
   const { isNative, platform } = getNativePlatform()
   const isIOS = platform === 'ios' && isNative
@@ -74,10 +75,15 @@ const CheckoutPage = () => {
     then: 'ios-native' | 'web',
     amount: number
   ) => {
-    if (!user) return
+    if (!user || !privateUser) return
     setError(null)
     setLoading(true)
-    if (getVerificationStatus(user).status !== 'error') {
+    if (!user.idVerified) {
+      router.push('/gidx/register?redirect=checkout')
+      return
+    }
+    const { status, message } = getVerificationStatus(user, privateUser)
+    if (status !== 'error') {
       if (then === 'ios-native') {
         initiatePurchaseInDollars(
           prices.find((p) => p.mana === amount)!.priceInDollars
@@ -86,7 +92,8 @@ const CheckoutPage = () => {
         setPage('location')
       }
     } else {
-      router.push('/gidx/register?redirect=checkout')
+      setError(message)
+      setLoading(false)
     }
   }
 

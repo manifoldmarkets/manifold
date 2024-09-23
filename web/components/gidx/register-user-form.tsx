@@ -1,13 +1,7 @@
 import { Col } from 'web/components/layout/col'
 import { Input } from 'web/components/widgets/input'
 import { Button, buttonClass } from 'web/components/buttons/button'
-import {
-  ageBlocked,
-  identityBlocked,
-  locationBlocked,
-  PrivateUser,
-  User,
-} from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import { CountryCodeSelector } from 'web/components/country-code-selector'
 import { Row } from 'web/components/layout/row'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -40,6 +34,13 @@ import { LocationBlockedIcon } from 'web/public/custom-components/locationBlocke
 import { RiUserForbidLine } from 'react-icons/ri'
 import { PiClockCountdown } from 'react-icons/pi'
 import { track } from 'web/lib/service/analytics'
+import {
+  ageBlocked,
+  documentPending,
+  fraudSession,
+  identityBlocked,
+  locationBlocked,
+} from 'common/gidx/user'
 
 export const RegisterUserForm = (props: {
   user: User
@@ -386,7 +387,7 @@ export const RegisterUserForm = (props: {
     )
   }
 
-  if (user.kycDocumentStatus === 'pending') {
+  if (documentPending(user, privateUser)) {
     return (
       <>
         <PiClockCountdown className="fill-ink-700 mx-auto h-40 w-40" />
@@ -414,13 +415,16 @@ export const RegisterUserForm = (props: {
         </BottomRow>
       </>
     )
-  }
-
-  if (identityBlocked(user, privateUser) || ageBlocked(user, privateUser)) {
+  } else if (
+    identityBlocked(user, privateUser) ||
+    ageBlocked(user, privateUser)
+  ) {
     return (
       <>
         <RiUserForbidLine className="fill-ink-700 mx-auto h-40 w-40" />
-        <span className={'mx-auto text-2xl'}>Blocked identity</span>
+        <span className={'mx-auto text-2xl'}>
+          {identityBlocked(user, privateUser) ? 'Blocked identity' : 'Underage'}
+        </span>
         <span className="text-ink-700">
           We verified your identity! But, you're blocked. Unfortunately, this
           means you can't use our sweepstakes markets.
@@ -449,9 +453,26 @@ export const RegisterUserForm = (props: {
         </Row>
       </>
     )
+  } else if (fraudSession(user, privateUser)) {
+    return (
+      <>
+        <div className="mx-auto text-[130px] ">🎉</div>
+        <span className={'mx-auto text-2xl'}>
+          Identity Verification Complete!
+        </span>
+        <span className="text-ink-700">
+          Your session is marked as possible fraud, however. Please turn off VPN
+          if using
+        </span>
+        <Row className="mx-auto">
+          <Link className={buttonClass('md', 'indigo')} href={'/home'}>
+            Go home
+          </Link>
+        </Row>
+      </>
+    )
   }
-
-  if (user.sweepstakesVerified === false || user.kycDocumentStatus === 'fail') {
+  if (!user.idVerified || user.kycDocumentStatus === 'fail') {
     return (
       <>
         <DocumentUploadIcon

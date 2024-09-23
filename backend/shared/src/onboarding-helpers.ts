@@ -94,8 +94,11 @@ const sendNextDayManaBonus = async (user: User) => {
     } else {
       await updatePrivateUser(tx, user.id, {
         manaBonusSent: true,
-        weeklyTrendingEmailSent: true, // not yet, but about to!
       })
+      await tx.none(
+        `update private_users set weekly_trending_email_sent = true where id = $1`,
+        [user.id]
+      )
     }
 
     const signupBonusTxn: Omit<

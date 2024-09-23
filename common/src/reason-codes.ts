@@ -22,16 +22,13 @@ export const otherErrorCodes: string[] = [
   'LL-FAIL', // Location service failed due to errors
 ]
 
-export const locationTemporarilyBlockedCodes = [
-  'DFP-HR-CONN', // Device Fingerprint High Risk Connection
-  'LL-BLOCK', // location blocked
-  'LL-ALERT-DIST', // Large distance between id location attempts
-]
-
 export const locationBlockedCodes = [
   'LL-HR', // high risk
   'LL-HR-CO', // high risk country
   'LL-WL', // location on watchlist
+  'DFP-HR-CONN', // Device Fingerprint High Risk Connection
+  'LL-BLOCK', // location blocked
+  'LL-ALERT-DIST', // Large distance between id location attempts
 ]
 
 export const underageErrorCodes = [
@@ -90,7 +87,7 @@ export const uploadedDocsToVerifyIdentity = (reasonCodes: string[]) =>
 export const documentsReadyCodes: string[] = ['DOC-REV-COMPL', 'DOC-UPLOADED']
 
 export type RegistrationReturnType = {
-  status: string
+  status: 'error' | 'warning' | 'success'
   message?: string
   idVerified: boolean
 }

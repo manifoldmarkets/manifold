@@ -12,7 +12,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
-import { getUser, log } from 'shared/utils'
+import { getUserAndPrivateUserOrThrow, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { User } from 'common/user'
 import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
@@ -43,13 +43,8 @@ export const getVerificationStatusInternal = async (
   } = customerProfile
   throwIfIPNotWhitelisted(ResponseCode, ResponseMessage)
   const pg = createSupabaseDirectClient()
-  const user = await getUser(userId, pg)
-  if (!user) {
-    return {
-      status: 'error',
-      message: 'User not found',
-    }
-  }
+  const userAndPrivateUser = await getUserAndPrivateUserOrThrow(userId, pg)
+  const { user } = userAndPrivateUser
   if (ResponseCode === 501 && ResponseMessage.includes('not found')) {
     log('User not found in GIDX', { userId, ResponseMessage })
     // TODO: broadcast this user update when we have that functionality
@@ -69,17 +64,15 @@ export const getVerificationStatusInternal = async (
     }
   }
 
-  const { status, message } = await verifyReasonCodes(
-    user,
+  const { status, message, idVerified } = await verifyReasonCodes(
+    userAndPrivateUser,
     ReasonCodes,
     FraudConfidenceScore,
     IdentityConfidenceScore
   )
 
-  if (status === 'success' && !user.sweepstakesVerified) {
-    await updateUser(pg, user.id, {
-      sweepstakesVerified: true,
-    })
+  // If they just got verified from their id document uploads, distribute the bonus
+  if (status !== 'error' && !user.idVerified && idVerified) {
     await distributeKycBonus(pg, user.id)
   }
 

@@ -5,8 +5,8 @@ import {
 } from 'shared/supabase/init'
 import { WEEK_MS } from 'common/util/time'
 import { APIError } from 'common/api/utils'
-import { User } from 'common/user'
-import { DataUpdate, updateData } from './utils'
+import { PrivateUser, User } from 'common/user'
+import { FieldValFunction, updateData } from './utils'
 import {
   broadcastUpdatedUser,
   broadcastUpdatedPrivateUser,
@@ -87,10 +87,17 @@ export const updateUser = async (
   broadcastUpdatedUser(fullUpdate)
 }
 
+// private_users has 2 columns that aren't in the data column
+type UpdateType =
+  | Partial<PrivateUser>
+  | {
+      [key in keyof PrivateUser]?: FieldValFunction
+    }
+
 export const updatePrivateUser = async (
   db: SupabaseDirectClient,
   id: string,
-  update: DataUpdate<'private_users'>
+  update: UpdateType
 ) => {
   await updateData(db, 'private_users', 'id', { id, ...update })
   broadcastUpdatedPrivateUser(id)

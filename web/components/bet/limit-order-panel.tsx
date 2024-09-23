@@ -58,6 +58,7 @@ export default function LimitOrderPanel(props: {
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
+  kycError: string | undefined
 
   onBuySuccess?: () => void
   className?: string
@@ -79,6 +80,7 @@ export default function LimitOrderPanel(props: {
     unfilledBets,
     balanceByUserId,
     user,
+    kycError,
     outcome,
     onBuySuccess,
     pseudonym,
@@ -151,7 +153,8 @@ export default function LimitOrderPanel(props: {
     !betAmount ||
     !hasLimitBet ||
     error === 'Insufficient balance' ||
-    showLocationMonitor
+    showLocationMonitor ||
+    !!kycError
 
   const preLimitProb =
     limitProbInt === undefined
@@ -476,6 +479,7 @@ export default function LimitOrderPanel(props: {
           setShowPanel={setShowLocationMonitor}
           showPanel={showLocationMonitor}
         />
+        {kycError && <div className="text-red-500">{kycError}</div>}
         <Row className="items-center justify-between gap-2">
           {user && (
             <Button

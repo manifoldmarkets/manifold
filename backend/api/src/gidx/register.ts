@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getUser, LOCAL_DEV, log } from 'shared/utils'
+import { getUserAndPrivateUserOrThrow, LOCAL_DEV, log } from 'shared/utils'
 import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
@@ -61,10 +61,8 @@ export const register: APIHandler<'register-gidx'> = async (
     throw new APIError(400, 'GIDX registration failed')
   }
   const pg = createSupabaseDirectClient()
-  const user = await getUser(auth.uid, pg)
-  if (!user) {
-    throw new APIError(400, 'User not found')
-  }
+  const userAndPrivateUser = await getUserAndPrivateUserOrThrow(auth.uid, pg)
+  const { user } = userAndPrivateUser
   const data = (await res.json()) as GIDXRegistrationResponse
   log('Registration response:', data)
   const {
@@ -76,21 +74,16 @@ export const register: APIHandler<'register-gidx'> = async (
   } = data
   throwIfIPNotWhitelisted(ResponseCode, ResponseMessage)
   const { status, message, idVerified } = await verifyReasonCodes(
-    user,
+    userAndPrivateUser,
     ReasonCodes,
     FraudConfidenceScore,
     IdentityConfidenceScore
   )
-  if (status === 'success') {
+  if (status !== 'error') {
     await updateUser(pg, auth.uid, {
-      sweepstakesVerified: true,
       kycDocumentStatus: 'await-documents',
     })
     await distributeKycBonus(pg, user.id)
-  } else if (idVerified) {
-    await updateUser(pg, auth.uid, {
-      kycDocumentStatus: 'await-documents',
-    })
   }
   track(auth.uid, 'register user gidx attempt', {
     status,

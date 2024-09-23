@@ -1,19 +1,17 @@
 import * as crypto from 'crypto'
 import { APIError } from 'common/api/utils'
 import {
+  FRAUD_THRESHOLD,
   GIDXCustomerProfile,
-  ID_ERROR_MSG,
-  IDENTITY_AND_FRAUD_THRESHOLD,
+  IDENTITY_THRESHOLD,
 } from 'common/gidx/gidx'
 import { getPrivateUserSupabase, getUser, isProd, log } from 'shared/utils'
 import { getPhoneNumber } from 'shared/helpers/get-phone-number'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
   blockedCodes,
-  hasIdentityError,
   limitTo5kCashoutCodes,
   locationBlockedCodes,
-  locationTemporarilyBlockedCodes,
   otherErrorCodes,
   RegistrationReturnType,
   timeoutCodes,
@@ -23,7 +21,7 @@ import {
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { intersection } from 'lodash'
 import { updatePrivateUser, updateUser } from 'shared/supabase/users'
-import { User } from 'common/user'
+import { User, UserAndPrivateUser } from 'common/user'
 
 export const GIDXCallbackUrl = 'https://' + ENV_CONFIG.apiEndpoint
 // If you want to test your local endpoint, use ngrok or similar service
@@ -107,12 +105,13 @@ export const throwIfIPNotWhitelisted = (code: number, message: string) => {
 }
 
 export const verifyReasonCodes = async (
-  user: User,
+  userAndPrivateUser: UserAndPrivateUser,
   ReasonCodes: string[],
   FraudConfidenceScore: number | undefined,
   IdentityConfidenceScore: number | undefined
 ): Promise<RegistrationReturnType> => {
   const pg = createSupabaseDirectClient()
+  const { user, privateUser } = userAndPrivateUser
   const userId = user.id
 
   const hasAny = (codes: string[]) =>
@@ -178,30 +177,25 @@ export const verifyReasonCodes = async (
     }
   }
 
-  // User identity not found/verified
-  if (hasIdentityError(ReasonCodes)) {
-    log('Registration failed, resulted in identity errors:', ReasonCodes)
-    if (user.sweepstakesVerified !== false) {
-      await updateUser(pg, userId, { sweepstakesVerified: false })
-    }
-    return {
-      status: 'error',
-      message: ID_ERROR_MSG,
-      idVerified,
-    }
-  }
-
   // User is blocked for any number of reasons
   const blockedReasonCodes = intersection(blockedCodes, ReasonCodes)
   if (blockedReasonCodes.length > 0) {
     log('Registration failed, resulted in blocked codes:', blockedReasonCodes)
-    if (user.sweepstakesVerified !== false) {
-      await updateUser(pg, userId, { sweepstakesVerified: false })
+    const updates = {
+      sweepstakesVerified: false,
+      kycLastAttemptTime: Date.now(),
+    }
+    if (
+      user.sweepstakesVerified !== updates.sweepstakesVerified ||
+      user.kycLastAttemptTime !== updates.kycLastAttemptTime
+    ) {
+      await updateUser(pg, userId, updates)
     }
     if (hasAny(locationBlockedCodes)) {
       return {
         status: 'error',
-        message: 'Registration failed, location blocked or high risk.',
+        message:
+          'Registration failed, location blocked or high risk.  Try again in 3 hours in an allowed location.',
         idVerified,
       }
     }
@@ -226,46 +220,17 @@ export const verifyReasonCodes = async (
     }
   }
 
-  // User is in disallowed location, but they may move
-  if (hasAny(locationTemporarilyBlockedCodes)) {
-    log(
-      'Registration failed, resulted in temporary blocked location codes:',
-      ReasonCodes
-    )
-    const updates = {
-      sweepstakesVerified: false,
-      kycLastAttemptTime: Date.now(),
-    } as Partial<User>
-    if (
-      user.sweepstakesVerified !== updates.sweepstakesVerified ||
-      user.kycLastAttemptTime !== updates.kycLastAttemptTime
-    ) {
-      await updateUser(pg, userId, updates)
-    }
-    return {
-      status: 'error',
-      message:
-        'Registration failed, location blocked. Try again in 3 hours in an allowed location.',
-      idVerified,
-    }
-  }
-
-  // User identity match is low confidence or attempt may be fraud
+  // User identity match is low confidence
   if (
-    FraudConfidenceScore !== undefined &&
     IdentityConfidenceScore !== undefined &&
-    (FraudConfidenceScore < IDENTITY_AND_FRAUD_THRESHOLD ||
-      IdentityConfidenceScore < IDENTITY_AND_FRAUD_THRESHOLD) &&
+    IdentityConfidenceScore < IDENTITY_THRESHOLD &&
     // If they uploaded docs to verify their identity, their ID score is meaningless
     !(
-      uploadedDocsToVerifyIdentity(ReasonCodes) &&
-      FraudConfidenceScore >= IDENTITY_AND_FRAUD_THRESHOLD &&
-      IdentityConfidenceScore === 0
+      uploadedDocsToVerifyIdentity(ReasonCodes) && IdentityConfidenceScore === 0
     )
   ) {
     log(
-      'Registration failed, resulted in low confidence scores:',
-      FraudConfidenceScore,
+      'Registration failed, resulted in low identity score:',
       IdentityConfidenceScore
     )
     if (user.sweepstakesVerified !== false) {
@@ -274,19 +239,46 @@ export const verifyReasonCodes = async (
     return {
       status: 'error',
       message:
-        'Confidence in identity or fraud too low. Double check your information.',
+        'Confidence in identity too low. Double check your information or upload documents to verify your identity.',
+      idVerified,
+    }
+  }
+
+  if (
+    FraudConfidenceScore !== undefined &&
+    FraudConfidenceScore < FRAUD_THRESHOLD
+  ) {
+    log(
+      'Registration failed, resulted in low fraud confidence score:',
+      FraudConfidenceScore
+    )
+    if (privateUser.sessionFraudScore !== FraudConfidenceScore) {
+      await updatePrivateUser(pg, userId, {
+        sessionFraudScore: FraudConfidenceScore,
+      })
+    }
+    return {
+      status: idVerified ? 'warning' : 'error',
+      message:
+        'Confidence in fraud too low for this session. Trading temporarily disbled',
       idVerified,
     }
   }
 
   // User is not blocked and ID is verified
-  if (ReasonCodes.includes('ID-VERIFIED')) {
-    log('Registration passed with allowed codes:', ReasonCodes)
+  if (idVerified) {
+    if (!user.sweepstakesVerified) {
+      await updateUser(pg, userId, {
+        sweepstakesVerified: true,
+      })
+    }
+
+    log('Reason codes passed with ID-VERIFIED:', ReasonCodes)
     return { status: 'success', idVerified }
   }
 
   log(
-    `Registration failed for ${userId} with no matched reason codes: ${ReasonCodes.join(
+    `Registration failed for ${userId} with unknown reason codes: ${ReasonCodes.join(
       ', '
     )}`
   )

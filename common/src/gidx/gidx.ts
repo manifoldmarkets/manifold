@@ -292,7 +292,8 @@ export type CheckoutSessionResponse = {
 export const ID_ERROR_MSG =
   'Registration failed, identity error. Check your identifying information.'
 
-export const IDENTITY_AND_FRAUD_THRESHOLD = 80
+export const IDENTITY_THRESHOLD = 80
+export const FRAUD_THRESHOLD = 80
 export const ENABLE_FAKE_CUSTOMER = false
 export const exampleCustomers = [
   {

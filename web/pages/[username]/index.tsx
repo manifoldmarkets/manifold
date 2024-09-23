@@ -173,6 +173,7 @@ function UserProfile(props: {
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
+  const privateUser = usePrivateUser()
 
   useSaveReferral(currentUser, {
     defaultReferrerUsername: user?.username,
@@ -394,7 +395,12 @@ function UserProfile(props: {
                 content: (
                   <>
                     <Col className="mt-2 gap-2">
-                      {currentUser && <VerifyMe user={currentUser} />}
+                      {currentUser && privateUser && (
+                        <VerifyMe
+                          user={currentUser}
+                          privateUser={privateUser}
+                        />
+                      )}
                       <VerifyPhoneNumberBanner user={currentUser} />
                     </Col>
                     <PortfolioSummary className="mt-4" user={user} />

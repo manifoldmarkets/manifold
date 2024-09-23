@@ -3,6 +3,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertPushTicket } from 'common/push-ticket'
 import { log } from 'shared/monitoring/log'
 import { updatePrivateUser } from './supabase/users'
+import { FieldVal } from './supabase/utils'
 
 export const checkPushNotificationReceipts = async () => {
   const expo = new Expo()
@@ -57,7 +58,9 @@ export const checkPushNotificationReceipts = async () => {
               log(`The error code is ${error}`)
               if (error === 'DeviceNotRegistered') {
                 // set private user pushToken to null
-                await updatePrivateUser(pg, ticket.userId, { pushToken: null })
+                await updatePrivateUser(pg, ticket.userId, {
+                  pushToken: FieldVal.delete(),
+                })
               }
             }
           }

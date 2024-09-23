@@ -52,7 +52,7 @@ export const LocationMonitor = (props: {
           Loading location may take a while, hold on!
         </span>
       )}
-      {monitorStatus === 'error' && (
+      {monitorStatus !== 'success' && (
         <span className="mt-2 text-red-500">{monitorStatusMessage}</span>
       )}
     </Col>
