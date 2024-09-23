@@ -310,22 +310,12 @@ export const use24hrUsdPurchases = (userId: string) => {
   const [purchases, setPurchases] = useState<Txn[]>([])
 
   useEffect(() => {
-    run(
-      db
-        .from('txns')
-        .select()
-        .eq('category', 'MANA_PURCHASE')
-        .eq('to_id', userId)
-    ).then((res) => {
-      setPurchases(res.data.map(convertTxn))
-    })
+    api('txns', {
+      category: 'MANA_PURCHASE',
+      toId: userId,
+      after: Date.now() - DAY_MS,
+    }).then(setPurchases)
   }, [userId])
 
-  return (
-    sum(
-      purchases
-        .filter((t) => t.createdTime > Date.now() - DAY_MS)
-        .map((t) => t.amount)
-    ) / 1000
-  )
+  return sum(purchases.map((t) => t.amount)) / 1000
 }

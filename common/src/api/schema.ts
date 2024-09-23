@@ -1661,7 +1661,7 @@ export const API = (_apiTypeCheck = {
   txns: {
     method: 'GET',
     visibility: 'public',
-    authed: true,
+    authed: false,
     props: z
       .object({
         token: z.string().optional(),

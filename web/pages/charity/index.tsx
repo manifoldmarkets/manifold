@@ -29,8 +29,8 @@ export async function getStaticProps() {
     return {
       props: {
         totalsByCharity,
-        mostRecentCharityId: mostRecentDonation.to_id,
-        mostRecentDonor: await getUserById(mostRecentDonation.from_id!),
+        mostRecentCharityId: mostRecentDonation.toId,
+        mostRecentDonor: await getUserById(mostRecentDonation.fromId!),
       },
       revalidate: 60,
     }
