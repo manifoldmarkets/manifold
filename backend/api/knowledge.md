@@ -87,10 +87,56 @@ const contractIds = await pg.manyOrNone(`select id from contracts`, [], r => r.i
 - Avoid editing the SQL via `${}`, and instead when using pgpromise, use the argument following the query to pass parameters to the query.
 
 
-## Data schema
+
+### Schema Definition
+
+We use Zod for defining our API schemas. This provides runtime type checking and automatic documentation generation.
+
+#### Setting Defaults
+
+When defining schemas, prefer setting defaults in the Zod schema rather than in the handler function. This ensures that the default values are documented and type-checked.
+
+Example:
+```typescript
+props: z.object({
+  limit: z.number().default(50),
+  offset: z.number().default(0),
+  // other properties...
+}).strict(),
+```
+
+### Data schema
 Tables like contract_comments, contract_bets, contract_follows, etc, use two primary ids: contract_id, and an id specific to the table: comment_id, bet_id, or follow_id. Thus they have no primary 'id' column.
 
 Thus to get a comment you would do:
 ```sql
 select * from contract_comments where comment_id = $1
 ```
+
+### Query Construction
+
+For constructing SQL queries, we use custom SQL builder helper functions. These functions provide a more type-safe and maintainable way to build complex queries.
+
+#### SQL Builder Functions
+
+We have several helper functions for building SQL queries:
+
+- `select`: Specifies the columns to select
+- `from`: Specifies the table to query
+- `where`: Adds WHERE clauses
+- `orderBy`: Specifies the order of results
+- `limit`: Limits the number of results
+- `renderSql`: Combines all parts into a final SQL string
+
+Example usage:
+```typescript
+const query = renderSql(
+  select('*'),
+  from('txns'),
+  where('token = ${token}', { token }),
+  orderBy('created_time desc'),
+  limit(limitValue)
+)
+```
+
+Using these functions instead of string concatenation helps prevent SQL injection and makes queries easier to read and maintain.
