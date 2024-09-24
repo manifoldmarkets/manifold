@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { MIN_CASHOUT_AMOUNT, STARTING_BALANCE } from 'common/economy'
+import { MIN_CASHOUT_AMOUNT } from 'common/economy'
 import {
   CASH_TO_MANA_CONVERSION_RATE,
   CHARITY_FEE,

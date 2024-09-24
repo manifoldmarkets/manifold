@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
-import { SWEEPIES_NAME, TRADED_TERM } from 'common/envs/constants'
+import { SWEEPIES_NAME } from 'common/envs/constants'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { formatSweepies, formatSweepsToUSD } from 'common/util/format'
 import Link from 'next/link'
