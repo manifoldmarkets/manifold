@@ -33,7 +33,7 @@ import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
 import { capitalize } from 'lodash'
-import { useKYCGiftAmount } from 'web/components/twomba/toggle-verify-callout'
+import { useKYCGiftAmount } from 'web/components/twomba/sweep-verify-section'
 import {
   Divider,
   InputTitle,
