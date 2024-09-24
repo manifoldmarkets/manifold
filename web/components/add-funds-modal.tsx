@@ -16,19 +16,19 @@ import { useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { APIError, api } from 'web/lib/api/api'
-import { getNativePlatform } from 'web/lib/native/is-native'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
 import { AlertBox } from './widgets/alert-box'
 import { AmountInput } from './widgets/amount-input'
-import { CoinNumber } from './widgets/coin-number'
 import { Col } from './layout/col'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 import { FaStore } from 'react-icons/fa6'
 import router from 'next/router'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
-import Link from 'next/link'
+import { useNativeInfo } from './native-message-provider'
+import { TwombaFundsSelector } from 'web/pages/checkout'
+import { CoinNumber } from './widgets/coin-number'
 
 const BUY_MANA_GRAPHICS = [
   '/buy-mana-graphics/10k.png',
@@ -78,8 +78,8 @@ export function AddFundsModal(props: {
 export function BuyManaTab(props: { onClose: () => void }) {
   const { onClose } = props
   const user = useUser()
-  const { isNative, platform } = getNativePlatform()
-  const prices = isNative && platform === 'ios' ? IOS_PRICES : MANA_WEB_PRICES
+  const { isIOS } = useNativeInfo()
+  const prices = isIOS ? IOS_PRICES : MANA_WEB_PRICES
   const [loading, setLoading] = useState<WebManaAmounts | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { initiatePurchaseInDollars, loadingMessage } = useIosPurchases(
@@ -94,26 +94,31 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const totalPurchased = use24hrUsdPurchases(user?.id || '')
   const pastLimit = totalPurchased >= 2500
 
+  if (TWOMBA_ENABLED) {
+    return (
+      <TwombaFundsSelector
+        prices={prices}
+        onSelect={(amount) => {
+          setLoading(amount)
+          if (isIOS) {
+            initiatePurchaseInDollars(amount)
+          } else {
+            router.push(`/checkout?manaAmount=${amount}`)
+          }
+        }}
+        loading={loading}
+      />
+    )
+  }
+
   return (
     <>
       <Row className="mb-2 items-center gap-1 text-2xl font-semibold">
         <FaStore className="h-6 w-6" />
         Mana Shop
       </Row>
-      <div
-        className={clsx(
-          'text-ink-700 text-sm',
-          TWOMBA_ENABLED ? 'mb-5' : 'mb-4'
-        )}
-      >
-        {TWOMBA_ENABLED ? (
-          <span>
-            Buy mana to trade in your favorite questions. Always free to play,
-            no purchase necessary.
-          </span>
-        ) : (
-          <span>Buy mana to trade in your favorite questions.</span>
-        )}
+      <div className={clsx('text-ink-700 mb-4 text-sm')}>
+        <span>Buy mana to trade in your favorite questions.</span>
       </div>
 
       {pastLimit && (
@@ -124,23 +129,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
 
       <div className="grid grid-cols-2 gap-4 gap-y-6">
         {prices.map((amounts, index) => {
-          return isNative && platform === 'ios' ? (
-            <PriceTile
-              key={`ios-${amounts.mana}`}
-              index={index}
-              amounts={amounts}
-              loading={loading}
-              disabled={pastLimit}
-              onClick={() => {
-                if (TWOMBA_ENABLED) {
-                  // The checkout page handles registration
-                  router.push(`/checkout?manaAmount=${amounts.mana}`)
-                } else {
-                  initiatePurchaseInDollars(amounts.priceInDollars)
-                }
-              }}
-            />
-          ) : (
+          return (
             <form
               key={`web-${amounts.mana}`}
               // Expects cents
@@ -156,12 +145,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
                 index={index}
                 loading={loading}
                 disabled={pastLimit}
-                onClick={() => {
-                  if (TWOMBA_ENABLED) {
-                    router.push(`/checkout?manaAmount=${amounts.mana}`)
-                  }
-                }}
-                isSubmitButton={!TWOMBA_ENABLED}
+                isSubmitButton={true}
               />
             </form>
           )
@@ -169,20 +153,6 @@ export function BuyManaTab(props: { onClose: () => void }) {
       </div>
       <div className="text-ink-500 text-sm">{loadingMessage}</div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
-
-      {TWOMBA_ENABLED && (
-        <div className="text-ink-500 mt-4 text-sm">
-          Please see our{' '}
-          <Link href="/terms" target="_blank" className="underline">
-            Terms & Conditions
-          </Link>{' '}
-          and{' '}
-          <Link href="/sweepstakes-rules" target="_blank" className="underline">
-            Sweepstakes Rules
-          </Link>
-          . All sales are final. No refunds.
-        </div>
-      )}
     </>
   )
 }
@@ -196,7 +166,13 @@ export function PriceTile(props: {
   isSubmitButton?: boolean
 }) {
   const { loading, onClick, isSubmitButton, amounts, index } = props
-  const { mana, priceInDollars, bonusInDollars } = amounts
+  const {
+    newUsersOnly,
+    mana,
+    priceInDollars,
+    bonusInDollars,
+    originalPriceInDollars,
+  } = amounts
 
   const isCurrentlyLoading = loading === mana
   const disabled = props.disabled || (loading && !isCurrentlyLoading)
@@ -207,50 +183,75 @@ export function PriceTile(props: {
         disabled
           ? 'pointer-events-none cursor-not-allowed opacity-50'
           : 'opacity-90 ring-2 ring-blue-600 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
-        isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait'
+        isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait',
+        newUsersOnly && 'border-4 border-blue-600 '
       )}
       type={isSubmitButton ? 'submit' : 'button'}
       onClick={onClick}
     >
+      {TWOMBA_ENABLED &&
+        originalPriceInDollars &&
+        originalPriceInDollars !== priceInDollars && (
+          <div
+            className="absolute right-0 top-0
+        whitespace-nowrap  bg-blue-600 px-2
+         py-0.5 text-white transition-colors
+           "
+          >
+            {(
+              ((originalPriceInDollars - priceInDollars) /
+                originalPriceInDollars) *
+              100
+            ).toFixed(0)}
+            % off
+          </div>
+        )}
+      <Col
+        className={clsx(
+          TWOMBA_ENABLED ? 'bg-canvas-0' : 'bg-canvas-50',
+          'w-full items-center rounded-t px-4 pb-2 pt-4'
+        )}
+      >
+        <Image
+          src={BUY_MANA_GRAPHICS[Math.min(index, BUY_MANA_GRAPHICS.length - 1)]}
+          alt={`${shortenNumber(mana)} mana`}
+          className="100%"
+          width={80}
+          height={80}
+        />
+
+        <div className="-mt-1 text-xl font-semibold text-violet-600 dark:text-violet-400">
+          Ṁ{shortenNumber(mana)}{' '}
+        </div>
+        {originalPriceInDollars && (
+          <Row className="text-sm text-red-500 line-through">
+            -${originalPriceInDollars}-
+          </Row>
+        )}
+      </Col>
+      <Col className="w-full bg-blue-600 px-4 py-1 text-xl font-semibold text-white">
+        Buy ${priceInDollars}
+      </Col>
       {TWOMBA_ENABLED && (
-        <div
-          className="absolute -right-2 -top-2
-        whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5
-         text-amber-800 shadow transition-colors group-hover:bg-amber-200
-          group-hover:text-amber-900 dark:bg-amber-700 dark:text-white
-           group-hover:dark:bg-amber-600 group-hover:dark:text-white"
+        <Row
+          className={clsx(
+            `w-full items-center justify-center gap-1 whitespace-nowrap
+       bg-amber-100 px-2 py-0.5 text-lg
+         text-amber-800 transition-colors group-hover:bg-amber-200
+          group-hover:text-amber-900 dark:bg-amber-600 dark:text-white
+           group-hover:dark:bg-amber-500 group-hover:dark:text-white`,
+            !newUsersOnly && 'shadow'
+          )}
         >
-          +
           <CoinNumber
             coinType="sweepies"
             className="font-bold"
             amount={bonusInDollars}
             isInline
           />{' '}
-          <span className="text-sm">bonus</span>
-        </div>
+          <span className="text-sm">free</span>
+        </Row>
       )}
-      <Col
-        className={clsx(
-          TWOMBA_ENABLED ? 'bg-canvas-0' : 'bg-canvas-50',
-          'items-center rounded-t px-4 pb-2 pt-4'
-        )}
-      >
-        <Image
-          src={BUY_MANA_GRAPHICS[Math.min(index, BUY_MANA_GRAPHICS.length - 1)]}
-          alt={`${shortenNumber(mana)} mana`}
-          className="w-2/3"
-          width={460}
-          height={400}
-        />
-
-        <div className="-mt-1 text-xl font-semibold text-violet-600 dark:text-violet-400">
-          Ṁ{shortenNumber(mana)}{' '}
-        </div>
-      </Col>
-      <Col className="w-full rounded-b bg-blue-600 px-4 py-1 text-lg font-semibold text-white">
-        ${priceInDollars}
-      </Col>
     </button>
   )
 }

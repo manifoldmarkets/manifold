@@ -1,5 +1,6 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
+import { HOUR_MS } from './util/time'
 
 export type User = {
   id: string
@@ -149,3 +150,6 @@ export const isUserLikelySpammer = (
 
 // This grandfathers in older users who have not yet verified their phone
 export const humanish = (user: User) => user.verifiedPhone !== false
+
+export const introductoryTimeWindow = (createdTime: number) =>
+  createdTime + 8 * HOUR_MS

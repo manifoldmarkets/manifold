@@ -6,8 +6,7 @@ import { Input } from '../components/widgets/input'
 import { Button } from 'web/components/buttons/button'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
-import { getNativePlatform } from 'web/lib/native/is-native'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { PriceTile, use24hrUsdPurchases } from 'web/components/add-funds-modal'
 import { CoinNumber } from 'web/components/widgets/coin-number'
@@ -32,12 +31,15 @@ import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
 import Link from 'next/link'
 import { getVerificationStatus } from 'common/gidx/user'
+import { useNativeInfo } from 'web/components/native-message-provider'
+import { Countdown } from 'web/components/widgets/countdown'
+import { introductoryTimeWindow } from 'common/user'
 
 const CheckoutPage = () => {
   const user = useUser()
   const privateUser = usePrivateUser()
   const [locationError, setLocationError] = useState<string>()
-  const { isNative, platform } = getNativePlatform()
+  const { isNative, platform } = useNativeInfo()
   const isIOS = platform === 'ios' && isNative
   const prices = isIOS ? IOS_PRICES : MANA_WEB_PRICES
   const [page, setPage] = useState<
@@ -156,7 +158,7 @@ const CheckoutPage = () => {
       {page === 'checkout' &&
       (isIOS ? true : !amountSelected && !manaAmountFromQuery) ? (
         <Col>
-          <FundsSelector
+          <TwombaFundsSelector
             prices={prices}
             onSelect={onSelectAmount}
             loading={priceLoading}
@@ -204,16 +206,24 @@ const CheckoutPage = () => {
   )
 }
 
-function FundsSelector(props: {
+export function TwombaFundsSelector(props: {
   prices: PaymentAmount[]
   onSelect: (amount: WebManaAmounts) => void
   loading: WebManaAmounts | null
 }) {
-  const { onSelect, prices, loading } = props
+  const { onSelect, loading } = props
   const user = useUser()
+  const expirationStart = user
+    ? new Date(introductoryTimeWindow(user.createdTime))
+    : new Date()
+  const eligibleForNewUserOffer =
+    user && user.createdTime < expirationStart.valueOf() && !user.purchasedMana
+  const newUserPrices = props.prices.filter((p) => p.newUsersOnly)
+  const prices = props.prices.filter((p) => !p.newUsersOnly)
 
-  const totalPurchased = use24hrUsdPurchases(user?.id || '')
-  const pastLimit = totalPurchased >= 2500
+  if (!TWOMBA_ENABLED) {
+    return <div>Sweepstaked are not enabled, sorry!</div>
+  }
 
   return (
     <Col className="mx-auto max-w-xl">
@@ -221,28 +231,40 @@ function FundsSelector(props: {
         <FaStore className="h-6 w-6" />
         Mana Shop
       </Row>
-      <div
-        className={clsx(
-          'text-ink-700 text-sm',
-          TWOMBA_ENABLED ? 'mb-5' : 'mb-4'
-        )}
-      >
-        {TWOMBA_ENABLED ? (
-          <div>
-            <span>
-              Buy mana to trade in your favorite questions. Always free to play,
-              no purchase necessary.
-            </span>
-            <CashoutLimitWarning user={user} className="mt-2" />
-          </div>
-        ) : (
-          <span>Buy mana to trade in your favorite questions.</span>
-        )}
+      <div className={clsx('text-ink-700 mb-4 text-sm')}>
+        <div>
+          <span>
+            Buy mana to trade in your favorite questions. Always free to play,
+            no purchase necessary.
+          </span>
+          <CashoutLimitWarning user={user} className="mt-2" />
+        </div>
       </div>
-      {pastLimit && (
-        <AlertBox title="Purchase limit" className="my-4">
-          You have reached your daily purchase limit. Please try again tomorrow.
-        </AlertBox>
+      {eligibleForNewUserOffer && (
+        <>
+          <span className="text-2xl text-blue-500">
+            Introductory discount expires in{' '}
+            <Countdown
+              includeSeconds
+              endDate={expirationStart}
+              className="ml-1 "
+            />
+          </span>
+          <Col className="mb-2 gap-2 py-4">
+            <div className="grid grid-cols-2 gap-4 gap-y-6">
+              {newUserPrices.map((amounts, index) => (
+                <PriceTile
+                  key={`price-tile-${amounts.mana}`}
+                  amounts={amounts}
+                  index={index}
+                  loading={loading}
+                  disabled={false}
+                  onClick={() => onSelect(amounts.mana)}
+                />
+              ))}
+            </div>
+          </Col>
+        </>
       )}
       <div className="grid grid-cols-2 gap-4 gap-y-6">
         {prices.map((amounts, index) => (
@@ -251,25 +273,22 @@ function FundsSelector(props: {
             amounts={amounts}
             index={index}
             loading={loading}
-            disabled={pastLimit}
+            disabled={false}
             onClick={() => onSelect(amounts.mana)}
           />
         ))}
       </div>
-
-      {TWOMBA_ENABLED && (
-        <div className="text-ink-500 mt-4 text-sm">
-          Please see our{' '}
-          <Link href="/terms" target="_blank" className="underline">
-            Terms & Conditions
-          </Link>{' '}
-          and{' '}
-          <Link href="/sweepstakes-rules" target="_blank" className="underline">
-            Sweepstakes Rules
-          </Link>
-          . All sales are final. No refunds.
-        </div>
-      )}
+      <div className="text-ink-500 mt-4 text-sm">
+        Please see our{' '}
+        <Link href="/terms" target="_blank" className="underline">
+          Terms & Conditions
+        </Link>{' '}
+        and{' '}
+        <Link href="/sweepstakes-rules" target="_blank" className="underline">
+          Sweepstakes Rules
+        </Link>
+        . All sales are final. No refunds.
+      </div>
     </Col>
   )
 }
@@ -343,6 +362,10 @@ const PaymentSection = (props: {
         MerchantTransactionID,
         MerchantSessionID,
       }).catch((e) => {
+        if (e instanceof APIError) {
+          console.error('Error completing checkout session', e)
+          return { status: 'error', message: e.message }
+        }
         console.error('Error completing checkout session', e)
         return { status: 'error', message: 'Error completing checkout session' }
       })

@@ -97,24 +97,38 @@ export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
 
 export const PaymentAmounts = [
   {
-    mana: 10_000,
+    mana: 1_000,
     priceInDollars: 13.99,
     bonusInDollars: 0,
   },
   {
-    mana: 25_000,
+    mana: 2_500,
     priceInDollars: 29.99,
     bonusInDollars: 0,
   },
   {
-    mana: 100_000,
+    mana: 10_000,
     priceInDollars: 109.99,
     bonusInDollars: 0,
   },
   {
-    mana: 1_000_000,
+    mana: 100_000,
     priceInDollars: 1_000,
     bonusInDollars: 0,
+  },
+  {
+    mana: 1_000,
+    priceInDollars: 5,
+    originalPriceInDollars: 13.99,
+    bonusInDollars: 0,
+    newUsersOnly: true,
+  },
+  {
+    mana: 5_000,
+    priceInDollars: 20,
+    originalPriceInDollars: 55.99,
+    bonusInDollars: 0,
+    newUsersOnly: true,
   },
 ]
 
@@ -139,6 +153,20 @@ export const PaymentAmountsGIDX = [
     priceInDollars: 1_000,
     bonusInDollars: 1000,
   },
+  {
+    mana: 1_000,
+    originalPriceInDollars: 15,
+    priceInDollars: 7,
+    bonusInDollars: 10,
+    newUsersOnly: true,
+  },
+  {
+    mana: 5_000,
+    originalPriceInDollars: 55,
+    priceInDollars: 20,
+    bonusInDollars: 40,
+    newUsersOnly: true,
+  },
 ]
 export type PaymentAmount = (typeof PaymentAmounts)[number]
 
@@ -148,29 +176,8 @@ export const MANA_WEB_PRICES = TWOMBA_ENABLED
 
 export type WebManaAmounts = (typeof PaymentAmounts)[number]['mana']
 // TODO: these prices should be a function of whether the user is sweepstakes verified or not
-export const IOS_PRICES = !TWOMBA_ENABLED
+export const IOS_PRICES = TWOMBA_ENABLED
   ? [
-      {
-        mana: 10_000,
-        priceInDollars: 14.99,
-        bonusInDollars: 0,
-        sku: 'mana_1000',
-      },
-      {
-        mana: 25_000,
-        priceInDollars: 35.99,
-        bonusInDollars: 0,
-        sku: 'mana_2500',
-      },
-      {
-        mana: 100_000,
-        priceInDollars: 142.99,
-        bonusInDollars: 0,
-        sku: 'mana_10000',
-      },
-      // No 1M option on ios: the fees are too high
-    ]
-  : [
       {
         mana: 1_000,
         priceInDollars: 14.99,
@@ -187,6 +194,27 @@ export const IOS_PRICES = !TWOMBA_ENABLED
         mana: 10_000,
         priceInDollars: 142.99,
         bonusInDollars: 100,
+        sku: 'mana_10000',
+      },
+      // No 1M option on ios: the fees are too high
+    ]
+  : [
+      {
+        mana: 10_000,
+        priceInDollars: 14.99,
+        bonusInDollars: 0,
+        sku: 'mana_1000',
+      },
+      {
+        mana: 25_000,
+        priceInDollars: 35.99,
+        bonusInDollars: 0,
+        sku: 'mana_2500',
+      },
+      {
+        mana: 100_000,
+        priceInDollars: 142.99,
+        bonusInDollars: 0,
         sku: 'mana_10000',
       },
       // No 1M option on ios: the fees are too high
