@@ -37,6 +37,10 @@ export const getVerificationStatus = (
     return { status: 'error', message: GIDX_DISABLED_MESSAGE }
   } else if (!humanish(user)) {
     return { status: 'error', message: PHONE_NOT_VERIFIED_MESSAGE }
+  } else if (user.kycDocumentStatus === 'fail') {
+    return { status: 'error', message: USER_DOCUMENT_FAILED_MESSAGE }
+  } else if (user.kycDocumentStatus === 'pending') {
+    return { status: 'error', message: USER_PENDING_VERIFICATION_MESSAGE }
   } else if (!user.idVerified) {
     return { status: 'error', message: IDENTIFICATION_FAILED_MESSAGE }
   } else if (
@@ -55,11 +59,6 @@ export const getVerificationStatus = (
       intersection(privateUser.kycFlags, locationBlockedCodes).length > 0
     ) {
       return { status: 'error', message: LOCATION_BLOCKED_MESSAGE }
-    }
-    if (user.kycDocumentStatus === 'fail') {
-      return { status: 'error', message: USER_DOCUMENT_FAILED_MESSAGE }
-    } else if (user.kycDocumentStatus === 'pending') {
-      return { status: 'error', message: USER_PENDING_VERIFICATION_MESSAGE }
     }
     return { status: 'error', message: USER_BLOCKED_MESSAGE }
   } else if (user.sweepstakesVerified) {

@@ -51,7 +51,9 @@ export const RegisterUserForm = (props: {
   const router = useRouter()
   const { redirect } = router.query
   const [page, setPage] = useState(
-    user.idVerified || user.kycDocumentStatus === 'pending'
+    user.idVerified ||
+      user.kycDocumentStatus === 'pending' ||
+      user.kycDocumentStatus === 'fail'
       ? 'final'
       : (redirect === 'checkout' || redirect === 'redeem') &&
         !user.verifiedPhone
@@ -472,7 +474,11 @@ export const RegisterUserForm = (props: {
       </>
     )
   }
-  if (!user.idVerified || user.kycDocumentStatus === 'fail') {
+  if (
+    !user.idVerified &&
+    (user.kycDocumentStatus === 'fail' ||
+      user.kycDocumentStatus === 'await-documents')
+  ) {
     return (
       <>
         <DocumentUploadIcon
