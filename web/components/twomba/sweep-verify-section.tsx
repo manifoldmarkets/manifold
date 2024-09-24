@@ -102,7 +102,9 @@ export function InBeta(props: {
       )}
     >
       <Tooltip
-        text={`${SWEEPIES_NAME} is currently in beta, which means we’re still fine-tuning it. You may encounter some bugs or imperfections as we continue to improve it.`}
+        text={`${capitalize(
+          SWEEPIES_NAME
+        )} is currently in beta, which means we’re still fine-tuning it. You may encounter some bugs or imperfections as we continue to improve it.`}
         placement={tooltipPlacement}
       >
         BETA
