@@ -4,7 +4,7 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Button } from '../buttons/button'
 import { CoinNumber } from '../widgets/coin-number'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
-import { useKYCGiftAmount } from '../twomba/toggle-verify-callout'
+import { useKYCGiftAmount } from '../twomba/sweep-verify-section'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { blockFromSweepstakes } from 'common/gidx/user'
 

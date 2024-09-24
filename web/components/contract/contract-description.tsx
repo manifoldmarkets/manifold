@@ -11,6 +11,7 @@ import { JSONContent } from '@tiptap/core'
 import { updateMarket } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import { LogoIcon } from '../icons/logo-icon'
+import { SweepVerifySection } from '../twomba/sweep-verify-section'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -25,6 +26,9 @@ export function ContractDescription(props: {
   return (
     <>
       <div className="mt-6">
+        {contract.token === 'CASH' && !user?.sweepstakesVerified && (
+          <SweepVerifySection />
+        )}
         {isCreator || isAdmin ? (
           <EditableDescription contract={contract} description={description} />
         ) : (
@@ -35,7 +39,7 @@ export function ContractDescription(props: {
           />
         )}
         {contract.token === 'CASH' && (
-          <div className="text-ink-600 flex items-center justify-center space-x-2 rounded-md bg-gray-50 px-4 py-2 italic">
+          <div className="text-ink-600 bg-canvas-50 flex items-center justify-center space-x-2 rounded-md px-4 py-2 italic">
             <LogoIcon className="h-5 w-5 text-indigo-600" />
             <span>This question is managed and resolved by Manifold.</span>
             <LogoIcon className="h-5 w-5 text-indigo-600" />

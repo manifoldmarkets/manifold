@@ -33,7 +33,6 @@ import { WatchMarketModal } from './watch-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
 import { isAdminId } from 'common/envs/constants'
 import { FaDollarSign } from 'react-icons/fa'
-import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
 import router from 'next/router'
 
 export function TwombaHeaderActions(props: {
@@ -256,10 +255,6 @@ export function TwombaHeaderActions(props: {
       {!!currentContract.siblingContractId && (
         <div className="relative">
           <TwombaToggle />
-          <ToggleVerifyCallout
-            className="absolute -right-[60px] top-full z-10 mt-3 hidden w-80 sm:flex"
-            caratClassName="right-[84px]"
-          />
         </div>
       )}
       {!playContract.coverImageUrl && isCreator && (

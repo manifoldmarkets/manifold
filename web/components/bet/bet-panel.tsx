@@ -63,7 +63,7 @@ import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
 import { CashoutLimitWarning } from './cashout-limit-warning'
-import { InBeta } from '../twomba/toggle-verify-callout'
+import { InBeta } from '../twomba/sweep-verify-section'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { getVerificationStatus } from 'common/gidx/user'
 
