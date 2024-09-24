@@ -315,7 +315,7 @@ export function TwombaContractPageContent(props: ContractParams) {
               />
             </Row>
           )}
-          
+
           <Col className={clsx('mb-4 p-4 pt-0 md:pb-8 lg:px-8')}>
             <Col className="w-full gap-3 lg:gap-4">
               <Col>

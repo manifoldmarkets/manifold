@@ -57,8 +57,12 @@ export function SweepsExplainer() {
 
 export function SweepsInfographic() {
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <img src="/sweeps-infographic.svg" alt="Sweepstakes Infographic" className="w-full h-auto" />
+    <div className="mx-auto w-full max-w-2xl">
+      <img
+        src="/sweeps-infographic.svg"
+        alt="Sweepstakes Infographic"
+        className="h-auto w-full"
+      />
     </div>
   )
 }

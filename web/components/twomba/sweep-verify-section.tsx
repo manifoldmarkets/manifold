@@ -20,9 +20,7 @@ import {
 import { SweepsInfographic } from '../sweeps-explainer'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
-export function SweepVerifySection(props: {
-  className?: string
-}) {
+export function SweepVerifySection(props: { className?: string }) {
   const { className } = props
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -48,7 +46,7 @@ export function SweepVerifySection(props: {
           color="gradient-pink"
           size="xl"
           onClick={firebaseLogin}
-          className="w-full mt-4"
+          className="mt-4 w-full"
         >
           Get started
         </Button>
@@ -68,15 +66,17 @@ export function SweepVerifySection(props: {
   if (!PROMPT_USER_VERIFICATION_MESSAGES.includes(message)) return null
 
   return (
-    <div className={`border-ink-300 bg-canvas-50 text-ink-800 relative rounded-lg border px-5 py-4 text-sm shadow-lg ${className}`}>
+    <div
+      className={`border-ink-300 bg-canvas-50 text-ink-800 relative rounded-lg border px-5 py-4 text-sm shadow-lg ${className}`}
+    >
       <SweepsInfographic />
-      
-      <div className="text-ink-700 text-sm mt-4">
+
+      <div className="text-ink-700 mt-4 text-sm">
         Verify your identity and start earning <b>real cash prizes</b> today.
       </div>
 
       <VerifyButton className="mt-2" />
-      
+
       <Row className="mt-1 w-full">
         <button
           onClick={() => setDismissed(true)}
