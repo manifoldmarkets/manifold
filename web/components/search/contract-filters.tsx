@@ -52,6 +52,7 @@ import {
 import { LiteGroup } from 'common/group'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { useSweepstakes } from '../sweestakes-context'
 
 export function ContractFilters(props: {
   className?: string
@@ -71,6 +72,8 @@ export function ContractFilters(props: {
     tf: topicFilter,
     sw: isSweepiesString,
   } = params
+  const isSweeps = isSweepiesString === '1'
+  const { setIsPlay } = useSweepstakes()
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -107,8 +110,9 @@ export function ContractFilters(props: {
   }
 
   const toggleSweepies = () => {
+    setIsPlay(isSweeps)
     updateParams({
-      sw: isSweepiesString == '1' ? '0' : '1',
+      sw: isSweeps ? '0' : '1',
     })
   }
 
@@ -154,14 +158,14 @@ export function ContractFilters(props: {
         </IconButton>
         {TWOMBA_ENABLED && (
           <FilterPill
-            selected={isSweepiesString === '1'}
+            selected={isSweeps}
             onSelect={toggleSweepies}
             type="sweepies"
           >
             <Row
               className={clsx(
                 'items-center gap-1',
-                isSweepiesString != '1' ? 'opacity-50' : 'opacity-100'
+                isSweeps ? 'opacity-100' : 'opacity-50'
               )}
             >
               <SweepiesCoin />
