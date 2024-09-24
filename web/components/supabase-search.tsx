@@ -238,7 +238,7 @@ export function SupabaseSearch(props: {
   } = props
 
   const isMobile = useIsMobile()
-  const { isPlay, setIsPlay } = useSweepstakes()
+  const { isPlay } = useSweepstakes()
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
