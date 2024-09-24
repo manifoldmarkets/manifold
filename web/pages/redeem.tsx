@@ -14,7 +14,10 @@ import {
   buttonClass,
 } from 'web/components/buttons/button'
 import { CashToManaForm } from 'web/components/cashout/cash-to-mana'
-import { SelectCashoutOptions } from 'web/components/cashout/select-cashout-options'
+import {
+  CashoutOptionsExplainer,
+  SelectCashoutOptions,
+} from 'web/components/cashout/select-cashout-options'
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { UploadDocuments } from 'web/components/gidx/upload-document'
 import { AmountInput } from 'web/components/widgets/amount-input'
@@ -63,45 +66,7 @@ type MoneyCashoutPagesType =
 
 type ManaCashoutPagesType = 'custom-mana'
 
-function SweepiesStats(props: {
-  redeemableCash: number
-  cashBalance: number
-  className?: string
-}) {
-  const { redeemableCash, cashBalance, className } = props
-  return (
-    <Row className="w-full max-w-lg gap-4 text-2xl md:text-3xl">
-      <Col className={clsx('w-1/2 items-start', className)}>
-        <div className="text-ink-500 whitespace-nowrap text-sm">
-          Redeemable
-          <span>
-            <InfoTooltip
-              text={`Redeemable ${SWEEPIES_NAME} are obtained when questions you've ${TRADED_TERM} ${SWEEPIES_NAME} on resolve`}
-              size={'sm'}
-              className=" ml-0.5"
-            />
-          </span>
-        </div>
-        <CoinNumber
-          amount={redeemableCash}
-          className={'font-bold'}
-          coinType={'sweepies'}
-        />
-      </Col>
-      <div className="bg-ink-300 mb-4 mt-1 w-[1px]" />
-      <Col className={clsx('w-1/2 items-start', className)}>
-        <div className="text-ink-500 whitespace-nowrap text-sm">Total</div>
-        <CoinNumber
-          amount={cashBalance}
-          className={'text-ink-500 font-bold'}
-          coinType={'sweepies'}
-        />
-      </Col>
-    </Row>
-  )
-}
-
-const CashoutPage = () => {
+export default function CashoutPage() {
   const user = useUser()
   const privateUser = usePrivateUser()
   const router = useRouter()
@@ -234,7 +199,25 @@ const CashoutPage = () => {
   })
 
   if (!user || !privateUser) {
-    return
+    return (
+      <Page trackPageView="signed-out redemptions page">
+        <Col className="bg-canvas-0 mx-auto max-w-lg gap-4 px-6 py-4">
+          <Row className="w-full justify-end">
+            <UsOnlyDisclaimer />
+          </Row>
+          <h1 className="text-ink-1000 flex w-full justify-center text-3xl">
+            Redeem {SWEEPIES_NAME}
+          </h1>
+          {/* TODO: some explanatory label here would help prevent layout shift as your user loads */}
+
+          {/* <div className="text-ink-700">
+            Prizes you can win by playing in our sweepstakes questions! Must be
+            a US Resident. 18+ only.
+          </div> */}
+          <CashoutOptionsExplainer />
+        </Col>
+      </Page>
+    )
   }
 
   const { status, message } = getVerificationStatus(user, privateUser)
@@ -366,9 +349,9 @@ const CashoutPage = () => {
         <Row className="w-full justify-end">
           <UsOnlyDisclaimer />
         </Row>
-        <Row className="text-ink-1000 w-full justify-center text-3xl">
+        <h1 className="text-ink-1000 flex w-full justify-center text-3xl">
           Redeem {SWEEPIES_NAME}
-        </Row>
+        </h1>
         <SweepiesStats
           redeemableCash={redeemableCash}
           cashBalance={user.cashBalance}
@@ -566,4 +549,40 @@ const CashoutPage = () => {
   )
 }
 
-export default CashoutPage
+function SweepiesStats(props: {
+  redeemableCash: number
+  cashBalance: number
+  className?: string
+}) {
+  const { redeemableCash, cashBalance, className } = props
+  return (
+    <Row className="w-full max-w-lg gap-4 text-2xl md:text-3xl">
+      <Col className={clsx('w-1/2 items-start', className)}>
+        <div className="text-ink-500 whitespace-nowrap text-sm">
+          Redeemable
+          <span>
+            <InfoTooltip
+              text={`Only ${SWEEPIES_NAME} that you won from sweepstakes questions resolving`}
+              size={'sm'}
+              className=" ml-0.5"
+            />
+          </span>
+        </div>
+        <CoinNumber
+          amount={redeemableCash}
+          className={'font-bold'}
+          coinType={'sweepies'}
+        />
+      </Col>
+      <div className="bg-ink-300 mb-4 mt-1 w-[1px]" />
+      <Col className={clsx('w-1/2 items-start', className)}>
+        <div className="text-ink-500 whitespace-nowrap text-sm">Total</div>
+        <CoinNumber
+          amount={cashBalance}
+          className={'text-ink-500 font-bold'}
+          coinType={'sweepies'}
+        />
+      </Col>
+    </Row>
+  )
+}
