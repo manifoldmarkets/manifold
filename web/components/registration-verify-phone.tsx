@@ -73,7 +73,11 @@ export function RegistrationVerifyPhone(props: {
             value={phoneNumber}
             onChange={(phone) => setPhoneNumber(phone)}
             placeholder={'Phone Number'}
-            className={'mx-auto'}
+            className={'mx-auto mb-1'}
+            inputClassName="!bg-canvas-0 !border-ink-300 !text-ink-1000 !text-sm !px-4 !py-6"
+            countrySelectorStyleProps={{
+              buttonClassName: '!bg-transparent !border-ink-300 !px-2 !py-6',
+            }}
           />
           <BottomRow>
             <Button color={'gray-white'} onClick={cancel}>
@@ -94,7 +98,7 @@ export function RegistrationVerifyPhone(props: {
           <PhoneIcon height={40} className="fill-ink-700 mx-auto" />
           <span className={'mx-auto text-2xl'}>Enter verification code</span>
           <Input
-            className={'mx-auto w-36 text-base'}
+            className={'mx-auto mb-1.5 w-36 text-base'}
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
             placeholder="123456"

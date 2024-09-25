@@ -182,6 +182,7 @@ export const RegisterUserForm = (props: {
     // Identity verification succeeded
     setPage('final')
   }
+  const [canContinue, setCanContinue] = useState(false)
 
   if (page === 'intro') {
     return (
@@ -191,11 +192,27 @@ export const RegisterUserForm = (props: {
         <span className="text-ink-700">
           To use sweepstakes coins, you must verify your identity.
         </span>
+        <span className="text-ink-700">
+          <input
+            type="checkbox"
+            checked={canContinue}
+            onChange={(e) => setCanContinue(e.target.checked)}
+            className="bg-canvas-0 mb-1 mr-2"
+          />
+          <span className="">
+            I am a resident of the United States (excluding DE, ID, MI, and WA)
+            and over 18 years old.
+          </span>
+        </span>
         <BottomRow>
           <Button color={'gray-white'} onClick={router.back}>
             Back
           </Button>
-          <Button color={'indigo'} onClick={() => setPage('phone')}>
+          <Button
+            color={'indigo'}
+            onClick={() => setPage('phone')}
+            disabled={!canContinue}
+          >
             Start verification
           </Button>
         </BottomRow>
