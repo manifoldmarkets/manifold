@@ -1,6 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getUserAndPrivateUserOrThrow, LOCAL_DEV, log } from 'shared/utils'
-import { updateUser } from 'shared/supabase/users'
+import { getUser, LOCAL_DEV, log } from 'shared/utils'
+import { getUserIdFromReferralCode, updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   getGIDXStandardParams,
@@ -34,6 +34,7 @@ export const register: APIHandler<'register-gidx'> = async (
   if (!EmailAddress) {
     throw new APIError(400, 'User must have an email address')
   }
+  const pg = createSupabaseDirectClient()
   const body = {
     EmailAddress,
     MobilePhoneNumber: ENABLE_FAKE_CUSTOMER
