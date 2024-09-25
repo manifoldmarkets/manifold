@@ -9,6 +9,7 @@ import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { PhoneIcon } from 'web/public/custom-components/phoneIcon'
 import { BottomRow } from './gidx/register-component-helpers'
+import { Row } from './layout/row'
 
 export function RegistrationVerifyPhone(props: {
   cancel: () => void
@@ -68,6 +69,9 @@ export function RegistrationVerifyPhone(props: {
         <>
           <PhoneIcon height={40} className="fill-ink-700 mx-auto" />
           <span className={'mx-auto text-2xl'}>Verify your phone number</span>
+          <Row className="text-ink-700 pl-5 text-sm">
+            We won't use your phone number for anything other than verification.
+          </Row>
           <PhoneInput
             defaultCountry={'us'}
             value={phoneNumber}
