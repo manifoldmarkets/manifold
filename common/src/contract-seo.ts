@@ -17,6 +17,7 @@ export const getContractOGProps = (
     creatorName,
     outcomeType,
     creatorAvatarUrl,
+    id,
   } = contract
 
   const topAnswer =
@@ -58,6 +59,7 @@ export const getContractOGProps = (
     resolution,
     topAnswer: topAnswer?.text,
     bountyLeft: bountyLeft,
+    contractId: id,
   }
 }
 
@@ -73,6 +75,7 @@ export type OgCardProps = {
   topAnswer?: string
   bountyLeft?: string // number
   points?: string // base64ified points
+  contractId?: string
 }
 
 export function getSeoDescription(contract: Contract) {
