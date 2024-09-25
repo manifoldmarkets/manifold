@@ -48,6 +48,7 @@ export type User = {
   homeSections?: string[]
 
   referredByUserId?: string
+  usedReferralCode?: boolean
   referredByContractId?: string
   referredByGroupId?: string
   shouldShowWelcome?: boolean

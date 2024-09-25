@@ -26,6 +26,7 @@ export const verificationParams = z.object({
   IdentificationTypeCode: z.number().gte(1).lte(4).optional(),
   IdentificationNumber: z.string().optional(),
   EmailAddress: z.string().optional(),
+  ReferralCode: z.string().optional(),
   // only used when ENABLE_FAKE_CUSTOMER is true
   DeviceIpAddress: z.string().optional(),
   MobilePhoneNumber: z.string().optional(),

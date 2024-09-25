@@ -118,6 +118,7 @@ export const RegisterUserForm = (props: {
     PostalCode?: string
     DeviceGPS?: GPSData
     EmailAddress?: string
+    ReferralCode?: string
   }>(
     ENABLE_FAKE_CUSTOMER
       ? {
@@ -406,6 +407,18 @@ export const RegisterUserForm = (props: {
             />
           </Col>
         </Row>
+        <Col className={'w-1/2 gap-0.5'}>
+          <InputTitle>Referral Code</InputTitle>
+          <Input
+            placeholder={'R2I3E (optional)'}
+            className={'w-full '}
+            value={userInfo.ReferralCode}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, ReferralCode: e.target.value })
+            }
+          />
+        </Col>
         {error && (
           <Col className={'text-error'}>
             {error}

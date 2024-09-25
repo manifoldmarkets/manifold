@@ -165,6 +165,7 @@ const getDesktopNav = (
       //   href: '/tv',
       //   icon: PiTelevisionSimpleBold,
       // },
+      { name: 'Refer a friend', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
       {
         name: 'Messages',
         href: '/messages',

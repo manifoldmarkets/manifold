@@ -4,8 +4,6 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { getShareUrl } from 'common/util/share'
 import toast from 'react-hot-toast'
-import { useUser } from 'web/hooks/use-user'
-import { getIsNative } from 'web/lib/native/is-native'
 import { trackShareEvent } from 'web/lib/service/analytics'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { Button } from '../buttons/button'
@@ -15,6 +13,7 @@ import { GradientContainer } from '../widgets/gradient-container'
 import { BoostButton } from './boost-button'
 import { AddBountyButton, CancelBountyButton } from './bountied-question'
 import { UpgradeTierButton } from './upgrade-tier-button'
+import { useNativeInfo } from 'web/components/native-message-provider'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -32,10 +31,7 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
         )}
         <ShareLinkButton contract={contract} />
         <TweetButton
-          tweetText={
-            'I created a question. ' +
-            getShareUrl(contract, contract.creatorUsername)
-          }
+          tweetText={'I created a question. ' + getShareUrl(contract)}
           className="hidden sm:flex"
         />
         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
@@ -48,30 +44,25 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
 
 export function NonCreatorSharePanel(props: { contract: Contract }) {
   const { contract } = props
-  const user = useUser()
 
   return (
     <Row className="my-4 flex-wrap gap-4">
       {contract.outcomeType == 'BOUNTIED_QUESTION' && (
         <AddBountyButton contract={contract} />
       )}
-      <ShareLinkButton contract={contract} username={user?.username} />
+      <ShareLinkButton contract={contract} />
       <TweetButton
-        tweetText={getShareUrl(contract, user?.username)}
+        tweetText={getShareUrl(contract)}
         className="hidden sm:flex"
       />
     </Row>
   )
 }
 
-const ShareLinkButton = (props: {
-  contract: Contract
-  username?: string
-  className?: string
-}) => {
-  const { contract, username, className } = props
-  const isNative = getIsNative()
-  const url = getShareUrl(contract, username ?? contract.creatorUsername)
+const ShareLinkButton = (props: { contract: Contract; className?: string }) => {
+  const { contract, className } = props
+  const { isNative } = useNativeInfo()
+  const url = getShareUrl(contract)
 
   const onClick = () => {
     if (!url) return

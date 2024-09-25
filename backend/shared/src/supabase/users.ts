@@ -8,8 +8,8 @@ import { APIError } from 'common/api/utils'
 import { PrivateUser, User } from 'common/user'
 import { FieldValFunction, updateData } from './utils'
 import {
-  broadcastUpdatedUser,
   broadcastUpdatedPrivateUser,
+  broadcastUpdatedUser,
 } from 'shared/websockets/helpers'
 import { removeUndefinedProps } from 'common/util/object'
 import { getBettingStreakResetTimeBeforeNow } from 'shared/utils'
@@ -246,4 +246,45 @@ export const bulkIncrementBalances = async (
       totalCashDeposits: row.total_cash_deposits,
     })
   }
+}
+
+export const getUserIdFromReferralCode = async (
+  pg: SupabaseDirectClient,
+  referralCode: string | undefined
+) => {
+  if (!referralCode) return undefined
+  const startOfId = referralCode.replace(/#/g, '0')
+  return await pg.oneOrNone(
+    `select id, coalesce((data->>'sweepstakesVerified')::boolean, false) as sweeps_verified from users
+           where id like $1 || '%' limit 1`,
+    [startOfId],
+    (r) =>
+      r
+        ? {
+            id: r.id as string,
+            sweepsVerified: r.sweeps_verified as boolean,
+          }
+        : null
+  )
+}
+export const getReferrerIdThatUsedReferralCode = async (
+  pg: SupabaseDirectClient,
+  referredByUserId: string | undefined
+) => {
+  if (!referredByUserId) return undefined
+  return await pg.oneOrNone(
+    `select id,
+       coalesce((data->>'sweepstakesVerified')::boolean, false) as sweeps_verified
+       from users where id = $1 
+       and coalesce((data->>'usedReferralCode')::boolean, false) = true
+      `,
+    [referredByUserId],
+    (row) =>
+      row
+        ? {
+            id: row.id as string,
+            sweeps_verified: row.sweeps_verified as boolean,
+          }
+        : null
+  )
 }

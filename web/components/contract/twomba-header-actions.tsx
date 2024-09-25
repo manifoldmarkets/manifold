@@ -264,7 +264,7 @@ export function TwombaHeaderActions(props: {
         />
       )}
       <CopyLinkOrShareButton
-        url={getShareUrl(currentContract, user?.username)}
+        url={getShareUrl(currentContract)}
         tooltip="Copy question share link"
         className="text-ink-500 hover:text-ink-600"
         size="xs"
