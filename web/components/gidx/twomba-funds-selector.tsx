@@ -25,7 +25,7 @@ export function TwombaFundsSelector(props: {
   const basePrices = usePrices()
   const user = useUser()
   const expirationStart = user
-    ? new Date(introductoryTimeWindow(user.createdTime))
+    ? new Date(introductoryTimeWindow(user))
     : new Date()
   const eligibleForNewUserOffer =
     user && Date.now() < expirationStart.valueOf() && !user.purchasedMana

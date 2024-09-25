@@ -82,6 +82,7 @@ export const register: APIHandler<'register-gidx'> = async (
   if (status !== 'error') {
     await updateUser(pg, auth.uid, {
       kycDocumentStatus: 'await-documents',
+      sweepstakesVerifiedTime: Date.now(),
     })
     await distributeKycBonus(pg, user.id)
   }

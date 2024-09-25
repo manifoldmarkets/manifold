@@ -74,6 +74,9 @@ export const getVerificationStatusInternal = async (
   // If they just got verified from their id document uploads, distribute the bonus
   if (status !== 'error' && !user.idVerified && idVerified) {
     await distributeKycBonus(pg, user.id)
+    await updateUser(pg, user.id, {
+      sweepstakesVerifiedTime: Date.now(),
+    })
   }
 
   const { documents, status: documentStatus } = await assessDocumentStatus(

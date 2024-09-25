@@ -76,6 +76,7 @@ export type User = {
   sweepstakesVerified?: boolean
   idVerified?: boolean
   sweepstakes5kLimit?: boolean
+  sweepstakesVerifiedTime?: number
 }
 
 export type PrivateUser = {
@@ -151,5 +152,5 @@ export const isUserLikelySpammer = (
 // This grandfathers in older users who have not yet verified their phone
 export const humanish = (user: User) => user.verifiedPhone !== false
 
-export const introductoryTimeWindow = (createdTime: number) =>
-  createdTime + 8 * HOUR_MS
+export const introductoryTimeWindow = (user: User) =>
+  (user.sweepstakesVerifiedTime ?? user.createdTime) + 8 * HOUR_MS
