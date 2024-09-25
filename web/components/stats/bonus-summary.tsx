@@ -97,7 +97,6 @@ export const BonusSummary = (props: {
                         .html(
                           renderToString(
                             <StackedChartTooltip
-                              categoryToColor={categoryToColor}
                               data={d.data as DateAndCategoriesToTotals}
                             />
                           )
@@ -126,13 +125,8 @@ export const BonusSummary = (props: {
         ref={tooltipRef}
         style={{
           position: 'absolute',
-          textAlign: 'left',
           width: 'auto',
           height: 'auto',
-          padding: '8px',
-          font: '12px sans-serif',
-          background: 'black',
-          borderRadius: '8px',
           pointerEvents: 'none',
           opacity: 0,
         }}
@@ -142,8 +136,9 @@ export const BonusSummary = (props: {
 }
 
 const getCategoryForTxn = (txn: rowFor<'txn_summary_stats'>) =>
+  (categoryToLabel as any)[txn.category] ||
   (txn.quest_type ? `${txn.quest_type}_` : '') +
-  txn.category.replace('_REWARD', '').replace('_BONUS', '')
+    txn.category.replace('_REWARD', '').replace('_BONUS', '')
 
 const orderAndGroupData = (data: rowFor<'txn_summary_stats'>[]) => {
   const groupedData = groupBy(data, (row) => row.start_time.split(' ')[0])
@@ -163,7 +158,7 @@ const orderAndGroupData = (data: rowFor<'txn_summary_stats'>[]) => {
 const StackedChartTooltip = (props: { data: DateAndCategoriesToTotals }) => {
   const { data } = props
   return (
-    <Col className={'max-w-xs gap-1 text-white'}>
+    <Col className="bg-canvas-0 border-ink-900 max-w-xs gap-1 rounded-lg border p-2 text-sm">
       {new Date(data.date).toLocaleString('en-us', {
         month: 'long',
         day: 'numeric',
@@ -181,9 +176,22 @@ const StackedChartTooltip = (props: { data: DateAndCategoriesToTotals }) => {
   )
 }
 
+const categoryToLabel = {
+  CASH_BONUS: 'MANA_PURCHASE_BONUS',
+}
+
 const categoryToColor = {
   BET_FEES: '#FF5733',
   MARKET_BOOST_REDEEM_FEE: '#FFC300',
+  CREATE_CONTRACT_ANTE: '#3498DB',
+  KYC: '#30E080',
+  SIGNUP: '#30E080',
+  REFERRAL: '#10A040',
+  MANIFOLD_TOP_UP: '#FF3060',
+  MANA_PURCHASE: '#925cf0',
+  MANA_PURCHASE_BONUS: '#925cf0',
+  MARKETS_CREATED_QUEST: '#3498DB',
+  PUSH_NOTIFICATION: '#FFC300',
 }
 
 // https://stackoverflow.com/a/3426956
