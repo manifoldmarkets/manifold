@@ -37,6 +37,7 @@ export const register: APIHandler<'register-gidx'> = async (
   const pg = createSupabaseDirectClient()
   const body = {
     EmailAddress,
+    CountryCode: 'US',
     MobilePhoneNumber: ENABLE_FAKE_CUSTOMER
       ? props.MobilePhoneNumber
       : parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ??
@@ -91,7 +92,6 @@ export const register: APIHandler<'register-gidx'> = async (
   track(auth.uid, 'register user gidx attempt', {
     status,
     message,
-    countryCode: body.CountryCode,
     idVerified,
   })
   return {

@@ -111,8 +111,6 @@ export const RegisterUserForm = (props: {
     FirstName?: string
     LastName?: string
     DateOfBirth?: string
-    CountryCode: string
-    ReferralCode?: string
     AddressLine1?: string
     AddressLine2?: string
     City?: string
@@ -130,7 +128,6 @@ export const RegisterUserForm = (props: {
           LastName: user.name.split(' ')[1],
           DateOfBirth: undefined,
           EmailAddress: privateUser.email,
-          CountryCode: 'US',
         },
     'gidx-registration-user-info'
   )
@@ -138,7 +135,6 @@ export const RegisterUserForm = (props: {
   useEffect(() => {
     track('register user gidx page change', {
       page,
-      countryCode: userInfo.CountryCode,
     })
   }, [page])
 
