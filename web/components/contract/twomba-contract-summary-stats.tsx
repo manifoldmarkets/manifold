@@ -48,7 +48,7 @@ export function TwombaContractSummaryStats(props: {
           {!isBlocked(privateUser, contract.creatorId) && (
             <LikeButton
               user={user}
-              size={'xs'}
+              size={'2xs'}
               contentId={contractId}
               contentType="contract"
               contentCreatorId={creatorId}
