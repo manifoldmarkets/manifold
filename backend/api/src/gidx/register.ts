@@ -1,6 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { getUser, LOCAL_DEV, log } from 'shared/utils'
-import { getUserIdFromReferralCode, updateUser } from 'shared/supabase/users'
+import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   getGIDXStandardParams,
