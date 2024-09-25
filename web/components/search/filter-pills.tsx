@@ -129,7 +129,7 @@ export function TierDropdownPill(props: {
         {
           name: 'Basic',
           content: (
-            <Row className="items-center text-sm text-ink-900">
+            <Row className="text-ink-900 items-center text-sm">
               <BasicTier />
               Basic
             </Row>

@@ -38,7 +38,10 @@ export function BasicTier(props: { className?: string }) {
       }}
     >
       <LogoIcon
-        className={clsx('text-ink-900 stroke-[1.5px] mx-auto my-auto', className)}
+        className={clsx(
+          'text-ink-900 mx-auto my-auto stroke-[1.5px]',
+          className
+        )}
         style={{
           width: '1em',
           height: '1em',
