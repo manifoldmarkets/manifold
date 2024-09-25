@@ -8,18 +8,11 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { api, APIError } from 'web/lib/api/api'
 import { AlertBox } from 'web/components/widgets/alert-box'
-import { PriceTile, use24hrUsdPurchases } from 'web/components/add-funds-modal'
+import { use24hrUsdPurchases } from 'web/components/add-funds-modal'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import { LogoIcon } from 'web/components/icons/logo-icon'
-import { FaStore } from 'react-icons/fa6'
-import clsx from 'clsx'
-import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
-import {
-  IOS_PRICES,
-  WebManaAmounts,
-  MANA_WEB_PRICES,
-  PaymentAmount,
-} from 'common/economy'
+import { TRADE_TERM } from 'common/envs/constants'
+import { MANA_WEB_PRICES, PaymentAmount, WebManaAmounts } from 'common/economy'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -28,20 +21,17 @@ import { LocationPanel } from 'web/components/gidx/location-panel'
 import { formatMoneyUSD } from 'common/util/format'
 import { capitalize } from 'lodash'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
-import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
-import Link from 'next/link'
 import { getVerificationStatus } from 'common/gidx/user'
 import { useNativeInfo } from 'web/components/native-message-provider'
-import { Countdown } from 'web/components/widgets/countdown'
-import { introductoryTimeWindow } from 'common/user'
+import { usePrices } from 'web/hooks/use-prices'
+import { TwombaFundsSelector } from 'web/components/gidx/twomba-funds-selector'
 
 const CheckoutPage = () => {
   const user = useUser()
   const privateUser = usePrivateUser()
   const [locationError, setLocationError] = useState<string>()
-  const { isNative, platform } = useNativeInfo()
-  const isIOS = platform === 'ios' && isNative
-  const prices = isIOS ? IOS_PRICES : MANA_WEB_PRICES
+  const { isIOS } = useNativeInfo()
+  const prices = usePrices()
   const [page, setPage] = useState<
     'checkout' | 'payment' | 'get-session' | 'location'
   >('checkout')
@@ -49,10 +39,10 @@ const CheckoutPage = () => {
   const [amountSelected, setAmountSelected] = useState<WebManaAmounts>()
   const [productSelected, setProductSelected] = useState<PaymentAmount>()
   const [loading, setLoading] = useState(false)
-  const [priceLoading, setPriceLoading] = useState<WebManaAmounts | null>(null)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const [showConfetti, setShowConfetti] = useState(false)
+  const [priceLoading, setPriceLoading] = useState<WebManaAmounts | null>(null)
   const { initiatePurchaseInDollars, loadingMessage } = useIosPurchases(
     setError,
     setPriceLoading,
@@ -159,7 +149,6 @@ const CheckoutPage = () => {
       (isIOS ? true : !amountSelected && !manaAmountFromQuery) ? (
         <Col>
           <TwombaFundsSelector
-            prices={prices}
             onSelect={onSelectAmount}
             loading={priceLoading}
           />
@@ -203,93 +192,6 @@ const CheckoutPage = () => {
         <Row className="text-ink-500 mt-2 text-sm">{loadingMessage}</Row>
       )}
     </Page>
-  )
-}
-
-export function TwombaFundsSelector(props: {
-  prices: PaymentAmount[]
-  onSelect: (amount: WebManaAmounts) => void
-  loading: WebManaAmounts | null
-}) {
-  const { onSelect, loading } = props
-  const user = useUser()
-  const expirationStart = user
-    ? new Date(introductoryTimeWindow(user.createdTime))
-    : new Date()
-  const eligibleForNewUserOffer =
-    user && user.createdTime < expirationStart.valueOf() && !user.purchasedMana
-  const newUserPrices = props.prices.filter((p) => p.newUsersOnly)
-  const prices = props.prices.filter((p) => !p.newUsersOnly)
-
-  if (!TWOMBA_ENABLED) {
-    return <div>Sweepstaked are not enabled, sorry!</div>
-  }
-
-  return (
-    <Col className="mx-auto max-w-xl">
-      <Row className="mb-2 items-center gap-1 text-2xl font-semibold">
-        <FaStore className="h-6 w-6" />
-        Mana Shop
-      </Row>
-      <div className={clsx('text-ink-700 mb-4 text-sm')}>
-        <div>
-          <span>
-            Buy mana to trade in your favorite questions. Always free to play,
-            no purchase necessary.
-          </span>
-          <CashoutLimitWarning user={user} className="mt-2" />
-        </div>
-      </div>
-      {eligibleForNewUserOffer && (
-        <>
-          <span className="text-2xl text-blue-500">
-            Introductory discount expires in{' '}
-            <Countdown
-              includeSeconds
-              endDate={expirationStart}
-              className="ml-1 "
-            />
-          </span>
-          <Col className="mb-2 gap-2 py-4">
-            <div className="grid grid-cols-2 gap-4 gap-y-6">
-              {newUserPrices.map((amounts, index) => (
-                <PriceTile
-                  key={`price-tile-${amounts.mana}`}
-                  amounts={amounts}
-                  index={index}
-                  loading={loading}
-                  disabled={false}
-                  onClick={() => onSelect(amounts.mana)}
-                />
-              ))}
-            </div>
-          </Col>
-        </>
-      )}
-      <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {prices.map((amounts, index) => (
-          <PriceTile
-            key={`price-tile-${amounts.mana}`}
-            amounts={amounts}
-            index={index}
-            loading={loading}
-            disabled={false}
-            onClick={() => onSelect(amounts.mana)}
-          />
-        ))}
-      </div>
-      <div className="text-ink-500 mt-4 text-sm">
-        Please see our{' '}
-        <Link href="/terms" target="_blank" className="underline">
-          Terms & Conditions
-        </Link>{' '}
-        and{' '}
-        <Link href="/sweepstakes-rules" target="_blank" className="underline">
-          Sweepstakes Rules
-        </Link>
-        . All sales are final. No refunds.
-      </div>
-    </Col>
   )
 }
 

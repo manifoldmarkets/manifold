@@ -1,11 +1,6 @@
 'use client'
 import clsx from 'clsx'
-import {
-  IOS_PRICES,
-  MANA_WEB_PRICES,
-  WebManaAmounts,
-  PaymentAmount,
-} from 'common/economy'
+import { WebManaAmounts, PaymentAmount } from 'common/economy'
 import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
 
 import { Txn } from 'common/txn'
@@ -27,8 +22,9 @@ import { FaStore } from 'react-icons/fa6'
 import router from 'next/router'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 import { useNativeInfo } from './native-message-provider'
-import { TwombaFundsSelector } from 'web/pages/checkout'
 import { CoinNumber } from './widgets/coin-number'
+import { usePrices } from 'web/hooks/use-prices'
+import { TwombaFundsSelector } from 'web/components/gidx/twomba-funds-selector'
 
 const BUY_MANA_GRAPHICS = [
   '/buy-mana-graphics/10k.png',
@@ -79,7 +75,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const { onClose } = props
   const user = useUser()
   const { isIOS } = useNativeInfo()
-  const prices = isIOS ? IOS_PRICES : MANA_WEB_PRICES
+  const prices = usePrices()
   const [loading, setLoading] = useState<WebManaAmounts | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { initiatePurchaseInDollars, loadingMessage } = useIosPurchases(
@@ -97,7 +93,6 @@ export function BuyManaTab(props: { onClose: () => void }) {
   if (TWOMBA_ENABLED) {
     return (
       <TwombaFundsSelector
-        prices={prices}
         onSelect={(amount) => {
           setLoading(amount)
           if (isIOS) {

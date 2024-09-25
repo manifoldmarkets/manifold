@@ -52,7 +52,7 @@ export const completeCheckoutSession: APIHandler<
   )
 
   if (paymentAmount.newUsersOnly) {
-    if (user.createdTime > introductoryTimeWindow(user.createdTime))
+    if (Date.now() > introductoryTimeWindow(user.createdTime))
       throw new APIError(403, 'New user purchase discount no longer offered.')
     if (user.purchasedMana)
       throw new APIError(403, 'New user purchase discount only available once.')
