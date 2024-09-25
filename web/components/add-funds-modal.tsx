@@ -183,7 +183,7 @@ export function PriceTile(props: {
           ? 'pointer-events-none cursor-not-allowed opacity-50'
           : 'opacity-90 ring-2 ring-blue-600 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
         isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait',
-        newUsersOnly && 'border-4 border-blue-600 '
+        newUsersOnly && 'border-4 border-purple-500 '
       )}
       type={isSubmitButton ? 'submit' : 'button'}
       onClick={onClick}
@@ -193,7 +193,7 @@ export function PriceTile(props: {
         originalPriceInDollars !== priceInDollars && (
           <div
             className="absolute right-0 top-0
-        whitespace-nowrap  bg-blue-600 px-2
+        whitespace-nowrap  bg-purple-500 px-2
          py-0.5 text-white transition-colors
            "
           >

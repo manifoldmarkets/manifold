@@ -55,14 +55,17 @@ export function TwombaFundsSelector(props: {
       </div>
       {eligibleForNewUserOffer && (
         <>
-          <span className="text-2xl text-blue-500">
-            Introductory discount expires in{' '}
-            <Countdown
-              includeSeconds
-              endDate={expirationStart}
-              className="ml-1 "
-            />
-          </span>
+          <Row className="items-baseline justify-between text-3xl text-purple-500">
+            Welcome Deal
+            <span className="text-lg text-purple-500">
+              expires in{' '}
+              <Countdown
+                includeSeconds
+                endDate={expirationStart}
+                className="ml-1 "
+              />
+            </span>
+          </Row>
           <Col className="mb-2 gap-2 py-4">
             <div className="grid grid-cols-2 gap-4 gap-y-6">
               {newUserPrices.map((amounts, index) => (
