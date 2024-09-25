@@ -409,7 +409,6 @@ export const RegisterUserForm = (props: {
               }
             />
           </Col>
-        </div>
         </Row>
         {error && (
           <Col className={'text-error'}>
