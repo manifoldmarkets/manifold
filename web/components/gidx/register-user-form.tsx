@@ -41,6 +41,7 @@ import {
   identityBlocked,
   locationBlocked,
 } from 'common/gidx/user'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export const RegisterUserForm = (props: {
   user: User
@@ -86,6 +87,24 @@ export const RegisterUserForm = (props: {
     0,
     'gidx-registration-identity-errors'
   )
+
+  const userSuccesfullyVerified =
+    user.idVerified &&
+    !documentPending(user, privateUser) &&
+    !identityBlocked(user, privateUser) &&
+    !ageBlocked(user, privateUser) &&
+    !locationBlocked(user, privateUser) &&
+    !fraudSession(user, privateUser) &&
+    page === 'final'
+  const TIME_TO_REDIRECT = 4000
+
+  useEffect(() => {
+    if (userSuccesfullyVerified) {
+      setTimeout(() => {
+        router.push('/checkout')
+      }, TIME_TO_REDIRECT)
+    }
+  }, [userSuccesfullyVerified, router])
 
   const [userInfo, setUserInfo] = usePersistentInMemoryState<{
     FirstName?: string
@@ -514,18 +533,9 @@ export const RegisterUserForm = (props: {
         />{' '}
         to get started.
       </span>
-      <div className="mx-auto">
-        {/*// TODO:  auto-redirect rather than make them click this button*/}
-        {redirect === 'checkout' ? (
-          <Link className={buttonClass('md', 'indigo')} href={'/checkout'}>
-            Get mana
-          </Link>
-        ) : (
-          <Link className={buttonClass('md', 'indigo')} href={'/home'}>
-            Done
-          </Link>
-        )}
-      </div>
+      <Row className="text-ink-700 mx-auto items-center gap-2">
+        <LoadingIndicator /> Exiting through the gift shop...
+      </Row>
     </>
   )
 }
