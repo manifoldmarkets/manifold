@@ -3,6 +3,7 @@ import { APIError } from 'common/api/utils'
 import {
   FRAUD_THRESHOLD,
   GIDXCustomerProfile,
+  ID_ERROR_MSG,
   IDENTITY_THRESHOLD,
 } from 'common/gidx/gidx'
 import { getPrivateUserSupabase, getUser, isProd, log } from 'shared/utils'
@@ -238,8 +239,7 @@ export const verifyReasonCodes = async (
     }
     return {
       status: 'error',
-      message:
-        'Confidence in identity too low. Double check your information or upload documents to verify your identity.',
+      message: ID_ERROR_MSG,
       idVerified,
     }
   }
@@ -249,7 +249,7 @@ export const verifyReasonCodes = async (
     FraudConfidenceScore < FRAUD_THRESHOLD
   ) {
     log(
-      'Registration failed, resulted in low fraud confidence score:',
+      'Registration activity suspicious, resulted in low fraud confidence score:',
       FraudConfidenceScore
     )
     if (privateUser.sessionFraudScore !== FraudConfidenceScore) {
