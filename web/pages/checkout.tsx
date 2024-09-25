@@ -7,8 +7,6 @@ import { Button } from 'web/components/buttons/button'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { api, APIError } from 'web/lib/api/api'
-import { AlertBox } from 'web/components/widgets/alert-box'
-import { use24hrUsdPurchases } from 'web/components/add-funds-modal'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import { LogoIcon } from 'web/components/icons/logo-icon'
 import { TRADE_TERM } from 'common/envs/constants'
@@ -89,8 +87,6 @@ const CheckoutPage = () => {
     }
   }
 
-  const totalPurchased = use24hrUsdPurchases(user?.id || '')
-  const pastLimit = totalPurchased >= 2500
   const getCheckoutSession = async (DeviceGPS: GPSData) => {
     if (!amountSelected) return
     setError(null)
@@ -152,13 +148,6 @@ const CheckoutPage = () => {
             onSelect={onSelectAmount}
             loading={priceLoading}
           />
-
-          {pastLimit && (
-            <AlertBox title="Purchase limit" className="my-4">
-              You have reached your daily purchase limit. Please try again
-              tomorrow.
-            </AlertBox>
-          )}
 
           <Row className="text-error mt-2 text-sm">{locationError}</Row>
         </Col>

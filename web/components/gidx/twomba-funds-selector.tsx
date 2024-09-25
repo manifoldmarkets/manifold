@@ -2,15 +2,20 @@ import { WebManaAmounts } from 'common/economy'
 import { usePrices } from 'web/hooks/use-prices'
 import { useUser } from 'web/hooks/use-user'
 import { introductoryTimeWindow } from 'common/user'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { DOLLAR_PURCHASE_LIMIT, TWOMBA_ENABLED } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { FaStore } from 'react-icons/fa6'
 import clsx from 'clsx'
 import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
 import { Countdown } from 'web/components/widgets/countdown'
-import { PriceTile } from 'web/components/add-funds-modal'
+import {
+  PriceTile,
+  use24hrUsdPurchasesInDollars,
+} from 'web/components/add-funds-modal'
 import Link from 'next/link'
+import { AlertBox } from '../widgets/alert-box'
+import { formatMoneyUSD } from 'common/util/format'
 
 export function TwombaFundsSelector(props: {
   onSelect: (amount: WebManaAmounts) => void
@@ -26,6 +31,8 @@ export function TwombaFundsSelector(props: {
     user && Date.now() < expirationStart.valueOf() && !user.purchasedMana
   const newUserPrices = basePrices.filter((p) => p.newUsersOnly)
   const prices = basePrices.filter((p) => !p.newUsersOnly)
+  const totalPurchased = use24hrUsdPurchasesInDollars(user?.id || '')
+  const pastLimit = totalPurchased >= DOLLAR_PURCHASE_LIMIT
 
   if (!TWOMBA_ENABLED) {
     return <div>Sweepstaked are not enabled, sorry!</div>
@@ -64,7 +71,7 @@ export function TwombaFundsSelector(props: {
                   amounts={amounts}
                   index={index}
                   loading={loading}
-                  disabled={false}
+                  disabled={pastLimit}
                   onClick={() => onSelect(amounts.mana)}
                 />
               ))}
@@ -79,11 +86,17 @@ export function TwombaFundsSelector(props: {
             amounts={amounts}
             index={index}
             loading={loading}
-            disabled={false}
+            disabled={pastLimit}
             onClick={() => onSelect(amounts.mana)}
           />
         ))}
       </div>
+      {pastLimit && (
+        <AlertBox title="Purchase limit" className="my-4">
+          You have reached your daily purchase limit of {formatMoneyUSD(LIMIT)}.
+          Please try again tomorrow.
+        </AlertBox>
+      )}
       <div className="text-ink-500 mt-4 text-sm">
         Please see our{' '}
         <Link href="/terms" target="_blank" className="underline">

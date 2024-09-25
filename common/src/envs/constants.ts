@@ -23,6 +23,7 @@ export const CHARITY_FEE = 0.05
 export const CASH_TO_CHARITY_DOLLARS = 1
 export const SPICE_TO_CHARITY_DOLLARS = (1 / 1000) * (1 - CHARITY_FEE) // prize points -> dollars
 export const NY_FL_CASHOUT_LIMIT = 5000
+export const DOLLAR_PURCHASE_LIMIT = 5000
 
 export const SPICE_NAME = 'Prize Point'
 export const SWEEPIES_NAME = 'sweepcash'

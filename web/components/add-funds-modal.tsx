@@ -1,7 +1,11 @@
 'use client'
 import clsx from 'clsx'
 import { WebManaAmounts, PaymentAmount } from 'common/economy'
-import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
+import {
+  DOLLAR_PURCHASE_LIMIT,
+  ENV_CONFIG,
+  TWOMBA_ENABLED,
+} from 'common/envs/constants'
 
 import { Txn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
@@ -87,8 +91,8 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const [url, setUrl] = useState('https://manifold.markets')
   useEffect(() => setUrl(window.location.href), [])
 
-  const totalPurchased = use24hrUsdPurchases(user?.id || '')
-  const pastLimit = totalPurchased >= 2500
+  const totalPurchased = use24hrUsdPurchasesInDollars(user?.id || '')
+  const pastLimit = totalPurchased >= DOLLAR_PURCHASE_LIMIT
 
   if (TWOMBA_ENABLED) {
     return (
@@ -299,7 +303,7 @@ export const SpiceToManaForm = (props: {
   )
 }
 
-export const use24hrUsdPurchases = (userId: string) => {
+export const use24hrUsdPurchasesInDollars = (userId: string) => {
   const [purchases, setPurchases] = useState<Txn[]>([])
 
   useEffect(() => {
@@ -310,5 +314,5 @@ export const use24hrUsdPurchases = (userId: string) => {
     }).then(setPurchases)
   }, [userId])
 
-  return sum(purchases.map((t) => t.amount)) / 1000
+  return sum(purchases.map((t) => t.data?.paidInCents)) / 100
 }
