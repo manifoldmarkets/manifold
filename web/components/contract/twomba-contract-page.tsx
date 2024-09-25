@@ -330,7 +330,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                   />
                 </div>
               </Col>
-              <Row className="text-ink-600  items-center justify-between gap-y-1 text-sm">
+              <Row className="text-ink-600 flex-wrap items-center justify-between gap-y-1 text-sm">
                 <AuthorInfo
                   contract={props.contract}
                   resolverId={liveContract.resolverId}
