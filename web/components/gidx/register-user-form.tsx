@@ -42,6 +42,7 @@ import {
   locationBlocked,
 } from 'common/gidx/user'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { CheckCircleIcon } from '@heroicons/react/solid'
 
 export const RegisterUserForm = (props: {
   user: User
@@ -189,9 +190,47 @@ export const RegisterUserForm = (props: {
       <>
         <RegisterIcon height={40} className="fill-ink-700 mx-auto" />
         <div className={'mx-auto text-2xl'}>Identity Verification</div>
-        <span className="text-ink-700">
-          To use sweepstakes coins, you must verify your identity.
-        </span>
+        <Col className="text-ink-700">
+          <Row className="p-4">
+            <Col>
+              <Row className="items-center">
+                <span className="mr-2 text-indigo-600">
+                  <CheckCircleIcon className="h-6 w-6" />
+                </span>
+                <span>
+                  To participate in sweepstakes and comply with U.S. laws, you
+                  must verify your identity.
+                </span>
+              </Row>
+            </Col>
+          </Row>
+          <Row className="p-4">
+            <Col>
+              <Row className="items-center">
+                <span className="mr-2 text-indigo-600">
+                  <CheckCircleIcon className="h-6 w-6" />
+                </span>
+                <span>
+                  Manifold uses a verification platform to validate your name,
+                  phone number, birthday, and address.
+                </span>
+              </Row>
+            </Col>
+          </Row>
+          <Row className="p-4">
+            <Col>
+              <Row className="items-center">
+                <span className="mr-2 text-indigo-600">
+                  <CheckCircleIcon className="h-6 w-6" />
+                </span>
+                <span>
+                  Your info is confidential, securely protected, and used solely
+                  for regulatory purposes.
+                </span>
+              </Row>
+            </Col>
+          </Row>
+        </Col>
         <span className="text-ink-700">
           <input
             type="checkbox"
@@ -205,8 +244,8 @@ export const RegisterUserForm = (props: {
           </span>
         </span>
         <BottomRow>
-          <Button color={'gray-white'} onClick={router.back}>
-            Back
+          <Button color={'gray-white'} onClick={() => router.push('/home')}>
+            Cancel
           </Button>
           <Button
             color={'indigo'}
