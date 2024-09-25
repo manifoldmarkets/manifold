@@ -93,8 +93,8 @@ export function TwombaFundsSelector(props: {
       </div>
       {pastLimit && (
         <AlertBox title="Purchase limit" className="my-4">
-          You have reached your daily purchase limit of {formatMoneyUSD(LIMIT)}.
-          Please try again tomorrow.
+          You have reached your daily purchase limit of{' '}
+          {formatMoneyUSD(DOLLAR_PURCHASE_LIMIT)}. Please try again tomorrow.
         </AlertBox>
       )}
       <div className="text-ink-500 mt-4 text-sm">
