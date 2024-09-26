@@ -231,7 +231,7 @@ const sendCoins = async (
     amount: amount.bonusInDollars,
     token: 'CASH',
     category: 'CASH_BONUS',
-    description: `Bonus for mana purchase`,
+    description: `Free sweepcash bonus for purchasing mana.`,
   } as const
 
   await pg.tx(async (tx) => {
