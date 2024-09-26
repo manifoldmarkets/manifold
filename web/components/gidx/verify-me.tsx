@@ -83,7 +83,10 @@ export const VerifyMe = (props: { user: User; privateUser: PrivateUser }) => {
   const showUploadDocsButton =
     getDocumentsStatus(documents ?? []).isRejected && documents
 
-  if (hideVerifyMe) {
+  const showUserDocStatus =
+    user.kycDocumentStatus === 'pending' || documentsFailed(user, privateUser)
+
+  if (hideVerifyMe && !showUserDocStatus) {
     return null
   }
 
@@ -107,10 +110,7 @@ export const VerifyMe = (props: { user: User; privateUser: PrivateUser }) => {
         </Row>
       </Col>
     )
-  } else if (
-    user.kycDocumentStatus === 'pending' ||
-    documentsFailed(user, privateUser)
-  ) {
+  } else if (showUserDocStatus) {
     return (
       <Col
         className={

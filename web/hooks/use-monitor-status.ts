@@ -7,8 +7,6 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { useEvent } from 'web/hooks/use-event'
 import { useLocation } from './use-location'
 
-//
-
 export const useMonitorStatus = (
   polling: boolean,
   user: User | undefined | null,
