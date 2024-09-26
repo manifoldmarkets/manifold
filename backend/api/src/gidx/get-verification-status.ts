@@ -11,11 +11,14 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { updateUser } from 'shared/supabase/users'
+import {
+  getReferrerIdThatUsedReferralCode,
+  updateUser,
+} from 'shared/supabase/users'
 import { getUserAndPrivateUserOrThrow, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { User } from 'common/user'
-import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
+import { distributeKycAndReferralBonus as distributeKycAndReferralBonus } from 'shared/distribute-kyc-bonus'
 
 export const getVerificationStatus: APIHandler<
   'get-verification-status-gidx'
@@ -71,9 +74,18 @@ export const getVerificationStatusInternal = async (
     IdentityConfidenceScore
   )
 
-  // If they just got verified from their id document uploads, distribute the bonus
+  // If they just got verified via their id documents, distribute the bonus
   if (status !== 'error' && !user.idVerified && idVerified) {
-    await distributeKycBonus(pg, user.id)
+    const referrerInfo = await getReferrerIdThatUsedReferralCode(
+      pg,
+      user.referredByUserId
+    )
+    await distributeKycAndReferralBonus(
+      pg,
+      user,
+      referrerInfo?.id,
+      referrerInfo?.sweeps_verified
+    )
     await updateUser(pg, user.id, {
       sweepstakesVerifiedTime: Date.now(),
     })
