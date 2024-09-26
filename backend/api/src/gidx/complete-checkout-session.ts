@@ -54,7 +54,7 @@ export const completeCheckoutSession: APIHandler<
   if (paymentAmount.newUsersOnly) {
     if (Date.now() > introductoryTimeWindow(user))
       throw new APIError(403, 'New user purchase discount no longer offered.')
-    if (user.purchasedMana)
+    if (user.purchasedSweepcash)
       throw new APIError(403, 'New user purchase discount only available once.')
   }
 
@@ -165,7 +165,7 @@ export const completeCheckoutSession: APIHandler<
   } else if (PaymentStatusCode === '3') {
     return {
       status: 'error',
-      message: 'Payment failed',
+      message: 'Payment failed, check your card information.',
       gidxMessage: PaymentStatusMessage,
     }
   } else if (PaymentStatusCode === '4') {
@@ -241,6 +241,7 @@ const sendCoins = async (
     }
     await updateUser(tx, userId, {
       purchasedMana: true,
+      purchasedSweepcash: isSweepsVerified,
     })
   })
 }

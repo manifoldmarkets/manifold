@@ -28,7 +28,7 @@ export function TwombaFundsSelector(props: {
     ? new Date(introductoryTimeWindow(user))
     : new Date()
   const eligibleForNewUserOffer =
-    user && Date.now() < expirationStart.valueOf() && !user.purchasedMana
+    user && Date.now() < expirationStart.valueOf() && !user.purchasedSweepcash
   const newUserPrices = basePrices.filter((p) => p.newUsersOnly)
   const prices = basePrices.filter((p) => !p.newUsersOnly)
   const totalPurchased = use24hrUsdPurchasesInDollars(user?.id || '')
