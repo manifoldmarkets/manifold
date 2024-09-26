@@ -46,7 +46,7 @@ export function TwombaToggle({
             : 'border-amber-500 dark:border-amber-200',
           sweepsEnabled
             ? ''
-            : 'cursor-not-allowed border-gray-400 opacity-60 dark:border-gray-400' // Greys out the button when disabled
+            : '!dark:border-gray-400 cursor-not-allowed !border-gray-400 opacity-60' // Greys out the button when disabled
         )}
         onClick={handleClick}
       >
