@@ -128,7 +128,7 @@ export function PoliticsCard(props: {
           >
             {customTitle ?? contract.question}
           </Link>
-          {TWOMBA_ENABLED && <TwombaToggle />}
+          {TWOMBA_ENABLED && <TwombaToggle sweepsEnabled={true} />}
         </Row>
 
         {children}
