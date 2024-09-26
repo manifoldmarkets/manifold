@@ -146,7 +146,7 @@ export const DeletedUser = () => {
       <Head>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
-      <div className="flex h-full flex-col items-center justify-center">
+      <div className="items-center flex h-full flex-col justify-center">
         <Title>Deleted account</Title>
         <p>This user's account has been deleted.</p>
       </div>
@@ -332,10 +332,11 @@ function UserProfile(props: {
           <Row className={'items-center gap-1 sm:gap-2'}>
             {isCurrentUser ? (
               TWOMBA_ENABLED ? (
-                <Row className="my-2 hidden items-center gap-2 px-4 sm:flex">
+                <Row className="items-center my-2 hidden gap-2 px-4 sm:flex">
                   <AddFundsButton
                     userId={user.id}
                     className="whitespace-nowra w-full lg:hidden"
+                    hideDiscount
                   />
                   <RedeemSweepsButtons user={user} className="shrink-0" />
                 </Row>
@@ -370,10 +371,11 @@ function UserProfile(props: {
         )}
 
         {isCurrentUser && TWOMBA_ENABLED && (
-          <Row className="my-2 w-full items-center gap-2 px-4 sm:hidden">
+          <Row className="items-center my-2 w-full gap-2 px-4 sm:hidden">
             <AddFundsButton
               userId={user.id}
               className="w-1/2 whitespace-nowrap"
+              hideDiscount
             />
             <RedeemSweepsButtons user={user} className="w-1/2" />
           </Row>
@@ -524,7 +526,7 @@ function ProfilePublicStats(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-600 flex-wrap items-center gap-x-2 text-sm',
+        'text-ink-600 items-center flex-wrap gap-x-2 text-sm',
         className
       )}
     >

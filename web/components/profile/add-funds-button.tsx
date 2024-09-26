@@ -14,8 +14,9 @@ export function AddFundsButton(props: {
   userId?: string
   className?: string
   size?: SizeType
+  hideDiscount?: boolean
 }) {
-  const { userId, className, size } = props
+  const { userId, className, size, hideDiscount } = props
   const [open, setOpen] = useState(false)
   const user = useUser()
   const router = useRouter()
@@ -41,7 +42,7 @@ export function AddFundsButton(props: {
       >
         Get <ManaCoin className="ml-1" /> and <SweepiesCoin className="ml-1" />
       </Button>
-      {eligibleForNewUserOffer && (
+      {eligibleForNewUserOffer && !hideDiscount && (
         <Link href="/checkout" className="text-center text-sm text-amber-500">
           ✨ Special offer expires in
           <RelativeTimestamp
