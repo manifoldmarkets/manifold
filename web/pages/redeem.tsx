@@ -118,7 +118,7 @@ export default function CashoutPage() {
 
   const roundedRedeemableCash = Math.floor(redeemableCash * 100) / 100
   const {
-    fetchMonitorStatus,
+    requestLocationThenFetchMonitorStatus,
     loading: loadingMonitorStatus,
     monitorStatusMessage,
     monitorStatus,
@@ -251,7 +251,7 @@ export default function CashoutPage() {
                 color={'indigo-outline'}
                 loading={loadingMonitorStatus}
                 disabled={loadingMonitorStatus}
-                onClick={() => fetchMonitorStatus()}
+                onClick={() => requestLocationThenFetchMonitorStatus()}
                 className={'mt-2 w-full'}
               >
                 Refresh status
@@ -325,7 +325,7 @@ export default function CashoutPage() {
                   color={'indigo-outline'}
                   loading={loadingMonitorStatus}
                   disabled={loadingMonitorStatus}
-                  onClick={() => fetchMonitorStatus()}
+                  onClick={() => requestLocationThenFetchMonitorStatus()}
                   className={'mt-2 w-full'}
                 >
                   Refresh status

@@ -65,7 +65,7 @@ export const VerifyMe = (props: { user: User; privateUser: PrivateUser }) => {
   )
 
   const {
-    fetchMonitorStatus,
+    requestLocationThenFetchMonitorStatus,
     loading: loadingMonitorStatus,
     monitorStatusMessage,
     monitorStatus,
@@ -232,7 +232,7 @@ export const VerifyMe = (props: { user: User; privateUser: PrivateUser }) => {
             color={'indigo-outline'}
             loading={loadingMonitorStatus}
             disabled={loadingMonitorStatus}
-            onClick={() => fetchMonitorStatus()}
+            onClick={() => requestLocationThenFetchMonitorStatus()}
             className={'w-full whitespace-nowrap sm:w-fit'}
           >
             Refresh status
