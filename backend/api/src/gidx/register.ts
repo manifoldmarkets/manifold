@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getUserAndPrivateUserOrThrow, LOCAL_DEV, log } from 'shared/utils'
+import { getUser, LOCAL_DEV, log } from 'shared/utils'
 import { updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
@@ -34,8 +34,10 @@ export const register: APIHandler<'register-gidx'> = async (
   if (!EmailAddress) {
     throw new APIError(400, 'User must have an email address')
   }
+  const pg = createSupabaseDirectClient()
   const body = {
     EmailAddress,
+    CountryCode: 'US',
     MobilePhoneNumber: ENABLE_FAKE_CUSTOMER
       ? props.MobilePhoneNumber
       : parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ??
@@ -60,9 +62,10 @@ export const register: APIHandler<'register-gidx'> = async (
   if (!res.ok) {
     throw new APIError(400, 'GIDX registration failed')
   }
-  const pg = createSupabaseDirectClient()
-  const userAndPrivateUser = await getUserAndPrivateUserOrThrow(auth.uid, pg)
-  const { user } = userAndPrivateUser
+  const user = await getUser(auth.uid)
+  if (!user) {
+    throw new APIError(404, 'User not found')
+  }
   const data = (await res.json()) as GIDXRegistrationResponse
   log('Registration response:', data)
   const {
@@ -74,7 +77,7 @@ export const register: APIHandler<'register-gidx'> = async (
   } = data
   throwIfIPNotWhitelisted(ResponseCode, ResponseMessage)
   const { status, message, idVerified } = await verifyReasonCodes(
-    userAndPrivateUser,
+    { user, privateUser },
     ReasonCodes,
     FraudConfidenceScore,
     IdentityConfidenceScore
@@ -89,7 +92,6 @@ export const register: APIHandler<'register-gidx'> = async (
   track(auth.uid, 'register user gidx attempt', {
     status,
     message,
-    citizenshipCountryCode: body.CitizenshipCountryCode,
     idVerified,
   })
   return {

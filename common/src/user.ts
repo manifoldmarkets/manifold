@@ -1,6 +1,6 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
-import { HOUR_MS } from './util/time'
+import { DAY_MS, HOUR_MS } from './util/time'
 
 export type User = {
   id: string
@@ -68,6 +68,7 @@ export type User = {
   signupBonusPaid?: number
   isAdvancedTrader?: boolean
   purchasedMana?: boolean
+  purchasedSweepcash?: boolean
   verifiedPhone?: boolean
 
   // KYC related fields:
@@ -152,5 +153,10 @@ export const isUserLikelySpammer = (
 // This grandfathers in older users who have not yet verified their phone
 export const humanish = (user: User) => user.verifiedPhone !== false
 
+// expires: sep 26th, ~530pm PT
+const LIMITED_TIME_DEAL_END = 1727311753233 + DAY_MS
 export const introductoryTimeWindow = (user: User) =>
-  (user.sweepstakesVerifiedTime ?? user.createdTime) + 8 * HOUR_MS
+  Math.max(
+    LIMITED_TIME_DEAL_END,
+    (user.sweepstakesVerifiedTime ?? user.createdTime) + 8 * HOUR_MS
+  )

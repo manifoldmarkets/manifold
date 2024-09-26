@@ -260,8 +260,8 @@ export const BuyPanelBody = (props: {
     isBinaryMC && multiProps
       ? multiProps.answerText ?? multiProps.answerToBuy.text
       : undefined
-
-  const initialBetAmount = marketTier === 'play' ? 5 : 50
+  const isCashContract = contract.token === 'CASH'
+  const initialBetAmount = isCashContract ? 1 : marketTier === 'play' ? 5 : 50
 
   const [betAmount, setBetAmount] = useState<number | undefined>(
     initialBetAmount
@@ -369,7 +369,6 @@ export const BuyPanelBody = (props: {
     }
   }
   const [showLocationMonitor, setShowLocationMonitor] = useState(false)
-  const isCashContract = contract.token === 'CASH'
 
   const { status: verificationStatus, message: verificationMessage } =
     user && privateUser

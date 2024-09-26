@@ -134,3 +134,8 @@ export const useNativeInfo = () => {
   }
   return context
 }
+
+export const useIsNativeIOS = () => {
+  const { isNative, platform } = useNativeInfo()
+  return isNative && platform === 'ios'
+}
