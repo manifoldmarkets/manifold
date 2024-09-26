@@ -152,17 +152,19 @@ const CheckoutPage = () => {
           <Row className="text-error mt-2 text-sm">{locationError}</Row>
         </Col>
       ) : page === 'location' ? (
-        <LocationPanel
-          setLocation={(data: GPSData) => {
-            setPage('get-session')
-            getCheckoutSession(data)
-          }}
-          setLocationError={setLocationError}
-          setLoading={setLoading}
-          loading={loading}
-          locationError={locationError}
-          back={() => setPage('checkout')}
-        />
+        <Col className=" mx-auto w-full max-w-lg gap-4 px-6 py-4">
+          <LocationPanel
+            setLocation={(data: GPSData) => {
+              setPage('get-session')
+              getCheckoutSession(data)
+            }}
+            setLocationError={setLocationError}
+            setLoading={setLoading}
+            loading={loading}
+            locationError={locationError}
+            back={() => setPage('checkout')}
+          />
+        </Col>
       ) : page === 'payment' &&
         checkoutSession &&
         productSelected &&
