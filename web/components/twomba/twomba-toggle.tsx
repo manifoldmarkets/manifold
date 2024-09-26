@@ -7,17 +7,28 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 
 export function TwombaToggle({
   sweepsEnabled = false,
+  isPlay: isPlayProp,
+  onClick,
 }: {
   sweepsEnabled?: boolean
+  isPlay?: boolean
+  onClick?: () => void
 }) {
-  const { isPlay, setIsPlay } = useSweepstakes()
-  const SweepiesCoin = sweepsEnabled ? SweepiesFlatCoin : SweepiesFlatCoinX
+  const { isPlay: contextIsPlay, setIsPlay: contextSetIsPlay } =
+    useSweepstakes()
+  const isPlay = isPlayProp !== undefined ? isPlayProp : contextIsPlay
 
   const handleClick = () => {
     if (sweepsEnabled) {
-      setIsPlay(!isPlay)
+      if (onClick) {
+        onClick()
+      } else {
+        contextSetIsPlay(!isPlay)
+      }
     }
   }
+
+  const SweepiesCoin = sweepsEnabled ? SweepiesFlatCoin : SweepiesFlatCoinX
 
   return (
     <Tooltip

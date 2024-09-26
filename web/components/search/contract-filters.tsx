@@ -54,6 +54,7 @@ import { LiteGroup } from 'common/group'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { useSweepstakes } from '../sweestakes-context'
+import { TwombaToggle } from '../twomba/twomba-toggle'
 
 export function ContractFilters(props: {
   className?: string
@@ -158,23 +159,13 @@ export function ContractFilters(props: {
           <FaSliders className="h-4 w-4" />
         </IconButton>
         {TWOMBA_ENABLED && (
-          <FilterPill
-            selected={isSweeps}
-            onSelect={toggleSweepies}
-            type="sweepies"
-          >
-            <Row
-              className={clsx(
-                'items-center gap-1',
-                isSweeps ? 'opacity-100' : 'opacity-50'
-              )}
-            >
-              <SweepiesCoin />
-              Sweepstakes
-            </Row>
-          </FilterPill>
+          <TwombaToggle
+            sweepsEnabled={true}
+            isPlay={!isSweeps}
+            onClick={toggleSweepies}
+          />
         )}
-        <Row className="bg-ink-200 dark:bg-ink-300 items-center rounded-full">
+        <Row className="bg-ink-200 dark:bg-ink-300 items-center rounded-full ml-1">
           <button
             key="score"
             className={clsx(
