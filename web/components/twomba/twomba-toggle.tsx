@@ -60,7 +60,7 @@ export function TwombaToggle({
           className={clsx(
             'z-10 h-8 transition-opacity',
             isPlay ? 'opacity-100' : 'opacity-20',
-            sweepsEnabled ? '' : 'grayscale filter'
+            // sweepsEnabled ? '' : 'grayscale filter'
           )}
         />
         <SweepiesCoin
