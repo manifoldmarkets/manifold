@@ -43,7 +43,8 @@ export function TwombaToggle({
           'bg-ink-200 dark:bg-canvas-50 relative flex h-fit w-fit shrink-0 flex-row items-center gap-1 rounded-full border-[1.5px] p-0.5 text-2xl transition-colors',
           isPlay
             ? 'border-violet-600 dark:border-violet-400'
-            : 'border-amber-500 dark:border-amber-200'
+            : 'border-amber-500 dark:border-amber-200',
+          sweepsEnabled ? '' : 'cursor-not-allowed border-gray-400 dark:border-gray-400 opacity-60' // Greys out the button when disabled
         )}
         onClick={handleClick}
       >
@@ -56,13 +57,15 @@ export function TwombaToggle({
         <ManaFlatCoin
           className={clsx(
             'z-10 h-8 transition-opacity',
-            isPlay ? 'opacity-100' : 'opacity-20'
+            isPlay ? 'opacity-100' : 'opacity-20',
+            sweepsEnabled ? '' : 'filter grayscale'
           )}
         />
         <SweepiesCoin
           className={clsx(
             'z-10 h-8 transition-opacity',
-            !isPlay ? 'opacity-100' : 'opacity-20'
+            !isPlay ? 'opacity-100' : 'opacity-20',
+            sweepsEnabled ? '' : 'filter grayscale'
           )}
         />
       </button>
