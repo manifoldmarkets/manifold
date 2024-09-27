@@ -96,8 +96,7 @@ export function SellRow(props: {
               tweetText={getPositionTweet(
                 (sharesOutcome === 'NO' ? -1 : 1) * shares,
                 getInvested(contract, userBets),
-                contract,
-                user.username
+                contract
               )}
             />
           )}
@@ -118,6 +117,16 @@ export function SellSharesModal(props: {
   user: User
   setOpen: (open: boolean) => void
   answerId?: string
+  binaryPseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
   const {
     className,
@@ -128,6 +137,7 @@ export function SellSharesModal(props: {
     user,
     setOpen,
     answerId,
+    binaryPseudonym,
   } = props
   const isStonk = contract.outcomeType === 'STONK'
   const isCashContract = contract.token === 'CASH'
@@ -152,6 +162,7 @@ export function SellSharesModal(props: {
             contract={contract}
             truncate={'short'}
             answerId={answerId}
+            pseudonym={binaryPseudonym}
           />
           .
         </div>
@@ -164,6 +175,7 @@ export function SellSharesModal(props: {
           userBets={userBets ?? []}
           onSellSuccess={() => setOpen(false)}
           answerId={answerId}
+          binaryPseudonym={binaryPseudonym}
         />
       </Col>
     </Modal>

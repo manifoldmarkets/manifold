@@ -5,6 +5,8 @@ import { RegisterUserForm } from 'web/components/gidx/register-user-form'
 
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { UsOnlyDisclaimer } from 'web/components/twomba/us-only-disclaimer'
 
 const HomePage = () => {
   const user = useUser()
@@ -12,9 +14,12 @@ const HomePage = () => {
   if (!TWOMBA_ENABLED) return null
   return (
     <Page trackPageView={'register user gidx'}>
-      <Col className="bg-canvas-0 mx-auto w-full max-w-lg gap-4 px-6 py-4">
+      <Col className="bg-canvas-0 relative mx-auto w-full max-w-lg gap-4 px-6 py-4">
+        <Row className="w-full justify-end rounded">
+          <UsOnlyDisclaimer />
+        </Row>
         {!user || !privateUser ? (
-          <LoadingIndicator />
+          <LoadingIndicator className="mx-auto my-auto h-80" />
         ) : (
           <RegisterUserForm user={user} privateUser={privateUser} />
         )}

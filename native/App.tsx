@@ -1,8 +1,8 @@
 import { app, auth, ENV } from './init'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
-import { EXTERNAL_REDIRECTS } from 'common/envs/constants'
+import { EXTERNAL_REDIRECTS, isAdminId } from 'common/envs/constants'
 import * as Notifications from 'expo-notifications'
 import {
   Platform,
@@ -39,17 +39,19 @@ import { NativeShareData } from 'common/native-share-data'
 import { clearData, getData, storeData } from 'lib/auth'
 import { SplashAuth } from 'components/splash-auth'
 import { useIsConnected } from 'lib/use-is-connected'
-import { getLocation } from 'lib/location'
-import * as Sentry from '@sentry/react-native';
+import { checkLocationPermission, getLocation } from 'lib/location'
+import * as Sentry from '@sentry/react-native'
+import * as StoreReview from 'expo-store-review'
+
 Sentry.init({
   dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
-  debug: ENV === 'DEV', 
-});
+  debug: ENV === 'DEV',
+})
 // NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address. ie:
 // "cross-env NEXT_PUBLIC_API_URL=192.168.1.229:8088 \
-// const baseUri = 'http://192.168.1.229:3000/'
+// const BASE_URI = 'http://192.168.1.229:3000/'
 
-const baseUri =
+const BASE_URI =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const isIOS = Platform.OS === 'ios'
 const App = () => {
@@ -65,6 +67,7 @@ const App = () => {
   const listeningToNative = useRef(false)
   // Sometimes we're linked to a url but the webview has been killed by the OS. We save it here to reload it on reboot
   const [lastLinkInMemory, setLastLinkInMemory] = useState<string | undefined>()
+  const [baseUri, setBaseUri] = useState(BASE_URI)
 
   // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
@@ -114,11 +117,14 @@ const App = () => {
   const [backgroundColor, setBackgroundColor] = useState('rgba(255,255,255,1)')
   const [theme, setTheme] = useState<'dark' | 'light'>('light')
 
-  const setEndpointWithNativeQuery = (endpoint?: string) => {
-    const url = new URL(baseUri)
-    url.pathname = endpoint ?? 'home'
-    setUrlWithNativeQuery(url.toString())
-  }
+  const setEndpointWithNativeQuery = useCallback(
+    (endpoint?: string) => {
+      const url = new URL(baseUri)
+      url.pathname = endpoint ?? 'home'
+      setUrlWithNativeQuery(url.toString())
+    },
+    [baseUri]
+  )
 
   const setUrlWithNativeQuery = (urlString: string) => {
     const url = new URL(urlString)
@@ -149,12 +155,11 @@ const App = () => {
     // Perhaps this isn't current if the webview is killed for memory collection? Not sure
     const notification = response.notification.request.content
       .data as Notification
+    log('notification', notification)
+    if (notification == undefined) return
 
     if (hasLoadedWebView && listeningToNative.current) {
-      communicateWithWebview(
-        'notification',
-        response.notification.request.content.data as Notification
-      )
+      communicateWithWebview('notification', notification)
       setLastLinkInMemory(getSourceUrl(notification))
     } else setEndpointWithNativeQuery(getSourceUrl(notification))
   }
@@ -370,10 +375,31 @@ const App = () => {
       log('Client started listening')
       listeningToNative.current = true
       if (fbUser) sendWebviewAuthInfo(fbUser)
+    } else if (type === 'locationPermissionStatusRequested') {
+      log('Location permission status requested from web')
+      const status = await checkLocationPermission()
+      communicateWithWebview('locationPermissionStatus', { status })
     } else if (type === 'locationRequested') {
       log('Location requested from web')
       const location = await getLocation()
       communicateWithWebview('location', location)
+    } else if (type === 'storeReviewRequested') {
+      log('Store review requested from web')
+      StoreReview.requestReview()
+    } else if (type === 'hasReviewActionRequested') {
+      log('Has review action requested from web')
+      const isAvailable = await StoreReview.isAvailableAsync()
+      const hasAction = await StoreReview.hasAction()
+      communicateWithWebview('hasReviewAction', { hasAction, isAvailable })
+    } else if (type === 'versionRequested') {
+      log('Version requested from web')
+      const version = Constants.expoConfig?.version
+      communicateWithWebview('version', { version })
+    } else if (type === 'setAppUrl') {
+      if (!fbUser?.uid || !isAdminId(fbUser.uid)) return
+      log('Setting app url to: ', payload.appUrl)
+      setBaseUri(payload.appUrl)
+      setUrlWithNativeQuery(payload.appUrl)
     } else {
       log('Unhandled message from web type: ', type)
       log('Unhandled message from web data: ', data)
@@ -432,16 +458,19 @@ const App = () => {
     },
   })
 
-  const handleExternalLink = (url: string) => {
-    if (
-      !url.startsWith(baseUri) ||
-      EXTERNAL_REDIRECTS.some((u) => url.endsWith(u))
-    ) {
-      webview.current?.stopLoading()
-      WebBrowser.openBrowserAsync(url)
-      return
-    }
-  }
+  const handleExternalLink = useCallback(
+    (url: string) => {
+      if (
+        !url.startsWith(baseUri) ||
+        EXTERNAL_REDIRECTS.some((u) => url.endsWith(u))
+      ) {
+        webview.current?.stopLoading()
+        WebBrowser.openBrowserAsync(url)
+        return
+      }
+    },
+    [baseUri]
+  )
 
   return (
     <>

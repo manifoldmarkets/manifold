@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react'
 import Image from 'next/legacy/image'
-
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
@@ -86,11 +85,12 @@ function CharityPage(props: {
   donations: DonationItem[]
   stats: { numSupporters: number; total: number }
 }) {
-  const { charity, donations, stats } = props
+  const { charity, donations } = props
   const { name, photo, description } = charity
   const user = useUser()
 
   const [showConfetti, setShowConfetti] = useState(false)
+  const [stats, setStats] = useState(props.stats)
 
   const paginationCallback = useCallback(getDonationsPageQuery(charity.id), [
     charity.id,
@@ -101,6 +101,14 @@ function CharityPage(props: {
     q: paginationCallback,
     prefix: donations,
   })
+
+  const updateStats = (amount: number) => {
+    setStats((prevStats) => ({
+      total: prevStats.total + amount,
+      numSupporters: prevStats.numSupporters + 1, // TODO: not always true, may have donated before.
+    }))
+  }
+
   return (
     <Page
       trackPageView={'charity slug page'}
@@ -127,11 +135,9 @@ function CharityPage(props: {
               pagination.prepend({
                 user,
                 ts,
-                amount:
-                  (TWOMBA_ENABLED
-                    ? CASH_TO_CHARITY_DOLLARS
-                    : SPICE_TO_CHARITY_DOLLARS) * amount,
+                amount: CASH_TO_CHARITY_DOLLARS * amount,
               })
+              updateStats(CASH_TO_CHARITY_DOLLARS * amount)
               setShowConfetti(true)
             }}
           />

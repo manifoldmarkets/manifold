@@ -8,12 +8,13 @@ import { Page } from 'web/components/layout/page'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { GroupPageContent } from '../browse/[[...slug]]'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { api } from 'web/lib/api/api'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { Welcome } from 'web/components/onboarding/welcome'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { TwombaBanner } from 'web/components/nav/banner'
 
 export async function getStaticProps() {
   try {
@@ -31,7 +32,6 @@ export async function getStaticProps() {
 
 export default function Home(props: { headlines: Headline[] }) {
   const user = useUser()
-  useSaveReferral(user)
   useRedirectIfSignedOut()
 
   const { headlines } = props
@@ -40,6 +40,9 @@ export default function Home(props: { headlines: Headline[] }) {
     <Page trackPageView={'home'} className="!mt-0">
       <Welcome />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
+
+      {TWOMBA_ENABLED && <TwombaBanner />}
+
       <HeadlineTabs
         endpoint={'news'}
         headlines={headlines}

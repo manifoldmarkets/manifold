@@ -5,7 +5,7 @@ import { APIError } from 'common/api/utils'
 import { SupabaseTransaction } from 'shared/supabase/init'
 import { convertTxn } from 'common/supabase/txns'
 import { removeUndefinedProps } from 'common/util/object'
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { incrementBalance } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { buildArray } from 'common/util/array'
@@ -62,10 +62,12 @@ export async function runTxn(
             `Insufficient cash balance: ${fromUser.username} needed ${amount} but only had ${fromUser.cashBalance}`
           )
         }
+        log('decrementing cash balance', fromId, amount)
         await incrementBalance(pgTransaction, fromId, {
           cashBalance: -amount,
           totalCashDeposits: -amount,
         })
+        log('decremented cash balance', fromId, amount)
       } else {
         if (fromUser.balance < amount) {
           throw new APIError(

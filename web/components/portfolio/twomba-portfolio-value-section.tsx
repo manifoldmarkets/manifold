@@ -26,6 +26,7 @@ import {
 } from './twomba-portfolio-graph'
 import { getPortfolioValues } from '../twomba-portfolio-helpers'
 import { useSweepstakes } from '../sweestakes-context'
+import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
@@ -177,13 +178,18 @@ export const TwombaPortfolioValueSection = memo(
     const { firstProfit, totalValue, calculatedProfit } = getPortfolioValues({
       first: first
         ? {
-            balance: first.balance,
+            balance:
+              first.balance +
+              (first.spiceBalance ?? 0) * SPICE_TO_MANA_CONVERSION_RATE,
             investmentValue: first.investmentValue,
             totalDeposits: first.totalDeposits,
           }
         : undefined,
       last: {
-        balance: lastPortfolioMetrics.balance,
+        balance:
+          lastPortfolioMetrics.balance +
+          (lastPortfolioMetrics.spiceBalance ?? 0) *
+            SPICE_TO_MANA_CONVERSION_RATE,
         investmentValue: lastPortfolioMetrics.investmentValue,
         totalDeposits: lastPortfolioMetrics.totalDeposits,
       },
@@ -322,7 +328,7 @@ function TwombaPortfolioValueSkeleton(props: {
       <Col className={clsx('gap-2')}>
         <Row className="text-ink-800 w-full items-center justify-between text-xl font-semibold">
           Portfolio
-          <TwombaToggle />
+          <TwombaToggle sweepsEnabled={true} />
         </Row>
         <Col className="bg-canvas-0 w-full rounded-lg p-4">
           <Col>
@@ -400,7 +406,7 @@ function TwombaPortfolioValueSkeleton(props: {
           </Col>
           {portfolioGraphElement && (
             <SizedContainer
-              className={clsx(className, 'mt-2 h-[50px] sm:h-[80px]')}
+              className={clsx(className, 'mt-2 h-[70px] sm:h-[80px]')}
               style={{
                 paddingRight: Y_AXIS_MARGIN,
               }}
@@ -444,7 +450,7 @@ function TwombaPortfolioValueSkeleton(props: {
           </Col>
           {profitGraphElement && (
             <SizedContainer
-              className={clsx(className, 'mt-2 h-[50px] sm:h-[80px]')}
+              className={clsx(className, 'mt-2 h-[70px] sm:h-[80px]')}
               style={{
                 paddingRight: Y_AXIS_MARGIN,
               }}

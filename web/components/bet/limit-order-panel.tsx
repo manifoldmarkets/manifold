@@ -45,6 +45,7 @@ import { FeeDisplay } from './fees'
 import { MoneyDisplay } from './money-display'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
+import { LocationMonitor } from '../gidx/location-monitor'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -57,10 +58,21 @@ export default function LimitOrderPanel(props: {
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
+  kycError: string | undefined
 
   onBuySuccess?: () => void
   className?: string
   outcome: 'YES' | 'NO' | undefined
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
   const {
     contract,
@@ -68,9 +80,13 @@ export default function LimitOrderPanel(props: {
     unfilledBets,
     balanceByUserId,
     user,
+    kycError,
     outcome,
     onBuySuccess,
+    pseudonym,
   } = props
+  const { pseudonymName, pseudonymColor } =
+    pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCColors = isBinaryMC
     ? (contract as MultiContract).answers.map(getAnswerColor)
@@ -88,7 +104,9 @@ export default function LimitOrderPanel(props: {
   }
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const defaultBetAmount = 1000
+  const isCashContract = contract.token === 'CASH'
+  const defaultBetAmount = isCashContract ? 50 : 1000
+
   const [betAmount, setBetAmount] = useState<number | undefined>(
     defaultBetAmount
   )
@@ -125,6 +143,7 @@ export default function LimitOrderPanel(props: {
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     Math.round(initialProb * 100)
   )
+  const [showLocationMonitor, setShowLocationMonitor] = useState(false)
 
   const hasLimitBet = !!limitProbInt && !!betAmount
 
@@ -133,7 +152,9 @@ export default function LimitOrderPanel(props: {
     !outcome ||
     !betAmount ||
     !hasLimitBet ||
-    error === 'Insufficient balance'
+    error === 'Insufficient balance' ||
+    showLocationMonitor ||
+    !!kycError
 
   const preLimitProb =
     limitProbInt === undefined
@@ -266,8 +287,7 @@ export default function LimitOrderPanel(props: {
   }
   const returnPercent = formatPercent(currentReturn)
   const totalFees = getFeeTotal(fees)
-
-  const isCashContract = contract.token === 'CASH'
+  const hideYesNo = isBinaryMC || !!pseudonym
 
   return (
     <>
@@ -296,6 +316,7 @@ export default function LimitOrderPanel(props: {
         disabled={isSubmitting}
         showSlider
         token={isCashContract ? 'CASH' : 'M$'}
+        sliderColor={pseudonymColor}
       />
 
       <div className="my-3">
@@ -397,9 +418,9 @@ export default function LimitOrderPanel(props: {
               {isPseudoNumeric ? (
                 <PseudoNumericOutcomeLabel outcome={outcome} />
               ) : (
-                !isBinaryMC && <BinaryOutcomeLabel outcome={outcome} />
+                !hideYesNo && <BinaryOutcomeLabel outcome={outcome} />
               )}{' '}
-              {isBinaryMC ? 'Filled' : 'filled'} now
+              {hideYesNo ? 'Filled' : 'filled'} now
             </div>
             <div className="mr-2 whitespace-nowrap">
               <MoneyDisplay
@@ -423,8 +444,7 @@ export default function LimitOrderPanel(props: {
                   'Shares'
                 ) : (
                   <>
-                    Max{' '}
-                    {!isBinaryMC && <BinaryOutcomeLabel outcome={outcome} />}{' '}
+                    Max {!hideYesNo && <BinaryOutcomeLabel outcome={outcome} />}{' '}
                     payout
                   </>
                 )}
@@ -453,12 +473,22 @@ export default function LimitOrderPanel(props: {
           />
         </Row>
 
+        <LocationMonitor
+          contract={contract}
+          user={user}
+          setShowPanel={setShowLocationMonitor}
+          showPanel={showLocationMonitor}
+        />
+        {kycError && <div className="text-red-500">{kycError}</div>}
         <Row className="items-center justify-between gap-2">
           {user && (
             <Button
               size="xl"
               disabled={betDisabled || inputError}
-              color={isBinaryMC ? 'none' : outcome === 'YES' ? 'green' : 'red'}
+              color={
+                (pseudonymColor as any) ??
+                (hideYesNo ? 'none' : outcome === 'YES' ? 'green' : 'red')
+              }
               loading={isSubmitting}
               className={clsx('flex-1 text-white')}
               style={{
@@ -474,7 +504,7 @@ export default function LimitOrderPanel(props: {
                 'Enter a probability'
               ) : !betAmount ? (
                 'Enter an amount'
-              ) : binaryMCOutcome ? (
+              ) : binaryMCOutcome || pseudonymName ? (
                 <span>
                   Submit order for{' '}
                   <MoneyDisplay

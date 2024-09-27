@@ -23,12 +23,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Install Node 18
+      - name: Install Node 20
         uses: actions/setup-node@v4
         env:
           FORCE_COLOR: 0 # https://github.com/actions/setup-node/issues/317
         with:
-          node-version: 18
+          node-version: 20
           cache: 'yarn'
       - name: Install dependencies
         run: yarn install --prefer-offline --frozen-lockfile
@@ -42,6 +42,8 @@ jobs:
         if: ${{ success() || failure() }}
         working-directory: backend/shared
         run: yarn build
+      - name: Check TypeScript Version
+        run: tsc --version
       - name: Run Typescript checker on API
         working-directory: backend/api
         run: tsc --noEmit --skipLibCheck --pretty

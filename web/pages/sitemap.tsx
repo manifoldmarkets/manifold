@@ -17,7 +17,6 @@ import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-co
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { PrivacyTermsLab } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -48,7 +47,7 @@ export default function AboutPage() {
   return (
     <Page trackPageView={'about page'}>
       <SEO
-        title="About"
+        title="Sitemap"
         description={`Manifold is a social prediction game. ${capitalize(
           TRADE_TERM
         )} on news, politics, tech, & AI with play money. Or create your own prediction market.`}
@@ -153,6 +152,11 @@ export default function AboutPage() {
               target="_blank"
             />
             <LabCard
+              title="👨‍⚖️ Sweepstakes rules"
+              href="/sweepstakes-rules"
+              target="_blank"
+            />
+            <LabCard
               title="🎯 Calibration & track record"
               href="/calibration"
             />
@@ -161,10 +165,10 @@ export default function AboutPage() {
               href="https://manifoldmarkets.notion.site/Changelog-da5b4fe95872484f8fa4ee5cc71806d8"
               target="_blank"
             />
-            <LabCard
+            {/* <LabCard
               title="👑 Creator Partner Program"
               href="/partner-explainer"
-            />
+            /> */}
             <LabCard
               title="📠 API docs"
               href="https://docs.manifold.markets/api"
@@ -177,7 +181,7 @@ export default function AboutPage() {
           <div className="mt-4 grid gap-x-2 md:grid-cols-3">
             {' '}
             <LabCard
-              title="🧑‍💻 Open source repo"
+              title="🧑‍💻 Github"
               href="https://github.com/manifoldmarkets/manifold"
               target="_blank"
             />
@@ -202,14 +206,13 @@ export default function AboutPage() {
               target="_blank"
             />
             <LabCard
-              title="📈 Additional calibration"
+              title="📈 Calibration City"
               href="https://calibration.city/"
               target="_blank"
             />
           </div>
         </div>
       </Col>
-      <PrivacyTermsLab />
     </Page>
   )
 }

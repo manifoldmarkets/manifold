@@ -14,7 +14,7 @@ As more people trade on the market, the probability estimate converges to reflec
 
 On Manifold, anyone can create their own prediction market about any question they want! We believe prediction markets are not only the best way to forecast difficult questions, but also a fun way to interact with friends, build communities over shared interests, and facilitate the sharing of information.
 
-Manifold is the best prediction markets platform because it offers the widest variety of question topics contributed by a large community. This diversity allows you to leverage your experience across multiple domains to showcase your knowledge and earn more mana from successful trades or unique and engaging questions.
+Manifold is the best prediction markets platform because it offers the widest variety of question topics contributed by a large community. This diversity allows you to leverage your experience across multiple domains to showcase your knowledge and earn more mana and sweepcash from successful trades or unique and engaging questions.
 
 #### An example
 
@@ -32,7 +32,9 @@ Yes! Manifold has consistently proven its validity and efficacy as a leading pre
 
 Beyond our platform, there is substantial evidence that play-money prediction markets provide real forecasting power. Examples include [sports betting](http://www.electronicmarkets.org/fileadmin/user_upload/doc/Issues/Volume_16/Issue_01/V16I1_Statistical_Tests_of_Real-Money_versus_Play-Money_Prediction_Markets.pdf) and internal prediction markets at firms like [Google](https://www.networkworld.com/article/2284098/google-bets-on-value-of-prediction-markets.html).
 
-Traders in a play-money environment are competing for social prestige and a sense of progression that comes from predicting and trading well. Manifold also has prizes available in some regions.
+Traders in a play-money environment are competing for social prestige and a sense of progression that comes from predicting and trading well.
+
+Selected markets also has sweepstakes prizes available in some regions to create further incentives for accurate market pricing.
 
 ## Using Manifold
 
@@ -52,11 +54,11 @@ Mana can be used to create, subsidise, and promote markets on your own questions
 
 In addition, you can [purchase more mana](https://manifold.markets/add-funds).
 
-### What are prize points
+### What is sweepcash?
 
-- When a prize points enabled question or multiple choice answer resolves, you receive prize points if you hold a stake in the correct side. If you sell your stake before the market resolves, you only receive mana. Of course, if you hold to the end but the market resolves against you, you receive nothing. See resolution and payouts sections below for more details.
-- You may convert prize points back into mana
-- Prize points can be [redeemed for charity donations](#how-can-i-donate-to-charity) at a rate of $0.95 per 1,000 points
+- When a Sweepcash enabled question or multiple choice answer resolves, you win sweepcash if you hold a stake in the correct side. If you sell your stake before the market resolves, you will also receive sweepcash, although it won't contribute towards your winnings (ie. you won't be able to withdraw until you've used it to win a market). See resolution and payouts sections below for more details.
+- You may convert sweepcash back into mana
+- Sweepcash can be withdrawn once you have submitted your bank details.
 
 ### How can I earn mana?
 
@@ -72,15 +74,6 @@ Mana can be earned by making correct predictions, successful trades, creating po
 There is a daily quest to bet, which gives a reward of M10. For each consecutive day you bet, this is increased in increments of M5 up to a maximum of M25 per day. Your daily betting streak can be viewed at the top right of your profile page.
 
 You can find all other available quests by navigating to your profile page and clicking on the streak button.
-
-
-### How else can I earn prize points?
-
-- [**Referring friends**](https://manifold.markets/referrals) -
-  Receive 1,000 Prize Points for each person who signs up when you share a market or group! Make sure they use your share link and place at least one trade after signing up. Click share, DO NOT copy the URL.
-
-- **Leagues** -
-  [Manifold Leagues](https://manifold.markets/leagues) are a fun way to compete with people globally who predict at a similar skill/intensity. They are a month long competition with significant rewards, so keep an eye on opportunities to advance in your league!
 
 ### What types of questions can I use Manifold to answer?
 
@@ -218,8 +211,7 @@ Don’t abuse resolving to N/A as it inflicts an opportunity cost on bettors. Fe
 
 - Resolution criteria for an outcome have been met.
 - Creator chooses the correct answer.
-- Winners are paid out and loans are taken back. 
-- If a market has prize points enabled, winnings will be paid in prize points. Otherwise, winners will receive mana.
+- Winners are paid out and loans are taken back.
 
 ## Market mechanics
 
@@ -319,17 +311,6 @@ Every day at midnight PT, you'd get 4% of your total bet amount back as a loan. 
 
 ## Misc
 
-### How can I donate to charity
-
-- First [select a non-profit](https://manifold.markets/charity) from the charity page
-- For every 1000 prize points you redeem we will donate $0.95 USD.
-- There is no limit to how much you can donate!
-
-### What kinds of charities can I donate to through Manifold Markets?
-
-The most popular included charities are GiveWell, Rethink Priorities, Balsa Research, EA Long-Term Future Fund, Grand Teton National Park Foundation, QURI, AI Impacts, Mriya, Doctors Without Borders, EA Animal Welfare Fund, EWG, GiveDirectly, and many more. Contact charity@manifold.markets if there is a charity not included that you would like to donate to!
-Read more here: [Charity page](https://manifold.markets/charity);
-
 ### How can I turn off emails and other notifications?
 
 You can fully [customise all your notifications](https://manifold.markets/notifications?tab=settings&section=).
@@ -371,7 +352,7 @@ Manifold Markets is able to maintain the best range of diverse questions thanks 
 
 ### What are the Manifold terms and conditions?
 
-Here you can find the [Manifold Markets terms and conditions](https://manifold.markets/terms.html)
+Here you can find the [Manifold Markets terms and conditions](/terms-and-conditions)
 
 ### How to resolve a dispute on Manifold Markets?
 
@@ -387,4 +368,4 @@ Manifold Markets believes users should have autonomy over their own markets as m
 
 ### Can you play Manifold Markets for free?
 
-Yes, Manifold is a free to play social prediction game with prizes enabled in select regions. Outside of permitted regions, you are unable to redeem your Prize Points for prizes. Prize Points can always be exchanged back to mana to continue playing.
+Yes, Manifold is a free to play social prediction game. Users may choose to participate in either mana markets or, region-permitting, sweepcash markets for free. Users may choose to buy additional mana, although it is not necessary.

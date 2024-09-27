@@ -12,21 +12,24 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 }
 
 export const TWOMBA_ENABLED = true
+export const TWOMBA_CASHOUT_ENABLED = true
 export const PRODUCT_MARKET_FIT_ENABLED = false
-export const SPICE_PRODUCTION_ENABLED = true
+export const SPICE_PRODUCTION_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
 export const CASH_TO_MANA_CONVERSION_RATE = 100
 export const MIN_CASH_DONATION = 25
 export const MIN_SPICE_DONATION = 25000
 export const CHARITY_FEE = 0.05
-export const CASH_TO_CHARITY_DOLLARS = 1 - CHARITY_FEE
+export const CASH_TO_CHARITY_DOLLARS = 1
 export const SPICE_TO_CHARITY_DOLLARS = (1 / 1000) * (1 - CHARITY_FEE) // prize points -> dollars
 export const NY_FL_CASHOUT_LIMIT = 5000
+export const DOLLAR_PURCHASE_LIMIT = 5000
 
 export const SPICE_NAME = 'Prize Point'
-export const SWEEPIES_NAME = 'Sweepcash'
+export const SWEEPIES_NAME = 'sweepcash'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
 export const SWEEPIES_MARKET_TOOLTIP = `Sweepstakes market! Win real cash prizes.`
+export const CASH_SUFFIX = '--cash'
 
 export const TRADE_TERM = 'trade'
 export const TRADED_TERM = 'traded'
@@ -203,7 +206,7 @@ export const MOD_IDS = [
   'tO4DwIsujySUwtSnrr2hnU1WJtJ3', // WieDan
 ]
 
-export const MVP = ['Eliza', 'Gabrielle']
+export const MVP = ['Eliza', 'Gabrielle', 'jacksonpolack']
 
 export const VERIFIED_USERNAMES = [
   'EliezerYudkowsky',
@@ -289,7 +292,6 @@ export const PARTNER_USER_IDS: string[] = [
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'X1xu1kvOxuevx09xuR2urWfzf7i1', // KeenenWatts
   '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
-  '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
   '8WEiWcxUd7QLeiveyI8iqbSIffU2', // goblinodds
   'Iua2KQvL6KYcfGLGNI6PVeGkseo1', // Ziddletwix
   'GRaWlYn2fNah0bvr6OW28l28nFn1', // cash
@@ -316,7 +318,6 @@ export const NEW_USER_HERLPER_IDS = [
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'rQPOELuW5zaapaNPnBYQBMoonk92', // Tumbles
   'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
-  '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
   'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
   '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
   'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
@@ -363,6 +364,11 @@ export function supabasePrivateUserConsolePath(userId: string) {
 export function supabaseConsoleContractPath(contractId: string) {
   const tableId = ENV === 'DEV' ? 19254 : 25924
   return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}?filter=id%3Aeq%3A${contractId}`
+}
+
+export function supabaseConsoleTxnPath(txnId: string) {
+  const tableId = ENV === 'DEV' ? 20014 : 25940
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}?filter=id%3Aeq%3A${txnId}`
 }
 
 export const GOOGLE_PLAY_APP_URL =

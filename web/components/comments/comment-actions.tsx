@@ -21,18 +21,19 @@ export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
   onAward?: (bountyTotal: number) => void
   comment: ContractComment
-  contract: Contract
+  liveContract: Contract // NOT the main contract that has the comments. this is for bets/bounty
   trackingLocation: string
 }) {
-  const { onReplyClick, onAward, comment, contract, trackingLocation } = props
+  const { onReplyClick, onAward, comment, liveContract, trackingLocation } =
+    props
   const user = useUser()
   const privateUser = usePrivateUser()
 
-  const isBountiedQuestion = contract.outcomeType === 'BOUNTIED_QUESTION'
+  const isBountiedQuestion = liveContract.outcomeType === 'BOUNTIED_QUESTION'
   const canGiveBounty =
     isBountiedQuestion &&
     user &&
-    user.id == contract.creatorId &&
+    user.id == liveContract.creatorId &&
     comment.userId != user.id &&
     onAward
   const [showBetModal, setShowBetModal] = useState(false)
@@ -41,21 +42,21 @@ export function CommentActions(props: {
     (comment.betReplyAmountsByOutcome?.YES ?? 0) -
     (comment.betReplyAmountsByOutcome?.NO ?? 0)
 
-  const isCashContract = contract.token === 'CASH'
+  const isCashContract = liveContract.token === 'CASH'
 
   return (
     <Row className="grow items-center justify-end">
       {canGiveBounty && (
         <AwardBountyButton
-          contract={contract}
+          contract={liveContract}
           comment={comment}
           onAward={onAward}
           user={user}
-          disabled={contract.bountyLeft <= 0}
+          disabled={liveContract.bountyLeft <= 0}
           buttonClassName={'mr-1'}
         />
       )}
-      {user && contract.outcomeType === 'BINARY' && !isCashContract && (
+      {user && liveContract.outcomeType === 'BINARY' && !isCashContract && (
         <IconButton
           onClick={() => {
             // TODO: Twomba tracking bet terminology
@@ -66,7 +67,7 @@ export function CommentActions(props: {
           size={'xs'}
         >
           <Tooltip text={`Reply with a ${TRADE_TERM}`} placement="bottom">
-            <Row className={'mt-0.5 gap-1'}>
+            <Row className="gap-1">
               {diff != 0 && (
                 <span className="">{Math.round(Math.abs(diff))}</span>
               )}
@@ -120,7 +121,7 @@ export function CommentActions(props: {
               @{comment.userUsername}: {richTextToString(comment.content)}
             </span>
             <BuyPanel
-              contract={contract as any}
+              contract={liveContract as any}
               initialOutcome={outcome}
               onBuySuccess={() => setTimeout(() => setShowBetModal(false), 500)}
               location={'comment on contract'}

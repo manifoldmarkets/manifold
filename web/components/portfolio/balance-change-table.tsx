@@ -4,8 +4,8 @@ import {
   formatMoneyUSD,
   formatSpice,
   formatSweepies,
+  formatWithToken,
   maybePluralize,
-  shortFormatNumber,
 } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
@@ -20,7 +20,6 @@ import {
   isTxnChange,
 } from 'common/balance-change'
 import Link from 'next/link'
-import { ENV_CONFIG } from 'common/envs/constants'
 import {
   FaBackward,
   FaArrowRightArrowLeft,
@@ -93,7 +92,7 @@ export const BalanceChangeTable = (props: {
               color="gray-outline"
               onClick={() => setShowCashoutModal(true)}
             >
-              View {maybePluralize('cashout', cashouts?.length ?? 0)}{' '}
+              View {maybePluralize('redemption', cashouts?.length ?? 0)}{' '}
               {pendingCashouts > 0 ? `(${pendingCashouts} pending)` : ''}
             </Button>
           </Row>
@@ -272,9 +271,11 @@ const BetBalanceChangeRow = (props: {
   const { amount, contract, answer, bet, type } = change
   const { outcome } = bet
   const { slug, question, creatorUsername } = contract
-  const niceAmount =
-    (token === 'CASH' ? 'S' : ENV_CONFIG.moneyMoniker) +
-    shortFormatNumber(amount).replace('-', '')
+  const niceAmount = formatWithToken({
+    amount: Math.abs(amount),
+    token: token === 'MANA' ? 'M$' : 'CASH',
+    short: true,
+  })
   const direction =
     type === 'redeem_shares'
       ? 'sideways'
@@ -393,8 +394,11 @@ const TxnBalanceChangeRow = (props: {
     CONTRACT_UNDO_PRODUCE_SPICE: 'bg-ink-1000',
     CONSUME_SPICE: 'bg-indigo-400',
     CONSUME_SPICE_DONE: 'bg-indigo-400',
+    CONVERT_CASH: 'bg-indigo-400',
+    CONVERT_CASH_DONE: 'bg-indigo-400',
     SIGNUP_BONUS: 'bg-yellow-200',
     KYC_BONUS: 'bg-yellow-200',
+    REFERRAL: 'bg-blue-300',
     MANA_PURCHASE: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
     CASH_BONUS: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
     MARKET_BOOST_REDEEM: 'bg-purple-200',
@@ -438,9 +442,12 @@ const TxnBalanceChangeRow = (props: {
               <FaBackward className={'h-5 w-5 text-white'} />
             ) : type === 'CREATE_CONTRACT_ANTE' || type === 'BOUNTY_POSTED' ? (
               <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
-            ) : type === 'CONSUME_SPICE' || type === 'CONSUME_SPICE_DONE' ? (
+            ) : type === 'CONSUME_SPICE' ||
+              type === 'CONSUME_SPICE_DONE' ||
+              type === 'CONVERT_CASH' ||
+              type === 'CONVERT_CASH_DONE' ? (
               <FaArrowRightArrowLeft className={'h-4 w-4'} />
-            ) : type === 'CHARITY' ? (
+            ) : type === 'CHARITY' || type === 'REFERRAL' ? (
               '❤️'
             ) : type === 'LOAN' || type === 'CASH_OUT' ? (
               '🏦'
@@ -560,13 +567,18 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Claim boost'
     case 'SIGNUP_BONUS':
       return change.description ?? 'Signup bonus'
+    case 'REFERRAL':
+      return 'Referral bonus'
     case 'CONSUME_SPICE':
     case 'CONSUME_SPICE_DONE':
       return `Redeem prize points for mana`
+    case 'CONVERT_CASH':
+    case 'CONVERT_CASH_DONE':
+      return 'Redeem sweepcash for mana'
     case 'CASH_OUT':
-      return 'Cash out request'
+      return 'Redemption request'
     case 'CASH_BONUS':
-      return 'Mana cash bonus'
+      return 'Sweepcash bonus'
     case 'KYC_BONUS':
       return 'ID verification bonus'
     default:
@@ -590,6 +602,8 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'SIGNUP_BONUS':
     case 'KYC_BONUS':
       return 'New user bonuses'
+    case 'REFERRAL':
+      return 'Quests'
     case 'QUEST_REWARD':
       return 'Quests'
     case 'CONTRACT_UNDO_PRODUCE_SPICE':
@@ -597,6 +611,8 @@ const txnTypeToDescription = (txnCategory: string) => {
       return 'Unresolve'
     case 'CONSUME_SPICE':
     case 'CONSUME_SPICE_DONE':
+    case 'CONVERT_CASH':
+    case 'CONVERT_CASH_DONE':
       return ''
     case 'MANA_PURCHASE':
       return ''

@@ -2382,7 +2382,6 @@ export type Database = {
       }
       txn_summary_stats: {
         Row: {
-          cash_amount: number
           category: string
           created_time: string
           end_time: string

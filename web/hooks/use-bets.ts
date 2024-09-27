@@ -86,6 +86,26 @@ export const useContractBets = (
     enabled,
   })
 
+  // We have to listen to cancels as well, since we don't get them in the `new-bet` topic.
+  useApiSubscription({
+    topics: [`contract/${contractId}/orders`],
+    onBroadcast: (msg) => {
+      const betUpdates = msg.data.bets as LimitBet[]
+      const cancelledBets = betUpdates.filter(
+        (bet: LimitBet) => bet.isCancelled
+      )
+      setNewBets((currentBets) => {
+        return currentBets.map((bet) => {
+          const cancelledBet = cancelledBets.find(
+            (cancelledBet) => cancelledBet.id === bet.id
+          )
+          return cancelledBet ? { ...bet, isCancelled: true } : bet
+        })
+      })
+    },
+    enabled,
+  })
+
   return newBets
 }
 

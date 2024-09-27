@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions'
 import { sum } from 'lodash'
 
 import { getUsersContractMetricsOrderedByProfit } from 'common/supabase/contract-metrics'
@@ -9,7 +8,6 @@ import {
   SupabaseClient,
 } from 'shared/supabase/init'
 import { getUser, getUsers, log } from 'shared/utils'
-import { secrets } from 'common/secrets'
 import { bulkInsert } from 'shared/supabase/utils'
 import { APIError } from 'common/api/utils'
 
@@ -24,25 +22,26 @@ const time = now.getTime()
 const getDate = () => dayjs(now).format('YYYY-MM-DD')
 
 const USERS_TO_SAVE = 300
-// Saving metrics should work until our users are greater than USERS_TO_SAVE * 2*60 users
-export const saveWeeklyContractMetrics = functions
-  .runWith({ memory: '4GB', secrets, timeoutSeconds: 60 })
-  // every minute for 2 hours Friday 4am PT (UTC -08:00)
-  .pubsub.schedule('* 13-14 * * 5')
-  .timeZone('Etc/UTC')
-  .onRun(async () => {
-    await saveWeeklyContractMetricsInternal()
-  })
+// // Saving metrics should work until our users are greater than USERS_TO_SAVE * 2*60 users
+// export const saveWeeklyContractMetrics = functions
+//   .runWith({ memory: '4GB', secrets, timeoutSeconds: 60 })
+//   // every minute for 2 hours Friday 4am PT (UTC -08:00)
+//   .pubsub.schedule('* 13-14 * * 5')
+//   .timeZone('Etc/UTC')
+//   .onRun(async () => {
+//     await saveWeeklyContractMetricsInternal()
+//   })
 
-export const sendWeeklyPortfolioUpdate = functions
-  .runWith({ memory: '8GB', secrets, timeoutSeconds: 540 })
-  // every Friday at 12pm PT (UTC -08:00)
-  .pubsub.schedule('0 20 * * 5')
-  .timeZone('Etc/UTC')
-  .onRun(async () => {
-    await sendWeeklyPortfolioUpdateNotifications()
-  })
+// export const sendWeeklyPortfolioUpdate = functions
+//   .runWith({ memory: '8GB', secrets, timeoutSeconds: 540 })
+//   // every Friday at 12pm PT (UTC -08:00)
+//   .pubsub.schedule('0 20 * * 5')
+//   .timeZone('Etc/UTC')
+//   .onRun(async () => {
+//     await sendWeeklyPortfolioUpdateNotifications()
+//   })
 
+// NOTE: this isn't used anywhere
 export const saveWeeklyContractMetricsInternal = async () => {
   const db = createSupabaseClient()
 

@@ -43,8 +43,7 @@ function getTweetHref(tweetText: string) {
 export const getPositionTweet = (
   position: number,
   invested: number,
-  contract: Contract,
-  username: string
+  contract: Contract
 ) => {
   const p = invested / Math.abs(position)
   const prob = formatPercent(position > 0 ? p : 1 - p)
@@ -52,19 +51,12 @@ export const getPositionTweet = (
 
   return `I'm ${
     TWOMBA_ENABLED ? 'predicting' : 'betting'
-  } there's a ${side} than ${prob} chance. ${getShareUrl(contract, username)}`
+  } there's a ${side} than ${prob} chance. ${getShareUrl(contract)}`
 }
 
-export const getWinningTweet = (
-  profit: number,
-  contract: Contract,
-  username: string
-) => {
+export const getWinningTweet = (profit: number, contract: Contract) => {
   const isCashContract = contract.token === 'CASH'
   return `I made ${isCashContract ? SWEEPIES_MONIKER : 'M$'}${formatMoneyNumber(
     profit
-  )} in profit trading on\n'${contract.question}'! ${getShareUrl(
-    contract,
-    username
-  )}`
+  )} in profit trading on\n'${contract.question}'! ${getShareUrl(contract)}`
 }

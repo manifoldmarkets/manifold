@@ -4175,10 +4175,10 @@ execa@^5.0.0, execa@^5.1.1:
     signal-exit "^3.0.3"
     strip-final-newline "^2.0.0"
 
-expo-apple-authentication@~6.4.1:
-  version "6.4.1"
-  resolved "https://registry.yarnpkg.com/expo-apple-authentication/-/expo-apple-authentication-6.4.1.tgz#3992abd1497abfe9163cc0f66245edd4161e39b3"
-  integrity sha512-tYpCx/cLHruOAPnU5K8UpAycWJWPgdPQra7qz6FGl53Agt8UJ4ev/qEkijbL959x46Ke9+6WSMOhLqt8JoypqA==
+expo-apple-authentication@6.4.2:
+  version "6.4.2"
+  resolved "https://registry.yarnpkg.com/expo-apple-authentication/-/expo-apple-authentication-6.4.2.tgz#1c2ea4fcbd1de5736483dccd370cdd6b8e3de15d"
+  integrity sha512-X4u1n3Ql1hOpztXHbKNq4I1l4+Ff82gC6RmEeW43Eht7VE6E8PrQBpYKw+JJv8osrCJt7R5O1PZwed6WLN5oig==
 
 expo-application@~5.9.0:
   version "5.9.1"
@@ -4359,6 +4359,11 @@ expo-status-bar@~1.12.1:
   version "1.12.1"
   resolved "https://registry.yarnpkg.com/expo-status-bar/-/expo-status-bar-1.12.1.tgz#52ce594aab5064a0511d14375364d718ab78aa66"
   integrity sha512-/t3xdbS8KB0prj5KG5w7z+wZPFlPtkgs95BsmrP/E7Q0xHXTcDcQ6Cu2FkFuRM+PKTb17cJDnLkawyS5vDLxMA==
+
+expo-store-review@~7.0.2:
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/expo-store-review/-/expo-store-review-7.0.2.tgz#cbe22d1ea12666710df66d78e351defa86a7d17b"
+  integrity sha512-bXBXPv2KhfE9Ct14vof9Y1kAGlTFXmGdOLPToyg/eM6lMSALwyrLMkJ3Ba2XCI8PzKGKlx/+Yx5bImrZs4cUwg==
 
 expo-structured-headers@~3.8.0:
   version "3.8.0"

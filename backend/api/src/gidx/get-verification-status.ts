@@ -11,11 +11,11 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { updateUser } from 'shared/supabase/users'
-import { getUser, log } from 'shared/utils'
+import { getReferrerInfo, updateUser } from 'shared/supabase/users'
+import { getUserAndPrivateUserOrThrow, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { User } from 'common/user'
-import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
+import { distributeKycAndReferralBonus as distributeKycAndReferralBonus } from 'shared/distribute-kyc-bonus'
 
 export const getVerificationStatus: APIHandler<
   'get-verification-status-gidx'
@@ -43,13 +43,8 @@ export const getVerificationStatusInternal = async (
   } = customerProfile
   throwIfIPNotWhitelisted(ResponseCode, ResponseMessage)
   const pg = createSupabaseDirectClient()
-  const user = await getUser(userId, pg)
-  if (!user) {
-    return {
-      status: 'error',
-      message: 'User not found',
-    }
-  }
+  const userAndPrivateUser = await getUserAndPrivateUserOrThrow(userId, pg)
+  const { user } = userAndPrivateUser
   if (ResponseCode === 501 && ResponseMessage.includes('not found')) {
     log('User not found in GIDX', { userId, ResponseMessage })
     // TODO: broadcast this user update when we have that functionality
@@ -69,18 +64,27 @@ export const getVerificationStatusInternal = async (
     }
   }
 
-  const { status, message } = await verifyReasonCodes(
-    user,
+  const { status, message, idVerified } = await verifyReasonCodes(
+    userAndPrivateUser,
     ReasonCodes,
     FraudConfidenceScore,
     IdentityConfidenceScore
   )
 
-  if (status === 'success' && !user.sweepstakesVerified) {
+  // If they just got verified via their id documents, distribute the bonus
+  if (status !== 'error' && !user.idVerified && idVerified) {
+    const referrerInfo = user.usedReferralCode
+      ? await getReferrerInfo(pg, user.referredByUserId)
+      : undefined
+    await distributeKycAndReferralBonus(
+      pg,
+      user,
+      referrerInfo?.id,
+      referrerInfo?.sweeps_verified
+    )
     await updateUser(pg, user.id, {
-      sweepstakesVerified: true,
+      sweepstakesVerifiedTime: Date.now(),
     })
-    await distributeKycBonus(pg, user.id)
   }
 
   const { documents, status: documentStatus } = await assessDocumentStatus(
@@ -96,9 +100,19 @@ export const getVerificationStatusInternal = async (
   }
 }
 
-const assessDocumentStatus = async (user: User, pg: SupabaseDirectClient) => {
-  const { isPending, isVerified, isRejected, documents } =
-    await getIdentityVerificationDocuments(user.id)
+export const assessDocumentStatus = async (
+  user: User,
+  pg: SupabaseDirectClient
+) => {
+  const {
+    documents,
+    rejectedDocuments,
+    unrejectedUtilityDocuments,
+    unrejectedIdDocuments,
+    isPending,
+    isVerified,
+    isRejected,
+  } = await getIdentityVerificationDocuments(user.id)
 
   if (isVerified && user.kycDocumentStatus !== 'verified') {
     // They passed the reason codes and have the required documents
@@ -129,5 +143,11 @@ const assessDocumentStatus = async (user: User, pg: SupabaseDirectClient) => {
   return {
     status: 'success',
     documents,
+    rejectedDocuments,
+    unrejectedUtilityDocuments,
+    unrejectedIdDocuments,
+    isPending,
+    isVerified,
+    isRejected,
   }
 }

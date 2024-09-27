@@ -54,7 +54,8 @@ export const getUserPortfolioInternal = async (userId: string) => {
       data->'pool' as pool,
       mechanism,
       data->'totalShares' as total_shares,
-      (data->>'p')::numeric as p
+      (data->>'p')::numeric as p,
+      token
     from contracts where id in ($1:list)
     `,
             [betContractIds],

@@ -75,7 +75,7 @@ export default function RegisterOnDiscord() {
         <Row className={'text-ink-600 mt-12 gap-1 text-sm'}>
           Questions? come by our
           <a
-            className={'text-indigo-700'}
+            className={'text-primary-700'}
             href="https://discord.com/invite/eHQBNBqXuh"
           >
             Discord

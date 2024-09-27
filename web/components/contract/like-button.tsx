@@ -24,7 +24,6 @@ import { UserHovercard } from '../user/user-hovercard'
 import { removeUndefinedProps } from 'common/util/object'
 import { useUsers } from 'web/hooks/use-user-supabase'
 import { DisplayUser } from 'common/api/user-types'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const LIKES_SHOWN = 3
 
@@ -137,7 +136,7 @@ export const LikeButton = memo(function LikeButton(props: {
         hasSafePolygon={showList}
         className="flex items-center"
       >
-        {TWOMBA_ENABLED && trackingLocation == 'contract page' ? (
+        {size == '2xs' ? (
           <button
             disabled={disabled}
             className={clsx(

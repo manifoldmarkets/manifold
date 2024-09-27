@@ -1,11 +1,12 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { getUser, LOCAL_DEV, log } from 'shared/utils'
-import { updateUser } from 'shared/supabase/users'
+import { getUserIdFromReferralCode, updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   getGIDXStandardParams,
   getLocalServerIP,
   getUserRegistrationRequirements,
+  GIDX_BASE_URL,
   throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
@@ -15,11 +16,11 @@ import {
 } from 'common/gidx/gidx'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { parsePhoneNumber } from 'libphonenumber-js'
-import { getIp } from 'shared/analytics'
-import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
+import { getIp, track } from 'shared/analytics'
+import { distributeKycAndReferralBonus } from 'shared/distribute-kyc-bonus'
 
 const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/CustomerIdentity/CustomerRegistration'
+  GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerRegistration'
 
 export const register: APIHandler<'register-gidx'> = async (
   props,
@@ -33,8 +34,15 @@ export const register: APIHandler<'register-gidx'> = async (
   if (!EmailAddress) {
     throw new APIError(400, 'User must have an email address')
   }
+  const { ReferralCode } = props
+  const pg = createSupabaseDirectClient()
+  const referrerInfo = await getUserIdFromReferralCode(pg, ReferralCode)
+  if (!referrerInfo && ReferralCode) {
+    throw new APIError(400, 'Invalid referral code')
+  }
   const body = {
     EmailAddress,
+    CountryCode: 'US',
     MobilePhoneNumber: ENABLE_FAKE_CUSTOMER
       ? props.MobilePhoneNumber
       : parsePhoneNumber(phoneNumberWithCode)?.nationalNumber ??
@@ -59,10 +67,9 @@ export const register: APIHandler<'register-gidx'> = async (
   if (!res.ok) {
     throw new APIError(400, 'GIDX registration failed')
   }
-  const pg = createSupabaseDirectClient()
-  const user = await getUser(auth.uid, pg)
+  const user = await getUser(auth.uid)
   if (!user) {
-    throw new APIError(400, 'User not found')
+    throw new APIError(404, 'User not found')
   }
   const data = (await res.json()) as GIDXRegistrationResponse
   log('Registration response:', data)
@@ -75,22 +82,35 @@ export const register: APIHandler<'register-gidx'> = async (
   } = data
   throwIfIPNotWhitelisted(ResponseCode, ResponseMessage)
   const { status, message, idVerified } = await verifyReasonCodes(
-    user,
+    { user, privateUser },
     ReasonCodes,
     FraudConfidenceScore,
     IdentityConfidenceScore
   )
-  if (status === 'success') {
+  if (referrerInfo) {
+    // If they didn't get verified right now, they might upload docs and get verified later
     await updateUser(pg, auth.uid, {
-      sweepstakesVerified: true,
-      kycDocumentStatus: 'await-documents',
-    })
-    await distributeKycBonus(pg, user.id)
-  } else if (idVerified) {
-    await updateUser(pg, auth.uid, {
-      kycDocumentStatus: 'await-documents',
+      referredByUserId: referrerInfo.id,
+      usedReferralCode: true,
     })
   }
+  if (status !== 'error') {
+    await updateUser(pg, auth.uid, {
+      kycDocumentStatus: 'await-documents',
+      sweepstakesVerifiedTime: Date.now(),
+    })
+    await distributeKycAndReferralBonus(
+      pg,
+      user,
+      referrerInfo?.id,
+      referrerInfo?.sweepsVerified
+    )
+  }
+  track(auth.uid, 'register user gidx attempt', {
+    status,
+    message,
+    idVerified,
+  })
   return {
     status,
     message,

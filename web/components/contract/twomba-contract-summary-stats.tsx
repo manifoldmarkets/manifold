@@ -41,14 +41,14 @@ export function TwombaContractSummaryStats(props: {
           inEmbed={true}
         />
       ) : (
-        <Row className="gap-4">
-          {marketTier && marketTier !== 'basic' && (
+        <Row className="ml-auto gap-4">
+          {marketTier && marketTier !== 'basic' && !isCashContract && (
             <TierTooltip tier={marketTier} contract={contract} />
           )}
           {!isBlocked(privateUser, contract.creatorId) && (
             <LikeButton
               user={user}
-              size={'xs'}
+              size={'2xs'}
               contentId={contractId}
               contentType="contract"
               contentCreatorId={creatorId}

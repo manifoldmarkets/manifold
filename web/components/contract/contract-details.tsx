@@ -24,21 +24,19 @@ import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 export function AuthorInfo(props: {
   contract: Contract
   resolverId?: string // live updated
-  className?: string
 }) {
-  const { contract, resolverId, className } = props
+  const { contract, resolverId } = props
   const { creatorId, creatorName, creatorUsername, creatorAvatarUrl } = contract
   const resolver = useDisplayUserById(resolverId)
   return (
-    <Row className={clsx('grow flex-wrap items-center gap-2', className)}>
-      <UserHovercard userId={creatorId}>
+    <Row className="grow flex-wrap items-center gap-4">
+      <UserHovercard userId={creatorId} className="flex items-center gap-2">
         <Avatar
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
           size={'xs'}
         />
-      </UserHovercard>
-      <UserHovercard userId={creatorId}>
+
         <UserLink
           user={{
             id: creatorId,
@@ -49,12 +47,12 @@ export function AuthorInfo(props: {
         />
       </UserHovercard>
       {resolver && resolver.id !== contract.creatorId && (
-        <>
-          <span className={'ml-1'}>resolved by </span>
+        <span>
+          resolved by{' '}
           <UserHovercard userId={resolver.id}>
             <UserLink user={resolver} />
           </UserHovercard>
-        </>
+        </span>
       )}
     </Row>
   )
@@ -109,7 +107,7 @@ export function CloseDate(props: {
     dayjs.duration(900, 'year')
   )
   const neverCloses =
-    !closeTime ??
+    !closeTime ||
     (NO_CLOSE_TIME_TYPES.includes(contract.outcomeType) &&
       dayjs(closeTime).isAfter(almostForeverTime))
 

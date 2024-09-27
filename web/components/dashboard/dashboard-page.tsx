@@ -6,7 +6,6 @@ import {
 } from 'common/dashboard'
 import { LinkPreviews } from 'common/link-preview'
 import { useUser } from 'web/hooks/use-user'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { useEffect, useState } from 'react'
 import { ENV_CONFIG, isAdminId, isModId } from 'common/envs/constants'
@@ -18,7 +17,6 @@ import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { referralQuery } from 'common/util/share'
 import { FollowDashboardButton } from 'web/components/dashboard/follow-dashboard-button'
 import { Button } from 'web/components/buttons/button'
 import { deleteDashboard, updateDashboard } from 'web/lib/api/api'
@@ -48,7 +46,6 @@ export function DashboardPage(props: {
   className?: string
 }) {
   const user = useUser()
-  useSaveReferral(user)
   useSaveCampaign()
 
   const router = useRouter()
@@ -141,9 +138,7 @@ export function DashboardPage(props: {
 
               <div className="flex items-center">
                 <CopyLinkOrShareButton
-                  url={`https://${ENV_CONFIG.domain}/${endpoint}/${slug}${
-                    user?.username ? referralQuery(user.username) : ''
-                  }`}
+                  url={`https://${ENV_CONFIG.domain}/${endpoint}/${slug}`}
                   eventTrackingName="copy dashboard link"
                   tooltip="Share"
                 />

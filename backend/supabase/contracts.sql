@@ -231,9 +231,9 @@ drop index if exists description_fts;
 
 create index description_fts on public.contracts using gin (description_fts);
 
-drop index if exists market_tier_idx;
+drop index if exists market_token_tier_idx;
 
-create index market_tier_idx on public.contracts using btree (tier);
+create index market_token_tier_idx on public.contracts using btree (token, tier);
 
 drop index if exists question_fts;
 

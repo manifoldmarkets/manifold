@@ -8,6 +8,7 @@ import { User } from 'common/user'
 import { formatMoneyUSD, formatPercent } from 'common/util/format'
 import { useState } from 'react'
 import { IoIosWarning } from 'react-icons/io'
+import { capitalize } from 'lodash'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { CoinNumber } from '../widgets/coin-number'
@@ -28,7 +29,8 @@ export function CashoutLimitWarning(props: {
       <div className={clsx('text-ink-700 w-full text-sm', className)}>
         <IoIosWarning className="mr-1 inline-block h-4 w-4 align-text-bottom text-orange-500" />
         <b>New York</b> and <b>Florida</b> have a{' '}
-        <b>{formatMoneyUSD(NY_FL_CASHOUT_LIMIT)}</b> cashout limit per market.{' '}
+        <b>{formatMoneyUSD(NY_FL_CASHOUT_LIMIT)}</b> redemption limit per
+        market.{' '}
         <button
           className="text-primary-600 font-semibold underline"
           onClick={() => setOpen(true)}
@@ -39,17 +41,17 @@ export function CashoutLimitWarning(props: {
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>
           <div className="text-primary-700 text-xl font-semibold">
-            Cashout Limit
+            Redemption Limit
           </div>
           <span>
             Residents of <b>New York</b> and <b>Florida</b> have a{' '}
-            <b>{formatMoneyUSD(NY_FL_CASHOUT_LIMIT)}</b> cashout limit per
+            <b>{formatMoneyUSD(NY_FL_CASHOUT_LIMIT)}</b> redemption limit per
             market.
           </span>
 
           <Col className="gap-1">
             <div className="text-ink-600 font-semibold">
-              {SWEEPIES_NAME} to Cash Conversion
+              {capitalize(SWEEPIES_NAME)} Redemption
             </div>
             <span>
               <CoinNumber
@@ -58,7 +60,7 @@ export function CashoutLimitWarning(props: {
                 className="font-semibold text-amber-700 dark:text-amber-300"
                 isInline
               />{' '}
-              = <b>$1</b>, with a <b>{formatPercent(CHARITY_FEE)} fee</b>. To
+              → <b>$1</b>, with a <b>{formatPercent(CHARITY_FEE)} fee</b>. To
               receive the full {formatMoneyUSD(NY_FL_CASHOUT_LIMIT)} in cash
               after the fee, you would need to redeem approximately{' '}
               <CoinNumber
@@ -71,7 +73,7 @@ export function CashoutLimitWarning(props: {
             </span>
           </Col>
           <Col className="gap-1">
-            <div className="text-ink-600 font-semibold">Cashout Limit</div>
+            <div className="text-ink-600 font-semibold">Redemption Limit</div>
             <span>
               Any Sweepies exceeding this{' '}
               <CoinNumber
@@ -90,8 +92,8 @@ export function CashoutLimitWarning(props: {
               Multi-Choice Markets
             </div>
             <span>
-              In multi-choice markets, the cashout limit applies separately to
-              each answer. This means you can redeem up to{' '}
+              In multi-choice markets, the redemption limit applies separately
+              to each answer. This means you can redeem up to{' '}
               <CoinNumber
                 amount={NY_FL_CASHOUT_LIMIT / (1 - CHARITY_FEE)}
                 coinType="CASH"

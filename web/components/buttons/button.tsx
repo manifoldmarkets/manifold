@@ -26,6 +26,8 @@ export type ColorType =
   | 'white-outline'
   | 'purple'
   | 'violet'
+  | 'azure'
+  | 'sienna'
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -83,7 +85,9 @@ export function buttonClass(size: SizeType, color: ColorType) {
       gradient,
       'enabled:!bg-gradient-to-br from-yellow-400 via-yellow-100 to-yellow-300 dark:from-yellow-600 dark:via-yellow-200 dark:to-yellow-400 !text-gray-900',
     ],
-    color === 'white-outline' && [outline, 'text-white hover:bg-white']
+    color === 'white-outline' && [outline, 'text-white hover:bg-white'],
+    color === 'azure' && [solid, 'bg-azure-500 hover:bg-azure-700'],
+    color === 'sienna' && [solid, 'bg-sienna-500 hover:bg-sienna-700']
   )
 }
 

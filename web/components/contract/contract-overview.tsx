@@ -1,6 +1,5 @@
 import { ReactNode, memo, useState, useEffect } from 'react'
 import clsx from 'clsx'
-import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 
 import { Bet } from 'common/bet'
 import { HistoryPoint, MultiPoints } from 'common/chart'
@@ -67,15 +66,12 @@ import { filterDefined } from 'common/util/array'
 import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
 import { useChartPositions } from 'web/hooks/use-chart-positions'
 import { BuyPanel } from '../bet/bet-panel'
-import { blockFromSweepstakes, identityPending, User } from 'common/user'
+import { User } from 'common/user'
 import {
   ChartAnnotations,
   EditChartAnnotationsButton,
 } from '../charts/chart-annotations'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
-import Link from 'next/link'
-import { buttonClass } from 'web/components/buttons/button'
-import { CoinNumber } from 'web/components/widgets/coin-number'
 
 export const ContractOverview = memo(
   (props: {
@@ -175,7 +171,6 @@ export const BinaryOverview = (props: {
   chartAnnotations: ChartAnnotation[]
 }) => {
   const { contract, resolutionRating } = props
-
   const user = useUser()
 
   const [showZoomer, setShowZoomer] = useState(false)
@@ -205,7 +200,9 @@ export const BinaryOverview = (props: {
           {resolutionRating}
         </Col>
         <Row className={'gap-1'}>
-          {loading && <LoadingIndicator size="sm" />}
+          {loading && (
+            <LoadingIndicator spinnerColor="border-ink-400" size="sm" />
+          )}
           {enableAdd && (
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
@@ -232,7 +229,6 @@ export const BinaryOverview = (props: {
         pointerMode={pointerMode}
         chartAnnotations={chartAnnotations}
       />
-
       {tradingAllowed(contract) && (
         <BinaryBetPanel contract={contract} user={user} />
       )}
@@ -834,33 +830,7 @@ export function BinaryBetPanel(props: {
 
   return (
     <Col className="my-3 w-full">
-      {contract.token === 'CASH' && identityPending(user) ? (
-        <Row className={'bg-canvas-50 rounded p-4'}>
-          You can't trade on sweepstakes markets while your status is pending.
-        </Row>
-      ) : contract.token === 'CASH' && user && !user.idVerified ? (
-        <Row className={'bg-canvas-50 items-center gap-1 rounded p-4'}>
-          <span>
-            Verify your info to start trading on sweepstakes markets and earn a
-            bonus of{' '}
-            <CoinNumber
-              amount={KYC_VERIFICATION_BONUS_CASH}
-              coinType="sweepies"
-              isInline
-            />
-            !
-          </span>
-          <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
-            Verify
-          </Link>
-        </Row>
-      ) : contract.token === 'CASH' && blockFromSweepstakes(user) ? (
-        <Row className={'bg-canvas-50 rounded p-4'}>
-          You are not eligible to trade on sweepstakes markets.
-        </Row>
-      ) : (
-        <BuyPanel inModal={false} contract={contract} />
-      )}
+      <BuyPanel inModal={false} contract={contract} />
       <UserBetsSummary
         className="border-ink-200 !mb-2 mt-2 "
         contract={contract}

@@ -33,7 +33,7 @@ import { WatchMarketModal } from './watch-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
 import { isAdminId } from 'common/envs/constants'
 import { FaDollarSign } from 'react-icons/fa'
-import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
+import router from 'next/router'
 
 export function TwombaHeaderActions(props: {
   playContract: Contract
@@ -111,6 +111,7 @@ export function TwombaHeaderActions(props: {
         subsidyAmount: 100, // You may want to make this configurable
       })
       toast.success('Market converted to cash market successfully')
+      router.reload()
     } catch (error) {
       toast.error('Failed to convert market to cash market')
       console.error(error)
@@ -238,7 +239,7 @@ export function TwombaHeaderActions(props: {
     ...(isAdmin && !playContract.siblingContractId
       ? [
           {
-            name: 'Prize Cashify!',
+            name: 'Sweepify!',
             onClick: convertToCashMarket,
             icon: <FaDollarSign className="h-4 w-4" />,
             className:
@@ -248,18 +249,21 @@ export function TwombaHeaderActions(props: {
       : []),
   ]
 
+  const sweepsEnabled = !!playContract.siblingContractId
+
+  const isNonBetPollOrBountiedQuestion =
+    playContract.mechanism === 'none' &&
+    (playContract.outcomeType === 'POLL' ||
+      playContract.outcomeType === 'BOUNTIED_QUESTION')
+
   return (
-    // make tooltip children stretch
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
-      {!!currentContract.siblingContractId && (
-        <div className="relative">
-          <TwombaToggle />
-          <ToggleVerifyCallout
-            className="absolute -right-[60px] top-full z-10 mt-3 hidden w-80 sm:flex"
-            caratClassName="right-[84px]"
-          />
-        </div>
-      )}
+      <div className="relative z-50">
+        {!isNonBetPollOrBountiedQuestion && (
+          <TwombaToggle sweepsEnabled={sweepsEnabled} />
+        )}
+      </div>
+
       {!playContract.coverImageUrl && isCreator && (
         <ChangeBannerButton
           contract={playContract}
@@ -267,7 +271,7 @@ export function TwombaHeaderActions(props: {
         />
       )}
       <CopyLinkOrShareButton
-        url={getShareUrl(currentContract, user?.username)}
+        url={getShareUrl(currentContract)}
         tooltip="Copy question share link"
         className="text-ink-500 hover:text-ink-600"
         size="xs"
@@ -285,7 +289,8 @@ export function TwombaHeaderActions(props: {
       />
       {repostOpen && (
         <RepostModal
-          contract={currentContract}
+          playContract={playContract}
+          liveContract={currentContract}
           open={repostOpen}
           setOpen={setRepostOpen}
         />

@@ -1,7 +1,6 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
 import { orderBy } from 'lodash'
 import { BetBalanceChange, TxnBalanceChange } from 'common/balance-change'
 import { Txn } from 'common/txn'
@@ -119,24 +118,37 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
   const pg = createSupabaseDirectClient()
   const contractToBets: {
     [contractId: string]: {
-      bets: Bet[]
-      contract: Contract
+      bets: (Bet & { answerText?: string | undefined })[]
+      contract: BetBalanceChange['contract']
     }
   } = {}
   await pg.map(
-    `
-     select json_agg(cb.data) as bets, c.data as contract
+    `select
+       json_agg(cb.data || jsonb_build_object('answerText', a.text)) as bets,
+       c.id,
+       c.question,
+       c.slug,
+       c.visibility,
+       c.data->>'creatorUsername' as creator_username,
+       c.token
      from contract_bets cb
-              join contracts c on cb.contract_id = c.id
+        join contracts c on cb.contract_id = c.id
+        left join answers a on a.id = cb.answer_id
      where cb.updated_time > millis_to_ts($1)
         and cb.user_id = $2
      group by c.id;
     `,
     [after, userId],
     (row) => {
-      contractToBets[row.contract.id] = {
-        bets: orderBy(row.bets as Bet[], (bet) => bet.createdTime, 'asc'),
-        contract: row.contract as Contract,
+      contractToBets[row.id] = {
+        bets: orderBy(row.bets, (bet) => bet.createdTime, 'asc'),
+        contract: {
+          question: row.question,
+          slug: row.slug,
+          visibility: row.visibility,
+          creatorUsername: row.creator_username,
+          token: row.token,
+        },
       }
     }
   )
@@ -156,11 +168,7 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
       if (isRedemption && nextBetIsRedemption) continue
       if (isRedemption && amount === 0) continue
 
-      const { question, visibility, creatorUsername, slug } = contract
-      const text =
-        contract.mechanism === 'cpmm-multi-1' && bet.answerId
-          ? contract.answers.find((a) => a.id === bet.answerId)?.text
-          : undefined
+      const { question, visibility, creatorUsername, slug, token } = contract
       const balanceChangeProps = {
         key: bet.id,
         bet: {
@@ -172,8 +180,12 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
           slug: visibility === 'public' ? slug : '',
           visibility,
           creatorUsername,
+          token,
         },
-        answer: text && bet.answerId ? { text, id: bet.answerId } : undefined,
+        answer:
+          bet.answerText && bet.answerId
+            ? { text: bet.answerText, id: bet.answerId }
+            : undefined,
       }
       if (bet.limitProb !== undefined && bet.fills) {
         const fillsInTimeframe = bet.fills.filter(

@@ -28,6 +28,12 @@ import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
 import { scoreContracts } from './score-contracts'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateLeague } from './update-league'
+import { drizzleLiquidity } from './drizzle-liquidity'
+import { resetBettingStreaksInternal } from './reset-betting-streaks'
+import {
+  resetDailyQuestStatsInternal,
+  resetWeeklyQuestStatsInternal,
+} from './reset-quests-stats'
 
 export function createJobs() {
   return [
@@ -81,6 +87,11 @@ export function createJobs() {
       'update-user-metrics',
       '0 * * * * *', // every minute
       () => updateUserMetricsCore()
+    ),
+    createJob(
+      'drizzle-liquidity',
+      '0 */7 * * * *', // every 7th minute
+      drizzleLiquidity
     ),
     createJob(
       'expire-limit-orders',
@@ -159,6 +170,21 @@ export function createJobs() {
       'update-league-ranks',
       '0 0 0 * * *', // every day at midnight
       updateLeagueRanks
+    ),
+    createJob(
+      'reset-betting-streaks',
+      '0 0 0 * * *', // every day at midnight
+      resetBettingStreaksInternal
+    ),
+    createJob(
+      'reset-quests-stats',
+      '0 0 0 * * *', // every day at midnight
+      resetDailyQuestStatsInternal
+    ),
+    createJob(
+      'reset-weekly-quests-stats',
+      '0 0 0 * * 1', // every Monday at midnight
+      resetWeeklyQuestStatsInternal
     ),
   ]
 }

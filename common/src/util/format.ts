@@ -72,10 +72,10 @@ export function formatSweepiesNumber(
   }
 ) {
   const { toDecimal, short } = parameters ?? {}
-  const toDecimalPlace = toDecimal ?? 2
-  if (short && amount > 1000) {
+  if (short) {
     return formatLargeNumber(amount)
   }
+  const toDecimalPlace = toDecimal ?? 2
   // return amount.toFixed(toDecimal ?? 2)
   return amount.toLocaleString('en-US', {
     minimumFractionDigits: toDecimalPlace,
@@ -246,8 +246,12 @@ export const formatOutcomeLabel = (
     | StonkContract
     | CPMMMultiContract
     | CPMMNumericContract,
-  outcomeLabel: 'YES' | 'NO'
+  outcomeLabel: 'YES' | 'NO',
+  outcomePseudonym?: string
 ) => {
+  if (outcomePseudonym) {
+    return outcomePseudonym
+  }
   if (
     contract.outcomeType === 'BINARY' ||
     contract.mechanism === 'cpmm-multi-1'

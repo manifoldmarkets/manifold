@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getGIDXStandardParams } from 'shared/gidx/helpers'
+import { getGIDXStandardParams, GIDX_BASE_URL } from 'shared/gidx/helpers'
 import { isProd, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { PROD_CONFIG } from 'common/envs/prod'
@@ -9,9 +9,10 @@ import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-docu
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { track } from 'shared/analytics'
 
 const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/DocumentLibrary/DocumentRegistration'
+  GIDX_BASE_URL + '/v3.0/api/DocumentLibrary/DocumentRegistration'
 export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
   props,
   auth
@@ -61,6 +62,10 @@ export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
       kycDocumentStatus: 'pending',
     })
   }
+  track(auth.uid, 'gidx document uploaded', {
+    needsMoreDocuments: !isPending,
+    fileName,
+  })
   return { status: 'success' }
 }
 

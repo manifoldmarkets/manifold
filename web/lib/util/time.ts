@@ -22,7 +22,7 @@ export function formatJustTime(time: number) {
   return dayjs(time).format('h:mma')
 }
 
-export const getCountdownString = (endDate: Date) => {
+export const getCountdownString = (endDate: Date, includeSeconds = false) => {
   const remainingTimeMs = endDate.getTime() - Date.now()
   const isPast = remainingTimeMs < 0
 
@@ -34,8 +34,10 @@ export const getCountdownString = (endDate: Date) => {
   const hoursStr = `${hours % 24}h`
   const minutesStr = `${minutes % 60}m`
   const daysStr = days > 0 ? `${days}d` : ''
-
-  return `${isPast ? '-' : ''}${daysStr} ${hoursStr} ${minutesStr}`
+  const secondsStr = includeSeconds ? ` ${seconds % 60}s` : ''
+  return `${
+    isPast ? '-' : ''
+  }${daysStr} ${hoursStr} ${minutesStr} ${secondsStr}`
 }
 
 export const getCountdownStringHoursMinutes = (endDate: Date) => {

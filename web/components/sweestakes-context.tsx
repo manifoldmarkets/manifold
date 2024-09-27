@@ -13,13 +13,7 @@ const SweepstakesContext = createContext<SweepstakesContextType | undefined>(
 export const SweepstakesProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [queryPlay, setQueryPlay] = usePersistentLocalState('play', 'true')
-
-  const isPlay = !queryPlay || queryPlay === 'true'
-  const setIsPlay = (isPlay: boolean) => {
-    setQueryPlay(isPlay ? 'true' : 'false')
-  }
-
+  const [isPlay, setIsPlay] = usePersistentLocalState(false, 'play')
   return (
     <SweepstakesContext.Provider value={{ isPlay, setIsPlay }}>
       {children}

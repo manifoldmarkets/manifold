@@ -1,29 +1,53 @@
-import {
-  ageBlocked,
-  getVerificationStatus,
-  identityBlocked,
-  locationBlocked,
-  User,
-} from 'common/user'
-import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
-import { formatMoney } from 'common/util/format'
+import { PrivateUser, User } from 'common/user'
 import { Col } from 'web/components/layout/col'
-import { CoinNumber } from 'web/components/widgets/coin-number'
 import Link from 'next/link'
 import clsx from 'clsx'
-import { Button, buttonClass } from 'web/components/buttons/button'
+import { Button, buttonClass, IconButton } from 'web/components/buttons/button'
 import { api } from 'web/lib/api/api'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { GIDXDocument, idNameToCategoryType } from 'common/gidx/gidx'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { SWEEPIES_NAME, TWOMBA_ENABLED } from 'common/envs/constants'
 import { getDocumentsStatus } from 'common/gidx/document'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
+import { VerifyButton } from '../twomba/sweep-verify-section'
+import { MdBlock } from 'react-icons/md'
+import { XIcon } from '@heroicons/react/solid'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import {
+  ageBlocked,
+  documentsFailed,
+  fraudSession,
+  identityBlocked,
+  locationBlocked,
+} from 'common/gidx/user'
 
-export const VerifyMe = (props: { user: User }) => {
+const HideVerifyMeButton = ({
+  hideVerifyMe,
+  setHideVerifyMe,
+  className,
+}: {
+  hideVerifyMe: boolean
+  setHideVerifyMe: (value: boolean) => void
+  className?: string
+}) => {
+  if (hideVerifyMe) return null
+
+  return (
+    <IconButton
+      className={clsx('h-8', className)}
+      size="xs"
+      onClick={() => setHideVerifyMe(true)}
+    >
+      <XIcon className="text-ink-700 h-5 w-5" />
+    </IconButton>
+  )
+}
+
+export const VerifyMe = (props: { user: User; privateUser: PrivateUser }) => {
   const user = useUser() ?? props.user
-  const privateUser = usePrivateUser()
+  const privateUser = usePrivateUser() ?? props.privateUser
   const [show, setShow] = useState(
     TWOMBA_ENABLED &&
       (!user.sweepstakesVerified ||
@@ -34,8 +58,14 @@ export const VerifyMe = (props: { user: User }) => {
 
   const [documents, setDocuments] = useState<GIDXDocument[] | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const [hideVerifyMe, setHideVerifyMe] = usePersistentLocalState(
+    false,
+    `hideVerifyMe`
+  )
+
   const {
-    fetchMonitorStatus,
+    requestLocationThenFetchMonitorStatus,
     loading: loadingMonitorStatus,
     monitorStatusMessage,
     monitorStatus,
@@ -49,46 +79,72 @@ export const VerifyMe = (props: { user: User }) => {
     if (documents) setDocuments(documents)
     if (message) console.error(message)
   }
-  if (!show || !user) return null
+  if (!show || !user || !privateUser) return null
   const showUploadDocsButton =
     getDocumentsStatus(documents ?? []).isRejected && documents
+
+  const showUserDocStatus =
+    user.kycDocumentStatus === 'pending' || documentsFailed(user, privateUser)
+
+  if (hideVerifyMe && !showUserDocStatus) {
+    return null
+  }
 
   if (identityBlocked(user, privateUser)) {
     return (
       <Col
         className={
-          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
+          'border-ink-400 bg-ink-200 text-ink-700 justify-between gap-2 rounded border p-2 px-4'
         }
       >
-        <Row className={'w-full items-center justify-between'}>
+        <Row className={'w-full items-center justify-between gap-1'}>
           <span>
+            <MdBlock className="mb-0.5 mr-1 inline-block h-4 w-4" />
             Blocked from sweepstakes participation due to blocked identity.{' '}
           </span>
+          <HideVerifyMeButton
+            hideVerifyMe={hideVerifyMe}
+            setHideVerifyMe={setHideVerifyMe}
+            className="-mr-2 -mt-1  sm:mt-0 "
+          />
         </Row>
       </Col>
     )
-  }
-  if (
-    user.kycDocumentStatus === 'pending' ||
-    user.kycDocumentStatus === 'fail'
-  ) {
+  } else if (showUserDocStatus) {
     return (
       <Col
         className={
-          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
+          'border-primary-500  bg-primary-100 justify-between gap-2 rounded border p-2 px-4 dark:bg-indigo-700'
         }
       >
-        <Row className={'w-full items-center justify-between'}>
-          <span>Document verification pending. </span>
-          <Button
-            color={'indigo-outline'}
-            loading={loading}
-            disabled={loading}
-            onClick={getStatus}
-          >
-            Refresh status
-          </Button>
-        </Row>
+        <Col
+          className={'w-full items-center justify-between gap-2 sm:flex-row'}
+        >
+          <Row className="w-full justify-between">
+            <span>Document verification pending... </span>
+            <HideVerifyMeButton
+              hideVerifyMe={hideVerifyMe}
+              setHideVerifyMe={setHideVerifyMe}
+              className=" -mr-2 -mt-1 sm:hidden"
+            />
+          </Row>
+          <Row className={'w-full justify-end gap-1'}>
+            <Button
+              color={'indigo-outline'}
+              loading={loading}
+              disabled={loading}
+              onClick={getStatus}
+              className="w-full sm:w-fit"
+            >
+              Refresh status
+            </Button>
+            <HideVerifyMeButton
+              hideVerifyMe={hideVerifyMe}
+              setHideVerifyMe={setHideVerifyMe}
+              className="-mr-2 hidden sm:block"
+            />
+          </Row>
+        </Col>
 
         {documents && (
           <Col className={'gap-2'}>
@@ -129,91 +185,133 @@ export const VerifyMe = (props: { user: User }) => {
         )}
       </Col>
     )
-  }
-
-  if (user.sweepstakesVerified) {
+  } else if (ageBlocked(user, privateUser)) {
     return (
       <Col
         className={
-          'm-2 justify-between gap-2 rounded-sm bg-teal-100 p-2 px-3 dark:bg-teal-700'
+          'border-ink-400 bg-ink-200 text-ink-700 gap-2 rounded border p-2 px-4'
         }
       >
-        <Col className={'w-full items-center justify-between sm:flex-row'}>
+        <Row className={'w-full items-center justify-between gap-1'}>
           <span>
-            <span className={'text-lg'}>🎉</span> Congrats, you've been
-            verified! <span className={'text-lg'}>🎉</span>
+            <MdBlock className="mb-0.5 mr-1 inline-block h-4 w-4" />
+            Blocked from sweepstakes participation due to underage.{' '}
           </span>
-
-          <Button color={'gray-white'} onClick={() => setShow(false)}>
-            Close
-          </Button>
-        </Col>
-      </Col>
-    )
-  }
-
-  if (ageBlocked(user, privateUser)) {
-    return (
-      <Col
-        className={
-          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
-        }
-      >
-        <Row className={'w-full items-center justify-between'}>
-          <span>Blocked from sweepstakes participation due to underage. </span>
+          <HideVerifyMeButton
+            hideVerifyMe={hideVerifyMe}
+            setHideVerifyMe={setHideVerifyMe}
+            className="-mr-2 -mt-1  sm:mt-0 "
+          />
         </Row>
       </Col>
     )
-  }
-
-  if (locationBlocked(user, privateUser)) {
+  } else if (locationBlocked(user, privateUser)) {
     return (
       <Col
         className={
-          'border-ink-400 m-2 justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700'
+          'border-ink-400 bg-ink-200 justify-between gap-2 rounded border p-2 px-4'
         }
       >
-        <Row className={'w-full items-center justify-between'}>
-          <span>Blocked from sweepstakes participation due to location. </span>
+        <div
+          className={
+            'flex w-full flex-col items-center justify-between gap-2 sm:flex-row'
+          }
+        >
+          <Row className="w-full justify-between">
+            <span>
+              <MdBlock className="mb-0.5 mr-1 inline-block h-4 w-4" />
+              Blocked from sweepstakes participation due to location.{' '}
+            </span>
+            <HideVerifyMeButton
+              hideVerifyMe={hideVerifyMe}
+              setHideVerifyMe={setHideVerifyMe}
+              className=" -mr-2 -mt-1 sm:hidden"
+            />
+          </Row>
           <Button
             color={'indigo-outline'}
             loading={loadingMonitorStatus}
             disabled={loadingMonitorStatus}
-            onClick={fetchMonitorStatus}
+            onClick={() => requestLocationThenFetchMonitorStatus()}
+            className={'w-full whitespace-nowrap sm:w-fit'}
           >
             Refresh status
           </Button>
-        </Row>
+          <HideVerifyMeButton
+            hideVerifyMe={hideVerifyMe}
+            setHideVerifyMe={setHideVerifyMe}
+            className="-mr-2 hidden sm:block"
+          />
+        </div>
         {monitorStatus === 'error' && (
           <Row className={'text-error'}>{monitorStatusMessage}</Row>
         )}
       </Col>
+    )
+    // This shouldn't be displayed going forward, but previously users were marked as
+    // sweepstakes disabled, (would trigger showing this) when they had suspicious activity sessions.
+  } else if (fraudSession(user, privateUser)) {
+    return (
+      <Col
+        className={
+          'border-ink-400 bg-ink-200 text-ink-700 justify-between gap-2 rounded border p-2 px-4'
+        }
+      >
+        <Row className={'w-full items-center justify-between gap-1'}>
+          <span>
+            <MdBlock className="mb-0.5 mr-1 inline-block h-4 w-4" />
+            Blocked from sweepstakes participation due to suspicious activity.
+            Turn off vpn if using.{' '}
+          </span>
+          <HideVerifyMeButton
+            hideVerifyMe={hideVerifyMe}
+            setHideVerifyMe={setHideVerifyMe}
+            className="-mr-2 -mt-1  sm:mt-0 "
+          />
+        </Row>
+      </Col>
+    )
+  } else if (user.sweepstakesVerified) {
+    return (
+      <Row
+        className={
+          ' bg-primary-100 border-primary-500 justify-between gap-2 rounded border p-2 px-4 '
+        }
+      >
+        <span>
+          <span className={'text-lg'}>🎉</span> Congrats, you've been verified!{' '}
+        </span>
+        <button
+          onClick={() => setShow(false)}
+          className="hover:bg-primary-200 text-primary-500 -mr-2 rounded p-1 px-2 transition-all"
+        >
+          <XIcon className={'h-4 w-4'} />
+        </button>
+      </Row>
     )
   }
 
   return (
     <Col
       className={
-        'border-ink-400 m-2 items-center justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700 sm:flex-row'
+        'border-primary-500 bg-primary-100 items-center justify-between gap-2 rounded border px-4 py-2 sm:flex-row'
       }
     >
-      <span>
-        {getVerificationStatus(user).status !== 'success' &&
-          'Verify your identity to collect '}
-        <CoinNumber
-          amount={KYC_VERIFICATION_BONUS_CASH}
-          className={'font-bold'}
-          coinType={'CASH'}
-          isInline
+      <Row className="w-full justify-between">
+        {!user.idVerified &&
+          `You are not yet verified! Verify to start trading on ${SWEEPIES_NAME} markets.`}
+        <HideVerifyMeButton
+          hideVerifyMe={hideVerifyMe}
+          setHideVerifyMe={setHideVerifyMe}
+          className=" -mr-2 -mt-1 sm:hidden"
         />
-        .{' '}
-      </span>
-      <Link
-        href={'gidx/register'}
-        className={clsx(buttonClass('md', 'indigo'))}
-      >
-        Claim {formatMoney(KYC_VERIFICATION_BONUS_CASH, 'CASH')}
-      </Link>
+      </Row>
+      <VerifyButton className={'w-full shrink-0 whitespace-nowrap sm:w-fit'} />
+      <HideVerifyMeButton
+        hideVerifyMe={hideVerifyMe}
+        setHideVerifyMe={setHideVerifyMe}
+        className="-mr-2 hidden sm:block"
+      />
     </Col>
   )
 }

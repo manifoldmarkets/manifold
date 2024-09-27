@@ -339,13 +339,13 @@ function Eula() {
             {expanded === 'tos' && (
               <WebView
                 style={{ height: 500, width: 300 }}
-                source={{ uri: 'https://manifold.markets/terms' }}
+                source={{ uri: 'https://docs.manifold.markets/terms-and-conditions' }}
               />
             )}
             {expanded === 'privacy' && (
               <WebView
                 style={{ height: 500, width: 300 }}
-                source={{ uri: 'https://manifold.markets/privacy' }}
+                source={{ uri: 'https://docs.manifold.markets/privacy-policy' }}
               />
             )}
           </View>

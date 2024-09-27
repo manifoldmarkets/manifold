@@ -1,6 +1,11 @@
 import { groupBy, isEqual, mapValues, sumBy, uniq, uniqBy } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
+import {
+  Contract,
+  ContractToken,
+  CPMM_MIN_POOL_QTY,
+  MarketContract,
+} from 'common/contract'
 import { User } from 'common/user'
 import {
   BetInfo,
@@ -11,12 +16,16 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet, maker } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { contractColumnsToSelect, log, metrics } from 'shared/utils'
+import { contractColumnsToSelect, isProd, log, metrics } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
-import { BANNED_TRADING_USER_IDS } from 'common/envs/constants'
+import {
+  BANNED_TRADING_USER_IDS,
+  isAdminId,
+  TWOMBA_ENABLED,
+} from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import {
@@ -129,10 +138,14 @@ export const placeBetMain = async (
   const result = await runShortTrans(async (pgTrans) => {
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)
     // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
-    const balanceByUserId = await getUserBalances(pgTrans, [
-      uid,
-      ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
-    ])
+    const balanceByUserId = await getUserBalances(
+      pgTrans,
+      [
+        uid,
+        ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
+      ],
+      contract.token
+    )
     user.balance = balanceByUserId[uid]
     if (user.balance < body.amount)
       throw new APIError(403, 'Insufficient balance.')
@@ -248,7 +261,7 @@ export const fetchContractBetDataAndValidate = async (
   const queries = `
     select * from users where id = $1;
     select ${contractColumnsToSelect} from contracts where id = $2;
-    select * from answers 
+    select * from answers
       where contract_id = $2 and (
           ($3 is null or id in ($3:list)) or
           (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
@@ -302,6 +315,9 @@ export const fetchContractBetDataAndValidate = async (
       403,
       'You must be kyc verified to trade on sweepstakes markets.'
     )
+  }
+  if (isAdminId(user.id) && contract.token === 'CASH' && isProd()) {
+    throw new APIError(403, 'Admins cannot trade on sweepstakes markets.')
   }
   if (BANNED_TRADING_USER_IDS.includes(user.id) || user.userDeleted) {
     throw new APIError(403, 'You are banned or deleted. And not #blessed.')
@@ -435,13 +451,16 @@ export const getUnfilledBets = async (
 
 export const getUserBalances = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
-  userIds: string[]
+  userIds: string[],
+  token: ContractToken
 ) => {
   const users =
     userIds.length === 0
       ? []
       : await pgTrans.map(
-          `select balance, id from users where id = any($1)`,
+          `select ${
+            token === 'CASH' ? 'cash_balance' : 'balance'
+          } as balance, id from users where id = any($1)`,
           [userIds],
           (r) => r as { balance: number; id: string }
         )
@@ -451,12 +470,16 @@ export const getUserBalances = async (
 
 export const getUnfilledBetsAndUserBalances = async (
   pgTrans: SupabaseTransaction,
-  contractId: string,
+  contract: Contract,
   answerId?: string
 ) => {
-  const unfilledBets = await getUnfilledBets(pgTrans, contractId, answerId)
+  const unfilledBets = await getUnfilledBets(pgTrans, contract.id, answerId)
   const userIds = uniq(unfilledBets.map((bet) => bet.userId))
-  const balanceByUserId = await getUserBalances(pgTrans, userIds)
+  const balanceByUserId = await getUserBalances(
+    pgTrans,
+    userIds,
+    contract.token
+  )
 
   return { unfilledBets, balanceByUserId }
 }
@@ -546,6 +569,25 @@ export const executeNewBetResult = async (
   )
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
+  if (!TWOMBA_ENABLED) {
+    const totalCreatorFee =
+      newBet.fees.creatorFee +
+      sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
+    if (totalCreatorFee !== 0) {
+      await incrementBalance(pgTrans, contract.creatorId, {
+        balance: totalCreatorFee,
+        totalDeposits: totalCreatorFee,
+      })
+
+      log(
+        `Updated creator ${
+          contract.creatorUsername
+        } with fee gain ${formatMoneyWithDecimals(totalCreatorFee)} - ${
+          contract.creatorId
+        }.`
+      )
+    }
+  }
 
   const answerUpdates: {
     id: string

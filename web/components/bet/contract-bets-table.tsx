@@ -122,7 +122,7 @@ export function ContractBetsTable(props: {
         {!expanded && normalBets.length > unexpandedBetsPerPage && (
           <button
             className={
-              'hover:bg-canvas-100 mb-1 rounded-md p-2 text-sm text-indigo-700'
+              'hover:bg-canvas-100 text-primary-700 mb-1 rounded-md p-2 text-sm'
             }
             onClick={() => setExpanded(true)}
           >

@@ -5,14 +5,15 @@ import {
 } from 'shared/supabase/init'
 import { WEEK_MS } from 'common/util/time'
 import { APIError } from 'common/api/utils'
-import { User } from 'common/user'
-import { DataUpdate, updateData } from './utils'
+import { PrivateUser, User } from 'common/user'
+import { FieldValFunction, updateData } from './utils'
 import {
-  broadcastUpdatedUser,
   broadcastUpdatedPrivateUser,
+  broadcastUpdatedUser,
 } from 'shared/websockets/helpers'
 import { removeUndefinedProps } from 'common/util/object'
 import { getBettingStreakResetTimeBeforeNow } from 'shared/utils'
+import { log } from 'node:console'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
@@ -87,10 +88,17 @@ export const updateUser = async (
   broadcastUpdatedUser(fullUpdate)
 }
 
+// private_users has 2 columns that aren't in the data column
+type UpdateType =
+  | Partial<PrivateUser>
+  | {
+      [key in keyof PrivateUser]?: FieldValFunction
+    }
+
 export const updatePrivateUser = async (
   db: SupabaseDirectClient,
   id: string,
-  update: DataUpdate<'private_users'>
+  update: UpdateType
 ) => {
   await updateData(db, 'private_users', 'id', { id, ...update })
   broadcastUpdatedPrivateUser(id)
@@ -239,4 +247,45 @@ export const bulkIncrementBalances = async (
       totalCashDeposits: row.total_cash_deposits,
     })
   }
+}
+
+export const getUserIdFromReferralCode = async (
+  pg: SupabaseDirectClient,
+  referralCode: string | undefined
+) => {
+  if (!referralCode) return undefined
+  const startOfId = referralCode.replace(/#/g, '0')
+  log('startOfId', startOfId)
+  return await pg.oneOrNone(
+    `select id, coalesce((data->>'sweepstakesVerified')::boolean, false) as sweeps_verified from users
+           where id ilike $1 || '%' limit 1`,
+    [startOfId],
+    (r) =>
+      r
+        ? {
+            id: r.id as string,
+            sweepsVerified: r.sweeps_verified as boolean,
+          }
+        : null
+  )
+}
+export const getReferrerInfo = async (
+  pg: SupabaseDirectClient,
+  referredByUserId: string | undefined
+) => {
+  if (!referredByUserId) return undefined
+  return await pg.oneOrNone(
+    `select id,
+       coalesce((data->>'sweepstakesVerified')::boolean, false) as sweeps_verified
+       from users where id = $1 
+      `,
+    [referredByUserId],
+    (row) =>
+      row
+        ? {
+            id: row.id as string,
+            sweeps_verified: row.sweeps_verified as boolean,
+          }
+        : null
+  )
 }

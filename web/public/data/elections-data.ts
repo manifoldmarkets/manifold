@@ -1,5 +1,5 @@
 import { MultiPoints } from 'common/chart'
-import { CPMMMultiContract, Contract } from 'common/contract'
+import { BinaryContract, CPMMMultiContract, Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Dashboard } from 'common/dashboard'
@@ -236,7 +236,8 @@ export type ElectionsPageProps = {
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
   rawPolicyContracts: PolicyContractType[]
-  electionPartyContract: CPMMMultiContract | null
+  electionPartyContract: BinaryContract | null
+  electionPartyCashContract: BinaryContract | null
   electionCandidateContract: Contract | null
   republicanCandidateContract: Contract | null
   democratCandidateContract: Contract | null

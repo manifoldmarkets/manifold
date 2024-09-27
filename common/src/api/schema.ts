@@ -183,7 +183,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string(),
-        amount: z.number().gte(1),
+        amount: z.number().gte(0.01),
         replyToCommentId: z.string().optional(),
         limitProb: z.number().gte(0.01).lte(0.99).optional(),
         expiresAt: z.number().optional(),
@@ -342,6 +342,7 @@ export const API = (_apiTypeCheck = {
     returns: [] as Bet[],
     props: z
       .object({
+        id: z.string().optional(),
         userId: z.string().optional(),
         username: z.string().optional(),
         contractId: z.string().or(z.array(z.string())).optional(),
@@ -725,6 +726,7 @@ export const API = (_apiTypeCheck = {
     props: z.object({}),
     returns: {} as { payout: number },
   },
+  // deprecated. use /txns instead
   managrams: {
     method: 'GET',
     visibility: 'public',
@@ -1639,6 +1641,40 @@ export const API = (_apiTypeCheck = {
         userId: z.string().optional(),
       })
       .strict(),
+  },
+  'get-kyc-stats': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({}),
+    returns: {} as {
+      initialVerifications: {
+        count: number
+        day: string
+      }[]
+      phoneVerifications: {
+        count: number
+        day: string
+      }[]
+    },
+  },
+  txns: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        token: z.string().optional(),
+        offset: z.coerce.number().default(0),
+        limit: z.coerce.number().gte(0).lte(100).default(100),
+        before: z.coerce.number().optional(),
+        after: z.coerce.number().optional(),
+        toId: z.string().optional(),
+        fromId: z.string().optional(),
+        category: z.string().optional(),
+      })
+      .strict(),
+    returns: [] as Txn[],
   },
 } as const)
 

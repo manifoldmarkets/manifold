@@ -22,7 +22,7 @@ import { UserAvatarAndBadge, UserLink } from 'web/components/widgets/user-link'
 import { QrcodeIcon, XIcon } from '@heroicons/react/outline'
 import { User } from 'web/lib/firebase/users'
 import { Avatar } from 'web/components/widgets/avatar'
-import { formatMoney, formatSpice } from 'common/util/format'
+import { formatSpice, formatWithToken } from 'common/util/format'
 import { Linkify } from 'web/components/widgets/linkify'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -220,9 +220,12 @@ const PaymentCards = (props: {
                 }
               >
                 {decreasedBalance ? '-' : '+'}
-                {payment.token === 'M$'
-                  ? formatMoney(Math.abs(payment.amount))
-                  : formatSpice(Math.abs(payment.amount))}
+                {payment.token === 'SPICE'
+                  ? formatSpice(Math.abs(payment.amount))
+                  : formatWithToken({
+                      amount: Math.abs(payment.amount),
+                      token: payment.token,
+                    })}
               </span>
             </Row>
             <Row className={'ml-1 mt-2'}>
@@ -410,7 +413,7 @@ export const QRModal = (props: {
   return (
     <Modal open={show} setOpen={setShow} className="bg-canvas-0 rounded-lg">
       <div className="flex flex-col items-center p-8">
-        <div className="mb-4 text-2xl text-indigo-700">
+        <div className="text-primary-700 mb-4 text-2xl">
           Scan to send mana to {user.name}
         </div>
 

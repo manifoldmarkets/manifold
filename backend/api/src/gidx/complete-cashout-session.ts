@@ -1,12 +1,14 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   CompleteSessionDirectCashierResponse,
+  PaymentMethod,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
 import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
   getLocalServerIP,
+  GIDX_BASE_URL,
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -16,17 +18,19 @@ import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getUser, LOCAL_DEV } from 'shared/utils'
 import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
+import { floatingEqual } from 'common/util/math'
 
-const ENDPOINT =
-  'https://api.gidx-service.in/v3.0/api/DirectCashier/CompleteSession'
+const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 
 export const completeCashoutSession: APIHandler<
   'complete-cashout-session-gidx'
 > = async (props, auth, req) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
+  const pg = createSupabaseDirectClient()
   const userId = auth.uid
   const { phoneNumberWithCode } = await getUserRegistrationRequirements(userId)
-  const user = await getUser(userId)
+
+  const user = await getUser(userId, pg)
   if (!user) {
     throw new APIError(404, 'User not found')
   }
@@ -39,12 +43,9 @@ export const completeCashoutSession: APIHandler<
   } = props
 
   const manaCashAmount = PaymentAmount.manaCash
-  if (user.cashBalance < manaCashAmount) {
-    throw new APIError(400, 'Insufficient mana cash balance')
-  }
-  const pg = createSupabaseDirectClient()
-  const redeemablePrizeCash = await calculateRedeemablePrizeCash(userId, pg)
-  if (redeemablePrizeCash < manaCashAmount) {
+  const { redeemable } = await calculateRedeemablePrizeCash(pg, userId)
+
+  if (redeemable < manaCashAmount) {
     throw new APIError(400, 'Insufficient redeemable prize cash')
   }
   const dollarsToWithdraw = PaymentAmount.dollars
@@ -86,11 +87,12 @@ export const completeCashoutSession: APIHandler<
     PaymentDetails,
     SessionStatusMessage,
     ResponseCode,
+    ResponseMessage,
   } = cashierResponse
   if (ResponseCode >= 300) {
     return {
       status: 'error',
-      message: 'GIDX error',
+      message: 'Error: ' + ResponseMessage,
       gidxMessage: SessionStatusMessage,
     }
   }
@@ -116,7 +118,7 @@ export const completeCashoutSession: APIHandler<
   }
   if (PaymentStatusCode === '1') {
     // This should always return a '0' for pending, but just in case
-    await debitCoins(userId, manaCashAmount, cashierResponse)
+    await debitCoins(userId, manaCashAmount, cashierResponse, PaymentMethod)
     return {
       status: 'success',
       message: 'Payment successful',
@@ -153,7 +155,7 @@ export const completeCashoutSession: APIHandler<
       gidxMessage: PaymentStatusMessage,
     }
   } else if (PaymentStatusCode === '0') {
-    await debitCoins(userId, manaCashAmount, cashierResponse)
+    await debitCoins(userId, manaCashAmount, cashierResponse, PaymentMethod)
     return {
       status: 'pending',
       message: 'Payment pending',
@@ -170,7 +172,8 @@ export const completeCashoutSession: APIHandler<
 const debitCoins = async (
   userId: string,
   manaCashAmount: number,
-  response: CompleteSessionDirectCashierResponse
+  response: CompleteSessionDirectCashierResponse,
+  paymentMethod: Omit<PaymentMethod, 'Token' | 'DisplayName'>
 ) => {
   const {
     MerchantTransactionID,
@@ -204,7 +207,7 @@ const debitCoins = async (
     amount: manaCashAmount,
     token: 'CASH',
     category: 'CASH_OUT',
-    description: `Cash out debit`,
+    description: `Redemption debit`,
   } as const
   const {
     ApiKey: _,
@@ -213,12 +216,47 @@ const debitCoins = async (
     LocationDetail: ____,
     ...dataToWrite
   } = response
-  await pg.tx(async (tx) => {
-    const redeemablePrizeCash = await calculateRedeemablePrizeCash(userId, tx)
-    if (redeemablePrizeCash < manaCashAmount) {
-      throw new APIError(400, 'Insufficient redeemable prize cash')
+  const cash = await pg.tx(async (tx) => {
+    let redeemablePrizeCash: number
+    let cash: number
+    try {
+      const { redeemable, cashBalance } = await calculateRedeemablePrizeCash(
+        tx,
+        userId
+      )
+      redeemablePrizeCash = redeemable
+      cash = cashBalance
+    } catch (e) {
+      log.error('Indeterminate state, may need to refund', { response })
+      throw e
     }
+
+    if (redeemablePrizeCash < manaCashAmount) {
+      throw new APIError(
+        500,
+        'Insufficient redeemable prize cash. Indeterminate state, may need to refund',
+        { response }
+      )
+    }
+    await tx.none(
+      `insert into delete_after_reading (user_id, data) values ($1, $2)`,
+      [userId, JSON.stringify(paymentMethod)]
+    )
+    log('Run cashout txn, redeemable:', redeemablePrizeCash)
+    log('Cash balance for user prior to txn', cash)
     const txn = await runTxn(tx, manaCashoutTxn)
+    const balanceAfter = await tx.one(
+      `select cash_balance from users where id = $1`,
+      [userId],
+      (r) => r.cash_balance
+    )
+    log('Run cashout txn, cash balance for user after txn', balanceAfter)
+    if (cash - manaCashAmount !== balanceAfter) {
+      log.error(
+        'Cash balance after txn does not match expected. Admin should take a look.'
+      )
+    }
+    log('Insert gidx receipt')
     await tx.none(
       `
     insert into gidx_receipts (
@@ -257,5 +295,23 @@ const debitCoins = async (
         JSON.stringify(dataToWrite),
       ]
     )
+    return cash
   })
+  const balanceAfter = await pg.one(
+    `select cash_balance from users where id = $1`,
+    [userId],
+    (r) => r.cash_balance
+  )
+  const expectedBalance = cash - manaCashAmount
+  log(
+    'Double checking cash balance after txn',
+    balanceAfter,
+    'should be',
+    expectedBalance
+  )
+  if (!floatingEqual(expectedBalance, balanceAfter)) {
+    log.error(
+      'Cash balance after txn does not match expected. Admin should take a look.'
+    )
+  }
 }

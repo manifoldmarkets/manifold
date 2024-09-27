@@ -14,12 +14,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
-
 import { SEO } from 'web/components/SEO'
-import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
-import { referralQuery } from 'common/util/share'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { TextButton } from 'web/components/buttons/text-button'
@@ -46,7 +43,6 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -176,10 +172,8 @@ function UserProfile(props: {
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
+  const privateUser = usePrivateUser()
 
-  useSaveReferral(currentUser, {
-    defaultReferrerUsername: user?.username,
-  })
   const isCurrentUser = user.id === currentUser?.id
   const [expandProfileInfo, setExpandProfileInfo] = usePersistentLocalState(
     false,
@@ -338,6 +332,7 @@ function UserProfile(props: {
                   <AddFundsButton
                     userId={user.id}
                     className="whitespace-nowra w-full lg:hidden"
+                    hideDiscount
                   />
                   <RedeemSweepsButtons user={user} className="shrink-0" />
                 </Row>
@@ -376,6 +371,7 @@ function UserProfile(props: {
             <AddFundsButton
               userId={user.id}
               className="w-1/2 whitespace-nowrap"
+              hideDiscount
             />
             <RedeemSweepsButtons user={user} className="w-1/2" />
           </Row>
@@ -396,8 +392,15 @@ function UserProfile(props: {
                 stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
                 content: (
                   <>
-                    {currentUser && <VerifyMe user={currentUser} />}
-                    <VerifyPhoneNumberBanner user={currentUser} />
+                    <Col className="mt-2 gap-2">
+                      {currentUser && privateUser && (
+                        <VerifyMe
+                          user={currentUser}
+                          privateUser={privateUser}
+                        />
+                      )}
+                      <VerifyPhoneNumberBanner user={currentUser} />
+                    </Col>
                     <PortfolioSummary className="mt-4" user={user} />
                   </>
                 ),
@@ -571,32 +574,6 @@ function ProfilePublicStats(props: {
         isOpen={followsOpen}
         setIsOpen={setFollowsOpen}
       />
-    </Row>
-  )
-}
-
-const ShareButton = (props: {
-  user: User
-  currentUser: User | undefined | null
-}) => {
-  const { user, currentUser } = props
-  const isSameUser = currentUser?.id === user.id
-  const url = `https://${ENV_CONFIG.domain}/${user.username}${
-    !isSameUser && currentUser ? referralQuery(currentUser.username) : ''
-  }`
-
-  return (
-    <Row className={'items-center'}>
-      <CopyLinkOrShareButton
-        url={url}
-        iconClassName={'h-3 !stroke-[3]'}
-        className={'-mx-1 gap-1 !px-1 !py-0.5'}
-        eventTrackingName={'share user page'}
-        tooltip={'Copy link to profile'}
-        size={'2xs'}
-      >
-        <span className={'text-sm'}>Share</span>
-      </CopyLinkOrShareButton>
     </Row>
   )
 }

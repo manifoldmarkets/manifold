@@ -4,31 +4,34 @@ import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
 import { Card } from './widgets/card'
 import React from 'react'
 import { Row } from './layout/row'
-import { FaHandHoldingUsd, FaPercentage } from 'react-icons/fa'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
 import {
-  SPICE_PRODUCTION_ENABLED,
+  CHARITY_FEE,
   SWEEPIES_NAME,
-  TRADE_TERM,
   TRADING_TERM,
   TWOMBA_ENABLED,
 } from 'common/envs/constants'
-import { capitalize } from 'lodash'
+import { AboutManifold } from './about-manifold'
+import { GoGraph } from 'react-icons/go'
+import Link from 'next/link'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { SWEEPIES_MONIKER } from 'common/util/format'
+
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { CoinNumber } from './widgets/coin-number'
+import { GiTakeMyMoney } from 'react-icons/gi'
 
 export const ExplainerPanel = (props: {
   className?: string
   showWhatIsManifold?: boolean
   showAccuracy?: boolean
-  showWhyBet?: boolean
+  showSweepstakes?: boolean
 }) => {
   const {
     className,
     showWhatIsManifold = true,
     showAccuracy = true,
-    showWhyBet = true,
+    showSweepstakes = true,
   } = props
   const handleSectionClick = (sectionTitle: string) => {
     track('explainer section click', { sectionTitle })
@@ -37,7 +40,9 @@ export const ExplainerPanel = (props: {
     <Col className={clsx(className)}>
       {showWhatIsManifold && <WhatIsManifold onClick={handleSectionClick} />}
       {showAccuracy && <Accuracy onClick={handleSectionClick} />}
-      {showWhyBet && <WhyBet onClick={handleSectionClick} />}
+      {showSweepstakes && TWOMBA_ENABLED && (
+        <Sweepstakes onClick={handleSectionClick} />
+      )}
     </Col>
   )
 }
@@ -75,89 +80,13 @@ const WhatIsManifold = ({
 }) => (
   <ExpandSection
     title={
-      <Row className="items-start">
-        <FaPercentage className="mr-2 mt-[0.25em] flex-shrink-0 align-text-bottom" />{' '}
-        What is Manifold?
-      </Row>
+      <>
+        <GoGraph className="mr-2  " /> What is Manifold?
+      </>
     }
     onClick={() => onClick('What is Manifold?')}
   >
-    <WhatIsManifoldContent />
-  </ExpandSection>
-)
-
-export const WhatIsManifoldContent = ({
-  className,
-}: {
-  className?: string
-}) => (
-  <>
-    {TWOMBA_ENABLED ? (
-      <div className={clsx('pb-2', className)}>
-        Manifold lets you {TRADE_TERM} on upcoming events. As other users{' '}
-        {TRADE_TERM} against you, it creates a probability of how likely the
-        event will happen—this is known as a prediction market.
-      </div>
-    ) : (
-      <div className={clsx('pb-2', className)}>
-        Manifold lets you {TRADE_TERM} on upcoming events using play money. As
-        other users {TRADE_TERM} against you, it creates a probability of how
-        likely the event will happen—this is known as a prediction market.
-      </div>
-    )}
-    <div className={clsx('pb-2', className)}>
-      {capitalize(TRADE_TERM)} on current events, politics, tech, and AI, or
-      create your own market about an event you care about for others to trade
-      on!
-    </div>
-  </>
-)
-
-const WhyBet = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
-  <ExpandSection
-    title={
-      <>
-        <FaHandHoldingUsd className="mr-2" /> Why should I {TRADE_TERM}?
-      </>
-    }
-    onClick={() => onClick(`Why should I ${TRADE_TERM}?`)}
-  >
-    <div className="pb-2">
-      {capitalize(TRADING_TERM)} contributes to accurate answers of important,
-      real-world questions.
-    </div>
-    {!TWOMBA_ENABLED && SPICE_PRODUCTION_ENABLED && (
-      <div className="pb-2">
-        {capitalize(TRADE_TERM)} to win prizepoints! Redeem them and we will
-        donate to a charity of your choice. Our users have{' '}
-        <a
-          className="text-primary-700 hover:underline"
-          target="_blank"
-          href="https://manifold.markets/calibration"
-        >
-          raised over $300,000 for charity
-        </a>{' '}
-        so far!
-      </div>
-    )}
-    {TWOMBA_ENABLED && (
-      <>
-        <div className="pb-2">
-          {capitalize(TRADE_TERM)} for a chance to win <b>real cash prizes</b>{' '}
-          when you trade with{' '}
-          <span className="coin-offset relative ml-[1.2em] whitespace-nowrap">
-            <SweepiesCoin className="absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]" />
-            <span className=" font-semibold text-amber-700 dark:text-amber-300 ">
-              {' '}
-              {SWEEPIES_NAME} ({SWEEPIES_MONIKER})
-            </span>
-          </span>
-          .
-        </div>
-      </>
-    )}
-
-    <div className="pb-2">Get started for free! No credit card required.</div>
+    <AboutManifold />
   </ExpandSection>
 )
 
@@ -196,5 +125,49 @@ const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
       like {TRADING_TERM} still use Manifold to get reliable news.
     </div>
     <div></div>
+  </ExpandSection>
+)
+
+const Sweepstakes = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    title={
+      <>
+        <GiTakeMyMoney className="mr-2" /> How do I win cash prizes?
+      </>
+    }
+    onClick={() => onClick('Are our forecasts accurate?')}
+  >
+    <div className="pb-2">
+      Manifold offers two market types: play money and sweepstakes.
+    </div>
+    <div className="pb-2">
+      All questions include a play money market which uses mana <ManaCoin /> and
+      can't be cashed out.
+    </div>
+    <div className="pb-2">
+      Selected markets will have a sweepstakes toggle. These require sweepcash{' '}
+      <SweepiesCoin />
+      &nbsp;to participate and winners can withdraw sweepcash as a cash prize.
+      You can filter for sweepstakes markets on the browse page.
+    </div>
+    <div className="pb-2">
+      Redeem your {SWEEPIES_NAME} won from markets at{' '}
+      <b>
+        <CoinNumber amount={1} coinType="sweepies" isInline={true} /> {'→'}{' '}
+        $1.00
+      </b>
+      , minus a {CHARITY_FEE * 100}% fee.
+    </div>
+
+    <Link
+      href="https://docs.manifold.markets/sweepstakes"
+      className="hover:text-primary-700 text-primary-600 hover:underline"
+    >
+      Learn more.
+    </Link>
   </ExpandSection>
 )

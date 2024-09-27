@@ -92,12 +92,17 @@ module.exports = {
       },
       {
         source: '/privacy',
-        destination: '/privacy.html',
+        destination: 'https://docs.manifold.markets/privacy-policy',
         permanent: true,
       },
       {
         source: '/terms',
-        destination: '/terms.html',
+        destination: 'https://docs.manifold.markets/terms-and-conditions',
+        permanent: true,
+      },
+      {
+        source: '/sweepstakes-rules',
+        destination: 'https://docs.manifold.markets/rules',
         permanent: true,
       },
       {

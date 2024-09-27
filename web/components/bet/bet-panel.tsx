@@ -39,7 +39,6 @@ import {
   TRADE_TERM,
   TWOMBA_ENABLED,
 } from 'common/envs/constants'
-import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { getFeeTotal } from 'common/fees'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
@@ -51,10 +50,10 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useFocus } from 'web/hooks/use-focus'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { Button, buttonClass } from '../buttons/button'
+import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { getAnswerColor } from '../charts/contract/choice'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
@@ -63,10 +62,10 @@ import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
-import Link from 'next/link'
-import { blockFromSweepstakes, identityPending } from 'common/user'
-import { CoinNumber } from '../widgets/coin-number'
 import { CashoutLimitWarning } from './cashout-limit-warning'
+import { InBeta } from '../twomba/sweep-verify-section'
+import { LocationMonitor } from '../gidx/location-monitor'
+import { getVerificationStatus } from 'common/gidx/user'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -92,6 +91,16 @@ export function BuyPanel(props: {
   alwaysShowOutcomeSwitcher?: boolean
   feedReason?: string
   children?: React.ReactNode
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
   const {
     contract,
@@ -100,7 +109,9 @@ export function BuyPanel(props: {
     inModal,
     alwaysShowOutcomeSwitcher,
     children,
+    pseudonym,
   } = props
+
   const user = useUser()
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
@@ -128,38 +139,6 @@ export function BuyPanel(props: {
       setIsPanelBodyVisible(true)
     }
   }
-  // TODO: combine w/ contract-overview panels
-  if (contract.token === 'CASH' && identityPending(user)) {
-    return (
-      <Row className={'bg-canvas-50 rounded p-4'}>
-        You can't trade on sweepstakes markets while your status is pending.
-      </Row>
-    )
-  } else if (contract.token === 'CASH' && user && !user.idVerified) {
-    return (
-      <Row className={'bg-canvas-50 gap-1 rounded p-4'}>
-        <span>
-          Verify your info to start trading on sweepstakes markets and earn a
-          bonus of{' '}
-          <CoinNumber
-            amount={KYC_VERIFICATION_BONUS_CASH}
-            coinType="sweepies"
-            isInline
-          />
-          !
-        </span>
-        <Link className={buttonClass('md', 'indigo')} href={'/gidx/register'}>
-          Verify
-        </Link>
-      </Row>
-    )
-  } else if (contract.token === 'CASH' && blockFromSweepstakes(user)) {
-    return (
-      <Row className={'bg-canvas-50 rounded p-4'}>
-        You are not eligible to trade on sweepstakes markets.
-      </Row>
-    )
-  }
   return (
     <Col>
       {!isPanelBodyVisible && (
@@ -186,7 +165,7 @@ export function BuyPanel(props: {
         <BuyPanelBody
           {...props}
           panelClassName={
-            TWOMBA_ENABLED
+            TWOMBA_ENABLED || !!pseudonym
               ? 'bg-canvas-50'
               : outcome === 'NO'
               ? 'bg-scarlet-50'
@@ -206,6 +185,7 @@ export function BuyPanel(props: {
                   }
                 }
           }
+          pseudonym={pseudonym}
         >
           {children}
         </BuyPanelBody>
@@ -232,6 +212,16 @@ export const BuyPanelBody = (props: {
   feedReason?: string
   panelClassName?: string
   children?: React.ReactNode
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) => {
   const {
     contract,
@@ -249,7 +239,7 @@ export const BuyPanelBody = (props: {
   } = props
 
   const user = useUser()
-
+  const privateUser = usePrivateUser()
   const marketTier =
     contract.marketTier ??
     getTierFromLiquidity(contract, contract.totalLiquidity)
@@ -270,8 +260,8 @@ export const BuyPanelBody = (props: {
     isBinaryMC && multiProps
       ? multiProps.answerText ?? multiProps.answerToBuy.text
       : undefined
-
-  const initialBetAmount = marketTier === 'play' ? 5 : 50
+  const isCashContract = contract.token === 'CASH'
+  const initialBetAmount = isCashContract ? 1 : marketTier === 'play' ? 5 : 50
 
   const [betAmount, setBetAmount] = useState<number | undefined>(
     initialBetAmount
@@ -378,11 +368,20 @@ export const BuyPanelBody = (props: {
       setIsSubmitting(false)
     }
   }
+  const [showLocationMonitor, setShowLocationMonitor] = useState(false)
+
+  const { status: verificationStatus, message: verificationMessage } =
+    user && privateUser
+      ? getVerificationStatus(user, privateUser)
+      : { status: 'error', message: 'sign in to trade' }
+
   const betDisabled =
     isSubmitting ||
     !betAmount ||
     outcome === undefined ||
-    error === 'Insufficient balance'
+    error === 'Insufficient balance' ||
+    showLocationMonitor ||
+    (isCashContract && verificationStatus !== 'success')
 
   const limits =
     contract.outcomeType === 'STONK'
@@ -489,7 +488,6 @@ export const BuyPanelBody = (props: {
     : formatPercent(probAfter)
 
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
-  const isCashContract = contract.token === 'CASH'
 
   // warnings
   const highBankrollSpend =
@@ -514,14 +512,22 @@ export const BuyPanelBody = (props: {
     ? { Buy: 'YES', Short: 'NO' }
     : { Yes: 'YES', No: 'NO' }
 
+  const { pseudonymName, pseudonymColor } =
+    props.pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
+
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
+        {isCashContract && <InBeta className="my-2" />}
         {children}
-
         {(isAdvancedTrader || alwaysShowOutcomeSwitcher) && (
           <Row className={'mb-2 mr-8 justify-between'}>
-            <Col className={clsx(' gap-1', isBinaryMC && 'invisible')}>
+            <Col
+              className={clsx(
+                ' gap-1',
+                (isBinaryMC || pseudonymName) && 'hidden'
+              )}
+            >
               <div className="text-ink-700">Outcome</div>
               <ChoicesToggleGroup
                 currentChoice={outcome}
@@ -588,6 +594,7 @@ export const BuyPanelBody = (props: {
                 showSlider={isAdvancedTrader}
                 marketTier={marketTier}
                 token={isCashContract ? 'CASH' : 'M$'}
+                sliderColor={pseudonymColor}
               />
 
               {isAdvancedTrader && (
@@ -671,6 +678,12 @@ export const BuyPanelBody = (props: {
               unfilledBets={unfilledBets}
               balanceByUserId={balanceByUserId}
               outcome={outcome}
+              pseudonym={props.pseudonym}
+              kycError={
+                isCashContract && verificationStatus !== 'success'
+                  ? verificationMessage
+                  : undefined
+              }
             />
           </>
         )}
@@ -678,50 +691,66 @@ export const BuyPanelBody = (props: {
         {betType !== 'Limit' && (
           <Col className="gap-2">
             {user ? (
-              <WarningConfirmationButton
-                marketType="binary"
-                amount={betAmount}
-                warning={warning}
-                userOptedOutOfWarning={user.optOutBetWarnings}
-                onSubmit={submitBet}
-                ButtonClassName={clsx('flex-grow')}
-                actionLabelClassName={'line-clamp-1'}
-                isSubmitting={isSubmitting}
-                disabled={betDisabled}
-                size="xl"
-                color={
-                  binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
-                  (outcome === 'NO' ? 'red' : 'green')
-                }
-                actionLabel={
-                  betDisabled ? (
-                    `Select ${formatOutcomeLabel(
-                      contract,
-                      'YES'
-                    )} or ${formatOutcomeLabel(contract, 'NO')}`
-                  ) : isStonk ? (
-                    <span>
-                      {formatOutcomeLabel(contract, outcome)}{' '}
-                      <MoneyDisplay
-                        amount={betAmount}
-                        isCashContract={isCashContract}
-                      />
-                    </span>
-                  ) : (
-                    <span>
-                      {capitalize(TRADE_TERM)}{' '}
-                      {binaryMCOutcomeLabel ??
-                        formatOutcomeLabel(contract, outcome)}{' '}
-                      to win{' '}
-                      <MoneyDisplay
-                        amount={currentPayout}
-                        isCashContract={isCashContract}
-                      />
-                    </span>
-                  )
-                }
-                inModal={!!onClose}
-              />
+              <>
+                <LocationMonitor
+                  contract={contract}
+                  user={user}
+                  setShowPanel={setShowLocationMonitor}
+                  showPanel={showLocationMonitor}
+                />
+                {isCashContract && verificationStatus !== 'success' && (
+                  <div className="text-error">{verificationMessage}</div>
+                )}
+                <WarningConfirmationButton
+                  marketType="binary"
+                  amount={betAmount}
+                  warning={warning}
+                  userOptedOutOfWarning={user.optOutBetWarnings}
+                  onSubmit={submitBet}
+                  ButtonClassName={clsx('flex-grow')}
+                  actionLabelClassName={'line-clamp-1'}
+                  isSubmitting={isSubmitting}
+                  disabled={betDisabled}
+                  size="xl"
+                  color={
+                    pseudonymColor ??
+                    binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
+                    (outcome === 'NO' ? 'red' : 'green')
+                  }
+                  actionLabel={
+                    betDisabled && !outcome ? (
+                      `Select ${formatOutcomeLabel(
+                        contract,
+                        'YES'
+                      )} or ${formatOutcomeLabel(contract, 'NO')}`
+                    ) : isStonk ? (
+                      <span>
+                        {formatOutcomeLabel(contract, outcome, pseudonymName)}{' '}
+                        <MoneyDisplay
+                          amount={betAmount ?? 0}
+                          isCashContract={isCashContract}
+                        />
+                      </span>
+                    ) : (
+                      <span>
+                        {capitalize(TRADE_TERM)}{' '}
+                        {binaryMCOutcomeLabel ??
+                          formatOutcomeLabel(
+                            contract,
+                            outcome,
+                            pseudonymName
+                          )}{' '}
+                        to win{' '}
+                        <MoneyDisplay
+                          amount={currentPayout}
+                          isCashContract={isCashContract}
+                        />
+                      </span>
+                    )
+                  }
+                  inModal={!!onClose}
+                />
+              </>
             ) : (
               <Button
                 color={outcome === 'NO' ? 'red' : 'green'}
@@ -866,6 +895,7 @@ export const BuyPanelBody = (props: {
             (b) => b.answerId === multiProps?.answerToBuy?.id
           )}
           answer={multiProps?.answerToBuy}
+          pseudonym={props.pseudonym}
         />
       )}
     </>

@@ -37,6 +37,7 @@ import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
 import { BinaryDigit, TierParamsType } from 'common/tier'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Spacer } from './layout/spacer'
+import { useSweepstakes } from './sweestakes-context'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -237,7 +238,7 @@ export function SupabaseSearch(props: {
   } = props
 
   const isMobile = useIsMobile()
-
+  const { isPlay } = useSweepstakes()
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
@@ -246,6 +247,7 @@ export function SupabaseSearch(props: {
     defaultForYou,
     useUrlParams,
     persistPrefix,
+    defaultSweepies: isPlay ? '0' : '1',
   })
 
   const query = searchParams[QUERY_KEY]
@@ -259,6 +261,14 @@ export function SupabaseSearch(props: {
   const forYou = searchParams[FOR_YOU_KEY] === '1'
   const marketTiers = searchParams[MARKET_TIER_KEY]
   const topicFilter = searchParams[TOPIC_FILTER_KEY]
+
+  useEffect(() => {
+    const isSweeps = sweepiesState === '1'
+    if (isPlay !== isSweeps) return
+    setSearchParams({
+      [SWEEPIES_KEY]: isPlay ? '0' : '1',
+    })
+  }, [isPlay, sweepiesState])
 
   const [userResults, setUserResults] = usePersistentInMemoryState<
     FullUser[] | undefined

@@ -33,7 +33,7 @@ export function UpgradeTierButton(props: {
   if (disabled) return <></>
 
   const alreadyHighestTier =
-    contract.marketTier === 'crystal' ??
+    contract.marketTier === 'crystal' ||
     getTierFromLiquidity(contract, contract.totalLiquidity) === 'crystal'
 
   return (

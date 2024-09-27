@@ -41,7 +41,6 @@ import {
   FilterPill,
   TopicDropdownPill,
 } from './filter-pills'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { TierDropdownPill } from './filter-pills'
 import { useUser } from 'web/hooks/use-user'
@@ -49,10 +48,13 @@ import {
   CrystalTier,
   PlusTier,
   PremiumTier,
+  BasicTier,
 } from 'web/public/custom-components/tiers'
 import { LiteGroup } from 'common/group'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { useSweepstakes } from '../sweestakes-context'
+import { TwombaToggle } from '../twomba/twomba-toggle'
 
 export function ContractFilters(props: {
   className?: string
@@ -68,11 +70,12 @@ export function ContractFilters(props: {
     s: sort,
     f: filter,
     ct: contractType,
-    p: isPrizeMarketString,
     mt: currentTiers,
     tf: topicFilter,
     sw: isSweepiesString,
   } = params
+  const isSweeps = isSweepiesString === '1'
+  const { setIsPlay } = useSweepstakes()
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -108,15 +111,10 @@ export function ContractFilters(props: {
     track('select contract type', { contractType: selection })
   }
 
-  const togglePrizeMarket = () => {
-    updateParams({
-      p: isPrizeMarketString == '1' ? '0' : '1',
-    })
-  }
-
   const toggleSweepies = () => {
+    setIsPlay(isSweeps)
     updateParams({
-      sw: isSweepiesString == '1' ? '0' : '1',
+      sw: isSweeps ? '0' : '1',
     })
   }
 
@@ -125,7 +123,6 @@ export function ContractFilters(props: {
     sort === 'close-date' ||
     contractType === 'BOUNTIED_QUESTION'
 
-  const filterLabel = getLabelFromValue(FILTERS, filter)
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
 
@@ -157,27 +154,15 @@ export function ContractFilters(props: {
   }
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
-      <Carousel labelsParentClassName="-ml-1.5 gap-1 items-center">
-        <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
-          <FaSliders className="h-4 w-4" />
-        </IconButton>
+      <Carousel labelsParentClassName="gap-1 items-center">
         {TWOMBA_ENABLED && (
-          <FilterPill
-            selected={isSweepiesString === '1'}
-            onSelect={toggleSweepies}
-            type="sweepies"
-          >
-            <Row
-              className={clsx(
-                'items-center gap-1',
-                isSweepiesString != '1' ? 'opacity-50' : 'opacity-100'
-              )}
-            >
-              <SweepiesCoin />
-              Sweepstakes
-            </Row>
-          </FilterPill>
+          <TwombaToggle
+            sweepsEnabled={true}
+            isPlay={!isSweeps}
+            onClick={toggleSweepies}
+          />
         )}
+
         <Row className="bg-ink-200 dark:bg-ink-300 items-center rounded-full">
           <button
             key="score"
@@ -244,21 +229,6 @@ export function ContractFilters(props: {
           selectFilter={selectFilter}
           currentFilter={filter}
         />
-        {isPrizeMarketString === '1' && (
-          <FilterPill
-            selected={isPrizeMarketString === '1'}
-            onSelect={togglePrizeMarket}
-            type="spice"
-            className="gap-1"
-          >
-            <div className="flex w-4 items-center">
-              <SpiceCoin
-                className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
-              />
-            </div>
-            Prize
-          </FilterPill>
-        )}
         {!hideFilter && currentTiers !== DEFAULT_TIER && (
           <AdditionalFilterPill
             type="filter"
@@ -269,6 +239,9 @@ export function ContractFilters(props: {
             <Row className="items-center py-[3px]">
               {currentTiers.split('').map((tier, index) => {
                 if (tier === '1') {
+                  if (tiers[index] == 'basic') {
+                    return <BasicTier className="text-white" key={index} />
+                  }
                   if (tiers[index] == 'plus') {
                     return <PlusTier key={index} />
                   }
@@ -330,6 +303,9 @@ export function ContractFilters(props: {
             {getLabelFromValue(CONTRACT_TYPES, contractValue)}
           </FilterPill>
         ))}
+        <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
+          <FaSliders className="h-4 w-4" />
+        </IconButton>
       </Carousel>
       <FilterModal
         open={openFilterModal}
@@ -338,7 +314,7 @@ export function ContractFilters(props: {
         selectFilter={selectFilter}
         selectSort={selectSort}
         selectContractType={selectContractType}
-        togglePrizeMarket={togglePrizeMarket}
+        toggleSweepies={toggleSweepies}
         toggleTier={toggleTier}
         hideFilter={hideFilter}
       />
@@ -353,7 +329,7 @@ function FilterModal(props: {
   selectFilter: (selection: Filter) => void
   selectSort: (selection: Sort) => void
   selectContractType: (selection: ContractTypeType) => void
-  togglePrizeMarket: () => void
+  toggleSweepies: () => void
   toggleTier: (tier: MarketTierType) => void
   hideFilter: boolean
 }) {
@@ -364,7 +340,7 @@ function FilterModal(props: {
     selectFilter,
     selectContractType,
     selectSort,
-    togglePrizeMarket,
+    toggleSweepies,
     toggleTier,
     hideFilter,
   } = props
@@ -372,7 +348,7 @@ function FilterModal(props: {
     s: sort,
     f: filter,
     ct: contractType,
-    p: isPrizeMarketString,
+    sw: isSweepiesString,
     mt: currentTiers,
   } = params
 
@@ -396,15 +372,15 @@ function FilterModal(props: {
             </Row>
             <Row className="flex-wrap gap-1">
               <FilterPill
-                selected={isPrizeMarketString === '1'}
-                onSelect={togglePrizeMarket}
-                type="spice"
+                selected={isSweepiesString === '1'}
+                onSelect={toggleSweepies}
+                type="sweepies"
               >
                 <Row className="items-center gap-1">
-                  <SpiceCoin
-                    className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
+                  <SweepiesCoin
+                    className={isSweepiesString !== '1' ? 'opacity-50' : ''}
                   />
-                  Prize
+                  Sweepstakes
                 </Row>
               </FilterPill>
               <TierDropdownPill

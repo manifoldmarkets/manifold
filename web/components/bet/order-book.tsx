@@ -316,8 +316,18 @@ export function CollatedOrderTable(props: {
     | CPMMMultiContract
     | MultiContract
   side: 'YES' | 'NO'
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
-  const { limitBets, contract, side } = props
+  const { limitBets, contract, side, pseudonym } = props
   const isBinaryMC = isBinaryMulti(contract)
   const groupedBets = groupBy(limitBets, (b) => b.limitProb)
 
@@ -325,8 +335,13 @@ export function CollatedOrderTable(props: {
     <div>
       <Row>
         <span className="mr-2">Buy</span>
-        {isBinaryMC ? (
-          <OutcomeLabel contract={contract} outcome={side} truncate={'short'} />
+        {isBinaryMC || !!pseudonym ? (
+          <OutcomeLabel
+            contract={contract}
+            outcome={side}
+            truncate={'short'}
+            pseudonym={pseudonym}
+          />
         ) : side === 'YES' ? (
           <YesLabel />
         ) : (
@@ -493,8 +508,18 @@ export function OrderBookPanel(props: {
     | MultiContract
   answer?: Answer
   showTitle?: boolean
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
-  const { limitBets, contract, answer, showTitle } = props
+  const { limitBets, contract, answer, showTitle, pseudonym } = props
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),
@@ -529,8 +554,14 @@ export function OrderBookPanel(props: {
           limitBets={yesBets}
           contract={contract}
           side="YES"
+          pseudonym={pseudonym}
         />
-        <CollatedOrderTable limitBets={noBets} contract={contract} side="NO" />
+        <CollatedOrderTable
+          limitBets={noBets}
+          contract={contract}
+          side="NO"
+          pseudonym={pseudonym}
+        />
       </Row>
 
       {!isPseudoNumeric && yesBets.length >= 2 && noBets.length >= 2 && (
@@ -547,6 +578,7 @@ export function OrderBookPanel(props: {
                 noBets={noBets}
                 width={w}
                 height={h}
+                pseudonym={pseudonym}
               />
             )}
           </SizedContainer>

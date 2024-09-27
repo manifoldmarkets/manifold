@@ -1,8 +1,6 @@
 import { APIError, APIHandler } from './helpers/endpoint'
-import { type TxnData, insertTxns } from 'shared/txn/run-txn'
+import { type TxnData, runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { incrementBalance } from 'shared/supabase/users'
-import { betsQueue } from 'shared/helpers/fn-queue'
 import { CASH_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
 
@@ -12,19 +10,12 @@ export const convertCashToMana: APIHandler<'convert-cash-to-mana'> = async (
 ) => {
   const pg = createSupabaseDirectClient()
 
-  await betsQueue.enqueueFn(async () => {
-    // check if user has enough cash
-    await pg.tx(async (tx) => {
-      const redeemable = await calculateRedeemablePrizeCash(auth.uid, tx)
-      if (redeemable < amount) {
-        throw new APIError(403, 'Not enough redeemable balance')
-      }
+  await pg.tx(async (tx) => {
+    const { redeemable } = await calculateRedeemablePrizeCash(tx, auth.uid)
 
-      await incrementBalance(tx, auth.uid, {
-        cashBalance: -amount,
-        balance: amount * CASH_TO_MANA_CONVERSION_RATE,
-      })
-    })
+    if (redeemable < amount) {
+      throw new APIError(403, 'Not enough redeemable balance')
+    }
 
     // key for equivalence
     const insertTime = Date.now()
@@ -36,10 +27,11 @@ export const convertCashToMana: APIHandler<'convert-cash-to-mana'> = async (
       toType: 'BANK',
       toId: 'BANK',
       amount: amount,
-      token: 'SPICE',
+      token: 'CASH',
       description: 'Convert cash to mana',
       data: { insertTime },
     }
+    await runTxn(tx, toBank)
 
     const toYou: TxnData = {
       category: 'CONVERT_CASH_DONE',
@@ -47,14 +39,11 @@ export const convertCashToMana: APIHandler<'convert-cash-to-mana'> = async (
       fromId: 'BANK',
       toType: 'USER',
       toId: auth.uid,
-      amount: amount,
+      amount: amount * CASH_TO_MANA_CONVERSION_RATE,
       token: 'M$',
       description: 'Convert cash to mana',
-      data: {
-        insertTime,
-      },
+      data: { insertTime },
     }
-
-    await pg.tx((tx) => insertTxns(tx, [toBank, toYou]))
-  }, [auth.uid])
+    await runTxn(tx, toYou)
+  })
 }
