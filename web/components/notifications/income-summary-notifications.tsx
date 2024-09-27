@@ -10,7 +10,6 @@ import {
 import {
   formatLargeNumber,
   formatMoney,
-  formatMoneyToDecimal,
   maybePluralize,
 } from 'common/util/format'
 import { groupBy } from 'lodash'
@@ -652,9 +651,12 @@ function IncomeNotificationLabel(props: {
   const { notification, className } = props
   const { sourceText } = notification
   return sourceText ? (
-    <span className={clsx('text-teal-600', className)}>
-      {formatMoneyToDecimal(parseFloat(sourceText))}
-    </span>
+    <CoinNumber
+      className={clsx('text-teal-600', className)}
+      amount={parseFloat(sourceText)}
+      coinType={'mana'}
+      isInline
+    />
   ) : (
     <div />
   )
