@@ -16,6 +16,7 @@ import {
 import Link from 'next/link'
 import { AlertBox } from '../widgets/alert-box'
 import { formatMoneyUSD } from 'common/util/format'
+import { useIsNativeIOS } from 'web/components/native-message-provider'
 
 export function TwombaFundsSelector(props: {
   onSelectPriceInDollars: (amount: WebPriceInDollars) => void
@@ -24,11 +25,18 @@ export function TwombaFundsSelector(props: {
   const { onSelectPriceInDollars, loadingPrice } = props
   const basePrices = usePrices()
   const user = useUser()
+
   const expirationStart = user
     ? new Date(introductoryTimeWindow(user))
     : new Date()
+
+  const isNativeIOS = useIsNativeIOS()
   const eligibleForNewUserOffer =
-    user && Date.now() < expirationStart.valueOf() && !user.purchasedMana
+    user &&
+    Date.now() < expirationStart.valueOf() &&
+    !user.purchasedSweepcash &&
+    !isNativeIOS
+
   const newUserPrices = basePrices.filter((p) => p.newUsersOnly)
   const prices = basePrices.filter((p) => !p.newUsersOnly)
   const totalPurchased = use24hrUsdPurchasesInDollars(user?.id || '')

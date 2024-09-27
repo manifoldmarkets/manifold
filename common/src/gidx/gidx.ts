@@ -292,7 +292,7 @@ export const ID_ERROR_MSG =
   'Confidence in identity too low. Double check your information or upload documents to verify your identity.'
 
 export const IDENTITY_THRESHOLD = 80
-export const FRAUD_THRESHOLD = 80
+export const FRAUD_THRESHOLD = 60
 export const ENABLE_FAKE_CUSTOMER = false
 export const exampleCustomers = [
   {

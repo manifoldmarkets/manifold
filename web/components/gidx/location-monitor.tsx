@@ -15,8 +15,7 @@ export const LocationMonitor = (props: {
   const { user, contract, setShowPanel, showPanel } = props
 
   const {
-    fetchMonitorStatus,
-    requestLocation,
+    requestLocationThenFetchMonitorStatus,
     loading,
     monitorStatus,
     monitorStatusMessage,
@@ -26,7 +25,6 @@ export const LocationMonitor = (props: {
     () => setShowPanel(true),
     (location) => {
       if (location) {
-        fetchMonitorStatus(location)
         setShowPanel(false)
       }
     }
@@ -43,7 +41,11 @@ export const LocationMonitor = (props: {
         Location required to participate in sweepstakes
       </span>
       <div className="mt-2 flex">
-        <Button size="xl" loading={loading} onClick={() => requestLocation()}>
+        <Button
+          size="xl"
+          loading={loading}
+          onClick={() => requestLocationThenFetchMonitorStatus()}
+        >
           Share location to {TRADE_TERM}
         </Button>
       </div>

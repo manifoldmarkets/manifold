@@ -243,7 +243,14 @@ export const verifyReasonCodes = async (
       idVerified,
     }
   }
-
+  if (
+    FraudConfidenceScore !== undefined &&
+    privateUser.sessionFraudScore !== FraudConfidenceScore
+  ) {
+    await updatePrivateUser(pg, userId, {
+      sessionFraudScore: FraudConfidenceScore,
+    })
+  }
   if (
     FraudConfidenceScore !== undefined &&
     FraudConfidenceScore < FRAUD_THRESHOLD
@@ -252,11 +259,6 @@ export const verifyReasonCodes = async (
       'Registration activity suspicious, resulted in low fraud confidence score:',
       FraudConfidenceScore
     )
-    if (privateUser.sessionFraudScore !== FraudConfidenceScore) {
-      await updatePrivateUser(pg, userId, {
-        sessionFraudScore: FraudConfidenceScore,
-      })
-    }
     return {
       status: idVerified ? 'warning' : 'error',
       message:

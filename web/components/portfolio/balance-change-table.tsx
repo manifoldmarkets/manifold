@@ -578,7 +578,7 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'CASH_OUT':
       return 'Redemption request'
     case 'CASH_BONUS':
-      return 'Mana cash bonus'
+      return 'Sweepcash bonus'
     case 'KYC_BONUS':
       return 'ID verification bonus'
     default:

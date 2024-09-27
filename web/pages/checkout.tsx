@@ -145,17 +145,19 @@ const CheckoutPage = () => {
           <Row className="text-error mt-2 text-sm">{locationError}</Row>
         </Col>
       ) : page === 'location' ? (
-        <LocationPanel
-          setLocation={(data: GPSData) => {
-            setPage('get-session')
-            getCheckoutSession(data)
-          }}
-          setLocationError={setLocationError}
-          setLoading={setLoading}
-          loading={loading}
-          locationError={locationError}
-          back={() => setPage('checkout')}
-        />
+        <Col className=" mx-auto w-full max-w-lg gap-4 px-6 py-4">
+          <LocationPanel
+            setLocation={(data: GPSData) => {
+              setPage('get-session')
+              getCheckoutSession(data)
+            }}
+            setLocationError={setLocationError}
+            setLoading={setLoading}
+            loading={loading}
+            locationError={locationError}
+            back={() => setPage('checkout')}
+          />
+        </Col>
       ) : page === 'payment' &&
         checkoutSession &&
         productSelected &&
@@ -263,6 +265,24 @@ const PaymentSection = (props: {
       }
     }
   }
+
+  const handleExpiryDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value
+    if (value.length > 5) {
+      return
+    }
+    const isBackspace =
+      (e.nativeEvent as InputEvent)?.inputType === 'deleteContentBackward'
+    if (value.length === 2 && !value.includes('/') && !isBackspace) {
+      value += '/'
+    } else if (value.length === 3 && !isBackspace && !value.includes('/')) {
+      value = value.slice(0, 2) + '/' + value.slice(2)
+    } else if (value.includes('/') && value.split('/').length > 2) {
+      return
+    }
+    setExpiryDate(value)
+  }
+
   if (complete) {
     return (
       <Col className={'gap-4'}>
@@ -363,7 +383,7 @@ const PaymentSection = (props: {
                   type="text"
                   placeholder="MM/YY"
                   value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
+                  onChange={handleExpiryDateChange}
                   className="w-1/2"
                 />
                 <Input

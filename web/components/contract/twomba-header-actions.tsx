@@ -249,14 +249,21 @@ export function TwombaHeaderActions(props: {
       : []),
   ]
 
+  const sweepsEnabled = !!playContract.siblingContractId
+
+  const isNonBetPollOrBountiedQuestion =
+    playContract.mechanism === 'none' &&
+    (playContract.outcomeType === 'POLL' ||
+      playContract.outcomeType === 'BOUNTIED_QUESTION')
+
   return (
-    // make tooltip children stretch
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
-      {!!currentContract.siblingContractId && (
-        <div className="relative">
-          <TwombaToggle />
-        </div>
-      )}
+      <div className="relative z-50">
+        {!isNonBetPollOrBountiedQuestion && (
+          <TwombaToggle sweepsEnabled={sweepsEnabled} />
+        )}
+      </div>
+
       {!playContract.coverImageUrl && isCreator && (
         <ChangeBannerButton
           contract={playContract}

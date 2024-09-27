@@ -51,6 +51,7 @@ import {
   locationBlocked,
   PROMPT_USER_VERIFICATION_MESSAGES,
 } from 'common/gidx/user'
+import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -116,6 +117,12 @@ export default function CashoutPage() {
     (redeemable?.redeemablePrizeCash ?? 0) - completedCashout
 
   const roundedRedeemableCash = Math.floor(redeemableCash * 100) / 100
+  const {
+    requestLocationThenFetchMonitorStatus,
+    loading: loadingMonitorStatus,
+    monitorStatusMessage,
+    monitorStatus,
+  } = useMonitorStatus(false, user)
 
   const getCashoutSession = async (DeviceGPS: GPSData) => {
     setError(undefined)
@@ -230,15 +237,29 @@ export default function CashoutPage() {
             <UsOnlyDisclaimer />
           </Row>
           {locationBlocked(user, privateUser) ? (
-            <Row className="items-center gap-4">
-              <LocationBlockedIcon height={16} className="fill-red-500" />
-              <Col className="gap-2">
-                <div className="text-2xl">Your location is blocked!</div>
-                <p className="text-ink-700 text-sm">
-                  You are unable to redeem at the moment.
-                </p>
-              </Col>
-            </Row>
+            <Col>
+              <Row className="items-center gap-4">
+                <LocationBlockedIcon height={16} className="fill-red-500" />
+                <Col className="gap-2">
+                  <div className="text-2xl">Your location is blocked!</div>
+                  <p className="text-ink-700 text-sm">
+                    You are unable to redeem at the moment.
+                  </p>
+                </Col>
+              </Row>
+              <Button
+                color={'indigo-outline'}
+                loading={loadingMonitorStatus}
+                disabled={loadingMonitorStatus}
+                onClick={() => requestLocationThenFetchMonitorStatus()}
+                className={'mt-2 w-full'}
+              >
+                Refresh status
+              </Button>
+              {monitorStatus === 'error' && (
+                <Row className={'text-error'}>{monitorStatusMessage}</Row>
+              )}
+            </Col>
           ) : ageBlocked(user, privateUser) ? (
             <Row className="items-center gap-4">
               <RiUserForbidLine className="h-16 w-16 shrink-0 fill-red-500" />
@@ -300,6 +321,18 @@ export default function CashoutPage() {
                   Your session is marked as possible fraud, please turn off VPN
                   if using.
                 </p>
+                <Button
+                  color={'indigo-outline'}
+                  loading={loadingMonitorStatus}
+                  disabled={loadingMonitorStatus}
+                  onClick={() => requestLocationThenFetchMonitorStatus()}
+                  className={'mt-2 w-full'}
+                >
+                  Refresh status
+                </Button>
+                {monitorStatus === 'error' && (
+                  <Row className={'text-error'}>{monitorStatusMessage}</Row>
+                )}
               </Col>
             </Row>
           ) : identityBlocked(user, privateUser) ? (

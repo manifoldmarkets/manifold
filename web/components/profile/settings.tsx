@@ -17,7 +17,9 @@ import { generateNewApiKey } from 'web/lib/api/api-key'
 import { api } from 'web/lib/api/api'
 import { DeleteYourselfButton } from './delete-yourself'
 import { capitalize } from 'lodash'
-import { TRADE_TERM } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId, TRADE_TERM } from 'common/envs/constants'
+import { useNativeInfo } from '../native-message-provider'
+import { postMessageToNative } from 'web/lib/native/post-message'
 
 export const AccountSettings = (props: {
   user: User
@@ -27,10 +29,14 @@ export const AccountSettings = (props: {
 
   const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
   const [betWarnings, setBetWarnings] = useState(!user.optOutBetWarnings)
-  const [advancedTraderMode, setAdvancedTraderMode] = useState(
-    !!user.isAdvancedTrader
-  )
+  const [appUrl, setAppUrl] = useState('https://' + ENV_CONFIG.domain)
+  const isAdmin = isAdminId(user.id)
+  const { isNative } = useNativeInfo()
 
+  const sendAppUrl = async () => {
+    postMessageToNative('setAppUrl', { appUrl })
+    return
+  }
   const updateApiKey = async (e?: React.MouseEvent) => {
     const newApiKey = await generateNewApiKey()
     setApiKey(newApiKey ?? '')
@@ -64,7 +70,13 @@ export const AccountSettings = (props: {
           <Button>Edit settings</Button>
         </Link>
       </div>
-
+      {isAdmin && isNative && (
+        <div>
+          Native url
+          <Input value={appUrl} onChange={(e) => setAppUrl(e.target.value)} />
+          <Button onClick={sendAppUrl}>Send</Button>
+        </div>
+      )}
       <div>
         <label className="mb-1 block">API key</label>
         <Row className="items-stretch gap-3">

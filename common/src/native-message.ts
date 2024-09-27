@@ -43,6 +43,7 @@ export type webToNativeMessageType =
   | 'storeReviewRequested'
   | 'hasReviewActionRequested'
   | 'versionRequested'
+  | 'setAppUrl'
 export const IS_NATIVE_KEY = 'is-native'
 export const PLATFORM_KEY = 'native-platform'
 
