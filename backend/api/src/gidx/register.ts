@@ -1,6 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { getUser, LOCAL_DEV, log } from 'shared/utils'
-import { updateUser } from 'shared/supabase/users'
+import { getUserIdFromReferralCode, updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   getGIDXStandardParams,
@@ -17,7 +17,7 @@ import {
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { parsePhoneNumber } from 'libphonenumber-js'
 import { getIp, track } from 'shared/analytics'
-import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
+import { distributeKycAndReferralBonus } from 'shared/distribute-kyc-bonus'
 
 const ENDPOINT =
   GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerRegistration'
@@ -34,7 +34,12 @@ export const register: APIHandler<'register-gidx'> = async (
   if (!EmailAddress) {
     throw new APIError(400, 'User must have an email address')
   }
+  const { ReferralCode } = props
   const pg = createSupabaseDirectClient()
+  const referrerInfo = await getUserIdFromReferralCode(pg, ReferralCode)
+  if (!referrerInfo && ReferralCode) {
+    throw new APIError(400, 'Invalid referral code')
+  }
   const body = {
     EmailAddress,
     CountryCode: 'US',
@@ -82,12 +87,24 @@ export const register: APIHandler<'register-gidx'> = async (
     FraudConfidenceScore,
     IdentityConfidenceScore
   )
+  if (referrerInfo) {
+    // If they didn't get verified right now, they might upload docs and get verified later
+    await updateUser(pg, auth.uid, {
+      referredByUserId: referrerInfo.id,
+      usedReferralCode: true,
+    })
+  }
   if (status !== 'error') {
     await updateUser(pg, auth.uid, {
       kycDocumentStatus: 'await-documents',
       sweepstakesVerifiedTime: Date.now(),
     })
-    await distributeKycBonus(pg, user.id)
+    await distributeKycAndReferralBonus(
+      pg,
+      user,
+      referrerInfo?.id,
+      referrerInfo?.sweepsVerified
+    )
   }
   track(auth.uid, 'register user gidx attempt', {
     status,

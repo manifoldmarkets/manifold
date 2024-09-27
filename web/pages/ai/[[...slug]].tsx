@@ -19,7 +19,6 @@ import { Headline } from 'common/news'
 import { DashboardPage } from 'web/components/dashboard/dashboard-page'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { referralQuery } from 'common/util/share'
 import { Row } from 'web/components/layout/row'
 import { HorizontalDashboard } from 'web/components/dashboard/horizontal-dashboard'
 import { contractPath, CPMMNumericContract } from 'common/contract'
@@ -128,7 +127,6 @@ function MultiDashboard(props: MultiDashboardProps) {
   )
   const whenAgi = useLiveContractWithAnswers(props.whenAgi)
 
-  const user = useUser()
   const expectedValueAGI = getExpectedValue(whenAgi)
   const eventYear = Math.floor(expectedValueAGI)
   const eventMonth = Math.round((expectedValueAGI - eventYear) * 12)
@@ -157,9 +155,7 @@ function MultiDashboard(props: MultiDashboardProps) {
           >
             Manifold AI Forecasts
             <CopyLinkOrShareButton
-              url={`https://${ENV_CONFIG.domain}/${ENDPOINT}${
-                user?.username ? referralQuery(user.username) : ''
-              }`}
+              url={`https://${ENV_CONFIG.domain}/${ENDPOINT}`}
               eventTrackingName="copy ai share link"
               tooltip="Share"
               className="hidden sm:inline"
