@@ -17,13 +17,13 @@ export const QUEST_DETAILS: Record<
 > = {
   BETTING_STREAK: {
     requiredCount: 1,
-    rewardAmount: 250,
+    rewardAmount: 25,
     scoreId: 'currentBettingStreak',
     title: 'Prediction Streak',
   },
   SHARES: {
     requiredCount: 1,
-    rewardAmount: 10,
+    rewardAmount: 5,
     scoreId: 'sharesToday',
     title: 'Sharing',
   },
