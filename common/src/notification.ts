@@ -381,6 +381,7 @@ export type UniqueBettorData = {
   totalUniqueBettors?: number
   totalAmountBet?: number
   token?: ContractToken
+  bonusAmount?: number
 }
 
 export type ReviewNotificationData = {

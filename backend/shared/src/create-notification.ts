@@ -63,7 +63,7 @@ import {
 import { createPushNotifications } from './create-push-notifications'
 import { Reaction } from 'common/reaction'
 import { QuestType } from 'common/quest'
-import { QuestRewardTxn } from 'common/txn'
+import { QuestRewardTxn, UniqueBettorBonusTxn } from 'common/txn'
 import { formatMoney } from 'common/util/format'
 import {
   createSupabaseDirectClient,
@@ -984,6 +984,7 @@ export const createNewBettorNotification = async (
   bettor: User,
   contract: Contract,
   bet: Bet,
+  txn: UniqueBettorBonusTxn,
   bets: Bet[] | undefined
 ) => {
   const privateUser = await getPrivateUser(creatorId)
@@ -1049,6 +1050,7 @@ export const createNewBettorNotification = async (
         ...pseudoNumericData,
         totalAmountBet: sumBy(bets, 'amount'),
         token: contract.token,
+        bonusAmount: txn.amount,
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)
@@ -1099,6 +1101,7 @@ export const createNewBettorNotification = async (
   )
   if (creatorHasSeenMarketSinceBet) return
 
+  // TODO: add back bonus amount to email
   await sendNewUniqueBettorsEmail(
     'unique_bettors_on_your_contract',
     privateUser,

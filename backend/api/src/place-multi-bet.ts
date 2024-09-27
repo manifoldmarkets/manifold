@@ -105,7 +105,8 @@ export const placeMultiBetMain = async (
       user,
       allOrdersToCancel,
       makers,
-      results.some((r) => r.streakIncremented)
+      results.some((r) => r.streakIncremented),
+      results.find((r) => r.bonuxTxn)?.bonuxTxn
     )
   }
 
