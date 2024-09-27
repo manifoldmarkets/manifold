@@ -3,7 +3,7 @@ import { TWOMBA_ENABLED } from './envs/constants'
 
 export const FEE_START_TIME = 1713292320000
 
-const TAKER_FEE_CONSTANT = 0.07
+const TAKER_FEE_CONSTANT = 0
 export const getTakerFee = (shares: number, prob: number) => {
   return TAKER_FEE_CONSTANT * prob * (1 - prob) * shares
 }
