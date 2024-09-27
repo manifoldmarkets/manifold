@@ -269,7 +269,7 @@ export const getUserIdFromReferralCode = async (
         : null
   )
 }
-export const getReferrerIdThatUsedReferralCode = async (
+export const getReferrerInfo = async (
   pg: SupabaseDirectClient,
   referredByUserId: string | undefined
 ) => {
@@ -278,7 +278,6 @@ export const getReferrerIdThatUsedReferralCode = async (
     `select id,
        coalesce((data->>'sweepstakesVerified')::boolean, false) as sweeps_verified
        from users where id = $1 
-       and coalesce((data->>'usedReferralCode')::boolean, false) = true
       `,
     [referredByUserId],
     (row) =>

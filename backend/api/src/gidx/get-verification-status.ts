@@ -11,10 +11,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import {
-  getReferrerIdThatUsedReferralCode,
-  updateUser,
-} from 'shared/supabase/users'
+import { getReferrerInfo, updateUser } from 'shared/supabase/users'
 import { getUserAndPrivateUserOrThrow, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { User } from 'common/user'
@@ -76,10 +73,9 @@ export const getVerificationStatusInternal = async (
 
   // If they just got verified via their id documents, distribute the bonus
   if (status !== 'error' && !user.idVerified && idVerified) {
-    const referrerInfo = await getReferrerIdThatUsedReferralCode(
-      pg,
-      user.referredByUserId
-    )
+    const referrerInfo = user.usedReferralCode
+      ? await getReferrerInfo(pg, user.referredByUserId)
+      : undefined
     await distributeKycAndReferralBonus(
       pg,
       user,
