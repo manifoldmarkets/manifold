@@ -87,8 +87,8 @@ export const MAX_TRADERS_FOR_BONUS = 10000
 
 export const SUBSIDY_FEE = 0
 
-export const BETTING_STREAK_BONUS_AMOUNT = 50
-export const BETTING_STREAK_BONUS_MAX = 250
+export const BETTING_STREAK_BONUS_AMOUNT = 5
+export const BETTING_STREAK_BONUS_MAX = 25
 
 export const BETTING_STREAK_RESET_HOUR = 7
 
