@@ -1,6 +1,6 @@
 'use client'
 import clsx from 'clsx'
-import { WebManaAmounts, PaymentAmount } from 'common/economy'
+import { WebPriceInDollars, PaymentAmount } from 'common/economy'
 import {
   DOLLAR_PURCHASE_LIMIT,
   ENV_CONFIG,
@@ -80,11 +80,13 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const user = useUser()
   const { isIOS } = useNativeInfo()
   const prices = usePrices()
-  const [loading, setLoading] = useState<WebManaAmounts | null>(null)
+  const [loadingPrice, setLoadingPrice] = useState<WebPriceInDollars | null>(
+    null
+  )
   const [error, setError] = useState<string | null>(null)
   const { initiatePurchaseInDollars, loadingMessage } = useIosPurchases(
     setError,
-    setLoading,
+    setLoadingPrice,
     onClose
   )
 
@@ -97,15 +99,15 @@ export function BuyManaTab(props: { onClose: () => void }) {
   if (TWOMBA_ENABLED) {
     return (
       <TwombaFundsSelector
-        onSelect={(amount) => {
-          setLoading(amount)
+        onSelectPriceInDollars={(dollarAmount) => {
+          setLoadingPrice(dollarAmount)
           if (isIOS) {
-            initiatePurchaseInDollars(amount)
+            initiatePurchaseInDollars(dollarAmount)
           } else {
-            router.push(`/checkout?manaAmount=${amount}`)
+            router.push(`/checkout?dollarAmount=${dollarAmount}`)
           }
         }}
-        loading={loading}
+        loadingPrice={loadingPrice}
       />
     )
   }
@@ -142,7 +144,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
               <PriceTile
                 amounts={amounts}
                 index={index}
-                loading={loading}
+                loadingPrice={loadingPrice}
                 disabled={pastLimit}
                 isSubmitButton={true}
               />
@@ -159,12 +161,12 @@ export function BuyManaTab(props: { onClose: () => void }) {
 export function PriceTile(props: {
   amounts: PaymentAmount
   index: number
-  loading: WebManaAmounts | null
+  loadingPrice: WebPriceInDollars | null
   disabled: boolean
   onClick?: () => void
   isSubmitButton?: boolean
 }) {
-  const { loading, onClick, isSubmitButton, amounts, index } = props
+  const { loadingPrice, onClick, isSubmitButton, amounts, index } = props
   const {
     newUsersOnly,
     mana,
@@ -173,8 +175,8 @@ export function PriceTile(props: {
     originalPriceInDollars,
   } = amounts
 
-  const isCurrentlyLoading = loading === mana
-  const disabled = props.disabled || (loading && !isCurrentlyLoading)
+  const isCurrentlyLoading = loadingPrice === priceInDollars
+  const disabled = props.disabled || (loadingPrice && !isCurrentlyLoading)
   return (
     <button
       className={clsx(

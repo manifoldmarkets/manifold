@@ -1,4 +1,4 @@
-import { WebManaAmounts } from 'common/economy'
+import { WebPriceInDollars } from 'common/economy'
 import { usePrices } from 'web/hooks/use-prices'
 import { useUser } from 'web/hooks/use-user'
 import { introductoryTimeWindow } from 'common/user'
@@ -18,10 +18,10 @@ import { AlertBox } from '../widgets/alert-box'
 import { formatMoneyUSD } from 'common/util/format'
 
 export function TwombaFundsSelector(props: {
-  onSelect: (amount: WebManaAmounts) => void
-  loading: WebManaAmounts | null
+  onSelectPriceInDollars: (amount: WebPriceInDollars) => void
+  loadingPrice: WebPriceInDollars | null
 }) {
-  const { onSelect, loading } = props
+  const { onSelectPriceInDollars, loadingPrice } = props
   const basePrices = usePrices()
   const user = useUser()
   const expirationStart = user
@@ -73,9 +73,9 @@ export function TwombaFundsSelector(props: {
                   key={`price-tile-${amounts.mana}`}
                   amounts={amounts}
                   index={index}
-                  loading={loading}
+                  loadingPrice={loadingPrice}
                   disabled={pastLimit}
-                  onClick={() => onSelect(amounts.mana)}
+                  onClick={() => onSelectPriceInDollars(amounts.priceInDollars)}
                 />
               ))}
             </div>
@@ -88,9 +88,9 @@ export function TwombaFundsSelector(props: {
             key={`price-tile-${amounts.mana}`}
             amounts={amounts}
             index={index}
-            loading={loading}
+            loadingPrice={loadingPrice}
             disabled={pastLimit}
-            onClick={() => onSelect(amounts.mana)}
+            onClick={() => onSelectPriceInDollars(amounts.priceInDollars)}
           />
         ))}
       </div>

@@ -10,7 +10,7 @@ import { api, APIError } from 'web/lib/api/api'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import { LogoIcon } from 'web/components/icons/logo-icon'
 import { TRADE_TERM } from 'common/envs/constants'
-import { MANA_WEB_PRICES, PaymentAmount, WebManaAmounts } from 'common/economy'
+import { PaymentAmount, WebPriceInDollars } from 'common/economy'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -34,36 +34,39 @@ const CheckoutPage = () => {
     'checkout' | 'payment' | 'get-session' | 'location'
   >('checkout')
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
-  const [amountSelected, setAmountSelected] = useState<WebManaAmounts>()
+  const [dollarAmountSelected, setDollarAmountSelected] =
+    useState<WebPriceInDollars>()
   const [productSelected, setProductSelected] = useState<PaymentAmount>()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const [showConfetti, setShowConfetti] = useState(false)
-  const [priceLoading, setPriceLoading] = useState<WebManaAmounts | null>(null)
+  const [loadingPrice, setLoadingPrice] = useState<WebPriceInDollars | null>(
+    null
+  )
   const { initiatePurchaseInDollars, loadingMessage } = useIosPurchases(
     setError,
-    setPriceLoading,
+    setLoadingPrice,
     () => setShowConfetti(true)
   )
 
-  const { manaAmount: manaAmountFromQuery } = router.query
+  const { dollarAmount: dollarAmountFromQuery } = router.query
   useEffect(() => {
-    if (!manaAmountFromQuery) return
+    if (!dollarAmountFromQuery) return
     if (
-      !Array.isArray(manaAmountFromQuery) &&
-      prices.find((p) => p.mana === parseInt(manaAmountFromQuery))
+      !Array.isArray(dollarAmountFromQuery) &&
+      prices.find((p) => p.priceInDollars === parseInt(dollarAmountFromQuery))
     ) {
-      onSelectAmount(parseInt(manaAmountFromQuery) as WebManaAmounts)
+      onSelectAmount(parseInt(dollarAmountFromQuery) as WebPriceInDollars)
     } else {
-      console.error('Invalid mana amount in query parameter')
-      setError('Invalid mana amount')
+      console.error('Invalid dollar amount in query parameter')
+      setError('Invalid dollar amount')
     }
-  }, [manaAmountFromQuery])
+  }, [dollarAmountFromQuery])
 
   const checkIfRegistered = async (
     then: 'ios-native' | 'web',
-    amount: number
+    dollarAmount: number
   ) => {
     if (!user || !privateUser) return
     setError(null)
@@ -75,9 +78,7 @@ const CheckoutPage = () => {
     const { status, message } = getVerificationStatus(user, privateUser)
     if (status !== 'error') {
       if (then === 'ios-native') {
-        initiatePurchaseInDollars(
-          prices.find((p) => p.mana === amount)!.priceInDollars
-        )
+        initiatePurchaseInDollars(dollarAmount)
       } else {
         setPage('location')
       }
@@ -88,18 +89,10 @@ const CheckoutPage = () => {
   }
 
   const getCheckoutSession = async (DeviceGPS: GPSData) => {
-    if (!amountSelected) return
+    if (!dollarAmountSelected) return
     setError(null)
     setLoading(true)
-    const dollarAmount = (prices as typeof MANA_WEB_PRICES).find(
-      (a) => a.mana === amountSelected
-    )?.priceInDollars
-    console.log('dollaramount', dollarAmount)
-    if (!dollarAmount) {
-      setError('Invalid mana amount')
-      setLoading(false)
-      return
-    }
+    console.log('dollaramount', dollarAmountSelected)
     try {
       const res = await api('get-checkout-session-gidx', {
         DeviceGPS,
@@ -107,7 +100,7 @@ const CheckoutPage = () => {
       const { session, status, message } = res
       if (session && status !== 'error') {
         const product = session.PaymentAmounts.find(
-          (a) => a.priceInDollars === dollarAmount
+          (a) => a.priceInDollars === dollarAmountSelected
         )
         if (!product) {
           setError(
@@ -130,23 +123,23 @@ const CheckoutPage = () => {
     }
   }
 
-  const onSelectAmount = (amount: WebManaAmounts) => {
+  const onSelectAmount = (dollarAmount: WebPriceInDollars) => {
     setShowConfetti(false)
     setError(null)
-    setAmountSelected(amount)
-    setPriceLoading(amount)
-    checkIfRegistered(isIOS ? 'ios-native' : 'web', amount)
+    setDollarAmountSelected(dollarAmount)
+    setLoadingPrice(dollarAmount)
+    checkIfRegistered(isIOS ? 'ios-native' : 'web', dollarAmount)
   }
 
   return (
     <Page className={'p-3'} trackPageView={'checkout page'}>
       {showConfetti && <FullscreenConfetti />}
       {page === 'checkout' &&
-      (isIOS ? true : !amountSelected && !manaAmountFromQuery) ? (
+      (isIOS ? true : !dollarAmountSelected && !dollarAmountFromQuery) ? (
         <Col>
           <TwombaFundsSelector
-            onSelect={onSelectAmount}
-            loading={priceLoading}
+            onSelectPriceInDollars={onSelectAmount}
+            loadingPrice={loadingPrice}
           />
 
           <Row className="text-error mt-2 text-sm">{locationError}</Row>
@@ -166,7 +159,7 @@ const CheckoutPage = () => {
       ) : page === 'payment' &&
         checkoutSession &&
         productSelected &&
-        amountSelected ? (
+        dollarAmountSelected ? (
         <PaymentSection
           CheckoutSession={checkoutSession}
           amount={productSelected}
