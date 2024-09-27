@@ -301,13 +301,6 @@ export function deleteDashboard(params: { dashboardId: string }) {
   return call(getApiUrl('delete-dashboard'), 'POST', params)
 }
 
-export function referUser(params: {
-  referredByUsername: string
-  contractId?: string
-}) {
-  return call(getApiUrl('refer-user'), 'POST', params)
-}
-
 export const updateMarket = curriedAPI('market/:contractId/update')
 
 export const updateUser = curriedAPI('me/update')
