@@ -512,7 +512,8 @@ export const executeNewBetResult = async (
   isApi: boolean,
   replyToCommentId?: string,
   betGroupId?: string,
-  deterministic?: boolean
+  deterministic?: boolean,
+  firstBetInMultiBet?: boolean
 ) => {
   const allOrdersToCancel: LimitBet[] = []
   const fullBets: Bet[] = []
@@ -576,7 +577,10 @@ export const executeNewBetResult = async (
     newBet.createdTime
   )
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
-  const bonuxTxn = await giveUniqueBettorBonus(pgTrans, contract, user, newBet)
+  const bonuxTxn =
+    contract.outcomeType !== 'NUMBER' || firstBetInMultiBet
+      ? await giveUniqueBettorBonus(pgTrans, contract, user, newBet)
+      : undefined
   const answerUpdates: {
     id: string
     poolYes: number

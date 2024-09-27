@@ -74,7 +74,7 @@ export const placeMultiBetMain = async (
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const betGroupId = crypto.randomBytes(12).toString('hex')
     return await Promise.all(
-      newBetResults.map((newBetResult) =>
+      newBetResults.map((newBetResult, i) =>
         executeNewBetResult(
           pgTrans,
           newBetResult,
@@ -83,7 +83,8 @@ export const placeMultiBetMain = async (
           isApi,
           undefined,
           betGroupId,
-          deterministic
+          deterministic,
+          i === 0
         )
       )
     )
