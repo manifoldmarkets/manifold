@@ -38,7 +38,7 @@ import {
   QuestIncomeNotification,
   UniqueBettorBonusIncomeNotification,
   UniqueBettorNotification,
-  UserJoinedNotification,
+  ReferralNotification,
 } from 'web/components/notifications/income-summary-notifications'
 import {
   BinaryOutcomeLabel,
@@ -171,7 +171,7 @@ export function NotificationItem(props: {
     )
   } else if (sourceType === 'user' && sourceUpdateType === 'updated') {
     return (
-      <UserJoinedNotification
+      <ReferralNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}

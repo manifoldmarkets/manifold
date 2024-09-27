@@ -414,6 +414,11 @@ export type PaymentCompletedData = {
   paymentAmountType: string
 }
 
+export type ReferralData = {
+  manaAmount: number
+  cashAmount: number
+}
+
 export function getSourceIdForLinkComponent(
   sourceId: string,
   sourceType?: notification_source_types

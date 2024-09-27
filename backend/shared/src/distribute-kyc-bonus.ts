@@ -64,12 +64,10 @@ export async function distributeKycAndReferralBonus(
     }
   })
   if (referrerId) {
-    // TODO: include both amounts
-    await createReferralNotification(
-      referrerId,
-      user,
-      REFERRAL_AMOUNT.toString()
-    )
+    await createReferralNotification(referrerId, user, {
+      manaAmount: REFERRAL_AMOUNT,
+      cashAmount: referrerSweepsVerified ? REFERRAL_AMOUNT_CASH : 0,
+    })
     await completeReferralsQuest(referrerId)
   }
 }

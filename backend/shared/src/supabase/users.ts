@@ -13,6 +13,7 @@ import {
 } from 'shared/websockets/helpers'
 import { removeUndefinedProps } from 'common/util/object'
 import { getBettingStreakResetTimeBeforeNow } from 'shared/utils'
+import { log } from 'node:console'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
@@ -254,9 +255,10 @@ export const getUserIdFromReferralCode = async (
 ) => {
   if (!referralCode) return undefined
   const startOfId = referralCode.replace(/#/g, '0')
+  log('startOfId', startOfId)
   return await pg.oneOrNone(
     `select id, coalesce((data->>'sweepstakesVerified')::boolean, false) as sweeps_verified from users
-           where id like $1 || '%' limit 1`,
+           where id ilike $1 || '%' limit 1`,
     [startOfId],
     (r) =>
       r
