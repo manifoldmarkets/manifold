@@ -6,7 +6,6 @@ import {
 } from 'common/dashboard'
 import { LinkPreviews } from 'common/link-preview'
 import { useUser } from 'web/hooks/use-user'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { useEffect, useState } from 'react'
 import { ENV_CONFIG, isAdminId, isModId } from 'common/envs/constants'
@@ -42,7 +41,6 @@ export function PoliticsDashboardPage(props: {
   className?: string
 }) {
   const user = useUser()
-  useSaveReferral(user)
   const router = useRouter()
   const pathName = usePathname() ?? ''
 

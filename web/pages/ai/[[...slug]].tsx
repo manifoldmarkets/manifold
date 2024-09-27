@@ -4,13 +4,11 @@ import {
 } from 'web/public/data/elections-data'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { useUser } from 'web/hooks/use-user'
 import { capitalize, first } from 'lodash'
 import { Col } from 'web/components/layout/col'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 import Custom404 from 'web/pages/404'
 import NewsPage from 'web/pages/news/[slug]'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useMultiDashboard } from 'web/hooks/use-multi-dashboard'
 import { MultiDashboardHeadlineTabs } from 'web/components/dashboard/multi-dashboard-header'
@@ -97,8 +95,6 @@ type MultiDashboardProps = {
 export default function MultiOrSingleDashboardPage(
   props: MultiDashboardProps | NewsDashboardPageProps
 ) {
-  const user = useUser()
-  useSaveReferral(user)
   useSaveCampaign()
 
   // Unknown dashboard

@@ -31,8 +31,6 @@ import { TestimonialsPanel } from 'web/components/testimonials-panel'
 import { Carousel } from 'web/components/widgets/carousel'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useUser } from 'web/hooks/use-user'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
@@ -105,8 +103,6 @@ export default function LandingPage(props: {
 }) {
   const { trendingContracts, topicSlugToContracts, topics } = props
 
-  const user = useUser()
-  useSaveReferral(user)
   useSaveCampaign()
   useRedirectIfSignedIn()
 

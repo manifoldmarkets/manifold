@@ -43,7 +43,6 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -175,9 +174,6 @@ function UserProfile(props: {
   const currentUser = useUser()
   const privateUser = usePrivateUser()
 
-  useSaveReferral(currentUser, {
-    defaultReferrerUsername: user?.username,
-  })
   const isCurrentUser = user.id === currentUser?.id
   const [expandProfileInfo, setExpandProfileInfo] = usePersistentLocalState(
     false,

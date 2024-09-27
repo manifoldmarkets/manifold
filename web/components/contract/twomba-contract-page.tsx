@@ -58,7 +58,6 @@ import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import {
   useSavedContractMetrics,
@@ -175,11 +174,6 @@ export function TwombaContractPageContent(props: ContractParams) {
   const [showResolver, setShowResolver] = useState(false)
   const [showReview, setShowReview] = useState(false)
   const [imageError, setImageError] = useState(false)
-
-  useSaveReferral(user, {
-    defaultReferrerUsername: props.contract.creatorUsername,
-    contractId: props.contract.id,
-  })
 
   const [replyTo, setReplyTo] = useState<Answer | Bet>()
 

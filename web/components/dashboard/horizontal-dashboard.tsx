@@ -11,8 +11,6 @@ import { key } from 'web/components/dashboard/dashboard-content'
 import { Row } from 'web/components/layout/row'
 import { useContracts } from 'web/hooks/use-contract'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useUser } from 'web/hooks/use-user'
 import {
   DashboardNewsItemPlaceholder,
   MaybeDashboardNewsItem,
@@ -27,9 +25,6 @@ export function HorizontalDashboard(props: {
   initialContracts: Contract[]
   slug: string
 }) {
-  const user = useUser()
-  useSaveReferral(user)
-
   const { initialDashboard, slug, previews, initialContracts } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
