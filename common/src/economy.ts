@@ -174,7 +174,8 @@ export const MANA_WEB_PRICES = TWOMBA_ENABLED
   ? PaymentAmountsGIDX
   : PaymentAmounts
 
-export type WebManaAmounts = (typeof PaymentAmounts)[number]['mana']
+export type WebPriceInDollars =
+  (typeof PaymentAmounts)[number]['priceInDollars']
 // TODO: these prices should be a function of whether the user is sweepstakes verified or not
 export const IOS_PRICES = TWOMBA_ENABLED
   ? [
