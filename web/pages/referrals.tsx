@@ -31,12 +31,14 @@ export default function ReferralsPage() {
         url="/referrals"
       />
 
-      <Col className="items-center max-w-2xl mx-auto">
+      <Col className="mx-auto max-w-2xl items-center">
         <Col className="bg-canvas-0 rounded-lg p-8 shadow-lg">
-          <h1 className="text-3xl font-bold mb-6 text-center">Refer a Friend</h1>
-          
+          <h1 className="mb-6 text-center text-3xl font-bold">
+            Refer a Friend
+          </h1>
+
           <img
-            className="mb-8 block mx-auto"
+            className="mx-auto mb-8 block"
             src="/logo-flapping-with-money.gif"
             width={200}
             height={200}
@@ -44,11 +46,9 @@ export default function ReferralsPage() {
           />
 
           {isSweepstakesVerified ? (
-            <div className="text-center mb-8">
-              <p className="text-xl mb-4">
-                Invite friends to Manifold and get
-              </p>
-              <div className="flex justify-center items-center gap-2 text-2xl font-bold">
+            <div className="mb-8 text-center">
+              <p className="mb-4 text-xl">Invite friends to Manifold and get</p>
+              <div className="flex items-center justify-center gap-2 text-2xl font-bold">
                 <CoinNumber
                   coinType={'CASH'}
                   amount={REFERRAL_AMOUNT_CASH}
@@ -61,26 +61,27 @@ export default function ReferralsPage() {
                   isInline
                 />
               </div>
-              <p className="mt-2">when they sign up & verify for sweepstakes!</p>
+              <p className="mt-2">
+                when they sign up & verify for sweepstakes!
+              </p>
             </div>
           ) : (
-            <div className="text-center mb-8">
-              <p className="text-xl mb-4">
+            <div className="mb-8 text-center">
+              <p className="mb-4 text-xl">
                 Invite friends to Manifold and earn
               </p>
               <div className="text-2xl font-bold">
-                <CoinNumber
-                  amount={REFERRAL_AMOUNT}
-                  isInline
-                />
+                <CoinNumber amount={REFERRAL_AMOUNT} isInline />
               </div>
-              <p className="mt-2">when they sign up and use your referral code!</p>
+              <p className="mt-2">
+                when they sign up and use your referral code!
+              </p>
             </div>
           )}
 
-          <div className="bg-primary-100 rounded-lg p-6 mb-8">
-            <p className="text-center text-lg mb-2">Your Referral Code</p>
-            <div className="text-4xl font-bold text-center mb-4">{code}</div>
+          <div className="bg-primary-100 mb-8 rounded-lg p-6">
+            <p className="mb-2 text-center text-lg">Your Referral Code</p>
+            <div className="mb-4 text-center text-4xl font-bold">{code}</div>
             <Button
               onClick={() => {
                 copyToClipboard(code)
