@@ -42,7 +42,7 @@ export function TwombaContractSummaryStats(props: {
         />
       ) : (
         <Row className="ml-auto gap-4">
-          {marketTier && marketTier !== 'basic' && !isCashContract && (
+          {marketTier && !isCashContract && (
             <TierTooltip tier={marketTier} contract={contract} />
           )}
           {!isBlocked(privateUser, contract.creatorId) && (
