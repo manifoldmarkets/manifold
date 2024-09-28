@@ -30,6 +30,7 @@ import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { Spacer } from '../layout/spacer'
 import { useNativeInfo } from '../native-message-provider'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export const CASHOUTS_PER_PAGE = 10
 
@@ -397,9 +398,11 @@ const DollarDescription = (props: { disabled?: boolean }) => (
           </b>
           ,
         </span>
-        <span>
-          minus a <b>{CHARITY_FEE * 100}% fee</b>.
-        </span>
+        <span>minus fees.</span>
+        <InfoTooltip
+          text="We charge 10% on the first $1,000 and 5% on anything above that."
+          className="text-sm"
+        />
       </div>
     </Col>
   </div>
