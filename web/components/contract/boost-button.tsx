@@ -57,7 +57,7 @@ export function BoostDialog(props: {
 
   const [index, setIndex] = useState(0)
 
-  const [amount, setAmount] = useState<number | undefined>(5000)
+  const [amount, setAmount] = useState<number | undefined>(500)
 
   return (
     <Modal open={isOpen} setOpen={setOpen} size="sm">
