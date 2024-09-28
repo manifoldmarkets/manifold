@@ -6,9 +6,7 @@ import {
   StarIcon,
   QuestionMarkCircleIcon,
   NewspaperIcon,
-  LightningBoltIcon,
   LoginIcon,
-  TemplateIcon,
   GlobeAltIcon,
   SearchIcon,
 } from '@heroicons/react/outline'
@@ -34,8 +32,6 @@ import { NavItem, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { DAY_MS } from 'common/util/time'
-import { LiveTVIcon } from '../tv-icon'
-import { PiTelevisionSimpleBold } from 'react-icons/pi'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
@@ -199,7 +195,7 @@ const getMobileNav = (
   toggleModal: () => void,
   options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
 ) => {
-  const { isNewUser, isLiveTV, isAdminOrMod } = options
+  const { isAdminOrMod } = options
 
   return buildArray<NavItem>(
     {
@@ -214,27 +210,27 @@ const getMobileNav = (
       href: '/messages',
       icon: PrivateMessagesIcon,
     },
-    {
-      name: 'TV',
-      href: '/tv',
-      icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
-    },
+    // {
+    //   name: 'TV',
+    //   href: '/tv',
+    //   icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
+    // },
+    // !isNewUser && {
+    //   name: 'Dashboards',
+    //   href: '/dashboard',
+    //   icon: TemplateIcon,
+    // },
+    // !isNewUser && {
+    //   name: 'Site activity',
+    //   href: '/live',
+    //   icon: LightningBoltIcon,
+    // },
+    { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     isAdminOrMod && {
       name: 'Reports',
       href: '/reports',
       icon: ReportsIcon,
-    },
-    !isNewUser && {
-      name: 'Dashboards',
-      href: '/dashboard',
-      icon: TemplateIcon,
-    },
-    !isNewUser && {
-      name: 'Site activity',
-      href: '/live',
-      icon: LightningBoltIcon,
-    },
-    { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
+    }
   )
 }
 

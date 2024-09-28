@@ -67,7 +67,10 @@ export function TierTooltip(props: {
 
 export function getPresentedTierName(tier: MarketTierType) {
   if (tier == 'play') {
-    return 'Mini'
+    return 'Basic'
+  }
+  if (tier == 'basic') {
+    return 'Standard'
   }
   return capitalize(tier)
 }

@@ -14,6 +14,8 @@ import { BoostButton } from './boost-button'
 import { AddBountyButton, CancelBountyButton } from './bountied-question'
 import { UpgradeTierButton } from './upgrade-tier-button'
 import { useNativeInfo } from 'web/components/native-message-provider'
+import { formatMoney } from 'common/util/format'
+import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -38,6 +40,13 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
           <CancelBountyButton contract={contract} />
         )}
       </div>
+
+      {contract.outcomeType !== 'POLL' &&
+        contract.outcomeType !== 'BOUNTIED_QUESTION' && (
+          <div className="text-ink-500 text-base">
+            Earn {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each trader.
+          </div>
+        )}
     </GradientContainer>
   )
 }

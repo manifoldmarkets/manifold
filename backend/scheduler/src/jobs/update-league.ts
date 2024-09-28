@@ -34,27 +34,88 @@ export async function updateLeague() {
   log(`Loaded ${userIds.length} user ids.`)
 
   log('Loading txns...')
-  // Earned fees from bets in your markets during the season.
-  const creatorFees = await pg.manyOrNone<{
+  const txnCategoriesCountedAsManaEarned = [
+    'BETTING_STREAK_BONUS',
+  ]
+  const txnData = await pg.manyOrNone<{
     user_id: string
     category: string
     amount: number
   }>(
     `select
-      contracts.creator_id as user_id,
-      'CREATOR_FEE' as category,
-      sum((cb.data->'fees'->>'creatorFee')::numeric) as amount
-    from contract_bets cb
-    join contracts on contracts.id = cb.contract_id
+      user_id,
+      category,
+      sum(amount) as amount
+    from txns
+    join
+      leagues on leagues.user_id = txns.to_id
     where
-      cb.created_time > millis_to_ts($2)
-      and cb.created_time < millis_to_ts($3)
-    group by contracts.creator_id
+      leagues.season = $1
+      and txns.created_time > millis_to_ts($2)
+      and txns.created_time < millis_to_ts($3)
+      and txns.category in ($4:csv)
+    group by user_id, category
+    `,
+    [season, seasonStart, seasonEnd, txnCategoriesCountedAsManaEarned]
+  )
+
+  // Unique bettor bonuses during the season (contract can be created any time).
+  const uniqueBettorBonuses = await pg.manyOrNone<{
+    user_id: string
+    category: string
+    amount: number
+  }>(
+    `select
+      user_id,
+      category,
+      sum(amount) as amount
+    from txns 
+    join
+      leagues on leagues.user_id = txns.to_id
+    where
+      leagues.season = $1
+      and txns.created_time > millis_to_ts($2)
+      and txns.created_time < millis_to_ts($3)
+      and txns.category = 'UNIQUE_BETTOR_BONUS'
+    group by user_id, category
     `,
     [season, seasonStart, seasonEnd]
   )
 
-  console.log('creator fees', creatorFees.length)
+  const negativeBettorBonuses = await pg.manyOrNone<{
+    user_id: string
+    category: string
+    amount: number
+  }>(
+    `select
+      user_id,
+      category,
+      -1 * sum(amount) as amount
+    from txns 
+    join
+      leagues on leagues.user_id = txns.from_id
+    join
+      contracts on contracts.id = txns.data->'data'->>'contractId'
+    where
+      leagues.season = $1
+      and ts_to_millis(contracts.created_time) > $2
+      and ts_to_millis(contracts.created_time) < $3
+      and txns.created_time > millis_to_ts($2)
+      and txns.created_time < millis_to_ts($3)
+      and txns.category = 'CANCEL_UNIQUE_BETTOR_BONUS'
+    group by user_id, category
+    `,
+    [season, seasonStart, seasonEnd]
+  )
+
+  console.log(
+    'Loaded txns per user',
+    txnData.length,
+    'unique bettor bonuses',
+    uniqueBettorBonuses.length,
+    'negative bettor bonuses',
+    negativeBettorBonuses.length
+  )
 
   log('Loading bets...')
   const betData = await pg.manyOrNone<{ data: Bet }>(
@@ -116,10 +177,12 @@ export async function updateLeague() {
   }
 
   const amountByUserId = groupBy(
-    [...userProfit, ...creatorFees].map((u) => ({
-      ...u,
-      amount: +u.amount,
-    })),
+    [
+      ...userProfit,
+      ...txnData,
+      ...uniqueBettorBonuses,
+      ...negativeBettorBonuses,
+    ].map((u) => ({ ...u, amount: +u.amount })),
     'user_id'
   )
 

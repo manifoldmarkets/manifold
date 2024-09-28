@@ -380,7 +380,7 @@ export const MAX_DESCRIPTION_LENGTH = 16000
 
 export const CPMM_MIN_POOL_QTY = 0.01
 export const MULTI_NUMERIC_BUCKETS_MAX = 50
-export const MULTI_NUMERIC_CREATION_ENABLED = true
+export const MULTI_NUMERIC_CREATION_ENABLED = false
 
 export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public' /*, 'unlisted'*/] as const
