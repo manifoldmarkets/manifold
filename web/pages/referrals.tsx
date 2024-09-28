@@ -31,94 +31,82 @@ export default function ReferralsPage() {
         url="/referrals"
       />
 
-      <Col className="items-center">
-        <Col className="bg-canvas-0 h-full rounded p-4 py-8 sm:p-8 sm:shadow-md">
-          {isSweepstakesVerified ? (
-            <>
-              <span className="text-2xl">Get free sweepcash</span>
-              <img
-                className="mb-6 block -scale-x-100 self-center"
-                src="/logo-flapping-with-money.gif"
-                width={200}
-                height={200}
-                alt=""
-              />
+      <Col className="items-center max-w-2xl mx-auto">
+        <Col className="bg-canvas-0 rounded-lg p-8 shadow-lg">
+          <h1 className="text-3xl font-bold mb-6 text-center">Refer a Friend</h1>
+          
+          <img
+            className="mb-8 block mx-auto"
+            src="/logo-flapping-with-money.gif"
+            width={200}
+            height={200}
+            alt="Animated logo"
+          />
 
-              <div className={'mb-4'}>
-                Invite friends to Manifold and get{' '}
+          {isSweepstakesVerified ? (
+            <div className="text-center mb-8">
+              <p className="text-xl mb-4">
+                Invite friends to Manifold and get
+              </p>
+              <div className="flex justify-center items-center gap-2 text-2xl font-bold">
                 <CoinNumber
                   coinType={'CASH'}
                   amount={REFERRAL_AMOUNT_CASH}
-                  className={clsx('font-bold')}
                   isInline
-                />{' '}
-                +{' '}
+                />
+                <span>+</span>
                 <CoinNumber
                   coinType={'MANA'}
                   amount={REFERRAL_AMOUNT}
-                  className={clsx(' mx-1 font-bold')}
                   isInline
                 />
-                when they sign up & verify for sweepstakes!
               </div>
-              <Col className="w-full items-center justify-center gap-4">
-                <span className=" px-4 py-2 text-4xl">{code}</span>
-                <Button
-                  onClick={() => {
-                    copyToClipboard(code)
-                    toast.success('Referral code copied to clipboard')
-                  }}
-                  size="xl"
-                >
-                  Copy referral code
-                </Button>
-              </Col>
-            </>
+              <p className="mt-2">when they sign up & verify for sweepstakes!</p>
+            </div>
           ) : (
-            <>
-              <span className="text-2xl">Earn free mana </span>
-              <img
-                className="mb-6 block -scale-x-100 self-center"
-                src="/logo-flapping-with-money.gif"
-                width={200}
-                height={200}
-                alt=""
-              />
-              <div className={'mb-4'}>
-                Invite friends to Manifold and earn{' '}
+            <div className="text-center mb-8">
+              <p className="text-xl mb-4">
+                Invite friends to Manifold and earn
+              </p>
+              <div className="text-2xl font-bold">
                 <CoinNumber
                   amount={REFERRAL_AMOUNT}
-                  className={clsx('font-bold')}
                   isInline
-                />{' '}
-                when they sign up and use your referral code!
+                />
               </div>
-              <Col className="w-full items-center justify-center gap-4">
-                <span className=" px-4 py-2 text-4xl">{code}</span>
-                <Button
-                  onClick={() => {
-                    copyToClipboard(code)
-                    toast.success('Referral code copied to clipboard')
-                  }}
-                  size="xl"
-                >
-                  Copy referral code
-                </Button>
-                <Link
-                  href={`https://${ENV_CONFIG.domain}/gidx/register`}
-                  className={buttonClass('xl', 'gold')}
-                >
-                  Register to earn +
-                  <CoinNumber
-                    coinType={'CASH'}
-                    amount={REFERRAL_AMOUNT_CASH}
-                    className={clsx('mx-1 font-bold')}
-                    isInline
-                  />
-                  sweepcash for each referral
-                </Link>
-              </Col>
-            </>
+              <p className="mt-2">when they sign up and use your referral code!</p>
+            </div>
+          )}
+
+          <div className="bg-primary-100 rounded-lg p-6 mb-8">
+            <p className="text-center text-lg mb-2">Your Referral Code</p>
+            <div className="text-4xl font-bold text-center mb-4">{code}</div>
+            <Button
+              onClick={() => {
+                copyToClipboard(code)
+                toast.success('Referral code copied to clipboard')
+              }}
+              size="xl"
+              className="w-full"
+            >
+              Copy referral code
+            </Button>
+          </div>
+
+          {!isSweepstakesVerified && (
+            <Link
+              href={`https://${ENV_CONFIG.domain}/gidx/register`}
+              className={clsx(buttonClass('xl', 'gold'), 'w-full')}
+            >
+              <span>Register to earn +</span>
+              <CoinNumber
+                coinType={'CASH'}
+                amount={REFERRAL_AMOUNT_CASH}
+                className="mx-1 font-bold"
+                isInline
+              />
+              <span>sweepcash for each referral</span>
+            </Link>
           )}
         </Col>
       </Col>
