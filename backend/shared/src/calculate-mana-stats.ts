@@ -39,7 +39,7 @@ export const updateTxnStats = async (
         from txns
          where created_time >= $1
          and created_time < $2
-         and (to_type = 'BANK' OR from_type = 'BANK')
+         and (to_type = 'BANK' OR from_type = 'BANK' OR category = 'ADD_SUBSIDY')
          and category not in ('CONSUME_SPICE', 'CONSUME_SPICE_DONE')
         group by from_type,
           to_type,
@@ -69,19 +69,6 @@ export const updateTxnStats = async (
       [startTime, endTime]
     )
 
-    log('Getting liquidity adds')
-    // TODO: migrate liquidity to txns so we don't have to get seperately
-    const liquidities = await pg.one(
-      `select
-        sum((l.data->'amount')::numeric) filter (where c.token = 'MANA') as mana_total,
-        sum((l.data->'amount')::numeric) filter (where c.token = 'CASH') as cash_total
-      from contract_liquidity l join contracts c
-      on l.contract_id = c.id
-      where (l.data->'createdTime')::numeric >= ts_to_millis($1)
-      and (l.data->'createdTime')::numeric < ts_to_millis($2)`,
-      [startTime, endTime]
-    )
-
     log(`Inserting txn stats for start_time ${startTime}`)
     await bulkInsert(pg, 'txn_summary_stats', [
       ...txnSummaries,
@@ -104,26 +91,6 @@ export const updateTxnStats = async (
         quest_type: null,
         category: 'BET_FEES',
         total_amount: fees.cash_platform_fees ?? 0,
-      },
-      {
-        start_time: startTime,
-        end_time: endTime,
-        from_type: 'USER',
-        to_type: 'CONTRACT',
-        token: 'M$',
-        quest_type: null,
-        category: 'ADD_LIQUIDITY',
-        total_amount: liquidities.mana_total ?? 0,
-      },
-      {
-        start_time: startTime,
-        end_time: endTime,
-        from_type: 'USER',
-        to_type: 'CONTRACT',
-        token: 'CASH',
-        quest_type: null,
-        category: 'ADD_LIQUIDITY',
-        total_amount: liquidities.cash_total ?? 0,
       },
     ])
   }
