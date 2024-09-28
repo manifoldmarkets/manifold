@@ -204,6 +204,7 @@ export const MOD_IDS = [
   'KHX2ThSFtLQlau58hrjtCX7OL2h2', // shankypanky (stefanie)
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
   'tO4DwIsujySUwtSnrr2hnU1WJtJ3', // WieDan
+  'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
 ]
 
 export const MVP = ['Eliza', 'Gabrielle', 'jacksonpolack']
