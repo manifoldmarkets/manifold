@@ -73,13 +73,13 @@ export const PHONE_VERIFICATION_BONUS = 1000
 export const REFERRAL_AMOUNT = 1_000
 export const REFERRAL_AMOUNT_CASH = 10.0
 
-// bonuses disabled
+export const UNIQUE_BETTOR_BONUS_AMOUNT = 10
+export const UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT = 10
+
+/* Disabled bonuses */
 export const NEXT_DAY_BONUS = 100 // Paid on day following signup
 export const MARKET_VISIT_BONUS = 100 // Paid on first distinct 5 market visits
 export const MARKET_VISIT_BONUS_TOTAL = 500
-export const UNIQUE_BETTOR_BONUS_AMOUNT = 5
-export const SMALL_UNIQUE_BETTOR_BONUS_AMOUNT = 1
-export const UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT = 5
 export const UNIQUE_BETTOR_LIQUIDITY = 20
 export const SMALL_UNIQUE_BETTOR_LIQUIDITY = 5
 export const MAX_TRADERS_FOR_BIG_BONUS = 50
@@ -89,10 +89,9 @@ export const SUBSIDY_FEE = 0
 
 export const BETTING_STREAK_BONUS_AMOUNT = 5
 export const BETTING_STREAK_BONUS_MAX = 25
-
 export const BETTING_STREAK_RESET_HOUR = 7
 
-export const MANACHAN_TWEET_COST = 2500
+export const MANACHAN_TWEET_COST = 250
 export const PUSH_NOTIFICATION_BONUS = 1000
 export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
 
