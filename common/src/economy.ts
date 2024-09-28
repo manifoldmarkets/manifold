@@ -70,8 +70,8 @@ export const STARTING_BALANCE = 100
 export const SUS_STARTING_BALANCE = 10
 export const PHONE_VERIFICATION_BONUS = 1000
 
-export const REFERRAL_AMOUNT = 500
-export const REFERRAL_AMOUNT_CASH = 5.0
+export const REFERRAL_AMOUNT = 1_000
+export const REFERRAL_AMOUNT_CASH = 10.0
 
 // bonuses disabled
 export const NEXT_DAY_BONUS = 100 // Paid on day following signup
