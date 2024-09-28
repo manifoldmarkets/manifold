@@ -350,9 +350,8 @@ const ManaDescription = (props: { disabled?: boolean }) => (
             {formatSweepies(1)} {'→'}{' '}
             {formatMoney(CASH_TO_MANA_CONVERSION_RATE)}
           </b>
-          ,
+          .
         </span>
-        <span className="whitespace-nowrap">with zero fees!</span>
       </div>
     </Col>
   </div>
