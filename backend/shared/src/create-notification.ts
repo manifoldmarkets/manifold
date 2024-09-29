@@ -1108,7 +1108,8 @@ export const createNewBettorNotification = async (
     contract,
     uniqueBettorsExcludingCreator.length,
     mostRecentUniqueBettors,
-    bettorsToTheirBets
+    bettorsToTheirBets,
+    txn.amount * TOTAL_NEW_BETTORS_TO_REPORT
   )
 }
 
