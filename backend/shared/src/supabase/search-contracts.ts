@@ -221,9 +221,7 @@ export function getSearchContractSQL(args: {
     select('data, importance_score, view_count'),
     from('contracts'),
     groupId && [
-      join(
-        `group_contracts gc on (gc.contract_id = contracts.id or gc.contract_id = contracts.data->>'siblingContractId')`
-      ),
+      join(`group_contracts gc on gc.contract_id = contracts.id`),
       where('gc.group_id = $1', [groupId]),
     ],
     searchType === 'answer' &&
