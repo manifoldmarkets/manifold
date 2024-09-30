@@ -1,28 +1,35 @@
 import { toUserAPIResponse } from 'common/api/user-types'
-import { run } from 'common/supabase/utils'
-import { User } from 'common/user'
-import { createSupabaseClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  from,
+  limit,
+  orderBy,
+  renderSql,
+  select,
+  where,
+} from 'shared/supabase/sql-builder'
 import { APIError, type APIHandler } from './helpers/endpoint'
 
-export const getUsers: APIHandler<'users'> = async ({ limit, before }) => {
-  const db = createSupabaseClient()
+export const getUsers: APIHandler<'users'> = async (props) => {
+  const pg = createSupabaseDirectClient()
 
-  const q = db
-    .from('users')
-    .select('data')
-    .limit(limit)
-    .order('created_time', { ascending: false })
+  const q = [
+    from('users'),
+    select('data'),
+    limit(props.limit),
+    orderBy('created_time desc'),
+  ]
 
-  if (before) {
-    const { data, error } = await db
-      .from('users')
-      .select('created_time')
-      .eq('id', before)
-      .single()
-    if (error) throw new APIError(404, `Could not find user with id: ${before}`)
-    q.lt('created_time', data.created_time)
+  if (props.before) {
+    const data = await pg.oneOrNone(
+      `select created_time from users where id = $1`,
+      props.before
+    )
+    if (!data)
+      throw new APIError(404, `Could not find user with id: ${props.before}`)
+
+    q.push(where('created_time < $1', data.created_time))
   }
 
-  const { data } = await run(q)
-  return data.map((data) => toUserAPIResponse(data.data as unknown as User))
+  return pg.map(renderSql(q), [], toUserAPIResponse)
 }

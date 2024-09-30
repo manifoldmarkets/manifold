@@ -867,7 +867,7 @@ export const giveUniqueBettorBonus = async (
 
   const userBetPreviously = await tx.oneOrNone(
     `select 1 from contract_bets
-      where contract_id = $1 
+      where contract_id = $1
       and user_id = $2
       and ($3 is null or answer_id = $3)
       and not is_redemption

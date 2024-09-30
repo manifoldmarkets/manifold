@@ -1,12 +1,10 @@
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getPrivateUser } from 'shared/utils'
 import { z } from 'zod'
 import { randomUUID } from 'crypto'
 import { updatePrivateUser } from 'shared/supabase/users'
+import { upsert } from 'shared/supabase/utils'
 
 const bodySchema = z
   .object({
@@ -28,13 +26,11 @@ export const registerdiscordid = authEndpoint(async (req, auth) => {
     await updatePrivateUser(pg, auth.uid, { apiKey })
   }
 
-  const db = createSupabaseClient()
-  const { error } = await db.from('discord_users').upsert({
+  await upsert(pg, 'discord_users', 'user_id', {
     discord_user_id: discordId,
     api_key: apiKey,
     user_id: auth.uid,
   })
-  if (error) throw new APIError(500, error.message)
 
   return { success: true }
 })

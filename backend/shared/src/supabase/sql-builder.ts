@@ -5,6 +5,8 @@ import { pgp } from './init'
 export type SqlBuilder = {
   with: string[]
   select: string[]
+  delete: boolean | undefined
+  set: string[] | undefined
   from: string | undefined
   join: string[]
   leftJoin: string[]
@@ -18,6 +20,8 @@ export type SqlBuilder = {
 export type SqlParts = {
   with?: string
   select?: string
+  delete?: true
+  set?: string
   from?: string
   join?: string
   leftJoin?: string
@@ -36,6 +40,8 @@ export function buildSql(...parts: Args): SqlBuilder {
   return {
     with: definedParts.flatMap((part) => part.with || []),
     select: definedParts.flatMap((part) => part.select || []),
+    delete: definedParts.some((part) => part.delete),
+    set: definedParts.flatMap((part) => part.set || []),
     from: last(definedParts.filter((part) => part.from))?.from,
     join: definedParts.flatMap((part) => part.join || []),
     leftJoin: definedParts.flatMap((part) => part.leftJoin || []),
@@ -54,6 +60,19 @@ export function withClause(clause: string, formatValues?: any) {
 
 export function select(clause: string) {
   return buildSql({ select: clause })
+}
+
+export function deleteFrom(clause: string) {
+  return buildSql({ delete: true, from: clause })
+}
+
+export function update(clause: string) {
+  return buildSql({ from: clause })
+}
+
+export function set(clause: string, formatValues?: any) {
+  const set = pgp.as.format(clause, formatValues)
+  return buildSql({ set })
 }
 
 export function from(clause: string, formatValues?: any) {
@@ -94,6 +113,8 @@ export function renderSql(...args: Args) {
   const {
     with: withClause,
     select,
+    delete: isDelete,
+    set,
     from,
     join,
     where,
@@ -103,10 +124,14 @@ export function renderSql(...args: Args) {
     leftJoin,
     groupBy,
   } = builder
-  return buildArray(
+  return buildArray<string>(
     withClause.length && `with ${withClause.join(', ')}`,
-    select.length && `select ${select.join(', ')}`,
-    from && `from ${from}`,
+    isDelete
+      ? `delete `
+      : select.length && `select ${builder.select.join(', ')}`,
+    set && set.length
+      ? `update ${from} set ${set.join(', ')}`
+      : from && `from ${from}`,
     join.length && `join ${join.join(' join ')}`,
     leftJoin.length && `left join ${leftJoin.join(' left join ')}`,
     where.length &&

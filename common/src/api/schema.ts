@@ -947,13 +947,6 @@ export const API = (_apiTypeCheck = {
       slug: z.enum(['politics', 'ai', 'news']).optional(),
     }),
   },
-  'politics-headlines': {
-    method: 'GET',
-    visibility: 'undocumented',
-    authed: false,
-    returns: [] as Headline[],
-    props: z.object({}),
-  },
   'set-news': {
     method: 'POST',
     visibility: 'undocumented',

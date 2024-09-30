@@ -1,30 +1,24 @@
 import { ModReport } from 'common/mod-report'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { removeUndefinedProps } from 'common/util/object'
+import { update } from 'shared/supabase/utils'
 
 export const updateModReport: APIHandler<'update-mod-report'> = async (
   props
 ) => {
   const { reportId, updates } = props
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
-  const updateData = removeUndefinedProps(updates)
+  const data = await update(pg, 'mod_reports', 'report_id', {
+    report_id: reportId,
+    ...removeUndefinedProps(updates),
+  })
 
-  const { data, error } = await db
-    .from('mod_reports')
-    .update(updateData)
-    .eq('report_id', reportId)
-    .select()
-
-  if (error) {
-    console.error('Error updating report:', error)
-    throw new APIError(500, 'Error updating report', { error })
-  }
-  if (!data || data.length === 0) {
+  if (!data) {
     console.error('Report not found for ID:', reportId)
     throw new APIError(404, 'Report not found')
   }
 
-  return { status: 'success', report: data[0] as ModReport }
+  return { status: 'success', report: data as ModReport }
 }

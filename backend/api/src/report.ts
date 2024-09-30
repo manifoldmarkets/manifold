@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import type { ReportProps } from 'common/src/report'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { insert } from 'shared/supabase/utils'
 
 const schema: z.ZodSchema<ReportProps> = z
   .object({
@@ -26,9 +27,9 @@ export const report = authEndpoint(async (req, auth) => {
     parentType,
   } = validate(schema, req.body)
 
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
-  const result = await db.from('reports').insert({
+  const result = await insert(pg, 'reports', {
     user_id: auth.uid,
     content_owner_id: contentOwnerId,
     content_type: contentType,

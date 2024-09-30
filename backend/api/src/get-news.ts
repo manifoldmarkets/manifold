@@ -1,34 +1,19 @@
 import { convertDashboardSqltoTS } from 'common/dashboard'
-import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError, jsonEndpoint } from './helpers/endpoint'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { jsonEndpoint } from './helpers/endpoint'
 
 export const getnews = jsonEndpoint(async () => {
-  const db = createSupabaseClient()
-  const dash = await db
-    .from('dashboards')
-    .select()
-    .neq('visibility', 'deleted')
-    .gt('importance_score', 0)
-    .order('importance_score', { ascending: false })
+  const pg = createSupabaseDirectClient()
 
-  if (dash.error)
-    throw new APIError(500, 'Error fetching news' + dash.error.message)
-
-  const groups = await db
-    .from('dashboard_groups')
-    .select('group_id, dashboard_id')
-    .in(
-      'dashboard_id',
-      dash.data.map((d) => d.id)
-    )
-
-  if (groups.error)
-    throw new APIError(500, 'Error fetching news groups' + groups.error.message)
-
-  return dash.data.map((d) => ({
-    ...convertDashboardSqltoTS(d),
-    topics: groups.data
-      .filter((g) => g.dashboard_id === d.id)
-      .map((g) => g.group_id),
-  }))
+  return await pg.map(
+    `select d.*, array_agg(dg.group_id) as topics
+    from dashboards d
+    left join dashboard_groups dg on d.id = dg.dashboard_id
+    where d.visibility != 'deleted'
+      and d.importance_score > 0
+    group by d.id
+    order by d.importance_score desc`,
+    undefined,
+    ({ topics, ...rest }) => ({ ...convertDashboardSqltoTS(rest), topics })
+  )
 })

@@ -2,7 +2,8 @@ import { Cron, CronOptions } from 'croner'
 import { log } from 'shared/monitoring/log'
 import { withMonitoringContext } from 'shared/monitoring/context'
 import * as crypto from 'crypto'
-import { createSupabaseClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { upsert } from 'shared/supabase/utils'
 
 // type for scheduled job functions
 export type JobContext = {
@@ -37,23 +38,20 @@ export function createJob(
     const context = { job: name, traceId }
     return await withMonitoringContext(context, async () => {
       log('Starting up.')
-      const db = createSupabaseClient()
+      const pg = createSupabaseDirectClient()
 
       // Get last end time in case function wants to use it
-      const lastEndTimeStamp = (
-        await db
-          .from('scheduler_info')
-          .select('last_end_time')
-          .eq('job_name', name)
-      ).data?.[0]?.last_end_time
+      const lastEndTimeStamp = await pg.one(
+        `select last_end_time from scheduler_info where job_name = $1`,
+        name,
+        (r) => r.last_end_time as string
+      )
 
       // Update last start time
-      await db
-        .from('scheduler_info')
-        .upsert(
-          { job_name: name, last_start_time: new Date().toISOString() },
-          { onConflict: 'job_name' }
-        )
+      await upsert(pg, 'scheduler_info', 'job_name', {
+        job_name: name,
+        last_start_time: new Date().toISOString(),
+      })
       log(`Last end time: ${lastEndTimeStamp ?? 'never'}`)
 
       const jobPromise = fn({
@@ -64,12 +62,11 @@ export function createJob(
 
       await jobPromise
       // Update last end time
-      await db
-        .from('scheduler_info')
-        .upsert(
-          { job_name: name, last_end_time: new Date().toISOString() },
-          { onConflict: 'job_name' }
-        )
+      await upsert(pg, 'scheduler_info', 'job_name', {
+        job_name: name,
+        last_end_time: new Date().toISOString(),
+      })
+
       log('Shutting down.')
     })
   })

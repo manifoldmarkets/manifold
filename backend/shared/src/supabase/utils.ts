@@ -90,6 +90,19 @@ export async function bulkUpdate<
   }
 }
 
+export async function upsert<
+  T extends TableName,
+  ColumnValues extends Tables[T]['Insert'],
+  Col extends Column<T>
+>(
+  db: SupabaseDirectClient,
+  table: T,
+  idField: Col | Col[],
+  values: ColumnValues
+) {
+  await bulkUpsert(db, table, idField, [values])
+}
+
 export async function bulkUpsert<
   T extends TableName,
   ColumnValues extends Tables[T]['Insert'],

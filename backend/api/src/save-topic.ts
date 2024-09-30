@@ -1,7 +1,7 @@
-import { z } from 'zod'
-
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
-import { createSupabaseClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { insert } from 'shared/supabase/utils'
+import { z } from 'zod'
 import { authEndpoint, validate } from './helpers/endpoint'
 
 const bodySchema = z
@@ -13,14 +13,13 @@ const bodySchema = z
 export const saveTopic = authEndpoint(async (req) => {
   const { topic } = validate(bodySchema, req.body)
 
-  const db = createSupabaseClient()
-  const response = await db
-    .from('topic_embeddings')
-    .select('*')
-    .eq('topic', topic)
-    .single()
+  const pg = createSupabaseDirectClient()
+  const response = pg.oneOrNone(
+    'select * from topic_embeddings where topic = $1',
+    topic
+  )
 
-  const hasTopic = !!response.data
+  const hasTopic = !!response
 
   if (!hasTopic) {
     const embedding = await generateEmbeddings(topic)
@@ -34,7 +33,7 @@ export const saveTopic = authEndpoint(async (req) => {
     } else {
       console.log('Generated embeddings for', topic)
 
-      await db.from('topic_embeddings').insert({
+      await insert(pg, 'topic_embeddings', {
         topic,
         embedding: embedding as any,
       })

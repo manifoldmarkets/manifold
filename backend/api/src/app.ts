@@ -114,7 +114,7 @@ import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler, typedEndpoint } from './helpers/endpoint'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
-import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
+import { getHeadlines } from './get-headlines'
 import { getadanalytics } from 'api/get-ad-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
 import { addOrRemoveReaction } from './reaction'
@@ -364,7 +364,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'set-push-token': setPushToken,
   'update-notif-settings': updateNotifSettings,
   headlines: getHeadlines,
-  'politics-headlines': getPoliticsHeadlines,
   'compatible-lovers': getCompatibleLovers,
   post: post,
   'fetch-link-preview': fetchLinkPreview,

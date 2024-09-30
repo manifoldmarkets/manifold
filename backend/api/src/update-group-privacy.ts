@@ -1,8 +1,15 @@
-import { z } from 'zod'
 import { isAdminId } from 'common/envs/constants'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  from,
+  limit,
+  renderSql,
+  select,
+  where,
+} from 'shared/supabase/sql-builder'
+import { updateData } from 'shared/supabase/utils'
+import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
-import { Group } from 'common/group'
 
 const bodySchema = z
   .object({
@@ -14,49 +21,49 @@ const bodySchema = z
 export const updategroupprivacy = authEndpoint(async (req, auth) => {
   const { groupId, privacy } = validate(bodySchema, req.body)
 
-  // TODO: move to single supabase transaction
-  const db = createSupabaseClient()
-
-  const userMembership = (
-    await db
-      .from('group_members')
-      .select()
-      .eq('member_id', auth.uid)
-      .eq('group_id', groupId)
-      .limit(1)
-  ).data
-
-  const requester = userMembership?.length ? userMembership[0] : null
-
-  const groupQuery = await db.from('groups').select().eq('id', groupId).limit(1)
-
-  if (groupQuery.error) throw new APIError(500, groupQuery.error.message)
-  if (!groupQuery.data.length) throw new APIError(404, 'Group cannot be found')
-  if (!userMembership?.length)
-    throw new APIError(404, 'You cannot be found in group')
-
-  const group = groupQuery.data[0]
-  console.log(group)
-
-  if (requester?.role !== 'admin' && !isAdminId(auth.uid))
-    throw new APIError(
-      403,
-      'You do not have permission to change group privacy'
+  const pg = createSupabaseDirectClient()
+  await pg.tx(async (tx) => {
+    const group = await tx.oneOrNone(
+      `select * from groups where id = $1`,
+      groupId
     )
 
-  if (privacy == group.privacy_status) {
-    throw new APIError(403, 'Group privacy is already set to this!')
-  }
-  // TODO: we need to figure out the role of the data column for the migration plan
-  await db
-    .from('groups')
-    .update({
-      data: {
-        ...(group.data as Group),
-        privacyStatus: privacy,
-      },
+    if (!group) throw new APIError(404, 'Group not found')
+
+    const requester = await pg.oneOrNone(
+      renderSql(
+        from('group_members'),
+        select('*'),
+        where('member_id = $1', auth.uid),
+        where('group_id= $1', groupId),
+        limit(1)
+      )
+    )
+
+    if (!requester?.length)
+      throw new APIError(404, 'You cannot be found in group')
+
+    if (group.privacy_status === privacy) {
+      throw new Error('Group privacy is already set to this!')
+    }
+
+    console.log(group)
+
+    if (requester?.role !== 'admin' && !isAdminId(auth.uid))
+      throw new APIError(
+        403,
+        'You do not have permission to change group privacy'
+      )
+
+    if (privacy == group.privacy_status) {
+      throw new APIError(403, 'Group privacy is already set to this!')
+    }
+
+    await updateData(tx, 'groups', 'id', {
+      id: groupId,
+      privacyStatus: privacy,
     })
-    .eq('id', groupId)
+  })
 
   return { status: 'success', message: 'Group privacy updated' }
 })

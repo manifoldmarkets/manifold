@@ -1,16 +1,12 @@
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { convertContract } from 'common/supabase/contracts'
 import {
   addGroupToContract,
   removeGroupFromContract,
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
-import { revalidateContractStaticProps } from 'shared/utils'
+import { getContract, revalidateContractStaticProps } from 'shared/utils'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { isAdminId, isModId } from 'common/envs/constants'
 import {
@@ -24,33 +20,26 @@ export const addOrRemoveTopicFromContract: APIHandler<
 > = async (props, auth) => {
   const { contractId, groupId, remove } = props
 
-  const db = createSupabaseClient()
   const pg = createSupabaseDirectClient()
 
-  const { data: membership } = await db
-    .from('group_members')
-    .select()
-    .eq('member_id', auth.uid)
-    .eq('group_id', groupId)
-    .single()
+  const membership = await pg.oneOrNone(
+    `select * from group_members where member_id = $1 and group_id = $2`,
+    [auth.uid, groupId]
+  )
 
-  const groupQuery = await db.from('groups').select().eq('id', groupId).single()
+  const group = await pg.oneOrNone(
+    `select * from groups where id = $1`,
+    groupId
+  )
+  const contract = await getContract(pg, contractId)
 
-  const contractQuery = await db
-    .from('contracts')
-    .select('data, importance_score, view_count')
-    .eq('id', contractId)
-    .single()
+  if (!group) throw new APIError(404, 'Group cannot be found')
+  if (!contract) throw new APIError(404, 'Contract cannot be found')
 
-  if (groupQuery.error) throw new APIError(404, 'Group cannot be found')
-  if (contractQuery.error) throw new APIError(404, 'Contract cannot be found')
-  const group = groupQuery.data
-  const contract = convertContract(contractQuery.data)
-
-  const { count: existingCount } = await db
-    .from('group_contracts')
-    .select('*', { count: 'exact', head: true })
-    .eq('contract_id', contractId)
+  const existingCount = await pg.one(
+    `select count(*) from group_contracts where contract_id = $1`,
+    contractId
+  )
 
   if (
     !remove &&

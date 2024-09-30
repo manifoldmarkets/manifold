@@ -155,17 +155,16 @@ export const incrementStreak = async (
   const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
 
   const incremented = await tx.one(
-    `
-      WITH old_data AS (
-        SELECT 
+    `WITH old_data AS (
+        SELECT
           coalesce((data->>'lastBetTime')::bigint, 0) AS lastBetTime,
           coalesce((data->>'currentBettingStreak')::int, 0) AS currentBettingStreak
         FROM users
         WHERE id = $1
       )
-      UPDATE users SET 
+      UPDATE users SET
         data = jsonb_set(
-          jsonb_set(data, '{currentBettingStreak}', 
+          jsonb_set(data, '{currentBettingStreak}',
             CASE
               WHEN old_data.lastBetTime < $2
               THEN (old_data.currentBettingStreak + 1)::text::jsonb
@@ -176,7 +175,7 @@ export const incrementStreak = async (
         )
       FROM old_data
       WHERE users.id = $1
-      RETURNING 
+      RETURNING
         CASE
           WHEN old_data.lastBetTime < $2 THEN true
           ELSE false
@@ -277,7 +276,7 @@ export const getReferrerInfo = async (
   return await pg.oneOrNone(
     `select id,
        coalesce((data->>'sweepstakesVerified')::boolean, false) as sweeps_verified
-       from users where id = $1 
+       from users where id = $1
       `,
     [referredByUserId],
     (row) =>
