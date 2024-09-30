@@ -3,6 +3,7 @@ import {
   BettingStreakData,
   getSourceUrl,
   LeagueChangeData,
+  ManaPaymentData,
   Notification,
   ReferralData,
   UniqueBettorData,
@@ -483,6 +484,7 @@ export function ManaPaymentReceivedNotification(props: {
 }) {
   const { notification, highlighted, setHighlighted } = props
   const { data, sourceId, sourceUserName, sourceUserUsername } = notification
+  const { token } = data as ManaPaymentData
   return (
     <NotificationFrame
       notification={notification}
@@ -502,7 +504,7 @@ export function ManaPaymentReceivedNotification(props: {
           className=""
         />
         <PrimaryNotificationLink text=" sent you " />
-        <IncomeNotificationLabel notification={notification} />
+        <IncomeNotificationLabel notification={notification} token={token} />
       </span>
     </NotificationFrame>
   )
@@ -646,15 +648,23 @@ function PrizeIncomeNotificationLabel(props: {
 
 function IncomeNotificationLabel(props: {
   notification: Notification
+  token?: 'M$' | 'CASH'
   className?: string
 }) {
-  const { notification, className } = props
+  const { notification, token = 'M$', className } = props
   const { sourceText } = notification
-  return sourceText ? (
+  return sourceText && token === 'M$' ? (
     <CoinNumber
       className={clsx('text-teal-600', className)}
       amount={parseFloat(sourceText)}
       coinType={'mana'}
+      isInline
+    />
+  ) : sourceText && token === 'CASH' ? (
+    <CoinNumber
+      className={clsx('text-amber-500', className)}
+      amount={parseFloat(sourceText)}
+      coinType={'CASH'}
       isInline
     />
   ) : (

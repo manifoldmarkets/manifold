@@ -403,6 +403,11 @@ export type AirdropData = {
   amount: number
 }
 
+export type ManaPaymentData = {
+  message: string
+  token?: 'M$' | 'CASH'
+}
+
 export type ExtraPurchasedManaData = {
   amount: number
 }

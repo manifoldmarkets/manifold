@@ -678,7 +678,7 @@ export const API = (_apiTypeCheck = {
         toIds: z.array(z.string()),
         message: z.string().max(MAX_COMMENT_LENGTH),
         groupId: z.string().max(MAX_ID_LENGTH).optional(),
-        token: z.enum(['M$', 'PP']).default('M$'),
+        token: z.enum(['M$', 'CASH']).default('M$'),
       })
       .strict(),
   },

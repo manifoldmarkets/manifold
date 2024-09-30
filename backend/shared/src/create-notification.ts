@@ -745,7 +745,8 @@ export const createManaPaymentNotification = async (
   fromUser: User,
   toUserId: string,
   amount: number,
-  message: string | undefined
+  message: string | undefined,
+  token: 'M$' | 'CASH'
 ) => {
   const privateUser = await getPrivateUser(toUserId)
   if (!privateUser) return
@@ -767,6 +768,7 @@ export const createManaPaymentNotification = async (
     sourceText: amount.toString(),
     data: {
       message: message ?? '',
+      token,
     },
     sourceTitle: 'User payments',
   }
