@@ -59,7 +59,7 @@ import {
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
 import { UniqueBettorBonusTxn } from 'common/txn'
-import { runTxnFromBank } from 'shared/txn/run-txn'
+import { insertTxn } from 'shared/txn/run-txn'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -895,18 +895,21 @@ export const giveUniqueBettorBonus = async (
     isPartner,
   })
 
-  const bonusTxn: Omit<UniqueBettorBonusTxn, 'id' | 'createdTime' | 'fromId'> =
-    {
-      fromType: 'BANK',
-      toId: creatorId,
-      toType: 'USER',
-      amount: bonusAmount,
-      token: 'M$',
-      category: 'UNIQUE_BETTOR_BONUS',
-      data: bonusTxnData,
-    }
-
-  const txn = await runTxnFromBank(tx, bonusTxn)
+  const bonusTxn: Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'> = {
+    fromType: 'BANK',
+    fromId: 'BANK',
+    toId: creatorId,
+    toType: 'USER',
+    amount: bonusAmount,
+    token: 'M$',
+    category: 'UNIQUE_BETTOR_BONUS',
+    data: bonusTxnData,
+  } as const
+  await incrementBalance(tx, bonusTxn.toId, {
+    balance: bonusAmount,
+    totalDeposits: bonusAmount,
+  })
+  const txn = await insertTxn(tx, bonusTxn)
 
   log(`Bonus txn for user: ${contract.creatorId} completed:`, txn.id)
   return txn as UniqueBettorBonusTxn
