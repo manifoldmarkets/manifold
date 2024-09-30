@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { claimManalink } from 'web/lib/api/api'
@@ -13,14 +13,11 @@ import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { User } from 'common/user'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Page } from 'web/components/layout/page'
 import { formatMoney } from 'common/util/format'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
-import { getUserById } from 'web/lib/supabase/users'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (ctx) => {
   const slug = ctx.params?.slug
@@ -47,8 +44,6 @@ export default function ClaimPage(props: {
   const router = useRouter()
   const [claiming, setClaiming] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
-
-  useReferral(user, link)
 
   return (
     <Page trackPageView={'manalink slug page'}>
@@ -106,16 +101,4 @@ export default function ClaimPage(props: {
       </div>
     </Page>
   )
-}
-
-const useReferral = (user: User | undefined | null, link: ManalinkInfo) => {
-  const [creatorUsername, setCreatorUsername] = useState<string | undefined>(
-    undefined
-  )
-
-  useEffect(() => {
-    getUserById(link.creatorId).then((c) => setCreatorUsername(c?.username))
-  }, [link])
-
-  useSaveReferral(user, { defaultReferrerUsername: creatorUsername })
 }

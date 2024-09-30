@@ -9,7 +9,6 @@ import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { setCachedReferralInfoForUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -90,12 +89,6 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
     user && !humanish(user) && <OnboardingVerifyPhone onClose={increasePage} />,
   ])
   const showBottomButtons = page < 2
-
-  useEffect(() => {
-    if (!authed || !user || !humanish(user)) return
-    // Wait until after they've had the opportunity to change their name
-    setCachedReferralInfoForUser(user)
-  }, [user, authed])
 
   const getTrendingAndUserCategories = async (userId: string) => {
     const hardCodedTopicIds = Object.keys(TOPICS_TO_SUBTOPICS)

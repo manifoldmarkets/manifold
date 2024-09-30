@@ -4,24 +4,13 @@ import { Col } from '../components/layout/col'
 import { Row } from '../components/layout/row'
 import { Input } from '../components/widgets/input'
 import { Button } from 'web/components/buttons/button'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
-import { getNativePlatform } from 'web/lib/native/is-native'
-import { api } from 'web/lib/api/api'
-import { AlertBox } from 'web/components/widgets/alert-box'
-import { PriceTile, use24hrUsdPurchases } from 'web/components/add-funds-modal'
-import { getVerificationStatus } from 'common/user'
+import { api, APIError } from 'web/lib/api/api'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import { LogoIcon } from 'web/components/icons/logo-icon'
-import { FaStore } from 'react-icons/fa6'
-import clsx from 'clsx'
-import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
-import {
-  IOS_PRICES,
-  WebManaAmounts,
-  MANA_WEB_PRICES,
-  PaymentAmount,
-} from 'common/economy'
+import { TRADE_TERM } from 'common/envs/constants'
+import { PaymentAmount, WebPriceInDollars } from 'common/economy'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -30,81 +19,80 @@ import { LocationPanel } from 'web/components/gidx/location-panel'
 import { formatMoneyUSD } from 'common/util/format'
 import { capitalize } from 'lodash'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
-import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
-import Link from 'next/link'
+import { getVerificationStatus } from 'common/gidx/user'
+import { useNativeInfo } from 'web/components/native-message-provider'
+import { usePrices } from 'web/hooks/use-prices'
+import { TwombaFundsSelector } from 'web/components/gidx/twomba-funds-selector'
 
 const CheckoutPage = () => {
   const user = useUser()
+  const privateUser = usePrivateUser()
   const [locationError, setLocationError] = useState<string>()
-  const { isNative, platform } = getNativePlatform()
-  const isIOS = platform === 'ios' && isNative
-  const prices = isIOS ? IOS_PRICES : MANA_WEB_PRICES
+  const { isIOS } = useNativeInfo()
+  const prices = usePrices()
   const [page, setPage] = useState<
     'checkout' | 'payment' | 'get-session' | 'location'
   >('checkout')
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
-  const [amountSelected, setAmountSelected] = useState<WebManaAmounts>()
+  const [dollarAmountSelected, setDollarAmountSelected] =
+    useState<WebPriceInDollars>()
   const [productSelected, setProductSelected] = useState<PaymentAmount>()
   const [loading, setLoading] = useState(false)
-  const [priceLoading, setPriceLoading] = useState<WebManaAmounts | null>(null)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const [showConfetti, setShowConfetti] = useState(false)
+  const [loadingPrice, setLoadingPrice] = useState<WebPriceInDollars | null>(
+    null
+  )
   const { initiatePurchaseInDollars, loadingMessage } = useIosPurchases(
     setError,
-    setPriceLoading,
+    setLoadingPrice,
     () => setShowConfetti(true)
   )
 
-  const { manaAmount: manaAmountFromQuery } = router.query
+  const { dollarAmount: dollarAmountFromQuery } = router.query
   useEffect(() => {
-    if (!manaAmountFromQuery) return
+    if (!dollarAmountFromQuery) return
     if (
-      !Array.isArray(manaAmountFromQuery) &&
-      prices.find((p) => p.mana === parseInt(manaAmountFromQuery))
+      !Array.isArray(dollarAmountFromQuery) &&
+      prices.find((p) => p.priceInDollars === parseInt(dollarAmountFromQuery))
     ) {
-      onSelectAmount(parseInt(manaAmountFromQuery) as WebManaAmounts)
+      onSelectAmount(parseInt(dollarAmountFromQuery) as WebPriceInDollars)
     } else {
-      console.error('Invalid mana amount in query parameter')
-      setError('Invalid mana amount')
+      console.error('Invalid dollar amount in query parameter')
+      setError('Invalid dollar amount')
     }
-  }, [manaAmountFromQuery])
+  }, [dollarAmountFromQuery])
 
   const checkIfRegistered = async (
     then: 'ios-native' | 'web',
-    amount: number
+    dollarAmount: number
   ) => {
-    if (!user) return
+    if (!user || !privateUser) return
     setError(null)
     setLoading(true)
-    if (getVerificationStatus(user).status !== 'error') {
+    if (!user.idVerified) {
+      router.push('/gidx/register?redirect=checkout')
+      return
+    }
+    const { status, message } = getVerificationStatus(user, privateUser)
+    if (status !== 'error') {
       if (then === 'ios-native') {
-        initiatePurchaseInDollars(
-          prices.find((p) => p.mana === amount)!.priceInDollars
-        )
+        initiatePurchaseInDollars(dollarAmount)
       } else {
         setPage('location')
       }
     } else {
-      router.push('/gidx/register?redirect=checkout')
+      setError(message)
+      setLoading(false)
     }
   }
 
-  const totalPurchased = use24hrUsdPurchases(user?.id || '')
-  const pastLimit = totalPurchased >= 2500
   const getCheckoutSession = async (DeviceGPS: GPSData) => {
-    if (!amountSelected) return
+    if (!dollarAmountSelected) return
     setError(null)
     setLoading(true)
-    const dollarAmount = (prices as typeof MANA_WEB_PRICES).find(
-      (a) => a.mana === amountSelected
-    )?.priceInDollars
-    console.log('dollaramount', dollarAmount)
-    if (!dollarAmount) {
-      setError('Invalid mana amount')
-      setLoading(false)
-      return
-    }
+    console.log('dollaramount', dollarAmountSelected)
     try {
       const res = await api('get-checkout-session-gidx', {
         DeviceGPS,
@@ -112,7 +100,7 @@ const CheckoutPage = () => {
       const { session, status, message } = res
       if (session && status !== 'error') {
         const product = session.PaymentAmounts.find(
-          (a) => a.priceInDollars === dollarAmount
+          (a) => a.priceInDollars === dollarAmountSelected
         )
         if (!product) {
           setError(
@@ -135,51 +123,45 @@ const CheckoutPage = () => {
     }
   }
 
-  const onSelectAmount = (amount: WebManaAmounts) => {
+  const onSelectAmount = (dollarAmount: WebPriceInDollars) => {
     setShowConfetti(false)
     setError(null)
-    setAmountSelected(amount)
-    setPriceLoading(amount)
-    checkIfRegistered(isIOS ? 'ios-native' : 'web', amount)
+    setDollarAmountSelected(dollarAmount)
+    setLoadingPrice(dollarAmount)
+    checkIfRegistered(isIOS ? 'ios-native' : 'web', dollarAmount)
   }
 
   return (
     <Page className={'p-3'} trackPageView={'checkout page'}>
       {showConfetti && <FullscreenConfetti />}
       {page === 'checkout' &&
-      (isIOS ? true : !amountSelected && !manaAmountFromQuery) ? (
+      (isIOS ? true : !dollarAmountSelected && !dollarAmountFromQuery) ? (
         <Col>
-          <FundsSelector
-            prices={prices}
-            onSelect={onSelectAmount}
-            loading={priceLoading}
+          <TwombaFundsSelector
+            onSelectPriceInDollars={onSelectAmount}
+            loadingPrice={loadingPrice}
           />
-
-          {pastLimit && (
-            <AlertBox title="Purchase limit" className="my-4">
-              You have reached your daily purchase limit. Please try again
-              tomorrow.
-            </AlertBox>
-          )}
 
           <Row className="text-error mt-2 text-sm">{locationError}</Row>
         </Col>
       ) : page === 'location' ? (
-        <LocationPanel
-          setLocation={(data: GPSData) => {
-            setPage('get-session')
-            getCheckoutSession(data)
-          }}
-          setLocationError={setLocationError}
-          setLoading={setLoading}
-          loading={loading}
-          locationError={locationError}
-          back={() => setPage('checkout')}
-        />
+        <Col className=" mx-auto w-full max-w-lg gap-4 px-6 py-4">
+          <LocationPanel
+            setLocation={(data: GPSData) => {
+              setPage('get-session')
+              getCheckoutSession(data)
+            }}
+            setLocationError={setLocationError}
+            setLoading={setLoading}
+            loading={loading}
+            locationError={locationError}
+            back={() => setPage('checkout')}
+          />
+        </Col>
       ) : page === 'payment' &&
         checkoutSession &&
         productSelected &&
-        amountSelected ? (
+        dollarAmountSelected ? (
         <PaymentSection
           CheckoutSession={checkoutSession}
           amount={productSelected}
@@ -194,76 +176,6 @@ const CheckoutPage = () => {
         <Row className="text-ink-500 mt-2 text-sm">{loadingMessage}</Row>
       )}
     </Page>
-  )
-}
-
-function FundsSelector(props: {
-  prices: PaymentAmount[]
-  onSelect: (amount: WebManaAmounts) => void
-  loading: WebManaAmounts | null
-}) {
-  const { onSelect, prices, loading } = props
-  const user = useUser()
-
-  const totalPurchased = use24hrUsdPurchases(user?.id || '')
-  const pastLimit = totalPurchased >= 2500
-
-  return (
-    <Col className="mx-auto max-w-xl">
-      <Row className="mb-2 items-center gap-1 text-2xl font-semibold">
-        <FaStore className="h-6 w-6" />
-        Mana Shop
-      </Row>
-      <div
-        className={clsx(
-          'text-ink-700 text-sm',
-          TWOMBA_ENABLED ? 'mb-5' : 'mb-4'
-        )}
-      >
-        {TWOMBA_ENABLED ? (
-          <div>
-            <span>
-              Buy mana to trade in your favorite questions. Always free to play,
-              no purchase necessary.
-            </span>
-            <CashoutLimitWarning user={user} className="mt-2" />
-          </div>
-        ) : (
-          <span>Buy mana to trade in your favorite questions.</span>
-        )}
-      </div>
-      {pastLimit && (
-        <AlertBox title="Purchase limit" className="my-4">
-          You have reached your daily purchase limit. Please try again tomorrow.
-        </AlertBox>
-      )}
-      <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {prices.map((amounts, index) => (
-          <PriceTile
-            key={`price-tile-${amounts.mana}`}
-            amounts={amounts}
-            index={index}
-            loading={loading}
-            disabled={pastLimit}
-            onClick={() => onSelect(amounts.mana)}
-          />
-        ))}
-      </div>
-
-      {TWOMBA_ENABLED && (
-        <div className="text-ink-500 mt-4 text-sm">
-          Please see our{' '}
-          <Link href="/terms" target="_blank" className="underline">
-            Terms & Conditions
-          </Link>{' '}
-          and{' '}
-          <Link href="/sweepstakes-rules" target="_blank" className="underline">
-            Sweepstakes Rules
-          </Link>
-          . All sales are final. No refunds.
-        </div>
-      )}
-    </Col>
   )
 }
 
@@ -336,6 +248,10 @@ const PaymentSection = (props: {
         MerchantTransactionID,
         MerchantSessionID,
       }).catch((e) => {
+        if (e instanceof APIError) {
+          console.error('Error completing checkout session', e)
+          return { status: 'error', message: e.message }
+        }
         console.error('Error completing checkout session', e)
         return { status: 'error', message: 'Error completing checkout session' }
       })
@@ -349,6 +265,24 @@ const PaymentSection = (props: {
       }
     }
   }
+
+  const handleExpiryDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value
+    if (value.length > 5) {
+      return
+    }
+    const isBackspace =
+      (e.nativeEvent as InputEvent)?.inputType === 'deleteContentBackward'
+    if (value.length === 2 && !value.includes('/') && !isBackspace) {
+      value += '/'
+    } else if (value.length === 3 && !isBackspace && !value.includes('/')) {
+      value = value.slice(0, 2) + '/' + value.slice(2)
+    } else if (value.includes('/') && value.split('/').length > 2) {
+      return
+    }
+    setExpiryDate(value)
+  }
+
   if (complete) {
     return (
       <Col className={'gap-4'}>
@@ -449,7 +383,7 @@ const PaymentSection = (props: {
                   type="text"
                   placeholder="MM/YY"
                   value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
+                  onChange={handleExpiryDateChange}
                   className="w-1/2"
                 />
                 <Input

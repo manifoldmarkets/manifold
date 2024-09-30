@@ -29,15 +29,15 @@ const categoryToLabel = {
 }
 
 const categoryToColor = {
-  total_value: '#FFF0FF',
-  balance: '#B690D6',
+  total_value: 'inherit',
+  balance: '#925cf0',
   spice_balance: '#FFA620',
   investment_value: '#30A0C6',
-  loan_total: '#FFB7B7',
-  amm_liquidity: '#B7FFB7',
-  total_cash_value: '#FFFFF0',
+  loan_total: '#FF80B0',
+  amm_liquidity: '#20D020',
+  total_cash_value: 'inherit',
   cash_balance: '#FFD700',
-  cash_investment_value: '#60D0C6',
+  cash_investment_value: '#30A0C6',
   amm_cash_liquidity: '#20D020',
 }
 
@@ -160,13 +160,9 @@ const StackedChart = (props: {
         ref={tooltipRef}
         style={{
           position: 'absolute',
-          textAlign: 'left',
           width: 'auto',
           height: 'auto',
           padding: '8px',
-          font: '12px sans-serif',
-          background: 'black',
-          borderRadius: '8px',
           pointerEvents: 'none',
           opacity: 0,
         }}
@@ -205,7 +201,7 @@ const orderAndGroupData = (data: rowFor<'mana_supply_stats'>[]) => {
 const StackedChartTooltip = (props: { data: DateAndCategoriesToTotals }) => {
   const { data } = props
   return (
-    <Col className={'max-w-xs gap-1 text-lg text-white'}>
+    <Col className="bg-canvas-0 border-ink-900 max-w-xs gap-1 rounded-lg border p-2 text-sm">
       {new Date(Date.parse(data.date)).toLocaleString('en-us', {
         month: 'short',
         day: 'numeric',

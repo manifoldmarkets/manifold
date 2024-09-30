@@ -1,9 +1,12 @@
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
 import { useUser } from './use-user'
-import { getUserContractMetrics } from 'common/supabase/contract-metrics'
+import {
+  getTopContractMetrics,
+  getUserContractMetrics,
+} from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { first, isEqual } from 'lodash'
 import { useEvent } from 'web/hooks/use-event'
@@ -22,8 +25,6 @@ export const useSavedContractMetrics = (contract: Contract) => {
 
   const callback = useEvent(async () => {
     if (!user?.id) return
-    // Wait a small amount for the bet to replicate to supabase
-    await new Promise((resolve) => setTimeout(resolve, 1000))
     const retry = lastBetTimeRef.current > Date.now() - 5000 ? 5 : 0
     const queryAndSet = async (retries: number) =>
       getUserContractMetrics(user.id, contract.id, db).then((metrics) =>
@@ -70,4 +71,43 @@ export const useReadLocalContractMetrics = (contractId: string) => {
     `contract-metrics-${contractId}`
   )
   return savedMetrics
+}
+
+export const useTopContractMetrics = (props: {
+  playContract: Contract
+  cashContract: Contract | null
+  defaultTopManaTraders: ContractMetric[]
+  defaultTopCashTraders: ContractMetric[]
+  isPlay: boolean
+}) => {
+  const {
+    playContract,
+    cashContract,
+    defaultTopManaTraders,
+    defaultTopCashTraders,
+    isPlay,
+  } = props
+
+  const [topManaTraders, setTopManaTraders] = useState<ContractMetric[]>(
+    defaultTopManaTraders
+  )
+  const [topCashTraders, setTopCashTraders] = useState<ContractMetric[]>(
+    defaultTopCashTraders
+  )
+
+  const topContractMetrics = isPlay ? topManaTraders : topCashTraders
+
+  // If the contract resolves while the user is on the page, get the top contract metrics
+  useEffect(() => {
+    if (playContract.resolution) {
+      getTopContractMetrics(playContract.id, 10, db).then(setTopManaTraders)
+    }
+  }, [playContract.resolution])
+  useEffect(() => {
+    if (cashContract?.resolution) {
+      getTopContractMetrics(cashContract.id, 10, db).then(setTopCashTraders)
+    }
+  }, [cashContract?.resolution])
+
+  return topContractMetrics
 }

@@ -43,7 +43,6 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -173,10 +172,8 @@ function UserProfile(props: {
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
+  const privateUser = usePrivateUser()
 
-  useSaveReferral(currentUser, {
-    defaultReferrerUsername: user?.username,
-  })
   const isCurrentUser = user.id === currentUser?.id
   const [expandProfileInfo, setExpandProfileInfo] = usePersistentLocalState(
     false,
@@ -335,6 +332,7 @@ function UserProfile(props: {
                   <AddFundsButton
                     userId={user.id}
                     className="whitespace-nowra w-full lg:hidden"
+                    hideDiscount
                   />
                   <RedeemSweepsButtons user={user} className="shrink-0" />
                 </Row>
@@ -373,6 +371,7 @@ function UserProfile(props: {
             <AddFundsButton
               userId={user.id}
               className="w-1/2 whitespace-nowrap"
+              hideDiscount
             />
             <RedeemSweepsButtons user={user} className="w-1/2" />
           </Row>
@@ -394,7 +393,12 @@ function UserProfile(props: {
                 content: (
                   <>
                     <Col className="mt-2 gap-2">
-                      {currentUser && <VerifyMe user={currentUser} />}
+                      {currentUser && privateUser && (
+                        <VerifyMe
+                          user={currentUser}
+                          privateUser={privateUser}
+                        />
+                      )}
                       <VerifyPhoneNumberBanner user={currentUser} />
                     </Col>
                     <PortfolioSummary className="mt-4" user={user} />

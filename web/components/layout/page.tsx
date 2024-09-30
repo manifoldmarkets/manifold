@@ -11,7 +11,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { DowntimeBanner } from '../nav/banner'
 import { useUser } from 'web/hooks/use-user'
 
-import { UpdatedTermsModal } from '../updated-terms-modal'
+import { Footer } from '../footer'
 
 export function Page(props: {
   trackPageView: string | false
@@ -74,9 +74,9 @@ export function Page(props: {
           )}
           {banner}
           {children}
+          <Footer />
         </main>
       </Col>
-      <UpdatedTermsModal />
       {!hideBottomBar && <BottomNavBar />}
     </>
   )

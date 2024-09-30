@@ -40,8 +40,7 @@ import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { api } from 'web/lib/api/api'
 import clsx from 'clsx'
 import { getAnswerColor } from '../charts/contract/choice'
-import { Fees, getFeeTotal, noFees } from 'common/fees'
-import { FeeDisplay } from './fees'
+import { Fees, noFees } from 'common/fees'
 import { MoneyDisplay } from './money-display'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
@@ -58,6 +57,7 @@ export default function LimitOrderPanel(props: {
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
+  kycError: string | undefined
 
   onBuySuccess?: () => void
   className?: string
@@ -79,6 +79,7 @@ export default function LimitOrderPanel(props: {
     unfilledBets,
     balanceByUserId,
     user,
+    kycError,
     outcome,
     onBuySuccess,
     pseudonym,
@@ -151,7 +152,8 @@ export default function LimitOrderPanel(props: {
     !betAmount ||
     !hasLimitBet ||
     error === 'Insufficient balance' ||
-    showLocationMonitor
+    showLocationMonitor ||
+    !!kycError
 
   const preLimitProb =
     limitProbInt === undefined
@@ -257,7 +259,7 @@ export default function LimitOrderPanel(props: {
   let currentReturn = 0
   let orderAmount = 0
   let filledAmount = 0
-  let fees = noFees
+  // let fees = noFees
   try {
     const result = getBetReturns(
       cpmmState,
@@ -272,7 +274,7 @@ export default function LimitOrderPanel(props: {
     currentReturn = result.currentReturn
     orderAmount = result.orderAmount
     filledAmount = result.amount
-    fees = result.fees
+    // fees = result.fees
     betDeps.current = result.betDeps
   } catch (err: any) {
     // TODO: Twomba tracking bet terminology
@@ -283,7 +285,7 @@ export default function LimitOrderPanel(props: {
     )
   }
   const returnPercent = formatPercent(currentReturn)
-  const totalFees = getFeeTotal(fees)
+  // const totalFees = getFeeTotal(fees)
   const hideYesNo = isBinaryMC || !!pseudonym
 
   return (
@@ -459,7 +461,7 @@ export default function LimitOrderPanel(props: {
           </Row>
         )}
 
-        <Row className="items-center justify-between gap-2 text-sm">
+        {/* <Row className="items-center justify-between gap-2 text-sm">
           <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
             Fees
           </Row>
@@ -468,7 +470,7 @@ export default function LimitOrderPanel(props: {
             totalFees={totalFees}
             isCashContract={isCashContract}
           />
-        </Row>
+        </Row> */}
 
         <LocationMonitor
           contract={contract}
@@ -476,6 +478,7 @@ export default function LimitOrderPanel(props: {
           setShowPanel={setShowLocationMonitor}
           showPanel={showLocationMonitor}
         />
+        {kycError && <div className="text-red-500">{kycError}</div>}
         <Row className="items-center justify-between gap-2">
           {user && (
             <Button

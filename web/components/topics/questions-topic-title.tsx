@@ -68,7 +68,7 @@ export const QuestionsTopicTitle = forwardRef(
           </Row>
           <Row>
             <CopyLinkOrShareButton
-              url={getTopicShareUrl(currentTopic?.slug ?? '', user?.username)}
+              url={getTopicShareUrl(currentTopic?.slug ?? '')}
               className={'gap-1 whitespace-nowrap'}
               eventTrackingName={'copy questions page link'}
               size={isMobile ? 'sm' : 'md'}

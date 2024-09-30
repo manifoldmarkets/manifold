@@ -41,7 +41,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
-import { FeeDisplay } from './fees'
 import { MoneyDisplay } from './money-display'
 
 export function SellPanel(props: {
@@ -303,10 +302,10 @@ export function SellPanel(props: {
             </span>
           </Row>
         )}
-        <Row className="text-ink-500 items-center justify-between gap-2">
+        {/* <Row className="text-ink-500 items-center justify-between gap-2">
           Fees
           <FeeDisplay totalFees={totalFees} amount={saleValue + totalFees} />
-        </Row>
+        </Row> */}
         <Row className="text-ink-500 items-center justify-between gap-2">
           Profit
           <span className="text-ink-700">

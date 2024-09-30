@@ -11,6 +11,7 @@ import {
   notification_reason_types,
   NotificationReason,
   PaymentCompletedData,
+  ReferralData,
   ReviewNotificationData,
   UniqueBettorData,
 } from 'common/notification'
@@ -62,7 +63,7 @@ import {
 import { createPushNotifications } from './create-push-notifications'
 import { Reaction } from 'common/reaction'
 import { QuestType } from 'common/quest'
-import { QuestRewardTxn } from 'common/txn'
+import { QuestRewardTxn, UniqueBettorBonusTxn } from 'common/txn'
 import { formatMoney } from 'common/util/format'
 import {
   createSupabaseDirectClient,
@@ -678,8 +679,7 @@ export const createLimitBetExpiredNotification = async (
 export const createReferralNotification = async (
   toUserId: string,
   referredUser: User,
-  bonusAmount: string,
-  referredByContract?: Contract
+  bonusAmounts: ReferralData
 ) => {
   const privateUser = await getPrivateUser(toUserId)
   if (!privateUser) return
@@ -692,26 +692,17 @@ export const createReferralNotification = async (
   const notification: Notification = {
     id: referredUser.id + '-signup-referral-bonus',
     userId: toUserId,
-    reason:
-      referredByContract?.creatorId === toUserId
-        ? 'user_joined_to_bet_on_your_market'
-        : 'you_referred_user',
+    reason: 'you_referred_user',
     createdTime: Date.now(),
     isSeen: false,
     sourceId: referredUser.id,
     sourceType: 'user',
     sourceUpdateType: 'updated',
-    sourceContractId: referredByContract?.id,
     sourceUserName: referredUser.name,
     sourceUserUsername: referredUser.username,
     sourceUserAvatarUrl: referredUser.avatarUrl,
-    sourceText: bonusAmount,
-    // Only pass the contract referral details if they weren't referred to a group
-    sourceContractCreatorUsername: referredByContract?.creatorUsername,
-    sourceContractTitle: referredByContract?.question,
-    sourceContractSlug: referredByContract?.slug,
-    sourceSlug: referredByContract?.slug,
-    sourceTitle: referredByContract?.question,
+    sourceText: '',
+    data: bonusAmounts,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -754,7 +745,8 @@ export const createManaPaymentNotification = async (
   fromUser: User,
   toUserId: string,
   amount: number,
-  message: string | undefined
+  message: string | undefined,
+  token: 'M$' | 'CASH'
 ) => {
   const privateUser = await getPrivateUser(toUserId)
   if (!privateUser) return
@@ -776,6 +768,7 @@ export const createManaPaymentNotification = async (
     sourceText: amount.toString(),
     data: {
       message: message ?? '',
+      token,
     },
     sourceTitle: 'User payments',
   }
@@ -993,6 +986,7 @@ export const createNewBettorNotification = async (
   bettor: User,
   contract: Contract,
   bet: Bet,
+  txn: UniqueBettorBonusTxn,
   bets: Bet[] | undefined
 ) => {
   const privateUser = await getPrivateUser(creatorId)
@@ -1031,12 +1025,12 @@ export const createNewBettorNotification = async (
       createdTime: Date.now(),
       isSeen: false,
       sourceId: bet.id,
-      sourceType: 'bet',
+      sourceType: 'bonus',
       sourceUpdateType: 'created',
       sourceUserName: bettor.name,
       sourceUserUsername: bettor.username,
       sourceUserAvatarUrl: bettor.avatarUrl,
-      sourceText: '',
+      sourceText: txn.amount.toString(),
       sourceSlug: contract.slug,
       sourceTitle: contract.question,
       // Perhaps not necessary, but just in case
@@ -1058,6 +1052,7 @@ export const createNewBettorNotification = async (
         ...pseudoNumericData,
         totalAmountBet: sumBy(bets, 'amount'),
         token: contract.token,
+        bonusAmount: txn.amount,
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)
@@ -1108,13 +1103,15 @@ export const createNewBettorNotification = async (
   )
   if (creatorHasSeenMarketSinceBet) return
 
+  // TODO: add back bonus amount to email
   await sendNewUniqueBettorsEmail(
     'unique_bettors_on_your_contract',
     privateUser,
     contract,
     uniqueBettorsExcludingCreator.length,
     mostRecentUniqueBettors,
-    bettorsToTheirBets
+    bettorsToTheirBets,
+    txn.amount * TOTAL_NEW_BETTORS_TO_REPORT
   )
 }
 

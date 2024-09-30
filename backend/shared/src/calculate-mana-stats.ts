@@ -5,6 +5,7 @@ import {
   getManaSupplyEachDayBetweeen as getManaSupplyEachDay,
 } from 'shared/mana-supply'
 import { bulkInsert, insert } from './supabase/utils'
+import { log } from './utils'
 
 type txnStats = {
   start_time: string
@@ -26,6 +27,7 @@ export const updateTxnStats = async (
     const startTime = new Date(startDate + i * DAY_MS).toISOString()
     const endTime = new Date(startDate + (i + 1) * DAY_MS).toISOString()
 
+    log('Getting txn sums')
     const txnSummaries = await pg.map(
       `
         select from_type,
@@ -35,9 +37,9 @@ export const updateTxnStats = async (
         category,
         sum(amount) as total_amount
         from txns
-         where created_time > $1
+         where created_time >= $1
          and created_time < $2
-         and (to_type = 'BANK' OR from_type = 'BANK')
+         and (to_type = 'BANK' OR from_type = 'BANK' OR category = 'ADD_SUBSIDY')
          and category not in ('CONSUME_SPICE', 'CONSUME_SPICE_DONE')
         group by from_type,
           to_type,
@@ -52,14 +54,22 @@ export const updateTxnStats = async (
           ...row,
         } as txnStats)
     )
+
+    log('Getting betting fees')
     const fees = await pg.one(
-      `select sum((data->'fees'->'platformFee')::numeric) as platform_fees
-                from contract_bets
-                where created_time >$1
-                and created_time < $2`,
-      [startTime, endTime],
-      (row) => (row.platform_fees ? (row.platform_fees as number) : 0)
+      `select
+          sum((b.data->'fees'->'platformFee')::numeric)
+            filter (where c.token = 'MANA') as mana_platform_fees,
+          sum((b.data->'fees'->'platformFee')::numeric)
+            filter (where c.token = 'CASH') as cash_platform_fees
+          from contract_bets b join contracts c
+          on b.contract_id = c.id
+          where b.created_time >= $1
+          and b.created_time < $2`,
+      [startTime, endTime]
     )
+
+    log(`Inserting txn stats for start_time ${startTime}`)
     await bulkInsert(pg, 'txn_summary_stats', [
       ...txnSummaries,
       {
@@ -70,7 +80,17 @@ export const updateTxnStats = async (
         token: 'M$',
         quest_type: null,
         category: 'BET_FEES',
-        total_amount: fees,
+        total_amount: fees.mana_platform_fees ?? 0,
+      },
+      {
+        start_time: startTime,
+        end_time: endTime,
+        from_type: 'USER',
+        to_type: 'BANK',
+        token: 'CASH',
+        quest_type: null,
+        category: 'BET_FEES',
+        total_amount: fees.cash_platform_fees ?? 0,
       },
     ])
   }

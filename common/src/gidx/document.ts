@@ -39,18 +39,18 @@ export const getDocumentsStatus = (documents: GIDXDocument[]) => {
 
   const isVerified =
     acceptedDocuments.length >= GIDX_REGISTATION_DOCUMENTS_REQUIRED &&
-    requiresMultipleDocuments
+    (requiresMultipleDocuments
       ? acceptedUtilityDocuments.length > 0 && acceptedIdDocuments.length > 0
-      : acceptedIdDocuments.length > 0
+      : acceptedIdDocuments.length > 0)
 
   const isPending =
     !isVerified &&
     acceptedDocuments.length + pendingDocuments.length >=
       GIDX_REGISTATION_DOCUMENTS_REQUIRED &&
-    requiresMultipleDocuments
+    (requiresMultipleDocuments
       ? unrejectedUtilityDocuments.length > 0 &&
         unrejectedIdDocuments.length > 0
-      : unrejectedIdDocuments.length > 0
+      : unrejectedIdDocuments.length > 0)
 
   const isRejected =
     !isVerified &&

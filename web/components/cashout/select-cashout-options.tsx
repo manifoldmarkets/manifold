@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { MIN_CASHOUT_AMOUNT } from 'common/economy'
+import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import {
   CASH_TO_MANA_CONVERSION_RATE,
   CHARITY_FEE,
@@ -19,7 +19,7 @@ import { CashoutPagesType } from 'web/pages/redeem'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { CoinNumber } from '../widgets/coin-number'
 import { formatMoney, formatMoneyUSD, formatSweepies } from 'common/util/format'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { UncontrolledTabs } from '../layout/tabs'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -29,6 +29,7 @@ import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { Spacer } from '../layout/spacer'
 import { useNativeInfo } from '../native-message-provider'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
 export const CASHOUTS_PER_PAGE = 10
 
@@ -172,21 +173,8 @@ function CashoutOptionsContent(props: {
   const hasNoRedeemableCash = redeemableCash === 0
   return (
     <Col className={clsx('gap-4', allDisabled && 'text-ink-700 opacity-80')}>
-      <Col className="bg-canvas-50 w-full gap-4 rounded-lg p-4 pb-1">
-        <Row className="gap-4">
-          <ManaCoin className={clsx('text-7xl', allDisabled && 'grayscale')} />
-          <Col>
-            <div className="text-lg font-semibold">Get Mana</div>
-            <div className="text-ink-700 text-sm">
-              Redeem your {SWEEPIES_NAME} at{' '}
-              <b>
-                {formatSweepies(1)} {'→'}{' '}
-                {formatMoney(CASH_TO_MANA_CONVERSION_RATE)}
-              </b>
-              , no fees included!
-            </div>
-          </Col>
-        </Row>
+      <Card className="pb-1">
+        <ManaDescription disabled={allDisabled} />
         <Col className="gap-0.5">
           <Button
             onClick={() => {
@@ -211,24 +199,10 @@ function CashoutOptionsContent(props: {
             mana value
           </Row>
         </Col>
-      </Col>
+      </Card>
       {!isNativeIOS && (
-        <Col className="bg-canvas-50 gap-4 rounded-lg p-4 pb-1">
-          <Row className="gap-4">
-            <img
-              alt="donate"
-              src="/images/donate.png"
-              height={80}
-              width={80}
-              className={clsx(allDisabled && 'grayscale')}
-            />
-            <Col>
-              <div className="text-lg font-semibold">Donate to Charity</div>
-              <div className="text-ink-700 text-sm">
-                Redeem your {SWEEPIES_NAME} as a donation to a charitable cause.
-              </div>
-            </Col>
-          </Row>
+        <Card className="pb-1">
+          <CharityDescription disabled={allDisabled} />
           <Col className="gap-0.5">
             <Link
               className={clsx(
@@ -242,7 +216,7 @@ function CashoutOptionsContent(props: {
               )}
               href="/charity"
             >
-              Visit charity page
+              See eligible charities
             </Link>
             <Row className="text-ink-500 w-full justify-between gap-1 whitespace-nowrap text-xs sm:text-sm ">
               <span>
@@ -272,32 +246,11 @@ function CashoutOptionsContent(props: {
               </span>
             </Row>
           </Col>
-        </Col>
+        </Card>
       )}
 
-      <Col className="bg-canvas-50 w-full gap-4 rounded-lg p-4 pb-1">
-        <Row className=" gap-4">
-          <img
-            alt="cashout"
-            src="/images/cash-icon.png"
-            height={80}
-            width={80}
-            className={clsx(
-              'h-[80px] w-[80px] object-contain',
-              allDisabled && 'grayscale'
-            )}
-          />
-          <Col>
-            <div className="text-lg font-semibold">Redeem for USD</div>
-            <div className="text-ink-700 text-sm">
-              Redeem your {SWEEPIES_NAME} at{' '}
-              <b>
-                {formatSweepies(1)} {'→'} {formatMoneyUSD(1)}
-              </b>
-              , minus a <b>{CHARITY_FEE * 100}% fee</b>.
-            </div>
-          </Col>
-        </Row>
+      <Card className="pb-1">
+        <DollarDescription disabled={allDisabled} />
         <Col className="gap-0.5">
           <Button
             className={clsx('text-xs sm:text-sm')}
@@ -311,7 +264,7 @@ function CashoutOptionsContent(props: {
             Redeem for USD
           </Button>
           {!TWOMBA_CASHOUT_ENABLED && (
-            <div className="text-ink-500 text-sm">
+            <div className="text-ink-500 text-xs sm:text-sm">
               Cashouts should be enabled in less than a week
             </div>
           )}
@@ -343,7 +296,108 @@ function CashoutOptionsContent(props: {
             </span>
           </Row>
         </Col>
-      </Col>
+      </Card>
     </Col>
   )
 }
+
+// No functionality. like, for signed out view
+export function CashoutOptionsExplainer() {
+  return (
+    <Col className="gap-4">
+      <Card>
+        <ManaDescription />
+      </Card>
+      <Card>
+        <CharityDescription />
+      </Card>
+      <Card>
+        <DollarDescription />
+      </Card>
+      <Button
+        color="gradient-pink"
+        size="2xl"
+        onClick={firebaseLogin}
+        className="w-full"
+      >
+        Get started for free!
+      </Button>
+    </Col>
+  )
+}
+
+const Card = (props: { children: ReactNode; className?: string }) => (
+  <div
+    className={clsx(
+      'bg-canvas-50 flex w-full flex-col gap-4 rounded-lg p-4',
+      props.className
+    )}
+  >
+    {props.children}
+  </div>
+)
+
+const ManaDescription = (props: { disabled?: boolean }) => (
+  <div className="flex gap-4">
+    <ManaCoin className={clsx('text-7xl', props.disabled && 'grayscale')} />
+    <Col>
+      <div className="text-lg font-semibold">Get Mana</div>
+      <div className="text-ink-700 flex flex-wrap gap-x-1 text-sm">
+        Redeem {SWEEPIES_NAME} at
+        <span>
+          <b>
+            {formatSweepies(1)} {'→'}{' '}
+            {formatMoney(CASH_TO_MANA_CONVERSION_RATE)}
+          </b>
+          .
+        </span>
+      </div>
+    </Col>
+  </div>
+)
+
+const CharityDescription = (props: { disabled?: boolean }) => (
+  <div className="flex gap-4">
+    <img
+      alt="donate"
+      src="/images/donate.png"
+      height={80}
+      width={80}
+      className={clsx(props.disabled && 'grayscale')}
+    />
+    <Col>
+      <div className="text-lg font-semibold">Donate to Charity</div>
+      <div className="text-ink-700 text-sm">
+        Redeem {SWEEPIES_NAME} for a cash donation to a charitable cause.
+      </div>
+    </Col>
+  </div>
+)
+
+const DollarDescription = (props: { disabled?: boolean }) => (
+  <div className="flex gap-4">
+    <img
+      alt="cashout"
+      src="/images/cash-icon.png"
+      height={60}
+      width={80}
+      className={clsx(
+        'h-[60px] w-[80px] object-contain',
+        props.disabled && 'grayscale'
+      )}
+    />
+    <Col>
+      <div className="text-lg font-semibold">Redeem for USD</div>
+      <div className="text-ink-700 flex flex-wrap gap-x-1 text-sm">
+        Redeem {SWEEPIES_NAME} at
+        <span>
+          <b>
+            {formatSweepies(1)} {'→'} {formatMoneyUSD(1)}
+          </b>
+          ,
+        </span>
+        <span>minus a {SWEEPIES_CASHOUT_FEE * 100}% fee.</span>
+      </div>
+    </Col>
+  </div>
+)

@@ -13,7 +13,6 @@ import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
@@ -33,7 +32,6 @@ import { capitalize } from 'lodash'
 
 export default function TwitchLandingPage() {
   const user = useUser()
-  useSaveReferral(user)
 
   const privateUser = usePrivateUser()
 

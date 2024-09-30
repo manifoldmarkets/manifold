@@ -1,11 +1,6 @@
 import { notification_preferences } from './user-notification-preferences'
-import { ENV_CONFIG, TWOMBA_ENABLED } from './envs/constants'
-import { intersection } from 'lodash'
-import {
-  identityBlockedCodes,
-  locationTemporarilyBlockedCodes,
-  underageErrorCodes,
-} from 'common/reason-codes'
+import { ENV_CONFIG } from './envs/constants'
+import { DAY_MS, HOUR_MS } from './util/time'
 
 export type User = {
   id: string
@@ -53,6 +48,7 @@ export type User = {
   homeSections?: string[]
 
   referredByUserId?: string
+  usedReferralCode?: boolean
   referredByContractId?: string
   referredByGroupId?: string
   shouldShowWelcome?: boolean
@@ -73,6 +69,7 @@ export type User = {
   signupBonusPaid?: number
   isAdvancedTrader?: boolean
   purchasedMana?: boolean
+  purchasedSweepcash?: boolean
   verifiedPhone?: boolean
 
   // KYC related fields:
@@ -81,6 +78,7 @@ export type User = {
   sweepstakesVerified?: boolean
   idVerified?: boolean
   sweepstakes5kLimit?: boolean
+  sweepstakesVerifiedTime?: number
 }
 
 export type PrivateUser = {
@@ -115,6 +113,7 @@ export type PrivateUser = {
 
   // KYC related fields:
   kycFlags?: string[]
+  sessionFraudScore?: number
 }
 
 // TODO: remove. Hardcoding the strings would be better.
@@ -155,70 +154,10 @@ export const isUserLikelySpammer = (
 // This grandfathers in older users who have not yet verified their phone
 export const humanish = (user: User) => user.verifiedPhone !== false
 
-const verifiedAndBlocked = (user: User | undefined | null) =>
-  user && user.idVerified && !user.sweepstakesVerified
-
-export const identityPending = (user: User | undefined | null) =>
-  user && !user.idVerified && user.kycDocumentStatus === 'pending'
-
-export const blockFromSweepstakes = (user: User | undefined | null) =>
-  user && (!user.idVerified || verifiedAndBlocked(user))
-
-export const locationBlocked = (
-  user: User | undefined | null,
-  privateUser: PrivateUser | undefined | null
-) =>
-  privateUser &&
-  verifiedAndBlocked(user) &&
-  intersection(privateUser.kycFlags, locationTemporarilyBlockedCodes).length > 0
-
-export const ageBlocked = (
-  user: User | undefined | null,
-  privateUser: PrivateUser | undefined | null
-) =>
-  privateUser &&
-  verifiedAndBlocked(user) &&
-  intersection(privateUser.kycFlags, underageErrorCodes).length > 0
-
-export const identityBlocked = (
-  user: User | undefined | null,
-  privateUser: PrivateUser | undefined | null
-) =>
-  privateUser &&
-  verifiedAndBlocked(user) &&
-  intersection(privateUser.kycFlags, identityBlockedCodes).length > 0
-
-export const GIDX_DISABLED_MESSAGE = 'GIDX registration is disabled'
-export const PHONE_NOT_VERIFIED_MESSAGE = 'User must verify phone'
-export const IDENTIFICATION_FAILED_MESSAGE = 'User identification failed'
-export const LOCATION_BLOCKED_MESSAGE = 'User location is blocked'
-export const USER_BLOCKED_MESSAGE = 'User is blocked'
-export const USER_NOT_REGISTERED_MESSAGE = 'User must register'
-export const USER_VERIFIED_MESSSAGE = 'User is verified'
-
-export const PROMPT_VERIFICATION_MESSAGES = [
-  USER_NOT_REGISTERED_MESSAGE,
-  PHONE_NOT_VERIFIED_MESSAGE,
-  IDENTIFICATION_FAILED_MESSAGE,
-]
-
-export const getVerificationStatus = (
-  user: User
-): {
-  status: 'success' | 'error'
-  message: string
-} => {
-  if (!TWOMBA_ENABLED) {
-    return { status: 'error', message: GIDX_DISABLED_MESSAGE }
-  } else if (!humanish(user)) {
-    return { status: 'error', message: PHONE_NOT_VERIFIED_MESSAGE }
-  } else if (!user.idVerified) {
-    return { status: 'error', message: IDENTIFICATION_FAILED_MESSAGE }
-  } else if (!user.sweepstakesVerified) {
-    return { status: 'error', message: USER_BLOCKED_MESSAGE }
-  } else if (user.sweepstakesVerified) {
-    return { status: 'success', message: USER_VERIFIED_MESSSAGE }
-  } else {
-    return { status: 'error', message: USER_NOT_REGISTERED_MESSAGE }
-  }
-}
+// expires: sep 26th, ~530pm PT
+const LIMITED_TIME_DEAL_END = 1727311753233 + DAY_MS
+export const introductoryTimeWindow = (user: User) =>
+  Math.max(
+    LIMITED_TIME_DEAL_END,
+    (user.sweepstakesVerifiedTime ?? user.createdTime) + 8 * HOUR_MS
+  )

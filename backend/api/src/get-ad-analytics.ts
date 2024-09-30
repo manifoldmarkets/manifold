@@ -1,38 +1,43 @@
 import { APIHandler } from 'api/helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
-import { run } from 'common/supabase/utils'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { sumBy } from 'lodash'
 import { log } from 'shared/utils'
+import { from, select, where, renderSql } from 'shared/supabase/sql-builder'
 
 export const getadanalytics: APIHandler<'get-ad-analytics'> = async (body) => {
   const { contractId } = body
-  const db = createSupabaseClient()
-  const [{ data: adData }, { data: viewData }] = await Promise.all([
-    run(
-      db
-        .from('market_ads')
-        .select('id, funds, created_at, cost_per_view')
-        .eq('market_id', contractId)
-    ),
-    run(
-      db
-        .from('user_contract_views')
-        .select('user_id, promoted_views, card_views')
-        .eq('contract_id', contractId)
-        .or('promoted_views.gt.0, card_views.gt.0')
-    ),
+  const pg = createSupabaseDirectClient()
+
+  const adQuery = renderSql(
+    from('market_ads'),
+    select('id, funds, created_at, cost_per_view'),
+    where('market_id = ${contractId}', { contractId })
+  )
+
+  const viewQuery = renderSql(
+    from('user_contract_views'),
+    select('user_id, promoted_views, card_views'),
+    where('contract_id = ${contractId}', { contractId }),
+    where('promoted_views > 0 or card_views > 0')
+  )
+
+  const [adData, viewData] = await Promise.all([
+    pg.any(adQuery),
+    pg.any(viewQuery),
   ])
+
   log({ adData, viewData })
 
   const lastAdData = adData?.[0]
 
-  const { count: redeemCount } = await run(
-    db
-      .from('txns')
-      .select('*', { count: 'exact' })
-      .eq('category', 'MARKET_BOOST_REDEEM')
-      .eq('from_id', lastAdData?.id)
+  const redeemQuery = renderSql(
+    from('txns'),
+    select('count(*)'),
+    where(`category = 'MARKET_BOOST_REDEEM'`),
+    where('from_id = ${fromId}', { fromId: lastAdData?.id })
   )
+  const redeemCount = lastAdData ? (await pg.one(redeemQuery)).count : 0
+
   const promotedViewData = viewData?.filter((v) => v.promoted_views > 0)
   const totalFunds = adData?.reduce((acc, v) => acc + v.funds, 0) ?? 0
   return {

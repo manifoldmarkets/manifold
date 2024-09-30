@@ -12,7 +12,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 }
 
 export const TWOMBA_ENABLED = true
-export const TWOMBA_CASHOUT_ENABLED = false
+export const TWOMBA_CASHOUT_ENABLED = true
 export const PRODUCT_MARKET_FIT_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
@@ -23,9 +23,10 @@ export const CHARITY_FEE = 0.05
 export const CASH_TO_CHARITY_DOLLARS = 1
 export const SPICE_TO_CHARITY_DOLLARS = (1 / 1000) * (1 - CHARITY_FEE) // prize points -> dollars
 export const NY_FL_CASHOUT_LIMIT = 5000
+export const DOLLAR_PURCHASE_LIMIT = 5000
 
 export const SPICE_NAME = 'Prize Point'
-export const SWEEPIES_NAME = 'Sweepcash'
+export const SWEEPIES_NAME = 'sweepcash'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
 export const SWEEPIES_MARKET_TOOLTIP = `Sweepstakes market! Win real cash prizes.`
 export const CASH_SUFFIX = '--cash'
@@ -203,6 +204,7 @@ export const MOD_IDS = [
   'KHX2ThSFtLQlau58hrjtCX7OL2h2', // shankypanky (stefanie)
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
   'tO4DwIsujySUwtSnrr2hnU1WJtJ3', // WieDan
+  'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
 ]
 
 export const MVP = ['Eliza', 'Gabrielle', 'jacksonpolack']
@@ -363,6 +365,11 @@ export function supabasePrivateUserConsolePath(userId: string) {
 export function supabaseConsoleContractPath(contractId: string) {
   const tableId = ENV === 'DEV' ? 19254 : 25924
   return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}?filter=id%3Aeq%3A${contractId}`
+}
+
+export function supabaseConsoleTxnPath(txnId: string) {
+  const tableId = ENV === 'DEV' ? 20014 : 25940
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}?filter=id%3Aeq%3A${txnId}`
 }
 
 export const GOOGLE_PLAY_APP_URL =

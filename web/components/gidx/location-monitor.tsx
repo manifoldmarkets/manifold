@@ -5,6 +5,7 @@ import { Col } from '../layout/col'
 import { Contract } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
 export const LocationMonitor = (props: {
   contract: Contract
@@ -15,8 +16,7 @@ export const LocationMonitor = (props: {
   const { user, contract, setShowPanel, showPanel } = props
 
   const {
-    fetchMonitorStatus,
-    requestLocation,
+    requestLocationThenFetchMonitorStatus,
     loading,
     monitorStatus,
     monitorStatusMessage,
@@ -26,7 +26,6 @@ export const LocationMonitor = (props: {
     () => setShowPanel(true),
     (location) => {
       if (location) {
-        fetchMonitorStatus(location)
         setShowPanel(false)
       }
     }
@@ -38,12 +37,17 @@ export const LocationMonitor = (props: {
     return null
   }
   return (
-    <Col className="py-2">
+    <Col className="gap-2 py-2">
       <span className="text-xl font-semibold">
         Location required to participate in sweepstakes
       </span>
-      <div className="mt-2 flex">
-        <Button size="xl" loading={loading} onClick={() => requestLocation()}>
+      <FirefoxWarning />
+      <div className="flex">
+        <Button
+          size="xl"
+          loading={loading}
+          onClick={() => requestLocationThenFetchMonitorStatus()}
+        >
           Share location to {TRADE_TERM}
         </Button>
       </div>
@@ -52,11 +56,29 @@ export const LocationMonitor = (props: {
           Loading location may take a while, hold on!
         </span>
       )}
-      {monitorStatus === 'error' && (
-        <span className="mt-2 text-red-500">{monitorStatusMessage}</span>
+      {monitorStatus !== 'success' && (
+        <span className=" text-red-500">{monitorStatusMessage}</span>
       )}
     </Col>
   )
+}
+
+export const FirefoxWarning = () => {
+  const isFirefox =
+    typeof window !== 'undefined' &&
+    navigator.userAgent.toLowerCase().indexOf('firefox') > -1
+
+  if (isFirefox) {
+    return (
+      <Image
+        src="/firefox-remember.png"
+        alt="Firefox Remember Location"
+        width={500}
+        height={200}
+      />
+    )
+  }
+  return null
 }
 
 export const useShowAfterLoadingTime = (

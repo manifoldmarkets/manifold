@@ -381,6 +381,7 @@ export type UniqueBettorData = {
   totalUniqueBettors?: number
   totalAmountBet?: number
   token?: ContractToken
+  bonusAmount?: number
 }
 
 export type ReviewNotificationData = {
@@ -402,6 +403,11 @@ export type AirdropData = {
   amount: number
 }
 
+export type ManaPaymentData = {
+  message: string
+  token?: 'M$' | 'CASH'
+}
+
 export type ExtraPurchasedManaData = {
   amount: number
 }
@@ -412,6 +418,11 @@ export type PaymentCompletedData = {
   currency: string
   paymentMethodType: string
   paymentAmountType: string
+}
+
+export type ReferralData = {
+  manaAmount: number
+  cashAmount: number
 }
 
 export function getSourceIdForLinkComponent(

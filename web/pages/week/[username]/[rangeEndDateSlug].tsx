@@ -28,8 +28,6 @@ import { SizedContainer } from 'web/components/sized-container'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useUser } from 'web/hooks/use-user'
 import { useRecentlyBetOnContracts } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { DisplayUser, getUserByUsername } from 'web/lib/supabase/users'
@@ -122,10 +120,6 @@ export default function RangePerformancePage(props: {
     weeklyPortfolioUpdateString
   ) as WeeklyPortfolioUpdate
   const contracts = JSON.parse(props.contractsString) as BinaryContract[]
-  const currentUser = useUser()
-  useSaveReferral(currentUser, {
-    defaultReferrerUsername: user?.username,
-  })
 
   const { contracts: relatedMarkets, loadMore } = useRecentlyBetOnContracts(
     user?.id ?? '_'

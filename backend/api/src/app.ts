@@ -70,7 +70,6 @@ import {
   getDashboardFromSlug,
 } from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
-import { referuser } from 'api/refer-user'
 import { banuser } from 'api/ban-user'
 import { updateMarket } from 'api/update-market'
 import { createprivateusermessage } from 'api/create-private-user-message'
@@ -193,6 +192,7 @@ import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-v
 import { completeCashoutSession } from 'api/gidx/complete-cashout-session'
 import { getCashouts } from './get-cashouts'
 import { getKYCStats } from './get-kyc-stats'
+import { getTxns } from './get-txns'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -424,6 +424,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'record-comment-view': recordCommentView,
   'get-cashouts': getCashouts,
   'get-kyc-stats': getKYCStats,
+  txns: getTxns,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -488,7 +489,6 @@ app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
-app.post('/refer-user', ...apiRoute(referuser))
 app.post('/leave-review', ...apiRoute(leavereview))
 app.post(
   '/get-user-contract-metrics-with-contracts',

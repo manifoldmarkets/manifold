@@ -129,7 +129,8 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       user,
       allOrdersToCancel,
       makers,
-      bets.some((b) => b.streakIncremented)
+      bets.some((b) => b.streakIncremented),
+      undefined
     )
   }
 

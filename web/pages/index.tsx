@@ -22,7 +22,6 @@ import { Button } from 'web/components/buttons/button'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
-import { Footer } from 'web/components/footer'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -32,8 +31,6 @@ import { TestimonialsPanel } from 'web/components/testimonials-panel'
 import { Carousel } from 'web/components/widgets/carousel'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useUser } from 'web/hooks/use-user'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
@@ -106,8 +103,6 @@ export default function LandingPage(props: {
 }) {
   const { trendingContracts, topicSlugToContracts, topics } = props
 
-  const user = useUser()
-  useSaveReferral(user)
   useSaveCampaign()
   useRedirectIfSignedIn()
 
@@ -251,8 +246,6 @@ export default function LandingPage(props: {
           ))}
         </Col>
         <TestimonialsPanel />
-
-        <Footer showAbout />
       </Col>
     </Page>
   )

@@ -2,7 +2,6 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   getGIDXStandardParams,
   getLocalServerIP,
-  getUserSweepstakesRequirements,
   GIDX_BASE_URL,
   throwIfIPNotWhitelisted,
   verifyReasonCodes,
@@ -12,11 +11,10 @@ import {
   FAKE_CUSTOMER_BODY,
   GIDXMonitorResponse,
 } from 'common/gidx/gidx'
-import { LOCAL_DEV, log } from 'shared/utils'
+import { getUserAndPrivateUserOrThrow, LOCAL_DEV, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getIp } from 'shared/analytics'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { updateUser } from 'shared/supabase/users'
 
 export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   props,
@@ -26,7 +24,8 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const userId = auth.uid
   const pg = createSupabaseDirectClient()
-  const user = await getUserSweepstakesRequirements(userId)
+  const userAndPrivateUser = await getUserAndPrivateUserOrThrow(userId, pg)
+
   const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerMonitor'
   const body = {
     MerchantCustomerID: userId,
@@ -67,17 +66,12 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   )
   throwIfIPNotWhitelisted(data.ResponseCode, data.ResponseMessage)
   const { status, message } = await verifyReasonCodes(
-    user,
+    userAndPrivateUser,
     data.ReasonCodes,
     data.FraudConfidenceScore,
     data.IdentityConfidenceScore
   )
 
-  if (status === 'success' && !user.sweepstakesVerified) {
-    await updateUser(pg, auth.uid, {
-      sweepstakesVerified: true,
-    })
-  }
   return {
     status,
     message,

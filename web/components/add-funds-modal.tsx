@@ -1,37 +1,28 @@
 'use client'
 import clsx from 'clsx'
-import {
-  IOS_PRICES,
-  MANA_WEB_PRICES,
-  WebManaAmounts,
-  PaymentAmount,
-} from 'common/economy'
-import { ENV_CONFIG, TWOMBA_ENABLED } from 'common/envs/constants'
+import { WebPriceInDollars, PaymentAmount } from 'common/economy'
+import { ENV_CONFIG } from 'common/envs/constants'
 
-import { convertTxn } from 'common/supabase/txns'
-import { run } from 'common/supabase/utils'
 import { Txn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
 import { sum } from 'lodash'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { APIError, api } from 'web/lib/api/api'
-import { getNativePlatform } from 'web/lib/native/is-native'
-import { checkoutURL } from 'web/lib/service/stripe'
-import { db } from 'web/lib/supabase/db'
 import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
-import { AlertBox } from './widgets/alert-box'
 import { AmountInput } from './widgets/amount-input'
-import { CoinNumber } from './widgets/coin-number'
 import { Col } from './layout/col'
 import { shortenNumber } from 'web/lib/util/formatNumber'
-import { FaStore } from 'react-icons/fa6'
 import router from 'next/router'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
-import Link from 'next/link'
+import { useNativeInfo } from './native-message-provider'
+import { CoinNumber } from './widgets/coin-number'
+import { TwombaFundsSelector } from 'web/components/gidx/twomba-funds-selector'
+import { getVerificationStatus } from 'common/gidx/user'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
 const BUY_MANA_GRAPHICS = [
   '/buy-mana-graphics/10k.png',
@@ -81,179 +72,132 @@ export function AddFundsModal(props: {
 export function BuyManaTab(props: { onClose: () => void }) {
   const { onClose } = props
   const user = useUser()
-  const { isNative, platform } = getNativePlatform()
-  const prices = isNative && platform === 'ios' ? IOS_PRICES : MANA_WEB_PRICES
-  const [loading, setLoading] = useState<WebManaAmounts | null>(null)
+  const privateUser = usePrivateUser()
+  const { isIOS } = useNativeInfo()
+  const [loadingPrice, setLoadingPrice] = useState<WebPriceInDollars | null>(
+    null
+  )
   const [error, setError] = useState<string | null>(null)
   const { initiatePurchaseInDollars, loadingMessage } = useIosPurchases(
     setError,
-    setLoading,
+    setLoadingPrice,
     onClose
   )
 
-  const [url, setUrl] = useState('https://manifold.markets')
-  useEffect(() => setUrl(window.location.href), [])
-
-  const totalPurchased = use24hrUsdPurchases(user?.id || '')
-  const pastLimit = totalPurchased >= 2500
-
   return (
-    <>
-      <Row className="mb-2 items-center gap-1 text-2xl font-semibold">
-        <FaStore className="h-6 w-6" />
-        Mana Shop
-      </Row>
-      <div
-        className={clsx(
-          'text-ink-700 text-sm',
-          TWOMBA_ENABLED ? 'mb-5' : 'mb-4'
-        )}
-      >
-        {TWOMBA_ENABLED ? (
-          <span>
-            Buy mana to trade in your favorite questions. Always free to play,
-            no purchase necessary.
-          </span>
-        ) : (
-          <span>Buy mana to trade in your favorite questions.</span>
-        )}
-      </div>
-
-      {pastLimit && (
-        <AlertBox title="Purchase limit" className="my-4">
-          You have reached your daily purchase limit. Please try again tomorrow.
-        </AlertBox>
-      )}
-
-      <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {prices.map((amounts, index) => {
-          return isNative && platform === 'ios' ? (
-            <PriceTile
-              key={`ios-${amounts.mana}`}
-              index={index}
-              amounts={amounts}
-              loading={loading}
-              disabled={pastLimit}
-              onClick={() => {
-                if (TWOMBA_ENABLED) {
-                  // The checkout page handles registration
-                  router.push(`/checkout?manaAmount=${amounts.mana}`)
-                } else {
-                  initiatePurchaseInDollars(amounts.priceInDollars)
-                }
-              }}
-            />
-          ) : (
-            <form
-              key={`web-${amounts.mana}`}
-              // Expects cents
-              action={checkoutURL(
-                user?.id || '',
-                amounts.priceInDollars * 100,
-                url
-              )}
-              method="POST"
-            >
-              <PriceTile
-                amounts={amounts}
-                index={index}
-                loading={loading}
-                disabled={pastLimit}
-                onClick={() => {
-                  if (TWOMBA_ENABLED) {
-                    router.push(`/checkout?manaAmount=${amounts.mana}`)
-                  }
-                }}
-                isSubmitButton={!TWOMBA_ENABLED}
-              />
-            </form>
-          )
-        })}
-      </div>
-      <div className="text-ink-500 text-sm">{loadingMessage}</div>
-      <Row className="text-error mt-2 text-sm">{error}</Row>
-
-      {TWOMBA_ENABLED && (
-        <div className="text-ink-500 mt-4 text-sm">
-          Please see our{' '}
-          <Link href="/terms" target="_blank" className="underline">
-            Terms & Conditions
-          </Link>{' '}
-          and{' '}
-          <Link href="/sweepstakes-rules" target="_blank" className="underline">
-            Sweepstakes Rules
-          </Link>
-          . All sales are final. No refunds.
-        </div>
-      )}
-    </>
+    <Col className={'gap-2'}>
+      <TwombaFundsSelector
+        onSelectPriceInDollars={(dollarAmount) => {
+          if (!user || !privateUser) return firebaseLogin()
+          const { status, message } = getVerificationStatus(user, privateUser)
+          if (status !== 'error') {
+            if (isIOS) {
+              initiatePurchaseInDollars(dollarAmount)
+            } else {
+              router.push(`/checkout?dollarAmount=${dollarAmount}`)
+            }
+          } else {
+            setError(message)
+          }
+          setLoadingPrice(dollarAmount)
+        }}
+        loadingPrice={loadingPrice}
+      />
+      {loadingMessage && <span className="text-ink-500">{loadingMessage}</span>}
+      {error && <span className="text-error">{error}</span>}
+    </Col>
   )
 }
 
 export function PriceTile(props: {
   amounts: PaymentAmount
   index: number
-  loading: WebManaAmounts | null
+  loadingPrice: WebPriceInDollars | null
   disabled: boolean
   onClick?: () => void
-  isSubmitButton?: boolean
 }) {
-  const { loading, onClick, isSubmitButton, amounts, index } = props
-  const { mana, priceInDollars, bonusInDollars } = amounts
+  const { loadingPrice, onClick, amounts, index } = props
+  const {
+    newUsersOnly,
+    mana,
+    priceInDollars,
+    bonusInDollars,
+    originalPriceInDollars,
+  } = amounts
 
-  const isCurrentlyLoading = loading === mana
-  const disabled = props.disabled || (loading && !isCurrentlyLoading)
+  const isCurrentlyLoading = loadingPrice === priceInDollars
+  const disabled = props.disabled || (loadingPrice && !isCurrentlyLoading)
   return (
     <button
       className={clsx(
-        'group relative flex w-full flex-col items-center rounded text-center shadow transition-all ',
+        'group relative flex h-fit w-full flex-col items-center rounded text-center shadow transition-all ',
         disabled
           ? 'pointer-events-none cursor-not-allowed opacity-50'
           : 'opacity-90 ring-2 ring-blue-600 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
-        isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait'
+        isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait',
+        newUsersOnly && 'border-4 border-purple-500 '
       )}
-      type={isSubmitButton ? 'submit' : 'button'}
+      type={'button'}
       onClick={onClick}
     >
-      {TWOMBA_ENABLED && (
+      {originalPriceInDollars && originalPriceInDollars !== priceInDollars && (
         <div
-          className="absolute -right-2 -top-2
-        whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5
-         text-amber-800 shadow transition-colors group-hover:bg-amber-200
-          group-hover:text-amber-900 dark:bg-amber-700 dark:text-white
-           group-hover:dark:bg-amber-600 group-hover:dark:text-white"
+          className="absolute right-0 top-0
+        whitespace-nowrap  bg-purple-500 px-2
+         py-0.5 text-white transition-colors
+           "
         >
-          +
+          {(
+            ((originalPriceInDollars - priceInDollars) /
+              originalPriceInDollars) *
+            100
+          ).toFixed(0)}
+          % off
+        </div>
+      )}
+      <Col
+        className={'bg-canvas-0 w-full items-center rounded-t px-4 pb-2 pt-4'}
+      >
+        <Image
+          src={BUY_MANA_GRAPHICS[Math.min(index, BUY_MANA_GRAPHICS.length - 1)]}
+          alt={`${shortenNumber(mana)} mana`}
+          className="100%"
+          width={80}
+          height={80}
+        />
+
+        <div className="-mt-1 text-xl font-semibold text-violet-600 dark:text-violet-400">
+          Ṁ{shortenNumber(mana)}{' '}
+        </div>
+        {originalPriceInDollars && (
+          <Row className="text-sm text-red-500 line-through">
+            -${originalPriceInDollars}-
+          </Row>
+        )}
+      </Col>
+      <Col className="w-full bg-blue-600 px-4 py-1 text-xl font-semibold text-white">
+        Buy ${priceInDollars}
+      </Col>
+      {bonusInDollars > 0 && (
+        <Row
+          className={clsx(
+            `w-full items-center justify-center gap-1 whitespace-nowrap
+       bg-amber-100 px-2 py-0.5 text-lg
+         text-amber-800 transition-colors group-hover:bg-amber-200
+          group-hover:text-amber-900 dark:bg-amber-600 dark:text-white
+           group-hover:dark:bg-amber-500 group-hover:dark:text-white`,
+            !newUsersOnly && 'shadow'
+          )}
+        >
           <CoinNumber
             coinType="sweepies"
             className="font-bold"
             amount={bonusInDollars}
             isInline
           />{' '}
-          <span className="text-sm">bonus</span>
-        </div>
+          <span className="text-sm">free</span>
+        </Row>
       )}
-      <Col
-        className={clsx(
-          TWOMBA_ENABLED ? 'bg-canvas-0' : 'bg-canvas-50',
-          'items-center rounded-t px-4 pb-2 pt-4'
-        )}
-      >
-        <Image
-          src={BUY_MANA_GRAPHICS[Math.min(index, BUY_MANA_GRAPHICS.length - 1)]}
-          alt={`${shortenNumber(mana)} mana`}
-          className="w-2/3"
-          width={460}
-          height={400}
-        />
-
-        <div className="-mt-1 text-xl font-semibold text-violet-600 dark:text-violet-400">
-          Ṁ{shortenNumber(mana)}{' '}
-        </div>
-      </Col>
-      <Col className="w-full rounded-b bg-blue-600 px-4 py-1 text-lg font-semibold text-white">
-        ${priceInDollars}
-      </Col>
     </button>
   )
 }
@@ -306,26 +250,16 @@ export const SpiceToManaForm = (props: {
   )
 }
 
-export const use24hrUsdPurchases = (userId: string) => {
+export const use24hrUsdPurchasesInDollars = (userId: string) => {
   const [purchases, setPurchases] = useState<Txn[]>([])
 
   useEffect(() => {
-    run(
-      db
-        .from('txns')
-        .select()
-        .eq('category', 'MANA_PURCHASE')
-        .eq('to_id', userId)
-    ).then((res) => {
-      setPurchases(res.data.map(convertTxn))
-    })
+    api('txns', {
+      category: 'MANA_PURCHASE',
+      toId: userId,
+      after: Date.now() - DAY_MS,
+    }).then(setPurchases)
   }, [userId])
 
-  return (
-    sum(
-      purchases
-        .filter((t) => t.createdTime > Date.now() - DAY_MS)
-        .map((t) => t.amount)
-    ) / 1000
-  )
+  return sum(purchases.map((t) => t.data?.paidInCents)) / 100
 }

@@ -202,6 +202,7 @@ export const FieldVal = {
       )
     },
 }
+export type FieldValFunction = (fieldName: string) => string
 
 type ValOrFieldVal<R extends Record<string, any>> = {
   [key in keyof R]?: R[key] | ((fieldName: string) => string)

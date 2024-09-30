@@ -1,15 +1,16 @@
-import { BETTING_STREAK_BONUS_MAX } from 'common/economy'
+import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
 import {
   BettingStreakData,
   getSourceUrl,
   LeagueChangeData,
+  ManaPaymentData,
   Notification,
+  ReferralData,
   UniqueBettorData,
 } from 'common/notification'
 import {
   formatLargeNumber,
   formatMoney,
-  formatMoneyToDecimal,
   maybePluralize,
 } from 'common/util/format'
 import { groupBy } from 'lodash'
@@ -48,7 +49,6 @@ import {
 import { humanish } from 'common/user'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { TRADE_TERM } from 'common/envs/constants'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -484,6 +484,7 @@ export function ManaPaymentReceivedNotification(props: {
 }) {
   const { notification, highlighted, setHighlighted } = props
   const { data, sourceId, sourceUserName, sourceUserUsername } = notification
+  const { token } = data as ManaPaymentData
   return (
     <NotificationFrame
       notification={notification}
@@ -503,49 +504,24 @@ export function ManaPaymentReceivedNotification(props: {
           className=""
         />
         <PrimaryNotificationLink text=" sent you " />
-        <IncomeNotificationLabel notification={notification} />
+        <IncomeNotificationLabel notification={notification} token={token} />
       </span>
     </NotificationFrame>
   )
 }
 
-export function UserJoinedNotification(props: {
+export function ReferralNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const {
-    sourceId,
-    sourceUserName,
-    sourceUserUsername,
-    sourceSlug,
-    reason,
-    sourceText,
-  } = notification
-  let reasonBlock = <span>because of a link you shared</span>
-  if (sourceSlug && reason == 'user_joined_to_bet_on_your_market') {
-    reasonBlock = (
-      <>
-        to {TRADE_TERM} on the question{' '}
-        <QuestionOrGroupLink
-          notification={notification}
-          truncatedLength={'xl'}
-        />
-      </>
-    )
-  } else if (sourceSlug && reason === 'user_joined_from_your_group_invite') {
-    reasonBlock = (
-      <>
-        because you shared{' '}
-        <QuestionOrGroupLink
-          notification={notification}
-          truncatedLength={'xl'}
-        />
-      </>
-    )
-  }
+  const { sourceId, sourceUserName, sourceUserUsername, data } = notification
+  const { manaAmount, cashAmount } = (data ?? {
+    manaAmount: REFERRAL_AMOUNT,
+    cashAmount: 0,
+  }) as ReferralData
   return (
     <NotificationFrame
       notification={notification}
@@ -557,24 +533,32 @@ export function UserJoinedNotification(props: {
       }
       link={getSourceUrl(notification)}
       subtitle={
-        sourceText && (
-          <span>
-            As a thank you, we sent you{' '}
-            <span className="text-teal-500">
-              {formatMoney(parseInt(sourceText))}
-            </span>
-            !
-          </span>
-        )
-      }
-    >
-      <div className="line-clamp-3">
         <NotificationUserLink
           userId={sourceId}
           name={sourceUserName}
           username={sourceUserUsername}
+        />
+      }
+    >
+      <div className="line-clamp-3">
+        {cashAmount > 0 && (
+          <>
+            <CoinNumber
+              className={'text-amber-500'}
+              amount={cashAmount}
+              coinType="CASH"
+              isInline
+            />
+            {' + '}
+          </>
+        )}
+        <CoinNumber
+          className={'text-teal-600'}
+          amount={manaAmount}
+          coinType="MANA"
+          isInline
         />{' '}
-        joined Manifold {reasonBlock}
+        for referring a new user!
       </div>
     </NotificationFrame>
   )
@@ -664,14 +648,25 @@ function PrizeIncomeNotificationLabel(props: {
 
 function IncomeNotificationLabel(props: {
   notification: Notification
+  token?: 'M$' | 'CASH'
   className?: string
 }) {
-  const { notification, className } = props
+  const { notification, token = 'M$', className } = props
   const { sourceText } = notification
-  return sourceText ? (
-    <span className={clsx('text-teal-600', className)}>
-      {formatMoneyToDecimal(parseFloat(sourceText))}
-    </span>
+  return sourceText && token === 'M$' ? (
+    <CoinNumber
+      className={clsx('text-teal-600', className)}
+      amount={parseFloat(sourceText)}
+      coinType={'mana'}
+      isInline
+    />
+  ) : sourceText && token === 'CASH' ? (
+    <CoinNumber
+      className={clsx('text-amber-500', className)}
+      amount={parseFloat(sourceText)}
+      coinType={'CASH'}
+      isInline
+    />
   ) : (
     <div />
   )

@@ -28,7 +28,6 @@ import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
@@ -136,7 +135,6 @@ export function GroupPageContent(props: {
   const autoFocus = !isMobile && !q
   const privateUser = usePrivateUser()
 
-  useSaveReferral(user)
   const shouldFilterDestiny = false // useShouldBlockDestiny(user?.id)
 
   const trendingTopics = useTrendingTopics(

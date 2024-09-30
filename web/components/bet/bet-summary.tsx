@@ -67,7 +67,6 @@ export function BetsSummary(props: {
   } = props
   const { resolution, outcomeType } = contract
   const userBets = useUserContractBets(metrics.userId, contract.id)
-  const user = useUser()
 
   // TODO: get payout from txns, to determine if spice
 
@@ -257,7 +256,7 @@ export function BetsSummary(props: {
             <MoneyDisplay amount={profit} isCashContract={isCashContract} /> in
             profit!{' '}
             <TweetButton
-              tweetText={getWinningTweet(profit, contract, user.username)}
+              tweetText={getWinningTweet(profit, contract)}
               className="ml-2"
             />
           </div>

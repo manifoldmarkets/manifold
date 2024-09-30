@@ -398,6 +398,7 @@ const TxnBalanceChangeRow = (props: {
     CONVERT_CASH_DONE: 'bg-indigo-400',
     SIGNUP_BONUS: 'bg-yellow-200',
     KYC_BONUS: 'bg-yellow-200',
+    REFERRAL: 'bg-blue-300',
     MANA_PURCHASE: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
     CASH_BONUS: 'bg-gradient-to-br from-blue-400 via-green-100 to-green-300',
     MARKET_BOOST_REDEEM: 'bg-purple-200',
@@ -446,7 +447,7 @@ const TxnBalanceChangeRow = (props: {
               type === 'CONVERT_CASH' ||
               type === 'CONVERT_CASH_DONE' ? (
               <FaArrowRightArrowLeft className={'h-4 w-4'} />
-            ) : type === 'CHARITY' ? (
+            ) : type === 'CHARITY' || type === 'REFERRAL' ? (
               '❤️'
             ) : type === 'LOAN' || type === 'CASH_OUT' ? (
               '🏦'
@@ -566,6 +567,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Claim boost'
     case 'SIGNUP_BONUS':
       return change.description ?? 'Signup bonus'
+    case 'REFERRAL':
+      return 'Referral bonus'
     case 'CONSUME_SPICE':
     case 'CONSUME_SPICE_DONE':
       return `Redeem prize points for mana`
@@ -575,7 +578,7 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'CASH_OUT':
       return 'Redemption request'
     case 'CASH_BONUS':
-      return 'Mana cash bonus'
+      return 'Sweepcash bonus'
     case 'KYC_BONUS':
       return 'ID verification bonus'
     default:
@@ -599,6 +602,8 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'SIGNUP_BONUS':
     case 'KYC_BONUS':
       return 'New user bonuses'
+    case 'REFERRAL':
+      return 'Quests'
     case 'QUEST_REWARD':
       return 'Quests'
     case 'CONTRACT_UNDO_PRODUCE_SPICE':

@@ -212,7 +212,7 @@ function ContractSmolView(props: {
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
-  const shareUrl = getShareUrl(contract, undefined)
+  const shareUrl = getShareUrl(contract)
 
   const showMultiChart = isMulti && !!props.multiPoints
 

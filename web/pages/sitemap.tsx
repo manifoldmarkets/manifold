@@ -17,7 +17,6 @@ import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-co
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { Footer } from 'web/components/footer'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -214,7 +213,6 @@ export default function AboutPage() {
           </div>
         </div>
       </Col>
-      <Footer />
     </Page>
   )
 }

@@ -8,6 +8,7 @@ import { User } from 'common/user'
 import { formatMoneyUSD, formatPercent } from 'common/util/format'
 import { useState } from 'react'
 import { IoIosWarning } from 'react-icons/io'
+import { capitalize } from 'lodash'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { CoinNumber } from '../widgets/coin-number'
@@ -50,7 +51,7 @@ export function CashoutLimitWarning(props: {
 
           <Col className="gap-1">
             <div className="text-ink-600 font-semibold">
-              {SWEEPIES_NAME} Redemption
+              {capitalize(SWEEPIES_NAME)} Redemption
             </div>
             <span>
               <CoinNumber

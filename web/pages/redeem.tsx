@@ -1,14 +1,7 @@
 import clsx from 'clsx'
 import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
-import { SWEEPIES_NAME, TRADED_TERM } from 'common/envs/constants'
+import { SWEEPIES_NAME } from 'common/envs/constants'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
-import {
-  ageBlocked,
-  getVerificationStatus,
-  locationBlocked,
-  PROMPT_VERIFICATION_MESSAGES,
-  USER_BLOCKED_MESSAGE,
-} from 'common/user'
 import { formatSweepies, formatSweepsToUSD } from 'common/util/format'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -21,7 +14,10 @@ import {
   buttonClass,
 } from 'web/components/buttons/button'
 import { CashToManaForm } from 'web/components/cashout/cash-to-mana'
-import { SelectCashoutOptions } from 'web/components/cashout/select-cashout-options'
+import {
+  CashoutOptionsExplainer,
+  SelectCashoutOptions,
+} from 'web/components/cashout/select-cashout-options'
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { UploadDocuments } from 'web/components/gidx/upload-document'
 import { AmountInput } from 'web/components/widgets/amount-input'
@@ -40,13 +36,22 @@ import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
 import { capitalize } from 'lodash'
-import { useKYCGiftAmount } from 'web/components/twomba/toggle-verify-callout'
+import { useKYCGiftAmount } from 'web/components/twomba/sweep-verify-section'
 import {
   Divider,
   InputTitle,
 } from 'web/components/gidx/register-component-helpers'
 import { UsOnlyDisclaimer } from 'web/components/twomba/us-only-disclaimer'
 import { useEvent } from 'web/hooks/use-event'
+import {
+  ageBlocked,
+  fraudSession,
+  getVerificationStatus,
+  identityBlocked,
+  locationBlocked,
+  PROMPT_USER_VERIFICATION_MESSAGES,
+} from 'common/gidx/user'
+import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -62,46 +67,9 @@ type MoneyCashoutPagesType =
 
 type ManaCashoutPagesType = 'custom-mana'
 
-function SweepiesStats(props: {
-  redeemableCash: number
-  cashBalance: number
-  className?: string
-}) {
-  const { redeemableCash, cashBalance, className } = props
-  return (
-    <Row className="w-full max-w-lg gap-4 text-2xl md:text-3xl">
-      <Col className={clsx('w-1/2 items-start', className)}>
-        <div className="text-ink-500 whitespace-nowrap text-sm">
-          Redeemable
-          <span>
-            <InfoTooltip
-              text={`Redeemable ${SWEEPIES_NAME} are obtained when questions you've ${TRADED_TERM} ${SWEEPIES_NAME} on resolve`}
-              size={'sm'}
-              className=" ml-0.5"
-            />
-          </span>
-        </div>
-        <CoinNumber
-          amount={redeemableCash}
-          className={'font-bold'}
-          coinType={'sweepies'}
-        />
-      </Col>
-      <div className="bg-ink-300 mb-4 mt-1 w-[1px]" />
-      <Col className={clsx('w-1/2 items-start', className)}>
-        <div className="text-ink-500 whitespace-nowrap text-sm">Total</div>
-        <CoinNumber
-          amount={cashBalance}
-          className={'text-ink-500 font-bold'}
-          coinType={'sweepies'}
-        />
-      </Col>
-    </Row>
-  )
-}
-
-const CashoutPage = () => {
+export default function CashoutPage() {
   const user = useUser()
+  const privateUser = usePrivateUser()
   const router = useRouter()
   const [page, setPage] = useState<CashoutPagesType>('select-cashout-method')
   const [NameOnAccount, setNameOnAccount] = useState('')
@@ -149,6 +117,12 @@ const CashoutPage = () => {
     (redeemable?.redeemablePrizeCash ?? 0) - completedCashout
 
   const roundedRedeemableCash = Math.floor(redeemableCash * 100) / 100
+  const {
+    requestLocationThenFetchMonitorStatus,
+    loading: loadingMonitorStatus,
+    monitorStatusMessage,
+    monitorStatus,
+  } = useMonitorStatus(false, user)
 
   const getCashoutSession = async (DeviceGPS: GPSData) => {
     setError(undefined)
@@ -231,35 +205,62 @@ const CashoutPage = () => {
     getCashoutSession(data)
   })
 
-  const privateUser = usePrivateUser()
-
   if (!user || !privateUser) {
-    return
+    return (
+      <Page trackPageView="signed-out redemptions page">
+        <Col className="bg-canvas-0 mx-auto max-w-lg gap-4 px-6 py-4">
+          <Row className="w-full justify-end">
+            <UsOnlyDisclaimer />
+          </Row>
+          <h1 className="text-ink-1000 flex w-full justify-center text-3xl">
+            Redeem {SWEEPIES_NAME}
+          </h1>
+          {/* TODO: some explanatory label here would help prevent layout shift as your user loads */}
+
+          {/* <div className="text-ink-700">
+            Prizes you can win by playing in our sweepstakes questions! Must be
+            a US Resident. 18+ only.
+          </div> */}
+          <CashoutOptionsExplainer />
+        </Col>
+      </Page>
+    )
   }
 
-  const { status, message } = getVerificationStatus(user)
+  const { status, message } = getVerificationStatus(user, privateUser)
 
-  const isLocationBlocked = locationBlocked(user, privateUser)
-  const isAgeBlocked = ageBlocked(user, privateUser)
-
-  if (status !== 'success' || isLocationBlocked || isAgeBlocked) {
+  if (status !== 'success') {
     return (
       <Page trackPageView={'redeem sweeps page'}>
         <Col className="bg-canvas-0 mx-auto max-w-lg gap-4 px-6 py-4">
           <Row className="w-full justify-end">
             <UsOnlyDisclaimer />
           </Row>
-          {isLocationBlocked ? (
-            <Row className="items-center gap-4">
-              <LocationBlockedIcon height={16} className="fill-red-500" />
-              <Col className="gap-2">
-                <div className="text-2xl">Your location is blocked!</div>
-                <p className="text-ink-700 text-sm">
-                  You are unable to redeem at the moment.
-                </p>
-              </Col>
-            </Row>
-          ) : isAgeBlocked ? (
+          {locationBlocked(user, privateUser) ? (
+            <Col>
+              <Row className="items-center gap-4">
+                <LocationBlockedIcon height={16} className="fill-red-500" />
+                <Col className="gap-2">
+                  <div className="text-2xl">Your location is blocked!</div>
+                  <p className="text-ink-700 text-sm">
+                    You are unable to redeem at the moment.
+                  </p>
+                </Col>
+              </Row>
+              <Button
+                color={'indigo-outline'}
+                loading={loadingMonitorStatus}
+                disabled={loadingMonitorStatus}
+                onClick={() => requestLocationThenFetchMonitorStatus()}
+                className={'mt-2 w-full'}
+              >
+                Refresh status
+              </Button>
+              {monitorStatus === 'error' && (
+                <Row className={'text-error'}>{monitorStatusMessage}</Row>
+              )}
+            </Col>
+          ) : ageBlocked(user, privateUser) ? (
             <Row className="items-center gap-4">
               <RiUserForbidLine className="h-16 w-16 shrink-0 fill-red-500" />
               <Col className="gap-2">
@@ -269,7 +270,7 @@ const CashoutPage = () => {
                 </p>
               </Col>
             </Row>
-          ) : PROMPT_VERIFICATION_MESSAGES.includes(message) ? (
+          ) : PROMPT_USER_VERIFICATION_MESSAGES.includes(message) ? (
             <Col className="mb-4 gap-4">
               <Row className="w-full items-center gap-4">
                 <RegisterIcon
@@ -311,13 +312,36 @@ const CashoutPage = () => {
                 </div>
               </Col>
             </Col>
-          ) : message == USER_BLOCKED_MESSAGE ? (
+          ) : fraudSession(user, privateUser) ? (
+            <Row className="items-center gap-4">
+              <MdOutlineNotInterested className="hidden h-16 w-16 fill-red-500 sm:inline" />
+              <Col className="gap-2">
+                <div className="text-2xl">Suspicious activity detected</div>
+                <p className="text-ink-700 text-sm">
+                  Your session is marked as possible fraud, please turn off VPN
+                  if using.
+                </p>
+                <Button
+                  color={'indigo-outline'}
+                  loading={loadingMonitorStatus}
+                  disabled={loadingMonitorStatus}
+                  onClick={() => requestLocationThenFetchMonitorStatus()}
+                  className={'mt-2 w-full'}
+                >
+                  Refresh status
+                </Button>
+                {monitorStatus === 'error' && (
+                  <Row className={'text-error'}>{monitorStatusMessage}</Row>
+                )}
+              </Col>
+            </Row>
+          ) : identityBlocked(user, privateUser) ? (
             <Row className="items-center gap-4">
               <RiUserForbidLine className="hidden h-16 w-16 fill-red-500 sm:inline" />
               <Col className="gap-2">
-                <div className="text-2xl">Your verification failed</div>
+                <div className="text-2xl">Your identity is blocked</div>
                 <p className="text-ink-700 text-sm">
-                  You are unable to redeem at the moment.
+                  You cannot participate in sweepstakes market.
                 </p>
               </Col>
             </Row>
@@ -332,13 +356,11 @@ const CashoutPage = () => {
               </Col>
             </Row>
           )}
-          {(isLocationBlocked || isAgeBlocked) && (
-            <SweepiesStats
-              redeemableCash={redeemableCash}
-              cashBalance={user.cashBalance}
-              className="text-ink-700 mb-4"
-            />
-          )}
+          <SweepiesStats
+            redeemableCash={redeemableCash}
+            cashBalance={user.cashBalance}
+            className="text-ink-700 mb-4"
+          />
           <SelectCashoutOptions
             redeemForUSDPageName={mustUploadDocs ? 'documents' : 'location'}
             user={user}
@@ -360,9 +382,9 @@ const CashoutPage = () => {
         <Row className="w-full justify-end">
           <UsOnlyDisclaimer />
         </Row>
-        <Row className="text-ink-1000 w-full justify-center text-3xl">
+        <h1 className="text-ink-1000 flex w-full justify-center text-3xl">
           Redeem {SWEEPIES_NAME}
-        </Row>
+        </h1>
         <SweepiesStats
           redeemableCash={redeemableCash}
           cashBalance={user.cashBalance}
@@ -560,4 +582,40 @@ const CashoutPage = () => {
   )
 }
 
-export default CashoutPage
+function SweepiesStats(props: {
+  redeemableCash: number
+  cashBalance: number
+  className?: string
+}) {
+  const { redeemableCash, cashBalance, className } = props
+  return (
+    <Row className="w-full max-w-lg gap-4 text-2xl md:text-3xl">
+      <Col className={clsx('w-1/2 items-start', className)}>
+        <div className="text-ink-500 whitespace-nowrap text-sm">
+          Redeemable
+          <span>
+            <InfoTooltip
+              text={`Only ${SWEEPIES_NAME} that you won from sweepstakes questions resolving`}
+              size={'sm'}
+              className=" ml-0.5"
+            />
+          </span>
+        </div>
+        <CoinNumber
+          amount={redeemableCash}
+          className={'font-bold'}
+          coinType={'sweepies'}
+        />
+      </Col>
+      <div className="bg-ink-300 mb-4 mt-1 w-[1px]" />
+      <Col className={clsx('w-1/2 items-start', className)}>
+        <div className="text-ink-500 whitespace-nowrap text-sm">Total</div>
+        <CoinNumber
+          amount={cashBalance}
+          className={'text-ink-500 font-bold'}
+          coinType={'sweepies'}
+        />
+      </Col>
+    </Row>
+  )
+}

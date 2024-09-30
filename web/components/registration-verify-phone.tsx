@@ -9,6 +9,7 @@ import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { PhoneIcon } from 'web/public/custom-components/phoneIcon'
 import { BottomRow } from './gidx/register-component-helpers'
+import { Row } from './layout/row'
 
 export function RegistrationVerifyPhone(props: {
   cancel: () => void
@@ -68,12 +69,19 @@ export function RegistrationVerifyPhone(props: {
         <>
           <PhoneIcon height={40} className="fill-ink-700 mx-auto" />
           <span className={'mx-auto text-2xl'}>Verify your phone number</span>
+          <Row className="text-ink-700 pl-5 text-sm">
+            We won't use your phone number for anything other than verification.
+          </Row>
           <PhoneInput
             defaultCountry={'us'}
             value={phoneNumber}
             onChange={(phone) => setPhoneNumber(phone)}
             placeholder={'Phone Number'}
-            className={'mx-auto'}
+            className={'mx-auto mb-1'}
+            inputClassName="!bg-canvas-0 !border-ink-300 !text-ink-1000 !text-sm !px-4 !py-6"
+            countrySelectorStyleProps={{
+              buttonClassName: '!bg-transparent !border-ink-300 !px-2 !py-6',
+            }}
           />
           <BottomRow>
             <Button color={'gray-white'} onClick={cancel}>
@@ -94,7 +102,7 @@ export function RegistrationVerifyPhone(props: {
           <PhoneIcon height={40} className="fill-ink-700 mx-auto" />
           <span className={'mx-auto text-2xl'}>Enter verification code</span>
           <Input
-            className={'mx-auto w-36 text-base'}
+            className={'mx-auto mb-1.5 w-36 text-base'}
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
             placeholder="123456"

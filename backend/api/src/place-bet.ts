@@ -31,11 +31,11 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import {
   BANNED_TRADING_USER_IDS,
+  BOT_USERNAMES,
   isAdminId,
-  TWOMBA_ENABLED,
+  PARTNER_USER_IDS,
 } from 'common/envs/constants'
 import * as crypto from 'crypto'
-import { formatMoneyWithDecimals } from 'common/util/format'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -62,6 +62,12 @@ import { updateContract } from 'shared/supabase/contracts'
 import { filterDefined } from 'common/util/array'
 import { convertUser } from 'common/supabase/users'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import {
+  UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
+  UNIQUE_BETTOR_BONUS_AMOUNT,
+} from 'common/economy'
+import { UniqueBettorBonusTxn } from 'common/txn'
+import { insertTxn } from 'shared/txn/run-txn'
 import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
 import { MarginalBet } from 'common/calculate-metrics'
 
@@ -229,6 +235,7 @@ export const placeBetMain = async (
     makers,
     betGroupId,
     streakIncremented,
+    bonuxTxn,
   } = result
 
   log(`Main transaction finished - auth ${uid}.`)
@@ -241,7 +248,8 @@ export const placeBetMain = async (
       user,
       allOrdersToCancel,
       makers,
-      streakIncremented
+      streakIncremented,
+      bonuxTxn
     )
   }
 
@@ -519,7 +527,8 @@ export const executeNewBetResult = async (
   isApi: boolean,
   replyToCommentId?: string,
   betGroupId?: string,
-  deterministic?: boolean
+  deterministic?: boolean,
+  firstBetInMultiBet?: boolean
 ) => {
   const allOrdersToCancel: LimitBet[] = []
   const fullBets: Bet[] = []
@@ -583,27 +592,10 @@ export const executeNewBetResult = async (
     newBet.createdTime
   )
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
-
-  if (!TWOMBA_ENABLED) {
-    const totalCreatorFee =
-      newBet.fees.creatorFee +
-      sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
-    if (totalCreatorFee !== 0) {
-      await incrementBalance(pgTrans, contract.creatorId, {
-        balance: totalCreatorFee,
-        totalDeposits: totalCreatorFee,
-      })
-
-      log(
-        `Updated creator ${
-          contract.creatorUsername
-        } with fee gain ${formatMoneyWithDecimals(totalCreatorFee)} - ${
-          contract.creatorId
-        }.`
-      )
-    }
-  }
-
+  const bonuxTxn =
+    contract.outcomeType !== 'NUMBER' || firstBetInMultiBet
+      ? await giveUniqueBettorBonus(pgTrans, contract, user, newBet)
+      : undefined
   const answerUpdates: {
     id: string
     poolYes: number
@@ -710,6 +702,7 @@ export const executeNewBetResult = async (
     user,
     betGroupId,
     streakIncremented,
+    bonuxTxn,
   }
 }
 
@@ -852,4 +845,93 @@ export const getMakerIdsFromBetResult = (result: NewBetResult) => {
   ].map((o) => o.userId)
 
   return uniq([...makerUserIds, ...cancelledUserIds])
+}
+
+export const giveUniqueBettorBonus = async (
+  tx: SupabaseTransaction,
+  contract: Contract,
+  bettor: User,
+  bet: CandidateBet
+) => {
+  const { answerId, isRedemption, isApi } = bet
+
+  const isBot = BOT_USERNAMES.includes(bettor.username)
+  const isUnlisted = contract.visibility === 'unlisted'
+
+  const answer =
+    answerId && 'answers' in contract
+      ? (contract.answers as Answer[]).find((a) => a.id == answerId)
+      : undefined
+  const answerCreatorId = answer?.userId
+  const creatorId = answerCreatorId ?? contract.creatorId
+  const isCreator = bettor.id == creatorId
+  const isUnfilledLimitOrder =
+    bet.limitProb !== undefined && (!bet.fills || bet.fills.length === 0)
+
+  const isPartner =
+    PARTNER_USER_IDS.includes(contract.creatorId) &&
+    // Require the contract creator to also be the answer creator for real-money bonus.
+    creatorId === contract.creatorId
+
+  const isCashContract = contract.token === 'CASH'
+
+  if (
+    isCreator ||
+    isBot ||
+    isUnlisted ||
+    isRedemption ||
+    isUnfilledLimitOrder ||
+    isApi ||
+    isCashContract
+  )
+    return undefined
+
+  const userBetPreviously = await tx.oneOrNone(
+    `select 1 from contract_bets
+      where contract_id = $1 
+      and user_id = $2
+      and ($3 is null or answer_id = $3)
+      and not is_redemption
+      and created_time < $4
+      limit 1`,
+    [
+      contract.id,
+      bettor.id,
+      answerId ?? null,
+      new Date(bet.createdTime).toISOString(),
+    ]
+  )
+  if (userBetPreviously) return undefined
+
+  // ian: removed the diminishing bonuses, but we could add them back via contract.uniqueBettorCount
+  const bonusAmount =
+    contract.mechanism === 'cpmm-multi-1'
+      ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
+      : UNIQUE_BETTOR_BONUS_AMOUNT
+
+  const bonusTxnData = removeUndefinedProps({
+    contractId: contract.id,
+    uniqueNewBettorId: bettor.id,
+    answerId,
+    isPartner,
+  })
+
+  const bonusTxn: Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'> = {
+    fromType: 'BANK',
+    fromId: 'BANK',
+    toId: creatorId,
+    toType: 'USER',
+    amount: bonusAmount,
+    token: 'M$',
+    category: 'UNIQUE_BETTOR_BONUS',
+    data: bonusTxnData,
+  } as const
+  await incrementBalance(tx, bonusTxn.toId, {
+    balance: bonusAmount,
+    totalDeposits: bonusAmount,
+  })
+  const txn = await insertTxn(tx, bonusTxn)
+
+  log(`Bonus txn for user: ${contract.creatorId} completed:`, txn.id)
+  return txn as UniqueBettorBonusTxn
 }

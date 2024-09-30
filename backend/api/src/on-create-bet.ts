@@ -24,7 +24,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
-import { BOT_USERNAMES, TWOMBA_ENABLED } from 'common/envs/constants'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
@@ -38,7 +38,7 @@ import {
   SMALL_UNIQUE_BETTOR_LIQUIDITY,
   UNIQUE_BETTOR_LIQUIDITY,
 } from 'common/economy'
-import { BettingStreakBonusTxn } from 'common/txn'
+import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { updateContract } from 'shared/supabase/contracts'
 import { Answer } from 'common/answer'
@@ -59,7 +59,8 @@ export const onCreateBets = async (
   originalBettor: User,
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined,
-  streakIncremented: boolean
+  streakIncremented: boolean,
+  txn: UniqueBettorBonusTxn | undefined
 ) => {
   const pg = createSupabaseDirectClient()
   broadcastNewBets(contract.id, contract.visibility, bets)
@@ -124,12 +125,14 @@ export const onCreateBets = async (
     replyBet &&
       (await handleBetReplyToComment(replyBet, contract, originalBettor, pg)),
     followContractInternal(pg, contract.id, true, originalBettor.id),
-    sendUniqueBettorNotificationToCreator(
-      contract,
-      originalBettor,
-      earliestBet,
-      nonRedemptionNonApiBets
-    ),
+    txn &&
+      sendUniqueBettorNotificationToCreator(
+        contract,
+        originalBettor,
+        earliestBet,
+        txn,
+        nonRedemptionNonApiBets
+      ),
     addToLeagueIfNotInOne(pg, originalBettor.id),
   ])
 }
@@ -394,12 +397,10 @@ export const sendUniqueBettorNotificationToCreator = async (
   contract: Contract,
   bettor: User,
   bet: Bet,
+  txn: UniqueBettorBonusTxn,
   usersNonRedemptionBets?: Bet[]
 ) => {
-  const { answerId, isRedemption, isApi } = bet
-  const pg = createSupabaseDirectClient()
-
-  const isBot = BOT_USERNAMES.includes(bettor.username)
+  const { answerId } = bet
 
   const answer =
     answerId && 'answers' in contract
@@ -407,28 +408,13 @@ export const sendUniqueBettorNotificationToCreator = async (
       : undefined
   const answerCreatorId = answer?.userId
   const creatorId = answerCreatorId ?? contract.creatorId
-  const isCreator = bettor.id == creatorId
-
-  if (isCreator || isBot || isRedemption || isApi) return
-
-  const previousBet = await pg.oneOrNone(
-    `select bet_id from contract_bets
-        where contract_id = $1
-          and ($2 is null or answer_id = $2)
-          and user_id = $3
-          and created_time < $4
-          and is_redemption = false
-        limit 1`,
-    [contract.id, answerId, bettor.id, new Date(bet.createdTime).toISOString()]
-  )
-  // Check previous bet.
-  if (previousBet) return
 
   await createNewBettorNotification(
     creatorId,
     bettor,
     contract,
     bet,
+    txn,
     usersNonRedemptionBets
   )
 }

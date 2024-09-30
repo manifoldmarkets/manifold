@@ -4,7 +4,6 @@ import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
 import { USElectionsPage } from 'web/components/elections-page'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 
@@ -23,7 +22,6 @@ export async function getStaticProps() {
 
 export default function Elections(props: ElectionsPageProps) {
   const user = useUser()
-  useSaveReferral(user)
   // mark US prez contract as seen to ensure US Politics group is auto-selected during onboarding
   useSaveContractVisitsLocally(user === null, 'ikSUiiNS8MwAI75RwEJf')
   useSaveCampaign()

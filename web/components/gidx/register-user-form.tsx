@@ -1,14 +1,7 @@
 import { Col } from 'web/components/layout/col'
 import { Input } from 'web/components/widgets/input'
 import { Button, buttonClass } from 'web/components/buttons/button'
-import {
-  ageBlocked,
-  identityBlocked,
-  locationBlocked,
-  PrivateUser,
-  User,
-} from 'common/user'
-import { CountryCodeSelector } from 'web/components/country-code-selector'
+import { PrivateUser, User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useEffect, useState } from 'react'
@@ -40,6 +33,16 @@ import { LocationBlockedIcon } from 'web/public/custom-components/locationBlocke
 import { RiUserForbidLine } from 'react-icons/ri'
 import { PiClockCountdown } from 'react-icons/pi'
 import { track } from 'web/lib/service/analytics'
+import {
+  ageBlocked,
+  documentPending,
+  fraudSession,
+  identityBlocked,
+  locationBlocked,
+} from 'common/gidx/user'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { CheckCircleIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 
 export const RegisterUserForm = (props: {
   user: User
@@ -50,7 +53,9 @@ export const RegisterUserForm = (props: {
   const router = useRouter()
   const { redirect } = router.query
   const [page, setPage] = useState(
-    user.idVerified || user.kycDocumentStatus === 'pending'
+    user.idVerified ||
+      user.kycDocumentStatus === 'pending' ||
+      user.kycDocumentStatus === 'fail'
       ? 'final'
       : (redirect === 'checkout' || redirect === 'redeem') &&
         !user.verifiedPhone
@@ -84,11 +89,28 @@ export const RegisterUserForm = (props: {
     'gidx-registration-identity-errors'
   )
 
+  const userSuccesfullyVerified =
+    user.idVerified &&
+    !documentPending(user, privateUser) &&
+    !identityBlocked(user, privateUser) &&
+    !ageBlocked(user, privateUser) &&
+    !locationBlocked(user, privateUser) &&
+    !fraudSession(user, privateUser) &&
+    page === 'final'
+  const TIME_TO_REDIRECT = 4000
+
+  useEffect(() => {
+    if (userSuccesfullyVerified) {
+      setTimeout(() => {
+        router.push('/checkout')
+      }, TIME_TO_REDIRECT)
+    }
+  }, [userSuccesfullyVerified, router])
+
   const [userInfo, setUserInfo] = usePersistentInMemoryState<{
     FirstName?: string
     LastName?: string
     DateOfBirth?: string
-    CitizenshipCountryCode: string
     AddressLine1?: string
     AddressLine2?: string
     City?: string
@@ -96,6 +118,7 @@ export const RegisterUserForm = (props: {
     PostalCode?: string
     DeviceGPS?: GPSData
     EmailAddress?: string
+    ReferralCode?: string
   }>(
     ENABLE_FAKE_CUSTOMER
       ? {
@@ -105,7 +128,6 @@ export const RegisterUserForm = (props: {
           FirstName: user.name.split(' ')[0],
           LastName: user.name.split(' ')[1],
           DateOfBirth: undefined,
-          CitizenshipCountryCode: 'US',
           EmailAddress: privateUser.email,
         },
     'gidx-registration-user-info'
@@ -114,7 +136,6 @@ export const RegisterUserForm = (props: {
   useEffect(() => {
     track('register user gidx page change', {
       page,
-      citizenshipCountryCode: userInfo.CitizenshipCountryCode,
     })
   }, [page])
 
@@ -160,20 +181,75 @@ export const RegisterUserForm = (props: {
     // Identity verification succeeded
     setPage('final')
   }
+  const [canContinue, setCanContinue] = useState(false)
 
   if (page === 'intro') {
     return (
       <>
         <RegisterIcon height={40} className="fill-ink-700 mx-auto" />
         <div className={'mx-auto text-2xl'}>Identity Verification</div>
+        <Col className="text-ink-700">
+          <Row className="p-4">
+            <Col>
+              <Row className="items-center">
+                <span className="mr-2 text-indigo-600">
+                  <CheckCircleIcon className="h-6 w-6" />
+                </span>
+                <span>
+                  To participate in sweepstakes and comply with U.S. laws, you
+                  must verify your identity.
+                </span>
+              </Row>
+            </Col>
+          </Row>
+          <Row className="p-4">
+            <Col>
+              <Row className="items-center">
+                <span className="mr-2 text-indigo-600">
+                  <CheckCircleIcon className="h-6 w-6" />
+                </span>
+                <span>
+                  Manifold uses a verification platform to validate your name,
+                  phone number, birthday, and address.
+                </span>
+              </Row>
+            </Col>
+          </Row>
+          <Row className="p-4">
+            <Col>
+              <Row className="items-center">
+                <span className="mr-2 text-indigo-600">
+                  <CheckCircleIcon className="h-6 w-6" />
+                </span>
+                <span>
+                  Your info is confidential, securely protected, and used solely
+                  for regulatory purposes.
+                </span>
+              </Row>
+            </Col>
+          </Row>
+        </Col>
         <span className="text-ink-700">
-          To use sweepstakes coins, you must verify your identity.
+          <input
+            type="checkbox"
+            checked={canContinue}
+            onChange={(e) => setCanContinue(e.target.checked)}
+            className="bg-canvas-0 mb-1 mr-2"
+          />
+          <span className="">
+            I am a resident of the United States (excluding DE, ID, MI, and WA)
+            and over 18 years old.
+          </span>
         </span>
         <BottomRow>
-          <Button color={'gray-white'} onClick={router.back}>
-            Back
+          <Button color={'gray-white'} onClick={() => router.push('/home')}>
+            Cancel
           </Button>
-          <Button color={'indigo'} onClick={() => setPage('phone')}>
+          <Button
+            color={'indigo'}
+            onClick={() => setPage('phone')}
+            disabled={!canContinue}
+          >
             Start verification
           </Button>
         </BottomRow>
@@ -219,7 +295,6 @@ export const RegisterUserForm = (props: {
           <Col className={sectionClass}>
             <InputTitle>First Name</InputTitle>
             <Input
-              placeholder={'Your first name'}
               value={userInfo.FirstName}
               type={'text'}
               onChange={(e) =>
@@ -231,7 +306,6 @@ export const RegisterUserForm = (props: {
           <Col className={sectionClass}>
             <InputTitle>Last Name</InputTitle>
             <Input
-              placeholder={'Your last name'}
               value={userInfo.LastName}
               type={'text'}
               onChange={(e) =>
@@ -243,7 +317,7 @@ export const RegisterUserForm = (props: {
         <Col className={sectionClass}>
           <InputTitle>Date of Birth</InputTitle>
           <Input
-            className={'w-full'}
+            className={'w-full sm:w-[50%]'}
             type={'date'}
             value={
               userInfo.DateOfBirth && userInfo.DateOfBirth.includes('/')
@@ -258,7 +332,6 @@ export const RegisterUserForm = (props: {
         <Col className={sectionClass}>
           <InputTitle>Email Address</InputTitle>
           <Input
-            placeholder={'Your email address'}
             value={userInfo.EmailAddress}
             type={'text'}
             onChange={(e) =>
@@ -268,7 +341,7 @@ export const RegisterUserForm = (props: {
         </Col>
 
         <Divider />
-
+        {/* 
         <Col className={sectionClass}>
           <InputTitle>Citizenship Country</InputTitle>
           <CountryCodeSelector
@@ -277,12 +350,11 @@ export const RegisterUserForm = (props: {
               setUserInfo({ ...userInfo, CitizenshipCountryCode: val })
             }
           />
-        </Col>
+        </Col> */}
 
         <Col className={sectionClass}>
           <InputTitle>Address Line 1</InputTitle>
           <Input
-            placeholder={'Your address'}
             value={userInfo.AddressLine1}
             type={'text'}
             onChange={(e) =>
@@ -290,31 +362,33 @@ export const RegisterUserForm = (props: {
             }
           />
         </Col>
-        <Col className={sectionClass}>
-          <InputTitle>Address Line 2</InputTitle>
-          <Input
-            placeholder={'Suite, apartment, etc. (optional)'}
-            value={userInfo.AddressLine2}
-            type={'text'}
-            onChange={(e) =>
-              setUserInfo({ ...userInfo, AddressLine2: e.target.value })
-            }
-          />
+        <Col className={'gap-4 sm:flex-row '}>
+          <Col className={clsx(sectionClass, 'sm:w-[50%]')}>
+            <InputTitle>Address Line 2</InputTitle>
+            <Input
+              placeholder={'Unit #, etc. (optional)'}
+              value={userInfo.AddressLine2}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, AddressLine2: e.target.value })
+              }
+            />
+          </Col>
+          <Col className={clsx(sectionClass, 'sm:w-[50%]')}>
+            <InputTitle>City</InputTitle>
+            <Input
+              value={userInfo.City}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, City: e.target.value })
+              }
+            />
+          </Col>
         </Col>
-        <Col className={sectionClass}>
-          <InputTitle>City</InputTitle>
-          <Input
-            placeholder={'Your city'}
-            value={userInfo.City}
-            type={'text'}
-            onChange={(e) => setUserInfo({ ...userInfo, City: e.target.value })}
-          />
-        </Col>
-        <div className={'flex flex-col gap-4 sm:flex-row'}>
-          <Col className={'w-full gap-0.5 sm:w-1/2'}>
+        <Row className={' gap-4'}>
+          <Col className={'w-1/2 gap-0.5'}>
             <InputTitle>State</InputTitle>
             <Input
-              placeholder={'Your state'}
               value={userInfo.StateCode}
               type={'text'}
               onChange={(e) =>
@@ -322,10 +396,9 @@ export const RegisterUserForm = (props: {
               }
             />
           </Col>
-          <Col className={'w-full gap-0.5 sm:w-1/2'}>
+          <Col className={'w-1/2 gap-0.5'}>
             <InputTitle>Postal Code</InputTitle>
             <Input
-              placeholder={'Your postal code'}
               value={userInfo.PostalCode}
               type={'text'}
               onChange={(e) =>
@@ -333,7 +406,19 @@ export const RegisterUserForm = (props: {
               }
             />
           </Col>
-        </div>
+        </Row>
+        <Col className={'w-1/2 gap-0.5'}>
+          <InputTitle>Referral Code</InputTitle>
+          <Input
+            placeholder={'R2I3E (optional)'}
+            className={'w-full '}
+            value={userInfo.ReferralCode}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, ReferralCode: e.target.value })
+            }
+          />
+        </Col>
         {error && (
           <Col className={'text-error'}>
             {error}
@@ -386,7 +471,7 @@ export const RegisterUserForm = (props: {
     )
   }
 
-  if (user.kycDocumentStatus === 'pending') {
+  if (documentPending(user, privateUser)) {
     return (
       <>
         <PiClockCountdown className="fill-ink-700 mx-auto h-40 w-40" />
@@ -414,13 +499,16 @@ export const RegisterUserForm = (props: {
         </BottomRow>
       </>
     )
-  }
-
-  if (identityBlocked(user, privateUser) || ageBlocked(user, privateUser)) {
+  } else if (
+    identityBlocked(user, privateUser) ||
+    ageBlocked(user, privateUser)
+  ) {
     return (
       <>
         <RiUserForbidLine className="fill-ink-700 mx-auto h-40 w-40" />
-        <span className={'mx-auto text-2xl'}>Blocked identity</span>
+        <span className={'mx-auto text-2xl'}>
+          {identityBlocked(user, privateUser) ? 'Blocked identity' : 'Underage'}
+        </span>
         <span className="text-ink-700">
           We verified your identity! But, you're blocked. Unfortunately, this
           means you can't use our sweepstakes markets.
@@ -449,9 +537,30 @@ export const RegisterUserForm = (props: {
         </Row>
       </>
     )
+  } else if (fraudSession(user, privateUser)) {
+    return (
+      <>
+        <div className="mx-auto text-[130px] ">🎉</div>
+        <span className={'mx-auto text-2xl'}>
+          Identity Verification Complete!
+        </span>
+        <span className="text-ink-700">
+          Your session is marked as possible fraud, however. Please turn off VPN
+          if using
+        </span>
+        <Row className="mx-auto">
+          <Link className={buttonClass('md', 'indigo')} href={'/home'}>
+            Go home
+          </Link>
+        </Row>
+      </>
+    )
   }
-
-  if (user.sweepstakesVerified === false || user.kycDocumentStatus === 'fail') {
+  if (
+    !user.idVerified &&
+    (user.kycDocumentStatus === 'fail' ||
+      user.kycDocumentStatus === 'await-documents')
+  ) {
     return (
       <>
         <DocumentUploadIcon
@@ -487,18 +596,9 @@ export const RegisterUserForm = (props: {
         />{' '}
         to get started.
       </span>
-      <div className="mx-auto">
-        {/*// TODO:  auto-redirect rather than make them click this button*/}
-        {redirect === 'checkout' ? (
-          <Link className={buttonClass('md', 'indigo')} href={'/checkout'}>
-            Get mana
-          </Link>
-        ) : (
-          <Link className={buttonClass('md', 'indigo')} href={'/home'}>
-            Done
-          </Link>
-        )}
-      </div>
+      <Row className="text-ink-700 mx-auto items-center gap-2">
+        <LoadingIndicator /> Exiting through the gift shop...
+      </Row>
     </>
   )
 }

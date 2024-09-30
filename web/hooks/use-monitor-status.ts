@@ -7,8 +7,6 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { useEvent } from 'web/hooks/use-event'
 import { useLocation } from './use-location'
 
-//
-
 export const useMonitorStatus = (
   polling: boolean,
   user: User | undefined | null,
@@ -45,7 +43,12 @@ export const useMonitorStatus = (
         requestLocation()
       }
     },
-    onFinishLocationRequest
+    (location?: GPSData) => {
+      if (location) {
+        fetchMonitorStatusWithLocation(location)
+      }
+      onFinishLocationRequest?.(location)
+    }
   )
 
   const fetchMonitorStatus = useEvent(async (location?: GPSData) => {
@@ -67,37 +70,25 @@ export const useMonitorStatus = (
     } else return fetchMonitorStatusWithLocation(location)
   })
 
-  const fetchMonitorStatusWithLocation = useEvent(
-    async (location: GPSData | undefined) => {
-      if (!location) {
-        setMonitorStatus('error')
-        setMonitorStatusMessage(
-          'Location not available, please enable and try again'
-        )
-        setLoading(false)
-        return {
-          status: 'error',
-          message: 'Location not available',
-        }
-      }
-      try {
-        const response = await api('get-monitor-status-gidx', {
-          DeviceGPS: location,
-        })
-        const { status, message } = response
-        setLoading(false)
-        setMonitorStatus(status)
-        setMonitorStatusMessage(message)
-        setLastApiCallTime(Date.now())
-        return response
-      } catch (error) {
-        setMonitorStatus('error')
-        setMonitorStatusMessage('Failed to fetch monitor status')
-        setLoading(false)
-        return { status: 'error', message: error }
-      }
+  const fetchMonitorStatusWithLocation = useEvent(async (location: GPSData) => {
+    try {
+      setLoading(true)
+      const response = await api('get-monitor-status-gidx', {
+        DeviceGPS: location,
+      })
+      const { status, message } = response
+      setLoading(false)
+      setMonitorStatus(status)
+      setMonitorStatusMessage(message)
+      setLastApiCallTime(Date.now())
+      return response
+    } catch (error) {
+      setMonitorStatus('error')
+      setMonitorStatusMessage('Failed to fetch monitor status')
+      setLoading(false)
+      return { status: 'error', message: error }
     }
-  )
+  })
 
   useEffect(() => {
     if (!polling || !user) return
@@ -118,6 +109,6 @@ export const useMonitorStatus = (
     monitorStatusMessage,
     fetchMonitorStatus,
     loading,
-    requestLocation,
+    requestLocationThenFetchMonitorStatus: requestLocation,
   }
 }

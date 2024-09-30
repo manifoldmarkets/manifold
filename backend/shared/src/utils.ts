@@ -1,5 +1,5 @@
 import { generateJSON } from '@tiptap/html'
-import { getCloudRunServiceUrl } from 'common//api/utils'
+import { APIError, getCloudRunServiceUrl } from 'common/api/utils'
 import { Contract, contractPath } from 'common/contract'
 import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
@@ -147,6 +147,27 @@ export const getUser = async (
     [userId],
     convertUser
   )
+}
+export const getUserAndPrivateUserOrThrow = async (
+  userId: string,
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) => {
+  const rows = await pg.multi(
+    `select * from users where id = $1 limit 1;
+           select * from private_users where id = $1 limit 1;`,
+    [userId]
+  )
+  const userRow = rows[0][0] as Row<'users'> | null
+  const privateUserRow = rows[1][0] as Row<'private_users'> | null
+
+  if (!userRow || !privateUserRow) {
+    throw new APIError(404, 'User or private user not found.')
+  }
+
+  return {
+    user: convertUser(userRow),
+    privateUser: convertPrivateUser(privateUserRow),
+  }
 }
 
 export const getUsers = async (

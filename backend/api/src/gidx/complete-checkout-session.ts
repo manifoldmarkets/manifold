@@ -5,6 +5,7 @@ import {
   CompleteSessionDirectCashierResponse,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
+import { introductoryTimeWindow } from 'common/user'
 import { getIp } from 'shared/analytics'
 import {
   getGIDXStandardParams,
@@ -20,8 +21,10 @@ import { getUser, LOCAL_DEV } from 'shared/utils'
 
 const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 
-const getPaymentAmountForWebPrice = (price: number) => {
-  const amount = PaymentAmountsGIDX.find((p) => p.priceInDollars === price)
+const getPaymentAmountForWebPriceDollars = (priceInDollars: number) => {
+  const amount = PaymentAmountsGIDX.find(
+    (p) => p.priceInDollars === priceInDollars
+  )
   if (!amount) {
     throw new APIError(400, 'Invalid price')
   }
@@ -44,9 +47,16 @@ export const completeCheckoutSession: APIHandler<
     PaymentAmount,
     MerchantTransactionID,
   } = props
-  const paymentAmount = getPaymentAmountForWebPrice(
+  const paymentAmount = getPaymentAmountForWebPriceDollars(
     PaymentAmount.priceInDollars
   )
+
+  if (paymentAmount.newUsersOnly) {
+    if (Date.now() > introductoryTimeWindow(user))
+      throw new APIError(403, 'New user purchase discount no longer offered.')
+    if (user.purchasedSweepcash)
+      throw new APIError(403, 'New user purchase discount only available once.')
+  }
 
   const { creditCard, Type, BillingAddress, NameOnAccount, SavePaymentMethod } =
     PaymentMethod
@@ -155,7 +165,7 @@ export const completeCheckoutSession: APIHandler<
   } else if (PaymentStatusCode === '3') {
     return {
       status: 'error',
-      message: 'Payment failed',
+      message: 'Payment failed, check your card information.',
       gidxMessage: PaymentStatusMessage,
     }
   } else if (PaymentStatusCode === '4') {
@@ -221,7 +231,7 @@ const sendCoins = async (
     amount: amount.bonusInDollars,
     token: 'CASH',
     category: 'CASH_BONUS',
-    description: `Bonus for mana purchase`,
+    description: `Free sweepcash bonus for purchasing mana.`,
   } as const
 
   await pg.tx(async (tx) => {
@@ -231,6 +241,7 @@ const sendCoins = async (
     }
     await updateUser(tx, userId, {
       purchasedMana: true,
+      purchasedSweepcash: isSweepsVerified,
     })
   })
 }

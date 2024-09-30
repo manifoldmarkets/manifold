@@ -48,10 +48,13 @@ import {
   CrystalTier,
   PlusTier,
   PremiumTier,
+  BasicTier,
 } from 'web/public/custom-components/tiers'
 import { LiteGroup } from 'common/group'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { useSweepstakes } from '../sweestakes-context'
+import { TwombaToggle } from '../twomba/twomba-toggle'
 
 export function ContractFilters(props: {
   className?: string
@@ -71,6 +74,8 @@ export function ContractFilters(props: {
     tf: topicFilter,
     sw: isSweepiesString,
   } = params
+  const isSweeps = isSweepiesString === '1'
+  const { setIsPlay } = useSweepstakes()
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -107,8 +112,9 @@ export function ContractFilters(props: {
   }
 
   const toggleSweepies = () => {
+    setIsPlay(isSweeps)
     updateParams({
-      sw: isSweepiesString == '1' ? '0' : '1',
+      sw: isSweeps ? '0' : '1',
     })
   }
 
@@ -148,27 +154,15 @@ export function ContractFilters(props: {
   }
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
-      <Carousel labelsParentClassName="-ml-1.5 gap-1 items-center">
-        <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
-          <FaSliders className="h-4 w-4" />
-        </IconButton>
+      <Carousel labelsParentClassName="gap-1 items-center">
         {TWOMBA_ENABLED && (
-          <FilterPill
-            selected={isSweepiesString === '1'}
-            onSelect={toggleSweepies}
-            type="sweepies"
-          >
-            <Row
-              className={clsx(
-                'items-center gap-1',
-                isSweepiesString != '1' ? 'opacity-50' : 'opacity-100'
-              )}
-            >
-              <SweepiesCoin />
-              Sweepstakes
-            </Row>
-          </FilterPill>
+          <TwombaToggle
+            sweepsEnabled={true}
+            isPlay={!isSweeps}
+            onClick={toggleSweepies}
+          />
         )}
+
         <Row className="bg-ink-200 dark:bg-ink-300 items-center rounded-full">
           <button
             key="score"
@@ -245,6 +239,9 @@ export function ContractFilters(props: {
             <Row className="items-center py-[3px]">
               {currentTiers.split('').map((tier, index) => {
                 if (tier === '1') {
+                  if (tiers[index] == 'basic') {
+                    return <BasicTier className="text-white" key={index} />
+                  }
                   if (tiers[index] == 'plus') {
                     return <PlusTier key={index} />
                   }
@@ -306,6 +303,9 @@ export function ContractFilters(props: {
             {getLabelFromValue(CONTRACT_TYPES, contractValue)}
           </FilterPill>
         ))}
+        <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
+          <FaSliders className="h-4 w-4" />
+        </IconButton>
       </Carousel>
       <FilterModal
         open={openFilterModal}

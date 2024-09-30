@@ -683,7 +683,8 @@ export const sendNewUniqueBettorsEmail = async (
   contract: Contract,
   totalPredictors: number,
   newPredictors: User[],
-  userBets: Dictionary<[Bet, ...Bet[]]>
+  userBets: Dictionary<[Bet, ...Bet[]]>,
+  bonusAmount: number
 ) => {
   const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
     privateUser,
@@ -710,6 +711,7 @@ export const sendNewUniqueBettorsEmail = async (
     totalPredictors: totalPredictors.toString(),
     marketTitle: contract.question,
     marketUrl: contractUrl(contract),
+    bonusString: bonusAmount.toString(),
     unsubscribeUrl,
     newPredictors: newPredictors.length.toString(),
   }
@@ -730,7 +732,7 @@ export const sendNewUniqueBettorsEmail = async (
     privateUser.email,
     subject,
     // This template accepts 5 unique bettors
-    'new-unique-bettors',
+    'new-unique-traders',
     templateData,
     {
       from: `Manifold <no-reply@manifold.markets>`,

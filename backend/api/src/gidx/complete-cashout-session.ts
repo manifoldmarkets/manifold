@@ -1,6 +1,7 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   CompleteSessionDirectCashierResponse,
+  PaymentMethod,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
 import {
@@ -117,7 +118,7 @@ export const completeCashoutSession: APIHandler<
   }
   if (PaymentStatusCode === '1') {
     // This should always return a '0' for pending, but just in case
-    await debitCoins(userId, manaCashAmount, cashierResponse)
+    await debitCoins(userId, manaCashAmount, cashierResponse, PaymentMethod)
     return {
       status: 'success',
       message: 'Payment successful',
@@ -154,7 +155,7 @@ export const completeCashoutSession: APIHandler<
       gidxMessage: PaymentStatusMessage,
     }
   } else if (PaymentStatusCode === '0') {
-    await debitCoins(userId, manaCashAmount, cashierResponse)
+    await debitCoins(userId, manaCashAmount, cashierResponse, PaymentMethod)
     return {
       status: 'pending',
       message: 'Payment pending',
@@ -171,7 +172,8 @@ export const completeCashoutSession: APIHandler<
 const debitCoins = async (
   userId: string,
   manaCashAmount: number,
-  response: CompleteSessionDirectCashierResponse
+  response: CompleteSessionDirectCashierResponse,
+  paymentMethod: Omit<PaymentMethod, 'Token' | 'DisplayName'>
 ) => {
   const {
     MerchantTransactionID,
@@ -236,6 +238,10 @@ const debitCoins = async (
         { response }
       )
     }
+    await tx.none(
+      `insert into delete_after_reading (user_id, data) values ($1, $2)`,
+      [userId, JSON.stringify(paymentMethod)]
+    )
     log('Run cashout txn, redeemable:', redeemablePrizeCash)
     log('Cash balance for user prior to txn', cash)
     const txn = await runTxn(tx, manaCashoutTxn)

@@ -1,10 +1,4 @@
-import {
-  ageBlocked,
-  getVerificationStatus,
-  identityBlocked,
-  locationBlocked,
-  User,
-} from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import Link from 'next/link'
 import clsx from 'clsx'
@@ -17,10 +11,17 @@ import { Row } from 'web/components/layout/row'
 import { SWEEPIES_NAME, TWOMBA_ENABLED } from 'common/envs/constants'
 import { getDocumentsStatus } from 'common/gidx/document'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
-import { VerifyButton } from '../twomba/toggle-verify-callout'
+import { VerifyButton } from '../twomba/sweep-verify-section'
 import { MdBlock } from 'react-icons/md'
 import { XIcon } from '@heroicons/react/solid'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import {
+  ageBlocked,
+  documentsFailed,
+  fraudSession,
+  identityBlocked,
+  locationBlocked,
+} from 'common/gidx/user'
 
 const HideVerifyMeButton = ({
   hideVerifyMe,
@@ -44,9 +45,9 @@ const HideVerifyMeButton = ({
   )
 }
 
-export const VerifyMe = (props: { user: User }) => {
+export const VerifyMe = (props: { user: User; privateUser: PrivateUser }) => {
   const user = useUser() ?? props.user
-  const privateUser = usePrivateUser()
+  const privateUser = usePrivateUser() ?? props.privateUser
   const [show, setShow] = useState(
     TWOMBA_ENABLED &&
       (!user.sweepstakesVerified ||
@@ -64,7 +65,7 @@ export const VerifyMe = (props: { user: User }) => {
   )
 
   const {
-    fetchMonitorStatus,
+    requestLocationThenFetchMonitorStatus,
     loading: loadingMonitorStatus,
     monitorStatusMessage,
     monitorStatus,
@@ -78,11 +79,14 @@ export const VerifyMe = (props: { user: User }) => {
     if (documents) setDocuments(documents)
     if (message) console.error(message)
   }
-  if (!show || !user) return null
+  if (!show || !user || !privateUser) return null
   const showUploadDocsButton =
     getDocumentsStatus(documents ?? []).isRejected && documents
 
-  if (hideVerifyMe) {
+  const showUserDocStatus =
+    user.kycDocumentStatus === 'pending' || documentsFailed(user, privateUser)
+
+  if (hideVerifyMe && !showUserDocStatus) {
     return null
   }
 
@@ -106,11 +110,7 @@ export const VerifyMe = (props: { user: User }) => {
         </Row>
       </Col>
     )
-  }
-  if (
-    user.kycDocumentStatus === 'pending' ||
-    user.kycDocumentStatus === 'fail'
-  ) {
+  } else if (showUserDocStatus) {
     return (
       <Col
         className={
@@ -185,29 +185,7 @@ export const VerifyMe = (props: { user: User }) => {
         )}
       </Col>
     )
-  }
-
-  if (user.sweepstakesVerified) {
-    return (
-      <Row
-        className={
-          ' bg-primary-100 border-primary-500 justify-between gap-2 rounded border p-2 px-4 '
-        }
-      >
-        <span>
-          <span className={'text-lg'}>🎉</span> Congrats, you've been verified!{' '}
-        </span>
-        <button
-          onClick={() => setShow(false)}
-          className="hover:bg-primary-200 text-primary-500 -mr-2 rounded p-1 px-2 transition-all"
-        >
-          <XIcon className={'h-4 w-4'} />
-        </button>
-      </Row>
-    )
-  }
-
-  if (ageBlocked(user, privateUser)) {
+  } else if (ageBlocked(user, privateUser)) {
     return (
       <Col
         className={
@@ -227,9 +205,7 @@ export const VerifyMe = (props: { user: User }) => {
         </Row>
       </Col>
     )
-  }
-
-  if (locationBlocked(user, privateUser)) {
+  } else if (locationBlocked(user, privateUser)) {
     return (
       <Col
         className={
@@ -256,7 +232,7 @@ export const VerifyMe = (props: { user: User }) => {
             color={'indigo-outline'}
             loading={loadingMonitorStatus}
             disabled={loadingMonitorStatus}
-            onClick={() => fetchMonitorStatus()}
+            onClick={() => requestLocationThenFetchMonitorStatus()}
             className={'w-full whitespace-nowrap sm:w-fit'}
           >
             Refresh status
@@ -272,6 +248,47 @@ export const VerifyMe = (props: { user: User }) => {
         )}
       </Col>
     )
+    // This shouldn't be displayed going forward, but previously users were marked as
+    // sweepstakes disabled, (would trigger showing this) when they had suspicious activity sessions.
+  } else if (fraudSession(user, privateUser)) {
+    return (
+      <Col
+        className={
+          'border-ink-400 bg-ink-200 text-ink-700 justify-between gap-2 rounded border p-2 px-4'
+        }
+      >
+        <Row className={'w-full items-center justify-between gap-1'}>
+          <span>
+            <MdBlock className="mb-0.5 mr-1 inline-block h-4 w-4" />
+            Blocked from sweepstakes participation due to suspicious activity.
+            Turn off vpn if using.{' '}
+          </span>
+          <HideVerifyMeButton
+            hideVerifyMe={hideVerifyMe}
+            setHideVerifyMe={setHideVerifyMe}
+            className="-mr-2 -mt-1  sm:mt-0 "
+          />
+        </Row>
+      </Col>
+    )
+  } else if (user.sweepstakesVerified) {
+    return (
+      <Row
+        className={
+          ' bg-primary-100 border-primary-500 justify-between gap-2 rounded border p-2 px-4 '
+        }
+      >
+        <span>
+          <span className={'text-lg'}>🎉</span> Congrats, you've been verified!{' '}
+        </span>
+        <button
+          onClick={() => setShow(false)}
+          className="hover:bg-primary-200 text-primary-500 -mr-2 rounded p-1 px-2 transition-all"
+        >
+          <XIcon className={'h-4 w-4'} />
+        </button>
+      </Row>
+    )
   }
 
   return (
@@ -281,7 +298,7 @@ export const VerifyMe = (props: { user: User }) => {
       }
     >
       <Row className="w-full justify-between">
-        {getVerificationStatus(user).status !== 'success' &&
+        {!user.idVerified &&
           `You are not yet verified! Verify to start trading on ${SWEEPIES_NAME} markets.`}
         <HideVerifyMeButton
           hideVerifyMe={hideVerifyMe}

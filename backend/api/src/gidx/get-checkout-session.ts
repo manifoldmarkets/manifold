@@ -17,9 +17,9 @@ import { log } from 'shared/monitoring/log'
 import { randomBytes } from 'crypto'
 import { TWOMBA_CASHOUT_ENABLED, TWOMBA_ENABLED } from 'common/envs/constants'
 import { PaymentAmountsGIDX } from 'common/economy'
-import { getVerificationStatus } from 'common/user'
-import { getUser, LOCAL_DEV } from 'shared/utils'
+import { getUserAndPrivateUserOrThrow, LOCAL_DEV } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getVerificationStatus } from 'common/gidx/user'
 
 const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CreateSession'
 
@@ -32,10 +32,9 @@ export const getCheckoutSession: APIHandler<
   }
   const pg = createSupabaseDirectClient()
   const userId = auth.uid
-  const user = await getUser(userId, pg)
-  if (!user) {
-    throw new APIError(400, 'User not found')
-  }
+  const userAndPrivateUser = await getUserAndPrivateUserOrThrow(userId, pg)
+  const { user, privateUser } = userAndPrivateUser
+
   const MerchantTransactionID = randomString(16)
   const MerchantOrderID = randomString(16)
   const body = {
@@ -74,7 +73,7 @@ export const getCheckoutSession: APIHandler<
   log('Checkout session response:', data)
 
   const { status, message } = await verifyReasonCodes(
-    user,
+    userAndPrivateUser,
     ReasonCodes,
     undefined,
     undefined
@@ -104,7 +103,7 @@ export const getCheckoutSession: APIHandler<
     CustomerProfile.ReasonCodes
   )
   if (props.PayActionCode === 'PAYOUT') {
-    const { status, message } = getVerificationStatus(user)
+    const { status, message } = getVerificationStatus(user, privateUser)
     if (status !== 'success') {
       return {
         status,

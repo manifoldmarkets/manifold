@@ -264,7 +264,7 @@ export function BuyAmountInput(props: {
 
   const incrementValues =
     quickButtonValues === 'large'
-      ? [1000, 5000]
+      ? [500, 1000]
       : quickButtonValues ??
         (isAdvancedTrader ? advancedIncrementValues : defaultIncrementValues)
 
@@ -334,7 +334,7 @@ export function BuyAmountInput(props: {
         )}
         {error ? (
           <div className="text-scarlet-500 mt-4 flex-wrap text-sm">
-            {error === 'Insufficient balance' && token === 'M$' ? (
+            {error === 'Insufficient balance' ? (
               <BuyMoreFunds user={user} />
             ) : (
               error

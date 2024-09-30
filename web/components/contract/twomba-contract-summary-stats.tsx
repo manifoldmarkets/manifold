@@ -7,7 +7,6 @@ import { TierTooltip } from '../tiers/tier-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
-import { CreatorFeesDisplay } from './creator-fees-display'
 import { LikeButton } from './like-button'
 import { MoneyDisplay } from '../bet/money-display'
 
@@ -28,7 +27,6 @@ export function TwombaContractSummaryStats(props: {
     isCashContract,
   } = props
   const { outcomeType, marketTier } = contract
-  const isCreator = useUser()?.id === creatorId
   const privateUser = usePrivateUser()
   const user = useUser()
 
@@ -41,14 +39,14 @@ export function TwombaContractSummaryStats(props: {
           inEmbed={true}
         />
       ) : (
-        <Row className="gap-4">
-          {marketTier && marketTier !== 'basic' && !isCashContract && (
+        <Row className="ml-auto gap-4">
+          {marketTier && !isCashContract && (
             <TierTooltip tier={marketTier} contract={contract} />
           )}
           {!isBlocked(privateUser, contract.creatorId) && (
             <LikeButton
               user={user}
-              size={'xs'}
+              size={'2xs'}
               contentId={contractId}
               contentType="contract"
               contentCreatorId={creatorId}
@@ -85,9 +83,9 @@ export function TwombaContractSummaryStats(props: {
             </Tooltip>
           )}
 
-          {isCreator && contract.mechanism !== 'none' && (
+          {/* {isCreator && contract.mechanism !== 'none' && (
             <CreatorFeesDisplay contract={contract} />
-          )}
+          )} */}
           <CloseOrResolveTime contract={contract} editable={editable} />
         </Row>
       )}

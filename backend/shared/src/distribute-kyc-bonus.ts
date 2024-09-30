@@ -1,12 +1,22 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
 import { runTxnFromBank } from 'shared/txn/run-txn'
-import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
+import {
+  KYC_VERIFICATION_BONUS_CASH,
+  REFERRAL_AMOUNT,
+  REFERRAL_AMOUNT_CASH,
+} from 'common/economy'
+import { createReferralNotification } from './create-notification'
+import { User } from 'common/user'
+import { completeReferralsQuest } from './complete-quest-internal'
 
-export async function distributeKycBonus(
+export async function distributeKycAndReferralBonus(
   pg: SupabaseDirectClient,
-  userId: string
+  user: User,
+  referrerId: string | undefined,
+  referrerSweepsVerified: boolean | undefined
 ) {
-  return await pg.tx(async (tx) => {
+  const userId = user.id
+  await pg.tx(async (tx) => {
     const data = await tx.oneOrNone<{
       reward_amount: number
       claimed: boolean
@@ -44,7 +54,63 @@ export async function distributeKycBonus(
         [userId, reward]
       )
     }
-
-    return reward
+    if (referrerId) {
+      await distributeReferralBonus(
+        tx,
+        userId,
+        referrerId,
+        referrerSweepsVerified
+      )
+    }
   })
+  if (referrerId) {
+    await createReferralNotification(referrerId, user, {
+      manaAmount: REFERRAL_AMOUNT,
+      cashAmount: referrerSweepsVerified ? REFERRAL_AMOUNT_CASH : 0,
+    })
+    await completeReferralsQuest(referrerId)
+  }
+}
+
+export async function distributeReferralBonus(
+  tx: SupabaseTransaction,
+  userId: string,
+  referrerId: string,
+  referrerSweepsVerified: boolean | undefined
+) {
+  await runTxnFromBank(tx, {
+    category: 'REFERRAL',
+    token: 'M$',
+    amount: REFERRAL_AMOUNT,
+    fromType: 'BANK',
+    toType: 'USER',
+    toId: userId,
+  })
+  await runTxnFromBank(tx, {
+    category: 'REFERRAL',
+    token: 'CASH',
+    amount: REFERRAL_AMOUNT_CASH,
+    fromType: 'BANK',
+    toType: 'USER',
+    toId: userId,
+  })
+
+  await runTxnFromBank(tx, {
+    category: 'REFERRAL',
+    token: 'M$',
+    amount: REFERRAL_AMOUNT,
+    fromType: 'BANK',
+    toType: 'USER',
+    toId: referrerId,
+  })
+  if (referrerSweepsVerified) {
+    await runTxnFromBank(tx, {
+      category: 'REFERRAL',
+      token: 'CASH',
+      amount: REFERRAL_AMOUNT_CASH,
+      fromType: 'BANK',
+      toType: 'USER',
+      toId: referrerId,
+    })
+  }
 }

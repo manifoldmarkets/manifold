@@ -1003,7 +1003,7 @@ Example response:
 ]
 ```
 
-### `GET /v0/managrams`
+### `GET /v0/managrams` (Deprecated)
 
 Gets a list of managrams, ordered by creation time descending.
 
@@ -1017,36 +1017,7 @@ Parameters:
 
 Requires no auth.
 
-Example request:
-
-```bash
-curl "https://api.manifold.markets/v0/managrams?toId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2" -X GET
-```
-
-Example response:
-
-```json
-[
-  {
-    "id": "INKcoBUVT914i1XUJ6rG",
-    "data": {
-      "groupId": "e097e0c5-3ce0-4eb2-9ca7-6554f86b84cd",
-      "message": "Puzzles for Progress",
-      "visibility": "public"
-    },
-    "toId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
-    "token": "M$",
-    "amount": 2500,
-    "fromId": "jO7sUhIDTQbAJ3w86akzncTlpRG2",
-    "toType": "USER",
-    "category": "MANA_PAYMENT",
-    "fromType": "USER",
-    "createdTime": 1695665438987,
-    "description": "Mana payment 2500 from MichaelWheatley to jO7sUhIDTQbAJ3w86akzncTlpRG2"
-  },
-  ...
-]
-```
+_This api is deprecated in favor of the more versatile [/v0/txns/](#get-v0txns) api below._
 
 ### `POST /v0/managram`
 
@@ -1107,6 +1078,58 @@ Example response (truncated):
 See a specific user's answers to compatibility questions.
 
 Requires no auth.
+
+### `GET /v0/txns`
+
+Get a list of transactions, ordered by creation date descending.
+
+Parameters:
+
+- `token`: Optional. Type of token (e.g., 'CASH', 'MANA')
+- `offset`: Optional. Number of records to skip (for pagination). Default is 0.
+- `limit`: Optional. Maximum number of records to return. The default and maximum are both 100.
+- `before`: Optional. Include only transactions created before this timestamp.
+- `after`: Optional. Include only transactions created after this timestamp.
+- `toId`: Optional. Include only transactions to the user with this ID.
+- `fromId`: Optional. Include only transactions from the user with this ID.
+- `category`: Optional. Include only transactions of this category.
+
+Requires no auth.
+
+Example request:
+
+```bash
+curl "https://api.manifold.markets/v0/txns?limit=10&category=MANA_PAYMENT" -X GET
+```
+
+Response type: An array of `Txn`.
+
+Example response:
+
+```json
+[
+  {
+    "id": "INKcoBUVT914i1XUJ6rG",
+    "data": {
+      "groupId": "e097e0c5-3ce0-4eb2-9ca7-6554f86b84cd",
+      "message": "Puzzles for Progress",
+      "visibility": "public"
+    },
+    "toId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
+    "token": "M$",
+    "amount": 2500,
+    "fromId": "jO7sUhIDTQbAJ3w86akzncTlpRG2",
+    "toType": "USER",
+    "category": "MANA_PAYMENT",
+    "fromType": "USER",
+    "createdTime": 1695665438987,
+    "description": "Mana payment 2500 from MichaelWheatley to jO7sUhIDTQbAJ3w86akzncTlpRG2"
+  },
+  ...
+]
+```
+
+Note: This API corresponds to the `txns` postgres table and does not include bets and liquidity injections.
 
 Example response (truncated):
 

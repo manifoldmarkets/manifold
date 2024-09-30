@@ -33,11 +33,9 @@ import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { useRouter } from 'next/router'
 import { filterDefined } from 'common/util/array'
 import { UserHovercard } from 'web/components/user/user-hovercard'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import { CoinNumber } from 'web/components/widgets/coin-number'
 
 export default function Payments() {
   const { payments, load } = useAllManaPayments()
@@ -260,7 +258,7 @@ export const PaymentsModal = (props: {
   const [message, setMessage] = useState(defaultMessage)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isSpice, setIsSpice] = useState(false)
+  const [isCash, setIsCash] = useState(false)
   const [toUsers, setToUsers] = useState<DisplayUser[]>([])
   const [removedToUser, setRemovedToUser] = useState(false)
   const { canSend, message: cannotSendMessage } = useCanSendMana(fromUser)
@@ -269,13 +267,7 @@ export const PaymentsModal = (props: {
     if (toUser) setToUsers([toUser])
   }, [toUser])
 
-  const showSpice =
-    fromUser.id === HOUSE_LIQUIDITY_PROVIDER_ID ||
-    fromUser.id === DEV_HOUSE_LIQUIDITY_PROVIDER_ID ||
-    (toUsers.length == 1 &&
-      (toUsers[0].id === HOUSE_LIQUIDITY_PROVIDER_ID ||
-        toUsers[0].id === DEV_HOUSE_LIQUIDITY_PROVIDER_ID))
-
+  const showCash = isAdminId(fromUser.id)
   return (
     <Modal open={show} setOpen={setShow}>
       <Col className={'bg-canvas-0 rounded-md p-4'}>
@@ -310,15 +302,15 @@ export const PaymentsModal = (props: {
             </Col>
           </Row>
           <Row className={'items-center justify-between'}>
-            {showSpice && (
+            {showCash && (
               <Col>
                 <span>Token</span>
                 <ChoicesToggleGroup
-                  currentChoice={isSpice ? 'PP' : 'M$'}
-                  setChoice={(val) => setIsSpice(val === 'PP')}
+                  currentChoice={isCash ? 'CASH' : 'M$'}
+                  setChoice={(val) => setIsCash(val === 'CASH')}
                   choicesMap={{
                     Mana: 'M$',
-                    'Prize Points': 'PP',
+                    Sweepcash: 'CASH',
                   }}
                 />
               </Col>
@@ -330,9 +322,7 @@ export const PaymentsModal = (props: {
                 allowNegative={isAdmin}
                 onChangeAmount={setAmount}
                 label={
-                  showSpice && isSpice
-                    ? ENV_CONFIG.spiceMoniker
-                    : ENV_CONFIG.moneyMoniker
+                  <CoinNumber coinType={showCash && isCash ? 'CASH' : 'MANA'} />
                 }
                 inputClassName={'w-52'}
                 onBlur={() => {
@@ -368,7 +358,7 @@ export const PaymentsModal = (props: {
                     amount,
                     message,
                     groupId,
-                    token: showSpice && isSpice ? 'PP' : 'M$',
+                    token: showCash && isCash ? 'CASH' : 'M$',
                   })
                   setError('')
                   setShow(false)
@@ -385,6 +375,7 @@ export const PaymentsModal = (props: {
                 !toUsers.length ||
                 !canSend
               }
+              loading={loading}
             >
               Send
             </Button>

@@ -29,6 +29,7 @@
     "string-similarity": "4.0.4"
   },
   "devDependencies": {
-    "@types/mailgun-js": "0.22.12"
+    "@types/mailgun-js": "0.22.12",
+    "@types/numeral": "2.0.5"
   }
 }

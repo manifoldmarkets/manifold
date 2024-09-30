@@ -7,13 +7,10 @@ import * as crypto from 'crypto'
 import { isAdminId } from 'common/envs/constants'
 import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getUser, getUsers, isProd } from 'shared/utils'
+import { getUser, getUsers } from 'shared/utils'
 import { bulkIncrementBalances } from 'shared/supabase/users'
 import { buildArray } from 'common/util/array'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+
 import { BURN_MANA_USER_ID } from 'common/economy'
 import { betsQueue } from 'shared/helpers/fn-queue'
 
@@ -23,6 +20,9 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
 
   if (!isAdminId(fromId) && amount < 10) {
     throw new APIError(403, 'Only admins can send less than 10 mana')
+  }
+  if (!isAdminId(fromId) && token === 'CASH') {
+    throw new APIError(403, 'You cannot send cash.')
   }
   if (toIds.includes(fromId)) {
     throw new APIError(400, 'Cannot send mana to yourself.')
@@ -57,27 +57,9 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
         throw new APIError(403, errorMessage)
       }
 
-      if (token === 'PP') {
-        const ManifoldAccount = isProd()
-          ? HOUSE_LIQUIDITY_PROVIDER_ID
-          : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-
-        if (fromId !== ManifoldAccount) {
-          if (toIds.length > 1)
-            throw new APIError(
-              400,
-              'You cannot send prize points to multiple users.'
-            )
-          if (toIds[0] !== ManifoldAccount)
-            throw new APIError(
-              400,
-              'Do send prize points only to @ManifoldMarkets.'
-            )
-        }
-      }
-
       const total = amount * toIds.length
-      const balance = token === 'M$' ? fromUser.balance : fromUser.spiceBalance
+      const balanceField = token === 'M$' ? 'balance' : 'cashBalance'
+      const balance = fromUser[balanceField]
       if (balance < total) {
         throw new APIError(
           403,
@@ -94,8 +76,15 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
       if (toUsers.some((toUser) => !humanish(toUser))) {
         throw new APIError(403, 'All destination users must be verified.')
       }
-
-      const balanceField = token === 'M$' ? 'balance' : 'spiceBalance'
+      if (
+        token === 'CASH' &&
+        toUsers.some((toUser) => !toUser.sweepstakesVerified)
+      ) {
+        throw new APIError(
+          403,
+          'All destination users must be sweepstakes verified.'
+        )
+      }
 
       await bulkIncrementBalances(
         tx,
@@ -125,7 +114,7 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
             toId,
             toType: 'USER',
             amount,
-            token: token === 'M$' ? 'M$' : 'SPICE',
+            token,
             category: 'MANA_PAYMENT',
             data: {
               message,
@@ -143,7 +132,7 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
 
   await Promise.all(
     toIds.map((toId) =>
-      createManaPaymentNotification(fromUser, toId, amount, message)
+      createManaPaymentNotification(fromUser, toId, amount, message, token)
     )
   )
 }

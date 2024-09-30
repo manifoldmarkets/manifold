@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
-import Image from 'next/image'
 
 export function SweepiesFlatCoin(props: { className?: string }) {
   const { className } = props

@@ -24,6 +24,7 @@ type NativeContextType = {
   isNative: boolean
   platform: string
   version: string
+  isIOS: boolean
 }
 
 export const NativeContext = createContext<NativeContextType | undefined>(
@@ -118,8 +119,9 @@ export const NativeMessageProvider = (props: { children: React.ReactNode }) => {
     handleNativeMessage
   )
 
+  const isIOS = platform === 'ios' && isNative
   return (
-    <NativeContext.Provider value={{ isNative, platform, version }}>
+    <NativeContext.Provider value={{ isNative, platform, version, isIOS }}>
       {children}
     </NativeContext.Provider>
   )
@@ -131,4 +133,9 @@ export const useNativeInfo = () => {
     throw new Error('useNativeInfo must be used within a NativeMessageListener')
   }
   return context
+}
+
+export const useIsNativeIOS = () => {
+  const { isNative, platform } = useNativeInfo()
+  return isNative && platform === 'ios'
 }

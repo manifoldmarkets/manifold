@@ -2,22 +2,19 @@ import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
-import { useUser } from 'web/hooks/use-user'
 import { shortenNumber } from '../../lib/util/formatNumber'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
-import { CreatorFeesDisplay } from './creator-fees-display'
 
 export function ContractSummaryStats(props: {
   contract: Contract
   editable?: boolean
 }) {
   const { contract, editable } = props
-  const { creatorId, outcomeType, marketTier } = contract
+  const { outcomeType, marketTier } = contract
 
-  const isCreator = useUser()?.id === creatorId
   const isCashContract = contract.token === 'CASH'
 
   return (
@@ -57,9 +54,9 @@ export function ContractSummaryStats(props: {
             </Tooltip>
           )}
 
-          {isCreator && contract.mechanism !== 'none' && (
+          {/* {isCreator && contract.mechanism !== 'none' && (
             <CreatorFeesDisplay contract={contract} />
-          )}
+          )} */}
           <CloseOrResolveTime contract={contract} editable={editable} />
         </Row>
       )}

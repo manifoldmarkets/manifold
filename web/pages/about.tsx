@@ -2,7 +2,6 @@ import { TbBrandDiscord } from 'react-icons/tb'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { Footer } from 'web/components/footer'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { getNativePlatform } from 'web/lib/native/is-native'
@@ -113,7 +112,6 @@ export default function AboutPage() {
           </div>
         </Col>
       </Col>
-      <Footer />
     </Page>
   )
 }

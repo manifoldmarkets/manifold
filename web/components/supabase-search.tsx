@@ -238,8 +238,7 @@ export function SupabaseSearch(props: {
   } = props
 
   const isMobile = useIsMobile()
-  const { isPlay, setIsPlay } = useSweepstakes()
-
+  const { isPlay } = useSweepstakes()
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
@@ -264,8 +263,12 @@ export function SupabaseSearch(props: {
   const topicFilter = searchParams[TOPIC_FILTER_KEY]
 
   useEffect(() => {
-    if (isWholePage) setIsPlay(sweepiesState === '0')
-  }, [isWholePage, sweepiesState])
+    const isSweeps = sweepiesState === '1'
+    if (isPlay !== isSweeps) return
+    setSearchParams({
+      [SWEEPIES_KEY]: isPlay ? '0' : '1',
+    })
+  }, [isPlay, sweepiesState])
 
   const [userResults, setUserResults] = usePersistentInMemoryState<
     FullUser[] | undefined

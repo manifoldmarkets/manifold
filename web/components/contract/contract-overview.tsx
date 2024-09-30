@@ -48,7 +48,7 @@ import { getAnswerProbability } from 'common/calculate'
 import { useAnnotateChartTools } from 'web/hooks/use-chart-annotations'
 import { type ChartAnnotation } from 'common/supabase/chart-annotations'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { isAdminId, isModId, TRADE_TERM } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
 import { AlertBox } from '../widgets/alert-box'
@@ -66,14 +66,12 @@ import { filterDefined } from 'common/util/array'
 import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
 import { useChartPositions } from 'web/hooks/use-chart-positions'
 import { BuyPanel } from '../bet/bet-panel'
-import { blockFromSweepstakes, identityPending, User } from 'common/user'
+import { User } from 'common/user'
 import {
   ChartAnnotations,
   EditChartAnnotationsButton,
 } from '../charts/chart-annotations'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
-import { VerifyButton } from '../twomba/toggle-verify-callout'
-import { InBeta } from '../twomba/toggle-verify-callout'
 
 export const ContractOverview = memo(
   (props: {
@@ -832,31 +830,7 @@ export function BinaryBetPanel(props: {
 
   return (
     <Col className="my-3 w-full">
-      {contract.token === 'CASH' && identityPending(user) ? (
-        <Row className={'bg-canvas-50 text-ink-700 rounded p-4 italic'}>
-          We're still reviewing your info for sweepstakes. You can still trade
-          in Play mode.
-        </Row>
-      ) : contract.token === 'CASH' && user && !user.idVerified ? (
-        <Col className="bg-canvas-50 relative gap-2 rounded-lg p-4">
-          <Row className="w-full justify-end">
-            <InBeta className="sm:absolute sm:right-4 sm:top-4" />
-          </Row>
-          <div className="mx-auto text-lg font-semibold">
-            Must be verified to {TRADE_TERM}
-          </div>
-          <p className="text-ink-700 mx-auto">
-            Verify your info to start trading on sweepstakes questions!
-          </p>
-          <VerifyButton className="mt-2" />
-        </Col>
-      ) : contract.token === 'CASH' && blockFromSweepstakes(user) ? (
-        <Row className={'bg-canvas-50 text-ink-700 rounded p-4 italic'}>
-          You are not eligible to trade on sweepstakes.
-        </Row>
-      ) : (
-        <BuyPanel inModal={false} contract={contract} />
-      )}
+      <BuyPanel inModal={false} contract={contract} />
       <UserBetsSummary
         className="border-ink-200 !mb-2 mt-2 "
         contract={contract}

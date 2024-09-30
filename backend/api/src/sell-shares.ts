@@ -332,7 +332,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       user,
       allOrdersToCancel,
       makers,
-      streakIncremented
+      streakIncremented,
+      undefined
     )
   }
   return { result: { ...newBet, betId }, continue: continuation }

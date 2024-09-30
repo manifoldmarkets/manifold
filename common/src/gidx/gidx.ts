@@ -17,17 +17,16 @@ export const verificationParams = z.object({
   LastName: z.string(),
   DeviceGPS: GPSProps,
   DateOfBirth: z.string(),
-  CitizenshipCountryCode: z.string(),
-  // Must supply address or ID info
-  AddressLine1: z.string().optional(),
+  // Must supply address atm, but we could also use ID info
+  AddressLine1: z.string(),
   AddressLine2: z.string().optional(),
-  City: z.string().optional(),
-  StateCode: z.string().optional(),
-  PostalCode: z.string().optional(),
-  CountryCode: z.string().optional(),
+  City: z.string(),
+  StateCode: z.string(),
+  PostalCode: z.string(),
   IdentificationTypeCode: z.number().gte(1).lte(4).optional(),
   IdentificationNumber: z.string().optional(),
   EmailAddress: z.string().optional(),
+  ReferralCode: z.string().optional(),
   // only used when ENABLE_FAKE_CUSTOMER is true
   DeviceIpAddress: z.string().optional(),
   MobilePhoneNumber: z.string().optional(),
@@ -290,9 +289,10 @@ export type CheckoutSessionResponse = {
 } & CheckoutSession
 
 export const ID_ERROR_MSG =
-  'Registration failed, identity error. Check your identifying information.'
+  'Confidence in identity too low. Double check your information or upload documents to verify your identity.'
 
-export const IDENTITY_AND_FRAUD_THRESHOLD = 80
+export const IDENTITY_THRESHOLD = 80
+export const FRAUD_THRESHOLD = 60
 export const ENABLE_FAKE_CUSTOMER = false
 export const exampleCustomers = [
   {
@@ -302,7 +302,7 @@ export const exampleCustomers = [
     FirstName: 'Adam',
     LastName: 'Gibbs',
     DateOfBirth: '01/11/1979',
-    CitizenshipCountryCode: 'GB',
+    CountryCode: 'GB',
     IdentificationTypeCode: 2,
     IdentificationNumber: '123456789',
     AddressLine1: '133 Hall Road',
@@ -325,7 +325,7 @@ export const exampleCustomers = [
     FirstName: 'Corey',
     LastName: 'Chandler',
     DateOfBirth: '09/28/1987',
-    CitizenshipCountryCode: 'US',
+    CountryCode: 'US',
     IdentificationTypeCode: 2,
     IdentificationNumber: '123456789',
     AddressLine1: '66 Forest Street',
@@ -358,7 +358,7 @@ export const exampleCustomers = [
     FirstName: 'Andrew',
     LastName: 'Siegfried',
     DateOfBirth: '01/27/1978',
-    CitizenshipCountryCode: 'US',
+    CountryCode: 'US',
     IdentificationTypeCode: 2,
     IdentificationNumber: '123456789',
     AddressLine1: '321 Greenwood Lane',
@@ -381,7 +381,7 @@ export const exampleCustomers = [
     FirstName: 'Antron',
     LastName: 'Hurt',
     DateOfBirth: '11/06/1986',
-    CitizenshipCountryCode: 'US',
+    CountryCode: 'US',
     IdentificationTypeCode: 2,
     IdentificationNumber: '123456789',
     AddressLine1: '214 Rosemont Ave',

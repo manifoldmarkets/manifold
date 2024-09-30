@@ -12,6 +12,7 @@ import { User } from 'common/user'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { removeEmojis } from 'common/util/string'
+import { capitalize } from 'lodash'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
@@ -204,7 +205,8 @@ export function FeedContractCard(props: {
           )}
         >
           <span>
-            <SweepiesCoin className="-mt-0.5" /> {SWEEPIES_NAME} Market
+            <SweepiesCoin className="-mt-0.5" /> {capitalize(SWEEPIES_NAME)}{' '}
+            Market
           </span>
         </div>
       ) : (
@@ -238,7 +240,7 @@ export function FeedContractCard(props: {
                 Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
               </div>
             )}
-            {marketTier && marketTier !== 'basic' ? (
+            {marketTier ? (
               <TierTooltip tier={marketTier} contract={contract} />
             ) : feedReason ? (
               <CardReason

@@ -91,13 +91,15 @@ export const paymentCallbackGIDX: APIHandler<'payment-callback-gidx'> = async (
        limit 1`,
       [MerchantTransactionID],
       (row) =>
-        ({
-          userId: row.user_id as string,
-          amount: row.amount as number,
-          currency: row.currency as string,
-          paymentMethodType: row.payment_method_type as string,
-          paymentAmountType: row.payment_amount_type as string,
-        } as PaymentCompletedData | null)
+        row
+          ? ({
+              userId: row.user_id as string,
+              amount: row.amount as number,
+              currency: row.currency as string,
+              paymentMethodType: row.payment_method_type as string,
+              paymentAmountType: row.payment_amount_type as string,
+            } as PaymentCompletedData)
+          : null
     )
     log('userId for payment', paymentData)
 

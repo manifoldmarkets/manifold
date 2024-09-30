@@ -83,7 +83,7 @@ export function QuestsModal(props: {
   const streakStatus = questToCompletionStatus['BETTING_STREAK']
   const shareStatus = questToCompletionStatus['SHARES']
   const createStatus = questToCompletionStatus['MARKETS_CREATED']
-  const referralsStatus = questToCompletionStatus['REFERRALS']
+  // const referralsStatus = questToCompletionStatus['REFERRALS']
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
@@ -133,7 +133,7 @@ export function QuestsModal(props: {
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
             href={'/create'}
           />
-          <QuestRow
+          {/* <QuestRow
             emoji={'🙋️'}
             title={`Refer a friend this week`}
             complete={
@@ -145,7 +145,7 @@ export function QuestsModal(props: {
               'Just click the share button on a question and your referral code will be added to the link'
             }
             href={'/referrals'}
-          />
+          /> */}
         </Col>
       </div>
     </Modal>

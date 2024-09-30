@@ -18,34 +18,9 @@ import { formatLargeNumber } from 'common/util/format'
 import { renderToString } from 'react-dom/server'
 import { Col } from 'web/components/layout/col'
 
-const colors = [
-  '#FF5733',
-  '#60d775',
-  '#3357FF',
-  '#ad33ff',
-  '#FFC300',
-  '#f89bde',
-  '#2ECC71',
-  '#FFDFBA',
-  '#BAFFC9',
-  '#BAE1FF',
-  '#D4A5A5',
-  '#A5D4D4',
-  '#D4D4A5',
-  '#D4A5C2',
-  '#B7C5FF',
-  '#E1B7FF',
-  '#B7FFE1',
-  '#FFB7E1',
-  '#FFB7B7',
-  '#B7FFB7',
-  '#B7B7FF',
-]
-
 type DateAndCategoriesToTotals = { date: string } & {
   [key: string]: number
 }
-const categoryToColor = new Map<string, string>()
 
 export const BonusSummary = (props: {
   txnSummaryStats: rowFor<'txn_summary_stats'>[]
@@ -63,12 +38,10 @@ export const BonusSummary = (props: {
   const { data, xScale, stackGen, colorScale, yScale, keys } = useMemo(() => {
     const data = orderAndGroupData(txnSummaryStats)
     const uniqueCategories = uniq(txnSummaryStats.map(getCategoryForTxn))
-    for (let i = 0; i < uniqueCategories.length; i++) {
-      categoryToColor.set(uniqueCategories[i], colors[i])
-    }
+
     const colorScale = scaleOrdinal<string>()
       .domain(uniqueCategories)
-      .range(colors)
+      .range(uniqueCategories.map(getColor))
     const xScale = scaleBand()
       .domain(data.map((d) => d.date))
       .range([0, innerWidth])
@@ -124,7 +97,6 @@ export const BonusSummary = (props: {
                         .html(
                           renderToString(
                             <StackedChartTooltip
-                              categoryToColor={categoryToColor}
                               data={d.data as DateAndCategoriesToTotals}
                             />
                           )
@@ -153,13 +125,8 @@ export const BonusSummary = (props: {
         ref={tooltipRef}
         style={{
           position: 'absolute',
-          textAlign: 'left',
           width: 'auto',
           height: 'auto',
-          padding: '8px',
-          font: '12px sans-serif',
-          background: 'black',
-          borderRadius: '8px',
           pointerEvents: 'none',
           opacity: 0,
         }}
@@ -169,8 +136,9 @@ export const BonusSummary = (props: {
 }
 
 const getCategoryForTxn = (txn: rowFor<'txn_summary_stats'>) =>
+  (categoryToLabel as any)[txn.category] ||
   (txn.quest_type ? `${txn.quest_type}_` : '') +
-  txn.category.replace('_REWARD', '').replace('_BONUS', '')
+    txn.category.replace('_REWARD', '').replace('_BONUS', '')
 
 const orderAndGroupData = (data: rowFor<'txn_summary_stats'>[]) => {
   const groupedData = groupBy(data, (row) => row.start_time.split(' ')[0])
@@ -187,13 +155,10 @@ const orderAndGroupData = (data: rowFor<'txn_summary_stats'>[]) => {
   })
 }
 
-const StackedChartTooltip = (props: {
-  data: DateAndCategoriesToTotals
-  categoryToColor: Map<string, string>
-}) => {
-  const { data, categoryToColor } = props
+const StackedChartTooltip = (props: { data: DateAndCategoriesToTotals }) => {
+  const { data } = props
   return (
-    <Col className={'max-w-xs gap-1 text-white'}>
+    <Col className="bg-canvas-0 border-ink-900 max-w-xs gap-1 rounded-lg border p-2 text-sm">
       {new Date(data.date).toLocaleString('en-us', {
         month: 'long',
         day: 'numeric',
@@ -203,13 +168,42 @@ const StackedChartTooltip = (props: {
       {Object.keys(data)
         .filter((k) => k !== 'date')
         .map((key) => (
-          <span
-            style={{ color: categoryToColor.get(key) }}
-            key={key + data[key]}
-          >
+          <span style={{ color: getColor(key) }} key={key + data[key]}>
             {key}: {formatLargeNumber(data[key])}
           </span>
         ))}
     </Col>
   )
 }
+
+const categoryToLabel = {
+  CASH_BONUS: 'MANA_PURCHASE_BONUS',
+}
+
+const categoryToColor = {
+  BET_FEES: '#FF5733',
+  MARKET_BOOST_REDEEM_FEE: '#FFC300',
+  CREATE_CONTRACT_ANTE: '#3498DB',
+  KYC: '#30E080',
+  SIGNUP: '#30E080',
+  REFERRAL: '#10A040',
+  MANIFOLD_TOP_UP: '#FF3060',
+  MANA_PURCHASE: '#925cf0',
+  MANA_PURCHASE_BONUS: '#925cf0',
+  MARKETS_CREATED_QUEST: '#3498DB',
+  PUSH_NOTIFICATION: '#FFC300',
+}
+
+// https://stackoverflow.com/a/3426956
+const colorHash = (str: string) => {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  }
+
+  const c = (hash & 0x00ffffff).toString(16).toUpperCase()
+  return '#' + '00000'.substring(0, 6 - c.length) + c
+}
+
+const getColor = (str: string) =>
+  (categoryToColor as any)[str] || colorHash(str)

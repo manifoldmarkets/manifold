@@ -17,10 +17,8 @@ import {
   MultiPoints,
   unserializeBase64Multi,
 } from 'common/chart'
-import { ContractMetric } from 'common/contract-metric'
 import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
-import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { DAY_MS } from 'common/util/time'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
@@ -60,18 +58,18 @@ import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import {
+  useSavedContractMetrics,
+  useTopContractMetrics,
+} from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweestakes-context'
-import { ToggleVerifyCallout } from '../twomba/toggle-verify-callout'
 import { useRouter } from 'next/router'
 
 export function TwombaContractPageContent(props: ContractParams) {
@@ -114,19 +112,18 @@ export function TwombaContractPageContent(props: ContractParams) {
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
   const user = useUser()
 
-  const contractMetrics = useSavedContractMetrics(props.contract)
+  const myContractMetrics = useSavedContractMetrics(liveContract)
+  const topContractMetrics = useTopContractMetrics({
+    playContract: livePlayContract,
+    cashContract: liveCashContract,
+    isPlay,
+    // TODO: do we really need this? leaderboards are below the fold. If we do, should add for cash as well
+    defaultTopManaTraders: props.topContractMetrics,
+    defaultTopCashTraders: [],
+  })
+
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []
-  const [topContractMetrics, setTopContractMetrics] = useState<
-    ContractMetric[]
-  >(props.topContractMetrics)
-
-  useEffect(() => {
-    // If the contract resolves while the user is on the page, get the top contract metrics
-    if (liveContract.resolution && topContractMetrics.length === 0) {
-      getTopContractMetrics(liveContract.id, 10, db).then(setTopContractMetrics)
-    }
-  }, [liveContract.resolution, liveContract.id, topContractMetrics.length])
 
   useSaveCampaign()
   useTracking(
@@ -177,11 +174,6 @@ export function TwombaContractPageContent(props: ContractParams) {
   const [showResolver, setShowResolver] = useState(false)
   const [showReview, setShowReview] = useState(false)
   const [imageError, setImageError] = useState(false)
-
-  useSaveReferral(user, {
-    defaultReferrerUsername: props.contract.creatorUsername,
-    contractId: props.contract.id,
-  })
 
   const [replyTo, setReplyTo] = useState<Answer | Bet>()
 
@@ -316,12 +308,7 @@ export function TwombaContractPageContent(props: ContractParams) {
               />
             </Row>
           )}
-          {!!liveContract.siblingContractId && (
-            <ToggleVerifyCallout
-              className="mx-4 mb-4 mt-1.5 w-[calc(100%-2rem)] sm:hidden"
-              caratClassName="right-[81px]"
-            />
-          )}
+
           <Col className={clsx('mb-4 p-4 pt-0 md:pb-8 lg:px-8')}>
             <Col className="w-full gap-3 lg:gap-4">
               <Col>
@@ -337,7 +324,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                   />
                 </div>
               </Col>
-              <Row className="text-ink-600  items-center justify-between gap-y-1 text-sm">
+              <Row className="text-ink-600 flex-wrap items-center justify-between gap-y-1 text-sm">
                 <AuthorInfo
                   contract={props.contract}
                   resolverId={liveContract.resolverId}
@@ -419,7 +406,7 @@ export function TwombaContractPageContent(props: ContractParams) {
               setShowResolver={setShowResolver}
               showReview={showReview}
               setShowReview={setShowReview}
-              userHasBet={!!contractMetrics}
+              userHasBet={!!myContractMetrics}
               hasReviewed={!!userHasReviewed}
             />
             <ContractDescription
@@ -455,7 +442,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                   )}
                   contractId={liveContract.id}
                   currentUser={user}
-                  currentUserMetrics={contractMetrics}
+                  currentUserMetrics={myContractMetrics}
                   isCashContract={isCashContract}
                 />
                 <Spacer h={12} />

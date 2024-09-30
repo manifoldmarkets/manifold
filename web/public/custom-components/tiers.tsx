@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { BiGame } from 'react-icons/bi'
 import { PiDiamond, PiDiamondFill } from 'react-icons/pi'
 import { IoTriangle, IoTriangleOutline } from 'react-icons/io5'
+import { LogoIcon } from 'web/components/icons/logo-icon'
 
 export function PlayTier(props: { className?: string }) {
   const { className } = props
@@ -19,6 +20,31 @@ export function PlayTier(props: { className?: string }) {
         style={{
           width: '.7em',
           height: '.7em',
+        }}
+      />
+    </div>
+  )
+}
+
+export function BasicTier(props: { className?: string }) {
+  const { className } = props
+  return (
+    <div
+      className="inline-flex items-center justify-center"
+      style={{
+        width: '1em',
+        height: '1em',
+        marginRight: '0.1em',
+      }}
+    >
+      <LogoIcon
+        className={clsx(
+          'text-ink-900 mx-auto my-auto stroke-[1.5px]',
+          className
+        )}
+        style={{
+          width: '1em',
+          height: '1em',
         }}
       />
     </div>
