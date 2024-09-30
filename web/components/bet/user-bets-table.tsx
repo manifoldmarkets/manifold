@@ -8,7 +8,6 @@ import { ContractMetric } from 'common/contract-metric'
 import {
   ENV_CONFIG,
   SWEEPIES_MARKET_TOOLTIP,
-  SWEEPIES_NAME,
   TRADE_TERM,
   TWOMBA_ENABLED,
 } from 'common/envs/constants'
