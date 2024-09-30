@@ -160,6 +160,7 @@ export function ContractFilters(props: {
             sweepsEnabled={true}
             isPlay={!isSweeps}
             onClick={toggleSweepies}
+            isSmall
           />
         )}
 
