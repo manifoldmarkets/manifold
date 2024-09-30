@@ -22,7 +22,6 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import { ProfitBadge } from '../profit-badge'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { MoneyDisplay } from './money-display'
-import { useUser } from 'web/hooks/use-user'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -249,7 +248,7 @@ export function BetsSummary(props: {
         )}
       </Row>
 
-      {!hideTweet && resolution && profit >= 1 && user?.username && (
+      {!hideTweet && resolution && profit >= 1 && (
         <Row className={'mt-4 items-center gap-2'}>
           <div>
             {areYourBets ? 'You' : 'They'} made{' '}
