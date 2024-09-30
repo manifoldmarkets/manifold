@@ -128,7 +128,6 @@ export const idNameToCategoryType = {
   Passport: 3,
   'Military Id': 4,
   'Government Photo Id': 5,
-  'Student Photo Id': 6,
   'Utility Bill': 7,
   Other: 1,
 }
