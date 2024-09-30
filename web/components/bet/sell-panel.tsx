@@ -41,7 +41,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
-import { FeeDisplay } from './fees'
 import { MoneyDisplay } from './money-display'
 
 export function SellPanel(props: {
