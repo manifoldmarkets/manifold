@@ -11,7 +11,7 @@ import {
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { BETTORS, User } from 'common/user'
 import dayjs from 'dayjs'
-import { capitalize, sum, sumBy } from 'lodash'
+import { capitalize, sumBy } from 'lodash'
 import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
@@ -79,7 +79,6 @@ export const Stats = (props: {
     outcomeType,
     id,
     elasticity,
-    isSpicePayout,
   } = contract
 
   const typeDisplay =
@@ -219,7 +218,7 @@ export const Stats = (props: {
               </td>
             </tr>
 
-            <tr>
+            {/* <tr>
               <td>
                 <span className="mr-1">Collected fees</span>
                 <InfoTooltip text="Includes both platform and creator fees" />
@@ -231,7 +230,7 @@ export const Stats = (props: {
                   numberType="toDecimal"
                 />
               </td>
-            </tr>
+            </tr> */}
 
             <tr>
               <td>{capitalize(BETTORS)}</td>
