@@ -284,7 +284,7 @@ export const getReferrerInfo = async (
       row
         ? {
             id: row.id as string,
-            sweeps_verified: row.sweeps_verified as boolean,
+            sweepsVerified: row.sweeps_verified as boolean,
           }
         : null
   )

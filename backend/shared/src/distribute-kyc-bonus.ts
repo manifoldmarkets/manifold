@@ -1,13 +1,7 @@
-import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
+import { SupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnFromBank } from 'shared/txn/run-txn'
-import {
-  KYC_VERIFICATION_BONUS_CASH,
-  REFERRAL_AMOUNT,
-  REFERRAL_AMOUNT_CASH,
-} from 'common/economy'
-import { createReferralNotification } from './create-notification'
+import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { User } from 'common/user'
-import { completeReferralsQuest } from './complete-quest-internal'
 
 export async function distributeKycBonus(pg: SupabaseDirectClient, user: User) {
   const userId = user.id
@@ -50,53 +44,4 @@ export async function distributeKycBonus(pg: SupabaseDirectClient, user: User) {
       )
     }
   })
-}
-
-export async function distributeReferralBonus(
-  tx: SupabaseTransaction,
-  user: User,
-  referrerId: string,
-  referrerSweepsVerified: boolean | undefined
-) {
-  const userId = user.id
-  await runTxnFromBank(tx, {
-    category: 'REFERRAL',
-    token: 'M$',
-    amount: REFERRAL_AMOUNT,
-    fromType: 'BANK',
-    toType: 'USER',
-    toId: userId,
-  })
-  await runTxnFromBank(tx, {
-    category: 'REFERRAL',
-    token: 'CASH',
-    amount: REFERRAL_AMOUNT_CASH,
-    fromType: 'BANK',
-    toType: 'USER',
-    toId: userId,
-  })
-
-  await runTxnFromBank(tx, {
-    category: 'REFERRAL',
-    token: 'M$',
-    amount: REFERRAL_AMOUNT,
-    fromType: 'BANK',
-    toType: 'USER',
-    toId: referrerId,
-  })
-  if (referrerSweepsVerified) {
-    await runTxnFromBank(tx, {
-      category: 'REFERRAL',
-      token: 'CASH',
-      amount: REFERRAL_AMOUNT_CASH,
-      fromType: 'BANK',
-      toType: 'USER',
-      toId: referrerId,
-    })
-  }
-  await createReferralNotification(referrerId, user, {
-    manaAmount: REFERRAL_AMOUNT,
-    cashAmount: referrerSweepsVerified ? REFERRAL_AMOUNT_CASH : 0,
-  })
-  await completeReferralsQuest(referrerId)
 }

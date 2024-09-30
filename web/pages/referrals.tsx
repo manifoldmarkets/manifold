@@ -3,7 +3,11 @@ import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
 import { Page } from 'web/components/layout/page'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { REFERRAL_AMOUNT, REFERRAL_AMOUNT_CASH } from 'common/economy'
+import {
+  REFERRAL_AMOUNT,
+  REFERRAL_AMOUNT_CASH,
+  REFERRAL_MIN_PURCHASE_DOLLARS,
+} from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import clsx from 'clsx'
@@ -62,7 +66,8 @@ export default function ReferralsPage() {
                 />
               </div>
               <p className="mt-2">
-                when they register and purchase $100 of mana!
+                when they register and purchase ${REFERRAL_MIN_PURCHASE_DOLLARS}{' '}
+                of mana!
               </p>
             </div>
           ) : (
@@ -74,7 +79,8 @@ export default function ReferralsPage() {
                 <CoinNumber amount={REFERRAL_AMOUNT} isInline />
               </div>
               <p className="mt-2">
-                when they register and purchase $100 of mana!
+                when they register and purchase ${REFERRAL_MIN_PURCHASE_DOLLARS}{' '}
+                of mana!
               </p>
             </div>
           )}

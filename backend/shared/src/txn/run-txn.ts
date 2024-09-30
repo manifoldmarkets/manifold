@@ -88,7 +88,10 @@ export async function runTxn(
     }
 
     if (toType === 'USER') {
-      const toUser = await getUser(toId, pgTransaction)
+      const toUser = await pgTransaction.oneOrNone(
+        `select 1 from users where id = $1`,
+        [toId]
+      )
       if (!toUser) {
         throw new APIError(404, `User ${toId} not found`)
       }
