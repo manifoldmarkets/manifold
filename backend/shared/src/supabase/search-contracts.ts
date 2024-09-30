@@ -44,6 +44,7 @@ export async function getForYouSQL(items: {
   marketTier: TierParamsType
   privateUser?: PrivateUser
   threshold?: number
+  isMana: boolean
 }) {
   const {
     filter,
@@ -56,6 +57,7 @@ export async function getForYouSQL(items: {
     marketTier,
     privateUser,
     threshold = DEFAULT_THRESHOLD,
+    isMana,
   } = items
 
   let userId = items.userId
@@ -95,6 +97,7 @@ export async function getForYouSQL(items: {
         isPrizeMarket,
         isSweepies,
         marketTier,
+        isMana,
       }),
       privateUserBlocksSql(privateUser),
       lim(limit, offset)
@@ -184,17 +187,9 @@ export function getSearchContractSQL(args: {
   isPrizeMarket?: boolean
   isSweepies?: boolean
   marketTier: TierParamsType
+  isMana?: boolean
 }) {
-  const {
-    term,
-    sort,
-    offset,
-    limit,
-    groupId,
-    creatorId,
-    searchType,
-    marketTier,
-  } = args
+  const { term, sort, offset, limit, groupId, creatorId, searchType } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
 
@@ -269,6 +264,7 @@ function getSearchContractWhereSQL(args: {
   isPrizeMarket?: boolean
   isSweepies?: boolean
   marketTier: TierParamsType
+  isMana?: boolean
 }) {
   const {
     filter,
@@ -281,6 +277,7 @@ function getSearchContractWhereSQL(args: {
     isPrizeMarket,
     isSweepies,
     marketTier,
+    isMana,
   } = args
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
@@ -316,6 +313,8 @@ function getSearchContractWhereSQL(args: {
 
   const isSweepiesFilter = isSweepies ? `token = 'CASH'` : ''
 
+  const isManaFilter = isMana ? `token = 'MANA'` : ''
+
   const tierFilters = tiers
     .map((tier: MarketTierType, index) =>
       marketTier[index] === '1' ? `tier = '${tier}'` : ''
@@ -339,6 +338,7 @@ function getSearchContractWhereSQL(args: {
     where(isPrizeMarketFilter),
     where(isSweepiesFilter),
     where(combinedTierFilter),
+    where(isManaFilter),
   ]
 }
 

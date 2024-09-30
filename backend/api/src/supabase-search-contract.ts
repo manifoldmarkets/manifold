@@ -51,11 +51,13 @@ const search = async (
     props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
 
   const isSweepies = props.isSweepies == 'true' || props.isSweepies == '1'
+  const isMana = props.isMana == 'true' || props.isMana == '1'
 
   if (limit === 0) {
     return []
   }
 
+  console.log('isMana$#@$#*$)@*#)$(*#)%*)@#*%)(#@*%)@#*%)#(@*%)#(*%', isMana)
   const isForYou = forYou === '1'
   const isRecent = possibleTopicSlug === 'recent'
   const topicSlug =
@@ -83,7 +85,10 @@ const search = async (
       isPrizeMarket,
       isSweepies,
       marketTier: marketTier as TierParamsType,
+      isMana,
     })
+
+    // console.log('forYouSql', forYouSql)
     const start = Date.now()
     contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
     log('For you search completed in (s):', (Date.now() - start) / 1000)
@@ -124,7 +129,9 @@ const search = async (
           isPrizeMarket,
           isSweepies,
           marketTier: marketTier as TierParamsType,
+          isMana,
         })
+        // console.log('searchSQL', searchSQL)
         return pg
           .map(searchSQL, null, (r) => ({
             data: convertContract(r),

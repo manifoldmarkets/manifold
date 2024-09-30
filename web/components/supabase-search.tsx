@@ -657,6 +657,7 @@ const useContractSearch = (
         marketTier,
         forYou,
         isSweepies: isSweepiesString,
+        isMana: isSweepiesString == '0' ? '1' : '0',
       })
 
       if (id === requestId.current) {

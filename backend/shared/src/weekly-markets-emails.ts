@@ -77,6 +77,7 @@ export async function getForYouMarkets(
     privateUser,
     isSweepies: false,
     threshold: 200,
+    isMana: false,
   })
   const pg = createSupabaseDirectClient()
   const contracts = await pg.map(searchMarketSQL, [], (r) => convertContract(r))

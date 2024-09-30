@@ -72,5 +72,13 @@ export const searchProps = z
         z.literal('0'),
       ])
       .default('0'),
+    isMana: z
+      .union([
+        z.literal('true'),
+        z.literal('false'),
+        z.literal('1'),
+        z.literal('0'),
+      ])
+      .default('0'),
   })
   .strict()
