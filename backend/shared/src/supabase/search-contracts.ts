@@ -138,6 +138,7 @@ export async function getForYouSQL(items: {
         isPrizeMarket,
         isSweepies,
         marketTier,
+        isMana,
       }),
       offset <= threshold / 2 &&
         sort === 'score' &&

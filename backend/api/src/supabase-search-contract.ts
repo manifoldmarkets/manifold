@@ -57,7 +57,6 @@ const search = async (
     return []
   }
 
-  console.log('isMana$#@$#*$)@*#)$(*#)%*)@#*%)(#@*%)@#*%)#(@*%)#(*%', isMana)
   const isForYou = forYou === '1'
   const isRecent = possibleTopicSlug === 'recent'
   const topicSlug =
@@ -88,7 +87,6 @@ const search = async (
       isMana,
     })
 
-    // console.log('forYouSql', forYouSql)
     const start = Date.now()
     contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
     log('For you search completed in (s):', (Date.now() - start) / 1000)
@@ -131,7 +129,6 @@ const search = async (
           marketTier: marketTier as TierParamsType,
           isMana,
         })
-        // console.log('searchSQL', searchSQL)
         return pg
           .map(searchSQL, null, (r) => ({
             data: convertContract(r),
