@@ -17,7 +17,7 @@ import {
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { parsePhoneNumber } from 'libphonenumber-js'
 import { getIp, track } from 'shared/analytics'
-import { distributeKycAndReferralBonus } from 'shared/distribute-kyc-bonus'
+import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
 
 const ENDPOINT =
   GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerRegistration'
@@ -99,12 +99,7 @@ export const register: APIHandler<'register-gidx'> = async (
       kycDocumentStatus: 'await-documents',
       sweepstakesVerifiedTime: Date.now(),
     })
-    await distributeKycAndReferralBonus(
-      pg,
-      user,
-      referrerInfo?.id,
-      referrerInfo?.sweepsVerified
-    )
+    await distributeKycBonus(pg, user)
   }
   track(auth.uid, 'register user gidx attempt', {
     status,

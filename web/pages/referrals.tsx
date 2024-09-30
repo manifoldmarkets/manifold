@@ -62,7 +62,7 @@ export default function ReferralsPage() {
                 />
               </div>
               <p className="mt-2">
-                when they sign up & verify for sweepstakes!
+                when they register and purchase $100 of mana!
               </p>
             </div>
           ) : (
@@ -74,7 +74,7 @@ export default function ReferralsPage() {
                 <CoinNumber amount={REFERRAL_AMOUNT} isInline />
               </div>
               <p className="mt-2">
-                when they sign up and use your referral code!
+                when they register and purchase $100 of mana!
               </p>
             </div>
           )}
