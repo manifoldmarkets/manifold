@@ -57,6 +57,7 @@ import { linkClass } from '../widgets/site-link'
 import { Tooltip } from '../widgets/tooltip'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { useContractBets } from 'web/hooks/use-bets'
+import { TwombaToggle } from '../twomba/twomba-toggle'
 
 type BetSort =
   | 'newest'
@@ -229,27 +230,17 @@ export function UserBetsTable(props: { user: User }) {
           />
           <Carousel labelsParentClassName={'gap-1'}>
             {TWOMBA_ENABLED && (
-              <PillButton
-                selected={tokenFilter === 'CASH'}
-                onSelect={() => {
+              <TwombaToggle
+                sweepsEnabled
+                onClick={() => {
                   if (tokenFilter == 'CASH') {
                     onSetTokenFilter('ALL')
                   } else {
                     onSetTokenFilter('CASH')
                   }
                 }}
-                type="sweepies"
-              >
-                <Row
-                  className={clsx(
-                    'items-center gap-1',
-                    tokenFilter != 'CASH' ? 'opacity-50' : 'opacity-100'
-                  )}
-                >
-                  <SweepiesCoin />
-                  {SWEEPIES_NAME}
-                </Row>
-              </PillButton>
+                isPlay={tokenFilter !== 'CASH'}
+              />
             )}
             {(
               [

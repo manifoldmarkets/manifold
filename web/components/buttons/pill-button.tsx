@@ -14,7 +14,7 @@ export function PillButton(props: {
   return (
     <button
       className={clsx(
-        'cursor-pointer select-none whitespace-nowrap rounded-full px-3 py-1.5 outline-none',
+        'cursor-pointer select-none whitespace-nowrap rounded-full px-3 py-1 outline-none',
         xs ? 'text-xs' : 'text-sm',
         type === 'sweepies'
           ? selected
