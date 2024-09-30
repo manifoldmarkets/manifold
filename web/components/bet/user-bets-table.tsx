@@ -240,6 +240,7 @@ export function UserBetsTable(props: { user: User }) {
                   }
                 }}
                 isPlay={tokenFilter !== 'CASH'}
+                isSmall
               />
             )}
             {(
