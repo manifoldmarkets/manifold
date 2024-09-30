@@ -6,7 +6,7 @@ import { useLocation } from 'web/hooks/use-location'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useEffect } from 'react'
 import { useNativeInfo } from '../native-message-provider'
-import { useShowAfterLoadingTime } from './location-monitor'
+import { FirefoxWarning, useShowAfterLoadingTime } from './location-monitor'
 import { Col } from '../layout/col'
 
 export const LocationPanel = (props: {
@@ -47,6 +47,7 @@ export const LocationPanel = (props: {
     return (
       <Col>
         <LoadingIndicator />
+        <FirefoxWarning />
         {showLoadingNote && (
           <span className="text-warning mt-2">
             Loading location may take a while, hold on!
@@ -64,6 +65,7 @@ export const LocationPanel = (props: {
         You must allow location sharing to verify that you're in a participating
         municipality.
       </span>
+      <FirefoxWarning />
       <BottomRow>
         <Button color={'gray-white'} onClick={back}>
           Back
