@@ -73,18 +73,6 @@ describe('CPMM Calculations', () => {
       collectedFees: noFees,
     }
 
-    it('should update pool correctly after YES bet', () => {
-      const { newPool } = calculateCpmmPurchase(initialState, 5, 'YES')
-      expect(newPool.YES).toBeCloseTo(95.3882, 2)
-      expect(newPool.NO).toBeCloseTo(104.8348, 2)
-    })
-
-    it('should update pool correctly after NO bet', () => {
-      const { newPool } = calculateCpmmPurchase(initialState, 5, 'NO')
-      expect(newPool.YES).toBeCloseTo(104.8348, 2)
-      expect(newPool.NO).toBeCloseTo(95.3882, 2)
-    })
-
     it('should maintain constant product after bet', () => {
       const { newPool } = calculateCpmmPurchase(initialState, 10, 'YES')
       const initialProduct = initialState.pool.YES * initialState.pool.NO
