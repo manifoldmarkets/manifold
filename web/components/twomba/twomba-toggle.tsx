@@ -42,10 +42,10 @@ export function TwombaToggle({
     >
       <button
         className={clsx(
-          'bg-ink-200 dark:bg-canvas-50 relative flex h-fit w-fit shrink-0 flex-row items-center  rounded-full  p-0.5 transition-colors',
+          'bg-ink-200 dark:bg-canvas-50 relative flex h-fit w-fit shrink-0 flex-row items-center  rounded-full transition-colors',
           isSmall
-            ? 'gap-0.5  border-[0.5px] text-xl'
-            : 'gap-1 border-[1.5px] text-2xl ',
+            ? 'gap-0.5  border-[1px] p-[1px] text-xl'
+            : 'gap-1 border-[1.5px] p-0.5  text-2xl',
           isPlay
             ? 'border-violet-600 dark:border-violet-400'
             : 'border-amber-500 dark:border-amber-200',
@@ -61,9 +61,9 @@ export function TwombaToggle({
             isPlay
               ? 'left-0'
               : isSmall
-              ? 'left-[calc(100%-24px)]'
+              ? 'left-[calc(100%-22px)]'
               : 'left-[calc(100%-28px)]',
-            isSmall ? ' h-[24px] w-[2px]' : ' h-[28px] w-[28px] drop-shadow '
+            isSmall ? ' h-[22px] w-[22px]' : ' h-[28px] w-[28px] drop-shadow '
           )}
         />
         <ManaFlatCoin
