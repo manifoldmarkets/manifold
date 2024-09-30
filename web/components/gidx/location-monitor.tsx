@@ -5,6 +5,7 @@ import { Col } from '../layout/col'
 import { Contract } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
 export const LocationMonitor = (props: {
   contract: Contract
@@ -36,11 +37,12 @@ export const LocationMonitor = (props: {
     return null
   }
   return (
-    <Col className="py-2">
+    <Col className="gap-2 py-2">
       <span className="text-xl font-semibold">
         Location required to participate in sweepstakes
       </span>
-      <div className="mt-2 flex">
+      <FirefoxWarning />
+      <div className="flex">
         <Button
           size="xl"
           loading={loading}
@@ -55,10 +57,28 @@ export const LocationMonitor = (props: {
         </span>
       )}
       {monitorStatus !== 'success' && (
-        <span className="mt-2 text-red-500">{monitorStatusMessage}</span>
+        <span className=" text-red-500">{monitorStatusMessage}</span>
       )}
     </Col>
   )
+}
+
+export const FirefoxWarning = () => {
+  const isFirefox =
+    typeof window !== 'undefined' &&
+    navigator.userAgent.toLowerCase().indexOf('firefox') > -1
+
+  if (isFirefox) {
+    return (
+      <Image
+        src="/firefox-remember.png"
+        alt="Firefox Remember Location"
+        width={500}
+        height={200}
+      />
+    )
+  }
+  return null
 }
 
 export const useShowAfterLoadingTime = (
