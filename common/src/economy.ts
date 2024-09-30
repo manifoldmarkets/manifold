@@ -221,8 +221,5 @@ export const IOS_PRICES = TWOMBA_ENABLED
       // No 1M option on ios: the fees are too high
     ]
 
+export const SWEEPIES_CASHOUT_FEE = 0.05
 export const MIN_CASHOUT_AMOUNT = 25
-
-export const getCashoutFee = (amount: number) => {
-  return amount > 1000 ? 100 + 0.05 * (amount - 1000) : 0.1 * amount
-}

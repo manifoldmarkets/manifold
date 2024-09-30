@@ -28,7 +28,7 @@ Users may participate in a sweepstakes market by using sweepcash. It is free to 
 
 ### How much can I withdraw my Sweepcash winnings for?
 
-When eligible to be withdrawn, sweepcash can be redeemed at a rate of 1.00 sweepcash to 1.00 USD, minus fees. We charge 10% on the first $1,000 and 5% on anything above that. E.g. Redeeming 2,000 sweepcash means 150 sweepcash in fees, so you'd get $1850 in cash.
+When eligible to be withdrawn, sweepcash can be redeemed at a rate of 1.00 sweepcash to 1.00 USD, minus a 5% fee.
 
 ### How do I withdraw my Sweepcash winnings?
 

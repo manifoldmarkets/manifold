@@ -16,7 +16,7 @@ import { runTxn } from 'shared/txn/run-txn'
 import { getIp } from 'shared/analytics'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getUser, LOCAL_DEV } from 'shared/utils'
-import { getCashoutFee } from 'common/economy'
+import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
 import { floatingEqual } from 'common/util/math'
 
@@ -49,7 +49,7 @@ export const completeCashoutSession: APIHandler<
     throw new APIError(400, 'Insufficient redeemable prize cash')
   }
   const dollarsToWithdraw = PaymentAmount.dollars
-  const CalculatedPaymentAmount = manaCashAmount - getCashoutFee(manaCashAmount)
+  const CalculatedPaymentAmount = (1 - SWEEPIES_CASHOUT_FEE) * manaCashAmount
   if (dollarsToWithdraw !== CalculatedPaymentAmount) {
     throw new APIError(400, 'Payment amount mismatch')
   }

@@ -1,6 +1,5 @@
 import clsx from 'clsx'
-
-import { getCashoutFee, MIN_CASHOUT_AMOUNT } from 'common/economy'
+import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import { SWEEPIES_NAME } from 'common/envs/constants'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { formatSweepies, formatSweepsToUSD } from 'common/util/format'
@@ -178,7 +177,7 @@ export default function CashoutPage() {
         },
         SavePaymentMethod,
         PaymentAmount: {
-          dollars: sweepCashAmount - getCashoutFee(sweepCashAmount),
+          dollars: (1 - SWEEPIES_CASHOUT_FEE) * sweepCashAmount,
           manaCash: sweepCashAmount,
         },
         MerchantSessionID: checkoutSession.MerchantSessionID,
@@ -558,8 +557,7 @@ export default function CashoutPage() {
                   <Row className={'gap-1'}>
                     Redeem for{' '}
                     {formatSweepsToUSD(
-                      (sweepCashAmount ?? 0) -
-                        getCashoutFee(sweepCashAmount ?? 0)
+                      (1 - SWEEPIES_CASHOUT_FEE) * (sweepCashAmount ?? 0)
                     )}
                   </Row>
                 </Button>
