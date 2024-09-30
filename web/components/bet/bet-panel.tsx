@@ -850,7 +850,7 @@ export const BuyPanelBody = (props: {
           </Col>
         )}
 
-        {betType !== 'Limit' && (
+        {/* {betType !== 'Limit' && (
           <div className="text-ink-700 mt-1 text-sm">
             Fees{' '}
             <FeeDisplay
@@ -859,7 +859,7 @@ export const BuyPanelBody = (props: {
               isCashContract={isCashContract}
             />
           </div>
-        )}
+        )} */}
 
         {user && (
           <div className="absolute bottom-2 right-0">

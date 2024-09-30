@@ -260,7 +260,7 @@ export default function LimitOrderPanel(props: {
   let currentReturn = 0
   let orderAmount = 0
   let filledAmount = 0
-  let fees = noFees
+  // let fees = noFees
   try {
     const result = getBetReturns(
       cpmmState,
@@ -275,7 +275,7 @@ export default function LimitOrderPanel(props: {
     currentReturn = result.currentReturn
     orderAmount = result.orderAmount
     filledAmount = result.amount
-    fees = result.fees
+    // fees = result.fees
     betDeps.current = result.betDeps
   } catch (err: any) {
     // TODO: Twomba tracking bet terminology
@@ -286,7 +286,7 @@ export default function LimitOrderPanel(props: {
     )
   }
   const returnPercent = formatPercent(currentReturn)
-  const totalFees = getFeeTotal(fees)
+  // const totalFees = getFeeTotal(fees)
   const hideYesNo = isBinaryMC || !!pseudonym
 
   return (
@@ -462,7 +462,7 @@ export default function LimitOrderPanel(props: {
           </Row>
         )}
 
-        <Row className="items-center justify-between gap-2 text-sm">
+        {/* <Row className="items-center justify-between gap-2 text-sm">
           <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
             Fees
           </Row>
@@ -471,7 +471,7 @@ export default function LimitOrderPanel(props: {
             totalFees={totalFees}
             isCashContract={isCashContract}
           />
-        </Row>
+        </Row> */}
 
         <LocationMonitor
           contract={contract}

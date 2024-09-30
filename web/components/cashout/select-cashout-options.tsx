@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { MIN_CASHOUT_AMOUNT } from 'common/economy'
+import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import {
   CASH_TO_MANA_CONVERSION_RATE,
   CHARITY_FEE,
@@ -349,9 +349,8 @@ const ManaDescription = (props: { disabled?: boolean }) => (
             {formatSweepies(1)} {'→'}{' '}
             {formatMoney(CASH_TO_MANA_CONVERSION_RATE)}
           </b>
-          ,
+          .
         </span>
-        <span className="whitespace-nowrap">with zero fees!</span>
       </div>
     </Col>
   </div>
@@ -398,7 +397,7 @@ const DollarDescription = (props: { disabled?: boolean }) => (
           ,
         </span>
         <span>
-          minus a <b>{CHARITY_FEE * 100}% fee</b>.
+          minus a {SWEEPIES_CASHOUT_FEE * 100}% fee.
         </span>
       </div>
     </Col>
