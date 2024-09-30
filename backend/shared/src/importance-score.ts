@@ -2,7 +2,6 @@ import {
   SupabaseDirectClient,
   SupabaseDirectClientTimeout,
 } from 'shared/supabase/init'
-import { SupabaseClient } from 'common/supabase/utils'
 import {
   DAY_MS,
   HOUR_MS,
