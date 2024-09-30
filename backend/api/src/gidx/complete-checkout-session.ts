@@ -1,11 +1,11 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { PaymentAmount, PaymentAmountsGIDX } from 'common/economy'
+import { PaymentAmount, getPricesForUser } from 'common/economy'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import {
   CompleteSessionDirectCashierResponse,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
-import { introductoryTimeWindow } from 'common/user'
+import { introductoryTimeWindow, User } from 'common/user'
 import { getIp } from 'shared/analytics'
 import {
   getGIDXStandardParams,
@@ -21,8 +21,11 @@ import { getUser, LOCAL_DEV } from 'shared/utils'
 
 const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 
-const getPaymentAmountForWebPriceDollars = (priceInDollars: number) => {
-  const amount = PaymentAmountsGIDX.find(
+const getPaymentAmountForWebPriceDollars = (
+  user: User,
+  priceInDollars: number
+) => {
+  const amount = getPricesForUser(user).find(
     (p) => p.priceInDollars === priceInDollars
   )
   if (!amount) {
@@ -48,6 +51,7 @@ export const completeCheckoutSession: APIHandler<
     MerchantTransactionID,
   } = props
   const paymentAmount = getPaymentAmountForWebPriceDollars(
+    user,
     PaymentAmount.priceInDollars
   )
 

@@ -16,7 +16,7 @@ import { getIp } from 'shared/analytics'
 import { log } from 'shared/monitoring/log'
 import { randomBytes } from 'crypto'
 import { TWOMBA_CASHOUT_ENABLED, TWOMBA_ENABLED } from 'common/envs/constants'
-import { PaymentAmountsGIDX } from 'common/economy'
+import { getPricesForUser } from 'common/economy'
 import { getUserAndPrivateUserOrThrow, LOCAL_DEV } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getVerificationStatus } from 'common/gidx/user'
@@ -111,7 +111,7 @@ export const getCheckoutSession: APIHandler<
       }
     }
   }
-  const PaymentAmounts = PaymentAmountsGIDX
+  const PaymentAmounts = getPricesForUser(user)
   return {
     status,
     message,

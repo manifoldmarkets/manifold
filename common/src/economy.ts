@@ -4,6 +4,7 @@ import {
 } from 'common/contract'
 import { MarketTierType, tiers } from './tier'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { User } from './user'
 
 export const FIXED_ANTE = 1000
 const BASE_ANSWER_COST = FIXED_ANTE / 10
@@ -95,87 +96,61 @@ export const MANACHAN_TWEET_COST = 250
 export const PUSH_NOTIFICATION_BONUS = 1000
 export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
 
-export const PaymentAmounts = [
-  {
-    mana: 1_000,
-    priceInDollars: 13.99,
-    bonusInDollars: 0,
-  },
-  {
-    mana: 2_500,
-    priceInDollars: 29.99,
-    bonusInDollars: 0,
-  },
-  {
-    mana: 10_000,
-    priceInDollars: 109.99,
-    bonusInDollars: 0,
-  },
-  {
-    mana: 100_000,
-    priceInDollars: 1_000,
-    bonusInDollars: 0,
-  },
-  {
-    mana: 1_000,
-    priceInDollars: 5,
-    originalPriceInDollars: 13.99,
-    bonusInDollars: 0,
-    newUsersOnly: true,
-  },
-  {
-    mana: 5_000,
-    priceInDollars: 20,
-    originalPriceInDollars: 55.99,
-    bonusInDollars: 0,
-    newUsersOnly: true,
-  },
-]
+export const getPricesForUser = (user: User | undefined | null) =>
+  [
+    {
+      mana: 500,
+      priceInDollars: 5,
+      bonusInDollars: 0,
+    },
+    {
+      mana: 1_000,
+      priceInDollars: 15,
+      bonusInDollars: 10,
+    },
+    {
+      mana: 2_500,
+      priceInDollars: 30,
+      bonusInDollars: 25,
+    },
+    {
+      mana: 10_000,
+      priceInDollars: 110,
+      bonusInDollars: 100,
+    },
+    {
+      mana: 100_000,
+      priceInDollars: 1_000,
+      bonusInDollars: 1000,
+    },
+    {
+      mana: 1_000,
+      originalPriceInDollars: 15,
+      priceInDollars: 7,
+      bonusInDollars: 10,
+      newUsersOnly: true,
+    },
+    {
+      mana: 5_000,
+      originalPriceInDollars: 55,
+      priceInDollars: 20,
+      bonusInDollars: 40,
+      newUsersOnly: true,
+    },
+  ].map((price) => {
+    if (user?.sweepstakesVerified) {
+      return price
+    }
+    return {
+      ...price,
+      bonusInDollars: 0,
+    }
+  })
+const signedOutPrices = getPricesForUser(undefined)
 
-export const PaymentAmountsGIDX = [
-  {
-    mana: 1_000,
-    priceInDollars: 15,
-    bonusInDollars: 10,
-  },
-  {
-    mana: 2_500,
-    priceInDollars: 30,
-    bonusInDollars: 25,
-  },
-  {
-    mana: 10_000,
-    priceInDollars: 110,
-    bonusInDollars: 100,
-  },
-  {
-    mana: 100_000,
-    priceInDollars: 1_000,
-    bonusInDollars: 1000,
-  },
-  {
-    mana: 1_000,
-    originalPriceInDollars: 15,
-    priceInDollars: 7,
-    bonusInDollars: 10,
-    newUsersOnly: true,
-  },
-  {
-    mana: 5_000,
-    originalPriceInDollars: 55,
-    priceInDollars: 20,
-    bonusInDollars: 40,
-    newUsersOnly: true,
-  },
-]
-export type PaymentAmount = (typeof PaymentAmounts)[number]
+export type PaymentAmount = (typeof signedOutPrices)[number]
 
-export const MANA_WEB_PRICES = TWOMBA_ENABLED
-  ? PaymentAmountsGIDX
-  : PaymentAmounts
-
-export type WebPriceInDollars =
-  (typeof PaymentAmounts)[number]['priceInDollars']
+export type WebPriceInDollars = PaymentAmount['priceInDollars']
 // TODO: these prices should be a function of whether the user is sweepstakes verified or not
 export const IOS_PRICES = TWOMBA_ENABLED
   ? [
