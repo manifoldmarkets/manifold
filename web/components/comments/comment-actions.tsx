@@ -59,8 +59,10 @@ export function CommentActions(props: {
       {user && liveContract.outcomeType === 'BINARY' && !isCashContract && (
         <IconButton
           onClick={() => {
-            // TODO: Twomba tracking bet terminology
-            track('bet intent', { location: 'comment on contract' })
+            track('bet intent', {
+              location: 'comment on contract',
+              token: liveContract.token,
+            })
             setOutcome('YES')
             setShowBetModal(true)
           }}

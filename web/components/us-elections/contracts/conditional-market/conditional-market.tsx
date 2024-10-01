@@ -243,8 +243,10 @@ export const BinaryBetButton = (props: { contract: BinaryContract }) => {
         className="bg-primary-50 h-fit w-fit"
         onClick={(e) => {
           e.stopPropagation()
-          // TODO: Twomba tracking bet terminology
-          track('bet intent', { location: 'binary panel' })
+          track('bet intent', {
+            location: 'binary panel',
+            token: contract.token,
+          })
           setOutcome('YES')
         }}
       >

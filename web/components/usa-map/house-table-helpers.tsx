@@ -411,8 +411,9 @@ export const BuyPanelBody = (props: {
             <Button
               color={outcome === 'NO' ? 'red' : 'green'}
               size="xl"
-              // TODO: Twomba tracking bet terminology
-              onClick={withTracking(firebaseLogin, 'login from bet panel')}
+              onClick={withTracking(firebaseLogin, 'login from bet panel', {
+                token: contract.token,
+              })}
               className="flex-grow"
             >
               Sign up to predict

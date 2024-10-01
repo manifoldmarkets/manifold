@@ -379,8 +379,10 @@ export function BinaryBetButton(props: {
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            // TODO: Twomba tracking bet terminology
-            track('bet intent', { location: 'contract table' })
+            track('bet intent', {
+              location: 'contract table',
+              token: contract.token,
+            })
             if (!user) {
               firebaseLogin()
               return

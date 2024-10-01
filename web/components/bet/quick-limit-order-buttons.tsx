@@ -87,12 +87,12 @@ export const QuickLimitOrderButtons = (props: {
         setIsSubmitting(false)
       })
 
-    // TODO: Twomba tracking bet terminology
     await track(
       'bet',
       removeUndefinedProps({
         location: 'quick bet panel',
         outcomeType: contract.outcomeType,
+        token: contract.token,
         slug: contract.slug,
         contractId: contract.id,
         amount,

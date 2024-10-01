@@ -229,7 +229,6 @@ export default function LimitOrderPanel(props: {
       console.log(`placed ${TRADE_TERM}. Result:`, bet)
       if (onBuySuccess) onBuySuccess()
 
-      // TODO: Twomba tracking bet terminology
       await track('bet', {
         location: 'bet panel',
         outcomeType: contract.outcomeType,
@@ -240,6 +239,7 @@ export default function LimitOrderPanel(props: {
         limitProb: limitProb,
         isLimitOrder: true,
         answerId: multiProps?.answerToBuy.id,
+        token: contract.token,
       })
     } catch (e) {
       if (e instanceof APIError) {
@@ -278,7 +278,6 @@ export default function LimitOrderPanel(props: {
     // fees = result.fees
     betDeps.current = result.betDeps
   } catch (err: any) {
-    // TODO: Twomba tracking bet terminology
     console.error('Error in calculateCpmmMultiArbitrageBet:', err)
     setError(
       err?.message ??
