@@ -119,22 +119,22 @@ const App = () => {
 
   const setEndpointWithNativeQuery = useCallback(
     (endpoint?: string) => {
-      const url = new URL(baseUri)
-      url.pathname = endpoint ?? 'home'
-      setUrlWithNativeQuery(url.toString())
+      const url = baseUri + (endpoint || 'home')
+      setUrlWithNativeQuery(url)
     },
     [baseUri]
   )
 
   const setUrlWithNativeQuery = (urlString: string) => {
-    const url = new URL(urlString)
+    const [baseUrl, fragment] = urlString.split('#')
+    const url = new URL(baseUrl)
 
     const params = new URLSearchParams()
     params.set('nativePlatform', Platform.OS)
     params.set('rand', Math.random().toString())
     url.search = params.toString()
 
-    const newUrl = url.toString()
+    const newUrl = url.toString() + (fragment ? `#${fragment}` : '')
     log('Setting new url:', newUrl)
     setUrlToLoad(newUrl)
   }
