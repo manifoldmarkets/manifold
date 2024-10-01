@@ -64,21 +64,8 @@ export const searchProps = z
       .string()
       .regex(/^[01]{5}$/)
       .default('00000'),
-    isSweepies: z
-      .union([
-        z.literal('true'),
-        z.literal('false'),
-        z.literal('1'),
-        z.literal('0'),
-      ])
-      .default('0'),
-    isMana: z
-      .union([
-        z.literal('true'),
-        z.literal('false'),
-        z.literal('1'),
-        z.literal('0'),
-      ])
-      .default('0'),
+    token: z
+      .union([z.literal('MANA'), z.literal('CASH'), z.literal('ALL')])
+      .default('ALL'),
   })
   .strict()

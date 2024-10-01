@@ -28,7 +28,7 @@ import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 
 const DEFAULT_THRESHOLD = 1000
 const DEBUG = false
-
+type TokenInputType = 'CASH' | 'MANA' | 'ALL'
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
 
@@ -40,11 +40,10 @@ export async function getForYouSQL(items: {
   offset: number
   sort: 'score' | 'freshness-score'
   isPrizeMarket: boolean
-  isSweepies: boolean
+  token: TokenInputType
   marketTier: TierParamsType
   privateUser?: PrivateUser
   threshold?: number
-  isMana: boolean
 }) {
   const {
     filter,
@@ -53,11 +52,10 @@ export async function getForYouSQL(items: {
     offset,
     sort,
     isPrizeMarket,
-    isSweepies,
     marketTier,
     privateUser,
     threshold = DEFAULT_THRESHOLD,
-    isMana,
+    token,
   } = items
 
   let userId = items.userId
@@ -95,9 +93,8 @@ export async function getForYouSQL(items: {
         uid: userId,
         hideStonks: true,
         isPrizeMarket,
-        isSweepies,
         marketTier,
-        isMana,
+        token,
       }),
       privateUserBlocksSql(privateUser),
       lim(limit, offset)
@@ -136,9 +133,8 @@ export async function getForYouSQL(items: {
         uid: userId,
         hideStonks: true,
         isPrizeMarket,
-        isSweepies,
         marketTier,
-        isMana,
+        token,
       }),
       offset <= threshold / 2 &&
         sort === 'score' &&
@@ -186,9 +182,8 @@ export function getSearchContractSQL(args: {
   isForYou?: boolean
   searchType: SearchTypes
   isPrizeMarket?: boolean
-  isSweepies?: boolean
   marketTier: TierParamsType
-  isMana?: boolean
+  token: TokenInputType
 }) {
   const { term, sort, offset, limit, groupId, creatorId, searchType } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
@@ -263,9 +258,8 @@ function getSearchContractWhereSQL(args: {
   hideStonks?: boolean
   hideLove?: boolean
   isPrizeMarket?: boolean
-  isSweepies?: boolean
+  token: TokenInputType
   marketTier: TierParamsType
-  isMana?: boolean
 }) {
   const {
     filter,
@@ -276,9 +270,8 @@ function getSearchContractWhereSQL(args: {
     hideStonks,
     hideLove,
     isPrizeMarket,
-    isSweepies,
     marketTier,
-    isMana,
+    token,
   } = args
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
@@ -312,9 +305,12 @@ function getSearchContractWhereSQL(args: {
 
   const isPrizeMarketFilter = isPrizeMarket ? 'is_spice_payout = true' : ''
 
-  const isSweepiesFilter = isSweepies ? `token = 'CASH'` : ''
-
-  const isManaFilter = isMana ? `token = 'MANA'` : ''
+  const tokenFilter =
+    token === 'CASH'
+      ? `token = 'CASH'`
+      : token === 'MANA'
+      ? `token = 'MANA'`
+      : ''
 
   const tierFilters = tiers
     .map((tier: MarketTierType, index) =>
@@ -337,9 +333,8 @@ function getSearchContractWhereSQL(args: {
     where(creatorFilter),
     where(deletedFilter),
     where(isPrizeMarketFilter),
-    where(isSweepiesFilter),
+    where(tokenFilter),
     where(combinedTierFilter),
-    where(isManaFilter),
   ]
 }
 
