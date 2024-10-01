@@ -52,7 +52,7 @@ export const redeemShares = async (
       )
 
       const userNonRedemptionBetsByAnswer = groupBy(
-        bets.filter((bet) => bet.shares !== 0),
+        bets.filter((bet) => bet.shares !== 0 && bet.userId === userId),
         (bet) => bet.answerId
       )
 
