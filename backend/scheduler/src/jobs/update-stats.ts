@@ -21,7 +21,10 @@ import {
 } from 'shared/supabase/init'
 import { bulkUpsert } from 'shared/supabase/utils'
 import { saveCalibrationData } from 'shared/calculate-calibration'
-import { MANA_PURCHASE_RATE_CHANGE_DATE } from 'common/envs/constants'
+import {
+  MANA_PURCHASE_RATE_CHANGE_DATE,
+  MANA_PURCHASE_RATE_REVERT_DATE,
+} from 'common/envs/constants'
 import {
   updateTxnStats,
   insertLatestManaStats,
@@ -453,7 +456,7 @@ async function updateDailySales(
     `select
       date_trunc('day', created_time at time zone 'america/los_angeles')::date as start_date,
       sum(
-        case when created_time < $3 then amount / 100 else amount / 1000 end
+        case when created_time > $3 and created_time < $4 then amount / 1000 else amount / 100 end
       ) as sales
     from txns
       where category = 'MANA_PURCHASE'
@@ -461,7 +464,12 @@ async function updateDailySales(
       and created_time < date_to_midnight_pt($2)
     group by start_date
     order by start_date asc`,
-    [start, end, MANA_PURCHASE_RATE_CHANGE_DATE.toISOString()]
+    [
+      start,
+      end,
+      MANA_PURCHASE_RATE_CHANGE_DATE.toISOString(),
+      MANA_PURCHASE_RATE_REVERT_DATE.toISOString(),
+    ]
   )
 
   log('upsert daily sales')

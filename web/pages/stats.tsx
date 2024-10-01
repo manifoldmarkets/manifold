@@ -23,9 +23,15 @@ import { ManaSupplySummary } from 'web/components/stats/mana-summary'
 import { average } from 'common/util/math'
 import { useCallback, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { TRADE_TERM, TRADED_TERM } from 'common/envs/constants'
+import {
+  MANA_PURCHASE_RATE_CHANGE_DATE,
+  MANA_PURCHASE_RATE_REVERT_DATE,
+  TRADE_TERM,
+  TRADED_TERM,
+} from 'common/envs/constants'
 import { capitalize, partition } from 'lodash'
 import { KYCStats } from 'web/components/stats/kyc-stats'
+import { formatTimeShort } from 'web/lib/util/time'
 
 export const getStaticProps = async () => {
   try {
@@ -279,13 +285,14 @@ export function CustomAnalytics(props: {
       <BonusSummary txnSummaryStats={fromBankSummaryCash} />
       <Spacer h={8} />
       <Title>Transactions to Manifold</Title>
-      <span>(Ignores mana purchases)</span>
+      <span className="text-ink-500">(Ignores mana purchases)</span>
       <BonusSummary txnSummaryStats={toBankSummaryMana} />
       <BonusSummary txnSummaryStats={toBankSummaryCash} />
       <Spacer h={8} />
       <Title>Mana sales</Title>
       <p className="text-ink-500">
         <b>${formatWithCommas(last30dSales)}</b> of mana sold in the last 30d
+        <br />
       </p>
       <Spacer h={4} />
       <Tabs
@@ -309,6 +316,13 @@ export function CustomAnalytics(props: {
         ]}
       />
       <Spacer h={8} />
+      <span className="text-ink-500 italic">
+        mana purchased divided by 100, except from{' '}
+        {formatTimeShort(MANA_PURCHASE_RATE_CHANGE_DATE.valueOf())} to{' '}
+        {formatTimeShort(MANA_PURCHASE_RATE_REVERT_DATE.valueOf())} it is
+        divided by 1000
+      </span>
+      <Spacer h={10} />
       <KYCStats />
       <Spacer h={8} />
       <Title>Retention</Title>

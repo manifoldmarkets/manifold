@@ -540,3 +540,4 @@ export const RESERVED_PATHS = [
 ]
 
 export const MANA_PURCHASE_RATE_CHANGE_DATE = new Date('2024-05-16T18:20:00Z')
+export const MANA_PURCHASE_RATE_REVERT_DATE = new Date('2024-09-17T17:06:00Z') // commit date of sweepcash - PR #2840 5e8b46d8
