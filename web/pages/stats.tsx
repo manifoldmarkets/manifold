@@ -5,7 +5,7 @@ import { Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getStats } from 'web/lib/supabase/stats'
-import { first, last, orderBy, sum, sumBy, uniq } from 'lodash'
+import { orderBy, sum, sumBy, uniq } from 'lodash'
 import {
   formatLargeNumber,
   formatMoney,
