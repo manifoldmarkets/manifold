@@ -51,7 +51,9 @@ export default function ReferralsPage() {
 
           {isSweepstakesVerified ? (
             <div className="mb-8 text-center">
-              <p className="mb-4 text-xl">Invite friends to Manifold and you'll both get</p>
+              <p className="mb-4 text-xl">
+                Invite friends to Manifold and you'll both get
+              </p>
               <div className="flex items-center justify-center gap-2 text-2xl font-bold">
                 <CoinNumber
                   coinType={'CASH'}
