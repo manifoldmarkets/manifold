@@ -14,7 +14,13 @@ import {
   MULTI_NUMERIC_BUCKETS_MAX,
   NON_BETTING_OUTCOMES,
 } from 'common/contract'
-import { getAnte, MINIMUM_BOUNTY } from 'common/economy'
+import {
+  getAnte,
+  getTieredCost,
+  MINIMUM_BOUNTY,
+  UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
+  UNIQUE_BETTOR_BONUS_AMOUNT,
+} from 'common/economy'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
@@ -56,6 +62,7 @@ import { MultiNumericRangeSection } from 'web/components/new-contract/multi-nume
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MarketTierType } from 'common/tier'
 import { randomString } from 'common/util/random'
+import { formatWithToken } from 'common/util/format'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -610,11 +617,30 @@ export function ContractParamsForm(props: {
         }}
       >
         {submitState === 'EDITING'
-          ? 'Create Question'
+          ? `Create question for ${formatWithToken({
+              amount: getTieredCost(anteOrBounty, marketTier, outcomeType),
+              short: true,
+              token: 'M$',
+            })}`
           : submitState === 'LOADING'
           ? 'Creating...'
           : 'Created!'}
       </Button>
+      <div className="text-ink-600 -mt-3 text-sm">
+        Earn back your creation cost! Get a{' '}
+        <b>
+          {formatWithToken({
+            amount:
+              outcomeType == 'MULTIPLE_CHOICE'
+                ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
+                : UNIQUE_BETTOR_BONUS_AMOUNT,
+            short: true,
+            token: 'M$',
+          })}{' '}
+          bonus
+        </b>{' '}
+        for each unique trader on your question.
+      </div>
       <div />
     </Col>
   )
