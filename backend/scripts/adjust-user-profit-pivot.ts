@@ -8,9 +8,11 @@ if (require.main === module) {
     // const allUserIds = ['AJwLWoo3xue32XIiAVrL5SyR1WB2']
     const allUserIds = await pg.map(
       `
-            select id, created_time from users where
-            data->>'lastBetTime' is not null
-            order by created_time
+           select distinct users.id from users
+           join contract_bets cb on users.id = cb.user_id
+--           select id, created_time from users where
+--           data->>'lastBetTime' is not null
+--           order by created_time
             `,
       [],
       (row) => [row.id, row.created_time]
