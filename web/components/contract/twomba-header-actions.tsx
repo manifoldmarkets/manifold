@@ -260,7 +260,10 @@ export function TwombaHeaderActions(props: {
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
       <div className="relative z-50">
         {!isNonBetPollOrBountiedQuestion && (
-          <TwombaToggle sweepsEnabled={sweepsEnabled} />
+          <TwombaToggle
+            sweepsEnabled={sweepsEnabled}
+            isPlay={currentContract.token == 'MANA'}
+          />
         )}
       </div>
 
