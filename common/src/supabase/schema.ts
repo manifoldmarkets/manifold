@@ -1540,6 +1540,11 @@ export type Database = {
           cash_investment_value: number
           created_time: string
           end_time: string
+          full_investment_value: number | null
+          full_loan_total: number | null
+          full_mana_balance: number | null
+          full_spice_balance: number | null
+          full_total_mana_value: number | null
           id: number
           investment_value: number
           loan_total: number
@@ -1556,6 +1561,11 @@ export type Database = {
           cash_investment_value?: number
           created_time?: string
           end_time: string
+          full_investment_value?: number | null
+          full_loan_total?: number | null
+          full_mana_balance?: number | null
+          full_spice_balance?: number | null
+          full_total_mana_value?: number | null
           id?: never
           investment_value: number
           loan_total: number
@@ -1572,6 +1582,11 @@ export type Database = {
           cash_investment_value?: number
           created_time?: string
           end_time?: string
+          full_investment_value?: number | null
+          full_loan_total?: number | null
+          full_mana_balance?: number | null
+          full_spice_balance?: number | null
+          full_total_mana_value?: number | null
           id?: never
           investment_value?: number
           loan_total?: number
