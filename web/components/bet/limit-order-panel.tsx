@@ -232,6 +232,7 @@ export default function LimitOrderPanel(props: {
       await track('bet', {
         location: 'bet panel',
         outcomeType: contract.outcomeType,
+        token: contract.token,
         slug: contract.slug,
         contractId: contract.id,
         amount,
