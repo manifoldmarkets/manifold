@@ -65,6 +65,7 @@ import { CashoutLimitWarning } from './cashout-limit-warning'
 import { InBeta } from '../twomba/sweep-verify-section'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { getVerificationStatus } from 'common/gidx/user'
+import { FeeDisplay } from './fees'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -859,6 +860,14 @@ export const BuyPanelBody = (props: {
             />
           </div>
         )} */}
+        <div className="text-ink-700 select-none text-sm">
+          No fees
+          <InfoTooltip
+            text={`Now with no fees on ${TRADE_TERM}s, you keep more of your winnings!`}
+            className="text-ink-600 ml-1 mt-0.5"
+            size="sm"
+          />
+        </div>
 
         {user && (
           <div className="absolute bottom-2 right-0">
