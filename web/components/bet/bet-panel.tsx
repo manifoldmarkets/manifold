@@ -65,7 +65,6 @@ import { CashoutLimitWarning } from './cashout-limit-warning'
 import { InBeta } from '../twomba/sweep-verify-section'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { getVerificationStatus } from 'common/gidx/user'
-import { FeeDisplay } from './fees'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 

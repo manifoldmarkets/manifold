@@ -42,7 +42,6 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
 import { MoneyDisplay } from './money-display'
-import { InfoTooltip } from '../widgets/info-tooltip'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
