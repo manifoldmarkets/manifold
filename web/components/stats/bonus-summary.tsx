@@ -24,8 +24,9 @@ type DateAndCategoriesToTotals = { date: string } & {
 
 export const BonusSummary = (props: {
   txnSummaryStats: rowFor<'txn_summary_stats'>[]
+  days?: string[]
 }) => {
-  const { txnSummaryStats } = props
+  const { txnSummaryStats, days } = props
   const svgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const xAxisRef = useRef<SVGGElement>(null)
@@ -36,7 +37,7 @@ export const BonusSummary = (props: {
   const innerWidth = width - margin.left - margin.right
   const innerHeight = height - margin.top - margin.bottom
   const { data, xScale, stackGen, colorScale, yScale, keys } = useMemo(() => {
-    const data = orderAndGroupData(txnSummaryStats)
+    const data = orderAndGroupData(txnSummaryStats, days)
     const uniqueCategories = uniq(txnSummaryStats.map(getCategoryForTxn))
 
     const colorScale = scaleOrdinal<string>()
@@ -140,10 +141,13 @@ const getCategoryForTxn = (txn: rowFor<'txn_summary_stats'>) =>
   (txn.quest_type ? `${txn.quest_type}_` : '') +
     txn.category.replace('_REWARD', '').replace('_BONUS', '')
 
-const orderAndGroupData = (data: rowFor<'txn_summary_stats'>[]) => {
+const orderAndGroupData = (
+  data: rowFor<'txn_summary_stats'>[],
+  days?: string[]
+) => {
   const groupedData = groupBy(data, (row) => row.start_time.split(' ')[0])
-  return Object.keys(groupedData).map((date) => {
-    const transactions = groupedData[date]
+
+  const summedData = mapValues(groupedData, (transactions, date) => {
     const groupedByCategory = groupBy(transactions, getCategoryForTxn)
 
     const dailyTotals = mapValues(groupedByCategory, (txns) =>
@@ -153,6 +157,18 @@ const orderAndGroupData = (data: rowFor<'txn_summary_stats'>[]) => {
     const sortedDailyTotals = fromPairs(sortedDailyTotalsArray)
     return { date, ...sortedDailyTotals } as DateAndCategoriesToTotals
   })
+
+  const values = Object.values(summedData)
+
+  if (days) {
+    return days.map(
+      (day) => summedData[day] ?? ({ date: day } as DateAndCategoriesToTotals)
+    )
+  } else {
+    return Object.values(summedData)
+  }
+
+  return values
 }
 
 const StackedChartTooltip = (props: { data: DateAndCategoriesToTotals }) => {

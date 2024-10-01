@@ -5,7 +5,7 @@ import { Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getStats } from 'web/lib/supabase/stats'
-import { orderBy, sum, sumBy } from 'lodash'
+import { first, last, orderBy, sum, sumBy, uniq } from 'lodash'
 import {
   formatLargeNumber,
   formatMoney,
@@ -119,6 +119,12 @@ export function CustomAnalytics(props: {
     toBankSummary,
     (f) => f.token === 'CASH'
   )
+
+  const days = uniq(
+    [...fromBankSummary, ...toBankSummary].map(
+      (stat) => stat.start_time.split(' ')[0]
+    )
+  ).sort()
 
   const latestRecordingTime = orderBy(fromBankSummary, 'start_time', 'desc')[0]
     .start_time
@@ -281,13 +287,13 @@ export function CustomAnalytics(props: {
       <ManaSupplySummary manaSupplyStats={manaSupplyOverTime} />
       <Spacer h={8} />
       <Title>Transactions from Manifold</Title>
-      <BonusSummary txnSummaryStats={fromBankSummaryMana} />
-      <BonusSummary txnSummaryStats={fromBankSummaryCash} />
+      <BonusSummary txnSummaryStats={fromBankSummaryMana} days={days} />
+      <BonusSummary txnSummaryStats={fromBankSummaryCash} days={days} />
       <Spacer h={8} />
       <Title>Transactions to Manifold</Title>
       <span className="text-ink-500">(Ignores mana purchases)</span>
-      <BonusSummary txnSummaryStats={toBankSummaryMana} />
-      <BonusSummary txnSummaryStats={toBankSummaryCash} />
+      <BonusSummary txnSummaryStats={toBankSummaryMana} days={days} />
+      <BonusSummary txnSummaryStats={toBankSummaryCash} days={days} />
       <Spacer h={8} />
       <Title>Mana sales</Title>
       <p className="text-ink-500">
