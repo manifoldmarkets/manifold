@@ -32,6 +32,27 @@ export async function updateLeague() {
     (r) => r.id as string
   )
   log(`Loaded ${userIds.length} user ids.`)
+  // Earned fees from bets in your markets during the season.
+  const creatorFees = await pg.manyOrNone<{
+    user_id: string
+    category: string
+    amount: number
+  }>(
+    `select
+      contracts.creator_id as user_id,
+      'CREATOR_FEE' as category,
+      sum((cb.data->'fees'->>'creatorFee')::numeric) as amount
+    from contract_bets cb
+    join contracts on contracts.id = cb.contract_id
+    where
+      cb.created_time > millis_to_ts($2)
+      and cb.created_time < millis_to_ts($3)
+    group by contracts.creator_id
+    `,
+    [season, seasonStart, seasonEnd]
+  )
+
+  console.log('creator fees', creatorFees.length)
 
   log('Loading bets...')
   const betData = await pg.manyOrNone<{ data: Bet }>(
@@ -93,10 +114,12 @@ export async function updateLeague() {
   }
 
   const amountByUserId = groupBy(
-    userProfit.map((u) => ({ ...u, amount: +u.amount })),
+    [...userProfit, ...creatorFees].map((u) => ({
+      ...u,
+      amount: +u.amount,
+    })),
     'user_id'
   )
-
   const manaEarnedUpdates = []
   for (const [userId, manaEarned] of Object.entries(amountByUserId)) {
     const keys = manaEarned.map((a) => a.category)
