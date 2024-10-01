@@ -5,6 +5,7 @@ import { Contract } from './contract'
 import { noFees } from './fees'
 import { CandidateBet } from './new-bet'
 import { removeUndefinedProps } from './util/object'
+import { ContractMetric } from './contract-metric'
 
 type RedeemableBet = Pick<Bet, 'outcome' | 'shares' | 'loanAmount'>
 
@@ -17,6 +18,20 @@ export const getBinaryRedeemableAmount = (bets: RedeemableBet[]) => {
   const soldFrac = shares > 0 ? shares / Math.max(yesShares, noShares) : 0
 
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
+  const loanPayment = loanAmount * soldFrac
+  const netAmount = shares - loanPayment
+  return { shares, loanPayment, netAmount }
+}
+
+export const getBinaryRedeemableAmountFromContractMetric = (
+  contractMetric: ContractMetric
+) => {
+  const yesShares = contractMetric.totalShares['YES'] ?? 0
+  const noShares = contractMetric.totalShares['NO'] ?? 0
+  const shares = Math.max(Math.min(yesShares, noShares), 0)
+  const soldFrac = shares > 0 ? shares / Math.max(yesShares, noShares) : 0
+
+  const loanAmount = contractMetric.loan ?? 0
   const loanPayment = loanAmount * soldFrac
   const netAmount = shares - loanPayment
   return { shares, loanPayment, netAmount }

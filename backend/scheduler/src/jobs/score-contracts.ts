@@ -5,7 +5,6 @@ import {
 } from 'shared/supabase/init'
 
 export const scoreContracts = async () => {
-  const db = createSupabaseClient()
   const pg = createSupabaseDirectClient()
-  await calculateImportanceScore(db, pg)
+  await calculateImportanceScore(pg)
 }

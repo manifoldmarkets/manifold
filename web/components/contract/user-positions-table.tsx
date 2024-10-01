@@ -32,10 +32,10 @@ import {
   ShortLabel,
   YesLabel,
 } from 'web/components/outcome-label'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
+import { EmptyAvatar } from 'web/components/widgets/avatar'
 import { Carousel } from 'web/components/widgets/carousel'
 import { Pagination } from 'web/components/widgets/pagination'
-import { UserLink } from 'web/components/widgets/user-link'
+import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
@@ -578,19 +578,15 @@ const PositionRow = memo(function PositionRow(props: {
             'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
           )}
         >
-          <Avatar
-            size={'sm'}
-            avatarUrl={userAvatarUrl}
-            username={userUsername}
+          <UserAvatarAndBadge
+            user={{
+              id: userId,
+              name: userName,
+              avatarUrl: userAvatarUrl,
+              username: userUsername,
+            }}
+            short={isMobile}
           />
-          {userName && userUsername ? (
-            <UserLink
-              user={{ id: userId, name: userName, username: userUsername }}
-              short={isMobile}
-            />
-          ) : (
-            <span>Loading..</span>
-          )}
         </Row>
       </UserHovercard>
       <Col>

@@ -20,6 +20,8 @@ dayjs.extend(timezone)
 import { LoanTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 
+// TODO: we don't store loans on the contract bets anymore, they're now stored on the user contract metrics.
+// TODO: Before reenabling, move any loan writes to user_contract_metrics
 const LOANS_DIABLED = true
 
 export const requestloan: APIHandler<'request-loan'> = async (_, auth) => {

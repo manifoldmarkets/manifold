@@ -2,7 +2,6 @@ import {
   SupabaseDirectClient,
   SupabaseDirectClientTimeout,
 } from 'shared/supabase/init'
-import { SupabaseClient } from 'common/supabase/utils'
 import {
   DAY_MS,
   HOUR_MS,
@@ -26,7 +25,6 @@ export const IMPORTANCE_MINUTE_INTERVAL = 2
 export const MIN_IMPORTANCE_SCORE = 0.1
 
 export async function calculateImportanceScore(
-  db: SupabaseClient,
   pg: SupabaseDirectClientTimeout,
   readOnly = false,
   rescoreAll = false
@@ -108,9 +106,9 @@ export async function calculateImportanceScore(
     'previously active contracts'
   )
 
-  const todayComments = await getTodayComments(db)
-  const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
-  const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
+  const todayComments = await getTodayComments(pg)
+  const todayLikesByContract = await getRecentContractLikes(pg, dayAgo)
+  const thisWeekLikesByContract = await getRecentContractLikes(pg, weekAgo)
 
   const todayTradersByContract = {
     ...(await getContractTraders(pg, dayAgo, contractIds)),
@@ -230,17 +228,12 @@ export async function calculateImportanceScore(
   }
 }
 
-export const getTodayComments = async (db: SupabaseClient) => {
-  const counts = await db
-    .rpc('count_recent_comments_by_contract')
-    .then((res) =>
-      (res.data ?? []).map(({ contract_id, comment_count }) => [
-        contract_id,
-        comment_count,
-      ])
-    )
+export const getTodayComments = async (pg: SupabaseDirectClient) => {
+  const counts = await pg.func<
+    { contract_id: string; comment_count: number }[]
+  >('count_recent_comments_by_contract')
 
-  return Object.fromEntries(counts)
+  return Object.fromEntries(counts.map((c) => [c.contract_id, c.comment_count]))
 }
 
 export const getContractTraders = async (

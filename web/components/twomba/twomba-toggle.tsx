@@ -30,8 +30,6 @@ export function TwombaToggle({
     }
   }
 
-  const SweepiesCoin = sweepsEnabled ? SweepiesFlatCoin : SweepiesFlatCoinX
-
   return (
     <Tooltip
       text={
@@ -72,7 +70,7 @@ export function TwombaToggle({
             // sweepsEnabled ? '' : 'grayscale filter'
           )}
         />
-        <SweepiesCoin
+        <SweepiesFlatCoin
           className={clsx(
             'z-10 transition-opacity',
             isSmall ? 'h-4' : 'h-8',

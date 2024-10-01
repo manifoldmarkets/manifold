@@ -17,6 +17,7 @@ import {
 } from './sql-builder'
 import { buildArray } from 'common/util/array'
 import { APIParams } from 'common/api/schema'
+import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
 
 export const getBetsDirect = async (
   pg: SupabaseDirectClient,
@@ -134,12 +135,14 @@ export const insertBet = async (
   bet: Omit<Bet, 'id'>,
   pg: SupabaseDirectClient
 ) => {
+  await bulkUpdateUserMetricsWithNewBetsOnly(pg, [bet])
   return await insert(pg, 'contract_bets', betToRow(bet))
 }
 export const bulkInsertBets = async (
   bets: Omit<Bet, 'id'>[],
   pg: SupabaseDirectClient
 ) => {
+  await bulkUpdateUserMetricsWithNewBetsOnly(pg, bets)
   return await bulkInsert(pg, 'contract_bets', bets.map(betToRow))
 }
 

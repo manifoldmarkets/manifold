@@ -1,11 +1,15 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { PaymentAmount, PaymentAmountsGIDX } from 'common/economy'
+import {
+  PaymentAmount,
+  PaymentAmountsGIDX,
+  REFERRAL_MIN_PURCHASE_DOLLARS,
+} from 'common/economy'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import {
   CompleteSessionDirectCashierResponse,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
-import { introductoryTimeWindow } from 'common/user'
+import { introductoryTimeWindow, User } from 'common/user'
 import { getIp } from 'shared/analytics'
 import {
   getGIDXStandardParams,
@@ -15,9 +19,10 @@ import {
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { updateUser } from 'shared/supabase/users'
+import { getReferrerInfo, updateUser } from 'shared/supabase/users'
 import { runTxn } from 'shared/txn/run-txn'
 import { getUser, LOCAL_DEV } from 'shared/utils'
+import { distributeReferralBonusIfNoneGiven } from 'shared/distribute-referral-bonus'
 
 const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 
@@ -144,7 +149,7 @@ export const completeCheckoutSession: APIHandler<
   }
   if (PaymentStatusCode === '1') {
     await sendCoins(
-      userId,
+      user,
       paymentAmount,
       CompletedPaymentAmount * 100,
       MerchantTransactionID,
@@ -201,13 +206,14 @@ export const completeCheckoutSession: APIHandler<
 }
 
 const sendCoins = async (
-  userId: string,
+  user: User,
   amount: PaymentAmount,
   paidInCents: number,
   transactionId: string,
   sessionId: string,
   isSweepsVerified: boolean
 ) => {
+  const userId = user.id
   const data = { transactionId, type: 'gidx', paidInCents, sessionId }
   const pg = createSupabaseDirectClient()
   const manaPurchaseTxn = {
@@ -243,5 +249,16 @@ const sendCoins = async (
       purchasedMana: true,
       purchasedSweepcash: isSweepsVerified,
     })
+    const referrerInfo = user.usedReferralCode
+      ? await getReferrerInfo(pg, user.referredByUserId)
+      : undefined
+    if (referrerInfo && paidInCents / 100 >= REFERRAL_MIN_PURCHASE_DOLLARS) {
+      await distributeReferralBonusIfNoneGiven(
+        tx,
+        user,
+        referrerInfo.id,
+        referrerInfo.sweepsVerified
+      )
+    }
   })
 }
