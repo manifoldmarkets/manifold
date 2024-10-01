@@ -656,7 +656,7 @@ const useContractSearch = (
         isPrizeMarket: isPrizeMarketString,
         marketTier,
         forYou,
-        isSweepies: isSweepiesString,
+        token: isSweepiesString === '1' ? 'CASH' : 'MANA',
       })
 
       if (id === requestId.current) {

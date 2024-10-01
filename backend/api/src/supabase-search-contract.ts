@@ -45,12 +45,11 @@ const search = async (
     forYou,
     creatorId,
     marketTier,
+    token,
   } = props
 
   const isPrizeMarket =
     props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
-
-  const isSweepies = props.isSweepies == 'true' || props.isSweepies == '1'
 
   if (limit === 0) {
     return []
@@ -71,7 +70,7 @@ const search = async (
     userId &&
     (sort === 'score' || sort === 'freshness-score') &&
     !topicSlug &&
-    !isSweepies
+    token !== 'CASH'
   ) {
     const forYouSql = await getForYouSQL({
       userId,
@@ -81,9 +80,10 @@ const search = async (
       offset,
       sort,
       isPrizeMarket,
-      isSweepies,
+      token,
       marketTier: marketTier as TierParamsType,
     })
+
     const start = Date.now()
     contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
     log('For you search completed in (s):', (Date.now() - start) / 1000)
@@ -122,9 +122,10 @@ const search = async (
           isForYou,
           searchType,
           isPrizeMarket,
-          isSweepies,
+          token,
           marketTier: marketTier as TierParamsType,
         })
+
         return pg
           .map(searchSQL, null, (r) => ({
             data: convertContract(r),

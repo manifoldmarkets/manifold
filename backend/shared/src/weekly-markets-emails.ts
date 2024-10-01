@@ -75,7 +75,7 @@ export async function getForYouMarkets(
     isPrizeMarket: false,
     marketTier: '00000',
     privateUser,
-    isSweepies: false,
+    token: 'ALL',
     threshold: 200,
   })
   const pg = createSupabaseDirectClient()

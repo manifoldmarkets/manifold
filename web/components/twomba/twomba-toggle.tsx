@@ -39,10 +39,8 @@ export function TwombaToggle({
     >
       <button
         className={clsx(
-          'bg-ink-200 dark:bg-canvas-50 relative flex h-fit w-fit shrink-0 flex-row items-center rounded-full  p-0.5 transition-colors',
-          isSmall
-            ? 'gap-0.5  border-[1px]  text-lg'
-            : 'gap-1 border-[1.5px]   text-2xl',
+          'bg-ink-200 dark:bg-canvas-50 relative flex h-fit w-fit shrink-0 flex-row items-center gap-1 rounded-full  p-0.5 transition-colors',
+          isSmall ? ' border-[1px]  text-lg' : ' border-[1.5px]   text-2xl',
           isPlay
             ? 'border-violet-600 dark:border-violet-400'
             : 'border-amber-500 dark:border-amber-200',
