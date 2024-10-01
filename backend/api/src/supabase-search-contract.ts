@@ -51,7 +51,8 @@ const search = async (
     props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
 
   const isSweepies = props.isSweepies == 'true' || props.isSweepies == '1'
-  const isMana = props.isMana == 'true' || props.isMana == '1'
+  // const isMana = props.isMana == 'true' || props.isMana == '1'
+  const isMana = false
 
   if (limit === 0) {
     return []
@@ -129,6 +130,7 @@ const search = async (
           marketTier: marketTier as TierParamsType,
           isMana,
         })
+
         return pg
           .map(searchSQL, null, (r) => ({
             data: convertContract(r),
