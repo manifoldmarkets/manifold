@@ -1,4 +1,12 @@
-import { groupBy, isEqual, mapValues, sumBy, uniq, uniqBy } from 'lodash'
+import {
+  groupBy,
+  isEqual,
+  mapValues,
+  orderBy,
+  sumBy,
+  uniq,
+  uniqBy,
+} from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import {
   Contract,
@@ -60,6 +68,8 @@ import {
 } from 'common/economy'
 import { UniqueBettorBonusTxn } from 'common/txn'
 import { insertTxn } from 'shared/txn/run-txn'
+import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
+import { MarginalBet } from 'common/calculate-metrics'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -207,7 +217,12 @@ export const placeBetMain = async (
       deterministic
     )
     log('Redeeming shares for bettor', user.username, user.id)
-    await redeemShares(pgTrans, user.id, contract)
+    await redeemShares(pgTrans, [user.id], contract, [
+      {
+        ...newBetResult.newBet,
+        userId: user.id,
+      },
+    ])
     log('Share redemption transaction finished.')
     return result
   })
@@ -739,6 +754,7 @@ export const updateMakers = async (
     amount: number
     shares: number
   }> = []
+  const fillsAsNewBets: MarginalBet[] = []
 
   for (const makers of Object.values(makersByBet)) {
     const bet = makers[0].bet
@@ -750,7 +766,14 @@ export const updateMakers = async (
     const totalShares = sumBy(fills, 'shares')
     const totalAmount = sumBy(fills, 'amount')
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
-
+    fillsAsNewBets.push({
+      ...bet,
+      amount: sumBy(newFills, 'amount'),
+      shares: sumBy(newFills, 'shares'),
+      createdTime: orderBy(newFills, 'timestamp', 'desc')[0].timestamp,
+      loanAmount: 0, // limit order fills don't repay loans
+      isRedemption: false,
+    })
     updates.push({
       id: bet.id,
       fills,
@@ -762,6 +785,7 @@ export const updateMakers = async (
 
   const bulkUpdateStart = Date.now()
   await bulkUpdateLimitOrders(pgTrans, updates)
+  await bulkUpdateUserMetricsWithNewBetsOnly(pgTrans, fillsAsNewBets)
   const bulkUpdateEnd = Date.now()
   log(`bulkUpdateLimitOrders took ${bulkUpdateEnd - bulkUpdateStart}ms`)
 
@@ -790,12 +814,9 @@ export const updateMakers = async (
   )
 
   const makerIds = Object.keys(spentByUser)
-  if (makerIds.length > 0) {
-    log('Redeeming shares for makers', makerIds)
-    await Promise.all(
-      makerIds.map(async (userId) => redeemShares(pgTrans, userId, contract))
-    )
-  }
+
+  log('Redeeming shares for makers', makerIds)
+  await redeemShares(pgTrans, makerIds, contract, fillsAsNewBets)
 }
 
 export const getRoundedLimitProb = (limitProb: number | undefined) => {

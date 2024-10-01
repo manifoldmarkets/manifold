@@ -56,7 +56,10 @@ export async function updateUserMetricsCore(
       from users
         left join user_portfolio_history_latest uph on uph.user_id = users.id
       where (
-       users.id in (
+       users.id not in (select distinct user_id from user_events
+                where ts > now() - interval '10 minutes' and user_id is not null)
+       and
+       (users.id in (
            select distinct user_id from user_contract_interactions
            where created_time > now() - interval '2 weeks'
        ) or
@@ -70,8 +73,8 @@ export async function updateUserMetricsCore(
             join contracts on user_contract_metrics.contract_id = contracts.id
              where contracts.resolution_time is null
              and user_contract_metrics.has_shares = true
-           ))
-       )
+      ))
+    ))
         order by uph.last_calculated nulls first limit $3`,
         [random, BOT_USERNAMES, LIMIT],
         (r) => r.id as string
@@ -242,7 +245,6 @@ export async function updateUserMetricsCore(
     )
 
     const { balance, investmentValue, totalDeposits } = newPortfolio
-
     const allTimeProfit = balance + investmentValue - totalDeposits
 
     const unresolvedMetrics = freshMetrics.filter((m) => {

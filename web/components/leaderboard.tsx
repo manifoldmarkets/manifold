@@ -7,8 +7,8 @@ import { ReactNode } from 'react'
 
 interface LeaderboardEntry {
   id: string
-  username: string
-  name: string
+  username?: string
+  name?: string
   avatarUrl?: string
   rank?: number | null
 }

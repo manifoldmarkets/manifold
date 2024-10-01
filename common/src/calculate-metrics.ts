@@ -1,5 +1,9 @@
-import { Dictionary, min, sumBy, uniq } from 'lodash'
-import { calculatePayout, getContractBetMetricsPerAnswer } from './calculate'
+import { Dictionary, min, orderBy, sum, sumBy, uniq } from 'lodash'
+import {
+  calculatePayout,
+  calculateTotalSpentAndShares,
+  getContractBetMetricsPerAnswer,
+} from './calculate'
 import { Bet, LimitBet } from './bet'
 import {
   Contract,
@@ -11,7 +15,7 @@ import { User } from './user'
 import { computeFills } from './new-bet'
 import { CpmmState, getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
-import { logit } from './util/math'
+import { floatingEqual, logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer } from 'common/answer'
 import { noFees } from './fees'
@@ -269,4 +273,103 @@ export const calculateUserMetrics = (
       ),
     } as ContractMetric)
   })
+}
+
+export type MarginalBet = Pick<
+  Bet,
+  | 'userId'
+  | 'answerId'
+  | 'contractId'
+  | 'amount'
+  | 'shares'
+  | 'outcome'
+  | 'createdTime'
+  | 'loanAmount'
+  | 'isRedemption'
+  | 'probAfter'
+>
+
+export const calculateUserMetricsWithNewBetsOnly = (
+  newBets: MarginalBet[],
+  um: Omit<ContractMetric, 'id'>
+) => {
+  const needsTotalSpentBackfilled = !um.totalSpent
+  const initialTotalSpent: { [key: string]: number } = um.totalSpent ?? {}
+  // TODO: remove this after backfilling
+  if (needsTotalSpentBackfilled) {
+    if (um.hasNoShares && !um.hasYesShares) {
+      initialTotalSpent.NO = um.invested
+    } else if (um.hasYesShares && !um.hasNoShares) {
+      initialTotalSpent.YES = um.invested
+    } else {
+      initialTotalSpent.NO = um.invested / 2
+      initialTotalSpent.YES = um.invested / 2
+    }
+  }
+
+  const initialTotalShares = { ...um.totalShares }
+
+  const { totalSpent, totalShares } = calculateTotalSpentAndShares(
+    newBets,
+    initialTotalSpent,
+    initialTotalShares
+  )
+
+  const invested = sum(Object.values(totalSpent))
+  const loan = sumBy(newBets, (b) => b.loanAmount ?? 0) + um.loan
+
+  const hasShares = Object.values(totalShares).some(
+    (shares) => !floatingEqual(shares, 0)
+  )
+  const hasYesShares = (totalShares.YES ?? 0) >= 1
+  const hasNoShares = (totalShares.NO ?? 0) >= 1
+  const soldOut = !hasNoShares && !hasYesShares
+  const maxSharesOutcome = soldOut
+    ? null
+    : (totalShares.NO ?? 0) > (totalShares.YES ?? 0)
+    ? 'NO'
+    : 'YES'
+  const lastBet = orderBy(newBets, (b) => b.createdTime, 'desc')[0]
+  const payout = soldOut
+    ? 0
+    : maxSharesOutcome
+    ? totalShares[maxSharesOutcome] *
+      (maxSharesOutcome === 'NO' ? 1 - lastBet.probAfter : lastBet.probAfter)
+    : 0
+  const totalAmountSold =
+    (um.totalAmountSold ?? 0) +
+    sumBy(
+      newBets.filter((b) => b.isRedemption || b.amount < 0),
+      (b) => -b.amount
+    )
+  const totalAmountInvested =
+    (um.totalAmountInvested ?? 0) +
+    sumBy(
+      newBets.filter((b) => b.amount > 0 && !b.isRedemption),
+      (b) => b.amount
+    )
+  const profit = payout + totalAmountSold - totalAmountInvested
+  const profitPercent = floatingEqual(totalAmountInvested, 0)
+    ? 0
+    : (profit / totalAmountInvested) * 100
+
+  return {
+    ...um,
+    loan: floatingEqual(loan, 0) ? 0 : loan,
+    invested: floatingEqual(invested, 0) ? 0 : invested,
+    totalShares,
+    hasNoShares,
+    hasYesShares,
+    hasShares,
+    maxSharesOutcome,
+    lastBetTime: lastBet.createdTime,
+    totalSpent,
+    payout: floatingEqual(payout, 0) ? 0 : payout,
+    totalAmountSold: floatingEqual(totalAmountSold, 0) ? 0 : totalAmountSold,
+    totalAmountInvested: floatingEqual(totalAmountInvested, 0)
+      ? 0
+      : totalAmountInvested,
+    profit,
+    profitPercent,
+  }
 }
