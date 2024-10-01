@@ -70,6 +70,7 @@ import { UniqueBettorBonusTxn } from 'common/txn'
 import { insertTxn } from 'shared/txn/run-txn'
 import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
 import { MarginalBet } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -295,6 +296,8 @@ export const fetchContractBetDataAndValidate = async (
            (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
            )
         and not b.is_filled and not b.is_cancelled;
+        select data from user_contract_metrics where user_id = $1 and contract_id = $2 and
+           ($3 is null or answer_id in ($3:list));
   `
 
   const results = await pgTrans.multi(queries, [
@@ -309,6 +312,7 @@ export const fetchContractBetDataAndValidate = async (
     balance: number
     cash_balance: number
   })[]
+  const contractMetrics = results[4].map((r) => r.data) as ContractMetric[]
 
   if (!user) throw new APIError(404, 'User not found.')
   if (!contract) throw new APIError(404, 'Contract not found.')
@@ -362,6 +366,7 @@ export const fetchContractBetDataAndValidate = async (
     unfilledBets,
     balanceByUserId,
     unfilledBetUserIds,
+    contractMetrics,
   }
 }
 

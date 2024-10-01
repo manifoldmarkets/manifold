@@ -1,4 +1,4 @@
-import { mapValues, groupBy, sumBy, isEqual } from 'lodash'
+import { isEqual } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { MarketContract } from 'common/contract'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
@@ -13,15 +13,15 @@ import { onCreateBets } from 'api/on-create-bet'
 import { log } from 'shared/utils'
 import * as crypto from 'crypto'
 import { runShortTrans } from 'shared/short-transaction'
-import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
   SupabaseTransaction,
 } from 'shared/supabase/init'
-import { Bet, LimitBet } from 'common/bet'
+import { LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
+import { ContractMetric } from 'common/contract-metric'
 
 const fetchSellSharesDataAndValidate = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
@@ -30,22 +30,7 @@ const fetchSellSharesDataAndValidate = async (
   userId: string,
   isApi: boolean
 ) => {
-  const userBetsPromise = pgTrans.map(
-    `select * from contract_bets where user_id = $1
-        and contract_id = $2
-        ${answerId ? 'and answer_id = $3' : ''}
-        order by created_time desc`,
-    [userId, contractId, answerId],
-    convertBet
-  )
-  const {
-    user,
-    contract,
-    answers,
-    balanceByUserId,
-    unfilledBets,
-    unfilledBetUserIds,
-  } = await fetchContractBetDataAndValidate(
+  const res = await fetchContractBetDataAndValidate(
     pgTrans,
     {
       contractId,
@@ -55,8 +40,7 @@ const fetchSellSharesDataAndValidate = async (
     userId,
     isApi
   )
-  const userBets = await userBetsPromise
-
+  const { contract } = res
   const { mechanism } = contract
 
   if (mechanism !== 'cpmm-1' && mechanism !== 'cpmm-multi-1')
@@ -65,15 +49,7 @@ const fetchSellSharesDataAndValidate = async (
       'You can only sell shares on cpmm-1 or cpmm-multi-1 contracts'
     )
 
-  return {
-    user,
-    contract,
-    answers,
-    balanceByUserId,
-    unfilledBets,
-    unfilledBetUserIds,
-    userBets,
-  }
+  return res
 }
 
 const calculateSellResult = (
@@ -84,15 +60,10 @@ const calculateSellResult = (
   answerId: string | undefined,
   outcome: 'YES' | 'NO' | undefined,
   shares: number | undefined,
-  userBets: Bet[]
+  contractMetric: ContractMetric
 ) => {
   const { mechanism } = contract
-
-  const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
-  const betsByOutcome = groupBy(userBets, (bet) => bet.outcome)
-  const sharesByOutcome = mapValues(betsByOutcome, (bets) =>
-    sumBy(bets, (b) => b.shares)
-  )
+  const { totalShares: sharesByOutcome, loan: loanAmount } = contractMetric
 
   let chosenOutcome: 'YES' | 'NO'
   if (outcome != null) {
@@ -193,7 +164,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   const isApi = auth.creds.kind === 'key'
   const { contractId, shares, outcome, answerId } = props
   const pg = createSupabaseDirectClient()
-  const { contract, answers, balanceByUserId, unfilledBets, userBets } =
+  const { contract, answers, balanceByUserId, unfilledBets, contractMetrics } =
     await fetchSellSharesDataAndValidate(
       pg,
       contractId,
@@ -209,7 +180,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     answerId,
     outcome,
     shares,
-    userBets
+    contractMetrics[0]
   )
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
   const deps = [userId, contractId, ...simulatedMakerIds]
@@ -232,7 +203,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     answers,
     balanceByUserId,
     unfilledBets,
-    userBets,
+    contractMetrics,
     unfilledBetUserIds,
   } = await fetchSellSharesDataAndValidate(
     pg,
@@ -249,7 +220,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     answerId,
     outcome,
     shares,
-    userBets
+    contractMetrics[0]
   )
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
 
@@ -284,7 +255,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       answerId,
       outcome,
       shares,
-      userBets
+      contractMetrics[0]
     )
     log(`Calculated sale information for ${user.username} - auth ${userId}.`)
 
