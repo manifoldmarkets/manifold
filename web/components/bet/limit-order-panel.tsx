@@ -45,6 +45,7 @@ import { MoneyDisplay } from './money-display'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import { LocationMonitor } from '../gidx/location-monitor'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -471,6 +472,14 @@ export default function LimitOrderPanel(props: {
             isCashContract={isCashContract}
           />
         </Row> */}
+        <div className="text-ink-700 select-none text-sm">
+          No fees
+          <InfoTooltip
+            text={`Now with no fees on ${TRADE_TERM}s, you keep more of your winnings!`}
+            className="text-ink-600 ml-1 mt-0.5"
+            size="sm"
+          />
+        </div>
 
         <LocationMonitor
           contract={contract}

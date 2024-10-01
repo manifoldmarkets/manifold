@@ -42,6 +42,7 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
 import { MoneyDisplay } from './money-display'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
@@ -306,6 +307,7 @@ export function SellPanel(props: {
           Fees
           <FeeDisplay totalFees={totalFees} amount={saleValue + totalFees} />
         </Row> */}
+
         <Row className="text-ink-500 items-center justify-between gap-2">
           Profit
           <span className="text-ink-700">
