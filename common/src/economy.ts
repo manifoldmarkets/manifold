@@ -7,6 +7,7 @@ import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const FIXED_ANTE = 1000
 const BASE_ANSWER_COST = FIXED_ANTE / 10
+const MIN_ANSWER_COST = 25
 const ANTES = {
   BINARY: FIXED_ANTE,
   MULTIPLE_CHOICE: BASE_ANSWER_COST, // Amount per answer.
@@ -20,7 +21,10 @@ const ANTES = {
 
 export const getTieredAnswerCost = (marketTier: MarketTierType | undefined) => {
   return marketTier
-    ? BASE_ANSWER_COST * 10 ** (tiers.indexOf(marketTier) - 1)
+    ? Math.max(
+        BASE_ANSWER_COST * 10 ** (tiers.indexOf(marketTier) - 1),
+        MIN_ANSWER_COST
+      )
     : BASE_ANSWER_COST
 }
 
