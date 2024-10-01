@@ -2,7 +2,6 @@ import clsx from 'clsx'
 import { ManaFlatCoin } from 'web/public/custom-components/manaFlatCoin'
 import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
 import { useSweepstakes } from 'web/components/sweestakes-context'
-import { SweepiesFlatCoinX } from 'web/public/custom-components/sweepiesFlatCoinX'
 import { Tooltip } from 'web/components/widgets/tooltip'
 
 export function TwombaToggle({
