@@ -32,6 +32,7 @@ import { onCreateBets } from 'api/on-create-bet'
 import {
   BANNED_TRADING_USER_IDS,
   BOT_USERNAMES,
+  CASH_BETS_DISABLED,
   isAdminId,
   PARTNER_USER_IDS,
 } from 'common/envs/constants'
@@ -518,7 +519,6 @@ export type NewBetResult = BetInfo & {
     ordersToCancel: LimitBet[]
   }[]
 }
-
 export const executeNewBetResult = async (
   pgTrans: SupabaseTransaction,
   newBetResult: NewBetResult,
@@ -530,6 +530,9 @@ export const executeNewBetResult = async (
   deterministic?: boolean,
   firstBetInMultiBet?: boolean
 ) => {
+  if (contract.token === 'CASH' && CASH_BETS_DISABLED) {
+    throw new APIError(403, 'Cannot bet with CASH token atm.')
+  }
   const allOrdersToCancel: LimitBet[] = []
   const fullBets: Bet[] = []
 
