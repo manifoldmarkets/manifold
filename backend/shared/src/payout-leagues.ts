@@ -1,10 +1,11 @@
 import { getLeaguePrize, league_user_info } from 'common/leagues'
 import { SupabaseDirectClient } from './supabase/init'
 import { createLeagueChangedNotification } from './create-notification'
-import { runTxnFromBank } from './txn/run-txn'
+import { runTxn, runTxnFromBank } from './txn/run-txn'
 
 import { LeaguePrizeTxn } from 'common/txn'
 import { chunk } from 'lodash'
+import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const sendEndOfSeasonNotificationsAndBonuses = async (
   pg: SupabaseDirectClient,
@@ -56,26 +57,28 @@ const sendEndOfSeasonNotificationAndBonus = async (
   const prize = getLeaguePrize(division, rank)
   if (!prize) return
 
-  const data: Omit<LeaguePrizeTxn, 'fromId' | 'id' | 'createdTime'> = {
-    fromType: 'BANK',
-    toId: userId,
-    toType: 'USER',
+  const data: any = {
+    fromId: userId,
+    fromType: 'USER',
+    toType: 'BANK',
+    toId: 'BANK',
     amount: prize,
-    token: 'M$',
-    category: 'LEAGUE_PRIZE',
+    token: 'CASH',
+    category: 'LEAGUE_PRIZE_UNDO',
     data: prevRow,
   }
 
-  const alreadyGotPrize = await pg.oneOrNone(
+  const alreadyGotPrizeReverted = await pg.oneOrNone(
     `select * from txns
-      where category = 'LEAGUE_PRIZE'
+      where category = 'LEAGUE_PRIZE_UNDO'
       and data->'data'->>'season' = $1
-      and to_id = $2`,
+      and from_id = $2`,
     [season.toString(), userId]
   )
-  if (!alreadyGotPrize) {
+
+  if (!alreadyGotPrizeReverted) {
     console.log(
-      'send',
+      'unsend',
       newRow.user_id,
       'division',
       division,
@@ -85,9 +88,10 @@ const sendEndOfSeasonNotificationAndBonus = async (
       prize
     )
 
+    // console.log(data)
     await pg.tx(async (tx) => {
-      await runTxnFromBank(tx, data)
-      await createLeagueChangedNotification(userId, prevRow, newRow, prize, tx)
+      await runTxn(tx, data)
+      // await createLeagueChangedNotification(userId, prevRow, newRow, prize, tx)
     })
   }
 }

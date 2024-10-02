@@ -27,9 +27,9 @@ export async function runTxn(
       throw new APIError(400, 'Invalid amount')
     }
 
-    if (!isAdminId(fromId) && amount <= 0) {
-      throw new APIError(400, 'Amount must be positive')
-    }
+    // if (!isAdminId(fromId) && amount <= 0) {
+    //   throw new APIError(400, 'Amount must be positive')
+    // }
 
     if (token !== 'SPICE' && token !== 'M$' && token !== 'CASH') {
       throw new APIError(400, `Invalid token type: ${token}`)
@@ -56,12 +56,12 @@ export async function runTxn(
           totalDeposits: -amount,
         })
       } else if (token === 'CASH') {
-        if (fromUser.cashBalance < amount) {
-          throw new APIError(
-            403,
-            `Insufficient cash balance: ${fromUser.username} needed ${amount} but only had ${fromUser.cashBalance}`
-          )
-        }
+        // if (fromUser.cashBalance < amount) {
+        //   throw new APIError(
+        //     403,
+        //     `Insufficient cash balance: ${fromUser.username} needed ${amount} but only had ${fromUser.cashBalance}`
+        //   )
+        // }
         log('decrementing cash balance', fromId, amount)
         await incrementBalance(pgTransaction, fromId, {
           cashBalance: -amount,
