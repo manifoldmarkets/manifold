@@ -1,6 +1,5 @@
 import {
   BinaryContract,
-  CPMMMultiContract,
   Contract,
   contractPath,
 } from 'common/contract'
@@ -12,8 +11,6 @@ import {
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { probToColor } from './state-election-map'
-import { MultiBettor, OpenProb } from '../answers/answer-components'
-import { Answer } from 'common/answer'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import Link from 'next/link'

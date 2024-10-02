@@ -12,7 +12,6 @@ import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import {
   ElectoralCollegeVisual,
   sortByDemocraticDiff,
-  sortByProbability,
 } from './electoral-college-visual'
 import {
   SwingStateContract,
@@ -33,7 +32,6 @@ import {
 } from 'web/public/data/elections-data'
 import { HouseTable } from './house-table'
 import { useSweepstakes } from '../sweestakes-context'
-import e from 'cors'
 
 type MapMode = 'presidency' | 'senate' | 'house' | 'governor'
 
