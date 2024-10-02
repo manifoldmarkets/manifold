@@ -399,6 +399,7 @@ const BottomActionRow = (props: {
 }) => {
   const { contract, feedReason, user, underline } = props
   const { question } = contract
+  const isCashContract = contract.token == 'CASH'
 
   return (
     <Row
@@ -437,9 +438,11 @@ const BottomActionRow = (props: {
                 className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
               >
                 <TbDropletHeart className="h-6 w-6 stroke-2" />
-                <div>
-                  {ENV_CONFIG.moneyMoniker}
-                  {shortFormatNumber(contract.totalLiquidity)}
+                <div className="text-ink-600">
+                  {formatWithToken({
+                    amount: contract.totalLiquidity,
+                    token: isCashContract ? 'CASH' : 'M$',
+                  })}
                 </div>
               </Row>
             </Tooltip>
@@ -462,6 +465,7 @@ const BottomActionRow = (props: {
           placement="top"
           feedReason={feedReason}
           contractId={contract.id}
+          heartClassName="stroke-ink-500"
         />
       </BottomRowButtonWrapper>
     </Row>

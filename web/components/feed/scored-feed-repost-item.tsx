@@ -14,7 +14,7 @@ import { PrivateUser, User } from 'common/user'
 import { TradesButton } from 'web/components/contract/trades-button'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { shortFormatNumber } from 'common/util/format'
+import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { LikeButton } from 'web/components/contract/like-button'
@@ -228,7 +228,7 @@ export const BottomActionRow = (props: {
   className?: string
 }) => {
   const { contract, className, comment, privateUser, user } = props
-
+  const isCashContract = contract.token == 'CASH'
   return (
     <Row className={clsx('justify-between pt-2', 'pb-2', className)}>
       <BottomRowButtonWrapper>
@@ -261,9 +261,11 @@ export const BottomActionRow = (props: {
                 className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
               >
                 <TbDropletHeart className="h-6 w-6 stroke-2" />
-                <div>
-                  {ENV_CONFIG.moneyMoniker}
-                  {shortFormatNumber(contract.totalLiquidity)}
+                <div className="text-ink-600">
+                  {formatWithToken({
+                    amount: contract.totalLiquidity,
+                    token: isCashContract ? 'CASH' : 'M$',
+                  })}
                 </div>
               </Row>
             </Tooltip>
@@ -291,6 +293,7 @@ export const BottomActionRow = (props: {
           contractId={contract.id}
           commentId={comment.id}
           feedReason={'repost'}
+          heartClassName="stroke-ink-500"
         />
       </BottomRowButtonWrapper>
     </Row>

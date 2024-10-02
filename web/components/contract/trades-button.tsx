@@ -56,7 +56,7 @@ export function TradesButton(props: {
         >
           <Tooltip text={tooltipText} placement="top" noTap>
             <Row className="relative items-center gap-1.5 text-sm">
-              <UserIcon className="h-5 w-5" />
+              <UserIcon className="text-ink-500 h-5 w-5" />
               <TradesNumber contract={contract} answer={answer} />
             </Row>
           </Tooltip>
@@ -75,7 +75,11 @@ export function TradesButton(props: {
           <Tooltip text={tooltipText} placement="bottom" noTap>
             <Row className="relative items-center gap-0.5">
               <FaUser className=" h-2.5 w-2.5" />
-              <TradesNumber contract={contract} answer={answer} />
+              <TradesNumber
+                contract={contract}
+                answer={answer}
+                className="text-ink-600"
+              />
             </Row>
           </Tooltip>
         </button>
@@ -94,8 +98,9 @@ export function TradesNumber(props: {
   contract: Contract
   answer?: Answer
   shorten?: boolean
+  className?: string
 }) {
-  const { contract, answer, shorten } = props
+  const { contract, answer, shorten, className } = props
 
   const isBounty = contract.outcomeType === 'BOUNTIED_QUESTION'
 
@@ -111,9 +116,9 @@ export function TradesNumber(props: {
     ? uniqueAnswerBettorCount
     : uniqueTraders || ''
   if (shorten) {
-    return <>{shortenNumber(+tradesNumber)}</>
+    return <div className={className}>{shortenNumber(+tradesNumber)}</div>
   }
-  return <>{tradesNumber}</>
+  return <div className={className}>{tradesNumber}</div>
 }
 
 export function TradesModal(props: {
