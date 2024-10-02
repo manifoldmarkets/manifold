@@ -262,35 +262,34 @@ export async function updateUserMetricsCore(
       }
       return !contract.isResolved
     })
-    const resolvedProfitAdjustment = user.resolvedProfitAdjustment ?? 0
-    // TODO: uncomment before merging
-    // if (since === 0) {
-    //   const resolvedMetrics = freshMetrics.filter((m) => {
-    //     const contract = contractsById[m.contractId]
-    //
-    //     if (contract.token !== 'MANA') return false
-    //
-    //     if (contract.mechanism === 'cpmm-multi-1') {
-    //       // Don't double count null answer (summary) profits
-    //       if (!m.answerId) return false
-    //       const answer = answersByContractId[m.contractId]?.find(
-    //         (a) => a.id === m.answerId
-    //       )
-    //       return !!answer?.resolutionTime
-    //     }
-    //     return contract.isResolved
-    //   })
-    //   resolvedProfitAdjustment = sumBy(
-    //     resolvedMetrics,
-    //     (m) => m.profitAdjustment ?? 0
-    //   )
-    //   await pg.none(
-    //     `update users
-    //      set resolved_profit_adjustment = $1
-    //      where id = $2`,
-    //     [resolvedProfitAdjustment, user.id]
-    //   )
-    // }
+    let resolvedProfitAdjustment = user.resolvedProfitAdjustment ?? 0
+    if (since === 0) {
+      const resolvedMetrics = freshMetrics.filter((m) => {
+        const contract = contractsById[m.contractId]
+
+        if (contract.token !== 'MANA') return false
+
+        if (contract.mechanism === 'cpmm-multi-1') {
+          // Don't double count null answer (summary) profits
+          if (!m.answerId) return false
+          const answer = answersByContractId[m.contractId]?.find(
+            (a) => a.id === m.answerId
+          )
+          return !!answer?.resolutionTime
+        }
+        return contract.isResolved
+      })
+      resolvedProfitAdjustment = sumBy(
+        resolvedMetrics,
+        (m) => m.profitAdjustment ?? 0
+      )
+      await pg.none(
+        `update users
+         set resolved_profit_adjustment = $1
+         where id = $2`,
+        [resolvedProfitAdjustment, user.id]
+      )
+    }
     const leaderBoardProfit =
       resolvedProfitAdjustment +
       // Resolved profits are already included in the user's balance - deposits
