@@ -8,10 +8,7 @@ import {
   ReferralData,
   UniqueBettorData,
 } from 'common/notification'
-import {
-  formatMoney,
-  maybePluralize,
-} from 'common/util/format'
+import { formatMoney, maybePluralize } from 'common/util/format'
 import { groupBy } from 'lodash'
 import { useState } from 'react'
 import clsx from 'clsx'
