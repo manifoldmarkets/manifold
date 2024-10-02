@@ -42,9 +42,9 @@ export function CommentsButton(props: {
     >
       <Tooltip text={`Comments`} placement="top" noTap>
         <Row className={'items-center gap-1.5'}>
-          <ChatIcon className="h-6 w-6" />
+          <ChatIcon className="stroke-ink-500 h-6 w-6" />
           {totalComments > 0 && (
-            <div className="text-ink-500 h-5 align-middle text-sm disabled:opacity-50">
+            <div className=" h-5 align-middle text-sm disabled:opacity-50">
               {totalComments}
             </div>
           )}

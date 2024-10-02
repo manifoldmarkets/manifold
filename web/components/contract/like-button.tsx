@@ -41,6 +41,7 @@ export const LikeButton = memo(function LikeButton(props: {
   feedReason?: string
   contractId?: string
   commentId?: string
+  heartClassName?: string
 }) {
   const {
     user,
@@ -55,6 +56,7 @@ export const LikeButton = memo(function LikeButton(props: {
     size,
     contractId,
     commentId,
+    heartClassName,
   } = props
   const likes = useLikesOnContent(contentType, contentId)
   const [liked, setLiked] = useState(false)
@@ -178,13 +180,14 @@ export const LikeButton = memo(function LikeButton(props: {
                 <HeartIcon
                   className={clsx(
                     'h-6 w-6',
+                    heartClassName,
                     liked &&
                       'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
                   )}
                 />
               </div>
               {totalLikes > 0 && (
-                <div className="text-ink-500 my-auto h-5  text-sm disabled:opacity-50">
+                <div className="my-auto h-5  text-sm disabled:opacity-50">
                   {totalLikes}
                 </div>
               )}
