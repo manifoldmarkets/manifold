@@ -9,16 +9,17 @@ if (require.main === module) {
     //   string,
     //   number
     // ][]
+    const startTime = new Date(0).toISOString()
     const allUserIds = await pg.map(
       `
                select distinct users.id, users.created_time from users
                join contract_bets cb on users.id = cb.user_id
-               
+               where users.created_time > $1
     --           select id, created_time from users where
     --           data->>'lastBetTime' is not null
-              order by created_time
+              order by users.created_time
                 `,
-      [],
+      [startTime],
       (row) => [row.id, row.created_time]
     )
     console.log('Total users:', allUserIds.length)
