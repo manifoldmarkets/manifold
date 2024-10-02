@@ -19,7 +19,7 @@ import { Input } from './widgets/input'
 import { FullUser } from 'common/api/user-types'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
-import { IconButton } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { searchContracts, searchGroups } from 'web/lib/api/api'
 import { searchUsers } from 'web/lib/supabase/users'
@@ -238,7 +238,7 @@ export function SupabaseSearch(props: {
   } = props
 
   const isMobile = useIsMobile()
-  const { isPlay } = useSweepstakes()
+  const { isPlay, setIsPlay } = useSweepstakes()
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
@@ -351,22 +351,33 @@ export function SupabaseSearch(props: {
     contractType !== 'ALL' ||
     prizeMarketState === '1' ||
     sweepiesState === '1' ? (
-      <span className="text-ink-700 mx-2 my-6 text-center">
-        No results found under this filter.{' '}
-        <button
-          className="text-indigo-500 hover:underline focus:underline"
-          onClick={() =>
-            onChange({
-              [FILTER_KEY]: 'all',
-              [CONTRACT_TYPE_KEY]: 'ALL',
-              [TOPIC_FILTER_KEY]: '',
-              p: '0',
-            })
-          }
-        >
-          Clear filter
-        </button>
-      </span>
+      <Col className="mt-2 items-center gap-3">
+        <span className="text-ink-700 text-center">
+          No {isPlay ? 'questions' : 'sweeps questions'} found under this
+          filter.
+        </span>
+        <Col className="gap-2">
+          {!isPlay && (
+            <Button onClick={() => setIsPlay(true)} color="purple">
+              See mana markets
+            </Button>
+          )}
+
+          <Button
+            onClick={() =>
+              onChange({
+                [FILTER_KEY]: 'all',
+                [CONTRACT_TYPE_KEY]: 'ALL',
+                [TOPIC_FILTER_KEY]: '',
+                p: '0',
+              })
+            }
+            color="gray-outline"
+          >
+            Clear filter
+          </Button>
+        </Col>
+      </Col>
     ) : query ? (
       <NoResults />
     ) : (
