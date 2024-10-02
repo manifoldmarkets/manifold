@@ -81,32 +81,35 @@ export function SwingStateContract(props: {
       return acc
     }, {} as MapContractsDictionary)
 
-  return (
-    <Col className=" w-full">
-      <Row className="text-ink-500 mb-1 hidden w-full justify-between text-sm sm:flex">
-        Swing States
-        <Row className="gap-4">
-          <Row className="w-28 justify-start">Democratic</Row>
-          <Row className="w-20 justify-start">Republican</Row>
-        </Row>
-      </Row>
-      {Object.entries(sortedSwingContractsDictionary).map(
-        ([key, contract], index) => {
-          return (
-            <SwingStateRow
-              key={key}
-              state={key}
-              contract={contract as CPMMMultiContract}
-              index={index}
-              targetState={targetState}
-              hoveredState={hoveredState}
-              setHoveredState={setHoveredState}
-            />
-          )
-        }
-      )}
-    </Col>
-  )
+  console.log('sortedSwingContractsDictionary', sortedSwingContractsDictionary)
+
+  // return (
+  //   <Col className=" w-full">
+  //     <Row className="text-ink-500 mb-1 hidden w-full justify-between text-sm sm:flex">
+  //       Swing States
+  //       <Row className="gap-4">
+  //         <Row className="w-28 justify-start">Democratic</Row>
+  //         <Row className="w-20 justify-start">Republican</Row>
+  //       </Row>
+  //     </Row>
+  //     {Object.entries(sortedSwingContractsDictionary).map(
+  //       ([key, contract], index) => {
+  //         return (
+  //           <SwingStateRow
+  //             key={key}
+  //             state={key}
+  //             contract={contract as CPMMMultiContract}
+  //             index={index}
+  //             targetState={targetState}
+  //             hoveredState={hoveredState}
+  //             setHoveredState={setHoveredState}
+  //           />
+  //         )
+  //       }
+  //     )}
+  //   </Col>
+  // )
+  return <></>
 }
 
 function SwingStateRow(props: {

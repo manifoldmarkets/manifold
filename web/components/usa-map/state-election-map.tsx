@@ -1,3 +1,4 @@
+import { getDisplayProbability } from 'common/calculate'
 import { Contract } from 'common/contract'
 import { StateElectionMarket } from 'web/public/data/elections-data'
 
@@ -33,22 +34,32 @@ export const probToColor = (
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
   }
 
-  if (!contract || contract.mechanism !== 'cpmm-multi-1') return undefined
-  const answers = contract.answers
+  if (!contract) return undefined
+
+  let probDemocratic: number | undefined
+  let probRepublican: number | undefined
+  let probOther: number | undefined
+
+  if (contract.mechanism === 'cpmm-multi-1') {
+    const answers = contract.answers
+    probDemocratic = answers.find(
+      (a) => a.text == 'Democratic Party' || a.text.includes('Democratic Party')
+    )?.prob
+    probRepublican = answers.find(
+      (a) => a.text == 'Republican Party' || a.text.includes('Republican Party')
+    )?.prob
+    probOther = answers.find((a) => a.text == 'Other')?.prob
+  } else if (contract.mechanism === 'cpmm-1') {
+    probRepublican = getDisplayProbability(contract)
+    probDemocratic = 1 - probRepublican
+    probOther = 0
+  }
 
   // Base colors
   const DEM_LIGHT = hexToRgb(DEM_LIGHT_HEX)
   const REP_LIGHT = hexToRgb(REP_LIGHT_HEX)
   const DEM_DARK = hexToRgb(DEM_DARK_HEX)
   const REP_DARK = hexToRgb(REP_DARK_HEX)
-
-  let probDemocratic = answers.find(
-    (a) => a.text == 'Democratic Party' || a.text.includes('Democratic Party')
-  )?.prob
-  let probRepublican = answers.find(
-    (a) => a.text == 'Republican Party' || a.text.includes('Republican Party')
-  )?.prob
-  const probOther = answers.find((a) => a.text == 'Other')?.prob
 
   if (
     probDemocratic === undefined ||
