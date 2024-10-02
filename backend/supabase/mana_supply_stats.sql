@@ -14,7 +14,12 @@ create table if not exists
     total_cash_value numeric default 0 not null,
     cash_balance numeric default 0 not null,
     cash_investment_value numeric default 0 not null,
-    amm_cash_liquidity numeric default 0 not null
+    amm_cash_liquidity numeric default 0 not null,
+    full_total_mana_value numeric,
+    full_mana_balance numeric,
+    full_spice_balance numeric,
+    full_investment_value numeric,
+    full_loan_total numeric
   );
 
 -- Row Level Security
