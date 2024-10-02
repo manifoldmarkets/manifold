@@ -10,7 +10,7 @@ import { Button, buttonClass } from '../buttons/button'
 import { Row } from '../layout/row'
 import { CoinNumber } from '../widgets/coin-number'
 import { Tooltip } from '../widgets/tooltip'
-import { useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { type User } from 'common/user'
 import {
@@ -149,8 +149,11 @@ export function CalloutFrame(props: {
   )
 }
 
-export function VerifyButton(props: { className?: string }) {
-  const { className } = props
+export function VerifyButton(props: {
+  className?: string
+  content?: ReactNode
+}) {
+  const { className, content } = props
 
   const user = useUser()
   const amount = useKYCGiftAmount(user)
@@ -164,15 +167,21 @@ export function VerifyButton(props: { className?: string }) {
         className
       )}
     >
-      Verify and claim
-      {amount == undefined ? (
-        <CoinNumber
-          amount={KYC_VERIFICATION_BONUS_CASH}
-          coinType="CASH"
-          className="ml-1"
-        />
+      {content ? (
+        content
       ) : (
-        <CoinNumber amount={amount} coinType="CASH" className="ml-1" />
+        <>
+          Verify and claim
+          {amount == undefined ? (
+            <CoinNumber
+              amount={KYC_VERIFICATION_BONUS_CASH}
+              coinType="CASH"
+              className="ml-1"
+            />
+          ) : (
+            <CoinNumber amount={amount} coinType="CASH" className="ml-1" />
+          )}
+        </>
       )}
     </Link>
   )

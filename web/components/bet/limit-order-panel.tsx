@@ -24,7 +24,7 @@ import { computeCpmmBet } from 'common/new-bet'
 import { formatPercent } from 'common/util/format'
 import { DAY_MS, HOUR_MS, MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
-import { User } from 'web/lib/firebase/users'
+import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -34,7 +34,7 @@ import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { MultiBetProps } from 'web/components/bet/bet-panel'
-import { track } from 'web/lib/service/analytics'
+import { track, withTracking } from 'web/lib/service/analytics'
 import { APIError } from 'common/api/utils'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { api } from 'web/lib/api/api'
@@ -46,6 +46,7 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { VerifyButton } from '../twomba/sweep-verify-section'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -59,7 +60,7 @@ export default function LimitOrderPanel(props: {
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
   kycError: string | undefined
-
+  shouldPromptVerification?: boolean
   onBuySuccess?: () => void
   className?: string
   outcome: 'YES' | 'NO' | undefined
@@ -84,6 +85,7 @@ export default function LimitOrderPanel(props: {
     outcome,
     onBuySuccess,
     pseudonym,
+    shouldPromptVerification,
   } = props
   const { pseudonymName, pseudonymColor } =
     pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
@@ -316,6 +318,7 @@ export default function LimitOrderPanel(props: {
         showSlider
         token={isCashContract ? 'CASH' : 'M$'}
         sliderColor={pseudonymColor}
+        disregardUserBalance={shouldPromptVerification}
       />
 
       <div className="my-3">
@@ -471,68 +474,83 @@ export default function LimitOrderPanel(props: {
             isCashContract={isCashContract}
           />
         </Row> */}
-        <div className="text-ink-700 select-none text-sm">
-          No fees
-          <InfoTooltip
-            text={`Now with no fees on ${TRADE_TERM}s, you keep more of your winnings!`}
-            className="text-ink-600 ml-1 mt-0.5"
-            size="sm"
-          />
-        </div>
 
-        <LocationMonitor
-          contract={contract}
-          user={user}
-          setShowPanel={setShowLocationMonitor}
-          showPanel={showLocationMonitor}
-        />
-        {kycError && <div className="text-red-500">{kycError}</div>}
-        <Row className="items-center justify-between gap-2">
-          {user && (
+        {kycError && !shouldPromptVerification && user && (
+          <div className="text-red-500">{kycError}</div>
+        )}
+
+        <Col className="gap-2">
+          {user ? (
+            shouldPromptVerification ? (
+              <VerifyButton content={<span>Verify to {TRADE_TERM}</span>} />
+            ) : (
+              <>
+                <LocationMonitor
+                  contract={contract}
+                  user={user}
+                  setShowPanel={setShowLocationMonitor}
+                  showPanel={showLocationMonitor}
+                />
+                <Row className="items-center justify-between gap-2">
+                  <Button
+                    size="xl"
+                    disabled={betDisabled || inputError}
+                    color={
+                      (pseudonymColor as any) ??
+                      (hideYesNo ? 'none' : outcome === 'YES' ? 'green' : 'red')
+                    }
+                    loading={isSubmitting}
+                    className={clsx('flex-1 text-white')}
+                    style={{
+                      backgroundColor:
+                        binaryMCColors?.[outcome == 'YES' ? 0 : 1],
+                    }}
+                    onClick={submitBet}
+                  >
+                    {isSubmitting ? (
+                      'Submitting...'
+                    ) : !outcome ? (
+                      'Choose YES or NO'
+                    ) : !limitProb ? (
+                      'Enter a probability'
+                    ) : !betAmount ? (
+                      'Enter an amount'
+                    ) : binaryMCOutcome || pseudonymName ? (
+                      <span>
+                        Submit order for{' '}
+                        <MoneyDisplay
+                          amount={betAmount}
+                          isCashContract={isCashContract}
+                        />{' '}
+                        at {formatPercent(preLimitProb ?? 0)}
+                      </span>
+                    ) : (
+                      <span>
+                        Submit {outcome} order for{' '}
+                        <MoneyDisplay
+                          amount={betAmount}
+                          isCashContract={isCashContract}
+                        />{' '}
+                        at {formatPercent(limitProb)}
+                      </span>
+                    )}
+                  </Button>
+                </Row>
+              </>
+            )
+          ) : (
             <Button
+              color={outcome === 'NO' ? 'red' : 'green'}
               size="xl"
-              disabled={betDisabled || inputError}
-              color={
-                (pseudonymColor as any) ??
-                (hideYesNo ? 'none' : outcome === 'YES' ? 'green' : 'red')
-              }
-              loading={isSubmitting}
-              className={clsx('flex-1 text-white')}
-              style={{
-                backgroundColor: binaryMCColors?.[outcome == 'YES' ? 0 : 1],
-              }}
-              onClick={submitBet}
+              onClick={withTracking(firebaseLogin, 'login from bet panel', {
+                token: contract.token,
+              })}
+              className="mb-2 flex-grow"
             >
-              {isSubmitting ? (
-                'Submitting...'
-              ) : !outcome ? (
-                'Choose YES or NO'
-              ) : !limitProb ? (
-                'Enter a probability'
-              ) : !betAmount ? (
-                'Enter an amount'
-              ) : binaryMCOutcome || pseudonymName ? (
-                <span>
-                  Submit order for{' '}
-                  <MoneyDisplay
-                    amount={betAmount}
-                    isCashContract={isCashContract}
-                  />{' '}
-                  at {formatPercent(preLimitProb ?? 0)}
-                </span>
-              ) : (
-                <span>
-                  Submit {outcome} order for{' '}
-                  <MoneyDisplay
-                    amount={betAmount}
-                    isCashContract={isCashContract}
-                  />{' '}
-                  at {formatPercent(limitProb)}
-                </span>
-              )}
+              Sign up to predict
             </Button>
           )}
-        </Row>
+        </Col>
       </Col>
     </>
   )

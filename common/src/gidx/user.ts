@@ -27,14 +27,16 @@ export const documentPending = (user: User, privateUser: PrivateUser) =>
   USER_PENDING_VERIFICATION_MESSAGE
 
 export const getVerificationStatus = (
-  user: User,
-  privateUser: PrivateUser
+  user: User | undefined | null,
+  privateUser: PrivateUser | undefined | null
 ): {
   status: 'success' | 'error'
   message: string
 } => {
   if (!TWOMBA_ENABLED) {
     return { status: 'error', message: GIDX_DISABLED_MESSAGE }
+  } else if (!user || !privateUser) {
+    return { status: 'error', message: USER_IS_UNDEFINED_MESSAGE }
   } else if (!humanish(user)) {
     return { status: 'error', message: PHONE_NOT_VERIFIED_MESSAGE }
   } else if (user.kycDocumentStatus === 'fail') {
@@ -68,6 +70,7 @@ export const getVerificationStatus = (
   }
 }
 
+const USER_IS_UNDEFINED_MESSAGE = 'User is undefined'
 const GIDX_DISABLED_MESSAGE = 'GIDX registration is disabled'
 const PHONE_NOT_VERIFIED_MESSAGE = 'User must verify phone'
 const IDENTIFICATION_FAILED_MESSAGE = 'User identification failed'
