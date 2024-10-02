@@ -52,6 +52,7 @@ import {
   PROMPT_USER_VERIFICATION_MESSAGES,
 } from 'common/gidx/user'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
+import { InfoBox } from 'web/components/widgets/info-box'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -75,6 +76,7 @@ export default function CashoutPage() {
   const [NameOnAccount, setNameOnAccount] = useState('')
   const [AccountNumber, setAccountNumber] = useState('')
   const [RoutingNumber, setRoutingNumber] = useState('')
+  const [BankName, setBankName] = useState('')
   const [SavePaymentMethod, _] = useState(false)
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
   const [sweepCashAmount, setSweepCashAmount] = useState<number | undefined>(
@@ -167,6 +169,7 @@ export default function CashoutPage() {
           AccountNumber,
           RoutingNumber,
           NameOnAccount,
+          BankName,
           BillingAddress: {
             AddressLine1: address,
             City: city,
@@ -455,6 +458,10 @@ export default function CashoutPage() {
                 </div>
               </Col>
               <Divider />
+              <InfoBox title="US domestic wires only" className="mb-0">
+                For a short time during our introductory period, we're only
+                supporting US domestic wires.
+              </InfoBox>
               <Col className={'w-full gap-0.5'}>
                 <InputTitle>Name</InputTitle>
                 <Input
@@ -462,6 +469,15 @@ export default function CashoutPage() {
                   placeholder="Name associated with account"
                   value={NameOnAccount}
                   onChange={(e) => setNameOnAccount(e.target.value)}
+                />
+              </Col>
+              <Col className={'w-full gap-0.5'}>
+                <InputTitle>Bank Name</InputTitle>
+                <Input
+                  type="text"
+                  placeholder="Your bank's name"
+                  value={BankName}
+                  onChange={(e) => setBankName(e.target.value)}
                 />
               </Col>
               <Col className={'w-full gap-0.5'}>

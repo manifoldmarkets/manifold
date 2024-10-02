@@ -89,6 +89,7 @@ export const cashoutParams = z.object({
     AccountNumber: z.string(),
     RoutingNumber: z.string(),
     BillingAddress: BillingAddress,
+    BankName: z.string(),
   }),
 })
 
