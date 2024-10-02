@@ -53,6 +53,7 @@ export function FeedBinaryChart(props: {
         percentBounds={percentBounds}
         className={className}
         size={'sm'}
+        noWatermark
       />
     )
   }

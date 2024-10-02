@@ -42,6 +42,7 @@ export const BinaryContractChart = (props: {
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
   graphColor?: string
+  noWatermark?: boolean
 }) => {
   const {
     contract,
@@ -56,6 +57,7 @@ export const BinaryContractChart = (props: {
     pointerMode = 'zoom',
     chartAnnotations,
     graphColor,
+    noWatermark,
   } = props
 
   const start = first(betPoints)?.x ?? contract.createdTime
@@ -103,6 +105,7 @@ export const BinaryContractChart = (props: {
       setHoveredAnnotation={setHoveredAnnotation}
       pointerMode={pointerMode}
       chartAnnotations={chartAnnotations}
+      noWatermark={noWatermark}
     />
   )
 }
@@ -121,6 +124,7 @@ export function SizedBinaryChart(props: {
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
+  noWatermark?: boolean
 }) {
   const {
     showZoomer,
@@ -135,6 +139,7 @@ export function SizedBinaryChart(props: {
     setHoveredAnnotation,
     hoveredAnnotation,
     chartAnnotations,
+    noWatermark,
   } = props
 
   return (
@@ -160,6 +165,7 @@ export function SizedBinaryChart(props: {
             setHoveredAnnotation={setHoveredAnnotation}
             pointerMode={pointerMode}
             chartAnnotations={chartAnnotations}
+            noWatermark={noWatermark}
           />
         )}
       </SizedContainer>
