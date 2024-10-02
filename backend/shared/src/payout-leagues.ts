@@ -82,7 +82,8 @@ const sendEndOfSeasonNotificationAndBonus = async (
       'rank',
       rank,
       'prize',
-      prize
+      prize,
+      data.token
     )
 
     await pg.tx(async (tx) => {
