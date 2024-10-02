@@ -442,6 +442,7 @@ const BottomActionRow = (props: {
                   {formatWithToken({
                     amount: contract.totalLiquidity,
                     token: isCashContract ? 'CASH' : 'M$',
+                    short: true,
                   })}
                 </div>
               </Row>
