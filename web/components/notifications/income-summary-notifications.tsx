@@ -9,7 +9,6 @@ import {
   UniqueBettorData,
 } from 'common/notification'
 import {
-  formatLargeNumber,
   formatMoney,
   maybePluralize,
 } from 'common/util/format'
@@ -48,7 +47,6 @@ import {
 } from 'common/partner'
 import { humanish } from 'common/user'
 import { CoinNumber } from 'web/components/widgets/coin-number'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
