@@ -843,7 +843,7 @@ export function MarketResolvedNotification(props: {
   const showReviewButton = !userReview && !justNowReview
 
   return (
-    <Col className="relative">
+    <>
       <NotificationFrame
         notification={notification}
         isChildOfGroup={isChildOfGroup}
@@ -937,7 +937,7 @@ export function MarketResolvedNotification(props: {
           {secondaryTitle}
         </NotificationFrame>
       )}
-    </Col>
+    </>
   )
 }
 
