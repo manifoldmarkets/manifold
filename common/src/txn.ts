@@ -211,12 +211,19 @@ type CashOutPending = {
   toType: 'BANK'
   token: 'CASH'
   category: 'CASH_OUT'
-  data: {
-    sessionId: string
-    transactionId: string
-    type: 'gidx'
-    payoutInDollars: number
-  }
+  data:
+    | {
+        sessionId: string
+        transactionId: string
+        type: 'gidx'
+        payoutInDollars: number
+      }
+    | {
+        merchantSessionId: string
+        transactionId: string
+        type: 'manual'
+        payoutInDollars: number
+      }
 }
 
 type KycBonus = {
@@ -587,3 +594,4 @@ export type ManifestAirDropTxn = Txn & ManifestAirDrop
 export type ExtraPurchasedManaTxn = Txn & ExtraPurchasedMana
 export type ManifoldTopUpTxn = Txn & ManifoldTopUp
 export type KycBonusTxn = Txn & KycBonus
+export type CashOutPendingTxn = Txn & CashOutPending

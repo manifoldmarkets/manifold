@@ -57,9 +57,9 @@ export const UploadDocuments = (props: {
       getKeyFromValue(idNameToCategoryType, CategoryType) ?? ''
     }.${ext}`
 
-    const fileUrl = await uploadPrivateImage(user.id, file, fileName)
     setLoading(true)
     setError(null)
+    const fileUrl = await uploadPrivateImage(user.id, file, fileName)
     const { status } = await api('upload-document-gidx', {
       fileUrl,
       fileName,
@@ -103,8 +103,14 @@ export const UploadDocuments = (props: {
       idDocuments,
     })
     setFile(null)
+    console.log('idDocuments', idDocuments)
+    console.log('utilityDocuments', utilityDocuments)
     if (currentStep === 'id' && idDocuments.length > 0) {
+      console.log('idDocuments.length > 0', idDocuments.length)
+      console.log('requireUtilityDoc', requireUtilityDoc)
+      console.log('utilityDocuments.length', utilityDocuments.length)
       if (requireUtilityDoc && utilityDocuments.length === 0) {
+        console.log('setting category type to 7')
         setCategoryType(7)
         setCurrentStep('utility')
       } else {
@@ -114,6 +120,10 @@ export const UploadDocuments = (props: {
       next()
     }
   }
+  useEffect(() => {
+    console.log('currentStep', currentStep)
+    console.log('CategoryType', CategoryType)
+  }, [currentStep, CategoryType])
 
   useEffect(() => {
     getAndSetDocuments()

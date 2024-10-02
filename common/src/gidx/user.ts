@@ -39,7 +39,7 @@ export const getVerificationStatus = (
     return { status: 'error', message: PHONE_NOT_VERIFIED_MESSAGE }
   } else if (user.kycDocumentStatus === 'fail') {
     return { status: 'error', message: USER_DOCUMENT_FAILED_MESSAGE }
-  } else if (user.kycDocumentStatus === 'pending') {
+  } else if (!user.idVerified && user.kycDocumentStatus === 'pending') {
     return { status: 'error', message: USER_PENDING_VERIFICATION_MESSAGE }
   } else if (!user.idVerified) {
     return { status: 'error', message: IDENTIFICATION_FAILED_MESSAGE }
