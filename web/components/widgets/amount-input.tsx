@@ -333,7 +333,7 @@ export function BuyAmountInput(props: {
           />
         )}
         {error ? (
-          <div className="text-scarlet-500 mt-4 flex-wrap text-sm">
+          <div className="text-scarlet-500 mt-2 flex-wrap text-sm">
             {error === 'Insufficient balance' ? (
               <BuyMoreFunds user={user} />
             ) : (

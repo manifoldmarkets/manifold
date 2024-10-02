@@ -62,9 +62,12 @@ import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
 import { CashoutLimitWarning } from './cashout-limit-warning'
-import { InBeta } from '../twomba/sweep-verify-section'
+import { InBeta, VerifyButton } from '../twomba/sweep-verify-section'
 import { LocationMonitor } from '../gidx/location-monitor'
-import { getVerificationStatus } from 'common/gidx/user'
+import {
+  getVerificationStatus,
+  PROMPT_USER_VERIFICATION_MESSAGES,
+} from 'common/gidx/user'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -512,6 +515,11 @@ export const BuyPanelBody = (props: {
   const { pseudonymName, pseudonymColor } =
     props.pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
 
+  const { message } = getVerificationStatus(user, privateUser)
+
+  const shouldPromptVerification =
+    isCashContract && PROMPT_USER_VERIFICATION_MESSAGES.includes(message)
+
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
@@ -592,6 +600,7 @@ export const BuyPanelBody = (props: {
                 marketTier={marketTier}
                 token={isCashContract ? 'CASH' : 'M$'}
                 sliderColor={pseudonymColor}
+                disregardUserBalance={shouldPromptVerification}
               />
 
               {isAdvancedTrader && (
@@ -681,6 +690,7 @@ export const BuyPanelBody = (props: {
                   ? verificationMessage
                   : undefined
               }
+              shouldPromptVerification={shouldPromptVerification}
             />
           </>
         )}
@@ -688,66 +698,70 @@ export const BuyPanelBody = (props: {
         {betType !== 'Limit' && (
           <Col className="gap-2">
             {user ? (
-              <>
-                <LocationMonitor
-                  contract={contract}
-                  user={user}
-                  setShowPanel={setShowLocationMonitor}
-                  showPanel={showLocationMonitor}
-                />
-                {isCashContract && verificationStatus !== 'success' && (
-                  <div className="text-error">{verificationMessage}</div>
-                )}
-                <WarningConfirmationButton
-                  marketType="binary"
-                  amount={betAmount}
-                  warning={warning}
-                  userOptedOutOfWarning={user.optOutBetWarnings}
-                  onSubmit={submitBet}
-                  ButtonClassName={clsx('flex-grow')}
-                  actionLabelClassName={'line-clamp-1'}
-                  isSubmitting={isSubmitting}
-                  disabled={betDisabled}
-                  size="xl"
-                  color={
-                    pseudonymColor ??
-                    binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
-                    (outcome === 'NO' ? 'red' : 'green')
-                  }
-                  actionLabel={
-                    betDisabled && !outcome ? (
-                      `Select ${formatOutcomeLabel(
-                        contract,
-                        'YES'
-                      )} or ${formatOutcomeLabel(contract, 'NO')}`
-                    ) : isStonk ? (
-                      <span>
-                        {formatOutcomeLabel(contract, outcome, pseudonymName)}{' '}
-                        <MoneyDisplay
-                          amount={betAmount ?? 0}
-                          isCashContract={isCashContract}
-                        />
-                      </span>
-                    ) : (
-                      <span>
-                        {capitalize(TRADE_TERM)}{' '}
-                        {binaryMCOutcomeLabel ??
-                          formatOutcomeLabel(
-                            contract,
-                            outcome,
-                            pseudonymName
-                          )}{' '}
-                        to win{' '}
-                        <MoneyDisplay
-                          amount={currentPayout}
-                          isCashContract={isCashContract}
-                        />
-                      </span>
-                    )
-                  }
-                  inModal={!!onClose}
-                />
-              </>
+              shouldPromptVerification ? (
+                <VerifyButton content={<span>Verify to {TRADE_TERM}</span>} />
+              ) : (
+                <>
+                  <LocationMonitor
+                    contract={contract}
+                    user={user}
+                    setShowPanel={setShowLocationMonitor}
+                    showPanel={showLocationMonitor}
+                  />
+                  {isCashContract && verificationStatus !== 'success' && (
+                    <div className="text-error">{verificationMessage}</div>
+                  )}
+                  <WarningConfirmationButton
+                    marketType="binary"
+                    amount={betAmount}
+                    warning={warning}
+                    userOptedOutOfWarning={user.optOutBetWarnings}
+                    onSubmit={submitBet}
+                    ButtonClassName={clsx('flex-grow')}
+                    actionLabelClassName={'line-clamp-1'}
+                    isSubmitting={isSubmitting}
+                    disabled={betDisabled}
+                    size="xl"
+                    color={
+                      pseudonymColor ??
+                      binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
+                      (outcome === 'NO' ? 'red' : 'green')
+                    }
+                    actionLabel={
+                      betDisabled && !outcome ? (
+                        `Select ${formatOutcomeLabel(
+                          contract,
+                          'YES'
+                        )} or ${formatOutcomeLabel(contract, 'NO')}`
+                      ) : isStonk ? (
+                        <span>
+                          {formatOutcomeLabel(contract, outcome, pseudonymName)}{' '}
+                          <MoneyDisplay
+                            amount={betAmount ?? 0}
+                            isCashContract={isCashContract}
+                          />
+                        </span>
+                      ) : (
+                        <span>
+                          {capitalize(TRADE_TERM)}{' '}
+                          {binaryMCOutcomeLabel ??
+                            formatOutcomeLabel(
+                              contract,
+                              outcome,
+                              pseudonymName
+                            )}{' '}
+                          to win{' '}
+                          <MoneyDisplay
+                            amount={currentPayout}
+                            isCashContract={isCashContract}
+                          />
+                        </span>
+                      )
+                    }
+                    inModal={!!onClose}
+                  />
+                </>
+              )
             ) : (
               <Button
                 color={outcome === 'NO' ? 'red' : 'green'}
@@ -755,7 +769,7 @@ export const BuyPanelBody = (props: {
                 onClick={withTracking(firebaseLogin, 'login from bet panel', {
                   token: contract.token,
                 })}
-                className="flex-grow"
+                className="mb-2 flex-grow"
               >
                 Sign up to predict
               </Button>
