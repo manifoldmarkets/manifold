@@ -1,8 +1,4 @@
-import {
-  BinaryContract,
-  Contract,
-  contractPath,
-} from 'common/contract'
+import { BinaryContract, Contract, contractPath } from 'common/contract'
 import { StateContractCard } from '../us-elections/contracts/state-contract-card'
 import {
   MapContractsDictionary,
