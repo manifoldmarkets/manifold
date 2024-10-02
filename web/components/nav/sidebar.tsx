@@ -36,7 +36,6 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { Col } from '../layout/col'
-import { PiTelevisionSimpleBold } from 'react-icons/pi'
 
 export default function Sidebar(props: {
   className?: string
@@ -157,11 +156,11 @@ const getDesktopNav = (
         href: '/election',
         icon: GiCapitol,
       },
-      {
-        name: 'TV',
-        href: '/tv',
-        icon: PiTelevisionSimpleBold,
-      },
+      // {
+      //   name: 'TV',
+      //   href: '/tv',
+      //   icon: PiTelevisionSimpleBold,
+      // },
       { name: 'Refer a friend', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
       {
         name: 'Messages',
@@ -211,11 +210,11 @@ const getMobileNav = (
       href: '/messages',
       icon: PrivateMessagesIcon,
     },
-    {
-      name: 'TV',
-      href: '/tv',
-      icon: PiTelevisionSimpleBold,
-    },
+    // {
+    //   name: 'TV',
+    //   href: '/tv',
+    //   icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
+    // },
     // !isNewUser && {
     //   name: 'Dashboards',
     //   href: '/dashboard',
