@@ -32,7 +32,7 @@ import { onCreateBets } from 'api/on-create-bet'
 import {
   BANNED_TRADING_USER_IDS,
   BOT_USERNAMES,
-  CASH_BETS_DISABLED,
+  CASH_BETS_ENABLED,
   isAdminId,
   PARTNER_USER_IDS,
 } from 'common/envs/constants'
@@ -530,7 +530,7 @@ export const executeNewBetResult = async (
   deterministic?: boolean,
   firstBetInMultiBet?: boolean
 ) => {
-  if (contract.token === 'CASH' && CASH_BETS_DISABLED) {
+  if (contract.token === 'CASH' && !CASH_BETS_ENABLED) {
     throw new APIError(403, 'Cannot bet with CASH token atm.')
   }
   const allOrdersToCancel: LimitBet[] = []
