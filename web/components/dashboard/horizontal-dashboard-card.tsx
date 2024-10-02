@@ -110,7 +110,7 @@ export function HorizontalDashboardCard(props: {
       className={clsx(
         'mt-3',
         isCashContract &&
-          ' ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200',
+          'ml-[1px] ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200',
         'group relative flex w-full cursor-pointer flex-col justify-between gap-0.5 rounded-xl px-4 py-2',
         size === 'sm'
           ? 'bg-canvas-50'
