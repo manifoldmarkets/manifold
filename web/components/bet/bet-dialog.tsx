@@ -10,7 +10,6 @@ import {
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { BinaryOutcomes, BuyPanel } from './bet-panel'
-import { Subtitle } from '../widgets/subtitle'
 import { getDefaultSort, MultiSort } from 'common/answer'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
