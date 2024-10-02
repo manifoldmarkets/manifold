@@ -16,6 +16,7 @@ export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
 export function USElectionsPage(props: ElectionsPageProps) {
   const {
     rawPresidencyStateContracts,
+    rawPresidencySwingCashContracts,
     rawSenateStateContracts,
     rawGovernorStateContracts,
     rawPolicyContracts,
@@ -91,6 +92,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
 
       <HomepageMap
         rawPresidencyStateContracts={rawPresidencyStateContracts}
+        rawPresidencySwingCashContracts={rawPresidencySwingCashContracts}
         rawSenateStateContracts={rawSenateStateContracts}
         rawGovernorStateContracts={rawGovernorStateContracts}
         houseContract={houseContract as MultiContract}

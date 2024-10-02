@@ -1,6 +1,6 @@
 import { Contract, CPMMMultiContract } from 'common/contract'
 import { fetchLinkPreviews } from 'common/link-preview'
-import { getContractFromSlug } from 'common/supabase/contracts'
+import { getContract, getContractFromSlug } from 'common/supabase/contracts'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import {
   ElectionsPageProps,
@@ -8,6 +8,7 @@ import {
   NH_LINK,
   presidency2024,
   StateElectionMarket,
+  swingStates,
 } from 'web/public/data/elections-data'
 import { governors2024 } from 'web/public/data/governors-data'
 import { senate2024 } from 'web/public/data/senate-state-data'
@@ -25,7 +26,13 @@ export const ELECTION_PARTY_CONTRACT_SLUG =
 
 export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
-  const getContract = (slug: string) => getContractFromSlug(adminDb, slug)
+  const getContractFromSlugFunction = (slug: string) =>
+    getContractFromSlug(adminDb, slug)
+
+  const getCashContract = (contract: Contract | null) => {
+    if (!contract || !contract.siblingContractId) return null
+    return getContract(adminDb, contract.siblingContractId)
+  }
 
   const [
     presidencyStateContracts,
@@ -33,13 +40,22 @@ export async function getElectionsPageProps() {
     governorStateContracts,
     headlines,
   ] = await Promise.all([
-    getStateContracts(getContract, presidency2024),
-    getStateContracts(getContract, senate2024),
-    getStateContracts(getContract, governors2024),
+    getStateContracts(getContractFromSlugFunction, presidency2024),
+    getStateContracts(getContractFromSlugFunction, senate2024),
+    getStateContracts(getContractFromSlugFunction, governors2024),
     api('headlines', { slug: 'politics' }),
   ])
 
-  const policyContracts = await getPolicyContracts(getContract)
+  const presidencySwingCashContracts = await Object.entries(
+    presidencyStateContracts
+  )
+    .filter(([state]) => swingStates.includes(state))
+    .reduce(async (acc, [state, contract]) => {
+      const cashContract = await getCashContract(contract)
+      return { ...(await acc), [state]: cashContract }
+    }, Promise.resolve({} as MapContractsDictionary))
+
+  const policyContracts = await getPolicyContracts(getContractFromSlugFunction)
 
   const newsDashboards = await Promise.all(
     headlines.map(async (headline) => getDashboardProps(headline.slug))
@@ -49,7 +65,6 @@ export async function getElectionsPageProps() {
 
   const specialContractSlugs = [
     ELECTION_PARTY_CONTRACT_SLUG,
-    `${ELECTION_PARTY_CONTRACT_SLUG}${CASH_SUFFIX}`,
     'who-will-win-the-2024-us-presidenti-8c1c8b2f8964',
     'who-will-win-the-2024-republican-pr-e1332cf40e59',
     'who-will-win-the-2024-democratic-pr-47576e90fa38',
@@ -62,12 +77,11 @@ export async function getElectionsPageProps() {
     'who-would-win-the-presidential-elec',
   ]
   const contractsPromises = specialContractSlugs.map(async (slug) =>
-    getContract(slug)
+    getContractFromSlugFunction(slug)
   )
 
   const [
     electionPartyContract,
-    electionPartyCashContract,
     electionCandidateContract,
     republicanCandidateContract,
     democratCandidateContract,
@@ -78,6 +92,8 @@ export async function getElectionsPageProps() {
     democraticElectability,
     // republicanElectability,
   ] = await Promise.all(contractsPromises)
+
+  const electionPartyCashContract = await getCashContract(electionPartyContract)
 
   const linkPreviews = await fetchLinkPreviews([NH_LINK])
   const afterTime = new Date().getTime() - 7 * 24 * 60 * 60 * 1000
@@ -106,6 +122,7 @@ export async function getElectionsPageProps() {
 
   return {
     rawPresidencyStateContracts: presidencyStateContracts,
+    rawPresidencySwingCashContracts: presidencySwingCashContracts,
     rawSenateStateContracts: senateStateContracts,
     rawGovernorStateContracts: governorStateContracts,
     rawPolicyContracts: policyContracts,
