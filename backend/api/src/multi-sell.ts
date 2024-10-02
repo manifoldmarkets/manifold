@@ -103,7 +103,8 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
           isApi,
           undefined,
           betGroupId,
-          deterministic
+          deterministic,
+          false
         )
       )
     )

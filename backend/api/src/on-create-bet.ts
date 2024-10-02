@@ -17,8 +17,6 @@ import {
   createLimitBetCanceledNotification,
   createNewBettorNotification,
 } from 'shared/create-notification'
-import { calculateUserMetrics } from 'common/calculate-metrics'
-import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -50,7 +48,6 @@ import {
 import { debounce } from 'api/helpers/debounce'
 import { Fees } from 'common/fees'
 import { broadcastNewBets } from 'shared/websockets/helpers'
-import { getAnswersForContract } from 'shared/supabase/answers'
 import { followContractInternal } from 'api/follow-contract'
 
 export const onCreateBets = async (
@@ -93,14 +90,7 @@ export const onCreateBets = async (
       usersToRefreshMetrics.push(...(notifiedUsers ?? []))
     })
   )
-  // if (usersToRefreshMetrics.length > 0) {
-  //   await updateUserContractMetrics(
-  //     contract,
-  //     uniqBy(usersToRefreshMetrics, 'id'),
-  //     pg
-  //   )
-  //   log(`Contract metrics updated for ${usersToRefreshMetrics.length} users.`)
-  // }
+
   const replyBet = bets.find((bet) => bet.replyToCommentId)
 
   const nonRedemptionNonApiBets = sortBy(
@@ -245,31 +235,6 @@ const notifyUsersOfLimitFills = async (
       })
     )
   )
-}
-
-const updateUserContractMetrics = async (
-  contract: Contract,
-  users: User[],
-  pg: SupabaseDirectClient
-) => {
-  const answers =
-    contract.mechanism === 'cpmm-multi-1'
-      ? await getAnswersForContract(pg, contract.id)
-      : []
-
-  const metrics = await Promise.all(
-    users.map(async (user) => {
-      const bets = await pg.map(
-        `select * from contract_bets where contract_id = $1 and user_id = $2`,
-        [contract.id, user.id],
-        convertBet
-      )
-
-      return calculateUserMetrics(contract, bets, user, answers)
-    })
-  )
-
-  await bulkUpdateContractMetrics(metrics.flat())
 }
 
 const handleBetReplyToComment = async (

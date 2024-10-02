@@ -5,16 +5,24 @@ import { chunk } from 'lodash'
 if (require.main === module) {
   runScript(async ({ pg }) => {
     const chunkSize = 250
-    // const allUserIds = ['AJwLWoo3xue32XIiAVrL5SyR1WB2']
+    // const allUserIds = [['AJwLWoo3xue32XIiAVrL5SyR1WB2', 0]] as [
+    //   string,
+    //   number
+    // ][]
+    const startTime = new Date(0).toISOString()
     const allUserIds = await pg.map(
       `
-            select id, created_time from users where
-            data->>'lastBetTime' is not null
-            order by created_time
-            `,
-      [],
+               select distinct users.id, users.created_time from users
+               join contract_bets cb on users.id = cb.user_id
+               where users.created_time > $1
+    --           select id, created_time from users where
+    --           data->>'lastBetTime' is not null
+              order by users.created_time
+                `,
+      [startTime],
       (row) => [row.id, row.created_time]
     )
+    console.log('Total users:', allUserIds.length)
     const chunks = chunk(allUserIds, chunkSize)
     let total = 0
     for (const userIds of chunks) {
