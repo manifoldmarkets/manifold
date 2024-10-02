@@ -25,6 +25,9 @@ import { PollPanel } from '../poll/poll-panel'
 import { ClickFrame } from '../widgets/click-frame'
 import { SmallAnswerBars } from '../answers/small-answer'
 import { BinaryBetButton } from '../us-elections/contracts/conditional-market/conditional-market'
+import { capitalize } from 'lodash'
+import { SWEEPIES_NAME } from 'common/envs/constants'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function HorizontalDashboardCard(props: {
   contract: Contract
@@ -100,10 +103,15 @@ export function HorizontalDashboardCard(props: {
       isPromoted: !!promotedData,
     })
 
+  const isCashContract = contract.token == 'CASH'
+
   return (
     <ClickFrame
       className={clsx(
-        'group relative flex w-full cursor-pointer flex-col justify-between gap-0.5 rounded-xl px-4',
+        'mt-3',
+        isCashContract &&
+          'ml-[1px] ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200',
+        'group relative flex w-full cursor-pointer flex-col justify-between gap-0.5 rounded-xl px-4 py-2',
         size === 'sm'
           ? 'bg-canvas-50'
           : size === 'md'
@@ -118,6 +126,19 @@ export function HorizontalDashboardCard(props: {
       }}
       ref={ref}
     >
+      {isCashContract && (
+        <div
+          className={clsx(
+            'absolute right-3 top-0 z-40 -translate-y-1/2 transform bg-amber-200 text-amber-700',
+            'rounded-full px-2 py-0.5 text-xs font-semibold'
+          )}
+        >
+          <span>
+            <SweepiesCoin className="-mt-0.5" /> {capitalize(SWEEPIES_NAME)}{' '}
+            Market
+          </span>
+        </div>
+      )}
       <Col className={clsx('w-full pt-2', size === 'xs' ? '' : 'gap-1.5 ')}>
         {/* Title is link to contract for open in new tab and a11y */}
         <Link
