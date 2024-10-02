@@ -725,6 +725,7 @@ export const SimpleMultiOverview = (props: { contract: CPMMMultiContract }) => {
         setQuery={setQuery}
         onAnswerHover={() => null}
         onAnswerClick={() => null}
+        floatingSearchClassName={'top-0 pt-2'}
       />
 
       <UserBetsSummary
