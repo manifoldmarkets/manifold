@@ -55,13 +55,16 @@ export function BetDialog(props: {
       setOpen={setOpen}
       className={clsx(
         MODAL_CLASS,
-        'pointer-events-auto max-h-[32rem] overflow-auto'
+        'pointer-events-auto max-h-[32rem] select-none overflow-auto'
       )}
     >
       <Col>
-        <Subtitle className="!mb-4 !mt-0 !text-xl">
+        <Link
+          className="text-primary-700 !mb-4 !mt-0 !text-xl hover:underline"
+          href={contractPath(contract)}
+        >
           {questionPseudonym ?? question}
-        </Subtitle>
+        </Link>
         <BuyPanel
           contract={contract}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
