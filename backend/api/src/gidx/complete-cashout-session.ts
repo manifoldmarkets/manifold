@@ -262,7 +262,7 @@ const debitCoins = async (
       (r) => r.cash_balance
     )
     log('Run cashout txn, cash balance for user after txn', balanceAfter)
-    if (cash - manaCashAmount !== balanceAfter) {
+    if (!floatingEqual(cash - manaCashAmount, balanceAfter)) {
       log.error(
         'Cash balance after txn does not match expected. Admin should take a look.'
       )
@@ -387,7 +387,7 @@ const debitCoinsManual = async (
       (r) => r.cash_balance
     )
     log('Run cashout txn, cash balance for user after txn', balanceAfter)
-    if (cash - manaCashAmount !== balanceAfter) {
+    if (!floatingEqual(cash - manaCashAmount, balanceAfter)) {
       log.error(
         'Cash balance after txn does not match expected. Admin should take a look.'
       )
