@@ -23,17 +23,13 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { ScheduleItem } from './tv-schedule'
 import { ScheduleTVModal } from './schedule-tv-modal'
 import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
-import { Presence } from './tv-page'
-import { sortBy } from 'lodash'
-import { Avatar } from '../widgets/avatar'
 import { buildArray } from 'common/util/array'
 
 export function TVDisplay(props: {
   contract: Contract
   stream?: ScheduleItem
-  watchers?: Presence[]
 }) {
-  const { contract, stream, watchers } = props
+  const { contract, stream } = props
 
   const user = useUser()
 
@@ -121,10 +117,6 @@ export function TVDisplay(props: {
                       />
                     ),
                   },
-                  watchers && {
-                    title: `${watchers.length} Viewers`,
-                    content: <Watchers watchers={watchers} />,
-                  },
                 ])}
               />
             ) : (
@@ -157,12 +149,6 @@ export function TVDisplay(props: {
         </Col>
 
         <Col className="sticky top-0 ml-4 hidden h-screen w-[300px] max-w-[375px] xl:flex xl:w-[350px]">
-          {watchers && (
-            <div className="text-ink-500">
-              <div>{watchers.length} viewers</div>
-              <Watchers watchers={watchers} limit={10} />
-            </div>
-          )}
           <div className={'text-primary-700 border-b-2 py-2 text-xl'}>
             Live chat
           </div>
@@ -174,24 +160,5 @@ export function TVDisplay(props: {
         </Col>
       </Row>
     </Page>
-  )
-}
-
-const Watchers = (props: { watchers: Presence[]; limit?: number }) => {
-  const { watchers, limit } = props
-  const sorted = sortBy(watchers, 'onlineAt')
-  const displayed = limit ? sorted.slice(-limit) : sorted.reverse()
-
-  return (
-    <div className="flex flex-wrap gap-1 py-1">
-      {displayed.map((watcher) => (
-        <Avatar
-          key={watcher.id}
-          username={watcher.username}
-          avatarUrl={watcher.avatarUrl}
-          size="sm"
-        />
-      ))}
-    </div>
   )
 }
