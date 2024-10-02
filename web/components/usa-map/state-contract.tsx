@@ -1,4 +1,9 @@
-import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
+import {
+  BinaryContract,
+  CPMMMultiContract,
+  Contract,
+  contractPath,
+} from 'common/contract'
 import { StateContractCard } from '../us-elections/contracts/state-contract-card'
 import {
   MapContractsDictionary,
@@ -13,6 +18,11 @@ import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { ClickFrame } from '../widgets/click-frame'
+import { getDisplayProbability } from 'common/calculate'
+import { formatPercent } from 'common/util/format'
+import { DATA } from './usa-map-data'
+import { BinaryBetButton } from '../us-elections/contracts/party-panel/binary-party-panel'
+import { TwombaToggle } from '../twomba/twomba-toggle'
 
 export function StateContract(props: {
   targetContract: Contract | null
@@ -81,40 +91,41 @@ export function SwingStateContract(props: {
       return acc
     }, {} as MapContractsDictionary)
 
-  console.log('sortedSwingContractsDictionary', sortedSwingContractsDictionary)
-
-  // return (
-  //   <Col className=" w-full">
-  //     <Row className="text-ink-500 mb-1 hidden w-full justify-between text-sm sm:flex">
-  //       Swing States
-  //       <Row className="gap-4">
-  //         <Row className="w-28 justify-start">Democratic</Row>
-  //         <Row className="w-20 justify-start">Republican</Row>
-  //       </Row>
-  //     </Row>
-  //     {Object.entries(sortedSwingContractsDictionary).map(
-  //       ([key, contract], index) => {
-  //         return (
-  //           <SwingStateRow
-  //             key={key}
-  //             state={key}
-  //             contract={contract as CPMMMultiContract}
-  //             index={index}
-  //             targetState={targetState}
-  //             hoveredState={hoveredState}
-  //             setHoveredState={setHoveredState}
-  //           />
-  //         )
-  //       }
-  //     )}
-  //   </Col>
-  // )
+  return (
+    <Col className=" w-full">
+      <Row className="mb-2 w-full justify-end">
+        <TwombaToggle sweepsEnabled />
+      </Row>
+      <Row className="text-ink-500 mb-1 hidden w-full justify-between text-sm sm:flex">
+        Swing States
+        <Row className="gap-4">
+          <Row className="w-28 justify-start">Democratic</Row>
+          <Row className="w-20 justify-start">Republican</Row>
+        </Row>
+      </Row>
+      {Object.entries(sortedSwingContractsDictionary).map(
+        ([key, contract], index) => {
+          return (
+            <SwingStateRow
+              key={key}
+              state={key}
+              contract={contract as BinaryContract}
+              index={index}
+              targetState={targetState}
+              hoveredState={hoveredState}
+              setHoveredState={setHoveredState}
+            />
+          )
+        }
+      )}
+    </Col>
+  )
   return <></>
 }
 
 function SwingStateRow(props: {
   state: string
-  contract: CPMMMultiContract | null
+  contract: BinaryContract | null
   index: number
   hoveredState: string | undefined | null
   setHoveredState: (state: string | undefined) => void
@@ -127,10 +138,9 @@ function SwingStateRow(props: {
     return <></>
   }
 
+  const stateName = DATA[state].name
+  const pseudonymTitle = `Which party will win the presidency in ${stateName}`
   const contractUrl = contractPath(contract)
-  const demAnswer = contract.answers.find((a) => a.text === 'Democratic Party')
-
-  const repAnswer = contract.answers.find((a) => a.text === 'Republican Party')
   return (
     <ClickFrame
       className={clsx(
@@ -163,41 +173,52 @@ function SwingStateRow(props: {
           href={contractUrl}
           className="hover:text-primary-700 hover:underline"
         >
-          {extractStateFromPresidentContract(contract.question)}
+          {stateName}
         </Link>
       </Row>
-      {demAnswer && repAnswer && (
-        <div className="my-auto flex flex-col items-center gap-1 sm:flex-row sm:gap-4">
-          <SwingStatePercent
-            answer={demAnswer}
-            contract={contract}
-            label="DEM"
-            className="justify-end sm:justify-start"
-          />
-          <SwingStatePercent
-            answer={repAnswer}
-            contract={contract}
-            label="REP"
-            className="justify-end"
-          />
-        </div>
-      )}
+
+      <div className="my-auto flex flex-col items-center gap-1 sm:flex-row sm:gap-4">
+        <SwingStatePercent
+          contract={contract}
+          label="DEM"
+          className="justify-end sm:justify-start"
+          questionPseudonym={pseudonymTitle}
+        />
+        <SwingStatePercent
+          contract={contract}
+          label="REP"
+          className="justify-end"
+          questionPseudonym={pseudonymTitle}
+        />
+      </div>
     </ClickFrame>
   )
 }
 
 function SwingStatePercent(props: {
-  answer: Answer
-  contract: CPMMMultiContract
+  contract: BinaryContract
   label: string
   className?: string
+  questionPseudonym?: string
 }) {
-  const { answer, contract, label, className } = props
+  const { contract, label, className, questionPseudonym } = props
+  const prob = getDisplayProbability(contract)
+  const isDemocraticParty = label == 'DEM'
   return (
     <Row className={clsx('w-32 items-center gap-2 sm:w-24', className)}>
       <div className="text-ink-600 font-light sm:hidden">{label}</div>
-      <OpenProb contract={contract} answer={answer} size="sm" />
-      <MultiBettor contract={contract as CPMMMultiContract} answer={answer} />
+      <div className="w-8 font-semibold">
+        {formatPercent(isDemocraticParty ? 1 - prob : prob)}
+      </div>
+      <BinaryBetButton
+        contract={contract}
+        initialOutcome={isDemocraticParty ? 'NO' : 'YES'}
+        questionPseudonym={questionPseudonym}
+        binaryPseudonym={{
+          YES: { pseudonymName: 'Republican', pseudonymColor: 'sienna' },
+          NO: { pseudonymName: 'Democratic', pseudonymColor: 'azure' },
+        }}
+      />
     </Row>
   )
 }

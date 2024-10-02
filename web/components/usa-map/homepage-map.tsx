@@ -33,6 +33,7 @@ import {
 } from 'web/public/data/elections-data'
 import { HouseTable } from './house-table'
 import { useSweepstakes } from '../sweestakes-context'
+import e from 'cors'
 
 type MapMode = 'presidency' | 'senate' | 'house' | 'governor'
 
@@ -51,23 +52,21 @@ export function HomepageMap(props: {
     houseContract,
   } = props
 
+  const { isPlay } = useSweepstakes()
+
   const presidencyContractsDictionary = Object.keys(
     rawPresidencyStateContracts
   ).reduce((acc, key) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    acc[key] = useLiveContractWithAnswers(rawPresidencyStateContracts[key]!)
-    return acc
-  }, {} as MapContractsDictionary)
-
-  const swingCashContracts = Object.keys(
-    rawPresidencySwingCashContracts
-  ).reduce((acc, key) => {
+    const currentContract =
+      !isPlay && rawPresidencySwingCashContracts[key]
+        ? rawPresidencySwingCashContracts[key]
+        : rawPresidencyStateContracts[key]
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    acc[key] = useLiveContractWithAnswers(rawPresidencySwingCashContracts[key]!)
+    acc[key] = useLiveContractWithAnswers(currentContract!)
+
     return acc
   }, {} as MapContractsDictionary)
-
-  const { isPlay, setIsPlay } = useSweepstakes()
 
   const sortedPresidencyContractsDictionary = sortByDemocraticDiff(
     presidencyContractsDictionary

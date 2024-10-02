@@ -25,6 +25,7 @@ export type ColorType =
   | 'none'
   | 'white-outline'
   | 'purple'
+  | 'purple-outline'
   | 'violet'
   | 'azure'
   | 'sienna'
@@ -51,7 +52,7 @@ export function buttonClass(size: SizeType, color: ColorType) {
   return clsx(
     baseButtonClasses,
     sizeClasses[size],
-    color === 'amber-outline' && [outline, 'text-amber-500 hover:bg-amber-500'],
+    color === 'amber-outline' && [outline, 'text-amber-600 hover:bg-amber-500'],
     color === 'amber' && [solid, 'bg-amber-600 hover:bg-amber-700'],
     color === 'green' && [solid, 'bg-teal-500 hover:bg-teal-600'],
     color === 'green-outline' && [outline, 'text-teal-500 hover:bg-teal-500'],
@@ -67,6 +68,10 @@ export function buttonClass(size: SizeType, color: ColorType) {
     ],
     color === 'blue' && [solid, 'bg-blue-400 hover:bg-blue-500'],
     color === 'purple' && [solid, 'bg-purple-500 hover:bg-purple-700'],
+    color === 'purple-outline' && [
+      outline,
+      'dark:hover:text-white dark:text-purple-400 text-purple-600 dark:hover:bg-purple-500 hover:bg-purple-500',
+    ],
     color === 'violet' && [solid, 'bg-violet-500 hover:bg-violet-700'],
     color === 'sky-outline' && [outline, 'text-sky-500 hover:bg-sky-500'],
     color === 'indigo' && [solid, 'bg-primary-500 hover:bg-primary-600'],

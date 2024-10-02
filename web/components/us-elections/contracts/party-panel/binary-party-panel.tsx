@@ -222,7 +222,6 @@ function BinaryPartyAnswer(props: {
             </div>
             <BinaryBetButton
               contract={contract}
-              user={user}
               initialOutcome={'YES'}
               questionPseudonym={ELECTIONS_PARTY_QUESTION_PSEUDONYM}
             />
@@ -270,7 +269,6 @@ function BinaryPartyAnswer(props: {
             </div>
             <BinaryBetButton
               contract={contract}
-              user={user}
               initialOutcome={'NO'}
               questionPseudonym={ELECTIONS_PARTY_QUESTION_PSEUDONYM}
             />
@@ -332,7 +330,6 @@ function BinaryPartyAnswerSnippet(props: {
       <div className="relative">
         <BinaryBetButton
           contract={contract}
-          user={user}
           initialOutcome={isDemocraticParty ? 'NO' : 'YES'}
           className="w-20"
           questionPseudonym={ELECTIONS_PARTY_QUESTION_PSEUDONYM}
@@ -357,14 +354,30 @@ function BinaryPartyAnswerSnippet(props: {
 
 export function BinaryBetButton(props: {
   contract: Contract
-  user?: User | null
   initialOutcome?: BinaryOutcomes
   className?: string
   questionPseudonym?: string
+  binaryPseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
-  const { contract, initialOutcome, className, questionPseudonym } = props
+  const {
+    contract,
+    initialOutcome,
+    className,
+    questionPseudonym,
+    binaryPseudonym,
+  } = props
   const user = useUser()
   const [open, setOpen] = useState(false)
+  const isCashContract = contract.token == 'CASH'
 
   if (
     !isClosed(contract) &&
@@ -390,7 +403,7 @@ export function BinaryBetButton(props: {
 
             setOpen(true)
           }}
-          className={className}
+          className={clsx('bg-primary-50', className)}
         >
           {capitalize(TRADE_TERM)}
         </Button>
@@ -402,7 +415,7 @@ export function BinaryBetButton(props: {
             setOpen={setOpen}
             trackingLocation="contract table"
             initialOutcome={initialOutcome}
-            binaryPseudonym={politicsBinaryPseudonym}
+            binaryPseudonym={binaryPseudonym ?? politicsBinaryPseudonym}
             questionPseudonym={questionPseudonym}
           />
         )}
