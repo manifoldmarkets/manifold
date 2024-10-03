@@ -9,19 +9,21 @@ import { APIError } from 'common/api/utils'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { WEB_PRICES } from 'common/economy'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
   metadata: {
     userId: string
-    manticDollarQuantity: string
+    priceInDollars: string
   }
 }
 
 export type StripeTransaction = {
   userId: string
   manticDollarQuantity: number
+  manaDepositAmount?: number
+  priceInDollars?: number
   sessionId: string
   session: StripeSession
   timestamp: number
@@ -32,49 +34,27 @@ const initStripe = () => {
   return new Stripe(apiKey, { apiVersion: '2020-08-27', typescript: true })
 }
 
-// manage at https://dashboard.stripe.com/test/products?active=true
-const manticDollarStripePrice = isProd()
-  ? {
-      1399: 'price_1P5bG1GdoFKoCJW7aoWlFYL2',
-      2999: 'price_1P5bIQGdoFKoCJW7MXrOwn7l',
-      10999: 'price_1P5bJ2GdoFKoCJW7YBXcxaEx',
-      100000: 'price_1N0TeXGdoFKoCJW7htfCrFd7',
-    }
-  : {
-      1399: 'price_1PJ2h0GdoFKoCJW7U1HE1SHZ',
-      2999: 'price_1PJ2itGdoFKoCJW7QqWKG7YW',
-      10999: 'price_1PJ2ffGdoFKoCJW70A20kUY7',
-      100000: 'price_1N0Td3GdoFKoCJW7rbQYmwho',
-    }
-
-const mappedDollarAmounts = {
-  1399: 10000,
-  2999: 25000,
-  10999: 100000,
-  100000: 1000000,
-} as { [key: string]: number }
-
 export const createcheckoutsession = async (req: Request, res: Response) => {
-  if (TWOMBA_ENABLED) {
-    res.status(400).send('Stripe purchases are disabled')
-    return
-  }
   const userId = req.query.userId?.toString()
 
-  const manticDollarQuantity = req.query.manticDollarQuantity?.toString()
+  const priceInDollars = req.query.priceInDollars?.toString()
 
   if (!userId) {
     res.status(400).send('Invalid user ID')
     return
   }
-
-  if (
-    !manticDollarQuantity ||
-    !Object.keys(manticDollarStripePrice).includes(manticDollarQuantity)
-  ) {
-    res.status(400).send('Invalid Mantic Dollar quantity')
+  if (!priceInDollars) {
+    res.status(400).send('Must specify manifold price in dollars')
     return
   }
+  const price = WEB_PRICES.find(
+    (p) => p.priceInDollars === Number.parseInt(priceInDollars)
+  )
+  if (!price || !price.devStripeId || !price.prodStripeId) {
+    res.status(400).send('Invalid price in dollars')
+    return
+  }
+  const priceId = isProd() ? price.prodStripeId : price.devStripeId
 
   const referrer =
     req.query.referer || req.headers.referer || 'https://manifold.markets'
@@ -83,21 +63,18 @@ export const createcheckoutsession = async (req: Request, res: Response) => {
   const session = await stripe.checkout.sessions.create({
     metadata: {
       userId,
-      manticDollarQuantity,
+      priceInDollars: price.priceInDollars,
     },
     line_items: [
       {
-        price:
-          manticDollarStripePrice[
-            manticDollarQuantity as unknown as keyof typeof manticDollarStripePrice
-          ],
+        price: priceId,
         quantity: 1,
       },
     ],
     mode: 'payment',
     allow_promotion_codes: true,
-    success_url: `${referrer}?funding-success`,
-    cancel_url: `${referrer}?funding-failure`,
+    success_url: `${referrer}?purchaseSuccess=true`,
+    cancel_url: `${referrer}?purchaseSuccess=false`,
   })
 
   res.redirect(303, session.url || '')
@@ -129,14 +106,19 @@ export const stripewebhook = async (req: Request, res: Response) => {
 
 const issueMoneys = async (session: StripeSession) => {
   const { id: sessionId } = session
-  const { userId, manticDollarQuantity } = session.metadata
-  if (manticDollarQuantity === undefined) {
+  const { userId, priceInDollars } = session.metadata
+  if (priceInDollars === undefined) {
     log('skipping session', sessionId, '; no mana amount')
     return
   }
-  const price = Number.parseInt(manticDollarQuantity)
-  const deposit = mappedDollarAmounts[price] ?? price
-  log('manticDollarQuantity', manticDollarQuantity, 'deposit', deposit)
+  const price = Number.parseInt(priceInDollars)
+  const deposit = WEB_PRICES.find(
+    (p) => p.priceInDollars === Number.parseInt(priceInDollars)
+  )?.mana
+  if (!deposit) {
+    throw new APIError(500, 'Invalid deposit amount')
+  }
+  log('priceInDollars', priceInDollars, 'deposit', deposit)
 
   // TODO kill firestore collection when we get off stripe. too lazy to do it now
   const id = await firestore.runTransaction(async (trans) => {
@@ -152,7 +134,9 @@ const issueMoneys = async (session: StripeSession) => {
     const stripeDoc = firestore.collection('stripe-transactions').doc()
     trans.set(stripeDoc, {
       userId,
-      manticDollarQuantity: deposit, // save as number
+      manticDollarQuantity: deposit,
+      priceInDollars,
+      manaDepoitAmount: deposit,
       sessionId,
       session,
       timestamp: Date.now(),
@@ -206,13 +190,13 @@ const issueMoneys = async (session: StripeSession) => {
     if (!privateUser) throw new APIError(500, 'Private user not found')
 
     await sendThankYouEmail(user, privateUser)
-    log('stripe revenue', deposit / 100)
+    log('stripe revenue', price)
 
     await trackPublicEvent(
       userId,
       'M$ purchase',
-      { amount: deposit, sessionId },
-      { revenue: deposit / 100 }
+      { amount: deposit, sessionId, priceInDollars },
+      { revenue: price }
     )
   }
 }
