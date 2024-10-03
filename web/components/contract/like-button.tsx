@@ -148,7 +148,7 @@ export const LikeButton = memo(function LikeButton(props: {
             )}
             {...likeLongPress}
           >
-            <Row className={'items-center gap-0.5'}>
+            <Row className={'text-ink-600 items-center gap-0.5'}>
               <div className="relative">
                 <HeartIcon
                   className={clsx(
