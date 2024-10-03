@@ -21,7 +21,7 @@ export function Banner(props: {
         'text-ink-900 bg-primary-100 z-10 justify-between gap-4'
       )}
     >
-      {link && (
+      {link ? (
         <Link
           target="_blank"
           href={link}
@@ -30,6 +30,8 @@ export function Banner(props: {
         >
           {children}
         </Link>
+      ) : (
+        <div className={'pl-4'}>{children}</div>
       )}
 
       {setShowBanner && (
@@ -98,10 +100,14 @@ export function ManifestBanner(props: { hideBanner: () => void }) {
 }
 
 export function DowntimeBanner() {
+  const maintainanceBannerEnabled = true
+  if (!maintainanceBannerEnabled) return null
   return (
-    <Banner className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b">
-      ⚠️ Manifold will be down at 9PM PT for about 1 hour, as we upgrade our
-      financial infrastructure.
+    <Banner className="bg-primary-100 hover:bg-primary-200 dark:text-primary-800  text-primary-700 hover:text-primary-900 h-10 items-center py-2 transition-colors">
+      <div>
+        ⚠️ Manifold will be down at 9PM PT for about 1 hour, as we upgrade our
+        financial infrastructure.
+      </div>
     </Banner>
   )
 }

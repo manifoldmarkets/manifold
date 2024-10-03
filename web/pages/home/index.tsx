@@ -14,7 +14,7 @@ import { HeadlineTabs } from 'web/components/dashboard/header'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { TwombaBanner } from 'web/components/nav/banner'
+import { DowntimeBanner, TwombaBanner } from 'web/components/nav/banner'
 
 export async function getStaticProps() {
   try {
@@ -33,16 +33,14 @@ export async function getStaticProps() {
 export default function Home(props: { headlines: Headline[] }) {
   const user = useUser()
   useRedirectIfSignedOut()
-
   const { headlines } = props
 
   return (
     <Page trackPageView={'home'} className="!mt-0">
       <Welcome />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
-
       {TWOMBA_ENABLED && <TwombaBanner />}
-
+      <DowntimeBanner />
       <HeadlineTabs
         endpoint={'news'}
         headlines={headlines}

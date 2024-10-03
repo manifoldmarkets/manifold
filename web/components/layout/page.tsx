@@ -8,8 +8,6 @@ import { Col } from './col'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { ConfettiOnDemand } from '../confetti-on-demand'
 import { useTracking } from 'web/hooks/use-tracking'
-import { DowntimeBanner } from '../nav/banner'
-import { useUser } from 'web/hooks/use-user'
 
 import { Footer } from '../footer'
 
@@ -32,14 +30,9 @@ export function Page(props: {
     banner,
   } = props
 
-  // Force enable maintainance banner.
-  const maintainanceBannerEnabled = false
-
   // eslint-disable-next-line react-hooks/rules-of-hooks
   trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
   const isMobile = useIsMobile()
-
-  const user = useUser()
 
   return (
     <>
@@ -62,16 +55,10 @@ export function Page(props: {
         )}
         <main
           className={clsx(
-            'col-span-8 flex flex-1 flex-col xl:px-2',
-            maintainanceBannerEnabled ? 'lg:mt-0' : 'lg:mt-6',
+            'col-span-8 flex flex-1 flex-col lg:mt-6 xl:px-2',
             className
           )}
         >
-          {maintainanceBannerEnabled && user && (
-            <DowntimeBanner>
-              {/*🛠️ Site is undergoing maintenance, sorry for the inconvenience.*/}
-            </DowntimeBanner>
-          )}
           {banner}
           {children}
           <Footer />
