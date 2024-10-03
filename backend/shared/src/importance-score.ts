@@ -46,6 +46,8 @@ export async function calculateImportanceScore(
            c.data->'createdTime' as created_time,
            c.data->'volume24Hours' as volume_24_hours,
            c.data->'shouldAnswersSumToOne' as should_answers_sum_to_one,
+           c.data->'siblingContractId' as sibling_contract_id,
+           c.data->'token' as token,
            conversion_score,importance_score, freshness_score, view_count, daily_score,
            case when count(a.prob) > 0 then json_agg(a.prob) end as answer_probs
     from contracts c
@@ -60,6 +62,8 @@ export async function calculateImportanceScore(
       created_time,
       volume_24_hours,
       prob_changes,
+      sibling_contract_id,
+      token,
       answer_probs,
       ...rest
     } = row
@@ -68,6 +72,8 @@ export async function calculateImportanceScore(
       probChanges: prob_changes,
       volume24Hours: volume_24_hours as number,
       uniqueBettorCount: unique_bettors as number,
+      siblingContractId: sibling_contract_id as string,
+      token: token as string,
       createdTime: created_time as number,
       answers: answer_probs?.map((p: number) => ({ prob: p as number })) ?? [],
       ...rest,
@@ -177,19 +183,29 @@ export async function calculateImportanceScore(
   )
     log('WARNING: some scores are out of bounds')
 
+  log('')
   log('Top 30 contracts by score')
 
   contractsWithUpdates.slice(0, 30).forEach((contract) => {
-    log(contract.importanceScore, contract.question)
+    log(
+      contract.importanceScore,
+      contract.question,
+      contract.token === 'CASH' ? '[sweep]' : ''
+    )
   })
 
+  log('')
   log('Bottom 5 contracts by score')
   contractsWithUpdates
     .slice()
     .reverse()
     .slice(0, 5)
     .forEach((contract) => {
-      log(contract.importanceScore, contract.question)
+      log(
+        contract.importanceScore,
+        contract.question,
+        contract.token === 'CASH' ? '[sweep]' : ''
+      )
     })
 
   // Sort in descending order by freshness
@@ -197,22 +213,33 @@ export async function calculateImportanceScore(
     contractsWithUpdates,
     (c) => -1 * (c.freshnessScore ?? 0)
   )
+  log('')
   log('Top 30 contracts by freshness')
 
   freshest.slice(0, 30).forEach((contract) => {
-    log(contract.freshnessScore, contract.question)
+    log(
+      contract.freshnessScore,
+      contract.question,
+      contract.token === 'CASH' ? '[sweep]' : ''
+    )
   })
 
+  log('')
   log('Bottom 5 contracts by freshness')
   freshest
     .slice()
     .reverse()
     .slice(0, 5)
     .forEach((contract) => {
-      log(contract.freshnessScore, contract.question)
+      log(
+        contract.freshnessScore,
+        contract.question,
+        contract.token === 'CASH' ? '[sweep]' : ''
+      )
     })
 
   if (!readOnly) {
+    log('')
     log('Updating', contractsWithUpdates.length, 'contracts')
     await bulkUpdate(
       pg,
@@ -367,8 +394,18 @@ export const computeContractScores = (
 
   const conversionScore = normalize(contract.conversionScore, 1)
 
+  const sweepsScore =
+    contract.token === 'CASH' // boost sweeps
+      ? 4
+      : contract.siblingContractId // boost mana markets with attached sweeps
+      ? 1
+      : contract.id === 'ikSUiiNS8MwAI75RwEJf' // downrank old election market
+      ? -4
+      : 0
+
   // recalibrate all of these numbers as site usage changes
   const rawMarketImportance =
+    sweepsScore +
     2 * normalize(Math.log10(contract.volume24Hours + 1), 5) +
     2 * normalize(traderHour, 20) +
     2 * normalize(todayScore, 100) +
