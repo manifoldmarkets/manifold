@@ -27,7 +27,7 @@ export const redeemShares = async (
   contract: Contract,
   newBets?: MarginalBet[] // used when uncommenting contract metrics logic
 ) => {
-  if (!userIds.length) return
+  if (!userIds.length) return { bets: [], balanceUpdates: [] }
 
   const answerIds = uniq(filterDefined((newBets ?? []).map((b) => b.answerId)))
   const metrics = await pgTrans.map(
@@ -53,13 +53,12 @@ export const redeemShares = async (
   }[] = []
 
   for (const userId of userIds) {
-    const userNonRedemptionBetsByAnswer = groupBy(
-      bets.filter((bet) => bet.shares !== 0 && bet.userId === userId),
-      (bet) => bet.answerId
-    )
-    // NOTE: This isn't used, number bets aren't actually redeemed rn
-    // However, we this should work for any sum-to-one cpmm-multi contract
+    // This should work for any sum-to-one cpmm-multi contract, as well
     if (contract.outcomeType === 'NUMBER') {
+      const userNonRedemptionBetsByAnswer = groupBy(
+        bets.filter((bet) => bet.shares !== 0 && bet.userId === userId),
+        (bet) => bet.answerId
+      )
       log(
         `Loaded ${bets.length} bets for user ${userId} on contract ${contract.id} to redeem shares`
       )
@@ -120,112 +119,66 @@ export const redeemShares = async (
           totalAmount: saleValue,
         })
       }
-      return
-    }
-
-    let totalCMAmount = 0
-    for (const metric of metrics.filter((m) => m.userId === userId)) {
-      const bet = newBets?.find(
-        (b) => b.answerId == metric.answerId && b.userId === userId
-      )
-      if (!bet) {
-        log.error('New bet not found for contract metric', { metric })
-        continue
-      }
-
-      const { shares, loanPayment, netAmount } =
-        getBinaryRedeemableAmountFromContractMetric(metric)
-      if (floatingEqual(shares, 0)) {
-        continue
-      }
-      if (!isFinite(netAmount)) {
-        throw new APIError(
-          500,
-          'Invalid redemption amount, no clue what happened here.'
+    } else {
+      let totalCMAmount = 0
+      for (const metric of metrics.filter((m) => m.userId === userId)) {
+        const bet = newBets?.find(
+          (b) => b.answerId == metric.answerId && b.userId === userId
         )
+        if (!bet) {
+          log.error('New bet not found for contract metric', { metric })
+          continue
+        }
+
+        const { shares, loanPayment, netAmount } =
+          getBinaryRedeemableAmountFromContractMetric(metric)
+        if (floatingEqual(shares, 0)) {
+          continue
+        }
+        if (!isFinite(netAmount)) {
+          throw new APIError(
+            500,
+            'Invalid redemption amount, no clue what happened here.'
+          )
+        }
+        totalCMAmount += netAmount
+        const answerId = metric.answerId ?? undefined
+        const lastProb = bet.probAfter
+        const [yesBet, noBet] = getRedemptionBets(
+          contract,
+          shares,
+          loanPayment,
+          lastProb,
+          answerId
+        )
+        const redemptionBets = [yesBet, noBet].map((b) => ({
+          userId,
+          ...b,
+        }))
+        betsToInsert.push(...redemptionBets)
+
+        log('redeemed', {
+          shares,
+          netAmount,
+        })
       }
-      totalCMAmount += netAmount
-      const answerId = metric.answerId ?? undefined
-      const lastProb = bet.probAfter
-      const [yesBet, noBet] = getRedemptionBets(
-        contract,
-        shares,
-        loanPayment,
-        lastProb,
-        answerId
-      )
-      const redemptionBets = [yesBet, noBet].map((b) => ({
-        userId,
-        ...b,
-      }))
-      betsToInsert.push(...redemptionBets)
 
-      log('redeemed', {
-        shares,
-        netAmount,
-      })
+      if (totalCMAmount !== 0) {
+        balanceUpdates.push({
+          id: userId,
+          [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+            totalCMAmount,
+        })
+      }
     }
-
-    if (totalCMAmount !== 0) {
-      balanceUpdates.push({
-        id: userId,
-        [contract.token === 'CASH' ? 'cashBalance' : 'balance']: totalCMAmount,
-      })
-    }
-
-    // // Remove this when using contract metrics
-    // let totalAmount = 0
-    // for (const [answerIdString, nonRedemptionBets] of Object.entries(
-    //   userNonRedemptionBetsByAnswer
-    // )) {
-    //   const { shares, loanPayment, netAmount } =
-    //     getBinaryRedeemableAmount(nonRedemptionBets)
-    //   if (floatingEqual(shares, 0)) {
-    //     continue
-    //   }
-    //   if (!isFinite(netAmount)) {
-    //     throw new APIError(
-    //       500,
-    //       'Invalid redemption amount, no clue what happened here.'
-    //     )
-    //   }
-    //   const answerId =
-    //     answerIdString === 'undefined' ? undefined : answerIdString
-    //   totalAmount += netAmount
-
-    //   const lastProb = maxBy(nonRedemptionBets, (b) => b.createdTime)
-    //     ?.probAfter as number
-    //   const [yesBet, noBet] = getRedemptionBets(
-    //     contract,
-    //     shares,
-    //     loanPayment,
-    //     lastProb,
-    //     answerId
-    //   )
-    //   const newBets = [yesBet, noBet].map((b) => ({
-    //     userId,
-    //     ...b,
-    //   }))
-    //   betsToInsert.push(...newBets)
-
-    //   log('redeemed', {
-    //     shares,
-    //     netAmount,
-    //   })
-    // }
-
-    // if (totalAmount !== 0) {
-    //   balanceUpdates.push({
-    //     id: userId,
-    //     [contract.token === 'CASH' ? 'cashBalance' : 'balance']: totalAmount,
-    //   })
-    // }
   }
-
+  let insertedBets: Bet[] = []
   if (betsToInsert.length > 0) {
-    await bulkInsertBets(betsToInsert, pgTrans)
+    const betRows = await bulkInsertBets(betsToInsert, pgTrans)
+    insertedBets = betRows.map(convertBet)
   }
   if (balanceUpdates.length > 0) {
     await bulkIncrementBalances(pgTrans, balanceUpdates)
   }
+  return { bets: insertedBets, balanceUpdates }
 }

@@ -3,8 +3,7 @@ import { SparklesIcon } from '@heroicons/react/solid'
 import { animated } from '@react-spring/web'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import { Bet } from 'common/bet'
-import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
+import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
   CPMMNumericContract,
@@ -17,12 +16,10 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { HOUR_MS } from 'common/util/time'
-import { capitalize, sumBy } from 'lodash'
+import { capitalize } from 'lodash'
 import { ReactNode, useState } from 'react'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUser } from 'web/hooks/use-user'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { track } from 'web/lib/service/analytics'
 import { formatTimeShort } from 'web/lib/util/time'
 import { MoneyDisplay } from '../bet/money-display'
@@ -44,6 +41,9 @@ import { Avatar, EmptyAvatar } from '../widgets/avatar'
 import { Linkify } from '../widgets/linkify'
 import { Tooltip } from '../widgets/tooltip'
 import { AnswerCpmmBetPanel } from './answer-bet-panel'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { ContractMetric } from 'common/contract-metric'
+import { floatingEqual } from 'common/util/math'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -301,17 +301,16 @@ const YesNoBetButtons = (props: {
 export const MultiSeller = (props: {
   answer: Answer
   contract: CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
+  metric: ContractMetric
   user: User
   className?: string
   showPosition?: boolean
 }) => {
-  const { answer, contract, userBets, user, className, showPosition } = props
+  const { answer, contract, metric, user, className, showPosition } = props
   const [open, setOpen] = useState(false)
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
-  const sharesOutcome = sharesSum > 0 ? 'YES' : 'NO'
+  const { totalShares, maxSharesOutcome } = metric
+  const outcome = (maxSharesOutcome ?? 'YES') as 'YES' | 'NO'
+  const sharesSum = totalShares[outcome] ?? 0
 
   return (
     <>
@@ -319,9 +318,9 @@ export const MultiSeller = (props: {
         <SellSharesModal
           contract={contract}
           user={user}
-          userBets={userBets}
-          shares={Math.abs(sharesSum)}
-          sharesOutcome={sharesOutcome}
+          metric={metric}
+          shares={sharesSum}
+          sharesOutcome={outcome}
           setOpen={setOpen}
           answerId={answer.id}
         />
@@ -337,12 +336,12 @@ export const MultiSeller = (props: {
         {showPosition && (
           <>
             <span className="font-bold">
-              <MultiSellerPosition contract={contract} userBets={userBets} />
+              <MultiSellerPosition metric={metric} />
             </span>
             (
             <MultiSellerProfit
               contract={contract}
-              userBets={userBets}
+              metric={metric}
               answer={answer}
             />{' '}
             profit)
@@ -359,11 +358,13 @@ export const BinaryMultiSellRow = (props: {
 }) => {
   const { contract, answer } = props
   const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)?.filter(
-    (b) => b.answerId === answer.id
-  )
+  const metric = useSavedContractMetrics(contract, answer.id)
   const [open, setOpen] = useState(false)
-  const { sharesOutcome, shares } = useSaveBinaryShares(contract, userBets)
+
+  const { totalShares, maxSharesOutcome } = metric
+  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO'
+  const sharesSum = totalShares?.[sharesOutcome] ?? 0
+
   if (!sharesOutcome || !user || contract.isResolved) return null
   return (
     <Row className={'mt-2'}>
@@ -371,8 +372,8 @@ export const BinaryMultiSellRow = (props: {
         <SellSharesModal
           contract={contract}
           user={user}
-          userBets={userBets ?? []}
-          shares={shares}
+          metric={metric}
+          shares={sharesSum}
           sharesOutcome={sharesOutcome}
           setOpen={setOpen}
           answerId={getMainBinaryMCAnswer(contract)?.id}
@@ -532,14 +533,15 @@ export const BetButtons = (props: {
 
 export function AnswerPosition(props: {
   contract: CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
   answer: Answer
   user: User
   className?: string
+  addDot?: boolean
 }) {
-  const { contract, user, userBets, answer, className } = props
+  const { contract, user, answer, className, addDot } = props
 
-  const { invested, totalShares } = getContractBetMetrics(contract, userBets)
+  const metric = useSavedContractMetrics(contract, answer.id)
+  const { invested, totalShares } = metric
 
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
@@ -550,57 +552,65 @@ export function AnswerPosition(props: {
     (position > 1e-7 && answer.resolution === 'YES') ||
     (position < -1e-7 && answer.resolution === 'NO')
 
+  if (!metric || floatingEqual(invested, 0)) return null
+
   return (
-    <Row
-      className={clsx(
-        className,
-        'text-ink-500 gap-1.5 whitespace-nowrap text-xs'
-      )}
-    >
-      <Row className="gap-1">
-        {canSell ? 'Payout' : won ? 'Paid out' : 'Held out for'}
-        {position > 1e-7 ? (
+    <>
+      <Row
+        className={clsx(
+          className,
+          'text-ink-500 gap-1.5 whitespace-nowrap text-xs'
+        )}
+      >
+        <Row className="gap-1">
+          {canSell ? 'Payout' : won ? 'Paid out' : 'Held out for'}
+          {position > 1e-7 ? (
+            <>
+              <span className="text-ink-700">
+                <MoneyDisplay
+                  amount={position}
+                  isCashContract={isCashContract}
+                />
+              </span>{' '}
+              on
+              <YesLabel />
+            </>
+          ) : position < -1e-7 ? (
+            <>
+              <span className="text-ink-700">
+                {' '}
+                <MoneyDisplay
+                  amount={-position}
+                  isCashContract={isCashContract}
+                />
+              </span>{' '}
+              on
+              <NoLabel />
+            </>
+          ) : (
+            '——'
+          )}
+        </Row>
+        &middot;
+        <Row className="gap-1">
+          <div className="text-ink-500">Spent</div>
+          <div className="text-ink-700">
+            <MoneyDisplay amount={invested} isCashContract={isCashContract} />
+          </div>
+        </Row>
+        {canSell && (
           <>
-            <span className="text-ink-700">
-              <MoneyDisplay amount={position} isCashContract={isCashContract} />
-            </span>{' '}
-            on
-            <YesLabel />
+            &middot;
+            <MultiSeller
+              answer={answer}
+              contract={contract}
+              metric={metric}
+              user={user}
+            />
           </>
-        ) : position < -1e-7 ? (
-          <>
-            <span className="text-ink-700">
-              {' '}
-              <MoneyDisplay
-                amount={-position}
-                isCashContract={isCashContract}
-              />
-            </span>{' '}
-            on
-            <NoLabel />
-          </>
-        ) : (
-          '——'
         )}
       </Row>
-      &middot;
-      <Row className="gap-1">
-        <div className="text-ink-500">Spent</div>
-        <div className="text-ink-700">
-          <MoneyDisplay amount={invested} isCashContract={isCashContract} />
-        </div>
-      </Row>
-      {canSell && (
-        <>
-          &middot;
-          <MultiSeller
-            answer={answer}
-            contract={contract}
-            userBets={userBets}
-            user={user}
-          />
-        </>
-      )}
-    </Row>
+      {addDot && <span>&middot;</span>}
+    </>
   )
 }

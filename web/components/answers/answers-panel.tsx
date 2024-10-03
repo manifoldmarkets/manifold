@@ -15,7 +15,7 @@ import {
   type Answer,
   type MultiSort,
 } from 'common/answer'
-import { Bet, LimitBet } from 'common/bet'
+import { LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
@@ -26,7 +26,6 @@ import {
 } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
-import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
 import { groupBy, sumBy } from 'lodash'
 import Link from 'next/link'
@@ -52,7 +51,6 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { api, editAnswerCpmm, updateMarket } from 'web/lib/api/api'
 import {
@@ -77,6 +75,8 @@ import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { debounce } from 'lodash'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { buildArray } from 'common/util/array'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { floatingEqual } from 'common/util/math'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -182,9 +182,7 @@ export function AnswersPanel(props: {
   }, [selectedAnswerIds.length, answersToShow.length])
 
   const user = useUser()
-
-  const userBets = useUserContractBets(user?.id, contract.id)
-  const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
+  const metrics = useSavedContractMetrics(contract)
 
   const isAdvancedTrader = useIsAdvancedTrader()
   const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
@@ -298,9 +296,6 @@ export function AnswersPanel(props: {
                   (b) => b.answerId === answer.id
                 )}
                 color={getAnswerColor(answer)}
-                userBets={
-                  shouldShowPositions ? userBetsByAnswer[answer.id] : undefined
-                }
                 shouldShowLimitOrderChart={
                   isAdvancedTrader && shouldShowLimitOrderChart
                 }
@@ -326,7 +321,7 @@ export function AnswersPanel(props: {
         )}
       </Col>
       <Row className="justify-end gap-4">
-        {userBets.length > 0 && (
+        {!floatingEqual(metrics.invested, 0) && (
           <Row className="mt-2 items-center gap-2">
             <input
               id="positions"
@@ -576,7 +571,6 @@ export function Answer(props: {
   onCommentClick?: () => void
   onHover?: (hovering: boolean) => void
   onClick?: () => void
-  userBets?: Bet[]
   barColor?: string
   shouldShowLimitOrderChart: boolean
   feedReason?: string
@@ -590,7 +584,6 @@ export function Answer(props: {
     onHover,
     onClick,
     color,
-    userBets,
     user,
     barColor,
     feedReason,
@@ -609,10 +602,6 @@ export function Answer(props: {
       ? 1
       : (resolutions?.[answer.id] ?? 0) / 100
 
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
-  const hasBets = userBets && !floatingEqual(sharesSum, 0)
   const isClient = useIsClient()
 
   const yourUnfilledBets = unfilledBets?.filter(
@@ -623,8 +612,6 @@ export function Answer(props: {
   const textColorClass = clsx(
     resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   )
-
-  const showPosition = hasBets && user
 
   const userHasLimitOrders =
     shouldShowLimitOrderChart && (yourUnfilledBets ?? []).length > 0
@@ -773,16 +760,15 @@ export function Answer(props: {
           }
         >
           <Row className="text-ink-500 gap-1.5">
-            {showPosition && (
+            {user && (
               <AnswerPosition
                 contract={contract}
                 answer={answer}
-                userBets={userBets}
                 className="self-end"
                 user={user}
+                addDot={userHasLimitOrders}
               />
             )}
-            {userHasLimitOrders && showPosition && <>&middot;</>}
             {userHasLimitOrders && (
               <AnswerOrdersButton
                 contract={contract}

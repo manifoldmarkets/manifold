@@ -58,6 +58,18 @@ export async function getUserContractMetrics(
   return data.map((r) => r.data) as ContractMetric[]
 }
 
+export async function getUserContractMetricsForAnswers(
+  userId: string,
+  contractId: string,
+  db: SupabaseClient
+) {
+  const q = selectJson(db, 'user_contract_metrics')
+    .eq('user_id', userId)
+    .eq('contract_id', contractId)
+  const { data } = await run(q)
+  return data.map((r) => r.data) as ContractMetric[]
+}
+
 export async function getCPMMContractUserContractMetrics(
   contractId: string,
   limit: number,
