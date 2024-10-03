@@ -382,14 +382,13 @@ export const calculateProfitMetricsWithProb = <
 ) => {
   const {
     maxSharesOutcome,
-    totalAmountSold,
-    totalAmountInvested,
+    totalAmountSold = 0,
+    totalAmountInvested = 0,
     totalShares,
     hasNoShares,
     hasYesShares,
   } = um
   const soldOut = !hasNoShares && !hasYesShares
-
   const payout = soldOut
     ? 0
     : maxSharesOutcome
@@ -411,7 +410,7 @@ export const calculateProfitMetricsWithProb = <
 
 export const calculateAnswerMetricsWithNewBetsOnly = (
   newBets: MarginalBet[],
-  userMetrics: Omit<ContractMetric, 'id'>[],
+  userMetrics: ContractMetric[],
   contractId: string,
   isMultiMarket: boolean
 ) => {
@@ -490,9 +489,11 @@ const defaultTimeScaleValues = {
 }
 
 // We could do this all in the database trigger, but the logic gets hairy
-export const applyMetricToSummary = (
-  metric: Omit<ContractMetric, 'id'>,
-  summary: Omit<ContractMetric, 'id'>,
+export const applyMetricToSummary = <
+  T extends Omit<ContractMetric, 'id'> | ContractMetric
+>(
+  metric: T,
+  summary: T,
   add: boolean
 ) => {
   const sign = add ? 1 : -1
