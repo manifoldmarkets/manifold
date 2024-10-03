@@ -3,13 +3,8 @@ import { charities } from 'common/charity'
 import { APIError } from 'api/helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import {
-  MIN_CASH_DONATION,
-  MIN_SPICE_DONATION,
-  CHARITY_FEE,
-  TWOMBA_ENABLED,
-} from 'common/envs/constants'
-import { getUser } from 'shared/utils'
+import { MIN_CASH_DONATION } from 'common/envs/constants'
+import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
 
 export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
   const charity = charities.find((c) => c.id === to)
@@ -18,49 +13,46 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
   const pg = createSupabaseDirectClient()
 
   await pg.tx(async (tx) => {
-    const user = await getUser(auth.uid, tx)
-    if (!user) throw new APIError(401, 'Your account was not found')
+    const { cashBalance, redeemable } = await calculateRedeemablePrizeCash(
+      tx,
+      auth.uid
+    )
 
-    const balance = TWOMBA_ENABLED ? user.cashBalance : user.spiceBalance
-    if (balance < amount) {
+    if (cashBalance < amount) {
+      throw new APIError(403, 'Insufficient prizecash balance')
+    }
+
+    if (redeemable < amount) {
       throw new APIError(
         403,
-        `Insufficient ${TWOMBA_ENABLED ? 'cash' : 'prize points'} balance`
+        `Insufficent redeemable prizecash. Only ${redeemable} prizecash can be redeemed.`
       )
     }
 
-    const min = TWOMBA_ENABLED ? MIN_CASH_DONATION : MIN_SPICE_DONATION
-    if (amount < min) {
+    if (amount < MIN_CASH_DONATION) {
       throw new APIError(
         400,
-        `Minimum donation is ${min} ${TWOMBA_ENABLED ? 'cash' : 'prize points'}`
+        `Minimum donation is ${MIN_CASH_DONATION} prizecash`
       )
     }
 
-    let donation: number
+    // const fee = CHARITY_FEE * amount
+    // amount -= fee
 
-    if (TWOMBA_ENABLED) {
-      donation = amount
-    } else {
-      // add donation to charity
-      const fee = CHARITY_FEE * amount
-      donation = amount - fee
+    // const feeTxn = {
+    //   category: 'CHARITY_FEE',
+    //   fromType: 'USER',
+    //   fromId: auth.uid,
+    //   toType: 'BANK',
+    //   toId: 'BANK',
+    //   amount: fee,
+    //   token: 'CASH',
+    //   data: {
+    //     charityId: charity.id,
+    //   },
+    // } as const
 
-      const feeTxn = {
-        category: 'CHARITY_FEE',
-        fromType: 'USER',
-        fromId: auth.uid,
-        toType: 'BANK',
-        toId: 'BANK',
-        amount: fee,
-        token: TWOMBA_ENABLED ? 'CASH' : 'SPICE',
-        data: {
-          charityId: charity.id,
-        },
-      } as const
-
-      await runTxn(tx, feeTxn)
-    }
+    // await runTxn(tx, feeTxn)
 
     const donationTxn = {
       category: 'CHARITY',
@@ -68,8 +60,8 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
       fromId: auth.uid,
       toType: 'CHARITY',
       toId: charity.id,
-      amount: donation,
-      token: TWOMBA_ENABLED ? 'CASH' : 'SPICE',
+      amount,
+      token: 'CASH',
     } as const
 
     await runTxn(tx, donationTxn)

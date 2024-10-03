@@ -1,10 +1,10 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/legacy/image'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { BuyAmountInput } from 'web/components/widgets/amount-input'
+import { AmountInput } from 'web/components/widgets/amount-input'
 import { Spacer } from 'web/components/layout/spacer'
 import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
@@ -18,7 +18,7 @@ import {
   getDonationsPageQuery,
 } from 'web/lib/supabase/txns'
 import { Donation } from 'web/components/charity/feed-items'
-import { formatMoneyUSD } from 'common/util/format'
+import { formatMoneyUSD, formatSweepies } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
@@ -29,10 +29,10 @@ import { CoinNumber } from 'web/components/widgets/coin-number'
 import {
   CASH_TO_CHARITY_DOLLARS,
   MIN_CASH_DONATION,
-  MIN_SPICE_DONATION,
-  SPICE_TO_CHARITY_DOLLARS,
   TWOMBA_ENABLED,
 } from 'common/envs/constants'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 type DonationItem = { user: User; ts: number; amount: number }
 
@@ -182,11 +182,25 @@ function DonationBox(props: {
   onDonated?: (user: User, ts: number, amount: number) => void
 }) {
   const { user, charity, onDonated } = props
+
+  const { data, refresh } = useAPIGetter('get-redeemable-prize-cash', {})
+  const redeemableCash = data?.redeemablePrizeCash ?? 0
+
   const [amount, setAmount] = useState<number | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
+  const min = MIN_CASH_DONATION
 
-  const min = TWOMBA_ENABLED ? MIN_CASH_DONATION : MIN_SPICE_DONATION
+  useEffect(() => {
+    if (amount && amount < min) {
+      setError(`Minimum amount: ${formatSweepies(min)}`)
+    } else if (amount && amount > redeemableCash) {
+      setError(`You don't have enough redeemable sweepcash`)
+    } else {
+      setError(undefined)
+    }
+  }, [amount])
+
   const donateDisabled = isSubmitting || !amount || !!error || amount < min
 
   const onSubmit: React.FormEventHandler = async (e) => {
@@ -205,36 +219,34 @@ function DonationBox(props: {
     setAmount(undefined)
     onDonated?.(user, Date.now(), amount)
     track('donation', { charityId: charity.id, amount })
+    await refresh()
   }
 
   return (
-    <div className="bg-canvas-50 my-4 rounded-lg px-4 py-2">
+    <div className="bg-canvas-50 my-4 flex flex-col rounded-lg px-4 py-2">
       <h2 className="text-primary-600 !mt-0 mb-4 text-2xl">Donate</h2>
       <label className="text-ink-700 mb-2 block text-sm">Amount</label>
-      <BuyAmountInput
-        inputClassName="donate-input"
-        minimumAmount={min}
+      <AmountInput
+        error={!!error}
+        min={min}
         amount={amount}
-        onChange={setAmount}
-        error={error}
-        setError={setError}
-        token={TWOMBA_ENABLED ? 'CASH' : 'SPICE'}
+        onChangeAmount={setAmount}
+        label={<SweepiesCoin />}
+        isSweepies
       />
 
-      <Col className="mt-3 w-full gap-3">
+      {error && (
+        <div className="text-scarlet-500 my-4 h-2 text-sm dark:text-red-400">
+          {error}
+        </div>
+      )}
+
+      <Col className="mb-8 mt-4 w-full gap-3">
         <Row className="items-center text-sm xl:justify-between">
           <span className="text-ink-500 mr-1">{charity.name} receives</span>
-          <span>
-            {formatMoneyUSD(
-              (TWOMBA_ENABLED
-                ? CASH_TO_CHARITY_DOLLARS
-                : SPICE_TO_CHARITY_DOLLARS) * (amount || 0)
-            )}
-          </span>
+          <span>{formatMoneyUSD(CASH_TO_CHARITY_DOLLARS * (amount || 0))}</span>
         </Row>
       </Col>
-
-      <Spacer h={8} />
 
       {user && (
         <Button
