@@ -1,7 +1,7 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   PaymentAmount,
-  WEB_PRICES,
+  PaymentAmountsGIDX,
   REFERRAL_MIN_PURCHASE_DOLLARS,
 } from 'common/economy'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
@@ -27,9 +27,8 @@ import { distributeReferralBonusIfNoneGiven } from 'shared/distribute-referral-b
 const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 
 const getPaymentAmountForWebPriceDollars = (priceInDollars: number) => {
-  const amount = WEB_PRICES.find(
-    (p) =>
-      p.priceInDollars === priceInDollars && !p.devStripeId && !p.prodStripeId
+  const amount = PaymentAmountsGIDX.find(
+    (p) => p.priceInDollars === priceInDollars
   )
   if (!amount) {
     throw new APIError(400, 'Invalid price')

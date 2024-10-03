@@ -22,8 +22,7 @@ import { useNativeInfo } from './native-message-provider'
 import { CoinNumber } from './widgets/coin-number'
 import { TwombaFundsSelector } from 'web/components/gidx/twomba-funds-selector'
 import { getVerificationStatus } from 'common/gidx/user'
-import { firebaseLogin, User } from 'web/lib/firebase/users'
-import { checkoutURL } from 'web/lib/service/stripe'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
 const BUY_MANA_GRAPHICS = [
   '/buy-mana-graphics/10k.png',
@@ -115,10 +114,9 @@ export function PriceTile(props: {
   index: number
   loadingPrice: WebPriceInDollars | null
   disabled: boolean
-  user: User | null | undefined
   onClick?: () => void
 }) {
-  const { loadingPrice, onClick, amounts, index, user } = props
+  const { loadingPrice, onClick, amounts, index } = props
   const {
     newUsersOnly,
     mana,
@@ -126,13 +124,10 @@ export function PriceTile(props: {
     bonusInDollars,
     originalPriceInDollars,
   } = amounts
-  const { isIOS } = useNativeInfo()
 
   const isCurrentlyLoading = loadingPrice === priceInDollars
   const disabled = props.disabled || (loadingPrice && !isCurrentlyLoading)
-
-  const useStripe = bonusInDollars === 0 && !isIOS
-  const tile = (
+  return (
     <button
       className={clsx(
         'group relative flex h-fit w-full flex-col items-center rounded text-center shadow transition-all ',
@@ -142,8 +137,8 @@ export function PriceTile(props: {
         isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait',
         newUsersOnly && 'border-4 border-purple-500 '
       )}
-      type={useStripe ? 'submit' : 'button'}
-      onClick={useStripe ? undefined : onClick}
+      type={'button'}
+      onClick={onClick}
     >
       {originalPriceInDollars && originalPriceInDollars !== priceInDollars && (
         <div
@@ -205,20 +200,6 @@ export function PriceTile(props: {
       )}
     </button>
   )
-  const [url, setUrl] = useState('https://manifold.markets')
-  useEffect(() => setUrl(window.location.href), [])
-  if (useStripe) {
-    return (
-      <form
-        // Expects cents
-        action={checkoutURL(user?.id || '', amounts.priceInDollars, url)}
-        method="POST"
-      >
-        {tile}
-      </form>
-    )
-  }
-  return tile
 }
 
 export const SpiceToManaForm = (props: {

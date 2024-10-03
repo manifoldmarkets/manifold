@@ -49,11 +49,6 @@ const CheckoutPage = () => {
     setLoadingPrice,
     () => setShowConfetti(true)
   )
-  useEffect(() => {
-    if (router.query.purchaseSuccess) {
-      setShowConfetti(true)
-    }
-  }, [router])
 
   const { dollarAmount: dollarAmountFromQuery } = router.query
   useEffect(() => {

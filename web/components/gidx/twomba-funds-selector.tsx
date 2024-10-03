@@ -83,7 +83,6 @@ export function TwombaFundsSelector(props: {
                   index={index}
                   loadingPrice={loadingPrice}
                   disabled={pastLimit}
-                  user={user}
                   onClick={() => onSelectPriceInDollars(amounts.priceInDollars)}
                 />
               ))}
@@ -99,7 +98,6 @@ export function TwombaFundsSelector(props: {
             index={index}
             loadingPrice={loadingPrice}
             disabled={pastLimit}
-            user={user}
             onClick={() => onSelectPriceInDollars(amounts.priceInDollars)}
           />
         ))}
