@@ -103,11 +103,9 @@ export function DowntimeBanner() {
   const maintainanceBannerEnabled = true
   if (!maintainanceBannerEnabled) return null
   return (
-    <Banner className="bg-primary-100 hover:bg-primary-200 dark:text-primary-800  text-primary-700 hover:text-primary-900 h-10 items-center py-2 transition-colors">
-      <div>
-        ⚠️ Manifold will be down at 9PM PT for about 1 hour, as we upgrade our
-        financial infrastructure.
-      </div>
+    <Banner className=" bg-primary-100 hover:bg-primary-200 dark:text-primary-800 text-primary-700  hover:text-primary-900 items-center py-2  transition-colors">
+      ⚠️ Manifold will be down at 9PM PT for about 1 hour, as we upgrade our
+      financial infrastructure.
     </Banner>
   )
 }
