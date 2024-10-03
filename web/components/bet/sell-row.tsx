@@ -31,9 +31,12 @@ export function SellRow(props: {
   const isStonk = contract.outcomeType === 'STONK'
 
   const metric = useSavedContractMetrics(contract)
-  const { totalShares, maxSharesOutcome } = metric
-  const shares = totalShares[maxSharesOutcome ?? 'YES'] ?? 0
-  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO' | undefined
+  const { totalShares, maxSharesOutcome } = metric ?? {
+    totalShares: { YES: 0, NO: 0 },
+    maxSharesOutcome: 'YES',
+  }
+  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO' | null
+  const shares = totalShares[sharesOutcome ?? 'YES'] ?? 0
   const [showSellModal, setShowSellModal] = useState(false)
 
   const { mechanism } = contract
@@ -111,7 +114,7 @@ export function SellRow(props: {
 export function SellSharesModal(props: {
   className?: string
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
-  metric: ContractMetric
+  metric: ContractMetric | undefined
   shares: number
   sharesOutcome: 'YES' | 'NO'
   user: User

@@ -23,7 +23,6 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { formatTimeShort } from 'web/lib/util/time'
 import { MoneyDisplay } from '../bet/money-display'
-import { MultiSellerPosition, MultiSellerProfit } from '../bet/sell-panel'
 import { SellSharesModal } from '../bet/sell-row'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
@@ -304,9 +303,8 @@ export const MultiSeller = (props: {
   metric: ContractMetric
   user: User
   className?: string
-  showPosition?: boolean
 }) => {
-  const { answer, contract, metric, user, className, showPosition } = props
+  const { answer, contract, metric, user, className } = props
   const [open, setOpen] = useState(false)
   const { totalShares, maxSharesOutcome } = metric
   const outcome = (maxSharesOutcome ?? 'YES') as 'YES' | 'NO'
@@ -333,20 +331,6 @@ export const MultiSeller = (props: {
         onClick={() => setOpen(true)}
       >
         <span className="font-bold">Sell</span>
-        {showPosition && (
-          <>
-            <span className="font-bold">
-              <MultiSellerPosition metric={metric} />
-            </span>
-            (
-            <MultiSellerProfit
-              contract={contract}
-              metric={metric}
-              answer={answer}
-            />{' '}
-            profit)
-          </>
-        )}
       </button>
     </>
   )
@@ -361,9 +345,12 @@ export const BinaryMultiSellRow = (props: {
   const metric = useSavedContractMetrics(contract, answer.id)
   const [open, setOpen] = useState(false)
 
-  const { totalShares, maxSharesOutcome } = metric
-  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO'
-  const sharesSum = totalShares?.[sharesOutcome] ?? 0
+  const { totalShares, maxSharesOutcome } = metric ?? {
+    totalShares: { YES: 0, NO: 0 },
+    maxSharesOutcome: 'YES',
+  }
+  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO' | undefined
+  const sharesSum = totalShares?.[sharesOutcome ?? 'YES'] ?? 0
 
   if (!sharesOutcome || !user || contract.isResolved) return null
   return (
@@ -541,7 +528,10 @@ export function AnswerPosition(props: {
   const { contract, user, answer, className, addDot } = props
 
   const metric = useSavedContractMetrics(contract, answer.id)
-  const { invested, totalShares } = metric
+  const { invested, totalShares } = metric ?? {
+    invested: 0,
+    totalShares: { YES: 0, NO: 0 },
+  }
 
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0

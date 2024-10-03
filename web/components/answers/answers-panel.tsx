@@ -182,7 +182,7 @@ export function AnswersPanel(props: {
   }, [selectedAnswerIds.length, answersToShow.length])
 
   const user = useUser()
-  const metrics = useSavedContractMetrics(contract)
+  const metrics = useSavedContractMetrics(contract) ?? { invested: 0 }
 
   const isAdvancedTrader = useIsAdvancedTrader()
   const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
@@ -321,7 +321,7 @@ export function AnswersPanel(props: {
         )}
       </Col>
       <Row className="justify-end gap-4">
-        {!floatingEqual(metrics.invested, 0) && (
+        {!floatingEqual(metrics?.invested ?? 0, 0) && (
           <Row className="mt-2 items-center gap-2">
             <input
               id="positions"

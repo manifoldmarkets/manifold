@@ -40,7 +40,7 @@ import { ContractMetric } from 'common/contract-metric'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
-  metric: ContractMetric
+  metric: ContractMetric | undefined
   shares: number
   sharesOutcome: 'YES' | 'NO'
   user: User
@@ -127,13 +127,13 @@ export function SellPanel(props: {
 
   const sellQuantity = isSellingAllShares ? shares : amount ?? 0
 
-  const loanAmount = metric.loan
+  const loanAmount = metric?.loan ?? 0
   const soldShares = Math.min(sellQuantity, shares)
   const saleFrac = soldShares / shares
   const loanPaid = saleFrac * loanAmount
   const isLoadPaid = loanPaid === 0
 
-  const invested = metric.invested
+  const invested = metric?.invested ?? 0
   const costBasis = invested * saleFrac
 
   async function submitSell() {

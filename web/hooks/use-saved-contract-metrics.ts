@@ -131,7 +131,7 @@ export const useSavedContractMetrics = (
   return (newMetric ??
     savedMetrics?.find((m) =>
       answerId ? m.answerId == answerId : m.answerId == null
-    )) as ContractMetric
+    )) as ContractMetric | undefined
 }
 
 export const useReadLocalContractMetrics = (contractId: string) => {

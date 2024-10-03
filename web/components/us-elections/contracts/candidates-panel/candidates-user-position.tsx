@@ -114,9 +114,9 @@ export function BinaryUserPosition(props: {
   const { contract, user, userBets, className, binaryPseudonym } = props
 
   const metric = useSavedContractMetrics(contract)
-  const { totalShares } = metric ?? {}
-  const yesWinnings = totalShares.YES ?? 0
-  const noWinnings = totalShares.NO ?? 0
+  const { totalShares } = metric ?? { totalShares: { YES: 0, NO: 0 } }
+  const yesWinnings = totalShares.YES
+  const noWinnings = totalShares.NO
   const position = yesWinnings - noWinnings
   const betUp = position > 1e-7
   const betDown = position < 1e-7
