@@ -209,7 +209,7 @@ Participants must adhere to the following process to receive Sweepcash by post:
 ‍  
    
 9\. WINNER’S LIST  
-9.1. Manifold will retain a list of all sweepstakes winners for regulatory compliance purposes and may occasionally be required to publicize the first name and last initials of winners in certain jurisdictions.  
+9.1. Manifold will retain information about all sweepstakes winners for regulatory compliance purposes.  Manifold may occasionally be required to publicize a list of sweepstakes winners, but out of respect for our Participants' privacy, that list will only include the following information: The underlying sweepstakes market + username.
    
 ‍  
    
@@ -236,4 +236,4 @@ Participants must adhere to the following process to receive Sweepcash by post:
 12\. PARTICIPANT’S PERSONAL INFORMATION  
 12.1. Information collected from Participants is subject to Manifold's Privacy Policy which is available on the Platform and at manifold.markets.  
    
-These Sweepstakes Rules were last updated on September 19th, 2024\.  
+These Sweepstakes Rules were last updated on October 3rd, 2024\.  

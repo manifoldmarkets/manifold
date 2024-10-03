@@ -268,15 +268,18 @@ export function getProfitMetrics(contract: Contract, yourBets: Bet[]) {
         return getCpmmOrDpmProfit(contract, bets, answer)
       }
     )
-    const profit = sumBy(profitMetricsPerAnswer, 'profit')
+    const profit = sumBy(profitMetricsPerAnswer, (m) => m.profit)
     const totalAmountInvested = sumBy(
       profitMetricsPerAnswer,
-      'totalAmountInvested'
+      (m) => m.totalAmountInvested
     )
     const profitPercent =
       totalAmountInvested === 0 ? 0 : (profit / totalAmountInvested) * 100
-    const payout = sumBy(profitMetricsPerAnswer, 'payout')
-    const totalAmountSold = sumBy(profitMetricsPerAnswer, 'totalSoldOrRedeemed')
+    const payout = sumBy(profitMetricsPerAnswer, (m) => m.payout)
+    const totalAmountSold = sumBy(
+      profitMetricsPerAnswer,
+      (m) => m.totalAmountSold
+    )
     return {
       profit,
       profitPercent,
