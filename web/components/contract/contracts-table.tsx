@@ -23,6 +23,7 @@ import {
   probColumn,
   traderColumn,
   ColumnFormat,
+  tierColumn,
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
@@ -44,7 +45,7 @@ export function ContractsTable(props: {
     contracts,
     onContractClick,
     highlightContractIds,
-    columns = [traderColumn, probColumn, actionColumn],
+    columns = [traderColumn, tierColumn, probColumn, actionColumn],
     hideAvatar,
   } = props
 
@@ -256,7 +257,6 @@ function ContractQuestion(props: {
   hideAvatar?: boolean
 }) {
   const { contract, className, hideAvatar } = props
-  const marketTier = contract.marketTier
 
   return (
     <Row className={clsx('gap-2 sm:gap-4', className)}>
@@ -293,21 +293,6 @@ function ContractQuestion(props: {
             </Tooltip>
           </span>
         )}
-        {!!marketTier &&
-          marketTier !== 'play' &&
-          marketTier !== 'basic' &&
-          contract.token != 'CASH' && (
-            <span>
-              <TierTooltip
-                placement={'top'}
-                tier={marketTier}
-                contract={contract}
-                noTitle
-                className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
-                iconClassName="absolute inset-0 top-[0.2em]"
-              />
-            </span>
-          )}
         {removeEmojis(contract.question)}
       </span>
     </Row>

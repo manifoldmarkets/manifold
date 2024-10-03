@@ -2,7 +2,7 @@ import { MarketContract } from './contract'
 import { getAnte, getTieredCost } from './economy'
 
 // Array of tiers in order
-export const tiers = ['play', 'basic', 'plus', 'premium', 'crystal'] as const
+export const tiers = ['play', 'plus', 'premium', 'crystal'] as const
 
 export type BinaryDigit = '0' | '1'
 

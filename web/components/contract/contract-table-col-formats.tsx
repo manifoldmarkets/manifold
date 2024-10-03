@@ -5,6 +5,7 @@ import { shortenNumber } from 'web/lib/util/formatNumber'
 import { Row } from '../layout/row'
 import { Action } from './contract-table-action'
 import { ContractStatusLabel } from './contracts-table'
+import { TierTooltip } from '../tiers/tier-tooltip'
 
 export type ColumnFormat = {
   header: string
@@ -48,6 +49,24 @@ export const probColumn = {
     </div>
   ),
   width: 'w-[80px]',
+}
+
+export const tierColumn = {
+  header: 'Tier',
+  content: (contract: Contract) => {
+    const marketTier = contract.marketTier
+    return (
+      <TierTooltip
+        placement={'top'}
+        tier={marketTier!}
+        contract={contract}
+        noTitle
+        className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+        iconClassName="absolute inset-0 top-[0.2em]"
+      />
+    )
+  },
+  width: 'w-8',
 }
 
 export const actionColumn = {
