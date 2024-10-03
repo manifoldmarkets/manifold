@@ -388,7 +388,6 @@ export const calculateProfitMetricsWithProb = <
     hasNoShares,
     hasYesShares,
   } = um
-  console.log('um', um)
   const soldOut = !hasNoShares && !hasYesShares
 
   const payout = soldOut
