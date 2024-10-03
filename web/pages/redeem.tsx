@@ -5,7 +5,7 @@ import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { formatSweepies, formatSweepsToUSD } from 'common/util/format'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MdOutlineNotInterested } from 'react-icons/md'
 import { RiUserForbidLine } from 'react-icons/ri'
 import {
@@ -100,9 +100,13 @@ export default function CashoutPage() {
   )
   const { utilityDocuments, idDocuments } = documentData ?? {}
   const mustUploadDocs =
-    user?.kycDocumentStatus === 'await-documents' ||
-    (utilityDocuments?.length ?? 0) <= 0 ||
-    (idDocuments?.length ?? 0) <= 0
+    (utilityDocuments?.length ?? 0) <= 0 || (idDocuments?.length ?? 0) <= 0
+  const [failedDocs, setFailedDocs] = useState(false)
+  useEffect(() => {
+    if (user?.kycDocumentStatus === 'fail') {
+      setFailedDocs(true)
+    }
+  }, [user?.kycDocumentStatus])
 
   useApiSubscription({
     topics: [
@@ -232,7 +236,7 @@ export default function CashoutPage() {
 
   const { status, message } = getVerificationStatus(user, privateUser)
 
-  if (status !== 'success') {
+  if (status !== 'success' || (failedDocs && mustUploadDocs)) {
     return (
       <Page trackPageView={'redeem sweeps page'}>
         <Col className="bg-canvas-0 mx-auto max-w-lg gap-4 px-6 py-4">
@@ -348,6 +352,12 @@ export default function CashoutPage() {
                 </p>
               </Col>
             </Row>
+          ) : failedDocs && mustUploadDocs ? (
+            <UploadDocuments
+              back={router.back}
+              next={() => setFailedDocs(false)}
+              requireUtilityDoc={true}
+            />
           ) : (
             <Row className="items-center gap-4">
               <MdOutlineNotInterested className="hidden h-16 w-16 fill-red-500 sm:inline" />

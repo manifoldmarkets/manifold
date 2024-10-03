@@ -176,7 +176,7 @@ export const VerifyMe = (props: { user: User; privateUser: PrivateUser }) => {
         {showUploadDocsButton && (
           <Row>
             <Link
-              href={'gidx/register'}
+              href={user.idVerified ? '/redeem' : 'gidx/register'}
               className={clsx(buttonClass('md', 'indigo'))}
             >
               Re-upload documents
