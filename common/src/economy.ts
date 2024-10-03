@@ -100,44 +100,14 @@ export const MANACHAN_TWEET_COST = 250
 export const PUSH_NOTIFICATION_BONUS = 1000
 export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
 
-export const PaymentAmounts = [
+const PaymentAmounts = [
   {
-    mana: 1_000,
-    priceInDollars: 13.99,
+    mana: 500,
+    priceInDollars: 7,
     bonusInDollars: 0,
+    devStripeId: 'price_1Q5vRAGdoFKoCJW7zk9OTWBK',
+    prodStripeId: 'price_1Q5vLGGdoFKoCJW7Q9w7cK1u',
   },
-  {
-    mana: 2_500,
-    priceInDollars: 29.99,
-    bonusInDollars: 0,
-  },
-  {
-    mana: 10_000,
-    priceInDollars: 109.99,
-    bonusInDollars: 0,
-  },
-  {
-    mana: 100_000,
-    priceInDollars: 1_000,
-    bonusInDollars: 0,
-  },
-  {
-    mana: 1_000,
-    priceInDollars: 5,
-    originalPriceInDollars: 13.99,
-    bonusInDollars: 0,
-    newUsersOnly: true,
-  },
-  {
-    mana: 5_000,
-    priceInDollars: 20,
-    originalPriceInDollars: 55.99,
-    bonusInDollars: 0,
-    newUsersOnly: true,
-  },
-]
-
-export const PaymentAmountsGIDX = [
   {
     mana: 1_000,
     priceInDollars: 15,
@@ -147,6 +117,13 @@ export const PaymentAmountsGIDX = [
     mana: 2_500,
     priceInDollars: 30,
     bonusInDollars: 25,
+  },
+  {
+    mana: 5_000,
+    priceInDollars: 55,
+    bonusInDollars: 0,
+    devStripeId: 'price_1Q5vaXGdoFKoCJW71l2OL31r',
+    prodStripeId: 'price_1Q5vJjGdoFKoCJW7Ws09fJ4j',
   },
   {
     mana: 10_000,
@@ -175,9 +152,7 @@ export const PaymentAmountsGIDX = [
 ]
 export type PaymentAmount = (typeof PaymentAmounts)[number]
 
-export const MANA_WEB_PRICES = TWOMBA_ENABLED
-  ? PaymentAmountsGIDX
-  : PaymentAmounts
+export const WEB_PRICES = PaymentAmounts
 
 export type WebPriceInDollars =
   (typeof PaymentAmounts)[number]['priceInDollars']
