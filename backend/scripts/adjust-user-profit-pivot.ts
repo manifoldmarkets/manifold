@@ -4,7 +4,7 @@ import { chunk } from 'lodash'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
-    const chunkSize = 250
+    const chunkSize = 50
     // const allUserIds = [['AJwLWoo3xue32XIiAVrL5SyR1WB2', 0]] as [
     //   string,
     //   number
