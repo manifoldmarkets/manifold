@@ -1,6 +1,5 @@
-import { groupBy, mapValues, sumBy } from 'lodash'
+import { groupBy, mapValues, omitBy, sum, sumBy } from 'lodash'
 import { LimitBet } from './bet'
-
 import { Fees, getFeesSplit, getTakerFee, noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
@@ -578,13 +577,17 @@ export function addCpmmMultiLiquidityAnswersSumToOne(
 }
 
 export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
-  const userAmounts = groupBy(liquidities, (w) => w.userId)
-  const totalAmount = sumBy(liquidities, (w) => w.amount)
+  const liquiditiesByUser = groupBy(liquidities, 'userId')
 
-  return mapValues(
-    userAmounts,
-    (amounts) => sumBy(amounts, (w) => w.amount) / totalAmount
+  // we don't clawback from users that took more liquidity than they gave
+  // instead we count their contribution as 0 and split the rest
+  const userAmounts = mapValues(liquiditiesByUser, (liquidities) =>
+    Math.max(0, sumBy(liquidities, 'amount'))
   )
+  const totalAmount = sum(Object.values(userAmounts))
+  if (totalAmount === 0) return {}
+  const weights = mapValues(userAmounts, (amount) => amount / totalAmount)
+  return omitBy(weights, (w) => w === 0)
 }
 
 const getK = (pool: { [outcome: string]: number }) => {
