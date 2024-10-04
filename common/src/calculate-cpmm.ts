@@ -1,4 +1,4 @@
-import { groupBy, mapValues, omitBy, sum, sumBy } from 'lodash'
+import { groupBy, mapValues, minBy, omitBy, sum, sumBy } from 'lodash'
 import { LimitBet } from './bet'
 import { Fees, getFeesSplit, getTakerFee, noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
@@ -585,7 +585,11 @@ export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
     Math.max(0, sumBy(liquidities, 'amount'))
   )
   const totalAmount = sum(Object.values(userAmounts))
-  if (totalAmount === 0) return {}
+  // ... unless they are all net liquidity leeches, in which case remaining liquidity goes to the first liquidizer (persumably the creator)
+  if (totalAmount === 0) {
+    const firstUser = minBy(liquidities, 'createdTime')!.userId
+    return { [firstUser]: 1 }
+  }
   const weights = mapValues(userAmounts, (amount) => amount / totalAmount)
   return omitBy(weights, (w) => w === 0)
 }
