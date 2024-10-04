@@ -219,12 +219,13 @@ export const placeBetMain = async (
       deterministic
     )
     log('Redeeming shares for bettor', user.username, user.id)
-    await redeemShares(pgTrans, [user.id], contract, [
+    const redemptionBets = await redeemShares(pgTrans, [user.id], contract, [
       {
         ...newBetResult.newBet,
         userId: user.id,
       },
     ])
+    result.fullBets.push(...redemptionBets)
     log('Share redemption transaction finished.')
     return result
   })
@@ -583,7 +584,13 @@ export const executeNewBetResult = async (
   log(`Inserted bet for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
-    await updateMakers(makers, betRow.bet_id, contract, pgTrans)
+    const redemptionBets = await updateMakers(
+      makers,
+      betRow.bet_id,
+      contract,
+      pgTrans
+    )
+    fullBets.push(...redemptionBets)
   }
   if (ordersToCancel) {
     allOrdersToCancel.push(...ordersToCancel)
@@ -682,12 +689,13 @@ export const executeNewBetResult = async (
         fullBets.push(convertBet(betRow))
 
         // TODO: bulk update the makers
-        await updateMakers(
+        const redemptionBets = await updateMakers(
           otherBetResults[i].makers,
           betRow.bet_id,
           contract,
           pgTrans
         )
+        fullBets.push(...redemptionBets)
       }
     }
 
@@ -754,7 +762,7 @@ export const updateMakers = async (
 ) => {
   const updatedLimitBets: LimitBet[] = []
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
-  if (Object.keys(makersByBet).length === 0) return
+  if (Object.keys(makersByBet).length === 0) return []
   const updates: Array<{
     id: string
     fills: any[]
@@ -824,7 +832,7 @@ export const updateMakers = async (
   const makerIds = Object.keys(spentByUser)
 
   log('Redeeming shares for makers', makerIds)
-  await redeemShares(pgTrans, makerIds, contract, fillsAsNewBets)
+  return await redeemShares(pgTrans, makerIds, contract, fillsAsNewBets)
 }
 
 export const getRoundedLimitProb = (limitProb: number | undefined) => {

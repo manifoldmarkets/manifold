@@ -1,12 +1,9 @@
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { OTHER_TOOLTIP_TEXT, sortAnswers, type Answer } from 'common/answer'
-import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { CPMMMultiContract, MultiContract, contractPath } from 'common/contract'
 import { User } from 'common/user'
-import { floatingEqual } from 'common/util/math'
-import { sumBy } from 'lodash'
 import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
 import { getAnswerColor } from '../charts/contract/choice'
@@ -80,10 +77,9 @@ export function SmallAnswer(props: {
   color: string
   user: User | undefined | null
   onCommentClick?: () => void
-  userBets?: Bet[]
   barColor?: string
 }) {
-  const { answer, contract, color, userBets, user, barColor } = props
+  const { answer, contract, color, user, barColor } = props
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -97,11 +93,6 @@ export function SmallAnswer(props: {
       ? 1
       : (resolutions?.[answer.id] ?? 0) / 100
 
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
-  const hasBets = userBets && !floatingEqual(sharesSum, 0)
-
   return (
     <Col className={'w-full'}>
       <SmallAnswerBar
@@ -113,11 +104,10 @@ export function SmallAnswer(props: {
         contract={contract}
         answer={answer}
       />
-      {!resolution && hasBets && isCpmm && user && (
+      {!resolution && isCpmm && user && (
         <AnswerPosition
           contract={contract}
           answer={answer}
-          userBets={userBets}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
           user={user}
         />
