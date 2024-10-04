@@ -39,37 +39,6 @@ export async function getRanking(
   return count + 1
 }
 
-export async function getUserContractMetrics(
-  userId: string,
-  contractId: string,
-  db: SupabaseClient,
-  answerId?: string
-) {
-  let q = selectJson(db, 'user_contract_metrics')
-    .eq('user_id', userId)
-    .eq('contract_id', contractId)
-
-  if (answerId) {
-    q = q.eq('answer_id', answerId)
-  } else {
-    q = q.is('answer_id', null)
-  }
-  const { data } = await run(q)
-  return data.map((r) => r.data) as ContractMetric[]
-}
-
-export async function getUserContractMetricsForAnswers(
-  userId: string,
-  contractId: string,
-  db: SupabaseClient
-) {
-  const q = selectJson(db, 'user_contract_metrics')
-    .eq('user_id', userId)
-    .eq('contract_id', contractId)
-  const { data } = await run(q)
-  return data.map((r) => r.data) as ContractMetric[]
-}
-
 export async function getCPMMContractUserContractMetrics(
   contractId: string,
   limit: number,
