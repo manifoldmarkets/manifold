@@ -27,7 +27,7 @@ export const redeemShares = async (
   contract: Contract,
   newBets?: MarginalBet[] // used when uncommenting contract metrics logic
 ) => {
-  if (!userIds.length) return { bets: [], balanceUpdates: [] }
+  if (!userIds.length) return []
 
   const answerIds = uniq(filterDefined((newBets ?? []).map((b) => b.answerId)))
   const metrics = await pgTrans.map(
@@ -180,5 +180,5 @@ export const redeemShares = async (
   if (balanceUpdates.length > 0) {
     await bulkIncrementBalances(pgTrans, balanceUpdates)
   }
-  return { bets: insertedBets, balanceUpdates }
+  return insertedBets
 }

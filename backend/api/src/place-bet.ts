@@ -219,17 +219,12 @@ export const placeBetMain = async (
       deterministic
     )
     log('Redeeming shares for bettor', user.username, user.id)
-    const { bets: redemptionBets } = await redeemShares(
-      pgTrans,
-      [user.id],
-      contract,
-      [
-        {
-          ...newBetResult.newBet,
-          userId: user.id,
-        },
-      ]
-    )
+    const redemptionBets = await redeemShares(pgTrans, [user.id], contract, [
+      {
+        ...newBetResult.newBet,
+        userId: user.id,
+      },
+    ])
     result.fullBets.push(...redemptionBets)
     log('Share redemption transaction finished.')
     return result
@@ -589,13 +584,13 @@ export const executeNewBetResult = async (
   log(`Inserted bet for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
-    const { bets } = await updateMakers(
+    const redemptionBets = await updateMakers(
       makers,
       betRow.bet_id,
       contract,
       pgTrans
     )
-    fullBets.push(...bets)
+    fullBets.push(...redemptionBets)
   }
   if (ordersToCancel) {
     allOrdersToCancel.push(...ordersToCancel)
@@ -694,13 +689,13 @@ export const executeNewBetResult = async (
         fullBets.push(convertBet(betRow))
 
         // TODO: bulk update the makers
-        const { bets } = await updateMakers(
+        const redemptionBets = await updateMakers(
           otherBetResults[i].makers,
           betRow.bet_id,
           contract,
           pgTrans
         )
-        fullBets.push(...bets)
+        fullBets.push(...redemptionBets)
       }
     }
 
@@ -767,8 +762,7 @@ export const updateMakers = async (
 ) => {
   const updatedLimitBets: LimitBet[] = []
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
-  if (Object.keys(makersByBet).length === 0)
-    return { bets: [], balanceUpdates: [] }
+  if (Object.keys(makersByBet).length === 0) return []
   const updates: Array<{
     id: string
     fills: any[]
