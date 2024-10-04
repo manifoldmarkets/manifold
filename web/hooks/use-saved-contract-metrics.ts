@@ -28,10 +28,10 @@ export const useSavedContractMetrics = (
   const [newBets, setNewBets] = useState<Bet[]>([])
   const [savedMetrics, setSavedMetrics] = usePersistentLocalState<
     ContractMetric[] | undefined
-  >(undefined, `contract-metrics-${contract.id}-${answerId}-4`)
+  >(undefined, `contract-metrics-${contract.id}-${answerId}-saved`)
   const [newMetric, setNewMetric] = usePersistentLocalState<
     ContractMetric | undefined
-  >(undefined, `contract-metrics-${contract.id}-new-${answerId}-4`)
+  >(undefined, `contract-metrics-${contract.id}-new-${answerId}-new`)
 
   const updateMetricsWithNewProbs = (metrics: ContractMetric[]) => {
     if (!user) return metrics
@@ -91,17 +91,21 @@ export const useSavedContractMetrics = (
   useEffect(() => {
     if (!newBets.length) return
     const metrics = savedMetrics ?? []
-    const updatedAnswerMetrics = calculateAnswerMetricsWithNewBetsOnly(
+    const metricsWithNewBets = calculateAnswerMetricsWithNewBetsOnly(
       newBets,
       metrics,
       contract.id,
       contract.mechanism === 'cpmm-multi-1'
     )
 
-    const updatedMetrics = updateMetricsWithNewProbs(
-      updatedAnswerMetrics as ContractMetric[]
-    )
-    const newestMetric = updatedMetrics.find((m) =>
+    const updatedMetrics = [
+      ...metricsWithNewBets,
+      ...metrics.filter(
+        (m) => !metricsWithNewBets.some((um) => um.answerId == m.answerId)
+      ),
+    ] as ContractMetric[]
+    const newestMetrics = updateMetricsWithNewProbs(updatedMetrics)
+    const newestMetric = newestMetrics.find((m) =>
       answerId ? m.answerId === answerId : m.answerId == null
     )
     setNewMetric(newestMetric)
