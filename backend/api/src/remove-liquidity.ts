@@ -1,4 +1,8 @@
-import { addCpmmLiquidity } from 'common/calculate-cpmm'
+import {
+  removeCpmmLiquidity,
+  MINIMUM_LIQUIDITY,
+  FRACTION_OF_POOL_MIN,
+} from 'common/calculate-cpmm'
 import { getTierFromLiquidity } from 'common/tier'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import { runShortTrans } from 'shared/short-transaction'
@@ -11,9 +15,6 @@ import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
-
-const UNBALANCED_POOL_RATIO_LIMIT = 9
-const MINIMUM_LIQUIDITY = 100
 
 export const removeLiquidity: APIHandler<
   'market/:contractId/remove-liquidity'
@@ -36,34 +37,16 @@ export const removeLiquidity: APIHandler<
 
     const takeFromPending = Math.min(pendingLiquidity, totalAmount)
     const takeFromPool = totalAmount - takeFromPending
-    const newTotal = contract.totalLiquidity - totalAmount
-
-    if (newTotal < MINIMUM_LIQUIDITY) {
-      throw new APIError(
-        403,
-        `Must leave at least ${MINIMUM_LIQUIDITY} liquidity in the market.`
-      )
-    }
 
     if (takeFromPool > 0) {
-      const { newPool, newP } = addCpmmLiquidity(
+      const { newPool, newP, error } = removeCpmmLiquidity(
         contract.pool,
         contract.p,
-        -1 * takeFromPool
+        takeFromPool
       )
 
-      // this should never happen for positive MIN_LIQUIDITY but just in case
-      if (newPool.YES <= 0 || newPool.NO <= 0)
-        throw new APIError(500, 'Cannot remove all liquidity')
-
-      if (
-        newPool.YES > UNBALANCED_POOL_RATIO_LIMIT * newPool.NO ||
-        newPool.NO > UNBALANCED_POOL_RATIO_LIMIT * newPool.YES
-      ) {
-        throw new APIError(
-          403,
-          `Removing that much liquidity would result in ${newPool.YES} YES vs ${newPool.NO} NO which is beyond the ratio of ${UNBALANCED_POOL_RATIO_LIMIT} to 1.`
-        )
+      if (error) {
+        throw new APIError(403, `Remaining liquidity too low. Pool is ${error}`)
       }
 
       await updateContract(pgTrans, contractId, {

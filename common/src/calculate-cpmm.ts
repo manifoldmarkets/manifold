@@ -576,7 +576,51 @@ export function addCpmmMultiLiquidityAnswersSumToOne(
   return newPools
 }
 
+// 0 to 1. The minimum fraction of the pool that we let remove. Extreme ratios with extreme p values have bad liquidity i think.
+export const FRACTION_OF_POOL_MIN = 0.1
+export const MINIMUM_LIQUIDITY = 100
+
+export function removeCpmmLiquidity(
+  pool: { [outcome: string]: number },
+  p: number,
+  amount: number
+) {
+  const { newPool, liquidity, newP } = addCpmmLiquidity(pool, p, -1 * amount)
+
+  let error = ''
+
+  if (newPool.YES < MINIMUM_LIQUIDITY || newPool.NO < MINIMUM_LIQUIDITY) {
+    error = 'below minimum'
+  } else {
+    const fractionOfPool = newPool.YES / (newPool.YES + newPool.NO)
+    if (
+      fractionOfPool < FRACTION_OF_POOL_MIN ||
+      1 - fractionOfPool < FRACTION_OF_POOL_MIN
+    ) {
+      error = 'unbalanced'
+    }
+  }
+
+  return { newPool, liquidity, newP, error }
+}
+
+// https://www.wolframalpha.com/input?i=z+%3C+%28y+-+b%29+%2F+%28%28y-b%29+%2B+%28n-b%29%29+%3C+%281+-+z%29%2C+b+%3E+0%2C+n+%3E+0%2C+y+%3E+0%2C+y-b+%3E+0%2C+n+-+b+%3E+0%2C+0+%3C+z+%3C+0.5+solve+for+b+
+export function maximumRemovableLiquidity(pool: { [outcome: string]: number }) {
+  if (FRACTION_OF_POOL_MIN > 1 || FRACTION_OF_POOL_MIN < 0)
+    throw new Error('Math invariant violated')
+
+  const z = FRACTION_OF_POOL_MIN
+  const { YES: y, NO: n } = pool
+  const ratioMax = (n * z + y * z - Math.min(y, n)) / (2 * z - 1)
+
+  const limitMax = Math.min(y, n) - MINIMUM_LIQUIDITY
+
+  return Math.min(ratioMax, limitMax)
+}
+
 export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
+  if (liquidities.length === 0) return {} // this should never happen
+
   const liquiditiesByUser = groupBy(liquidities, 'userId')
 
   // we don't clawback from users that took more liquidity than they gave
