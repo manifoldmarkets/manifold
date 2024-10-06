@@ -1,4 +1,3 @@
-import { SupabaseDirectClient } from './supabase/init'
 import {
   getContract,
   getUser,
@@ -13,15 +12,15 @@ import { randomString } from 'common/util/random'
 import { getNewContract } from 'common/new-contract'
 import { convertContract } from 'common/supabase/contracts'
 import { clamp } from 'lodash'
+import { runShortTrans } from './short-transaction'
 
 // cribbed from backend/api/src/create-market.ts
 
 export async function createCashContractMain(
-  pg: SupabaseDirectClient,
   manaContractId: string,
   subsidyAmount: number
 ) {
-  const { cashContract, manaContract } = await pg.tx(async (tx) => {
+  const { cashContract, manaContract } = await runShortTrans(async (tx) => {
     const manaContract = await getContract(tx, manaContractId)
     if (!manaContract) {
       throw new APIError(404, `Mana contract ${manaContractId} not found`)
@@ -47,6 +46,13 @@ export async function createCashContractMain(
       )
 
       // TODO: Add support for multi
+    }
+
+    if (manaContract.siblingContractId) {
+      throw new APIError(
+        400,
+        `Contract ${manaContractId} already has a sweepstakes sibling contract ${manaContract.siblingContractId}`
+      )
     }
 
     const contract = getNewContract({

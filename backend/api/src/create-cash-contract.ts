@@ -1,7 +1,6 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { isAdminId } from 'common/envs/constants'
 import { createCashContractMain } from 'shared/create-cash-contract'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { toLiteMarket } from 'common/api/market-types'
 
 export const createCashContract: APIHandler<'create-cash-contract'> = async (
@@ -16,12 +15,6 @@ export const createCashContract: APIHandler<'create-cash-contract'> = async (
       'Only Manifold team members can create cash contracts'
     )
 
-  const pg = createSupabaseDirectClient()
-
-  const contract = await createCashContractMain(
-    pg,
-    manaContractId,
-    subsidyAmount
-  )
+  const contract = await createCashContractMain(manaContractId, subsidyAmount)
   return toLiteMarket(contract)
 }
