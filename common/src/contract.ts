@@ -405,6 +405,16 @@ export function contractPath(contract: {
   return `/${contract.creatorUsername}/${contract.slug}`
 }
 
+export type CashType = {
+  contract: Contract
+  lastBetTime?: number
+  pointsString: string
+  multiPointsString: { [answerId: string]: string }
+  userPositionsByOutcome: ContractMetricsByOutcome
+  totalPositions: number
+  totalBets: number
+}
+
 export type ContractParams = {
   contract: Contract
   lastBetTime?: number
@@ -421,15 +431,7 @@ export type ContractParams = {
   dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]
   betReplies: Bet[]
-  cash?: {
-    contract: Contract
-    lastBetTime?: number
-    pointsString: string
-    multiPointsString: { [answerId: string]: string }
-    userPositionsByOutcome: ContractMetricsByOutcome
-    totalPositions: number
-    totalBets: number
-  }
+  cash?: CashType
 }
 
 export type MaybeAuthedContractParams =

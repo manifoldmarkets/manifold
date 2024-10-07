@@ -107,16 +107,28 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
 }
 
 function NonPrivateContractPage(props: { contractParams: ContractParams }) {
-  const { contract, pointsString } = props.contractParams
+  const { contract, pointsString, cash } = props.contractParams
 
   const points = pointsString ? base64toPoints(pointsString) : []
+  const cashPoints = cash
+    ? cash.pointsString
+      ? base64toPoints(cash.pointsString)
+      : []
+    : null
 
   const inIframe = useIsIframe()
   if (!contract) {
     return <Custom404 customText="Unable to fetch question" />
   }
   if (inIframe) {
-    return <ContractEmbedPage contract={contract} points={points} />
+    return (
+      <ContractEmbedPage
+        contract={contract}
+        points={points}
+        cashContract={cash ? cash.contract : null}
+        cashPoints={cashPoints}
+      />
+    )
   }
 
   return (
