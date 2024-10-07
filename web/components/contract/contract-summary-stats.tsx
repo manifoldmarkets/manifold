@@ -17,8 +17,6 @@ export function ContractSummaryStats(props: {
 
   const isCashContract = contract.token === 'CASH'
 
-  console.log(contract, isCashContract)
-
   return (
     <>
       {outcomeType == 'BOUNTIED_QUESTION' ? (

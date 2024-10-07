@@ -118,11 +118,6 @@ export default function ContractEmbedPage(props: {
       useLiveContractWithAnswers(cashContract)
     : null
 
-  // const cashContract = props.cash
-  //   ? // eslint-disable-next-line react-hooks/rules-of-hooks
-  //     useLiveContractWithAnswers(props.cash.contract)
-  //   : null
-
   const router = useRouter()
 
   useEffect(() => {
