@@ -288,12 +288,20 @@ export function CustomAnalytics(props: {
       <Spacer h={8} />
       <Title>Transactions from Manifold</Title>
       <BonusSummary txnSummaryStats={fromBankSummaryMana} days={days} />
-      <BonusSummary txnSummaryStats={fromBankSummaryCash} days={days} />
+      <BonusSummary
+        txnSummaryStats={fromBankSummaryCash}
+        days={days}
+        defaultHidden={['LEAGUE_PRIZE']}
+      />
       <Spacer h={8} />
       <Title>Transactions to Manifold</Title>
       <span className="text-ink-500">(Ignores mana purchases)</span>
       <BonusSummary txnSummaryStats={toBankSummaryMana} days={days} />
-      <BonusSummary txnSummaryStats={toBankSummaryCash} days={days} />
+      <BonusSummary
+        txnSummaryStats={toBankSummaryCash}
+        days={days}
+        defaultHidden={['LEAGUE_PRIZE_UNDO']}
+      />
       <Spacer h={8} />
       <Title>Mana sales</Title>
       <p className="text-ink-500">

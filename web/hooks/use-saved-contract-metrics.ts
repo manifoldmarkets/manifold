@@ -1,68 +1,120 @@
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
 import { useUser } from './use-user'
-import {
-  getTopContractMetrics,
-  getUserContractMetrics,
-} from 'common/supabase/contract-metrics'
+import { uniqBy } from 'lodash'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from './use-persistent-local-state'
-import { first, isEqual } from 'lodash'
 import { useEvent } from 'web/hooks/use-event'
+import { useApiSubscription } from 'web/hooks/use-api-subscription'
+import { Bet } from 'common/bet'
+import {
+  calculateProfitMetricsWithProb,
+  calculateAnswerMetricsWithNewBetsOnly,
+  getDefaultMetric,
+  applyMetricToSummary,
+} from 'common/calculate-metrics'
+import { api } from 'web/lib/api/api'
+import { removeUndefinedProps } from 'common/util/object'
 
-export const useSavedContractMetrics = (contract: Contract) => {
+export const useSavedContractMetrics = (
+  contract: Contract,
+  answerId?: string
+) => {
   const user = useUser()
-  const lastBetTimeRef = useRef<number>(user?.lastBetTime ?? 0)
-
-  useEffect(() => {
-    lastBetTimeRef.current = user?.lastBetTime ?? 0
-  }, [user?.lastBetTime])
-
+  const [newBets, setNewBets] = useState<Bet[]>([])
   const [savedMetrics, setSavedMetrics] = usePersistentLocalState<
+    ContractMetric[] | undefined
+  >(undefined, `contract-metrics-${contract.id}-${answerId}-saved`)
+  const [newMetric, setNewMetric] = usePersistentLocalState<
     ContractMetric | undefined
-  >(undefined, `contract-metrics-${contract.id}`)
+  >(undefined, `contract-metrics-${contract.id}-new-${answerId}-new`)
 
-  const callback = useEvent(async () => {
+  const updateMetricsWithNewProbs = (metrics: ContractMetric[]) => {
+    if (!user) return metrics
+    if (contract.mechanism === 'cpmm-1') {
+      return [calculateProfitMetricsWithProb(contract.prob, metrics[0])]
+    }
+    if (contract.mechanism === 'cpmm-multi-1') {
+      const updatedMetrics = metrics.map((metric) => {
+        const answer = contract.answers.find((a) => a.id === metric.answerId)
+        return answer
+          ? calculateProfitMetricsWithProb(answer.prob, metric)
+          : metric
+      })
+      const nonNullMetrics = updatedMetrics.filter((m) => m.answerId != null)
+      const nullMetric = getDefaultMetric(user.id, contract.id, null)
+      nonNullMetrics.forEach((m) => applyMetricToSummary(m, nullMetric, true))
+      return [...nonNullMetrics, nullMetric] as ContractMetric[]
+    }
+    return metrics
+  }
+
+  const refreshMyMetrics = useEvent(async () => {
     if (!user?.id) return
-    const retry = lastBetTimeRef.current > Date.now() - 5000 ? 5 : 0
-    const queryAndSet = async (retries: number) =>
-      getUserContractMetrics(user.id, contract.id, db).then((metrics) =>
-        tryToGetDifferentMetricsThanSaved(
-          savedMetrics,
-          metrics,
-          retries,
-          setSavedMetrics,
-          queryAndSet
-        )
-      )
-    queryAndSet(retry)
+
+    const metrics = await await api(
+      `market/:id/positions`,
+      removeUndefinedProps({
+        id: contract.id,
+        userId: user.id,
+        answerId,
+      })
+    )
+    if (!metrics.length) return
+    setSavedMetrics(updateMetricsWithNewProbs(metrics))
+    setNewMetric(undefined)
   })
 
   useEffect(() => {
-    callback()
-  }, [user?.id, contract.id, contract.lastBetTime])
+    refreshMyMetrics()
+  }, [user?.id, contract.id, answerId])
 
-  return savedMetrics
-}
+  useApiSubscription({
+    topics: [`contract/${contract.id}/new-bet`],
+    onBroadcast: (msg) => {
+      const myNewBets = (msg.data.bets as Bet[]).filter(
+        (bet) =>
+          bet.userId === user?.id &&
+          (answerId ? bet.answerId === answerId : true)
+      )
+      setNewBets((prevBets) =>
+        uniqBy([...prevBets, ...myNewBets], (bet) => bet.id)
+      )
+    },
+    enabled: !!user?.id,
+  })
 
-const tryToGetDifferentMetricsThanSaved = (
-  savedMetrics: ContractMetric | undefined,
-  metrics: ContractMetric[] | undefined,
-  retries: number,
-  setSavedMetrics: (metric: ContractMetric | undefined) => void,
-  queryAndSet: (retries: number) => void
-) => {
-  const metric = first(metrics)
-  if (metric && !savedMetrics) setSavedMetrics(metric)
-  else if (metric && savedMetrics && retries > 0) {
-    // If we get the same metric as the saved one, retry to make sure we have the latest
-    if (isEqual(metric, savedMetrics)) {
-      queryAndSet(retries - 1)
-    } else setSavedMetrics({ ...savedMetrics, ...metric })
-  } else if (metric && savedMetrics && retries === 0) {
-    setSavedMetrics({ ...savedMetrics, ...metric })
-  } else if (retries > 0) queryAndSet(retries - 1)
+  useEffect(() => {
+    if (!newBets.length) return
+    const metrics = savedMetrics ?? []
+    const metricsWithNewBets = calculateAnswerMetricsWithNewBetsOnly(
+      newBets,
+      metrics,
+      contract.id,
+      contract.mechanism === 'cpmm-multi-1'
+    )
+
+    const updatedMetrics = [
+      ...metricsWithNewBets,
+      ...metrics.filter(
+        (m) => !metricsWithNewBets.some((um) => um.answerId == m.answerId)
+      ),
+    ] as ContractMetric[]
+    const newestMetrics = updateMetricsWithNewProbs(updatedMetrics)
+    const newestMetric = newestMetrics.find((m) =>
+      answerId ? m.answerId === answerId : m.answerId == null
+    )
+    setNewMetric(newestMetric)
+  }, [newBets.length, contract.lastBetTime])
+
+  return (
+    newMetric ??
+    savedMetrics?.find((m) =>
+      answerId ? m.answerId === answerId : m.answerId == null
+    )
+  )
 }
 
 export const useReadLocalContractMetrics = (contractId: string) => {

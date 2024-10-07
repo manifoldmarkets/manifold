@@ -27,11 +27,10 @@ import {
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
-import { Tooltip } from '../widgets/tooltip'
 import { removeEmojis } from 'common/util/string'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { track } from 'web/lib/service/analytics'
-import { TierTooltip } from '../tiers/tier-tooltip'
+import { Tooltip } from '../widgets/tooltip'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function ContractsTable(props: {

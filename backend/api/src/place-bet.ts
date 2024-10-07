@@ -8,12 +8,7 @@ import {
   uniqBy,
 } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import {
-  Contract,
-  ContractToken,
-  CPMM_MIN_POOL_QTY,
-  MarketContract,
-} from 'common/contract'
+import { Contract, CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
 import {
   BetInfo,
@@ -54,7 +49,6 @@ import {
   cancelLimitOrders,
   insertBet,
 } from 'shared/supabase/bets'
-import { broadcastOrders } from 'shared/websockets/helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
@@ -116,7 +110,7 @@ export const placeBetMain = async (
 ) => {
   const startTime = Date.now()
 
-  const { contractId, replyToCommentId, dryRun, deterministic } = body
+  const { contractId, replyToCommentId, dryRun, deterministic, answerId } = body
 
   // Fetch data outside transaction first.
   const {
@@ -155,15 +149,14 @@ export const placeBetMain = async (
 
   const result = await runShortTrans(async (pgTrans) => {
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)
-    // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
-    const balanceByUserId = await getUserBalances(
-      pgTrans,
-      [
-        uid,
-        ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
-      ],
-      contract.token
-    )
+    // Refetch just user balance and metrics in transaction, since queue only enforces contract and bets not changing.
+    const { balanceByUserId, contractMetrics } =
+      await getUserBalancesAndMetrics(
+        pgTrans,
+        [uid, ...simulatedMakerIds], // Fetch just the makers that matched in the simulation.
+        contract,
+        answerId
+      )
     user.balance = balanceByUserId[uid]
     if (user.balance < body.amount)
       throw new APIError(403, 'Insufficient balance.')
@@ -214,17 +207,26 @@ export const placeBetMain = async (
       contract,
       user,
       isApi,
+      contractMetrics,
       replyToCommentId,
       betGroupId,
       deterministic
     )
+    const { updatedMetrics } = result
     log('Redeeming shares for bettor', user.username, user.id)
-    await redeemShares(pgTrans, [user.id], contract, [
-      {
-        ...newBetResult.newBet,
-        userId: user.id,
-      },
-    ])
+    const { bets: redemptionBets } = await redeemShares(
+      pgTrans,
+      [user.id],
+      contract,
+      [
+        {
+          ...newBetResult.newBet,
+          userId: user.id,
+        },
+      ],
+      updatedMetrics
+    )
+    result.fullBets.push(...redemptionBets)
     log('Share redemption transaction finished.')
     return result
   })
@@ -297,8 +299,8 @@ export const fetchContractBetDataAndValidate = async (
            (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
            )
         and not b.is_filled and not b.is_cancelled;
-        select data from user_contract_metrics where user_id = $1 and contract_id = $2 and
-           ($3 is null or answer_id in ($3:list));
+    select data from user_contract_metrics where user_id = $1 and contract_id = $2 and
+           ($3 is null or answer_id in ($3:list) or answer_id is null);
   `
 
   const results = await pgTrans.multi(queries, [
@@ -478,39 +480,51 @@ export const getUnfilledBets = async (
   )
 }
 
-export const getUserBalances = async (
+export const getUserBalancesAndMetrics = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
   userIds: string[],
-  token: ContractToken
+  contract: Contract,
+  answerId?: string
 ) => {
-  const users =
-    userIds.length === 0
-      ? []
-      : await pgTrans.map(
-          `select ${
-            token === 'CASH' ? 'cash_balance' : 'balance'
-          } as balance, id from users where id = any($1)`,
-          [userIds],
-          (r) => r as { balance: number; id: string }
-        )
+  const { token, id: contractId, mechanism } = contract
+  // TODO: if we pass the makers' answerIds, we don't need to fetch the metrics for all answers
+  const sumsToOne =
+    mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+  const results = await pgTrans.multi(
+    `
+      SELECT ${
+        token === 'CASH' ? 'cash_balance AS balance' : 'balance'
+      }, id FROM users WHERE id = ANY($1);
+      
+      select data from user_contract_metrics where user_id = any($1) and contract_id = $2 and
+           ($3 is null or answer_id = $3 or answer_id is null);
+    `,
+    [userIds, contractId, sumsToOne ? null : answerId ?? null]
+  )
+  const balanceByUserId = Object.fromEntries(
+    results[0].map((user) => [user.id, user.balance])
+  )
+  const contractMetrics = results[1].map((r) => r.data) as ContractMetric[]
 
-  return Object.fromEntries(users.map((user) => [user.id, user.balance]))
+  return { balanceByUserId, contractMetrics }
 }
 
 export const getUnfilledBetsAndUserBalances = async (
   pgTrans: SupabaseTransaction,
   contract: Contract,
+  userId: string,
   answerId?: string
 ) => {
   const unfilledBets = await getUnfilledBets(pgTrans, contract.id, answerId)
-  const userIds = uniq(unfilledBets.map((bet) => bet.userId))
-  const balanceByUserId = await getUserBalances(
+  const userIds = uniq([userId, ...unfilledBets.map((bet) => bet.userId)])
+  const { balanceByUserId, contractMetrics } = await getUserBalancesAndMetrics(
     pgTrans,
     userIds,
-    contract.token
+    contract,
+    answerId
   )
 
-  return { unfilledBets, balanceByUserId }
+  return { unfilledBets, balanceByUserId, contractMetrics }
 }
 
 export type NewBetResult = BetInfo & {
@@ -530,6 +544,7 @@ export const executeNewBetResult = async (
   contract: MarketContract,
   user: User,
   isApi: boolean,
+  contractMetrics: ContractMetric[],
   replyToCommentId?: string,
   betGroupId?: string,
   deterministic?: boolean,
@@ -538,8 +553,6 @@ export const executeNewBetResult = async (
   if (contract.token === 'CASH' && !CASH_BETS_ENABLED) {
     throw new APIError(403, 'Cannot bet with CASH token atm.')
   }
-  const allOrdersToCancel: LimitBet[] = []
-  const fullBets: Bet[] = []
 
   const {
     newBet,
@@ -578,13 +591,34 @@ export const executeNewBetResult = async (
     betGroupId,
     ...newBet,
   })
-  const betRow = await insertBet(candidateBet, pgTrans)
-  fullBets.push(convertBet(betRow))
-  log(`Inserted bet for ${user.username} - auth ${user.id}.`)
 
-  if (makers) {
-    await updateMakers(makers, betRow.bet_id, contract, pgTrans)
+  // Just an unfilled limit order, no need to update metrics or maker shares
+  if (newBet.amount === 0) {
+    const { insertedBet: betRow, updatedMetrics } = await insertBet(
+      candidateBet,
+      pgTrans,
+      contractMetrics
+    )
+    log(`Inserted bet for ${user.username} - auth ${user.id}.`)
+
+    return {
+      contract,
+      newBet,
+      betId: betRow.bet_id,
+      makers,
+      allOrdersToCancel: [],
+      fullBets: [convertBet(betRow)],
+      user,
+      betGroupId,
+      streakIncremented: false,
+      bonuxTxn: undefined,
+      updatedMetrics,
+    }
   }
+  const betsToInsert: Omit<Bet, 'id'>[] = [candidateBet]
+  const makersInBetOrder: (maker[] | undefined)[] = [makers]
+  const allOrdersToCancel: LimitBet[] = []
+  const makerIDsByTakerBetId: Record<string, maker[]> = {}
   if (ordersToCancel) {
     allOrdersToCancel.push(...ordersToCancel)
   }
@@ -599,9 +633,16 @@ export const executeNewBetResult = async (
     user,
     newBet.createdTime
   )
+  const sumsToOne =
+    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
   const bonuxTxn =
-    contract.outcomeType !== 'NUMBER' || firstBetInMultiBet
+    (contract.outcomeType !== 'NUMBER' || firstBetInMultiBet) &&
+    !contractMetrics.find(
+      (m) =>
+        m.userId === user.id &&
+        (sumsToOne ? true : m.answerId == candidateBet.answerId)
+    )
       ? await giveUniqueBettorBonus(pgTrans, contract, user, newBet)
       : undefined
   const answerUpdates: {
@@ -611,99 +652,100 @@ export const executeNewBetResult = async (
     prob: number
   }[] = []
 
-  if (newBet.amount !== 0) {
-    if (newBet.answerId) {
-      // Multi-cpmm-1 contract
-      if (newPool) {
-        const { YES: poolYes, NO: poolNo } = newPool
-        const prob = getCpmmProbability(newPool, 0.5)
-        answerUpdates.push({
-          id: newBet.answerId,
-          poolYes,
-          poolNo,
-          prob,
-        })
-      }
-    } else {
-      await updateContract(
-        pgTrans,
-        contract.id,
-        removeUndefinedProps({
-          pool: newPool,
-          p: newP,
-          totalLiquidity: newTotalLiquidity,
-          prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
-        })
-      )
+  if (newBet.answerId) {
+    // Multi-cpmm-1 contract
+    if (newPool) {
+      const { YES: poolYes, NO: poolNo } = newPool
+      const prob = getCpmmProbability(newPool, 0.5)
+      answerUpdates.push({
+        id: newBet.answerId,
+        poolYes,
+        poolNo,
+        prob,
+      })
     }
-
-    if (otherBetResults) {
-      const betsToInsert = filterDefined(
-        otherBetResults.map((result) => {
-          const { answer, bet, cpmmState, ordersToCancel } = result
-          const { probBefore, probAfter } = bet
-          const smallEnoughToIgnore =
-            probBefore < 0.001 &&
-            probAfter < 0.001 &&
-            Math.abs(probAfter - probBefore) < 0.00001
-
-          if (deterministic || !smallEnoughToIgnore || Math.random() < 0.01) {
-            const candidateBet = removeUndefinedProps({
-              userId: user.id,
-              isApi,
-              betGroupId,
-              ...bet,
-            })
-
-            const { YES: poolYes, NO: poolNo } = cpmmState.pool
-            const prob = getCpmmProbability(cpmmState.pool, 0.5)
-            answerUpdates.push({
-              id: answer.id,
-              poolYes,
-              poolNo,
-              prob,
-            })
-
-            return candidateBet
-          }
-
-          allOrdersToCancel.push(...ordersToCancel)
-          return undefined
-        })
-      )
-
-      const bulkInsertStart = Date.now()
-      const insertedBets = await bulkInsertBets(betsToInsert, pgTrans)
-      const bulkInsertEnd = Date.now()
-      log(`bulkInsertBets took ${bulkInsertEnd - bulkInsertStart}ms`)
-
-      for (let i = 0; i < insertedBets.length; i++) {
-        const betRow = insertedBets[i]
-        fullBets.push(convertBet(betRow))
-
-        // TODO: bulk update the makers
-        await updateMakers(
-          otherBetResults[i].makers,
-          betRow.bet_id,
-          contract,
-          pgTrans
-        )
-      }
-    }
-
-    await updateAnswers(pgTrans, contract.id, answerUpdates)
-    await cancelLimitOrders(
+  } else {
+    await updateContract(
       pgTrans,
-      allOrdersToCancel.map((o) => o.id)
+      contract.id,
+      removeUndefinedProps({
+        pool: newPool,
+        p: newP,
+        totalLiquidity: newTotalLiquidity,
+        prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
+      })
     )
-
-    log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
   }
+
+  if (otherBetResults) {
+    const otherBetsToInsert = filterDefined(
+      otherBetResults.map((result) => {
+        const { answer, bet, cpmmState, ordersToCancel, makers } = result
+        const { probBefore, probAfter } = bet
+        const smallEnoughToIgnore =
+          probBefore < 0.001 &&
+          probAfter < 0.001 &&
+          Math.abs(probAfter - probBefore) < 0.00001
+
+        if (deterministic || !smallEnoughToIgnore || Math.random() < 0.01) {
+          const candidateBet = removeUndefinedProps({
+            userId: user.id,
+            isApi,
+            betGroupId,
+            ...bet,
+          })
+
+          const { YES: poolYes, NO: poolNo } = cpmmState.pool
+          const prob = getCpmmProbability(cpmmState.pool, 0.5)
+          answerUpdates.push({
+            id: answer.id,
+            poolYes,
+            poolNo,
+            prob,
+          })
+          makersInBetOrder.push(makers)
+          return candidateBet
+        }
+
+        allOrdersToCancel.push(...ordersToCancel)
+        return undefined
+      })
+    )
+    betsToInsert.push(...otherBetsToInsert)
+  }
+  const bulkInsertStart = Date.now()
+  const { insertedBets, updatedMetrics } = await bulkInsertBets(
+    betsToInsert,
+    pgTrans,
+    contractMetrics
+  )
+  const bulkInsertEnd = Date.now()
+  log(`bulkInsertBets took ${bulkInsertEnd - bulkInsertStart}ms`)
+
+  for (let i = 0; i < insertedBets.length; i++) {
+    const makers = makersInBetOrder[i]
+    if (makers) {
+      makerIDsByTakerBetId[insertedBets[i].bet_id] = makers
+    }
+  }
+  const { bets: redemptionBets, updatedMetrics: redemptionUpdatedMetrics } =
+    await updateMakers(makerIDsByTakerBetId, contract, updatedMetrics, pgTrans)
+  const fullBets = insertedBets.map(convertBet)
+  fullBets.push(...redemptionBets)
+  log('update makers took', Date.now() - bulkInsertEnd)
+
+  await updateAnswers(pgTrans, contract.id, answerUpdates)
+  await cancelLimitOrders(
+    pgTrans,
+    allOrdersToCancel.map((o) => o.id)
+  )
+
+  log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
 
   return {
     contract,
     newBet,
-    betId: betRow.bet_id,
+    betId: insertedBets[0].bet_id,
     makers,
     allOrdersToCancel,
     fullBets,
@@ -711,6 +753,7 @@ export const executeNewBetResult = async (
     betGroupId,
     streakIncremented,
     bonuxTxn,
+    updatedMetrics: redemptionUpdatedMetrics,
   }
 }
 
@@ -747,84 +790,95 @@ export async function bulkUpdateLimitOrders(
 }
 
 export const updateMakers = async (
-  makers: maker[],
-  takerBetId: string,
+  makersByTakerBetId: Record<string, maker[]>,
   contract: MarketContract,
+  contractMetrics: ContractMetric[],
   pgTrans: SupabaseTransaction
 ) => {
-  const updatedLimitBets: LimitBet[] = []
-  const makersByBet = groupBy(makers, (maker) => maker.bet.id)
-  if (Object.keys(makersByBet).length === 0) return
-  const updates: Array<{
+  const allFillsAsNewBets: MarginalBet[] = []
+  const allMakerIds: string[] = []
+  const allSpentByUser: Record<string, number> = {}
+  const allUpdates: Array<{
     id: string
     fills: any[]
     isFilled: boolean
     amount: number
     shares: number
   }> = []
-  const fillsAsNewBets: MarginalBet[] = []
 
-  for (const makers of Object.values(makersByBet)) {
-    const bet = makers[0].bet
-    const newFills = makers.map((maker) => {
-      const { amount, shares, timestamp } = maker
-      return { amount, shares, matchedBetId: takerBetId, timestamp }
-    })
-    const fills = [...bet.fills, ...newFills]
-    const totalShares = sumBy(fills, 'shares')
-    const totalAmount = sumBy(fills, 'amount')
-    const isFilled = floatingEqual(totalAmount, bet.orderAmount)
-    fillsAsNewBets.push({
-      ...bet,
-      amount: sumBy(newFills, 'amount'),
-      shares: sumBy(newFills, 'shares'),
-      createdTime: orderBy(newFills, 'timestamp', 'desc')[0].timestamp,
-      loanAmount: 0, // limit order fills don't repay loans
-      isRedemption: false,
-    })
-    updates.push({
-      id: bet.id,
-      fills,
-      isFilled,
-      amount: totalAmount,
-      shares: totalShares,
-    })
+  for (const [takerBetId, makers] of Object.entries(makersByTakerBetId)) {
+    const makersByBet = groupBy(makers, (maker) => maker.bet.id)
+
+    for (const makers of Object.values(makersByBet)) {
+      const limitOrderBet = makers[0].bet
+      const newFills = makers.map((maker) => {
+        const { amount, shares, timestamp } = maker
+        return { amount, shares, matchedBetId: takerBetId, timestamp }
+      })
+      const fills = [...limitOrderBet.fills, ...newFills]
+      const totalShares = sumBy(fills, 'shares')
+      const totalAmount = sumBy(fills, 'amount')
+      const isFilled = floatingEqual(totalAmount, limitOrderBet.orderAmount)
+      allFillsAsNewBets.push({
+        ...limitOrderBet,
+        amount: sumBy(newFills, 'amount'),
+        shares: sumBy(newFills, 'shares'),
+        createdTime: orderBy(newFills, 'timestamp', 'desc')[0].timestamp,
+        loanAmount: 0,
+        isRedemption: false,
+      })
+      allUpdates.push({
+        id: limitOrderBet.id,
+        fills,
+        isFilled,
+        amount: totalAmount,
+        shares: totalShares,
+      })
+    }
+
+    const spentByUser = mapValues(
+      groupBy(makers, (maker) => maker.bet.userId),
+      (makers) => sumBy(makers, (maker) => maker.amount)
+    )
+
+    for (const [userId, spent] of Object.entries(spentByUser)) {
+      allSpentByUser[userId] = (allSpentByUser[userId] || 0) + spent
+    }
+
+    allMakerIds.push(...Object.keys(spentByUser))
+  }
+  if (allUpdates.length === 0) {
+    return { bets: [], updatedMetrics: contractMetrics }
   }
 
   const bulkUpdateStart = Date.now()
-  await bulkUpdateLimitOrders(pgTrans, updates)
-  await bulkUpdateUserMetricsWithNewBetsOnly(pgTrans, fillsAsNewBets)
+  await bulkUpdateLimitOrders(pgTrans, allUpdates)
+  const allUpdatedMetrics = await bulkUpdateUserMetricsWithNewBetsOnly(
+    pgTrans,
+    allFillsAsNewBets,
+    contractMetrics
+  )
   const bulkUpdateEnd = Date.now()
   log(`bulkUpdateLimitOrders took ${bulkUpdateEnd - bulkUpdateStart}ms`)
 
-  // Fetch updated bets
-  await pgTrans.map(
-    `SELECT data
-       FROM contract_bets
-       WHERE bet_id IN ($1:csv)`,
-    [updates.map((u) => u.id)],
-    (r) => updatedLimitBets.push(r.data)
-  )
-  broadcastOrders(updatedLimitBets)
-
-  // Deduct balance of makers.
-  const spentByUser = mapValues(
-    groupBy(makers, (maker) => maker.bet.userId),
-    (makers) => sumBy(makers, (maker) => maker.amount)
-  )
-
   await bulkIncrementBalances(
     pgTrans,
-    Object.entries(spentByUser).map(([userId, spent]) => ({
+    Object.entries(allSpentByUser).map(([userId, spent]) => ({
       id: userId,
       [contract.token === 'CASH' ? 'cashBalance' : 'balance']: -spent,
     }))
   )
 
-  const makerIds = Object.keys(spentByUser)
+  const makerIds = uniq(allMakerIds)
 
   log('Redeeming shares for makers', makerIds)
-  await redeemShares(pgTrans, makerIds, contract, fillsAsNewBets)
+  return await redeemShares(
+    pgTrans,
+    allMakerIds,
+    contract,
+    allFillsAsNewBets,
+    allUpdatedMetrics
+  )
 }
 
 export const getRoundedLimitProb = (limitProb: number | undefined) => {
@@ -893,23 +947,6 @@ export const giveUniqueBettorBonus = async (
     isCashContract
   )
     return undefined
-
-  const userBetPreviously = await tx.oneOrNone(
-    `select 1 from contract_bets
-      where contract_id = $1 
-      and user_id = $2
-      and ($3 is null or answer_id = $3)
-      and not is_redemption
-      and created_time < $4
-      limit 1`,
-    [
-      contract.id,
-      bettor.id,
-      answerId ?? null,
-      new Date(bet.createdTime).toISOString(),
-    ]
-  )
-  if (userBetPreviously) return undefined
 
   // ian: removed the diminishing bonuses, but we could add them back via contract.uniqueBettorCount
   const bonusAmount =

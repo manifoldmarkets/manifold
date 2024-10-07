@@ -40,6 +40,9 @@ export const register: APIHandler<'register-gidx'> = async (
   if (!referrerInfo && ReferralCode) {
     throw new APIError(400, 'Invalid referral code')
   }
+  if (referrerInfo && referrerInfo.id === auth.uid) {
+    throw new APIError(400, 'Cannot refer yourself')
+  }
   const body = {
     EmailAddress,
     CountryCode: 'US',

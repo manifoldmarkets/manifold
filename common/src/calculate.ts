@@ -334,7 +334,7 @@ export const getContractBetMetrics = (
   contract: Contract,
   yourBets: Bet[],
   answerId?: string
-) => {
+): Omit<ContractMetric, 'id' | 'from' | 'userId'> => {
   const { mechanism } = contract
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
   const {
@@ -344,7 +344,8 @@ export const getContractBetMetrics = (
     totalAmountInvested,
     totalAmountSold,
   } = getProfitMetrics(contract, yourBets)
-  const invested = getInvested(contract, yourBets)
+  const { totalSpent } = calculateTotalSpentAndShares(yourBets)
+  const invested = sum(Object.values(totalSpent))
   const loan = sumBy(yourBets, 'loanAmount')
 
   const { totalShares, hasShares, hasYesShares, hasNoShares } =
@@ -364,11 +365,13 @@ export const getContractBetMetrics = (
     hasShares: isCpmmMulti ? getCpmmMultiShares(yourBets).hasShares : hasShares,
     hasYesShares,
     hasNoShares,
-    maxSharesOutcome,
+    maxSharesOutcome: maxSharesOutcome ?? null,
     lastBetTime,
     answerId: answerId ?? null,
     totalAmountSold,
     totalAmountInvested,
+    totalSpent,
+    contractId: contract.id,
   }
 }
 export const getContractBetMetricsPerAnswer = (

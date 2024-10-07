@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 
-import { getContractBetMetrics, getProbability } from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import {
   Contract,
   CPMMContract,
@@ -14,7 +14,6 @@ import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
 import { MultiNumericSellPanel } from 'web/components/answers/numeric-sell-panel'
 import { SellRow } from 'web/components/bet/sell-row'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -65,17 +64,8 @@ export function BetsSummary(props: {
     areYourBets,
   } = props
   const { resolution, outcomeType } = contract
-  const userBets = useUserContractBets(metrics.userId, contract.id)
 
-  // TODO: get payout from txns, to determine if spice
-
-  const {
-    payout,
-    invested,
-    totalShares = {},
-    profit,
-    profitPercent,
-  } = userBets ? getContractBetMetrics(contract, userBets) : metrics
+  const { payout, invested, totalShares = {}, profit, profitPercent } = metrics
 
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
@@ -267,8 +257,8 @@ export function BetsSummary(props: {
           contract={contract as CPMMMultiContract}
         />
       )}
-      {includeSellButton && contract.outcomeType === 'NUMBER' && userBets && (
-        <MultiNumericSellPanel contract={contract} userBets={userBets} />
+      {includeSellButton && contract.outcomeType === 'NUMBER' && (
+        <MultiNumericSellPanel contract={contract} userId={metrics.userId} />
       )}
     </Col>
   )

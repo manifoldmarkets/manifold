@@ -39,6 +39,7 @@ import { Table } from '../widgets/table'
 import { BoostButton } from './boost-button'
 import { ContractHistoryButton } from './contract-edit-history-button'
 import { SubsidizeButton } from './subsidize-button'
+import { InfoBox } from '../widgets/info-box'
 
 export const Stats = (props: {
   contract: Contract
@@ -115,6 +116,12 @@ export const Stats = (props: {
       : { label: 'Mistake', desc: "Likely one of Austin's bad ideas" }
 
   const isBettingContract = contract.mechanism !== 'none'
+  const drizzler = mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
+  const drizzled = drizzler
+    ? contract.totalLiquidity -
+      contract.subsidyPool -
+      ('answers' in contract ? sumBy(contract.answers, 'subsidyPool') : 0)
+    : 0
 
   return (
     <Table>
@@ -278,33 +285,40 @@ export const Stats = (props: {
         )}
 
         {isBettingContract && (
+          <>
+            <tr>
+              <td>Liquidity subsidies</td>
+              <td>
+                {drizzler ? (
+                  <>
+                    <MoneyDisplay
+                      amount={drizzled}
+                      isCashContract={isCashContract}
+                    />{' '}
+                    /{' '}
+                    <MoneyDisplay
+                      amount={contract.totalLiquidity}
+                      isCashContract={isCashContract}
+                    />
+                  </>
+                ) : (
+                  <MoneyDisplay amount={100} isCashContract={isCashContract} />
+                )}
+              </td>
+            </tr>
+          </>
+        )}
+        {drizzler && drizzled !== contract.totalLiquidity ? (
           <tr>
-            <td>Liquidity subsidies</td>
-            <td>
-              {mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1' ? (
-                <>
-                  <MoneyDisplay
-                    amount={
-                      contract.totalLiquidity -
-                      contract.subsidyPool -
-                      ('answers' in contract
-                        ? sumBy(contract.answers, 'subsidyPool')
-                        : 0)
-                    }
-                    isCashContract={isCashContract}
-                  />{' '}
-                  /{' '}
-                  <MoneyDisplay
-                    amount={contract.totalLiquidity}
-                    isCashContract={isCashContract}
-                  />
-                </>
-              ) : (
-                <MoneyDisplay amount={100} isCashContract={isCashContract} />
-              )}
+            <td colSpan={2}>
+              <InfoBox
+                title="Where's my liquidity?"
+                text="Liquidity is
+                  drizzled in slowly to prevent manipulation"
+              />
             </td>
           </tr>
-        )}
+        ) : null}
 
         {!hideAdvanced && isBettingContract && (
           <tr>

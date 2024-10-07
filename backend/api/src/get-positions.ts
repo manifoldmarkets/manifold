@@ -15,6 +15,7 @@ import {
 } from 'shared/supabase/sql-builder'
 import { log } from 'shared/utils'
 import { getIp } from 'shared/analytics'
+import { ValidatedAPIParams } from 'common/api/schema'
 
 export const getPositions: APIHandler<'market/:id/positions'> = async (
   props,
@@ -28,38 +29,33 @@ export const getPositions: APIHandler<'market/:id/positions'> = async (
   }
   log('getPositions from ip:', getIp(req))
   const pg = createSupabaseDirectClient()
-  const { top, bottom, userId, answerId, order } = props
 
-  return await getOrderedContractMetricRowsForContractId(pg, contractId, {
-    top,
-    userId,
-    answerId,
-    bottom,
-    order,
-  })
+  return await getOrderedContractMetricRowsForContractId(pg, contractId, props)
 }
 
 const getOrderedContractMetricRowsForContractId = async (
   pg: SupabaseDirectClient,
   contractId: string,
-  options: {
-    userId?: string
-    answerId?: string
-    order?: 'profit' | 'shares'
-    top?: number
-    bottom?: number
-  }
+  options: ValidatedAPIParams<'market/:id/positions'>
 ) => {
-  const { userId, top, bottom, answerId, order = 'profit' } = options
-
+  const {
+    userId,
+    top,
+    bottom,
+    answerId,
+    order = 'profit',
+    summaryOnly,
+  } = options
+  if (answerId && summaryOnly) {
+    throw new APIError(400, 'Cannot use both answerId and summaryOnly')
+  }
   const sharedConditions = buildArray(
     select('data'),
     from('user_contract_metrics'),
     where('contract_id = ${contractId}', { contractId }),
     userId && where('user_id = ${userId}', { userId }),
-    answerId
-      ? where('answer_id = ${answerId}', { answerId })
-      : where('answer_id is null')
+    answerId && where('answer_id = ${answerId}', { answerId }),
+    summaryOnly && where('answer_id is null')
   )
 
   if (userId) {

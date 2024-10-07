@@ -1,13 +1,8 @@
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
-import { Bet, LimitBet } from 'common/bet'
-import {
-  getAnswerProbability,
-  getContractBetMetrics,
-  getInvested,
-  getProbability,
-} from 'common/calculate'
+import { LimitBet } from 'common/bet'
+import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
   calculateCpmmMultiSumsToOneSale,
   calculateCpmmSale,
@@ -30,7 +25,6 @@ import {
   formatWithToken,
 } from 'common/util/format'
 import { addObjects } from 'common/util/object'
-import { sumBy } from 'lodash'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
@@ -42,10 +36,11 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
 import { MoneyDisplay } from './money-display'
+import { ContractMetric } from 'common/contract-metric'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
+  metric: ContractMetric | undefined
   shares: number
   sharesOutcome: 'YES' | 'NO'
   user: User
@@ -66,7 +61,7 @@ export function SellPanel(props: {
     contract,
     shares,
     sharesOutcome,
-    userBets,
+    metric,
     user,
     onSellSuccess,
     answerId,
@@ -132,13 +127,13 @@ export function SellPanel(props: {
 
   const sellQuantity = isSellingAllShares ? shares : amount ?? 0
 
-  const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+  const loanAmount = metric?.loan ?? 0
   const soldShares = Math.min(sellQuantity, shares)
   const saleFrac = soldShares / shares
   const loanPaid = saleFrac * loanAmount
   const isLoadPaid = loanPaid === 0
 
-  const invested = getInvested(contract, userBets)
+  const invested = metric?.invested ?? 0
   const costBasis = invested * saleFrac
 
   async function submitSell() {
@@ -455,12 +450,9 @@ export const getSaleResultMultiSumsToOne = (
   }
 }
 
-export function MultiSellerPosition(props: {
-  contract: CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
-}) {
-  const { contract, userBets } = props
-  const { totalShares } = getContractBetMetrics(contract, userBets)
+export function MultiSellerPosition(props: { metric: ContractMetric }) {
+  const { metric } = props
+  const { totalShares } = metric
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
   const position = yesWinnings - noWinnings
@@ -473,19 +465,17 @@ export function MultiSellerPosition(props: {
 
 export function MultiSellerProfit(props: {
   contract: CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
+  metric: ContractMetric
   answer: Answer
 }) {
-  const { contract, userBets, answer } = props
+  const { contract, metric, answer } = props
   const { id: answerId } = answer
   const { outcomeType } = contract
   const isMultiSumsToOne =
     (outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne) ||
     outcomeType === 'NUMBER'
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
-  const sharesOutcome = sharesSum > 0 ? 'YES' : 'NO'
+  const sharesSum = metric.totalShares[metric.maxSharesOutcome ?? 'YES'] ?? 0
+  const sharesOutcome = (metric.maxSharesOutcome ?? 'YES') as 'YES' | 'NO'
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(contract.id)
@@ -515,7 +505,7 @@ export function MultiSellerProfit(props: {
     ))
   }
 
-  const invested = getInvested(contract, userBets)
+  const invested = metric.invested
 
   return (
     <MoneyDisplay

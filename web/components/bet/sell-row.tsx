@@ -1,6 +1,4 @@
 import clsx from 'clsx'
-import { Bet } from 'common/bet'
-import { getInvested } from 'common/calculate'
 import {
   CPMMContract,
   CPMMMultiContract,
@@ -10,8 +8,6 @@ import { getStonkDisplayShares } from 'common/stonk'
 import { User } from 'common/user'
 import { formatShares } from 'common/util/format'
 import { useState } from 'react'
-import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { Button } from '../buttons/button'
 import { TweetButton, getPositionTweet } from '../buttons/tweet-button'
 import { Col } from '../layout/col'
@@ -21,6 +17,8 @@ import { OutcomeLabel } from '../outcome-label'
 import { Title } from '../widgets/title'
 import { MoneyDisplay } from './money-display'
 import { SellPanel } from './sell-panel'
+import { ContractMetric } from 'common/contract-metric'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 
 export function SellRow(props: {
   contract: CPMMContract
@@ -32,11 +30,16 @@ export function SellRow(props: {
   const { className, contract, user, showTweet, hideStatus } = props
   const isStonk = contract.outcomeType === 'STONK'
 
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const metric = useSavedContractMetrics(contract)
+  const { totalShares, maxSharesOutcome } = metric ?? {
+    totalShares: { YES: 0, NO: 0 },
+    maxSharesOutcome: 'YES',
+  }
+  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO' | null
+  const shares = totalShares[sharesOutcome ?? 'YES'] ?? 0
   const [showSellModal, setShowSellModal] = useState(false)
 
   const { mechanism } = contract
-  const { sharesOutcome, shares } = useSaveBinaryShares(contract, userBets)
   const isCashContract = contract.token === 'CASH'
 
   if (sharesOutcome && user && mechanism === 'cpmm-1') {
@@ -83,19 +86,19 @@ export function SellRow(props: {
           {showSellModal && (
             <SellSharesModal
               contract={contract}
+              metric={metric}
               user={user}
-              userBets={userBets ?? []}
               shares={shares}
               sharesOutcome={sharesOutcome}
               setOpen={setShowSellModal}
             />
           )}
 
-          {showTweet && userBets && (
+          {showTweet && metric && (
             <TweetButton
               tweetText={getPositionTweet(
                 (sharesOutcome === 'NO' ? -1 : 1) * shares,
-                getInvested(contract, userBets),
+                metric.invested,
                 contract
               )}
             />
@@ -111,7 +114,7 @@ export function SellRow(props: {
 export function SellSharesModal(props: {
   className?: string
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
+  metric: ContractMetric | undefined
   shares: number
   sharesOutcome: 'YES' | 'NO'
   user: User
@@ -133,7 +136,7 @@ export function SellSharesModal(props: {
     contract,
     shares,
     sharesOutcome,
-    userBets,
+    metric,
     user,
     setOpen,
     answerId,
@@ -172,7 +175,7 @@ export function SellSharesModal(props: {
           shares={shares}
           sharesOutcome={sharesOutcome}
           user={user}
-          userBets={userBets ?? []}
+          metric={metric}
           onSellSuccess={() => setOpen(false)}
           answerId={answerId}
           binaryPseudonym={binaryPseudonym}

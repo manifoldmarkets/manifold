@@ -1,11 +1,14 @@
 import { ChatIcon, UserIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
+import { SWEEPIES_MARKET_TOOLTIP } from 'common/envs/constants'
 import { useNumContractComments } from 'web/hooks/use-comments'
 import { shortenNumber } from 'web/lib/util/formatNumber'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { Row } from '../layout/row'
+import { TierTooltip } from '../tiers/tier-tooltip'
+import { Tooltip } from '../widgets/tooltip'
 import { Action } from './contract-table-action'
 import { ContractStatusLabel } from './contracts-table'
-import { TierTooltip } from '../tiers/tier-tooltip'
 
 export type ColumnFormat = {
   header: string
@@ -23,7 +26,7 @@ export const traderColumn = {
         <BountiedContractComments contractId={contract.id} />
       </div>
     ) : (
-      <div className="text-ink-700 ml-1 h-min w-[85px] align-top">
+      <div className="text-ink-700 ml-1 mr-7 h-min  align-top">
         <Row className="align-center text-ink-700 h-full shrink-0 items-center justify-end gap-0.5">
           <UserIcon className="text-ink-400 h-4 w-4" />
           {shortenNumber(uniqueBettorCount ?? 0)}
@@ -31,7 +34,7 @@ export const traderColumn = {
       </div>
     )
   },
-  width: 'w-[110px]',
+  width: 'w-[90px]',
 }
 
 export const probColumn = {
