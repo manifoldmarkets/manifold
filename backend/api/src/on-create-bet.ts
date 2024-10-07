@@ -25,7 +25,7 @@ import { convertBet } from 'common/supabase/bets'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { getCommentSafe } from 'shared/supabase/contract-comments'
-import { getBetsRepliedToComment } from 'shared/supabase/bets'
+import { getBetsDirect, getBetsRepliedToComment } from 'shared/supabase/bets'
 import { updateData } from 'shared/supabase/utils'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
@@ -47,7 +47,7 @@ import {
 } from 'shared/helpers/add-house-subsidy'
 import { debounce } from 'api/helpers/debounce'
 import { Fees } from 'common/fees'
-import { broadcastNewBets } from 'shared/websockets/helpers'
+import { broadcastNewBets, broadcastOrders } from 'shared/websockets/helpers'
 import { followContractInternal } from 'api/follow-contract'
 
 export const onCreateBets = async (
@@ -62,6 +62,16 @@ export const onCreateBets = async (
   const pg = createSupabaseDirectClient()
   broadcastNewBets(contract.id, contract.visibility, bets)
   debouncedContractUpdates(contract)
+  const matchedBetIds = filterDefined(
+    bets.flatMap((b) => b.fills?.map((f) => f.matchedBetId) ?? [])
+  )
+  if (matchedBetIds.length > 0) {
+    const updatedLimitBets = (await getBetsDirect(
+      pg,
+      matchedBetIds
+    )) as LimitBet[]
+    broadcastOrders(updatedLimitBets)
+  }
 
   await Promise.all(
     ordersToCancel?.map((order) => {

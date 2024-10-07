@@ -18,6 +18,7 @@ import {
 import { buildArray } from 'common/util/array'
 import { APIParams } from 'common/api/schema'
 import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
+import { ContractMetric } from 'common/contract-metric'
 
 export const getBetsDirect = async (
   pg: SupabaseDirectClient,
@@ -133,17 +134,25 @@ export const getBetsRepliedToComment = async (
 
 export const insertBet = async (
   bet: Omit<Bet, 'id'>,
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  contractMetrics: ContractMetric[]
 ) => {
-  await bulkUpdateUserMetricsWithNewBetsOnly(pg, [bet])
-  return await insert(pg, 'contract_bets', betToRow(bet))
+  const [updatedMetrics, insertedBet] = await Promise.all([
+    bulkUpdateUserMetricsWithNewBetsOnly(pg, [bet], contractMetrics),
+    insert(pg, 'contract_bets', betToRow(bet)),
+  ])
+  return { updatedMetrics, insertedBet }
 }
 export const bulkInsertBets = async (
   bets: Omit<Bet, 'id'>[],
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  contractMetrics: ContractMetric[]
 ) => {
-  await bulkUpdateUserMetricsWithNewBetsOnly(pg, bets)
-  return await bulkInsert(pg, 'contract_bets', bets.map(betToRow))
+  const [updatedMetrics, insertedBets] = await Promise.all([
+    bulkUpdateUserMetricsWithNewBetsOnly(pg, bets, contractMetrics),
+    bulkInsert(pg, 'contract_bets', bets.map(betToRow)),
+  ])
+  return { updatedMetrics, insertedBets }
 }
 
 const betToRow = (bet: Omit<Bet, 'id'>) => ({

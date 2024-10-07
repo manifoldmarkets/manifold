@@ -32,8 +32,14 @@ export const placeMultiBetMain = async (
       `Inside main transaction for ${uid} placing a bet on ${body.contractId}.`
     )
 
-    const { user, contract, answers, unfilledBets, balanceByUserId } =
-      await fetchContractBetDataAndValidate(pgTrans, body, uid, isApi)
+    const {
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId,
+      contractMetrics,
+    } = await fetchContractBetDataAndValidate(pgTrans, body, uid, isApi)
 
     const { mechanism } = contract
 
@@ -81,6 +87,7 @@ export const placeMultiBetMain = async (
           contract,
           user,
           isApi,
+          contractMetrics,
           undefined,
           betGroupId,
           deterministic,

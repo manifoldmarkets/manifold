@@ -261,10 +261,7 @@ export const calculateUserMetrics = (
     return removeUndefinedProps({
       ...current,
       contractId: contract.id,
-      userName: user.name,
       userId: user.id,
-      userUsername: user.username,
-      userAvatarUrl: user.avatarUrl,
       profitAdjustment: getAdjustedProfit(
         contract,
         current.profit,

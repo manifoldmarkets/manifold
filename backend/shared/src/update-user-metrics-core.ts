@@ -240,7 +240,11 @@ export async function updateUserMetricsCore(
             freshMetric.answerId === m.answerId
         )
         if (!currentMetric) return true
+        // TODO: just a hack for now to write less updates that conflict with betting.
+        // Calculating metrics in the scheduled function is only necessary to get the period changes
         return hasSignificantDeepChanges(currentMetric, freshMetric, 0.1)
+          ? Math.random() > 0.9 && !userIds
+          : false
       })
     )
 
