@@ -146,7 +146,7 @@ export default function ContractEmbedPage(props: {
   return (
     <>
       <NoSEO />
-      <ContractSEO contract={contract} />
+      <ContractSEO contract={isCash ? liveCashContract! : contract} />
       <ContractSmolView
         contract={isCash ? liveCashContract! : contract}
         points={isCash ? cashPoints : points}
