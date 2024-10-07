@@ -23,6 +23,7 @@ import { useUser } from 'web/hooks/use-user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { useSweepstakes } from 'web/components/sweestakes-context'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -108,6 +109,7 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
 
 function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   const { contract, pointsString, cash } = props.contractParams
+  const { isPlay } = useSweepstakes()
 
   const points = pointsString ? base64toPoints(pointsString) : []
   const cashPoints = cash
@@ -133,7 +135,10 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
 
   return (
     <Page trackPageView={false} className="xl:col-span-10">
-      <ContractSEO contract={contract} points={pointsString} />
+      <ContractSEO
+        contract={!isPlay && cash?.contract ? cash.contract : contract}
+        points={pointsString}
+      />
       <TwombaContractPageContent key={contract.id} {...props.contractParams} />
     </Page>
   )
