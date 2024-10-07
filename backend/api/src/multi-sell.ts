@@ -13,6 +13,7 @@ import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getAnswersForContract } from 'shared/supabase/answers'
+import { ContractMetric } from 'common/contract-metric'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
   return await betsQueue.enqueueFn(
@@ -64,6 +65,12 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       convertBet
     )
 
+    const contractMetrics = await pgTrans.map(
+      `select data from user_contract_metrics where user_id = $1 and contract_id = $2 and answer_id in ($3:list)`,
+      [uid, contractId, answersToSell.map((a) => a.id)],
+      (row) => row.data as ContractMetric
+    )
+
     const loanAmountByAnswerId = mapValues(
       groupBy(userBets, 'answerId'),
       (bets) => sumBy(bets, (bet) => bet.loanAmount ?? 0)
@@ -101,6 +108,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
           contract,
           user,
           isApi,
+          contractMetrics,
           undefined,
           betGroupId,
           deterministic,
