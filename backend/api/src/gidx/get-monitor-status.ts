@@ -13,7 +13,7 @@ import {
 } from 'common/gidx/gidx'
 import { getUserAndPrivateUserOrThrow, LOCAL_DEV, log } from 'shared/utils'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { getIp } from 'shared/analytics'
+import { getIp, track } from 'shared/analytics'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
@@ -71,7 +71,12 @@ export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
     data.FraudConfidenceScore,
     data.IdentityConfidenceScore
   )
-
+  track(auth.uid, 'gidx monitor status', {
+    status,
+    message,
+    fraudScore: data.FraudConfidenceScore,
+    userId: auth.uid,
+  })
   return {
     status,
     message,
