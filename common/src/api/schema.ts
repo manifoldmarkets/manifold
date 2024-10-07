@@ -1628,7 +1628,14 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     returns: {} as { redeemablePrizeCash: number },
-    props: z.object({}).strict(),
+    props: z.object({}),
+  },
+  'get-total-redeemable-prize-cash': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as { total: number },
+    props: z.object({}),
   },
   'get-cashouts': {
     method: 'GET',
