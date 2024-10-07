@@ -3,10 +3,10 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { chunk } from 'lodash'
-import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 import { log } from 'shared/utils'
 import { DAY_MS } from 'common/util/time'
 import { millisToTs } from 'common/supabase/utils'
+import { updateUserPortfolioHistoriesCore } from './update-user-portfolio-histories-core'
 
 export const recalculateAllUserPortfolios = async (
   pg: SupabaseDirectClient
@@ -25,7 +25,7 @@ export const recalculateAllUserPortfolios = async (
   const chunks = chunk(allUserIdsWithInvestments, 1000)
   let processed = 0
   for (const userIds of chunks) {
-    await updateUserMetricsCore(userIds)
+    await updateUserPortfolioHistoriesCore(userIds)
     processed += userIds.length
     log(`Processed ${processed} of ${allUserIdsWithInvestments.length} users`)
   }
