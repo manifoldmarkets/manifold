@@ -49,8 +49,12 @@ export function ContractSummaryStats(props: {
               noTap
               className="flex flex-row items-center gap-1"
             >
-              <ChartBarIcon className="text-ink-500 h-4 w-4" />Ṁ
-              {shortenNumber(contract.volume)}
+              <ChartBarIcon className="text-ink-500 h-4 w-4" />
+              {formatWithToken({
+                amount: contract.volume,
+                token: isCashContract ? 'CASH' : 'M$',
+                short: true,
+              })}
             </Tooltip>
           )}
 

@@ -6,9 +6,11 @@ import {
   contractPath,
   isBinaryMulti,
   getMainBinaryMCAnswer,
+  CashType,
+  twombaContractPath,
 } from 'common/contract'
 import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
-import { getContractFromSlug } from 'common/supabase/contracts'
+import { getContract, getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
 import { getShareUrl } from 'common/util/share'
 import Image from 'next/image'
@@ -39,10 +41,11 @@ import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { PollPanel } from 'web/components/poll/poll-panel'
-import { getSingleBetPoints } from 'common/contract-params'
+import { getContractParams, getSingleBetPoints } from 'common/contract-params'
 import { ChoiceContractChart } from 'web/components/charts/contract/choice'
 import { Spacer } from 'web/components/layout/spacer'
 import { getBetPoints } from 'web/lib/supabase/bets'
+import { pick } from 'lodash'
 
 type Points = HistoryPoint<any>[]
 
@@ -69,7 +72,17 @@ export async function getStaticProps(props: {
   if (contract == null) {
     return { notFound: true, revalidate: 60 }
   }
+
   const points = await getHistoryData(contract)
+
+  let cashContract = null
+  let cashPoints = null
+  if (contract.siblingContractId) {
+    cashContract = await getContract(db, contract.siblingContractId)
+    if (cashContract) {
+      cashPoints = await getHistoryData(cashContract)
+    }
+  }
 
   const multiPoints = null
   // if (contract.mechanism == 'cpmm-multi-1') {
@@ -81,7 +94,7 @@ export async function getStaticProps(props: {
   //   multiPoints = unserializeMultiPoints(serializedMultiPoints)
   // }
   return {
-    props: { contract, points, multiPoints },
+    props: { contract, points, multiPoints, cashContract, cashPoints },
   }
 }
 
@@ -93,18 +106,31 @@ export default function ContractEmbedPage(props: {
   contract: Contract
   points: Points | null
   multiPoints?: MultiPoints | null
+  cashContract: Contract | null
+  cashPoints: Points | null
 }) {
+  const [showQRCode, setShowQRCode] = useState(false)
+  const [isCash, setIsCash] = useState(false)
+  const { cashContract, points, multiPoints, cashPoints } = props
+
   const contract = useLiveContractWithAnswers(props.contract)
+  const liveCashContract = cashContract
+    ? // eslint-disable-next-line react-hooks/rules-of-hooks
+      useLiveContractWithAnswers(cashContract)
+    : null
 
   const router = useRouter()
 
-  const [showQRCode, setShowQRCode] = useState(false)
-
   useEffect(() => {
-    if (router.query.qr !== undefined) {
-      setShowQRCode(true)
+    if (router.isReady) {
+      if (router.query.qr !== undefined) {
+        setShowQRCode(true)
+      }
+      if (router.query.play !== undefined) {
+        setIsCash(router.query.play === 'false')
+      }
     }
-  }, [router.query.qr])
+  }, [router.isReady, router.query])
 
   useEffect(() => {
     if (contract?.id)
@@ -116,7 +142,7 @@ export default function ContractEmbedPage(props: {
       })
   }, [contract?.creatorId, contract?.id, contract?.slug])
 
-  if (!contract) {
+  if (!contract || (isCash && !liveCashContract)) {
     return <Custom404 />
   }
 
@@ -125,8 +151,8 @@ export default function ContractEmbedPage(props: {
       <NoSEO />
       <ContractSEO contract={contract} />
       <ContractSmolView
-        contract={contract}
-        points={props.points}
+        contract={isCash ? liveCashContract! : contract}
+        points={isCash ? cashPoints : points}
         multiPoints={props.multiPoints}
         showQRCode={showQRCode}
       />
@@ -202,6 +228,7 @@ function ContractSmolView(props: {
 }) {
   const { contract, points, showQRCode } = props
   const { question, outcomeType } = contract
+  const isCashContract = contract.token == 'CASH'
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -210,7 +237,7 @@ function ContractSmolView(props: {
   const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   const isPoll = outcomeType === 'POLL'
 
-  const href = `https://${DOMAIN}${contractPath(contract)}`
+  const href = `https://${DOMAIN}${twombaContractPath(contract)}`
 
   const shareUrl = getShareUrl(contract)
 
