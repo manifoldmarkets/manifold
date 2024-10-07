@@ -266,6 +266,7 @@ const StackedChartTooltip = (props: { data: DateAndCategoriesToTotals }) => {
 
 const categoryToLabel = {
   CASH_BONUS: 'MANA_PURCHASE_BONUS',
+  CONVERT_CASH: 'CONVERT_CASH_TO_MANA',
 }
 
 const categoryToColor = {
@@ -280,6 +281,10 @@ const categoryToColor = {
   MANA_PURCHASE_BONUS: '#925cf0',
   MARKETS_CREATED_QUEST: '#3498DB',
   PUSH_NOTIFICATION: '#FFC300',
+  CASH_OUT: '#50C000',
+  CONVERT_CASH_TO_MANA: '#7C3AED',
+  CONVERT_CASH_DONE: '#7C3AED',
+  LEAGUE_PRIZE_UNDO: '#7DC5E2',
 }
 
 // https://stackoverflow.com/a/3426956
