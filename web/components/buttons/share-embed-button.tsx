@@ -2,7 +2,7 @@ import { CodeIcon } from '@heroicons/react/outline'
 import toast from 'react-hot-toast'
 
 import { Contract, contractPath, twombaContractPath } from 'common/contract'
-import { CASH_SUFFIX, DOMAIN } from 'common/envs/constants'
+import { DOMAIN } from 'common/envs/constants'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
 import { Button } from './button'

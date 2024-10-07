@@ -3,10 +3,8 @@ import { HistoryPoint, MultiPoints } from 'common/chart'
 import {
   CPMMMultiContract,
   Contract,
-  contractPath,
   isBinaryMulti,
   getMainBinaryMCAnswer,
-  CashType,
   twombaContractPath,
 } from 'common/contract'
 import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
@@ -41,11 +39,10 @@ import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { PollPanel } from 'web/components/poll/poll-panel'
-import { getContractParams, getSingleBetPoints } from 'common/contract-params'
+import { getSingleBetPoints } from 'common/contract-params'
 import { ChoiceContractChart } from 'web/components/charts/contract/choice'
 import { Spacer } from 'web/components/layout/spacer'
 import { getBetPoints } from 'web/lib/supabase/bets'
-import { pick } from 'lodash'
 
 type Points = HistoryPoint<any>[]
 
