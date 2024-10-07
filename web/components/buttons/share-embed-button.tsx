@@ -10,7 +10,10 @@ import clsx from 'clsx'
 
 export function embedContractCode(contract: Contract) {
   const title = contract.question
-  const src = `https://${DOMAIN}/embed${contractPath(contract)}`
+  const isCashContract = contract.token == 'CASH'
+  const src = `https://${DOMAIN}/embed${contractPath(contract)}${
+    isCashContract ? '?play=false' : ''
+  }`
   return `<iframe src="${src}" title="${title}" frameborder="0" style="position: relative; left:50%; transform: translateX(-50%); width:90%; height:18rem; max-width: 35rem;"></iframe>`
 }
 
