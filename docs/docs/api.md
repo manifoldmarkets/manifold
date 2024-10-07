@@ -320,6 +320,9 @@ type LiteMarket = {
 
   lastUpdatedTime?: number
   lastBetTime?: number
+
+  token?: 'MANA' | 'CASH' // mana or prizecash question
+  siblingContractId?: string // id of the prizecash or mana version of this question that you get to by toggling.
 }
 ```
 
@@ -358,6 +361,7 @@ Example response:
   "isResolved": true,
   "resolution": "MKT",
   "resolutionTime": 1655265001448,
+  "token": "MANA",
   "answers": [
     {
       "createdTime": 1655258941573,
