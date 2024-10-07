@@ -7,6 +7,7 @@ import {
   isBinaryMulti,
   getMainBinaryMCAnswer,
   CashType,
+  twombaContractPath,
 } from 'common/contract'
 import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
 import { getContract, getContractFromSlug } from 'common/supabase/contracts'
@@ -236,9 +237,7 @@ function ContractSmolView(props: {
   const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   const isPoll = outcomeType === 'POLL'
 
-  const href = `https://${DOMAIN}${contractPath(contract)}${
-    isCashContract ? '?play=false' : ''
-  }`
+  const href = `https://${DOMAIN}${twombaContractPath(contract)}`
 
   const shareUrl = getShareUrl(contract)
 

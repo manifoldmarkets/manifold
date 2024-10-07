@@ -1,8 +1,8 @@
 import { CodeIcon } from '@heroicons/react/outline'
 import toast from 'react-hot-toast'
 
-import { Contract, contractPath } from 'common/contract'
-import { DOMAIN } from 'common/envs/constants'
+import { Contract, contractPath, twombaContractPath } from 'common/contract'
+import { CASH_SUFFIX, DOMAIN } from 'common/envs/constants'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
 import { Button } from './button'
@@ -10,12 +10,7 @@ import clsx from 'clsx'
 
 export function embedContractCode(contract: Contract) {
   const title = contract.question
-  const isCashContract = contract.token == 'CASH'
-  const cleanedSlug = contract.slug.replace(/--cash$/, '')
-  const src = `https://${DOMAIN}/embed${contractPath({
-    creatorUsername: contract.creatorUsername,
-    slug: cleanedSlug,
-  })}${isCashContract ? '?play=false' : ''}`
+  const src = `https://${DOMAIN}/embed${twombaContractPath(contract)}`
   return `<iframe src="${src}" title="${title}" frameborder="0" style="position: relative; left:50%; transform: translateX(-50%); width:90%; height:18rem; max-width: 35rem;"></iframe>`
 }
 

@@ -8,7 +8,7 @@ import { Bet } from './bet'
 import { getLiquidity } from './calculate-cpmm'
 import { ContractComment } from './comment'
 import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
-import { ENV_CONFIG, isAdminId, isModId } from './envs/constants'
+import { CASH_SUFFIX, ENV_CONFIG, isAdminId, isModId } from './envs/constants'
 import { Fees } from './fees'
 import { PollOption } from './poll-option'
 import { formatMoney, formatPercent } from './util/format'
@@ -403,6 +403,18 @@ export function contractPath(contract: {
   slug: string
 }) {
   return `/${contract.creatorUsername}/${contract.slug}`
+}
+
+export function twombaContractPath(contract: {
+  creatorUsername: string
+  slug: string
+  token?: ContractToken
+}) {
+  const isCashContract = contract.token == 'CASH'
+  const cleanedSlug = contract.slug.replace(new RegExp(`${CASH_SUFFIX}$`), '')
+  return `/${contract.creatorUsername}/${cleanedSlug}${
+    isCashContract ? '?play=false' : '?play=true'
+  }`
 }
 
 export type CashType = {
