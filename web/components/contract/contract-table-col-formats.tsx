@@ -5,6 +5,10 @@ import { shortenNumber } from 'web/lib/util/formatNumber'
 import { Row } from '../layout/row'
 import { Action } from './contract-table-action'
 import { ContractStatusLabel } from './contracts-table'
+import { Tooltip } from '../widgets/tooltip'
+import { SWEEPIES_MARKET_TOOLTIP } from 'common/envs/constants'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { TierTooltip } from '../tiers/tier-tooltip'
 
 export type ColumnFormat = {
   header: string
@@ -22,7 +26,7 @@ export const traderColumn = {
         <BountiedContractComments contractId={contract.id} />
       </div>
     ) : (
-      <div className="text-ink-700 ml-1 h-min w-[85px] align-top">
+      <div className="text-ink-700 ml-1 mr-7 h-min  align-top">
         <Row className="align-center text-ink-700 h-full shrink-0 items-center justify-end gap-0.5">
           <UserIcon className="text-ink-400 h-4 w-4" />
           {shortenNumber(uniqueBettorCount ?? 0)}
@@ -30,7 +34,45 @@ export const traderColumn = {
       </div>
     )
   },
-  width: 'w-[110px]',
+  width: 'w-[90px]',
+}
+
+export const coinOrTierColumn = {
+  header: 'Coin/Tier',
+  content: (contract: Contract) => {
+    const { marketTier, token } = contract
+    return (
+      <>
+        {token == 'CASH' && (
+          <span>
+            <Tooltip
+              text={SWEEPIES_MARKET_TOOLTIP}
+              className=" relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+            >
+              <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
+            </Tooltip>
+          </span>
+        )}
+
+        {!!marketTier &&
+          marketTier !== 'play' &&
+          marketTier !== 'basic' &&
+          token != 'CASH' && (
+            <span>
+              <TierTooltip
+                placement={'top'}
+                tier={marketTier}
+                contract={contract}
+                noTitle
+                className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+                iconClassName="absolute inset-0 top-[0.2em]"
+              />
+            </span>
+          )}
+      </>
+    )
+  },
+  width: 'w-[30px]',
 }
 
 export const probColumn = {

@@ -25,6 +25,7 @@ import { searchContracts, searchGroups } from 'web/lib/api/api'
 import { searchUsers } from 'web/lib/supabase/users'
 import {
   actionColumn,
+  coinOrTierColumn,
   probColumn,
   traderColumn,
 } from './contract/contract-table-col-formats'
@@ -526,6 +527,7 @@ export function SupabaseSearch(props: {
             columns={buildArray([
               traderColumn,
               probColumn,
+              coinOrTierColumn,
               !hideActions && actionColumn,
             ])}
           />
