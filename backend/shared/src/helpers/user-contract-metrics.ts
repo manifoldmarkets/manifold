@@ -209,6 +209,8 @@ export const bulkUpdateUserMetricsWithNewBetsOnly = async (
   // TODO: remove this bit if we never see the missing metrics log
   const missingMetrics = marginalBets.filter(
     (b) =>
+      b.amount !== 0 &&
+      b.shares !== 0 &&
       !contractMetrics.some(
         (m) =>
           m.userId === b.userId &&

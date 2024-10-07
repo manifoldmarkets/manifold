@@ -8,12 +8,7 @@ import {
   uniqBy,
 } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import {
-  Contract,
-  ContractToken,
-  CPMM_MIN_POOL_QTY,
-  MarketContract,
-} from 'common/contract'
+import { Contract, CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
 import {
   BetInfo,
@@ -115,7 +110,7 @@ export const placeBetMain = async (
 ) => {
   const startTime = Date.now()
 
-  const { contractId, replyToCommentId, dryRun, deterministic } = body
+  const { contractId, replyToCommentId, dryRun, deterministic, answerId } = body
 
   // Fetch data outside transaction first.
   const {
@@ -159,8 +154,8 @@ export const placeBetMain = async (
       await getUserBalancesAndMetrics(
         pgTrans,
         [uid, ...simulatedMakerIds], // Fetch just the makers that matched in the simulation.
-        contract.token,
-        contractId
+        contract,
+        answerId
       )
     user.balance = balanceByUserId[uid]
     if (user.balance < body.amount)
@@ -488,10 +483,13 @@ export const getUnfilledBets = async (
 export const getUserBalancesAndMetrics = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
   userIds: string[],
-  token: ContractToken,
-  contractId: string,
+  contract: Contract,
   answerId?: string
 ) => {
+  const { token, id: contractId, mechanism } = contract
+  // TODO: if we pass the makers' answerIds, we don't need to fetch the metrics for all answers
+  const sumsToOne =
+    mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
   const results = await pgTrans.multi(
     `
       SELECT ${
@@ -501,7 +499,7 @@ export const getUserBalancesAndMetrics = async (
       select data from user_contract_metrics where user_id = any($1) and contract_id = $2 and
            ($3 is null or answer_id = $3 or answer_id is null);
     `,
-    [userIds, contractId, answerId ?? null]
+    [userIds, contractId, sumsToOne ? null : answerId ?? null]
   )
   const balanceByUserId = Object.fromEntries(
     results[0].map((user) => [user.id, user.balance])
@@ -522,8 +520,7 @@ export const getUnfilledBetsAndUserBalances = async (
   const { balanceByUserId, contractMetrics } = await getUserBalancesAndMetrics(
     pgTrans,
     userIds,
-    contract.token,
-    contract.id,
+    contract,
     answerId
   )
 

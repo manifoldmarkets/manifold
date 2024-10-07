@@ -237,8 +237,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
           userId,
           ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
         ],
-        contract.token,
-        contractId,
+        contract,
         answerId
       )
     user.balance = balanceByUserId[userId]
