@@ -232,6 +232,7 @@ function ContractSmolView(props: {
 }) {
   const { contract, points, showQRCode } = props
   const { question, outcomeType } = contract
+  const isCashContract = contract.token == 'CASH'
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -240,7 +241,9 @@ function ContractSmolView(props: {
   const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   const isPoll = outcomeType === 'POLL'
 
-  const href = `https://${DOMAIN}${contractPath(contract)}`
+  const href = `https://${DOMAIN}${contractPath(contract)}${
+    isCashContract ? '?play=false' : ''
+  }`
 
   const shareUrl = getShareUrl(contract)
 
