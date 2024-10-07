@@ -36,7 +36,9 @@ export function TwombaContractInfoDialog(props: {
             <ContractHistoryButton contract={playContract} />
             <ShareQRButton contract={playContract} />
             <ShareIRLButton contract={playContract} />
-            <ShareEmbedButton contract={statsContract} />
+            <ShareEmbedButton
+              contract={statsContract}
+            />
           </Row>
           <Row className="flex-wrap gap-2">
             {isAdmin || isTrusted ? (
