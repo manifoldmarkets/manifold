@@ -327,7 +327,6 @@ export const NEW_USER_HERLPER_IDS = [
   'GRwzCexe5PM6ThrSsodKZT9ziln2', // Inga
   'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
-  'sA7V30Ic73XZtniboy2eKr6ekkn1', // MartinRandall
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
   'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // Bayesian
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
