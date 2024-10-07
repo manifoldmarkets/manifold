@@ -1,4 +1,4 @@
-import { groupBy, uniq } from 'lodash'
+import { groupBy, uniq, uniqBy } from 'lodash'
 import {
   Contract,
   DPM_CUTOFF_TIMESTAMP,
@@ -195,28 +195,71 @@ export const rerankContractMetricsManually = async (
 
 export const bulkUpdateUserMetricsWithNewBetsOnly = async (
   pgTrans: SupabaseDirectClient,
-  marginalBets: MarginalBet[]
+  marginalBets: MarginalBet[],
+  contractMetrics: ContractMetric[]
 ) => {
   if (marginalBets.every((b) => b.shares === 0 && b.amount === 0)) {
-    return
+    return contractMetrics
   }
   const userIds = uniq(marginalBets.map((b) => b.userId))
   const answerIds = uniq(filterDefined(marginalBets.map((b) => b.answerId)))
   const isMultiMarket = answerIds.length > 0
   const contractId = marginalBets[0].contractId
-  const userMetrics = await pgTrans.map<ContractMetric>(
-    `select data from user_contract_metrics
-    where contract_id = $1 and user_id = any($2)
-    and ($3 is null or answer_id = any($3) or answer_id is null)
-    `,
-    [contractId, userIds, isMultiMarket ? answerIds : null],
-    (row) => row.data
+
+  // TODO: remove this bit if we never see the missing metrics log
+  const missingMetrics = marginalBets.filter(
+    (b) =>
+      !contractMetrics.some(
+        (m) =>
+          m.userId === b.userId &&
+          m.contractId === b.contractId &&
+          m.answerId == b.answerId
+      )
   )
+  if (missingMetrics.length > 0) {
+    const missingContractMetrics = await getContractMetrics(
+      pgTrans,
+      userIds,
+      contractId,
+      filterDefined(missingMetrics.map((b) => b.answerId)),
+      false
+    )
+    if (missingContractMetrics.length > 0) {
+      log('Found missing metrics:', missingContractMetrics.length)
+      contractMetrics.push(...missingContractMetrics)
+    }
+  }
+
   const updatedMetrics = calculateAnswerMetricsWithNewBetsOnly(
     marginalBets,
-    userMetrics,
+    contractMetrics,
     contractId,
     isMultiMarket
   )
   await bulkUpdateContractMetrics(updatedMetrics, pgTrans)
+  return uniqBy(
+    [...(updatedMetrics ?? []), ...contractMetrics],
+    (m) => m.userId + m.answerId + m.contractId
+  ) as ContractMetric[]
+}
+
+export const getContractMetrics = async (
+  pg: SupabaseDirectClient,
+  userIds: string[],
+  contractId: string,
+  answerIds: string[],
+  includeNullAnswer: boolean
+) => {
+  const metrics = await pg.map<ContractMetric>(
+    `select data from user_contract_metrics
+       where contract_id = $1
+         and user_id = any ($2)
+         and ($3 is null or answer_id = any ($3) ${
+           includeNullAnswer ? 'or answer_id is null' : ''
+         })
+    `,
+    [contractId, userIds, answerIds.length > 0 ? answerIds : null],
+    (row) => row.data as ContractMetric
+  )
+  return metrics
 }

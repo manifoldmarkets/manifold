@@ -1,4 +1,4 @@
-import { groupBy, mapValues, min, sum, sumBy, uniq } from 'lodash'
+import { groupBy, mapValues, min, sum, sumBy } from 'lodash'
 
 import {
   getBinaryRedeemableAmountFromContractMetric,
@@ -18,24 +18,21 @@ import { convertBet } from 'common/supabase/bets'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { MarginalBet } from 'common/calculate-metrics'
-import { filterDefined } from 'common/util/array'
 import { ContractMetric } from 'common/contract-metric'
 
 export const redeemShares = async (
   pgTrans: SupabaseDirectClient,
   userIds: string[],
   contract: Contract,
-  newBets?: MarginalBet[] // used when uncommenting contract metrics logic
+  newBets: MarginalBet[],
+  contractMetrics: ContractMetric[]
 ) => {
-  if (!userIds.length) return []
+  if (!userIds.length)
+    return {
+      bets: [],
+      updatedMetrics: contractMetrics,
+    }
 
-  const answerIds = uniq(filterDefined((newBets ?? []).map((b) => b.answerId)))
-  const metrics = await pgTrans.map(
-    `select data from user_contract_metrics where contract_id = $1 and user_id = any($2)
-    and ($3 is null or answer_id = any($3))`,
-    [contract.id, userIds, answerIds?.length ? answerIds : null],
-    (row) => row.data as ContractMetric
-  )
   const bets =
     contract.outcomeType === 'NUMBER'
       ? await pgTrans.map(
@@ -121,12 +118,12 @@ export const redeemShares = async (
       }
     } else {
       let totalCMAmount = 0
-      for (const metric of metrics.filter((m) => m.userId === userId)) {
-        const bet = newBets?.find(
-          (b) => b.answerId == metric.answerId && b.userId === userId
+      for (const bet of newBets.filter((b) => b.userId === userId)) {
+        const metric = contractMetrics.find(
+          (m) => m.answerId == bet.answerId && m.userId === userId
         )
-        if (!bet) {
-          log.error('New bet not found for contract metric', { metric })
+        if (!metric) {
+          log.error('Contract metric not found for new bet', { bet })
           continue
         }
 
@@ -157,9 +154,11 @@ export const redeemShares = async (
         }))
         betsToInsert.push(...redemptionBets)
 
-        log('redeemed', {
+        log('redeeming', {
           shares,
           netAmount,
+          answerId,
+          userId,
         })
       }
 
@@ -173,12 +172,18 @@ export const redeemShares = async (
     }
   }
   let insertedBets: Bet[] = []
+  let updatedMetrics: ContractMetric[] = contractMetrics
   if (betsToInsert.length > 0) {
-    const betRows = await bulkInsertBets(betsToInsert, pgTrans)
+    const { insertedBets: betRows, updatedMetrics: newMetrics } =
+      await bulkInsertBets(betsToInsert, pgTrans, contractMetrics)
     insertedBets = betRows.map(convertBet)
+    updatedMetrics = newMetrics
   }
   if (balanceUpdates.length > 0) {
     await bulkIncrementBalances(pgTrans, balanceUpdates)
   }
-  return insertedBets
+  return {
+    bets: insertedBets,
+    updatedMetrics,
+  }
 }

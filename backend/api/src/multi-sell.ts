@@ -13,7 +13,7 @@ import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getAnswersForContract } from 'shared/supabase/answers'
-import { ContractMetric } from 'common/contract-metric'
+import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
   return await betsQueue.enqueueFn(
@@ -50,7 +50,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
 
     const unfilledBetsAndBalances = await Promise.all(
       answersToSell.map((answer) =>
-        getUnfilledBetsAndUserBalances(pgTrans, contract, answer.id)
+        getUnfilledBetsAndUserBalances(pgTrans, contract, uid, answer.id)
       )
     )
     const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)
@@ -58,17 +58,22 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     unfilledBetsAndBalances.forEach((b) => {
       balancesByUserId = { ...balancesByUserId, ...b.balanceByUserId }
     })
+    const allMyMetrics = await getContractMetrics(
+      pgTrans,
+      [uid],
+      contractId,
+      contract.answers.map((a) => a.id),
+      true
+    )
+    const contractMetrics = [
+      ...(unfilledBetsAndBalances.flatMap((b) => b.contractMetrics) ?? []),
+      ...allMyMetrics,
+    ]
 
     const userBets = await pgTrans.map(
       `select * from contract_bets where user_id = $1 and answer_id in ($2:list)`,
       [uid, answersToSell.map((a) => a.id)],
       convertBet
-    )
-
-    const contractMetrics = await pgTrans.map(
-      `select data from user_contract_metrics where user_id = $1 and contract_id = $2 and answer_id in ($3:list)`,
-      [uid, contractId, answersToSell.map((a) => a.id)],
-      (row) => row.data as ContractMetric
     )
 
     const loanAmountByAnswerId = mapValues(

@@ -542,7 +542,11 @@ export function AnswerPosition(props: {
     (position > 1e-7 && answer.resolution === 'YES') ||
     (position < -1e-7 && answer.resolution === 'NO')
 
-  if (!metric || floatingEqual(invested, 0)) return null
+  if (
+    !metric ||
+    (floatingEqual(yesWinnings, 0) && floatingEqual(noWinnings, 0))
+  )
+    return null
 
   return (
     <>

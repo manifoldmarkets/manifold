@@ -7,7 +7,7 @@ import {
   executeNewBetResult,
   fetchContractBetDataAndValidate,
   getMakerIdsFromBetResult,
-  getUserBalances,
+  getUserBalancesAndMetrics,
 } from './place-bet'
 import { onCreateBets } from 'api/on-create-bet'
 import { log } from 'shared/utils'
@@ -203,7 +203,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     answers,
     balanceByUserId,
     unfilledBets,
-    contractMetrics,
+    contractMetrics: staleMetrics,
     unfilledBetUserIds,
   } = await fetchSellSharesDataAndValidate(
     pg,
@@ -220,7 +220,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     answerId,
     outcome,
     shares,
-    contractMetrics[0]
+    staleMetrics[0]
   )
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
 
@@ -230,14 +230,17 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     )
 
     // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
-    const balanceByUserId = await getUserBalances(
-      pgTrans,
-      [
-        userId,
-        ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
-      ],
-      contract.token
-    )
+    const { balanceByUserId, contractMetrics } =
+      await getUserBalancesAndMetrics(
+        pgTrans,
+        [
+          userId,
+          ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
+        ],
+        contract.token,
+        contractId,
+        answerId
+      )
     user.balance = balanceByUserId[userId]
 
     for (const userId of unfilledBetUserIds) {
@@ -281,6 +284,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       contract,
       user,
       isApi,
+      contractMetrics,
       undefined,
       betGroupId,
       deterministic
