@@ -10,6 +10,7 @@ import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
+import { filterDefined } from 'common/util/array'
 
 // Run every minute on Monday for 3 hours starting at 12pm PT.
 // Should scale until at least 1000 * 120 = 120k users signed up for emails (70k at writing)
@@ -83,7 +84,7 @@ export async function getForYouMarkets(
     userId,
     filter: 'open',
     contractType: 'ALL',
-    limit,
+    limit: limit * 2,
     offset: 0,
     sort: 'score',
     isPrizeMarket: false,
@@ -92,8 +93,18 @@ export async function getForYouMarkets(
     token: 'ALL',
     threshold: 200,
   })
+
   const pg = createSupabaseDirectClient()
   const contracts = await pg.map(searchMarketSQL, [], (r) => convertContract(r))
 
-  return contracts ?? []
+  // Prefer cash contracts over mana contracts in emails
+  const siblingIds = filterDefined(
+    contracts.map((contract) =>
+      contract.token === 'CASH' ? contract.siblingContractId : null
+    )
+  )
+  const contractsWithoutSiblings = contracts.filter(
+    (contract) => !siblingIds.includes(contract.id)
+  )
+  return contractsWithoutSiblings ?? []
 }
