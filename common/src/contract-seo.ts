@@ -17,7 +17,6 @@ export const getContractOGProps = (
     creatorName,
     outcomeType,
     creatorAvatarUrl,
-    token,
   } = contract
 
   const topAnswer =
