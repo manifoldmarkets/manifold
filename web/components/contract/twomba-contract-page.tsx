@@ -122,6 +122,19 @@ export function TwombaContractPageContent(props: ContractParams) {
     }
   }, [prefersPlay, sweepsIsPossible])
 
+  useEffect(() => {
+    const newQuery = { ...router.query, play: isPlay.toString() }
+    if (JSON.stringify(newQuery) !== JSON.stringify(router.query)) {
+      router.replace(
+        {
+          query: newQuery,
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+  }, [isPlay])
+
   const myContractMetrics = useSavedContractMetrics(liveContract)
   const topContractMetrics = useTopContractMetrics({
     playContract: livePlayContract,
