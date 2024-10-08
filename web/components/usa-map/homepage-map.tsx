@@ -31,7 +31,7 @@ import {
   swingStates,
 } from 'web/public/data/elections-data'
 import { HouseTable } from './house-table'
-import { useSweepstakes } from '../sweestakes-context'
+import { useSweepstakes } from '../sweepstakes-provider'
 
 type MapMode = 'presidency' | 'senate' | 'house' | 'governor'
 
@@ -50,14 +50,14 @@ export function HomepageMap(props: {
     houseContract,
   } = props
 
-  const { isPlay } = useSweepstakes()
+  const { prefersPlay } = useSweepstakes()
 
   const presidencyContractsDictionary = Object.keys(
     rawPresidencyStateContracts
   ).reduce((acc, key) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const currentContract =
-      !isPlay && rawPresidencySwingCashContracts[key]
+      !prefersPlay && rawPresidencySwingCashContracts[key]
         ? rawPresidencySwingCashContracts[key]
         : rawPresidencyStateContracts[key]
     // eslint-disable-next-line react-hooks/rules-of-hooks
