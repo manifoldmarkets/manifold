@@ -299,6 +299,13 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
     [userIds],
     (r) => r.data as ContractMetric
   )
+  if (metrics.length === 0) {
+    return {
+      metrics: [],
+      contracts: [],
+      answers: [],
+    }
+  }
   const contractIds = uniq(metrics.map((m) => m.contractId))
   const answerIds = filterDefined(uniq(metrics.map((m) => m.answerId)))
   const results = await pg.multi(
