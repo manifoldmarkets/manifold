@@ -46,8 +46,6 @@ import { getBetPoints } from 'web/lib/supabase/bets'
 
 type Points = HistoryPoint<any>[]
 
-const substackEmbedSuffix = 'substackcash'
-
 async function getHistoryData(contract: Contract) {
   switch (contract.outcomeType) {
     case 'BINARY':
@@ -67,12 +65,7 @@ export async function getStaticProps(props: {
 }) {
   const { contractSlug } = props.params
   // TODO: use admin db
-  const isSubstackCashEmbed = contractSlug.endsWith(substackEmbedSuffix)
-  const cleanedSlug = isSubstackCashEmbed
-    ? contractSlug.slice(0, -substackEmbedSuffix.length)
-    : contractSlug
-
-  const contract = await getContractFromSlug(db, cleanedSlug)
+  const contract = await getContractFromSlug(db, contractSlug)
   if (contract == null) {
     return { notFound: true, revalidate: 60 }
   }
@@ -98,14 +91,7 @@ export async function getStaticProps(props: {
   //   multiPoints = unserializeMultiPoints(serializedMultiPoints)
   // }
   return {
-    props: {
-      contract,
-      points,
-      multiPoints,
-      cashContract,
-      cashPoints,
-      isSubstackCashEmbed,
-    },
+    props: { contract, points, multiPoints, cashContract, cashPoints },
   }
 }
 
@@ -119,10 +105,9 @@ export default function ContractEmbedPage(props: {
   multiPoints?: MultiPoints | null
   cashContract: Contract | null
   cashPoints: Points | null
-  isSubstackCashEmbed?: boolean
 }) {
   const [showQRCode, setShowQRCode] = useState(false)
-  const [isCash, setIsCash] = useState(props.isSubstackCashEmbed ?? null)
+  const [isCash, setIsCash] = useState(false)
   const { cashContract, points, multiPoints, cashPoints } = props
 
   const contract = useLiveContractWithAnswers(props.contract)
@@ -138,7 +123,7 @@ export default function ContractEmbedPage(props: {
       if (router.query.qr !== undefined) {
         setShowQRCode(true)
       }
-      if (router.query.play !== undefined && !props.isSubstackCashEmbed) {
+      if (router.query.play !== undefined) {
         setIsCash(router.query.play === 'false')
       }
     }
