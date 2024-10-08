@@ -175,6 +175,9 @@ export async function updateUserMetricPeriods(
               return {
                 id: currentMetric.id,
                 from: freshMetric.from,
+                payout: freshMetric.payout,
+                profit: freshMetric.profit,
+                profitPercent: freshMetric.profitPercent,
               }
             }
             return undefined

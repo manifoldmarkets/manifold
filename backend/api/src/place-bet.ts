@@ -63,7 +63,10 @@ import {
 } from 'common/economy'
 import { UniqueBettorBonusTxn } from 'common/txn'
 import { insertTxn } from 'shared/txn/run-txn'
-import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
+import {
+  bulkUpdateUserMetricsWithNewBetsOnly,
+  getContractMetrics,
+} from 'shared/helpers/user-contract-metrics'
 import { MarginalBet } from 'common/calculate-metrics'
 import { ContractMetric } from 'common/contract-metric'
 
@@ -300,7 +303,9 @@ export const fetchContractBetDataAndValidate = async (
            )
         and not b.is_filled and not b.is_cancelled;
     select data from user_contract_metrics where user_id = $1 and contract_id = $2 and
-           ($3 is null or answer_id in ($3:list) or answer_id is null);
+           ($3 is null or answer_id in ($3:list) or answer_id is null or            
+           (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
+           );
   `
 
   const results = await pgTrans.multi(queries, [
@@ -714,10 +719,20 @@ export const executeNewBetResult = async (
     betsToInsert.push(...otherBetsToInsert)
   }
   const bulkInsertStart = Date.now()
+  const metrics =
+    contract.outcomeType === 'NUMBER' && !firstBetInMultiBet
+      ? await getContractMetrics(
+          pgTrans,
+          [user.id],
+          contract.id,
+          filterDefined(betsToInsert.map((b) => b.answerId)),
+          true
+        )
+      : contractMetrics
   const { insertedBets, updatedMetrics } = await bulkInsertBets(
     betsToInsert,
     pgTrans,
-    contractMetrics
+    metrics
   )
   const bulkInsertEnd = Date.now()
   log(`bulkInsertBets took ${bulkInsertEnd - bulkInsertStart}ms`)
