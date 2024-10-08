@@ -1,4 +1,4 @@
-import { DAY_MS, MINUTE_MS } from 'common/util/time'
+import { DAY_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -113,8 +113,7 @@ export async function updateCreatorMetricsCore() {
             chunk.map((u) => ({
               id: u.id,
               data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
-            })),
-            5 * MINUTE_MS
+            }))
           )
         )
       )

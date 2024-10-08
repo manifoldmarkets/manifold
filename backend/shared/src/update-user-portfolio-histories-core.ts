@@ -1,4 +1,4 @@
-import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -62,11 +62,11 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
        and
        (users.id in (
            select distinct user_id from user_contract_interactions
-           where created_time > now() - interval '2 weeks'
+           where created_time > now() - interval '6 weeks'
        ) or
        users.id in (
            select id from users where username in ($2:list) and
-           (users.data -> 'lastBetTime')::bigint > ts_to_millis(now() - interval '2 weeks')
+           (users.data -> 'lastBetTime')::bigint > ts_to_millis(now() - interval '6 weeks')
         ) or
        ($1 < 0.05 and id in (
            select distinct users.id from users
@@ -268,8 +268,7 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
             chunk.map((u) => ({
               id: u.id,
               data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
-            })),
-            5 * MINUTE_MS
+            }))
           )
         )
       )
