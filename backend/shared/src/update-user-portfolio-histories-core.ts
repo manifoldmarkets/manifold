@@ -283,7 +283,7 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
   log('Done.')
 }
 
-const getUnresolvedContractMetricsContractsAnswers = async (
+export const getUnresolvedContractMetricsContractsAnswers = async (
   pg: SupabaseDirectClient,
   userIds: string[]
 ) => {
@@ -294,7 +294,7 @@ const getUnresolvedContractMetricsContractsAnswers = async (
     left join answers as a on ucm.answer_id = a.id
     where
       ucm.user_id in ($1:list)
-      and (c.resolution_time is null)
+      and c.resolution_time is null
       and (a is null or a.resolution_time is null);
     `,
     [userIds],
@@ -363,7 +363,7 @@ const getPortfolioHistoricalProfits = async (
   )
 }
 
-const calculateNewPortfolioMetricsWithContractMetrics = (
+export const calculateNewPortfolioMetricsWithContractMetrics = (
   user: User,
   contractsById: { [k: string]: Contract },
   contractMetrics: ContractMetric[]
