@@ -1,7 +1,7 @@
 import { createJob } from './helpers'
 import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
-import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
+import { updateUserMetricPeriods } from 'shared/update-user-metric-periods'
 import { updateGroupMetricsCore } from 'shared/update-group-metrics-core'
 import { cleanOldNotifications } from './clean-old-notifications'
 import { updateStatsCore } from './update-stats'
@@ -34,6 +34,7 @@ import {
   resetDailyQuestStatsInternal,
   resetWeeklyQuestStatsInternal,
 } from './reset-quests-stats'
+import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
 
 export function createJobs() {
   return [
@@ -84,9 +85,9 @@ export function createJobs() {
       autoAwardBounty
     ),
     createJob(
-      'update-user-metrics',
-      '0 * * * * *', // every minute
-      () => updateUserMetricsCore()
+      'update-user-portfolio-histories',
+      '0 */2 * * * *', // every other minute
+      () => updateUserPortfolioHistoriesCore()
     ),
     createJob(
       'drizzle-liquidity',
@@ -105,7 +106,7 @@ export function createJobs() {
     ),
     createJob(
       'denormalize-answers',
-      '0 */1 * * * *', // every minute
+      '0 * * * * *', // every minute
       denormalizeAnswers
     ),
     createJob(
@@ -118,6 +119,11 @@ export function createJobs() {
       'clean-old-notifications',
       '0 30 2 * * *', // 230 AM daily
       cleanOldNotifications
+    ),
+    createJob(
+      'update-user-metric-periods',
+      '0 0 2 * * *', // 2 AM daily
+      () => updateUserMetricPeriods()
     ),
     createJob(
       'reset-pg-stats',

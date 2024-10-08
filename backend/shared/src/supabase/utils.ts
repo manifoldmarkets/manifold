@@ -125,11 +125,16 @@ export async function bulkUpdateData<T extends TableName>(
   db: SupabaseDirectClient,
   table: T,
   // TODO: explicit id field
-  updates: (Partial<DataFor<T>> & { id: string })[]
+  updates: (Partial<DataFor<T>> & { id: string | number })[]
 ) {
   if (updates.length > 0) {
     const values = updates
-      .map((update) => `('${update.id}', '${JSON.stringify(update)}'::jsonb)`)
+      .map(
+        (update) =>
+          `(${
+            typeof update.id === 'string' ? `'${update.id}'` : update.id
+          }, '${JSON.stringify(update)}'::jsonb)`
+      )
       .join(',\n')
 
     await db.none(

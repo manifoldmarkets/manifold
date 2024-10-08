@@ -171,6 +171,7 @@ import { updateNotifSettings } from './update-notif-settings'
 import { createCashContract } from './create-cash-contract'
 import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { getRedeemablePrizeCash } from './get-redeemable-prize-cash'
+import { getTotalRedeemablePrizeCash } from './get-total-redeemable-prize-cash'
 import { getMonitorStatus } from 'api/gidx/get-monitor-status'
 import { getBestComments } from 'api/get-best-comments'
 import { recordCommentView } from 'api/record-comment-view'
@@ -419,6 +420,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'payment-callback-gidx': paymentCallbackGIDX,
   'get-verification-documents-gidx': getVerificationDocuments,
   'get-redeemable-prize-cash': getRedeemablePrizeCash,
+  'get-total-redeemable-prize-cash': getTotalRedeemablePrizeCash,
   'get-monitor-status-gidx': getMonitorStatus,
   'get-best-comments': getBestComments,
   'record-comment-view': recordCommentView,

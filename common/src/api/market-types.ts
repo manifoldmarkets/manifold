@@ -119,6 +119,8 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     matchCreatorId,
     isLove,
     marketTier,
+    token,
+    siblingContractId,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -168,6 +170,8 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     lastCommentTime,
     ...numericValues,
     marketTier,
+    token,
+    siblingContractId,
 
     // Manifold love props.
     loverUserId1,
