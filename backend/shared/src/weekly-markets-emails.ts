@@ -22,42 +22,56 @@ export async function sendWeeklyMarketsEmails() {
     EMAILS_PER_BATCH,
     pg
   )
+  const userIds = privateUsers.map((u) => u.id)
   await pg.none(
     `update private_users set weekly_trending_email_sent = true where id = any($1)`,
-    [privateUsers.map((u) => u.id)]
+    [userIds]
   )
+  const userIdsSentEmails: string[] = []
 
-  const CHUNK_SIZE = 50
+  const CHUNK_SIZE = 25
   let i = 0
-  const chunks = chunk(privateUsers, CHUNK_SIZE)
-  await buildUserInterestsCache(privateUsers.map((u) => u.id))
-  for (const chunk of chunks) {
-    await Promise.all(
-      chunk.map(async (privateUser) => {
-        const contractsToSend = await getForYouMarkets(
-          privateUser.id,
-          6,
-          privateUser
-        )
-        // TODO: bulkify this
-        await sendInterestingMarketsEmail(
-          privateUser.name,
-          privateUser,
-          contractsToSend
-        )
-        if (userIdsToAverageTopicConversionScores[privateUser.id]) {
-          delete userIdsToAverageTopicConversionScores[privateUser.id]
-        }
-      })
-    )
+  try {
+    const chunks = chunk(privateUsers, CHUNK_SIZE)
+    await buildUserInterestsCache(privateUsers.map((u) => u.id))
+    for (const chunk of chunks) {
+      await Promise.allSettled(
+        chunk.map(async (privateUser) => {
+          const contractsToSend = await getForYouMarkets(
+            privateUser.id,
+            6,
+            privateUser
+          )
+          // TODO: bulkify this
+          await sendInterestingMarketsEmail(
+            privateUser.name,
+            privateUser,
+            contractsToSend
+          )
+          if (userIdsToAverageTopicConversionScores[privateUser.id]) {
+            delete userIdsToAverageTopicConversionScores[privateUser.id]
+          }
+          userIdsSentEmails.push(privateUser.id)
+        })
+      )
 
-    i++
-    log(
-      `Sent ${i * CHUNK_SIZE} of ${
-        privateUsers.length
-      } weekly trending emails in this batch`
-    )
+      i++
+      log(
+        `Sent ${i * CHUNK_SIZE} of ${
+          privateUsers.length
+        } weekly trending emails in this batch`
+      )
+    }
+  } catch (e) {
+    log.error(`Error sending weekly trending emails: ${e}`)
   }
+  const userIdsNotSent = userIds.filter(
+    (uid) => !userIdsSentEmails.includes(uid)
+  )
+  await pg.none(
+    `update private_users set weekly_trending_email_sent = false where id = any($1)`,
+    [userIdsNotSent]
+  )
 }
 
 export async function getForYouMarkets(
