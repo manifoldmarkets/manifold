@@ -89,7 +89,6 @@ export function TwombaContractPageContent(props: ContractParams) {
   // sync query state with context
   const { isPlay, setIsPlay } = useSweepstakes()
   const router = useRouter()
-  const initialLoadRef = useRef(true)
 
   useEffect(() => {
     if (router.isReady) {
@@ -97,7 +96,6 @@ export function TwombaContractPageContent(props: ContractParams) {
       if (playQuery !== undefined) {
         setIsPlay(playQuery !== 'false')
       }
-      initialLoadRef.current = false
     }
   }, [router.isReady, setIsPlay])
 
