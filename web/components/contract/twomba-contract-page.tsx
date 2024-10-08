@@ -101,16 +101,6 @@ export function TwombaContractPageContent(props: ContractParams) {
     }
   }, [router.isReady, setIsPlay])
 
-  useEffect(() => {
-    if (!initialLoadRef.current) {
-      router.replace(
-        { query: { ...router.query, play: isPlay ? 'true' : 'false' } },
-        undefined,
-        { shallow: true }
-      )
-    }
-  }, [isPlay, router])
-
   const livePlayContract = useLiveContractWithAnswers(props.contract)
   const liveCashContract = props.cash
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
