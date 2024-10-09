@@ -10,7 +10,7 @@ import {
   ProcessSessionCode,
 } from 'common/gidx/gidx'
 import { introductoryTimeWindow, User } from 'common/user'
-import { getIp } from 'shared/analytics'
+import { getIp, track } from 'shared/analytics'
 import {
   getGIDXStandardParams,
   getLocalServerIP,
@@ -108,6 +108,10 @@ export const completeCheckoutSession: APIHandler<
     body: JSON.stringify(body),
   })
   if (!res.ok) {
+    track(auth.uid, 'gidx complete checkout session', {
+      status: 'error',
+      message: 'GIDX error',
+    })
     throw new APIError(400, 'GIDX complete checkout session failed')
   }
   const data = (await res.json()) as CompleteSessionDirectCashierResponse
@@ -121,6 +125,11 @@ export const completeCheckoutSession: APIHandler<
     SessionID,
   } = data
   if (ResponseCode >= 300) {
+    track(auth.uid, 'gidx complete checkout session', {
+      status: 'error',
+      message: 'GIDX error',
+      gidxMessage: SessionStatusMessage,
+    })
     return {
       status: 'error',
       message: 'GIDX error',
@@ -132,6 +141,11 @@ export const completeCheckoutSession: APIHandler<
     SessionStatusMessage,
     AllowRetry
   )
+  track(auth.uid, 'gidx complete checkout session', {
+    status,
+    message,
+    gidxMessage,
+  })
   if (status !== 'success') {
     return { status, message, gidxMessage }
   }

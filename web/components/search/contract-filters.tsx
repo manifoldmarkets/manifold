@@ -53,7 +53,7 @@ import {
 import { LiteGroup } from 'common/group'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { useSweepstakes } from '../sweestakes-context'
+import { useSweepstakes } from '../sweepstakes-provider'
 import { TwombaToggle } from '../twomba/twomba-toggle'
 
 export function ContractFilters(props: {
@@ -75,7 +75,7 @@ export function ContractFilters(props: {
     sw: isSweepiesString,
   } = params
   const isSweeps = isSweepiesString === '1'
-  const { setIsPlay } = useSweepstakes()
+  const { setPrefersPlay } = useSweepstakes()
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -112,7 +112,7 @@ export function ContractFilters(props: {
   }
 
   const toggleSweepies = () => {
-    setIsPlay(isSweeps)
+    setPrefersPlay(isSweeps)
     updateParams({
       sw: isSweeps ? '0' : '1',
     })

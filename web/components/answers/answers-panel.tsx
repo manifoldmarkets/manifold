@@ -672,7 +672,13 @@ export function Answer(props: {
       name: 'Trades',
       buttonContent: (
         <Row>
-          See <TradesNumber contract={contract} answer={answer} shorten />{' '}
+          See
+          <TradesNumber
+            className="mx-1"
+            contract={contract}
+            answer={answer}
+            shorten
+          />
           traders
         </Row>
       ),

@@ -59,6 +59,8 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
 
       const total = amount * toIds.length
       const balanceField = token === 'M$' ? 'balance' : 'cashBalance'
+      const depositsField =
+        token === 'M$' ? 'totalDeposits' : 'totalCashDeposits'
       const balance = fromUser[balanceField]
       if (balance < total) {
         throw new APIError(
@@ -92,14 +94,14 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
           {
             id: fromId,
             [balanceField]: -total,
-            totalDeposits: -total,
+            [depositsField]: -total,
           },
           toIds
             .filter((id) => id !== BURN_MANA_USER_ID)
             .map((toId) => ({
               id: toId,
               [balanceField]: amount,
-              totalDeposits: amount,
+              [depositsField]: amount,
             }))
         )
       )

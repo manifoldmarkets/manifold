@@ -130,14 +130,14 @@ export const useTopContractMetrics = (props: {
   cashContract: Contract | null
   defaultTopManaTraders: ContractMetric[]
   defaultTopCashTraders: ContractMetric[]
-  isPlay: boolean
+  prefersPlay: boolean
 }) => {
   const {
     playContract,
     cashContract,
     defaultTopManaTraders,
     defaultTopCashTraders,
-    isPlay,
+    prefersPlay,
   } = props
 
   const [topManaTraders, setTopManaTraders] = useState<ContractMetric[]>(
@@ -147,7 +147,7 @@ export const useTopContractMetrics = (props: {
     defaultTopCashTraders
   )
 
-  const topContractMetrics = isPlay ? topManaTraders : topCashTraders
+  const topContractMetrics = prefersPlay ? topManaTraders : topCashTraders
 
   // If the contract resolves while the user is on the page, get the top contract metrics
   useEffect(() => {

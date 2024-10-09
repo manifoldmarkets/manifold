@@ -25,7 +25,7 @@ import {
   TwombaProfitGraph,
 } from './twomba-portfolio-graph'
 import { getPortfolioValues } from '../twomba-portfolio-helpers'
-import { useSweepstakes } from '../sweestakes-context'
+import { useSweepstakes } from '../sweepstakes-provider'
 import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 
 export type PortfolioHoveredGraphType =
@@ -321,14 +321,14 @@ function TwombaPortfolioValueSkeleton(props: {
     setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
   }
 
-  const { isPlay } = useSweepstakes()
+  const { prefersPlay } = useSweepstakes()
 
   return (
     <Col>
       <Col className={clsx('gap-2')}>
         <Row className="text-ink-800 w-full items-center justify-between text-xl font-semibold">
           Portfolio
-          <TwombaToggle sweepsEnabled={true} />
+          <TwombaToggle sweepsEnabled={true} isPlay={prefersPlay} />
         </Row>
         <Col className="bg-canvas-0 w-full rounded-lg p-4">
           <Col>
@@ -336,7 +336,7 @@ function TwombaPortfolioValueSkeleton(props: {
               className={clsx(
                 'cursor-pointer select-none transition-opacity',
                 portfolioFocus == 'all'
-                  ? isPlay
+                  ? prefersPlay
                     ? 'text-violet-600 opacity-100 dark:text-violet-400'
                     : 'text-amber-700 opacity-100 dark:text-amber-600'
                   : 'text-ink-1000 opacity-50 hover:opacity-[85%]'
@@ -346,14 +346,14 @@ function TwombaPortfolioValueSkeleton(props: {
               <CoinNumber
                 amount={displayAmounts(
                   graphValues.net,
-                  isPlay ? portfolioValues?.net : portfolioValues?.netCash
+                  prefersPlay ? portfolioValues?.net : portfolioValues?.netCash
                 )}
                 className={clsx(
                   'text-3xl font-bold transition-all sm:text-4xl'
                 )}
                 isInline
                 coinClassName="top-[0.25rem] sm:top-[0.1rem]"
-                coinType={isPlay ? 'mana' : 'sweepies'}
+                coinType={prefersPlay ? 'mana' : 'sweepies'}
               />
               <span
                 className={clsx(
@@ -370,13 +370,13 @@ function TwombaPortfolioValueSkeleton(props: {
                 portfolioFocus={portfolioFocus}
                 displayedAmount={displayAmounts(
                   graphValues.balance,
-                  isPlay
+                  prefersPlay
                     ? portfolioValues?.balance
                     : portfolioValues?.cashBalance
                 )}
                 className={clsx(
                   portfolioFocus == 'balance'
-                    ? isPlay
+                    ? prefersPlay
                       ? 'bg-violet-700 text-white'
                       : 'bg-amber-700 text-white'
                     : 'bg-canvas-50 text-ink-1000'
@@ -389,13 +389,13 @@ function TwombaPortfolioValueSkeleton(props: {
                 portfolioFocus={portfolioFocus}
                 displayedAmount={displayAmounts(
                   graphValues.invested,
-                  isPlay
+                  prefersPlay
                     ? portfolioValues?.invested
                     : portfolioValues?.cashInvested
                 )}
                 className={clsx(
                   portfolioFocus == 'investment'
-                    ? isPlay
+                    ? prefersPlay
                       ? 'bg-violet-700 text-white'
                       : 'bg-amber-700 text-white'
                     : 'bg-canvas-50 text-ink-1000'
@@ -421,13 +421,15 @@ function TwombaPortfolioValueSkeleton(props: {
               <CoinNumber
                 amount={displayAmounts(
                   graphValues.profit,
-                  isPlay ? portfolioValues?.profit : portfolioValues?.cashProfit
+                  prefersPlay
+                    ? portfolioValues?.profit
+                    : portfolioValues?.cashProfit
                 )}
                 className={clsx(
                   'text-ink-1000 text-3xl font-bold transition-all sm:text-4xl',
                   (displayAmounts(
                     graphValues.profit,
-                    isPlay
+                    prefersPlay
                       ? portfolioValues?.profit
                       : portfolioValues?.cashProfit
                   ) ?? 0) < 0
@@ -436,7 +438,7 @@ function TwombaPortfolioValueSkeleton(props: {
                 )}
                 isInline
                 coinClassName="top-[0.25rem] sm:top-[0.1rem]"
-                coinType={isPlay ? 'mana' : 'sweepies'}
+                coinType={prefersPlay ? 'mana' : 'sweepies'}
               />
               <span
                 className={clsx(
@@ -446,7 +448,7 @@ function TwombaPortfolioValueSkeleton(props: {
                 profit
               </span>
             </span>
-            {isPlay && <ProfitWidget user={user} portfolio={portfolio} />}
+            {prefersPlay && <ProfitWidget user={user} portfolio={portfolio} />}
           </Col>
           {profitGraphElement && (
             <SizedContainer

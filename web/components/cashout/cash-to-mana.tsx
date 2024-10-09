@@ -88,7 +88,7 @@ export const CashToManaForm = (props: {
             updateAmounts(newAmount, 'sweepies')
             setActiveInput('sweepies')
           }}
-          isSweepies
+          allowFloat={true}
           label={<SweepiesCoin />}
           className={activeInput === 'mana' ? 'opacity-50' : ''}
           inputClassName={clsx(

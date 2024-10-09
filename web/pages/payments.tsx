@@ -322,7 +322,10 @@ export const PaymentsModal = (props: {
                 allowNegative={isAdmin}
                 onChangeAmount={setAmount}
                 label={
-                  <CoinNumber coinType={showCash && isCash ? 'CASH' : 'MANA'} />
+                  <CoinNumber
+                    coinType={showCash && isCash ? 'CASH' : 'MANA'}
+                    hideAmount
+                  />
                 }
                 inputClassName={'w-52'}
                 onBlur={() => {

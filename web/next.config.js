@@ -64,6 +64,7 @@ module.exports = {
         destination: '/election',
         permanent: true,
       },
+
       {
         source: '/api',
         destination: API_DOCS_URL,
