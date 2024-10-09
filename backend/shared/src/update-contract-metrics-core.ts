@@ -19,7 +19,8 @@ export async function updateContractMetricsCore() {
   const allContracts = await pg.map(
     `
     select data from contracts
-    where (resolution_time is null or resolution_time > now() - interval '1 month')
+    where (resolution_time is null and last_bet_time > now() - interval '1 month')
+     or resolution_time > now() - interval '1 month'
     `,
     [],
     (r) => r.data as Contract
