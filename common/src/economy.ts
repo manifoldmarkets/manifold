@@ -21,16 +21,15 @@ const ANTES = {
 
 export const getTieredAnswerCost = (marketTier: MarketTierType | undefined) => {
   return marketTier
-    ? BASE_ANSWER_COST * costGivenTier(marketTier)
+    ? Math.max(
+        BASE_ANSWER_COST * 10 ** (tiers.indexOf(marketTier) - 1),
+        MIN_ANSWER_COST
+      )
     : BASE_ANSWER_COST
 }
 
-export const MINIMUM_BOUNTY = 1000
 
-const costGivenTier = (tier: MarketTierType) => {
-  return tier === 'play' ? 1 / 4 : 10 ** (tiers.indexOf(tier) - 1)
-}
-
+export const MINIMUM_BOUNTY = 10000
 export const MULTIPLE_CHOICE_MINIMUM_COST = 1000
 
 export const getAnte = (
@@ -54,7 +53,9 @@ export const getTieredCost = (
     return baseCost
   }
 
-  const tieredCost = tier ? baseCost * costGivenTier(tier) : baseCost
+  const tieredCost = tier
+    ? baseCost * 10 ** (tiers.indexOf(tier) - 1)
+    : baseCost
 
   if (outcomeType == 'NUMBER' && tier != 'basic' && tier != 'play') {
     return tieredCost / 10
