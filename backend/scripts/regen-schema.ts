@@ -156,7 +156,8 @@ async function getTableInfo(pg: SupabaseDirectClient, tableName: string) {
     FROM
       pg_indexes
     WHERE
-      tablename = $1
+      schemaname = 'public'
+      AND tablename = $1
     ORDER BY
       indexname`,
     [tableName]
