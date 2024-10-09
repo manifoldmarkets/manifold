@@ -19,7 +19,6 @@ import { floatingEqual, logit } from 'common/util/math'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { convertContract } from 'common/supabase/contracts'
-import { removeNullOrUndefinedProps } from 'common/util/object'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
 export const MIN_IMPORTANCE_SCORE = 0.1
@@ -35,20 +34,12 @@ export async function calculateImportanceScore(
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
   const select = (whereClause: string) => `
-    select c.id,
-           question,
-           mechanism,
-           c.data->'prob' as prob,
-           c.data->'volume' as volume,
-           c.data->'elasticity' as elasticity,
-           c.data->'probChanges' as prob_changes,
-           c.data->'uniqueBettorCount' as unique_bettors,
-           c.data->'createdTime' as created_time,
-           c.data->'volume24Hours' as volume_24_hours,
-           c.data->'shouldAnswersSumToOne' as should_answers_sum_to_one,
-           c.data->'siblingContractId' as sibling_contract_id,
-           c.data->'token' as token,
-           conversion_score,importance_score, freshness_score, view_count, daily_score,
+    select c.data,
+           conversion_score,
+           importance_score,
+           freshness_score,
+           view_count,
+           daily_score,
            case when count(a.prob) > 0 then json_agg(a.prob) end as answer_probs
     from contracts c
            left join answers a on c.id = a.contract_id
@@ -56,31 +47,13 @@ export async function calculateImportanceScore(
     group by c.id
        `
   const convertRow = (row: any) => {
-    const {
-      should_answers_sum_to_one,
-      unique_bettors,
-      created_time,
-      volume_24_hours,
-      prob_changes,
-      sibling_contract_id,
-      token,
-      answer_probs,
-      ...rest
-    } = row
-    const data = removeNullOrUndefinedProps({
-      shouldAnswersSumToOne: should_answers_sum_to_one,
-      probChanges: prob_changes,
-      volume24Hours: volume_24_hours as number,
-      uniqueBettorCount: unique_bettors as number,
-      siblingContractId: sibling_contract_id as string,
-      token: token as string,
-      createdTime: created_time as number,
+    const { answer_probs, ...rest } = row
+    const contractData = {
       answers: answer_probs?.map((p: number) => ({ prob: p as number })) ?? [],
       ...rest,
-    }) as Contract
-    return convertContract({ ...row, data })
+    }
+    return convertContract(contractData)
   }
-
   const activeContracts = await pg.map(
     select(
       'where last_bet_time > millis_to_ts($1) or last_comment_time > millis_to_ts($1)'
@@ -319,8 +292,9 @@ export const computeContractScores = (
   const popularityScore = todayScore + thisWeekScoreWeight
   const wasCreatedToday = contract.createdTime > now - DAY_MS
 
-  const { createdTime, closeTime, isResolved, outcomeType } = contract
-
+  const { createdTime, closeTime, isResolved, resolutionTime, outcomeType } =
+    contract
+  const resolvedOverADayAgo = resolutionTime && resolutionTime < now - DAY_MS
   const commentScore = commentsToday
     ? normalize(Math.log10(1 + commentsToday), Math.log10(50))
     : 0
@@ -416,9 +390,9 @@ export const computeContractScores = (
     commentScore +
     normalize(thisWeekScore, 200) +
     normalize(contract.uniqueBettorCount, 1000) +
-    normalize(Math.log10(contract.volume + 1), 7) +
+    (resolvedOverADayAgo ? 0 : normalize(Math.log10(contract.volume + 1), 7)) +
     uncertainness +
-    conversionScore
+    (resolvedOverADayAgo ? 0 : conversionScore)
 
   const rawPollImportance =
     2 * normalize(traderHour, 20) +
