@@ -251,7 +251,7 @@ export function SellPanel(props: {
             ? 0
             : Math.floor(displayAmount)
         }
-        allowFloat={isStonk}
+        allowFloat={isStonk || isCashContract}
         onChangeAmount={onAmountChange}
         label="Shares"
         error={!!error}

@@ -291,7 +291,9 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
+          downvotes: number | null
           likes: number
+          upvotes: number | null
           user_id: string
           visibility: string | null
         }
@@ -300,7 +302,9 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
+          downvotes?: number | null
           likes?: number
+          upvotes?: number | null
           user_id: string
           visibility?: string | null
         }
@@ -309,7 +313,9 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
+          downvotes?: number | null
           likes?: number
+          upvotes?: number | null
           user_id?: string
           visibility?: string | null
         }
@@ -740,6 +746,49 @@ export type Database = {
           }
         ]
       }
+      delete_after_reading: {
+        Row: {
+          created_time: string
+          data: Json | null
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_time?: string
+          data?: Json | null
+          id?: never
+          user_id: string
+        }
+        Update: {
+          created_time?: string
+          data?: Json | null
+          id?: never
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'delete_after_reading_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'delete_after_reading_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'delete_after_reading_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       discord_messages_markets: {
         Row: {
           channel_id: string
@@ -897,14 +946,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'group_contracts_group_id_fke'
+            foreignKeyName: 'group_contracts_group_id_fkey'
             columns: ['group_id']
             isOneToOne: false
             referencedRelation: 'group_role'
             referencedColumns: ['group_id']
           },
           {
-            foreignKeyName: 'group_contracts_group_id_fke'
+            foreignKeyName: 'group_contracts_group_id_fkey'
             columns: ['group_id']
             isOneToOne: false
             referencedRelation: 'groups'
@@ -2409,7 +2458,6 @@ export type Database = {
           total_amount: number
         }
         Insert: {
-          cash_amount?: number
           category: string
           created_time?: string
           end_time: string
@@ -2422,7 +2470,6 @@ export type Database = {
           total_amount: number
         }
         Update: {
-          cash_amount?: number
           category?: string
           created_time?: string
           end_time?: string
@@ -2681,7 +2728,7 @@ export type Database = {
           data: Json
           id: number
           name: string
-          ts: string | null
+          ts: string
           user_id: string | null
         }
         Insert: {
@@ -2691,7 +2738,7 @@ export type Database = {
           data: Json
           id?: never
           name: string
-          ts?: string | null
+          ts?: string
           user_id?: string | null
         }
         Update: {
@@ -2701,7 +2748,7 @@ export type Database = {
           data?: Json
           id?: never
           name?: string
-          ts?: string | null
+          ts?: string
           user_id?: string | null
         }
         Relationships: []
@@ -2723,6 +2770,58 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_monitor_status: {
+        Row: {
+          created_time: string | null
+          data: Json
+          fraud_confidence_score: number | null
+          id: number
+          identity_confidence_score: number | null
+          reason_codes: string[] | null
+          user_id: string
+        }
+        Insert: {
+          created_time?: string | null
+          data: Json
+          fraud_confidence_score?: number | null
+          id?: never
+          identity_confidence_score?: number | null
+          reason_codes?: string[] | null
+          user_id: string
+        }
+        Update: {
+          created_time?: string | null
+          data?: Json
+          fraud_confidence_score?: number | null
+          id?: never
+          identity_confidence_score?: number | null
+          reason_codes?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_monitor_status_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'user_monitor_status_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'user_monitor_status_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       user_notifications: {
         Row: {
@@ -2860,6 +2959,7 @@ export type Database = {
           content_type: string
           created_time: string
           reaction_id: string
+          reaction_type: string | null
           user_id: string
         }
         Insert: {
@@ -2868,6 +2968,7 @@ export type Database = {
           content_type: string
           created_time?: string
           reaction_id?: string
+          reaction_type?: string | null
           user_id: string
         }
         Update: {
@@ -2876,6 +2977,7 @@ export type Database = {
           content_type?: string
           created_time?: string
           reaction_id?: string
+          reaction_type?: string | null
           user_id?: string
         }
         Relationships: []
@@ -3163,6 +3265,19 @@ export type Database = {
         }
         Returns: string
       }
+      binary_quantize:
+        | {
+            Args: {
+              '': string
+            }
+            Returns: unknown
+          }
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: unknown
+          }
       calculate_earth_distance_km: {
         Args: {
           lat1: number
@@ -3519,12 +3634,54 @@ export type Database = {
         }
         Returns: unknown
       }
+      halfvec_avg: {
+        Args: {
+          '': number[]
+        }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: {
+          '': unknown
+        }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: {
+          '': unknown[]
+        }
+        Returns: number
+      }
       has_moderator_or_above_role: {
         Args: {
           this_group_id: string
           this_user_id: string
         }
         Returns: boolean
+      }
+      hnsw_bit_support: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
       }
       hnswhandler: {
         Args: {
@@ -3555,6 +3712,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      ivfflat_bit_support: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
+      }
       ivfflathandler: {
         Args: {
           '': unknown
@@ -3567,6 +3736,38 @@ export type Database = {
         }
         Returns: string[]
       }
+      l2_norm:
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: number
+          }
+      l2_normalize:
+        | {
+            Args: {
+              '': string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: unknown
+          }
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: unknown
+          }
       millis_interval: {
         Args: {
           start_millis: number
@@ -3657,6 +3858,24 @@ export type Database = {
         }
         Returns: string[]
       }
+      sparsevec_out: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: {
+          '': unknown
+        }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: {
+          '': unknown[]
+        }
+        Returns: number
+      }
       test: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -3686,12 +3905,19 @@ export type Database = {
         }
         Returns: string
       }
-      vector_dims: {
-        Args: {
-          '': string
-        }
-        Returns: number
-      }
+      vector_dims:
+        | {
+            Args: {
+              '': string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: number
+          }
       vector_norm: {
         Args: {
           '': string

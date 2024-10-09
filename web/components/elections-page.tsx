@@ -8,12 +8,14 @@ import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
 import { ConditionalMarkets } from './us-elections/contracts/conditional-market/conditional-markets'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
-import { useSweepstakes } from './sweestakes-context'
+import { useSweepstakes } from './sweepstakes-provider'
 
 export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
   'Who will win the Presidential Election?'
 
-export function USElectionsPage(props: ElectionsPageProps) {
+export function USElectionsPage(
+  props: ElectionsPageProps & { hideTitle?: boolean }
+) {
   const {
     rawPresidencyStateContracts,
     rawPresidencySwingCashContracts,
@@ -27,9 +29,10 @@ export function USElectionsPage(props: ElectionsPageProps) {
     democratCandidateContract,
     houseContract,
     trendingDashboard,
+    hideTitle,
   } = props
 
-  const { isPlay, setIsPlay } = useSweepstakes()
+  const { prefersPlay } = useSweepstakes()
   if (
     !electionPartyContract ||
     !electionPartyCashContract ||
@@ -66,13 +69,13 @@ export function USElectionsPage(props: ElectionsPageProps) {
     )
 
   const currentElectionPartyContract =
-    !isPlay && electionPartyContract
+    !prefersPlay && electionPartyContract
       ? electionPartyCashContract
       : electionPartyContract
 
   return (
     <Col className="mb-8 gap-6 px-1 sm:gap-8 sm:px-2">
-      <Col>
+      <Col className={hideTitle ? 'hidden' : ''}>
         <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
           Manifold 2024 Election Forecast
         </div>

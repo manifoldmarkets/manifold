@@ -3,34 +3,24 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
+import { getUsers, log, revalidateStaticProps } from 'shared/utils'
+import { groupBy, sortBy, sumBy, uniq } from 'lodash'
+import { Contract, CPMMMultiContract } from 'common/contract'
 import {
-  contractColumnsToSelect,
-  getUsers,
-  isProd,
-  log,
-  revalidateStaticProps,
-} from 'shared/utils'
-import { chunk, groupBy, sum, sumBy, uniq } from 'lodash'
-import {
-  Contract,
-  ContractToken,
-  CPMMMultiContract,
-  MarketContract,
-} from 'common/contract'
-import { calculateProfitMetricsWithProb } from 'common/calculate-metrics'
-import { buildArray, filterDefined } from 'common/util/array'
-import {
-  hasSignificantDeepChanges,
-  removeUndefinedProps,
-} from 'common/util/object'
+  calculateMetricsByContractAndAnswer,
+  calculateNewPortfolioMetrics,
+} from 'common/calculate-metrics'
+import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
+import { buildArray } from 'common/util/array'
+import { hasSignificantDeepChanges } from 'common/util/object'
+import { Bet } from 'common/bet'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { convertBet } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
 import { Row } from 'common/supabase/utils'
-import { BOT_USERNAMES } from 'common/envs/constants'
-import { bulkInsert, bulkUpdate } from 'shared/supabase/utils'
-import { type User } from 'common/user'
-import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import { bulkInsert } from 'shared/supabase/utils'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -40,45 +30,30 @@ const userToPortfolioMetrics: {
     timeCachedPeriodProfits: number
   }
 } = {}
-const LIMIT = isProd() ? 400 : 10
-export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
+
+// NOTE: This function is just a script and isn't used regularly
+export async function updateUserMetricsWithBets(
+  userIds?: string[],
+  since?: number
+) {
+  const useSince = since !== undefined
   const now = Date.now()
   const yesterday = now - DAY_MS
   const weekAgo = now - DAY_MS * 7
   const pg = createSupabaseDirectClient()
 
   log('Loading active users...')
-  const random = Math.random()
   const activeUserIds = userIds?.length
     ? userIds
     : await pg.map(
         `
-      select distinct users.id, uph.last_calculated
-      from users
-        left join user_portfolio_history_latest uph on uph.user_id = users.id
-      where (
-       users.id not in (select distinct user_id from user_events
-                where ts > now() - interval '10 minutes' and user_id is not null)
-       and
-       (users.id in (
-           select distinct user_id from user_contract_interactions
-           where created_time > now() - interval '6 weeks'
-       ) or
-       users.id in (
-           select id from users where username in ($2:list) and
-           (users.data -> 'lastBetTime')::bigint > ts_to_millis(now() - interval '6 weeks')
-        ) or
-       ($1 < 0.05 and id in (
-           select distinct users.id from users
-            join user_contract_metrics on users.id = user_contract_metrics.user_id
-            join contracts on user_contract_metrics.contract_id = contracts.id
-             where contracts.resolution_time is null
-             and user_contract_metrics.has_shares = true
-      ))
-    ))
-        order by uph.last_calculated nulls first limit $3`,
-        [random, BOT_USERNAMES, LIMIT],
-        (r) => r.id as string
+      select distinct user_id from contract_bets
+      join contracts on contract_bets.contract_id = contracts.id
+      where contracts.outcome_type = 'NUMBER'
+      and contract_bets.created_time > now() - interval '2 day'
+      `,
+        [],
+        (r) => r.user_id as string
       )
 
   log(`Loaded ${activeUserIds.length} active users.`)
@@ -125,58 +100,146 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
           userToPortfolioMetrics[userId]?.currentPortfolio,
         dayAgoProfit: dayAgoProfits[userId]?.mana,
         weekAgoProfit: weekAgoProfits[userId]?.mana,
-        // TODO: cash profits
         timeCachedPeriodProfits: Date.now(),
       }
     }
   }
 
-  log('Loading metrics, contracts, and answers...')
-  const { metrics, contracts, answers } =
-    await getUnresolvedContractMetricsContractsAnswers(pg, activeUserIds)
-  log(`Loaded ${metrics.length} metrics.`)
+  log('Loading bets...')
+
+  // We need to update metrics for contracts that resolved up through a week ago,
+  // so we can calculate the daily/weekly profit on them
+  const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
+    pg,
+    activeUserIds,
+    useSince ? since : weekAgo
+  )
+  log(
+    `Loaded ${sumBy(
+      Object.values(metricRelevantBets),
+      (bets) => bets.length
+    )} bets.`
+  )
+
+  log('Loading contracts...')
+  const allBets = Object.values(metricRelevantBets).flat()
+  const contracts = await getRelevantContracts(pg, allBets)
+  log('Loading answers...')
+  const answersByContractId = await getAnswersForContractsDirect(
+    pg,
+    contracts.filter((c) => c.mechanism === 'cpmm-multi-1').map((c) => c.id)
+  )
   log(`Loaded ${contracts.length} contracts and their answers.`)
 
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
-  const answersByContractId = groupBy(answers, (a) => a.contractId)
+
   for (const [contractId, answers] of Object.entries(answersByContractId)) {
     // Denormalize answers onto the contract.
     // eslint-disable-next-line no-extra-semi
     ;(contractsById[contractId] as CPMMMultiContract).answers = answers
   }
 
-  const currentMetricsByUserId = groupBy(metrics, (m) => m.userId)
+  log('Loading current contract metrics...')
+  const currentContractMetrics = await pg.map(
+    `select data from user_contract_metrics
+            where user_id in ($1:list)
+            and contract_id in ($2:list)
+            `,
+    [activeUserIds, contracts.map((c) => c.id)],
+    (r) => r.data as ContractMetric
+  )
+  log(`Loaded ${currentContractMetrics.length} current contract metrics.`)
 
-  const userUpdates: User[] = []
+  const currentMetricsByUserId = groupBy(
+    currentContractMetrics,
+    (m) => m.userId
+  )
+
   const portfolioUpdates = [] as Omit<Row<'user_portfolio_history'>, 'id'>[]
+  const contractMetricUpdates = []
 
   log('Loading user balances & deposit information...')
   // Load user data right before calculating metrics to avoid out-of-date deposit/balance data (esp. for new users that
   // get their first 9 deposits upon visiting new markets).
   const users = await getUsers(activeUserIds)
-  log('Computing portfolio updates...')
+  log('Computing metric updates...')
   for (const user of users) {
-    const userMetrics = currentMetricsByUserId[user.id] ?? []
+    const userMetricRelevantBets = metricRelevantBets[user.id] ?? []
     const { currentPortfolio } = userToPortfolioMetrics[user.id]
-
+    const unresolvedBetsOnly = userMetricRelevantBets.filter((b) => {
+      if (contractsById[b.contractId].isResolved) return false
+      if (b.answerId === 'undefined' || !b.answerId) {
+        return !contractsById[b.contractId].resolution
+      }
+      const answers = answersByContractId[b.contractId]
+      if (b.answerId && answers) {
+        const answer = answers.find((a) => a.id === b.answerId)
+        if (!answer) {
+          log(
+            `Answer not found for contract ${b.contractId}, answer ${b.answerId}, bet ${b.id}`
+          )
+          // We're assuming if there's no answer found, it's not resolved
+          return true
+        }
+        // sum to one answers are resolved when the contract is resolved
+        // indie answers are resolved when they have a resolution time
+        return !answer.resolutionTime
+      } else if (b.answerId && !answers) {
+        log(
+          `No answers found for contract ${b.contractId}, answer ${b.answerId}, bet ${b.id}`
+        )
+      }
+      return !contractsById[b.contractId].resolution
+    })
     const newPortfolio = {
-      ...calculateNewPortfolioMetricsWithContractMetrics(
-        user,
-        contractsById,
-        userMetrics
-      ),
+      ...calculateNewPortfolioMetrics(user, contractsById, unresolvedBetsOnly),
       profit: 0,
     }
+    const metricRelevantBetsByContract = groupBy(
+      userMetricRelevantBets,
+      (b) => b.contractId
+    )
+    const freshMetrics = calculateMetricsByContractAndAnswer(
+      metricRelevantBetsByContract,
+      contractsById,
+      user,
+      answersByContractId
+    ).flat()
+    const currentMetricsForUser = currentMetricsByUserId[user.id] ?? []
+    contractMetricUpdates.push(
+      ...freshMetrics.filter((freshMetric) => {
+        const currentMetric = currentMetricsForUser.find(
+          (m) =>
+            freshMetric.contractId === m.contractId &&
+            freshMetric.answerId === m.answerId
+        )
+        if (!currentMetric) return true
+        return hasSignificantDeepChanges(currentMetric, freshMetric, 0.1)
+      })
+    )
 
-    const { balance, investmentValue, totalDeposits } = newPortfolio
-    const allTimeProfit = balance + investmentValue - totalDeposits
+    const { balance, totalDeposits } = newPortfolio
 
+    const unresolvedMetrics = freshMetrics.filter((m) => {
+      const contract = contractsById[m.contractId]
+
+      if (contract.token !== 'MANA') return false
+
+      if (contract.mechanism === 'cpmm-multi-1') {
+        // Don't double count null answer (summary) profits
+        if (!m.answerId) return false
+        const answer = answersByContractId[m.contractId]?.find(
+          (a) => a.id === m.answerId
+        )
+        return !answer?.resolutionTime
+      }
+      return !contract.isResolved
+    })
     const resolvedProfitAdjustment = user.resolvedProfitAdjustment ?? 0
-
     const leaderBoardProfit =
       resolvedProfitAdjustment +
       // Resolved profits are already included in the user's balance - deposits
-      sumBy(userMetrics, (m) => (m.profitAdjustment ?? 0) + m.profit) +
+      sumBy(unresolvedMetrics, (m) => (m.profitAdjustment ?? 0) + m.profit) +
       balance -
       totalDeposits
 
@@ -195,17 +258,6 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
       currentPortfolio.loanTotal !== newPortfolio.loanTotal ||
       currentPortfolio.profit !== leaderBoardProfit
 
-    const newProfit = {
-      daily:
-        allTimeProfit -
-        (userToPortfolioMetrics[user.id].dayAgoProfit ?? allTimeProfit),
-      weekly:
-        allTimeProfit -
-        (userToPortfolioMetrics[user.id].weekAgoProfit ?? allTimeProfit),
-      monthly: 0,
-      allTime: allTimeProfit,
-    }
-
     if (didPortfolioChange) {
       portfolioUpdates.push({
         user_id: user.id,
@@ -222,31 +274,19 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
       })
       userToPortfolioMetrics[user.id].currentPortfolio = newPortfolio
     }
-
-    // TODO: Remove these user updates, just use lateste portfolio history
-    if (
-      hasSignificantDeepChanges(
-        user,
-        {
-          profitCached: newProfit,
-        },
-        1
-      )
-    ) {
-      userUpdates.push({
-        ...user,
-        profitCached: newProfit,
-      })
-    }
   }
+  log(`Computed ${contractMetricUpdates.length} metric updates.`)
 
   const userIdsNotWritten = activeUserIds.filter(
     (id) => !portfolioUpdates.some((p) => p.user_id === id)
   )
-  const userUpdateChunks = chunk(userUpdates, LIMIT / 10)
   log('Writing updates and inserts...')
   await Promise.all(
     buildArray(
+      contractMetricUpdates.length > 0 &&
+        bulkUpdateContractMetrics(contractMetricUpdates)
+          .catch((e) => log.error('Error upserting contract metrics', e))
+          .then(() => log('Finished updating contract metrics.')),
       portfolioUpdates.length > 0 &&
         bulkInsert(pg, 'user_portfolio_history', portfolioUpdates)
           .catch((e) => log.error('Error inserting user portfolio history', e))
@@ -257,23 +297,7 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
         pg.query(
           `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
           [new Date(now).toISOString(), userIdsNotWritten]
-        ),
-
-      Promise.all(
-        userUpdateChunks.map(async (chunk) =>
-          bulkUpdate(
-            pg,
-            'users',
-            ['id'],
-            chunk.map((u) => ({
-              id: u.id,
-              data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
-            }))
-          )
         )
-      )
-        .catch((e) => log.error('Error writing user updates', e))
-        .then(() => log('Finished user updates.'))
     )
   )
 
@@ -282,59 +306,39 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
   log('Done.')
 }
 
-export const getUnresolvedContractMetricsContractsAnswers = async (
+const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
+  const betContractIds = uniq(bets.map((b) => b.contractId))
+  return await pg.map(
+    `select data from contracts where id in ($1:list)`,
+    [betContractIds],
+    (r) => r.data as Contract
+  )
+}
+
+const getUnresolvedOrRecentlyResolvedBets = async (
   pg: SupabaseDirectClient,
-  userIds: string[]
+  userIds: string[],
+  since: number
 ) => {
-  const metrics = await pg.map(
+  const bets = await pg.map(
     `
-    select ucm.data from user_contract_metrics ucm
-    join contracts as c on ucm.contract_id = c.id
-    left join answers as a on ucm.answer_id = a.id
+    select cb.amount, cb.shares, cb.outcome, cb.loan_amount, cb.user_id, cb.answer_id, cb.contract_id, cb.created_time, cb.is_redemption
+    from contract_bets as cb
+    join contracts as c on cb.contract_id = c.id
+    left join answers as a on cb.answer_id = a.id
     where
-      ucm.user_id in ($1:list)
-      and c.resolution_time is null
-      and (a is null or a.resolution_time is null);
+      cb.user_id in ($1:list)
+      and (c.resolution_time is null or c.resolution_time > $2)
+      and (a is null or a.resolution_time is null or a.resolution_time > $2)
     `,
-    [userIds],
-    (r) => r.data as ContractMetric
+    [userIds, new Date(since).toISOString()],
+    convertBet
   )
-  if (metrics.length === 0) {
-    return {
-      metrics: [],
-      contracts: [],
-      answers: [],
-    }
-  }
-  const contractIds = uniq(metrics.map((m) => m.contractId))
-  const answerIds = filterDefined(uniq(metrics.map((m) => m.answerId)))
-  const selectContracts = `select ${contractColumnsToSelect} from contracts where id in ($1:list);`
-  if (answerIds.length === 0) {
-    const contracts = await pg.map(
-      selectContracts,
-      [contractIds],
-      convertContract
-    )
-    return {
-      metrics,
-      contracts,
-      answers: [],
-    }
-  }
-  const results = await pg.multi(
-    `
-    ${selectContracts}
-    select * from answers where id in ($2:list);
-    `,
-    [contractIds, answerIds]
+
+  return groupBy(
+    sortBy(bets, (b) => b.createdTime),
+    (r) => r.userId as string
   )
-  const contracts = results[0].map(convertContract)
-  const answers = results[1].map(convertAnswer)
-  return {
-    metrics,
-    contracts,
-    answers,
-  }
 }
 
 const getPortfolioSnapshot = async (
@@ -380,46 +384,4 @@ const getPortfolioHistoricalProfits = async (
       ]
     )
   )
-}
-
-export const calculateNewPortfolioMetricsWithContractMetrics = (
-  user: User,
-  contractsById: { [k: string]: Contract },
-  contractMetrics: ContractMetric[]
-) => {
-  const getPayouts = (token: ContractToken) =>
-    contractMetrics.map((cm) => {
-      const contract = contractsById[cm.contractId] as MarketContract
-      if (contract.token !== token || contract.isResolved) return 0
-      // ignore summary metrics
-      if (contract.mechanism === 'cpmm-multi-1') {
-        if (!cm.answerId) return 0
-        const answer = contract.answers.find((a) => a.id === cm.answerId)
-        // Might not get an answer if it's not denormalized and resolved already, (excluded by the sql query)
-        if (!answer || answer.resolutionTime) return 0
-        return (
-          calculateProfitMetricsWithProb(answer.prob, cm).payout -
-          (cm.loan ?? 0)
-        )
-      }
-      return (
-        calculateProfitMetricsWithProb(contract.prob, cm).payout -
-        (cm.loan ?? 0)
-      )
-    })
-  const cashPayouts = sum(getPayouts('CASH'))
-  const manaPayouts = sum(getPayouts('MANA'))
-  const loanTotal = sumBy(contractMetrics, (cm) => cm.loan)
-  return {
-    investmentValue: manaPayouts,
-    cashInvestmentValue: cashPayouts,
-    balance: user.balance,
-    cashBalance: user.cashBalance,
-    spiceBalance: user.spiceBalance,
-    totalDeposits: user.totalDeposits,
-    totalCashDeposits: user.totalCashDeposits,
-    loanTotal,
-    timestamp: Date.now(),
-    userId: user.id,
-  }
 }

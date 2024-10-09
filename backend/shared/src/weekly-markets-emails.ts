@@ -10,6 +10,7 @@ import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
+import { filterDefined } from 'common/util/array'
 
 // Run every minute on Monday for 3 hours starting at 12pm PT.
 // Should scale until at least 1000 * 120 = 120k users signed up for emails (70k at writing)
@@ -22,42 +23,56 @@ export async function sendWeeklyMarketsEmails() {
     EMAILS_PER_BATCH,
     pg
   )
+  const userIds = privateUsers.map((u) => u.id)
   await pg.none(
     `update private_users set weekly_trending_email_sent = true where id = any($1)`,
-    [privateUsers.map((u) => u.id)]
+    [userIds]
   )
+  const userIdsSentEmails: string[] = []
 
-  const CHUNK_SIZE = 50
+  const CHUNK_SIZE = 25
   let i = 0
-  const chunks = chunk(privateUsers, CHUNK_SIZE)
-  await buildUserInterestsCache(privateUsers.map((u) => u.id))
-  for (const chunk of chunks) {
-    await Promise.all(
-      chunk.map(async (privateUser) => {
-        const contractsToSend = await getForYouMarkets(
-          privateUser.id,
-          6,
-          privateUser
-        )
-        // TODO: bulkify this
-        await sendInterestingMarketsEmail(
-          privateUser.name,
-          privateUser,
-          contractsToSend
-        )
-        if (userIdsToAverageTopicConversionScores[privateUser.id]) {
-          delete userIdsToAverageTopicConversionScores[privateUser.id]
-        }
-      })
-    )
+  try {
+    const chunks = chunk(privateUsers, CHUNK_SIZE)
+    await buildUserInterestsCache(privateUsers.map((u) => u.id))
+    for (const chunk of chunks) {
+      await Promise.allSettled(
+        chunk.map(async (privateUser) => {
+          const contractsToSend = await getForYouMarkets(
+            privateUser.id,
+            6,
+            privateUser
+          )
+          // TODO: bulkify this
+          await sendInterestingMarketsEmail(
+            privateUser.name,
+            privateUser,
+            contractsToSend
+          )
+          if (userIdsToAverageTopicConversionScores[privateUser.id]) {
+            delete userIdsToAverageTopicConversionScores[privateUser.id]
+          }
+          userIdsSentEmails.push(privateUser.id)
+        })
+      )
 
-    i++
-    log(
-      `Sent ${i * CHUNK_SIZE} of ${
-        privateUsers.length
-      } weekly trending emails in this batch`
-    )
+      i++
+      log(
+        `Sent ${i * CHUNK_SIZE} of ${
+          privateUsers.length
+        } weekly trending emails in this batch`
+      )
+    }
+  } catch (e) {
+    log.error(`Error sending weekly trending emails: ${e}`)
   }
+  const userIdsNotSent = userIds.filter(
+    (uid) => !userIdsSentEmails.includes(uid)
+  )
+  await pg.none(
+    `update private_users set weekly_trending_email_sent = false where id = any($1)`,
+    [userIdsNotSent]
+  )
 }
 
 export async function getForYouMarkets(
@@ -69,7 +84,7 @@ export async function getForYouMarkets(
     userId,
     filter: 'open',
     contractType: 'ALL',
-    limit,
+    limit: limit * 2,
     offset: 0,
     sort: 'score',
     isPrizeMarket: false,
@@ -78,8 +93,18 @@ export async function getForYouMarkets(
     token: 'ALL',
     threshold: 200,
   })
+
   const pg = createSupabaseDirectClient()
   const contracts = await pg.map(searchMarketSQL, [], (r) => convertContract(r))
 
-  return contracts ?? []
+  // Prefer cash contracts over mana contracts in emails
+  const siblingIds = filterDefined(
+    contracts.map((contract) =>
+      contract.token === 'CASH' ? contract.siblingContractId : null
+    )
+  )
+  const contractsWithoutSiblings = contracts.filter(
+    (contract) => !siblingIds.includes(contract.id)
+  )
+  return contractsWithoutSiblings ?? []
 }

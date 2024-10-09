@@ -11,7 +11,6 @@ import {
   limit as lim,
   where,
   orderBy as order,
-  leftJoin,
   groupBy,
 } from 'shared/supabase/sql-builder'
 import { buildArray, filterDefined } from 'common/util/array'
@@ -79,16 +78,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       reposts: [],
     }
   }
-  const viewedContractsQuery = renderSql(
-    select(`contract_id, max(view_time) AS latest_seen_time`),
-    from(
-      `(select contract_id, last_page_view_ts as view_time from user_contract_views where user_id = $1 union all
-           select contract_id, last_promoted_view_ts as view_time from user_contract_views where user_id = $1 union all
-           select contract_id, last_card_view_ts as view_time from user_contract_views where user_id = $1) as combined_views`,
-      [userId]
-    ),
-    groupBy(`contract_id`)
-  )
 
   const claimedAdsQuery = renderSql(
     select('1'),
@@ -146,9 +135,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     buildArray(
       select('contracts.*'),
       !adQuery
-        ? select(
-            `avg(uti.topic_score) as topic_conversion_score, cv.latest_seen_time`
-          )
+        ? select(`avg(uti.topic_score) as topic_conversion_score`)
         : select(`uti.topic_score as topic_conversion_score, ma.id as ad_id`),
       from(
         `(select
@@ -162,13 +149,11 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       ),
       join(`group_contracts on group_contracts.group_id = uti.group_id`),
       join(`contracts on contracts.id = group_contracts.contract_id`),
-      // Another option: get the top 1000 contracts by uti.CS * contracts.CS and then filter by user_contract_views
-      !adQuery && [
-        leftJoin(
-          `(${viewedContractsQuery}) cv ON cv.contract_id = contracts.id`
+      !adQuery &&
+        where(
+          'not exists (select 1 from user_contract_views where user_id = $1 and contract_id = contracts.id)',
+          [userId]
         ),
-        where(`cv.latest_seen_time is null`),
-      ],
       ...minimumContractsQualityBarWhereClauses(adQuery),
       where(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
@@ -178,7 +163,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         where(`contracts.id <> all(array[$1])`, [ignoreContractIds]),
       privateUserBlocksSql(privateUser),
       lim(limit, offset),
-      !adQuery && groupBy(`contracts.id, cv.latest_seen_time`)
+      !adQuery && groupBy(`contracts.id`)
     )
 
   const adsQuery = renderSql(

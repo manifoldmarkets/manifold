@@ -77,24 +77,25 @@ export const placeMultiBetMain = async (
       expiresAt
     )
 
+    const results = []
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const betGroupId = crypto.randomBytes(12).toString('hex')
-    return await Promise.all(
-      newBetResults.map((newBetResult, i) =>
-        executeNewBetResult(
-          pgTrans,
-          newBetResult,
-          contract,
-          user,
-          isApi,
-          contractMetrics,
-          undefined,
-          betGroupId,
-          deterministic,
-          i === 0
-        )
+    for (const [i, newBetResult] of newBetResults.entries()) {
+      const result = await executeNewBetResult(
+        pgTrans,
+        newBetResult,
+        contract,
+        user,
+        isApi,
+        contractMetrics,
+        undefined,
+        betGroupId,
+        deterministic,
+        i === 0
       )
-    )
+      results.push(result)
+    }
+    return results
   })
 
   log(`Main transaction finished - auth ${uid}.`)

@@ -1,30 +1,26 @@
 import clsx from 'clsx'
 import { ManaFlatCoin } from 'web/public/custom-components/manaFlatCoin'
 import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
-import { useSweepstakes } from 'web/components/sweestakes-context'
+import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Tooltip } from 'web/components/widgets/tooltip'
 
-export function TwombaToggle({
-  sweepsEnabled = false,
-  isPlay: isPlayProp,
-  onClick,
-  isSmall = false,
-}: {
-  sweepsEnabled?: boolean
+export function TwombaToggle(props: {
+  sweepsEnabled: boolean
   isPlay?: boolean
   onClick?: () => void
   isSmall?: boolean
 }) {
-  const { isPlay: contextIsPlay, setIsPlay: contextSetIsPlay } =
-    useSweepstakes()
-  const isPlay = isPlayProp !== undefined ? isPlayProp : contextIsPlay
+  const { sweepsEnabled, isPlay: isPlayProp, onClick, isSmall } = props
+  const { prefersPlay, setPrefersPlay } = useSweepstakes()
+  const isPlay =
+    isPlayProp !== undefined ? isPlayProp : sweepsEnabled ? prefersPlay : true
 
   const handleClick = () => {
     if (sweepsEnabled) {
       if (onClick) {
         onClick()
       } else {
-        contextSetIsPlay(!isPlay)
+        setPrefersPlay(!prefersPlay)
       }
     }
   }
@@ -36,6 +32,7 @@ export function TwombaToggle({
           ? null
           : 'This question does not have sweepstakes enabled.'
       }
+      placement="bottom"
     >
       <button
         className={clsx(

@@ -44,7 +44,7 @@ export async function getStaticPaths() {
 
 export async function getStaticProps(ctx: { params: { charitySlug: string } }) {
   const { charitySlug } = ctx.params
-  const charity = charities.find((c) => c.slug === charitySlug?.toLowerCase())
+  const charity = charities.find((c) => c.id === charitySlug?.toLowerCase())
   if (!charity) {
     return {
       props: {
@@ -228,11 +228,10 @@ function DonationBox(props: {
       <label className="text-ink-700 mb-2 block text-sm">Amount</label>
       <AmountInput
         error={!!error}
-        min={min}
         amount={amount}
         onChangeAmount={setAmount}
         label={<SweepiesCoin />}
-        isSweepies
+        allowFloat={true}
       />
 
       {error && (

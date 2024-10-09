@@ -38,7 +38,7 @@ import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
 import { BinaryDigit, TierParamsType } from 'common/tier'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Spacer } from './layout/spacer'
-import { useSweepstakes } from './sweestakes-context'
+import { useSweepstakes } from './sweepstakes-provider'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -239,7 +239,7 @@ export function SupabaseSearch(props: {
   } = props
 
   const isMobile = useIsMobile()
-  const { isPlay, setIsPlay } = useSweepstakes()
+  const { prefersPlay, setPrefersPlay } = useSweepstakes()
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
@@ -248,7 +248,7 @@ export function SupabaseSearch(props: {
     defaultForYou,
     useUrlParams,
     persistPrefix,
-    defaultSweepies: isPlay ? '0' : '1',
+    defaultSweepies: prefersPlay ? '0' : '1',
   })
 
   const query = searchParams[QUERY_KEY]
@@ -265,11 +265,11 @@ export function SupabaseSearch(props: {
 
   useEffect(() => {
     const isSweeps = sweepiesState === '1'
-    if (isPlay !== isSweeps) return
+    if (prefersPlay !== isSweeps) return
     setSearchParams({
-      [SWEEPIES_KEY]: isPlay ? '0' : '1',
+      [SWEEPIES_KEY]: prefersPlay ? '0' : '1',
     })
-  }, [isPlay, sweepiesState])
+  }, [prefersPlay, sweepiesState])
 
   const [userResults, setUserResults] = usePersistentInMemoryState<
     FullUser[] | undefined
@@ -354,12 +354,12 @@ export function SupabaseSearch(props: {
     sweepiesState === '1' ? (
       <Col className="mt-2 items-center gap-3">
         <span className="text-ink-700 text-center">
-          No {isPlay ? 'questions' : 'sweeps questions'} found under this
+          No {prefersPlay ? 'questions' : 'sweeps questions'} found under this
           filter.
         </span>
         <Col className="gap-2">
-          {!isPlay && (
-            <Button onClick={() => setIsPlay(true)} color="purple">
+          {!prefersPlay && (
+            <Button onClick={() => setPrefersPlay(true)} color="purple">
               See mana markets
             </Button>
           )}
@@ -525,6 +525,7 @@ export function SupabaseSearch(props: {
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
             columns={buildArray([
+              coinOrTierColumn,
               traderColumn,
               tierColumn,
               probColumn,

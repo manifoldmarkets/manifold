@@ -13,7 +13,7 @@ import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
-import { SweepstakesProvider } from 'web/components/sweestakes-context'
+import { Sweepstakes } from 'web/components/sweepstakes-provider'
 import { capitalize } from 'lodash'
 import { useThemeManager } from 'web/hooks/use-theme'
 import { DevtoolsDetector, setupDevtoolsDetector } from 'web/lib/util/devtools'
@@ -177,11 +177,11 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           </div>
         ) : (
           <AuthProvider serverUser={pageProps.auth}>
-            <SweepstakesProvider>
+            <Sweepstakes>
               <NativeMessageProvider>
                 <Component {...pageProps} />
               </NativeMessageProvider>
-            </SweepstakesProvider>
+            </Sweepstakes>
           </AuthProvider>
         )}
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}

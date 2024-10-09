@@ -2,6 +2,7 @@ import {
   groupBy,
   isEqual,
   mapValues,
+  maxBy,
   orderBy,
   sumBy,
   uniq,
@@ -63,7 +64,10 @@ import {
 } from 'common/economy'
 import { UniqueBettorBonusTxn } from 'common/txn'
 import { insertTxn } from 'shared/txn/run-txn'
-import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
+import {
+  bulkUpdateUserMetricsWithNewBetsOnly,
+  getContractMetrics,
+} from 'shared/helpers/user-contract-metrics'
 import { MarginalBet } from 'common/calculate-metrics'
 import { ContractMetric } from 'common/contract-metric'
 
@@ -300,7 +304,9 @@ export const fetchContractBetDataAndValidate = async (
            )
         and not b.is_filled and not b.is_cancelled;
     select data from user_contract_metrics where user_id = $1 and contract_id = $2 and
-           ($3 is null or answer_id in ($3:list) or answer_id is null);
+           ($3 is null or answer_id in ($3:list) or answer_id is null or            
+           (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
+           );
   `
 
   const results = await pgTrans.multi(queries, [
@@ -652,31 +658,6 @@ export const executeNewBetResult = async (
     prob: number
   }[] = []
 
-  if (newBet.answerId) {
-    // Multi-cpmm-1 contract
-    if (newPool) {
-      const { YES: poolYes, NO: poolNo } = newPool
-      const prob = getCpmmProbability(newPool, 0.5)
-      answerUpdates.push({
-        id: newBet.answerId,
-        poolYes,
-        poolNo,
-        prob,
-      })
-    }
-  } else {
-    await updateContract(
-      pgTrans,
-      contract.id,
-      removeUndefinedProps({
-        pool: newPool,
-        p: newP,
-        totalLiquidity: newTotalLiquidity,
-        prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
-      })
-    )
-  }
-
   if (otherBetResults) {
     const otherBetsToInsert = filterDefined(
       otherBetResults.map((result) => {
@@ -713,11 +694,54 @@ export const executeNewBetResult = async (
     )
     betsToInsert.push(...otherBetsToInsert)
   }
+
+  if (newBet.answerId) {
+    // Multi-cpmm-1 contract
+    if (newPool) {
+      const { YES: poolYes, NO: poolNo } = newPool
+      const prob = getCpmmProbability(newPool, 0.5)
+      answerUpdates.push({
+        id: newBet.answerId,
+        poolYes,
+        poolNo,
+        prob,
+      })
+    }
+  } else {
+    const lastBetTime =
+      maxBy(betsToInsert, (b) => b.createdTime)?.createdTime ?? Date.now()
+    await updateContract(
+      pgTrans,
+      contract.id,
+      removeUndefinedProps({
+        pool: newPool,
+        p: newP,
+        totalLiquidity: newTotalLiquidity,
+        prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
+        lastBetTime,
+        volume:
+          contract.volume + sumBy(betsToInsert, (b) => Math.abs(b.amount)),
+        lastUpdatedTime: lastBetTime,
+        uniqueBettorCount: contract.uniqueBettorCount + (bonuxTxn ? 1 : 0),
+      })
+    )
+  }
+
   const bulkInsertStart = Date.now()
+  const metrics =
+    contract.outcomeType === 'NUMBER' && !firstBetInMultiBet
+      ? await getContractMetrics(
+          pgTrans,
+          [user.id],
+          contract.id,
+          filterDefined(betsToInsert.map((b) => b.answerId)),
+          true
+        )
+      : contractMetrics
   const { insertedBets, updatedMetrics } = await bulkInsertBets(
     betsToInsert,
     pgTrans,
-    contractMetrics
+    metrics
   )
   const bulkInsertEnd = Date.now()
   log(`bulkInsertBets took ${bulkInsertEnd - bulkInsertStart}ms`)

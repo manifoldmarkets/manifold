@@ -26,7 +26,7 @@ export const traderColumn = {
         <BountiedContractComments contractId={contract.id} />
       </div>
     ) : (
-      <div className="text-ink-700 ml-1 mr-7 h-min  align-top">
+      <div className="text-ink-700 mr-7 h-min  align-top">
         <Row className="align-center text-ink-700 h-full shrink-0 items-center justify-end gap-0.5">
           <UserIcon className="text-ink-400 h-4 w-4" />
           {shortenNumber(uniqueBettorCount ?? 0)}
