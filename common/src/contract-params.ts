@@ -42,7 +42,7 @@ export async function getContractParams(
     relatedContracts,
     betReplies,
   ] = await Promise.all([
-    unauthedApi('getmarket-props', {
+    unauthedApi('get-market-props', {
       id: market.id,
       key: adminKey,
     }),
