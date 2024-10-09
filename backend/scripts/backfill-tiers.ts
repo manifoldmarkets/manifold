@@ -11,7 +11,7 @@ if (require.main === module) {
   contractsRef.get().then(async (contractsSnaps) => {
     console.log(`Loaded ${contractsSnaps.size} contracts.`)
     const needsFilling = contractsSnaps.docs.filter((ct) => {
-      return 'totalLiquidity' in ct.data()
+      return !('marketTier' in ct.data()) && 'totalLiquidity' in ct.data()
     })
     console.log(`Found ${needsFilling.length} contracts to update.`)
     await Promise.all(
