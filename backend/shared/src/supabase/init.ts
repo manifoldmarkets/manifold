@@ -104,7 +104,7 @@ export function createSupabaseClient() {
 }
 
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
-const pgpDirect: SupabaseDirectClientTimeout | null = null
+let pgpDirect: SupabaseDirectClientTimeout | null = null
 export function createSupabaseDirectClient(
   instanceId?: string,
   password?: string
@@ -156,7 +156,8 @@ export function createSupabaseDirectClient(
     metrics.set('pg/pool_connections', pool.totalCount, { state: 'total' })
   }, METRICS_INTERVAL_MS)
 
-  return client
+  pgpDirect = client
+  return pgpDirect
 }
 
 export const SERIAL_MODE = new pgp.txMode.TransactionMode({
