@@ -66,9 +66,7 @@ pgp.pg.types.setTypeParser(20, (value) => parseInt(value, 10)) // int8.
 pgp.pg.types.setTypeParser(1700, parseFloat) // numeric
 
 pgp.pg.types.setTypeParser(1082, (value) => value) // date (not timestamp! has no time info so we just parse as string)
-export type SupabaseDirectClientTimeout = IDatabase<{}, IClient> & {
-  timeout: TimeoutTask
-}
+export type SupabaseDirectClientTimeout = IDatabase<{}, IClient>
 export type SupabaseTransaction = ITask<{}>
 export type SupabaseDirectClient =
   | SupabaseDirectClientTimeout
@@ -105,14 +103,8 @@ export function createSupabaseClient() {
   return createClient(instanceId, key, { auth: { autoRefreshToken: false } })
 }
 
-type TimeoutTask = <T>(
-  timeoutInMs: number,
-  queryMethod: (t: ITask<{}>) => Promise<T>,
-  serialize?: boolean
-) => Promise<T>
-
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
-let pgpDirect: SupabaseDirectClientTimeout | null = null
+const pgpDirect: SupabaseDirectClientTimeout | null = null
 export function createSupabaseDirectClient(
   instanceId?: string,
   password?: string
@@ -164,60 +156,7 @@ export function createSupabaseDirectClient(
     metrics.set('pg/pool_connections', pool.totalCount, { state: 'total' })
   }, METRICS_INTERVAL_MS)
 
-  const timeout: TimeoutTask = async <T>(
-    timeoutInMs: number,
-    queryMethod: (t: ITask<{}>) => Promise<T>,
-    serialize?: boolean
-  ) => {
-    let pid: number | undefined
-    let timeoutId: NodeJS.Timeout | undefined
-
-    const callback = async (t: ITask<{}>) => {
-      const pidResult = await t.one('SELECT pg_backend_pid() AS pid')
-      pid = pidResult.pid
-      log('Query PID:', pid)
-      return queryMethod(t)
-    }
-
-    const t = serialize
-      ? client.tx({ mode: SERIAL_MODE }, callback)
-      : client.tx(callback)
-
-    const cancelAfterTimeout = new Promise<never>((_, reject) => {
-      log(`Starting timeout: ${timeoutInMs / 1000} seconds`)
-      timeoutId = setTimeout(async () => {
-        if (pid) {
-          try {
-            log('Cancelling query:', pid)
-            const cancelled = await pgpDirect!.one(
-              'select pg_cancel_backend($1)',
-              [pid],
-              (data) => data.pg_cancel_backend
-            )
-            log('Cancelled:', cancelled)
-          } catch (error) {
-            log('Error cancelling query:', error)
-          }
-        }
-        reject(new Error(`Query timed out after ${timeoutInMs}ms`))
-      }, timeoutInMs)
-    })
-
-    try {
-      const res = await Promise.race([t, cancelAfterTimeout])
-      clearTimeout(timeoutId)
-      return res
-    } catch (error) {
-      clearTimeout(timeoutId)
-      throw error
-    }
-  }
-
-  pgpDirect = {
-    ...client,
-    timeout,
-  }
-  return pgpDirect
+  return client
 }
 
 export const SERIAL_MODE = new pgp.txMode.TransactionMode({
