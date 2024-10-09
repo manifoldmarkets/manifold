@@ -99,6 +99,7 @@ import { getBets } from './get-bets'
 import { getLiteUser, getUser } from './get-user'
 import { getUsers } from './get-users'
 import { getMarket } from './get-market'
+import { getMarketProps } from './get-market-props'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
@@ -322,6 +323,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'group/:slug/unblock': unblockGroup,
   groups: getGroups,
   'market/:id': getMarket,
+  'get-market-props': getMarketProps,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'slug/:slug': getMarket,
   'market/:contractId/update': updateMarket,

@@ -7,7 +7,6 @@ import {
 import { getContractParams } from 'common/contract-params'
 import { base64toPoints } from 'common/edge/og'
 import { CASH_SUFFIX } from 'common/envs/constants'
-import { getContract, getContractFromSlug } from 'common/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
 import { pick, sortBy, uniqBy } from 'lodash'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
@@ -20,18 +19,21 @@ import { Title } from 'web/components/widgets/title'
 import { useBetsOnce, useUnfilledBets } from 'web/hooks/use-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useUser } from 'web/hooks/use-user'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { initApiAdmin } from 'web/lib/api/admin-api'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useSweepstakes } from 'web/components/sweepstakes-provider'
+import { unauthedApi } from 'common/util/api'
+import { FullMarket } from 'common/api/market-types'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { username, contractSlug } = ctx.params
-  const adminDb = await initSupabaseAdmin()
-  const contract = await getContractFromSlug(adminDb, contractSlug)
 
+  const contract = (await unauthedApi('slug/:slug', {
+    slug: contractSlug,
+  })) as FullMarket
   if (!contract) {
     return {
       notFound: true,
@@ -50,7 +52,9 @@ export async function getStaticProps(ctx: {
 
   if (contract.token === 'CASH') {
     const manaContract = contract.siblingContractId
-      ? await getContract(adminDb, contract.siblingContractId)
+      ? await unauthedApi('market/:id', {
+          id: contract.siblingContractId,
+        })
       : null
     const slug = manaContract?.slug ?? contractSlug.replace(CASH_SUFFIX, '')
 
@@ -61,15 +65,17 @@ export async function getStaticProps(ctx: {
       },
     }
   }
-
-  const props = await getContractParams(contract, adminDb)
+  const adminKey = await initApiAdmin()
+  const props = await getContractParams(contract, adminKey)
 
   // Fetch sibling contract if it exists
   let cash = undefined
   if (contract.siblingContractId) {
-    const cashContract = await getContract(adminDb, contract.siblingContractId)
+    const cashContract = (await unauthedApi('market/:id', {
+      id: contract.siblingContractId,
+    })) as FullMarket
     if (cashContract) {
-      const params = await getContractParams(cashContract, adminDb)
+      const params = await getContractParams(cashContract, adminKey)
       cash = pick(params, [
         'contract',
         'lastBetTime',
