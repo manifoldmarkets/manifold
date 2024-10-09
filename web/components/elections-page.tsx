@@ -8,7 +8,7 @@ import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
 import { ConditionalMarkets } from './us-elections/contracts/conditional-market/conditional-markets'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
-import { useSweepstakes } from './sweestakes-context'
+import { useSweepstakes } from './sweepstakes-provider'
 
 export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
   'Who will win the Presidential Election?'
@@ -32,7 +32,7 @@ export function USElectionsPage(
     hideTitle,
   } = props
 
-  const { isPlay, setIsPlay } = useSweepstakes()
+  const { prefersPlay, setPrefersPlay } = useSweepstakes()
   if (
     !electionPartyContract ||
     !electionPartyCashContract ||
@@ -69,7 +69,7 @@ export function USElectionsPage(
     )
 
   const currentElectionPartyContract =
-    !isPlay && electionPartyContract
+    !prefersPlay && electionPartyContract
       ? electionPartyCashContract
       : electionPartyContract
 
