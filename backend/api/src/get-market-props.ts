@@ -82,7 +82,7 @@ export const getMarketProps = async (
     and has_yes_shares
     and exists (select 1 from contracts where id = $1 and mechanism = 'cpmm-1')
     order by total_shares_yes desc
-    limit 25;
+    limit 50;
 
     select data
     from user_contract_metrics
@@ -90,7 +90,7 @@ export const getMarketProps = async (
     and has_no_shares 
     and exists (select 1 from contracts where id = $1 and mechanism = 'cpmm-1')
     order by total_shares_no desc
-    limit 25;
+    limit 50;
 
     select data
     from user_contract_metrics
