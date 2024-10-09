@@ -6,7 +6,10 @@ import {
 import { contractColumnsToSelect, isProd, log } from 'shared/utils'
 import { chunk, groupBy, sortBy, sumBy, uniq } from 'lodash'
 import { CPMMMultiContract } from 'common/contract'
-import { calculateMetricsByContractAndAnswer } from 'common/calculate-metrics'
+import {
+  calculateMetricsByContractAndAnswer,
+  isEmptyMetric,
+} from 'common/calculate-metrics'
 import { filterDefined } from 'common/util/array'
 import { hasSignificantDeepChanges } from 'common/util/object'
 import { convertBet } from 'common/supabase/bets'
@@ -159,9 +162,10 @@ export async function updateUserMetricPeriods(
                 freshMetric.answerId === m.answerId
             )
             if (!currentMetric) {
-              log.error(
-                `Current metric not found for user ${user.id}, contract ${freshMetric.contractId}, answer ${freshMetric.answerId}`
-              )
+              !isEmptyMetric(freshMetric) &&
+                log.error(
+                  `Current metric not found for user ${user.id}, contract ${freshMetric.contractId}, answer ${freshMetric.answerId}`
+                )
               return undefined
             }
             if (

@@ -248,6 +248,18 @@ export const calculateMetricsByContractAndAnswer = (
   })
 }
 
+// Produced from 0 filled limit orders
+export const isEmptyMetric = (m: ContractMetric) => {
+  return (
+    m.profit === 0 &&
+    m.invested === 0 &&
+    m.loan === 0 &&
+    m.payout === 0 &&
+    !m.hasShares &&
+    sum(Object.values(m.totalSpent ?? {})) === 0
+  )
+}
+
 export const calculateUserMetrics = (
   contract: Contract,
   bets: Bet[],
