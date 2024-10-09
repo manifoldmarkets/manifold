@@ -100,8 +100,9 @@ export const getMarketProps = async (
     order by profit desc
     limit 10;
 
-    select count(distinct user_id) as count from user_contract_metrics
+    select count(user_id) as count from user_contract_metrics
      where contract_id = $1
+     and answer_id is null
      and has_shares;
 
     with contract as (
