@@ -9,7 +9,7 @@ create table if not exists
     created_time timestamp without time zone default now() not null,
     mana_earned_breakdown jsonb default '{}'::jsonb not null,
     rank_snapshot integer,
-    id uuid default gen_random_uuid () not null
+    id uuid primary key default gen_random_uuid () not null
   );
 
 -- Row Level Security

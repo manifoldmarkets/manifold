@@ -6,7 +6,7 @@ create table if not exists
     contract_id text,
     name text not null,
     ts timestamp with time zone default now(),
-    id bigint not null,
+    id bigint primary key generated always as identity not null,
     comment_id text,
     ad_id text
   );

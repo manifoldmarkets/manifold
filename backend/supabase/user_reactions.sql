@@ -7,7 +7,8 @@ create table if not exists
     content_type text not null,
     content_owner_id text not null,
     created_time timestamp with time zone default now() not null,
-    reaction_type character varying(20)
+    reaction_type character varying(20),
+    constraint primary key (user_id, reaction_id)
   );
 
 -- Row Level Security

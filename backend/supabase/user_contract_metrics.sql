@@ -11,9 +11,54 @@ create table if not exists
     profit numeric,
     has_shares boolean,
     answer_id text,
-    id bigint generated always as identity,
+    id bigint primary key generated always as identity not null,
     profit_adjustment numeric
   );
+
+-- Triggers
+create trigger update_null_answer_metrics_trigger
+after insert
+or
+update on public.user_contract_metrics for each row
+execute function update_null_answer_metrics ();
+
+-- Functions
+create
+or replace function public.update_null_answer_metrics () returns trigger language plpgsql as $function$
+DECLARE
+    sum_has_yes_shares BOOLEAN := FALSE;
+    sum_has_no_shares BOOLEAN := FALSE;
+    sum_has_shares BOOLEAN := FALSE;
+BEGIN
+    -- Check if the new row has a non-null answer_id
+    IF NEW.answer_id IS NOT NULL THEN
+        -- Aggregate boolean fields from rows with the same user_id and contract_id
+        SELECT
+            BOOL_OR(has_yes_shares),
+            BOOL_OR(has_no_shares),
+            BOOL_OR(has_shares)
+        INTO
+            sum_has_yes_shares,
+            sum_has_no_shares,
+            sum_has_shares
+        FROM user_contract_metrics
+        WHERE user_id = NEW.user_id
+          AND contract_id = NEW.contract_id
+          AND answer_id IS NOT NULL;
+        -- Update the row where answer_id is null with the aggregated metrics
+        UPDATE user_contract_metrics
+        SET
+            has_yes_shares = sum_has_yes_shares,
+            has_no_shares = sum_has_no_shares,
+            has_shares = sum_has_shares
+        WHERE user_id = NEW.user_id
+          AND contract_id = NEW.contract_id
+          AND answer_id IS NULL;
+    END IF;
+
+    RETURN NEW;
+END;
+$function$;
 
 -- Row Level Security
 alter table user_contract_metrics enable row level security;
@@ -58,47 +103,3 @@ create index user_contract_metrics_recent_bets on public.user_contract_metrics u
   user_id,
   (((data -> 'lastBetTime'::text))::bigint) desc
 );
-
-create
-or replace function update_null_answer_metrics () returns trigger as $$
-DECLARE
-    sum_has_yes_shares BOOLEAN := FALSE;
-    sum_has_no_shares BOOLEAN := FALSE;
-    sum_has_shares BOOLEAN := FALSE;
-BEGIN
-    -- Check if the new row has a non-null answer_id
-    IF NEW.answer_id IS NOT NULL THEN
-        -- Aggregate boolean fields from rows with the same user_id and contract_id
-        SELECT
-            BOOL_OR(has_yes_shares),
-            BOOL_OR(has_no_shares),
-            BOOL_OR(has_shares)
-        INTO
-            sum_has_yes_shares,
-            sum_has_no_shares,
-            sum_has_shares
-        FROM user_contract_metrics
-        WHERE user_id = NEW.user_id
-          AND contract_id = NEW.contract_id
-          AND answer_id IS NOT NULL;
-        -- Update the row where answer_id is null with the aggregated metrics
-        UPDATE user_contract_metrics
-        SET
-            has_yes_shares = sum_has_yes_shares,
-            has_no_shares = sum_has_no_shares,
-            has_shares = sum_has_shares
-        WHERE user_id = NEW.user_id
-          AND contract_id = NEW.contract_id
-          AND answer_id IS NULL;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ language plpgsql;
-
-create
-or replace trigger update_null_answer_metrics_trigger
-after insert
-or
-update on user_contract_metrics for each row
-execute function update_null_answer_metrics ();

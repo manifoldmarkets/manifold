@@ -6,7 +6,8 @@ create table if not exists
     market_id text not null,
     rating numeric not null,
     content jsonb,
-    created_time timestamp with time zone default now() not null
+    created_time timestamp with time zone default now() not null,
+    constraint primary key (reviewer_id, market_id)
   );
 
 -- Indexes

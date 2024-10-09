@@ -3,7 +3,8 @@ create table if not exists
   dashboard_follows (
     dashboard_id text not null,
     follower_id text not null,
-    created_time timestamp with time zone default now()
+    created_time timestamp with time zone default now(),
+    constraint primary key (dashboard_id, follower_id)
   );
 
 -- Indexes

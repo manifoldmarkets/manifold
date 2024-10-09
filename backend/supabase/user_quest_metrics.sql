@@ -4,7 +4,8 @@ create table if not exists
     user_id text not null,
     score_id text not null,
     score_value numeric not null,
-    idempotency_key text
+    idempotency_key text,
+    constraint primary key (user_id, score_id)
   );
 
 -- Row Level Security

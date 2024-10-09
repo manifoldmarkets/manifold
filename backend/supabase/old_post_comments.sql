@@ -2,11 +2,12 @@
 create table if not exists
   old_post_comments (
     post_id text not null,
-    comment_id text default extensions.uuid_generate_v4 () not null,
+    comment_id text default uuid_generate_v4 () not null,
     data jsonb not null,
     fs_updated_time timestamp without time zone,
     user_id text,
-    created_time timestamp with time zone default now()
+    created_time timestamp with time zone default now(),
+    constraint primary key (post_id, comment_id)
   );
 
 -- Triggers

@@ -3,7 +3,8 @@ create table if not exists
   contract_follows (
     contract_id text not null,
     follow_id text not null,
-    created_time timestamp with time zone default now() not null
+    created_time timestamp with time zone default now() not null,
+    constraint primary key (contract_id, follow_id)
   );
 
 -- Row Level Security

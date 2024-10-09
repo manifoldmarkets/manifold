@@ -5,7 +5,8 @@ create table if not exists
     target1_id text not null,
     target2_id text not null,
     ship_id text default random_alphanumeric (12) not null,
-    created_time timestamp with time zone default now() not null
+    created_time timestamp with time zone default now() not null,
+    constraint primary key (creator_id, ship_id)
   );
 
 -- Row Level Security

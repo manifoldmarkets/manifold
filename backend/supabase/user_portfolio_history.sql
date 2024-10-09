@@ -7,7 +7,7 @@ create table if not exists
     balance numeric,
     total_deposits numeric,
     loan_total numeric,
-    id bigint not null,
+    id bigint primary key generated always as identity not null,
     spice_balance numeric default 0 not null,
     profit numeric,
     cash_investment_value numeric default 0 not null,

@@ -3,7 +3,8 @@ create table if not exists
   contract_liquidity (
     contract_id text not null,
     liquidity_id text not null,
-    data jsonb not null
+    data jsonb not null,
+    constraint primary key (contract_id, liquidity_id)
   );
 
 -- Row Level Security

@@ -4,7 +4,8 @@ create table if not exists
     id text not null,
     contract_id text not null,
     user_id text not null,
-    created_time timestamp with time zone default now() not null
+    created_time timestamp with time zone default now() not null,
+    constraint primary key (id, contract_id, user_id)
   );
 
 -- Indexes

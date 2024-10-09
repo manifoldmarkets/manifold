@@ -9,7 +9,8 @@ create table if not exists
     created_time timestamp with time zone not null,
     likes integer default 0 not null,
     upvotes integer default 0,
-    downvotes integer default 0
+    downvotes integer default 0,
+    constraint primary key (contract_id, comment_id)
   );
 
 -- Triggers

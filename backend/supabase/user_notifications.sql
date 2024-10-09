@@ -3,7 +3,8 @@ create table if not exists
   user_notifications (
     user_id text not null,
     notification_id text not null,
-    data jsonb not null
+    data jsonb not null,
+    constraint primary key (user_id, notification_id)
   );
 
 -- Row Level Security

@@ -4,7 +4,8 @@ create table if not exists
     creator_id text not null,
     target_id text not null,
     like_id text default random_alphanumeric (12) not null,
-    created_time timestamp with time zone default now() not null
+    created_time timestamp with time zone default now() not null,
+    constraint primary key (creator_id, like_id)
   );
 
 -- Row Level Security

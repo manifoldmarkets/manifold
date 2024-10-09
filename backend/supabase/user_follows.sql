@@ -3,7 +3,8 @@ create table if not exists
   user_follows (
     user_id text not null,
     follow_id text not null,
-    created_time timestamp with time zone default now() not null
+    created_time timestamp with time zone default now() not null,
+    constraint primary key (user_id, follow_id)
   );
 
 -- Row Level Security
