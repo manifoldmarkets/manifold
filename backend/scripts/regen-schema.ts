@@ -48,7 +48,7 @@ async function getTableInfo(pg: SupabaseDirectClient, tableName: string) {
       ON d.adrelid = a.attrelid
       AND d.adnum = a.attnum
     WHERE table_schema = 'public' AND table_name = $1
-    ORDER BY ordinal_position`,
+    ORDER BY column_name`,
     [tableName]
   )
 
@@ -156,7 +156,9 @@ async function getTableInfo(pg: SupabaseDirectClient, tableName: string) {
     FROM
       pg_indexes
     WHERE
-      tablename = $1`,
+      tablename = $1
+    ORDER BY
+      indexname`,
     [tableName]
   )
 
