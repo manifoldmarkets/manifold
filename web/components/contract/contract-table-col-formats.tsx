@@ -26,7 +26,7 @@ export const traderColumn = {
         <BountiedContractComments contractId={contract.id} />
       </div>
     ) : (
-      <div className="text-ink-700 ml-1 mr-7 h-min  align-top">
+      <div className="text-ink-700 mr-7 h-min  align-top">
         <Row className="align-center text-ink-700 h-full shrink-0 items-center justify-end gap-0.5">
           <UserIcon className="text-ink-400 h-4 w-4" />
           {shortenNumber(uniqueBettorCount ?? 0)}
@@ -47,7 +47,7 @@ export const coinOrTierColumn = {
           <span>
             <Tooltip
               text={SWEEPIES_MARKET_TOOLTIP}
-              className=" relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+              className="relative inline-flex h-[1em] w-[1.1em] items-baseline"
             >
               <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
             </Tooltip>
@@ -72,7 +72,7 @@ export const coinOrTierColumn = {
       </>
     )
   },
-  width: 'w-[30px]',
+  width: 'w-[10px]',
 }
 
 export const probColumn = {

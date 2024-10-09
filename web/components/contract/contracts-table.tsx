@@ -37,7 +37,7 @@ export function ContractsTable(props: {
     contracts,
     onContractClick,
     highlightContractIds,
-    columns = [traderColumn, probColumn, coinOrTierColumn, actionColumn],
+    columns = [coinOrTierColumn, traderColumn, probColumn, actionColumn],
     hideAvatar,
   } = props
 
