@@ -32,6 +32,7 @@ export function TwombaToggle(props: {
           ? null
           : 'This question does not have sweepstakes enabled.'
       }
+      placement="bottom"
     >
       <button
         className={clsx(
