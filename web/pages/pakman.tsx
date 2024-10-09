@@ -78,7 +78,7 @@ export function PromotionalPanel(props: {
       </Col>
 
       <div className={`mx-8 h-[1px] bg-indigo-300 sm:hidden`} />
-      <Col className="relative w-full items-center px-16 py-6  text-white">
+      <Col className="sm: relative w-full items-center px-8 py-6 text-white  sm:px-16">
         {!isMobile && (
           <div className="absolute -left-0.5 bottom-0 z-20 h-full">
             <SquiggleVertical className={clsx(`h-full text-indigo-300`)} />
@@ -93,15 +93,15 @@ export function PromotionalPanel(props: {
             Register today and get a limited time offer in store!
           </div>
           <Row
-            className={`relative mx-auto mt-4 items-center gap-2 rounded-xl border border-indigo-300 p-5 text-4xl`}
+            className={`md::text-4xl relative mx-auto mt-4 items-center gap-2 rounded-xl border border-indigo-300 p-5 text-2xl `}
           >
             <CoinNumber
               amount={5000}
               // isInline
               numberType="short"
-              className="font-bold text-white"
-            />{' '}
-            <div className="text-xl">+</div>{' '}
+              className=" font-bold text-white"
+            />
+            <div className="text-xl">+</div>
             <CoinNumber
               amount={40}
               // isInline
