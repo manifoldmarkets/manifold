@@ -228,11 +228,10 @@ function DonationBox(props: {
       <label className="text-ink-700 mb-2 block text-sm">Amount</label>
       <AmountInput
         error={!!error}
-        min={min}
         amount={amount}
         onChangeAmount={setAmount}
         label={<SweepiesCoin />}
-        isSweepies
+        allowFloat={true}
       />
 
       {error && (
