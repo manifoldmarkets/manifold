@@ -44,7 +44,7 @@ export async function getStaticPaths() {
 
 export async function getStaticProps(ctx: { params: { charitySlug: string } }) {
   const { charitySlug } = ctx.params
-  const charity = charities.find((c) => c.slug === charitySlug?.toLowerCase())
+  const charity = charities.find((c) => c.id === charitySlug?.toLowerCase())
   if (!charity) {
     return {
       props: {
