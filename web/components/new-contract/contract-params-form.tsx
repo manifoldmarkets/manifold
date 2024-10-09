@@ -215,7 +215,7 @@ export function ContractParamsForm(props: {
     'new-selected-groups' + paramsKey
   )
 
-  const defaultBountyAmount = 500
+  const defaultBountyAmount = 1000
   const [bountyAmount, setBountyAmount] = usePersistentLocalState<
     number | undefined
   >(defaultBountyAmount, 'new-bounty' + paramsKey)

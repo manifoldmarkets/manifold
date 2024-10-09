@@ -101,10 +101,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     idempotencyKey,
   } = validateMarketBody(body)
 
-  if (outcomeType === 'BOUNTIED_QUESTION') {
-    throw new APIError(400, 'Bountied questions are not currently enabled.')
-  }
-
   const userId = auth.uid
 
   const pg = createSupabaseDirectClient()
