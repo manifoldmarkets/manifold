@@ -104,20 +104,6 @@ export function TwombaHeaderActions(props: {
       })
   }, [user?.id, followingOpen])
 
-  const convertToCashMarket = async () => {
-    try {
-      await api('create-cash-contract', {
-        manaContractId: currentContract.id,
-        subsidyAmount: 100, // You may want to make this configurable
-      })
-      toast.success('Market converted to cash market successfully')
-      router.reload()
-    } catch (error) {
-      toast.error('Failed to convert market to cash market')
-      console.error(error)
-    }
-  }
-
   const dropdownItems = [
     ...(user
       ? [
@@ -233,17 +219,6 @@ export function TwombaHeaderActions(props: {
             className: isBlocked
               ? ''
               : 'text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-100 dark:hover:bg-ink-100',
-          },
-        ]
-      : []),
-    ...(isAdmin && !playContract.siblingContractId
-      ? [
-          {
-            name: 'Sweepify!',
-            onClick: convertToCashMarket,
-            icon: <FaDollarSign className="h-4 w-4" />,
-            className:
-              'text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-100 dark:hover:bg-ink-100',
           },
         ]
       : []),
