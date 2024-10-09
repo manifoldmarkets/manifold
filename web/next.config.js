@@ -64,11 +64,7 @@ module.exports = {
         destination: '/election',
         permanent: true,
       },
-      {
-        source: '/pakman',
-        destination: '/election',
-        permanent: false,
-      },
+
       {
         source: '/api',
         destination: API_DOCS_URL,
