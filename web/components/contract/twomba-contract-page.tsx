@@ -71,7 +71,6 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { useRouter } from 'next/router'
-import { useIsClient } from 'web/hooks/use-is-client'
 
 export function TwombaContractPageContent(props: ContractParams) {
   const {
@@ -101,31 +100,38 @@ export function TwombaContractPageContent(props: ContractParams) {
   const liveContract =
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
   const user = useUser()
-  const isClient = useIsClient()
 
   // Read and set play state from the query if the user hasn't set their preference
   useEffect(() => {
-    const playQuery = router.query.play
     if (
       isPlay !== undefined || // user has set their preference
       prefersPlay !== undefined || // user has set their preference
-      !isClient || // not ready yet
-      playQuery === undefined // nothing from the query
+      !router.isReady // not ready yet
     )
       return
-    const prefersSweepsFromQuery = playQuery === 'false'
-    const prefersPlayFromQuery = playQuery === 'true'
-    if (prefersSweepsFromQuery && sweepsIsPossible && isPlay) {
-      setIsPlay(false)
-    } else if (prefersPlayFromQuery && !isPlay) {
+    const playQuery = router.query.play
+    const queryIndicatesSweeps = playQuery === 'false'
+    const queryIndicatesPlay =
+      playQuery === 'true' ||
+      (playQuery === undefined &&
+        !sweepsIsPossible &&
+        prefersPlay === undefined)
+    if (queryIndicatesSweeps) {
+      if (sweepsIsPossible && isPlay) {
+        setIsPlay(false)
+      } else if (!sweepsIsPossible && !isPlay) {
+        setIsPlay(true)
+      }
+    } else if (queryIndicatesPlay && !isPlay) {
       setIsPlay(true)
     }
-  }, [isPlay, isClient, router.query, prefersPlay])
+  }, [isPlay, router.query, prefersPlay])
 
   // When the user changes their preference, update the play state and set the query
   useEffect(() => {
     if (prefersPlay === undefined) return
-    const shouldBePlay = prefersPlay && !isPlay
+    const shouldBePlay =
+      (prefersPlay && !isPlay) || (!sweepsIsPossible && !isPlay)
     const shouldBeSweeps =
       !prefersPlay &&
       (isPlay === undefined || isPlay === true) &&
