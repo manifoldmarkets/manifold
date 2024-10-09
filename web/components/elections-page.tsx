@@ -32,7 +32,7 @@ export function USElectionsPage(
     hideTitle,
   } = props
 
-  const { prefersPlay, setPrefersPlay } = useSweepstakes()
+  const { prefersPlay } = useSweepstakes()
   if (
     !electionPartyContract ||
     !electionPartyCashContract ||

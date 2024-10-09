@@ -2,7 +2,7 @@ import React, { createContext, useContext } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 type SweepstakesContextType = {
-  prefersPlay: boolean
+  prefersPlay: boolean | undefined
   setPrefersPlay: (prefersPlay: boolean) => void
 }
 
@@ -13,7 +13,9 @@ const SweepstakesProvider = createContext<SweepstakesContextType | undefined>(
 export const Sweepstakes: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [prefersPlay, setPrefersPlay] = usePersistentLocalState(false, 'play')
+  const [prefersPlay, setPrefersPlay] = usePersistentLocalState<
+    boolean | undefined
+  >(undefined, 'play')
   return (
     <SweepstakesProvider.Provider value={{ prefersPlay, setPrefersPlay }}>
       {children}
