@@ -25,7 +25,7 @@ BEGIN
     LIMIT batch_size
   )
   UPDATE contracts c
-  SET tier = tu.new_tier
+  SET data = c.data || jsonb_build_object('marketTier', tu.new_tier)
   FROM to_update tu
   WHERE c.id = tu.id
   AND (c.tier IS DISTINCT FROM tu.new_tier OR c.tier IS NULL);
