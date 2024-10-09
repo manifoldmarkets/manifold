@@ -78,7 +78,7 @@ export function PromotionalPanel(props: {
       </Col>
 
       <div className={`mx-8 h-[1px] bg-indigo-300 sm:hidden`} />
-      <Col className="sm: relative w-full items-center px-8 py-6 text-white  sm:px-16">
+      <Col className="relative w-full items-center px-8 py-6 text-white sm:px-16">
         {!isMobile && (
           <div className="absolute -left-0.5 bottom-0 z-20 h-full">
             <SquiggleVertical className={clsx(`h-full text-indigo-300`)} />
