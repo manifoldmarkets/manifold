@@ -15,14 +15,19 @@ import Link from 'next/link'
 import SquiggleVertical from 'web/lib/icons/squiggle-vertical.svg'
 import SquiggleHorizontal from 'web/lib/icons/squiggle-horizontal.svg'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import Custom404 from './404'
+import { ENV } from 'common/envs/constants'
 
 const revalidate = 60
 
-export async function getStaticPaths() {
-  return { paths: [], fallback: 'blocking' }
-}
-
 export async function getStaticProps() {
+  if (ENV === 'DEV') {
+    return {
+      props: {},
+      revalidate,
+    }
+  }
+
   const electionsPageProps = await getElectionsPageProps()
   return {
     props: electionsPageProps,
@@ -31,7 +36,9 @@ export async function getStaticProps() {
 }
 
 export default function Pakman(props: ElectionsPageProps) {
-  const { theme } = useTheme()
+  if (Object.keys(props).length === 0) {
+    return <Custom404 />
+  }
 
   return (
     <Page trackPageView="Pakman page">
