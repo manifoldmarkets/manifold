@@ -105,7 +105,7 @@ export function PromotionalPanel(props: {
             <CoinNumber
               amount={40}
               // isInline
-              coinType={'spice'}
+              coinType={'sweepies'}
               className="font-bold text-white"
             />{' '}
             <div
