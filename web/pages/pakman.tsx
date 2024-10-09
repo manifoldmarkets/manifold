@@ -5,7 +5,7 @@ import { SEO } from 'web/components/SEO'
 import { getElectionsPageProps } from 'web/lib/politics/home'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 import Image from 'next/image'
-import { formatMoneyUSD } from 'common/util/format'
+import { formatMoneyUSD, formatSweepies } from 'common/util/format'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import { Row } from 'web/components/layout/row'
 import { buttonClass } from 'web/components/buttons/button'
@@ -88,7 +88,7 @@ export function PromotionalPanel(props: {
         <div className="text-2xl">
           Welcome, from <b>{welcomerName}</b>
         </div>
-        <Col className="dark:text-ink-800 w-full items-center text-lg text-indigo-300">
+        <Col className="w-full items-center text-lg text-indigo-300">
           <div className="mx-auto mt-2">
             Register today and get a limited time offer in store!
           </div>
@@ -109,13 +109,22 @@ export function PromotionalPanel(props: {
               className="font-bold text-white"
             />{' '}
             <div
-              className={`absolute -bottom-4  left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-indigo-300 px-3 text-lg text-indigo-700`}
+              className={`absolute bottom-[-14px]  left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-indigo-300 px-3 text-lg text-indigo-700`}
             >
               for only <b>{formatMoneyUSD(20)}</b>
             </div>
           </Row>
+          <div className="mt-5">
+            <CoinNumber
+              amount={1}
+              coinType={'sweepies'}
+              isInline
+              numberType="short"
+            />{' '}
+            → {formatMoneyUSD(1)} USD
+          </div>
 
-          <div className="group relative z-30 mt-10">
+          <div className="group relative z-30 mt-8">
             <Link
               className={clsx(
                 buttonClass('2xl', 'gradient-pink'),
