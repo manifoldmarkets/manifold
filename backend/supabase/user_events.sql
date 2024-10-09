@@ -7,7 +7,7 @@ create table if not exists
     data jsonb not null,
     id bigint primary key generated always as identity not null,
     name text not null,
-    ts timestamp with time zone default now(),
+    ts timestamp with time zone default now() not null,
     user_id text
   );
 

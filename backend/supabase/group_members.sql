@@ -22,7 +22,7 @@ execute function increment_group_members ();
 
 -- Functions
 create
-or replace function public.decrement_group_members () returns trigger language plpgsql as $function$ begin 
+or replace function public.decrement_group_members () returns trigger language plpgsql as $function$ begin
     update groups set total_members = total_members - 1 where id = old.group_id;
     return old;
 end $function$;

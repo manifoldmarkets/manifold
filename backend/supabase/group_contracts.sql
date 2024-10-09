@@ -8,7 +8,7 @@ create table if not exists
 
 -- Foreign Keys
 alter table group_contracts
-add constraint group_contracts_group_id_fke foreign key (group_id) references groups (id) not valid;
+add constraint group_contracts_group_id_fkey foreign key (group_id) references groups (id) on update cascade;
 
 -- Row Level Security
 alter table group_contracts enable row level security;
