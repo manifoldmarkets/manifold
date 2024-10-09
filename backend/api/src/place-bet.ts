@@ -694,6 +694,17 @@ export const executeNewBetResult = async (
     )
     betsToInsert.push(...otherBetsToInsert)
   }
+  const isUniqueBettor =
+    (contract.outcomeType !== 'NUMBER' || firstBetInMultiBet) &&
+    !contractMetrics.find((m) => m.userId === user.id)
+  const lastBetTime =
+    maxBy(betsToInsert, (b) => b.createdTime)?.createdTime ?? Date.now()
+  const sharedContractUpdates: Partial<MarketContract> = removeUndefinedProps({
+    lastBetTime,
+    volume: contract.volume + sumBy(betsToInsert, (b) => Math.abs(b.amount)),
+    lastUpdatedTime: lastBetTime,
+    uniqueBettorCount: contract.uniqueBettorCount + (isUniqueBettor ? 1 : 0),
+  })
 
   if (newBet.answerId) {
     // Multi-cpmm-1 contract
@@ -707,9 +718,8 @@ export const executeNewBetResult = async (
         prob,
       })
     }
+    await updateContract(pgTrans, contract.id, sharedContractUpdates)
   } else {
-    const lastBetTime =
-      maxBy(betsToInsert, (b) => b.createdTime)?.createdTime ?? Date.now()
     await updateContract(
       pgTrans,
       contract.id,
@@ -718,11 +728,7 @@ export const executeNewBetResult = async (
         p: newP,
         totalLiquidity: newTotalLiquidity,
         prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
-        lastBetTime,
-        volume:
-          contract.volume + sumBy(betsToInsert, (b) => Math.abs(b.amount)),
-        lastUpdatedTime: lastBetTime,
-        uniqueBettorCount: contract.uniqueBettorCount + (bonuxTxn ? 1 : 0),
+        ...sharedContractUpdates,
       })
     )
   }
