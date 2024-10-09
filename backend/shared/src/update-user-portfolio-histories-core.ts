@@ -308,9 +308,22 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
   }
   const contractIds = uniq(metrics.map((m) => m.contractId))
   const answerIds = filterDefined(uniq(metrics.map((m) => m.answerId)))
+  const selectContracts = `select ${contractColumnsToSelect} from contracts where id in ($1:list);`
+  if (answerIds.length === 0) {
+    const contracts = await pg.map(
+      selectContracts,
+      [contractIds],
+      convertContract
+    )
+    return {
+      metrics,
+      contracts,
+      answers: [],
+    }
+  }
   const results = await pg.multi(
     `
-    select ${contractColumnsToSelect} from contracts where id in ($1:list);
+    ${selectContracts}
     select * from answers where id in ($2:list);
     `,
     [contractIds, answerIds]
