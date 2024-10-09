@@ -68,34 +68,6 @@ type MoneyCashoutPagesType =
 
 type ManaCashoutPagesType = 'custom-mana'
 
-export function LocationBlocked() {
-  return (
-    <Col>
-      <Row className="items-center gap-4">
-        <LocationBlockedIcon height={16} className="fill-red-500" />
-        <Col className="gap-2">
-          <div className="text-2xl">Your location is blocked!</div>
-          <p className="text-ink-700 text-sm">
-            You are unable to redeem at the moment.
-          </p>
-        </Col>
-      </Row>
-      <Button
-        color={'indigo-outline'}
-        loading={loadingMonitorStatus}
-        disabled={loadingMonitorStatus}
-        onClick={() => requestLocationThenFetchMonitorStatus()}
-        className={'mt-2 w-full'}
-      >
-        Refresh status
-      </Button>
-      {monitorStatus === 'error' && (
-        <Row className={'text-error'}>{monitorStatusMessage}</Row>
-      )}
-    </Col>
-  )
-}
-
 export default function CashoutPage() {
   const user = useUser()
   const privateUser = usePrivateUser()
