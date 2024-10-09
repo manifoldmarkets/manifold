@@ -32,8 +32,6 @@ import { TwombaContractInfoDialog } from './twomba-contract-info-dialog'
 import { WatchMarketModal } from './watch-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
 import { isAdminId } from 'common/envs/constants'
-import { FaDollarSign } from 'react-icons/fa'
-import router from 'next/router'
 
 export function TwombaHeaderActions(props: {
   playContract: Contract
