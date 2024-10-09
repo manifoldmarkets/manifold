@@ -7,7 +7,6 @@ import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { UsOnlyDisclaimer } from 'web/components/twomba/us-only-disclaimer'
-import { GoogleSignInButton } from 'web/components/buttons/sign-up-button'
 import { Button } from 'web/components/buttons/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
