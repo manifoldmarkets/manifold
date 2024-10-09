@@ -33,7 +33,10 @@ export async function getStaticProps(ctx: {
 
   const contract = (await unauthedApi('slug/:slug', {
     slug: contractSlug,
-  })) as FullMarket
+  }).catch((e) => {
+    console.error('Error fetching contract', e)
+    return null
+  })) as FullMarket | null
   if (!contract) {
     return {
       notFound: true,
@@ -52,9 +55,12 @@ export async function getStaticProps(ctx: {
 
   if (contract.token === 'CASH') {
     const manaContract = contract.siblingContractId
-      ? await unauthedApi('market/:id', {
+      ? ((await unauthedApi('market/:id', {
           id: contract.siblingContractId,
-        })
+        }).catch((e) => {
+          console.error('Error fetching contract', e)
+          return null
+        })) as FullMarket | null)
       : null
     const slug = manaContract?.slug ?? contractSlug.replace(CASH_SUFFIX, '')
 
@@ -73,7 +79,10 @@ export async function getStaticProps(ctx: {
   if (contract.siblingContractId) {
     const cashContract = (await unauthedApi('market/:id', {
       id: contract.siblingContractId,
-    })) as FullMarket
+    }).catch((e) => {
+      console.error('Error fetching contract', e)
+      return null
+    })) as FullMarket | null
     if (cashContract) {
       const params = await getContractParams(cashContract, adminKey)
       cash = pick(params, [
