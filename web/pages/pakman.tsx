@@ -119,7 +119,7 @@ export function PromotionalPanel(props: {
             </Link>
             <div
               className={clsx(
-                `text-ink-900 rounded-md bg-amber-300`,
+                `text-ink-900 rounded-md bg-teal-300 dark:bg-teal-700`,
                 'px-6 py-3 text-xl font-semibold'
               )}
             >
