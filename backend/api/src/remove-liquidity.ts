@@ -15,6 +15,10 @@ import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 
 export const removeLiquidity: APIHandler<
   'market/:contractId/remove-liquidity'
@@ -25,6 +29,17 @@ export const removeLiquidity: APIHandler<
 
     if (contract.mechanism !== 'cpmm-1')
       throw new APIError(403, 'Only cpmm-1 is supported')
+
+    if (
+      contract.token === 'CASH' &&
+      auth.uid !== HOUSE_LIQUIDITY_PROVIDER_ID &&
+      auth.uid !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+    ) {
+      throw new APIError(
+        403,
+        'Only Manifold account is allowed to remove sweepcash liquidity. Complain to Sinclair'
+      )
+    }
 
     const user = await getUser(auth.uid, pgTrans)
 
