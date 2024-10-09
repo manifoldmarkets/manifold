@@ -18,6 +18,10 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 const revalidate = 60
 
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
 export async function getStaticProps() {
   const electionsPageProps = await getElectionsPageProps()
   return {
