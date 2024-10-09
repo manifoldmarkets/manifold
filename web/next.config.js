@@ -65,6 +65,11 @@ module.exports = {
         permanent: true,
       },
       {
+        source: '/pakman',
+        destination: '/election',
+        permanent: false,
+      },
+      {
         source: '/api',
         destination: API_DOCS_URL,
         permanent: false,
