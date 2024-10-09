@@ -525,7 +525,6 @@ export function SupabaseSearch(props: {
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
             columns={buildArray([
-              coinOrTierColumn,
               traderColumn,
               tierColumn,
               probColumn,
