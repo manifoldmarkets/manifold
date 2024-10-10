@@ -55,7 +55,10 @@ export const useSavedContractMetrics = (
         answerId,
       })
     )
-    if (!metrics.length) return
+    if (!metrics.length) {
+      setSavedMetrics([])
+      return
+    }
     setSavedMetrics(updateMetricsWithNewProbs(metrics))
   })
 
