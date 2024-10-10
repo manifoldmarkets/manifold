@@ -1,8 +1,4 @@
-import {
-  removeCpmmLiquidity,
-  MINIMUM_LIQUIDITY,
-  FRACTION_OF_POOL_MIN,
-} from 'common/calculate-cpmm'
+import { removeCpmmLiquidity } from 'common/calculate-cpmm'
 import { getTierFromLiquidity } from 'common/tier'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import { runShortTrans } from 'shared/short-transaction'
@@ -30,23 +26,21 @@ export const removeLiquidity: APIHandler<
     if (contract.mechanism !== 'cpmm-1')
       throw new APIError(403, 'Only cpmm-1 is supported')
 
-    if (
-      contract.token === 'CASH' &&
-      auth.uid !== HOUSE_LIQUIDITY_PROVIDER_ID &&
-      auth.uid !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-    ) {
-      throw new APIError(
-        403,
-        'Only Manifold account is allowed to remove sweepcash liquidity. Complain to Sinclair'
-      )
+    // TODO: this should be based on liquidity providers instead ...
+    if (contract.token === 'CASH') {
+      if (
+        auth.uid !== HOUSE_LIQUIDITY_PROVIDER_ID &&
+        auth.uid !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+      ) {
+        throw new APIError(
+          403,
+          'Only Manifold account is allowed to remove sweepcash liquidity. Complain to Sinclair'
+        )
+      }
+    } else {
+      if (auth.uid !== contract.creatorId)
+        throw new APIError(403, 'You are not the creator of this market')
     }
-
-    const user = await getUser(auth.uid, pgTrans)
-
-    if (!user) throw new APIError(401, 'Your account was not found')
-
-    if (auth.uid !== contract.creatorId)
-      throw new APIError(403, 'You are not the creator of this market')
 
     const { subsidyPool: pendingLiquidity } = contract
 
