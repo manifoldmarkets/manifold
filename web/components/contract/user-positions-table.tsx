@@ -19,7 +19,7 @@ import {
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { countBy, first, orderBy, partition, uniqBy } from 'lodash'
-import { memo, ReactNode, useEffect, useMemo, useState } from 'react'
+import { memo, ReactNode, useEffect, useState } from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -325,28 +325,22 @@ const BinaryUserPositionsTable = memo(
     const followedUsers = useFollows(currentUser?.id)
     const isCashContract = contract.token === 'CASH'
 
-    const [leftColumnPositions, rightColumnPositions] = useMemo(
-      () =>
-        partition(
-          sortBy === 'profit' ? positionsByProfit ?? [] : positionsByShares,
-          (cm) => (sortBy === 'profit' ? cm.profit >= 0 : cm.hasYesShares)
-        ),
-      [
-        JSON.stringify(positionsByProfit),
-        JSON.stringify(positionsByShares),
-        sortBy,
-      ]
+    const [leftColumnPositions, rightColumnPositions] = partition(
+      sortBy === 'profit' ? positionsByProfit ?? [] : positionsByShares,
+      (cm) => (sortBy === 'profit' ? cm.profit >= 0 : cm.hasYesShares)
     )
 
-    const visibleLeftPositions = leftColumnPositions.slice(
-      page * pageSize,
-      (page + 1) * pageSize
-    )
+    const visibleLeftPositions = orderBy(
+      leftColumnPositions,
+      (cm) => (sortBy === 'profit' ? cm.profit : cm.totalShares['YES']),
+      'desc'
+    ).slice(page * pageSize, (page + 1) * pageSize)
 
-    const visibleRightPositions = rightColumnPositions.slice(
-      page * pageSize,
-      (page + 1) * pageSize
-    )
+    const visibleRightPositions = orderBy(
+      rightColumnPositions,
+      (cm) => (sortBy === 'profit' ? -cm.profit : cm.totalShares['NO']),
+      'desc'
+    ).slice(page * pageSize, (page + 1) * pageSize)
 
     const largestColumnLength =
       leftColumnPositions.length > rightColumnPositions.length
