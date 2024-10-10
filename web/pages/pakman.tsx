@@ -15,6 +15,7 @@ import SquiggleVertical from 'web/lib/icons/squiggle-vertical.svg'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import Custom404 from './404'
 import { ENV } from 'common/envs/constants'
+import { useTracking } from 'web/hooks/use-tracking'
 
 const revalidate = 60
 
@@ -34,6 +35,8 @@ export async function getStaticProps() {
 }
 
 export default function Pakman(props: ElectionsPageProps) {
+  useTracking('pakman page view')
+
   if (Object.keys(props).length === 0) {
     return <Custom404 />
   }
@@ -41,8 +44,8 @@ export default function Pakman(props: ElectionsPageProps) {
   return (
     <Page trackPageView="Pakman page">
       <SEO
-        title="Pakman Manifold "
-        description="The David Pakman Show's Manifold Landing Page."
+        title="Pakman Manifold"
+        description="The David Pakman Show on Manifold."
         url="/pakman"
       />
       <PromotionalPanel
