@@ -97,7 +97,8 @@ export default function Sidebar(props: {
     >
       <ManifoldLogo className="pb-3 pt-6" />
 
-      {user === undefined && <div className="h-[56px]" />}
+      {/* causes jumping around in signed out sidebar */}
+      {/* {user === undefined && <div className="h-[56px]" />} */}
 
       {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
