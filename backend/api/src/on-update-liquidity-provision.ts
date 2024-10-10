@@ -24,7 +24,7 @@ export const onCreateLiquidityProvision = async (
 
   log(`onCreateLiquidityProvision: ${JSON.stringify(liquidity)}`)
 
-  if (liquidity.amount <= 0) return
+  if (liquidity.amount < 1) return
 
   const liquidityProvider = await getUser(liquidity.userId)
   if (!liquidityProvider) throw new Error('Could not find liquidity provider')
