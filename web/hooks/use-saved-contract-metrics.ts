@@ -67,7 +67,9 @@ export const useSavedContractMetrics = (
     topics: [`contract/${contract.id}/user-metrics/${user?.id}`],
     onBroadcast: (msg) => {
       const metrics = msg.data.metrics as ContractMetric[]
-      setSavedMetrics(metrics)
+      setSavedMetrics(
+        metrics.filter((m) => (answerId ? m.answerId === answerId : true))
+      )
     },
     enabled: !!user?.id,
   })
