@@ -31,7 +31,7 @@ export async function getContractParams(
   const isNumber = market.outcomeType === 'NUMBER'
   const numberContractBetCount = async () =>
     unauthedApi('unique-bet-group-count', {
-      contractId: contract.id,
+      contractId: market.id,
     }).then((res) => res.count)
 
   const [
