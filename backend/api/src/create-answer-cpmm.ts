@@ -42,8 +42,11 @@ import { getTierFromLiquidity } from 'common/tier'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { runShortTrans } from 'shared/short-transaction'
-import { LimitBet } from 'common/bet'
+import { LimitBet, maker } from 'common/bet'
 import { followContractInternal } from 'api/follow-contract'
+import { ContractMetric } from 'common/contract-metric'
+import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
+import { filterDefined } from 'common/util/array'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -296,8 +299,8 @@ async function createAnswerAndSumAnswersToOne(
     newAnswer,
     updatedOtherAnswer,
   ]
-  const { unfilledBets, balanceByUserId } =
-    await getUnfilledBetsAndUserBalances(pgTrans, contract)
+  const { unfilledBets, balanceByUserId, contractMetrics } =
+    await getUnfilledBetsAndUserBalances(pgTrans, contract, user.id)
 
   // Cancel limit orders on Other answer.
   const [unfilledBetsOnOther, unfilledBetsExcludingOther] = partition(
@@ -348,18 +351,21 @@ async function createAnswerAndSumAnswersToOne(
 
   const answerUpdates: Pick<Answer, 'id' | 'poolNo' | 'poolYes' | 'prob'>[] = []
   const allOrdersToCancel: LimitBet[] = []
+  const makerIDsByTakerBetId: Record<string, maker[]> = {}
+  let allUpdatedMetrics: ContractMetric[] = []
   for (const result of betResults) {
     const { answer, bet, makers, ordersToCancel } = result
 
-    const betRow = await insertBet(
+    const { insertedBet: betRow, updatedMetrics } = await insertBet(
       {
         userId: user.id,
         isApi: false,
         ...bet,
       },
-      pgTrans
+      pgTrans,
+      contractMetrics
     )
-
+    allUpdatedMetrics = updatedMetrics
     const pool = newPoolsByAnswer[answer.id]
     const { YES: poolYes, NO: poolNo } = pool
     const prob = getCpmmProbability(pool, 0.5)
@@ -369,10 +375,13 @@ async function createAnswerAndSumAnswersToOne(
       poolNo,
       prob,
     })
+    if (makers) {
+      makerIDsByTakerBetId[betRow.bet_id] = makers
+    }
 
-    await updateMakers(makers, betRow.bet_id, contract, pgTrans)
     allOrdersToCancel.push(...ordersToCancel)
   }
+  await updateMakers(makerIDsByTakerBetId, contract, allUpdatedMetrics, pgTrans)
 
   log('inserting new answer')
   await insertAnswer(pgTrans, newAnswer)
@@ -409,6 +418,7 @@ async function convertOtherAnswerShares(
   )
 
   const betsByUserId = groupBy(bets, (b) => b.userId)
+  const newBets: (CandidateBet & { userId: string })[] = []
 
   // Gain YES shares in new answer for each YES share in Other.
   for (const [userId, bets] of Object.entries(betsByUserId)) {
@@ -436,12 +446,11 @@ async function convertOtherAnswerShares(
         isRedemption: true,
         isApi: false,
       }
-      await insertBet(freeYesSharesBet, pgTrans)
+      newBets.push(freeYesSharesBet)
     }
   }
 
   // Convert NO shares in Other answer to YES shares in all other answers (excluding new answer).
-  const newBets: (CandidateBet & { userId: string })[] = []
   for (const [userId, bets] of Object.entries(betsByUserId)) {
     const now = Date.now()
     const noPosition = sumBy(
@@ -497,6 +506,14 @@ async function convertOtherAnswerShares(
       }
     }
   }
-  await bulkInsertBets(newBets, pgTrans)
+  const contractMetrics = await getContractMetrics(
+    pgTrans,
+    newBets.map((b) => b.userId),
+    contractId,
+    filterDefined(newBets.map((b) => b.answerId)),
+    true
+  )
+
+  await bulkInsertBets(newBets, pgTrans, contractMetrics)
   return answers
 }

@@ -32,6 +32,7 @@ import {
 import { capitalize, partition } from 'lodash'
 import { KYCStats } from 'web/components/stats/kyc-stats'
 import { formatTimeShort } from 'web/lib/util/time'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export const getStaticProps = async () => {
   try {
@@ -49,8 +50,18 @@ export const getStaticProps = async () => {
       ignoreCategories: ['RECLAIM_MANA'],
       limitDays: 100,
     })
+    const { total: totalRedeemable } = await api(
+      'get-total-redeemable-prize-cash',
+      {}
+    )
     return {
-      props: { stats, fromBankSummary, toBankSummary, manaSupplyOverTime },
+      props: {
+        stats,
+        fromBankSummary,
+        toBankSummary,
+        manaSupplyOverTime,
+        totalRedeemable,
+      },
       revalidate: 60 * 60, // One hour
     }
   } catch (err) {
@@ -64,8 +75,15 @@ export default function Analytics(props: {
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
+  totalRedeemable: number
 }) {
-  const { stats, manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+  const {
+    stats,
+    manaSupplyOverTime,
+    fromBankSummary,
+    toBankSummary,
+    totalRedeemable,
+  } = props
 
   if (!stats) {
     return null
@@ -82,6 +100,7 @@ export default function Analytics(props: {
         manaSupplyOverTime={manaSupplyOverTime}
         fromBankSummary={fromBankSummary}
         toBankSummary={toBankSummary}
+        totalRedeemable={totalRedeemable}
       />
     </Page>
   )
@@ -92,8 +111,14 @@ export function CustomAnalytics(props: {
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
+  totalRedeemable: number
 }) {
-  const { manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+  const {
+    manaSupplyOverTime,
+    fromBankSummary,
+    toBankSummary,
+    totalRedeemable,
+  } = props
   const [stats, setStats] = useState(props.stats)
 
   const dataFor = useCallback(dataForStats(stats), [stats])
@@ -226,7 +251,7 @@ export function CustomAnalytics(props: {
       <DailyChart values={dataFor('engaged_users')} />
       <Spacer h={8} />
       <Title>Mana supply</Title>
-      <div className="text-ink-700 mb-4 grid grid-cols-3 gap-y-1">
+      <div className="text-ink-700 mb-4 grid grid-cols-3 justify-items-end gap-y-1">
         <div className="text-ink-800 mb-2">Supply Today</div>
         <div className="text-ink-800 mb-2">Mana</div>
         <div className="text-ink-800 mb-2">Prize Cash</div>
@@ -237,11 +262,6 @@ export function CustomAnalytics(props: {
         </div>
         <div className="font-semibold">
           {formatSweepies(currentSupply.cash_balance)}
-        </div>
-
-        <div>Prize point balances</div>
-        <div className="col-span-2 font-semibold">
-          ₽{formatWithCommas(currentSupply.spice_balance)}
         </div>
 
         <div>Investment</div>
@@ -267,15 +287,6 @@ export function CustomAnalytics(props: {
           {formatSweepies(currentSupply.amm_cash_liquidity)}
         </div>
 
-        <div className="col-span-full h-2" />
-        <div>Unaccounted since yesterday</div>
-        <div className="font-semibold">
-          {formatMoney(unaccountedDifference)}
-        </div>
-        <div className="font-semibold">
-          {formatSweepies(cashUnaccountedDifference)}
-        </div>
-
         <div>Total</div>
         <div className="font-semibold">
           {formatMoney(currentSupply.total_value)}
@@ -283,17 +294,48 @@ export function CustomAnalytics(props: {
         <div className="font-semibold">
           {formatSweepies(currentSupply.total_cash_value)}
         </div>
+
+        <div>Total redeemable</div>
+        <div />
+        <div className="font-semibold">{formatSweepies(totalRedeemable)}</div>
+
+        <div>
+          Cash over (yesterday){' '}
+          <InfoTooltip
+            text={
+              <>
+                &Delta; mana_supply_stats.total_value
+                <br />
+                minus net sum txns to or from Manifold
+              </>
+            }
+          />
+        </div>
+        <div className="font-semibold">
+          {formatMoney(unaccountedDifference)}
+        </div>
+        <div className="font-semibold">
+          {formatSweepies(cashUnaccountedDifference)}
+        </div>
       </div>
       <ManaSupplySummary manaSupplyStats={manaSupplyOverTime} />
       <Spacer h={8} />
       <Title>Transactions from Manifold</Title>
       <BonusSummary txnSummaryStats={fromBankSummaryMana} days={days} />
-      <BonusSummary txnSummaryStats={fromBankSummaryCash} days={days} />
+      <BonusSummary
+        txnSummaryStats={fromBankSummaryCash}
+        days={days}
+        defaultHidden={['LEAGUE_PRIZE']}
+      />
       <Spacer h={8} />
       <Title>Transactions to Manifold</Title>
       <span className="text-ink-500">(Ignores mana purchases)</span>
       <BonusSummary txnSummaryStats={toBankSummaryMana} days={days} />
-      <BonusSummary txnSummaryStats={toBankSummaryCash} days={days} />
+      <BonusSummary
+        txnSummaryStats={toBankSummaryCash}
+        days={days}
+        defaultHidden={['LEAGUE_PRIZE_UNDO']}
+      />
       <Spacer h={8} />
       <Title>Mana sales</Title>
       <p className="text-ink-500">

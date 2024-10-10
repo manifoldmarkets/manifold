@@ -133,7 +133,7 @@ export function PriceTile(props: {
         'group relative flex h-fit w-full flex-col items-center rounded text-center shadow transition-all ',
         disabled
           ? 'pointer-events-none cursor-not-allowed opacity-50'
-          : 'opacity-90 ring-2 ring-blue-600 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
+          : 'opacity-90 ring-2 ring-indigo-600 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
         isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait',
         newUsersOnly && 'border-4 border-purple-500 '
       )}
@@ -169,35 +169,36 @@ export function PriceTile(props: {
         <div className="-mt-1 text-xl font-semibold text-violet-600 dark:text-violet-400">
           Ṁ{shortenNumber(mana)}{' '}
         </div>
-        {originalPriceInDollars && (
-          <Row className="text-sm text-red-500 line-through">
-            -${originalPriceInDollars}-
-          </Row>
-        )}
-      </Col>
-      <Col className="w-full bg-blue-600 px-4 py-1 text-xl font-semibold text-white">
-        Buy ${priceInDollars}
       </Col>
       {bonusInDollars > 0 && (
         <Row
           className={clsx(
             `w-full items-center justify-center gap-1 whitespace-nowrap
-       bg-amber-100 px-2 py-0.5 text-lg
+       bg-amber-100 px-2 py-0.5 text-sm
          text-amber-800 transition-colors group-hover:bg-amber-200
           group-hover:text-amber-900 dark:bg-amber-600 dark:text-white
            group-hover:dark:bg-amber-500 group-hover:dark:text-white`,
             !newUsersOnly && 'shadow'
           )}
         >
+          <span>+</span>
           <CoinNumber
             coinType="sweepies"
-            className="font-bold"
+            className="text-lg font-bold"
             amount={bonusInDollars}
-            isInline
           />{' '}
-          <span className="text-sm">free</span>
+          <span>free</span>
         </Row>
       )}
+      <div className="w-full bg-indigo-600 px-4 py-1 text-xl font-semibold text-white">
+        Buy{' '}
+        {originalPriceInDollars && (
+          <span className="font-normal text-slate-400 line-through">
+            -${originalPriceInDollars}-
+          </span>
+        )}{' '}
+        ${priceInDollars}
+      </div>
     </button>
   )
 }

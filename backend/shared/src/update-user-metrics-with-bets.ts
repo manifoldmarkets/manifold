@@ -1,10 +1,10 @@
-import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { getUsers, isProd, log, revalidateStaticProps } from 'shared/utils'
-import { chunk, groupBy, sortBy, sumBy, uniq } from 'lodash'
+import { getUsers, log, revalidateStaticProps } from 'shared/utils'
+import { groupBy, sortBy, sumBy, uniq } from 'lodash'
 import { Contract, CPMMMultiContract } from 'common/contract'
 import {
   calculateMetricsByContractAndAnswer,
@@ -12,10 +12,7 @@ import {
 } from 'common/calculate-metrics'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { buildArray } from 'common/util/array'
-import {
-  hasSignificantDeepChanges,
-  removeUndefinedProps,
-} from 'common/util/object'
+import { hasSignificantDeepChanges } from 'common/util/object'
 import { Bet } from 'common/bet'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { getAnswersForContractsDirect } from 'shared/supabase/answers'
@@ -23,9 +20,7 @@ import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { convertBet } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
 import { Row } from 'common/supabase/utils'
-import { BOT_USERNAMES } from 'common/envs/constants'
-import { bulkInsert, bulkUpdate } from 'shared/supabase/utils'
-import { type User } from 'common/user'
+import { bulkInsert } from 'shared/supabase/utils'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -35,8 +30,9 @@ const userToPortfolioMetrics: {
     timeCachedPeriodProfits: number
   }
 } = {}
-const LIMIT = isProd() ? 400 : 10
-export async function updateUserMetricsCore(
+
+// NOTE: This function is just a script and isn't used regularly
+export async function updateUserMetricsWithBets(
   userIds?: string[],
   since?: number
 ) {
@@ -47,37 +43,17 @@ export async function updateUserMetricsCore(
   const pg = createSupabaseDirectClient()
 
   log('Loading active users...')
-  const random = Math.random()
   const activeUserIds = userIds?.length
     ? userIds
     : await pg.map(
         `
-      select distinct users.id, uph.last_calculated
-      from users
-        left join user_portfolio_history_latest uph on uph.user_id = users.id
-      where (
-       users.id not in (select distinct user_id from user_events
-                where ts > now() - interval '10 minutes' and user_id is not null)
-       and
-       (users.id in (
-           select distinct user_id from user_contract_interactions
-           where created_time > now() - interval '2 weeks'
-       ) or
-       users.id in (
-           select id from users where username in ($2:list) and
-           (users.data -> 'lastBetTime')::bigint > ts_to_millis(now() - interval '2 weeks')
-        ) or
-       ($1 < 0.05 and id in (
-           select distinct users.id from users
-            join user_contract_metrics on users.id = user_contract_metrics.user_id
-            join contracts on user_contract_metrics.contract_id = contracts.id
-             where contracts.resolution_time is null
-             and user_contract_metrics.has_shares = true
-      ))
-    ))
-        order by uph.last_calculated nulls first limit $3`,
-        [random, BOT_USERNAMES, LIMIT],
-        (r) => r.id as string
+      select distinct user_id from contract_bets
+      join contracts on contract_bets.contract_id = contracts.id
+      where contracts.outcome_type = 'NUMBER'
+      and contract_bets.created_time > now() - interval '2 day'
+      `,
+        [],
+        (r) => r.user_id as string
       )
 
   log(`Loaded ${activeUserIds.length} active users.`)
@@ -124,7 +100,6 @@ export async function updateUserMetricsCore(
           userToPortfolioMetrics[userId]?.currentPortfolio,
         dayAgoProfit: dayAgoProfits[userId]?.mana,
         weekAgoProfit: weekAgoProfits[userId]?.mana,
-        // TODO: cash profits
         timeCachedPeriodProfits: Date.now(),
       }
     }
@@ -180,7 +155,6 @@ export async function updateUserMetricsCore(
     (m) => m.userId
   )
 
-  const userUpdates: User[] = []
   const portfolioUpdates = [] as Omit<Row<'user_portfolio_history'>, 'id'>[]
   const contractMetricUpdates = []
 
@@ -244,8 +218,7 @@ export async function updateUserMetricsCore(
       })
     )
 
-    const { balance, investmentValue, totalDeposits } = newPortfolio
-    const allTimeProfit = balance + investmentValue - totalDeposits
+    const { balance, totalDeposits } = newPortfolio
 
     const unresolvedMetrics = freshMetrics.filter((m) => {
       const contract = contractsById[m.contractId]
@@ -262,34 +235,7 @@ export async function updateUserMetricsCore(
       }
       return !contract.isResolved
     })
-    let resolvedProfitAdjustment = user.resolvedProfitAdjustment ?? 0
-    if (since === 0) {
-      const resolvedMetrics = freshMetrics.filter((m) => {
-        const contract = contractsById[m.contractId]
-
-        if (contract.token !== 'MANA') return false
-
-        if (contract.mechanism === 'cpmm-multi-1') {
-          // Don't double count null answer (summary) profits
-          if (!m.answerId) return false
-          const answer = answersByContractId[m.contractId]?.find(
-            (a) => a.id === m.answerId
-          )
-          return !!answer?.resolutionTime
-        }
-        return contract.isResolved
-      })
-      resolvedProfitAdjustment = sumBy(
-        resolvedMetrics,
-        (m) => m.profitAdjustment ?? 0
-      )
-      await pg.none(
-        `update users
-         set resolved_profit_adjustment = $1
-         where id = $2`,
-        [resolvedProfitAdjustment, user.id]
-      )
-    }
+    const resolvedProfitAdjustment = user.resolvedProfitAdjustment ?? 0
     const leaderBoardProfit =
       resolvedProfitAdjustment +
       // Resolved profits are already included in the user's balance - deposits
@@ -312,21 +258,6 @@ export async function updateUserMetricsCore(
       currentPortfolio.loanTotal !== newPortfolio.loanTotal ||
       currentPortfolio.profit !== leaderBoardProfit
 
-    const newProfit = {
-      daily:
-        allTimeProfit -
-        (userToPortfolioMetrics[user.id].dayAgoProfit ?? allTimeProfit),
-      weekly:
-        allTimeProfit -
-        (userToPortfolioMetrics[user.id].weekAgoProfit ?? allTimeProfit),
-      monthly: 0,
-      allTime: allTimeProfit,
-    }
-
-    // const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
-    //   ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
-    //   : 0
-
     if (didPortfolioChange) {
       portfolioUpdates.push({
         user_id: user.id,
@@ -343,30 +274,12 @@ export async function updateUserMetricsCore(
       })
       userToPortfolioMetrics[user.id].currentPortfolio = newPortfolio
     }
-
-    if (
-      hasSignificantDeepChanges(
-        user,
-        {
-          profitCached: newProfit,
-          // nextLoanCached: nextLoanPayout,
-        },
-        1
-      )
-    ) {
-      userUpdates.push({
-        ...user,
-        profitCached: newProfit,
-        // nextLoanCached: nextLoanPayout,
-      })
-    }
   }
   log(`Computed ${contractMetricUpdates.length} metric updates.`)
 
   const userIdsNotWritten = activeUserIds.filter(
     (id) => !portfolioUpdates.some((p) => p.user_id === id)
   )
-  const userUpdateChunks = chunk(userUpdates, LIMIT / 10)
   log('Writing updates and inserts...')
   await Promise.all(
     buildArray(
@@ -384,24 +297,7 @@ export async function updateUserMetricsCore(
         pg.query(
           `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
           [new Date(now).toISOString(), userIdsNotWritten]
-        ),
-
-      Promise.all(
-        userUpdateChunks.map(async (chunk) =>
-          bulkUpdate(
-            pg,
-            'users',
-            ['id'],
-            chunk.map((u) => ({
-              id: u.id,
-              data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
-            })),
-            5 * MINUTE_MS
-          )
         )
-      )
-        .catch((e) => log.error('Error writing user updates', e))
-        .then(() => log('Finished user updates.'))
     )
   )
 
@@ -412,7 +308,6 @@ export async function updateUserMetricsCore(
 
 const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
   const betContractIds = uniq(bets.map((b) => b.contractId))
-  // TODO shoud remove extraneous data from this
   return await pg.map(
     `select data from contracts where id in ($1:list)`,
     [betContractIds],

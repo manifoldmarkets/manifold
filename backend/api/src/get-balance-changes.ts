@@ -83,8 +83,7 @@ const getTxnBalanceChanges = async (after: number, userId: string) => {
       charity:
         txn.toType === 'CHARITY'
           ? {
-              name:
-                charities.find((c) => c.slug === txn.toId)?.name ?? txn.toId,
+              name: charities.find((c) => c.id === txn.toId)?.name ?? txn.toId,
               slug: txn.toId,
             }
           : undefined,

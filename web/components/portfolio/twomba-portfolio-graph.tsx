@@ -12,7 +12,7 @@ import { findMinMax } from 'web/lib/util/minMax'
 import { HistoryPoint } from 'common/chart'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
-import { useSweepstakes } from '../sweestakes-context'
+import { useSweepstakes } from '../sweepstakes-provider'
 
 export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice'
@@ -73,14 +73,16 @@ export const TwombaPortfolioGraph = (props: {
     firstCashProfit
   )
 
-  const { isPlay } = useSweepstakes()
+  const { prefersPlay } = useSweepstakes()
 
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
-    const minMaxBalancePoints = isPlay ? balancePoints : cashBalancePoints
-    const minMaxInvestmentPoints = isPlay
+    const minMaxBalancePoints = prefersPlay ? balancePoints : cashBalancePoints
+    const minMaxInvestmentPoints = prefersPlay
       ? investmentPoints
       : cashInvestmentPoints
-    const minMaxNetworthPoints = isPlay ? networthPoints : cashNetworthPoints
+    const minMaxNetworthPoints = prefersPlay
+      ? networthPoints
+      : cashNetworthPoints
 
     const balanceXPoints = minMaxBalancePoints.map((d) => d.x)!
     const { min: balanceXMin, max: balanceXMax } = findMinMax(balanceXPoints)
@@ -124,7 +126,7 @@ export const TwombaPortfolioGraph = (props: {
         ? balanceYMax
         : investmentYMax
     return { minDate, maxDate, minValue, maxValue }
-  }, [duration, portfolioFocus, isPlay])
+  }, [duration, portfolioFocus, prefersPlay])
 
   const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
@@ -140,7 +142,7 @@ export const TwombaPortfolioGraph = (props: {
   // reset axis scale if mode or duration change (since points change)
   useLayoutEffect(() => {
     zoomParams?.setXScale(xScale)
-  }, [duration, portfolioFocus, isPlay])
+  }, [duration, portfolioFocus, prefersPlay])
 
   return (
     <SingleValueHistoryChart
@@ -149,21 +151,21 @@ export const TwombaPortfolioGraph = (props: {
       xScale={xScale}
       yScale={portfolioFocus == 'spice' ? spiceYScale : yScale}
       zoomParams={zoomParams}
-      yKind={isPlay ? 'Ṁ' : 'sweepies'}
+      yKind={prefersPlay ? 'Ṁ' : 'sweepies'}
       data={
         portfolioFocus == 'all'
-          ? isPlay
+          ? prefersPlay
             ? networthPoints
             : cashNetworthPoints
           : portfolioFocus == 'balance'
-          ? isPlay
+          ? prefersPlay
             ? balancePoints
             : cashBalancePoints
-          : isPlay
+          : prefersPlay
           ? investmentPoints
           : cashInvestmentPoints
       }
-      color={isPlay ? MANA_COLOR : CASH_COLOR}
+      color={prefersPlay ? MANA_COLOR : CASH_COLOR}
       Tooltip={(props) => (
         // eslint-disable-next-line react/prop-types
         <PortfolioTooltip date={xScale.invert(props.x)} />
@@ -215,7 +217,7 @@ export const TwombaProfitGraph = (props: {
     updateGraphValues,
   } = props
 
-  const { isPlay } = useSweepstakes()
+  const { prefersPlay } = useSweepstakes()
 
   const { profitPoints, cashProfitPoints } = usePortfolioPointsFromHistory(
     portfolioHistory,
@@ -224,7 +226,7 @@ export const TwombaProfitGraph = (props: {
   )
 
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
-    const minMaxProfitPoints = isPlay ? profitPoints : cashProfitPoints
+    const minMaxProfitPoints = prefersPlay ? profitPoints : cashProfitPoints
 
     const profitXPoints = minMaxProfitPoints.map((d) => d.x)!
     const { min: profitXMin, max: profitXMax } = findMinMax(profitXPoints)
@@ -236,7 +238,7 @@ export const TwombaProfitGraph = (props: {
       minValue: profitYMin,
       maxValue: profitYMax,
     }
-  }, [duration, isPlay])
+  }, [duration, prefersPlay])
 
   const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
@@ -257,8 +259,8 @@ export const TwombaProfitGraph = (props: {
       xScale={xScale}
       yScale={yScale}
       zoomParams={zoomParams}
-      yKind={isPlay ? 'Ṁ' : 'sweepies'}
-      data={isPlay ? profitPoints : cashProfitPoints}
+      yKind={prefersPlay ? 'Ṁ' : 'sweepies'}
+      data={prefersPlay ? profitPoints : cashProfitPoints}
       // eslint-disable-next-line react/prop-types
       Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
       onMouseOver={(p) => {

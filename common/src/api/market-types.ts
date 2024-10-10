@@ -60,6 +60,10 @@ export type LiteMarket = {
   lastUpdatedTime?: number
   lastBetTime?: number
   marketTier?: MarketTierType
+  deleted?: boolean
+  visibility?: string
+  token?: string
+  siblingContractId?: string
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -119,6 +123,10 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     matchCreatorId,
     isLove,
     marketTier,
+    token,
+    siblingContractId,
+    visibility,
+    deleted,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -168,6 +176,10 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     lastCommentTime,
     ...numericValues,
     marketTier,
+    token,
+    siblingContractId,
+    visibility,
+    deleted,
 
     // Manifold love props.
     loverUserId1,

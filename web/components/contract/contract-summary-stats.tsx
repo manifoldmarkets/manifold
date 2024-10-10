@@ -2,7 +2,6 @@ import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
-import { shortenNumber } from '../../lib/util/formatNumber'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
@@ -49,8 +48,12 @@ export function ContractSummaryStats(props: {
               noTap
               className="flex flex-row items-center gap-1"
             >
-              <ChartBarIcon className="text-ink-500 h-4 w-4" />Ṁ
-              {shortenNumber(contract.volume)}
+              <ChartBarIcon className="text-ink-500 h-4 w-4" />
+              {formatWithToken({
+                amount: contract.volume,
+                token: isCashContract ? 'CASH' : 'M$',
+                short: true,
+              })}
             </Tooltip>
           )}
 

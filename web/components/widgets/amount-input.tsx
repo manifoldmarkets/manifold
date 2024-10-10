@@ -43,7 +43,6 @@ export function AmountInput(
     allowFloat?: boolean
     allowNegative?: boolean
     disableClearButton?: boolean
-    isSweepies?: boolean
   } & JSX.IntrinsicElements['input']
 ) {
   const {
@@ -59,13 +58,12 @@ export function AmountInput(
     quickAddMoreButton,
     allowNegative,
     disableClearButton,
-    isSweepies,
     ...rest
   } = props
 
   const [amountString, setAmountString] = useState(formatAmountString(amount))
 
-  const allowFloat = isSweepies || !!props.allowFloat
+  const allowFloat = !!props.allowFloat
 
   function formatAmountString(amount: number | undefined) {
     return amount?.toString() ?? ''
@@ -124,7 +122,7 @@ export function AmountInput(
                 onChangeAmount(Math.max(0, (amount ?? 0) - 5))
               }
             }}
-            min={isSweepies ? 1 : 0}
+            min={allowFloat ? 0 : 1}
           />
           <Row className="divide-ink-300 absolute right-[1px] h-full divide-x">
             {!disableClearButton && (
@@ -292,6 +290,7 @@ export function BuyAmountInput(props: {
           amount={amount}
           onChangeAmount={onChange}
           error={!!error}
+          allowFloat={token === 'CASH'}
           disabled={disabled}
           inputRef={inputRef}
           disableClearButton={!isAdvancedTrader}
@@ -318,7 +317,6 @@ export function BuyAmountInput(props: {
               </Row>
             )
           }
-          isSweepies={token === 'CASH'}
         />
         {showSlider && (
           <BetSlider

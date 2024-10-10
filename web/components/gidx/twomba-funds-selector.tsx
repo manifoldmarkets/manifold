@@ -55,8 +55,12 @@ export function TwombaFundsSelector(props: {
       <div className={clsx('text-ink-700 mb-4 text-sm')}>
         <div>
           <span>
-            Buy mana to trade in your favorite questions. Always free to play,
-            no purchase necessary.
+            Buy mana to trade in your favorite questions. Only sweepcash won
+            from sweepstakes questions is{' '}
+            <Link href="/redeem" className="underline">
+              redeemable for cash
+            </Link>
+            . Always free to play, no purchase necessary.
           </span>
           <CashoutLimitWarning user={user} className="mt-2" />
         </div>

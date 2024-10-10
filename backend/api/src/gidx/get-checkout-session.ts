@@ -12,7 +12,7 @@ import {
   throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
-import { getIp } from 'shared/analytics'
+import { getIp, track } from 'shared/analytics'
 import { log } from 'shared/monitoring/log'
 import { randomBytes } from 'crypto'
 import { TWOMBA_CASHOUT_ENABLED, TWOMBA_ENABLED } from 'common/envs/constants'
@@ -56,6 +56,11 @@ export const getCheckoutSession: APIHandler<
     body: JSON.stringify(body),
   })
   if (!res.ok) {
+    track(auth.uid, 'gidx get checkout session', {
+      status: 'error',
+      message: 'GIDX checkout session failed',
+      sessionType: props.PayActionCode === 'PAYOUT' ? 'cashout' : 'purchase',
+    })
     throw new APIError(400, 'GIDX checkout session failed')
   }
   const data = (await res.json()) as CheckoutSessionResponse
@@ -78,6 +83,12 @@ export const getCheckoutSession: APIHandler<
     undefined,
     undefined
   )
+  track(auth.uid, 'gidx get checkout session', {
+    status,
+    message,
+    sessionType: props.PayActionCode === 'PAYOUT' ? 'cashout' : 'purchase',
+  })
+
   if (status === 'error') {
     return {
       status,

@@ -28,7 +28,7 @@ export const getTieredAnswerCost = (marketTier: MarketTierType | undefined) => {
     : BASE_ANSWER_COST
 }
 
-export const MINIMUM_BOUNTY = 10000
+export const MINIMUM_BOUNTY = 1000
 export const MULTIPLE_CHOICE_MINIMUM_COST = 1000
 
 export const getAnte = (

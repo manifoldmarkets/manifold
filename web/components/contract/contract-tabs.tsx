@@ -599,11 +599,15 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
               bets={item.bets}
             />
           ) : (
-            <FeedLiquidity
+            <div
               key={item.id}
-              liquidity={item.lp}
-              isCashContract={isCashContract}
-            />
+              className="-ml-2 rounded-full bg-gradient-to-r from-pink-300/50 via-purple-300/50 to-indigo-300/50 p-2"
+            >
+              <FeedLiquidity
+                liquidity={item.lp}
+                isCashContract={isCashContract}
+              />
+            </div>
           )
         )}
         {/* TODO: skeleton */}

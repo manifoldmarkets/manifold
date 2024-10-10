@@ -32,6 +32,7 @@ import { RangeSlider } from 'web/components/widgets/slider'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { api } from 'web/lib/api/api'
 import { MoneyDisplay } from '../bet/money-display'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
 
 export const NumericSellPanel = (props: {
   contract: CPMMNumericContract
@@ -334,9 +335,11 @@ export const NumericSellPanel = (props: {
 }
 export const MultiNumericSellPanel = (props: {
   contract: CPMMNumericContract
-  userBets: Bet[]
+  userId: string
 }) => {
-  const { contract, userBets } = props
+  const { contract, userId } = props
+  const userBets = useUserContractBets(userId, contract.id)
+
   const [showSellPanel, setShowSellPanel] = useState(false)
   const totalShares = sumBy(userBets, (bet) => bet.shares)
   if (floatingEqual(totalShares, 0)) return null

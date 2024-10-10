@@ -9,10 +9,10 @@ import { Card } from '../widgets/card'
 
 export function CharityCard(props: { charity: Charity; raised: number }) {
   const { charity, raised } = props
-  const { slug, photo, preview, tags } = charity
+  const { id, photo, preview, tags } = charity
 
   return (
-    <Link href={`/charity/${slug}`} className="flex-1">
+    <Link href={`/charity/${id}`} className="flex-1">
       <Card className="!rounded-2xl">
         <Row className="mb-2 mt-6">{tags?.includes('New') && <NewBadge />}</Row>
         <div className="px-8">

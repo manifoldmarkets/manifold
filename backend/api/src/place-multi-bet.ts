@@ -32,8 +32,14 @@ export const placeMultiBetMain = async (
       `Inside main transaction for ${uid} placing a bet on ${body.contractId}.`
     )
 
-    const { user, contract, answers, unfilledBets, balanceByUserId } =
-      await fetchContractBetDataAndValidate(pgTrans, body, uid, isApi)
+    const {
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId,
+      contractMetrics,
+    } = await fetchContractBetDataAndValidate(pgTrans, body, uid, isApi)
 
     const { mechanism } = contract
 
@@ -71,23 +77,25 @@ export const placeMultiBetMain = async (
       expiresAt
     )
 
+    const results = []
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const betGroupId = crypto.randomBytes(12).toString('hex')
-    return await Promise.all(
-      newBetResults.map((newBetResult, i) =>
-        executeNewBetResult(
-          pgTrans,
-          newBetResult,
-          contract,
-          user,
-          isApi,
-          undefined,
-          betGroupId,
-          deterministic,
-          i === 0
-        )
+    for (const [i, newBetResult] of newBetResults.entries()) {
+      const result = await executeNewBetResult(
+        pgTrans,
+        newBetResult,
+        contract,
+        user,
+        isApi,
+        contractMetrics,
+        undefined,
+        betGroupId,
+        deterministic,
+        i === 0
       )
-    )
+      results.push(result)
+    }
+    return results
   })
 
   log(`Main transaction finished - auth ${uid}.`)
@@ -107,7 +115,8 @@ export const placeMultiBetMain = async (
       allOrdersToCancel,
       makers,
       results.some((r) => r.streakIncremented),
-      results.find((r) => r.bonuxTxn)?.bonuxTxn
+      results.find((r) => r.bonuxTxn)?.bonuxTxn,
+      undefined
     )
   }
 

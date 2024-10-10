@@ -1,10 +1,8 @@
 import * as fs from 'fs/promises'
-import * as fsBase from 'fs'
-import * as readline from 'readline'
 import { execSync } from 'child_process'
 import { type SupabaseDirectClient } from 'shared/supabase/init'
 import { runScript } from 'run-script'
-import { isProd } from 'shared/utils'
+import { countBy } from 'lodash'
 
 const outputDir = `../supabase/`
 
@@ -13,11 +11,81 @@ runScript(async ({ pg }) => {
   execSync(`mkdir -p ${outputDir}`)
   // delete all sql files except seed.sql
   execSync(`cd ${outputDir} && find *.sql -type f ! -name seed.sql -delete`)
-  await dump()
   await generateSQLFiles(pg)
 })
 
 async function getTableInfo(pg: SupabaseDirectClient, tableName: string) {
+  const columns = await pg.manyOrNone<{
+    name: string
+    type: string
+    not_null: boolean
+    default: string | null
+    identity: boolean
+    always: 'BY DEFAULT' | 'ALWAYS'
+    gen: string | null
+    stored: 'STORED' | 'VIRTUAL'
+  }>(
+    `SELECT
+      column_name as name,
+      format_type(a.atttypid, a.atttypmod) as type,
+      is_nullable = 'NO' as not_null,
+      column_default as default,
+      is_identity = 'YES' as identity,
+      identity_generation as always,
+      pg_get_expr(d.adbin, d.adrelid, true) AS gen,
+      CASE
+        WHEN a.attgenerated = 's' THEN 'STORED'
+        WHEN a.attgenerated = 'v' THEN 'VIRTUAL'
+        ELSE NULL
+      END AS stored
+    FROM information_schema.columns c
+    LEFT JOIN pg_catalog.pg_attribute a
+      ON a.attrelid = c.table_name::regclass
+      AND a.attname = c.column_name
+      AND NOT a.attisdropped
+    JOIN pg_catalog.pg_type t ON t.oid = a.atttypid
+    LEFT JOIN pg_catalog.pg_attrdef d
+      ON d.adrelid = a.attrelid
+      AND d.adnum = a.attnum
+    WHERE table_schema = 'public' AND table_name = $1
+    ORDER BY column_name`,
+    [tableName]
+  )
+
+  const checks = await pg.manyOrNone<{
+    name: string
+    definition: string
+  }>(
+    `SELECT
+      cc.constraint_name as name,
+      cc.check_clause as definition
+    FROM information_schema.table_constraints tc
+    join information_schema.check_constraints cc
+      ON tc.constraint_schema = cc.constraint_schema
+      AND tc.constraint_name = cc.constraint_name
+    WHERE tc.constraint_type = 'CHECK'
+    AND NOT cc.check_clause ilike '% IS NOT NULL'
+    AND tc.table_schema = 'public'
+    AND tc.table_name = $1`,
+    [tableName]
+  )
+
+  const primaryKeys = await pg.map(
+    `SELECT c.column_name
+    FROM
+      information_schema.table_constraints tc
+    JOIN
+      information_schema.constraint_column_usage AS ccu
+      USING (constraint_schema, constraint_name)
+    JOIN information_schema.columns AS c
+      ON c.table_schema = tc.constraint_schema
+      AND tc.table_name = c.table_name
+      AND ccu.column_name = c.column_name
+    WHERE constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'public' AND tc.table_name = $1`,
+    [tableName],
+    (row) => row.column_name as string
+  )
+
   const foreignKeys = await pg.manyOrNone<{
     constraint_name: string
     definition: string
@@ -88,12 +156,18 @@ async function getTableInfo(pg: SupabaseDirectClient, tableName: string) {
     FROM
       pg_indexes
     WHERE
-      tablename = $1`,
+      schemaname = 'public'
+      AND tablename = $1
+    ORDER BY
+      indexname`,
     [tableName]
   )
 
   return {
     tableName,
+    columns,
+    checks,
+    primaryKeys,
     foreignKeys,
     triggers,
     rls,
@@ -132,54 +206,7 @@ async function getViews(pg: SupabaseDirectClient) {
   )
 }
 
-async function dump() {
-  console.log('DAMPU')
-  const supabaseProject = isProd()
-    ? 'pxidrgkatumlvfqaxcll'
-    : 'mfodonznyfxllcezufgr'
-  execSync(
-    `supabase link -p $SUPABASE_PASSWORD --project-ref ${supabaseProject}`
-  )
-  execSync(`supabase db dump --linked -s 'public'  -f ./supabase/dump.sql`)
-}
-
-async function extractTableDefinitions() {
-  console.log('Extracting table definitions')
-
-  const filename = `${outputDir}/dump.sql`
-  const fileStream = fsBase.createReadStream(filename)
-  const rl = readline.createInterface({
-    input: fileStream,
-    crlfDelay: Infinity,
-  })
-
-  let currentTable = ''
-  let inTableDefinition = false
-  const tableDefs = {} as Record<string, string>
-
-  for await (const line of rl) {
-    if (line.startsWith('CREATE TABLE')) {
-      inTableDefinition = true
-      currentTable = line.match(/"public"."(\w+)"/)![1]
-      tableDefs[currentTable] = line + '\n'
-    } else if (inTableDefinition) {
-      tableDefs[currentTable] += line + '\n'
-      if (line.trim() === ');') {
-        // strip out the cruft
-        tableDefs[currentTable] = tableDefs[currentTable]
-          .replaceAll(`"`, ``)
-          .replaceAll(`public.`, ``)
-        inTableDefinition = false
-      }
-    }
-  }
-
-  return tableDefs
-}
-
 async function generateSQLFiles(pg: SupabaseDirectClient) {
-  const definitions = await extractTableDefinitions()
-
   const tables = await pg.map(
     "SELECT tablename FROM pg_tables WHERE schemaname = 'public'",
     [],
@@ -196,7 +223,58 @@ async function generateSQLFiles(pg: SupabaseDirectClient) {
   for (const tableInfo of tableInfos) {
     let content = `-- This file is autogenerated from regen-schema.ts\n\n`
 
-    content += `${definitions[tableInfo.tableName]}\n`
+    content += `CREATE TABLE IF NOT EXISTS ${tableInfo.tableName} (\n`
+
+    // organize check constraints by column
+    const checksByColumn: {
+      [col: string]: { name: string; definition: string }
+    } = {}
+    const remainingChecks = []
+    for (const check of tableInfo.checks) {
+      const matches = tableInfo.columns.filter((c) =>
+        check.definition.includes(c.name)
+      )
+
+      if (matches.length === 1) {
+        checksByColumn[matches[0].name] = check
+      } else {
+        remainingChecks.push(check)
+      }
+    }
+
+    const pkeys = tableInfo.primaryKeys
+
+    for (const c of tableInfo.columns) {
+      const isSerial = c.default?.startsWith('nextval(')
+
+      if (isSerial) {
+        content += `  ${c.name} ${c.type === 'bigint' ? 'bigserial' : 'serial'}`
+      } else {
+        content += `  ${c.name} ${c.type}`
+        if (pkeys.length === 1 && pkeys[0] === c.name) content += ' PRIMARY KEY'
+        if (c.default) content += ` DEFAULT ${c.default}`
+        else if (c.identity) content += ` GENERATED ${c.always} AS IDENTITY`
+        else if (c.gen) content += ` GENERATED ALWAYS AS (${c.gen}) ${c.stored}`
+      }
+      if (c.not_null) content += ' NOT NULL'
+      const check = checksByColumn[c.name]
+      if (check)
+        content += ` CONSTRAINT ${check.name} CHECK ${check.definition}`
+
+      content += ',\n'
+    }
+
+    if (pkeys.length > 1) {
+      content += `  CONSTRAINT PRIMARY KEY (${pkeys.join(', ')}),\n`
+    }
+
+    for (const check of remainingChecks) {
+      content += `  CONSTRAINT ${check.name} CHECK ${check.definition},\n`
+    }
+
+    // remove the trailing comma
+    content = content.replace(/,(?=[^,]+$)/, '')
+    content += ');\n\n'
 
     if (tableInfo.foreignKeys.length > 0) content += `-- Foreign Keys\n`
     for (const fk of tableInfo.foreignKeys) {

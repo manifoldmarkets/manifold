@@ -99,6 +99,7 @@ import { getBets } from './get-bets'
 import { getLiteUser, getUser } from './get-user'
 import { getUsers } from './get-users'
 import { getMarket } from './get-market'
+import { getMarketProps } from './get-market-props'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
@@ -171,6 +172,7 @@ import { updateNotifSettings } from './update-notif-settings'
 import { createCashContract } from './create-cash-contract'
 import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { getRedeemablePrizeCash } from './get-redeemable-prize-cash'
+import { getTotalRedeemablePrizeCash } from './get-total-redeemable-prize-cash'
 import { getMonitorStatus } from 'api/gidx/get-monitor-status'
 import { getBestComments } from 'api/get-best-comments'
 import { recordCommentView } from 'api/record-comment-view'
@@ -321,6 +323,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'group/:slug/unblock': unblockGroup,
   groups: getGroups,
   'market/:id': getMarket,
+  'get-market-props': getMarketProps,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'slug/:slug': getMarket,
   'market/:contractId/update': updateMarket,
@@ -419,6 +422,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'payment-callback-gidx': paymentCallbackGIDX,
   'get-verification-documents-gidx': getVerificationDocuments,
   'get-redeemable-prize-cash': getRedeemablePrizeCash,
+  'get-total-redeemable-prize-cash': getTotalRedeemablePrizeCash,
   'get-monitor-status-gidx': getMonitorStatus,
   'get-best-comments': getBestComments,
   'record-comment-view': recordCommentView,

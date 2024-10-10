@@ -27,13 +27,10 @@ import { Row } from '../layout/row'
 import { TwombaToggle } from '../twomba/twomba-toggle'
 import { getLinkTarget } from '../widgets/linkify'
 import { BoostDialog } from './boost-button'
-import { AddLiquidityModal } from './subsidize-button'
+import { AddLiquidityModal } from './liquidity-modal'
 import { TwombaContractInfoDialog } from './twomba-contract-info-dialog'
 import { WatchMarketModal } from './watch-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
-import { isAdminId } from 'common/envs/constants'
-import { FaDollarSign } from 'react-icons/fa'
-import router from 'next/router'
 
 export function TwombaHeaderActions(props: {
   playContract: Contract
@@ -43,7 +40,6 @@ export function TwombaHeaderActions(props: {
   const user = useUser()
   const privateUser = usePrivateUser()
   const isCreator = user?.id === playContract.creatorId
-  const isAdmin = user ? isAdminId(user.id) : false
 
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [repostOpen, setRepostOpen] = useState(false)
@@ -104,20 +100,6 @@ export function TwombaHeaderActions(props: {
       })
   }, [user?.id, followingOpen])
 
-  const convertToCashMarket = async () => {
-    try {
-      await api('create-cash-contract', {
-        manaContractId: currentContract.id,
-        subsidyAmount: 100, // You may want to make this configurable
-      })
-      toast.success('Market converted to cash market successfully')
-      router.reload()
-    } catch (error) {
-      toast.error('Failed to convert market to cash market')
-      console.error(error)
-    }
-  }
-
   const dropdownItems = [
     ...(user
       ? [
@@ -165,7 +147,7 @@ export function TwombaHeaderActions(props: {
     ...(addLiquidityEnabled
       ? [
           {
-            name: 'Add Liquidity',
+            name: 'Liquidity',
             onClick: () => {
               setLiquidityOpen(true)
             },
@@ -236,17 +218,6 @@ export function TwombaHeaderActions(props: {
           },
         ]
       : []),
-    ...(isAdmin && !playContract.siblingContractId
-      ? [
-          {
-            name: 'Sweepify!',
-            onClick: convertToCashMarket,
-            icon: <FaDollarSign className="h-4 w-4" />,
-            className:
-              'text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-100 dark:hover:bg-ink-100',
-          },
-        ]
-      : []),
   ]
 
   const sweepsEnabled = !!playContract.siblingContractId
@@ -258,14 +229,12 @@ export function TwombaHeaderActions(props: {
 
   return (
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
-      <div className="relative z-50">
-        {!isNonBetPollOrBountiedQuestion && (
-          <TwombaToggle
-            sweepsEnabled={sweepsEnabled}
-            isPlay={currentContract.token == 'MANA'}
-          />
-        )}
-      </div>
+      {!isNonBetPollOrBountiedQuestion && (
+        <TwombaToggle
+          sweepsEnabled={sweepsEnabled}
+          isPlay={currentContract.token == 'MANA'}
+        />
+      )}
 
       {!playContract.coverImageUrl && isCreator && (
         <ChangeBannerButton

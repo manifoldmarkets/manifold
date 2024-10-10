@@ -25,7 +25,7 @@ import { convertBet } from 'common/supabase/bets'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { getCommentSafe } from 'shared/supabase/contract-comments'
-import { getBetsRepliedToComment } from 'shared/supabase/bets'
+import { getBetsDirect, getBetsRepliedToComment } from 'shared/supabase/bets'
 import { updateData } from 'shared/supabase/utils'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
@@ -38,17 +38,20 @@ import {
 } from 'common/economy'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
-import { updateContract } from 'shared/supabase/contracts'
 import { Answer } from 'common/answer'
-import { removeNullOrUndefinedProps } from 'common/util/object'
 import {
   addHouseSubsidy,
   addHouseSubsidyToAnswer,
 } from 'shared/helpers/add-house-subsidy'
 import { debounce } from 'api/helpers/debounce'
-import { Fees } from 'common/fees'
-import { broadcastNewBets } from 'shared/websockets/helpers'
+import {
+  broadcastNewBets,
+  broadcastOrders,
+  broadcastUpdatedMetrics,
+} from 'shared/websockets/helpers'
 import { followContractInternal } from 'api/follow-contract'
+import { ContractMetric } from 'common/contract-metric'
+import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
 
 export const onCreateBets = async (
   bets: Bet[],
@@ -57,11 +60,32 @@ export const onCreateBets = async (
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined,
   streakIncremented: boolean,
-  txn: UniqueBettorBonusTxn | undefined
+  txn: UniqueBettorBonusTxn | undefined,
+  updatedMetrics: ContractMetric[] | undefined
 ) => {
   const pg = createSupabaseDirectClient()
   broadcastNewBets(contract.id, contract.visibility, bets)
+  if (!updatedMetrics) {
+    updatedMetrics = await getContractMetrics(
+      pg,
+      [originalBettor.id],
+      contract.id,
+      [],
+      true
+    )
+  }
+  broadcastUpdatedMetrics(updatedMetrics)
   debouncedContractUpdates(contract)
+  const matchedBetIds = filterDefined(
+    bets.flatMap((b) => b.fills?.map((f) => f.matchedBetId) ?? [])
+  )
+  if (matchedBetIds.length > 0) {
+    const updatedLimitBets = (await getBetsDirect(
+      pg,
+      matchedBetIds
+    )) as LimitBet[]
+    broadcastOrders(updatedLimitBets)
+  }
 
   await Promise.all(
     ordersToCancel?.map((order) => {
@@ -129,58 +153,6 @@ export const onCreateBets = async (
 
 const debouncedContractUpdates = (contract: Contract) => {
   const writeUpdates = async () => {
-    const pg = createSupabaseDirectClient()
-    const { uniqueBettorCount } = contract
-    const result = await pg.oneOrNone(
-      `
-          select
-              coalesce(sum(abs(amount)), 0) as volume,
-              max(created_time) as time,
-              count(distinct user_id)::numeric as count,
-              count(distinct case when created_time > now() - interval '1 day' and not is_redemption then user_id end)::numeric as count_day,
-              coalesce(sum((data->'fees'->>'creatorFee')::numeric), 0) AS creator_fee,
-              coalesce(sum((data->'fees'->>'platformFee')::numeric), 0) AS platform_fee,
-              coalesce(sum((data->'fees'->>'liquidityFee')::numeric), 0) AS liquidity_fee
-          FROM contract_bets
-          WHERE contract_id = $1
-      `,
-      [contract.id]
-    )
-    const {
-      volume,
-      time: lastBetTime,
-      count,
-      count_day,
-      creator_fee,
-      platform_fee,
-      liquidity_fee,
-    } = result
-    const collectedFees: Fees = {
-      creatorFee: creator_fee ?? 0,
-      platformFee: platform_fee ?? 0,
-      liquidityFee: liquidity_fee ?? 0,
-    }
-    log('Got updated stats for contract id: ' + contract.id, {
-      volume,
-      lastBetTime,
-      count,
-      count_day,
-      collectedFees,
-    })
-
-    await updateContract(
-      pg,
-      contract.id,
-      removeNullOrUndefinedProps({
-        volume,
-        lastBetTime: lastBetTime ? new Date(lastBetTime).valueOf() : undefined,
-        lastUpdatedTime: Date.now(),
-        uniqueBettorCount: uniqueBettorCount !== count ? count : undefined,
-        uniqueBettorCountDay: count_day,
-        collectedFees,
-      })
-    )
-    log('Wrote debounced updates for contract id: ' + contract.id)
     await revalidateContractStaticProps(contract)
     log('Contract static props revalidated.')
   }

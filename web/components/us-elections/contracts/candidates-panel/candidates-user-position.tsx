@@ -1,13 +1,13 @@
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
-import { getContractBetMetrics } from 'common/calculate'
 import { BinaryContract, CPMMMultiContract } from 'common/contract'
 import { TRADED_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { sumBy } from 'lodash'
 import { useState } from 'react'
 import { SellSharesModal } from 'web/components/bet/sell-row'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 
 export function UserPosition(props: {
   contract: CPMMMultiContract
@@ -28,8 +28,8 @@ export function UserPosition(props: {
     redArrowClassName,
   } = props
 
-  const { totalShares } = getContractBetMetrics(contract, userBets)
-
+  const metric = useSavedContractMetrics(contract, answer.id)
+  const { totalShares } = metric ?? { totalShares: { YES: 0, NO: 0 } }
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
   const position = yesWinnings - noWinnings
@@ -83,7 +83,7 @@ export function UserPosition(props: {
           <SellSharesModal
             contract={contract}
             user={user}
-            userBets={userBets}
+            metric={metric}
             shares={Math.abs(sharesSum)}
             sharesOutcome={sharesSum > 0 ? 'YES' : 'NO'}
             setOpen={setOpenModal}
@@ -113,10 +113,10 @@ export function BinaryUserPosition(props: {
 }) {
   const { contract, user, userBets, className, binaryPseudonym } = props
 
-  const { totalShares } = getContractBetMetrics(contract, userBets)
-
-  const yesWinnings = totalShares.YES ?? 0
-  const noWinnings = totalShares.NO ?? 0
+  const metric = useSavedContractMetrics(contract)
+  const { totalShares } = metric ?? { totalShares: { YES: 0, NO: 0 } }
+  const yesWinnings = totalShares.YES
+  const noWinnings = totalShares.NO
   const position = yesWinnings - noWinnings
   const betUp = position > 1e-7
   const betDown = position < 1e-7
@@ -149,7 +149,7 @@ export function BinaryUserPosition(props: {
           <SellSharesModal
             contract={contract}
             user={user}
-            userBets={userBets}
+            metric={metric}
             shares={Math.abs(sharesSum)}
             sharesOutcome={sharesSum > 0 ? 'YES' : 'NO'}
             setOpen={setOpenModal}

@@ -63,6 +63,7 @@ import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -471,6 +472,30 @@ export const API = (_apiTypeCheck = {
     cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ id: z.string(), lite: coerceBoolean.optional() }),
   },
+  'get-market-props': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      contract: Contract
+      chartAnnotations: ChartAnnotation[]
+      topics: Topic[]
+      comments: ContractComment[]
+      pinnedComments: ContractComment[]
+      userPositionsByOutcome: {
+        YES: ContractMetric[]
+        NO: ContractMetric[]
+      }
+      topContractMetrics: ContractMetric[]
+      totalPositions: number
+      dashboards: Dashboard[]
+    },
+    props: z.object({
+      slug: z.string().optional(),
+      id: z.string().optional(),
+      key: z.string(),
+    }),
+  },
   // deprecated. use /market/:id?lite=true instead
   'market/:id/lite': {
     method: 'GET',
@@ -765,6 +790,7 @@ export const API = (_apiTypeCheck = {
         id: z.string(),
         userId: z.string().optional(),
         answerId: z.string().optional(),
+        summaryOnly: z.boolean().optional(),
         top: z.undefined().or(z.coerce.number()),
         bottom: z.undefined().or(z.coerce.number()),
         order: z.enum(['shares', 'profit']).optional(),
@@ -1639,7 +1665,14 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     returns: {} as { redeemablePrizeCash: number },
-    props: z.object({}).strict(),
+    props: z.object({}),
+  },
+  'get-total-redeemable-prize-cash': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as { total: number },
+    props: z.object({}),
   },
   'get-cashouts': {
     method: 'GET',

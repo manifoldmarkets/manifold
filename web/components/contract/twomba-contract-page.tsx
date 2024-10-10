@@ -69,7 +69,7 @@ import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from 'web/pages/[username]/[contractSlug]'
-import { useSweepstakes } from '../sweestakes-context'
+import { useSweepstakes } from '../sweepstakes-provider'
 import { useRouter } from 'next/router'
 
 export function TwombaContractPageContent(props: ContractParams) {
@@ -87,22 +87,11 @@ export function TwombaContractPageContent(props: ContractParams) {
   } = props
 
   // sync query state with context
-  const { isPlay, setIsPlay } = useSweepstakes()
+  const { prefersPlay } = useSweepstakes()
   const router = useRouter()
-  useEffect(() => {
-    if (router.isReady) {
-      setIsPlay(router.query.play !== 'false')
-    }
-  }, [router.isReady])
-  useEffect(() => {
-    router.replace(
-      { query: { ...router.query, play: isPlay ? 'true' : 'false' } },
-      undefined,
-      { shallow: true }
-    )
-  }, [isPlay])
-
+  const [isPlay, setIsPlay] = useState<boolean | undefined>(prefersPlay)
   const livePlayContract = useLiveContractWithAnswers(props.contract)
+  const sweepsIsPossible = !!livePlayContract.siblingContractId
   const liveCashContract = props.cash
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
       useLiveContractWithAnswers(props.cash.contract)
@@ -112,11 +101,68 @@ export function TwombaContractPageContent(props: ContractParams) {
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
   const user = useUser()
 
+  // Read and set play state from the query if the user hasn't set their preference
+  useEffect(() => {
+    if (
+      isPlay !== undefined || // user has set their preference
+      prefersPlay !== undefined || // user has set their preference
+      !router.isReady // not ready yet
+    )
+      return
+    const playQuery = router.query.play
+    const queryIndicatesSweeps = playQuery === 'false'
+    const queryIndicatesPlay =
+      playQuery === 'true' ||
+      (playQuery === undefined &&
+        !sweepsIsPossible &&
+        prefersPlay === undefined)
+    if (queryIndicatesSweeps) {
+      if (sweepsIsPossible && isPlay) {
+        setIsPlay(false)
+      } else if (!sweepsIsPossible && !isPlay) {
+        setIsPlay(true)
+      }
+    } else if (queryIndicatesPlay && !isPlay) {
+      setIsPlay(true)
+    }
+  }, [isPlay, router.query, prefersPlay])
+
+  // When the user changes their preference, update the play state and set the query
+  useEffect(() => {
+    if (prefersPlay === undefined) return
+    const shouldBePlay =
+      (prefersPlay && !isPlay) || (!sweepsIsPossible && !isPlay)
+    const shouldBeSweeps =
+      !prefersPlay &&
+      (isPlay === undefined || isPlay === true) &&
+      sweepsIsPossible
+    if (shouldBePlay) {
+      setIsPlay(true)
+      setPlayStateInQuery(true)
+    } else if (shouldBeSweeps) {
+      setIsPlay(false)
+      setPlayStateInQuery(false)
+    }
+  }, [prefersPlay])
+
+  const setPlayStateInQuery = (play: boolean) => {
+    const newQuery = { ...router.query, play: play.toString() }
+    if (JSON.stringify(newQuery) !== JSON.stringify(router.query)) {
+      router.replace(
+        {
+          query: newQuery,
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+  }
+
   const myContractMetrics = useSavedContractMetrics(liveContract)
   const topContractMetrics = useTopContractMetrics({
     playContract: livePlayContract,
     cashContract: liveCashContract,
-    isPlay,
+    prefersPlay: isPlay ?? false,
     // TODO: do we really need this? leaderboards are below the fold. If we do, should add for cash as well
     defaultTopManaTraders: props.topContractMetrics,
     defaultTopCashTraders: [],

@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { PortfolioMode } from './portfolio-value-graph'
 import { CoinNumber } from '../widgets/coin-number'
 import { Col } from '../layout/col'
-import { useSweepstakes } from '../sweestakes-context'
+import { useSweepstakes } from '../sweepstakes-provider'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export function PortfolioGraphNumber(props: {
@@ -24,7 +24,7 @@ export function PortfolioGraphNumber(props: {
     isSpice,
   } = props
 
-  const { isPlay } = useSweepstakes()
+  const { prefersPlay } = useSweepstakes()
 
   return (
     <div
@@ -47,7 +47,7 @@ export function PortfolioGraphNumber(props: {
             isSpice
               ? 'spice'
               : TWOMBA_ENABLED
-              ? isPlay
+              ? prefersPlay
                 ? 'mana'
                 : 'sweepies'
               : 'mana'

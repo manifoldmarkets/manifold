@@ -7,7 +7,7 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../widgets/title'
-import { AddLiquidityPanel } from './liquidity-modal'
+import { AddLiquidityControl } from './liquidity-modal'
 import { getAnte, getTieredCost } from 'common/economy'
 import { CoinNumber } from '../widgets/coin-number'
 import { TierIcon, getPresentedTierName } from '../tiers/tier-tooltip'
@@ -88,7 +88,7 @@ export function AddLiquidityDialogue(props: {
           {alreadyHighestTier ? 'Add liquidity' : 'Upgrade Tier'}
         </Title>
         {alreadyHighestTier ? (
-          <AddLiquidityPanel
+          <AddLiquidityControl
             contract={contract}
             amount={amount}
             setAmount={setAmount}

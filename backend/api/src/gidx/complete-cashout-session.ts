@@ -13,7 +13,7 @@ import {
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxn } from 'shared/txn/run-txn'
-import { getIp } from 'shared/analytics'
+import { getIp, track } from 'shared/analytics'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getUser, LOCAL_DEV } from 'shared/utils'
 import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
@@ -74,6 +74,10 @@ export const completeCashoutSession: APIHandler<
   }
   log('complete cashout session body:', body)
   if (MANUALLY_PROCESS_CASH_OUT) {
+    track(auth.uid, 'gidx complete cashout session', {
+      status: 'manual',
+      message: 'Payment successful',
+    })
     await debitCoinsManual(userId, manaCashAmount, props, PaymentMethod)
     return {
       status: 'success',
@@ -92,7 +96,11 @@ export const completeCashoutSession: APIHandler<
     }),
   })
   if (!res.ok) {
-    throw new APIError(400, 'GIDX complete checkout session failed')
+    track(auth.uid, 'gidx complete cashout session', {
+      status: 'error',
+      message: 'GIDX error',
+    })
+    throw new APIError(400, 'GIDX complete cashout session failed')
   }
   const cashierResponse =
     (await res.json()) as CompleteSessionDirectCashierResponse
@@ -106,6 +114,11 @@ export const completeCashoutSession: APIHandler<
     ResponseMessage,
   } = cashierResponse
   if (ResponseCode >= 300) {
+    track(auth.uid, 'gidx complete cashout session', {
+      status: 'error',
+      message: 'Error: ' + ResponseMessage,
+      gidxMessage: SessionStatusMessage,
+    })
     return {
       status: 'error',
       message: 'Error: ' + ResponseMessage,
@@ -117,6 +130,11 @@ export const completeCashoutSession: APIHandler<
     SessionStatusMessage,
     AllowRetry
   )
+  track(auth.uid, 'gidx complete cashout session', {
+    status,
+    message,
+    gidxMessage,
+  })
   if (status !== 'success') {
     return { status, message, gidxMessage }
   }

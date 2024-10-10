@@ -13,6 +13,7 @@ import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getAnswersForContract } from 'shared/supabase/answers'
+import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
   return await betsQueue.enqueueFn(
@@ -29,7 +30,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
   const user = await getUser(uid)
   if (!user) throw new APIError(401, 'Your account was not found')
 
-  const { bets, contract } = await runShortTrans(async (pgTrans) => {
+  const results = await runShortTrans(async (pgTrans) => {
     const contract = await getContract(pgTrans, contractId)
     if (!contract) throw new APIError(404, 'Contract not found')
     const { closeTime, isResolved, mechanism } = contract
@@ -49,7 +50,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
 
     const unfilledBetsAndBalances = await Promise.all(
       answersToSell.map((answer) =>
-        getUnfilledBetsAndUserBalances(pgTrans, contract, answer.id)
+        getUnfilledBetsAndUserBalances(pgTrans, contract, uid, answer.id)
       )
     )
     const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)
@@ -57,6 +58,17 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     unfilledBetsAndBalances.forEach((b) => {
       balancesByUserId = { ...balancesByUserId, ...b.balanceByUserId }
     })
+    const allMyMetrics = await getContractMetrics(
+      pgTrans,
+      [uid],
+      contractId,
+      contract.answers.map((a) => a.id),
+      true
+    )
+    const contractMetrics = [
+      ...(unfilledBetsAndBalances.flatMap((b) => b.contractMetrics) ?? []),
+      ...allMyMetrics,
+    ]
 
     const userBets = await pgTrans.map(
       `select * from contract_bets where user_id = $1 and answer_id in ($2:list)`,
@@ -83,7 +95,6 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
         `You specified an answer to sell in which you have 0 shares.`
       )
 
-    const betGroupId = crypto.randomBytes(12).toString('hex')
     const betResults = getCpmmMultiSellSharesInfo(
       contract,
       answers,
@@ -92,51 +103,57 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       balancesByUserId,
       loanAmountByAnswerId
     )
+    const results = []
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
-    const bets = await Promise.all(
-      betResults.map((newBetResult) =>
-        executeNewBetResult(
-          pgTrans,
-          newBetResult,
-          contract,
-          user,
-          isApi,
-          undefined,
-          betGroupId,
-          deterministic,
-          false
-        )
+    const betGroupId = crypto.randomBytes(12).toString('hex')
+    for (const newBetResult of betResults) {
+      const result = await executeNewBetResult(
+        pgTrans,
+        newBetResult,
+        contract,
+        user,
+        isApi,
+        contractMetrics,
+        undefined,
+        betGroupId,
+        deterministic,
+        false
       )
-    )
+      results.push(result)
+    }
+    const bets = results.flatMap((r) => r.fullBets)
     const loanPaid = sum(Object.values(loanAmountByAnswerId))
     if (loanPaid > 0 && bets.length > 0) {
       await incrementBalance(pgTrans, uid, {
         balance: -loanPaid,
       })
     }
-    return { bets, contract }
+    return results
   })
 
   log(`Main transaction finished - auth ${uid}.`)
 
   const continuation = async () => {
-    const fullBets = bets.flatMap((result) => result.fullBets)
-    const allOrdersToCancel = bets.flatMap((result) => result.allOrdersToCancel)
-    const makers = bets.flatMap((result) => result.makers ?? [])
-    const user = bets[0].user
+    const fullBets = results.flatMap((result) => result.fullBets)
+    const allOrdersToCancel = results.flatMap(
+      (result) => result.allOrdersToCancel
+    )
+    const makers = results.flatMap((result) => result.makers ?? [])
+    const user = results[0].user
     await onCreateBets(
       fullBets,
-      contract,
+      results[0].contract,
       user,
       allOrdersToCancel,
       makers,
-      bets.some((b) => b.streakIncremented),
+      results.some((b) => b.streakIncremented),
+      undefined,
       undefined
     )
   }
 
   return {
-    result: bets.map((result) => ({
+    result: results.map((result) => ({
       ...result.newBet,
       betId: result.betId,
       betGroupId: result.betGroupId,

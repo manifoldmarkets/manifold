@@ -7,7 +7,6 @@ import {
 import { getContractParams } from 'common/contract-params'
 import { base64toPoints } from 'common/edge/og'
 import { CASH_SUFFIX } from 'common/envs/constants'
-import { getContract, getContractFromSlug } from 'common/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
 import { pick, sortBy, uniqBy } from 'lodash'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
@@ -20,17 +19,24 @@ import { Title } from 'web/components/widgets/title'
 import { useBetsOnce, useUnfilledBets } from 'web/hooks/use-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useUser } from 'web/hooks/use-user'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { initApiAdmin } from 'web/lib/api/admin-api'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { useSweepstakes } from 'web/components/sweepstakes-provider'
+import { unauthedApi } from 'common/util/api'
+import { FullMarket } from 'common/api/market-types'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { username, contractSlug } = ctx.params
-  const adminDb = await initSupabaseAdmin()
-  const contract = await getContractFromSlug(adminDb, contractSlug)
 
+  const contract = (await unauthedApi('slug/:slug', {
+    slug: contractSlug,
+  }).catch((e) => {
+    console.error('Error fetching contract', e)
+    return null
+  })) as FullMarket | null
   if (!contract) {
     return {
       notFound: true,
@@ -49,7 +55,12 @@ export async function getStaticProps(ctx: {
 
   if (contract.token === 'CASH') {
     const manaContract = contract.siblingContractId
-      ? await getContract(adminDb, contract.siblingContractId)
+      ? ((await unauthedApi('market/:id', {
+          id: contract.siblingContractId,
+        }).catch((e) => {
+          console.error('Error fetching contract', e)
+          return null
+        })) as FullMarket | null)
       : null
     const slug = manaContract?.slug ?? contractSlug.replace(CASH_SUFFIX, '')
 
@@ -60,15 +71,20 @@ export async function getStaticProps(ctx: {
       },
     }
   }
-
-  const props = await getContractParams(contract, adminDb)
+  const adminKey = await initApiAdmin()
+  const props = await getContractParams(contract, adminKey)
 
   // Fetch sibling contract if it exists
   let cash = undefined
   if (contract.siblingContractId) {
-    const cashContract = await getContract(adminDb, contract.siblingContractId)
+    const cashContract = (await unauthedApi('market/:id', {
+      id: contract.siblingContractId,
+    }).catch((e) => {
+      console.error('Error fetching contract', e)
+      return null
+    })) as FullMarket | null
     if (cashContract) {
-      const params = await getContractParams(cashContract, adminDb)
+      const params = await getContractParams(cashContract, adminKey)
       cash = pick(params, [
         'contract',
         'lastBetTime',
@@ -107,21 +123,37 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
 }
 
 function NonPrivateContractPage(props: { contractParams: ContractParams }) {
-  const { contract, pointsString } = props.contractParams
+  const { contract, pointsString, cash } = props.contractParams
+  const { prefersPlay } = useSweepstakes()
 
   const points = pointsString ? base64toPoints(pointsString) : []
+  const cashPoints = cash
+    ? cash.pointsString
+      ? base64toPoints(cash.pointsString)
+      : []
+    : null
 
   const inIframe = useIsIframe()
   if (!contract) {
     return <Custom404 customText="Unable to fetch question" />
   }
   if (inIframe) {
-    return <ContractEmbedPage contract={contract} points={points} />
+    return (
+      <ContractEmbedPage
+        contract={contract}
+        points={points}
+        cashContract={cash ? cash.contract : null}
+        cashPoints={cashPoints}
+      />
+    )
   }
 
   return (
     <Page trackPageView={false} className="xl:col-span-10">
-      <ContractSEO contract={contract} points={pointsString} />
+      <ContractSEO
+        contract={!prefersPlay && cash?.contract ? cash.contract : contract}
+        points={pointsString}
+      />
       <TwombaContractPageContent key={contract.id} {...props.contractParams} />
     </Page>
   )

@@ -67,8 +67,7 @@ export async function bulkUpdate<
   db: SupabaseDirectClient,
   table: T,
   idFields: Column<T>[],
-  values: ColumnValues[],
-  timeoutMs?: number // only works with SupabaseDirectClientTimeout
+  values: ColumnValues[]
 ) {
   if (values.length) {
     const columnNames = Object.keys(values[0])
@@ -77,16 +76,7 @@ export async function bulkUpdate<
     const query = pgp.helpers.update(values, cs) + ` WHERE ${clause}`
     // Hack to properly cast values.
     const q = query.replace(/::(\w*)'/g, "'::$1")
-    if (timeoutMs) {
-      if (!('timeout' in db)) {
-        throw new Error(
-          'bulkUpdate with timeoutMs is not supported in a transaction'
-        )
-      }
-      await db.timeout(timeoutMs, (t) => t.none(q))
-    } else {
-      await db.none(q)
-    }
+    await db.none(q)
   }
 }
 
@@ -125,11 +115,16 @@ export async function bulkUpdateData<T extends TableName>(
   db: SupabaseDirectClient,
   table: T,
   // TODO: explicit id field
-  updates: (Partial<DataFor<T>> & { id: string })[]
+  updates: (Partial<DataFor<T>> & { id: string | number })[]
 ) {
   if (updates.length > 0) {
     const values = updates
-      .map((update) => `('${update.id}', '${JSON.stringify(update)}'::jsonb)`)
+      .map(
+        (update) =>
+          `(${
+            typeof update.id === 'string' ? `'${update.id}'` : update.id
+          }, '${JSON.stringify(update)}'::jsonb)`
+      )
       .join(',\n')
 
     await db.none(
