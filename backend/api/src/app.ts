@@ -22,6 +22,7 @@ import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
 import { getMe } from './get-me'
 import { saveTwitchCredentials } from './save-twitch-credentials'
 import { addLiquidity } from './add-liquidity'
+import { removeLiquidity } from './remove-liquidity'
 import { validateiap } from './validate-iap'
 import { markallnotifications } from './mark-all-notifications'
 import { updatememberrole } from './update-group-member-role'
@@ -330,6 +331,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:contractId/close': closeMarket,
   'market/:contractId/resolve': resolveMarket,
   'market/:contractId/add-liquidity': addLiquidity,
+  'market/:contractId/remove-liquidity': removeLiquidity,
   'market/:contractId/add-bounty': addBounty,
   'market/:contractId/award-bounty': awardBounty,
   'market/:contractId/answer': createAnswerCPMM,
