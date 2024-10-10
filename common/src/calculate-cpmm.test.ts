@@ -5,6 +5,7 @@ import {
   getCpmmOutcomeProbabilityAfterBet,
   addCpmmLiquidity,
   type CpmmState,
+  removeCpmmLiquidity,
 } from './calculate-cpmm'
 import { noFees } from './fees'
 
@@ -127,6 +128,67 @@ describe('CPMM Calculations', () => {
       const newProb = getCpmmProbability(newPool, newP)
 
       expect(newProb).toBeCloseTo(initialProb, 5)
+    })
+
+    it('should not change if state if 0 liquidity is added', () => {
+      const pool = { YES: 100, NO: 100 }
+      const p = 0.5
+      const amount = 0
+
+      const { newPool, newP } = addCpmmLiquidity(pool, p, amount)
+
+      expect(newPool.YES).toBeCloseTo(pool.YES, 5)
+      expect(newPool.NO).toBeCloseTo(pool.NO, 5)
+      expect(newP).toBeCloseTo(p, 5)
+    })
+  })
+
+  describe('removeCpmmLiquidity', () => {
+    const initialPool = { YES: 100, NO: 100 }
+    const initialP = 0.5
+    const amount = 10
+
+    it('should not change the probability when removing liquidity', () => {
+      const initialProb = getCpmmProbability(initialPool, initialP)
+      const { newPool, newP } = removeCpmmLiquidity(
+        initialPool,
+        initialP,
+        amount
+      )
+      const finalProb = getCpmmProbability(newPool, newP)
+
+      expect(finalProb).toBeCloseTo(initialProb, 5)
+    })
+
+    it('should result in the same state after adding then removing liquidity', () => {
+      const { newPool: poolAfterAdd, newP: pAfterAdd } = addCpmmLiquidity(
+        initialPool,
+        initialP,
+        amount
+      )
+      const { newPool: finalPool, newP: finalP } = removeCpmmLiquidity(
+        poolAfterAdd,
+        pAfterAdd,
+        amount
+      )
+
+      expect(finalPool.YES).toBeCloseTo(initialPool.YES, 5)
+      expect(finalPool.NO).toBeCloseTo(initialPool.NO, 5)
+      expect(finalP).toBeCloseTo(initialP, 5)
+    })
+
+    it('should result in the same state after removing then adding liquidity', () => {
+      const { newPool: poolAfterRemove, newP: pAfterRemove } =
+        removeCpmmLiquidity(initialPool, initialP, amount)
+      const { newPool: finalPool, newP: finalP } = addCpmmLiquidity(
+        poolAfterRemove,
+        pAfterRemove,
+        amount
+      )
+
+      expect(finalPool.YES).toBeCloseTo(initialPool.YES, 5)
+      expect(finalPool.NO).toBeCloseTo(initialPool.NO, 5)
+      expect(finalP).toBeCloseTo(initialP, 5)
     })
   })
 })

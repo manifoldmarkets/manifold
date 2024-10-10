@@ -558,6 +558,18 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'market/:contractId/remove-liquidity': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as LiquidityProvision,
+    props: z
+      .object({
+        contractId: z.string(),
+        amount: z.number().gt(0).finite(),
+      })
+      .strict(),
+  },
   'market/:contractId/add-bounty': {
     method: 'POST',
     visibility: 'public',
