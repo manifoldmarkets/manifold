@@ -578,6 +578,7 @@ export function addCpmmMultiLiquidityAnswersSumToOne(
 
 // 0 to 1. The minimum fraction of the pool that we let remove. Extreme ratios with extreme p values have bad liquidity i think.
 export const FRACTION_OF_POOL_MIN = 0.1
+// Must be at least this many yes and no shares
 export const MINIMUM_LIQUIDITY = 100
 
 export function removeCpmmLiquidity(
@@ -613,7 +614,7 @@ export function maximumRemovableLiquidity(pool: { [outcome: string]: number }) {
   const { YES: y, NO: n } = pool
   const ratioMax = (n * z + y * z - Math.min(y, n)) / (2 * z - 1)
 
-  const limitMax = Math.min(y, n) - MINIMUM_LIQUIDITY
+  const limitMax = Math.max(Math.min(y, n) - MINIMUM_LIQUIDITY, 0)
 
   return Math.min(ratioMax, limitMax)
 }
