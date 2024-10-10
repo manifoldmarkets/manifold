@@ -92,17 +92,15 @@ export function AddLiquidityControl(props: {
     ? undefined
     : Math.max(0, contract.subsidyPool + amount * (mode === 'add' ? 1 : -1))
 
-  const { newPool, error: withdrawError } =
-    contract.mechanism === 'cpmm-1' &&
-    mode === 'remove' &&
-    !!amount &&
-    amount > contract.subsidyPool
-      ? removeCpmmLiquidity(
+  const newPool =
+    contract.mechanism === 'cpmm-1' && mode === 'remove' && !!amount
+      ? amount > contract.subsidyPool &&
+        removeCpmmLiquidity(
           contract.pool,
           contract.p,
           amount - contract.subsidyPool
-        )
-      : { newPool: undefined, error: undefined }
+        ).newPool
+      : undefined
 
   const isCashContract = contract.token === 'CASH'
 

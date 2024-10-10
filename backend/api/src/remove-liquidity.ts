@@ -55,7 +55,7 @@ export const removeLiquidity: APIHandler<
       )
 
       if (error) {
-        throw new APIError(403, `Remaining liquidity too low. Pool is ${error}`)
+        throw new APIError(403, `Remaining liquidity too low`)
       }
 
       await updateContract(pgTrans, contractId, {
