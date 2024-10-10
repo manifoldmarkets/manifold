@@ -166,6 +166,8 @@ export type SupabaseAdditionalFilter = {
 
 export type SearchState = {
   contracts: Contract[] | undefined
+  users: FullUser[] | undefined
+  topics: LiteGroup[] | undefined
   shouldLoadMore: boolean
   // mirror of search param state, but to determine if the first load should load new data
   lastSearchParams?: {
@@ -201,13 +203,10 @@ export function SupabaseSearch(props: {
   emptyState?: ReactNode
   hideSearch?: boolean
   hideContractFilters?: boolean
-  topics?: LiteGroup[]
-  setTopics?: (topics: LiteGroup[]) => void
   topicSlug?: string
   contractsOnly?: boolean
   hideSearchTypes?: boolean
   hideAvatars?: boolean
-  shownTopics?: LiteGroup[]
   initialTopics?: LiteGroup[]
   setTopicSlug?: (slug: string) => void
 }) {
@@ -227,13 +226,11 @@ export function SupabaseSearch(props: {
     useUrlParams,
     autoFocus,
     hideContractFilters,
-    setTopics: setTopicResults,
     topicSlug = '',
     contractsOnly,
     hideSearch,
     hideSearchTypes,
     hideAvatars,
-    shownTopics,
     initialTopics,
     setTopicSlug,
   } = props
@@ -271,12 +268,27 @@ export function SupabaseSearch(props: {
     })
   }, [prefersPlay, sweepiesState])
 
-  const [userResults, setUserResults] = usePersistentInMemoryState<
-    FullUser[] | undefined
-  >(undefined, `${persistPrefix}-queried-user-results`)
+  const showSearchTypes = !!query && !hideSearchTypes && !contractsOnly
 
-  const { contracts, loading, queryContracts, shouldLoadMore } =
-    useContractSearch(persistPrefix, searchParams, topicSlug, additionalFilter)
+  const {
+    contracts,
+    users,
+    topics,
+    loading,
+    shouldLoadMore,
+    querySearchResults,
+  } = useSearchResults(
+    persistPrefix,
+    searchParams,
+    showSearchTypes,
+    topicSlug,
+    additionalFilter
+  )
+
+  const showTopics =
+    topics && topics.length > 0 && query && query.length > 0 && setTopicSlug
+
+  const showUsers = users && users.length > 0 && query !== '' && !topicSlug
 
   const onChange = (changes: Partial<SearchParams>) => {
     const updatedParams = { ...changes }
@@ -291,25 +303,12 @@ export function SupabaseSearch(props: {
 
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
-  const showSearchTypes = !!query && !hideSearchTypes && !contractsOnly
   const showContractFilters = !hideContractFilters
-
-  const queryUsers = useEvent(async (query: string) =>
-    searchUsers(query, USERS_PER_PAGE)
-  )
-
-  const queryTopics = useEvent(async (query: string) =>
-    searchGroups({
-      term: query,
-      limit: TOPICS_PER_PAGE,
-      type: 'lite',
-    })
-  )
 
   useDebouncedEffect(
     () => {
       if (isReady) {
-        queryContracts(true)
+        querySearchResults(true)
       }
     },
     100,
@@ -329,22 +328,6 @@ export function SupabaseSearch(props: {
   )
 
   const searchCountRef = useRef(0)
-  useDebouncedEffect(
-    () => {
-      const searchCount = ++searchCountRef.current
-      // Wait for both queries to reduce visual flicker on update.
-      Promise.all([queryUsers(query), queryTopics(query)]).then(
-        ([userResults, topicResults]) => {
-          if (searchCount === searchCountRef.current) {
-            setUserResults(userResults)
-            setTopicResults?.(topicResults.lite)
-          }
-        }
-      )
-    },
-    100,
-    [query]
-  )
 
   const emptyContractsState =
     props.emptyState ??
@@ -391,15 +374,6 @@ export function SupabaseSearch(props: {
         )}
       </Col>
     ))
-
-  const showUsers =
-    userResults && userResults.length > 0 && query !== '' && !topicSlug
-  const showTopics =
-    shownTopics &&
-    shownTopics.length > 0 &&
-    !!setTopicSlug &&
-    query &&
-    query.length > 0
 
   const hasQuery = query !== ''
 
@@ -474,18 +448,18 @@ export function SupabaseSearch(props: {
               <Row className="text-ink-500 items-center gap-1 text-sm">
                 <hr className="border-ink-300 ml-2 grow sm:ml-0" />
                 <span>
-                  {!query || !shownTopics?.length
+                  {!query || !topics?.length
                     ? ''
-                    : shownTopics.length >= 100
+                    : topics.length >= 100
                     ? '100+'
-                    : `${shownTopics.length}`}{' '}
-                  {!query || !shownTopics?.length ? 'Topics' : 'topics'}
+                    : `${topics.length}`}{' '}
+                  {!query || !topics?.length ? 'Topics' : 'topics'}
                 </span>
                 <hr className="border-ink-300 mr-2 grow sm:mr-0" />
               </Row>
               <BrowseTopicPills
                 className={'relative w-full px-2 pb-4'}
-                topics={shownTopics}
+                topics={topics}
                 currentTopicSlug={topicSlug}
                 onClick={(newSlug: string) => {
                   setTopicSlug(newSlug)
@@ -493,7 +467,7 @@ export function SupabaseSearch(props: {
               />
             </>
           )}
-          {showUsers && <UserResults userResults={userResults} />}
+          {showUsers && <UserResults userResults={users} />}
           {(showTopics || showUsers) && (
             <Row className="text-ink-500 items-center gap-1 text-sm">
               <hr className="border-ink-300 ml-2 grow sm:ml-0" />
@@ -531,7 +505,7 @@ export function SupabaseSearch(props: {
               !hideActions && actionColumn,
             ])}
           />
-          <LoadMoreUntilNotVisible loadMore={queryContracts} />
+          <LoadMoreUntilNotVisible loadMore={() => querySearchResults()} />
           {shouldLoadMore && <LoadingResults />}
           {!shouldLoadMore &&
             (filter !== 'all' ||
@@ -594,12 +568,15 @@ const LoadingResults = () => {
 
 const FRESH_SEARCH_CHANGED_STATE: SearchState = {
   contracts: undefined,
+  users: undefined,
+  topics: undefined,
   shouldLoadMore: true,
 }
 
-const useContractSearch = (
+const useSearchResults = (
   persistPrefix: string,
   searchParams: SearchParams,
+  showSearchTypes: boolean,
   topicSlug: string,
   additionalFilter?: SupabaseAdditionalFilter
 ) => {
@@ -611,7 +588,7 @@ const useContractSearch = (
 
   const requestId = useRef(0)
 
-  const queryContracts = useEvent(async (freshQuery?: boolean) => {
+  const querySearchResults = useEvent(async (freshQuery?: boolean) => {
     const {
       q: query,
       s: sort,
@@ -652,53 +629,69 @@ const useContractSearch = (
         }, 500)
       }
 
-      const newContracts = await searchContracts({
-        term: query,
-        filter,
-        sort,
-        contractType,
-        offset: freshQuery ? 0 : state.contracts?.length ?? 0,
-        limit: CONTRACTS_PER_SEARCH_PAGE,
-        topicSlug:
-          topicSlug !== ''
-            ? topicSlug
-            : topicFilter !== ''
-            ? topicFilter
-            : undefined,
-        creatorId: additionalFilter?.creatorId,
-        isPrizeMarket: isPrizeMarketString,
-        marketTier,
-        forYou,
-        token: isSweepiesString === '1' ? 'CASH' : 'MANA',
-      })
-
-      if (id === requestId.current) {
-        const freshContracts = freshQuery
-          ? newContracts
-          : buildArray(state.contracts, newContracts)
-
-        const shouldLoadMore = newContracts.length === CONTRACTS_PER_SEARCH_PAGE
-
-        setState({
-          contracts: freshContracts,
-          shouldLoadMore,
-          lastSearchParams: {
-            query,
-            sort,
+      try {
+        const [newContracts, newUsers, newTopics] = await Promise.all([
+          searchContracts({
+            term: query,
             filter,
+            sort,
             contractType,
-            topicSlug,
+            offset: freshQuery ? 0 : state.contracts?.length ?? 0,
+            limit: CONTRACTS_PER_SEARCH_PAGE,
+            topicSlug:
+              topicSlug !== ''
+                ? topicSlug
+                : topicFilter !== ''
+                ? topicFilter
+                : undefined,
+            creatorId: additionalFilter?.creatorId,
             isPrizeMarket: isPrizeMarketString,
-            forYou,
             marketTier,
-            topicFilter,
-            isSweepies: isSweepiesString,
-          },
-        })
-        clearTimeout(timeoutId)
-        setLoading(false)
+            forYou,
+            token: isSweepiesString === '1' ? 'CASH' : 'MANA',
+          }),
+          searchUsers(query, USERS_PER_PAGE),
+          searchGroups({
+            term: query,
+            limit: TOPICS_PER_PAGE,
+            type: 'lite',
+          }),
+        ])
 
-        return shouldLoadMore
+        if (id === requestId.current) {
+          const freshContracts = freshQuery
+            ? newContracts
+            : buildArray(state.contracts, newContracts)
+
+          const shouldLoadMore =
+            newContracts.length === CONTRACTS_PER_SEARCH_PAGE
+
+          setState({
+            contracts: freshContracts,
+            users: newUsers,
+            topics: newTopics.lite,
+            shouldLoadMore,
+            lastSearchParams: {
+              query,
+              sort,
+              filter,
+              contractType,
+              topicSlug,
+              isPrizeMarket: isPrizeMarketString,
+              forYou,
+              marketTier,
+              topicFilter,
+              isSweepies: isSweepiesString,
+            },
+          })
+          clearTimeout(timeoutId)
+          setLoading(false)
+
+          return shouldLoadMore
+        }
+      } catch (error) {
+        console.error('Error fetching search results:', error)
+        setLoading(false)
       }
     }
     return false
@@ -721,9 +714,11 @@ const useContractSearch = (
 
   return {
     contracts,
+    users: state.users,
+    topics: state.topics,
     loading,
     shouldLoadMore: state.shouldLoadMore,
-    queryContracts,
+    querySearchResults,
   }
 }
 

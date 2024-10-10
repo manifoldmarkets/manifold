@@ -177,11 +177,6 @@ export function GroupPageContent(props: {
   }, [topicFromRouter])
 
   const allTopics = buildArray(topicsFromRouter, topicsByImportance)
-  const [topicResults, setTopicResults] = usePersistentInMemoryState<
-    LiteGroup[] | undefined
-  >(undefined, `search-topic-results`)
-
-  const shownTopics = q && topicResults?.length ? topicResults : undefined
   const initialTopics = topicsByImportance
 
   const currentTopic = allTopics.find((t) => t.slug === topicSlug)
@@ -204,12 +199,10 @@ export function GroupPageContent(props: {
       useUrlParams
       isWholePage
       headerClassName={'pt-0 px-2 bg-canvas-50'}
-      setTopics={setTopicResults}
       topicSlug={topicSlug}
       defaultFilter="open"
       defaultSort="score"
       defaultForYou="1"
-      shownTopics={shownTopics}
       initialTopics={initialTopics}
       setTopicSlug={(slug) => {
         setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
