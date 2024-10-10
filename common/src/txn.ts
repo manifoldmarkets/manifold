@@ -46,6 +46,7 @@ type AnyTxnType =
   | ContractUndoOldResolutionPayout
   | ContractAnte
   | AddSubsidy
+  | RemoveSubsidy
   | ReclaimMana
   | ManachanTweet
   | BotCommentFee
@@ -495,6 +496,13 @@ type AddSubsidy = {
   token: 'M$' | 'CASH'
 }
 
+type RemoveSubsidy = {
+  category: 'REMOVE_SUBSIDY'
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  token: 'M$' | 'CASH'
+}
+
 type ReclaimMana = {
   category: 'RECLAIM_MANA'
   fromType: 'USER'
@@ -545,6 +553,7 @@ type ManifoldTopUp = {
 }
 
 export type AddSubsidyTxn = Txn & AddSubsidy
+export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink

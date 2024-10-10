@@ -1,6 +1,5 @@
-import { groupBy, mapValues, sumBy } from 'lodash'
+import { groupBy, mapValues, minBy, omitBy, sum, sumBy } from 'lodash'
 import { LimitBet } from './bet'
-
 import { Fees, getFeesSplit, getTakerFee, noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
@@ -577,14 +576,45 @@ export function addCpmmMultiLiquidityAnswersSumToOne(
   return newPools
 }
 
-export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
-  const userAmounts = groupBy(liquidities, (w) => w.userId)
-  const totalAmount = sumBy(liquidities, (w) => w.amount)
+// Must be at least this many yes and no shares
+export const MINIMUM_LIQUIDITY = 100
 
-  return mapValues(
-    userAmounts,
-    (amounts) => sumBy(amounts, (w) => w.amount) / totalAmount
+export function removeCpmmLiquidity(
+  pool: { [outcome: string]: number },
+  p: number,
+  amount: number
+) {
+  const { newPool, liquidity, newP } = addCpmmLiquidity(pool, p, -1 * amount)
+
+  const error =
+    newPool.YES < MINIMUM_LIQUIDITY || newPool.NO < MINIMUM_LIQUIDITY
+
+  return { newPool, liquidity, newP, error }
+}
+
+export function maximumRemovableLiquidity(pool: { [outcome: string]: number }) {
+  const { YES: y, NO: n } = pool
+  return Math.max(Math.min(y, n) - MINIMUM_LIQUIDITY, 0)
+}
+
+export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
+  if (liquidities.length === 0) return {} // this should never happen
+
+  const liquiditiesByUser = groupBy(liquidities, 'userId')
+
+  // we don't clawback from users that took more liquidity than they gave
+  // instead we count their contribution as 0 and split the rest
+  const userAmounts = mapValues(liquiditiesByUser, (liquidities) =>
+    Math.max(0, sumBy(liquidities, 'amount'))
   )
+  const totalAmount = sum(Object.values(userAmounts))
+  // ... unless they are all net liquidity leeches, in which case remaining liquidity goes to the first liquidizer (persumably the creator)
+  if (totalAmount === 0) {
+    const firstUser = minBy(liquidities, 'createdTime')!.userId
+    return { [firstUser]: 1 }
+  }
+  const weights = mapValues(userAmounts, (amount) => amount / totalAmount)
+  return omitBy(weights, (w) => w === 0)
 }
 
 const getK = (pool: { [outcome: string]: number }) => {
