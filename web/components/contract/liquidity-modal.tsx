@@ -82,7 +82,8 @@ export function AddLiquidityControl(props: {
   const canWithdraw =
     contract.mechanism === 'cpmm-1' &&
     !!user &&
-    (user.id === contract.creatorId || isAdminId(user.id))
+    ((user.id === contract.creatorId && contract.token !== 'CASH') ||
+      isAdminId(user.id))
   const maxWithdrawable = !canWithdraw
     ? 0
     : contract.subsidyPool + maximumRemovableLiquidity(contract.pool)
