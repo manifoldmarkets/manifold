@@ -160,11 +160,9 @@ export function AddLiquidityControl(props: {
         <ChoicesToggleGroup
           currentChoice={mode}
           setChoice={(mode) => {
-            if (mode === 'add') {
-              setMode('add')
-              if (!amount) setAmount(Math.floor(maxWithdrawable))
-            } else {
-              setMode('remove')
+            setMode(mode as 'add' | 'remove')
+            if (mode === 'remove' && !amount) {
+              setAmount(Math.floor(maxWithdrawable))
             }
           }}
           choicesMap={{
