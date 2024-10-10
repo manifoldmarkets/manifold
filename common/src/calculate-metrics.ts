@@ -419,7 +419,7 @@ export const calculateProfitMetricsWithProb = <
 
 export const calculateAnswerMetricsWithNewBetsOnly = (
   newBets: MarginalBet[],
-  userMetrics: ContractMetric[],
+  userMetrics: Omit<ContractMetric, 'id'>[],
   contractId: string,
   isMultiMarket: boolean
 ) => {
