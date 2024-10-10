@@ -69,9 +69,7 @@ export function getPresentedTierName(tier: MarketTierType) {
   if (tier == 'play') {
     return 'Basic'
   }
-  if (tier == 'basic') {
-    return 'Standard'
-  }
+
   return capitalize(tier)
 }
 
@@ -80,14 +78,7 @@ export function TierIcon(props: { tier: MarketTierType; className?: string }) {
   if (tier == 'play') {
     return <PlayTier className={className} />
   }
-  if (tier == 'basic') {
-    return (
-      <LogoIcon
-        className="stroke-ink-600 h-[1em] w-[1em] shrink-0 stroke-[1.5px] transition-transform"
-        aria-hidden
-      />
-    )
-  }
+
   if (tier == 'plus') {
     return <PlusTier className={className} />
   }

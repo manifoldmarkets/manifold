@@ -30,21 +30,6 @@ type TIER_TYPE = { name: MarketTierType; icon: ReactNode }
 export const TIERS: TIER_TYPE[] = [
   { name: 'play', icon: <PlayTier /> },
   {
-    name: 'basic',
-    icon: (
-      <LogoIcon
-        className="stroke-ink-600 flex-inline shrink-0 stroke-[1.5px]"
-        aria-hidden
-        style={{
-          width: '1em',
-          height: '1em',
-          marginRight: '0.1em',
-          marginBottom: '0.1em',
-        }}
-      />
-    ),
-  },
-  {
     name: 'plus',
     icon: <PlusTier />,
   },
@@ -61,7 +46,7 @@ export const TIERS: TIER_TYPE[] = [
 const TIER_EXCLUSIONS: Partial<
   Record<CreateableOutcomeType, MarketTierType[]>
 > = {
-  NUMBER: ['play', 'basic'],
+  NUMBER: ['play'],
 }
 
 const isTierDisabled = (
@@ -124,7 +109,7 @@ function PriceSection(props: {
   const { baseCost, outcomeType, currentTier, setMarketTier } = props
 
   if (!currentTier) {
-    return <CoinNumber amount={getTieredCost(baseCost, 'basic', outcomeType)} />
+    return <CoinNumber amount={getTieredCost(baseCost, 'plus', outcomeType)} />
   }
   return (
     <Col className="w-full gap-2">
@@ -132,7 +117,7 @@ function PriceSection(props: {
         Choose a tier to determine how much initial liquidity to inject into the
         market. More liquidity attracts more traders but has a higher cost.
       </div>
-      <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-5">
+      <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
         {TIERS.map((tier: TIER_TYPE) => {
           return (
             <Tier
@@ -207,16 +192,12 @@ function Tier(props: {
         currentTier == tier
           ? tier == 'play'
             ? 'outline-ink-500'
-            : tier == 'basic'
-            ? 'outline-ink-500'
             : tier == 'plus'
             ? 'outline-blue-500'
             : tier == 'premium'
             ? 'outline-purple-400'
             : 'outline-pink-500'
           : tier == 'play'
-          ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
-          : tier == 'basic'
           ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
           : tier == 'plus'
           ? 'opacity-50 outline-transparent hover:outline-purple-500/50'
