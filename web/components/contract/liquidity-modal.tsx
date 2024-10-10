@@ -22,6 +22,7 @@ import { isAdminId } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { APIError } from 'common/api/utils'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { floatingEqual } from 'common/util/math'
 
 export function AddLiquidityModal(props: {
   contract: MarketContract
@@ -179,14 +180,15 @@ export function AddLiquidityControl(props: {
               <span className={clsx(!newTrickleQueue && 'font-semibold')}>
                 {formatMoney(contract.subsidyPool, contract.token)}
               </span>
-              {newTrickleQueue != undefined && (
-                <>
-                  <span className="text-ink-600 mx-1">&rarr;</span>
-                  <span className="font-semibold">
-                    {formatMoney(newTrickleQueue, contract.token)}
-                  </span>
-                </>
-              )}
+              {newTrickleQueue != undefined &&
+                !floatingEqual(newTrickleQueue, contract.subsidyPool) && (
+                  <>
+                    <span className="text-ink-600 mx-1">&rarr;</span>
+                    <span className="font-semibold">
+                      {formatMoney(newTrickleQueue, contract.token)}
+                    </span>
+                  </>
+                )}
               <InfoTooltip
                 text="When you subsidize, the liquidity is added over time to prevent exploits"
                 className="ml-1"
