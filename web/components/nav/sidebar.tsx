@@ -242,7 +242,6 @@ const bottomNav = (
   router: AppRouterInstance
 ) =>
   buildArray<NavItem>(
-    !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
       name: theme ?? 'auto',
@@ -278,5 +277,6 @@ const bottomNav = (
         await withTracking(firebaseLogout, 'sign out')()
         await router.refresh()
       },
-    }
+    },
+    !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin }
   )
