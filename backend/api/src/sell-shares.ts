@@ -180,7 +180,9 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     answerId,
     outcome,
     shares,
-    contractMetrics.find((m) => m.answerId == answerId)!
+    contractMetrics.find(
+      (m) => m.answerId == answerId && m.userId === auth.uid
+    )!
   )
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
   const deps = [userId, contractId, ...simulatedMakerIds]
@@ -220,7 +222,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     answerId,
     outcome,
     shares,
-    staleMetrics.find((m) => m.answerId == answerId)!
+    staleMetrics.find((m) => m.answerId == answerId && m.userId === auth.uid)!
   )
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
 
@@ -257,7 +259,9 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       answerId,
       outcome,
       shares,
-      contractMetrics.find((m) => m.answerId == answerId)!
+      contractMetrics.find(
+        (m) => m.answerId == answerId && m.userId === auth.uid
+      )!
     )
     log(`Calculated sale information for ${user.username} - auth ${userId}.`)
 
