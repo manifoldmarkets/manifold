@@ -27,11 +27,10 @@ import { Row } from '../layout/row'
 import { TwombaToggle } from '../twomba/twomba-toggle'
 import { getLinkTarget } from '../widgets/linkify'
 import { BoostDialog } from './boost-button'
-import { AddLiquidityModal } from './subsidize-button'
+import { AddLiquidityModal } from './liquidity-modal'
 import { TwombaContractInfoDialog } from './twomba-contract-info-dialog'
 import { WatchMarketModal } from './watch-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
-import { isAdminId } from 'common/envs/constants'
 
 export function TwombaHeaderActions(props: {
   playContract: Contract
@@ -41,7 +40,6 @@ export function TwombaHeaderActions(props: {
   const user = useUser()
   const privateUser = usePrivateUser()
   const isCreator = user?.id === playContract.creatorId
-  const isAdmin = user ? isAdminId(user.id) : false
 
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [repostOpen, setRepostOpen] = useState(false)
@@ -149,7 +147,7 @@ export function TwombaHeaderActions(props: {
     ...(addLiquidityEnabled
       ? [
           {
-            name: 'Add Liquidity',
+            name: 'Liquidity',
             onClick: () => {
               setLiquidityOpen(true)
             },

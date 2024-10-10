@@ -12,6 +12,7 @@ export type TierParamsType =
 // Derive the MarketTierType from the array
 export type MarketTierType = (typeof tiers)[number]
 
+// For multi & mumeric markets this can only get the current tier, not back-calculate
 export function getTierFromLiquidity(
   contract: MarketContract,
   liquidity: number

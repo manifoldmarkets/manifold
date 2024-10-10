@@ -2,7 +2,11 @@ import dayjs from 'dayjs'
 import { BETTOR } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
+import {
+  Avatar,
+  type AvatarSizeType,
+  EmptyAvatar,
+} from 'web/components/widgets/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -10,13 +14,15 @@ import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { DisplayUser } from 'common/api/user-types'
 import { MoneyDisplay } from '../bet/money-display'
+import clsx from 'clsx'
 
 export function FeedLiquidity(props: {
-  className?: string
   liquidity: LiquidityProvision
   isCashContract: boolean
+  avatarSize?: AvatarSizeType
+  className?: string
 }) {
-  const { liquidity, isCashContract } = props
+  const { liquidity, isCashContract, avatarSize, className } = props
   const { userId, createdTime } = liquidity
 
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
@@ -27,27 +33,33 @@ export function FeedLiquidity(props: {
   const isSelf = user?.id === userId
 
   return (
-    <div className="to-primary-300 -ml-2 rounded-full bg-gradient-to-r from-pink-300 via-purple-300 p-2">
-      <Row className="bg-ink-100 items-stretch gap-2 rounded-full">
-        {isSelf ? (
-          <Avatar avatarUrl={user.avatarUrl} username={user.username} />
-        ) : showUser && bettor ? (
-          <UserHovercard userId={userId}>
-            <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
-          </UserHovercard>
-        ) : (
-          <div className="relative px-1">
-            <EmptyAvatar />
-          </div>
-        )}
-        <LiquidityStatusText
-          liquidity={liquidity}
-          isSelf={isSelf}
-          bettor={bettor}
-          isCashContract={isCashContract}
+    <Row className={clsx('items-stretch gap-2', className)}>
+      {isSelf ? (
+        <Avatar
+          avatarUrl={user.avatarUrl}
+          username={user.username}
+          size={avatarSize}
         />
-      </Row>
-    </div>
+      ) : showUser && bettor ? (
+        <UserHovercard userId={userId}>
+          <Avatar
+            avatarUrl={bettor.avatarUrl}
+            username={bettor.username}
+            size={avatarSize}
+          />
+        </UserHovercard>
+      ) : (
+        <div className="relative px-1">
+          <EmptyAvatar />
+        </div>
+      )}
+      <LiquidityStatusText
+        liquidity={liquidity}
+        isSelf={isSelf}
+        bettor={bettor}
+        isCashContract={isCashContract}
+      />
+    </Row>
   )
 }
 
@@ -58,24 +70,27 @@ function LiquidityStatusText(props: {
   isCashContract: boolean
 }) {
   const { liquidity, bettor, isSelf, isCashContract } = props
-  const { amount, createdTime } = liquidity
-
-  const bought = amount >= 0 ? 'added' : 'withdrew'
-  const money = (
-    <MoneyDisplay amount={Math.abs(amount)} isCashContract={isCashContract} />
-  )
+  const { amount, createdTime, isAnte } = liquidity
 
   return (
     <div className="text-ink-1000 flex flex-wrap items-center gap-x-1 pr-4 text-sm">
       {bettor ? (
         <UserHovercard userId={bettor.id}>
-          <UserLink user={bettor} />
+          <UserLink user={bettor} className="font-semibold" />
         </UserHovercard>
       ) : (
         <span>{isSelf ? 'You' : `A ${BETTOR}`}</span>
       )}
-      {bought} a subsidy of <span className="text-primary-700">{money}</span>
-      <RelativeTimestamp time={createdTime} className="text-ink-1000" />
+      <span>
+        {isAnte ? 'created question with' : amount >= 0 ? 'added' : 'withdrew'}
+      </span>
+      <MoneyDisplay
+        amount={Math.abs(amount)}
+        isCashContract={isCashContract}
+        className="text-primary-700"
+      />
+      <span>subsidy</span>
+      <RelativeTimestamp time={createdTime} shortened />
     </div>
   )
 }
