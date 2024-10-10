@@ -445,10 +445,13 @@ export const MultiNumericDistributionChart = (props: {
     height,
   } = props
   const { min, max } = contract
-  const data = useMemo(() => getExpectedValuesArray(contract), [contract])
+  const data = useMemo(
+    () => getExpectedValuesArray(contract),
+    [contract.answers]
+  )
   const otherData = useMemo(
     () => (updatedContract ? getExpectedValuesArray(updatedContract) : []),
-    [updatedContract]
+    [updatedContract?.answers]
   )
   const maxY = Math.max(...data.map((d) => d.y))
   const otherMaxY = Math.max(...otherData.map((d) => d.y))

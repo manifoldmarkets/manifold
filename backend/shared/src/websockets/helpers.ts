@@ -5,6 +5,8 @@ import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
 import { Answer } from 'common/answer'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { ContractMetric } from 'common/contract-metric'
+import { groupBy } from 'lodash'
 
 export function broadcastUpdatedPrivateUser(userId: string) {
   // don't send private user info because it's private and anyone can listen
@@ -35,6 +37,17 @@ export function broadcastOrders(bets: LimitBet[]) {
   if (bets.length === 0) return
   const { contractId } = bets[0]
   broadcast(`contract/${contractId}/orders`, { bets })
+}
+
+export function broadcastUpdatedMetrics(metrics: ContractMetric[]) {
+  if (metrics.length === 0) return
+  const { contractId } = metrics[0]
+  const metricsByUser = groupBy(metrics, (m) => m.userId)
+  for (const userMetrics of Object.values(metricsByUser)) {
+    broadcast(`contract/${contractId}/user-metrics/${userMetrics[0].userId}`, {
+      metrics: userMetrics,
+    })
+  }
 }
 
 export function broadcastNewComment(
