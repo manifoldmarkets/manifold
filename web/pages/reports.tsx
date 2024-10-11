@@ -1,6 +1,6 @@
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { ControlledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { ModReport, ReportStatus } from 'common/mod-report'
@@ -9,6 +9,7 @@ import { useModReports } from 'web/hooks/use-mod-reports'
 import ModReportItem from 'web/components/mod-report-item'
 import { Title } from 'web/components/widgets/title'
 import { api } from 'web/lib/api/api'
+import { useState } from 'react'
 
 const updateModReport = async (
   reportId: number,
@@ -25,6 +26,7 @@ const updateModReport = async (
 
 export default function ReportsPage() {
   const isAdminOrMod = useAdminOrMod()
+  const [activeTab, setActiveTab] = useState('unresolved')
   const {
     reports: modReports,
     initialLoading,
@@ -32,7 +34,11 @@ export default function ReportsPage() {
     modNotes,
     setReportStatuses,
     setModNotes,
-  } = useModReports()
+  } = useModReports(
+    activeTab === 'resolved'
+      ? ['resolved']
+      : ['new', 'under review', 'needs admin']
+  )
 
   const handleStatusChange = async (
     reportId: number,
@@ -133,11 +139,13 @@ export default function ReportsPage() {
       />
       <Col className="p-4">
         <Title>Reports</Title>
-        <QueryUncontrolledTabs
+        <ControlledTabs
           tabs={tabs}
-          defaultIndex={0}
-          scrollToTop={true}
+          activeIndex={activeTab === 'resolved' ? 1 : 0}
           trackingName="mod-reports-tabs"
+          onClick={(title, index) =>
+            setActiveTab(index === 0 ? 'unresolved' : 'resolved')
+          }
         />
       </Col>
     </Page>
