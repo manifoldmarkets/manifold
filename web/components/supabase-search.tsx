@@ -505,7 +505,9 @@ export function SupabaseSearch(props: {
               !hideActions && actionColumn,
             ])}
           />
-          <LoadMoreUntilNotVisible loadMore={() => querySearchResults()} />
+          <LoadMoreUntilNotVisible
+            loadMore={() => querySearchResults(false, true)}
+          />
           {shouldLoadMore && <LoadingResults />}
           {!shouldLoadMore &&
             (filter !== 'all' ||
@@ -588,114 +590,128 @@ const useSearchResults = (
 
   const requestId = useRef(0)
 
-  const querySearchResults = useEvent(async (freshQuery?: boolean) => {
-    const {
-      q: query,
-      s: sort,
-      f: filter,
-      ct: contractType,
-      p: isPrizeMarketString,
-      fy: forYou,
-      mt: marketTier,
-      tf: topicFilter,
-      sw: isSweepiesString,
-    } = searchParams
-    // if fresh query and the search params haven't changed (like user clicked back) do nothing
-    if (
-      freshQuery &&
-      query === state.lastSearchParams?.query &&
-      sort === state.lastSearchParams?.sort &&
-      filter === state.lastSearchParams?.filter &&
-      contractType === state.lastSearchParams?.contractType &&
-      topicSlug === state.lastSearchParams?.topicSlug &&
-      topicSlug !== 'recent' &&
-      isPrizeMarketString == state.lastSearchParams?.isPrizeMarket &&
-      forYou == state.lastSearchParams?.forYou &&
-      marketTier == state.lastSearchParams?.marketTier &&
-      topicFilter == state.lastSearchParams?.topicFilter &&
-      isSweepiesString == state.lastSearchParams?.isSweepies
-    ) {
-      return state.shouldLoadMore
-    }
-
-    if (freshQuery || state.shouldLoadMore) {
-      const id = ++requestId.current
-      let timeoutId: NodeJS.Timeout | undefined
-      if (freshQuery) {
-        timeoutId = setTimeout(() => {
-          if (id === requestId.current) {
-            setLoading(true)
-          }
-        }, 500)
+  const querySearchResults = useEvent(
+    async (freshQuery?: boolean, contractsOnly?: boolean) => {
+      const {
+        q: query,
+        s: sort,
+        f: filter,
+        ct: contractType,
+        p: isPrizeMarketString,
+        fy: forYou,
+        mt: marketTier,
+        tf: topicFilter,
+        sw: isSweepiesString,
+      } = searchParams
+      // if fresh query and the search params haven't changed (like user clicked back) do nothing
+      if (
+        freshQuery &&
+        query === state.lastSearchParams?.query &&
+        sort === state.lastSearchParams?.sort &&
+        filter === state.lastSearchParams?.filter &&
+        contractType === state.lastSearchParams?.contractType &&
+        topicSlug === state.lastSearchParams?.topicSlug &&
+        topicSlug !== 'recent' &&
+        isPrizeMarketString == state.lastSearchParams?.isPrizeMarket &&
+        forYou == state.lastSearchParams?.forYou &&
+        marketTier == state.lastSearchParams?.marketTier &&
+        topicFilter == state.lastSearchParams?.topicFilter &&
+        isSweepiesString == state.lastSearchParams?.isSweepies
+      ) {
+        return state.shouldLoadMore
       }
 
-      try {
-        const [newContracts, newUsers, newTopics] = await Promise.all([
-          searchContracts({
-            term: query,
-            filter,
-            sort,
-            contractType,
-            offset: freshQuery ? 0 : state.contracts?.length ?? 0,
-            limit: CONTRACTS_PER_SEARCH_PAGE,
-            topicSlug:
-              topicSlug !== ''
-                ? topicSlug
-                : topicFilter !== ''
-                ? topicFilter
-                : undefined,
-            creatorId: additionalFilter?.creatorId,
-            isPrizeMarket: isPrizeMarketString,
-            marketTier,
-            forYou,
-            token: isSweepiesString === '1' ? 'CASH' : 'MANA',
-          }),
-          searchUsers(query, USERS_PER_PAGE),
-          searchGroups({
-            term: query,
-            limit: TOPICS_PER_PAGE,
-            type: 'lite',
-          }),
-        ])
+      const includeUsersAndTopics = !contractsOnly && showSearchTypes
 
-        if (id === requestId.current) {
-          const freshContracts = freshQuery
-            ? newContracts
-            : buildArray(state.contracts, newContracts)
-
-          const shouldLoadMore =
-            newContracts.length === CONTRACTS_PER_SEARCH_PAGE
-
-          setState({
-            contracts: freshContracts,
-            users: newUsers,
-            topics: newTopics.lite,
-            shouldLoadMore,
-            lastSearchParams: {
-              query,
-              sort,
-              filter,
-              contractType,
-              topicSlug,
-              isPrizeMarket: isPrizeMarketString,
-              forYou,
-              marketTier,
-              topicFilter,
-              isSweepies: isSweepiesString,
-            },
-          })
-          clearTimeout(timeoutId)
-          setLoading(false)
-
-          return shouldLoadMore
+      if (freshQuery || state.shouldLoadMore) {
+        const id = ++requestId.current
+        let timeoutId: NodeJS.Timeout | undefined
+        if (freshQuery) {
+          timeoutId = setTimeout(() => {
+            if (id === requestId.current) {
+              setLoading(true)
+            }
+          }, 500)
         }
-      } catch (error) {
-        console.error('Error fetching search results:', error)
-        setLoading(false)
+
+        try {
+          const searchPromises: Promise<any>[] = [
+            searchContracts({
+              term: query,
+              filter,
+              sort,
+              contractType,
+              offset: freshQuery ? 0 : state.contracts?.length ?? 0,
+              limit: CONTRACTS_PER_SEARCH_PAGE,
+              topicSlug:
+                topicSlug !== ''
+                  ? topicSlug
+                  : topicFilter !== ''
+                  ? topicFilter
+                  : undefined,
+              creatorId: additionalFilter?.creatorId,
+              isPrizeMarket: isPrizeMarketString,
+              marketTier,
+              forYou,
+              token: isSweepiesString === '1' ? 'CASH' : 'MANA',
+            }),
+          ]
+
+          if (includeUsersAndTopics) {
+            searchPromises.push(
+              searchUsers(query, USERS_PER_PAGE),
+              searchGroups({
+                term: query,
+                limit: TOPICS_PER_PAGE,
+                type: 'lite',
+              })
+            )
+          }
+
+          const results = await Promise.all(searchPromises)
+
+          if (id === requestId.current) {
+            const newContracts = results[0]
+            const newUsers = results[1]
+            const newTopics = results[2]
+            const freshContracts = freshQuery
+              ? newContracts
+              : buildArray(state.contracts, newContracts)
+
+            const shouldLoadMore =
+              newContracts.length === CONTRACTS_PER_SEARCH_PAGE
+
+            setState({
+              contracts: freshContracts,
+              users: includeUsersAndTopics ? newUsers : state.users,
+              topics: includeUsersAndTopics ? newTopics.lite : state.topics,
+              shouldLoadMore,
+              lastSearchParams: {
+                query,
+                sort,
+                filter,
+                contractType,
+                topicSlug,
+                isPrizeMarket: isPrizeMarketString,
+                forYou,
+                marketTier,
+                topicFilter,
+                isSweepies: isSweepiesString,
+              },
+            })
+            clearTimeout(timeoutId)
+            setLoading(false)
+
+            return shouldLoadMore
+          }
+        } catch (error) {
+          console.error('Error fetching search results:', error)
+          setLoading(false)
+        }
       }
+      return false
     }
-    return false
-  })
+  )
 
   const contracts = state.contracts
     ? uniqBy(
