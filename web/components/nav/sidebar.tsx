@@ -12,7 +12,6 @@ import {
 } from '@heroicons/react/outline'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { GiCapitol } from 'react-icons/gi'
-import { PiTelevisionSimpleBold } from 'react-icons/pi'
 import clsx from 'clsx'
 import { useState } from 'react'
 
@@ -158,11 +157,11 @@ const getDesktopNav = (
         href: '/election',
         icon: GiCapitol,
       },
-      {
-        name: 'TV',
-        href: '/tv',
-        icon: PiTelevisionSimpleBold,
-      },
+      // {
+      //   name: 'TV',
+      //   href: '/tv',
+      //   icon: PiTelevisionSimpleBold,
+      // },
       { name: 'Refer a friend', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
       {
         name: 'Messages',
@@ -212,11 +211,11 @@ const getMobileNav = (
       href: '/messages',
       icon: PrivateMessagesIcon,
     },
-    {
-      name: 'TV',
-      href: '/tv',
-      icon: PiTelevisionSimpleBold,
-    },
+    // {
+    //   name: 'TV',
+    //   href: '/tv',
+    //   icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
+    // },
     // !isNewUser && {
     //   name: 'Dashboards',
     //   href: '/dashboard',
