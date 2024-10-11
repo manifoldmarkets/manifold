@@ -1,12 +1,12 @@
 import { ImageResponse } from '@vercel/og'
 import { ImageResponseOptions } from '@vercel/og/dist/types'
 import { NextRequest } from 'next/server'
-import { ContractEmbedPage } from 'web/pages/[username]/[contractSlug]'
+import ContractEmbedPage from 'web/pages/[username]/[contractSlug]'
 import { classToTw } from 'web/components/og/utils'
 import { OgCardProps } from 'common/contract-seo'
 import { unauthedApi } from 'common/util/api'
 import { base64toPoints } from 'common/edge/og'
-import { getCardOptions } from './market'
+import { getCardOptions as marketGetCardOptions } from './market'
 
 export const config = { runtime: 'edge' }
 export const getCardOptions = async () => {
@@ -43,9 +43,8 @@ export default async function handler(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
 
-    const contractSlug = searchParams.get('contractSlug')
+    const contractSlug = searchParams.get('contractSlug') ?? '' 
     const username = searchParams.get('username')
-
     const contract = await unauthedApi('slug/:slug', {
       slug: contractSlug,
     }).catch((e) => {
@@ -60,7 +59,12 @@ export default async function handler(req: NextRequest) {
       ? await unauthedApi('market/:id', { id: contract.siblingContractId })
       : null
 
-    const points = base64toPoints(contract.pointsString ?? '')
+    if (contract && 'pointsString' in contract) {
+      const points = base64toPoints(contract.pointsString ?? '')
+    } else {
+      const points = [];
+    }
+
     const cashPoints = cashContract ? base64toPoints(cashContract.pointsString ?? '') : null
 
     const options = await getCardOptions()
