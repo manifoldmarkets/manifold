@@ -196,6 +196,7 @@ import { completeCashoutSession } from 'api/gidx/complete-cashout-session'
 import { getCashouts } from './get-cashouts'
 import { getKYCStats } from './get-kyc-stats'
 import { getTxns } from './get-txns'
+import { getIp } from 'shared/analytics'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -234,7 +235,8 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
     ) {
       log(`${method} ${url}`)
     }
-    metrics.inc('http/request_count', { endpoint, baseEndpoint, method })
+    const ip = getIp(req)
+    metrics.inc('http/request_count', { endpoint, baseEndpoint, method, ip })
     res.on('close', () => {
       const endTs = hrtime.bigint()
       const latencyMs = Number(endTs - startTs) / 1e6 // Convert to milliseconds
