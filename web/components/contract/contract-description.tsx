@@ -12,6 +12,7 @@ import { updateMarket } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import { LogoIcon } from '../icons/logo-icon'
 import { SweepVerifySection } from '../twomba/sweep-verify-section'
+import clsx from 'clsx'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -27,7 +28,7 @@ export function ContractDescription(props: {
     <>
       <div className="mt-6">
         {contract.token === 'CASH' && !user?.sweepstakesVerified && (
-          <SweepVerifySection />
+          <SweepVerifySection className="mb-4" />
         )}
         {isCreator || isAdmin ? (
           <EditableDescription contract={contract} description={description} />
@@ -38,13 +39,17 @@ export function ContractDescription(props: {
             hideCollapse={!user}
           />
         )}
-        {contract.token === 'CASH' && (
-          <div className="text-ink-600 bg-canvas-50 flex items-center justify-center space-x-2 rounded-md px-4 py-2 italic">
-            <LogoIcon className="h-5 w-5 text-indigo-600" />
-            <span>This question is managed and resolved by Manifold.</span>
-            <LogoIcon className="h-5 w-5 text-indigo-600" />
-          </div>
-        )}
+
+        <div
+          className={clsx(
+            contract.token !== 'CASH' && 'invisible',
+            'text-ink-600 bg-canvas-50 flex items-center justify-center space-x-2 rounded-md px-4 py-2 italic'
+          )}
+        >
+          <LogoIcon className="h-5 w-5 text-indigo-600" />
+          <span>This question is managed and resolved by Manifold.</span>
+          <LogoIcon className="h-5 w-5 text-indigo-600" />
+        </div>
       </div>
     </>
   )
