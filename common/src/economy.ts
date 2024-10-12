@@ -56,7 +56,7 @@ export const getTieredCost = (
     ? baseCost * 10 ** (tiers.indexOf(tier) - 1)
     : baseCost
 
-  if (outcomeType == 'NUMBER' && tier != 'basic' && tier != 'play') {
+  if (outcomeType == 'NUMBER' && tier != 'play') {
     return tieredCost / 10
   }
 
