@@ -15,7 +15,6 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { DowntimeBanner, TwombaBanner } from 'web/components/nav/banner'
-import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 
 export async function getStaticProps() {
   try {
@@ -71,7 +70,7 @@ export default function Home(props: { headlines: Headline[] }) {
         </button>
       )}
       {/* Preload feed */}
-      {user && <LiveGeneratedFeed userId={user.id} reload={false} hidden />}
+      {/* {user && <LiveGeneratedFeed userId={user.id} reload={false} hidden />} */}
     </Page>
   )
 }
