@@ -37,10 +37,7 @@ export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const axisRef = useRef<SVGGElement>(null)
   useEffect(() => {
     if (axisRef.current != null) {
-      select(axisRef.current)
-        .call(axis)
-        .select('.domain')
-        .attr('stroke-width', 0)
+      select(axisRef.current).call(axis).select('.domain').remove()
     }
   }, [h, axis])
   return <g ref={axisRef} transform={`translate(0, ${h})`} />
@@ -87,7 +84,7 @@ export const YAxis = <Y,>(props: {
         })
       }
 
-      brush.select('.domain').attr('stroke-width', 0)
+      brush.select('.domain').remove()
       if (iconSVG) {
         brush.selectAll('.tick text').attr('x', '1.7em') // Horizontal offset from the text
       }

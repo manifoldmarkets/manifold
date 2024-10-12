@@ -8,6 +8,7 @@ import {
   formatMoneyNumber,
   formatPercent,
   formatSweepiesNumber,
+  formatWithCommas,
 } from 'common/util/format'
 import { bisector } from 'd3-array'
 import { axisBottom, axisRight } from 'd3-axis'
@@ -770,31 +771,26 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const py1 = useCallback((p: P) => yScale(p.y), [yScale])
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
+
     const nTicks = h < 200 ? 3 : 5
-    const customTickValues = getTickValues(min, max, nTicks)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 120)
-    const yAxis =
+    const yAxis = axisRight<number>(yScale)
+    if (yKind === 'percent' || negativeThreshold) {
+      yAxis.tickValues(getTickValues(min, max, nTicks))
+    } else {
+      yAxis.ticks(nTicks)
+    }
+
+    yAxis.tickFormat(
       yKind === 'percent'
-        ? axisRight<number>(yScale)
-            .tickValues(customTickValues)
-            .tickFormat((n) => formatPct(n))
+        ? (n) => formatPct(n)
         : yKind === 'Ṁ' || yKind === 'spice'
-        ? negativeThreshold
-          ? axisRight<number>(yScale)
-              .tickValues(customTickValues)
-              .tickFormat((n) => formatMoneyNumber(n))
-          : axisRight<number>(yScale)
-              .ticks(nTicks)
-              .tickFormat((n) => formatMoneyNumber(n))
+        ? (n) => formatMoneyNumber(n)
         : yKind === 'sweepies'
-        ? negativeThreshold
-          ? axisRight<number>(yScale)
-              .tickValues(customTickValues)
-              .tickFormat((n) => formatSweepiesNumber(n))
-          : axisRight<number>(yScale)
-              .ticks(nTicks)
-              .tickFormat((n) => formatSweepiesNumber(n))
-        : axisRight<number>(yScale).ticks(nTicks)
+        ? (n) => formatSweepiesNumber(n)
+        : (n) => formatWithCommas(n)
+    )
+
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
