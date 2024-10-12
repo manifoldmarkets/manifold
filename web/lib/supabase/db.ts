@@ -3,9 +3,14 @@ import { ENV_CONFIG } from 'common/envs/constants'
 
 let currentToken: string | undefined
 
-export function initSupabaseClient() {
-  const instanceId =
+export function getSupabaseInstanceId() {
+  return (
     ENV_CONFIG.supabaseLoadBalancerInstanceId ?? ENV_CONFIG.supabaseInstanceId
+  )
+}
+
+export function initSupabaseClient() {
+  const instanceId = getSupabaseInstanceId()
   return createClient(instanceId, ENV_CONFIG.supabaseAnonKey)
 }
 

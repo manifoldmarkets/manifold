@@ -1,6 +1,7 @@
 import { createClient } from 'common/supabase/utils'
-import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { ENV } from 'common/envs/constants'
 import { getSecrets, getServiceAccountCredentials } from 'common/secrets'
+import { getSupabaseInstanceId } from './db'
 
 // the vercel names for these secrets
 let key =
@@ -17,5 +18,5 @@ export async function initSupabaseAdmin() {
     const result = await getSecrets(creds, 'SUPABASE_KEY')
     key = result['SUPABASE_KEY']
   }
-  return createClient(ENV_CONFIG.supabaseInstanceId, key)
+  return createClient(getSupabaseInstanceId(), key)
 }
