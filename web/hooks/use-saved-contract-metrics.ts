@@ -1,7 +1,10 @@
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
 import { useUser } from './use-user'
-import { getTopContractMetrics } from 'common/supabase/contract-metrics'
+import {
+  getTopContractMetrics,
+  getUserContractMetrics,
+} from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from './use-persistent-local-state'
@@ -12,8 +15,6 @@ import {
   getDefaultMetric,
   applyMetricToSummary,
 } from 'common/calculate-metrics'
-import { api } from 'web/lib/api/api'
-import { removeUndefinedProps } from 'common/util/object'
 
 export const useSavedContractMetrics = (
   contract: Contract,
@@ -47,14 +48,13 @@ export const useSavedContractMetrics = (
   const refreshMyMetrics = useEvent(async () => {
     if (!user?.id) return
 
-    const metrics = await await api(
-      `market/:id/positions`,
-      removeUndefinedProps({
-        id: contract.id,
-        userId: user.id,
-        answerId,
-      })
+    const metrics = await getUserContractMetrics(
+      user.id,
+      contract.id,
+      db,
+      answerId
     )
+
     if (!metrics.length) {
       setSavedMetrics([])
       return

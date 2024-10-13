@@ -283,3 +283,22 @@ export async function getOrderedContractMetricRowsForContractId(
   const { data: q2Data } = await run(q2)
   return q1Data.concat(q2Data)
 }
+
+export async function getUserContractMetrics(
+  userId: string,
+  contractId: string,
+  db: SupabaseClient,
+  answerId: string | undefined | null // undefined means any answer id goes
+) {
+  let q = selectJson(db, 'user_contract_metrics')
+    .eq('user_id', userId)
+    .eq('contract_id', contractId)
+  if (answerId === null) {
+    q = q.is('answer_id', null)
+  } else if (answerId) {
+    q = q.eq('answer_id', answerId)
+  }
+
+  const { data } = await run(q)
+  return data.map((r) => r.data) as ContractMetric[]
+}
