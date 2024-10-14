@@ -11,18 +11,29 @@ import {
 import { log } from 'shared/utils'
 import { runShortTrans } from 'shared/short-transaction'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { buildArray } from 'common/util/array'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
 
+  const pg = createSupabaseDirectClient()
+  const c = await pg.oneOrNone(
+    `select data->'shouldAnswersSumToOne')::boolean as sum_to_one from contracts where id = $1`,
+    [props.contractId]
+  )
+
   return await betsQueue.enqueueFn(
     () => placeMultiBetMain(props, auth.uid, isApi),
-    [auth.uid, props.contractId]
+    buildArray(
+      auth.uid,
+      !c || c.sum_to_one ? props.contractId : props.answerIds
+    )
   )
 }
 
 // Note: this returns a continuation function that should be run for consistency.
-export const placeMultiBetMain = async (
+const placeMultiBetMain = async (
   body: ValidatedAPIParams<'multi-bet'>,
   uid: string,
   isApi: boolean
