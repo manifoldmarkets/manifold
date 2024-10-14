@@ -5,7 +5,6 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
   MultiContract,
-  canCancelContract,
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/api/api'
@@ -141,16 +140,12 @@ function AnswersResolveOptions(props: {
     setIsSubmitting(false)
   }
 
-  const user = useUser()
-  const canCancel = !!user && canCancelContract(user.id, contract)
-
   return (
     <>
       <div className="flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:flex-wrap sm:justify-between">
         <ChooseCancelSelector
           selected={resolveOption}
           onSelect={setResolveOption}
-          canCancel={canCancel}
         />
 
         <Row className="justify-end gap-1">

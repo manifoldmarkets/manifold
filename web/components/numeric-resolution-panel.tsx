@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NumberCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
-import { PseudoNumericContract, canCancelContract } from 'common/contract'
+import { PseudoNumericContract } from 'common/contract'
 import { APIError, api } from 'web/lib/api/api'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
@@ -72,9 +72,6 @@ export function NumericResolutionPanel(props: {
     outcomeMode === undefined ||
     (value === undefined && outcomeMode !== 'CANCEL')
 
-  const user = useUser()
-  const canCancel = !!user && canCancelContract(user.id, contract)
-
   return (
     <>
       <ResolveHeader
@@ -84,11 +81,7 @@ export function NumericResolutionPanel(props: {
         fullTitle={inModal}
       />
 
-      <NumberCancelSelector
-        selected={outcomeMode}
-        onSelect={setOutcomeMode}
-        canCancel={canCancel}
-      />
+      <NumberCancelSelector selected={outcomeMode} onSelect={setOutcomeMode} />
 
       <Spacer h={4} />
 

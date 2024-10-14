@@ -8,7 +8,6 @@ import {
   BinaryContract,
   CPMMMultiContract,
   Contract,
-  canCancelContract,
   resolution,
 } from 'common/contract'
 import { BETTORS } from 'common/user'
@@ -89,9 +88,6 @@ export function ResolutionPanel(props: {
     }
   }
 
-  const user = useUser()
-  const canCancel = !!user && canCancelContract(user.id, contract)
-
   return (
     <>
       <ResolveHeader
@@ -101,11 +97,7 @@ export function ResolutionPanel(props: {
         fullTitle={inModal}
       />
 
-      <YesNoCancelSelector
-        selected={outcome}
-        onSelect={setOutcome}
-        canCancel={canCancel}
-      />
+      <YesNoCancelSelector selected={outcome} onSelect={setOutcome} />
 
       <Spacer h={4} />
       {!!error && <div className="text-scarlet-500">{error}</div>}
@@ -233,9 +225,6 @@ export function MiniResolutionPanel(props: {
 }) {
   const { contract, answer, isAdmin, isCreator, modalSetOpen } = props
 
-  const user = useUser()
-  const canCancel = !!user && canCancelContract(user.id, contract)
-
   const [outcome, setOutcome] = useState<resolution | undefined>()
   const toggleOutcome = (newOutcome: resolution | undefined) => {
     if (newOutcome === outcome) {
@@ -290,11 +279,7 @@ export function MiniResolutionPanel(props: {
         </div>
       )}
       <Col className="gap-1">
-        <YesNoCancelSelector
-          selected={outcome}
-          onSelect={toggleOutcome}
-          canCancel={canCancel}
-        />
+        <YesNoCancelSelector selected={outcome} onSelect={toggleOutcome} />
         {outcome === 'MKT' && (
           <Col className="gap-2">
             <Row className="flex-wrap items-center gap-1">
@@ -347,9 +332,7 @@ export const ResolutionExplainer = (props: {
           right. <br />{' '}
         </>
       )}
-      If you need help, ask in the comments section below; mention{' '}
-      <span className="font-semibold">@mods</span> in your comment if you want
-      to cancel the {answerOrQuestion}. Or, ask in our{' '}
+      If you need help, ask in the comments section below. Or, ask in our{' '}
       <Link
         onClick={(e) => {
           e.stopPropagation()

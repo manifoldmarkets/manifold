@@ -8,11 +8,10 @@ import { Bet } from './bet'
 import { getLiquidity } from './calculate-cpmm'
 import { ContractComment } from './comment'
 import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
-import { CASH_SUFFIX, ENV_CONFIG, isAdminId, isModId } from './envs/constants'
+import { CASH_SUFFIX, ENV_CONFIG } from './envs/constants'
 import { Fees } from './fees'
 import { PollOption } from './poll-option'
 import { formatMoney, formatPercent } from './util/format'
-import { MINUTE_MS } from './util/time'
 import { MarketTierType } from './tier'
 
 /************************************************
@@ -459,11 +458,6 @@ export const MAX_CPMM_PROB = 0.99
 export const MIN_CPMM_PROB = 0.01
 export const MAX_STONK_PROB = 0.95
 export const MIN_STONK_PROB = 0.2
-
-export const canCancelContract = (userId: string, contract: Contract) => {
-  const createdRecently = (Date.now() - contract.createdTime) / MINUTE_MS < 15
-  return createdRecently || isModId(userId) || isAdminId(userId)
-}
 
 export const isMarketRanked = (contract: Contract) =>
   contract.isRanked != false &&
