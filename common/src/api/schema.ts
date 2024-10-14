@@ -93,6 +93,12 @@ const coerceBoolean = z
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
 export const API = (_apiTypeCheck = {
+  'refresh-all-clients': {
+    method: 'POST',
+    visibility: 'public',
+    props: z.object({ message: z.string().optional() }),
+    authed: true,
+  },
   'create-cash-contract': {
     method: 'POST',
     visibility: 'public',

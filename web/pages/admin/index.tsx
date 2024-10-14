@@ -4,6 +4,8 @@ import { LabCard } from '../lab'
 import { NoSEO } from 'web/components/NoSEO'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useAdmin } from 'web/hooks/use-admin'
+import { api } from 'web/lib/api/api'
+import { Button } from 'web/components/buttons/button'
 
 export default function AdminPage() {
   useRedirectIfSignedOut()
@@ -51,6 +53,9 @@ export default function AdminPage() {
         <LabCard title="🤬 reports" href="/admin/reports" />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
+        <Button onClick={() => api('refresh-all-clients', {})}>
+          Refresh all clients
+        </Button>
       </div>
     </Page>
   )

@@ -195,6 +195,7 @@ import { completeCashoutSession } from 'api/gidx/complete-cashout-session'
 import { getCashouts } from './get-cashouts'
 import { getKYCStats } from './get-kyc-stats'
 import { getTxns } from './get-txns'
+import { refreshAllClients } from './refresh-all-clients'
 import { getIp } from 'shared/analytics'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
@@ -294,6 +295,7 @@ app.options('*', allowCorsUnrestricted)
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 const handlers: { [k in APIPath]: APIHandler<k> } = {
+  'refresh-all-clients': refreshAllClients,
   'create-cash-contract': createCashContract,
   bet: placeBet,
   'multi-bet': placeMultiBet,
