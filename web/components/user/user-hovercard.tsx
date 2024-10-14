@@ -27,8 +27,6 @@ export function UserHovercard({
   userId,
   className,
 }: UserHovercardProps) {
-  const isClient = useIsClient()
-  if (!isClient) return <button className="inline-flex">{children}</button>
   return (
     <HoverCard.Root openDelay={150}>
       {/* Use "asChild" and wrap children in a button to prevent nested links.
