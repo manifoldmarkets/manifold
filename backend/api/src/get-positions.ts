@@ -23,7 +23,6 @@ export const getPositions: APIHandler<'market/:id/positions'> = async (
   req
 ) => {
   const { id: contractId } = props
-  throw new APIError(404, `positions endpoint is temporarily disabled`)
 
   if (contractId === 'U3zLgOZkGUE7cvG98961') {
     throw new APIError(404, `We're done with whales vs minnows, sorry!`)
