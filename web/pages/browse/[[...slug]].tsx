@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { type DisplayUser } from 'common/api/user-types'
 import { DESTINY_GROUP_SLUG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
-import { Group, LiteGroup } from 'common/group'
+import { Group } from 'common/group'
 import { removeEmojis } from 'common/util/string'
 import { BETTORS } from 'common/user'
 import { buildArray } from 'common/util/array'
