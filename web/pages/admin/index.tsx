@@ -40,11 +40,6 @@ export default function AdminPage() {
           href="https://manifoldmarkets.grafana.net/d/TFZtEJh4k/supabase"
         />
         <LabCard
-          title="🪵🔥 logflare"
-          description="vercel api logs"
-          href="https://logflare.app/sources/20705"
-        />
-        <LabCard
           title="💤 postgres logs"
           href="https://app.supabase.com/project/pxidrgkatumlvfqaxcll/logs/postgres-logs"
         />
