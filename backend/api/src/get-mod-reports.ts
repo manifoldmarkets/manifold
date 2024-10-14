@@ -1,12 +1,10 @@
 import { ModReport } from 'common/mod-report'
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { log } from 'node:console'
 
 export const getModReports: APIHandler<'get-mod-reports'> = async (props) => {
   const pg = createSupabaseDirectClient()
   const { statuses, limit, offset, count } = props
-  log('getModReports', statuses, limit, offset, count)
 
   if (count) {
     const total = await pg.one<{ count: number }>(
