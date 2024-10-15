@@ -205,7 +205,7 @@ export function TwombaContractPageContent(props: ContractParams) {
   })
 
   const { bets, totalBets, yourNewBets, betPoints } =
-    cashBetData && !isPlay ? cashBetData : playBetData
+    cash && !isPlay ? cashBetData : playBetData
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } =
     liveContract
@@ -596,7 +596,7 @@ const useBetData = (props: {
     if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') {
       const data = multiPointsString
         ? unserializeBase64Multi(multiPointsString)
-        : []
+        : {}
       const newData = getMultiBetPoints(newBets)
 
       return mergeWith(data, newData, (array1, array2) =>
