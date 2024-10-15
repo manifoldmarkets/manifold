@@ -24,7 +24,7 @@ case $ENV in
     prod)
         NEXT_PUBLIC_FIREBASE_ENV=PROD
         GCLOUD_PROJECT=mantic-markets
-        MACHINE_TYPE=n2-standard-8 ;;
+        MACHINE_TYPE=c2-standard-4 ;;
     *)
         echo "Invalid environment; must be dev or prod."
         exit 1

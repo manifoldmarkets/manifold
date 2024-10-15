@@ -13,5 +13,5 @@ COPY dist ./
 ENV PORT=80
 EXPOSE 80/tcp
 
-# 32 GB on the box, give 28 GB to the JS heap
-ENTRYPOINT [ "node", "--max-old-space-size=28672", "backend/api/lib/serve.js" ]
+# 16 GB on the box, give 12 GB to the JS heap
+ENTRYPOINT [ "node", "--max-old-space-size=12288", "backend/api/lib/serve.js" ]
