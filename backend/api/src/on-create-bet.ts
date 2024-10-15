@@ -38,12 +38,15 @@ import {
 } from 'common/economy'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
+import { updateContract } from 'shared/supabase/contracts'
 import { Answer } from 'common/answer'
+import { removeNullOrUndefinedProps } from 'common/util/object'
 import {
   addHouseSubsidy,
   addHouseSubsidyToAnswer,
 } from 'shared/helpers/add-house-subsidy'
 import { debounce } from 'api/helpers/debounce'
+import { Fees } from 'common/fees'
 import {
   broadcastNewBets,
   broadcastOrders,
@@ -153,6 +156,58 @@ export const onCreateBets = async (
 
 const debouncedContractUpdates = (contract: Contract) => {
   const writeUpdates = async () => {
+    const pg = createSupabaseDirectClient()
+    const { uniqueBettorCount } = contract
+    const result = await pg.oneOrNone(
+      `
+          select
+              coalesce(sum(abs(amount)), 0) as volume,
+              max(created_time) as time,
+              count(distinct user_id)::numeric as count,
+              count(distinct case when created_time > now() - interval '1 day' and not is_redemption then user_id end)::numeric as count_day,
+              coalesce(sum((data->'fees'->>'creatorFee')::numeric), 0) AS creator_fee,
+              coalesce(sum((data->'fees'->>'platformFee')::numeric), 0) AS platform_fee,
+              coalesce(sum((data->'fees'->>'liquidityFee')::numeric), 0) AS liquidity_fee
+          FROM contract_bets
+          WHERE contract_id = $1
+      `,
+      [contract.id]
+    )
+    const {
+      volume,
+      time: lastBetTime,
+      count,
+      count_day,
+      creator_fee,
+      platform_fee,
+      liquidity_fee,
+    } = result
+    const collectedFees: Fees = {
+      creatorFee: creator_fee ?? 0,
+      platformFee: platform_fee ?? 0,
+      liquidityFee: liquidity_fee ?? 0,
+    }
+    log('Got updated stats for contract id: ' + contract.id, {
+      volume,
+      lastBetTime,
+      count,
+      count_day,
+      collectedFees,
+    })
+
+    await updateContract(
+      pg,
+      contract.id,
+      removeNullOrUndefinedProps({
+        volume,
+        lastBetTime: lastBetTime ? new Date(lastBetTime).valueOf() : undefined,
+        lastUpdatedTime: Date.now(),
+        uniqueBettorCount: uniqueBettorCount !== count ? count : undefined,
+        uniqueBettorCountDay: count_day,
+        collectedFees,
+      })
+    )
+    log('Wrote debounced updates for contract id: ' + contract.id)
     await revalidateContractStaticProps(contract)
     log('Contract static props revalidated.')
   }
