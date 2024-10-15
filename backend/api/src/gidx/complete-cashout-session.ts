@@ -23,7 +23,7 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import { CashOutPendingTxn } from 'common/txn'
 
 const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
-const MANUALLY_PROCESS_CASH_OUT = true
+const MANUALLY_PROCESS_CASH_OUT = false
 export const completeCashoutSession: APIHandler<
   'complete-cashout-session-gidx'
 > = async (props, auth, req) => {
