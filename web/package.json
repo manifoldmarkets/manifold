@@ -8,7 +8,7 @@
     "dev": "concurrently -n NEXT,TS -c magenta,cyan \"yarn serve\" \"yarn ts-watch\"",
     "dev:dev": "cross-env NEXT_PUBLIC_FIREBASE_ENV=DEV yarn dev",
     "dev:prod": "cross-env NEXT_PUBLIC_FIREBASE_ENV=PROD yarn dev",
-    "dev:local": "cross-env NEXT_PUBLIC_FUNCTIONS_URL=http://localhost:8080 yarn devdev",
+    "dev:local": "cross-env NEXT_PUBLIC_API_URL=localhost:8088 yarn devdev",
     "devdev": "yarn dev:dev",
     "prod": "yarn dev:prod",
     "disk-space-info": "du -hs ./node_modules && du -hs ./.next && du -hs ./.next/cache",
