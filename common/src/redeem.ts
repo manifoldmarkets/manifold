@@ -24,7 +24,7 @@ export const getBinaryRedeemableAmount = (bets: RedeemableBet[]) => {
 }
 
 export const getBinaryRedeemableAmountFromContractMetric = (
-  contractMetric: ContractMetric
+  contractMetric: Omit<ContractMetric, 'id'>
 ) => {
   const yesShares = contractMetric.totalShares['YES'] ?? 0
   const noShares = contractMetric.totalShares['NO'] ?? 0
