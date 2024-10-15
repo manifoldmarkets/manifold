@@ -64,7 +64,7 @@ export async function updateContractMetricsCore() {
     )
 
     log('Loading volume...')
-    const volume = await getVolumeSince(pg, dayAgo, contractIds)
+    const volumeAndCount = await getVolumeAndCountSince(pg, dayAgo, contractIds)
 
     log('Loading unfilled limits...')
     const limits = await getUnfilledLimitOrders(pg, contractIds)
@@ -133,8 +133,9 @@ export async function updateContractMetricsCore() {
         }
       }
       const elasticity = computeElasticity(limits[contract.id] ?? [], contract)
-      const update = {
-        volume24Hours: volume[contract.id] ?? 0,
+      const update: Partial<Contract> = {
+        volume24Hours: volumeAndCount[contract.id]?.volume ?? 0,
+        uniqueBettorCountDay: volumeAndCount[contract.id]?.countDay ?? 0,
         elasticity,
         ...cpmmFields,
       }
@@ -174,22 +175,28 @@ const getUnfilledLimitOrders = async (
     (rows) => rows.map((r) => r.data as LimitBet)
   )
 }
-
-const getVolumeSince = async (
+const getVolumeAndCountSince = async (
   pg: SupabaseDirectClient,
   since: number,
   contractIds: string[]
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select contract_id, sum(abs(amount)) as volume
+      `select contract_id, sum(abs(amount)) as volume,
+      count(distinct case when created_time > now() - interval '1 day' and not is_redemption then user_id end)::numeric as count_day
       from contract_bets
       where created_time >= millis_to_ts($1)
       and not is_redemption
       and contract_id = any($2)
        group by contract_id`,
       [since, contractIds],
-      (r) => [r.contract_id as string, parseFloat(r.volume as string)]
+      (r) => [
+        r.contract_id as string,
+        {
+          volume: parseFloat(r.volume as string),
+          countDay: parseFloat(r.count_day as string),
+        },
+      ]
     )
   )
 }

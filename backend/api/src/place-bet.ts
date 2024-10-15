@@ -4,6 +4,7 @@ import {
   groupBy,
   isEqual,
   mapValues,
+  maxBy,
   orderBy,
   sumBy,
   uniq,
@@ -705,31 +706,6 @@ export const executeNewBetResult = async (
     prob: number
   }[] = []
 
-  if (newBet.answerId) {
-    // Multi-cpmm-1 contract
-    if (newPool) {
-      const { YES: poolYes, NO: poolNo } = newPool
-      const prob = getCpmmProbability(newPool, 0.5)
-      answerUpdates.push({
-        id: newBet.answerId,
-        poolYes,
-        poolNo,
-        prob,
-      })
-    }
-  } else {
-    await updateContract(
-      pgTrans,
-      contract.id,
-      removeUndefinedProps({
-        pool: newPool,
-        p: newP,
-        totalLiquidity: newTotalLiquidity,
-        prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
-      })
-    )
-  }
-
   if (otherBetResults) {
     const otherBetsToInsert = filterDefined(
       otherBetResults.map((result) => {
@@ -766,6 +742,39 @@ export const executeNewBetResult = async (
     )
     betsToInsert.push(...otherBetsToInsert)
   }
+
+  if (newBet.answerId) {
+    // Multi-cpmm-1 contract
+    if (newPool) {
+      const { YES: poolYes, NO: poolNo } = newPool
+      const prob = getCpmmProbability(newPool, 0.5)
+      answerUpdates.push({
+        id: newBet.answerId,
+        poolYes,
+        poolNo,
+        prob,
+      })
+    }
+  } else {
+    const lastBetTime =
+      maxBy(betsToInsert, (b) => b.createdTime)?.createdTime ?? Date.now()
+    await updateContract(
+      pgTrans,
+      contract.id,
+      removeUndefinedProps({
+        pool: newPool,
+        p: newP,
+        totalLiquidity: newTotalLiquidity,
+        prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
+        lastBetTime,
+        volume:
+          contract.volume + sumBy(betsToInsert, (b) => Math.abs(b.amount)),
+        lastUpdatedTime: lastBetTime,
+        uniqueBettorCount: contract.uniqueBettorCount + (bonuxTxn ? 1 : 0),
+      })
+    )
+  }
+
   const bulkInsertStart = Date.now()
   const metrics =
     contract.outcomeType === 'NUMBER' && !firstBetInMultiBet
