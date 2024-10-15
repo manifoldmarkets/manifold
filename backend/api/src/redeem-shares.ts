@@ -117,7 +117,7 @@ export const redeemShares = async (
         })
       }
     } else {
-      let totalCMAmount = 0
+      let totalAmountRedeemed = 0
       for (const metric of contractMetrics.filter((m) => m.userId === userId)) {
         const newUsersBets = newBets.filter(
           (b) => b.answerId == metric.answerId && b.userId === userId
@@ -135,7 +135,7 @@ export const redeemShares = async (
             'Invalid redemption amount, no clue what happened here.'
           )
         }
-        totalCMAmount += netAmount
+        totalAmountRedeemed += netAmount
         const answerId = metric.answerId ?? undefined
         const lastProb = orderBy(newUsersBets, 'createdTime', 'desc')[0]
           .probAfter
@@ -160,11 +160,11 @@ export const redeemShares = async (
         })
       }
 
-      if (totalCMAmount !== 0) {
+      if (totalAmountRedeemed !== 0) {
         balanceUpdates.push({
           id: userId,
           [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
-            totalCMAmount,
+            totalAmountRedeemed,
         })
       }
     }
