@@ -112,6 +112,20 @@ export function TwombaFundsSelector(props: {
           {formatMoneyUSD(DOLLAR_PURCHASE_LIMIT)}. Please try again tomorrow.
         </AlertBox>
       )}
+
+      <div className="mx-auto mt-8 max-w-xl rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-700 dark:bg-indigo-900">
+        <p className="text-indigo-700 dark:text-indigo-300">
+          If you wish to purchase $5,000 - $100,000, please reach out to{' '}
+          <a
+            href="mailto:info@manifold.markets"
+            className="underline hover:text-indigo-600 dark:hover:text-indigo-400"
+          >
+            info@manifold.markets
+          </a>{' '}
+          for a special discount.
+        </p>
+      </div>
+
       <div className="text-ink-500 mt-4 text-sm">
         Please see our{' '}
         <Link href="/terms" target="_blank" className="underline">
