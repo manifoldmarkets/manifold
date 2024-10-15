@@ -3,6 +3,9 @@
 FROM node:19-alpine
 WORKDIR /usr/src/app
 
+# Install PM2 globally
+RUN yarn global add pm2
+
 # first get dependencies in for efficient docker layering
 COPY dist/package.json dist/yarn.lock ./
 RUN yarn install --frozen-lockfile --production
@@ -13,5 +16,5 @@ COPY dist ./
 ENV PORT=80
 EXPOSE 80/tcp
 
-# 16 GB on the box, give 12 GB to the JS heap
-ENTRYPOINT [ "node", "--max-old-space-size=12288", "backend/api/lib/serve.js" ]
+# Use PM2 to run the application
+CMD ["pm2-runtime", "backend/api/lib/serve.js"]
