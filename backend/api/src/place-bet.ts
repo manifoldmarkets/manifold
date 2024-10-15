@@ -1,3 +1,5 @@
+import { Worker } from 'worker_threads'
+import * as path from 'path'
 import {
   groupBy,
   isEqual,
@@ -84,7 +86,7 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
         isApi
       )
     // Simulate bet to see whose limit orders you match.
-    const simulatedResult = calculateBetResult(
+    const simulatedResult = await calculateBetResultWithWorker(
       props,
       user,
       contract,
@@ -131,7 +133,7 @@ export const placeBetMain = async (
     isApi
   )
   // Simulate bet to see whose limit orders you match.
-  const simulatedResult = calculateBetResult(
+  const simulatedResult = await calculateBetResultWithWorker(
     body,
     user,
     contract,
@@ -172,7 +174,7 @@ export const placeBetMain = async (
       }
     }
 
-    const newBetResult = calculateBetResult(
+    const newBetResult = await calculateBetResultWithWorker(
       body,
       user,
       contract,
@@ -379,6 +381,49 @@ export const fetchContractBetDataAndValidate = async (
     balanceByUserId,
     unfilledBetUserIds,
     contractMetrics,
+  }
+}
+
+export async function calculateBetResultWithWorker(
+  props: ValidatedAPIParams<'bet'>,
+  user: User,
+  contract: MarketContract,
+  answers: Answer[] | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: Record<string, number>
+): Promise<NewBetResult> {
+  if (
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    contract.shouldAnswersSumToOne
+  ) {
+    const worker = new Worker(
+      path.resolve(__dirname, 'workers/bet-calculation-worker.js')
+    )
+
+    const result = await new Promise<NewBetResult>((resolve, reject) => {
+      worker.on('message', resolve)
+      worker.on('error', reject)
+      worker.postMessage({
+        body: props,
+        user,
+        contract,
+        answers,
+        unfilledBets,
+        balanceByUserId,
+      })
+    })
+
+    worker.terminate()
+    return result
+  } else {
+    return calculateBetResult(
+      props,
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId
+    )
   }
 }
 
