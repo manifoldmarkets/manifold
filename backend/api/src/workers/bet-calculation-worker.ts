@@ -4,6 +4,7 @@ import { calculateBetResult } from '../place-bet'
 const parentPort = maybeParentPort
 if (parentPort) {
   parentPort.on('message', (data: any) => {
+    const startTime = Date.now()
     const result = calculateBetResult(
       data.body,
       data.user,
@@ -12,6 +13,9 @@ if (parentPort) {
       data.unfilledBets,
       data.balanceByUserId
     )
-    parentPort.postMessage(result)
+    parentPort.postMessage({
+      ...result,
+      duration: Date.now() - startTime,
+    })
   })
 }

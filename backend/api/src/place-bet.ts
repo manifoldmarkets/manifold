@@ -392,15 +392,13 @@ export async function calculateBetResultWithWorker(
   unfilledBets: LimitBet[],
   balanceByUserId: Record<string, number>
 ): Promise<NewBetResult> {
-  if (
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.shouldAnswersSumToOne
-  ) {
-    const worker = new Worker(
-      path.resolve(__dirname, 'workers/bet-calculation-worker.js')
-    )
+  const startTime = Date.now()
+  const worker = new Worker(
+    path.resolve(__dirname, 'workers/bet-calculation-worker.js')
+  )
 
-    const result = await new Promise<NewBetResult>((resolve, reject) => {
+  const result = await new Promise<NewBetResult & { duration: number }>(
+    (resolve, reject) => {
       worker.on('message', resolve)
       worker.on('error', reject)
       worker.postMessage({
@@ -411,20 +409,15 @@ export async function calculateBetResultWithWorker(
         unfilledBets,
         balanceByUserId,
       })
-    })
+    }
+  )
 
-    worker.terminate()
-    return result
-  } else {
-    return calculateBetResult(
-      props,
-      user,
-      contract,
-      answers,
-      unfilledBets,
-      balanceByUserId
-    )
-  }
+  worker.terminate()
+  const totalDuration = Date.now() - startTime
+  log(
+    `calculateBetResultWithWorker took ${result.duration}ms. Including worker creation: ${totalDuration}ms.`
+  )
+  return result
 }
 
 export const calculateBetResult = (
