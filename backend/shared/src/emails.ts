@@ -9,6 +9,7 @@ import {
   renderResolution,
 } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
+import { getReferralCodeFromUser } from 'common/util/share'
 import {
   formatLargeNumber,
   formatMoney,
@@ -34,6 +35,7 @@ import {
 } from 'shared/supabase/init'
 import { getLoverRow } from 'common/love/lover'
 import { HOUR_MS } from 'common/util/time'
+import { REFERRAL_AMOUNT, REFERRAL_AMOUNT_CASH } from 'common/economy'
 
 export type PerContractInvestmentsData = {
   questionTitle: string
@@ -57,7 +59,7 @@ export type OverallPerformanceData = {
   league_rank: string
 }
 
-export const emailMoneyFormat = (amount: number, token: ContractToken) => {
+export const formatMoneyEmail = (amount: number, token: ContractToken) => {
   if (token === 'CASH') {
     return formatSweepies(amount).replace(SWEEPIES_MONIKER, 'S')
   }
@@ -94,7 +96,7 @@ export const getMarketResolutionEmail = (
 
   const creatorPayoutText =
     creatorPayout >= 1 && privateUser.id === creator.id
-      ? ` (plus ${emailMoneyFormat(
+      ? ` (plus ${formatMoneyEmail(
           creatorPayout,
           contract.token
         )} in commissions)`
@@ -103,11 +105,11 @@ export const getMarketResolutionEmail = (
   const correctedInvestment =
     Number.isNaN(investment) || investment < 0 ? 0 : investment
 
-  const displayedInvestment = emailMoneyFormat(
+  const displayedInvestment = formatMoneyEmail(
     correctedInvestment,
     contract.token
   )
-  const displayedPayout = emailMoneyFormat(payout, contract.token)
+  const displayedPayout = formatMoneyEmail(payout, contract.token)
 
   const templateData: market_resolved_template = {
     userId: privateUser.id,
@@ -414,7 +416,7 @@ export const sendMarketCloseEmail = async (
       unsubscribeUrl: '',
       userId,
       name: firstName,
-      volume: emailMoneyFormat(volume, contract.token),
+      volume: formatMoneyEmail(volume, contract.token),
     }
   )
 }
@@ -442,7 +444,7 @@ export const getNewCommentEmail = (
   let betDescription = ''
   if (bet) {
     const { amount } = bet
-    betDescription = `${amount < 0 ? 'sold' : 'bought'} ${emailMoneyFormat(
+    betDescription = `${amount < 0 ? 'sold' : 'bought'} ${formatMoneyEmail(
       Math.abs(amount),
       contract.token
     )}`
@@ -531,7 +533,12 @@ export const sendInterestingMarketsEmail = async (
     {
       name: firstName,
       unsubscribeUrl,
-
+      referralCode: getReferralCodeFromUser(privateUser.id),
+      referralManaAmount: formatMoney(REFERRAL_AMOUNT).replace(
+        ENV_CONFIG.moneyMoniker,
+        ''
+      ),
+      referralCashAmount: REFERRAL_AMOUNT_CASH.toFixed(0),
       question1Title: contractsToSend[0].question,
       question1Link: contractUrl(contractsToSend[0]),
       question1ImgSrc: imageSourceUrl(contractsToSend[0]),
@@ -724,7 +731,7 @@ export const sendNewUniqueBettorsEmail = async (
       const { amount } = bet
       templateData[`bet${i + 1}Description`] = `${
         amount < 0 ? 'sold' : 'bought'
-      } ${emailMoneyFormat(Math.abs(amount), contract.token)}`
+      } ${formatMoneyEmail(Math.abs(amount), contract.token)}`
     }
   })
 
@@ -768,7 +775,7 @@ export const getWeeklyPortfolioUpdateEmail = (
       templateData[`question${i + 1}Title`] = investment.questionTitle
       templateData[`question${i + 1}Url`] = investment.questionUrl
       templateData[`question${i + 1}Prob`] = investment.questionProb
-      templateData[`question${i + 1}Change`] = emailMoneyFormat(
+      templateData[`question${i + 1}Change`] = formatMoneyEmail(
         investment.profit,
         investment.token
       )

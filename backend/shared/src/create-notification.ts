@@ -51,7 +51,7 @@ import {
   sendNewUniqueBettorsEmail,
   EmailAndTemplateEntry,
   toDisplayResolution,
-  emailMoneyFormat,
+  formatMoneyEmail,
 } from './emails'
 import {
   getNotificationDestinationsForUser,
@@ -1370,11 +1370,11 @@ export const createContractResolvedNotifications = async (
           : '.'
       const profit = userPayout - userInvestment
       const profitPercent = Math.round((profit / userInvestment) * 100)
-      const profitString = ` You made ${emailMoneyFormat(
+      const profitString = ` You made ${formatMoneyEmail(
         profit,
         token
       )} (+${profitPercent}%)`
-      const lossString = ` You lost ${emailMoneyFormat(-profit, token)}`
+      const lossString = ` You lost ${formatMoneyEmail(-profit, token)}`
       bulkPushNotifications.push([
         privateUser,
         notification,

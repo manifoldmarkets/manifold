@@ -6,7 +6,7 @@ import { partition, sortBy, sum, uniq } from 'lodash'
 import {
   PerContractInvestmentsData,
   OverallPerformanceData,
-  emailMoneyFormat,
+  formatMoneyEmail,
   getWeeklyPortfolioUpdateEmail,
   sendBulkEmails,
   EmailAndTemplateEntry,
@@ -126,7 +126,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     const marketsCreated = usersToContractsCreated?.[privateUser.id] ?? 0
     const performanceData = {
       // TODO: don't just show mana profit
-      profit: emailMoneyFormat(profit, 'MANA'),
+      profit: formatMoneyEmail(profit, 'MANA'),
       profit_style: `background-color: ${
         roundedProfit > 0 ? greenBg : roundedProfit === 0 ? clearBg : redBg
       }`,

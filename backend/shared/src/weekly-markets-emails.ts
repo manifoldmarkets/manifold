@@ -23,6 +23,12 @@ export async function sendWeeklyMarketsEmails() {
     EMAILS_PER_BATCH,
     pg
   )
+  const sweepsUserIds = await pg.map(
+    `select id from users where data->>'sweepstakesVerified' = 'true'
+    and id in ($1)`,
+    [privateUsers.map((u) => u.id)],
+    (r) => r.id
+  )
   const userIds = privateUsers.map((u) => u.id)
   await pg.none(
     `update private_users set weekly_trending_email_sent = true where id = any($1)`,
@@ -41,7 +47,8 @@ export async function sendWeeklyMarketsEmails() {
           const contractsToSend = await getForYouMarkets(
             privateUser.id,
             6,
-            privateUser
+            privateUser,
+            sweepsUserIds.includes(privateUser.id)
           )
           // TODO: bulkify this
           await sendInterestingMarketsEmail(
@@ -78,7 +85,8 @@ export async function sendWeeklyMarketsEmails() {
 export async function getForYouMarkets(
   userId: string,
   limit: number,
-  privateUser: PrivateUser
+  privateUser: PrivateUser,
+  sweepstakesVerified: boolean
 ) {
   const searchMarketSQL = await getForYouSQL({
     userId,
@@ -90,7 +98,7 @@ export async function getForYouMarkets(
     isPrizeMarket: false,
     marketTier: '00000',
     privateUser,
-    token: 'ALL',
+    token: sweepstakesVerified ? 'CASH' : 'ALL',
     threshold: 200,
   })
 
