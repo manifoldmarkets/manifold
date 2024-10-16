@@ -9,7 +9,6 @@
     "target": "esnext",
     "paths": {
       "common/*": ["../../common/src/*", "../../../common/lib/*"],
-      "functions/*": ["../functions/src/*", "../../functions/lib/*"],
       "api/*": ["../api/src/*", "../../api/lib/*"],
       "shared/*": ["../shared/src/*", "../../shared/lib/*"],
       "scheduler/*": ["../scheduler/src/*", "../../scheduler/lib/*"],
@@ -25,9 +24,6 @@
     },
     {
       "path": "../shared"
-    },
-    {
-      "path": "../functions"
     },
     {
       "path": "../api"
