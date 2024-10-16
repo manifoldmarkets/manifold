@@ -201,9 +201,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const user = useUser()
 
   // Load all comments once
-  const { data: fetchedComments } = useAPIGetter('comments', {
-    contractId: playContract.id,
-  })
+  const { data: fetchedComments } = useAPIGetter(
+    'comments',
+    {
+      contractId: playContract.id,
+    },
+    undefined,
+    'comments-' + playContract.id
+  )
 
   // Listen for new comments
   const newComments = useSubscribeNewComments(playContract.id)
