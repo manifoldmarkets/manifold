@@ -14,11 +14,22 @@ import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getAnswersForContract } from 'shared/supabase/answers'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
+import { buildArray } from 'common/util/array'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
+  const pg = createSupabaseDirectClient()
+  const c = await pg.oneOrNone(
+    `select data->'shouldAnswersSumToOne')::boolean as sum_to_one from contracts where id = $1`,
+    [props.contractId]
+  )
+
   return await betsQueue.enqueueFn(
     () => multiSellMain(props, auth, req),
-    [props.contractId, auth.uid]
+    buildArray(
+      auth.uid,
+      !c || c.sum_to_one ? props.contractId : props.answerIds
+    )
   )
 }
 
