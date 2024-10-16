@@ -132,7 +132,7 @@ const CheckoutPage = () => {
   }
 
   return (
-    <Page className={'p-3'} trackPageView={'checkout page'}>
+    <Page className={'p-3'} trackPageView={'checkout page'} hideFooter>
       {showConfetti && <FullscreenConfetti />}
       {page === 'checkout' &&
       (isIOS ? true : !dollarAmountSelected && !dollarAmountFromQuery) ? (

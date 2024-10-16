@@ -107,6 +107,11 @@ module.exports = {
         permanent: true,
       },
       {
+        source: '/mana-only-terms',
+        destination: 'https://docs.manifold.markets/mana-only-terms',
+        permanent: true,
+      },
+      {
         source: '/sweepstakes-rules',
         destination: 'https://docs.manifold.markets/rules',
         permanent: true,

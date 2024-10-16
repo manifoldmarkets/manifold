@@ -18,6 +18,7 @@ export function Page(props: {
   children?: ReactNode
   hideSidebar?: boolean
   hideBottomBar?: boolean
+  hideFooter?: boolean
   banner?: ReactNode
 }) {
   const {
@@ -61,7 +62,7 @@ export function Page(props: {
         >
           {banner}
           {children}
-          <Footer />
+          {!props.hideFooter && <Footer />}
         </main>
       </Col>
       {!hideBottomBar && <BottomNavBar />}

@@ -130,7 +130,10 @@ export function TwombaFundsSelector(props: {
         Please see our{' '}
         <Link href="/terms" target="_blank" className="underline">
           Terms & Conditions
-        </Link>{' '}
+        </Link>,{' '}
+        <Link href="/mana-only-terms" target="_blank" className="underline">
+          Mana-only Terms of Service
+        </Link>,{' '}
         and{' '}
         <Link href="/sweepstakes-rules" target="_blank" className="underline">
           Sweepstakes Rules
