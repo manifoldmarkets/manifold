@@ -23,12 +23,14 @@ export async function sendWeeklyMarketsEmails() {
     EMAILS_PER_BATCH,
     pg
   )
+  log(`Found ${privateUsers.length} users to send emails to`)
   const sweepsUserIds = await pg.map(
     `select id from users where data->>'sweepstakesVerified' = 'true'
-    and id in ($1)`,
+    and id in ($1:list)`,
     [privateUsers.map((u) => u.id)],
     (r) => r.id
   )
+  log(`Found ${sweepsUserIds.length} sweepstakes verified users`)
   const userIds = privateUsers.map((u) => u.id)
   await pg.none(
     `update private_users set weekly_trending_email_sent = true where id = any($1)`,
