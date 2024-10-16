@@ -1,3 +1,5 @@
+import './tracer' // must be first import
+
 import * as admin from 'firebase-admin'
 import { getLocalEnv, initAdmin } from 'shared/init-admin'
 import { loadSecretsToEnv, getServiceAccountCredentials } from 'common/secrets'

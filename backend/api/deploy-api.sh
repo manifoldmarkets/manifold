@@ -63,7 +63,21 @@ if [ -z "${MANIFOLD_CLOUD_BUILD}" ]; then
     fi
     IMAGE_NAME="us-east4-docker.pkg.dev/${GCLOUD_PROJECT}/builds/${SERVICE_NAME}"
     IMAGE_URL="${IMAGE_NAME}:${IMAGE_TAG}"
-    docker build . --tag ${IMAGE_URL} --platform linux/amd64
+
+    # Get Datadog API key from GCP Secret Manager
+    DD_API_KEY=$(gcloud secrets versions access latest --secret="DD_API_KEY" --project=${GCLOUD_PROJECT})
+
+    # Add Datadog environment variables to the Docker build
+    docker build . --tag ${IMAGE_URL} --platform linux/amd64 \
+        --build-arg DD_API_KEY=${DD_API_KEY} \
+        --build-arg DD_SITE="us3.datadoghq.com" \
+        --build-arg DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true \
+        --build-arg DD_LOGS_INJECTION=true \
+        --build-arg DD_PROFILING_ENABLED=true \
+        --build-arg DD_ENV=${ENV} \
+        --build-arg DD_SERVICE=${SERVICE_NAME} \
+        --build-arg DD_VERSION=${IMAGE_TAG} \
+        gcr.io/datadoghq/agent:latest
     docker push ${IMAGE_URL}
 else
     # not really any reason to do this other than if you have been too lazy to install docker
