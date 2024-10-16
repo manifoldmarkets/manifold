@@ -233,7 +233,7 @@ export function TopicDropdownPill(props: {
   )?.name
   const currentTopicLabel = forYou
     ? 'Your topics'
-    : currentTopicInInitialTopicsName ?? 'All Topics'
+    : currentTopicInInitialTopicsName ?? 'All topics'
 
   const selectTopicFilter = (selection: string) => {
     if (selection === currentTopicFilter) {
@@ -259,7 +259,7 @@ export function TopicDropdownPill(props: {
   const items = [
     ...(forYouItem ? [forYouItem] : []), // Include forYouItem only if it is not null
     {
-      name: 'All Topics',
+      name: 'All topics',
       onClick: () =>
         updateParams({
           [FOR_YOU_KEY]: '0',
