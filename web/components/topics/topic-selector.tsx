@@ -1,5 +1,9 @@
 import { Combobox } from '@headlessui/react'
-import { PlusCircleIcon, SelectorIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  PlusCircleIcon,
+  SelectorIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Group, LiteGroup, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { useEffect, useRef, useState } from 'react'
@@ -7,20 +11,18 @@ import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
-import { getGroups } from 'web/lib/supabase/groups'
 import { searchGroups } from 'web/lib/api/api'
 import { PRIVACY_STATUS_ITEMS } from './topic-privacy-modal'
 import { uniqBy } from 'lodash'
-
-import { useAsyncData } from 'web/hooks/use-async-data'
 import { Col } from '../layout/col'
+import { buildArray } from 'common/util/array'
+import DropdownMenu from '../comments/dropdown-menu'
 
 export function TopicSelector(props: {
   setSelectedGroup: (group: Group) => void
   max?: number
   label?: string
   selectedIds?: string[]
-  onlyGroupIds?: string[]
   onCreateTopic?: (group: Group) => void
   className?: string
   placeholder?: string
@@ -31,48 +33,13 @@ export function TopicSelector(props: {
     label,
     onCreateTopic,
     selectedIds,
-    onlyGroupIds,
     className,
     placeholder,
   } = props
   const user = useUser()
-  const onlyGroups = useAsyncData(onlyGroupIds, getGroups)
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
-  const [query, setQuery] = useState('')
-  const [searchedGroups, setSearchedGroups] = useState<LiteGroup[]>([])
-  const [loading, setLoading] = useState(false)
 
-  const requestNumber = useRef(0)
-
-  useEffect(() => {
-    if (onlyGroups?.length) setSearchedGroups(onlyGroups)
-  }, [onlyGroups?.length])
-
-  useEffect(() => {
-    if (!user) return
-    if (onlyGroupIds) {
-      onlyGroups &&
-        setSearchedGroups(
-          onlyGroups.filter((group) => group.name.includes(query))
-        )
-      return
-    }
-    requestNumber.current++
-    const requestId = requestNumber.current
-    setSearchedGroups([])
-    setLoading(true)
-    searchGroups({
-      term: query,
-      limit: 10,
-      addingToContract: true,
-      type: 'lite',
-    }).then((result) => {
-      if (requestNumber.current === requestId) {
-        setSearchedGroups(uniqBy(result.lite, 'name'))
-        setLoading(false)
-      }
-    })
-  }, [user?.id, query])
+  const { query, setQuery, searchedGroups, loading } = useSearchGroups()
 
   const handleSelectGroup = (group: Group | null | 'new') => {
     if (group === 'new') {
@@ -196,3 +163,99 @@ const LoadingOption = (props: { className: string }) => (
     <div className={clsx('bg-ink-300 h-4 rounded-full', props.className)} />
   </div>
 )
+
+const useSearchGroups = () => {
+  const [query, setQuery] = useState('')
+  const [searchedGroups, setSearchedGroups] = useState<LiteGroup[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const requestNumber = useRef(0)
+
+  useEffect(() => {
+    requestNumber.current++
+    const requestId = requestNumber.current
+    setSearchedGroups([])
+    setLoading(true)
+    searchGroups({
+      term: query,
+      limit: 10,
+      addingToContract: true,
+      type: 'lite',
+    }).then((result) => {
+      if (requestNumber.current === requestId) {
+        setSearchedGroups(uniqBy(result.lite, 'name'))
+        setLoading(false)
+      }
+    })
+  }, [query])
+
+  return {
+    query,
+    setQuery,
+    searchedGroups,
+    setSearchedGroups,
+    loading,
+    setLoading,
+  }
+}
+
+export function TopicPillSelector(props: {
+  topic: LiteGroup | undefined
+  setTopic: (topic: LiteGroup | undefined) => void
+}) {
+  const { topic, setTopic } = props
+  const { query, setQuery, searchedGroups, loading } = useSearchGroups()
+
+  const currentName = topic?.name ?? 'All topics'
+
+  return (
+    <DropdownMenu
+      withinOverflowContainer
+      closeOnClick
+      selectedItemName={currentName}
+      items={buildArray(
+        {
+          name: 'Search topics',
+          nonButtonContent: (
+            <div className="flex">
+              <input
+                type="text"
+                className="bg-ink-200 dark:bg-ink-300 focus:ring-primary-500 mx-1 mb-1 rounded-md border-none px-3 py-0.5 text-xs"
+                placeholder="search"
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+          ),
+        },
+        {
+          name: 'All topics',
+          onClick: () => {
+            setTopic(undefined)
+          },
+        },
+        searchedGroups.map((topic) => ({
+          name: topic.name,
+          onClick: () => {
+            setTopic(topic)
+            setQuery('')
+          },
+        }))
+      )}
+      buttonContent={(open) => (
+        <div
+          className={clsx(
+            'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
+            'bg-ink-200 hover:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
+          )}
+        >
+          {currentName}
+          <ChevronDownIcon
+            className={clsx('ml-2 h-4 w-4', open && 'rotate-180')}
+          />
+        </div>
+      )}
+    />
+  )
+}

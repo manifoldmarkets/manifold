@@ -21,13 +21,9 @@ import {
   getTopCreators,
   getTopTraders,
 } from 'web/lib/supabase/users'
-import { Group, TOPIC_KEY } from 'common/group'
+import { type Group, type LiteGroup, TOPIC_KEY } from 'common/group'
 import { Row } from 'web/components/layout/row'
-import { TopicSelector } from 'web/components/topics/topic-selector'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
-import { Modal } from 'web/components/layout/modal'
-import { PencilIcon, TagIcon, XIcon } from '@heroicons/react/outline'
-import { DotsVerticalIcon } from '@heroicons/react/solid'
+import { TopicPillSelector } from 'web/components/topics/topic-selector'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { BackButton } from 'web/components/contract/back-button'
@@ -83,7 +79,6 @@ export default function Leaderboards(props: {
   const [myRanks, setMyRanks] = useState<Ranking>()
   const [userReferralInfo, setUserReferralInfo] =
     useState<Awaited<ReturnType<typeof getUserReferralsInfo>>>()
-  const [showSelectGroupModal, setShowSelectGroupModal] = useState(false)
   const user = useUser()
   const currentHistory = useCurrentPortfolio(user?.id)
 
@@ -105,12 +100,21 @@ export default function Leaderboards(props: {
   const { topReferrals } = props
   const [topicSlug, setTopicSlug] = usePersistentQueryState(TOPIC_KEY, '')
   const topicFromRouter = useTopicFromRouter(topicSlug)
-  const [topic, setTopic] = useState<Group>()
+  const [topic, setTopic] = useState<LiteGroup | undefined>()
+
   useEffect(() => {
     setTopic(topicFromRouter)
   }, [topicFromRouter])
+  useEffect(() => {
+    if (topic) {
+      setTopicSlug(topic.slug)
+    } else {
+      setTopicSlug('')
+    }
+  }, [topic])
+
   const topTopicTraders = useToTopUsers(
-    topic && topic.cachedLeaderboard?.topTraders
+    topic && (topic as Group).cachedLeaderboard?.topTraders
   )?.map((c) => ({
     ...c.user,
     profitCached: {
@@ -119,7 +123,7 @@ export default function Leaderboards(props: {
   }))
 
   const topTopicCreators = useToTopUsers(
-    topic && topic.cachedLeaderboard?.topCreators
+    topic && (topic as Group).cachedLeaderboard?.topCreators
   )?.map((c) => ({
     ...c.user,
     creatorTraders: {
@@ -207,34 +211,14 @@ export default function Leaderboards(props: {
         url="/leaderboards"
       />
       <Col className="mb-4 p-2">
-        <Row className={'mb-4 items-center justify-between '}>
+        <Row className={'mb-4 w-full items-center justify-between'}>
           <Row className={'items-center gap-2'}>
             <BackButton className={'md:hidden'} />
             <Title className={'!mb-0'}>
               Leaderboards <InfoTooltip text="Updated every 15 minutes" />
             </Title>
           </Row>
-          <DropdownMenu
-            icon={<DotsVerticalIcon className={'h-5 w-5'} />}
-            menuWidth={'w-48'}
-            items={[
-              {
-                name: topic ? 'Change topic' : 'Filter by topic',
-                onClick: () => setShowSelectGroupModal(true),
-                icon: topic ? (
-                  <PencilIcon
-                    className="text-ink-400 h-5 w-5"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <TagIcon
-                    className="text-ink-400 h-5 w-5"
-                    aria-hidden="true"
-                  />
-                ),
-              },
-            ]}
-          />
+          <TopicPillSelector topic={topic} setTopic={setTopic} />
         </Row>
 
         <Col className="items-center gap-10 lg:flex-row lg:items-start">
@@ -290,53 +274,7 @@ export default function Leaderboards(props: {
           </Col>
         )}
       </Col>
-      <SelectTopicModal
-        open={showSelectGroupModal}
-        setOpen={setShowSelectGroupModal}
-        setGroup={(group) => {
-          setTopicSlug(group?.slug ?? '')
-        }}
-        group={topic}
-      />
     </Page>
-  )
-}
-
-const SelectTopicModal = (props: {
-  open: boolean
-  setOpen: (open: boolean) => void
-  group?: Group
-  setGroup: (group: Group | undefined) => void
-}) => {
-  const { open, group, setOpen, setGroup } = props
-  return (
-    <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <Col className={'bg-canvas-50 min-h-[25rem] rounded-xl p-4'}>
-        <Title className={''}>Filter leaderboards by topic</Title>
-        {group && (
-          <Row className={'items-center justify-between gap-2'}>
-            <span className={'text-ink-900 text-lg font-bold'}>
-              {group.name}
-            </span>
-            <button
-              onClick={() => {
-                setGroup(undefined)
-              }}
-            >
-              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
-            </button>
-          </Row>
-        )}
-        <Col className={''}>
-          <TopicSelector
-            setSelectedGroup={(group) => {
-              setGroup(group)
-              setOpen(false)
-            }}
-          />
-        </Col>
-      </Col>
-    </Modal>
   )
 }
 
