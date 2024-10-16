@@ -19,8 +19,8 @@ COPY ecosystem.config.js ./
 ENV PORT=80
 EXPOSE 80/tcp
 
-# Use PM2 to run the application
-CMD ["pm2-runtime", "backend/api/lib/serve.js"]
+# # Use PM2 to run the application
+# CMD ["pm2-runtime", "backend/api/lib/serve.js"]
 
-# # Use PM2 to run the application with the ecosystem config
-# CMD ["pm2-runtime", "ecosystem.config.js"]
+# Use PM2 to run the application with the ecosystem config
+CMD ["pm2-runtime", "ecosystem.config.js"]
