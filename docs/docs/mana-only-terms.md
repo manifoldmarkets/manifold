@@ -1,6 +1,6 @@
-**TERMS OF SERVICE**
+# Terms of Service (Mana-only)
 
-**Last updated October 15, 2024**
+Last updated October 15, 2024
 
 **1. AGREEMENT TO TERMS**
 
