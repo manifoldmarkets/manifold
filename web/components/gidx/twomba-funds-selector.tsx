@@ -96,17 +96,19 @@ export function TwombaFundsSelector(props: {
         </>
       )}
       <div className="grid grid-cols-2 gap-4 gap-y-6">
-        {prices.map((amounts, index) => (
-          <PriceTile
-            key={`price-tile-${amounts.mana}`}
-            amounts={amounts}
-            index={index}
-            loadingPrice={loadingPrice}
-            disabled={pastLimit}
-            user={user}
-            onClick={() => onSelectPriceInDollars(amounts.priceInDollars)}
-          />
-        ))}
+        {prices
+          .sort((a, b) => a.bonusInDollars - b.bonusInDollars)
+          .map((amounts, index) => (
+            <PriceTile
+              key={`price-tile-${amounts.mana}`}
+              amounts={amounts}
+              index={index}
+              loadingPrice={loadingPrice}
+              disabled={pastLimit}
+              user={user}
+              onClick={() => onSelectPriceInDollars(amounts.priceInDollars)}
+            />
+          ))}
       </div>
       {pastLimit && (
         <AlertBox title="Purchase limit" className="my-4">
