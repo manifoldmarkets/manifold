@@ -218,22 +218,21 @@ export const placeBetMain = async (
     )
     const { updatedMetrics } = result
     log('Redeeming shares for bettor', user.username, user.id)
-    const { bets: redemptionBets, updatedMetrics: redemptionUpdatedMetrics } =
-      await redeemShares(
-        pgTrans,
-        [user.id],
-        contract,
-        [
-          {
-            ...newBetResult.newBet,
-            userId: user.id,
-          },
-        ],
-        updatedMetrics
-      )
+    const { bets: redemptionBets } = await redeemShares(
+      pgTrans,
+      [user.id],
+      contract,
+      [
+        {
+          ...newBetResult.newBet,
+          userId: user.id,
+        },
+      ],
+      updatedMetrics
+    )
     result.fullBets.push(...redemptionBets)
     log('Share redemption transaction finished.')
-    return { ...result, updatedMetrics: redemptionUpdatedMetrics }
+    return result
   })
 
   const {
@@ -245,7 +244,6 @@ export const placeBetMain = async (
     betGroupId,
     streakIncremented,
     bonuxTxn,
-    updatedMetrics,
   } = result
 
   log(`Main transaction finished - auth ${uid}.`)
@@ -259,8 +257,7 @@ export const placeBetMain = async (
       allOrdersToCancel,
       makers,
       streakIncremented,
-      bonuxTxn,
-      updatedMetrics
+      bonuxTxn
     )
   }
 

@@ -30,7 +30,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
   const user = await getUser(uid)
   if (!user) throw new APIError(401, 'Your account was not found')
 
-  const results = await runShortTrans(async (pgTrans) => {
+  const { bets, contract } = await runShortTrans(async (pgTrans) => {
     const contract = await getContract(pgTrans, contractId)
     if (!contract) throw new APIError(404, 'Contract not found')
     const { closeTime, isResolved, mechanism } = contract
@@ -95,6 +95,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
         `You specified an answer to sell in which you have 0 shares.`
       )
 
+    const betGroupId = crypto.randomBytes(12).toString('hex')
     const betResults = getCpmmMultiSellSharesInfo(
       contract,
       answers,
@@ -103,57 +104,52 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       balancesByUserId,
       loanAmountByAnswerId
     )
-    const results = []
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
-    const betGroupId = crypto.randomBytes(12).toString('hex')
-    for (const newBetResult of betResults) {
-      const result = await executeNewBetResult(
-        pgTrans,
-        newBetResult,
-        contract,
-        user,
-        isApi,
-        contractMetrics,
-        undefined,
-        betGroupId,
-        deterministic,
-        false
+    const bets = await Promise.all(
+      betResults.map((newBetResult) =>
+        executeNewBetResult(
+          pgTrans,
+          newBetResult,
+          contract,
+          user,
+          isApi,
+          contractMetrics,
+          undefined,
+          betGroupId,
+          deterministic,
+          false
+        )
       )
-      results.push(result)
-    }
-    const bets = results.flatMap((r) => r.fullBets)
+    )
     const loanPaid = sum(Object.values(loanAmountByAnswerId))
     if (loanPaid > 0 && bets.length > 0) {
       await incrementBalance(pgTrans, uid, {
         balance: -loanPaid,
       })
     }
-    return results
+    return { bets, contract }
   })
 
   log(`Main transaction finished - auth ${uid}.`)
 
   const continuation = async () => {
-    const fullBets = results.flatMap((result) => result.fullBets)
-    const allOrdersToCancel = results.flatMap(
-      (result) => result.allOrdersToCancel
-    )
-    const makers = results.flatMap((result) => result.makers ?? [])
-    const user = results[0].user
+    const fullBets = bets.flatMap((result) => result.fullBets)
+    const allOrdersToCancel = bets.flatMap((result) => result.allOrdersToCancel)
+    const makers = bets.flatMap((result) => result.makers ?? [])
+    const user = bets[0].user
     await onCreateBets(
       fullBets,
-      results[0].contract,
+      contract,
       user,
       allOrdersToCancel,
       makers,
-      results.some((b) => b.streakIncremented),
-      undefined,
+      bets.some((b) => b.streakIncremented),
       undefined
     )
   }
 
   return {
-    result: results.map((result) => ({
+    result: bets.map((result) => ({
       ...result.newBet,
       betId: result.betId,
       betGroupId: result.betGroupId,

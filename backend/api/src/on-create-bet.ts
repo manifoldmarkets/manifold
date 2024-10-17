@@ -44,14 +44,8 @@ import {
   addHouseSubsidyToAnswer,
 } from 'shared/helpers/add-house-subsidy'
 import { debounce } from 'api/helpers/debounce'
-import {
-  broadcastNewBets,
-  broadcastOrders,
-  broadcastUpdatedMetrics,
-} from 'shared/websockets/helpers'
+import { broadcastNewBets, broadcastOrders } from 'shared/websockets/helpers'
 import { followContractInternal } from 'api/follow-contract'
-import { ContractMetric } from 'common/contract-metric'
-import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
 
 export const onCreateBets = async (
   bets: Bet[],
@@ -60,21 +54,10 @@ export const onCreateBets = async (
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined,
   streakIncremented: boolean,
-  txn: UniqueBettorBonusTxn | undefined,
-  updatedMetrics: ContractMetric[] | undefined
+  txn: UniqueBettorBonusTxn | undefined
 ) => {
   const pg = createSupabaseDirectClient()
   broadcastNewBets(contract.id, contract.visibility, bets)
-  if (!updatedMetrics) {
-    updatedMetrics = await getContractMetrics(
-      pg,
-      [originalBettor.id],
-      contract.id,
-      [],
-      true
-    )
-  }
-  broadcastUpdatedMetrics(updatedMetrics)
   debouncedContractUpdates(contract)
   const matchedBetIds = filterDefined(
     bets.flatMap((b) => b.fills?.map((f) => f.matchedBetId) ?? [])
