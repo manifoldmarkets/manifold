@@ -55,7 +55,7 @@ import {
   checkoutParams,
   verificationParams,
   cashoutParams,
-  CashoutStatusData,
+  PendingCashoutStatusData,
 } from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
@@ -63,7 +63,6 @@ import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
-
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -1682,8 +1681,8 @@ export const API = (_apiTypeCheck = {
   'get-cashouts': {
     method: 'GET',
     visibility: 'undocumented',
-    authed: false,
-    returns: [] as CashoutStatusData[],
+    authed: true,
+    returns: [] as PendingCashoutStatusData[],
     props: z
       .object({
         limit: z.coerce.number().gte(0).lte(100).default(10),

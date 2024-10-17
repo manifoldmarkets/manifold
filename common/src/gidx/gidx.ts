@@ -91,6 +91,7 @@ export const cashoutParams = z.object({
     BillingAddress: BillingAddress,
     BankName: z.string(),
   }),
+  DeviceGPS: GPSProps,
 })
 
 export type DocumentRegistrationResponse = {
@@ -548,4 +549,22 @@ export type CashoutStatusData = {
       payoutInDollars: number
     }
   }
+}
+
+export type TemporaryPaymentData = Omit<
+  PaymentMethod,
+  'Token' | 'DisplayName'
+> & {
+  ip?: string
+  gps?: GPSData
+  txnId?: string
+}
+
+export type PendingCashoutStatusData = {
+  user: CashoutStatusData['user']
+  txn: Omit<CashoutStatusData['txn'], 'data'> & {
+    payoutInDollars: number
+    transactionId: string | undefined
+  }
+  data: TemporaryPaymentData | undefined
 }

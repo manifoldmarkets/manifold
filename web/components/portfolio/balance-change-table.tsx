@@ -118,9 +118,7 @@ export const BalanceChangeTable = (props: {
             <tbody>
               {cashouts?.map((cashout) => (
                 <tr key={cashout.txn.id}>
-                  <td>
-                    {formatMoneyUSD(cashout.txn.data.payoutInDollars, true)}
-                  </td>
+                  <td>{formatMoneyUSD(cashout.txn.payoutInDollars, true)}</td>
                   <td className="whitespace-nowrap">
                     {new Date(cashout.txn.createdTime).toLocaleString()}
                   </td>

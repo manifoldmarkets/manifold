@@ -78,7 +78,13 @@ export const completeCashoutSession: APIHandler<
       status: 'manual',
       message: 'Payment successful',
     })
-    await debitCoinsManual(userId, manaCashAmount, props, PaymentMethod)
+    await debitCoinsManual(
+      userId,
+      manaCashAmount,
+      props,
+      PaymentMethod,
+      getIp(req)
+    )
     return {
       status: 'success',
       message: 'Payment successful',
@@ -344,14 +350,25 @@ const debitCoins = async (
     )
   }
 }
+// TODO:
+// create a new endpoint where admins manually process cashouts,
+// creating a cashout session with the user's info and the amount,
+// completing it, and deleting the row from delete_after_reading
 
 const debitCoinsManual = async (
   userId: string,
   manaCashAmount: number,
   response: ValidatedAPIParams<'complete-cashout-session-gidx'>,
-  paymentMethod: Omit<PaymentMethod, 'Token' | 'DisplayName'>
+  paymentMethod: Omit<PaymentMethod, 'Token' | 'DisplayName'>,
+  ip: string
 ) => {
-  const { MerchantTransactionID, MerchantSessionID, PaymentAmount } = response
+  const { MerchantTransactionID, MerchantSessionID, PaymentAmount, DeviceGPS } =
+    response
+  const dataToDelete = {
+    ...paymentMethod,
+    ip,
+    gps: DeviceGPS,
+  }
   const data = {
     merchantSessionId: MerchantSessionID,
     transactionId: MerchantTransactionID,
@@ -392,13 +409,19 @@ const debitCoinsManual = async (
         { response }
       )
     }
+    const txn = await runTxn(tx, manaCashoutTxn)
     await tx.none(
       `insert into delete_after_reading (user_id, data) values ($1, $2)`,
-      [userId, JSON.stringify(paymentMethod)]
+      [
+        userId,
+        JSON.stringify({
+          ...dataToDelete,
+          txnId: txn.id,
+        }),
+      ]
     )
     log('Run cashout txn, redeemable:', redeemablePrizeCash)
     log('Cash balance for user prior to txn', cash)
-    await runTxn(tx, manaCashoutTxn)
     const balanceAfter = await tx.one(
       `select cash_balance from users where id = $1`,
       [userId],

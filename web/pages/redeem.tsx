@@ -93,6 +93,7 @@ export default function CashoutPage() {
   const [sessionStatus, setSessionStatus] = useState<string>()
   const [completedCashout, setCompletedCashout] = useState(0)
   const kycAmount = useKYCGiftAmount(user)
+  const [deviceGPS, setDeviceGPS] = useState<GPSData>()
 
   const { data: documentData } = useAPIGetter(
     'get-verification-documents-gidx',
@@ -165,7 +166,7 @@ export default function CashoutPage() {
   const handleSubmit = async () => {
     setloading(true)
     setError(undefined)
-    if (!checkoutSession || !sweepCashAmount) return
+    if (!checkoutSession || !sweepCashAmount || !deviceGPS) return
     try {
       const { status, message } = await api('complete-cashout-session-gidx', {
         PaymentMethod: {
@@ -189,6 +190,7 @@ export default function CashoutPage() {
         },
         MerchantSessionID: checkoutSession.MerchantSessionID,
         MerchantTransactionID: checkoutSession.MerchantTransactionID,
+        DeviceGPS: deviceGPS,
       })
       if (status === 'error') {
         setError(message)
@@ -210,6 +212,7 @@ export default function CashoutPage() {
   const handleLocationReceived = useEvent((data: GPSData) => {
     setPage('get-session')
     getCashoutSession(data)
+    setDeviceGPS(data)
   })
 
   if (!user || !privateUser) {
@@ -576,7 +579,8 @@ export default function CashoutPage() {
                     !AccountNumber ||
                     !RoutingNumber ||
                     !sweepCashAmount ||
-                    lessThanMinRedeemable
+                    lessThanMinRedeemable ||
+                    !deviceGPS
                   }
                   className="flex-1"
                 >

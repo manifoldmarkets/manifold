@@ -6,12 +6,12 @@ import { formatMoneyUSD } from 'common/util/format'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Row } from 'web/components/layout/row'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
-import { CashoutStatusData } from 'common/gidx/gidx'
-import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { getStatusColor } from 'web/components/cashout/select-cashout-options'
+import { PendingCashoutStatusData } from 'common/gidx/gidx'
+import { PaginationNextPrev } from 'web/components/widgets/pagination'
 
 export default function AdminCashouts() {
   const [page, setPage] = useState(0)
@@ -41,16 +41,14 @@ export default function AdminCashouts() {
               {cashouts === undefined ? (
                 <LoadingIndicator />
               ) : (
-                cashouts?.map((cashout: CashoutStatusData) => (
+                cashouts?.map((cashout: PendingCashoutStatusData) => (
                   <tr key={cashout.txn.id}>
                     <td className="py-2">
                       <Row className="items-center gap-2">
                         <UserAvatarAndBadge user={cashout.user} />
                       </Row>
                     </td>
-                    <td>
-                      {formatMoneyUSD(cashout.txn.data.payoutInDollars, true)}
-                    </td>
+                    <td>{formatMoneyUSD(cashout.txn.payoutInDollars, true)}</td>
                     <td className="whitespace-nowrap">
                       {new Date(cashout.txn.createdTime).toLocaleString()}
                     </td>
@@ -64,47 +62,51 @@ export default function AdminCashouts() {
                       </span>
                     </td>
                     <td className="whitespace-nowrap">
-                      <Link
-                        className={linkClass}
-                        href={`https://portal.gidx-service.in/Payments?TransactionID=${
-                          cashout.txn.data.transactionId
-                        }&CustomerID=&dpStart=${new Date(
-                          cashout.txn.createdTime
-                        )
-                          .toLocaleDateString('en-US', {
-                            month: '2-digit',
-                            day: '2-digit',
-                            year: 'numeric',
-                          })
-                          .replace(/\//g, '%2F')}&dpEnd=${new Date()
-                          .toLocaleDateString('en-US', {
-                            month: '2-digit',
-                            day: '2-digit',
-                            year: 'numeric',
-                          })
-                          .replace(/\//g, '%2F')}&DateRange=${new Date(
-                          cashout.txn.createdTime
-                        )
-                          .toLocaleDateString('en-US', {
-                            month: '2-digit',
-                            day: '2-digit',
-                            year: 'numeric',
-                          })
-                          .replace(/\//g, '%2F')}+-+${new Date()
-                          .toLocaleDateString('en-US', {
-                            month: '2-digit',
-                            day: '2-digit',
-                            year: 'numeric',
-                          })
-                          .replace(
-                            /\//g,
-                            '%2F'
-                          )}&downloadType=&SearchRecords=true`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        inspect
-                      </Link>
+                      {!cashout.txn.transactionId ? (
+                        ''
+                      ) : (
+                        <Link
+                          className={linkClass}
+                          href={`https://portal.gidx-service.in/Payments?TransactionID=${
+                            cashout.txn.transactionId
+                          }&CustomerID=&dpStart=${new Date(
+                            cashout.txn.createdTime
+                          )
+                            .toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })
+                            .replace(/\//g, '%2F')}&dpEnd=${new Date()
+                            .toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })
+                            .replace(/\//g, '%2F')}&DateRange=${new Date(
+                            cashout.txn.createdTime
+                          )
+                            .toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })
+                            .replace(/\//g, '%2F')}+-+${new Date()
+                            .toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })
+                            .replace(
+                              /\//g,
+                              '%2F'
+                            )}&downloadType=&SearchRecords=true`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          inspect
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))
