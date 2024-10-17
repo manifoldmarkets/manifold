@@ -1,10 +1,5 @@
 import { Contract } from 'common/contract'
-import {
-  humanish,
-  MINUTES_ALLOWED_TO_REFER,
-  PrivateUser,
-  User,
-} from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
@@ -78,12 +73,4 @@ export const isContractBlocked = (
     blockedByUserIds?.includes(contract.creatorId) ||
     blockedUserIds?.includes(contract.creatorId)
   )
-}
-
-export const canSetReferrer = (user: User) => {
-  if (user.referredByUserId) return false
-  if (!humanish(user)) return false
-  const now = dayjs().utc()
-  const userCreatedTime = dayjs(user.createdTime)
-  return now.diff(userCreatedTime, 'minute') < MINUTES_ALLOWED_TO_REFER
 }

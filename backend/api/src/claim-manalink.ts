@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { humanish } from 'common/user'
 import { canSendMana } from 'common/can-send-mana'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
@@ -76,14 +75,6 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
     const toUser = await getUser(auth.uid)
     if (!toUser) {
       throw new APIError(401, 'Your account was not found')
-    }
-
-    const canReceive = humanish(toUser)
-    if (!canReceive) {
-      throw new APIError(
-        403,
-        'You must verify your phone number to claim mana.'
-      )
     }
 
     const data = {

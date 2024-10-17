@@ -21,10 +21,7 @@ import {
 } from 'common/user-notification-preferences'
 import { Notification } from 'common/notification'
 import * as crypto from 'crypto'
-import {
-  sendBonusWithInterestingMarketsEmail,
-  sendUnactivatedNewUserEmail,
-} from 'shared/emails'
+import { sendBonusWithInterestingMarketsEmail } from 'shared/emails'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { APIError } from 'common/api/utils'
 import { getForYouMarkets } from 'shared/weekly-markets-emails'
@@ -54,31 +51,30 @@ export async function sendOnboardingNotificationsInternal() {
     'Non love users created older than 1 day, younger than 1 week:' +
       recentUsers.length
   )
-  const verifiedUsers = recentUsers.filter(humanish)
 
-  await Promise.all(verifiedUsers.map(sendNextDayManaBonus))
-  const unactivatedUsers = recentUsers.filter((user) => !user.lastBetTime)
-  const templateId = 'didnt-bet-new-user-survey'
-  const unactivatedUsersSentEmailAlready = await pg.map(
-    `select distinct users.id from users
-            join sent_emails on users.id = sent_emails.user_id
-            where users.id = any($1)
-            and sent_emails.email_template_id = $2`,
-    [unactivatedUsers.map((user) => user.id), templateId],
-    (row) => row.id
-  )
+  await Promise.all(recentUsers.map(sendNextDayManaBonus))
+  // const unactivatedUsers = recentUsers.filter((user) => !user.lastBetTime)
+  // const templateId = 'didnt-bet-new-user-survey'
+  // const unactivatedUsersSentEmailAlready = await pg.map(
+  //   `select distinct users.id from users
+  //           join sent_emails on users.id = sent_emails.user_id
+  //           where users.id = any($1)
+  //           and sent_emails.email_template_id = $2`,
+  //   [unactivatedUsers.map((user) => user.id), templateId],
+  //   (row) => row.id
+  // )
 
-  await Promise.all(
-    unactivatedUsers
-      .filter((user) => !unactivatedUsersSentEmailAlready.includes(user.id))
-      .map(async (user) => {
-        await sendUnactivatedNewUserEmail(user, templateId)
-        await pg.none(
-          `insert into sent_emails (user_id, email_template_id) values ($1, $2)`,
-          [user.id, templateId]
-        )
-      })
-  )
+  // await Promise.all(
+  //   unactivatedUsers
+  //     .filter((user) => !unactivatedUsersSentEmailAlready.includes(user.id))
+  //     .map(async (user) => {
+  //       await sendUnactivatedNewUserEmail(user, templateId)
+  //       await pg.none(
+  //         `insert into sent_emails (user_id, email_template_id) values ($1, $2)`,
+  //         [user.id, templateId]
+  //       )
+  //     })
+  // )
 }
 
 const sendNextDayManaBonus = async (user: User) => {

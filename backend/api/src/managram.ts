@@ -75,9 +75,6 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
       if (toUsers.length !== toIds.length) {
         throw new APIError(404, 'Some destination users not found.')
       }
-      if (toUsers.some((toUser) => !humanish(toUser))) {
-        throw new APIError(403, 'All destination users must be verified.')
-      }
       if (
         token === 'CASH' &&
         toUsers.some((toUser) => !toUser.sweepstakesVerified)

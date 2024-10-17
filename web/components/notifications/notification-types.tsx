@@ -50,7 +50,6 @@ import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useReview } from 'web/hooks/use-review'
 import { useUser } from 'web/hooks/use-user'
-import { canSetReferrer } from 'web/lib/firebase/users'
 import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Rating, ReviewPanel } from '../reviews/stars'
@@ -1444,13 +1443,7 @@ function ReferralProgramNotification(props: {
           symbol={'💸'}
         />
       }
-      subtitle={
-        user && canSetReferrer(user) ? (
-          <span>Did a friend refer you? Tap here to attribute them!</span>
-        ) : (
-          <span>Tap here to see your referral code.</span>
-        )
-      }
+      subtitle={<span>Tap here to see your referral code.</span>}
     >
       <span>
         Refer friends and get{' '}
