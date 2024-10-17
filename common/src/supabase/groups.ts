@@ -69,3 +69,25 @@ export const convertTopic = (
     },
     false
   )
+
+export async function getTopicsOnContract(
+  contractId: string,
+  db: SupabaseClient
+) {
+  const { data } = await run(
+    db
+      .from('group_contracts')
+      .select(
+        'groups (id, name, slug, importance_score, privacy_status, total_members)'
+      )
+      .eq('contract_id', contractId)
+      .order('importance_score', {
+        referencedTable: 'groups',
+        ascending: false,
+      })
+  )
+
+  return data
+    .filter((g) => g?.groups !== null)
+    .map((g) => convertGroup(g.groups as any) as Topic)
+}

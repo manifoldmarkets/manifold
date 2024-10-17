@@ -63,7 +63,6 @@ import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -471,30 +470,6 @@ export const API = (_apiTypeCheck = {
     returns: {} as LiteMarket | FullMarket,
     cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ id: z.string(), lite: coerceBoolean.optional() }),
-  },
-  'get-market-props': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    returns: {} as {
-      contract: Contract
-      chartAnnotations: ChartAnnotation[]
-      topics: Topic[]
-      comments: ContractComment[]
-      pinnedComments: ContractComment[]
-      userPositionsByOutcome: {
-        YES: ContractMetric[]
-        NO: ContractMetric[]
-      }
-      topContractMetrics: ContractMetric[]
-      totalPositions: number
-      dashboards: Dashboard[]
-    },
-    props: z.object({
-      slug: z.string().optional(),
-      id: z.string().optional(),
-      key: z.string(),
-    }),
   },
   // deprecated. use /market/:id?lite=true instead
   'market/:id/lite': {

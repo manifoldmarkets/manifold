@@ -39,6 +39,45 @@ export async function getRanking(
   return count + 1
 }
 
+export async function getCPMMContractUserContractMetrics(
+  contractId: string,
+  limit: number,
+  answerId: string | null,
+  db: SupabaseClient
+) {
+  async function fetchOutcomeMetrics(outcome: 'yes' | 'no') {
+    const hasSharesColumn = `has_${outcome}_shares`
+    const totalSharesColumn = `total_shares_${outcome}`
+    let q = db
+      .from('user_contract_metrics')
+      .select('data')
+      .eq('contract_id', contractId)
+      .eq(hasSharesColumn, true)
+      .order(totalSharesColumn, { ascending: false } as any)
+      .limit(limit)
+    q = answerId ? q.eq('answer_id', answerId) : q.is('answer_id', null)
+    const { data, error } = await q
+
+    if (error) {
+      throw error
+    }
+
+    return data.map((doc) => doc.data as ContractMetric)
+  }
+
+  try {
+    const yesMetrics = await fetchOutcomeMetrics('yes')
+    const noMetrics = await fetchOutcomeMetrics('no')
+    return {
+      YES: yesMetrics,
+      NO: noMetrics,
+    }
+  } catch (error) {
+    console.error('Error fetching user contract metrics:', error)
+    return { YES: [], NO: [] }
+  }
+}
+
 export async function getUserContractMetricsWithContracts(
   userId: string,
   db: SupabaseClient,

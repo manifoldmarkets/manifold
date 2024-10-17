@@ -9,93 +9,105 @@ import {
   ContractParams,
 } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
-
+import {
+  getRecentTopLevelCommentsAndReplies,
+  getPinnedComments,
+} from 'common/supabase/comments'
+import {
+  getCPMMContractUserContractMetrics,
+  getTopContractMetrics,
+  getContractMetricsCount,
+} from 'common/supabase/contract-metrics'
+import { getTopicsOnContract } from 'common/supabase/groups'
 import { removeUndefinedProps } from 'common/util/object'
 import { pointsToBase64 } from 'common/util/og'
+import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { groupBy, mapValues, minBy, omit, orderBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
+import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
 import { MAX_ANSWERS, sortAnswers } from './answer'
+import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
 import { getBetPoints, getTotalBetCount } from 'web/lib/supabase/bets'
-import { FullMarket } from './api/market-types'
-import { APIResponse } from './api/schema'
 
 export async function getContractParams(
-  market: FullMarket,
-  adminKey: string
+  contract: Contract,
+  db: SupabaseClient
 ): Promise<Omit<ContractParams, 'cash'>> {
-  const isCpmm1 = market.mechanism === 'cpmm-1'
-  const hasMechanism = market.mechanism !== 'none'
-  const isMulti = market.mechanism === 'cpmm-multi-1'
-  const isNumber = market.outcomeType === 'NUMBER'
+  const isCpmm1 = contract.mechanism === 'cpmm-1'
+  const hasMechanism = contract.mechanism !== 'none'
+  const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const isNumber = contract.outcomeType === 'NUMBER'
   const numberContractBetCount = async () =>
     unauthedApi('unique-bet-group-count', {
       contractId: contract.id,
     }).then((res) => res.count)
 
   const [
-    apiParams,
     totalBets,
     lastBetArray,
     allBetPoints,
+    comments,
+    pinnedComments,
+    userPositionsByOutcome,
+    topContractMetrics,
+    totalPositions,
     relatedContracts,
     betReplies,
+    chartAnnotations,
+    topics,
+    dashboards,
   ] = await Promise.all([
-    unauthedApi('get-market-props', {
-      id: market.id,
-      key: adminKey,
-    }),
     hasMechanism
       ? isNumber
         ? numberContractBetCount()
-        : getTotalBetCount(market.id)
+        : getTotalBetCount(contract.id)
       : 0,
     hasMechanism
       ? unauthedApi('bets', {
-          contractId: market.id,
+          contractId: contract.id,
           limit: 1,
           order: 'desc',
           filterRedemptions: true,
         })
       : ([] as Bet[]),
     hasMechanism
-      ? getBetPoints(market.id, {
-          filterRedemptions: market.mechanism !== 'cpmm-multi-1',
+      ? getBetPoints(contract.id, {
+          filterRedemptions: contract.mechanism !== 'cpmm-multi-1',
         })
       : [],
+    getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
+    getPinnedComments(db, contract.id),
+    isCpmm1
+      ? getCPMMContractUserContractMetrics(contract.id, 100, null, db)
+      : {},
+    contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
+    isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
     unauthedApi('get-related-markets', {
-      contractId: market.id,
+      contractId: contract.id,
       limit: 10,
     }),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
       ? unauthedApi('bets', {
-          contractId: market.id,
+          contractId: contract.id,
           commentRepliesOnly: true,
         })
       : ([] as Bet[]),
+    getChartAnnotations(contract.id, db),
+    getTopicsOnContract(contract.id, db),
+    getDashboardsToDisplayOnContract(contract.slug, contract.creatorId, db),
   ])
-  const {
-    contract,
-    chartAnnotations,
-    topics,
-    comments,
-    pinnedComments,
-    userPositionsByOutcome,
-    topContractMetrics,
-    totalPositions,
-    dashboards,
-  } = apiParams as APIResponse<'get-market-props'>
-  const multiPoints =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.outcomeType === 'NUMBER'
-        ? getFilledInMultiNumericBetPoints(
-            groupBy(allBetPoints, 'answerId'),
-            contract
-          )
-        : getMultiBetPoints(allBetPoints, contract)
-      : {}
+
+  const multiPoints = isMulti
+    ? isNumber
+      ? getFilledInMultiNumericBetPoints(
+          groupBy(allBetPoints, 'answerId'),
+          contract
+        )
+      : getMultiBetPoints(allBetPoints, contract)
+    : {}
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
   const ogPoints = !isMulti ? binAvg(allBetPoints) : []
