@@ -31,8 +31,8 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
 
     return data.map((r) => ({
       userId: r.id,
-      score: r.totalReferrals,
-      totalReferredProfit: r.totalReferredProfit,
+      score: r.total_referrals,
+      totalReferredProfit: r.total_referred_profit,
     }))
   }
 
@@ -57,11 +57,11 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
         'c.id in (select contract_id from group_contracts where group_id = ${groupId})',
         { groupId }
       ),
-    orderBy('score desc'),
+    orderBy('score desc nulls last'),
     limit(limitValue)
   )
 
-  return await pg.any(query, (r: any) => ({
+  return await pg.map(query, [], (r) => ({
     userId: r.user_id,
     score: parseFloat(r.score),
   }))
