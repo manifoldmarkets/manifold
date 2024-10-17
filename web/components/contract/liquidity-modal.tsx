@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { type MarketContract } from 'common/contract'
+import { SUBSIDY_FEE } from 'common/economy'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useLiquidity } from 'web/hooks/use-liquidity'
@@ -13,16 +14,7 @@ import { BuyAmountInput } from '../widgets/amount-input'
 import { Title } from '../widgets/title'
 import { FeedLiquidity } from 'web/components/feed/feed-liquidity'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
-import {
-  maximumRemovableLiquidity,
-  removeCpmmLiquidity,
-} from 'common/calculate-cpmm'
-import { isAdminId } from 'common/envs/constants'
-import { useUser } from 'web/hooks/use-user'
-import { APIError } from 'common/api/utils'
-import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
-import { floatingEqual } from 'common/util/math'
+import { formatMoney } from 'common/util/format'
 
 export function AddLiquidityModal(props: {
   contract: MarketContract
@@ -54,7 +46,17 @@ export function AddLiquidityModal(props: {
         <NoLiquidityCopy />
       )}
 
-      <div className="h-8" />
+      <div className="h-4" />
+
+      {contract.mechanism === 'cpmm-1' && contract.subsidyPool > 0 && (
+        <div>
+          Trickling in:{' '}
+          <span className="font-semibold">
+            {formatMoney(contract.subsidyPool, contract.token)}
+          </span>{' '}
+          <InfoTooltip text="When you subsidize, the liquidity is added over time to prevent exploits" />
+        </div>
+      )}
 
       <AddLiquidityControl
         contract={contract}
@@ -76,34 +78,7 @@ export function AddLiquidityControl(props: {
   const [error, setError] = useState<string | undefined>(undefined)
   const [isLoading, setIsLoading] = useState(false)
 
-  const user = useUser()
-
-  const [mode, setMode] = useState<'add' | 'remove'>('add')
-  const canWithdraw =
-    contract.mechanism === 'cpmm-1' &&
-    !!user &&
-    ((user.id === contract.creatorId && contract.token !== 'CASH') ||
-      isAdminId(user.id))
-  const maxWithdrawable = !canWithdraw
-    ? 0
-    : contract.subsidyPool + maximumRemovableLiquidity(contract.pool)
-  const aboveMax = mode === 'remove' && amount && amount > maxWithdrawable
-  const newTotal = totalLiquidity + (amount ?? 0) * (mode === 'add' ? 1 : -1)
-
-  const newTrickleQueue = !amount
-    ? undefined
-    : Math.max(0, contract.subsidyPool + amount * (mode === 'add' ? 1 : -1))
-
-  const newPool =
-    contract.mechanism === 'cpmm-1' && mode === 'remove' && !!amount
-      ? amount > contract.subsidyPool &&
-        removeCpmmLiquidity(
-          contract.pool,
-          contract.p,
-          amount - contract.subsidyPool
-        ).newPool
-      : undefined
-
+  const payAmount = Math.ceil((1 / (1 - SUBSIDY_FEE)) * (amount ?? 0))
   const isCashContract = contract.token === 'CASH'
 
   const submit = async () => {
@@ -112,45 +87,22 @@ export function AddLiquidityControl(props: {
     setIsLoading(true)
 
     try {
-      if (mode === 'add') {
-        await api('market/:contractId/add-liquidity', {
-          amount,
-          contractId,
-        })
-        toast.success(
-          <>
-            Success! Added{' '}
-            <MoneyDisplay amount={amount} isCashContract={isCashContract} />{' '}
-            subsidy.
-          </>
-        )
-      } else {
-        await api('market/:contractId/remove-liquidity', {
-          amount,
-          contractId,
-        })
-        toast.success(
-          <>
-            Success! Withdrew{' '}
-            <MoneyDisplay amount={amount} isCashContract={isCashContract} />{' '}
-            subsidy.
-          </>
-        )
-      }
-
+      await api('market/:contractId/add-liquidity', {
+        amount: payAmount,
+        contractId,
+      })
+      toast.success(
+        <>
+          Success! Added{' '}
+          <MoneyDisplay amount={amount} isCashContract={isCashContract} />{' '}
+          subsidy.
+        </>
+      )
       setAmount(undefined)
       setError(undefined)
-      if (mode === 'add') {
-        track('add liquidity', { amount, contractId, slug })
-      } else {
-        track('remove liquidity', { amount, contractId, slug })
-      }
+      track('add liquidity', { amount, contractId, slug })
     } catch (e) {
-      if (e instanceof APIError) {
-        setError(e.message)
-      } else {
-        setError('Server error')
-      }
+      setError('Server error')
     } finally {
       setIsLoading(false)
     }
@@ -158,89 +110,25 @@ export function AddLiquidityControl(props: {
 
   return (
     <>
-      {canWithdraw && (
-        <ChoicesToggleGroup
-          currentChoice={mode}
-          setChoice={(mode) => {
-            setMode(mode as 'add' | 'remove')
-            if (mode === 'remove' && !amount) {
-              setAmount(Math.floor(maxWithdrawable))
-            }
-          }}
-          choicesMap={{
-            'Add subsidy': 'add',
-            Withdraw: 'remove',
-          }}
-        />
-      )}
-      <div className="my-4 flex flex-col gap-1">
-        {contract.mechanism === 'cpmm-1' && (
+      <div className="my-4">
+        Total subsidy pool:{' '}
+        <span className={clsx(!amount && 'font-semibold')}>
+          <MoneyDisplay
+            amount={totalLiquidity}
+            isCashContract={isCashContract}
+          />
+        </span>
+        {!!amount && (
           <>
-            <div>
-              Trickling in:{' '}
-              <span className={clsx(!newTrickleQueue && 'font-semibold')}>
-                {formatMoney(contract.subsidyPool, contract.token)}
-              </span>
-              {newTrickleQueue != undefined &&
-                !floatingEqual(newTrickleQueue, contract.subsidyPool) && (
-                  <>
-                    <span className="text-ink-600 mx-1">&rarr;</span>
-                    <span className="font-semibold">
-                      {formatMoney(newTrickleQueue, contract.token)}
-                    </span>
-                  </>
-                )}
-              <InfoTooltip
-                text="When you subsidize, the liquidity is added over time to prevent exploits"
-                className="ml-1"
+            <span className="text-ink-600 mx-1">&rarr;</span>
+            <span className="font-semibold">
+              <MoneyDisplay
+                amount={totalLiquidity + amount}
+                isCashContract={isCashContract}
               />
-            </div>
-            <div>
-              <span>Subsidy pool:</span>{' '}
-              <span className="whitespace-nowrap">
-                {shortFormatNumber(contract.pool.YES)} <span>YES</span>
-                {' / '}
-                {shortFormatNumber(contract.pool.NO)} <span>NO</span>
-              </span>
-              {newPool && (
-                <>
-                  <span className="text-ink-600 mx-1">&rarr;</span>
-
-                  <span
-                    className={clsx(
-                      'whitespace-nowrap font-semibold',
-                      aboveMax && 'text-scarlet-500'
-                    )}
-                  >
-                    {shortFormatNumber(newPool.YES)} <span>YES</span>
-                    {' / '}
-                    {shortFormatNumber(newPool.NO)} <span>NO</span>
-                  </span>
-                </>
-              )}
-            </div>
+            </span>
           </>
         )}
-        <div>
-          Total liquidity:{' '}
-          <span className={clsx(!amount && 'font-semibold')}>
-            <MoneyDisplay
-              amount={totalLiquidity}
-              isCashContract={isCashContract}
-            />
-          </span>
-          {!!amount && (
-            <>
-              <span className="text-ink-600 mx-1">&rarr;</span>
-              <span className="font-semibold">
-                <MoneyDisplay
-                  amount={newTotal}
-                  isCashContract={isCashContract}
-                />
-              </span>
-            </>
-          )}
-        </div>
       </div>
 
       <Row className="mb-4">
@@ -252,17 +140,15 @@ export function AddLiquidityControl(props: {
           disabled={false}
           quickButtonValues="large"
           token={isCashContract ? 'CASH' : 'M$'}
-          maximumAmount={mode === 'remove' ? maxWithdrawable : undefined}
         />
       </Row>
       <Button
         onClick={submit}
         disabled={isLoading || !!error || !amount}
-        color={mode === 'add' ? 'indigo' : 'yellow'}
         size="sm"
         className="mb-2 w-full"
       >
-        {mode === 'add' ? 'Add liquidity' : 'Withdraw liquidity'}
+        Subsidize
       </Button>
       {isLoading && <div className="text-ink-700">Processing...</div>}
     </>

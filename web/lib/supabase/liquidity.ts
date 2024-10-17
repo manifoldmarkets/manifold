@@ -1,17 +1,11 @@
 import { db } from './db'
 import { convertLiquidity } from 'common/supabase/liquidity'
-import { sortBy } from 'lodash'
+import { run } from 'common/supabase/utils'
 
-export const getLiquidityDocs = async (contractId: string) => {
-  const { data, error } = await db
-    .from('contract_liquidity')
-    .select('*')
-    .eq('contract_id', contractId)
+export const getLiquidtyDocs = async (contractId: string) => {
+  const { data } = await run(
+    db.from('contract_liquidity').select('*').eq('contract_id', contractId)
+  )
 
-  if (error) {
-    console.error(error)
-    return undefined
-  }
-
-  return sortBy(data.map(convertLiquidity), (l) => l.createdTime)
+  return data?.map(convertLiquidity)
 }
