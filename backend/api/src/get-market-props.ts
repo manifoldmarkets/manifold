@@ -4,6 +4,7 @@ import { convertContract } from 'common/supabase/contracts'
 import { contractColumnsToSelect } from 'shared/utils'
 import { first } from 'lodash'
 import { convertGroup } from 'common/supabase/groups'
+import { Contract } from 'common/contract'
 import { convertContractComment } from 'common/supabase/comments'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractComment } from 'common/comment'
@@ -25,13 +26,14 @@ export const getMarketProps = async (
   if (!contractId && !contractSlug) {
     throw new APIError(400, 'id or slug is required')
   }
+  let contract: Contract | undefined = undefined
   if (!contractId) {
-    contractId = await pg.oneOrNone(
-      `select id from contracts where slug = $1`,
-      [contractSlug],
-      (r) => (r ? r.id : null)
+    const result = await pg.oneOrNone(
+      `select id,slug from contracts where slug = $1`,
+      [contractSlug]
     )
-    if (!contractId) throw new APIError(404, 'Contract not found')
+    if (!result) throw new APIError(404, 'Contract not found')
+    contractId = result.id
   }
   const results = await pg.multi(
     `
@@ -124,7 +126,7 @@ export const getMarketProps = async (
   `,
     [contractId]
   )
-  const contract = first(results[0]?.map(convertContract))
+  contract = first(results[0]?.map(convertContract))
   if (!contract) throw new APIError(404, 'Contract not found')
   const chartAnnotations = results[1]
   const topics = results[2].map(convertGroup)
