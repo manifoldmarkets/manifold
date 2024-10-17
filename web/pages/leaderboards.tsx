@@ -30,6 +30,7 @@ import { BackButton } from 'web/components/contract/back-button'
 import { filterDefined } from 'common/util/array'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
+import { TwombaToggle } from 'web/components/twomba/twomba-toggle'
 
 export async function getStaticProps() {
   const allTime = await queryLeaderboardUsers().catch(() => ({
@@ -214,11 +215,12 @@ export default function Leaderboards(props: {
         <Row className={'mb-4 w-full items-center justify-between'}>
           <Row className={'items-center gap-2'}>
             <BackButton className={'md:hidden'} />
-            <Title className={'!mb-0'}>
-              Leaderboards <InfoTooltip text="Updated every 15 minutes" />
-            </Title>
+            <Title className={'!mb-0'}>Leaderboard</Title>
           </Row>
-          <TopicPillSelector topic={topic} setTopic={setTopic} />
+          <div className="flex gap-2">
+            <TopicPillSelector topic={topic} setTopic={setTopic} />
+            <TwombaToggle sweepsEnabled isSmall />
+          </div>
         </Row>
 
         <Col className="items-center gap-10 lg:flex-row lg:items-start">
