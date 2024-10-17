@@ -278,6 +278,21 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  leaderboard: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as { userId: string; score: number }[],
+    props: z
+      .object({
+        groupId: z.string().optional(),
+        limit: z.coerce.number().min(1).max(100).default(50),
+        token: z.enum(['MANA', 'CASH']).default('MANA'),
+        kind: z.enum(['creator', 'profit', 'referral']),
+      })
+      .strict(),
+  },
   'verify-phone-number': {
     method: 'POST',
     visibility: 'undocumented',
