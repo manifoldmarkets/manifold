@@ -1,9 +1,9 @@
 import { Col } from 'web/components/layout/col'
-import { Leaderboard } from 'web/components/leaderboard'
+import { Leaderboard, type LeaderboardEntry } from 'web/components/leaderboard'
 import { Page } from 'web/components/layout/page'
 import { User } from 'web/lib/firebase/users'
 import { formatMoney, formatWithCommas } from 'common/util/format'
-import { useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { Title } from 'web/components/widgets/title'
 import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
@@ -24,6 +24,8 @@ import {
 import { type Group, type LiteGroup, TOPIC_KEY } from 'common/group'
 import { Row } from 'web/components/layout/row'
 import { TopicPillSelector } from 'web/components/topics/topic-selector'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { DropdownPill } from 'web/components/search/filter-pills'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { BackButton } from 'web/components/contract/back-button'
@@ -99,9 +101,11 @@ export default function Leaderboards(props: {
   }, [user?.creatorTraders, user?.profitCached])
 
   const { topReferrals } = props
+
   const [topicSlug, setTopicSlug] = usePersistentQueryState(TOPIC_KEY, '')
   const topicFromRouter = useTopicFromRouter(topicSlug)
   const [topic, setTopic] = useState<LiteGroup | undefined>()
+  const [type, setType] = useState<LeaderboardType>('profit')
 
   useEffect(() => {
     setTopic(topicFromRouter)
@@ -204,6 +208,52 @@ export default function Leaderboards(props: {
     }
   }
 
+  type LeaderboardData<T extends LeaderboardEntry = LeaderboardEntry> = {
+    entries: T[]
+    columns: { header: string | ReactNode; renderCell: (entry: T) => string }[]
+  }
+
+  const leaderboards: { [key in LeaderboardType]: LeaderboardData } = {
+    profit: {
+      entries: topTraderEntries,
+      columns: [
+        {
+          header: 'Profit',
+          renderCell: (user: any) => formatMoney(user.score),
+        },
+      ],
+    },
+    creators: {
+      entries: topCreatorEntries,
+      columns: [
+        {
+          header: 'Traders',
+          renderCell: (user: any) => formatWithCommas(user.score),
+        },
+      ],
+    },
+    referrals: {
+      entries: topReferrals,
+      columns: [
+        {
+          header: 'Referrals',
+          renderCell: (user: any) => user.totalReferrals,
+        },
+        {
+          header: (
+            <span>
+              Referred profits
+              <InfoTooltip text={'Total profit earned by referred users'} />
+            </span>
+          ),
+          renderCell: (user: any) => formatMoney(user.totalReferredProfit ?? 0),
+        },
+      ],
+    },
+  }
+
+  const { entries, columns } = leaderboards[type]
+
   return (
     <Page trackPageView={'leaderboards'}>
       <SEO
@@ -211,72 +261,66 @@ export default function Leaderboards(props: {
         description={`Manifold's leaderboards show the top ${BETTORS}, question creators, and referrers.`}
         url="/leaderboards"
       />
-      <Col className="mb-4 p-2">
+      <Col className="mx-4 mb-10 items-center self-center p-2 md:mx-0 md:w-[35rem]">
         <Row className={'mb-4 w-full items-center justify-between'}>
           <Row className={'items-center gap-2'}>
             <BackButton className={'md:hidden'} />
             <Title className={'!mb-0'}>Leaderboard</Title>
           </Row>
           <div className="flex gap-2">
-            <TopicPillSelector topic={topic} setTopic={setTopic} />
+            <TypePillSelector type={type} setType={setType} />
+            {type != 'referrals' && (
+              <TopicPillSelector topic={topic} setTopic={setTopic} />
+            )}
             <TwombaToggle sweepsEnabled isSmall />
           </div>
         </Row>
 
-        <Col className="items-center gap-10 lg:flex-row lg:items-start">
-          <Leaderboard
-            title={`🏅 ${topic?.name ?? 'Top'} ${BETTORS}`}
-            entries={topTraderEntries}
-            columns={[
-              {
-                header: 'Profit',
-                renderCell: (user) => formatMoney(user.score),
-              },
-            ]}
-            highlightUsername={user?.username}
-          />
-
-          <Leaderboard
-            title={`🏅 ${topic?.name ?? 'Top'} creators`}
-            entries={topCreatorEntries}
-            columns={[
-              {
-                header: 'Traders',
-                renderCell: (user) => formatWithCommas(user.score),
-              },
-            ]}
-            highlightUsername={user?.username}
-          />
-        </Col>
-        {!topic && (
-          <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-[35rem] lg:flex-row">
-            <Leaderboard
-              title="🏅 Top Referrers"
-              entries={topReferrals}
-              columns={[
-                {
-                  header: 'Referrals',
-                  renderCell: (user) => user.totalReferrals,
-                },
-                {
-                  header: (
-                    <span>
-                      Referred profits
-                      <InfoTooltip
-                        text={'Total profit earned by referred users'}
-                      />
-                    </span>
-                  ),
-                  renderCell: (user) =>
-                    formatMoney(user.totalReferredProfit ?? 0),
-                },
-              ]}
-              highlightUsername={user?.username}
-            />
-          </Col>
-        )}
+        <Leaderboard
+          entries={entries}
+          columns={columns}
+          highlightUsername={user?.username}
+        />
       </Col>
     </Page>
+  )
+}
+
+const LEADERBOARD_TYPES = [
+  {
+    name: 'Top traders',
+    value: 'profit',
+  },
+  {
+    name: 'Top creators',
+    value: 'creators',
+  },
+  {
+    name: 'Most referrals',
+    value: 'referrals',
+  },
+] as const
+
+type LeaderboardType = (typeof LEADERBOARD_TYPES)[number]['value']
+
+const TypePillSelector = (props: {
+  type: LeaderboardType
+  setType: (type: LeaderboardType) => void
+}) => {
+  const { type, setType } = props
+  const currentEntry = LEADERBOARD_TYPES.find((t) => t.value === type)!
+  return (
+    <DropdownMenu
+      closeOnClick
+      selectedItemName={currentEntry.name}
+      items={LEADERBOARD_TYPES.map((t) => ({
+        name: t.name,
+        onClick: () => setType(t.value),
+      }))}
+      buttonContent={(open) => (
+        <DropdownPill open={open}>{currentEntry.name}</DropdownPill>
+      )}
+    />
   )
 }
 

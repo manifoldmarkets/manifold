@@ -5,7 +5,7 @@ import { sortBy } from 'lodash'
 import { UserAvatarAndBadge } from './widgets/user-link'
 import { ReactNode } from 'react'
 
-interface LeaderboardEntry {
+export interface LeaderboardEntry {
   id: string
   username?: string
   name?: string
@@ -14,7 +14,7 @@ interface LeaderboardEntry {
 }
 
 export function Leaderboard<T extends LeaderboardEntry>(props: {
-  title: string
+  title?: string
   entries: T[]
   columns: {
     header: string | ReactNode
@@ -32,7 +32,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
   )
   return (
     <div className={clsx('w-full px-1', className)}>
-      <Title>{title}</Title>
+      {title != undefined && <Title>{title}</Title>}
       {entries.length === 0 ? (
         <div className="text-ink-500 ml-2">None yet</div>
       ) : (

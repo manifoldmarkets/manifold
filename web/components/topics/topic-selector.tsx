@@ -1,9 +1,5 @@
 import { Combobox } from '@headlessui/react'
-import {
-  ChevronDownIcon,
-  PlusCircleIcon,
-  SelectorIcon,
-} from '@heroicons/react/outline'
+import { PlusCircleIcon, SelectorIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Group, LiteGroup, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { useEffect, useRef, useState } from 'react'
@@ -17,6 +13,7 @@ import { uniqBy } from 'lodash'
 import { Col } from '../layout/col'
 import { buildArray } from 'common/util/array'
 import DropdownMenu from '../comments/dropdown-menu'
+import { DropdownPill } from '../search/filter-pills'
 
 export function TopicSelector(props: {
   setSelectedGroup: (group: Group) => void
@@ -204,13 +201,12 @@ export function TopicPillSelector(props: {
   setTopic: (topic: LiteGroup | undefined) => void
 }) {
   const { topic, setTopic } = props
-  const { query, setQuery, searchedGroups, loading } = useSearchGroups()
+  const { query, setQuery, searchedGroups } = useSearchGroups()
 
   const currentName = topic?.name ?? 'All topics'
 
   return (
     <DropdownMenu
-      withinOverflowContainer
       closeOnClick
       selectedItemName={currentName}
       items={buildArray(
@@ -244,17 +240,7 @@ export function TopicPillSelector(props: {
         }))
       )}
       buttonContent={(open) => (
-        <div
-          className={clsx(
-            'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
-            'bg-ink-200 hover:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
-          )}
-        >
-          {currentName}
-          <ChevronDownIcon
-            className={clsx('ml-2 h-4 w-4', open && 'rotate-180')}
-          />
-        </div>
+        <DropdownPill open={open}>{currentName}</DropdownPill>
       )}
     />
   )
