@@ -152,7 +152,7 @@ export function createJobs() {
     ),
     createJob(
       'weekly-markets-emails',
-      '0 */3 11-17 * * 3', // TODO move back to Monday
+      '0 */3 11-17 * * 4', // TODO move back to Monday
       sendWeeklyMarketsEmails
     ),
     createJob(
