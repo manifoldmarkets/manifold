@@ -364,7 +364,7 @@ function FilterModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className={clsx(MODAL_CLASS, 'text-ink-600 text-sm')}>
+      <Col className={clsx(MODAL_CLASS, 'text-ink-600 !items-stretch text-sm')}>
         {!hideFilter && (
           <Col className="gap-2">
             <Row className="items-center gap-1 font-semibold">
