@@ -312,6 +312,7 @@ export const fetchContractBetDataAndValidate = async (
            ($3 is null or answer_id in ($3:list) or answer_id is null or            
            (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
            );
+    select status from system_trading_status where token = (select token from contracts where id = $2);
   `
 
   const results = await pgTrans.multi(queries, [
@@ -327,6 +328,14 @@ export const fetchContractBetDataAndValidate = async (
     cash_balance: number
   })[]
   const contractMetrics = results[4].map((r) => r.data) as ContractMetric[]
+  const systemStatus = results[5][0]
+
+  if (!systemStatus.status) {
+    throw new APIError(
+      403,
+      `Trading with ${contract.token} is currently disabled.`
+    )
+  }
 
   if (!user) throw new APIError(404, 'User not found.')
   if (!contract) throw new APIError(404, 'Contract not found.')

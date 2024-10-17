@@ -197,6 +197,7 @@ import { getKYCStats } from './get-kyc-stats'
 import { getTxns } from './get-txns'
 import { refreshAllClients } from './refresh-all-clients'
 import { getIp } from 'shared/analytics'
+import { toggleSystemTradingStatus } from './toggle-system-status'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -433,6 +434,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-cashouts': getCashouts,
   'get-kyc-stats': getKYCStats,
   txns: getTxns,
+  'toggle-system-trading-status': toggleSystemTradingStatus,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

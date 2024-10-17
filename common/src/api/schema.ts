@@ -99,6 +99,17 @@ export const API = (_apiTypeCheck = {
     props: z.object({ message: z.string().optional() }),
     authed: true,
   },
+  'toggle-system-trading-status': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        token: z.enum(['MANA', 'CASH']),
+      })
+      .strict(),
+    returns: {} as { status: boolean },
+  },
   'create-cash-contract': {
     method: 'POST',
     visibility: 'public',
