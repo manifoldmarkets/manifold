@@ -218,12 +218,12 @@ export function BuyAmountInput(props: {
           (token === 'CASH' && user.cashBalance < amount))
       ) {
         setError('Insufficient balance')
-      } else if (minimumAmount && amount < minimumAmount) {
+      } else if (minimumAmount != undefined && amount < minimumAmount) {
         setError(
           'Minimum amount: ' +
             formatWithToken({ amount: minimumAmount, token: token })
         )
-      } else if (maximumAmount && amount > maximumAmount) {
+      } else if (maximumAmount != undefined && amount > maximumAmount) {
         setError(
           'Maximum amount: ' +
             formatWithToken({ amount: maximumAmount, token: token })
