@@ -118,7 +118,7 @@ export const CONTRACT_TYPES = [
 ] as const
 
 export const DEFAULT_SORT = 'score'
-export const DEFAULT_SORTS = ['freshness-score']
+export const DEFAULT_SORTS = ['freshness-score', 'newest']
 export const DEFAULT_BOUNTY_SORTS = ['bounty-amount', 'newest']
 export const DEFAULT_POLL_SORTS = ['newest']
 
