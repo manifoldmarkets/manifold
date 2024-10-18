@@ -3,9 +3,7 @@ import { api } from 'web/lib/api/api'
 import { ModReport, ReportStatus } from 'common/mod-report'
 import { keyBy, mapValues } from 'lodash'
 
-export const useModReports = (
-  statuses: ('new' | 'under review' | 'resolved' | 'needs admin')[]
-) => {
+export const useModReports = () => {
   const [reports, setReports] = useState<ModReport[] | undefined>(undefined)
   const [reportStatuses, setReportStatuses] = useState<{
     [key: number]: ReportStatus
@@ -16,11 +14,7 @@ export const useModReports = (
 
   const getModReports = async () => {
     try {
-      const response = await api('get-mod-reports', {
-        statuses,
-        limit: statuses.includes('resolved') ? 15 : 50,
-        offset: 0,
-      })
+      const response = await api('get-mod-reports', {})
       if (response && response.status === 'success') {
         const newReports = response.reports
 
@@ -48,7 +42,13 @@ export const useModReports = (
 
   useEffect(() => {
     getModReports()
-  }, [statuses.length])
+
+    const intervalId = setInterval(() => {
+      getModReports()
+    }, 1000)
+
+    return () => clearInterval(intervalId)
+  }, [])
 
   return {
     reports,
