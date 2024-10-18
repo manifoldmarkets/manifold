@@ -76,17 +76,6 @@ export async function getCreatorRank(userId: string) {
   return data
 }
 
-export async function getTopTraders() {
-  // add extra for @acc, excluded users
-  const { data } = await run(db.rpc('profit_leaderboard', { limit_n: 25 }))
-  return data
-}
-
-export async function getTopCreators() {
-  const { data } = await run(db.rpc('creator_leaderboard', { limit_n: 20 }))
-  return data
-}
-
 export const getTotalPublicContractsCreated = async (userId: string) => {
   const { count } = await run(
     db

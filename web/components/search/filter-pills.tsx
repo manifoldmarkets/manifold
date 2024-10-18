@@ -139,13 +139,9 @@ export function TierDropdownPill(props: {
         },
       ]}
       buttonContent={(open) => (
-        <div
-          className={clsx(
-            'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
-            currentTiers.includes('1')
-              ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-              : 'bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
-          )}
+        <DropdownPill
+          open={open}
+          color={currentTiers.includes('1') ? 'indigo' : 'light-gray'}
         >
           <Row className="h-5 items-center">
             {currentTiers === '00000'
@@ -167,13 +163,7 @@ export function TierDropdownPill(props: {
                   }
                 })}
           </Row>
-          <ChevronDownIcon
-            className={clsx(
-              'h-4 w-4 transition-transform',
-              open ? 'rotate-180' : ''
-            )}
-          />
-        </div>
+        </DropdownPill>
       )}
     />
   )
@@ -196,21 +186,7 @@ export function FilterDropdownPill(props: {
       })}
       menuItemsClass={clsx()}
       buttonContent={(open) => (
-        <div
-          className={clsx(
-            'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
-
-            'bg-ink-200 hover:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
-          )}
-        >
-          {currentFilterLabel}
-          <ChevronDownIcon
-            className={clsx(
-              'h-4 w-4 transition-transform',
-              open ? 'rotate-180' : ''
-            )}
-          />
-        </div>
+        <DropdownPill open={open}>{currentFilterLabel}</DropdownPill>
       )}
       selectedItemName={currentFilterLabel}
       closeOnClick
@@ -277,25 +253,41 @@ export function TopicDropdownPill(props: {
       withinOverflowContainer
       items={items}
       buttonContent={(open) => (
-        <div
-          className={clsx(
-            'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
-
-            'bg-ink-200 hover:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
-          )}
-        >
-          {currentTopicLabel}
-          <ChevronDownIcon
-            className={clsx(
-              'h-4 w-4 transition-transform',
-              open ? 'rotate-180' : ''
-            )}
-          />
-        </div>
+        <DropdownPill open={open}>{currentTopicLabel}</DropdownPill>
       )}
       selectedItemName={currentTopicLabel}
       closeOnClick
       menuItemsClass="max-h-64 overflow-y-auto"
     />
+  )
+}
+
+export function DropdownPill(props: {
+  color?: 'indigo' | 'gray' | 'light-gray'
+  open: boolean
+  children: ReactNode
+}) {
+  const color = props.color ?? 'gray'
+
+  return (
+    <div
+      className={clsx(
+        'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
+        color === 'indigo'
+          ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+          : color === 'light-gray'
+          ? 'bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
+          : 'bg-ink-200 hover:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
+      )}
+    >
+      {/* eslint-disable react/prop-types */}
+      {props.children}
+      <ChevronDownIcon
+        className={clsx(
+          'h-4 w-4 transition-transform',
+          props.open ? 'rotate-180' : ''
+        )}
+      />
+    </div>
   )
 }
