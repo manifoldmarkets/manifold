@@ -63,47 +63,12 @@ from
   leagues;
 
 create or replace view
-  user_referrals as
-select
-  subquery.id,
-  subquery.data,
-  subquery.total_referrals,
-  rank() over (
-    order by
-      subquery.total_referrals desc
-  ) as rank
-from
-  (
-    select
-      referrer.id,
-      referrer.data,
-      count(*) as total_referrals
-    from
-      (
-        users referred
-        join users referrer on (
-          (
-            (referrer.data ->> 'id'::text) = (referred.data ->> 'referredByUserId'::text)
-          )
-        )
-      )
-    where
-      (
-        (referred.data ->> 'referredByUserId'::text) is not null
-      )
-    group by
-      referrer.id
-  ) subquery
-order by
-  subquery.total_referrals desc;
-
-create or replace view
   user_referrals_profit as
 select
   subquery.id,
-  subquery.data,
   subquery.total_referrals,
   subquery.total_referred_profit,
+  subquery.total_referred_cash_profit,
   rank() over (
     order by
       subquery.total_referrals desc
@@ -112,23 +77,30 @@ from
   (
     select
       referrer.id,
-      referrer.data,
       count(*) as total_referrals,
       sum(
         (
           (
-            (referred.data -> 'profitCached'::text) ->> 'allTime'::text
-          )
-        )::numeric
-      ) as total_referred_profit
+            (uphl.balance + uphl.spice_balance) + uphl.investment_value
+          ) - uphl.total_deposits
+        )
+      ) as total_referred_profit,
+      sum(
+        (
+          (uphl.cash_balance + uphl.cash_investment_value) - uphl.total_cash_deposits
+        )
+      ) as total_referred_cash_profit
     from
       (
-        users referred
-        join users referrer on (
-          (
-            (referrer.data ->> 'id'::text) = (referred.data ->> 'referredByUserId'::text)
+        (
+          users referred
+          join users referrer on (
+            (
+              referrer.id = (referred.data ->> 'referredByUserId'::text)
+            )
           )
         )
+        join user_portfolio_history_latest uphl on ((referred.id = uphl.user_id))
       )
     where
       (

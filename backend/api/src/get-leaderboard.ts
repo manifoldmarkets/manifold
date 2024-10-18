@@ -1,4 +1,4 @@
-import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { APIHandler } from 'api/helpers/endpoint'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
@@ -18,14 +18,11 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
   token,
   kind,
 }) => {
-  if (kind === 'referral' && groupId)
-    throw new APIError(400, 'Referrals are not per-topic')
-
   const pg = createSupabaseDirectClient()
 
   if (kind === 'referral') {
     const data = await pg.any(
-      `select id, total_referrals, total_referred_profit
+      `select id, total_referrals, total_referred_profit, total_referred_cash_profit
       from user_referrals_profit limit $1`,
       [limitValue]
     )
@@ -33,7 +30,10 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     return data.map((r) => ({
       userId: r.id,
       score: r.total_referrals,
-      totalReferredProfit: r.total_referred_profit,
+      totalReferredProfit:
+        token === 'CASH'
+          ? r.total_referred_cash_profit
+          : r.total_referred_profit,
     }))
   }
 

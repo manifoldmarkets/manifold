@@ -19,13 +19,6 @@ export async function getUserReferralsInfo(userId: string, db: SupabaseClient) {
   const { data } = await run(
     db.from('user_referrals_profit').select('*').eq('id', userId)
   )
-  let fallbackRank = 0
-  if (data.length === 0) {
-    const { count } = await db
-      .from('user_referrals')
-      .select('*', { head: true, count: 'exact' })
-    fallbackRank = (count ?? Infinity) + 1
-  }
 
-  return { ...data[0], rank: data[0]?.rank ?? fallbackRank }
+  return { ...data[0], rank: data[0]?.rank ?? 0 }
 }

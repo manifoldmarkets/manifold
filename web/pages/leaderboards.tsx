@@ -43,7 +43,8 @@ type MyScores = {
   referral: {
     rank: number
     score: number
-    totalReferralProfit: number
+    profitMana: number
+    profitCash: number
   }
 }
 
@@ -85,7 +86,8 @@ export default function Leaderboards() {
         referral: {
           rank: referrerInfo.rank,
           score: referrerInfo.total_referrals ?? 0,
-          totalReferralProfit: referrerInfo.total_referred_profit ?? 0,
+          profitMana: referrerInfo.total_referred_profit ?? 0,
+          profitCash: referrerInfo.total_referred_cash_profit ?? 0,
         },
       })
     })()
@@ -111,7 +113,7 @@ export default function Leaderboards() {
     refresh,
   } = useAPIGetter('leaderboard', {
     kind: type,
-    groupId: type === 'referral' ? undefined : topic?.id,
+    groupId: topic?.id,
     token,
     limit: 50,
   })
@@ -121,10 +123,16 @@ export default function Leaderboards() {
   const data = myScores?.[type]
   const myEntry = shouldInsertMe &&
     data && {
-      ...data,
+      rank: data.rank,
       score:
         'score' in data ? data.score : token === 'CASH' ? data.cash : data.mana,
       userId: user?.id,
+      ...('profitCash' in data
+        ? {
+            totalReferredProfit:
+              token === 'CASH' ? data.profitCash : data.profitMana,
+          }
+        : {}),
     }
 
   const allColumns: { [key in LeaderboardType]: LeaderboardColumn[] } = {
@@ -154,7 +162,8 @@ export default function Leaderboards() {
             <InfoTooltip text={'Total profit earned by referred users'} />
           </span>
         ),
-        renderCell: (user: any) => formatMoney(user.totalReferredProfit ?? 0),
+        renderCell: (user: any) =>
+          formatMoney(user.totalReferredProfit ?? 0, token),
       },
     ],
   }
