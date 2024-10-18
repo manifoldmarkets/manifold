@@ -23,7 +23,7 @@ import { ReactNode, useState } from 'react'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { UncontrolledTabs } from '../layout/tabs'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { CashoutStatusData } from 'common/gidx/gidx'
+import { PendingCashoutStatusData } from 'common/gidx/gidx'
 import { PaginationNextPrev } from '../widgets/pagination'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
@@ -103,7 +103,7 @@ export function SelectCashoutOptions(props: {
                         </td>
                       </tr>
                     ) : (
-                      cashouts?.map((cashout: CashoutStatusData) => {
+                      cashouts?.map((cashout: PendingCashoutStatusData) => {
                         const createdDate = new Date(
                           cashout.txn.createdTime
                         ).getTime()
@@ -114,7 +114,7 @@ export function SelectCashoutOptions(props: {
                           >
                             <td className="px-3 py-2 ">
                               {formatMoneyUSD(
-                                cashout.txn.data.payoutInDollars,
+                                cashout.txn.payoutInDollars,
                                 true
                               )}
                             </td>

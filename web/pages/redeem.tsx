@@ -76,7 +76,6 @@ export default function CashoutPage() {
   const [NameOnAccount, setNameOnAccount] = useState('')
   const [AccountNumber, setAccountNumber] = useState('')
   const [RoutingNumber, setRoutingNumber] = useState('')
-  const [BankName, setBankName] = useState('')
   const [SavePaymentMethod, _] = useState(false)
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
   const [sweepCashAmount, setSweepCashAmount] = useState<number | undefined>(
@@ -93,6 +92,7 @@ export default function CashoutPage() {
   const [sessionStatus, setSessionStatus] = useState<string>()
   const [completedCashout, setCompletedCashout] = useState(0)
   const kycAmount = useKYCGiftAmount(user)
+  const [deviceGPS, setDeviceGPS] = useState<GPSData>()
 
   const { data: documentData } = useAPIGetter(
     'get-verification-documents-gidx',
@@ -165,15 +165,14 @@ export default function CashoutPage() {
   const handleSubmit = async () => {
     setloading(true)
     setError(undefined)
-    if (!checkoutSession || !sweepCashAmount) return
+    if (!checkoutSession || !sweepCashAmount || !deviceGPS) return
     try {
-      const { status, message } = await api('complete-cashout-session-gidx', {
+      const { status, message } = await api('complete-cashout-request', {
         PaymentMethod: {
           Type: 'ACH',
           AccountNumber,
           RoutingNumber,
           NameOnAccount,
-          BankName,
           BillingAddress: {
             AddressLine1: address,
             City: city,
@@ -189,6 +188,7 @@ export default function CashoutPage() {
         },
         MerchantSessionID: checkoutSession.MerchantSessionID,
         MerchantTransactionID: checkoutSession.MerchantTransactionID,
+        DeviceGPS: deviceGPS,
       })
       if (status === 'error') {
         setError(message)
@@ -210,6 +210,7 @@ export default function CashoutPage() {
   const handleLocationReceived = useEvent((data: GPSData) => {
     setPage('get-session')
     getCashoutSession(data)
+    setDeviceGPS(data)
   })
 
   if (!user || !privateUser) {
@@ -482,15 +483,6 @@ export default function CashoutPage() {
                 />
               </Col>
               <Col className={'w-full gap-0.5'}>
-                <InputTitle>Bank Name</InputTitle>
-                <Input
-                  type="text"
-                  placeholder="Your bank's name"
-                  value={BankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                />
-              </Col>
-              <Col className={'w-full gap-0.5'}>
                 <InputTitle>Account Number</InputTitle>
                 <Input
                   type="text"
@@ -576,7 +568,8 @@ export default function CashoutPage() {
                     !AccountNumber ||
                     !RoutingNumber ||
                     !sweepCashAmount ||
-                    lessThanMinRedeemable
+                    lessThanMinRedeemable ||
+                    !deviceGPS
                   }
                   className="flex-1"
                 >

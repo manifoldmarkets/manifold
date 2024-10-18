@@ -1,40 +1,28 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   CompleteSessionDirectCashierResponse,
-  PaymentMethod,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
 import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
-  getLocalServerIP,
   GIDX_BASE_URL,
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { runTxn } from 'shared/txn/run-txn'
-import { getIp, track } from 'shared/analytics'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { getUser, LOCAL_DEV } from 'shared/utils'
-import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
-import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
-import { floatingEqual } from 'common/util/math'
-import { ValidatedAPIParams } from 'common/api/schema'
-import { CashOutPendingTxn } from 'common/txn'
+import { track } from 'shared/analytics'
+import { isAdminId, TWOMBA_ENABLED } from 'common/envs/constants'
+import { getUser } from 'shared/utils'
 
 const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
-const MANUALLY_PROCESS_CASH_OUT = true
 export const completeCashoutSession: APIHandler<
   'complete-cashout-session-gidx'
-> = async (props, auth, req) => {
+> = async (props, auth) => {
   if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const pg = createSupabaseDirectClient()
-  const userId = auth.uid
-  const { phoneNumberWithCode } = await getUserRegistrationRequirements(userId)
 
-  const user = await getUser(userId, pg)
-  if (!user) {
-    throw new APIError(404, 'User not found')
+  if (!isAdminId(auth.uid)) {
+    throw new APIError(403, 'Unauthorized')
   }
   const {
     PaymentMethod,
@@ -42,30 +30,29 @@ export const completeCashoutSession: APIHandler<
     PaymentAmount,
     MerchantTransactionID,
     SavePaymentMethod,
+    txnId,
   } = props
+
+  const userId = props.userId
+  const { phoneNumberWithCode } = await getUserRegistrationRequirements(userId)
+
+  const user = await getUser(userId, pg)
+  if (!user) {
+    throw new APIError(404, 'User not found')
+  }
+
   log('Complete cashout session merchant info:', {
     MerchantSessionID,
     MerchantTransactionID,
   })
 
-  const manaCashAmount = PaymentAmount.manaCash
-  const { redeemable } = await calculateRedeemablePrizeCash(pg, userId)
-
-  if (redeemable < manaCashAmount) {
-    throw new APIError(400, 'Insufficient redeemable prize cash')
-  }
-  const dollarsToWithdraw = PaymentAmount.dollars
-  const CalculatedPaymentAmount = (1 - SWEEPIES_CASHOUT_FEE) * manaCashAmount
-  if (dollarsToWithdraw !== CalculatedPaymentAmount) {
-    throw new APIError(400, 'Payment amount mismatch')
-  }
   const body = {
     PaymentAmount: {
-      PaymentAmount: CalculatedPaymentAmount,
+      PaymentAmount: PaymentAmount.dollars,
       BonusAmount: 0,
     },
     SavePaymentMethod,
-    DeviceIpAddress: LOCAL_DEV ? await getLocalServerIP() : getIp(req),
+    DeviceIpAddress: props.ip,
     MerchantTransactionID,
     PaymentMethod: {
       ...PaymentMethod,
@@ -73,17 +60,6 @@ export const completeCashoutSession: APIHandler<
     },
   }
   log('complete cashout session body:', body)
-  if (MANUALLY_PROCESS_CASH_OUT) {
-    track(auth.uid, 'gidx complete cashout session', {
-      status: 'manual',
-      message: 'Payment successful',
-    })
-    await debitCoinsManual(userId, manaCashAmount, props, PaymentMethod)
-    return {
-      status: 'success',
-      message: 'Payment successful',
-    }
-  }
 
   const res = await fetch(ENDPOINT, {
     method: 'POST',
@@ -96,7 +72,7 @@ export const completeCashoutSession: APIHandler<
     }),
   })
   if (!res.ok) {
-    track(auth.uid, 'gidx complete cashout session', {
+    track(userId, 'gidx complete cashout session', {
       status: 'error',
       message: 'GIDX error',
     })
@@ -114,7 +90,7 @@ export const completeCashoutSession: APIHandler<
     ResponseMessage,
   } = cashierResponse
   if (ResponseCode >= 300) {
-    track(auth.uid, 'gidx complete cashout session', {
+    track(userId, 'gidx complete cashout session', {
       status: 'error',
       message: 'Error: ' + ResponseMessage,
       gidxMessage: SessionStatusMessage,
@@ -130,7 +106,7 @@ export const completeCashoutSession: APIHandler<
     SessionStatusMessage,
     AllowRetry
   )
-  track(auth.uid, 'gidx complete cashout session', {
+  track(userId, 'gidx complete cashout session', {
     status,
     message,
     gidxMessage,
@@ -152,7 +128,7 @@ export const completeCashoutSession: APIHandler<
   }
   if (PaymentStatusCode === '1') {
     // This should always return a '0' for pending, but just in case
-    await debitCoins(userId, manaCashAmount, cashierResponse)
+    await updateStatusAndSaveReceipt(userId, txnId, cashierResponse)
     return {
       status: 'success',
       message: 'Payment successful',
@@ -189,7 +165,7 @@ export const completeCashoutSession: APIHandler<
       gidxMessage: PaymentStatusMessage,
     }
   } else if (PaymentStatusCode === '0') {
-    await debitCoins(userId, manaCashAmount, cashierResponse)
+    await updateStatusAndSaveReceipt(userId, txnId, cashierResponse)
     return {
       status: 'pending',
       message: 'Payment pending',
@@ -203,9 +179,9 @@ export const completeCashoutSession: APIHandler<
   }
 }
 
-const debitCoins = async (
+const updateStatusAndSaveReceipt = async (
   userId: string,
-  manaCashAmount: number,
+  txnId: string,
   response: CompleteSessionDirectCashierResponse
 ) => {
   const {
@@ -224,24 +200,8 @@ const debitCoins = async (
     PaymentStatusMessage,
     PaymentAmountType,
   } = PaymentDetails[0]
-  const data = {
-    sessionId: SessionID,
-    transactionId: MerchantTransactionID,
-    type: 'gidx',
-    payoutInDollars: PaymentDetails[0].PaymentAmount,
-  } as const
   const pg = createSupabaseDirectClient()
-  const manaCashoutTxn: Omit<CashOutPendingTxn, 'id' | 'createdTime'> = {
-    fromId: userId,
-    fromType: 'USER',
-    toId: 'EXTERNAL',
-    toType: 'BANK',
-    data,
-    amount: manaCashAmount,
-    token: 'CASH',
-    category: 'CASH_OUT',
-    description: `Redemption debit`,
-  }
+
   const {
     ApiKey: _,
     MerchantID: __,
@@ -249,42 +209,18 @@ const debitCoins = async (
     LocationDetail: ____,
     ...dataToWrite
   } = response
-  const cash = await pg.tx(async (tx) => {
-    let redeemablePrizeCash: number
-    let cash: number
-    try {
-      const { redeemable, cashBalance } = await calculateRedeemablePrizeCash(
-        tx,
-        userId
-      )
-      redeemablePrizeCash = redeemable
-      cash = cashBalance
-    } catch (e) {
-      log.error('Indeterminate state, may need to refund', { response })
-      throw e
-    }
-
-    if (redeemablePrizeCash < manaCashAmount) {
-      throw new APIError(
-        500,
-        'Insufficient redeemable prize cash. Indeterminate state, may need to refund',
-        { response }
-      )
-    }
-    log('Run cashout txn, redeemable:', redeemablePrizeCash)
-    log('Cash balance for user prior to txn', cash)
-    const txn = await runTxn(tx, manaCashoutTxn)
-    const balanceAfter = await tx.one(
-      `select cash_balance from users where id = $1`,
-      [userId],
-      (r) => r.cash_balance
+  await pg.tx(async (tx) => {
+    await tx.none(
+      `
+      update redemption_status set
+        status = $1,
+        session_id = $2,
+        transaction_id = $3
+      where txn_id = $4
+        `,
+      ['approved', SessionID, MerchantTransactionID, txnId]
     )
-    log('Run cashout txn, cash balance for user after txn', balanceAfter)
-    if (!floatingEqual(cash - manaCashAmount, balanceAfter)) {
-      log.error(
-        'Cash balance after txn does not match expected. Admin should take a look.'
-      )
-    }
+
     log('Insert gidx receipt')
     await tx.none(
       `
@@ -320,113 +256,15 @@ const debitCoins = async (
         PaymentAmountType,
         SessionStatusMessage,
         SessionStatusCode,
-        txn.id,
+        txnId,
         JSON.stringify(dataToWrite),
       ]
     )
-    return cash
-  })
-  const balanceAfter = await pg.one(
-    `select cash_balance from users where id = $1`,
-    [userId],
-    (r) => r.cash_balance
-  )
-  const expectedBalance = cash - manaCashAmount
-  log(
-    'Double checking cash balance after txn',
-    balanceAfter,
-    'should be',
-    expectedBalance
-  )
-  if (!floatingEqual(expectedBalance, balanceAfter)) {
-    log.error(
-      'Cash balance after txn does not match expected. Admin should take a look.'
-    )
-  }
-}
-
-const debitCoinsManual = async (
-  userId: string,
-  manaCashAmount: number,
-  response: ValidatedAPIParams<'complete-cashout-session-gidx'>,
-  paymentMethod: Omit<PaymentMethod, 'Token' | 'DisplayName'>
-) => {
-  const { MerchantTransactionID, MerchantSessionID, PaymentAmount } = response
-  const data = {
-    merchantSessionId: MerchantSessionID,
-    transactionId: MerchantTransactionID,
-    type: 'manual',
-    payoutInDollars: PaymentAmount.dollars,
-  } as const
-  const pg = createSupabaseDirectClient()
-  const manaCashoutTxn: Omit<CashOutPendingTxn, 'id' | 'createdTime'> = {
-    fromId: userId,
-    fromType: 'USER',
-    toId: 'EXTERNAL',
-    toType: 'BANK',
-    data,
-    amount: manaCashAmount,
-    token: 'CASH',
-    category: 'CASH_OUT',
-    description: `Redemption debit`,
-  }
-  const cash = await pg.tx(async (tx) => {
-    let redeemablePrizeCash: number
-    let cash: number
-    try {
-      const { redeemable, cashBalance } = await calculateRedeemablePrizeCash(
-        tx,
-        userId
-      )
-      redeemablePrizeCash = redeemable
-      cash = cashBalance
-    } catch (e) {
-      log.error('Indeterminate state, may need to refund', { response })
-      throw e
-    }
-
-    if (redeemablePrizeCash < manaCashAmount) {
-      throw new APIError(
-        500,
-        'Insufficient redeemable prize cash. Indeterminate state, may need to refund',
-        { response }
-      )
-    }
     await tx.none(
-      `insert into delete_after_reading (user_id, data) values ($1, $2)`,
-      [userId, JSON.stringify(paymentMethod)]
+      `
+      delete from delete_after_reading where user_id = $1 and data->>'txnId' = $2
+     `,
+      [userId, txnId]
     )
-    log('Run cashout txn, redeemable:', redeemablePrizeCash)
-    log('Cash balance for user prior to txn', cash)
-    await runTxn(tx, manaCashoutTxn)
-    const balanceAfter = await tx.one(
-      `select cash_balance from users where id = $1`,
-      [userId],
-      (r) => r.cash_balance
-    )
-    log('Run cashout txn, cash balance for user after txn', balanceAfter)
-    if (!floatingEqual(cash - manaCashAmount, balanceAfter)) {
-      log.error(
-        'Cash balance after txn does not match expected. Admin should take a look.'
-      )
-    }
-    return cash
   })
-  const balanceAfter = await pg.one(
-    `select cash_balance from users where id = $1`,
-    [userId],
-    (r) => r.cash_balance
-  )
-  const expectedBalance = cash - manaCashAmount
-  log(
-    'Double checking cash balance after txn',
-    balanceAfter,
-    'should be',
-    expectedBalance
-  )
-  if (!floatingEqual(expectedBalance, balanceAfter)) {
-    log.error(
-      'Cash balance after txn does not match expected. Admin should take a look.'
-    )
-  }
 }
