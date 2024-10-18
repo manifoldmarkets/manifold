@@ -23,18 +23,18 @@ import { DropdownPill } from 'web/components/search/filter-pills'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { BackButton } from 'web/components/contract/back-button'
-import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { TwombaToggle } from 'web/components/twomba/twomba-toggle'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Button } from 'web/components/buttons/button'
-import { cloneDeep } from 'lodash'
 import { buildArray } from 'common/util/array'
+import { getCurrentPortfolio } from 'common/supabase/portfolio-metrics'
 
 type MyScores = {
   profit: {
     rank: number
-    score: number
+    mana: number
+    cash: number
   }
   creator: {
     rank: number
@@ -61,13 +61,22 @@ export default function Leaderboards() {
     ;(async () => {
       const profitRank = await getProfitRank(user.id)
       const tradersRank = await getCreatorRank(user.id)
-
       const referrerInfo = await getUserReferralsInfo(user.id, db)
+
+      const p = await getCurrentPortfolio(user.id, db)
+      let manaProfit = 0,
+        cashProfit = 0
+      if (p) {
+        manaProfit =
+          p.balance + p.spiceBalance + p.investmentValue - p.totalDeposits
+        cashProfit = p.cashBalance + p.cashInvestmentValue - p.totalCashDeposits
+      }
 
       setMyScores({
         profit: {
           rank: profitRank,
-          score: myScores?.profit.score ?? user.profitCached.allTime,
+          mana: manaProfit,
+          cash: cashProfit,
         },
         creator: {
           rank: tradersRank,
@@ -81,17 +90,6 @@ export default function Leaderboards() {
       })
     })()
   }, [user?.id])
-
-  const currentHistory = useCurrentPortfolio(user?.id)
-  useEffect(() => {
-    if (myScores && currentHistory?.profit != undefined) {
-      setMyScores((s) => {
-        const ret = cloneDeep(s!)
-        ret.profit.score = currentHistory.profit!
-        return ret
-      })
-    }
-  }, [!!myScores, currentHistory?.profit])
 
   useEffect(() => {
     setTopic(topicFromRouter)
@@ -118,12 +116,16 @@ export default function Leaderboards() {
     limit: 50,
   })
 
-  const insertMe =
-    user &&
-    entries &&
-    !entries.find((e) => e.userId === user.id) &&
-    myScores &&
-    !topic
+  const shouldInsertMe =
+    user && entries && !entries.find((e) => e.userId === user.id) && !topic
+  const data = myScores?.[type]
+  const myEntry = shouldInsertMe &&
+    data && {
+      ...data,
+      score:
+        'score' in data ? data.score : token === 'CASH' ? data.cash : data.mana,
+      userId: user?.id,
+    }
 
   const allColumns: { [key in LeaderboardType]: LeaderboardColumn[] } = {
     profit: [
@@ -184,10 +186,7 @@ export default function Leaderboards() {
         </Col>
         {entries ? (
           <Leaderboard
-            entries={buildArray(
-              entries,
-              insertMe && { ...myScores[type], userId: user.id }
-            )}
+            entries={buildArray(entries, myEntry)}
             columns={columns}
             highlightUserId={user?.id}
           />
