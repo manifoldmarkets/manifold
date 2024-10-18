@@ -87,7 +87,6 @@ const contractIds = await pg.manyOrNone(`select id from contracts`, [], r => r.i
 - Avoid editing the SQL via `${}`, and instead when using pgpromise, use the argument following the query to pass parameters to the query.
 
 
-
 ### Schema Definition
 
 We use Zod for defining our API schemas. This provides runtime type checking and automatic documentation generation.
@@ -119,7 +118,7 @@ For constructing SQL queries, we use custom SQL builder helper functions. These 
 
 #### SQL Builder Functions
 
-We have several helper functions for building SQL queries:
+Use the sqlBuilder from `shared/supabase/sql-builder.ts` for constructing SQL queries with re-useable components. It has several helper functions for building SQL queries, including:
 
 - `select`: Specifies the columns to select
 - `from`: Specifies the table to query
