@@ -22,13 +22,6 @@ export type User = {
   totalDeposits: number
   totalCashDeposits: number
   resolvedProfitAdjustment?: number
-  /** @deprecated - use user PortfolioMetrics instead */
-  profitCached: {
-    daily: number
-    weekly: number
-    monthly: number // Currently not updated bc it's not used
-    allTime: number
-  }
 
   creatorTraders: {
     daily: number
