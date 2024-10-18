@@ -39,6 +39,8 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
 
   const query = renderSql(
     from('contracts c'),
+    join('user_contract_metrics ucm on ucm.contract_id = c.id'),
+    where('ucm.answer_id is null'),
 
     kind === 'creator' && [
       select('c.creator_id as user_id, count(*) as score'),
@@ -46,9 +48,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     ],
 
     kind === 'profit' && [
-      join('user_contract_metrics ucm on ucm.contract_id = c.id'),
-      where('ucm.answer_id is null'),
-      select('user_id, sum(profit) as score'),
+      select('user_id, sum(profit + profit_adjustment) as score'),
       groupBy('user_id'),
       where('user_id not in ($1:list)', [HIDE_FROM_LEADERBOARD_USER_IDS]),
     ],
