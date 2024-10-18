@@ -24,15 +24,10 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
   entries: T[]
   columns: LeaderboardColumn<T>[]
   className?: string
-  maxToShow?: number
   highlightUserId?: string
 }) {
-  const { title, columns, className, highlightUserId } = props
-  const maxToShow = props.maxToShow ?? props.entries.length
-  const entries = sortBy(
-    props.entries.slice(0, maxToShow),
-    (entry) => entry.rank
-  )
+  const { title, entries, columns, className, highlightUserId } = props
+
   return (
     <div className={clsx('w-full px-1', className)}>
       {title != undefined && <Title>{title}</Title>}

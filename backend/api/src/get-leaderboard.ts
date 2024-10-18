@@ -1,4 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   renderSql,
@@ -49,9 +50,11 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
       where('ucm.answer_id is null'),
       select('user_id, sum(profit) as score'),
       groupBy('user_id'),
+      where('user_id not in ($1:list)', [HIDE_FROM_LEADERBOARD_USER_IDS]),
     ],
 
     where('c.token = ${token}', { token }),
+
     groupId &&
       where(
         'c.id in (select contract_id from group_contracts where group_id = ${groupId})',

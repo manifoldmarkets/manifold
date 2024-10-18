@@ -3,10 +3,8 @@ import {
   Leaderboard,
   LoadingLeaderboard,
   type LeaderboardColumn,
-  type LeaderboardEntry,
 } from 'web/components/leaderboard'
 import { Page } from 'web/components/layout/page'
-import { User } from 'web/lib/firebase/users'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Title } from 'web/components/widgets/title'
@@ -14,18 +12,9 @@ import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import {
-  getTopReferrals,
-  getUserReferralsInfo,
-} from 'common/supabase/referrals'
+import { getUserReferralsInfo } from 'common/supabase/referrals'
 import { db } from 'web/lib/supabase/db'
-import {
-  getCreatorRank,
-  getDisplayUsers,
-  getProfitRank,
-  getTopCreators,
-  getTopTraders,
-} from 'web/lib/supabase/users'
+import { getCreatorRank, getProfitRank } from 'web/lib/supabase/users'
 import { type LiteGroup, TOPIC_KEY } from 'common/group'
 import { Row } from 'web/components/layout/row'
 import { TopicPillSelector } from 'web/components/topics/topic-selector'
@@ -34,84 +23,75 @@ import { DropdownPill } from 'web/components/search/filter-pills'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { BackButton } from 'web/components/contract/back-button'
-import { filterDefined } from 'common/util/array'
-import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { TwombaToggle } from 'web/components/twomba/twomba-toggle'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Button } from 'web/components/buttons/button'
+import { cloneDeep } from 'lodash'
+import { buildArray } from 'common/util/array'
 
-export async function getStaticProps() {
-  const allTime = await queryLeaderboardUsers().catch(() => ({
-    topTraders: [],
-    topCreators: [],
-  }))
-
-  const topReferrals = await getTopReferrals(db).catch(() => [])
-
-  return {
-    props: {
-      allTime,
-      topReferrals,
-    },
-    revalidate: 60 * 15, // regenerate after 15 minutes
+type MyScores = {
+  profit: {
+    rank: number
+    score: number
+  }
+  creator: {
+    rank: number
+    score: number
+  }
+  referral: {
+    rank: number
+    score: number
+    totalReferralProfit: number
   }
 }
 
-const queryLeaderboardUsers = async () => {
-  const [topTraders, topCreators] = await Promise.all([
-    getTopTraders().then((users) =>
-      users
-        .filter((u) => !HIDE_FROM_LEADERBOARD_USER_IDS.includes(u.user_id))
-        .slice(0, 20)
-    ),
-    getTopCreators(),
-  ])
-  return {
-    topTraders,
-    topCreators,
-  }
-}
-
-type Leaderboard = Awaited<ReturnType<typeof queryLeaderboardUsers>>
-type ReferralLeaderboard = Awaited<ReturnType<typeof getTopReferrals>>
-
-type Ranking = {
-  profitRank: number
-  tradersRank: number
-  referralsRank: number
-}
-
-export default function Leaderboards(props: {
-  allTime: Leaderboard
-  topReferrals: ReferralLeaderboard
-}) {
-  const [myRanks, setMyRanks] = useState<Ranking>()
-  const [userReferralInfo, setUserReferralInfo] =
-    useState<Awaited<ReturnType<typeof getUserReferralsInfo>>>()
-  const user = useUser()
-  const currentHistory = useCurrentPortfolio(user?.id)
-
-  useEffect(() => {
-    if (!user) return
-    ;(async () => {
-      const rankings = {} as Ranking
-      rankings.profitRank = await getProfitRank(user.id)
-      rankings.tradersRank = await getCreatorRank(user.id)
-
-      const referrerInfo = await getUserReferralsInfo(user.id, db)
-      setUserReferralInfo(referrerInfo)
-      rankings.referralsRank = referrerInfo.rank
-
-      setMyRanks(rankings)
-    })()
-  }, [user?.id])
-
+export default function Leaderboards() {
   const [topicSlug, setTopicSlug] = usePersistentQueryState(TOPIC_KEY, '')
   const topicFromRouter = useTopicFromRouter(topicSlug)
   const [topic, setTopic] = useState<LiteGroup | undefined>()
   const [type, setType] = useState<LeaderboardType>('profit')
+
+  const [myScores, setMyScores] = useState<MyScores>()
+  const user = useUser()
+
+  useEffect(() => {
+    if (!user) return
+    ;(async () => {
+      const profitRank = await getProfitRank(user.id)
+      const tradersRank = await getCreatorRank(user.id)
+
+      const referrerInfo = await getUserReferralsInfo(user.id, db)
+
+      setMyScores({
+        profit: {
+          rank: profitRank,
+          score: myScores?.profit.score ?? user.profitCached.allTime,
+        },
+        creator: {
+          rank: tradersRank,
+          score: user.creatorTraders.allTime,
+        },
+        referral: {
+          rank: referrerInfo.rank,
+          score: referrerInfo.total_referrals ?? 0,
+          totalReferralProfit: referrerInfo.total_referred_profit ?? 0,
+        },
+      })
+    })()
+  }, [user?.id])
+
+  const currentHistory = useCurrentPortfolio(user?.id)
+  useEffect(() => {
+    if (myScores && currentHistory?.profit != undefined) {
+      setMyScores((s) => {
+        const ret = cloneDeep(s!)
+        ret.profit.score = currentHistory.profit!
+        return ret
+      })
+    }
+  }, [!!myScores, currentHistory?.profit])
 
   useEffect(() => {
     setTopic(topicFromRouter)
@@ -138,40 +118,12 @@ export default function Leaderboards(props: {
     limit: 50,
   })
 
-  // if (user && currentHistory && myRanks != null && !topic) {
-  //   if (
-  //     myRanks.profitRank != null &&
-  //     !topTraderEntries.find((x) => x.id === user.id)
-  //   ) {
-  //     topTraderEntries.push({
-  //       ...user,
-  //       score: currentHistory.profit ?? user.profitCached.allTime,
-  //       rank: myRanks.profitRank,
-  //     })
-  //   }
-  //   if (
-  //     myRanks.tradersRank != null &&
-  //     !topCreatorEntries.find((x) => x.id === user.id)
-  //   ) {
-  //     topCreatorEntries.push({
-  //       ...user,
-  //       score: user.creatorTraders.allTime,
-  //       rank: myRanks.tradersRank,
-  //     })
-  //   }
-  //   // Currently only set for allTime
-  //   if (
-  //     myRanks.referralsRank != null &&
-  //     !topReferrals.find((x) => x.id === user.id)
-  //   ) {
-  //     topReferrals.push({
-  //       ...user,
-  //       rank: myRanks.referralsRank,
-  //       totalReferrals: userReferralInfo?.total_referrals ?? 0,
-  //       totalReferredProfit: userReferralInfo?.total_referred_profit ?? 0,
-  //     })
-  //   }
-  // }
+  const insertMe =
+    user &&
+    entries &&
+    !entries.find((e) => e.userId === user.id) &&
+    myScores &&
+    !topic
 
   const allColumns: { [key in LeaderboardType]: LeaderboardColumn[] } = {
     profit: [
@@ -225,14 +177,19 @@ export default function Leaderboards(props: {
           <div className="flex gap-2">
             <TypePillSelector type={type} setType={setType} />
             {type != 'referral' && (
-              <TopicPillSelector topic={topic} setTopic={setTopic} />
+              <>
+                <TopicPillSelector topic={topic} setTopic={setTopic} />
+                <TwombaToggle sweepsEnabled isSmall />
+              </>
             )}
-            <TwombaToggle sweepsEnabled isSmall />
           </div>
         </Row>
         {entries ? (
           <Leaderboard
-            entries={entries}
+            entries={buildArray(
+              entries,
+              insertMe && { ...myScores[type], userId: user.id }
+            )}
             columns={columns}
             highlightUserId={user?.id}
           />
