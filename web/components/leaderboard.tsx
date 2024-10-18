@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { Table } from './widgets/table'
 import { Title } from './widgets/title'
-import { range, sortBy } from 'lodash'
+import { range } from 'lodash'
 import { UserAvatarAndBadge } from './widgets/user-link'
 import { ReactNode } from 'react'
 import { EmptyAvatar } from './widgets/avatar'
