@@ -78,23 +78,13 @@ export function getInstanceId() {
     (isProd() ? PROD_CONFIG.supabaseInstanceId : DEV_CONFIG.supabaseInstanceId)
   )
 }
-export function getRestInstanceId() {
-  return (
-    process.env.SUPABASE_REST_INSTANCE_ID ??
-    (isProd()
-      ? PROD_CONFIG.supabaseLoadBalancerInstanceId
-      : DEV_CONFIG.supabaseLoadBalancerInstanceId) ??
-    getInstanceId()
-  )
-}
 
 export function getInstanceHostname(instanceId: string) {
   return `${instanceId}.supabase.co`
 }
 /**@deprecated: Use createSupabaseDirectClient instead. */
 export function createSupabaseClient() {
-  const instanceId = getRestInstanceId()
-  console.log('INSTANCE ID', instanceId)
+  const instanceId = getInstanceId()
   if (!instanceId) {
     throw new Error(
       "Can't connect to Supabase; no process.env.SUPABASE_INSTANCE_ID and no instance ID in config."

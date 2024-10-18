@@ -91,58 +91,6 @@ const contractIds = await pg.manyOrNone(`select id from contracts`, [], r => r.i
 
 We use Zod for defining our API schemas. This provides runtime type checking and automatic documentation generation.
 
-
-## Code Organization and Performance Optimization
-
-### Function Placement
-- Place utility functions and helper methods at the bottom of the file.
-- Ensure new functionality is used consistently throughout the file where applicable.
-
-### Worker Threads for Performance
-- Use worker threads for computationally intensive operations, especially in bet calculations for multiple choice bets with "shouldSumToOne" set to true.
-- Factor out bet calculation logic into a separate function that delegates to worker threads when appropriate.
-- Example usage:
-
-```ts
-async function calculateBetResultWithWorker(
-  props: ValidatedAPIParams<'bet'>,
-  user: User,
-  contract: MarketContract,
-  answers: Answer[] | undefined,
-  unfilledBets: LimitBet[],
-  balanceByUserId: Record<string, number>
-): Promise<NewBetResult> {
-  if (
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.shouldAnswersSumToOne
-  ) {
-    // Use worker thread for intensive calculations
-    // ... worker thread implementation ...
-  } else {
-    // Use main thread for other cases
-    return calculateBetResult(
-      props,
-      user,
-      contract,
-      answers,
-      unfilledBets,
-      balanceByUserId
-    )
-  }
-}
-
-// Call this function in both the simulation and the main bet placement logic to ensure consistent behavior.
-```
-
-This approach helps maintain responsiveness in the API, especially for complex bet calculations.
-## Module Imports
-
-When importing Node.js built-in modules like 'path', use the namespace import syntax:
-
-```ts
-import * as path from 'path'
-```
-
 #### Setting Defaults
 
 When defining schemas, prefer setting defaults in the Zod schema rather than in the handler function. This ensures that the default values are documented and type-checked.
