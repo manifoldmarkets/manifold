@@ -3,7 +3,7 @@ import {
   fetchContractBetDataAndValidate,
   getMakerIdsFromBetResult,
   placeBetMain,
-  calculateBetResultWithWorker,
+  calculateBetResult,
 } from 'api/place-bet'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -21,7 +21,7 @@ export const placeBetter: APIHandler<'bet-ter'> = async (props, auth) => {
         isApi
       )
     // Simulate bet to see whose limit orders you match.
-    const simulatedResult = await calculateBetResultWithWorker(
+    const simulatedResult = calculateBetResult(
       props,
       user,
       contract,
