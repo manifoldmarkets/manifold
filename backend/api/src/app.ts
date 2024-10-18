@@ -222,8 +222,7 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
     : crypto.randomUUID()
   const { method, path: endpoint, url } = req
   const baseEndpoint = getBaseName(endpoint)
-  const ip = getIp(req)
-  const context = { endpoint, traceId, baseEndpoint, ip }
+  const context = { endpoint, traceId, baseEndpoint }
   withMonitoringContext(context, () => {
     if (method == 'OPTIONS') {
       next()
@@ -237,6 +236,7 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
     ) {
       log(`${method} ${url}`)
     }
+    const ip = getIp(req)
     metrics.inc('http/request_count', { endpoint, baseEndpoint, method, ip })
     res.on('close', () => {
       const endTs = hrtime.bigint()
