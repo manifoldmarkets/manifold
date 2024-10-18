@@ -1,18 +1,22 @@
 import clsx from 'clsx'
 import { type DisplayUser } from 'common/api/user-types'
-import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
+import { DESTINY_GROUP_SLUG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { removeEmojis } from 'common/util/string'
+import { BETTORS } from 'common/user'
 import { buildArray } from 'common/util/array'
+import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { first, uniqBy } from 'lodash'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { Leaderboard } from 'web/components/leaderboard'
+import LoadingUserRows from 'web/components/loading-user-rows'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import {
   useTrendingTopics,
@@ -21,6 +25,7 @@ import {
 import { SupabaseSearch } from 'web/components/supabase-search'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { Content } from 'web/components/widgets/editor'
+import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
@@ -227,6 +232,37 @@ export function GroupPageContent(props: {
                 },
                 currentTopic && [
                   {
+                    title: 'Leaderboards',
+                    content: (
+                      <Col className={''}>
+                        <div className="text-ink-500 mb-4 mt-2 text-sm">
+                          Updates every 15 minutes
+                        </div>
+                        <Col className="gap-2 ">
+                          <GroupLeaderboard
+                            topic={currentTopic}
+                            type={'trader'}
+                            cachedTopUsers={
+                              staticTopicIsCurrent
+                                ? staticTopicParams?.topTraders
+                                : undefined
+                            }
+                          />
+                          <GroupLeaderboard
+                            topic={currentTopic}
+                            type={'creator'}
+                            cachedTopUsers={
+                              staticTopicIsCurrent
+                                ? staticTopicParams?.topCreators
+                                : undefined
+                            }
+                            noFormatting={true}
+                          />
+                        </Col>
+                      </Col>
+                    ),
+                  },
+                  {
                     title: 'About',
                     content: (
                       <Col className="w-full">
@@ -289,6 +325,67 @@ const combineGroupsByImportance = (
   ]
 
   return uniqBy(combined, (g) => removeEmojis(g.name).toLowerCase())
+}
+const MAX_LEADERBOARD_SIZE = 50
+
+function GroupLeaderboard(props: {
+  topic: Group
+  type: 'creator' | 'trader'
+  cachedTopUsers: UserStat[] | undefined
+  noFormatting?: boolean
+}) {
+  const { type, topic, cachedTopUsers, noFormatting } = props
+
+  const title = type === 'trader' ? `🏅 Top ${BETTORS}` : `🏅 Top creators`
+  const header = type === 'trader' ? 'Profit' : 'Traders'
+  const uncachedTopUsers =
+    (type === 'trader'
+      ? topic.cachedLeaderboard?.topTraders
+      : topic.cachedLeaderboard?.topCreators) ?? []
+  const topUsers = (
+    cachedTopUsers ?? // eslint-disable-next-line react-hooks/rules-of-hooks
+    useToTopUsers(uncachedTopUsers) ??
+    []
+  ).filter((u) => u.user.username !== HOUSE_BOT_USERNAME)
+  const scoresByUser = Object.fromEntries(
+    topUsers.map((u) => [u.user.id, u.score])
+  )
+  if (!topUsers.length) {
+    return (
+      <Col className={'px-1'}>
+        <Title>{title}</Title>
+        <LoadingUserRows />
+      </Col>
+    )
+  }
+
+  return (
+    <Leaderboard
+      entries={topUsers.map((t) => t.user)}
+      title={title}
+      columns={[
+        {
+          header,
+          renderCell: (user) =>
+            noFormatting
+              ? scoresByUser[user.id]
+              : formatMoney(scoresByUser[user.id]),
+        },
+      ]}
+      maxToShow={MAX_LEADERBOARD_SIZE}
+    />
+  )
+}
+
+function useToTopUsers(
+  userScores: { userId: string; score: number }[]
+): UserStat[] | null {
+  const [topUsers, setTopUsers] = useState<UserStat[]>([])
+  useEffect(() => {
+    if (topUsers) setTopUsers([])
+    toTopUsers(userScores).then((result) => setTopUsers(result as UserStat[]))
+  }, [userScores])
+  return topUsers && topUsers.length > 0 ? topUsers : null
 }
 
 const useFirstSlugFromRouter = () => {

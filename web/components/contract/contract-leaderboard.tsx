@@ -58,11 +58,11 @@ export function ContractLeaderboard(props: {
     .map((cm) => {
       const { profit } = cm
       return removeUndefinedProps({
-        userId: cm.userId,
+        id: cm.userId,
         name: cm.userName,
         username: cm.userUsername,
         avatarUrl: cm.userAvatarUrl,
-        score: profit,
+        total: profit,
         rank:
           cm.userId === currentUser?.id && !userIsAlreadyRanked
             ? yourRank
@@ -72,8 +72,8 @@ export function ContractLeaderboard(props: {
       })
     })
   const top = Object.values(userProfits)
-    .sort((a, b) => b.score - a.score)
-    .filter((p) => p.score > 0)
+    .sort((a, b) => b.total - a.total)
+    .filter((p) => p.total > 0)
     .slice(
       0,
       !currentUser || userIsAlreadyRanked || !currentUserMetrics
@@ -90,13 +90,13 @@ export function ContractLeaderboard(props: {
           header: 'Total profit',
           renderCell: (entry) =>
             formatWithToken({
-              amount: entry.score,
+              amount: entry.total,
               token: isCashContract ? 'CASH' : 'M$',
             }),
         },
       ]}
       className="mt-12"
-      highlightUserId={currentUser?.id}
+      highlightUsername={currentUser?.username}
     />
   ) : null
 }

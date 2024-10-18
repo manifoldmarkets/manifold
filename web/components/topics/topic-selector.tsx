@@ -1,5 +1,9 @@
 import { Combobox } from '@headlessui/react'
-import { PlusCircleIcon, SelectorIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  PlusCircleIcon,
+  SelectorIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Group, LiteGroup, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { useEffect, useRef, useState } from 'react'
@@ -13,7 +17,6 @@ import { uniqBy } from 'lodash'
 import { Col } from '../layout/col'
 import { buildArray } from 'common/util/array'
 import DropdownMenu from '../comments/dropdown-menu'
-import { DropdownPill } from '../search/filter-pills'
 
 export function TopicSelector(props: {
   setSelectedGroup: (group: Group) => void
@@ -201,12 +204,13 @@ export function TopicPillSelector(props: {
   setTopic: (topic: LiteGroup | undefined) => void
 }) {
   const { topic, setTopic } = props
-  const { query, setQuery, searchedGroups } = useSearchGroups()
+  const { query, setQuery, searchedGroups, loading } = useSearchGroups()
 
   const currentName = topic?.name ?? 'All topics'
 
   return (
     <DropdownMenu
+      withinOverflowContainer
       closeOnClick
       selectedItemName={currentName}
       items={buildArray(
@@ -216,7 +220,7 @@ export function TopicPillSelector(props: {
             <div className="flex">
               <input
                 type="text"
-                className="bg-ink-200 dark:bg-ink-300 focus:ring-primary-500 mx-1 mb-1 w-full rounded-md border-none px-3 py-0.5 text-xs"
+                className="bg-ink-200 dark:bg-ink-300 focus:ring-primary-500 mx-1 mb-1 rounded-md border-none px-3 py-0.5 text-xs"
                 placeholder="search"
                 autoFocus
                 value={query}
@@ -240,7 +244,17 @@ export function TopicPillSelector(props: {
         }))
       )}
       buttonContent={(open) => (
-        <DropdownPill open={open}>{currentName}</DropdownPill>
+        <div
+          className={clsx(
+            'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
+            'bg-ink-200 hover:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
+          )}
+        >
+          {currentName}
+          <ChevronDownIcon
+            className={clsx('ml-2 h-4 w-4', open && 'rotate-180')}
+          />
+        </div>
       )}
     />
   )

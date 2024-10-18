@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+
 import { APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { APIError, api } from 'web/lib/api/api'
@@ -27,31 +28,23 @@ export const useAPIGetter = <P extends APIPath>(
     key
   )
 
-  const getAndSetData = useEvent(async () => {
+  const refresh = useEvent(async () => {
     if (!props) return
-    setError(undefined)
 
-    let promise = promiseCache[key]
-    if (!promise) {
-      promise = api(path, props).catch(setError)
+    const cachedPromise = promiseCache[key]
+    if (cachedPromise) {
+      await cachedPromise.then(setData).catch(setError)
+    } else {
+      const promise = api(path, props)
       promiseCache[key] = promise
+      await promise.then(setData).catch(setError)
+      promiseCache[key] = undefined
     }
-
-    const k = key
-    const result = await promise
-    if (k === key) setData(result)
   })
 
   useEffect(() => {
-    setData(undefined)
-    getAndSetData()
+    refresh()
   }, [propsStringToTriggerRefresh])
-
-  const refresh = async () => {
-    promiseCache[key] = undefined
-    setData(undefined)
-    await getAndSetData()
-  }
 
   return { data, error, refresh, setData }
 }
