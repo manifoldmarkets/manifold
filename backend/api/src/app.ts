@@ -152,7 +152,6 @@ import { getFeed } from 'api/get-feed'
 import { getManaSupply } from './get-mana-supply'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { deleteMe } from './delete-me'
-import { placeBetter } from './place-better'
 import { updateModReport } from './update-mod-report'
 import { getModReports } from './get-mod-reports'
 import { searchContractPositions } from 'api/search-contract-positions'
@@ -300,7 +299,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'create-cash-contract': createCashContract,
   bet: placeBet,
   'multi-bet': placeMultiBet,
-  'bet-ter': placeBetter,
   'follow-contract': followContract,
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
