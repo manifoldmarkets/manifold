@@ -166,24 +166,22 @@ export default function Leaderboards() {
         description={`Manifold's leaderboards show the top ${BETTORS}, question creators, and referrers.`}
         url="/leaderboards"
       />
-      <Col className="mx-4 mb-10 items-center self-center p-2 md:mx-0 md:w-[35rem]">
-        <Row
-          className={'mb-4 w-full flex-wrap items-center justify-between gap-2'}
-        >
+      <Col className="mx-4 mb-10 w-full items-stretch self-center p-2 sm:mx-0 sm:w-[36rem]">
+        <Col className={'mb-4 w-full gap-2 self-start'}>
           <Row className={'items-center gap-2'}>
             <BackButton className={'md:hidden'} />
             <Title className={'!mb-0'}>Leaderboard</Title>
           </Row>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <TwombaToggle sweepsEnabled isSmall />
             <TypePillSelector type={type} setType={setType} />
             {type != 'referral' && (
               <>
                 <TopicPillSelector topic={topic} setTopic={setTopic} />
-                <TwombaToggle sweepsEnabled isSmall />
               </>
             )}
           </div>
-        </Row>
+        </Col>
         {entries ? (
           <Leaderboard
             entries={buildArray(

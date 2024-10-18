@@ -54,7 +54,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                     entry.userId === highlightUserId ? '!bg-indigo-400/20' : ''
                   }
                 >
-                  <td className={'w-[4.5rem] min-w-[4.5rem] '}>
+                  <td className={'min-w-4 w-16'}>
                     {entry.rank ? entry.rank : index + 1}
                   </td>
                   <td>

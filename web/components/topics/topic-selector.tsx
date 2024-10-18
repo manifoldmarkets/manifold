@@ -216,7 +216,7 @@ export function TopicPillSelector(props: {
             <div className="flex">
               <input
                 type="text"
-                className="bg-ink-200 dark:bg-ink-300 focus:ring-primary-500 mx-1 mb-1 rounded-md border-none px-3 py-0.5 text-xs"
+                className="bg-ink-200 dark:bg-ink-300 focus:ring-primary-500 mx-1 mb-1 w-full rounded-md border-none px-3 py-0.5 text-xs"
                 placeholder="search"
                 autoFocus
                 value={query}
