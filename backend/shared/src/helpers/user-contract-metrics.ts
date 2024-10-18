@@ -207,7 +207,7 @@ export const bulkUpdateUserMetricsWithNewBetsOnly = async (
   const contractId = marginalBets[0].contractId
 
   // TODO: remove this bit if we never see the missing metrics log
-  const missingMetrics = marginalBets.filter(
+  const missingMetricsBets = marginalBets.filter(
     (b) =>
       b.amount !== 0 &&
       b.shares !== 0 &&
@@ -218,16 +218,22 @@ export const bulkUpdateUserMetricsWithNewBetsOnly = async (
           m.answerId == b.answerId
       )
   )
-  if (missingMetrics.length > 0) {
+  if (missingMetricsBets.length > 0) {
     const missingContractMetrics = await getContractMetrics(
       pgTrans,
       userIds,
       contractId,
-      filterDefined(missingMetrics.map((b) => b.answerId)),
+      filterDefined(missingMetricsBets.map((b) => b.answerId)),
       false
     )
     if (missingContractMetrics.length > 0) {
-      log('Found missing metrics:', missingContractMetrics.length)
+      log('Found missing metrics:', {
+        contractId,
+        userIds,
+        answerIds,
+        missingMetricsBets,
+        missingContractMetrics,
+      })
       contractMetrics.push(...missingContractMetrics)
     }
   }
