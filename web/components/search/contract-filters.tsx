@@ -201,6 +201,24 @@ export function ContractFilters(props: {
           >
             Hot
           </button>
+          <button
+            key="newest"
+            className={clsx(
+              'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
+              sort == 'newest'
+                ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+                : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
+              className
+            )}
+            onClick={() => {
+              if (sort === 'newest') {
+                selectSort('score')
+              }
+              selectSort('newest')
+            }}
+          >
+            New
+          </button>
         </Row>
         {sortItems.map((sortValue) => (
           <FilterPill
