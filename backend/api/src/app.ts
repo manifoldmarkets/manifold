@@ -196,7 +196,6 @@ import { getCashouts } from './get-cashouts'
 import { getKYCStats } from './get-kyc-stats'
 import { getTxns } from './get-txns'
 import { refreshAllClients } from './refresh-all-clients'
-import { getIp } from 'shared/analytics'
 import { toggleSystemTradingStatus } from './toggle-system-status'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
@@ -236,8 +235,7 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
     ) {
       log(`${method} ${url}`)
     }
-    const ip = getIp(req)
-    metrics.inc('http/request_count', { endpoint, baseEndpoint, method, ip })
+    metrics.inc('http/request_count', { endpoint, baseEndpoint, method })
     res.on('close', () => {
       const endTs = hrtime.bigint()
       const latencyMs = Number(endTs - startTs) / 1e6 // Convert to milliseconds
