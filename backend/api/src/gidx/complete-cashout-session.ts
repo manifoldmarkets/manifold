@@ -218,7 +218,7 @@ const updateStatusAndSaveReceipt = async (
         transaction_id = $3
       where txn_id = $4
         `,
-      ['processing', SessionID, MerchantTransactionID, txnId]
+      ['approved', SessionID, MerchantTransactionID, txnId]
     )
 
     log('Insert gidx receipt')
