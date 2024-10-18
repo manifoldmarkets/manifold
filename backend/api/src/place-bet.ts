@@ -194,10 +194,8 @@ export const placeBetMain = async (
       actualMakerIds
     )
     if (!isEqual(simulatedMakerIds, actualMakerIds)) {
-      throw new APIError(
-        503,
-        'Please try betting again. (Matched limit orders changed from simulated values.)'
-      )
+      log.warn('Matched limit orders changed from simulated values.')
+      throw new APIError(503, 'Please try betting again.')
     }
 
     const betGroupId =
