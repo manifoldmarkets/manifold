@@ -14,3 +14,7 @@ create table if not exists
 drop index if exists mod_reports_pkey;
 
 create unique index mod_reports_pkey on public.mod_reports using btree (report_id);
+
+drop index if exists mod_status;
+
+create index mod_status on mod_reports (status);

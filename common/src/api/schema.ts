@@ -1504,8 +1504,21 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    props: z.object({}).strict(),
-    returns: {} as { status: string; reports: ModReport[] },
+    props: z
+      .object({
+        statuses: z.array(
+          z.enum(['new', 'under review', 'resolved', 'needs admin'])
+        ),
+        limit: z.coerce.number().gte(0).lte(100).default(25),
+        offset: z.coerce.number().gte(0).default(0),
+        count: coerceBoolean.optional(),
+      })
+      .strict(),
+    returns: {} as {
+      status: string
+      count?: number
+      reports: ModReport[]
+    },
   },
   'get-txn-summary-stats': {
     method: 'GET',
