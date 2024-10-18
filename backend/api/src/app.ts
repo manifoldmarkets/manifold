@@ -198,6 +198,7 @@ import { getTxns } from './get-txns'
 import { refreshAllClients } from './refresh-all-clients'
 import { getIp } from 'shared/analytics'
 import { toggleSystemTradingStatus } from './toggle-system-status'
+import { completeCashoutRequest } from './gidx/complete-cashout-request'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -421,6 +422,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-checkout-session-gidx': getCheckoutSession,
   'complete-checkout-session-gidx': completeCheckoutSession,
   'complete-cashout-session-gidx': completeCashoutSession,
+  'complete-cashout-request': completeCashoutRequest,
   'get-verification-status-gidx': getVerificationStatus,
   'upload-document-gidx': uploadDocument,
   'identity-callback-gidx': identityCallbackGIDX,

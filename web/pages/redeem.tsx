@@ -76,7 +76,6 @@ export default function CashoutPage() {
   const [NameOnAccount, setNameOnAccount] = useState('')
   const [AccountNumber, setAccountNumber] = useState('')
   const [RoutingNumber, setRoutingNumber] = useState('')
-  const [BankName, setBankName] = useState('')
   const [SavePaymentMethod, _] = useState(false)
   const [checkoutSession, setCheckoutSession] = useState<CheckoutSession>()
   const [sweepCashAmount, setSweepCashAmount] = useState<number | undefined>(
@@ -168,13 +167,12 @@ export default function CashoutPage() {
     setError(undefined)
     if (!checkoutSession || !sweepCashAmount || !deviceGPS) return
     try {
-      const { status, message } = await api('complete-cashout-session-gidx', {
+      const { status, message } = await api('complete-cashout-request', {
         PaymentMethod: {
           Type: 'ACH',
           AccountNumber,
           RoutingNumber,
           NameOnAccount,
-          BankName,
           BillingAddress: {
             AddressLine1: address,
             City: city,
@@ -482,15 +480,6 @@ export default function CashoutPage() {
                   placeholder="Name associated with account"
                   value={NameOnAccount}
                   onChange={(e) => setNameOnAccount(e.target.value)}
-                />
-              </Col>
-              <Col className={'w-full gap-0.5'}>
-                <InputTitle>Bank Name</InputTitle>
-                <Input
-                  type="text"
-                  placeholder="Your bank's name"
-                  value={BankName}
-                  onChange={(e) => setBankName(e.target.value)}
                 />
               </Col>
               <Col className={'w-full gap-0.5'}>

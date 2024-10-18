@@ -54,8 +54,9 @@ import {
   PaymentDetail,
   checkoutParams,
   verificationParams,
-  cashoutParams,
+  cashoutRequestParams,
   PendingCashoutStatusData,
+  cashoutParams,
 } from 'common/gidx/gidx'
 
 import { notification_preference } from 'common/user-notification-preferences'
@@ -1572,6 +1573,8 @@ export const API = (_apiTypeCheck = {
     props: z.object({
       PayActionCode: z.enum(['PAY', 'PAYOUT']).default('PAY'),
       DeviceGPS: GPSProps,
+      userId: z.string().optional(),
+      ip: z.string().optional(),
     }),
   },
   'complete-checkout-session-gidx': {
@@ -1596,7 +1599,19 @@ export const API = (_apiTypeCheck = {
       gidxMessage?: string | null
       details?: PaymentDetail[]
     },
-    props: cashoutParams,
+    props: z.object(cashoutParams),
+  },
+  'complete-cashout-request': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      status: string
+      message?: string
+      gidxMessage?: string | null
+      details?: PaymentDetail[]
+    },
+    props: z.object(cashoutRequestParams),
   },
   'get-verification-documents-gidx': {
     method: 'POST',

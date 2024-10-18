@@ -20,13 +20,13 @@ export const getCashouts: APIHandler<'get-cashouts'> = async (props, auth) => {
     users.name,
     users.username,
     users.data->>'avatarUrl' as avatar_url,
-    txns.id as txn_id, -- TODO: join delete_after_reading on the txn_id after final cashouts w/o it are processed
+    txns.id as txn_id,
     txns.amount,
     txns.created_time,
-    txns.data->'data'->>'payoutInDollars' as payout_in_dollars,
+    (txns.data->'data'->>'payoutInDollars')::numeric as payout_in_dollars,
     delete_after_reading.data as data
     from delete_after_reading
-    JOIN txns ON delete_after_reading.user_id = txns.from_id AND date_trunc('second', delete_after_reading.created_time) = date_trunc('second', txns.created_time)
+    JOIN txns ON delete_after_reading.data->>'txnId' = txns.id
     join users on delete_after_reading.user_id = users.id
     and category ='CASH_OUT'
     and ($3 is null or users.id = $3)
@@ -60,7 +60,8 @@ export const getCashouts: APIHandler<'get-cashouts'> = async (props, auth) => {
         array_agg(g.transaction_status_message order by g.created_time desc) as gidx_status
     from txns t
     join users u on t.from_id = u.id
-    left join gidx_receipts g on t.data->'data'->>'transactionId' = g.merchant_transaction_id
+    left join redemption_status r on t.id = r.txn_id 
+    left join gidx_receipts g on coalesce(r.transaction_id, t.data->'data'->>'transactionId') = g.merchant_transaction_id
     where t.category = 'CASH_OUT'
     and ($3 is null or u.id = $3)
     group by u.id, t.id, t.created_time

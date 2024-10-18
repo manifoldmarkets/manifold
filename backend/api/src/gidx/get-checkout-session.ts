@@ -15,7 +15,11 @@ import {
 import { getIp, track } from 'shared/analytics'
 import { log } from 'shared/monitoring/log'
 import { randomBytes } from 'crypto'
-import { TWOMBA_CASHOUT_ENABLED, TWOMBA_ENABLED } from 'common/envs/constants'
+import {
+  isAdminId,
+  TWOMBA_CASHOUT_ENABLED,
+  TWOMBA_ENABLED,
+} from 'common/envs/constants'
 import { getUserAndPrivateUserOrThrow, LOCAL_DEV } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getVerificationStatus } from 'common/gidx/user'
@@ -30,8 +34,14 @@ export const getCheckoutSession: APIHandler<
   if (!TWOMBA_CASHOUT_ENABLED && props.PayActionCode === 'PAYOUT') {
     throw new APIError(400, 'Cashouts will be enabled soon!')
   }
+  if (
+    (props.userId !== undefined || props.ip !== undefined) &&
+    !isAdminId(auth.uid)
+  ) {
+    throw new APIError(403, 'Unauthorized')
+  }
   const pg = createSupabaseDirectClient()
-  const userId = auth.uid
+  const userId = props.userId ?? auth.uid
   const userAndPrivateUser = await getUserAndPrivateUserOrThrow(userId, pg)
   const { user, privateUser } = userAndPrivateUser
 
@@ -39,7 +49,8 @@ export const getCheckoutSession: APIHandler<
   const MerchantOrderID = randomString(16)
   const body = {
     ...props,
-    DeviceIpAddress: LOCAL_DEV ? await getLocalServerIP() : getIp(req),
+    DeviceIpAddress:
+      props.ip ?? (LOCAL_DEV ? await getLocalServerIP() : getIp(req)),
     MerchantCustomerID: userId,
     MerchantOrderID,
     MerchantTransactionID,
@@ -56,7 +67,7 @@ export const getCheckoutSession: APIHandler<
     body: JSON.stringify(body),
   })
   if (!res.ok) {
-    track(auth.uid, 'gidx get checkout session', {
+    track(userId, 'gidx get checkout session', {
       status: 'error',
       message: 'GIDX checkout session failed',
       sessionType: props.PayActionCode === 'PAYOUT' ? 'cashout' : 'purchase',
@@ -83,7 +94,7 @@ export const getCheckoutSession: APIHandler<
     undefined,
     undefined
   )
-  track(auth.uid, 'gidx get checkout session', {
+  track(userId, 'gidx get checkout session', {
     status,
     message,
     sessionType: props.PayActionCode === 'PAYOUT' ? 'cashout' : 'purchase',

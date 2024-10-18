@@ -74,7 +74,7 @@ export const checkoutParams = {
   }),
 }
 
-export const cashoutParams = z.object({
+export const cashoutRequestParams = {
   ...checkoutParams,
   PaymentAmount: z.object({
     manaCash: z.number().gte(MIN_CASHOUT_AMOUNT),
@@ -89,10 +89,16 @@ export const cashoutParams = z.object({
     AccountNumber: z.string(),
     RoutingNumber: z.string(),
     BillingAddress: BillingAddress,
-    BankName: z.string(),
   }),
   DeviceGPS: GPSProps,
-})
+}
+
+export const cashoutParams = {
+  ...cashoutRequestParams,
+  userId: z.string(),
+  ip: z.string(),
+  txnId: z.string(),
+}
 
 export type DocumentRegistrationResponse = {
   ResponseCode: number
