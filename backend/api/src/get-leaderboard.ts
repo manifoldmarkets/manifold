@@ -48,7 +48,9 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     ],
 
     kind === 'profit' && [
-      select('user_id, sum(profit + profit_adjustment) as score'),
+      select(
+        `user_id, nullif(sum(profit + coalesce(profit_adjustment, 0)), 'NaN') as score`
+      ),
       groupBy('user_id'),
       where('user_id not in ($1:list)', [HIDE_FROM_LEADERBOARD_USER_IDS]),
     ],
