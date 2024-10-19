@@ -117,7 +117,7 @@ export default function Leaderboards() {
 
   const shouldInsertMe =
     user && entries && !entries.find((e) => e.userId === user.id) && !topic
-  const data = myScores?.[type][token === 'CASH' ? 'cash' : 'mana']
+  const data = myScores?.[type]?.[token === 'CASH' ? 'cash' : 'mana']
   const myEntry = shouldInsertMe && data ? { userId: user.id, ...data } : null
 
   const allColumns: { [key in LeaderboardType]: LeaderboardColumn<Entry>[] } = {
@@ -134,6 +134,10 @@ export default function Leaderboards() {
           </span>
         ),
       },
+    ],
+
+    volume: [
+      { header: 'Volume', renderCell: (c) => formatMoney(c.score, token) },
     ],
 
     creator: [
@@ -212,6 +216,10 @@ const LEADERBOARD_TYPES = [
     value: 'loss',
   },
   {
+    name: 'Volume',
+    value: 'volume',
+  },
+  {
     name: 'Top creators',
     value: 'creator',
   },
@@ -226,7 +234,7 @@ type LeaderboardType = (typeof LEADERBOARD_TYPES)[number]['value']
 type Entry = LeaderboardEntry & { totalReferredProfit?: number }
 type MyEntry = Omit<Entry, 'userId'>
 type MyScores = {
-  [key in LeaderboardType]: { mana: MyEntry; cash: MyEntry }
+  [key in LeaderboardType]?: { mana: MyEntry; cash: MyEntry }
 }
 
 const TypePillSelector = (props: {

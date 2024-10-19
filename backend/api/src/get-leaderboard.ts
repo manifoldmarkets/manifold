@@ -76,6 +76,14 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
       where('user_id not in ($1:list)', [HIDE_FROM_LEADERBOARD_USER_IDS]),
     ],
 
+    kind === 'volume' && [
+      select('user_id'),
+      select(
+        `sum((ucm.data->'totalAmountSold')::numeric + (ucm.data->'totalAmountInvested')::numeric) as score`
+      ),
+      groupBy('user_id'),
+    ],
+
     where('c.token = ${token}', { token }),
 
     groupId &&
