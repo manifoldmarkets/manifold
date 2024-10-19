@@ -37,6 +37,27 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     }))
   }
 
+  if ((kind == 'profit' || kind == 'loss') && !groupId) {
+    const query = renderSql(
+      from('user_portfolio_history_latest uph'),
+      select('uph.user_id as user_id'),
+      token === 'MANA'
+        ? select(
+            'uph.balance + uph.spice_balance + uph.investment_value - uph.total_deposits as score'
+          )
+        : select(
+            'uph.cash_balance + uph.cash_investment_value - uph.total_cash_deposits as score'
+          ),
+      where('user_id not in ($1:list)', [HIDE_FROM_LEADERBOARD_USER_IDS]),
+      orderBy(kind === 'loss' ? 'score asc' : 'score desc nulls last'),
+      limit(limitValue)
+    )
+    return await pg.map(query, [], (r) => ({
+      userId: r.user_id,
+      score: r.score,
+    }))
+  }
+
   const query = renderSql(
     from('contracts c'),
     join('user_contract_metrics ucm on ucm.contract_id = c.id'),
