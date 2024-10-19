@@ -14,6 +14,8 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { getBettingStreakResetTimeBeforeNow } from 'shared/utils'
 import { log } from 'node:console'
+import { groupBy, mapValues, sumBy } from 'lodash'
+import { Row } from 'common/supabase/utils'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
@@ -213,8 +215,20 @@ export const bulkIncrementBalances = async (
   if (userUpdates.length === 0) return
   const query = bulkIncrementBalancesQuery(userUpdates)
   const results = await db.many(query)
-
-  for (const row of results) {
+  broadcastUserUpdates(results)
+}
+export const broadcastUserUpdates = (
+  userUpdates: Pick<
+    Row<'users'>,
+    | 'id'
+    | 'balance'
+    | 'cash_balance'
+    | 'spice_balance'
+    | 'total_deposits'
+    | 'total_cash_deposits'
+  >[]
+) => {
+  for (const row of userUpdates) {
     broadcastUpdatedUser({
       id: row.id,
       balance: row.balance,
@@ -225,7 +239,6 @@ export const bulkIncrementBalances = async (
     })
   }
 }
-import { groupBy, mapValues, sumBy } from 'lodash'
 
 export const bulkIncrementBalancesQuery = (
   userUpdates: {

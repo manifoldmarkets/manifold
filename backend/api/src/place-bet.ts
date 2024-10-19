@@ -71,7 +71,7 @@ import {
 } from 'shared/helpers/user-contract-metrics'
 import { MarginalBet } from 'common/calculate-metrics'
 import { ContractMetric } from 'common/contract-metric'
-
+import { broadcastUserUpdates } from 'shared/supabase/users'
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
 
@@ -242,8 +242,8 @@ export const placeBetMain = async (
       const results = await pgTrans.multi(
         `${balanceQuery}; ${insertBetsQuery}; ${metricsQuery};`
       )
-      // TODO: broadcast user updates
       const userUpdates = results[0]
+      broadcastUserUpdates(userUpdates)
       const insertedBets = results[1].map(convertBet)
       result.fullBets.push(...insertedBets)
     }
@@ -812,9 +812,9 @@ export const executeNewBetResult = async (
      ${insertBetsQuery};
      ${metricsQuery};`
   )
-  // TODO: broadcast user updates
   const userUpdates = results[0]
-  // TODO: Stop using the sql data, betsToInsert is fully formed
+  broadcastUserUpdates(userUpdates)
+  // TODO: Stop waiting for the sql bet data, betsToInsert is fully formed
   const insertedBets = results[1].map(convertBet)
   await updateAnswers(pgTrans, contract.id, answerUpdates)
   await cancelLimitOrders(
