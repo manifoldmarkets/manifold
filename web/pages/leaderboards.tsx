@@ -3,6 +3,7 @@ import {
   Leaderboard,
   LoadingLeaderboard,
   type LeaderboardColumn,
+  type LeaderboardEntry,
 } from 'web/components/leaderboard'
 import { Page } from 'web/components/layout/page'
 import { formatMoney, formatWithCommas } from 'common/util/format'
@@ -29,29 +30,6 @@ import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Button } from 'web/components/buttons/button'
 import { buildArray } from 'common/util/array'
 import { getCurrentPortfolio } from 'common/supabase/portfolio-metrics'
-
-type MyScores = {
-  profit: {
-    rank: number
-    mana: number
-    cash: number
-  }
-  loss: {
-    rank: number
-    mana: number
-    cash: number
-  }
-  creator: {
-    rank: number
-    score: number
-  }
-  referral: {
-    rank: number
-    score: number
-    profitMana: number
-    profitCash: number
-  }
-}
 
 export default function Leaderboards() {
   const [topicSlug, setTopicSlug] = usePersistentQueryState(TOPIC_KEY, '')
@@ -82,26 +60,31 @@ export default function Leaderboards() {
         .from('users')
         .select('*', { count: 'exact' })
 
+      // TODO: my ranks are inaccurate for cash stats
       setMyScores({
         profit: {
-          rank: profitRank,
-          mana: manaProfit,
-          cash: cashProfit,
+          mana: { rank: profitRank, score: manaProfit },
+          cash: { rank: profitRank, score: cashProfit },
         },
         loss: {
-          rank: numUsers ?? NaN - profitRank,
-          mana: manaProfit,
-          cash: cashProfit,
+          mana: { rank: numUsers ?? NaN - profitRank, score: manaProfit },
+          cash: { rank: numUsers ?? NaN - profitRank, score: cashProfit },
         },
         creator: {
-          rank: tradersRank,
-          score: user.creatorTraders.allTime,
+          mana: { rank: tradersRank, score: user.creatorTraders.allTime },
+          cash: { rank: tradersRank, score: user.creatorTraders.allTime },
         },
         referral: {
-          rank: referrerInfo.rank,
-          score: referrerInfo.total_referrals ?? 0,
-          profitMana: referrerInfo.total_referred_profit ?? 0,
-          profitCash: referrerInfo.total_referred_cash_profit ?? 0,
+          mana: {
+            rank: referrerInfo.rank,
+            score: referrerInfo.total_referrals ?? 0,
+            totalReferredProfit: referrerInfo.total_referred_profit ?? 0,
+          },
+          cash: {
+            rank: referrerInfo.rank,
+            score: referrerInfo.total_referrals ?? 0,
+            totalReferredProfit: referrerInfo.total_referred_cash_profit ?? 0,
+          },
         },
       })
     })()
@@ -134,47 +117,22 @@ export default function Leaderboards() {
 
   const shouldInsertMe =
     user && entries && !entries.find((e) => e.userId === user.id) && !topic
-  const data = myScores?.[type]
-  const myEntry = shouldInsertMe &&
-    data && {
-      rank: data.rank,
-      score:
-        'score' in data ? data.score : token === 'CASH' ? data.cash : data.mana,
-      userId: user?.id,
-      ...('profitCash' in data
-        ? {
-            totalReferredProfit:
-              token === 'CASH' ? data.profitCash : data.profitMana,
-          }
-        : {}),
-    }
+  const data = myScores?.[type][token === 'CASH' ? 'cash' : 'mana']
+  const myEntry = shouldInsertMe && data ? { userId: user.id, ...data } : null
 
-  const allColumns: { [key in LeaderboardType]: LeaderboardColumn[] } = {
+  const allColumns: { [key in LeaderboardType]: LeaderboardColumn<Entry>[] } = {
     profit: [
-      {
-        header: 'Profit',
-        renderCell: (user: any) => formatMoney(user.score, token),
-      },
+      { header: 'Profit', renderCell: (c) => formatMoney(c.score, token) },
     ],
-    loss: [
-      {
-        header: 'Loss',
-        renderCell: (user: any) => formatMoney(user.score, token),
-      },
-    ],
+
+    loss: [{ header: 'Loss', renderCell: (c) => formatMoney(c.score, token) }],
 
     creator: [
-      {
-        header: 'Traders',
-        renderCell: (user: any) => formatWithCommas(user.score),
-      },
+      { header: 'Traders', renderCell: (c) => formatWithCommas(c.score) },
     ],
 
     referral: [
-      {
-        header: 'Referrals',
-        renderCell: (user: any) => user.score,
-      },
+      { header: 'Referrals', renderCell: (c) => c.score },
       {
         header: (
           <span>
@@ -182,8 +140,7 @@ export default function Leaderboards() {
             <InfoTooltip text={'Total profit earned by referred users'} />
           </span>
         ),
-        renderCell: (user: any) =>
-          formatMoney(user.totalReferredProfit ?? 0, token),
+        renderCell: (c) => formatMoney(c.totalReferredProfit ?? 0, token),
       },
     ],
   }
@@ -256,6 +213,12 @@ const LEADERBOARD_TYPES = [
 ] as const
 
 type LeaderboardType = (typeof LEADERBOARD_TYPES)[number]['value']
+
+type Entry = LeaderboardEntry & { totalReferredProfit?: number }
+type MyEntry = Omit<Entry, 'userId'>
+type MyScores = {
+  [key in LeaderboardType]: { mana: MyEntry; cash: MyEntry }
+}
 
 const TypePillSelector = (props: {
   type: LeaderboardType

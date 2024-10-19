@@ -8,7 +8,7 @@ import { EmptyAvatar } from './widgets/avatar'
 
 export interface LeaderboardEntry {
   userId: string
-  score?: number
+  score: number
   rank?: number | null
 }
 
