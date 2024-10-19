@@ -125,7 +125,16 @@ export default function Leaderboards() {
       { header: 'Profit', renderCell: (c) => formatMoney(c.score, token) },
     ],
 
-    loss: [{ header: 'Loss', renderCell: (c) => formatMoney(c.score, token) }],
+    loss: [
+      {
+        header: 'Loss',
+        renderCell: (c) => (
+          <span className={c.score < 0 ? 'text-scarlet-500' : 'text-ink-400'}>
+            {formatMoney(c.score, token)}
+          </span>
+        ),
+      },
+    ],
 
     creator: [
       { header: 'Traders', renderCell: (c) => formatWithCommas(c.score) },
