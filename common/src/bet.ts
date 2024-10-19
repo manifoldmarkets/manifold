@@ -1,6 +1,7 @@
 import { groupBy, mapValues } from 'lodash'
 import { Fees } from './fees'
 import { maxMinBin } from './chart'
+import { nanoid } from 'nanoid'
 
 /************************************************
 
@@ -100,3 +101,5 @@ export type maker = {
   shares: number
   timestamp: number
 }
+
+export const getNewBetId = () => nanoid(12)

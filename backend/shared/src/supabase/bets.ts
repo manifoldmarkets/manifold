@@ -4,7 +4,7 @@ import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { bulkInsert, insert } from 'shared/supabase/utils'
+import { bulkInsert, bulkInsertQuery, insert } from 'shared/supabase/utils'
 import { broadcastOrders } from 'shared/websockets/helpers'
 import {
   from,
@@ -138,29 +138,34 @@ export const insertBet = async (
   contractMetrics: ContractMetric[]
 ) => {
   const [updatedMetrics, insertedBet] = await Promise.all([
-    bulkUpdateUserMetricsWithNewBetsOnly(pg, [bet], contractMetrics),
+    bulkUpdateUserMetricsWithNewBetsOnly(pg, [bet], contractMetrics, true),
     insert(pg, 'contract_bets', betToRow(bet)),
   ])
   return { updatedMetrics, insertedBet }
 }
 export const bulkInsertBets = async (
-  bets: Omit<Bet, 'id'>[],
   pg: SupabaseDirectClient,
+  bets: Bet[],
   contractMetrics: ContractMetric[]
 ) => {
   const [updatedMetrics, insertedBets] = await Promise.all([
-    bulkUpdateUserMetricsWithNewBetsOnly(pg, bets, contractMetrics),
+    bulkUpdateUserMetricsWithNewBetsOnly(pg, bets, contractMetrics, true),
     bulkInsert(pg, 'contract_bets', bets.map(betToRow)),
   ])
   return { updatedMetrics, insertedBets }
 }
+export const bulkInsertBetsQuery = (bets: Bet[]) => {
+  return bulkInsertQuery('contract_bets', bets.map(betToRow))
+}
 
-const betToRow = (bet: Omit<Bet, 'id'>) => ({
-  contract_id: bet.contractId,
-  user_id: bet.userId,
-  created_time: millisToTs(bet.createdTime),
-  data: JSON.stringify(removeUndefinedProps(bet)) + '::jsonb',
-})
+const betToRow = (bet: Bet | Omit<Bet, 'id'>) =>
+  removeUndefinedProps({
+    contract_id: bet.contractId,
+    user_id: bet.userId,
+    bet_id: 'id' in bet ? bet.id : undefined,
+    created_time: millisToTs(bet.createdTime),
+    data: JSON.stringify(removeUndefinedProps(bet)) + '::jsonb',
+  })
 
 export const cancelLimitOrders = async (
   pg: SupabaseDirectClient,
