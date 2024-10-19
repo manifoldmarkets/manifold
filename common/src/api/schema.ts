@@ -267,7 +267,7 @@ export const API = (_apiTypeCheck = {
         groupId: z.string().optional(),
         limit: z.coerce.number().min(1).max(100).default(50),
         token: z.enum(['MANA', 'CASH']).default('MANA'),
-        kind: z.enum(['creator', 'profit', 'referral']),
+        kind: z.enum(['creator', 'profit', 'loss', 'referral']),
       })
       .strict(),
   },

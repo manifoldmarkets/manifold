@@ -36,6 +36,11 @@ type MyScores = {
     mana: number
     cash: number
   }
+  loss: {
+    rank: number
+    mana: number
+    cash: number
+  }
   creator: {
     rank: number
     score: number
@@ -73,9 +78,18 @@ export default function Leaderboards() {
         cashProfit = p.cashBalance + p.cashInvestmentValue - p.totalCashDeposits
       }
 
+      const { count: numUsers } = await db
+        .from('users')
+        .select('*', { count: 'exact' })
+
       setMyScores({
         profit: {
           rank: profitRank,
+          mana: manaProfit,
+          cash: cashProfit,
+        },
+        loss: {
+          rank: numUsers ?? NaN - profitRank,
           mana: manaProfit,
           cash: cashProfit,
         },
@@ -139,6 +153,12 @@ export default function Leaderboards() {
     profit: [
       {
         header: 'Profit',
+        renderCell: (user: any) => formatMoney(user.score, token),
+      },
+    ],
+    loss: [
+      {
+        header: 'Loss',
         renderCell: (user: any) => formatMoney(user.score, token),
       },
     ],
@@ -218,8 +238,12 @@ export default function Leaderboards() {
 
 const LEADERBOARD_TYPES = [
   {
-    name: 'Top traders',
+    name: 'Profit',
     value: 'profit',
+  },
+  {
+    name: 'Loss',
+    value: 'loss',
   },
   {
     name: 'Top creators',

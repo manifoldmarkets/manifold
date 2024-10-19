@@ -47,7 +47,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
       groupBy('c.creator_id'),
     ],
 
-    kind === 'profit' && [
+    (kind === 'profit' || kind === 'loss') && [
       select(
         `user_id, nullif(sum(profit + coalesce(profit_adjustment, 0)), 'NaN') as score`
       ),
@@ -62,7 +62,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
         'c.id in (select contract_id from group_contracts where group_id = ${groupId})',
         { groupId }
       ),
-    orderBy('score desc nulls last'),
+    orderBy(kind === 'loss' ? 'score asc' : 'score desc nulls last'),
     limit(limitValue)
   )
 
