@@ -240,7 +240,9 @@ export const placeBetMain = async (
         redemptionUpdatedMetrics
       )
       const results = await pgTrans.multi(
-        `${balanceQuery}; ${insertBetsQuery}; ${metricsQuery};`
+        `${balanceQuery};
+         ${insertBetsQuery};
+         ${metricsQuery};`
       )
       const userUpdates = results[0]
       broadcastUserUpdates(userUpdates)
