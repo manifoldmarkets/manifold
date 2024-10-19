@@ -61,7 +61,10 @@ export function formatSweepies(
     short?: boolean
   }
 ) {
-  return SWEEPIES_MONIKER + formatSweepiesNumber(amount, parameters)
+  const numberText = formatSweepiesNumber(amount, parameters)
+  const negative = numberText.startsWith('-')
+
+  return (negative ? '-' : '') + SWEEPIES_MONIKER + numberText.replace('-', '')
 }
 
 export function formatSweepiesNumber(
