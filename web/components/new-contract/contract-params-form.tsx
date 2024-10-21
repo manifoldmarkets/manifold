@@ -74,12 +74,12 @@ export function ContractParamsForm(props: {
     outcomeType
   )
     ? undefined
-    : outcomeType == 'NUMBER'
-    ? 'plus'
-    : 'basic'
+    : 'plus'
+
   const [marketTier, setMarketTier] = useState<MarketTierType | undefined>(
     DEFAULT_TIER
   )
+
   const paramsKey =
     (params?.q ?? '') +
     (params?.groupSlugs?.join('') ?? '') +

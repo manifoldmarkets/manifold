@@ -1,5 +1,3 @@
-// We have many old contracts without a collectedFees data structure. Let's fill them in.
-
 import { MarketContract } from 'common/contract'
 import { getTierFromLiquidity } from 'common/tier'
 import * as admin from 'firebase-admin'
@@ -13,10 +11,7 @@ if (require.main === module) {
   contractsRef.get().then(async (contractsSnaps) => {
     console.log(`Loaded ${contractsSnaps.size} contracts.`)
     const needsFilling = contractsSnaps.docs.filter((ct) => {
-      return (
-        !('marketTier' in ct.data()) &&
-        'totalLiquidity' in ct.data()
-      )
+      return !('marketTier' in ct.data()) && 'totalLiquidity' in ct.data()
     })
     console.log(`Found ${needsFilling.length} contracts to update.`)
     await Promise.all(

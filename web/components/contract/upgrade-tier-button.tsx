@@ -226,14 +226,14 @@ function UpgradeTier(props: {
     <Col
       className={clsx(
         currentAmount == additionalAmount
-          ? tier == 'basic'
+          ? tier == 'play'
             ? 'outline-ink-500'
             : tier == 'plus'
             ? 'outline-blue-500'
             : tier == 'premium'
             ? 'outline-purple-400'
             : 'outline-pink-500'
-          : tier == 'basic'
+          : tier == 'play'
           ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
           : tier == 'plus'
           ? 'opacity-50 outline-transparent hover:outline-purple-500/50'

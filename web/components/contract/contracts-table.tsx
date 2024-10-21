@@ -2,7 +2,11 @@ import { EyeOffIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
-import { ENV_CONFIG } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  SPICE_MARKET_TOOLTIP,
+  SWEEPIES_MARKET_TOOLTIP,
+} from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatMoney, formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
@@ -19,12 +23,15 @@ import {
   probColumn,
   traderColumn,
   ColumnFormat,
-  coinOrTierColumn,
+  tierColumn,
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { removeEmojis } from 'common/util/string'
 import { track } from 'web/lib/service/analytics'
+import { Tooltip } from '../widgets/tooltip'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -37,7 +44,7 @@ export function ContractsTable(props: {
     contracts,
     onContractClick,
     highlightContractIds,
-    columns = [coinOrTierColumn, traderColumn, probColumn, actionColumn],
+    columns = [traderColumn, tierColumn, probColumn, actionColumn],
     hideAvatar,
   } = props
 
@@ -263,7 +270,30 @@ function ContractQuestion(props: {
           />
         </UserHovercard>
       )}
-      <span>{removeEmojis(contract.question)}</span>
+      <span>
+        {/* <VisibilityIcon contract={contract} /> */}
+        {contract.token == 'CASH' && (
+          <span>
+            <Tooltip
+              text={SWEEPIES_MARKET_TOOLTIP}
+              className=" relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+            >
+              <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
+            </Tooltip>
+          </span>
+        )}
+        {!!contract.isSpicePayout && (
+          <span>
+            <Tooltip
+              text={SPICE_MARKET_TOOLTIP}
+              className=" relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+            >
+              <SpiceCoin className="absolute inset-0 top-[0.2em]" />
+            </Tooltip>
+          </span>
+        )}
+        {removeEmojis(contract.question)}
+      </span>
     </Row>
   )
 }

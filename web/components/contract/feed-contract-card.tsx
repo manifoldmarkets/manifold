@@ -240,7 +240,7 @@ export function FeedContractCard(props: {
                 Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
               </div>
             )}
-            {marketTier && marketTier !== 'basic' ? (
+            {marketTier ? (
               <TierTooltip tier={marketTier} contract={contract} />
             ) : feedReason ? (
               <CardReason
