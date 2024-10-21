@@ -74,8 +74,8 @@ Feel free to use the API for any purpose you'd like. There is a rate limit of 10
 
 ## Fees
 
-- A non-refundable transaction fee of $M0.25 will be levied on any bet, sell, or limit order placed through the API, or by any account marked as a bot. (The fee has been levied even if the returned "bet" object claims there was no fee; this is a known bug.)
-- Comments placed through the API will incur a $M1 transaction fee.
+- A non-refundable transaction fee of M$0.1 will be levied on any bet, sell, or limit order placed through the API, or by any account marked as a bot. (The fee has been levied even if the returned "bet" object claims there was no fee; this is a known bug.)
+- Comments placed through the API will incur a M$1 transaction fee.
 
 ## Trade history dumps
 
@@ -1186,7 +1186,7 @@ Example response (truncated):
 
 ## Internal API
 
-Manifold has some internal API endpoints that are not part of the official API. These are largely undocumented, but a few are mentioned here for third-party use until a more permanent solution is implimented. These endpoints are not preceeded by `/v0` and are even more subject to sudden changes than the official API endpoints.
+Manifold has some internal API endpoints that are not part of the official API. These are largely undocumented, but a few are mentioned here for third-party use until a more permanent solution is implemented. These endpoints are not preceded by `/v0` and are even more subject to sudden changes than the official API endpoints.
 
 ### `POST /unresolve`
 
