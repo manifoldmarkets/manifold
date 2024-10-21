@@ -24,7 +24,6 @@
     "dayjs": "1.11.4",
     "link-preview-js": "3.0.4",
     "lodash": "4.17.21",
-    "nanoid": "^3.3.4",
     "string-similarity": "4.0.4",
     "zod": "3.21.4"
   },
