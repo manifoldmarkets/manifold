@@ -176,10 +176,14 @@ export function TwombaHeaderActions(props: {
       onClick: () => setDetailsOpen(true),
       icon: <InformationCircleIcon className="h-5 w-5" />,
     },
-    {
-      name: 'line',
-      nonButtonContent: <div className="bg-ink-400 mx-4 my-2 h-[1px]" />,
-    },
+    ...(user
+      ? [
+          {
+            name: 'line',
+            nonButtonContent: <div className="bg-ink-400 mx-4 my-2 h-[1px]" />,
+          },
+        ]
+      : []),
     ...(user && !isCreator
       ? [
           {
