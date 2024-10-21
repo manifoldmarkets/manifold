@@ -1,8 +1,4 @@
-import {
-  pgp,
-  SupabaseDirectClient,
-  SupabaseTransaction,
-} from 'shared/supabase/init'
+import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { WEEK_MS } from 'common/util/time'
 import { APIError } from 'common/api/utils'
 import { PrivateUser, User } from 'common/user'
@@ -149,56 +145,39 @@ export const incrementBalance = async (
   )
 }
 
-export const incrementStreak = async (
-  tx: SupabaseTransaction,
-  user: User,
-  newBetTime: number
-) => {
+export const incrementStreakQuery = (user: User, newBetTime: number) => {
   const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
 
-  const incremented = await tx.one(
+  return pgp.as.format(
     `
-      WITH old_data AS (
-        SELECT 
-          coalesce((data->>'lastBetTime')::bigint, 0) AS lastBetTime,
-          coalesce((data->>'currentBettingStreak')::int, 0) AS currentBettingStreak
-        FROM users
-        WHERE id = $1
+    WITH old_data AS (
+      SELECT 
+        coalesce((data->>'lastBetTime')::bigint, 0) AS lastBetTime,
+        coalesce((data->>'currentBettingStreak')::int, 0) AS currentBettingStreak
+      FROM users
+      WHERE id = $1
+    )
+    UPDATE users SET 
+      data = jsonb_set(
+        jsonb_set(data, '{currentBettingStreak}', 
+          CASE
+            WHEN old_data.lastBetTime < $2
+            THEN (old_data.currentBettingStreak + 1)::text::jsonb
+            ELSE old_data.currentBettingStreak::text::jsonb
+          END
+        ),
+        '{lastBetTime}', to_jsonb($3)::jsonb
       )
-      UPDATE users SET 
-        data = jsonb_set(
-          jsonb_set(data, '{currentBettingStreak}', 
-            CASE
-              WHEN old_data.lastBetTime < $2
-              THEN (old_data.currentBettingStreak + 1)::text::jsonb
-              ELSE old_data.currentBettingStreak::text::jsonb
-            END
-          ),
-          '{lastBetTime}', to_jsonb($3)::jsonb
-        )
-      FROM old_data
-      WHERE users.id = $1
-      RETURNING 
-        CASE
-          WHEN old_data.lastBetTime < $2 THEN true
-          ELSE false
-        END AS streak_incremented
-      `,
-    [user.id, betStreakResetTime, newBetTime],
-    (r) => r.streak_incremented
+    FROM old_data
+    WHERE users.id = $1
+    RETURNING 
+      CASE
+        WHEN old_data.lastBetTime < $2 THEN true
+        ELSE false
+      END AS streak_incremented
+  `,
+    [user.id, betStreakResetTime, newBetTime]
   )
-
-  broadcastUpdatedUser(
-    removeUndefinedProps({
-      id: user.id,
-      currentBettingStreak: incremented
-        ? (user?.currentBettingStreak ?? 0) + 1
-        : undefined,
-      lastBetTime: newBetTime,
-    })
-  )
-
-  return incremented
 }
 
 export const bulkIncrementBalances = async (

@@ -3,7 +3,7 @@ import { ContractComment } from 'common/comment'
 import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { bulkInsert, bulkInsertQuery, insert } from 'shared/supabase/utils'
 import { broadcastOrders } from 'shared/websockets/helpers'
 import {
@@ -167,17 +167,25 @@ const betToRow = (bet: Bet | Omit<Bet, 'id'>) =>
     data: JSON.stringify(removeUndefinedProps(bet)) + '::jsonb',
   })
 
+export const cancelLimitOrdersQuery = (limitOrderIds: string[]) => {
+  if (!limitOrderIds.length) return 'select 1 where false'
+  return pgp.as.format(
+    `update contract_bets
+    set data = data || '{"isCancelled":true}'
+    where bet_id in ($1:list)
+    returning data`,
+    [limitOrderIds]
+  )
+}
+
 export const cancelLimitOrders = async (
   pg: SupabaseDirectClient,
   limitOrderIds: string[]
 ) => {
   if (limitOrderIds.length > 0) {
     const bets = await pg.map<LimitBet>(
-      `update contract_bets
-      set data = data || '{"isCancelled":true}'
-      where bet_id in ($1:list)
-      returning data`,
-      [limitOrderIds],
+      cancelLimitOrdersQuery(limitOrderIds),
+      [],
       (r) => r.data
     )
 

@@ -71,6 +71,19 @@ export async function update<
   return await db.one<Row<T>>(q + ` returning *`)
 }
 
+export function bulkUpdateQuery<
+  T extends TableName,
+  ColumnValues extends Tables[T]['Update']
+>(table: T, idFields: Column<T>[], values: ColumnValues[]) {
+  if (!values.length) return 'select 1 where false'
+  const columnNames = Object.keys(values[0])
+  const cs = new pgp.helpers.ColumnSet(columnNames, { table })
+  const clause = idFields.map((f) => `v.${f} = t.${f}`).join(' and ')
+  const query = pgp.helpers.update(values, cs) + ` WHERE ${clause}`
+  // Hack to properly cast values.
+  return query.replace(/::(\w*)'/g, "'::$1")
+}
+
 export async function bulkUpdate<
   T extends TableName,
   ColumnValues extends Tables[T]['Update']
@@ -80,15 +93,9 @@ export async function bulkUpdate<
   idFields: Column<T>[],
   values: ColumnValues[]
 ) {
-  if (values.length) {
-    const columnNames = Object.keys(values[0])
-    const cs = new pgp.helpers.ColumnSet(columnNames, { table })
-    const clause = idFields.map((f) => `v.${f} = t.${f}`).join(' and ')
-    const query = pgp.helpers.update(values, cs) + ` WHERE ${clause}`
-    // Hack to properly cast values.
-    const q = query.replace(/::(\w*)'/g, "'::$1")
-    await db.none(q)
-  }
+  if (!values.length) return
+  const query = bulkUpdateQuery(table, idFields, values)
+  await db.none(query)
 }
 
 export async function bulkUpsert<
@@ -155,10 +162,7 @@ export async function bulkUpdateData<T extends TableName>(
     )
   }
 }
-
-// Replacement for firebase updateDoc. Updates just the data field (what firebase would've replicated to)
-export async function updateData<T extends TableName>(
-  db: SupabaseDirectClient,
+export function updateDataQuery<T extends TableName>(
   table: T,
   idField: Column<T>,
   data: DataUpdate<T>
@@ -179,14 +183,24 @@ export async function updateData<T extends TableName>(
   const sortedExtraOperations = sortBy(extras, (statement) =>
     statement.startsWith('-') ? -1 : 1
   )
-
-  return await db.one<Row<T>>(
+  return pgp.as.format(
     `update ${table} set data = data
     ${sortedExtraOperations.join('\n')}
     || $1
     where ${idField} = '${id}' returning *`,
     [JSON.stringify(basic)]
   )
+}
+
+// Replacement for firebase updateDoc. Updates just the data field (what firebase would've replicated to)
+export async function updateData<T extends TableName>(
+  db: SupabaseDirectClient,
+  table: T,
+  idField: Column<T>,
+  data: DataUpdate<T>
+) {
+  const query = updateDataQuery(table, idField, data)
+  return await db.one<Row<T>>(query)
 }
 
 /*

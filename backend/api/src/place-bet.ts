@@ -41,20 +41,19 @@ import {
 import {
   bulkIncrementBalancesQuery,
   incrementBalance,
-  incrementStreak,
+  incrementStreakQuery,
 } from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
 import {
   bulkInsertBetsQuery,
-  cancelLimitOrders,
+  cancelLimitOrdersQuery,
   insertBet,
 } from 'shared/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
-import { updateAnswers } from 'shared/supabase/answers'
-import { updateContract } from 'shared/supabase/contracts'
+import { partialAnswerToRow } from 'shared/supabase/answers'
 import { filterDefined } from 'common/util/array'
 import { convertUser } from 'common/supabase/users'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
@@ -72,6 +71,13 @@ import {
 import { MarginalBet } from 'common/calculate-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { broadcastUserUpdates } from 'shared/supabase/users'
+import {
+  broadcastOrders,
+  broadcastUpdatedAnswers,
+  broadcastUpdatedContract,
+  broadcastUpdatedUser,
+} from 'shared/websockets/helpers'
+import { bulkUpdateQuery, updateDataQuery } from 'shared/supabase/utils'
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
 
@@ -131,6 +137,7 @@ export const placeBetMain = async (
     uid,
     isApi
   )
+  // TODO: Try running all simulations on single worker thread
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
     body,
@@ -666,11 +673,6 @@ export const executeNewBetResult = async (
     allOrdersToCancel.push(...ordersToCancel)
   }
 
-  const streakIncremented = await incrementStreak(
-    pgTrans,
-    user,
-    newBet.createdTime
-  )
   const sumsToOne =
     contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
@@ -732,38 +734,31 @@ export const executeNewBetResult = async (
     !contractMetrics.find((m) => m.userId === user.id)
   const lastBetTime =
     maxBy(betsToInsert, (b) => b.createdTime)?.createdTime ?? Date.now()
-  const sharedContractUpdates: Partial<MarketContract> = removeUndefinedProps({
+  const contractUpdate: Partial<MarketContract> = removeUndefinedProps({
+    id: contract.id,
     lastBetTime,
     volume: contract.volume + sumBy(betsToInsert, (b) => Math.abs(b.amount)),
     lastUpdatedTime: lastBetTime,
     uniqueBettorCount: contract.uniqueBettorCount + (isUniqueBettor ? 1 : 0),
+    ...(contract.mechanism === 'cpmm-1'
+      ? {
+          pool: newPool,
+          p: newP,
+          totalLiquidity: newTotalLiquidity,
+          prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
+        }
+      : {}),
   })
-
-  if (newBet.answerId) {
-    // Multi-cpmm-1 contract
-    if (newPool) {
-      const { YES: poolYes, NO: poolNo } = newPool
-      const prob = getCpmmProbability(newPool, 0.5)
-      answerUpdates.push({
-        id: newBet.answerId,
-        poolYes,
-        poolNo,
-        prob,
-      })
-    }
-    await updateContract(pgTrans, contract.id, sharedContractUpdates)
-  } else {
-    await updateContract(
-      pgTrans,
-      contract.id,
-      removeUndefinedProps({
-        pool: newPool,
-        p: newP,
-        totalLiquidity: newTotalLiquidity,
-        prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
-        ...sharedContractUpdates,
-      })
-    )
+  // Multi-cpmm-1 contract
+  if (newBet.answerId && newPool) {
+    const { YES: poolYes, NO: poolNo } = newPool
+    const prob = getCpmmProbability(newPool, 0.5)
+    answerUpdates.push({
+      id: newBet.answerId,
+      poolYes,
+      poolNo,
+      prob,
+    })
   }
 
   const bulkInsertStart = Date.now()
@@ -809,20 +804,51 @@ export const executeNewBetResult = async (
     ...redemptionBetsToInsert,
   ])
   const metricsQuery = bulkUpdateContractMetricsQuery(redemptionUpdatedMetrics)
-  const results = await pgTrans.multi(
-    `${balanceQuery};
-     ${insertBetsQuery};
-     ${metricsQuery};`
+  const streakIncrementedQuery = incrementStreakQuery(user, newBet.createdTime)
+  const contractUpdateQuery = updateDataQuery('contracts', 'id', contractUpdate)
+  const answerUpdateQuery = bulkUpdateQuery(
+    'answers',
+    ['id'],
+    answerUpdates.map(partialAnswerToRow)
   )
-  const userUpdates = results[0]
-  broadcastUserUpdates(userUpdates)
-  // TODO: Stop waiting for the sql bet data, betsToInsert is fully formed
-  const insertedBets = results[1].map(convertBet)
-  await updateAnswers(pgTrans, contract.id, answerUpdates)
-  await cancelLimitOrders(
-    pgTrans,
+  const cancelLimitsQuery = cancelLimitOrdersQuery(
     allOrdersToCancel.map((o) => o.id)
   )
+
+  const results = await pgTrans.multi(
+    `${balanceQuery};
+     ${streakIncrementedQuery};
+     ${insertBetsQuery};
+     ${metricsQuery};
+     ${contractUpdateQuery};
+     ${answerUpdateQuery};
+     ${cancelLimitsQuery};
+     `
+  )
+  const userUpdates = results[0]
+  const streakIncremented = results[1][0].streak_incremented
+  broadcastUserUpdates(userUpdates)
+  broadcastUpdatedUser(
+    removeUndefinedProps({
+      id: user.id,
+      currentBettingStreak: streakIncremented
+        ? (user?.currentBettingStreak ?? 0) + 1
+        : undefined,
+      lastBetTime: newBet.createdTime,
+    })
+  )
+  // TODO: No reason to return the sql bet data, betsToInsert is fully formed
+  const insertedBets = results[2].map(convertBet)
+  const newContract = results[4].map(convertContract)[0]
+  log('updated contract', newContract)
+  const updatedValues = mapValues(
+    contractUpdate,
+    (_, k) => newContract[k as keyof Contract] ?? null
+  ) as any
+  broadcastUpdatedContract(newContract.visibility, updatedValues)
+  broadcastUpdatedAnswers(newContract.id, answerUpdates)
+  const cancelledLimitOrders = results[6].map(convertBet) as LimitBet[]
+  broadcastOrders(cancelledLimitOrders)
 
   log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
 
