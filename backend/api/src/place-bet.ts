@@ -665,7 +665,7 @@ export const executeNewBetResult = async (
   }
   const apiFee = isApi ? FLAT_TRADE_FEE : 0
   const betsToInsert: Bet[] = [candidateBet]
-  const allOrdersToCancel: LimitBet[] = []
+  const allOrdersToCancel: LimitBet[] = filterDefined(ordersToCancel ?? [])
   const userBalanceUpdates = [
     {
       id: user.id,
@@ -676,9 +676,12 @@ export const executeNewBetResult = async (
   const makerIDsByTakerBetId: Record<string, maker[]> = {
     [candidateBet.id]: makers ?? [],
   }
-  if (ordersToCancel) {
-    allOrdersToCancel.push(...ordersToCancel)
-  }
+  const answerUpdates: {
+    id: string
+    poolYes: number
+    poolNo: number
+    prob: number
+  }[] = []
 
   const sumsToOne =
     contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
@@ -701,13 +704,6 @@ export const executeNewBetResult = async (
     }
     bonusTxnQuery = txnQuery
   }
-
-  const answerUpdates: {
-    id: string
-    poolYes: number
-    poolNo: number
-    prob: number
-  }[] = []
 
   if (otherBetResults) {
     const otherBetsToInsert = filterDefined(
