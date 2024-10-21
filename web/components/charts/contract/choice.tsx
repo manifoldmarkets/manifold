@@ -191,9 +191,6 @@ export const ChoiceContractChart = (props: {
   const [lowestPoint, highestPoint] = useMemo(() => {
     if (!zoomY) return [0, 1]
 
-    // const allPoints = Object.values(graphedData).flatMap(({ points }) =>
-    //   points.map((p) => p.y)
-    // )
     const [minXDate, maxXDate] = zoomParams?.viewXScale.domain() ?? [null, null]
     const minX = minXDate ? minXDate.getTime() : start
     const maxX = maxXDate ? maxXDate.getTime() : end
