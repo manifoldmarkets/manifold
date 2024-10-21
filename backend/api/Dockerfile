@@ -19,8 +19,5 @@ COPY ecosystem.config.js ./
 ENV PORT=80
 EXPOSE 80/tcp
 
-# 16 GB on the box, give 12 GB to the JS heap
-ENTRYPOINT [ "node", "--max-old-space-size=28672", "backend/api/lib/serve.js" ]
-
 # # Use PM2 to run the application with the ecosystem config
-# CMD ["pm2-runtime", "ecosystem.config.js"]
+CMD ["pm2-runtime", "ecosystem.config.js"]
