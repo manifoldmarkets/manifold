@@ -380,8 +380,13 @@ async function createAnswerAndSumAnswersToOne(
 
     allOrdersToCancel.push(...ordersToCancel)
   }
-  await updateMakers(makerIDsByTakerBetId, contract, allUpdatedMetrics, pgTrans)
-
+  const { bulkUpdateLimitOrdersQuery } = await updateMakers(
+    makerIDsByTakerBetId,
+    contract,
+    allUpdatedMetrics,
+    pgTrans
+  )
+  await pgTrans.none(bulkUpdateLimitOrdersQuery)
   log('inserting new answer')
   await insertAnswer(pgTrans, newAnswer)
   log('updating index and liquidity of Other')

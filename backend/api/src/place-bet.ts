@@ -761,7 +761,6 @@ export const executeNewBetResult = async (
     })
   }
 
-  const bulkInsertStart = Date.now()
   const metrics =
     contract.outcomeType === 'NUMBER' && !firstBetInMultiBet
       ? await getContractMetrics(
@@ -780,20 +779,17 @@ export const executeNewBetResult = async (
     false
   )
 
-  const bulkInsertEnd = Date.now()
-  log(`bulkInsertBets took ${bulkInsertEnd - bulkInsertStart}ms`)
-
   const {
     betsToInsert: redemptionBetsToInsert,
     updatedMetrics: redemptionUpdatedMetrics,
     balanceUpdates: redemptionAndLimitOrderBalanceUpdates,
+    bulkUpdateLimitOrdersQuery,
   } = await updateMakers(
     makerIDsByTakerBetId,
     contract,
     updatedMetrics,
     pgTrans
   )
-  log('update makers took', Date.now() - bulkInsertEnd)
 
   const balanceQuery = bulkIncrementBalancesQuery([
     userBalanceUpdate,
@@ -814,7 +810,7 @@ export const executeNewBetResult = async (
   const cancelLimitsQuery = cancelLimitOrdersQuery(
     allOrdersToCancel.map((o) => o.id)
   )
-
+  const startTime = Date.now()
   const results = await pgTrans.multi(
     `${balanceQuery};
      ${streakIncrementedQuery};
@@ -823,8 +819,11 @@ export const executeNewBetResult = async (
      ${contractUpdateQuery};
      ${answerUpdateQuery};
      ${cancelLimitsQuery};
+     ${bulkUpdateLimitOrdersQuery};
      `
   )
+  const endTime = Date.now()
+  log(`placeBet bulk insert/update took ${endTime - startTime}ms`)
   const userUpdates = results[0]
   const streakIncremented = results[1][0].streak_incremented
   broadcastUserUpdates(userUpdates)
@@ -867,8 +866,7 @@ export const executeNewBetResult = async (
   }
 }
 
-export async function bulkUpdateLimitOrders(
-  db: SupabaseDirectClient,
+export const getBulkUpdateLimitOrdersQuery = (
   updates: Array<{
     id: string
     fills?: any[]
@@ -876,27 +874,24 @@ export async function bulkUpdateLimitOrders(
     amount?: number
     shares?: number
   }>
-) {
-  if (updates.length > 0) {
-    const values = updates
-      .map((update) => {
-        const updateData = {
-          fills: update.fills,
-          isFilled: update.isFilled,
-          amount: update.amount,
-          shares: update.shares,
-        }
-        return `('${update.id}', '${JSON.stringify(updateData)}'::jsonb)`
-      })
-      .join(',\n')
+) => {
+  if (updates.length === 0) return 'select 1 where false'
+  const values = updates
+    .map((update) => {
+      const updateData = {
+        fills: update.fills,
+        isFilled: update.isFilled,
+        amount: update.amount,
+        shares: update.shares,
+      }
+      return `('${update.id}', '${JSON.stringify(updateData)}'::jsonb)`
+    })
+    .join(',\n')
 
-    await db.none(
-      `UPDATE contract_bets AS c
+  return `UPDATE contract_bets AS c
        SET data = data || v.update
        FROM (VALUES ${values}) AS v(id, update)
        WHERE c.bet_id = v.id`
-    )
-  }
 }
 
 export const updateMakers = async (
@@ -963,19 +958,16 @@ export const updateMakers = async (
       betsToInsert: [],
       updatedMetrics: contractMetrics,
       balanceUpdates: [],
+      bulkUpdateLimitOrdersQuery: 'select 1 where false',
     }
   }
 
-  const bulkUpdateStart = Date.now()
-  await bulkUpdateLimitOrders(pgTrans, allUpdates)
   const allUpdatedMetrics = await bulkUpdateUserMetricsWithNewBetsOnly(
     pgTrans,
     allFillsAsNewBets,
     contractMetrics,
     false
   )
-  const bulkUpdateEnd = Date.now()
-  log(`bulkUpdateLimitOrders took ${bulkUpdateEnd - bulkUpdateStart}ms`)
 
   const bulkLimitOrderBalanceUpdates = Object.entries(allSpentByUser).map(
     ([userId, spent]) => ({
@@ -1004,6 +996,7 @@ export const updateMakers = async (
     balanceUpdates: redemptionBalanceUpdates.concat(
       bulkLimitOrderBalanceUpdates
     ),
+    bulkUpdateLimitOrdersQuery: getBulkUpdateLimitOrdersQuery(allUpdates),
   }
 }
 
