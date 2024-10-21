@@ -10,7 +10,7 @@ import {
   log,
   revalidateStaticProps,
 } from 'shared/utils'
-import { chunk, groupBy, sum, sumBy, uniq } from 'lodash'
+import { groupBy, sum, sumBy, uniq } from 'lodash'
 import {
   Contract,
   ContractToken,
@@ -19,16 +19,13 @@ import {
 } from 'common/contract'
 import { calculateProfitMetricsWithProb } from 'common/calculate-metrics'
 import { buildArray, filterDefined } from 'common/util/array'
-import {
-  hasSignificantDeepChanges,
-  removeUndefinedProps,
-} from 'common/util/object'
+
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { Row } from 'common/supabase/utils'
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { bulkInsert, bulkUpdate } from 'shared/supabase/utils'
+import { bulkInsert } from 'shared/supabase/utils'
 import { type User } from 'common/user'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 
@@ -147,7 +144,6 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
 
   const currentMetricsByUserId = groupBy(metrics, (m) => m.userId)
 
-  const userUpdates: User[] = []
   const portfolioUpdates = [] as Omit<Row<'user_portfolio_history'>, 'id'>[]
 
   log('Loading user balances & deposit information...')
@@ -158,29 +154,20 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
   for (const user of users) {
     const userMetrics = currentMetricsByUserId[user.id] ?? []
     const { currentPortfolio } = userToPortfolioMetrics[user.id]
-
+    const { balance, totalDeposits, resolvedProfitAdjustment } = user
     const newPortfolio = {
       ...calculateNewPortfolioMetricsWithContractMetrics(
         user,
         contractsById,
         userMetrics
       ),
-      profit: 0,
+      profit:
+        (resolvedProfitAdjustment ?? 0) +
+        // Resolved profits are already included in the user's balance - deposits
+        sumBy(userMetrics, (m) => (m.profitAdjustment ?? 0) + m.profit) +
+        balance -
+        totalDeposits,
     }
-
-    const { balance, investmentValue, totalDeposits } = newPortfolio
-    const allTimeProfit = balance + investmentValue - totalDeposits
-
-    const resolvedProfitAdjustment = user.resolvedProfitAdjustment ?? 0
-
-    const leaderBoardProfit =
-      resolvedProfitAdjustment +
-      // Resolved profits are already included in the user's balance - deposits
-      sumBy(userMetrics, (m) => (m.profitAdjustment ?? 0) + m.profit) +
-      balance -
-      totalDeposits
-
-    newPortfolio.profit = leaderBoardProfit
 
     const didPortfolioChange =
       currentPortfolio === undefined ||
@@ -193,18 +180,7 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
       currentPortfolio.cashInvestmentValue !==
         newPortfolio.cashInvestmentValue ||
       currentPortfolio.loanTotal !== newPortfolio.loanTotal ||
-      currentPortfolio.profit !== leaderBoardProfit
-
-    const newProfit = {
-      daily:
-        allTimeProfit -
-        (userToPortfolioMetrics[user.id].dayAgoProfit ?? allTimeProfit),
-      weekly:
-        allTimeProfit -
-        (userToPortfolioMetrics[user.id].weekAgoProfit ?? allTimeProfit),
-      monthly: 0,
-      allTime: allTimeProfit,
-    }
+      currentPortfolio.profit !== newPortfolio.profit
 
     if (didPortfolioChange) {
       portfolioUpdates.push({
@@ -218,32 +194,15 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
         total_deposits: newPortfolio.totalDeposits,
         total_cash_deposits: newPortfolio.totalCashDeposits,
         loan_total: newPortfolio.loanTotal,
-        profit: leaderBoardProfit,
+        profit: newPortfolio.profit,
       })
       userToPortfolioMetrics[user.id].currentPortfolio = newPortfolio
-    }
-
-    // TODO: Remove these user updates, just use lateste portfolio history
-    if (
-      hasSignificantDeepChanges(
-        user,
-        {
-          profitCached: newProfit,
-        },
-        1
-      )
-    ) {
-      userUpdates.push({
-        ...user,
-        profitCached: newProfit,
-      })
     }
   }
 
   const userIdsNotWritten = activeUserIds.filter(
     (id) => !portfolioUpdates.some((p) => p.user_id === id)
   )
-  const userUpdateChunks = chunk(userUpdates, LIMIT / 10)
   log('Writing updates and inserts...')
   await Promise.all(
     buildArray(
@@ -257,23 +216,7 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
         pg.query(
           `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
           [new Date(now).toISOString(), userIdsNotWritten]
-        ),
-
-      Promise.all(
-        userUpdateChunks.map(async (chunk) =>
-          bulkUpdate(
-            pg,
-            'users',
-            ['id'],
-            chunk.map((u) => ({
-              id: u.id,
-              data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
-            }))
-          )
         )
-      )
-        .catch((e) => log.error('Error writing user updates', e))
-        .then(() => log('Finished user updates.'))
     )
   )
 

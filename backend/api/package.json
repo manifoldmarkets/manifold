@@ -50,7 +50,7 @@
     "mailgun-js": "0.22.0",
     "marked": "4.1.1",
     "openai": "4.16.1",
-    "pg-promise": "11.4.1",
+    "pg-promise": "11.10.0",
     "sharp": "0.32.6",
     "string-similarity": "4.0.4",
     "stripe": "8.194.0",

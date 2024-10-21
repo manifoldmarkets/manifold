@@ -18,7 +18,7 @@ import {
   getNewMultiCpmmBetInfo,
 } from 'common/new-bet'
 import { removeUndefinedProps } from 'common/util/object'
-import { Bet, LimitBet, maker } from 'common/bet'
+import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { contractColumnsToSelect, isProd, log, metrics } from 'shared/utils'
 import { Answer } from 'common/answer'
@@ -39,22 +39,21 @@ import {
   SupabaseTransaction,
 } from 'shared/supabase/init'
 import {
-  bulkIncrementBalances,
+  bulkIncrementBalancesQuery,
   incrementBalance,
-  incrementStreak,
+  incrementStreakQuery,
 } from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
 import {
-  bulkInsertBets,
-  cancelLimitOrders,
+  bulkInsertBetsQuery,
+  cancelLimitOrdersQuery,
   insertBet,
 } from 'shared/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
-import { updateAnswers } from 'shared/supabase/answers'
-import { updateContract } from 'shared/supabase/contracts'
+import { partialAnswerToRow } from 'shared/supabase/answers'
 import { filterDefined } from 'common/util/array'
 import { convertUser } from 'common/supabase/users'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
@@ -65,12 +64,20 @@ import {
 import { UniqueBettorBonusTxn } from 'common/txn'
 import { insertTxn } from 'shared/txn/run-txn'
 import {
+  bulkUpdateContractMetricsQuery,
   bulkUpdateUserMetricsWithNewBetsOnly,
   getContractMetrics,
 } from 'shared/helpers/user-contract-metrics'
 import { MarginalBet } from 'common/calculate-metrics'
 import { ContractMetric } from 'common/contract-metric'
-
+import { broadcastUserUpdates } from 'shared/supabase/users'
+import {
+  broadcastOrders,
+  broadcastUpdatedAnswers,
+  broadcastUpdatedContract,
+  broadcastUpdatedUser,
+} from 'shared/websockets/helpers'
+import { bulkUpdateQuery, updateDataQuery } from 'shared/supabase/utils'
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
 
@@ -130,6 +137,7 @@ export const placeBetMain = async (
     uid,
     isApi
   )
+  // TODO: Try running all simulations on single worker thread
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
     body,
@@ -194,10 +202,8 @@ export const placeBetMain = async (
       actualMakerIds
     )
     if (!isEqual(simulatedMakerIds, actualMakerIds)) {
-      throw new APIError(
-        503,
-        'Please try betting again. (Matched limit orders changed from simulated values.)'
-      )
+      log.warn('Matched limit orders changed from simulated values.')
+      throw new APIError(503, 'Please try betting again.')
     }
 
     const betGroupId =
@@ -218,20 +224,38 @@ export const placeBetMain = async (
     )
     const { updatedMetrics } = result
     log('Redeeming shares for bettor', user.username, user.id)
-    const { bets: redemptionBets, updatedMetrics: redemptionUpdatedMetrics } =
-      await redeemShares(
-        pgTrans,
-        [user.id],
-        contract,
-        [
-          {
-            ...newBetResult.newBet,
-            userId: user.id,
-          },
-        ],
-        updatedMetrics
+    const {
+      betsToInsert: redemptionBetsToInsert,
+      updatedMetrics: redemptionUpdatedMetrics,
+      balanceUpdates,
+    } = await redeemShares(
+      pgTrans,
+      [user.id],
+      contract,
+      [
+        {
+          ...newBetResult.newBet,
+          userId: user.id,
+        },
+      ],
+      updatedMetrics
+    )
+    if (redemptionBetsToInsert.length > 0) {
+      const balanceQuery = bulkIncrementBalancesQuery(balanceUpdates)
+      const insertBetsQuery = bulkInsertBetsQuery(redemptionBetsToInsert)
+      const metricsQuery = bulkUpdateContractMetricsQuery(
+        redemptionUpdatedMetrics
       )
-    result.fullBets.push(...redemptionBets)
+      const results = await pgTrans.multi(
+        `${balanceQuery};
+         ${insertBetsQuery};
+         ${metricsQuery};`
+      )
+      const userUpdates = results[0]
+      broadcastUserUpdates(userUpdates)
+      const insertedBets = results[1].map(convertBet)
+      result.fullBets.push(...insertedBets)
+    }
     log('Share redemption transaction finished.')
     return { ...result, updatedMetrics: redemptionUpdatedMetrics }
   })
@@ -603,6 +627,7 @@ export const executeNewBetResult = async (
   }
 
   const candidateBet = removeUndefinedProps({
+    id: getNewBetId(),
     userId: user.id,
     isApi,
     replyToCommentId,
@@ -633,24 +658,21 @@ export const executeNewBetResult = async (
       updatedMetrics,
     }
   }
-  const betsToInsert: Omit<Bet, 'id'>[] = [candidateBet]
-  const makersInBetOrder: (maker[] | undefined)[] = [makers]
+  const apiFee = isApi ? FLAT_TRADE_FEE : 0
+  const betsToInsert: Bet[] = [candidateBet]
   const allOrdersToCancel: LimitBet[] = []
-  const makerIDsByTakerBetId: Record<string, maker[]> = {}
+  const userBalanceUpdate = {
+    id: user.id,
+    [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+      -newBet.amount - apiFee,
+  }
+  const makerIDsByTakerBetId: Record<string, maker[]> = {
+    [candidateBet.id]: makers ?? [],
+  }
   if (ordersToCancel) {
     allOrdersToCancel.push(...ordersToCancel)
   }
 
-  const apiFee = isApi ? FLAT_TRADE_FEE : 0
-  await incrementBalance(pgTrans, user.id, {
-    [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
-      -newBet.amount - apiFee,
-  })
-  const streakIncremented = await incrementStreak(
-    pgTrans,
-    user,
-    newBet.createdTime
-  )
   const sumsToOne =
     contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
@@ -682,6 +704,7 @@ export const executeNewBetResult = async (
 
         if (deterministic || !smallEnoughToIgnore || Math.random() < 0.01) {
           const candidateBet = removeUndefinedProps({
+            id: getNewBetId(),
             userId: user.id,
             isApi,
             betGroupId,
@@ -696,7 +719,7 @@ export const executeNewBetResult = async (
             poolNo,
             prob,
           })
-          makersInBetOrder.push(makers)
+          makerIDsByTakerBetId[candidateBet.id] = makers
           return candidateBet
         }
 
@@ -711,38 +734,31 @@ export const executeNewBetResult = async (
     !contractMetrics.find((m) => m.userId === user.id)
   const lastBetTime =
     maxBy(betsToInsert, (b) => b.createdTime)?.createdTime ?? Date.now()
-  const sharedContractUpdates: Partial<MarketContract> = removeUndefinedProps({
+  const contractUpdate: Partial<MarketContract> = removeUndefinedProps({
+    id: contract.id,
     lastBetTime,
     volume: contract.volume + sumBy(betsToInsert, (b) => Math.abs(b.amount)),
     lastUpdatedTime: lastBetTime,
     uniqueBettorCount: contract.uniqueBettorCount + (isUniqueBettor ? 1 : 0),
+    ...(contract.mechanism === 'cpmm-1'
+      ? {
+          pool: newPool,
+          p: newP,
+          totalLiquidity: newTotalLiquidity,
+          prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
+        }
+      : {}),
   })
-
-  if (newBet.answerId) {
-    // Multi-cpmm-1 contract
-    if (newPool) {
-      const { YES: poolYes, NO: poolNo } = newPool
-      const prob = getCpmmProbability(newPool, 0.5)
-      answerUpdates.push({
-        id: newBet.answerId,
-        poolYes,
-        poolNo,
-        prob,
-      })
-    }
-    await updateContract(pgTrans, contract.id, sharedContractUpdates)
-  } else {
-    await updateContract(
-      pgTrans,
-      contract.id,
-      removeUndefinedProps({
-        pool: newPool,
-        p: newP,
-        totalLiquidity: newTotalLiquidity,
-        prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
-        ...sharedContractUpdates,
-      })
-    )
+  // Multi-cpmm-1 contract
+  if (newBet.answerId && newPool) {
+    const { YES: poolYes, NO: poolNo } = newPool
+    const prob = getCpmmProbability(newPool, 0.5)
+    answerUpdates.push({
+      id: newBet.answerId,
+      poolYes,
+      poolNo,
+      prob,
+    })
   }
 
   const bulkInsertStart = Date.now()
@@ -756,41 +772,93 @@ export const executeNewBetResult = async (
           true
         )
       : contractMetrics
-  const { insertedBets, updatedMetrics } = await bulkInsertBets(
-    betsToInsert,
+
+  const updatedMetrics = await bulkUpdateUserMetricsWithNewBetsOnly(
     pgTrans,
-    metrics
+    betsToInsert,
+    metrics,
+    false
   )
+
   const bulkInsertEnd = Date.now()
   log(`bulkInsertBets took ${bulkInsertEnd - bulkInsertStart}ms`)
 
-  for (let i = 0; i < insertedBets.length; i++) {
-    const makers = makersInBetOrder[i]
-    if (makers) {
-      makerIDsByTakerBetId[insertedBets[i].bet_id] = makers
-    }
-  }
-  const { bets: redemptionBets, updatedMetrics: redemptionUpdatedMetrics } =
-    await updateMakers(makerIDsByTakerBetId, contract, updatedMetrics, pgTrans)
-  const fullBets = insertedBets.map(convertBet)
-  fullBets.push(...redemptionBets)
+  const {
+    betsToInsert: redemptionBetsToInsert,
+    updatedMetrics: redemptionUpdatedMetrics,
+    balanceUpdates: redemptionAndLimitOrderBalanceUpdates,
+  } = await updateMakers(
+    makerIDsByTakerBetId,
+    contract,
+    updatedMetrics,
+    pgTrans
+  )
   log('update makers took', Date.now() - bulkInsertEnd)
 
-  await updateAnswers(pgTrans, contract.id, answerUpdates)
-  await cancelLimitOrders(
-    pgTrans,
+  const balanceQuery = bulkIncrementBalancesQuery([
+    userBalanceUpdate,
+    ...redemptionAndLimitOrderBalanceUpdates,
+  ])
+  const insertBetsQuery = bulkInsertBetsQuery([
+    ...betsToInsert,
+    ...redemptionBetsToInsert,
+  ])
+  const metricsQuery = bulkUpdateContractMetricsQuery(redemptionUpdatedMetrics)
+  const streakIncrementedQuery = incrementStreakQuery(user, newBet.createdTime)
+  const contractUpdateQuery = updateDataQuery('contracts', 'id', contractUpdate)
+  const answerUpdateQuery = bulkUpdateQuery(
+    'answers',
+    ['id'],
+    answerUpdates.map(partialAnswerToRow)
+  )
+  const cancelLimitsQuery = cancelLimitOrdersQuery(
     allOrdersToCancel.map((o) => o.id)
   )
+
+  const results = await pgTrans.multi(
+    `${balanceQuery};
+     ${streakIncrementedQuery};
+     ${insertBetsQuery};
+     ${metricsQuery};
+     ${contractUpdateQuery};
+     ${answerUpdateQuery};
+     ${cancelLimitsQuery};
+     `
+  )
+  const userUpdates = results[0]
+  const streakIncremented = results[1][0].streak_incremented
+  broadcastUserUpdates(userUpdates)
+  broadcastUpdatedUser(
+    removeUndefinedProps({
+      id: user.id,
+      currentBettingStreak: streakIncremented
+        ? (user?.currentBettingStreak ?? 0) + 1
+        : undefined,
+      lastBetTime: newBet.createdTime,
+    })
+  )
+  // TODO: No reason to return the sql bet data, betsToInsert is fully formed
+  const insertedBets = results[2].map(convertBet)
+  const newContract = results[4].map(convertContract)[0]
+  log('updated contract', newContract)
+  const updatedValues = mapValues(
+    contractUpdate,
+    (_, k) => newContract[k as keyof Contract] ?? null
+  ) as any
+  broadcastUpdatedContract(newContract.visibility, updatedValues)
+  broadcastUpdatedAnswers(newContract.id, answerUpdates)
+  const cancelledLimitOrders = results[6].map(convertBet) as LimitBet[]
+  broadcastOrders(cancelledLimitOrders)
 
   log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
 
   return {
     contract,
     newBet,
-    betId: insertedBets[0].bet_id,
+    betId: betsToInsert[0].id,
     makers,
     allOrdersToCancel,
-    fullBets,
+    fullBets: insertedBets,
     user,
     betGroupId,
     streakIncremented,
@@ -889,8 +957,13 @@ export const updateMakers = async (
 
     allMakerIds.push(...Object.keys(spentByUser))
   }
+
   if (allUpdates.length === 0) {
-    return { bets: [], updatedMetrics: contractMetrics }
+    return {
+      betsToInsert: [],
+      updatedMetrics: contractMetrics,
+      balanceUpdates: [],
+    }
   }
 
   const bulkUpdateStart = Date.now()
@@ -898,29 +971,40 @@ export const updateMakers = async (
   const allUpdatedMetrics = await bulkUpdateUserMetricsWithNewBetsOnly(
     pgTrans,
     allFillsAsNewBets,
-    contractMetrics
+    contractMetrics,
+    false
   )
   const bulkUpdateEnd = Date.now()
   log(`bulkUpdateLimitOrders took ${bulkUpdateEnd - bulkUpdateStart}ms`)
 
-  await bulkIncrementBalances(
-    pgTrans,
-    Object.entries(allSpentByUser).map(([userId, spent]) => ({
+  const bulkLimitOrderBalanceUpdates = Object.entries(allSpentByUser).map(
+    ([userId, spent]) => ({
       id: userId,
       [contract.token === 'CASH' ? 'cashBalance' : 'balance']: -spent,
-    }))
+    })
   )
 
   const makerIds = uniq(allMakerIds)
-
   log('Redeeming shares for makers', makerIds)
-  return await redeemShares(
+  const {
+    betsToInsert: redemptionBets,
+    updatedMetrics: redemptionUpdatedMetrics,
+    balanceUpdates: redemptionBalanceUpdates,
+  } = await redeemShares(
     pgTrans,
-    allMakerIds,
+    makerIds,
     contract,
     allFillsAsNewBets,
     allUpdatedMetrics
   )
+
+  return {
+    betsToInsert: redemptionBets,
+    updatedMetrics: redemptionUpdatedMetrics,
+    balanceUpdates: redemptionBalanceUpdates.concat(
+      bulkLimitOrderBalanceUpdates
+    ),
+  }
 }
 
 export const getRoundedLimitProb = (limitProb: number | undefined) => {

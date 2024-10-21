@@ -214,28 +214,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'bet-ter': {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    returns: {} as CandidateBet & { betId: string },
-    props: z
-      .object({
-        contractId: z.string(),
-        amount: z.number().gte(1),
-        replyToCommentId: z.string().optional(),
-        limitProb: z.number().gte(0.01).lte(0.99).optional(),
-        expiresAt: z.number().optional(),
-        // Used for binary and new multiple choice contracts (cpmm-multi-1).
-        outcome: z.enum(['YES', 'NO']).default('YES'),
-        //Multi
-        answerId: z.string().optional(),
-        dryRun: z.boolean().optional(),
-        deps: z.array(z.string()).optional(),
-        deterministic: z.boolean().optional(),
-      })
-      .strict(),
-  },
   createuser: {
     method: 'POST',
     visibility: 'public',
@@ -289,7 +267,7 @@ export const API = (_apiTypeCheck = {
         groupId: z.string().optional(),
         limit: z.coerce.number().min(1).max(100).default(50),
         token: z.enum(['MANA', 'CASH']).default('MANA'),
-        kind: z.enum(['creator', 'profit', 'referral']),
+        kind: z.enum(['creator', 'profit', 'loss', 'volume', 'referral']),
       })
       .strict(),
   },

@@ -126,7 +126,7 @@ const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
 })
 
 // does not convert isOther, loverUserId
-const partialAnswerToRow = (answer: Partial<Answer>) => {
+export const partialAnswerToRow = (answer: Partial<Answer>) => {
   const partial: any = removeUndefinedProps(answerToRow(answer as any))
   delete partial.data
   return partial as Partial<Row<'answers'>>

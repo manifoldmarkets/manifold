@@ -258,6 +258,7 @@ export const VERIFIED_USERNAMES = [
   'patrissimo',
   'postjawline',
   'MatthewYglesias',
+  'MatthewYglesiasvuyf',
   'BillyMcRascal',
   'kyootbot',
   'MaximLott',

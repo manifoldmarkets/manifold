@@ -130,12 +130,6 @@ type User = {
   totalDeposits: number
   lastBetTime?: number
   currentBettingStreak?: number
-  profitCached: {
-    daily: number
-    weekly: number
-    monthly: number
-    allTime: number
-  }
 }
 ```
 

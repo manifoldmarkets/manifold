@@ -727,13 +727,6 @@ export type Database = {
             foreignKeyName: 'dashboards_creator_id_fkey'
             columns: ['creator_id']
             isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
-            isOneToOne: false
             referencedRelation: 'user_referrals_profit'
             referencedColumns: ['id']
           },
@@ -766,13 +759,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: 'delete_after_reading_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
-          },
           {
             foreignKeyName: 'delete_after_reading_user_id_fkey'
             columns: ['user_id']
@@ -908,13 +894,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: 'gidx_receipts_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
-          },
           {
             foreignKeyName: 'gidx_receipts_user_id_fkey'
             columns: ['user_id']
@@ -1140,13 +1119,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: 'kyc_bonus_rewards_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: true
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
-          },
           {
             foreignKeyName: 'kyc_bonus_rewards_user_id_fkey'
             columns: ['user_id']
@@ -2260,13 +2232,6 @@ export type Database = {
             foreignKeyName: 'reports_content_owner_id_fkey'
             columns: ['content_owner_id']
             isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            isOneToOne: false
             referencedRelation: 'user_referrals_profit'
             referencedColumns: ['id']
           },
@@ -2275,13 +2240,6 @@ export type Database = {
             columns: ['content_owner_id']
             isOneToOne: false
             referencedRelation: 'users'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_referrals'
             referencedColumns: ['id']
           },
           {
@@ -2804,13 +2762,6 @@ export type Database = {
             foreignKeyName: 'user_monitor_status_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'user_monitor_status_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
             referencedRelation: 'user_referrals_profit'
             referencedColumns: ['id']
           },
@@ -3171,13 +3122,6 @@ export type Database = {
             foreignKeyName: 'weekly_update_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
             referencedRelation: 'user_referrals_profit'
             referencedColumns: ['id']
           },
@@ -3238,21 +3182,12 @@ export type Database = {
         }
         Relationships: []
       }
-      user_referrals: {
-        Row: {
-          data: Json | null
-          id: string | null
-          rank: number | null
-          total_referrals: number | null
-        }
-        Relationships: []
-      }
       user_referrals_profit: {
         Row: {
-          data: Json | null
           id: string | null
           rank: number | null
           total_referrals: number | null
+          total_referred_cash_profit: number | null
           total_referred_profit: number | null
         }
         Relationships: []

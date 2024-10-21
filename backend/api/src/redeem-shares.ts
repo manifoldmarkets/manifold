@@ -11,15 +11,13 @@ import { log } from 'shared/utils'
 import { getNewSellBetInfo } from 'common/sell-bet'
 import * as crypto from 'crypto'
 import { getSellAllRedemptionPreliminaryBets } from 'common/calculate-cpmm-arbitrage'
-import { bulkIncrementBalances } from 'shared/supabase/users'
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { bulkInsertBets } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
-import { Bet } from 'common/bet'
+import { Bet, getNewBetId } from 'common/bet'
 import { Contract } from 'common/contract'
 import { MarginalBet } from 'common/calculate-metrics'
 import { ContractMetric } from 'common/contract-metric'
-
+import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
 export const redeemShares = async (
   pgTrans: SupabaseDirectClient,
   userIds: string[],
@@ -27,10 +25,18 @@ export const redeemShares = async (
   newBets: MarginalBet[],
   contractMetrics: ContractMetric[]
 ) => {
+  const betsToInsert: Bet[] = []
+  const balanceUpdates: {
+    id: string
+    balance?: number
+    cashBalance?: number
+  }[] = []
+
   if (!userIds.length)
     return {
-      bets: [],
+      betsToInsert,
       updatedMetrics: contractMetrics,
+      balanceUpdates,
     }
 
   const bets =
@@ -41,13 +47,6 @@ export const redeemShares = async (
           convertBet
         )
       : []
-
-  const betsToInsert: Omit<Bet, 'id'>[] = []
-  const balanceUpdates: {
-    id: string
-    balance?: number
-    cashBalance?: number
-  }[] = []
 
   for (const userId of userIds) {
     // This should work for any sum-to-one cpmm-multi contract, as well
@@ -105,6 +104,7 @@ export const redeemShares = async (
         const betGroupId = crypto.randomBytes(12).toString('hex')
         betsToInsert.push(
           ...sellBetCandidates.map((b) => ({
+            id: getNewBetId(),
             userId,
             ...b.newBet,
             betGroupId,
@@ -139,19 +139,16 @@ export const redeemShares = async (
         const answerId = metric.answerId ?? undefined
         const lastProb = orderBy(newUsersBets, 'createdTime', 'desc')[0]
           .probAfter
-        const [yesBet, noBet] = getRedemptionBets(
-          contract,
-          shares,
-          loanPayment,
-          lastProb,
-          answerId
+        betsToInsert.push(
+          ...getRedemptionBets(
+            contract,
+            shares,
+            loanPayment,
+            lastProb,
+            answerId,
+            userId
+          )
         )
-        const redemptionBets = [yesBet, noBet].map((b) => ({
-          userId,
-          ...b,
-        }))
-        betsToInsert.push(...redemptionBets)
-
         log('redeeming', {
           shares,
           netAmount,
@@ -169,19 +166,15 @@ export const redeemShares = async (
       }
     }
   }
-  let insertedBets: Bet[] = []
-  let updatedMetrics: ContractMetric[] = contractMetrics
-  if (betsToInsert.length > 0) {
-    const { insertedBets: betRows, updatedMetrics: newMetrics } =
-      await bulkInsertBets(betsToInsert, pgTrans, contractMetrics)
-    insertedBets = betRows.map(convertBet)
-    updatedMetrics = newMetrics
-  }
-  if (balanceUpdates.length > 0) {
-    await bulkIncrementBalances(pgTrans, balanceUpdates)
-  }
+  const updatedMetrics = await bulkUpdateUserMetricsWithNewBetsOnly(
+    pgTrans,
+    betsToInsert,
+    contractMetrics,
+    false
+  )
   return {
-    bets: insertedBets,
     updatedMetrics,
+    balanceUpdates,
+    betsToInsert,
   }
 }

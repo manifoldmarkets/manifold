@@ -7,7 +7,7 @@ import {
   createSupabaseDirectClient,
   SupabaseClient,
 } from 'shared/supabase/init'
-import { getUser, getUsers, log } from 'shared/utils'
+import { getUsers, log } from 'shared/utils'
 import { bulkInsert } from 'shared/supabase/utils'
 import { APIError } from 'common/api/utils'
 
@@ -100,14 +100,11 @@ export const saveWeeklyContractMetricsInternal = async () => {
 
   const results = await Promise.all(
     usersToSave.map(async (privateUser) => {
-      const user = await getUser(privateUser.id)
       const contractMetrics = usersToContractMetrics[privateUser.id]
       return {
         contract_metrics: contractMetrics,
         user_id: privateUser.id,
-        profit:
-          user?.profitCached.weekly ??
-          sum(contractMetrics.map((m) => m.from?.week.profit ?? 0)),
+        profit: sum(contractMetrics.map((m) => m.from?.week.profit ?? 0)),
         range_end: getDate(),
       }
     })

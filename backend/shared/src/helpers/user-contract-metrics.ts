@@ -10,7 +10,7 @@ import {
   calculateUserMetrics,
   MarginalBet,
 } from 'common/calculate-metrics'
-import { bulkUpsert } from 'shared/supabase/utils'
+import { bulkUpsert, bulkUpsertQuery } from 'shared/supabase/utils'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
@@ -45,6 +45,24 @@ export async function updateContractMetricsForUsers(
   await bulkUpdateContractMetrics(metrics)
 }
 
+const getColumnsFromMetrics = (metrics: Omit<ContractMetric, 'id'>[]) =>
+  metrics.map(
+    (m) =>
+      ({
+        contract_id: m.contractId,
+        user_id: m.userId,
+        data: m,
+        has_shares: m.hasShares,
+        profit: m.profit,
+        has_no_shares: m.hasNoShares,
+        has_yes_shares: m.hasYesShares,
+        total_shares_no: m.totalShares['NO'] ?? null,
+        total_shares_yes: m.totalShares['YES'] ?? null,
+        answer_id: m.answerId,
+        profit_adjustment: m.profitAdjustment ?? null,
+      } as Tables['user_contract_metrics']['Insert'])
+  )
+
 export async function bulkUpdateContractMetrics(
   metrics: Omit<ContractMetric, 'id'>[],
   pg: SupabaseDirectClient = createSupabaseDirectClient()
@@ -53,22 +71,17 @@ export async function bulkUpdateContractMetrics(
     pg,
     'user_contract_metrics',
     [],
-    metrics.map(
-      (m) =>
-        ({
-          contract_id: m.contractId,
-          user_id: m.userId,
-          data: m,
-          has_shares: m.hasShares,
-          profit: m.profit,
-          has_no_shares: m.hasNoShares,
-          has_yes_shares: m.hasYesShares,
-          total_shares_no: m.totalShares['NO'] ?? null,
-          total_shares_yes: m.totalShares['YES'] ?? null,
-          answer_id: m.answerId,
-          profit_adjustment: m.profitAdjustment ?? null,
-        } as Tables['user_contract_metrics']['Insert'])
-    ),
+    getColumnsFromMetrics(metrics),
+    `CONFLICT (user_id, contract_id, coalesce(answer_id, ''))`
+  )
+}
+export function bulkUpdateContractMetricsQuery(
+  metrics: Omit<ContractMetric, 'id'>[]
+) {
+  return bulkUpsertQuery(
+    'user_contract_metrics',
+    [],
+    getColumnsFromMetrics(metrics),
     `CONFLICT (user_id, contract_id, coalesce(answer_id, ''))`
   )
 }
@@ -196,7 +209,8 @@ export const rerankContractMetricsManually = async (
 export const bulkUpdateUserMetricsWithNewBetsOnly = async (
   pgTrans: SupabaseDirectClient,
   marginalBets: MarginalBet[],
-  contractMetrics: ContractMetric[]
+  contractMetrics: ContractMetric[],
+  writeUpdates: boolean
 ) => {
   if (marginalBets.every((b) => b.shares === 0 && b.amount === 0)) {
     return contractMetrics
@@ -207,7 +221,7 @@ export const bulkUpdateUserMetricsWithNewBetsOnly = async (
   const contractId = marginalBets[0].contractId
 
   // TODO: remove this bit if we never see the missing metrics log
-  const missingMetrics = marginalBets.filter(
+  const missingMetricsBets = marginalBets.filter(
     (b) =>
       b.amount !== 0 &&
       b.shares !== 0 &&
@@ -218,16 +232,22 @@ export const bulkUpdateUserMetricsWithNewBetsOnly = async (
           m.answerId == b.answerId
       )
   )
-  if (missingMetrics.length > 0) {
+  if (missingMetricsBets.length > 0) {
     const missingContractMetrics = await getContractMetrics(
       pgTrans,
       userIds,
       contractId,
-      filterDefined(missingMetrics.map((b) => b.answerId)),
+      filterDefined(missingMetricsBets.map((b) => b.answerId)),
       false
     )
     if (missingContractMetrics.length > 0) {
-      log('Found missing metrics:', missingContractMetrics.length)
+      log('Found missing metrics:', {
+        contractId,
+        userIds,
+        answerIds,
+        missingMetricsBets,
+        missingContractMetrics,
+      })
       contractMetrics.push(...missingContractMetrics)
     }
   }
@@ -238,7 +258,9 @@ export const bulkUpdateUserMetricsWithNewBetsOnly = async (
     contractId,
     isMultiMarket
   )
-  await bulkUpdateContractMetrics(updatedMetrics, pgTrans)
+  if (writeUpdates) {
+    await bulkUpdateContractMetrics(updatedMetrics, pgTrans)
+  }
   return uniqBy(
     [...(updatedMetrics ?? []), ...contractMetrics],
     (m) => m.userId + m.answerId + m.contractId

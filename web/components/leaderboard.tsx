@@ -8,7 +8,7 @@ import { EmptyAvatar } from './widgets/avatar'
 
 export interface LeaderboardEntry {
   userId: string
-  score?: number
+  score: number
   rank?: number | null
 }
 
@@ -96,19 +96,21 @@ export function LoadingLeaderboard(props: {
               ))}
             </tr>
           </thead>
-          {range(maxToShow).map((i) => (
-            <tr key={i}>
-              <td className={'w-[4.5rem] min-w-[4.5rem] '}>{i + 1}</td>
-              <td className="animate-pulse">
-                <EmptyAvatar />
-              </td>
-              {columns.map((column, index) => (
-                <td key={index}>
-                  <div className="bg-ink-300 h-4 w-full animate-pulse rounded-full" />
+          <tbody>
+            {range(maxToShow).map((i) => (
+              <tr key={i}>
+                <td className={'w-[4.5rem] min-w-[4.5rem] '}>{i + 1}</td>
+                <td className="animate-pulse">
+                  <EmptyAvatar />
                 </td>
-              ))}
-            </tr>
-          ))}
+                {columns.map((_, index) => (
+                  <td key={index}>
+                    <div className="bg-ink-300 h-4 w-full animate-pulse rounded-full" />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
         </Table>
       </div>
     </div>
