@@ -168,7 +168,7 @@ export const redeemShares = async (
   }
   const updatedMetrics = await bulkUpdateUserMetricsWithNewBetsOnly(
     pgTrans,
-    bets,
+    betsToInsert,
     contractMetrics,
     false
   )
