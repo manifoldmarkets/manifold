@@ -220,7 +220,7 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
     )
   )
 
-  await revalidateStaticProps('/leaderboards')
+  // await revalidateStaticProps('/leaderboards')
 
   log('Done.')
 }

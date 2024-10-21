@@ -130,7 +130,7 @@ export async function updateUserMetricsWithBets(
     )
   )
 
-  await revalidateStaticProps('/leaderboards')
+  // await revalidateStaticProps('/leaderboards')
 
   log('Done.')
 }
