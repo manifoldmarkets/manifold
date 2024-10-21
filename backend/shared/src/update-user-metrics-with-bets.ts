@@ -3,7 +3,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { getUsers, log, revalidateStaticProps } from 'shared/utils'
+import { getUsers, log } from 'shared/utils'
 import { groupBy, sortBy, sumBy, uniq } from 'lodash'
 import { Contract, CPMMMultiContract } from 'common/contract'
 import { calculateMetricsByContractAndAnswer } from 'common/calculate-metrics'

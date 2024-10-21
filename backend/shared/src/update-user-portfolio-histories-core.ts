@@ -8,7 +8,6 @@ import {
   getUsers,
   isProd,
   log,
-  revalidateStaticProps,
 } from 'shared/utils'
 import { groupBy, sum, sumBy, uniq } from 'lodash'
 import {
