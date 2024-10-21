@@ -53,7 +53,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
 import { AlertBox } from '../widgets/alert-box'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
-import { orderBy, maxBy, minBy } from 'lodash'
+import { orderBy } from 'lodash'
 import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
 import {
   MultiNumericDistributionChart,

@@ -27,7 +27,6 @@ import {
   ZoomParams,
 } from '../helpers'
 import { extent } from 'd3-array'
-import { createSearchParamsBailoutProxy } from 'next/dist/client/components/searchparams-bailout-proxy'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
