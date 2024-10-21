@@ -53,7 +53,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
 import { AlertBox } from '../widgets/alert-box'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
-import { orderBy } from 'lodash'
+import { orderBy, maxBy, minBy } from 'lodash'
 import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
 import {
   MultiNumericDistributionChart,
@@ -101,6 +101,7 @@ export const ContractOverview = memo(
             contract={contract}
             resolutionRating={resolutionRating}
             chartAnnotations={chartAnnotations}
+            zoomY
           />
         )
       case 'PSEUDO_NUMERIC':
@@ -124,6 +125,7 @@ export const ContractOverview = memo(
               setShowResolver={setShowResolver}
               resolutionRating={resolutionRating}
               chartAnnotations={chartAnnotations}
+              zoomY
             />
           )
         }
@@ -136,6 +138,7 @@ export const ContractOverview = memo(
             resolutionRating={resolutionRating}
             onAnswerCommentClick={onAnswerCommentClick}
             chartAnnotations={chartAnnotations}
+            zoomY
           />
         )
       case 'NUMBER':
@@ -169,8 +172,9 @@ export const BinaryOverview = (props: {
   betPoints: HistoryPoint<Partial<Bet>>[]
   resolutionRating?: ReactNode
   chartAnnotations: ChartAnnotation[]
+  zoomY?: boolean
 }) => {
-  const { contract, resolutionRating } = props
+  const { contract, resolutionRating, zoomY } = props
   const user = useUser()
 
   const [showZoomer, setShowZoomer] = useState(false)
@@ -228,6 +232,7 @@ export const BinaryOverview = (props: {
         setHoveredAnnotation={setHoveredAnnotation}
         pointerMode={pointerMode}
         chartAnnotations={chartAnnotations}
+        zoomY={zoomY}
       />
       {tradingAllowed(contract) && (
         <BinaryBetPanel contract={contract} user={user} />
@@ -244,6 +249,7 @@ const ChoiceOverview = (props: {
   setShowResolver: (show: boolean) => void
   onAnswerCommentClick: (answer: Answer) => void
   chartAnnotations: ChartAnnotation[]
+  zoomY?: boolean
 }) => {
   const {
     points,
@@ -252,6 +258,7 @@ const ChoiceOverview = (props: {
     resolutionRating,
     setShowResolver,
     onAnswerCommentClick,
+    zoomY,
   } = props
 
   const currentUser = useUser()
@@ -376,6 +383,7 @@ const ChoiceOverview = (props: {
               )}
               hoveredChartPosition={hoveredChartPosition}
               setHoveredChartPosition={setHoveredChartPosition}
+              zoomY={zoomY}
             />
           )}
         </SizedContainer>
@@ -580,9 +588,16 @@ const BinaryChoiceOverview = (props: {
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
   chartAnnotations: ChartAnnotation[]
+  zoomY?: boolean
 }) => {
-  const { points, contract, showResolver, resolutionRating, setShowResolver } =
-    props
+  const {
+    points,
+    contract,
+    showResolver,
+    resolutionRating,
+    setShowResolver,
+    zoomY,
+  } = props
   const user = useUser()
 
   const [showZoomer, setShowZoomer] = useState(false)
@@ -655,6 +670,7 @@ const BinaryChoiceOverview = (props: {
               height={h}
               betPoints={betPoints}
               contract={contract}
+              zoomY={zoomY}
             />
           )}
         </SizedContainer>

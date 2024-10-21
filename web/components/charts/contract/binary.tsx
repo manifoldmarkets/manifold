@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { first, last } from 'lodash'
+import { first, last, minBy, maxBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import clsx from 'clsx'
 
@@ -29,13 +29,40 @@ import { Bet } from 'common/bet'
 import { SizedContainer } from 'web/components/sized-container'
 import { ChartAnnotations } from '../chart-annotations'
 
+const getVisibleYRange = (params: {
+  data: SingleContractPoint[]
+  zoomY?: boolean
+  start: number
+  end: number | null
+  zoomParams?: ZoomParams
+}) => {
+  const { data, zoomY, start, end, zoomParams } = params
+
+  if (!zoomY) return [0, 1]
+
+  const [minXDate, maxXDate] = zoomParams?.viewXScale.domain() ?? [null, null]
+  const minX = minXDate ? minXDate.getTime() : start
+  const maxX = maxXDate ? maxXDate.getTime() : end
+
+  const visibleData = data.filter(
+    (p) => p.x >= minX && p.x <= (maxX ?? Infinity)
+  )
+  const minYValue = zoomY
+    ? Math.max(Math.floor((minBy(visibleData, 'y')?.y ?? 0) * 10) / 10, 0)
+    : 0
+  const maxYValue = zoomY
+    ? Math.min(Math.ceil((maxBy(visibleData, 'y')?.y ?? 1) * 10) / 10, 1)
+    : 1
+
+  return [minYValue, maxYValue]
+}
+
 export const BinaryContractChart = (props: {
   contract: BinaryContract
   betPoints: SingleContractPoint[]
   width: number
   height: number
   zoomParams?: ZoomParams
-  percentBounds?: { max?: number; min?: number }
   showZoomer?: boolean
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
@@ -43,13 +70,13 @@ export const BinaryContractChart = (props: {
   chartAnnotations?: ChartAnnotation[]
   graphColor?: string
   noWatermark?: boolean
+  zoomY?: boolean
 }) => {
   const {
     contract,
     width,
     height,
     zoomParams,
-    percentBounds,
     betPoints,
     showZoomer,
     hoveredAnnotation,
@@ -58,6 +85,7 @@ export const BinaryContractChart = (props: {
     chartAnnotations,
     graphColor,
     noWatermark,
+    zoomY,
   } = props
 
   const start = first(betPoints)?.x ?? contract.createdTime
@@ -77,10 +105,15 @@ export const BinaryContractChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
 
   const xScale = scaleTime([start, rightmostDate], [0, width])
-  const yScale = scaleLinear(
-    [percentBounds?.min ?? 0, percentBounds?.max ?? 1],
-    [height, 0]
-  )
+
+  const [minYValue, maxYValue] = getVisibleYRange({
+    data,
+    zoomY,
+    start,
+    end,
+    zoomParams,
+  })
+  const yScale = scaleLinear([minYValue, maxYValue], [height, 0])
 
   return (
     <SingleValueHistoryChart
@@ -115,7 +148,6 @@ export function SizedBinaryChart(props: {
   zoomParams?: ZoomParams
   showAnnotations?: boolean
   betPoints: HistoryPoint<Partial<Bet>>[]
-  percentBounds?: { max: number; min: number }
   contract: BinaryContract
   className?: string
   size?: 'sm' | 'md'
@@ -125,6 +157,7 @@ export function SizedBinaryChart(props: {
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
   noWatermark?: boolean
+  zoomY?: boolean
 }) {
   const {
     showZoomer,
@@ -132,7 +165,6 @@ export function SizedBinaryChart(props: {
     showAnnotations,
     betPoints,
     contract,
-    percentBounds,
     className,
     size = 'md',
     pointerMode,
@@ -140,6 +172,7 @@ export function SizedBinaryChart(props: {
     hoveredAnnotation,
     chartAnnotations,
     noWatermark,
+    zoomY,
   } = props
 
   return (
@@ -159,13 +192,13 @@ export function SizedBinaryChart(props: {
             betPoints={betPoints}
             showZoomer={showZoomer}
             zoomParams={zoomParams}
-            percentBounds={percentBounds}
             contract={contract}
             hoveredAnnotation={hoveredAnnotation}
             setHoveredAnnotation={setHoveredAnnotation}
             pointerMode={pointerMode}
             chartAnnotations={chartAnnotations}
             noWatermark={noWatermark}
+            zoomY={zoomY}
           />
         )}
       </SizedContainer>
@@ -186,18 +219,11 @@ export const MultiBinaryChart = (props: {
   width: number
   height: number
   zoomParams?: ZoomParams
-  percentBounds?: { max?: number; min?: number }
   showZoomer?: boolean
+  zoomY?: boolean
 }) => {
-  const {
-    contract,
-    width,
-    height,
-    zoomParams,
-    percentBounds,
-    betPoints,
-    showZoomer,
-  } = props
+  const { contract, width, height, zoomParams, betPoints, showZoomer, zoomY } =
+    props
 
   const start = first(betPoints)?.x ?? contract.createdTime
   const end = getEndDate(contract)
@@ -218,10 +244,16 @@ export const MultiBinaryChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
 
   const xScale = scaleTime([start, rightmostDate], [0, width])
-  const yScale = scaleLinear(
-    [percentBounds?.min ?? 0, percentBounds?.max ?? 1],
-    [height, 0]
-  )
+
+  const [minYValue, maxYValue] = getVisibleYRange({
+    data,
+    zoomY,
+    start,
+    end,
+    zoomParams,
+  })
+
+  const yScale = scaleLinear([minYValue, maxYValue], [height, 0])
 
   return (
     <SingleValueStackedHistoryChart
