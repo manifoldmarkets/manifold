@@ -992,11 +992,12 @@ export const updateMakers = async (
     balanceUpdates: redemptionBalanceUpdates,
   } = await redeemShares(
     pgTrans,
-    allMakerIds,
+    makerIds,
     contract,
     allFillsAsNewBets,
     allUpdatedMetrics
   )
+
   return {
     betsToInsert: redemptionBets,
     updatedMetrics: redemptionUpdatedMetrics,
