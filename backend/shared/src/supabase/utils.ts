@@ -1,6 +1,6 @@
 import { sortBy } from 'lodash'
 import { pgp, SupabaseDirectClient } from './init'
-import { DataFor, Tables, TableName, Column, Row } from 'common/supabase/utils'
+import { Column, DataFor, Row, TableName, Tables } from 'common/supabase/utils'
 
 export async function getIds<T extends TableName>(
   db: SupabaseDirectClient,
@@ -21,6 +21,21 @@ export async function insert<
   return await db.one<Row<T>>(q + ` returning *`)
 }
 
+export function bulkInsertQuery<
+  T extends TableName,
+  ColumnValues extends Tables[T]['Insert']
+>(table: T, values: ColumnValues[]) {
+  if (values.length == 0) {
+    return 'select 1 where false'
+  }
+  const columnNames = Object.keys(values[0])
+  const cs = new pgp.helpers.ColumnSet(columnNames, { table })
+  const query = pgp.helpers.insert(values, cs)
+  // Hack to properly cast values.
+  const q = query.replace(/::(\w*)'/g, "'::$1")
+  return q + ` returning *`
+}
+
 export async function bulkInsert<
   T extends TableName,
   ColumnValues extends Tables[T]['Insert']
@@ -28,12 +43,8 @@ export async function bulkInsert<
   if (values.length == 0) {
     return []
   }
-  const columnNames = Object.keys(values[0])
-  const cs = new pgp.helpers.ColumnSet(columnNames, { table })
-  const query = pgp.helpers.insert(values, cs)
-  // Hack to properly cast values.
-  const q = query.replace(/::(\w*)'/g, "'::$1")
-  return await db.many<Row<T>>(q + ` returning *`)
+  const query = bulkInsertQuery(table, values)
+  return await db.many<Row<T>>(query)
 }
 
 export async function update<
@@ -91,7 +102,17 @@ export async function bulkUpsert<
   values: ColumnValues[],
   onConflict?: string
 ) {
-  if (!values.length) return
+  if (!values.length) return []
+  const query = bulkUpsertQuery(table, idField, values, onConflict)
+  return await db.none(query)
+}
+
+export function bulkUpsertQuery<
+  T extends TableName,
+  ColumnValues extends Tables[T]['Insert'],
+  Col extends Column<T>
+>(table: T, idField: Col | Col[], values: ColumnValues[], onConflict?: string) {
+  if (!values.length) return 'select 1 where false'
 
   const columnNames = Object.keys(values[0])
   const cs = new pgp.helpers.ColumnSet(columnNames, { table })
@@ -101,13 +122,12 @@ export async function bulkUpsert<
 
   const primaryKey = Array.isArray(idField) ? idField.join(', ') : idField
   const upsertAssigns = cs.assignColumns({ from: 'excluded', skip: idField })
-  const query =
+  return (
     `${baseQueryReplaced} on ` +
     (onConflict ? onConflict : `conflict(${primaryKey})`) +
     ' ' +
     (upsertAssigns ? `do update set ${upsertAssigns}` : `do nothing`)
-
-  await db.none(query)
+  )
 }
 
 // Replacement for BulkWriter

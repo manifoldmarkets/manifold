@@ -1,7 +1,7 @@
 import { groupBy, partition, sumBy } from 'lodash'
 import { CPMMMultiContract, add_answers_mode } from 'common/contract'
 import { User } from 'common/user'
-import { CandidateBet, getBetDownToOneMultiBetInfo } from 'common/new-bet'
+import { getBetDownToOneMultiBetInfo } from 'common/new-bet'
 import { Answer, getMaximumAnswers } from 'common/answer'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { getTieredAnswerCost } from 'common/economy'
@@ -42,12 +42,11 @@ import { getTierFromLiquidity } from 'common/tier'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { runShortTrans } from 'shared/short-transaction'
-import { LimitBet, maker } from 'common/bet'
+import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import { followContractInternal } from 'api/follow-contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { filterDefined } from 'common/util/array'
-
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
   auth
@@ -418,7 +417,7 @@ async function convertOtherAnswerShares(
   )
 
   const betsByUserId = groupBy(bets, (b) => b.userId)
-  const newBets: (CandidateBet & { userId: string })[] = []
+  const newBets: Bet[] = []
 
   // Gain YES shares in new answer for each YES share in Other.
   for (const [userId, bets] of Object.entries(betsByUserId)) {
@@ -427,9 +426,8 @@ async function convertOtherAnswerShares(
       (b) => b.shares * (b.outcome === 'YES' ? 1 : -1)
     )
     if (!floatingEqual(position, 0) && position > 0) {
-      const freeYesSharesBet: CandidateBet & {
-        userId: string
-      } = {
+      const freeYesSharesBet: Bet = {
+        id: getNewBetId(),
         contractId,
         userId,
         answerId: newAnswer.id,
@@ -458,9 +456,8 @@ async function convertOtherAnswerShares(
       (b) => b.shares * (b.outcome === 'YES' ? -1 : 1)
     )
     if (!floatingEqual(noPosition, 0) && noPosition > 0) {
-      const convertNoSharesBet: CandidateBet & {
-        userId: string
-      } = {
+      const convertNoSharesBet: Bet = {
+        id: getNewBetId(),
         contractId,
         userId,
         answerId: otherAnswer.id,
@@ -483,9 +480,8 @@ async function convertOtherAnswerShares(
         (a) => a.id !== newAnswer.id && a.id !== otherAnswer.id
       )
       for (const answer of previousAnswers) {
-        const gainYesSharesBet: CandidateBet & {
-          userId: string
-        } = {
+        const gainYesSharesBet: Bet = {
+          id: getNewBetId(),
           contractId,
           userId,
           answerId: answer.id,
@@ -514,6 +510,6 @@ async function convertOtherAnswerShares(
     true
   )
 
-  await bulkInsertBets(newBets, pgTrans, contractMetrics)
+  await bulkInsertBets(pgTrans, newBets, contractMetrics)
   return answers
 }

@@ -1,9 +1,8 @@
 import { partition, sumBy } from 'lodash'
 
-import { Bet } from './bet'
+import { Bet, getNewBetId } from './bet'
 import { Contract } from './contract'
 import { noFees } from './fees'
-import { CandidateBet } from './new-bet'
 import { removeUndefinedProps } from './util/object'
 import { ContractMetric } from './contract-metric'
 
@@ -42,10 +41,13 @@ export const getRedemptionBets = (
   shares: number,
   loanPayment: number,
   prob: number,
-  answerId: string | undefined
+  answerId: string | undefined,
+  userId: string
 ) => {
   const createdTime = Date.now()
-  const yesBet: CandidateBet = removeUndefinedProps({
+  const yesBet: Bet = removeUndefinedProps({
+    id: getNewBetId(),
+    userId,
     contractId: contract.id,
     amount: prob * -shares,
     shares: -shares,
@@ -59,7 +61,9 @@ export const getRedemptionBets = (
     visibility: contract.visibility,
     answerId,
   })
-  const noBet: CandidateBet = removeUndefinedProps({
+  const noBet: Bet = removeUndefinedProps({
+    id: getNewBetId(),
+    userId,
     contractId: contract.id,
     amount: (1 - prob) * -shares,
     shares: -shares,

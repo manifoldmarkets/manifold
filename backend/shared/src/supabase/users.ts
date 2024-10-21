@@ -14,6 +14,8 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { getBettingStreakResetTimeBeforeNow } from 'shared/utils'
 import { log } from 'node:console'
+import { groupBy, mapValues, sumBy } from 'lodash'
+import { Row } from 'common/supabase/utils'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
@@ -211,33 +213,22 @@ export const bulkIncrementBalances = async (
   }[]
 ) => {
   if (userUpdates.length === 0) return
-
-  const values = userUpdates
-    .map((update) =>
-      pgp.as.format(`($1, $2, $3, $4, $5, $6)`, [
-        update.id,
-        update.balance ?? 0,
-        update.cashBalance ?? 0,
-        update.spiceBalance ?? 0,
-        update.totalDeposits ?? 0,
-        update.totalCashDeposits ?? 0,
-      ])
-    )
-    .join(',\n')
-
-  const results = await db.many(`update users as u
-    set
-        balance = u.balance + v.balance,
-        cash_balance = u.cash_balance + v.cash_balance,
-        spice_balance = u.spice_balance + v.spice_balance,
-        total_deposits = u.total_deposits + v.total_deposits,
-        total_cash_deposits = u.total_cash_deposits + v.total_cash_deposits
-    from (values ${values}) as v(id, balance, cash_balance, spice_balance, total_deposits, total_cash_deposits)
-    where u.id = v.id
-    returning u.id, u.balance, u.cash_balance, u.spice_balance, u.total_deposits, u.total_cash_deposits
-  `)
-
-  for (const row of results) {
+  const query = bulkIncrementBalancesQuery(userUpdates)
+  const results = await db.many(query)
+  broadcastUserUpdates(results)
+}
+export const broadcastUserUpdates = (
+  userUpdates: Pick<
+    Row<'users'>,
+    | 'id'
+    | 'balance'
+    | 'cash_balance'
+    | 'spice_balance'
+    | 'total_deposits'
+    | 'total_cash_deposits'
+  >[]
+) => {
+  for (const row of userUpdates) {
     broadcastUpdatedUser({
       id: row.id,
       balance: row.balance,
@@ -247,6 +238,55 @@ export const bulkIncrementBalances = async (
       totalCashDeposits: row.total_cash_deposits,
     })
   }
+}
+
+export const bulkIncrementBalancesQuery = (
+  userUpdates: {
+    id: string
+    balance?: number
+    cashBalance?: number
+    spiceBalance?: number
+    totalDeposits?: number
+    totalCashDeposits?: number
+  }[]
+) => {
+  if (userUpdates.length === 0) return 'select 1 where false'
+
+  // Group and sum updates for duplicate user IDs
+  const groupedUpdates = groupBy(userUpdates, 'id')
+  const summedUpdates = mapValues(groupedUpdates, (updates) => ({
+    id: updates[0].id,
+    balance: sumBy(updates, 'balance') ?? 0,
+    cashBalance: sumBy(updates, 'cashBalance') ?? 0,
+    spiceBalance: sumBy(updates, 'spiceBalance') ?? 0,
+    totalDeposits: sumBy(updates, 'totalDeposits') ?? 0,
+    totalCashDeposits: sumBy(updates, 'totalCashDeposits') ?? 0,
+  }))
+
+  const values = Object.values(summedUpdates)
+    .map((update) =>
+      pgp.as.format(`($1, $2, $3, $4, $5, $6)`, [
+        update.id,
+        update.balance,
+        update.cashBalance,
+        update.spiceBalance,
+        update.totalDeposits,
+        update.totalCashDeposits,
+      ])
+    )
+    .join(',\n')
+
+  return `update users as u
+    set
+        balance = u.balance + v.balance,
+        cash_balance = u.cash_balance + v.cash_balance,
+        spice_balance = u.spice_balance + v.spice_balance,
+        total_deposits = u.total_deposits + v.total_deposits,
+        total_cash_deposits = u.total_cash_deposits + v.total_cash_deposits
+    from (values ${values}) as v(id, balance, cash_balance, spice_balance, total_deposits, total_cash_deposits)
+    where u.id = v.id
+    returning u.id, u.balance, u.cash_balance, u.spice_balance, u.total_deposits, u.total_cash_deposits
+    `
 }
 
 export const getUserIdFromReferralCode = async (
