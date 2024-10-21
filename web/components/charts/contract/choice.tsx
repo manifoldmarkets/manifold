@@ -26,6 +26,7 @@ import {
   TooltipProps,
   ZoomParams,
 } from '../helpers'
+import { extent } from 'd3-array'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -117,6 +118,7 @@ export const ChoiceContractChart = (props: {
   chartPositions?: ChartPosition[]
   hoveredChartPosition?: ChartPosition | null
   setHoveredChartPosition?: (position: ChartPosition | null) => void
+  zoomY?: boolean
 }) => {
   const {
     contract,
@@ -134,6 +136,7 @@ export const ChoiceContractChart = (props: {
     chartPositions,
     hoveredChartPosition,
     setHoveredChartPosition,
+    zoomY,
   } = props
 
   const start = contract.createdTime
@@ -180,9 +183,23 @@ export const ChoiceContractChart = (props: {
     ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0)
   )
   const rightmostDate = getRightmostVisibleDate(end, rightestPointX, now)
-  const xScale = scaleTime([start, rightmostDate], [0, width])
-  const yScale = scaleLinear([0, 1], [height, 0])
   const chosenAnswerIds = buildArray(selectedAnswerIds, highlightAnswerId)
+
+  const graphedData = pick(data, chosenAnswerIds)
+
+  const [lowestPoint, highestPoint] = useMemo(() => {
+    if (!zoomY) return [0, 1]
+
+    const allPoints = Object.values(graphedData).flatMap(({ points }) =>
+      points.map((p) => p.y)
+    )
+    const [min, max] = extent(allPoints) as [number, number]
+    // return [Math.floor(min * 10) / 10, Math.ceil(max * 10) / 10]
+    return [min, max]
+  }, [graphedData, zoomY])
+
+  const xScale = scaleTime([start, rightmostDate], [0, width])
+  const yScale = scaleLinear([lowestPoint, highestPoint], [height, 0])
 
   return (
     <MultiValueHistoryChart
@@ -192,7 +209,7 @@ export const ChoiceContractChart = (props: {
       yScale={yScale}
       zoomParams={zoomParams}
       showZoomer={showZoomer}
-      data={pick(data, chosenAnswerIds)}
+      data={graphedData}
       hoveringId={highlightAnswerId}
       Tooltip={
         !zoomParams
