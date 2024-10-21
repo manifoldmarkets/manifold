@@ -122,25 +122,19 @@ export async function getBestAndWorstUserContractMetrics(
   from: 'day' | 'week' | 'month' | 'all',
   limit: number
 ) {
-  const orderString =
-    from !== 'all' ? `data->from->${from}->profit` : 'data->profit'
+  const orderString = from == 'all' ? 'profit' : `data->from->${from}->profit`
   const { data: negative } = await run(
     selectJson(db, 'user_contract_metrics')
       .eq('user_id', userId)
       .is('answer_id', null)
-      .order(orderString as any, {
-        ascending: true,
-      })
+      .order(orderString, { ascending: true })
       .limit(limit)
   )
   const { data: profit } = await run(
     selectJson(db, 'user_contract_metrics')
       .eq('user_id', userId)
       .is('answer_id', null)
-      .order(orderString as any, {
-        ascending: false,
-        nullsFirst: false,
-      })
+      .order(orderString, { ascending: false, nullsFirst: false })
       .limit(limit)
   )
   return uniqBy([...profit, ...negative], (d) => d.data.contractId).map(
@@ -155,24 +149,18 @@ export async function getUsersContractMetricsOrderedByProfit(
 ) {
   const chunks = chunk(userIds, 100)
   const promises = chunks.map(async (chunk) => {
-    const orderString =
-      from !== 'all' ? `data->from->${from}->profit` : 'data->profit'
+    const orderString = from == 'all' ? 'profit' : `data->from->${from}->profit`
     const { data: negative } = await run(
       selectJson(db, 'user_contract_metrics')
         .in('user_id', chunk)
         .is('answer_id', null)
-        .order(orderString as any, {
-          ascending: true,
-        })
+        .order(orderString, { ascending: true })
     )
     const { data: profit } = await run(
       selectJson(db, 'user_contract_metrics')
         .in('user_id', chunk)
         .is('answer_id', null)
-        .order(orderString as any, {
-          ascending: false,
-          nullsFirst: false,
-        })
+        .order(orderString, { ascending: false, nullsFirst: false })
     )
     // We want most profitable and least profitable
     return [...profit, ...negative.reverse()].map(
@@ -245,39 +233,33 @@ export async function getOrderedContractMetricRowsForContractId(
   order: 'profit' | 'shares' = 'profit',
   limit: number = 50
 ) {
-  let q1 = db
+  const q1 = db
     .from('user_contract_metrics')
     .select('*')
     .eq('contract_id', contractId)
     .limit(limit)
-  let q2 = db
+  const q2 = db
     .from('user_contract_metrics')
     .select('*')
     .eq('contract_id', contractId)
     .limit(limit)
 
   if (answerId) {
-    q1 = q1.eq('answer_id', answerId)
-    q2 = q2.eq('answer_id', answerId)
+    q1.eq('answer_id', answerId)
+    q2.eq('answer_id', answerId)
   } else {
-    q1 = q1.is('answer_id', null)
-    q2 = q2.is('answer_id', null)
+    q1.is('answer_id', null)
+    q2.is('answer_id', null)
   }
 
   if (order === 'shares') {
-    q1 = q1
-      .eq(`has_yes_shares`, true)
-      .order(`total_shares_yes`, { ascending: false })
-    q2 = q2
-      .eq(`has_no_shares`, true)
-      .order(`total_shares_no`, { ascending: false })
+    q1.eq(`has_yes_shares`, true).order(`total_shares_yes`, {
+      ascending: false,
+    })
+    q2.eq(`has_no_shares`, true).order(`total_shares_no`, { ascending: false })
   } else {
-    q1 = q1
-      .order(`profit`, { ascending: false, nullsFirst: false })
-      .gt(`profit`, 0)
-    q2 = q2
-      .order(`profit`, { ascending: true, nullsFirst: false })
-      .lt(`profit`, 0)
+    q1.order(`profit`, { ascending: false, nullsFirst: false }).gt(`profit`, 0)
+    q2.order(`profit`, { ascending: true, nullsFirst: false }).lt(`profit`, 0)
   }
   const { data: q1Data } = await run(q1)
   const { data: q2Data } = await run(q2)
@@ -290,13 +272,13 @@ export async function getUserContractMetrics(
   db: SupabaseClient,
   answerId: string | undefined | null // undefined means any answer id goes
 ) {
-  let q = selectJson(db, 'user_contract_metrics')
+  const q = selectJson(db, 'user_contract_metrics')
     .eq('user_id', userId)
     .eq('contract_id', contractId)
   if (answerId === null) {
-    q = q.is('answer_id', null)
+    q.is('answer_id', null)
   } else if (answerId) {
-    q = q.eq('answer_id', answerId)
+    q.eq('answer_id', answerId)
   }
 
   const { data } = await run(q)
