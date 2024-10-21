@@ -1,6 +1,7 @@
 import { runScript } from './run-script'
-import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 import { chunk } from 'lodash'
+import { updateUserMetricsWithBets } from 'shared/update-user-metrics-with-bets'
+import { WEEK_MS } from 'common/util/time'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -12,12 +13,11 @@ if (require.main === module) {
     const startTime = new Date(0).toISOString()
     const allUserIds = await pg.map(
       `
-               select distinct users.id, users.created_time from users
-               join contract_bets cb on users.id = cb.user_id
-               where users.created_time > $1
-    --           select id, created_time from users where
-    --           data->>'lastBetTime' is not null
-              order by users.created_time
+       select distinct users.id, users.created_time from users
+       join contract_bets cb on users.id = cb.user_id
+       where users.created_time > $1
+--        and cb.created_time > now () - interval '2 week'
+       order by users.created_time
                 `,
       [startTime],
       (row) => [row.id, row.created_time]
@@ -26,9 +26,9 @@ if (require.main === module) {
     const chunks = chunk(allUserIds, chunkSize)
     let total = 0
     for (const userIds of chunks) {
-      await updateUserMetricsCore(
+      await updateUserMetricsWithBets(
         userIds.map((u) => u[0]),
-        0
+        Date.now() - WEEK_MS
       )
       total += userIds.length
       console.log(
