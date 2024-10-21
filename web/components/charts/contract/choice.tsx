@@ -27,6 +27,7 @@ import {
   ZoomParams,
 } from '../helpers'
 import { extent } from 'd3-array'
+import { createSearchParamsBailoutProxy } from 'next/dist/client/components/searchparams-bailout-proxy'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -190,13 +191,22 @@ export const ChoiceContractChart = (props: {
   const [lowestPoint, highestPoint] = useMemo(() => {
     if (!zoomY) return [0, 1]
 
-    const allPoints = Object.values(graphedData).flatMap(({ points }) =>
-      points.map((p) => p.y)
+    // const allPoints = Object.values(graphedData).flatMap(({ points }) =>
+    //   points.map((p) => p.y)
+    // )
+    const [minXDate, maxXDate] = zoomParams?.viewXScale.domain() ?? [null, null]
+    const minX = minXDate ? minXDate.getTime() : start
+    const maxX = maxXDate ? maxXDate.getTime() : end
+
+    const allVisiblePoints = Object.values(graphedData).flatMap(({ points }) =>
+      points
+        .filter((p) => p.x >= minX && p.x <= (maxX ?? Infinity))
+        .map((p) => p.y)
     )
-    const [min, max] = extent(allPoints) as [number, number]
-    // return [Math.floor(min * 10) / 10, Math.ceil(max * 10) / 10]
-    return [min, max]
-  }, [graphedData, zoomY])
+
+    const [min, max] = extent(allVisiblePoints) as [number, number]
+    return [Math.floor(min * 10) / 10, Math.ceil(max * 10) / 10]
+  }, [graphedData, zoomY, start, end, now])
 
   const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([lowestPoint, highestPoint], [height, 0])
