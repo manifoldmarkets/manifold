@@ -1,12 +1,9 @@
 import { ChatIcon, UserIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
-import { SWEEPIES_MARKET_TOOLTIP } from 'common/envs/constants'
 import { useNumContractComments } from 'web/hooks/use-comments'
 import { shortenNumber } from 'web/lib/util/formatNumber'
-import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { Row } from '../layout/row'
 import { TierTooltip } from '../tiers/tier-tooltip'
-import { Tooltip } from '../widgets/tooltip'
 import { Action } from './contract-table-action'
 import { ContractStatusLabel } from './contracts-table'
 

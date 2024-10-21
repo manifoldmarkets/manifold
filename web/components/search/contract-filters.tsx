@@ -48,7 +48,6 @@ import {
   CrystalTier,
   PlusTier,
   PremiumTier,
-  BasicTier,
 } from 'web/public/custom-components/tiers'
 import { LiteGroup } from 'common/group'
 import { TWOMBA_ENABLED } from 'common/envs/constants'

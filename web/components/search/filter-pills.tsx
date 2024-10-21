@@ -6,7 +6,6 @@ import {
   CrystalTier,
   PlusTier,
   PremiumTier,
-  BasicTier,
 } from 'web/public/custom-components/tiers'
 import { Row } from '../layout/row'
 import CheckedDropdownMenu from '../widgets/checked-dropdown'

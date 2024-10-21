@@ -10,7 +10,6 @@ import {
   PlusTier,
   PremiumTier,
 } from 'web/public/custom-components/tiers'
-import { LogoIcon } from '../icons/logo-icon'
 import { Tooltip } from '../widgets/tooltip'
 
 export function TierTooltip(props: {

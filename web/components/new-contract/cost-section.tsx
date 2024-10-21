@@ -16,7 +16,6 @@ import {
   PlusTier,
   PremiumTier,
 } from 'web/public/custom-components/tiers'
-import { LogoIcon } from '../icons/logo-icon'
 import { CoinNumber } from '../widgets/coin-number'
 import { MarketTierType } from 'common/tier'
 import { getPresentedTierName } from '../tiers/tier-tooltip'
