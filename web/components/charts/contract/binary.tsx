@@ -29,6 +29,34 @@ import { Bet } from 'common/bet'
 import { SizedContainer } from 'web/components/sized-container'
 import { ChartAnnotations } from '../chart-annotations'
 
+const getVisibleYRange = (params: {
+  data: SingleContractPoint[]
+  zoomY?: boolean
+  start: number
+  end: number | null
+  zoomParams?: ZoomParams
+}) => {
+  const { data, zoomY, start, end, zoomParams } = params
+
+  if (!zoomY) return [0, 1]
+
+  const [minXDate, maxXDate] = zoomParams?.viewXScale.domain() ?? [null, null]
+  const minX = minXDate ? minXDate.getTime() : start
+  const maxX = maxXDate ? maxXDate.getTime() : end
+
+  const visibleData = data.filter(
+    (p) => p.x >= minX && p.x <= (maxX ?? Infinity)
+  )
+  const minYValue = zoomY
+    ? Math.max(Math.floor((minBy(visibleData, 'y')?.y ?? 0) * 10) / 10, 0)
+    : 0
+  const maxYValue = zoomY
+    ? Math.min(Math.ceil((maxBy(visibleData, 'y')?.y ?? 1) * 10) / 10, 1)
+    : 1
+
+  return [minYValue, maxYValue]
+}
+
 export const BinaryContractChart = (props: {
   contract: BinaryContract
   betPoints: SingleContractPoint[]
@@ -77,13 +105,14 @@ export const BinaryContractChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
 
   const xScale = scaleTime([start, rightmostDate], [0, width])
-  const minYValue = zoomY
-    ? Math.max(Math.floor((minBy(data, 'y')?.y ?? 0) * 10) / 10, 0)
-    : 0
-  const maxYValue = zoomY
-    ? Math.min(Math.ceil((maxBy(data, 'y')?.y ?? 1) * 10) / 10, 1)
-    : 1
 
+  const [minYValue, maxYValue] = getVisibleYRange({
+    data,
+    zoomY,
+    start,
+    end,
+    zoomParams,
+  })
   const yScale = scaleLinear([minYValue, maxYValue], [height, 0])
 
   return (
@@ -216,12 +245,13 @@ export const MultiBinaryChart = (props: {
 
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
-  const minYValue = zoomY
-    ? Math.max(Math.floor((minBy(data, 'y')?.y ?? 0) * 10) / 10, 0)
-    : 0
-  const maxYValue = zoomY
-    ? Math.min(Math.ceil((maxBy(data, 'y')?.y ?? 1) * 10) / 10, 1)
-    : 1
+  const [minYValue, maxYValue] = getVisibleYRange({
+    data,
+    zoomY,
+    start,
+    end,
+    zoomParams,
+  })
 
   const yScale = scaleLinear([minYValue, maxYValue], [height, 0])
 
