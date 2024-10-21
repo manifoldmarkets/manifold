@@ -135,8 +135,7 @@ export async function runTxn(
       )
     }
 
-    const txn = await insertTxn(pgTransaction, data)
-    return txn
+    return await insertTxn(pgTransaction, data)
   }, deps)
 }
 
@@ -165,7 +164,7 @@ export async function insertTxns(
   await bulkInsert(pgTransaction, 'txns', txns.map(txnDataToRow))
 }
 
-const txnDataToRow = (data: TxnData) => {
+export const txnDataToRow = (data: TxnData) => {
   return {
     data: JSON.stringify(
       // data is nested an extra level for legacy reasons

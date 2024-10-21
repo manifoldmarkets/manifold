@@ -1,4 +1,5 @@
 import {
+  first,
   groupBy,
   isEqual,
   mapValues,
@@ -40,7 +41,6 @@ import {
 } from 'shared/supabase/init'
 import {
   bulkIncrementBalancesQuery,
-  incrementBalance,
   incrementStreakQuery,
 } from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
@@ -62,7 +62,7 @@ import {
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
 import { UniqueBettorBonusTxn } from 'common/txn'
-import { insertTxn } from 'shared/txn/run-txn'
+import { txnDataToRow } from 'shared/txn/run-txn'
 import {
   bulkUpdateContractMetricsQuery,
   bulkUpdateUserMetricsWithNewBetsOnly,
@@ -77,7 +77,12 @@ import {
   broadcastUpdatedContract,
   broadcastUpdatedUser,
 } from 'shared/websockets/helpers'
-import { bulkUpdateQuery, updateDataQuery } from 'shared/supabase/utils'
+import {
+  bulkUpdateQuery,
+  getInsertQuery,
+  updateDataQuery,
+} from 'shared/supabase/utils'
+import { convertTxn } from 'common/supabase/txns'
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
 
@@ -268,7 +273,7 @@ export const placeBetMain = async (
     makers,
     betGroupId,
     streakIncremented,
-    bonuxTxn,
+    bonusTxn,
     updatedMetrics,
   } = result
 
@@ -283,7 +288,7 @@ export const placeBetMain = async (
       allOrdersToCancel,
       makers,
       streakIncremented,
-      bonuxTxn,
+      bonusTxn,
       updatedMetrics
     )
   }
@@ -654,18 +659,20 @@ export const executeNewBetResult = async (
       user,
       betGroupId,
       streakIncremented: false,
-      bonuxTxn: undefined,
+      bonusTxn: undefined,
       updatedMetrics,
     }
   }
   const apiFee = isApi ? FLAT_TRADE_FEE : 0
   const betsToInsert: Bet[] = [candidateBet]
   const allOrdersToCancel: LimitBet[] = []
-  const userBalanceUpdate = {
-    id: user.id,
-    [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
-      -newBet.amount - apiFee,
-  }
+  const userBalanceUpdates = [
+    {
+      id: user.id,
+      [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+        -newBet.amount - apiFee,
+    },
+  ]
   const makerIDsByTakerBetId: Record<string, maker[]> = {
     [candidateBet.id]: makers ?? [],
   }
@@ -675,16 +682,26 @@ export const executeNewBetResult = async (
 
   const sumsToOne =
     contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
-  log(`Updated user ${user.username} balance - auth ${user.id}.`)
-  const bonuxTxn =
+  let bonusTxnQuery = 'select 1 where false'
+  if (
     (contract.outcomeType !== 'NUMBER' || firstBetInMultiBet) &&
     !contractMetrics.find(
       (m) =>
         m.userId === user.id &&
         (sumsToOne ? true : m.answerId == candidateBet.answerId)
     )
-      ? await giveUniqueBettorBonus(pgTrans, contract, user, newBet)
-      : undefined
+  ) {
+    const { balanceUpdate, txnQuery } = getUniqueBettorBonusQuery(
+      contract,
+      user,
+      newBet
+    )
+    if (balanceUpdate) {
+      userBalanceUpdates.push(balanceUpdate)
+    }
+    bonusTxnQuery = txnQuery
+  }
+
   const answerUpdates: {
     id: string
     poolYes: number
@@ -792,7 +809,7 @@ export const executeNewBetResult = async (
   )
 
   const balanceQuery = bulkIncrementBalancesQuery([
-    userBalanceUpdate,
+    ...userBalanceUpdates,
     ...redemptionAndLimitOrderBalanceUpdates,
   ])
   const insertBetsQuery = bulkInsertBetsQuery([
@@ -812,14 +829,16 @@ export const executeNewBetResult = async (
   )
   const startTime = Date.now()
   const results = await pgTrans.multi(
-    `${balanceQuery};
-     ${streakIncrementedQuery};
-     ${insertBetsQuery};
-     ${metricsQuery};
-     ${contractUpdateQuery};
-     ${answerUpdateQuery};
-     ${cancelLimitsQuery};
-     ${bulkUpdateLimitOrdersQuery};
+    `
+    ${balanceQuery}; --0
+    ${streakIncrementedQuery}; --1
+    ${insertBetsQuery}; --2
+    ${metricsQuery}; --3
+    ${contractUpdateQuery}; --4
+    ${answerUpdateQuery}; --5
+    ${cancelLimitsQuery}; --6
+    ${bulkUpdateLimitOrdersQuery}; --7
+    ${bonusTxnQuery}; --8
      `
   )
   const endTime = Date.now()
@@ -848,6 +867,9 @@ export const executeNewBetResult = async (
   broadcastUpdatedAnswers(newContract.id, answerUpdates)
   const cancelledLimitOrders = results[6].map(convertBet) as LimitBet[]
   broadcastOrders(cancelledLimitOrders)
+  const bonusTxn = first(results[8].map(convertTxn)) as
+    | UniqueBettorBonusTxn
+    | undefined
 
   log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
 
@@ -861,7 +883,7 @@ export const executeNewBetResult = async (
     user,
     betGroupId,
     streakIncremented,
-    bonuxTxn,
+    bonusTxn,
     updatedMetrics: redemptionUpdatedMetrics,
   }
 }
@@ -1028,8 +1050,7 @@ export const getMakerIdsFromBetResult = (result: NewBetResult) => {
   return uniq([...makerUserIds, ...cancelledUserIds])
 }
 
-export const giveUniqueBettorBonus = async (
-  tx: SupabaseTransaction,
+export const getUniqueBettorBonusQuery = (
   contract: Contract,
   bettor: User,
   bet: CandidateBet
@@ -1065,7 +1086,10 @@ export const giveUniqueBettorBonus = async (
     isApi ||
     isCashContract
   )
-    return undefined
+    return {
+      balanceUpdate: undefined,
+      txnQuery: 'select 1 where false',
+    }
 
   // ian: removed the diminishing bonuses, but we could add them back via contract.uniqueBettorCount
   const bonusAmount =
@@ -1090,12 +1114,16 @@ export const giveUniqueBettorBonus = async (
     category: 'UNIQUE_BETTOR_BONUS',
     data: bonusTxnData,
   } as const
-  await incrementBalance(tx, bonusTxn.toId, {
+  const balanceUpdate = {
+    id: bonusTxn.toId,
     balance: bonusAmount,
     totalDeposits: bonusAmount,
-  })
-  const txn = await insertTxn(tx, bonusTxn)
+  }
+  const txnQuery = getInsertQuery('txns', txnDataToRow(bonusTxn))
 
-  log(`Bonus txn for user: ${contract.creatorId} completed:`, txn.id)
-  return txn as UniqueBettorBonusTxn
+  log(`Bonus txn for user: ${contract.creatorId} constructed:`, bonusTxn)
+  return {
+    balanceUpdate,
+    txnQuery,
+  }
 }

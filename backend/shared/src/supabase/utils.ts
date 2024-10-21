@@ -8,17 +8,24 @@ export async function getIds<T extends TableName>(
 ) {
   return db.map('select id from $1~', [table], (r) => r.id as string)
 }
-
-export async function insert<
+export function getInsertQuery<
   T extends TableName,
   ColumnValues extends Tables[T]['Insert']
->(db: SupabaseDirectClient, table: T, values: ColumnValues) {
+>(table: T, values: ColumnValues) {
   const columnNames = Object.keys(values)
   const cs = new pgp.helpers.ColumnSet(columnNames, { table })
   const query = pgp.helpers.insert(values, cs)
   // Hack to properly cast values.
   const q = query.replace(/::(\w*)'/g, "'::$1")
-  return await db.one<Row<T>>(q + ` returning *`)
+  return q + ` returning *`
+}
+
+export async function insert<
+  T extends TableName,
+  ColumnValues extends Tables[T]['Insert']
+>(db: SupabaseDirectClient, table: T, values: ColumnValues) {
+  const query = getInsertQuery(table, values)
+  return await db.one<Row<T>>(query)
 }
 
 export function bulkInsertQuery<
