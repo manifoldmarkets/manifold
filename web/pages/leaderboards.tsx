@@ -162,7 +162,7 @@ export default function Leaderboards() {
   const columns = allColumns[type]
 
   return (
-    <Page trackPageView={'leaderboards'} className='!mt-0'>
+    <Page trackPageView={'leaderboards'} className="!mt-0">
       <SEO
         title="Leaderboards"
         description={`Manifold's leaderboards show the top ${BETTORS}, question creators, and referrers.`}
@@ -172,7 +172,8 @@ export default function Leaderboards() {
         className="border-primary-300 from-primary-100 to-primary-200 my-2 border bg-gradient-to-b py-2"
         link="https://manifoldmarkets.notion.site/Election-Season-Tournament-12654492ea7a805289bfca70d3dce0bd"
       >
-        🗳️ Join our Election Season Tournament! Predict election outcomes and win prizes. Learn more
+        🗳️ Join our Election Season Tournament! Predict election outcomes and
+        win prizes. Learn more
       </Banner>
       <Col className="mx-4 mb-10 w-full items-stretch self-center p-2 sm:mx-0 sm:w-[36rem]">
         <Col className={'mb-4 w-full gap-2 self-start'}>
