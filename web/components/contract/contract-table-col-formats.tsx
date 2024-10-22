@@ -6,54 +6,73 @@ import { Row } from '../layout/row'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { Action } from './contract-table-action'
 import { ContractStatusLabel } from './contracts-table'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { Tooltip } from '../widgets/tooltip'
 
 export type ColumnFormat = {
   header: string
-  content: (c: Contract) => JSX.Element
+  content: (props: { contract: Contract }) => JSX.Element
   width: string
 }
-
-export const traderColumn = {
-  header: 'Traders',
-  content: (contract: Contract) => {
-    const { outcomeType, uniqueBettorCount } = contract
-
-    return outcomeType == 'BOUNTIED_QUESTION' ? (
-      <div className="text-ink-700 h-min align-top">
-        <BountiedContractComments contractId={contract.id} />
-      </div>
-    ) : (
-      <div className="text-ink-700 mr-7 h-min  align-top">
+const TradersColumnComponent = (props: { contract: Contract }) => {
+  const { contract } = props
+  const { outcomeType, uniqueBettorCount } = contract
+  const metric = useSavedContractMetrics(contract)
+  return outcomeType == 'BOUNTIED_QUESTION' ? (
+    <div className="text-ink-700 h-min align-top">
+      <BountiedContractComments contractId={contract.id} />
+    </div>
+  ) : (
+    <Tooltip
+      text={`${contract.uniqueBettorCount} unique traders ${
+        metric ? '(including you)' : ''
+      }`}
+    >
+      <div className="text-ink-700 ml-1 mr-7 h-min  align-top">
         <Row className="align-center text-ink-700 h-full shrink-0 items-center justify-end gap-0.5">
-          <UserIcon className="text-ink-400 h-4 w-4" />
+          <UserIcon
+            className={
+              !metric
+                ? 'text-ink-400 h-4 w-4'
+                : 'text-primary-300 dark:text-primary-200 h-4 w-4'
+            }
+          />
           {shortenNumber(uniqueBettorCount ?? 0)}
         </Row>
       </div>
-    )
-  },
+    </Tooltip>
+  )
+}
+export const traderColumn = {
+  header: 'Traders',
+  content: TradersColumnComponent,
   width: 'w-[90px]',
 }
 
 export const probColumn = {
   header: 'Stat',
-  content: (contract: Contract) => (
-    <div className="font-semibold">
-      <ContractStatusLabel
-        contract={contract}
-        showProbChange={
-          contract.uniqueBettorCountDay !== contract.uniqueBettorCount
-        }
-        className="block w-[3ch] text-right"
-        width={'w-[65px]'}
-      />
-    </div>
-  ),
+  content: (props: { contract: Contract }) => {
+    const { contract } = props
+    return (
+      <div className="font-semibold">
+        <ContractStatusLabel
+          contract={contract}
+          showProbChange={
+            contract.uniqueBettorCountDay !== contract.uniqueBettorCount
+          }
+          className="block w-[3ch] text-right"
+          width={'w-[65px]'}
+        />
+      </div>
+    )
+  },
   width: 'w-[80px]',
 }
 
 export const tierColumn = {
   header: 'Tier',
-  content: (contract: Contract) => {
+  content: (props: { contract: Contract }) => {
+    const { contract } = props
     const marketTier = contract.marketTier
     return (
       <TierTooltip
@@ -71,7 +90,9 @@ export const tierColumn = {
 
 export const actionColumn = {
   header: 'Action',
-  content: (contract: Contract) => <Action contract={contract} />,
+  content: (props: { contract: Contract }) => (
+    <Action contract={props.contract} />
+  ),
   width: 'w-12',
 }
 
