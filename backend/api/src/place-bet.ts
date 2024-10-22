@@ -34,7 +34,7 @@ import {
   cancelLimitOrdersQuery,
   insertBet,
 } from 'shared/supabase/bets'
-import { betsQueue } from 'shared/helpers/fn-queue'
+import { betsQueue, betsQueueQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
 import { partialAnswerToRow } from 'shared/supabase/answers'
@@ -66,38 +66,38 @@ import {
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-
-  let simulatedMakerIds: string[] = []
-  if (props.deps === undefined) {
-    const { user, contract, answers, unfilledBets, balanceByUserId } =
-      await fetchContractBetDataAndValidate(
-        createSupabaseDirectClient(),
+  const { deps, contractId } = props
+  if (deps === undefined) {
+    const deps = [auth.uid, contractId]
+    return await betsQueueQueue.enqueueFn(async () => {
+      const { user, contract, answers, unfilledBets, balanceByUserId } =
+        await fetchContractBetDataAndValidate(
+          createSupabaseDirectClient(),
+          props,
+          auth.uid,
+          isApi
+        )
+      // Simulate bet to see whose limit orders you match.
+      const simulatedResult = calculateBetResult(
         props,
-        auth.uid,
-        isApi
+        user,
+        contract,
+        answers,
+        unfilledBets,
+        balanceByUserId
       )
-    // Simulate bet to see whose limit orders you match.
-    const simulatedResult = calculateBetResult(
-      props,
-      user,
-      contract,
-      answers,
-      unfilledBets,
-      balanceByUserId
-    )
-    simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
+      const makerIds = getMakerIdsFromBetResult(simulatedResult)
+
+      return await betsQueue.enqueueFn(async () => {
+        return placeBetMain(props, auth.uid, isApi)
+      }, [...deps, ...makerIds])
+    }, deps)
   }
+  const fullDeps = [auth.uid, contractId, ...deps]
 
-  const deps = [
-    auth.uid,
-    props.contractId,
-    ...(props.deps ?? simulatedMakerIds),
-  ]
-
-  return await betsQueue.enqueueFn(
-    () => placeBetMain(props, auth.uid, isApi),
-    deps
-  )
+  return await betsQueue.enqueueFn(() => {
+    return placeBetMain(props, auth.uid, isApi)
+  }, fullDeps)
 }
 
 export const placeBetMain = async (
@@ -291,6 +291,7 @@ export const calculateBetResult = (
   unfilledBets: LimitBet[],
   balanceByUserId: Record<string, number>
 ) => {
+  const startTime = Date.now()
   const { amount, contractId } = body
   const { outcomeType, mechanism } = contract
 
@@ -322,7 +323,7 @@ export const calculateBetResult = (
     log(
       `Checking for limit orders in placebet for user ${user.id} on contract id ${contractId}.`
     )
-    return getBinaryCpmmBetInfo(
+    const info = getBinaryCpmmBetInfo(
       contract,
       outcome,
       amount,
@@ -331,6 +332,9 @@ export const calculateBetResult = (
       balanceByUserId,
       expiresAt
     )
+    const time = Date.now() - startTime
+    log(`getBinaryCpmmBetInfo took ${time}ms.`)
+    return info
   } else if (
     (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
     mechanism == 'cpmm-multi-1'
