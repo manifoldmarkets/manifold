@@ -3,12 +3,7 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { MarketContract } from 'common/contract'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
-import {
-  executeNewBetResult,
-  fetchContractBetDataAndValidate,
-  getMakerIdsFromBetResult,
-  getUserBalancesAndMetrics,
-} from './place-bet'
+import { executeNewBetResult } from './place-bet'
 import { onCreateBets } from 'api/on-create-bet'
 import { log } from 'shared/utils'
 import * as crypto from 'crypto'
@@ -22,6 +17,11 @@ import {
 import { LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { ContractMetric } from 'common/contract-metric'
+import {
+  fetchContractBetDataAndValidate,
+  getMakerIdsFromBetResult,
+  getUserBalancesAndMetrics,
+} from 'api/helpers/bets'
 
 const fetchSellSharesDataAndValidate = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,

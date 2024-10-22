@@ -3,14 +3,14 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
-import {
-  getRoundedLimitProb,
-  executeNewBetResult,
-  fetchContractBetDataAndValidate,
-} from 'api/place-bet'
+import { executeNewBetResult } from 'api/place-bet'
 import { log } from 'shared/utils'
 import { runShortTrans } from 'shared/short-transaction'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import {
+  fetchContractBetDataAndValidate,
+  getRoundedLimitProb,
+} from 'api/helpers/bets'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'

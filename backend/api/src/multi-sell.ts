@@ -1,10 +1,7 @@
 import * as crypto from 'crypto'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { onCreateBets } from 'api/on-create-bet'
-import {
-  getUnfilledBetsAndUserBalances,
-  executeNewBetResult,
-} from 'api/place-bet'
+import { executeNewBetResult } from 'api/place-bet'
 import { getContract, getUser, log } from 'shared/utils'
 import { groupBy, mapValues, sum, sumBy } from 'lodash'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
@@ -14,6 +11,7 @@ import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getAnswersForContract } from 'shared/supabase/answers'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
+import { getUnfilledBetsAndUserBalances } from 'api/helpers/bets'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
   return await betsQueue.enqueueFn(

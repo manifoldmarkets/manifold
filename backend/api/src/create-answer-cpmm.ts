@@ -6,7 +6,6 @@ import { Answer, getMaximumAnswers } from 'common/answer'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { getTieredAnswerCost } from 'common/economy'
 import { randomString } from 'common/util/random'
-import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import {
   addCpmmMultiLiquidityAnswersSumToOne,
   getCpmmProbability,
@@ -47,6 +46,7 @@ import { followContractInternal } from 'api/follow-contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { filterDefined } from 'common/util/array'
+import { getUnfilledBetsAndUserBalances, updateMakers } from 'api/helpers/bets'
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
   auth
