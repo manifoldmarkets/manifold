@@ -7,12 +7,15 @@ import { DEV_CONFIG } from 'common/envs/dev'
 import { pgp } from 'shared/supabase/init'
 import { getTestUsers } from 'shared/test/users'
 import { getRandomTestBet } from 'shared/test/bets'
+import { MONTH_MS } from 'common/util/time'
+import { LiteMarket } from 'common/api/market-types'
 
 const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 // const URL = `http://localhost:8088/v0`
-const OLD_MARKET_SLUG = 'chaos-sweeps--cash'
+const OLD_MARKET_SLUG = undefined //'chaos-sweeps--cash'
 const USE_OLD_MARKET = !!OLD_MARKET_SLUG
 const ENABLE_LIMIT_ORDERS = true
+const USERS = 100
 
 if (require.main === module) {
   runScript(async ({ pg, firestore }) => {
@@ -20,22 +23,23 @@ if (require.main === module) {
       log('This script is dangerous to run in prod. Exiting.')
       return
     }
-    const privateUsers = await getTestUsers(firestore, pg, 100)
-    let markets = []
+    const privateUsers = await getTestUsers(firestore, pg, USERS)
+    let markets: LiteMarket[] = []
     if (!USE_OLD_MARKET) {
       const marketCreations = [
-        {
-          question: 'test ' + Math.random().toString(36).substring(7),
-          outcomeType: 'MULTIPLE_CHOICE',
-          answers: Array(50)
-            .fill(0)
-            .map((_, i) => 'answer ' + i),
-          shouldAnswersSumToOne: true,
-        },
         // {
         //   question: 'test ' + Math.random().toString(36).substring(7),
-        //   outcomeType: 'BINARY',
+        //   outcomeType: 'MULTIPLE_CHOICE',
+        //   answers: Array(50)
+        //     .fill(0)
+        //     .map((_, i) => 'answer ' + i),
+        //   shouldAnswersSumToOne: true,
         // },
+        {
+          question: 'test ' + Math.random().toString(36).substring(7),
+          outcomeType: 'BINARY',
+          closeTime: Date.now() + MONTH_MS,
+        },
         // {
         //   question: 'test ' + Math.random().toString(36).substring(7),
         //   outcomeType: 'MULTIPLE_CHOICE',
@@ -167,6 +171,9 @@ if (require.main === module) {
         Math.round((totalVisits / (totalVisits + totalVisitErrors)) * 100) + '%'
       )
       log(`----- BETS -----`)
+      log(`Total bettors: ${privateUsers.length}`)
+      log(`Limit orders enabled: ${ENABLE_LIMIT_ORDERS ? 'yes' : 'no'}`)
+      log(`Slug used: ${USE_OLD_MARKET ? OLD_MARKET_SLUG : markets[0].slug}`)
       log(`Total error bets: ${totalBetErrors}`)
       log(`Total successful bets: ${totalBets}`)
       log(
