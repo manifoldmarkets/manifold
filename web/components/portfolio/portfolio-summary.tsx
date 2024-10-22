@@ -6,7 +6,6 @@ import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { LoadingContractRow } from '../contract/contracts-table'
 import { Col } from '../layout/col'
 import { SupabaseSearch } from '../supabase-search'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { PortfolioValueSection } from './portfolio-value-section'
 
 export const PortfolioSummary = (props: { user: User; className?: string }) => {
