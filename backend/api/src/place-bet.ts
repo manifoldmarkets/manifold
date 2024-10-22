@@ -70,7 +70,7 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
 
   // Most likely path for api users as they won't pass their deps
   if (deps === undefined) {
-    return getDependenciesThenQueueBet(props, auth, isApi)
+    return queueDependenciesThenBet(props, auth, isApi)
   }
 
   // Worst thing that could happen from wrong deps is contention
@@ -80,7 +80,7 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   }, fullDeps)
 }
 
-const getDependenciesThenQueueBet = async (
+const queueDependenciesThenBet = async (
   props: ValidatedAPIParams<'bet'>,
   auth: AuthedUser,
   isApi: boolean
