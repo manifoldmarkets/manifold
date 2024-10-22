@@ -28,13 +28,13 @@ const TradersColumnComponent = (props: { contract: Contract }) => {
         metric ? '(including you)' : ''
       }`}
     >
-      <div className="text-ink-700 ml-1 mr-7 h-min  align-top">
-        <Row className="align-center text-ink-700 h-full shrink-0 items-center justify-end gap-0.5">
+      <div className="text-ink-700 ml-1 h-min align-top">
+        <Row className="align-left text-ink-700 h-full shrink-0 items-center justify-start gap-0.5">
           <UserIcon
             className={
               !metric
-                ? 'text-ink-400 h-4 w-4'
-                : 'text-primary-300 dark:text-primary-200 h-4 w-4'
+                ? 'text-ink-400 h-4 w-4 shrink-0'
+                : 'text-primary-600 h-4 w-4 shrink-0'
             }
           />
           {shortenNumber(uniqueBettorCount ?? 0)}
@@ -46,7 +46,7 @@ const TradersColumnComponent = (props: { contract: Contract }) => {
 export const traderColumn = {
   header: 'Traders',
   content: TradersColumnComponent,
-  width: 'w-[90px]',
+  width: 'w-[70px]',
 }
 
 export const probColumn = {
