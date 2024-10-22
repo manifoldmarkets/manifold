@@ -2193,6 +2193,51 @@ export type Database = {
         }
         Relationships: []
       }
+      redemption_status: {
+        Row: {
+          created_time: string
+          id: number
+          session_id: string
+          status: string
+          transaction_id: string
+          txn_id: string
+          user_id: string
+        }
+        Insert: {
+          created_time?: string
+          id?: never
+          session_id: string
+          status: string
+          transaction_id: string
+          txn_id: string
+          user_id: string
+        }
+        Update: {
+          created_time?: string
+          id?: never
+          session_id?: string
+          status?: string
+          transaction_id?: string
+          txn_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'redemption_status_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'redemption_status_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       reports: {
         Row: {
           content_id: string
@@ -2342,6 +2387,21 @@ export type Database = {
         Update: {
           daily_values?: number[] | null
           title?: string
+        }
+        Relationships: []
+      }
+      system_trading_status: {
+        Row: {
+          status: boolean
+          token: string
+        }
+        Insert: {
+          status: boolean
+          token: string
+        }
+        Update: {
+          status?: boolean
+          token?: string
         }
         Relationships: []
       }
@@ -3091,48 +3151,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      weekly_update: {
-        Row: {
-          contract_metrics: Json
-          created_time: string
-          id: string
-          profit: number
-          range_end: string
-          user_id: string
-        }
-        Insert: {
-          contract_metrics: Json
-          created_time?: string
-          id?: string
-          profit: number
-          range_end: string
-          user_id: string
-        }
-        Update: {
-          contract_metrics?: Json
-          created_time?: string
-          id?: string
-          profit?: number
-          range_end?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
-          }
-        ]
       }
     }
     Views: {
@@ -3987,4 +4005,19 @@ export type Enums<
   ? Database[PublicEnumNameOrOptions['schema']]['Enums'][EnumName]
   : PublicEnumNameOrOptions extends keyof PublicSchema['Enums']
   ? PublicSchema['Enums'][PublicEnumNameOrOptions]
+  : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof PublicSchema['CompositeTypes']
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never = never
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema['CompositeTypes']
+  ? PublicSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
   : never

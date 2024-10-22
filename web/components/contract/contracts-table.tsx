@@ -117,7 +117,7 @@ function ContractRow(props: {
               key={contract.id + column.header}
               className={clsx(faded && 'text-ink-500', column.width)}
             >
-              {column.content(contract)}
+              {column.content({ contract })}
             </div>
           ))}
         </Row>
