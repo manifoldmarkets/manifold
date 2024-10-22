@@ -24,7 +24,7 @@ import { DropdownPill } from 'web/components/search/filter-pills'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { BackButton } from 'web/components/contract/back-button'
-import { TwombaToggle } from 'web/components/twomba/twomba-toggle'
+import { SweepsToggle } from 'web/components/sweeps/sweeps-toggle'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Button } from 'web/components/buttons/button'
@@ -182,7 +182,7 @@ export default function Leaderboards() {
             <Title className={'!mb-0'}>Leaderboard</Title>
           </Row>
           <div className="flex flex-wrap gap-2">
-            <TwombaToggle sweepsEnabled isSmall />
+            <SweepsToggle sweepsEnabled isSmall />
             <TypePillSelector type={type} setType={setType} />
             {type != 'referral' && (
               <>

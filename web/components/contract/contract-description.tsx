@@ -11,7 +11,7 @@ import { JSONContent } from '@tiptap/core'
 import { updateMarket } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import { LogoIcon } from '../icons/logo-icon'
-import { SweepVerifySection } from '../twomba/sweep-verify-section'
+import { SweepVerifySection } from '../sweeps/sweep-verify-section'
 import clsx from 'clsx'
 
 export function ContractDescription(props: {

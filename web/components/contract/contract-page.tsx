@@ -40,8 +40,8 @@ import {
   RelatedContractsGrid,
   SidebarRelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
-import { TwombaContractSummaryStats } from 'web/components/contract/twomba-contract-summary-stats'
-import { TwombaHeaderActions } from 'web/components/contract/twomba-header-actions'
+import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
+import { HeaderActions } from 'web/components/contract/header-actions'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -72,7 +72,7 @@ import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { useRouter } from 'next/router'
 
-export function TwombaContractPageContent(props: ContractParams) {
+export function ContractPageContent(props: ContractParams) {
   const {
     comments,
     relatedContracts,
@@ -335,7 +335,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                 )}
               </Row>
               {(headerStuck || !coverImageUrl) && (
-                <TwombaHeaderActions
+                <HeaderActions
                   playContract={livePlayContract}
                   currentContract={liveContract}
                 />
@@ -348,7 +348,7 @@ export function TwombaContractPageContent(props: ContractParams) {
               <div>
                 <BackButton className="pr-8" />
               </div>
-              <TwombaHeaderActions
+              <HeaderActions
                 playContract={livePlayContract}
                 currentContract={liveContract}
               />
@@ -375,7 +375,7 @@ export function TwombaContractPageContent(props: ContractParams) {
                   contract={props.contract}
                   resolverId={liveContract.resolverId}
                 />
-                <TwombaContractSummaryStats
+                <ContractSummaryStats
                   contractId={props.contract.id}
                   creatorId={props.contract.creatorId}
                   question={props.contract.question}

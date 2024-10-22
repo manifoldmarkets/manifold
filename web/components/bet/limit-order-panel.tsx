@@ -45,7 +45,7 @@ import { MoneyDisplay } from './money-display'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import { LocationMonitor } from '../gidx/location-monitor'
-import { VerifyButton } from '../twomba/sweep-verify-section'
+import { VerifyButton } from '../sweeps/sweep-verify-section'
 
 export default function LimitOrderPanel(props: {
   contract:

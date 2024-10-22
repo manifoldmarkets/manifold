@@ -3,10 +3,11 @@ import { HistoryPoint, MultiPoints } from 'common/chart'
 import {
   CPMMMultiContract,
   Contract,
-  isBinaryMulti,
   getMainBinaryMCAnswer,
+  isBinaryMulti,
   twombaContractPath,
 } from 'common/contract'
+import { getSingleBetPoints } from 'common/contract-params'
 import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
 import { getContract, getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
@@ -20,6 +21,7 @@ import {
   BinaryContractChart,
   MultiBinaryChart,
 } from 'web/components/charts/contract/binary'
+import { ChoiceContractChart } from 'web/components/charts/contract/choice'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
 import {
@@ -28,21 +30,19 @@ import {
   StonkPrice,
 } from 'web/components/contract/contract-price'
 import { ContractSEO } from 'web/components/contract/contract-seo'
+import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { Spacer } from 'web/components/layout/spacer'
+import { PollPanel } from 'web/components/poll/poll-panel'
 import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
 import { track } from 'web/lib/service/analytics'
+import { getBetPoints } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
-import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
-import { PollPanel } from 'web/components/poll/poll-panel'
-import { getSingleBetPoints } from 'common/contract-params'
-import { ChoiceContractChart } from 'web/components/charts/contract/choice'
-import { Spacer } from 'web/components/layout/spacer'
-import { getBetPoints } from 'web/lib/supabase/bets'
 
 type Points = HistoryPoint<any>[]
 
@@ -365,8 +365,15 @@ function ContractSmolView(props: {
           </Col>
         )}
       </div>
-      <Row className="text-ink-500 mt-4 w-full justify-end text-sm md:text-lg">
-        <ContractSummaryStats contract={contract} />
+      <Row className="text-ink-500 mt-4 w-full justify-end text-sm ">
+        <ContractSummaryStats
+          contractId={contract.id}
+          creatorId={contract.creatorId}
+          question={contract.question}
+          financeContract={contract}
+          editable={false}
+          isCashContract={isCashContract}
+        />
       </Row>
     </Col>
   )

@@ -15,7 +15,7 @@ import { getDisplayProbability } from 'common/calculate'
 import { formatPercent } from 'common/util/format'
 import { DATA } from './usa-map-data'
 import { BinaryBetButton } from '../us-elections/contracts/party-panel/binary-party-panel'
-import { TwombaToggle } from '../twomba/twomba-toggle'
+import { SweepsToggle } from '../sweeps/sweeps-toggle'
 
 export function StateContract(props: {
   targetContract: Contract | null
@@ -87,7 +87,7 @@ export function SwingStateContract(props: {
   return (
     <Col className=" w-full">
       <Row className="mb-2 w-full justify-end">
-        <TwombaToggle sweepsEnabled />
+        <SweepsToggle sweepsEnabled />
       </Row>
       <Row className="text-ink-500 mb-1 hidden w-full justify-between text-sm sm:flex">
         Swing States

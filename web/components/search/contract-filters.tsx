@@ -53,7 +53,7 @@ import { LiteGroup } from 'common/group'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { useSweepstakes } from '../sweepstakes-provider'
-import { TwombaToggle } from '../twomba/twomba-toggle'
+import { SweepsToggle } from '../sweeps/sweeps-toggle'
 
 export function ContractFilters(props: {
   className?: string
@@ -155,7 +155,7 @@ export function ContractFilters(props: {
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
       <Carousel labelsParentClassName="gap-1 items-center">
         {TWOMBA_ENABLED && (
-          <TwombaToggle
+          <SweepsToggle
             sweepsEnabled={true}
             isPlay={!isSweeps}
             onClick={toggleSweepies}

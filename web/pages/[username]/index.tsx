@@ -60,13 +60,12 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { buildArray } from 'common/util/array'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { FaCrown } from 'react-icons/fa6'
 import { getUserForStaticProps } from 'common/supabase/users'
 import { VerifyMe } from 'web/components/gidx/verify-me'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
-import { TwombaPortfolioValueSection } from 'web/components/portfolio/twomba-portfolio-value-section'
+import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { unauthedApi } from 'common/util/api'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
@@ -414,30 +413,17 @@ function UserProfile(props: {
                     <Spacer h={2} />
                     {!isCurrentUser && (
                       <>
-                        {TWOMBA_ENABLED ? (
-                          <>
-                            <TwombaPortfolioValueSection
-                              user={user}
-                              defaultTimePeriod={
-                                currentUser?.id === user.id
-                                  ? 'weekly'
-                                  : 'monthly'
-                              }
-                            />
+                        <PortfolioValueSection
+                          user={user}
+                          defaultTimePeriod={
+                            currentUser?.id === user.id ? 'weekly' : 'monthly'
+                          }
+                        />
 
-                            <div className="text-ink-800 border-ink-300 mx-2 mt-6 gap-2 border-t pt-4 text-xl font-semibold lg:mx-0">
-                              Trades
-                            </div>
-                          </>
-                        ) : (
-                          <PortfolioValueSection
-                            user={user}
-                            defaultTimePeriod={
-                              currentUser?.id === user.id ? 'weekly' : 'monthly'
-                            }
-                            hideAddFundsButton
-                          />
-                        )}
+                        <div className="text-ink-800 border-ink-300 mx-2 mt-6 gap-2 border-t pt-4 text-xl font-semibold lg:mx-0">
+                          Trades
+                        </div>
+
                         <Spacer h={4} />
                       </>
                     )}

@@ -24,15 +24,15 @@ import { followMarket, unfollowMarket } from '../buttons/follow-market-button'
 import { ReportModal } from '../buttons/report-button'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
-import { TwombaToggle } from '../twomba/twomba-toggle'
+import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { getLinkTarget } from '../widgets/linkify'
 import { BoostDialog } from './boost-button'
 import { AddLiquidityModal } from './liquidity-modal'
-import { TwombaContractInfoDialog } from './twomba-contract-info-dialog'
+import { ContractInfoDialog } from './contract-info-dialog'
 import { WatchMarketModal } from './watch-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
 
-export function TwombaHeaderActions(props: {
+export function HeaderActions(props: {
   playContract: Contract
   currentContract: Contract
 }) {
@@ -234,7 +234,7 @@ export function TwombaHeaderActions(props: {
   return (
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
       {!isNonBetPollOrBountiedQuestion && (
-        <TwombaToggle
+        <SweepsToggle
           sweepsEnabled={sweepsEnabled}
           isPlay={currentContract.token == 'MANA'}
         />
@@ -256,7 +256,7 @@ export function TwombaHeaderActions(props: {
       />
 
       <DropdownMenu items={dropdownItems} />
-      <TwombaContractInfoDialog
+      <ContractInfoDialog
         playContract={playContract}
         statsContract={currentContract}
         user={user}

@@ -6,7 +6,7 @@ import { RegisterUserForm } from 'web/components/gidx/register-user-form'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { UsOnlyDisclaimer } from 'web/components/twomba/us-only-disclaimer'
+import { UsOnlyDisclaimer } from 'web/components/sweeps/us-only-disclaimer'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import {

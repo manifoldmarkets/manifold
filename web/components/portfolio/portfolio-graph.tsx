@@ -31,7 +31,7 @@ export const PortfolioTooltip = (props: { date: Date }) => {
   )
 }
 
-export const TwombaPortfolioGraph = (props: {
+export const PortfolioGraph = (props: {
   duration?: Period
   portfolioHistory: PortfolioSnapshot[]
   width: number
@@ -192,7 +192,7 @@ export const TwombaPortfolioGraph = (props: {
   )
 }
 
-export const TwombaProfitGraph = (props: {
+export const ProfitGraph = (props: {
   duration?: Period
   portfolioHistory: PortfolioSnapshot[]
   width: number

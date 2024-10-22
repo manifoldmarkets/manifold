@@ -22,7 +22,7 @@ import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 import { getVerificationStatus } from 'common/gidx/user'
 import { useNativeInfo } from 'web/components/native-message-provider'
 import { usePrices } from 'web/hooks/use-prices'
-import { TwombaFundsSelector } from 'web/components/gidx/twomba-funds-selector'
+import { FundsSelector } from 'web/components/gidx/funds-selector'
 
 const CheckoutPage = () => {
   const user = useUser()
@@ -142,7 +142,7 @@ const CheckoutPage = () => {
       {page === 'checkout' &&
       (isIOS ? true : !dollarAmountSelected && !dollarAmountFromQuery) ? (
         <Col>
-          <TwombaFundsSelector
+          <FundsSelector
             onSelectPriceInDollars={onSelectAmount}
             loadingPrice={loadingPrice}
           />
