@@ -1,5 +1,5 @@
 import { first, isEqual, mapValues, maxBy, sumBy } from 'lodash'
-import { APIError, type APIHandler } from './helpers/endpoint'
+import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { Contract, CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
 import {
@@ -34,7 +34,7 @@ import {
   cancelLimitOrdersQuery,
   insertBet,
 } from 'shared/supabase/bets'
-import { betsQueue, betsQueueQueue } from 'shared/helpers/fn-queue'
+import { betsQueue, ordersQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
 import { partialAnswerToRow } from 'shared/supabase/answers'
@@ -67,37 +67,48 @@ import {
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
   const { deps, contractId } = props
+
+  // Most likely path for api users as they won't pass their deps
   if (deps === undefined) {
-    const deps = [auth.uid, contractId]
-    return await betsQueueQueue.enqueueFn(async () => {
-      const { user, contract, answers, unfilledBets, balanceByUserId } =
-        await fetchContractBetDataAndValidate(
-          createSupabaseDirectClient(),
-          props,
-          auth.uid,
-          isApi
-        )
-      // Simulate bet to see whose limit orders you match.
-      const simulatedResult = calculateBetResult(
-        props,
-        user,
-        contract,
-        answers,
-        unfilledBets,
-        balanceByUserId
-      )
-      const makerIds = getMakerIdsFromBetResult(simulatedResult)
-
-      return await betsQueue.enqueueFn(async () => {
-        return placeBetMain(props, auth.uid, isApi)
-      }, [...deps, ...makerIds])
-    }, deps)
+    return getDependenciesThenQueueBet(props, auth, isApi)
   }
-  const fullDeps = [auth.uid, contractId, ...deps]
 
+  // Worst thing that could happen from wrong deps is contention
+  const fullDeps = [auth.uid, contractId, ...deps]
   return await betsQueue.enqueueFn(() => {
     return placeBetMain(props, auth.uid, isApi)
   }, fullDeps)
+}
+
+const getDependenciesThenQueueBet = async (
+  props: ValidatedAPIParams<'bet'>,
+  auth: AuthedUser,
+  isApi: boolean
+) => {
+  const minimalDeps = [auth.uid, props.contractId]
+  return await ordersQueue.enqueueFn(async () => {
+    const { user, contract, answers, unfilledBets, balanceByUserId } =
+      await fetchContractBetDataAndValidate(
+        createSupabaseDirectClient(),
+        props,
+        auth.uid,
+        isApi
+      )
+    // Simulate bet to see whose limit orders you match.
+    const simulatedResult = calculateBetResult(
+      props,
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId
+    )
+    const makerIds = getMakerIdsFromBetResult(simulatedResult)
+
+    return await betsQueue.enqueueFn(async () => {
+      return placeBetMain(props, auth.uid, isApi)
+    }, [...minimalDeps, ...makerIds])
+  }, minimalDeps)
 }
 
 export const placeBetMain = async (
