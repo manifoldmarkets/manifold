@@ -202,23 +202,15 @@ export const getPrivateUserSupabase = (userId: string) => {
   )
 }
 
-const keyByUser: Record<string, PrivateUser> = {}
 export const getPrivateUserByKey = async (
   apiKey: string,
   pg: SupabaseDirectClient = createSupabaseDirectClient()
 ) => {
-  if (keyByUser[apiKey]) {
-    return keyByUser[apiKey]
-  }
-  const res = await pg.oneOrNone(
+  return await pg.oneOrNone(
     `select * from private_users where data->>'apiKey' = $1 limit 1`,
     [apiKey],
     convertPrivateUser
   )
-  if (res) {
-    keyByUser[apiKey] = res
-  }
-  return res
 }
 
 export const getPrivateUsersNotSent = async (
