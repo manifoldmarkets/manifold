@@ -336,7 +336,7 @@ export const fetchContractBetDataAndValidate = async (
            )
         and not b.is_filled and not b.is_cancelled;
     select data from user_contract_metrics where user_id = $1 and contract_id = $2 and
-           ($3 is null or answer_id in ($3:list) or answer_id is null or            
+           ($3 is null or answer_id in ($3:list) or answer_id is null or
            (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
            );
     select status from system_trading_status where token = (select token from contracts where id = $2);
@@ -542,7 +542,7 @@ export const getUserBalancesAndMetrics = async (
       SELECT ${
         token === 'CASH' ? 'cash_balance AS balance' : 'balance'
       }, id FROM users WHERE id = ANY($1);
-      
+
       select data from user_contract_metrics where user_id = any($1) and contract_id = $2 and
            ($3 is null or answer_id = $3 or answer_id is null);
     `,
@@ -1071,16 +1071,13 @@ export const getUniqueBettorBonusQuery = (
     // Require the contract creator to also be the answer creator for real-money bonus.
     creatorId === contract.creatorId
 
-  const isCashContract = contract.token === 'CASH'
-
   if (
     isCreator ||
     isBot ||
     isUnlisted ||
     isRedemption ||
     isUnfilledLimitOrder ||
-    isApi ||
-    isCashContract
+    isApi
   )
     return {
       balanceUpdate: undefined,
