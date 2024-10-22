@@ -499,8 +499,8 @@ export function SupabaseSearch(props: {
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
             columns={buildArray([
-              traderColumn,
               tierColumn,
+              traderColumn,
               probColumn,
               !hideActions && actionColumn,
             ])}
