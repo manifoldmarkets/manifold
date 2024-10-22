@@ -25,7 +25,7 @@ import { ManaFlatCoin } from 'web/public/custom-components/manaFlatCoin'
 import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 
-export function TwombaWelcomePage() {
+export function SweepsWelcomePage() {
   const user = useUser()
 
   const [name, setName] = useState<string>(user?.name ?? 'friend')
@@ -111,7 +111,7 @@ export function TwombaWelcomePage() {
   )
 }
 
-export function TwombaCoinsPage() {
+export function SweepsCoinsPage() {
   return (
     <>
       <div className="text-primary-700 text-center text-2xl font-normal">

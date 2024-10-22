@@ -1,14 +1,9 @@
 'use client'
 import clsx from 'clsx'
-import {
-  SPICE_NAME,
-  SPICE_TO_MANA_CONVERSION_RATE,
-} from 'common/envs/constants'
 import { Period, periodDurations } from 'common/period'
 import { LivePortfolioMetrics } from 'common/portfolio-metrics'
 import { last } from 'lodash'
 import { ReactNode, memo, useState } from 'react'
-import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { SizedContainer } from 'web/components/sized-container'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
@@ -19,17 +14,15 @@ import { Y_AXIS_MARGIN, useZoom } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { RedeemSpiceButton } from '../profile/redeem-spice-button'
+import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { ColorType } from '../widgets/choices-toggle-group'
 import { CoinNumber } from '../widgets/coin-number'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
-import { PortfolioTab } from './portfolio-tabs'
-import {
-  GraphMode,
-  PortfolioGraph,
-  PortfolioMode,
-} from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
+import { PortfolioGraph, ProfitGraph, PortfolioMode } from './portfolio-graph'
+import { getPortfolioValues } from '../portfolio-helpers'
+import { useSweepstakes } from '../sweepstakes-provider'
+import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
@@ -42,7 +35,10 @@ export type GraphValueType = {
   balance?: number | null
   invested?: number | null
   profit?: number | null
-  spice?: number | null
+  cashBalance?: number | null
+  cashInvested?: number | null
+  cashProfit?: number | null
+  netCash?: number | null
 }
 
 export type PortfolioValueType = Required<GraphValueType>
@@ -53,6 +49,10 @@ export const emptyGraphValues = {
   invested: undefined,
   profit: undefined,
   spice: undefined,
+  cashBalance: undefined,
+  cashInvested: undefined,
+  cashProfit: undefined,
+  netCash: undefined,
 }
 
 export const PortfolioValueSection = memo(
@@ -60,17 +60,13 @@ export const PortfolioValueSection = memo(
     user: User
     defaultTimePeriod: Period
     portfolio?: LivePortfolioMetrics
-    hideAddFundsButton?: boolean
-    onlyShowProfit?: boolean
     graphContainerClassName?: string
     size?: 'sm' | 'md'
   }) {
     const {
       user,
-      hideAddFundsButton,
       defaultTimePeriod,
       portfolio,
-      onlyShowProfit,
       graphContainerClassName,
       size = 'md',
     } = props
@@ -79,7 +75,6 @@ export const PortfolioValueSection = memo(
 
     const portfolioHistory = usePortfolioHistory(user.id, currentTimePeriod)
 
-    const [graphMode, setGraphMode] = useState<GraphMode>('portfolio')
     const [portfolioFocus, setPortfolioFocus] = useState<PortfolioMode>('all')
 
     const [graphValues, setGraphValues] =
@@ -101,14 +96,6 @@ export const PortfolioValueSection = memo(
         return updatedValues
       })
     }
-
-    const first = portfolioHistory?.[0]
-    const firstProfit = first
-      ? first.spiceBalance +
-        first.balance +
-        first.investmentValue -
-        first.totalDeposits
-      : 0
 
     const lastPortfolioMetrics = portfolio ?? last(portfolioHistory)
 
@@ -133,42 +120,43 @@ export const PortfolioValueSection = memo(
       updateGraphValues(emptyGraphValues)
     }
 
-    if (!portfolioHistory || !lastPortfolioMetrics) {
-      const showDisclaimer = portfolioHistory
+    function noHistoryGraphElement(_width: number, height: number) {
+      if (portfolioHistory) {
+        return (
+          <Col className={'text-ink-500 mt-2'}>
+            <Row className={'gap-2'}>
+              <span>No portfolio history, yet.</span>
+            </Row>
+          </Col>
+        )
+      }
       return (
-        <PortfolioValueSkeleton
-          hideAddFundsButton={hideAddFundsButton}
+        <div
+          style={{
+            height: `${height - 40}px`,
+            margin: '20px 70px 20px 10px',
+          }}
+        >
+          <PlaceholderGraph className="text-ink-400 h-full w-full animate-pulse" />
+        </div>
+      )
+    }
+
+    if (!portfolioHistory || !lastPortfolioMetrics) {
+      return (
+        <TwombaPortfolioValueSkeleton
           userId={user.id}
-          graphMode={graphMode}
           hideSwitcher={true}
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
-          className={clsx(showDisclaimer ? 'h-8' : '', graphContainerClassName)}
-          graphElement={(_width, height) => {
-            if (showDisclaimer) {
-              return (
-                <Col className={'text-ink-500 mt-2'}>
-                  <Row className={'gap-2'}>
-                    <span>No portfolio history, yet.</span>
-                  </Row>
-                </Col>
-              )
-            }
-            return (
-              <div
-                style={{
-                  height: `${height - 40}px`,
-                  margin: '20px 70px 20px 10px',
-                }}
-              >
-                <PlaceholderGraph className="text-ink-400 h-full w-full animate-pulse" />
-              </div>
-            )
-          }}
+          className={clsx(
+            portfolioHistory ? 'h-8' : '',
+            graphContainerClassName
+          )}
+          portfolioGraphElement={noHistoryGraphElement}
+          profitGraphElement={noHistoryGraphElement}
           disabled={true}
-          placement={isMobile ? 'bottom' : undefined}
           size={size}
-          setGraphMode={setGraphMode}
           portfolio={portfolio}
           user={user}
           portfolioFocus={portfolioFocus}
@@ -178,13 +166,50 @@ export const PortfolioValueSection = memo(
       )
     }
 
-    const { balance, investmentValue, totalDeposits, spiceBalance } =
+    const { balance, investmentValue, cashBalance, cashInvestmentValue } =
       lastPortfolioMetrics
 
-    const totalValue =
-      balance + investmentValue + spiceBalance * SPICE_TO_MANA_CONVERSION_RATE
+    const first = portfolioHistory?.[0]
 
-    const calculatedProfit = totalValue - totalDeposits - firstProfit
+    const { firstProfit, totalValue, calculatedProfit } = getPortfolioValues({
+      first: first
+        ? {
+            balance:
+              first.balance +
+              (first.spiceBalance ?? 0) * SPICE_TO_MANA_CONVERSION_RATE,
+            investmentValue: first.investmentValue,
+            totalDeposits: first.totalDeposits,
+          }
+        : undefined,
+      last: {
+        balance:
+          lastPortfolioMetrics.balance +
+          (lastPortfolioMetrics.spiceBalance ?? 0) *
+            SPICE_TO_MANA_CONVERSION_RATE,
+        investmentValue: lastPortfolioMetrics.investmentValue,
+        totalDeposits: lastPortfolioMetrics.totalDeposits,
+      },
+    })
+
+    const {
+      firstProfit: firstCashProfit,
+      totalValue: totalCashValue,
+      calculatedProfit: calculatedCashProfit,
+    } = getPortfolioValues({
+      first: first
+        ? {
+            balance: first.cashBalance,
+            investmentValue: first.cashInvestmentValue,
+            totalDeposits: first.totalCashDeposits,
+          }
+        : undefined,
+      last: {
+        balance: lastPortfolioMetrics.cashBalance,
+        investmentValue: lastPortfolioMetrics.cashInvestmentValue,
+        totalDeposits: lastPortfolioMetrics.totalCashDeposits,
+      },
+    })
+
     const profit =
       currentTimePeriod === 'daily' && portfolio
         ? portfolio.dailyProfit
@@ -195,7 +220,10 @@ export const PortfolioValueSection = memo(
       invested: investmentValue,
       profit,
       net: totalValue,
-      spice: spiceBalance,
+      cashBalance: cashBalance ?? 0,
+      cashInvested: cashInvestmentValue ?? 0,
+      cashProfit: calculatedCashProfit ?? 0,
+      netCash: totalCashValue,
     }
 
     // Add the latest portfolio data as the final point
@@ -204,18 +232,14 @@ export const PortfolioValueSection = memo(
       : portfolioHistory
 
     return (
-      <PortfolioValueSkeleton
-        hideAddFundsButton={hideAddFundsButton}
+      <TwombaPortfolioValueSkeleton
         userId={user.id}
-        graphMode={graphMode}
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
-        switcherColor={graphMode === 'profit' ? 'green' : 'indigo'}
         portfolioFocus={portfolioFocus}
         setPortfolioFocus={onSetPortfolioFocus}
-        graphElement={(width, height) => (
+        portfolioGraphElement={(width, height) => (
           <PortfolioGraph
-            mode={graphMode}
             duration={currentTimePeriod}
             portfolioHistory={updatedPortfolioHistory}
             width={width}
@@ -223,284 +247,226 @@ export const PortfolioValueSection = memo(
             zoomParams={zoomParams}
             hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
             firstProfit={firstProfit}
+            firstCashProfit={firstCashProfit}
             updateGraphValues={updateGraphValues}
             portfolioFocus={portfolioFocus}
             setPortfolioFocus={onSetPortfolioFocus}
           />
         )}
-        onlyShowProfit={onlyShowProfit}
-        placement={isMobile && !onlyShowProfit ? 'bottom' : undefined}
+        profitGraphElement={(width, height) => (
+          <ProfitGraph
+            duration={currentTimePeriod}
+            portfolioHistory={updatedPortfolioHistory}
+            width={width}
+            height={height}
+            zoomParams={zoomParams}
+            hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
+            firstProfit={firstProfit}
+            firstCashProfit={firstCashProfit}
+            updateGraphValues={updateGraphValues}
+          />
+        )}
         className={clsx(graphContainerClassName, !isMobile && 'mb-4')}
         size={size}
         portfolioValues={portfolioValues}
         graphValues={graphValues}
-        setGraphMode={setGraphMode}
         portfolio={portfolio}
         user={user}
       />
     )
   }
 )
-function PortfolioValueSkeleton(props: {
-  graphMode: GraphMode
+function TwombaPortfolioValueSkeleton(props: {
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
-  graphElement: ((width: number, height: number) => ReactNode) | undefined
+  portfolioGraphElement:
+    | ((width: number, height: number) => ReactNode)
+    | undefined
+  profitGraphElement: ((width: number, height: number) => ReactNode) | undefined
   hideSwitcher?: boolean
   className?: string
   switcherColor?: ColorType
   userId?: string
   disabled?: boolean
-  placement?: 'bottom'
-  hideAddFundsButton?: boolean
-  onlyShowProfit?: boolean
   size?: 'sm' | 'md'
   portfolioValues?: PortfolioValueType
   graphValues: GraphValueType
-  setGraphMode: (mode: GraphMode) => void
   portfolio: PortfolioSnapshot | undefined
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
   user: User
 }) {
   const {
-    graphMode,
     currentTimePeriod,
     setCurrentTimePeriod,
-    graphElement,
+    portfolioGraphElement,
+    profitGraphElement,
     hideSwitcher,
     switcherColor,
-    userId,
     disabled,
     className,
-    hideAddFundsButton,
-    onlyShowProfit,
-    size = 'md',
     portfolioValues,
     graphValues,
-    setGraphMode,
     portfolioFocus,
     setPortfolioFocus,
     portfolio,
     user,
   } = props
-  const profitLabel = onlyShowProfit
-    ? {
-        daily: 'Daily profit',
-        weekly: 'Weekly profit',
-        monthly: 'Monthly profit',
-        allTime: 'All-time profit',
-      }[currentTimePeriod]
-    : {
-        daily: 'Profit 1D',
-        weekly: 'Profit 1W',
-        monthly: 'Profit 1M',
-        allTime: 'Profit',
-      }[currentTimePeriod]
 
   function togglePortfolioFocus(toggleTo: PortfolioMode) {
     setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
   }
 
+  const { prefersPlay } = useSweepstakes()
+
   return (
     <Col>
-      <Row className={clsx('grow items-start gap-0')}>
-        <PortfolioTab
-          onClick={() => setGraphMode('portfolio')}
-          isSelected={graphMode == 'portfolio'}
-          title="Portfolio"
-        >
-          <CoinNumber
-            amount={portfolioValues?.net ?? undefined}
-            className="text-xs text-violet-600 dark:text-violet-400 sm:text-sm"
-            numberType="short"
-          />
-        </PortfolioTab>
-
-        <PortfolioTab
-          onClick={() => setGraphMode('profit')}
-          isSelected={graphMode == 'profit'}
-          title={profitLabel}
-        >
-          <CoinNumber
-            amount={portfolioValues?.profit ?? undefined}
-            className="text-xs text-violet-600 dark:text-violet-400 sm:text-sm"
-            numberType="short"
-          />
-        </PortfolioTab>
-      </Row>
-      <Col
-        className={clsx(
-          'bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-b-lg border-2 p-4 sm:rounded-lg sm:rounded-tl-none'
-        )}
-      >
-        <div>
-          {graphMode == 'portfolio' && (
-            <Col className="w-full">
-              <Row className="w-full justify-between gap-2">
-                <Col>
-                  <span
-                    className={clsx(
-                      'cursor-pointer select-none transition-opacity',
-                      portfolioFocus == 'all'
-                        ? 'text-violet-700 opacity-100 dark:text-violet-400'
-                        : 'text-ink-1000 opacity-50 hover:opacity-[85%]'
-                    )}
-                    onClick={() => togglePortfolioFocus('all')}
-                  >
-                    <CoinNumber
-                      amount={displayAmounts(
-                        graphValues.net,
-                        portfolioValues?.net
-                      )}
-                      className={clsx(
-                        'text-3xl font-bold transition-all sm:text-4xl'
-                      )}
-                      isInline
-                      coinClassName="top-[0.25rem] sm:top-[0.1rem]"
-                    />
-                    <span
-                      className={clsx(
-                        'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
-                      )}
-                    >
-                      net worth
-                    </span>
-                  </span>
-                  <Row className="mt-2 gap-2">
-                    <PortfolioGraphNumber
-                      numberType={'balance'}
-                      descriptor="balance"
-                      portfolioFocus={portfolioFocus}
-                      displayedAmount={displayAmounts(
-                        graphValues.balance,
-                        portfolioValues?.balance
-                      )}
-                      className={clsx(
-                        portfolioFocus == 'balance'
-                          ? 'bg-violet-700 text-white'
-                          : 'bg-canvas-50 text-ink-1000'
-                      )}
-                      onClick={() => togglePortfolioFocus('balance')}
-                    />
-                    <PortfolioGraphNumber
-                      numberType={'investment'}
-                      descriptor="invested"
-                      portfolioFocus={portfolioFocus}
-                      displayedAmount={displayAmounts(
-                        graphValues.invested,
-                        portfolioValues?.invested
-                      )}
-                      className={clsx(
-                        portfolioFocus == 'investment'
-                          ? 'bg-violet-700 text-white'
-                          : 'bg-canvas-50 text-ink-1000'
-                      )}
-                      onClick={() => togglePortfolioFocus('investment')}
-                    />
-
-                    <PortfolioGraphNumber
-                      numberType={'spice'}
-                      descriptor={SPICE_NAME.toLowerCase() + 's'}
-                      portfolioFocus={portfolioFocus}
-                      displayedAmount={displayAmounts(
-                        graphValues.spice,
-                        user.spiceBalance
-                      )}
-                      className={clsx(
-                        portfolioFocus == 'spice'
-                          ? ' bg-amber-600 text-white'
-                          : 'bg-canvas-50 text-ink-1000'
-                      )}
-                      onClick={() => togglePortfolioFocus('spice')}
-                      isSpice
-                    />
-                  </Row>
-                </Col>
-                {!hideAddFundsButton && (
-                  <Col className="hidden gap-1 sm:flex">
-                    <AddFundsButton
-                      userId={userId}
-                      className="h-fit whitespace-nowrap lg:hidden"
-                    />
-                    <RedeemSpiceButton
-                      userId={userId}
-                      className="h-fit whitespace-nowrap"
-                      spice={user.spiceBalance}
-                    />
-                  </Col>
+      <Col className={clsx('gap-2')}>
+        <Row className="text-ink-800 w-full items-center justify-between text-xl font-semibold">
+          Portfolio
+          <SweepsToggle sweepsEnabled={true} isPlay={prefersPlay} />
+        </Row>
+        <Col className="bg-canvas-0 w-full rounded-lg p-4">
+          <Col>
+            <span
+              className={clsx(
+                'cursor-pointer select-none transition-opacity',
+                portfolioFocus == 'all'
+                  ? prefersPlay
+                    ? 'text-violet-600 opacity-100 dark:text-violet-400'
+                    : 'text-amber-700 opacity-100 dark:text-amber-600'
+                  : 'text-ink-1000 opacity-50 hover:opacity-[85%]'
+              )}
+              onClick={() => togglePortfolioFocus('all')}
+            >
+              <CoinNumber
+                amount={displayAmounts(
+                  graphValues.net,
+                  prefersPlay ? portfolioValues?.net : portfolioValues?.netCash
                 )}
-              </Row>
-            </Col>
+                className={clsx(
+                  'text-3xl font-bold transition-all sm:text-4xl'
+                )}
+                isInline
+                coinClassName="top-[0.25rem] sm:top-[0.1rem]"
+                coinType={prefersPlay ? 'mana' : 'sweepies'}
+              />
+              <span
+                className={clsx(
+                  'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
+                )}
+              >
+                net worth
+              </span>
+            </span>
+            <Row className="mt-2 gap-2">
+              <PortfolioGraphNumber
+                numberType={'balance'}
+                descriptor="balance"
+                portfolioFocus={portfolioFocus}
+                displayedAmount={displayAmounts(
+                  graphValues.balance,
+                  prefersPlay
+                    ? portfolioValues?.balance
+                    : portfolioValues?.cashBalance
+                )}
+                className={clsx(
+                  portfolioFocus == 'balance'
+                    ? prefersPlay
+                      ? 'bg-violet-700 text-white'
+                      : 'bg-amber-700 text-white'
+                    : 'bg-canvas-50 text-ink-1000'
+                )}
+                onClick={() => togglePortfolioFocus('balance')}
+              />
+              <PortfolioGraphNumber
+                numberType={'investment'}
+                descriptor="invested"
+                portfolioFocus={portfolioFocus}
+                displayedAmount={displayAmounts(
+                  graphValues.invested,
+                  prefersPlay
+                    ? portfolioValues?.invested
+                    : portfolioValues?.cashInvested
+                )}
+                className={clsx(
+                  portfolioFocus == 'investment'
+                    ? prefersPlay
+                      ? 'bg-violet-700 text-white'
+                      : 'bg-amber-700 text-white'
+                    : 'bg-canvas-50 text-ink-1000'
+                )}
+                onClick={() => togglePortfolioFocus('investment')}
+              />
+            </Row>
+          </Col>
+          {portfolioGraphElement && (
+            <SizedContainer
+              className={clsx(className, 'mt-2 h-[70px] sm:h-[80px]')}
+              style={{
+                paddingRight: Y_AXIS_MARGIN,
+              }}
+            >
+              {portfolioGraphElement}
+            </SizedContainer>
           )}
-          {graphMode == 'profit' && (
-            <>
-              <div>
-                <span>
-                  <CoinNumber
-                    amount={displayAmounts(
-                      graphValues.profit,
-                      portfolioValues?.profit
-                    )}
-                    className={clsx(
-                      'text-ink-1000 text-2xl font-bold transition-all sm:text-4xl',
-                      (graphValues.profit ?? portfolioValues?.profit ?? 0) < 0
-                        ? 'text-scarlet-500'
-                        : 'text-teal-500'
-                    )}
-                    isInline
-                    coinClassName="top-[0.25rem] sm:top-[0.1rem]"
-                  />
-                  <span
-                    className={clsx(
-                      'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
-                    )}
-                  >
-                    profit
-                  </span>
-                </span>
-              </div>
+        </Col>
+        <Col className="bg-canvas-0 w-full  rounded-lg p-4">
+          <Col className="items-start">
+            <span>
+              <CoinNumber
+                amount={displayAmounts(
+                  graphValues.profit,
+                  prefersPlay
+                    ? portfolioValues?.profit
+                    : portfolioValues?.cashProfit
+                )}
+                className={clsx(
+                  'text-ink-1000 text-3xl font-bold transition-all sm:text-4xl',
+                  (displayAmounts(
+                    graphValues.profit,
+                    prefersPlay
+                      ? portfolioValues?.profit
+                      : portfolioValues?.cashProfit
+                  ) ?? 0) < 0
+                    ? 'text-scarlet-500'
+                    : 'text-teal-500'
+                )}
+                isInline
+                coinClassName="top-[0.25rem] sm:top-[0.1rem]"
+                coinType={prefersPlay ? 'mana' : 'sweepies'}
+              />
+              <span
+                className={clsx(
+                  'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
+                )}
+              >
+                profit
+              </span>
+            </span>
+            {prefersPlay && <ProfitWidget user={user} portfolio={portfolio} />}
+          </Col>
+          {profitGraphElement && (
+            <SizedContainer
+              className={clsx(className, 'mt-2 h-[70px] sm:h-[80px]')}
+              style={{
+                paddingRight: Y_AXIS_MARGIN,
+              }}
+            >
+              {profitGraphElement}
+            </SizedContainer>
+          )}
+        </Col>
 
-              <ProfitWidget user={user} portfolio={portfolio} />
-            </>
-          )}
-        </div>
-        {graphElement && (
-          <SizedContainer
-            className={clsx(
-              className,
-              'mt-2',
-              size == 'sm' ? 'h-[80px] sm:h-[100px]' : 'h-[125px] sm:h-[200px]'
-            )}
-            style={{
-              paddingRight: Y_AXIS_MARGIN,
-            }}
-          >
-            {graphElement}
-          </SizedContainer>
-        )}
-        {!hideSwitcher && graphElement && (
+        {!hideSwitcher && !!portfolioGraphElement && (
           <TimeRangePicker
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setCurrentTimePeriod}
             color={switcherColor}
             disabled={disabled}
-            className="bg-canvas-50 mt-8 border-0"
+            className="bg-canvas-0 border-0"
             toggleClassName="grow justify-center"
           />
-        )}
-        {!hideAddFundsButton && (
-          <Row className="mt-4 w-full gap-1 sm:hidden">
-            <AddFundsButton
-              userId={userId}
-              className="w-1/2 whitespace-nowrap"
-            />
-            <RedeemSpiceButton
-              userId={userId}
-              className="w-1/2 whitespace-nowrap"
-              spice={portfolioValues?.spice}
-            />
-          </Row>
         )}
       </Col>
     </Col>

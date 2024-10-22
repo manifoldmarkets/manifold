@@ -16,9 +16,9 @@ import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { Subtitle } from '../widgets/subtitle'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
-import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import { getReferralCodeFromUser } from 'common/util/share'
+import { CASH_COLOR } from '../portfolio/portfolio-graph'
 
 export const useReferralCount = (user: User) => {
   const [referralCount, setReferralCount] = useState(0)
@@ -56,7 +56,7 @@ export function Referrals(props: { user: User }) {
                 coinType={TWOMBA_ENABLED ? 'MANA' : 'spice'}
                 amount={REFERRAL_AMOUNT}
                 style={{
-                  color: SPICE_COLOR,
+                  color: CASH_COLOR,
                 }}
                 className={clsx('mr-1 font-bold')}
                 isInline

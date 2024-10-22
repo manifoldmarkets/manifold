@@ -20,7 +20,7 @@ import router from 'next/router'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 import { useNativeInfo } from './native-message-provider'
 import { CoinNumber } from './widgets/coin-number'
-import { TwombaFundsSelector } from 'web/components/gidx/twomba-funds-selector'
+import { FundsSelector } from 'web/components/gidx/funds-selector'
 import { getVerificationStatus } from 'common/gidx/user'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { checkoutURL } from 'web/lib/service/stripe'
@@ -87,7 +87,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
 
   return (
     <Col className={'gap-2'}>
-      <TwombaFundsSelector
+      <FundsSelector
         onSelectPriceInDollars={(dollarAmount) => {
           if (!user || !privateUser) return firebaseLogin()
           const { status, message } = getVerificationStatus(user, privateUser)

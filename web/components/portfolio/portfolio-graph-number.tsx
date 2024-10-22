@@ -1,9 +1,9 @@
 import clsx from 'clsx'
-import { PortfolioMode } from './portfolio-value-graph'
 import { CoinNumber } from '../widgets/coin-number'
 import { Col } from '../layout/col'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { PortfolioMode } from './portfolio-graph'
 
 export function PortfolioGraphNumber(props: {
   numberType: 'balance' | 'investment' | 'spice'

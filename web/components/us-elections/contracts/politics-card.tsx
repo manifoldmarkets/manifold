@@ -17,7 +17,7 @@ import { CandidatePanel } from './candidates-panel/candidates-panel'
 import { SmallCandidatePanel } from './candidates-panel/small-candidate-panel'
 import { PartyPanel } from './party-panel/party-panel'
 import { BinaryPartyPanel } from './party-panel/binary-party-panel'
-import { TwombaToggle } from 'web/components/twomba/twomba-toggle'
+import { SweepsToggle } from 'web/components/sweeps/sweeps-toggle'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 
@@ -128,7 +128,7 @@ export function PoliticsCard(props: {
           >
             {customTitle ?? contract.question}
           </Link>
-          {TWOMBA_ENABLED && <TwombaToggle sweepsEnabled={true} />}
+          {TWOMBA_ENABLED && <SweepsToggle sweepsEnabled={true} />}
         </Row>
 
         {children}

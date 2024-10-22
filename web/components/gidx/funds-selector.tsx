@@ -18,7 +18,7 @@ import { AlertBox } from '../widgets/alert-box'
 import { formatMoneyUSD } from 'common/util/format'
 import { useIsNativeIOS } from 'web/components/native-message-provider'
 
-export function TwombaFundsSelector(props: {
+export function FundsSelector(props: {
   onSelectPriceInDollars: (amount: WebPriceInDollars) => void
   loadingPrice: WebPriceInDollars | null
 }) {

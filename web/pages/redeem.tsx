@@ -36,12 +36,12 @@ import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
 import { capitalize } from 'lodash'
-import { useKYCGiftAmount } from 'web/components/twomba/sweep-verify-section'
+import { useKYCGiftAmount } from 'web/components/sweeps/sweep-verify-section'
 import {
   Divider,
   InputTitle,
 } from 'web/components/gidx/register-component-helpers'
-import { UsOnlyDisclaimer } from 'web/components/twomba/us-only-disclaimer'
+import { UsOnlyDisclaimer } from 'web/components/sweeps/us-only-disclaimer'
 import { useEvent } from 'web/hooks/use-event'
 import {
   ageBlocked,

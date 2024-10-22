@@ -13,7 +13,7 @@ import { pick, sortBy, uniqBy } from 'lodash'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { YourOrders } from 'web/components/bet/order-book'
 import { ContractSEO } from 'web/components/contract/contract-seo'
-import { TwombaContractPageContent } from 'web/components/contract/twomba-contract-page'
+import { ContractPageContent } from 'web/components/contract/contract-page'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
@@ -139,7 +139,7 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
         contract={!prefersPlay && cash?.contract ? cash.contract : contract}
         points={pointsString}
       />
-      <TwombaContractPageContent key={contract.id} {...props.contractParams} />
+      <ContractPageContent key={contract.id} {...props.contractParams} />
     </Page>
   )
 }

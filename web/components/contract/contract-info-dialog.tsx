@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { APIError } from 'common/api/utils'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Contract, contractPool } from 'common/contract'
 import {
@@ -12,10 +13,9 @@ import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { BETTORS, User } from 'common/user'
 import dayjs from 'dayjs'
 import { capitalize, sumBy } from 'lodash'
+import router from 'next/router'
 import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
-import { BlockMarketButton } from 'web/components/buttons/block-market-button'
-import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { useAdmin, useDev, useTrusted } from 'web/hooks/use-admin'
 import {
   api,
@@ -25,21 +25,18 @@ import {
 import { formatTime } from 'web/lib/util/time'
 import { MoneyDisplay } from '../bet/money-display'
 import { Button } from '../buttons/button'
+import { ConfirmationButton } from '../buttons/confirmation-button'
 import { CopyLinkOrShareButton } from '../buttons/copy-link-button'
-import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
-import { ReportButton } from '../buttons/report-button'
 import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import SuperBanControl from '../SuperBanControl'
+import { InfoBox } from '../widgets/info-box'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
-import { BoostButton } from './boost-button'
 import { ContractHistoryButton } from './contract-edit-history-button'
-import { SubsidizeButton } from './subsidize-button'
-import { InfoBox } from '../widgets/info-box'
 
 export const Stats = (props: {
   contract: Contract
@@ -489,15 +486,34 @@ export const CheckOrSwitch = (props: {
 }
 
 export function ContractInfoDialog(props: {
-  contract: Contract
+  playContract: Contract
+  statsContract: Contract
   user: User | null | undefined
   open: boolean
   setOpen: (open: boolean) => void
 }) {
-  const { contract, user, open, setOpen } = props
+  const { playContract, statsContract, user, open, setOpen } = props
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
-  const isCreator = user?.id === contract.creatorId
+
+  const convertToCashMarket = async () => {
+    try {
+      await api('create-cash-contract', {
+        manaContractId: playContract.id,
+        subsidyAmount: 100, // You may want to make this configurable
+      })
+      toast.success('Market converted to cash market successfully')
+      router.reload()
+    } catch (error) {
+      if (error instanceof APIError) {
+        toast.error(error.message)
+        console.error(error.details)
+      } else {
+        toast.error('Failed to convert market to cash market')
+        console.error(error)
+      }
+    }
+  }
 
   return (
     <Modal
@@ -505,44 +521,40 @@ export function ContractInfoDialog(props: {
       setOpen={setOpen}
       className="bg-canvas-0 flex flex-col gap-4 rounded p-6"
     >
-      <FollowMarketButton contract={contract} user={user} />
-
-      <Stats contract={contract} user={user} />
+      <Stats contract={statsContract} user={user} />
 
       {!!user && (
         <>
           <Row className="my-2 flex-wrap gap-2">
-            {!isCreator && <BoostButton contract={contract} />}
-            <DuplicateContractButton contract={contract} />
-            <ContractHistoryButton contract={contract} />
-            <ShareQRButton contract={contract} />
-            <ShareIRLButton contract={contract} />
-            <ShareEmbedButton contract={contract} />
-            {(contract.mechanism == 'cpmm-1' ||
-              contract.mechanism == 'cpmm-multi-1') && (
-              <SubsidizeButton contract={contract} />
-            )}
+            <ContractHistoryButton contract={playContract} />
+            <ShareQRButton contract={playContract} />
+            <ShareIRLButton contract={playContract} />
+            <ShareEmbedButton contract={statsContract} />
           </Row>
           <Row className="flex-wrap gap-2">
-            <ReportButton
-              report={{
-                contentId: contract.id,
-                contentType: 'contract',
-                contentOwnerId: contract.creatorId,
-              }}
-            />
-
-            <BlockMarketButton contract={contract} />
-            <DisinterestedButton contract={contract} user={user} />
             {isAdmin || isTrusted ? (
-              <SuperBanControl userId={contract.creatorId} />
+              <SuperBanControl userId={playContract.creatorId} />
             ) : null}
+            {isAdmin && !playContract.siblingContractId && (
+              <ConfirmationButton
+                openModalBtn={{
+                  label: 'Make sweepcash',
+                  color: 'yellow-outline',
+                }}
+                submitBtn={{ label: 'Sweepify!', color: 'yellow' }}
+                onSubmit={() => convertToCashMarket()}
+              >
+                Are you sure you want to convert this market to a sweepcash
+                market?
+              </ConfirmationButton>
+            )}
           </Row>
         </>
       )}
     </Modal>
   )
 }
+
 const DisinterestedButton = (props: {
   contract: Contract
   user: User | null | undefined

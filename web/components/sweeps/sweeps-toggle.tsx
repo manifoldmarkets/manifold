@@ -4,7 +4,7 @@ import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
 import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Tooltip } from 'web/components/widgets/tooltip'
 
-export function TwombaToggle(props: {
+export function SweepsToggle(props: {
   sweepsEnabled: boolean
   isPlay?: boolean
   onClick?: () => void

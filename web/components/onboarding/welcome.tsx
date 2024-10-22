@@ -34,8 +34,8 @@ import { removeEmojis } from 'common/util/string'
 import { unauthedApi } from 'common/util/api'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { capitalize } from 'lodash'
-import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
-import { TwombaCoinsPage, TwombaWelcomePage } from './twomba-welcome'
+import { TRADE_TERM } from 'common/envs/constants'
+import { SweepsCoinsPage, SweepsWelcomePage } from './sweeps-welcome'
 
 const FORCE_SHOW_WELCOME_MODAL = false
 
@@ -75,8 +75,8 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const [trendingTopics, setTrendingTopics] = useState<Group[]>([])
 
   const availablePages = buildArray([
-    TWOMBA_ENABLED ? <TwombaWelcomePage /> : <WhatIsManifoldPage />,
-    TWOMBA_ENABLED ? <TwombaCoinsPage /> : <PredictionMarketPage />,
+    <SweepsWelcomePage />,
+    <SweepsCoinsPage />,
     <TopicsPage
       trendingTopics={trendingTopics}
       userInterestedTopics={userInterestedTopics}

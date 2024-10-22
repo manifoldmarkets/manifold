@@ -12,9 +12,9 @@ import { api } from 'web/lib/api/api'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { Welcome } from 'web/components/onboarding/welcome'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { DowntimeBanner, TwombaBanner } from 'web/components/nav/banner'
+import { Welcome } from 'web/components/onboarding/welcome'
 
 export async function getStaticProps() {
   try {
@@ -39,7 +39,7 @@ export default function Home(props: { headlines: Headline[] }) {
     <Page trackPageView={'home'} className="!mt-0">
       <Welcome />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
-      {TWOMBA_ENABLED && <TwombaBanner />}
+      <TwombaBanner />
       <DowntimeBanner />
       <HeadlineTabs
         endpoint={'news'}
