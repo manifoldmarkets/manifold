@@ -40,6 +40,7 @@ import { ManaSupply } from 'common/stats'
 import { Repost } from 'common/repost'
 import { adContract } from 'common/boost'
 import { PERIODS } from 'common/period'
+import { SWEEPS_MIN_BET } from 'common/economy'
 import {
   LivePortfolioMetrics,
   PortfolioMetrics,
@@ -200,7 +201,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string(),
-        amount: z.number().gte(0.01),
+        amount: z.number().gte(SWEEPS_MIN_BET),
         replyToCommentId: z.string().optional(),
         limitProb: z.number().gte(0.01).lte(0.99).optional(),
         expiresAt: z.number().optional(),

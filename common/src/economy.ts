@@ -203,3 +203,5 @@ export const IOS_PRICES = TWOMBA_ENABLED
 
 export const SWEEPIES_CASHOUT_FEE = 0.05
 export const MIN_CASHOUT_AMOUNT = 25
+
+export const SWEEPS_MIN_BET = 1
