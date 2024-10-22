@@ -147,7 +147,7 @@ export function createJobs() {
     ),
     createJob(
       'weekly-portfolio-emails',
-      '0 * 12-14 * * 5',
+      '0 * 12-14 * * 5', // every Friday from 12pm to 2pm
       sendPortfolioUpdateEmailsToAllUsers
     ),
     createJob(
@@ -157,20 +157,13 @@ export function createJobs() {
     ),
     createJob(
       'reset-weekly-email-flags',
-      '0 0 0 * * 6',
+      '0 0 0 * * 6', // every Saturday at midnight
       resetWeeklyEmailsFlags
     ),
     createJob(
       'send-streak-notifications',
       '0 30 18 * * *', // 6:30pm PST daily ( 9:30pm EST )
       sendStreakExpirationNotification
-    ),
-
-    // Monthly jobs:
-    createJob(
-      'increment-streak-forgiveness',
-      '0 0 3 1 * *', // 3am PST on the 1st day of the month
-      incrementStreakForgiveness
     ),
     createJob(
       'update-league-ranks',
@@ -191,6 +184,12 @@ export function createJobs() {
       'reset-weekly-quests-stats',
       '0 0 0 * * 1', // every Monday at midnight
       resetWeeklyQuestStatsInternal
+    ),
+    // Monthly jobs:
+    createJob(
+      'increment-streak-forgiveness',
+      '0 0 3 1 * *', // 3am PST on the 1st day of the month
+      incrementStreakForgiveness
     ),
   ]
 }
