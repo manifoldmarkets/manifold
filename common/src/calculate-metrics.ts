@@ -9,7 +9,6 @@ import {
   Contract,
   CPMMMultiContract,
   CPMMMultiNumeric,
-  getAdjustedProfit,
 } from './contract'
 import { User } from './user'
 import { computeFills } from './new-bet'

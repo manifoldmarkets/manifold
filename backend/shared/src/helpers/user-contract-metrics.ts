@@ -1,8 +1,6 @@
 import { groupBy, uniq, uniqBy } from 'lodash'
 import {
   Contract,
-  DPM_CUTOFF_TIMESTAMP,
-  PROFIT_CUTOFF_TIME,
 } from 'common/contract'
 import { Bet } from 'common/bet'
 import {
