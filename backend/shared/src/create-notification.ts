@@ -150,6 +150,7 @@ export const createFollowOrMarketSubsidizedNotification = async (
           sourceContractSlug: sourceContract?.slug,
           sourceSlug: sourceContract?.slug,
           sourceTitle: sourceContract?.question,
+          data: sourceContract ? { token: sourceContract?.token } : undefined,
         }
         const pg = createSupabaseDirectClient()
         await insertNotificationToSupabase(notification, pg)
