@@ -116,5 +116,6 @@ export const createFnQueue = (props?: { timeout?: number }) => {
   return { enqueueFn, enqueueFnFirst }
 }
 
+export const ordersQueue = createFnQueue()
 export const betsQueue = createFnQueue()
 export const pollQueue = createFnQueue()

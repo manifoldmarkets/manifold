@@ -1,5 +1,5 @@
 import { first, isEqual, mapValues, maxBy, sumBy } from 'lodash'
-import { APIError, type APIHandler } from './helpers/endpoint'
+import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { Contract, CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
 import {
@@ -34,7 +34,7 @@ import {
   cancelLimitOrdersQuery,
   insertBet,
 } from 'shared/supabase/bets'
-import { betsQueue } from 'shared/helpers/fn-queue'
+import { betsQueue, ordersQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
 import { partialAnswerToRow } from 'shared/supabase/answers'
@@ -66,9 +66,27 @@ import {
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
+  const { deps, contractId } = props
 
-  let simulatedMakerIds: string[] = []
-  if (props.deps === undefined) {
+  // Most likely path for api users as they won't pass their deps
+  if (deps === undefined) {
+    return queueDependenciesThenBet(props, auth, isApi)
+  }
+
+  // Worst thing that could happen from wrong deps is contention
+  const fullDeps = [auth.uid, contractId, ...deps]
+  return await betsQueue.enqueueFn(() => {
+    return placeBetMain(props, auth.uid, isApi)
+  }, fullDeps)
+}
+
+const queueDependenciesThenBet = async (
+  props: ValidatedAPIParams<'bet'>,
+  auth: AuthedUser,
+  isApi: boolean
+) => {
+  const minimalDeps = [auth.uid, props.contractId]
+  return await ordersQueue.enqueueFn(async () => {
     const { user, contract, answers, unfilledBets, balanceByUserId } =
       await fetchContractBetDataAndValidate(
         createSupabaseDirectClient(),
@@ -85,19 +103,12 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
       unfilledBets,
       balanceByUserId
     )
-    simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
-  }
+    const makerIds = getMakerIdsFromBetResult(simulatedResult)
 
-  const deps = [
-    auth.uid,
-    props.contractId,
-    ...(props.deps ?? simulatedMakerIds),
-  ]
-
-  return await betsQueue.enqueueFn(
-    () => placeBetMain(props, auth.uid, isApi),
-    deps
-  )
+    return await betsQueue.enqueueFn(async () => {
+      return placeBetMain(props, auth.uid, isApi)
+    }, [...minimalDeps, ...makerIds])
+  }, minimalDeps)
 }
 
 export const placeBetMain = async (
