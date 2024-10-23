@@ -1,3 +1,4 @@
+import { RefreshIcon } from '@heroicons/react/outline'
 import { Col } from 'web/components/layout/col'
 import {
   Leaderboard,
@@ -189,6 +190,12 @@ export default function Leaderboards() {
                 <TopicPillSelector topic={topic} setTopic={setTopic} />
               </>
             )}
+            <button
+              onClick={refresh}
+              className="hover:bg-ink-300 active:bg-ink-300 flex items-center rounded-full px-1 transition-colors"
+            >
+              <RefreshIcon className="text-ink-600 h-4 w-4" />
+            </button>
           </div>
         </Col>
         {entries ? (
