@@ -7,10 +7,9 @@ export const nanoid = (e = 21) => {
   return t
 }
 
-export const randomString = (length = 10) => nanoid(length)
-
 // Matches the output of the randomString function, for validation purposes.
-export const randomStringRegex = /^[0-9a-z]+$/
+export const randomStringRegex = /^[0-9a-zA-Z]+$/
+export const randomString = (length = 10) => nanoid(length)
 
 export function genHash(str: string) {
   // xmur3
