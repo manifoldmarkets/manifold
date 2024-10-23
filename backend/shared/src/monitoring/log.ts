@@ -19,7 +19,7 @@ const IS_GCP = process.env.GOOGLE_CLOUD_PROJECT != null
 const DISPLAY_CATEGORY_KEYS = ['endpoint', 'job'] as const
 
 // keys to ignore when printing out log details in the console
-const DISPLAY_EXCLUDED_KEYS = ['traceId', 'baseEndpoint'] as const
+const DISPLAY_EXCLUDED_KEYS = ['traceId', 'baseEndpoint', 'ip'] as const
 
 export type LogLevel = keyof typeof JS_TO_GCP_LEVELS
 export type LogDetails = Record<string, unknown>
