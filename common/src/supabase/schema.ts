@@ -2613,7 +2613,6 @@ export type Database = {
           has_yes_shares: boolean | null
           id: number
           profit: number | null
-          profit_adjustment: number | null
           total_shares_no: number | null
           total_shares_yes: number | null
           user_id: string
@@ -2627,7 +2626,6 @@ export type Database = {
           has_yes_shares?: boolean | null
           id?: never
           profit?: number | null
-          profit_adjustment?: number | null
           total_shares_no?: number | null
           total_shares_yes?: number | null
           user_id: string
@@ -2641,7 +2639,6 @@ export type Database = {
           has_yes_shares?: boolean | null
           id?: never
           profit?: number | null
-          profit_adjustment?: number | null
           total_shares_no?: number | null
           total_shares_yes?: number | null
           user_id?: string
@@ -3095,7 +3092,6 @@ export type Database = {
           id: string
           name: string
           name_username_vector: unknown | null
-          resolved_profit_adjustment: number | null
           spice_balance: number
           total_cash_deposits: number
           total_deposits: number
@@ -3109,7 +3105,6 @@ export type Database = {
           id?: string
           name: string
           name_username_vector?: unknown | null
-          resolved_profit_adjustment?: number | null
           spice_balance?: number
           total_cash_deposits?: number
           total_deposits?: number
@@ -3123,7 +3118,6 @@ export type Database = {
           id?: string
           name?: string
           name_username_vector?: unknown | null
-          resolved_profit_adjustment?: number | null
           spice_balance?: number
           total_cash_deposits?: number
           total_deposits?: number
