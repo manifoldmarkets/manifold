@@ -21,5 +21,5 @@ export const initCaches = async (timeoutId: NodeJS.Timeout) => {
     'Active user ids to cache interests: ',
     activeUserIdsToCacheInterests.length
   )
-  await buildUserInterestsCache(activeUserIdsToCacheInterests)
+  buildUserInterestsCache(activeUserIdsToCacheInterests)
 }
