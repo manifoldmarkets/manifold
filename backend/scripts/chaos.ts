@@ -20,21 +20,30 @@ const ENABLE_LIMIT_ORDERS = true
 const USERS = 100
 // TODO Does it lock down without using limit orders?
 
-async function promptForRunName(): Promise<string> {
+async function promptForRunInfo() {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   })
 
-  return new Promise((resolve) => {
+  const runName = await new Promise<string>((resolve) => {
     rl.question(
       'Enter a name for this chaos run (what feature are you testing?): ',
+      (answer) => resolve(answer)
+    )
+  })
+
+  const runTime = await new Promise<number | undefined>((resolve) => {
+    rl.question(
+      'Enter runtime in seconds (leave empty to run forever): ',
       (answer) => {
         rl.close()
-        resolve(answer)
+        resolve(answer ? parseInt(answer) : undefined)
       }
     )
   })
+
+  return { runName, runTime }
 }
 
 if (require.main === module) {
@@ -44,7 +53,7 @@ if (require.main === module) {
       return
     }
 
-    const runName = await promptForRunName()
+    const { runName, runTime } = await promptForRunInfo()
 
     const privateUsers = await getTestUsers(pg, USERS)
     let markets: LiteMarket[] = []
@@ -222,6 +231,10 @@ if (require.main === module) {
       log(`Run name: ${runName}`)
       log(`Total time elapsed: ${elapsedSeconds.toFixed(2)} seconds`)
       log(`-------------------------`)
+      if (runTime && elapsedSeconds >= runTime) {
+        log(`Runtime elapsed, exiting...`)
+        process.exit(0)
+      }
     }
 
     // Run report stats and repeat chaos
