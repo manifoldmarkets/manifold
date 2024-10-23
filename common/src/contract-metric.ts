@@ -35,7 +35,6 @@ export type ContractMetric = {
         }
       }
     | undefined
-  profitAdjustment?: number
   /*@deprecated join with users table*/
   userUsername?: string
   /*@deprecated join with users table*/

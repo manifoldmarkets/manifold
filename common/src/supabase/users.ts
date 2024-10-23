@@ -38,7 +38,6 @@ export function convertUser(row: Row<'users'> | null): User | null {
     spiceBalance: row.spice_balance,
     totalDeposits: row.total_deposits,
     totalCashDeposits: row.total_cash_deposits,
-    resolvedProfitAdjustment: row.resolved_profit_adjustment,
   } as User
 }
 

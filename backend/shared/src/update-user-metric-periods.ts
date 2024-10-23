@@ -47,7 +47,7 @@ export async function updateUserMetricPeriods(
     ),
     recent_answers as (
       select distinct a.contract_id
-      from answers a 
+      from answers a
       where a.resolution_time > now() - interval '${daysAgoSince} day'
     )
     select distinct contract_id
@@ -103,7 +103,7 @@ export async function updateUserMetricPeriods(
       select id, data from user_contract_metrics
       where user_id in ($2:list)
       and contract_id in ($1:list);
-      
+
       select * from users where id in ($2:list);
     `,
       [uniq(allBets.map((b) => b.contractId)), activeUserIds]
@@ -188,33 +188,6 @@ export async function updateUserMetricPeriods(
           })
         )
       )
-      if (since === 0) {
-        const resolvedMetrics = freshMetrics.filter((m) => {
-          const contract = contractsById[m.contractId]
-
-          if (contract.token !== 'MANA') return false
-
-          if (contract.mechanism === 'cpmm-multi-1') {
-            // Don't double count null answer (summary) profits
-            if (!m.answerId) return false
-            const answer = answersByContractId[m.contractId]?.find(
-              (a) => a.id === m.answerId
-            )
-            return !!answer?.resolutionTime
-          }
-          return contract.isResolved
-        })
-        const resolvedProfitAdjustment = sumBy(
-          resolvedMetrics,
-          (m) => m.profitAdjustment ?? 0
-        )
-        await pg.none(
-          `update users
-         set resolved_profit_adjustment = $1
-         where id = $2`,
-          [resolvedProfitAdjustment, user.id]
-        )
-      }
     }
     log(`Computed ${contractMetricUpdates.length} metric updates.`)
 

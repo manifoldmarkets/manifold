@@ -3,12 +3,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import {
-  contractColumnsToSelect,
-  getUsers,
-  isProd,
-  log,
-} from 'shared/utils'
+import { contractColumnsToSelect, getUsers, isProd, log } from 'shared/utils'
 import { groupBy, sum, sumBy, uniq } from 'lodash'
 import {
   Contract,
@@ -153,7 +148,7 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
   for (const user of users) {
     const userMetrics = currentMetricsByUserId[user.id] ?? []
     const { currentPortfolio } = userToPortfolioMetrics[user.id]
-    const { balance, totalDeposits, resolvedProfitAdjustment } = user
+    const { balance, totalDeposits } = user
     const newPortfolio = {
       ...calculateNewPortfolioMetricsWithContractMetrics(
         user,
@@ -161,11 +156,8 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
         userMetrics
       ),
       profit:
-        (resolvedProfitAdjustment ?? 0) +
         // Resolved profits are already included in the user's balance - deposits
-        sumBy(userMetrics, (m) => (m.profitAdjustment ?? 0) + m.profit) +
-        balance -
-        totalDeposits,
+        sumBy(userMetrics, (m) => m.profit) + balance - totalDeposits,
     }
 
     const didPortfolioChange =
@@ -230,7 +222,8 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
 ) => {
   const metrics = await pg.map(
     `
-    select ucm.data from user_contract_metrics ucm
+    select ucm.data, coalesce((c.data->'isRanked')::boolean, false) as is_ranked
+    from user_contract_metrics ucm
     join contracts as c on ucm.contract_id = c.id
     left join answers as a on ucm.answer_id = a.id
     where
@@ -239,7 +232,8 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
       and (a is null or a.resolution_time is null);
     `,
     [userIds],
-    (r) => r.data as ContractMetric
+    (r) =>
+      ({ ...r.data, profit: r.is_ranked ? r.data.profit : 0 } as ContractMetric)
   )
   if (metrics.length === 0) {
     return {

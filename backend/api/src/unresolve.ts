@@ -16,7 +16,6 @@ import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { TxnData, insertTxns } from 'shared/txn/run-txn'
-import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
 import { bulkIncrementBalances } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { assert } from 'common/util/assert'
@@ -51,12 +50,7 @@ const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
 
     await undoResolution(tx, contract, auth.uid, answerId)
 
-    return {
-      result: { success: true as const },
-      continue: async () => {
-        await setAdjustProfitFromResolvedMarkets(contractId)
-      },
-    }
+    return { success: true as const }
   })
 
   await trackPublicEvent(auth.uid, 'unresolve market', {

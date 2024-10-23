@@ -21,7 +21,6 @@ export type User = {
   spiceBalance: number
   totalDeposits: number
   totalCashDeposits: number
-  resolvedProfitAdjustment?: number
 
   creatorTraders: {
     daily: number
