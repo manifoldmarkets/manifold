@@ -10,6 +10,7 @@ import { getRandomTestBet } from 'shared/test/bets'
 import { MONTH_MS } from 'common/util/time'
 import { LiteMarket } from 'common/api/market-types'
 import { sumBy } from 'lodash'
+import * as readline from 'readline'
 
 const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 // const URL = `http://localhost:8088/v0`
@@ -17,6 +18,24 @@ const OLD_MARKET_SLUG = undefined //'chaos-sweeps--cash'
 const USE_OLD_MARKET = !!OLD_MARKET_SLUG
 const ENABLE_LIMIT_ORDERS = true
 const USERS = 100
+// TODO Does it lock down without using limit orders?
+
+async function promptForRunName(): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  })
+
+  return new Promise((resolve) => {
+    rl.question(
+      'Enter a name for this chaos run (what feature are you testing?): ',
+      (answer) => {
+        rl.close()
+        resolve(answer)
+      }
+    )
+  })
+}
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -24,6 +43,9 @@ if (require.main === module) {
       log('This script is dangerous to run in prod. Exiting.')
       return
     }
+
+    const runName = await promptForRunName()
+
     const privateUsers = await getTestUsers(pg, USERS)
     let markets: LiteMarket[] = []
     if (!USE_OLD_MARKET) {
@@ -197,6 +219,7 @@ if (require.main === module) {
       )
 
       log(`----- FINALLY -----`)
+      log(`Run name: ${runName}`)
       log(`Total time elapsed: ${elapsedSeconds.toFixed(2)} seconds`)
       log(`-------------------------`)
     }
