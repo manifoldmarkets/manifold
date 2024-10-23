@@ -207,7 +207,7 @@ export const placeBetMain = async (
         ? getNewBetId()
         : undefined
 
-    const result = await executeNewBetResult(
+    return await executeNewBetResult(
       pgTrans,
       newBetResult,
       contract,
@@ -218,42 +218,6 @@ export const placeBetMain = async (
       betGroupId,
       deterministic
     )
-    const { updatedMetrics } = result
-    log('Redeeming shares for bettor', user.username, user.id)
-    const {
-      betsToInsert: redemptionBetsToInsert,
-      updatedMetrics: redemptionUpdatedMetrics,
-      balanceUpdates,
-    } = await redeemShares(
-      pgTrans,
-      [user.id],
-      contract,
-      [
-        {
-          ...newBetResult.newBet,
-          userId: user.id,
-        },
-      ],
-      updatedMetrics
-    )
-    if (redemptionBetsToInsert.length > 0) {
-      const balanceQuery = bulkIncrementBalancesQuery(balanceUpdates)
-      const insertBetsQuery = bulkInsertBetsQuery(redemptionBetsToInsert)
-      const metricsQuery = bulkUpdateContractMetricsQuery(
-        redemptionUpdatedMetrics
-      )
-      const results = await pgTrans.multi(
-        `${balanceQuery};
-         ${insertBetsQuery};
-         ${metricsQuery};`
-      )
-      const userUpdates = results[0]
-      broadcastUserUpdates(userUpdates)
-      const insertedBets = results[1].map(convertBet)
-      result.fullBets.push(...insertedBets)
-    }
-    log('Share redemption transaction finished.')
-    return { ...result, updatedMetrics: redemptionUpdatedMetrics }
   })
 
   const {
@@ -603,9 +567,9 @@ export const executeNewBetResult = async (
   )
 
   const {
-    betsToInsert: redemptionBetsToInsert,
-    updatedMetrics: redemptionUpdatedMetrics,
-    balanceUpdates: redemptionAndLimitOrderBalanceUpdates,
+    betsToInsert: makerRedemptionBetsToInsert,
+    updatedMetrics: makerRedemptionAndFillUpdatedMetrics,
+    balanceUpdates: makerRedemptionAndFillBalanceUpdates,
     bulkUpdateLimitOrdersQuery,
   } = await updateMakers(
     makerIDsByTakerBetId,
@@ -613,16 +577,32 @@ export const executeNewBetResult = async (
     updatedMetrics,
     pgTrans
   )
+  // Create redemption bets for bettor w/o limit fills if needed:
+  const {
+    betsToInsert: bettorRedemptionBetsToInsert,
+    updatedMetrics: bettorRedemptionUpdatedMetrics,
+    balanceUpdates: bettorRedemptionBalanceUpdates,
+  } = await redeemShares(
+    pgTrans,
+    [user.id],
+    contract,
+    [candidateBet],
+    makerRedemptionAndFillUpdatedMetrics
+  )
 
   const balanceQuery = bulkIncrementBalancesQuery([
     ...userBalanceUpdates,
-    ...redemptionAndLimitOrderBalanceUpdates,
+    ...makerRedemptionAndFillBalanceUpdates,
+    ...bettorRedemptionBalanceUpdates,
   ])
   const insertBetsQuery = bulkInsertBetsQuery([
     ...betsToInsert,
-    ...redemptionBetsToInsert,
+    ...makerRedemptionBetsToInsert,
+    ...bettorRedemptionBetsToInsert,
   ])
-  const metricsQuery = bulkUpdateContractMetricsQuery(redemptionUpdatedMetrics)
+  const metricsQuery = bulkUpdateContractMetricsQuery(
+    bettorRedemptionUpdatedMetrics
+  )
   const streakIncrementedQuery = incrementStreakQuery(user, newBet.createdTime)
   const contractUpdateQuery = updateDataQuery('contracts', 'id', contractUpdate)
   const answerUpdateQuery = bulkUpdateQuery(
@@ -661,7 +641,7 @@ export const executeNewBetResult = async (
       lastBetTime: newBet.createdTime,
     })
   )
-  // TODO: No reason to return the sql bet data, betsToInsert is fully formed
+  // TODO: No reason to return the sql bet data, the bets we insert are fully formed
   const insertedBets = results[2].map(convertBet)
   const newContract = results[4].map(convertContract)[0]
   log('updated contract', newContract)
@@ -690,6 +670,6 @@ export const executeNewBetResult = async (
     betGroupId,
     streakIncremented,
     bonusTxn,
-    updatedMetrics: redemptionUpdatedMetrics,
+    updatedMetrics: bettorRedemptionUpdatedMetrics,
   }
 }
