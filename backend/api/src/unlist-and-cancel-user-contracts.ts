@@ -1,15 +1,11 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { getUser } from 'shared/utils'
-import { Contract } from 'common/contract'
-import { betsQueue } from 'shared/helpers/fn-queue'
 import { updateContract } from 'shared/supabase/contracts'
+import { convertContract } from 'common/supabase/contracts'
 
 export const unlistAndCancelUserContracts: APIHandler<
   'unlist-and-cancel-user-contracts'
@@ -29,18 +25,13 @@ export const unlistAndCancelUserContracts: APIHandler<
     throw new APIError(500, 'Creator not found')
   }
 
-  const db = createSupabaseClient()
   const pg = createSupabaseDirectClient()
 
-  const { data, error } = await db
-    .from('contracts')
-    .select('data')
-    .eq('creatorId', userId)
-  if (error) {
-    throw new APIError(500, 'Failed to fetch contracts: ' + error.message)
-  }
-
-  const contracts = data.map((contract) => contract.data as Contract)
+  const contracts = await pg.map(
+    `SELECT * FROM contracts WHERE creator_id = $1`,
+    [userId],
+    convertContract
+  )
 
   if (contracts.length === 0) {
     console.log('No contracts found for this user.')
@@ -61,17 +52,11 @@ export const unlistAndCancelUserContracts: APIHandler<
   }
 
   try {
-    await Promise.all(
-      contracts.map((contract) =>
-        betsQueue.enqueueFnFirst(
-          () =>
-            resolveMarketHelper(contract, resolver, creator, {
-              outcome: 'CANCEL',
-            }),
-          [contract.id, creator.id]
-        )
-      )
-    )
+    for (const contract of contracts) {
+      await resolveMarketHelper(contract, resolver, creator, {
+        outcome: 'CANCEL',
+      })
+    }
   } catch (error) {
     console.error('Error resolving contracts:', error)
     throw new APIError(500, 'Failed to update one or more contracts.')
