@@ -9,6 +9,7 @@ import { getTestUsers } from 'shared/test/users'
 import { getRandomTestBet } from 'shared/test/bets'
 import { MONTH_MS } from 'common/util/time'
 import { LiteMarket } from 'common/api/market-types'
+import { sumBy } from 'lodash'
 
 const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 // const URL = `http://localhost:8088/v0`
@@ -174,6 +175,8 @@ if (require.main === module) {
       log(`Total bettors: ${privateUsers.length}`)
       log(`Limit orders enabled: ${ENABLE_LIMIT_ORDERS ? 'yes' : 'no'}`)
       log(`Slug used: ${USE_OLD_MARKET ? OLD_MARKET_SLUG : markets[0].slug}`)
+      log(`Old market used: ${USE_OLD_MARKET ? 'yes' : 'no'}`)
+      log(`Total market volume at start: ${sumBy(contracts, (c) => c.volume)}`)
       log(`Total error bets: ${totalBetErrors}`)
       log(`Total successful bets: ${totalBets}`)
       log(
