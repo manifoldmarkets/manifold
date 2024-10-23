@@ -31,8 +31,10 @@ const userToPortfolioMetrics: {
     timeCachedPeriodProfits: number
   }
 } = {}
-const LIMIT = isProd() ? 400 : 10
+
 export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
+  const LIMIT = isProd() ? 400 : 10
+
   const now = Date.now()
   const yesterday = now - DAY_MS
   const weekAgo = now - DAY_MS * 7
