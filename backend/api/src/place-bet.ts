@@ -17,7 +17,6 @@ import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import { CASH_BETS_ENABLED } from 'common/envs/constants'
-import * as crypto from 'crypto'
 import {
   createSupabaseDirectClient,
   SupabaseTransaction,
@@ -205,7 +204,7 @@ export const placeBetMain = async (
 
     const betGroupId =
       contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
-        ? crypto.randomBytes(12).toString('hex')
+        ? getNewBetId()
         : undefined
 
     const result = await executeNewBetResult(
