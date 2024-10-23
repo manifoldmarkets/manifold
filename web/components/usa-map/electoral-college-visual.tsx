@@ -128,6 +128,12 @@ export function sortByDemocraticDiff(
         diff = democraticAnswer
           ? getAnswerProbability(contract, democraticAnswer.id)
           : 0
+
+        const x = data?.find((d) => d.state === state)
+        if (x?.otherParty == 'Democratic Party') {
+          const other = contract.answers.find((a) => a.isOther)?.id
+          if (other) diff += getAnswerProbability(contract, other)
+        }
       } else if (contract?.mechanism === 'cpmm-1') {
         // Binary contract logic
         const republicanProb = getDisplayProbability(contract as BinaryContract)
