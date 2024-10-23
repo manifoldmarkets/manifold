@@ -1,7 +1,7 @@
 import { log } from 'shared/monitoring/log'
 import { incrementBalance, updateUser } from 'shared/supabase/users'
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { randomString, secureRandomString } from 'common/util/random'
+import { randomString } from 'common/util/random'
 import * as admin from 'firebase-admin'
 import { createUserMain } from 'shared/create-user-main'
 
@@ -22,7 +22,7 @@ export const getTestUsers = async (
     Array.from({ length: missing }).map(async () => {
       const userCredential = await auth.createUser({
         email: 'manifoldTestNewUser+' + randomString() + '@gmail.com',
-        password: secureRandomString(16),
+        password: randomString(16),
         emailVerified: true,
         displayName: 'Manifold Test User',
       })

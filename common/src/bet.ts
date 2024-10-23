@@ -1,6 +1,7 @@
 import { groupBy, mapValues } from 'lodash'
 import { Fees } from './fees'
 import { maxMinBin } from './chart'
+import { nanoid } from 'common/util/random'
 
 /************************************************
 
@@ -101,12 +102,4 @@ export type maker = {
   timestamp: number
 }
 
-export const getNewBetId = () => {
-  const characters =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let result = ''
-  for (let i = 0; i < 12; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length))
-  }
-  return result
-}
+export const getNewBetId = () => nanoid(12)

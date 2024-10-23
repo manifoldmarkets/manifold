@@ -1,11 +1,13 @@
-// max 10 length string. For longer, concat multiple
-// Often used as a unique identifier.
-import { randomBytes } from 'crypto'
+const a = 'useandom26T198340PX75pxJACKVERYMINDBUSHWOLFGQZbfghjklqvwyzrict'
+export const nanoid = (e = 21) => {
+  let t = ''
+  const r = crypto.getRandomValues(new Uint8Array(e))
+  for (let n = 0; n < e; n++) t += a[61 & r[n]]
+  if (t.length !== e) throw new Error('Failed to generate random string')
+  return t
+}
 
-export const randomString = (length = 10) =>
-  Math.random()
-    .toString(36)
-    .substring(2, length + 2)
+export const randomString = (length = 10) => nanoid(length)
 
 // Matches the output of the randomString function, for validation purposes.
 export const randomStringRegex = /^[0-9a-z]+$/
@@ -58,8 +60,4 @@ export const shuffle = (array: unknown[], rand: () => number) => {
     const swapIndex = i + Math.floor(rand() * (array.length - i))
     ;[array[i], array[swapIndex]] = [array[swapIndex], array[i]]
   }
-}
-
-export const secureRandomString = (length: number): string => {
-  return randomBytes(length).toString('hex').slice(0, length)
 }

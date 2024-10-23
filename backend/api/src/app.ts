@@ -1,6 +1,5 @@
 import { hrtime } from 'node:process'
 import * as cors from 'cors'
-import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 import { log, metrics } from 'shared/utils'
@@ -198,6 +197,7 @@ import { refreshAllClients } from './refresh-all-clients'
 import { getLeaderboard } from './get-leaderboard'
 import { toggleSystemTradingStatus } from './toggle-system-status'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
+import { randomString } from 'common/util/random'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -217,9 +217,7 @@ const ignoredEndpoints = [
 
 const requestMonitoring: RequestHandler = (req, res, next) => {
   const traceContext = req.get('X-Cloud-Trace-Context')
-  const traceId = traceContext
-    ? traceContext.split('/')[0]
-    : crypto.randomUUID()
+  const traceId = traceContext ? traceContext.split('/')[0] : randomString(12)
   const { method, path: endpoint, url } = req
   const baseEndpoint = getBaseName(endpoint)
   const context = { endpoint, traceId, baseEndpoint }
