@@ -1,6 +1,6 @@
 import { XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { PHONE_VERIFICATION_BONUS } from 'common/economy'
+import { PHONE_VERIFICATION_BONUS, SWEEPS_MIN_BET } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { MarketTierType } from 'common/tier'
 import { humanish, User } from 'common/user'
@@ -218,6 +218,11 @@ export function BuyAmountInput(props: {
           (token === 'CASH' && user.cashBalance < amount))
       ) {
         setError('Insufficient balance')
+      } else if (token === 'CASH' && amount < SWEEPS_MIN_BET) {
+        setError(
+          'Minimum amount: ' +
+            formatWithToken({ amount: SWEEPS_MIN_BET, token: 'CASH' })
+        )
       } else if (minimumAmount != undefined && amount < minimumAmount) {
         setError(
           'Minimum amount: ' +
@@ -234,7 +239,7 @@ export function BuyAmountInput(props: {
     } else {
       setError(undefined)
     }
-  }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
+  }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance, token])
 
   const portfolio = useCurrentPortfolio(user?.id)
   const hasLotsOfMoney =
