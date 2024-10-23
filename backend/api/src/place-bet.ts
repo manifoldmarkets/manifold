@@ -447,7 +447,7 @@ export const executeNewBetResult = async (
         -newBet.amount - apiFee,
     },
   ]
-  const makerIDsByTakerBetId: Record<string, maker[]> = {
+  const makersByTakerBetId: Record<string, maker[]> = {
     [candidateBet.id]: makers ?? [],
   }
   const answerUpdates: {
@@ -506,7 +506,7 @@ export const executeNewBetResult = async (
             poolNo,
             prob,
           })
-          makerIDsByTakerBetId[candidateBet.id] = makers
+          makersByTakerBetId[candidateBet.id] = makers
           return candidateBet
         }
 
@@ -571,12 +571,7 @@ export const executeNewBetResult = async (
     updatedMetrics: makerRedemptionAndFillUpdatedMetrics,
     balanceUpdates: makerRedemptionAndFillBalanceUpdates,
     bulkUpdateLimitOrdersQuery,
-  } = await updateMakers(
-    makerIDsByTakerBetId,
-    contract,
-    updatedMetrics,
-    pgTrans
-  )
+  } = await updateMakers(makersByTakerBetId, contract, updatedMetrics, pgTrans)
   // Create redemption bets for bettor w/o limit fills if needed:
   const {
     betsToInsert: bettorRedemptionBetsToInsert,
