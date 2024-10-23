@@ -302,7 +302,6 @@ export const calculateBetResult = (
   unfilledBets: LimitBet[],
   balanceByUserId: Record<string, number>
 ) => {
-  const startTime = Date.now()
   const { amount, contractId } = body
   const { outcomeType, mechanism } = contract
 
@@ -334,7 +333,7 @@ export const calculateBetResult = (
     log(
       `Checking for limit orders in placebet for user ${user.id} on contract id ${contractId}.`
     )
-    const info = getBinaryCpmmBetInfo(
+    return getBinaryCpmmBetInfo(
       contract,
       outcome,
       amount,
@@ -343,9 +342,6 @@ export const calculateBetResult = (
       balanceByUserId,
       expiresAt
     )
-    const time = Date.now() - startTime
-    log(`getBinaryCpmmBetInfo took ${time}ms.`)
-    return info
   } else if (
     (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
     mechanism == 'cpmm-multi-1'
