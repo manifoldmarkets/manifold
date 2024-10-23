@@ -196,7 +196,6 @@ import { getKYCStats } from './get-kyc-stats'
 import { getTxns } from './get-txns'
 import { refreshAllClients } from './refresh-all-clients'
 import { getLeaderboard } from './get-leaderboard'
-import { getIp } from 'shared/analytics'
 import { toggleSystemTradingStatus } from './toggle-system-status'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
 
@@ -223,8 +222,7 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
     : crypto.randomUUID()
   const { method, path: endpoint, url } = req
   const baseEndpoint = getBaseName(endpoint)
-  const ip = getIp(req)
-  const context = { endpoint, traceId, baseEndpoint, ip }
+  const context = { endpoint, traceId, baseEndpoint }
   withMonitoringContext(context, () => {
     if (method == 'OPTIONS') {
       next()
@@ -238,7 +236,7 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
     ) {
       log(`${method} ${url}`)
     }
-    metrics.inc('http/request_count', { endpoint, baseEndpoint, method, ip })
+    metrics.inc('http/request_count', { endpoint, baseEndpoint, method })
     res.on('close', () => {
       const endTs = hrtime.bigint()
       const latencyMs = Number(endTs - startTs) / 1e6 // Convert to milliseconds
