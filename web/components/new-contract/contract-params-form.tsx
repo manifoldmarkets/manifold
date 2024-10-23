@@ -13,6 +13,7 @@ import {
   MAX_QUESTION_LENGTH,
   MULTI_NUMERIC_BUCKETS_MAX,
   NON_BETTING_OUTCOMES,
+  Visibility,
 } from 'common/contract'
 import {
   getAnte,
@@ -99,6 +100,10 @@ export function ContractParamsForm(props: {
   const [isLogScale, setIsLogScale] = usePersistentLocalState<boolean>(
     !!params?.isLogScale,
     'new-is-log-scale' + paramsKey
+  )
+  const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
+    (params?.visibility ?? 'public') as Visibility,
+    `new-visibility` + paramsKey
   )
 
   const [initialValueString, setInitialValueString] = usePersistentLocalState(
@@ -391,7 +396,7 @@ export function ContractParamsForm(props: {
         answers,
         addAnswersMode,
         shouldAnswersSumToOne,
-        visibility: 'public',
+        visibility,
         utcOffset: new Date().getTimezoneOffset(),
         totalBounty: bountyAmount,
         isAutoBounty:
@@ -592,6 +597,24 @@ export function ContractParamsForm(props: {
         outcomeType={outcomeType}
         initTime={initTime}
       />
+      <Row className="mt-2 items-center gap-2">
+        <span>
+          Publicly listed{' '}
+          <InfoTooltip
+            text={
+              visibility === 'public'
+                ? 'Visible on home page and search results'
+                : "Only visible via link. Won't notify followers"
+            }
+          />
+        </span>
+        <ShortToggle
+          on={visibility === 'public'}
+          setOn={(on) => {
+            setVisibility(on ? 'public' : 'unlisted')
+          }}
+        />
+      </Row>
       <CostSection
         balance={balance}
         baseCost={anteOrBounty}

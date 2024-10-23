@@ -21,6 +21,7 @@ export type NewQuestionParams = {
   description: string
   closeTime: number
   outcomeType?: CreateableOutcomeType
+  visibility: string
   // Params for PSEUDO_NUMERIC outcomeType
   min?: number
   max?: number
