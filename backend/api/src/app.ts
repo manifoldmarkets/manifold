@@ -214,12 +214,16 @@ const ignoredEndpoints = [
   '/v0/get-mod-reports',
   '/get-channel-seen-time',
 ]
-
+const getCleanIp = (ip: string) => {
+  return ip.startsWith('::ffff:') ? ip.substring(7) : ip
+}
 const requestMonitoring: RequestHandler = (req, res, next) => {
   const traceContext = req.get('X-Cloud-Trace-Context')
   const traceId = traceContext ? traceContext.split('/')[0] : randomString(12)
   const { method, path: endpoint, url } = req
   const baseEndpoint = getBaseName(endpoint)
+  const ip = getCleanIp(req.ip)
+
   const context = { endpoint, traceId, baseEndpoint }
   withMonitoringContext(context, () => {
     if (method == 'OPTIONS') {
@@ -234,7 +238,7 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
     ) {
       log(`${method} ${url}`)
     }
-    metrics.inc('http/request_count', { endpoint, baseEndpoint, method })
+    metrics.inc('http/request_count', { endpoint, baseEndpoint, method, ip })
     res.on('close', () => {
       const endTs = hrtime.bigint()
       const latencyMs = Number(endTs - startTs) / 1e6 // Convert to milliseconds
