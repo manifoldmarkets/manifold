@@ -170,9 +170,10 @@ export function FeedContractCard(props: {
         isPrizeMarket || isCashContract
           ? 'mt-2 ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200'
           : 'ring-primary-200 hover:ring-1',
-        className,
+
         'relative cursor-pointer rounded-xl transition-all ',
         'flex w-full flex-col gap-0.5 px-4',
+        className,
         size === 'sm'
           ? 'bg-canvas-50'
           : size === 'md'
