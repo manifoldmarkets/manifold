@@ -8,7 +8,7 @@ export const nanoid = (e = 21) => {
 }
 
 // Matches the output of the randomString function, for validation purposes.
-export const randomStringRegex = /^[0-9a-zA-Z]+$/
+export const randomStringRegex = new RegExp(`^[${a}]+$`)
 export const randomString = (length = 10) => nanoid(length)
 
 export function genHash(str: string) {
