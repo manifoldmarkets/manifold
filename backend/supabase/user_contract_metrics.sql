@@ -9,7 +9,6 @@ create table if not exists
     has_yes_shares boolean,
     id bigint primary key generated always as identity not null,
     profit numeric,
-    profit_adjustment numeric,
     total_shares_no numeric,
     total_shares_yes numeric,
     user_id text not null

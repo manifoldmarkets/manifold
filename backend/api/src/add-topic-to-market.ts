@@ -17,7 +17,6 @@ import {
   UNRANKED_GROUP_ID,
   UNSUBSIDIZED_GROUP_ID,
 } from 'common/supabase/groups'
-import { rerankContractMetricsManually } from 'shared/helpers/user-contract-metrics'
 
 export const addOrRemoveTopicFromContract: APIHandler<
   'market/:contractId/group'
@@ -84,13 +83,6 @@ export const addOrRemoveTopicFromContract: APIHandler<
 
   const continuation = async () => {
     await revalidateContractStaticProps(contract)
-    if (group.id === UNRANKED_GROUP_ID) {
-      await rerankContractMetricsManually(
-        contract.id,
-        remove && contract.visibility === 'public',
-        contract.resolutionTime
-      )
-    }
     await upsertGroupEmbedding(createSupabaseDirectClient(), groupId)
   }
 

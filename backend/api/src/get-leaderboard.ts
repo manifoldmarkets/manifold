@@ -42,9 +42,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
       from('user_portfolio_history_latest uph'),
       select('uph.user_id as user_id'),
       token === 'MANA'
-        ? select(
-            'uph.balance + uph.spice_balance + uph.investment_value - uph.total_deposits as score'
-          )
+        ? select('uph.profit as score') // excludes unranked
         : select(
             'uph.cash_balance + uph.cash_investment_value - uph.total_cash_deposits as score'
           ),
@@ -62,6 +60,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     from('contracts c'),
     join('user_contract_metrics ucm on ucm.contract_id = c.id'),
     where('ucm.answer_id is null'),
+    where(`coalesce((c.data->'isRanked')::boolean, true) = true`),
 
     kind === 'creator' && [
       select('c.creator_id as user_id, count(*) as score'),
@@ -69,9 +68,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     ],
 
     (kind === 'profit' || kind === 'loss') && [
-      select(
-        `user_id, nullif(sum(profit + coalesce(profit_adjustment, 0)), 'NaN') as score`
-      ),
+      select(`user_id, sum(profit) as score`),
       groupBy('user_id'),
       where('user_id not in ($1:list)', [HIDE_FROM_LEADERBOARD_USER_IDS]),
     ],

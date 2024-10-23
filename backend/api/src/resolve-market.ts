@@ -17,7 +17,6 @@ import {
   resolvePseudoNumericSchema,
 } from 'common/api/market-types'
 import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
-import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getAnswersForContract } from 'shared/supabase/answers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -112,12 +111,7 @@ export const resolveMarketMain: APIHandler<
   }
 
   await resolveMarketHelper(contract, caller, creator, resolutionParams)
-  return {
-    result: { message: 'success' },
-    continue: async () => {
-      await setAdjustProfitFromResolvedMarkets(contract.id)
-    },
-  }
+  return { message: 'success' }
 }
 
 function getResolutionParams(

@@ -274,12 +274,6 @@ export const calculateUserMetrics = (
       ...current,
       contractId: contract.id,
       userId: user.id,
-      profitAdjustment: getAdjustedProfit(
-        contract,
-        current.profit,
-        answers,
-        current.answerId
-      ),
     } as ContractMetric)
   })
 }
@@ -478,7 +472,6 @@ export const getDefaultMetric = (
   payout: 0,
   profit: 0,
   profitPercent: 0,
-  profitAdjustment: undefined,
   hasNoShares: false,
   hasShares: false,
   hasYesShares: false,
@@ -514,10 +507,6 @@ export const applyMetricToSummary = <
   if (metric.totalSpent) {
     summary.totalSpent['NO'] += sign * (metric.totalSpent['NO'] ?? 0)
     summary.totalSpent['YES'] += sign * (metric.totalSpent['YES'] ?? 0)
-  }
-  if (metric.profitAdjustment) {
-    summary.profitAdjustment =
-      (summary.profitAdjustment ?? 0) + sign * metric.profitAdjustment
   }
   summary.loan += sign * metric.loan
   summary.invested += sign * metric.invested
