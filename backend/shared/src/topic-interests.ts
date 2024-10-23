@@ -45,26 +45,37 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
 
   const chunks = chunk(userIds, 1000)
   for (const userIds of chunks) {
-    await Promise.all([
-      ...userIds.map(async (userId) => {
+    await Promise.all(
+      userIds.map(async (userId) => {
         userIdsToAverageTopicConversionScores[userId] = {}
-        const [followedTopics, blockedTopics, _] = await Promise.all([
-          getFollowedTopics(pg, userId),
-          getBlockedTopics(pg, userId),
-          pg.map(
-            `
-              select distinct uti.*
-              from get_user_topic_interests_2($1) as uti
-              where uti.group_id in ($2:list)
-              order by uti.score desc
-          `,
-            [userId, topicIdsMeetingMinimumBar],
-            (r) => {
-              userIdsToAverageTopicConversionScores[userId][r.group_id] =
-                r.score
-            }
-          ),
-        ])
+
+        const results = await pg.multi(
+          `
+        select group_id from group_members where member_id = $1;
+        
+        with user_blocked_slugs as (
+          select pu.id,jsonb_array_elements_text(pu.data->'blockedGroupSlugs') as slug
+          from private_users pu
+          where pu.id = $1
+        )
+        select distinct g.id as blocked_group_ids
+        from user_blocked_slugs ubs
+        join groups g on g.slug = ubs.slug;
+
+        select distinct uti.*
+        from get_user_topic_interests_2($1) as uti
+        where uti.group_id in ($2:list)
+        order by uti.score desc;
+      `,
+          [userId, topicIdsMeetingMinimumBar]
+        )
+        const followedTopics = results[0].map((row) => row.group_id)
+        const blockedTopics = results[1].map((row) => row.blocked_group_ids)
+
+        results[2].forEach((r) => {
+          userIdsToAverageTopicConversionScores[userId][r.group_id] = r.score
+        })
+
         for (const groupId of followedTopics) {
           const hasFewInterests =
             Object.keys(userIdsToAverageTopicConversionScores[userId]).length <=
@@ -92,8 +103,8 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
               groupScore ** 2 // assumes score is less than 1
           }
         }
-      }),
-    ])
+      })
+    )
 
     log(
       'built topic interests cache for users: ',
@@ -101,31 +112,6 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
     )
   }
   log('built user topic interests cache')
-}
-
-const getFollowedTopics = async (pg: SupabaseDirectClient, userId: string) => {
-  return await pg.map(
-    `select group_id from group_members where member_id = $1`,
-    [userId],
-    (row) => row.group_id as string
-  )
-}
-
-const getBlockedTopics = async (pg: SupabaseDirectClient, userId: string) => {
-  return await pg.map(
-    `
-        with user_blocked_slugs as (
-            select pu.id,jsonb_array_elements_text(pu.data->'blockedGroupSlugs') as slug
-            from private_users pu
-            where pu.id = $1
-        )
-        select distinct g.id as blocked_group_ids
-        from user_blocked_slugs ubs
-        join groups g on g.slug = ubs.slug;
-`,
-    [userId],
-    (row) => (row ? row.blocked_group_ids : [])
-  )
 }
 
 export const minimumContractsQualityBarWhereClauses = (adQuery: boolean) =>
