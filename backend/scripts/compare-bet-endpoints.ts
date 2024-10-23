@@ -37,12 +37,12 @@ const ENABLE_LIMIT_ORDERS = true
 const MULTI_MARKET_ANSWER_COUNT = 50
 
 if (require.main === module) {
-  runScript(async ({ pg, firestore }) => {
+  runScript(async ({ pg }) => {
     if (isProd()) {
       log('This script is not intended to run in production')
       process.exit(1)
     }
-    const users = await getTestUsers(firestore, pg, NUM_USERS)
+    const users = await getTestUsers(pg, NUM_USERS)
     const markets = await createTestMarkets(pg, users[0].apiKey)
 
     log('Created test markets and users')

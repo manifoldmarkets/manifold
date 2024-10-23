@@ -19,12 +19,12 @@ const ENABLE_LIMIT_ORDERS = true
 const USERS = 100
 
 if (require.main === module) {
-  runScript(async ({ pg, firestore }) => {
+  runScript(async ({ pg }) => {
     if (isProd()) {
       log('This script is dangerous to run in prod. Exiting.')
       return
     }
-    const privateUsers = await getTestUsers(firestore, pg, USERS)
+    const privateUsers = await getTestUsers(pg, USERS)
     let markets: LiteMarket[] = []
     if (!USE_OLD_MARKET) {
       const marketCreations = [

@@ -5,11 +5,7 @@ import { randomString } from 'common/util/random'
 import * as admin from 'firebase-admin'
 import { createUserMain } from 'shared/create-user-main'
 
-export const getTestUsers = async (
-  firestore: admin.firestore.Firestore,
-  pg: SupabaseDirectClient,
-  limit: number
-) => {
+export const getTestUsers = async (pg: SupabaseDirectClient, limit: number) => {
   const totalPrivateUsers = await pg.one(
     `select count(*) from private_users where data->>'email' ilike '%manifoldtestnewuser%'`
   )
@@ -50,8 +46,10 @@ export const getTestUsers = async (
   )
 
   const privateUsers = await pg.map(
-    `select id, data->>'apiKey' as api_key from private_users
-              where data->>'email' ilike '%manifoldtestnewuser%'
+    `select pu.id, pu.data->>'apiKey' as api_key from private_users pu
+              join users u on pu.id = u.id
+              where pu.data->>'email' ilike '%manifoldtestnewuser%'
+              and not coalesce((u.data->'isBannedFromPosting')::boolean,false)
               order by random()
               limit $1`,
     [limit],
