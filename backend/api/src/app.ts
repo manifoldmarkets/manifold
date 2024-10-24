@@ -10,6 +10,7 @@ import { assertUnreachable } from 'common/util/types'
 import { typedEndpoint } from './helpers/endpoint'
 import { randomString } from 'common/util/random'
 import { handlers } from './routes'
+import { addOldRoutes } from './old-routes'
 
 export const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -124,3 +125,4 @@ Object.entries(handlers).forEach(([path, handler]) => {
     assertUnreachable(api, 'Unsupported API method')
   }
 })
+addOldRoutes(app)
