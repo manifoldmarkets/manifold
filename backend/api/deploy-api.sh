@@ -137,4 +137,32 @@ echo "Rollout underway. Waiting for update to finish rolling out"
 echo "Current time: $(date "+%Y-%m-%d %I:%M:%S %p")"
 gcloud compute instance-groups managed wait-until --stable ${SERVICE_GROUP} \
        --project ${GCLOUD_PROJECT} \
-       --zone ${ZONE}
+       --zone
+
+# create forwarding rule if it doesn't exist
+gcloud compute backend-services update-backend api-write-backend \
+--global \
+--region=${REGION} \
+--http-health-checks api-path-balancer-health-check \
+--global-forwarding-rule api-forwarding-rule
+
+
+# create url map if it doesn't exist
+gcloud compute url-maps create api-url-map --default-service api-main-backend
+
+echo 'Reading path names from read-routes.ts'
+READ_PATHS=$(for PATH in $(npx ts-node src/read-routes.ts);
+    do echo -n "/api/v0/${PATH}=api-read-backend,"; done \
+    | sed 's/,$//')
+
+gcloud compute url-maps add-path-matcher api-url-map \
+    --path-matcher-name=read-paths \
+    --default-service=api-main-backend \
+    --path-rules="${READ_PATHS}"
+
+echo 'Updating forwarding rules'
+gcloud compute forwarding-rules update api-forwarding-rule \
+--global \
+--region=${REGION} \
+--url-map api-url-map \
+--target-http-proxy api-proxy

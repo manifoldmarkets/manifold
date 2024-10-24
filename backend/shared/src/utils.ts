@@ -104,7 +104,11 @@ export const isProd = () => {
   if (process.env.NEXT_PUBLIC_FIREBASE_ENV) {
     return process.env.NEXT_PUBLIC_FIREBASE_ENV === 'PROD'
   } else {
-    return admin.app().options.projectId === 'mantic-markets'
+    try {
+      return admin.app().options.projectId === 'mantic-markets'
+    } catch {
+      return false
+    }
   }
 }
 export const contractColumnsToSelect = `data, importance_score, conversion_score, view_count, token`

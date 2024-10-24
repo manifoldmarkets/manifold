@@ -1,8 +1,6 @@
-import { authEndpoint } from './helpers/endpoint'
+import { APIHandler } from './helpers/endpoint'
 
-export const health = authEndpoint(async (_, auth) => {
-  return {
-    message: 'Server is working.',
-    uid: auth.uid,
-  }
+export const health: APIHandler<'health'> = async (_, auth) => ({
+  message: 'Server is working.',
+  uid: auth.uid,
 })

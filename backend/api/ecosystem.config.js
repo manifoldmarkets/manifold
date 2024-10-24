@@ -10,6 +10,21 @@ module.exports = {
       watch: false,
       // 16 GB on the box, give 12 GB to the JS heap
       node_args: '--max-old-space-size=12288',
+      env: {
+        PORT: 8088,
+      },
+    },
+    {
+      name: 'serve-read',
+      script: 'backend/api/lib/serve.js',
+      instances: 3, // Use 3 cores for read API
+      exec_mode: 'cluster',
+      autorestart: true,
+      watch: false,
+      env: {
+        PORT: 8089,
+        IS_READ_ONLY: 'true',
+      },
     },
   ],
 }

@@ -94,6 +94,22 @@ const coerceBoolean = z
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
 export const API = (_apiTypeCheck = {
+  health: {
+    // on main api instance
+    method: 'GET',
+    visibility: 'undocumented',
+    props: z.object({ message: z.string().optional() }),
+    returns: {} as { message: 'Server is working.'; uid: string },
+    authed: true,
+  },
+  'read-health': {
+    // on read-only api instance
+    method: 'GET',
+    visibility: 'undocumented',
+    props: z.object({ message: z.string().optional() }),
+    returns: {} as { message: 'Server is working.'; uid: string },
+    authed: true,
+  },
   'refresh-all-clients': {
     method: 'POST',
     visibility: 'public',

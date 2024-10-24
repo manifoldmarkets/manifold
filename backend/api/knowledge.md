@@ -9,6 +9,83 @@ This directory contains the implementation of various API endpoints for the Mani
 - We use Supabase for database operations.
 - Authentication is handled using the `APIHandler` type, which automatically manages user authentication based on the schema definition.
 
+## Deployment Architecture
+
+- The API runs in Docker containers on Google Cloud Platform (GCP)
+- A GCP load balancer sits in front of the API containers
+- The API is split into two Express instances:
+  - Main API (port 8088): Handles all POST endpoints and stateful operations
+  - Read-only API (port 8089): Handles GET endpoints for better scalability
+- Load balancer configuration is managed through GCP console, not in codebase
+- Scaling strategy:
+  - Use PM2 cluster mode to run multiple instances on different cores of same machine
+  - Each instance runs on different ports
+  - Load balancer distributes traffic between ports
+  - Prefer this over deploying separate instance groups for simpler operations
+
+### Load Balancer Configuration
+
+Configure path-based routing in GCP Console:
+
+1. Create backend services:
+```bash
+# Main API backend (port 8088)
+gcloud compute backend-services create api-main-backend \
+  --protocol HTTP \
+  --port-name=http \
+  --timeout=60s \
+  --global
+
+# Read API backend (port 8089)
+gcloud compute backend-services create api-read-backend \
+  --protocol HTTP \
+  --port-name=http \
+  --timeout=60s \
+  --global
+2. Add path rules to URL map:
+```bash
+# Create URL map if it doesn't exist
+gcloud compute url-maps create api-url-map --default-service api-main-backend
+# Add path matcher for read-only endpoints
+gcloud compute url-maps add-path-matcher api-url-map \
+  --path-matcher-name=read-paths \
+  --default-service=api-main-backend \
+  --path-rules="/api/v0/bets=api-read-backend,/api/v0/markets=api-read-backend"
+3. Update paths when adding new GET endpoints:
+- Add new GET endpoint paths to the URL map path rules
+- All other traffic routes to main backend by default
+[Previous content about adding endpoints preserved...]
+## Load Balancer Configuration
+The GCP load balancer routes traffic based on the HTTP path:
+- GET endpoints -> port 8089 (read-only API instances)
+- All other traffic -> port 8088 (main API)
+To configure path-based routing in GCP:
+1. Create URL map:
+```bash
+gcloud compute url-maps create api-url-map \
+  --default-service api-backend \
+  --project [PROJECT]
+```
+
+2. Add path matcher for read-only endpoints:
+```bash
+gcloud compute url-maps add-path-matcher api-url-map \
+  --path-matcher-name read-paths \
+  --default-service api-backend \
+  --path-rules="/v0/bets=api-read-backend,/v0/comments=api-read-backend,/v0/market/*/positions=api-read-backend" \
+  --project [PROJECT]
+```
+
+3. Update forwarding rule to use URL map:
+```bash
+gcloud compute forwarding-rules update api-forwarding-rule \
+  --global \
+  --target-http-proxy api-proxy \
+  --project [PROJECT]
+```
+
+Note: The actual paths should match those in read-routes.ts. The above are just examples.
+
 ## Adding a New API Endpoint
 
 To add a new API endpoint, follow these steps:

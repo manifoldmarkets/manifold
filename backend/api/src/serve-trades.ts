@@ -21,11 +21,11 @@ if (LOCAL_DEV) {
 METRIC_WRITER.start()
 
 import { app } from './app'
-import { readApp } from './read-app'
 
 const credentials = LOCAL_DEV
   ? getServiceAccountCredentials(getLocalEnv())
-  : undefined
+  : // No explicit credentials needed for deployed service.
+    undefined
 
 const DB_RESPONSE_TIMEOUT = 30_000
 
@@ -44,21 +44,12 @@ const startupProcess = async () => {
   await initCaches(timeoutId)
   log('Caches loaded.')
 
-  const PORT = process.env.PORT ?? 8088
-  const IS_READ_ONLY = process.env.IS_READ_ONLY === 'true'
+  const PORT = process.env.PORT ?? 8089
+  const httpServer = app.listen(PORT, () => {
+    log.info(`Serving API on port ${PORT}.`)
+  })
 
-  if (IS_READ_ONLY) {
-    readApp.listen(PORT, () => {
-      log.info(`Serving read-only API on port ${PORT}.`)
-    })
-  } else {
-    const httpServer = app.listen(PORT, () => {
-      log.info(`Serving main API on port ${PORT}.`)
-    })
-
-    webSocketListen(httpServer, '/ws')
-  }
-
+  webSocketListen(httpServer, '/ws')
   log('Server started successfully')
 }
 startupProcess()
