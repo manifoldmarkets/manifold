@@ -9,7 +9,6 @@ import {
   DisplayUser,
   getDisplayUsers,
   getFullUserById,
-  getUserById,
 } from 'web/lib/supabase/users'
 import { FullUser } from 'common/api/user-types'
 
@@ -39,10 +38,10 @@ export function useDisplayUserById(userId: string | undefined) {
       if (cache.has(userId)) {
         setUser(cache.get(userId))
       } else {
-        getUserById(userId)
+        getDisplayUsers([userId])
           .then((result) => {
-            cache.set(userId, result)
-            setUser(result)
+            cache.set(userId, result[0])
+            setUser(result[0])
           })
           .catch(() => {
             setUser(null)
