@@ -5,7 +5,7 @@ This directory contains the implementation of various API endpoints for the Mani
 ## Key Concepts
 
 - Each endpoint is typically implemented in its own file.
-- The `app.ts` file serves as the main router, connecting endpoint handlers to their respective routes.
+- The `routes.ts` file serves as the main router, connecting endpoint handlers to their respective routes.
 - We use Supabase for database operations.
 - Authentication is handled using the `APIHandler` type, which automatically manages user authentication based on the schema definition.
 
@@ -16,7 +16,7 @@ To add a new API endpoint, follow these steps:
 1. Create a new file for the endpoint in the `backend/api/src` directory. Each endpoint should be in a new file.
 2. Implement the endpoint logic in the new file.
 3. Add the endpoint schema to `common/src/api/schema.ts`, including props, return type, and other information. Note that we only use POST and GET methods.
-4. Update `backend/api/src/app.ts`:
+4. Update `backend/api/src/routes.ts`:
    - Import the handler function from the new file.
    - Add the handler to the `handlers` object.
 
@@ -43,7 +43,7 @@ export const myNewEndpoint: APIHandler<'my-new-endpoint'> = async (props, auth, 
   }),
 },
 
-// 3. Update backend/api/src/app.ts
+// 3. Update backend/api/src/routes.ts
 import { myNewEndpoint } from './my-new-endpoint'
 
 const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -62,7 +62,9 @@ Authentication is managed automatically by the `APIHandler` type. The `authed` p
 Example of an authenticated endpoint:
 
 ```typescript
-export const myAuthenticatedEndpoint: APIHandler<'my-authenticated-endpoint'> = async (props, auth, req) => {
+export const myAuthenticatedEndpoint: APIHandler<
+  'my-authenticated-endpoint'
+> = async (props, auth, req) => {
   const { uid } = auth // auth object is automatically provided for authenticated endpoints
   // Implement endpoint logic here
 }
@@ -71,12 +73,17 @@ export const myAuthenticatedEndpoint: APIHandler<'my-authenticated-endpoint'> = 
 ## Best Practices
 
 - Use the `createSupabaseDirectClient` function from `shared/supabase/init` for database operations.
-This uses the pg promise library, where you pass raw sql strings like so:
+  This uses the pg promise library, where you pass raw sql strings like so:
+
 ```ts
 import { createSupabaseClient } from 'shared/supabase/init'
 
 const pg = createSupabaseDirectConnection()
-const contractIds = await pg.manyOrNone(`select id from contracts`, [], r => r.id as string)
+const contractIds = await pg.manyOrNone(
+  `select id from contracts`,
+  [],
+  (r) => r.id as string
+)
 ```
 
 - Keep endpoint logic modular and reusable when possible.
@@ -85,7 +92,6 @@ const contractIds = await pg.manyOrNone(`select id from contracts`, [], r => r.i
 - Use the `APIError` class from `api/helpers/endpoint` to throw standardized API errors.
 - Use lowercase SQL keywords in queries. Don't capitalize SQL keywords.
 - Avoid editing the SQL via `${}`, and instead when using pgpromise, use the argument following the query to pass parameters to the query.
-
 
 ### Schema Definition
 
@@ -96,6 +102,7 @@ We use Zod for defining our API schemas. This provides runtime type checking and
 When defining schemas, prefer setting defaults in the Zod schema rather than in the handler function. This ensures that the default values are documented and type-checked.
 
 Example:
+
 ```typescript
 props: z.object({
   limit: z.number().default(50),
@@ -105,9 +112,11 @@ props: z.object({
 ```
 
 ### Data schema
+
 Tables like contract_comments, contract_bets, contract_follows, etc, use two primary ids: contract_id, and an id specific to the table: comment_id, bet_id, or follow_id. Thus they have no primary 'id' column.
 
 Thus to get a comment you would do:
+
 ```sql
 select * from contract_comments where comment_id = $1
 ```
@@ -128,6 +137,7 @@ Use the sqlBuilder from `shared/supabase/sql-builder.ts` for constructing SQL qu
 - `renderSql`: Combines all parts into a final SQL string
 
 Example usage:
+
 ```typescript
 const query = renderSql(
   select('*'),
