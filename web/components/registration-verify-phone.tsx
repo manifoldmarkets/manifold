@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { PhoneInput } from 'react-international-phone'
-import 'react-international-phone/style.css'
 import { Button } from 'web/components/buttons/button'
 import { Input } from 'web/components/widgets/input'
 import { useUser } from 'web/hooks/use-user'
@@ -10,6 +8,7 @@ import { track } from 'web/lib/service/analytics'
 import { PhoneIcon } from 'web/public/custom-components/phoneIcon'
 import { BottomRow } from './gidx/register-component-helpers'
 import { Row } from './layout/row'
+import { StyledPhoneInput } from './onboarding-verify-phone'
 
 export function RegistrationVerifyPhone(props: {
   cancel: () => void
@@ -72,16 +71,9 @@ export function RegistrationVerifyPhone(props: {
           <Row className="text-ink-700 pl-5 text-sm">
             We won't use your phone number for anything other than verification.
           </Row>
-          <PhoneInput
-            defaultCountry={'us'}
-            value={phoneNumber}
-            onChange={(phone) => setPhoneNumber(phone)}
-            placeholder={'Phone Number'}
-            className={'mx-auto mb-1'}
-            inputClassName="!bg-canvas-0 !border-ink-300 !text-ink-1000 !text-sm !px-4 !py-6"
-            countrySelectorStyleProps={{
-              buttonClassName: '!bg-transparent !border-ink-300 !px-2 !py-6',
-            }}
+          <StyledPhoneInput
+            phoneNumber={phoneNumber}
+            setPhoneNumber={setPhoneNumber}
           />
           <BottomRow>
             <Button color={'gray-white'} onClick={cancel}>

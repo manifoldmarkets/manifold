@@ -12,6 +12,28 @@ import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { CoinNumber } from 'web/components/widgets/coin-number'
+import clsx from 'clsx'
+
+export const StyledPhoneInput = (props: {
+  phoneNumber: string
+  setPhoneNumber: (phone: string) => void
+  className?: string
+}) => {
+  const { phoneNumber, setPhoneNumber, className } = props
+  return (
+    <PhoneInput
+      defaultCountry={'us'}
+      value={phoneNumber}
+      onChange={(phone) => setPhoneNumber(phone)}
+      placeholder={'Phone Number'}
+      className={clsx('mx-auto mb-1', className)}
+      inputClassName="!bg-canvas-0 !border-ink-300 !text-ink-1000 !text-sm !px-4 !py-6"
+      countrySelectorStyleProps={{
+        buttonClassName: '!bg-transparent !border-ink-300 !px-2 !py-6',
+      }}
+    />
+  )
+}
 
 export function OnboardingVerifyPhone(props: { onClose: () => void }) {
   const { onClose } = props
@@ -76,12 +98,9 @@ export function OnboardingVerifyPhone(props: { onClose: () => void }) {
               (We won't send you any other messages.)
             </span>
           </span>
-          <PhoneInput
-            defaultCountry={'us'}
-            value={phoneNumber}
-            onChange={(phone) => setPhoneNumber(phone)}
-            placeholder={'Phone Number'}
-            className={'mb-4'}
+          <StyledPhoneInput
+            phoneNumber={phoneNumber}
+            setPhoneNumber={setPhoneNumber}
           />
           <Row
             className={
