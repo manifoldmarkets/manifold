@@ -33,7 +33,7 @@ const BETS_PER_USER_PER_MARKET = 10
 const NUM_USERS = 10
 
 // total bets will be: 4 markets x bets per user x num users
-const ENABLE_LIMIT_ORDERS = true
+const LIMIT_ORDER_RATE = 0.5
 const MULTI_MARKET_ANSWER_COUNT = 50
 
 if (require.main === module) {
@@ -114,7 +114,7 @@ if (require.main === module) {
       for (let i = 0; i < BETS_PER_USER_PER_MARKET; i++) {
         const binaryBet = getRandomTestBet(
           binaryMarkets[0],
-          ENABLE_LIMIT_ORDERS,
+          LIMIT_ORDER_RATE,
           0.5
         )
         const binaryBetTwin = {
@@ -123,7 +123,7 @@ if (require.main === module) {
         }
         const multiChoiceBet = getRandomTestBet(
           multiChoiceMarkets[0],
-          ENABLE_LIMIT_ORDERS,
+          LIMIT_ORDER_RATE,
           // Smaller to avoid betting must be between 1-99% error
           0.05
         )

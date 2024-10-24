@@ -3,7 +3,6 @@ import { isProd, log } from 'shared/utils'
 import { convertContract } from 'common/supabase/contracts'
 import { Contract } from 'common/contract'
 import { formatApiUrlWithParams } from 'common/util/api'
-import { DEV_CONFIG } from 'common/envs/dev'
 import { pgp } from 'shared/supabase/init'
 import { getTestUsers } from 'shared/test/users'
 import { getRandomTestBet } from 'shared/test/bets'
@@ -11,13 +10,16 @@ import { MONTH_MS } from 'common/util/time'
 import { LiteMarket } from 'common/api/market-types'
 import { sumBy } from 'lodash'
 import * as readline from 'readline'
+import { DEV_CONFIG } from 'common/envs/dev'
 
 const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 // const URL = `http://localhost:8088/v0`
-const OLD_MARKET_SLUG = undefined //'chaos-sweeps--cash'
+const OLD_MARKET_SLUG = undefined // 'test-8yr5oj'
 const USE_OLD_MARKET = !!OLD_MARKET_SLUG
-const ENABLE_LIMIT_ORDERS = true
+const LIMIT_ORDER_RATE = 0.05
+const VISIT_MARKETS = true
 const USERS = 100
+
 // TODO Does it lock down without using limit orders?
 
 async function promptForRunInfo() {
@@ -27,9 +29,8 @@ async function promptForRunInfo() {
   })
 
   const runName = await new Promise<string>((resolve) => {
-    rl.question(
-      'Enter a name for this chaos run (what feature are you testing?): ',
-      (answer) => resolve(answer)
+    rl.question('What features/changes are you testing?: ', (answer) =>
+      resolve(answer)
     )
   })
 
@@ -106,9 +107,9 @@ if (require.main === module) {
     )
     log(`Found ${contracts.length} contracts`)
 
-    const totalVisits = 0
+    let totalVisits = 0
     let totalBets = 0
-    const totalVisitErrors = 0
+    let totalVisitErrors = 0
     let totalBetErrors = 0
     const startTime = Date.now()
     const userSpentAmounts: { [key: string]: number } = {}
@@ -156,58 +157,124 @@ if (require.main === module) {
             ) {
               recentBetResults.shift()
             }
-            // 50 visits per user
-            // const visitPromises = Array(50)
-            //   .fill(null)
-            //   .map(() => async () => {
-            //     const contract =
-            //       contracts[Math.floor(Math.random() * contracts.length)]
-            //     try {
-            //       await visitContract(contract)
-            //       totalVisits++
-            //     } catch (error: any) {
-            //       errorMessage[error.message] = errorMessage[error.message]
-            //         ? errorMessage[error.message] + 1
-            //         : 1
-            //       totalVisitErrors++
-            //     }
-            //   })
           }
+          // 50 visits per user
+          const visitPromises = Array(50)
+            .fill(null)
+            .map(() => async () => {
+              const contract =
+                contracts[Math.floor(Math.random() * contracts.length)]
+              try {
+                await visitContract(contract)
+                totalVisits++
+              } catch (error: any) {
+                errorMessage[error.message] = errorMessage[error.message]
+                  ? errorMessage[error.message] + 1
+                  : 1
+                totalVisitErrors++
+              }
+            })
 
           await Promise.all([
-            // ...visitPromises.map((p) => p()),
+            ...(VISIT_MARKETS ? visitPromises.map((p) => p()) : []),
             manyBetsPromise(),
           ])
         })
       )
     }
 
-    const reportStats = () => {
-      const elapsedSeconds = (Date.now() - startTime) / 1000
-      log(`----- Stats report -----`)
-      log(`----- Errors follow -----`)
-      Object.entries(errorMessage).map(([key, value]) => {
-        log(`Error seen ${value} times: ${key}`)
+    type QueueSizeResult = {
+      queueSizeErrors: { [range: string]: number }
+      queueSizeMessages: Set<string>
+    }
+
+    const processQueueSizeErrors = (errorMessages: {
+      [key: string]: number
+    }): QueueSizeResult => {
+      const queueSizeErrors: { [range: string]: number } = {}
+      const queueSizeMessages = new Set<string>()
+
+      Object.entries(errorMessages).forEach(([message, count]) => {
+        const match = message.match(/\((\d+) requests in queue\)/)
+        if (match) {
+          const queueSize = parseInt(match[1])
+          let range
+          if (queueSize < 100) range = '<100'
+          else if (queueSize < 200) range = '100-199'
+          else if (queueSize < 300) range = '200-299'
+          else if (queueSize < 400) range = '300-399'
+          else if (queueSize < 500) range = '400-499'
+          else if (queueSize < 600) range = '500-599'
+          else if (queueSize < 700) range = '600-699'
+          else if (queueSize < 800) range = '700-799'
+          else if (queueSize < 900) range = '800-899'
+          else if (queueSize < 1000) range = '900-999'
+          else range = '1000+'
+
+          queueSizeErrors[range] = (queueSizeErrors[range] || 0) + count
+          queueSizeMessages.add(message)
+        }
       })
-      log(`----- End of errors -----`)
-      log(`----- VISITS -----`)
-      log(`Total error visits: ${totalVisitErrors}`)
-      log(`Total successful visits: ${totalVisits}`)
-      log(
-        `Successful visits per second: ${(totalVisits / elapsedSeconds).toFixed(
-          2
-        )}`
+
+      return { queueSizeErrors, queueSizeMessages }
+    }
+
+    const reportStats = async () => {
+      const totalLimitOrdersOnMarket = await pg.one(
+        `select count(*) from contract_bets where contract_id in ($1:list)
+        and not is_filled and not is_cancelled
+        `,
+        [contracts.map((c) => c.id)]
       )
-      log(
-        'Successful visit rate: ',
-        Math.round((totalVisits / (totalVisits + totalVisitErrors)) * 100) + '%'
+      const elapsedSeconds = (Date.now() - startTime) / 1000
+      const { queueSizeErrors, queueSizeMessages } =
+        processQueueSizeErrors(errorMessage)
+
+      log(`----- Stats report -----`)
+      log(`----- Queue errors -----`)
+      Object.entries(queueSizeErrors)
+        .sort((a, b) => {
+          const getMin = (range: string) =>
+            parseInt(range.split('-')[0].replace(/[<+]/g, ''))
+          return getMin(a[0]) - getMin(b[0])
+        })
+        .forEach(([range, count]) => {
+          if (count > 0) {
+            log(`Queue size ${range}: ${count} errors`)
+          }
+        })
+
+      const otherErrors = Object.entries(errorMessage).filter(
+        ([message]) => !queueSizeMessages.has(message)
       )
-      log(`----- BETS -----`)
+
+      if (otherErrors.length > 0) {
+        log(`----- Other errors -----`)
+        otherErrors.forEach(([message, count]) => {
+          log(`Error seen ${count} times: ${message}`)
+        })
+      }
+      if (VISIT_MARKETS) {
+        log(`----- Visits -----`)
+        log(`Total error visits: ${totalVisitErrors}`)
+        log(`Total successful visits: ${totalVisits}`)
+        log(
+          `Successful visits per second: ${(
+            totalVisits / elapsedSeconds
+          ).toFixed(2)}`
+        )
+        log(
+          'Successful visit rate: ',
+          Math.round((totalVisits / (totalVisits + totalVisitErrors)) * 100) +
+            '%'
+        )
+      }
+      log(`----- Bets -----`)
       log(`Total bettors: ${privateUsers.length}`)
-      log(`Limit orders enabled: ${ENABLE_LIMIT_ORDERS ? 'yes' : 'no'}`)
+      log(`Limit order rate: ${LIMIT_ORDER_RATE}`)
       log(`Slug used: ${USE_OLD_MARKET ? OLD_MARKET_SLUG : markets[0].slug}`)
-      log(`Old market used: ${USE_OLD_MARKET ? 'yes' : 'no'}`)
       log(`Total market volume at start: ${sumBy(contracts, (c) => c.volume)}`)
+      log(`Total limit orders on market: ${totalLimitOrdersOnMarket.count}`)
       log(`Total error bets: ${totalBetErrors}`)
       log(`Total successful bets: ${totalBets}`)
       log(
@@ -227,8 +294,8 @@ if (require.main === module) {
         Math.round((totalBets / (totalBets + totalBetErrors)) * 100) + '%'
       )
 
-      log(`----- FINALLY -----`)
-      log(`Run name: ${runName}`)
+      log(`----- Finally -----`)
+      log(`Testing changes: ${runName}`)
       log(`Total time elapsed: ${elapsedSeconds.toFixed(2)} seconds`)
       log(`-------------------------`)
       if (runTime && elapsedSeconds >= runTime) {
@@ -245,7 +312,7 @@ if (require.main === module) {
     process.on('SIGINT', async () => {
       clearInterval(chaosInterval)
       clearInterval(reportInterval)
-      reportStats()
+      await reportStats()
       pgp.end()
       log('Chaos no longer reigns.')
       process.exit()
@@ -272,7 +339,7 @@ async function placeManyBets(
   count: number,
   contract: Contract
 ) {
-  const betData = getRandomTestBet(contract, ENABLE_LIMIT_ORDERS)
+  const betData = getRandomTestBet(contract, LIMIT_ORDER_RATE)
   let success = 0
   let failure = 0
   let totalSpent = 0

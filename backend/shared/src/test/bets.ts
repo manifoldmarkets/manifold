@@ -3,14 +3,13 @@ import { removeUndefinedProps } from 'common/util/object'
 
 export const getRandomTestBet = (
   contract: Contract,
-  enableLimitOrders: boolean,
+  limitOrderRate: number,
   chanceOfNo?: number
 ) => {
-  const limitProb = !enableLimitOrders
-    ? undefined
-    : Math.random() > 0.5
-    ? parseFloat(Math.random().toPrecision(1))
-    : undefined
+  const limitProb =
+    Math.random() < limitOrderRate
+      ? parseFloat(Math.random().toPrecision(1))
+      : undefined
 
   return removeUndefinedProps({
     contractId: contract.id,
