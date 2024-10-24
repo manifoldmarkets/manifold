@@ -13,7 +13,6 @@ export function MultipleChoiceAnswers(props: {
   addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
   setAddAnswersMode: (mode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE') => void
   shouldAnswersSumToOne: boolean
-  setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
   outcomeType: OutcomeType
   placeholder?: string
 }) {
@@ -23,7 +22,6 @@ export function MultipleChoiceAnswers(props: {
     addAnswersMode,
     setAddAnswersMode,
     shouldAnswersSumToOne,
-    setShouldAnswersSumToOne,
     outcomeType,
     placeholder,
   } = props
@@ -143,7 +141,7 @@ export function MultipleChoiceAnswers(props: {
             />
           </Col>
 
-          <Col className="items-start gap-2">
+          {/* <Col className="items-start gap-2">
             <Row className="items-center gap-2">
               <div className="cursor-pointer">
                 How many answers will be chosen?
@@ -166,7 +164,7 @@ export function MultipleChoiceAnswers(props: {
                 setShouldAnswersSumToOne(choice === 'true')
               }
             />
-          </Col>
+          </Col> */}
         </>
       )}
     </Col>

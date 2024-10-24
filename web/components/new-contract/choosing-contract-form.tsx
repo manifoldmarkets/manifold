@@ -13,9 +13,11 @@ import { CreateContractStateType } from './new-contract-panel'
 export function ChoosingContractForm(props: {
   outcomeType: CreateableOutcomeType | undefined
   setOutcomeType: (outcomeType: CreateableOutcomeType) => void
+  setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
   setState: (state: CreateContractStateType) => void
 }) {
-  const { outcomeType, setOutcomeType, setState } = props
+  const { outcomeType, setOutcomeType, setShouldAnswersSumToOne, setState } =
+    props
   return (
     <Col>
       <div className="text-lg">Choose your question type.</div>
@@ -34,8 +36,15 @@ export function ChoosingContractForm(props: {
             value={value}
             visual={visual}
             outcomeType={outcomeType}
-            setOutcomeType={setOutcomeType}
-            setState={setState}
+            onClick={() => {
+              if (name == 'Independent Multiple Choice') {
+                setShouldAnswersSumToOne(false)
+              } else if (name == 'Dependent Multiple Choice') {
+                setShouldAnswersSumToOne(true)
+              }
+              setOutcomeType(value)
+              setState('filling contract params')
+            }}
           />
         ))}
       </Col>
@@ -53,8 +62,7 @@ function OutcomeButton(props: {
   backgroundColor?: string
   selectClassName?: string
   outcomeType: CreateableOutcomeType | undefined
-  setOutcomeType: (outcomeType: CreateableOutcomeType) => void
-  setState: (state: CreateContractStateType) => void
+  onClick: () => void
 }) {
   const {
     label,
@@ -65,8 +73,7 @@ function OutcomeButton(props: {
     backgroundColor,
     selectClassName,
     outcomeType,
-    setOutcomeType,
-    setState,
+    onClick,
   } = props
   const [touch, setTouch] = useState(false)
   return (
@@ -80,10 +87,7 @@ function OutcomeButton(props: {
             : 'from-primary-100 ring-primary-500 bg-gradient-to-br to-transparent ring-2'
           : backgroundColor ?? 'bg-primary-600/5'
       )}
-      onClick={() => {
-        setOutcomeType(value)
-        setState('filling contract params')
-      }}
+      onClick={onClick}
       onTouchStart={() => setTouch(true)}
       onTouchEnd={() => setTouch(false)}
     >

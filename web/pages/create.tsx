@@ -23,6 +23,11 @@ export default function Create() {
         ])
       ).params as NewQuestionParams)
     : ({} as NewQuestionParams)
+
+  const setShouldAnswersSumToOne = (shouldAnswersSumToOne: boolean) => {
+    params.shouldAnswersSumToOne = shouldAnswersSumToOne
+  }
+
   if (!user) return <div />
 
   if (user.isBannedFromPosting)
@@ -39,7 +44,11 @@ export default function Create() {
 
   return (
     <Page trackPageView={'create page'}>
-      <NewContractPanel params={params} creator={user} />
+      <NewContractPanel
+        params={params}
+        setShouldAnswersSumToOne={setShouldAnswersSumToOne}
+        creator={user}
+      />
     </Page>
   )
 }

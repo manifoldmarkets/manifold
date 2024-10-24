@@ -128,6 +128,7 @@ export function ContractParamsForm(props: {
       params?.addAnswersMode ?? 'DISABLED',
       'new-add-answers-mode' + paramsKey
     )
+
   const [shouldAnswersSumToOne, setShouldAnswersSumToOne] =
     usePersistentLocalState(
       params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER' ?? true,
@@ -502,7 +503,6 @@ export function ContractParamsForm(props: {
           addAnswersMode={addAnswersMode}
           setAddAnswersMode={setAddAnswersMode}
           shouldAnswersSumToOne={shouldAnswersSumToOne}
-          setShouldAnswersSumToOne={setShouldAnswersSumToOne}
           outcomeType={outcomeType}
           placeholder={isMulti ? 'Type your answer..' : undefined}
         />

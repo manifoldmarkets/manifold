@@ -41,8 +41,9 @@ export type CreateContractStateType =
 export function NewContractPanel(props: {
   creator: User
   params?: NewQuestionParams
+  setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
 }) {
-  const { creator, params } = props
+  const { creator, params, setShouldAnswersSumToOne } = props
   const [outcomeType, setOutcomeType] = useState<
     CreateableOutcomeType | undefined
   >(params?.outcomeType ?? undefined)
@@ -73,6 +74,7 @@ export function NewContractPanel(props: {
             <ChoosingContractForm
               outcomeType={outcomeType}
               setOutcomeType={setOutcomeType}
+              setShouldAnswersSumToOne={setShouldAnswersSumToOne}
               setState={setState}
             />
             {creator.createdTime > Date.now() - WEEK_MS && <ExplainerPanel />}

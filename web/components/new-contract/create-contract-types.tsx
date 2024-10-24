@@ -2,6 +2,7 @@ import {
   BsFillCheckCircleFill,
   BsFillXCircleFill,
   BsUiChecks,
+  BsUiChecksGrid,
 } from 'react-icons/bs'
 import { Col } from 'web/components/layout/col'
 import { CgPoll } from 'react-icons/cg'
@@ -24,12 +25,24 @@ export const PREDICTIVE_CONTRACT_TYPES = {
       </Col>
     ),
   },
-  MULTIPLE_CHOICE: {
-    label: 'Multiple choice',
+  DEPENDENT_MULTIPLE_CHOICE: {
+    label: 'Dependent Multiple Choice',
     value: 'MULTIPLE_CHOICE',
     name: 'multiple choice',
     descriptor: 'A question with multiple answers that you define.',
-    example: 'Which of the following candidates will be elected in 2024?',
+    example: 'Who will be the next president of the United States?',
+    visual: (
+      <Col className="text-primary-400 relative my-auto h-12 w-12">
+        <BsUiChecksGrid className="h-12 w-12" />
+      </Col>
+    ),
+  },
+  INDEPENDENT_MULTIPLE_CHOICE: {
+    label: 'Independent Multiple Choice',
+    value: 'MULTIPLE_CHOICE',
+    name: 'multiple choice',
+    descriptor: 'A question with multiple answers that you define.',
+    example: 'Which of the following things will happen during the debate?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <BsUiChecks className="h-12 w-12" />
