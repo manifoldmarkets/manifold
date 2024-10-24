@@ -83,17 +83,22 @@ export function AddMarketToGroupModal(props: {
 
 export function NewContractFromGroup(props: { group: Group; user: User }) {
   const { group, user } = props
+  const [params, setParams] = useState({
+    q: '',
+    description: '',
+    closeTime: Date.now() + 7 * DAY_MS,
+    groupIds: [group.id],
+    shouldAnswersSumToOne: false,
+  } as NewQuestionParams)
+  const setShouldAnswersSumToOne = (shouldAnswersSumToOne: boolean) => {
+    setParams({ ...params, shouldAnswersSumToOne: shouldAnswersSumToOne })
+  }
+
   return (
     <NewContractPanel
-      params={
-        {
-          q: '',
-          description: '',
-          closeTime: Date.now() + 7 * DAY_MS,
-          groupIds: [group.id],
-        } as NewQuestionParams
-      }
+      params={params}
       creator={user}
+      setShouldAnswersSumToOne={setShouldAnswersSumToOne}
     />
   )
 }

@@ -261,7 +261,7 @@ export const getContractVoters = async (
   since: number,
   inContractIds: string[]
 ) => {
-  return Object.fromEntries(
+  return Object.fromEntries( 
     await pg.map(
       `select cb.contract_id, count(distinct cb.user_id)::int as n
        from votes cb

@@ -41,8 +41,9 @@ export type CreateContractStateType =
 export function NewContractPanel(props: {
   creator: User
   params?: NewQuestionParams
+  setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
 }) {
-  const { creator, params } = props
+  const { creator, params, setShouldAnswersSumToOne } = props
   const [outcomeType, setOutcomeType] = useState<
     CreateableOutcomeType | undefined
   >(params?.outcomeType ?? undefined)
@@ -66,13 +67,19 @@ export function NewContractPanel(props: {
         'text-ink-1000 bg-canvas-0 mx-auto w-full max-w-2xl transition-colors'
       )}
     >
-      <CreateStepTracker outcomeType={outcomeType} setState={setState} />
+      <CreateStepTracker
+        outcomeType={outcomeType}
+        setState={setState}
+        shouldAnswersSumToOne={params?.shouldAnswersSumToOne}
+      />
       <Col className={clsx('px-6 py-2')}>
         {state == 'choosing contract' && (
           <>
             <ChoosingContractForm
               outcomeType={outcomeType}
               setOutcomeType={setOutcomeType}
+              shouldAnswersSumToOne={params?.shouldAnswersSumToOne}
+              setShouldAnswersSumToOne={setShouldAnswersSumToOne}
               setState={setState}
             />
             {creator.createdTime > Date.now() - WEEK_MS && <ExplainerPanel />}
@@ -92,9 +99,16 @@ export function NewContractPanel(props: {
 
 function CreateStepTracker(props: {
   outcomeType: CreateableOutcomeType | undefined
+  shouldAnswersSumToOne: boolean | undefined
   setState: (state: CreateContractStateType) => void
 }) {
-  const { outcomeType, setState } = props
+  const { outcomeType, setState, shouldAnswersSumToOne } = props
+  const outcomeKey =
+    outcomeType == 'MULTIPLE_CHOICE'
+      ? shouldAnswersSumToOne
+        ? 'DEPENDENT_MULTIPLE_CHOICE'
+        : 'INDEPENDENT_MULTIPLE_CHOICE'
+      : outcomeType
   return (
     <Row
       className={clsx(
@@ -115,7 +129,12 @@ function CreateStepTracker(props: {
         }}
       >
         {outcomeType
-          ? `${capitalize(getContractTypeFromValue(outcomeType, 'name'))}`
+          ? `${capitalize(
+              getContractTypeFromValue(
+                outcomeKey as CreateableOutcomeType,
+                'name'
+              )
+            )}`
           : ''}
       </CreateStepButton>
     </Row>
