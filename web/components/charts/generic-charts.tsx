@@ -773,9 +773,12 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     const yTickValues = getOptimalTickValues(min, max)
 
     const xAxis = axisBottom<Date>(xScale).ticks(w / 120)
-    const yAxis = axisRight<number>(yScale)
-      .tickValues(yTickValues)
-      .tickFormat((n) => formatPct(n))
+    const yAxis = axisRight<number>(yScale).tickValues(yTickValues)
+    if (yKind === 'percent' || negativeThreshold) {
+      yAxis.tickValues(yTickValues)
+    } else {
+      yAxis.ticks(h < 200 ? 3 : 5)
+    }
 
     yAxis.tickFormat(
       yKind === 'percent'
