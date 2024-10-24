@@ -27,6 +27,7 @@ import {
   ZoomParams,
 } from '../helpers'
 import { extent } from 'd3-array'
+import { GRAPH_Y_DIVISOR } from './binary'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -201,7 +202,10 @@ export const ChoiceContractChart = (props: {
     )
 
     const [min, max] = extent(allVisiblePoints) as [number, number]
-    return [Math.floor(min * 10) / 10, Math.ceil(max * 10) / 10]
+    return [
+      Math.floor(min * GRAPH_Y_DIVISOR) / GRAPH_Y_DIVISOR,
+      Math.ceil(max * GRAPH_Y_DIVISOR) / GRAPH_Y_DIVISOR,
+    ]
   }, [graphedData, zoomY, start, end, now])
 
   const xScale = scaleTime([start, rightmostDate], [0, width])

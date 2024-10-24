@@ -29,6 +29,8 @@ import { Bet } from 'common/bet'
 import { SizedContainer } from 'web/components/sized-container'
 import { ChartAnnotations } from '../chart-annotations'
 
+export const GRAPH_Y_DIVISOR = 20
+
 const getVisibleYRange = (params: {
   data: SingleContractPoint[]
   zoomY?: boolean
@@ -48,10 +50,18 @@ const getVisibleYRange = (params: {
     (p) => p.x >= minX && p.x <= (maxX ?? Infinity)
   )
   const minYValue = zoomY
-    ? Math.max(Math.floor((minBy(visibleData, 'y')?.y ?? 0) * 10) / 10, 0)
+    ? Math.max(
+        Math.floor((minBy(visibleData, 'y')?.y ?? 0) * GRAPH_Y_DIVISOR) /
+          GRAPH_Y_DIVISOR,
+        0
+      )
     : 0
   const maxYValue = zoomY
-    ? Math.min(Math.ceil((maxBy(visibleData, 'y')?.y ?? 1) * 10) / 10, 1)
+    ? Math.min(
+        Math.ceil((maxBy(visibleData, 'y')?.y ?? 1) * GRAPH_Y_DIVISOR) /
+          GRAPH_Y_DIVISOR,
+        1
+      )
     : 1
 
   return [minYValue, maxYValue]

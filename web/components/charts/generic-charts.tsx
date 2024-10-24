@@ -449,11 +449,10 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
 
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
-    const nTicks = h < 200 ? 3 : 5
-    const pctTickValues = getTickValues(min, max, nTicks)
+    const yTickValues = getOptimalTickValues(min, max)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis = axisRight<number>(yScale)
-      .tickValues(pctTickValues)
+      .tickValues(yTickValues)
       .tickFormat((n) => formatPct(n))
 
     return { xAxis, yAxis }
@@ -771,15 +770,12 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const py1 = useCallback((p: P) => yScale(p.y), [yScale])
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
+    const yTickValues = getOptimalTickValues(min, max)
 
-    const nTicks = h < 200 ? 3 : 5
     const xAxis = axisBottom<Date>(xScale).ticks(w / 120)
     const yAxis = axisRight<number>(yScale)
-    if (yKind === 'percent' || negativeThreshold) {
-      yAxis.tickValues(getTickValues(min, max, nTicks))
-    } else {
-      yAxis.ticks(nTicks)
-    }
+      .tickValues(yTickValues)
+      .tickFormat((n) => formatPct(n))
 
     yAxis.tickFormat(
       yKind === 'percent'
@@ -933,6 +929,53 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   )
 }
 
+export const getOptimalTickValues = (
+  min: number,
+  max: number,
+  maxTicks: number = 6
+) => {
+  const range = max - min
+
+  if (range === 0) {
+    return [min, min, min]
+  }
+
+  // Determine the magnitude of the range
+  const magnitude = Math.floor(Math.log10(range))
+  const normalizedRange = range / Math.pow(10, magnitude)
+
+  // Define nice step sizes based on the normalized range
+  const niceSteps = [1, 2, 2.5, 5, 10]
+  let step =
+    niceSteps.find(
+      (s) => normalizedRange / s >= 2 && normalizedRange / s <= maxTicks - 1
+    ) ?? normalizedRange / 2
+  step *= Math.pow(10, magnitude)
+
+  // Adjust start and end to be multiples of the step
+  let start = Math.floor(min / step) * step
+  let end = Math.ceil(max / step) * step
+
+  // Ensure start and end include min and max
+  if (start > min) start -= step
+  if (end < max) end += step
+
+  const ticks = []
+  const epsilon = step / 1e6 // To handle floating point precision issues
+  for (let i = start; i <= end + epsilon; i += step) {
+    const tick = Number((Math.round(i / step) * step).toFixed(10))
+    ticks.push(tick)
+  }
+
+  // Always include min and max if they're not already in the ticks
+  if (ticks[0] > min) ticks.unshift(min)
+  if (ticks[ticks.length - 1] < max) ticks.push(max)
+
+  // Remove any ticks outside the range
+  const finalTicks = ticks.filter((tick) => tick >= min && tick <= max)
+
+  return finalTicks
+}
 // copied gratuitously from SingleValueHistoryChart
 export const SingleValueStackedHistoryChart = <P extends HistoryPoint>(props: {
   data: P[]
