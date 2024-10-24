@@ -24,7 +24,7 @@ export const cancelBet: APIHandler<'bet/cancel/:betId'> = async (
       throw new APIError(403, 'Not a limit order. Cannot cancel.')
     if (bet.isCancelled) throw new APIError(403, 'Bet already cancelled')
 
-    await cancelLimitOrders(tx, [betId])
+    await cancelLimitOrders(tx, [bet as LimitBet])
     const now = Date.now()
 
     await updateContract(tx, bet.contractId, {

@@ -31,7 +31,7 @@ export async function insert<
 export function bulkInsertQuery<
   T extends TableName,
   ColumnValues extends Tables[T]['Insert']
->(table: T, values: ColumnValues[]) {
+>(table: T, values: ColumnValues[], returnData = true) {
   if (values.length == 0) {
     return 'select 1 where false'
   }
@@ -40,7 +40,7 @@ export function bulkInsertQuery<
   const query = pgp.helpers.insert(values, cs)
   // Hack to properly cast values.
   const q = query.replace(/::(\w*)'/g, "'::$1")
-  return q + ` returning *`
+  return returnData ? `${q} returning *` : q
 }
 
 export async function bulkInsert<

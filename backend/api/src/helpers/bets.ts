@@ -43,6 +43,7 @@ export const fetchContractBetDataAndValidate = async (
   uid: string,
   isApi: boolean
 ) => {
+  const startTime = Date.now()
   const { amount, contractId } = body
   const answerIds =
     'answerIds' in body
@@ -144,15 +145,13 @@ export const fetchContractBetDataAndValidate = async (
   if (BANNED_TRADING_USER_IDS.includes(user.id) || user.userDeleted) {
     throw new APIError(403, 'You are banned or deleted. And not #blessed.')
   }
-  log(
-    `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
-  )
   if (contract.outcomeType === 'STONK' && isApi) {
     throw new APIError(403, 'API users cannot bet on STONK contracts.')
   }
   log(
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
   )
+  log(`Fetch bet data took ${Date.now() - startTime}ms`)
 
   return {
     user,
@@ -186,6 +185,7 @@ export const getUserBalancesAndMetrics = async (
   contract: Contract,
   answerId?: string
 ) => {
+  const startTime = Date.now()
   const { token, id: contractId, mechanism } = contract
   // TODO: if we pass the makers' answerIds, we don't need to fetch the metrics for all answers
   const sumsToOne =
@@ -205,7 +205,7 @@ export const getUserBalancesAndMetrics = async (
     results[0].map((user) => [user.id, user.balance])
   )
   const contractMetrics = results[1].map((r) => r.data) as ContractMetric[]
-
+  log(`Fetch user balances and metrics took ${Date.now() - startTime}ms`)
   return { balanceByUserId, contractMetrics }
 }
 export const getUnfilledBetsAndUserBalances = async (
