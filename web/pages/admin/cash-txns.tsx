@@ -1,8 +1,9 @@
+import { EyeOffIcon } from '@heroicons/react/outline'
 import { supabaseConsoleTxnPath } from 'common/envs/constants'
 import { type Txn } from 'common/txn'
 import { formatMoney } from 'common/util/format'
-import { useCallback } from 'react'
-import { Button } from 'web/components/buttons/button'
+import { useState } from 'react'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -11,22 +12,19 @@ import { Table } from 'web/components/widgets/table'
 import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
-import { usePagination } from 'web/hooks/use-pagination'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
-import { api } from 'web/lib/api/api'
 import { formatTime } from 'web/lib/util/time'
+import { uniq } from 'lodash'
 
 export default function CashTxnsPage() {
-  const fetch = useCallback(
-    ({ limit, offset }: { limit: number; offset: number }) =>
-      api('txns', { limit, offset, token: 'CASH' }),
-    []
-  )
-
-  const pagination = usePagination({
-    pageSize: 50,
-    prefix: [] as Txn[],
-    q: fetch,
+  const [ignoredCategories, setIgnoredCategories] = useState<string[]>([])
+  const [page, setPage] = useState(0)
+  const { data } = useAPIGetter('txns', {
+    limit: 50,
+    offset: page * 50,
+    token: 'CASH',
+    ignoreCategories: ignoredCategories,
   })
 
   // TODO: it's actually ok for anyone to see this page
@@ -39,11 +37,15 @@ export default function CashTxnsPage() {
         <Row className="items-start justify-between">
           <Title>Cash Transactions</Title>
           <div className="flex gap-1">
-            <Button onClick={pagination.getPrev} disabled={pagination.isStart}>
+            <Button onClick={() => setPage(page - 1)} disabled={page === 0}>
               Previous
             </Button>
-            <Button onClick={pagination.getNext}>Next</Button>
+            <Button onClick={() => setPage(page + 1)}>Next</Button>
           </div>
+        </Row>
+        <Row className="gap-2">
+          <span>Ignored Categories:</span>
+          <span>{ignoredCategories.join(', ')}</span>
         </Row>
         <Table className="w-full">
           <thead>
@@ -57,23 +59,35 @@ export default function CashTxnsPage() {
             </tr>
           </thead>
           <tbody>
-            {pagination.items.map((txn) => (
-              <TxnRow key={txn.id} txn={txn} />
+            {data?.map((txn) => (
+              <TxnRow
+                key={txn.id}
+                txn={txn}
+                onHideCategory={(category) => {
+                  setIgnoredCategories(uniq([...ignoredCategories, category]))
+                }}
+              />
             ))}
           </tbody>
         </Table>
         <div className="flex items-end gap-1">
-          <Button onClick={pagination.getPrev} disabled={pagination.isStart}>
+          <Button onClick={() => setPage(page - 1)} disabled={page === 0}>
             Previous
           </Button>
-          <Button onClick={pagination.getNext}>Next</Button>
+          <Button onClick={() => setPage(page + 1)}>Next</Button>
         </div>
       </Col>
     </Page>
   )
 }
 
-const TxnRow = ({ txn }: { txn: Txn }) => {
+const TxnRow = ({
+  txn,
+  onHideCategory,
+}: {
+  txn: Txn
+  onHideCategory: (category: string) => void
+}) => {
   const a = useDisplayUserById(txn.fromId)
   const b = useDisplayUserById(txn.toId)
 
@@ -108,7 +122,14 @@ const TxnRow = ({ txn }: { txn: Txn }) => {
         )}
       </td>
       <td>{formatMoney(txn.amount, 'CASH')}</td>
-      <td>{txn.category}</td>
+      <td>
+        <Row className="items-center gap-2">
+          {txn.category}
+          <IconButton size="xs" onClick={() => onHideCategory(txn.category)}>
+            <EyeOffIcon className="h-4 w-4" />
+          </IconButton>
+        </Row>
+      </td>
       <td>{formatTime(txn.createdTime)}</td>
     </tr>
   )

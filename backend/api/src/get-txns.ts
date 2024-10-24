@@ -24,6 +24,7 @@ export const getTxnsMain = async (props: {
   toId?: string
   fromId?: string
   category?: string
+  ignoreCategories?: string[]
 }) => {
   const {
     token,
@@ -34,6 +35,7 @@ export const getTxnsMain = async (props: {
     toId,
     fromId,
     category,
+    ignoreCategories,
   } = props
 
   const pg = createSupabaseDirectClient()
@@ -48,7 +50,7 @@ export const getTxnsMain = async (props: {
     toId && where('to_id = ${toId}', { toId }),
     fromId && where('from_id = ${fromId}', { fromId }),
     category && where('category = ${category}', { category }),
-
+    ignoreCategories && where('category not in ($1:list)', [ignoreCategories]),
     orderBy('created_time desc'),
     limit(limitValue, offset)
   )

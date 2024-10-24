@@ -1730,6 +1730,7 @@ export const API = (_apiTypeCheck = {
         toId: z.string().optional(),
         fromId: z.string().optional(),
         category: z.string().optional(),
+        ignoreCategories: z.array(z.string()).optional(),
       })
       .strict(),
     returns: [] as Txn[],
