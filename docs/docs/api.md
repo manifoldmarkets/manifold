@@ -70,7 +70,7 @@ APIs that require authentication accept an `Authorization` header in one of two 
 
 ## Usage Guidelines
 
-Feel free to use the API for any purpose you'd like. There is a rate limit of 1000 requests per minute per IP. Please don't use multiple IP addresses to circumvent this limit.
+Feel free to use the API for any purpose you'd like. There is a rate limit of 500 requests per minute per IP. Please don't use multiple IP addresses to circumvent this limit.
 
 ## Fees
 
