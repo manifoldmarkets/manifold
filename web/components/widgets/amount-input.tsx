@@ -1,6 +1,10 @@
 import { XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { PHONE_VERIFICATION_BONUS, SWEEPS_MIN_BET } from 'common/economy'
+import {
+  MANA_MIN_BET,
+  PHONE_VERIFICATION_BONUS,
+  SWEEPS_MIN_BET,
+} from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { MarketTierType } from 'common/tier'
 import { humanish, User } from 'common/user'
@@ -21,10 +25,7 @@ import { AddFundsModal } from '../add-funds-modal'
 import { BetSlider } from '../bet/bet-slider'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import {
-  IncrementButton,
-  IncrementDecrementAmountButton,
-} from './increment-button'
+import { IncrementDecrementAmountButton } from './increment-button'
 import { Input } from './input'
 
 export function AmountInput(
@@ -209,16 +210,18 @@ export function BuyAmountInput(props: {
 
   // Check for errors.
   useEffect(() => {
-    if (amount !== undefined) {
-      if (
-        !disregardUserBalance &&
-        user &&
-        ((token === 'M$' && user.balance < amount) ||
-          (token === 'SPICE' && user.spiceBalance < amount) ||
-          (token === 'CASH' && user.cashBalance < amount))
-      ) {
-        setError('Insufficient balance')
-      } else if (token === 'CASH' && amount < SWEEPS_MIN_BET) {
+    if (
+      !disregardUserBalance &&
+      user &&
+      ((token === 'M$' &&
+        (user.balance < (amount ?? 0) || user.balance < MANA_MIN_BET)) ||
+        (token === 'CASH' &&
+          (user.cashBalance < (amount ?? 0) ||
+            user.cashBalance < SWEEPS_MIN_BET)))
+    ) {
+      setError('Insufficient balance')
+    } else if (amount !== undefined) {
+      if (token === 'CASH' && amount < SWEEPS_MIN_BET) {
         setError(
           'Minimum amount: ' +
             formatWithToken({ amount: SWEEPS_MIN_BET, token: 'CASH' })
@@ -277,8 +280,7 @@ export function BuyAmountInput(props: {
         <AmountInput
           className={className}
           inputClassName={clsx(
-            'w-full !text-xl',
-            isAdvancedTrader && '!h-[72px]',
+            'w-full !text-xl !h-[72px]',
             !disableQuickButtons &&
               (incrementValues.length > 2 ? 'pr-[182px]' : 'pr-[134px]'),
             inputClassName
@@ -302,23 +304,14 @@ export function BuyAmountInput(props: {
           quickAddMoreButton={
             disableQuickButtons ? undefined : (
               <Row className="divide-ink-300 border-ink-300 divide-x border-l text-sm">
-                {incrementValues.map((increment) =>
-                  isAdvancedTrader ? (
-                    <IncrementDecrementAmountButton
-                      key={increment}
-                      amount={increment}
-                      incrementBy={incrementBy}
-                      token={token}
-                    />
-                  ) : (
-                    <IncrementButton
-                      key={increment}
-                      amount={increment}
-                      onIncrement={() => incrementBy(increment)}
-                      token={token}
-                    />
-                  )
-                )}
+                {incrementValues.map((increment) => (
+                  <IncrementDecrementAmountButton
+                    key={increment}
+                    amount={increment}
+                    incrementBy={incrementBy}
+                    token={token}
+                  />
+                ))}
               </Row>
             )
           }
