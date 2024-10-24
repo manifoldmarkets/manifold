@@ -27,9 +27,9 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   },
   DEPENDENT_MULTIPLE_CHOICE: {
     label: 'Dependent Multiple Choice',
-    value: 'MULTIPLE_CHOICE',
-    name: 'multiple choice',
-    descriptor: 'A question with multiple answers that you define.',
+    value: 'DEPENDENT_MULTIPLE_CHOICE',
+    name: 'dependentmultiple choice',
+    descriptor: 'A question that resolves to a single answer.',
     example: 'Who will be the next president of the United States?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
@@ -39,9 +39,10 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   },
   INDEPENDENT_MULTIPLE_CHOICE: {
     label: 'Independent Multiple Choice',
-    value: 'MULTIPLE_CHOICE',
-    name: 'multiple choice',
-    descriptor: 'A question with multiple answers that you define.',
+    value: 'INDEPENDENT_MULTIPLE_CHOICE',
+    name: 'independent multiple choice',
+    descriptor:
+      'A question with multiple answers, each of which can be resolved independently.',
     example: 'Which of the following things will happen during the debate?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">

@@ -27,26 +27,35 @@ export function ChoosingContractForm(props: {
           ...Object.values(ALL_CONTRACT_TYPES).filter(({ value }) =>
             MULTI_NUMERIC_CREATION_ENABLED ? true : value !== 'NUMBER'
           ),
-        ].map(({ label, name, descriptor, example, value, visual }) => (
-          <OutcomeButton
-            key={value + name}
-            label={label}
-            descriptor={descriptor}
-            example={example}
-            value={value}
-            visual={visual}
-            outcomeType={outcomeType}
-            onClick={() => {
-              if (name == 'Independent Multiple Choice') {
-                setShouldAnswersSumToOne(false)
-              } else if (name == 'Dependent Multiple Choice') {
-                setShouldAnswersSumToOne(true)
-              }
-              setOutcomeType(value)
-              setState('filling contract params')
-            }}
-          />
-        ))}
+        ].map(({ label, name, descriptor, example, value, visual }) => {
+          const trueOutcomeType: CreateableOutcomeType =
+            value ==
+            ('INDEPENDENT_MULTIPLE_CHOICE' ||
+              value == 'DEPENDENT_MULTIPLE_CHOICE')
+              ? 'MULTIPLE_CHOICE'
+              : value
+
+          return (
+            <OutcomeButton
+              key={value + name}
+              label={label}
+              descriptor={descriptor}
+              example={example}
+              value={value}
+              visual={visual}
+              outcomeType={trueOutcomeType}
+              onClick={() => {
+                if (value == 'INDEPENDENT_MULTIPLE_CHOICE') {
+                  setShouldAnswersSumToOne(false)
+                } else if (value == 'DEPENDENT_MULTIPLE_CHOICE') {
+                  setShouldAnswersSumToOne(true)
+                }
+                setOutcomeType(trueOutcomeType)
+                setState('filling contract params')
+              }}
+            />
+          )
+        })}
       </Col>
     </Col>
   )
@@ -56,7 +65,10 @@ function OutcomeButton(props: {
   label: string
   descriptor: string
   example: string | ReactNode
-  value: CreateableOutcomeType
+  value:
+    | CreateableOutcomeType
+    | 'INDEPENDENT_MULTIPLE_CHOICE'
+    | 'DEPENDENT_MULTIPLE_CHOICE'
   visual: ReactNode
   className?: string
   backgroundColor?: string
