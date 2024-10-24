@@ -155,7 +155,7 @@ export const bulkInsertBets = async (
   return { updatedMetrics, insertedBets }
 }
 export const bulkInsertBetsQuery = (bets: Bet[]) => {
-  return bulkInsertQuery('contract_bets', bets.map(betToRow))
+  return bulkInsertQuery('contract_bets', bets.map(betToRow), false)
 }
 
 const betToRow = (bet: Bet | Omit<Bet, 'id'>) =>
@@ -167,28 +167,26 @@ const betToRow = (bet: Bet | Omit<Bet, 'id'>) =>
     data: JSON.stringify(removeUndefinedProps(bet)) + '::jsonb',
   })
 
-export const cancelLimitOrdersQuery = (limitOrderIds: string[]) => {
-  if (!limitOrderIds.length) return 'select 1 where false'
-  return pgp.as.format(
-    `update contract_bets
+export const cancelLimitOrdersQuery = (limitOrders: LimitBet[]) => {
+  if (!limitOrders.length) return { query: 'select 1 where false', bets: [] }
+  return {
+    query: pgp.as.format(
+      `update contract_bets
     set data = data || '{"isCancelled":true}'
-    where bet_id in ($1:list)
-    returning data`,
-    [limitOrderIds]
-  )
+    where bet_id in ($1:list)`,
+      [limitOrders.map((l) => l.id)]
+    ),
+    bets: limitOrders.map((b) => ({ ...b, isCancelled: true })),
+  }
 }
 
 export const cancelLimitOrders = async (
   pg: SupabaseDirectClient,
-  limitOrderIds: string[]
+  limitOrders: LimitBet[]
 ) => {
-  if (limitOrderIds.length > 0) {
-    const bets = await pg.map<LimitBet>(
-      cancelLimitOrdersQuery(limitOrderIds),
-      [],
-      (r) => r.data
-    )
-
+  if (limitOrders.length > 0) {
+    const { query, bets } = cancelLimitOrdersQuery(limitOrders)
+    await pg.none(query)
     broadcastOrders(bets)
   }
 }

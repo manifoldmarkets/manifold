@@ -398,10 +398,7 @@ async function createAnswerAndSumAnswersToOne(
   await updateAnswers(pgTrans, contract.id, answerUpdates)
 
   allOrdersToCancel.push(...unfilledBetsOnOther)
-  await cancelLimitOrders(
-    pgTrans,
-    allOrdersToCancel.map((b) => b.id)
-  )
+  await cancelLimitOrders(pgTrans, allOrdersToCancel)
 }
 
 async function convertOtherAnswerShares(

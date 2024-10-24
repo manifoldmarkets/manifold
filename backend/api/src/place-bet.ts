@@ -585,16 +585,17 @@ export const executeNewBetResult = async (
     makerRedemptionAndFillUpdatedMetrics
   )
 
-  const balanceQuery = bulkIncrementBalancesQuery([
+  const userBalanceUpdatesQuery = bulkIncrementBalancesQuery([
     ...userBalanceUpdates,
     ...makerRedemptionAndFillBalanceUpdates,
     ...bettorRedemptionBalanceUpdates,
   ])
-  const insertBetsQuery = bulkInsertBetsQuery([
+  const insertedBets = [
     ...betsToInsert,
     ...makerRedemptionBetsToInsert,
     ...bettorRedemptionBetsToInsert,
-  ])
+  ]
+  const insertBetsQuery = bulkInsertBetsQuery(insertedBets)
   const metricsQuery = bulkUpdateContractMetricsQuery(
     bettorRedemptionUpdatedMetrics
   )
@@ -605,13 +606,12 @@ export const executeNewBetResult = async (
     ['id'],
     answerUpdates.map(partialAnswerToRow)
   )
-  const cancelLimitsQuery = cancelLimitOrdersQuery(
-    allOrdersToCancel.map((o) => o.id)
-  )
+  const { query: cancelLimitsQuery, bets: cancelledLimitOrders } =
+    cancelLimitOrdersQuery(allOrdersToCancel)
   const startTime = Date.now()
   const results = await pgTrans.multi(
     `
-    ${balanceQuery}; --0
+    ${userBalanceUpdatesQuery}; --0
     ${streakIncrementedQuery}; --1
     ${insertBetsQuery}; --2
     ${metricsQuery}; --3
@@ -636,8 +636,6 @@ export const executeNewBetResult = async (
       lastBetTime: newBet.createdTime,
     })
   )
-  // TODO: No reason to return the sql bet data, the bets we insert are fully formed
-  const insertedBets = results[2].map(convertBet)
   const newContract = results[4].map(convertContract)[0]
   log('updated contract', newContract)
   const updatedValues = mapValues(
@@ -646,13 +644,10 @@ export const executeNewBetResult = async (
   ) as any
   broadcastUpdatedContract(newContract.visibility, updatedValues)
   broadcastUpdatedAnswers(newContract.id, answerUpdates)
-  const cancelledLimitOrders = results[6].map(convertBet) as LimitBet[]
   broadcastOrders(cancelledLimitOrders)
   const bonusTxn = first(results[8].map(convertTxn)) as
     | UniqueBettorBonusTxn
     | undefined
-
-  log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
 
   return {
     contract,
