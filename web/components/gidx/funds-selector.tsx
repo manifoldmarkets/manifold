@@ -67,9 +67,9 @@ export function FundsSelector(props: {
       </div>
       {eligibleForNewUserOffer && (
         <>
-          <Row className="items-baseline justify-between text-3xl text-purple-500">
+          <Row className="items-baseline justify-between text-3xl text-green-500">
             Welcome Deal
-            <span className="text-lg text-purple-500">
+            <span className="text-lg text-green-500">
               expires in{' '}
               <Countdown
                 includeSeconds

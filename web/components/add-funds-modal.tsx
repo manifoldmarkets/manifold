@@ -44,6 +44,7 @@ export function AddFundsModal(props: {
     <Modal
       open={open}
       setOpen={setOpen}
+      size="lg"
       className="bg-canvas-0 text-ink-1000 rounded-md p-8"
     >
       <BuyManaTab onClose={() => setOpen(false)} />
@@ -140,7 +141,7 @@ export function PriceTile(props: {
           ? 'pointer-events-none cursor-not-allowed opacity-50'
           : 'opacity-90 ring-2 ring-indigo-600 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
         isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait',
-        newUsersOnly && 'border-4 border-purple-500 '
+        newUsersOnly && 'border-4 border-green-500 '
       )}
       type={useStripe ? 'submit' : 'button'}
       onClick={useStripe ? undefined : onClick}
@@ -148,7 +149,7 @@ export function PriceTile(props: {
       {originalPriceInDollars && originalPriceInDollars !== priceInDollars && (
         <div
           className="absolute right-0 top-0
-        whitespace-nowrap  bg-purple-500 px-2
+        whitespace-nowrap  bg-green-500 px-2
          py-0.5 text-white transition-colors
            "
         >
