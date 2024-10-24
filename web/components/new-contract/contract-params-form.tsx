@@ -120,15 +120,15 @@ export function ContractParamsForm(props: {
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL' ? ['', ''] : []
 
   const [answers, setAnswers] = usePersistentLocalState(
-    params?.answers ? params.answers : defaultAnswers,
+    !!params?.answers ? params.answers : defaultAnswers,
     'new-answers-with-other' + paramsKey
   )
+
   const [addAnswersMode, setAddAnswersMode] =
     usePersistentLocalState<add_answers_mode>(
       params?.addAnswersMode ?? 'DISABLED',
       'new-add-answers-mode' + paramsKey
     )
-
   const [shouldAnswersSumToOne, setShouldAnswersSumToOne] =
     usePersistentLocalState(
       params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER' ?? true,
@@ -136,7 +136,10 @@ export function ContractParamsForm(props: {
     )
   // NOTE: if you add another user-controlled state variable here, you should also add it to the duplication parameters
 
-  const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
+  const hasOtherAnswer =
+    addAnswersMode !== 'DISABLED' &&
+    shouldAnswersSumToOne &&
+    outcomeType != 'POLL'
   const numAnswers = hasOtherAnswer ? answers.length + 1 : answers.length
 
   useEffect(() => {

@@ -54,11 +54,15 @@ export function MultipleChoiceAnswers(props: {
     }
   }
 
-  const hasOther = shouldAnswersSumToOne && addAnswersMode !== 'DISABLED'
+  const hasOther =
+    shouldAnswersSumToOne &&
+    addAnswersMode !== 'DISABLED' &&
+    outcomeType !== 'POLL'
+
   const numAnswers = answers.length + (hasOther ? 1 : 0)
 
   const canRemoveAnswers =
-    !shouldAnswersSumToOne ||
+    (!shouldAnswersSumToOne && numAnswers > 1) ||
     numAnswers > 2 ||
     (numAnswers > 1 && addAnswersMode !== 'DISABLED')
 

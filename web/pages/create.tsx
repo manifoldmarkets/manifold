@@ -8,6 +8,7 @@ import { Title } from 'web/components/widgets/title'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
 import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
+import { useEffect, useState } from 'react'
 
 export default function Create() {
   useRedirectIfSignedOut()
@@ -15,17 +16,26 @@ export default function Create() {
   const user = useUser()
   const { searchParams } = useDefinedSearchParams()
   const paramsEntries = Object.fromEntries(searchParams.entries())
-  const params = searchParams
-    ? (Object.fromEntries(
-        Object.keys(paramsEntries).map((key) => [
-          key,
-          JSON.parse(paramsEntries[key] || 'null'),
-        ])
-      ).params as NewQuestionParams)
-    : ({} as NewQuestionParams)
+
+  function getURLParams() {
+    return searchParams
+      ? (Object.fromEntries(
+          Object.keys(paramsEntries).map((key) => [
+            key,
+            JSON.parse(paramsEntries[key] || 'null'),
+          ])
+        ).params as NewQuestionParams)
+      : ({} as NewQuestionParams)
+  }
+
+  const [params, setParams] = useState(getURLParams())
+
+  useEffect(() => {
+    setParams(getURLParams())
+  }, [searchParams])
 
   const setShouldAnswersSumToOne = (shouldAnswersSumToOne: boolean) => {
-    params.shouldAnswersSumToOne = shouldAnswersSumToOne
+    setParams({ ...params, shouldAnswersSumToOne })
   }
 
   if (!user) return <div />

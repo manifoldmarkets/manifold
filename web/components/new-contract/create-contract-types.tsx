@@ -28,8 +28,9 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   DEPENDENT_MULTIPLE_CHOICE: {
     label: 'Dependent Multiple Choice',
     value: 'DEPENDENT_MULTIPLE_CHOICE',
-    name: 'dependentmultiple choice',
-    descriptor: 'A question that resolves to a single answer.',
+    name: 'dependent multiple choice',
+    descriptor:
+      'A multi-choice question where the options are connected, and your total prediction must sum to 100%, reflecting a single final outcome.',
     example: 'Who will be the next president of the United States?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
@@ -42,7 +43,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     value: 'INDEPENDENT_MULTIPLE_CHOICE',
     name: 'independent multiple choice',
     descriptor:
-      'A question with multiple answers, each of which can be resolved independently.',
+      'A multi-choice question where each option is independent, and multiple outcomes can happen. You can think of each answer as its own separate prediction.',
     example: 'Which of the following things will happen during the debate?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
