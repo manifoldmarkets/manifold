@@ -139,11 +139,19 @@ export const RegisterUserForm = (props: {
     })
   }, [page])
 
-  const optionalKeys = ['AddressLine2', 'StateCode']
-  const unfilled = Object.entries(userInfo ?? {}).filter(
-    ([key, value]) =>
-      !optionalKeys.includes(key) && (value === undefined || value === '')
-  )
+  const requiredKeys = [
+    'FirstName',
+    'LastName',
+    'DateOfBirth',
+    'AddressLine1',
+    'City',
+    'PostalCode',
+    'DeviceGPS',
+    'EmailAddress',
+  ] as const
+
+  const unfilled = requiredKeys.filter((key) => !userInfo[key])
+
   const register = async () => {
     setError(null)
     setLoading(true)
@@ -181,7 +189,9 @@ export const RegisterUserForm = (props: {
     // Identity verification succeeded
     setPage('final')
   }
+
   const [canContinue, setCanContinue] = useState(false)
+  const sectionClass = 'gap-0.5 w-full'
 
   if (page === 'intro') {
     return (
@@ -274,7 +284,7 @@ export const RegisterUserForm = (props: {
             ...userInfo,
             DeviceGPS: data,
           })
-          setPage('form')
+          setPage('user-info-form')
         }}
         setLocationError={setLocationError}
         setLoading={setLoading}
@@ -285,12 +295,10 @@ export const RegisterUserForm = (props: {
     )
   }
 
-  if (page === 'form') {
-    const sectionClass = 'gap-0.5 w-full'
+  if (page === 'user-info-form') {
     return (
       <>
-        <span className={'mx-auto text-2xl'}>Identity Verification</span>
-
+        <span className={'mx-auto text-2xl'}>Identity</span>
         <div className="flex flex-col gap-4 sm:flex-row">
           <Col className={sectionClass}>
             <InputTitle>First Name</InputTitle>
@@ -317,7 +325,7 @@ export const RegisterUserForm = (props: {
         <Col className={sectionClass}>
           <InputTitle>Date of Birth</InputTitle>
           <Input
-            className={'w-full sm:w-[50%]'}
+            className={'w-full '}
             type={'date'}
             value={
               userInfo.DateOfBirth && userInfo.DateOfBirth.includes('/')
@@ -339,19 +347,34 @@ export const RegisterUserForm = (props: {
             }
           />
         </Col>
-
-        <Divider />
-        {/* 
-        <Col className={sectionClass}>
-          <InputTitle>Citizenship Country</InputTitle>
-          <CountryCodeSelector
-            selectedCountry={userInfo.CitizenshipCountryCode}
-            setSelectedCountry={(val) =>
-              setUserInfo({ ...userInfo, CitizenshipCountryCode: val })
+        <BottomRow>
+          <Button
+            color={'gray-white'}
+            disabled={loading}
+            onClick={() => setPage('intro')}
+          >
+            Back
+          </Button>
+          <Button
+            color={'indigo'}
+            onClick={() => setPage('user-address-form')}
+            disabled={
+              !userInfo.FirstName ||
+              !userInfo.LastName ||
+              !userInfo.DateOfBirth ||
+              !userInfo.EmailAddress
             }
-          />
-        </Col> */}
-
+          >
+            Next
+          </Button>
+        </BottomRow>
+      </>
+    )
+  }
+  if (page == 'user-address-form') {
+    return (
+      <>
+        <span className={'mx-auto text-2xl'}>Address</span>
         <Col className={sectionClass}>
           <InputTitle>Address Line 1</InputTitle>
           <Input
@@ -407,7 +430,7 @@ export const RegisterUserForm = (props: {
             />
           </Col>
         </Row>
-        <Col className={'w-1/2 gap-0.5'}>
+        <Col className={'w-full gap-0.5'}>
           <InputTitle>Referral Code</InputTitle>
           <Input
             placeholder={'R2I3E (optional)'}
