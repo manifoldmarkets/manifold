@@ -144,11 +144,19 @@ export const RegisterUserForm = (props: {
     })
   }, [page])
 
-  const optionalKeys = ['AddressLine2', 'StateCode', 'ReferralCode']
-  const unfilled = Object.entries(userInfo ?? {}).filter(
-    ([key, value]) =>
-      !optionalKeys.includes(key) && (value === undefined || value === '')
-  )
+  const requiredKeys = [
+    'FirstName',
+    'LastName',
+    'DateOfBirth',
+    'AddressLine1',
+    'City',
+    'PostalCode',
+    'DeviceGPS',
+    'EmailAddress',
+  ] as const
+
+  const unfilled = requiredKeys.filter((key) => !userInfo[key])
+
   const register = async () => {
     setError(null)
     setLoading(true)
@@ -187,7 +195,6 @@ export const RegisterUserForm = (props: {
     setPage('final')
   }
 
-  console.log('USER INFO', userInfo, 'UNFILLED', unfilled)
   const [canContinue, setCanContinue] = useState(false)
   const sectionClass = 'gap-0.5 w-full'
 
