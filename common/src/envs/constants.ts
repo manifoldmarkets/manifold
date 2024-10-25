@@ -271,6 +271,7 @@ export const VERIFIED_USERNAMES = [
   'transmissions11',
   'DanHendrycks',
   'Cremieux',
+  'tracewoodgrains',
 ]
 
 export const BANNED_TRADING_USER_IDS = [
