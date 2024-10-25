@@ -25,7 +25,6 @@ import { CoinNumber } from 'web/components/widgets/coin-number'
 import { RegisterIcon } from 'web/public/custom-components/registerIcon'
 import {
   BottomRow,
-  Divider,
   InputTitle,
 } from 'web/components/gidx/register-component-helpers'
 import { DocumentUploadIcon } from 'web/public/custom-components/documentUploadIcon'
