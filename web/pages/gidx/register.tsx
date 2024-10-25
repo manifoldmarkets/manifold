@@ -7,26 +7,17 @@ import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { UsOnlyDisclaimer } from 'web/components/sweeps/us-only-disclaimer'
-import { Button, buttonClass } from 'web/components/buttons/button'
+import { Button } from 'web/components/buttons/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import {
-  ageBlocked,
-  getVerificationStatus,
-  locationBlocked,
-  PROMPT_USER_VERIFICATION_MESSAGES,
-} from 'common/gidx/user'
+import { ageBlocked, locationBlocked } from 'common/gidx/user'
 import { PrivateUser, User } from 'common/user'
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
 import { RiUserForbidLine } from 'react-icons/ri'
-import Link from 'next/link'
 
 const HomePage = () => {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const { status, message } = getVerificationStatus(user, privateUser)
-  const shouldPromptVerification =
-    PROMPT_USER_VERIFICATION_MESSAGES.includes(message)
 
   if (!TWOMBA_ENABLED) return null
   return (
@@ -49,23 +40,8 @@ const HomePage = () => {
           </Col>
         ) : !privateUser ? (
           <LoadingIndicator className="mx-auto my-auto h-80" />
-        ) : shouldPromptVerification ? (
-          <RegisterUserForm user={user} privateUser={privateUser} />
         ) : (
-          <Col className="items-center gap-4">
-            <VerificationBlockedReasons
-              user={user}
-              privateUser={privateUser}
-              message={message}
-            />
-            <div className="text-ink-700">
-              You can still participate in our free mana Markets - no
-              verification needed!
-            </div>
-            <Link className={buttonClass('md', 'indigo')} href={'/home'}>
-              Go home
-            </Link>
-          </Col>
+          <RegisterUserForm user={user} privateUser={privateUser} />
         )}
       </Col>
     </Page>
