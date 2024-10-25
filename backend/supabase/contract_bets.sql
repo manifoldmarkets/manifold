@@ -101,10 +101,9 @@ drop index if exists contract_bets_historical_probs;
 
 create index contract_bets_historical_probs on public.contract_bets using btree (contract_id, answer_id, created_time desc) include (prob_before, prob_after);
 
+drop index if exists contract_bets_user_id_created_time;
 
-drop index if exists contract_bets_user_id_contract_id;
-
-create index contract_bets_user_id_contract_id on public.contract_bets using btree (user_id, contract_id, created_time);
+create index contract_bets_user_id_created_time on public.contract_bets using btree (user_id, created_time desc);
 
 drop index if exists contract_bets_user_outstanding_limit_orders;
 
