@@ -26,11 +26,11 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     ),
   },
   DEPENDENT_MULTIPLE_CHOICE: {
-    label: 'Dependent Multiple Choice',
+    label: 'Multiple Choice',
     value: 'DEPENDENT_MULTIPLE_CHOICE',
-    name: 'dependent multiple choice',
+    name: 'multiple choice',
     descriptor:
-      'A multi-choice question where the options are connected, and your total prediction must sum to 100%, reflecting a single final outcome.',
+      'A multi-choice question where only one option can be selected.',
     example: 'Who will be the next president of the United States?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
@@ -39,11 +39,11 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     ),
   },
   INDEPENDENT_MULTIPLE_CHOICE: {
-    label: 'Independent Multiple Choice',
+    label: 'Set',
     value: 'INDEPENDENT_MULTIPLE_CHOICE',
-    name: 'independent multiple choice',
+    name: 'set',
     descriptor:
-      'A multi-choice question where each option is independent, and multiple outcomes can happen. You can think of each answer as its own separate prediction.',
+      'A question with multiple selectable options. You can think of each answer as its own separate prediction.',
     example: 'Which of the following things will happen during the debate?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
