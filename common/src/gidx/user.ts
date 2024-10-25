@@ -11,7 +11,9 @@ import { humanish, PrivateUser, User } from 'common/user'
 export const blockFromSweepstakes = (user: User | undefined | null) =>
   user && (!user.idVerified || !user.sweepstakesVerified)
 export const locationBlocked = (user: User, privateUser: PrivateUser) =>
-  getVerificationStatus(user, privateUser).message === LOCATION_BLOCKED_MESSAGE
+  [LOCATION_BLOCKED_MESSAGE, LOCATION_BLOCKED_TIME_MESSAGE].includes(
+    getVerificationStatus(user, privateUser).message
+  )
 export const ageBlocked = (user: User, privateUser: PrivateUser) =>
   getVerificationStatus(user, privateUser).message === USER_UNDERAGE_MESSAGE
 export const identityBlocked = (user: User, privateUser: PrivateUser) =>
@@ -60,6 +62,9 @@ export const getVerificationStatus = (
     } else if (
       intersection(privateUser.kycFlags, locationBlockedCodes).length > 0
     ) {
+      if (privateUser.kycFlags?.includes('LL-ALERT-DIST')) {
+        return { status: 'error', message: LOCATION_BLOCKED_TIME_MESSAGE }
+      }
       return { status: 'error', message: LOCATION_BLOCKED_MESSAGE }
     }
     return { status: 'error', message: USER_BLOCKED_MESSAGE }
@@ -75,6 +80,8 @@ const GIDX_DISABLED_MESSAGE = 'GIDX registration is disabled'
 const PHONE_NOT_VERIFIED_MESSAGE = 'User must verify phone'
 const IDENTIFICATION_FAILED_MESSAGE = 'User identification failed'
 const LOCATION_BLOCKED_MESSAGE = 'User location is blocked'
+const LOCATION_BLOCKED_TIME_MESSAGE =
+  'User is blocked due to rapid changes in location. Try again in 3 hours.'
 const USER_BLOCKED_MESSAGE =
   'User is not eligible to trade on sweepstakes markets.'
 const USER_UNDERAGE_MESSAGE = 'User is underage'
