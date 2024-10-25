@@ -129,11 +129,6 @@ export const RegisterUserForm = (props: {
           LastName: user.name.split(' ')[1],
           DateOfBirth: undefined,
           EmailAddress: privateUser.email,
-          AddressLine1: undefined,
-          AddressLine2: undefined,
-          City: undefined,
-          StateCode: undefined,
-          PostalCode: undefined,
         },
     'gidx-registration-user-info'
   )
