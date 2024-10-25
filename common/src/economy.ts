@@ -64,7 +64,7 @@ export const getTieredCost = (
 }
 
 /* Sweeps bonuses */
-export const KYC_VERIFICATION_BONUS_CASH = 1
+export const KYC_VERIFICATION_BONUS_CASH = 3
 export const BETTING_STREAK_SWEEPS_BONUS_AMOUNT = 0.05
 export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
 
