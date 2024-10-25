@@ -463,7 +463,7 @@ export const RegisterUserForm = (props: {
           <Button
             color={'gray-white'}
             disabled={loading}
-            onClick={() => setPage('user-info-form')}
+            onClick={() => setPage('intro')}
           >
             Back
           </Button>
