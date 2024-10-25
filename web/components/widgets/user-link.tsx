@@ -7,6 +7,8 @@ import {
   ENV_CONFIG,
   MOD_IDS,
   PARTNER_USER_IDS,
+  INSTITUTIONAL_PARTNER_USER_IDS,
+  BEING_DEAD_HEADS,
 } from 'common/envs/constants'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
@@ -22,7 +24,8 @@ import { BsFillArrowThroughHeartFill } from 'react-icons/bs'
 import { LuCrown } from 'react-icons/lu'
 import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
-
+import { GiBurningSkull } from 'react-icons/gi'
+import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -177,6 +180,12 @@ export function UserBadge(props: {
   if (PARTNER_USER_IDS.includes(userId)) {
     badges.push(<PartnerBadge key="partner" />)
   }
+  if (INSTITUTIONAL_PARTNER_USER_IDS.includes(userId)) {
+    badges.push(<InstitutionalPartnerBadge key="institutional-partner" />)
+  }
+  if (BEING_DEAD_HEADS.includes(userId)) {
+    badges.push(<BeingDeadHead key="being-dead" />)
+  }
   if (fresh) {
     badges.push(<FreshBadge key="fresh" />)
   }
@@ -234,6 +243,24 @@ function PartnerBadge() {
   return (
     <Tooltip text="Partner" placement="right">
       <LuCrown className="text-primary-700 h-3.5 w-3.5" aria-hidden />
+    </Tooltip>
+  )
+}
+function InstitutionalPartnerBadge() {
+  return (
+    <Tooltip text="Institutional Partner" placement="right">
+      <HiOutlineBuildingLibrary
+        className="text-primary-700 h-3.5 w-3.5"
+        aria-hidden
+      />
+    </Tooltip>
+  )
+}
+
+function BeingDeadHead() {
+  return (
+    <Tooltip text="Being Dead head (the band)" placement="right">
+      <GiBurningSkull className="text-primary-700 h-3.5 w-3.5" aria-hidden />
     </Tooltip>
   )
 }

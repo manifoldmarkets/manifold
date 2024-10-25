@@ -15,6 +15,7 @@ import { CandidateBet } from 'common/new-bet'
 import {
   BANNED_TRADING_USER_IDS,
   BOT_USERNAMES,
+  INSTITUTIONAL_PARTNER_USER_IDS,
   isAdminId,
   PARTNER_USER_IDS,
 } from 'common/envs/constants'
@@ -132,7 +133,8 @@ export const fetchContractBetDataAndValidate = async (
     throw new APIError(403, 'Insufficient balance.')
   if (
     (!user.sweepstakesVerified || !user.idVerified) &&
-    contract.token === 'CASH'
+    contract.token === 'CASH' &&
+    !INSTITUTIONAL_PARTNER_USER_IDS.includes(user.id)
   ) {
     throw new APIError(
       403,

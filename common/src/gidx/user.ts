@@ -70,7 +70,7 @@ export const getVerificationStatus = (
   }
 }
 
-const USER_IS_UNDEFINED_MESSAGE = 'User is undefined'
+const USER_IS_UNDEFINED_MESSAGE = 'Please sign in or sign up'
 const GIDX_DISABLED_MESSAGE = 'GIDX registration is disabled'
 const PHONE_NOT_VERIFIED_MESSAGE = 'User must verify phone'
 const IDENTIFICATION_FAILED_MESSAGE = 'User identification failed'

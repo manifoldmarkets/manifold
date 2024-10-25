@@ -372,9 +372,7 @@ export const BuyPanelBody = (props: {
   const [showLocationMonitor, setShowLocationMonitor] = useState(false)
 
   const { status: verificationStatus, message: verificationMessage } =
-    user && privateUser
-      ? getVerificationStatus(user, privateUser)
-      : { status: 'error', message: 'sign in to trade' }
+    getVerificationStatus(user, privateUser)
 
   const betDisabled =
     isSubmitting ||
@@ -515,10 +513,9 @@ export const BuyPanelBody = (props: {
   const { pseudonymName, pseudonymColor } =
     props.pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
 
-  const { message } = getVerificationStatus(user, privateUser)
-
   const shouldPromptVerification =
-    isCashContract && PROMPT_USER_VERIFICATION_MESSAGES.includes(message)
+    isCashContract &&
+    PROMPT_USER_VERIFICATION_MESSAGES.includes(verificationMessage)
 
   return (
     <>
