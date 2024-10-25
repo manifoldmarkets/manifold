@@ -352,14 +352,13 @@ export const HIDE_FROM_LEADERBOARD_USER_IDS = [
   'tRZZ6ihugZQLXPf6aPRneGpWLmz1', // ManifoldLove
 ]
 
-export const INSTITUTIONAL_PARTNER_USER_IDS: string[] = [
-  'D8O4yNtFhEU8Y7Taf3BilznJOcu2',
-  'tlmGNz9kjXc2EteizMORes4qvWl2',
-]
+export const INSTITUTIONAL_PARTNER_USER_IDS: string[] = []
 
 export const BEING_DEAD_HEADS = [
   '6hHpzvRG0pMq8PNJs7RZj2qlZGn2',
   'AJwLWoo3xue32XIiAVrL5SyR1WB2',
+  'D8O4yNtFhEU8Y7Taf3BilznJOcu2',
+  'tlmGNz9kjXc2EteizMORes4qvWl2',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
