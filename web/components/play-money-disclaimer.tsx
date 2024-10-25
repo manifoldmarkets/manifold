@@ -1,14 +1,26 @@
 import { CoinNumber } from './widgets/coin-number'
 import { Row } from './layout/row'
+import {
+  KYC_VERIFICATION_BONUS_CASH,
+  PHONE_VERIFICATION_BONUS,
+} from 'common/src/economy'
 
-export const PlayMoneyDisclaimer = (props: { text?: string }) => {
-  const { text } = props
+export const PlayMoneyDisclaimer = ({ isLong }: { isLong?: boolean }) => {
   return (
     <Row className="text-ink-500 my-1.5 justify-center text-sm">
       Get
-      <CoinNumber amount={1000} coinType="mana" className="mx-1" />
+      <CoinNumber
+        amount={PHONE_VERIFICATION_BONUS}
+        coinType="mana"
+        className="mx-1"
+      />
       and
-      <CoinNumber amount={1} coinType="sweepies" className="ml-1" />
+      <CoinNumber
+        amount={KYC_VERIFICATION_BONUS_CASH}
+        coinType="sweepies"
+        className="mx-1"
+      />
+      {isLong && ' to start trading!'}
     </Row>
   )
 }

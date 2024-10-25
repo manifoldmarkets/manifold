@@ -34,6 +34,7 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
+import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
@@ -207,6 +208,7 @@ export default function LandingPage(props: {
               >
                 Start predicting
               </Button>
+              <PlayMoneyDisclaimer isLong />
             </Col>
             <Col className="mx-auto hidden h-full sm:flex">
               <img

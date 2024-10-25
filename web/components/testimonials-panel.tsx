@@ -7,12 +7,11 @@ import clsx from 'clsx'
 import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { MARKET_VISIT_BONUS_TOTAL, STARTING_BALANCE } from 'common/economy'
 import SquiggleVertical from 'web/lib/icons/squiggle-vertical.svg'
 import SquiggleHorizontal from 'web/lib/icons/squiggle-horizontal.svg'
 import QuoteIcon from 'web/lib/icons/quote.svg'
 import testimonials from '../public/testimonials/testimonials.json'
-import { formatMoney } from 'common/util/format'
+import { PlayMoneyDisclaimer } from './play-money-disclaimer'
 
 export function TestimonialsPanel() {
   const isMobile = useIsMobile()
@@ -63,12 +62,7 @@ export function TestimonialsPanel() {
           </div>
           <div className="absolute left-8 top-6 sm:top-48 md:left-8">
             <div className="hidden text-right text-sm text-black sm:inline">
-              And get{'   '}
-              <span className="relative z-10 font-semibold">
-                {formatMoney(STARTING_BALANCE + MARKET_VISIT_BONUS_TOTAL)}
-              </span>
-              {'   '}
-              to start trading!
+              <PlayMoneyDisclaimer isLong />
             </div>
           </div>
         </div>
