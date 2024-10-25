@@ -129,6 +129,11 @@ export const RegisterUserForm = (props: {
           LastName: user.name.split(' ')[1],
           DateOfBirth: undefined,
           EmailAddress: privateUser.email,
+          AddressLine1: undefined,
+          AddressLine2: undefined,
+          City: undefined,
+          StateCode: undefined,
+          PostalCode: undefined,
         },
     'gidx-registration-user-info'
   )
@@ -139,7 +144,7 @@ export const RegisterUserForm = (props: {
     })
   }, [page])
 
-  const optionalKeys = ['AddressLine2', 'StateCode']
+  const optionalKeys = ['AddressLine2', 'StateCode', 'ReferralCode']
   const unfilled = Object.entries(userInfo ?? {}).filter(
     ([key, value]) =>
       !optionalKeys.includes(key) && (value === undefined || value === '')
@@ -181,9 +186,10 @@ export const RegisterUserForm = (props: {
     // Identity verification succeeded
     setPage('final')
   }
-  const [canContinue, setCanContinue] = useState(false)
 
-  const [formPage, setFormPage] = useState(1)
+  console.log('USER INFO', userInfo, 'UNFILLED', unfilled)
+  const [canContinue, setCanContinue] = useState(false)
+  const sectionClass = 'gap-0.5 w-full'
 
   if (page === 'intro') {
     return (
@@ -276,7 +282,7 @@ export const RegisterUserForm = (props: {
             ...userInfo,
             DeviceGPS: data,
           })
-          setPage('form')
+          setPage('user-info-form')
         }}
         setLocationError={setLocationError}
         setLoading={setLoading}
@@ -287,7 +293,189 @@ export const RegisterUserForm = (props: {
     )
   }
 
- 
+  if (page === 'user-info-form') {
+    return (
+      <>
+        <span className={'mx-auto text-2xl'}>Identity</span>
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <Col className={sectionClass}>
+            <InputTitle>First Name</InputTitle>
+            <Input
+              value={userInfo.FirstName}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, FirstName: e.target.value })
+              }
+            />
+          </Col>
+
+          <Col className={sectionClass}>
+            <InputTitle>Last Name</InputTitle>
+            <Input
+              value={userInfo.LastName}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, LastName: e.target.value })
+              }
+            />
+          </Col>
+        </div>
+        <Col className={sectionClass}>
+          <InputTitle>Date of Birth</InputTitle>
+          <Input
+            className={'w-full '}
+            type={'date'}
+            value={
+              userInfo.DateOfBirth && userInfo.DateOfBirth.includes('/')
+                ? new Date(userInfo.DateOfBirth).toISOString().split('T')[0]
+                : userInfo.DateOfBirth
+            }
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, DateOfBirth: e.target.value })
+            }
+          />
+        </Col>
+        <Col className={sectionClass}>
+          <InputTitle>Email Address</InputTitle>
+          <Input
+            value={userInfo.EmailAddress}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, EmailAddress: e.target.value })
+            }
+          />
+        </Col>
+        <BottomRow>
+          <Button
+            color={'gray-white'}
+            disabled={loading}
+            onClick={() => setPage('intro')}
+          >
+            Back
+          </Button>
+          <Button
+            color={'indigo'}
+            onClick={() => setPage('user-address-form')}
+            disabled={
+              !userInfo.FirstName ||
+              !userInfo.LastName ||
+              !userInfo.DateOfBirth ||
+              !userInfo.EmailAddress
+            }
+          >
+            Next
+          </Button>
+        </BottomRow>
+      </>
+    )
+  }
+  if (page == 'user-address-form') {
+    return (
+      <>
+        <span className={'mx-auto text-2xl'}>Address</span>
+        <Col className={sectionClass}>
+          <InputTitle>Address Line 1</InputTitle>
+          <Input
+            value={userInfo.AddressLine1}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, AddressLine1: e.target.value })
+            }
+          />
+        </Col>
+        <Col className={'gap-4 sm:flex-row '}>
+          <Col className={clsx(sectionClass, 'sm:w-[50%]')}>
+            <InputTitle>Address Line 2</InputTitle>
+            <Input
+              placeholder={'Unit #, etc. (optional)'}
+              value={userInfo.AddressLine2}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, AddressLine2: e.target.value })
+              }
+            />
+          </Col>
+          <Col className={clsx(sectionClass, 'sm:w-[50%]')}>
+            <InputTitle>City</InputTitle>
+            <Input
+              value={userInfo.City}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, City: e.target.value })
+              }
+            />
+          </Col>
+        </Col>
+        <Row className={' gap-4'}>
+          <Col className={'w-1/2 gap-0.5'}>
+            <InputTitle>State</InputTitle>
+            <Input
+              value={userInfo.StateCode}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, StateCode: e.target.value })
+              }
+            />
+          </Col>
+          <Col className={'w-1/2 gap-0.5'}>
+            <InputTitle>Postal Code</InputTitle>
+            <Input
+              value={userInfo.PostalCode}
+              type={'text'}
+              onChange={(e) =>
+                setUserInfo({ ...userInfo, PostalCode: e.target.value })
+              }
+            />
+          </Col>
+        </Row>
+        <Col className={'w-full gap-0.5'}>
+          <InputTitle>Referral Code</InputTitle>
+          <Input
+            placeholder={'R2I3E (optional)'}
+            className={'w-full '}
+            value={userInfo.ReferralCode}
+            type={'text'}
+            onChange={(e) =>
+              setUserInfo({ ...userInfo, ReferralCode: e.target.value })
+            }
+          />
+        </Col>
+        {error && (
+          <Col className={'text-error'}>
+            {error}
+            <Row>
+              {error === ID_ERROR_MSG ? (
+                <Button
+                  onClick={() => setPage('documents')}
+                  color={'indigo-outline'}
+                >
+                  Upload documents instead
+                </Button>
+              ) : (
+                ''
+              )}
+            </Row>
+          </Col>
+        )}
+        <BottomRow>
+          <Button
+            color={'gray-white'}
+            disabled={loading}
+            onClick={() => setPage('user-info-form')}
+          >
+            Back
+          </Button>
+          <Button
+            loading={loading}
+            disabled={loading || unfilled.length > 0}
+            onClick={register}
+          >
+            Submit
+          </Button>
+        </BottomRow>
+      </>
+    )
+  }
 
   if (page === 'documents') {
     return (
