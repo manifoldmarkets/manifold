@@ -18,7 +18,6 @@ import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
 import { followtopic } from './follow-topic'
 import { editcomment } from 'api/edit-comment'
-
 import { leagueActivity } from './league-activity'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
@@ -55,9 +54,7 @@ import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
-
 import { deletetv, settv } from './set-tv'
-
 import { allowCorsUnrestricted, apiErrorHandler } from './app'
 import { RequestHandler } from 'express'
 

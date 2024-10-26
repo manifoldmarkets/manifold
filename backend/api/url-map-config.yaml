@@ -1,0 +1,37 @@
+name: api-url-map
+defaultService: global/backendServices/api-lb-service
+hostRules:
+  - hosts:
+      - '*'
+    pathMatcher: method-matcher
+pathMatchers:
+  - name: method-matcher
+    defaultService: global/backendServices/api-lb-service
+    routeRules:
+      - priority: 1
+        matchRules:
+          - prefixMatch: /
+            # - regexMatch: '^\/(?!(?:ws|health)(?:\/|$)).*$'
+            headerMatches:
+              - headerName: method
+                exactMatch: GET
+        routeAction:
+          weightedBackendServices:
+            - backendService: global/backendServices/api-lb-service
+              weight: 33
+              headerAction:
+                requestHeadersToAdd:
+                  - headerName: Port
+                    headerValue: '8090'
+            - backendService: global/backendServices/api-lb-service
+              weight: 33
+              headerAction:
+                requestHeadersToAdd:
+                  - headerName: Port
+                    headerValue: '8091'
+            - backendService: global/backendServices/api-lb-service
+              weight: 34
+              headerAction:
+                requestHeadersToAdd:
+                  - headerName: Port
+                    headerValue: '8092'

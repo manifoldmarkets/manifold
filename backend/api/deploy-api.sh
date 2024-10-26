@@ -133,6 +133,11 @@ gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GRO
        --no-user-output-enabled \
        --max-unavailable 0 # don't kill old one until new one is healthy
 
+echo "Importing url-map config"
+gcloud compute url-maps import api-url-map \
+        --source url-map-config.yaml \
+        --global
+
 echo "Rollout underway. Waiting for update to finish rolling out"
 echo "Current time: $(date "+%Y-%m-%d %I:%M:%S %p")"
 gcloud compute instance-groups managed wait-until --stable ${SERVICE_GROUP} \

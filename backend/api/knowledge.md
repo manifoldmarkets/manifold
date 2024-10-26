@@ -9,6 +9,20 @@ This directory contains the implementation of various API endpoints for the Mani
 - We use Supabase for database operations.
 - Authentication is handled using the `APIHandler` type, which automatically manages user authentication based on the schema definition.
 
+## Architecture
+
+- The API runs in Docker containers on Google Cloud Platform (GCP)
+- A GCP load balancer sits in front of the API containers
+- The API is split into two Express instances:
+  - Main API (port 8088): Handles all POST endpoints and stateful operations
+  - Read-only API (port 8090, 8091, 8092): Handles GET endpoints for better scalability
+- Load balancer configuration is managed through GCP console, not in codebase
+- Scaling strategy:
+  - Use PM2 cluster mode to run multiple instances on different cores of same machine
+  - Each instance runs on different ports
+  - Load balancer distributes traffic between ports
+  - Prefer this over deploying separate instance groups for simpler operations
+
 ## Adding a New API Endpoint
 
 To add a new API endpoint, follow these steps:
