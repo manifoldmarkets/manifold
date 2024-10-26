@@ -241,6 +241,10 @@ export const BinaryOverview = (props: {
   )
 }
 
+export const getShouldHideGraph = (contract: MultiContract) => {
+  return contract.mechanism == 'cpmm-multi-1' && contract.answers.length > 3
+}
+
 const ChoiceOverview = (props: {
   points: MultiPoints
   contract: MultiContract
@@ -318,77 +322,87 @@ const ChoiceOverview = (props: {
     setSelectedAnswerIds(filterDefined(contractPositionAnswerIds))
   }, [JSON.stringify(contractPositionAnswerIds)])
 
+  const hideGraph = getShouldHideGraph(contract)
+
   return (
     <>
-      <Row className="relative  justify-between gap-2">
+      <Row className="relative justify-between gap-2">
         {contract.resolution === 'CANCEL' ? (
           <div className="flex items-end gap-2 text-2xl sm:text-3xl">
             <span className="text-base">Resolved</span>
             <CancelLabel />
           </div>
         ) : (
-          <div />
+          <></>
         )}
-        <Row className={'relative gap-1'}>
-          <UserPositionSearchButton
-            currentUser={currentUser}
-            displayUser={displayUser}
-            contract={contract}
-            setDisplayUser={setDisplayUser}
-          />
-          {enableAdd && (
-            <EditChartAnnotationsButton
-              pointerMode={pointerMode}
-              setPointerMode={setPointerMode}
-            />
-          )}
-          <TimeRangePicker
-            currentTimePeriod={currentTimePeriod}
-            setCurrentTimePeriod={setTimePeriod}
-            maxRange={maxRange}
-            color="indigo"
-          />
-        </Row>
-      </Row>
-      {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
-        <SizedContainer
-          className={clsx(
-            'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
-            showZoomer && 'mb-12'
-          )}
-        >
-          {(w, h) => (
-            <ChoiceContractChart
-              showZoomer={showZoomer}
-              zoomParams={zoomParams}
-              width={w}
-              height={h}
-              multiPoints={points}
-              contract={contract}
-              highlightAnswerId={hoverAnswerId}
-              selectedAnswerIds={
-                selectedAnswerIds.length
-                  ? selectedAnswerIds
-                  : defaultAnswerIdsToGraph
-              }
-              pointerMode={pointerMode}
-              setHoveredAnnotation={setHoveredAnnotation}
-              hoveredAnnotation={hoveredAnnotation}
-              chartAnnotations={chartAnnotations}
-              chartPositions={chartPositions?.filter((cp) =>
-                hoverAnswerId
-                  ? cp.answerId === hoverAnswerId
-                  : selectedAnswerIds.length === 0 ||
-                    (cp.answerId && selectedAnswerIds.includes(cp.answerId))
+
+        {!hideGraph && (
+          <>
+            <Row className={'relative gap-1'}>
+              <UserPositionSearchButton
+                currentUser={currentUser}
+                displayUser={displayUser}
+                contract={contract}
+                setDisplayUser={setDisplayUser}
+              />
+              {enableAdd && (
+                <EditChartAnnotationsButton
+                  pointerMode={pointerMode}
+                  setPointerMode={setPointerMode}
+                />
               )}
-              hoveredChartPosition={hoveredChartPosition}
-              setHoveredChartPosition={setHoveredChartPosition}
-              zoomY={zoomY}
-            />
-          )}
-        </SizedContainer>
-      )}
-      {chartAnnotations?.length ? (
+              <TimeRangePicker
+                currentTimePeriod={currentTimePeriod}
+                setCurrentTimePeriod={setTimePeriod}
+                maxRange={maxRange}
+                color="indigo"
+              />
+            </Row>
+          </>
+        )}
+      </Row>
+
+      {!!Object.keys(points).length &&
+        contract.mechanism == 'cpmm-multi-1' &&
+        !hideGraph && (
+          <SizedContainer
+            className={clsx(
+              'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
+              showZoomer && 'mb-12'
+            )}
+          >
+            {(w, h) => (
+              <ChoiceContractChart
+                showZoomer={showZoomer}
+                zoomParams={zoomParams}
+                width={w}
+                height={h}
+                multiPoints={points}
+                contract={contract}
+                highlightAnswerId={hoverAnswerId}
+                selectedAnswerIds={
+                  selectedAnswerIds.length
+                    ? selectedAnswerIds
+                    : defaultAnswerIdsToGraph
+                }
+                pointerMode={pointerMode}
+                setHoveredAnnotation={setHoveredAnnotation}
+                hoveredAnnotation={hoveredAnnotation}
+                chartAnnotations={chartAnnotations}
+                chartPositions={chartPositions?.filter((cp) =>
+                  hoverAnswerId
+                    ? cp.answerId === hoverAnswerId
+                    : selectedAnswerIds.length === 0 ||
+                      (cp.answerId && selectedAnswerIds.includes(cp.answerId))
+                )}
+                hoveredChartPosition={hoveredChartPosition}
+                setHoveredChartPosition={setHoveredChartPosition}
+                zoomY={zoomY}
+              />
+            )}
+          </SizedContainer>
+        )}
+      {chartAnnotations?.length && !hideGraph ? (
         <ChartAnnotations
           annotations={chartAnnotations}
           hoveredAnnotation={hoveredAnnotation}
@@ -430,6 +444,7 @@ const ChoiceOverview = (props: {
             query={query}
             setQuery={setQuery}
             showSetDefaultSort={showSetDefaultSort}
+            className={hideGraph ? '-mt-4' : ''}
           />
           {tradingAllowed(contract) && (
             <UserBetsSummary

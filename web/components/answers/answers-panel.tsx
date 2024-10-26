@@ -77,6 +77,8 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { buildArray } from 'common/util/array'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { floatingEqual } from 'common/util/math'
+import { getShouldHideGraph } from '../contract/contract-overview'
+import { GoGraph } from 'react-icons/go'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -102,6 +104,7 @@ export function AnswersPanel(props: {
   setDefaultAnswerIdsToGraph?: (ids: string[]) => void
   defaultAddAnswer?: boolean
   floatingSearchClassName?: string
+  className?: string
 }) {
   const {
     contract,
@@ -116,6 +119,7 @@ export function AnswersPanel(props: {
     showSetDefaultSort,
     setDefaultAnswerIdsToGraph,
     floatingSearchClassName,
+    className,
   } = props
   const { outcomeType, resolutions } = contract
   const addAnswersMode =
@@ -247,7 +251,7 @@ export function AnswersPanel(props: {
   }, [query, scrollToAnswers])
 
   return (
-    <Col>
+    <Col className={className}>
       <SearchCreateAnswerPanel
         contract={contract}
         canAddAnswer={canAddAnswer}
@@ -628,6 +632,8 @@ export function Answer(props: {
   const answerCreator = useDisplayUserByIdOrAnswer(answer)
   const answerCreatorIsNotContractCreator =
     !!answerCreator && answerCreator.username !== contract.creatorUsername
+  const shouldHideGraph = getShouldHideGraph(contract)
+
   const dropdownItems = buildArray(
     {
       name: 'author info',
@@ -687,6 +693,11 @@ export function Answer(props: {
     hasLimitOrders && {
       icon: <ScaleIcon className="h-4 w-4" />,
       name: getOrderBookButtonLabel(unfilledBets),
+      onClick: () => setLimitBetModalOpen(true),
+    },
+    shouldHideGraph && {
+      icon: <GoGraph className="h-4 w-4" />,
+      name: 'Show graph',
       onClick: () => setLimitBetModalOpen(true),
     }
   )
