@@ -326,13 +326,17 @@ const PaymentSection = (props: {
               amount={amount.mana}
               isInline
             />{' '}
-            +{' '}
-            <CoinNumber
-              className={'font-semibold'}
-              coinType={'sweepies'}
-              amount={amount.bonusInDollars}
-              isInline
-            />
+            {amount.bonusInDollars ? (
+              <>
+                +{' '}
+                <CoinNumber
+                  className={'font-semibold'}
+                  coinType={'sweepies'}
+                  amount={amount.bonusInDollars}
+                  isInline
+                />
+              </>
+            ) : null}
           </span>
         </Row>
         <Row className={'my-4 justify-center text-4xl '}>
