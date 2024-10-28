@@ -1,5 +1,5 @@
 import { APIError } from 'common/api/utils'
-import { Contract } from 'common/contract'
+import { MarketContract } from 'common/contract'
 import { User } from 'common/user'
 import { groupBy, mapValues } from 'lodash'
 import {
@@ -46,7 +46,7 @@ export const getMutuallyMessagedUserIds = async (creatorId: string) => {
 }
 
 export const resolveLoveMarketOtherAnswers = async (
-  contract: Contract,
+  contract: MarketContract,
   resolver: User,
   creator: User,
   resolutionParams: ResolutionParams

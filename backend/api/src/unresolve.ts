@@ -25,6 +25,8 @@ import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { convertTxn } from 'common/supabase/txns'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import { getCpmmProbability } from 'common/calculate-cpmm'
+import { removeUndefinedProps } from 'common/util/object'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
@@ -253,7 +255,7 @@ const undoResolution = async (
   log('reverted txns')
 
   if (contract.isResolved || contract.resolutionTime) {
-    const updatedAttrs = {
+    const updatedAttrs = removeUndefinedProps({
       isResolved: false,
       resolutionTime: FieldVal.delete(),
       resolverId: FieldVal.delete(),
@@ -261,18 +263,30 @@ const undoResolution = async (
       resolutions: FieldVal.delete(),
       resolutionProbability: FieldVal.delete(),
       closeTime: Date.now(),
-    }
+      prob:
+        contract.mechanism === 'cpmm-1'
+          ? getCpmmProbability(contract.pool, contract.p)
+          : undefined,
+    })
     await updateContract(pg, contractId, updatedAttrs)
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
     // remove resolutionTime and resolverId from all answers in the contract
     const newAnswers = await pg.map(
-      `update answers
+      `
+      with last_bet as (
+        select distinct on (answer_id) answer_id, prob_after from contract_bets
+        where contract_id = $1
+        order by answer_id, created_time desc
+      )
+      update answers
       set
         resolution_time = null,
-        resolver_id = null
-      where contract_id = $1
+        resolver_id = null,
+        prob = coalesce(last_bet.prob_after,0.5)
+      from last_bet
+      where answers.id = last_bet.answer_id
       returning *`,
       [contractId],
       convertAnswer
@@ -280,12 +294,21 @@ const undoResolution = async (
     broadcastUpdatedAnswers(contractId, newAnswers)
   } else if (answerId) {
     const answer = await pg.one(
-      `update answers
+      `
+      with last_bet as (
+        select prob_after from contract_bets
+        where answer_id = $1
+        order by created_time desc
+        limit 1
+      )
+      update answers
       set
         resolution = null,
         resolution_time = null,
         resolution_probability = null,
+        prob = coalesce(last_bet.prob_after,0.5),
         resolver_id = null
+      from last_bet
       where id = $1
       returning *`,
       [answerId],

@@ -6,6 +6,7 @@ import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { getUser } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
 import { convertContract } from 'common/supabase/contracts'
+import { MarketContract } from 'common/contract'
 
 export const unlistAndCancelUserContracts: APIHandler<
   'unlist-and-cancel-user-contracts'
@@ -52,8 +53,10 @@ export const unlistAndCancelUserContracts: APIHandler<
   }
 
   try {
-    for (const contract of contracts) {
-      await resolveMarketHelper(contract, resolver, creator, {
+    for (const contract of contracts.filter(
+      (c) => c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1'
+    )) {
+      await resolveMarketHelper(contract as MarketContract, resolver, creator, {
         outcome: 'CANCEL',
       })
     }

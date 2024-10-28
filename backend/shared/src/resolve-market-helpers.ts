@@ -5,7 +5,12 @@ import {
 } from 'common/antes'
 import { Bet } from 'common/bet'
 import { getContractBetMetrics } from 'common/calculate'
-import { Contract, contractPath, CPMMMultiContract } from 'common/contract'
+import {
+  Contract,
+  contractPath,
+  CPMMMultiContract,
+  MarketContract,
+} from 'common/contract'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { Txn, CancelUniqueBettorBonusTxn } from 'common/txn'
 import { User } from 'common/user'
@@ -55,7 +60,7 @@ export type ResolutionParams = {
 }
 
 export const resolveMarketHelper = async (
-  unresolvedContract: Contract,
+  unresolvedContract: MarketContract,
   resolver: User,
   creator: User,
   { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams
@@ -65,7 +70,10 @@ export const resolveMarketHelper = async (
   const { contract, bets, payoutsWithoutLoans, updatedContractAttrs } =
     await pg.tx(async (tx) => {
       // Fetch fresh contract & check if resolved within lock.
-      const fetch = await getContract(tx, unresolvedContract.id)
+      const fetch = (await getContract(
+        tx,
+        unresolvedContract.id
+      )) as MarketContract
       if (!fetch) {
         throw new APIError(500, 'Contract not found')
       }
@@ -90,7 +98,15 @@ export const resolveMarketHelper = async (
           probabilityInt,
           answerId
         )
-
+      // Keep MKT resolution prob for consistency's sake
+      const probBeforeResolution =
+        outcome === 'MKT'
+          ? resolutionProbability
+          : unresolvedContract.mechanism === 'cpmm-1'
+          ? unresolvedContract.prob
+          : unresolvedContract.answers.find((a) => a.id === answerId)?.prob
+      const newProb =
+        outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : probBeforeResolution
       let updatedContractAttrs: Partial<Contract> | undefined =
         removeUndefinedProps({
           isResolved: true,
@@ -98,7 +114,8 @@ export const resolveMarketHelper = async (
           resolutionValue: value,
           resolutionTime,
           closeTime: newCloseTime,
-          resolutionProbability,
+          prob: newProb,
+          resolutionProbability: probBeforeResolution,
           resolutions,
           resolverId: resolver.id,
           subsidyPool: 0,
@@ -131,15 +148,11 @@ export const resolveMarketHelper = async (
             resolution: finalResolution,
           }
         else updatedContractAttrs = undefined
-
-        const finalProb =
-          resolutionProbability ??
-          (outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : undefined)
         updateAnswerAttrs = removeUndefinedProps({
           resolution: outcome,
           resolutionTime,
-          resolutionProbability,
-          prob: finalProb,
+          resolutionProbability: probBeforeResolution,
+          prob: newProb,
           resolverId: resolver.id,
         }) as Partial<Answer>
         // We have to update the denormalized answer data on the contract for the updateContractMetrics call
@@ -168,6 +181,8 @@ export const resolveMarketHelper = async (
           answers: unresolvedContract.answers.map((a) => ({
             ...a,
             ...updateAnswerAttrs,
+            prob: resolutions ? (resolutions[a.id] ?? 0) / 100 : undefined,
+            resolutionProbability: a.prob,
           })),
         } as Partial<CPMMMultiContract>
       }
@@ -209,14 +224,13 @@ export const resolveMarketHelper = async (
       if (updateAnswerAttrs && answerId) {
         const props = removeUndefinedProps(updateAnswerAttrs)
         await updateAnswer(tx, answerId, props)
-      } else if (
-        updateAnswerAttrs &&
-        unresolvedContract.mechanism === 'cpmm-multi-1'
-      ) {
-        const answerUpdates = unresolvedContract.answers.map((a) =>
+      } else if (updateAnswerAttrs && contract.mechanism === 'cpmm-multi-1') {
+        const answerUpdates = contract.answers.map((a) =>
           removeUndefinedProps({
             id: a.id,
             ...updateAnswerAttrs,
+            prob: a.prob,
+            resolutionProbability: a.resolutionProbability,
           })
         )
         await updateAnswers(tx, contractId, answerUpdates)

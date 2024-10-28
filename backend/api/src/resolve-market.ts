@@ -1,11 +1,12 @@
 import { sumBy } from 'lodash'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import {
-  CPMMMultiContract,
   Contract,
+  CPMMMultiContract,
   CPMMNumericContract,
+  MarketContract,
 } from 'common/contract'
-import { log, getUser, getContract, isProd } from 'shared/utils'
+import { getContract, getUser, isProd, log } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
@@ -106,11 +107,15 @@ export const resolveMarketMain: APIHandler<
     )
 
     // Refresh answers.
-    const answers = await getAnswersForContract(db, contractId)
-    contract.answers = answers
+    contract.answers = await getAnswersForContract(db, contractId)
   }
 
-  await resolveMarketHelper(contract, caller, creator, resolutionParams)
+  await resolveMarketHelper(
+    contract as MarketContract,
+    caller,
+    creator,
+    resolutionParams
+  )
   return { message: 'success' }
 }
 
