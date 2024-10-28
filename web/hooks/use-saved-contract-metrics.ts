@@ -1,6 +1,5 @@
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
-import { useUser } from './use-user'
 import {
   getTopContractMetrics,
   getUserContractMetrics,
@@ -15,6 +14,7 @@ import {
   getDefaultMetric,
   applyMetricToSummary,
 } from 'common/calculate-metrics'
+import { useUser } from './use-user'
 
 export const useSavedContractMetrics = (
   contract: Contract,
@@ -34,7 +34,14 @@ export const useSavedContractMetrics = (
       const updatedMetrics = metrics.map((metric) => {
         const answer = contract.answers.find((a) => a.id === metric.answerId)
         return answer
-          ? calculateProfitMetricsWithProb(answer.prob, metric)
+          ? calculateProfitMetricsWithProb(
+              answer.resolution === 'YES'
+                ? 1
+                : answer.resolution === 'NO'
+                ? 0
+                : answer.prob,
+              metric
+            )
           : metric
       })
       const nonNullMetrics = updatedMetrics.filter((m) => m.answerId != null)
