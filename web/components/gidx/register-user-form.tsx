@@ -65,6 +65,8 @@ export const RegisterUserForm = (props: {
   )
   const [initialUserState, _] = useState(props.user)
 
+  console.log('page', page, user.verifiedPhone)
+
   // Used for ads conversion tracking
   useEffect(() => {
     if (
@@ -462,7 +464,7 @@ export const RegisterUserForm = (props: {
           <Button
             color={'gray-white'}
             disabled={loading}
-            onClick={() => setPage('intro')}
+            onClick={() => setPage('user-info-form')}
           >
             Back
           </Button>
