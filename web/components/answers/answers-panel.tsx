@@ -99,12 +99,13 @@ export function AnswersPanel(props: {
   setQuery: (query: string) => void
   onAnswerCommentClick?: (answer: Answer) => void
   onAnswerHover: (answer: Answer | undefined) => void
-  onAnswerClick: (answer: Answer) => void
+  onAnswerClick?: (answer: Answer) => void
   showSetDefaultSort?: boolean
   setDefaultAnswerIdsToGraph?: (ids: string[]) => void
   defaultAddAnswer?: boolean
   floatingSearchClassName?: string
   className?: string
+  onSeeGraphClick?: (answer: Answer) => void
 }) {
   const {
     contract,
@@ -120,6 +121,7 @@ export function AnswersPanel(props: {
     setDefaultAnswerIdsToGraph,
     floatingSearchClassName,
     className,
+    onSeeGraphClick,
   } = props
   const { outcomeType, resolutions } = contract
   const addAnswersMode =
@@ -277,7 +279,8 @@ export function AnswersPanel(props: {
               <Answer
                 className={
                   selectedAnswerIds.length &&
-                  !selectedAnswerIds.includes(answer.id)
+                  !selectedAnswerIds.includes(answer.id) &&
+                  !!onAnswerClick
                     ? 'opacity-70'
                     : ''
                 }
@@ -303,6 +306,7 @@ export function AnswersPanel(props: {
                 shouldShowLimitOrderChart={
                   isAdvancedTrader && shouldShowLimitOrderChart
                 }
+                onSeeGraphClick={onSeeGraphClick}
               />
             ))}
 
@@ -579,6 +583,7 @@ export function Answer(props: {
   shouldShowLimitOrderChart: boolean
   feedReason?: string
   className?: string
+  onSeeGraphClick?: (answer: Answer) => void
 }) {
   const {
     answer,
@@ -593,6 +598,7 @@ export function Answer(props: {
     feedReason,
     shouldShowLimitOrderChart,
     className,
+    onSeeGraphClick,
   } = props
 
   const prob = getAnswerProbability(contract, answer.id)
@@ -695,11 +701,12 @@ export function Answer(props: {
       name: getOrderBookButtonLabel(unfilledBets),
       onClick: () => setLimitBetModalOpen(true),
     },
-    shouldHideGraph && {
-      icon: <GoGraph className="h-4 w-4" />,
-      name: 'Show graph',
-      onClick: () => setLimitBetModalOpen(true),
-    }
+    shouldHideGraph &&
+      onSeeGraphClick && {
+        icon: <GoGraph className="h-4 w-4" />,
+        name: 'See graph',
+        onClick: () => onSeeGraphClick(answer),
+      }
   )
 
   return (

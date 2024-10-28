@@ -72,6 +72,8 @@ import {
   EditChartAnnotationsButton,
 } from '../charts/chart-annotations'
 import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import { Modal, MODAL_CLASS } from '../layout/modal'
+import { MultiGraphModal } from './multi-graph-modal'
 
 export const ContractOverview = memo(
   (props: {
@@ -324,6 +326,16 @@ const ChoiceOverview = (props: {
 
   const hideGraph = getShouldHideGraph(contract)
 
+  const [graphModalOpen, setGraphModalOpen] = useState(false)
+
+  function addAnswerToGraph(answer: Answer) {
+    setSelectedAnswerIds((answers) =>
+      answers.includes(answer.id)
+        ? answers.filter((a) => a !== answer.id)
+        : [...answers, answer.id]
+    )
+  }
+
   return (
     <>
       <Row className="relative justify-between gap-2">
@@ -425,6 +437,16 @@ const ChoiceOverview = (props: {
         )
       ) : (
         <>
+          <MultiGraphModal
+            points={points}
+            contract={contract}
+            zoomY={zoomY}
+            chartAnnotations={chartAnnotations}
+            open={graphModalOpen}
+            setOpen={setGraphModalOpen}
+            selectedAnswerIds={selectedAnswerIds}
+            setSelectedAnswerIds={setSelectedAnswerIds}
+          />
           {resolutionRating}
           <AnswersPanel
             setDefaultAnswerIdsToGraph={setDefaultAnswerIdsToGraph}
@@ -432,19 +454,21 @@ const ChoiceOverview = (props: {
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
             onAnswerHover={(ans) => setHoverAnswerId(ans?.id)}
-            onAnswerClick={({ id }) =>
-              setSelectedAnswerIds((answers) =>
-                answers.includes(id)
-                  ? answers.filter((a) => a !== id)
-                  : [...answers, id]
-              )
-            }
+            onAnswerClick={hideGraph ? undefined : addAnswerToGraph}
             sort={sort}
             setSort={setSort}
             query={query}
             setQuery={setQuery}
             showSetDefaultSort={showSetDefaultSort}
             className={hideGraph ? '-mt-4' : ''}
+            onSeeGraphClick={
+              hideGraph
+                ? ({ id }) => {
+                    setSelectedAnswerIds([id])
+                    setGraphModalOpen(true)
+                  }
+                : undefined
+            }
           />
           {tradingAllowed(contract) && (
             <UserBetsSummary
