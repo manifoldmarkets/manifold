@@ -16,7 +16,7 @@ import {
   GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
 } from 'common/envs/constants'
 import { convertPrivateUser, convertUser } from 'common/supabase/users'
-import { convertContract } from 'common/supabase/contracts'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Row, tsToMillis } from 'common/supabase/utils'
 import { log } from 'shared/monitoring/log'
 import { metrics } from 'shared/monitoring/metrics'
@@ -113,13 +113,17 @@ export const getContract = async (
   pg: SupabaseDirectClient,
   contractId: string
 ) => {
-  const res = await pg.map(
-    `select ${contractColumnsToSelect} from contracts where id = $1
-            limit 1`,
-    [contractId],
-    (row) => convertContract(row)
+  const res = await pg.multi(
+    `select ${contractColumnsToSelect} from contracts where id = $1 limit 1;
+     select * from answers where contract_id = $1 order by index;`,
+    [contractId]
   )
-  return first(res)
+  const contract = first(res[0].map(convertContract))
+  const answers = res[1].map(convertAnswer)
+  if (contract && 'answers' in contract) {
+    contract.answers = answers
+  }
+  return contract
 }
 
 export const getContractSupabase = async (contractId: string) => {

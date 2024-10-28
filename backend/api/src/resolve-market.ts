@@ -105,9 +105,6 @@ export const resolveMarketMain: APIHandler<
       creator,
       resolutionParams
     )
-
-    // Refresh answers.
-    contract.answers = await getAnswersForContract(db, contractId)
   }
 
   await resolveMarketHelper(
