@@ -65,8 +65,6 @@ export const RegisterUserForm = (props: {
   )
   const [initialUserState, _] = useState(props.user)
 
-  console.log('page', page, user.verifiedPhone)
-
   // Used for ads conversion tracking
   useEffect(() => {
     if (
