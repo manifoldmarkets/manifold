@@ -37,6 +37,7 @@ import { formatTime, getCountdownStringHoursMinutes } from 'web/lib/util/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
+import Link from 'next/link'
 
 export default function Leagues() {
   const user = useUser()
@@ -217,8 +218,8 @@ export default function Leagues() {
             </Col>
           </Row>
 
-          <Row className="mb-2 mt-2 items-center gap-3">
-            <text className="">
+          <Col className="text-ink-700 my-2 justify-center gap-1">
+            <div>
               Compete for{' '}
               <span
                 className="border-primary-600 text-primary-600 hover:text-primary-800 cursor-help border-b border-dotted"
@@ -227,9 +228,19 @@ export default function Leagues() {
                 prizes
               </span>{' '}
               and promotion by earning the most mana this month!
-            </text>
-            <PrizesModal open={prizesModalOpen} setOpen={setPrizesModalOpen} />
-          </Row>
+            </div>
+            <div>
+              Looking for the all time leaderboard? It's{' '}
+              <Link
+                href="/leaderboards"
+                className="text-primary-600 hover:text-primary-800 underline-offset-2 hover:underline"
+              >
+                here
+              </Link>
+              .
+            </div>
+          </Col>
+          <PrizesModal open={prizesModalOpen} setOpen={setPrizesModalOpen} />
 
           {cohort && (
             <Row className="mt-2 gap-2">
