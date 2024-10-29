@@ -9,7 +9,6 @@ import { incrementBalance } from 'shared/supabase/users'
 import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { getAnswersForContract } from 'shared/supabase/answers'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { getUnfilledBetsAndUserBalances } from 'api/helpers/bets'
 
@@ -42,8 +41,9 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       `Checking for limit orders and bets in sellshares for user ${uid} on contract id ${contractId}.`
     )
 
-    const answers = await getAnswersForContract(pgTrans, contractId)
-    const answersToSell = answers.filter((a) => answerIds.includes(a.id))
+    const answersToSell = contract.answers.filter((a) =>
+      answerIds.includes(a.id)
+    )
     if (!answersToSell) throw new APIError(404, 'Answers not found')
 
     const unfilledBetsAndBalances = await Promise.all(
@@ -95,7 +95,6 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
 
     const betResults = getCpmmMultiSellSharesInfo(
       contract,
-      answers,
       nonRedemptionBetsByAnswerId,
       unfilledBets,
       balancesByUserId,

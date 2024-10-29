@@ -187,19 +187,19 @@ export const getCpmmMultiSellBetInfo = (
 }
 export const getCpmmMultiSellSharesInfo = (
   contract: CPMMMultiContract | CPMMNumericContract,
-  answers: Answer[],
   userBetsByAnswerIdToSell: { [answerId: string]: Bet[] },
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
   loanPaidByAnswerId: { [answerId: string]: number }
 ) => {
+  const { answers, collectedFees } = contract
   const { otherBetResults, newBetResults } =
     calculateCpmmMultiArbitrageSellYesEqually(
       answers,
       userBetsByAnswerIdToSell,
       unfilledBets,
       balanceByUserId,
-      contract.collectedFees
+      collectedFees
     )
 
   const now = Date.now()

@@ -15,12 +15,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
-import {
-  getAnswer,
-  getAnswersForContract,
-  updateAnswer,
-  updateAnswers,
-} from 'shared/supabase/answers'
+import { getAnswer, updateAnswer, updateAnswers } from 'shared/supabase/answers'
 import { runShortTrans } from 'shared/short-transaction'
 import { getContract, log } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
@@ -61,7 +56,7 @@ const drizzleMarket = async (contractId: string) => {
     const amount = subsidyPool <= 1 ? subsidyPool : r * v * subsidyPool
 
     if (contract.mechanism === 'cpmm-multi-1') {
-      const answers = await getAnswersForContract(pgTrans, contractId)
+      const answers = contract.answers
       if (!answers.length) {
         return
       }

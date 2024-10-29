@@ -9,7 +9,6 @@ import {
 import { getContract, getUser, isProd, log } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { Answer } from 'common/answer'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
@@ -19,7 +18,6 @@ import {
 } from 'common/api/market-types'
 import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { getAnswersForContract } from 'shared/supabase/answers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
@@ -41,13 +39,6 @@ export const resolveMarketMain: APIHandler<
   const { contractId } = props
   const contract = await getContract(db, contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
-
-  let answers: Answer[] = []
-  if (contract.mechanism === 'cpmm-multi-1') {
-    // Denormalize answers.
-    answers = await getAnswersForContract(db, contractId)
-    contract.answers = answers
-  }
 
   const { creatorId, outcomeType } = contract
   if (outcomeType === 'STONK') {
@@ -79,7 +70,7 @@ export const resolveMarketMain: APIHandler<
 
   if ('answerId' in resolutionParams && 'answers' in contract) {
     const { answerId } = resolutionParams
-    const answer = answers.find((a) => a.id === answerId)
+    const answer = contract.answers.find((a) => a.id === answerId)
     if (answer?.resolution) {
       throw new APIError(403, `${answerId} answer is already resolved`)
     }
