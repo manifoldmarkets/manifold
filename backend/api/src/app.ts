@@ -12,7 +12,9 @@ import { randomString } from 'common/util/random'
 import { handlers } from './routes'
 import { addOldRoutes } from './old-routes'
 
-export const allowCorsUnrestricted: RequestHandler = cors({})
+export const allowCorsUnrestricted: RequestHandler = cors({
+  origin: '*',
+})
 
 function cacheController(policy?: string): RequestHandler {
   return (_req, res, next) => {

@@ -68,8 +68,8 @@ const apiRoute = (endpoint: RequestHandler) => {
 }
 
 export const addOldRoutes = (app: express.Application) => {
-  app.get('/health', ...apiRoute(health))
-  app.get('/unsubscribe', ...apiRoute(unsubscribe))
+  app.get('/health', allowCorsUnrestricted, ...apiRoute(health))
+  app.get('/unsubscribe', allowCorsUnrestricted, ...apiRoute(unsubscribe))
   app.post('/editcomment', ...apiRoute(editcomment))
 
   app.post('/claimmanalink', ...apiRoute(claimmanalink))
@@ -86,7 +86,11 @@ export const addOldRoutes = (app: express.Application) => {
     '/update-user-disinterest-embedding',
     ...apiRoute(updateUserDisinterestEmbedding)
   )
-  app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
+  app.get(
+    '/getsupabasetoken',
+    allowCorsUnrestricted,
+    ...apiRoute(getsupabasetoken)
+  )
   app.post('/delete-market', ...apiRoute(deleteMarket))
   app.post('/save-topic', ...apiRoute(saveTopic))
   app.post('/boost-market', ...apiRoute(boostmarket))
@@ -132,7 +136,7 @@ export const addOldRoutes = (app: express.Application) => {
   app.post('/getyourfolloweddashboards', ...apiRoute(getyourfolloweddashboards))
   app.post('/updatedashboard', ...apiRoute(updatedashboard))
   app.post('/delete-dashboard', ...apiRoute(deletedashboard))
-  app.get('/get-news-dashboards', ...apiRoute(getnews))
+  app.get('/get-news-dashboards', allowCorsUnrestricted, ...apiRoute(getnews))
   app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
   app.post('/ban-user', ...apiRoute(banuser))
   app.post(
