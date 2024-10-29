@@ -231,7 +231,8 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
     where
       ucm.user_id in ($1:list)
       and c.resolution_time is null
-      and (a is null or a.resolution_time is null);
+      and (a is null or a.resolution_time is null)
+      and case when c.mechanism = 'cpmm-multi-1' then ucm.answer_id is not null else true end;
     `,
     [userIds],
     (r) =>
