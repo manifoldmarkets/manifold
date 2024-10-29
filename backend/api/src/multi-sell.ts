@@ -69,8 +69,9 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     ]
 
     const userBets = await pgTrans.map(
-      `select * from contract_bets where user_id = $1 and answer_id in ($2:list)`,
-      [uid, answersToSell.map((a) => a.id)],
+      `select * from contract_bets
+        where user_id = $1 and contract_id = $2 and answer_id in ($3:list)`,
+      [uid, contractId, answersToSell.map((a) => a.id)],
       convertBet
     )
 
