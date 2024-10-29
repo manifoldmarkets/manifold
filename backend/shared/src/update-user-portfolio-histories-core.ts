@@ -224,7 +224,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
 ) => {
   const metrics = await pg.map(
     `
-    select ucm.data, coalesce((c.data->'isRanked')::boolean, false) as is_ranked
+    select ucm.data, coalesce((c.data->'isRanked')::boolean, true) as is_ranked
     from user_contract_metrics ucm
     join contracts as c on ucm.contract_id = c.id
     left join answers as a on ucm.answer_id = a.id
