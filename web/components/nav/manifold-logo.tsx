@@ -3,7 +3,6 @@ import clsx from 'clsx'
 import { useUser } from 'web/hooks/use-user'
 import { useTheme } from 'web/hooks/use-theme'
 import { ENV } from 'common/envs/constants'
-import { LogoIcon } from '../icons/logo-icon'
 import { PRODUCT_MARKET_FIT_ENABLED } from 'common/envs/constants'
 
 export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
