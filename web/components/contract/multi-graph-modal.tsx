@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ReactNode, useEffect, useState } from 'react'
 
-import { Answer, MultiSort, getDefaultSort } from 'common/answer'
+import { Answer, MultiSort, getDefaultSort, sortAnswers } from 'common/answer'
 import { MultiPoints } from 'common/chart'
 import { MultiContract } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
@@ -23,6 +23,7 @@ import { Row } from '../layout/row'
 import { getShouldHideGraph, useTimePicker } from './contract-overview'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Col } from '../layout/col'
+import { SimpleAnswerBars } from '../answers/answers-panel'
 
 export const MultiGraphModal = (props: {
   open: boolean
@@ -50,29 +51,6 @@ export const MultiGraphModal = (props: {
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
 
-  const defaultSort = getDefaultSort(contract)
-  const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
-    defaultSort,
-    'answer-sort' + contract.id
-  )
-  const [hoverAnswerId, setHoverAnswerId] = useState<string>()
-  const [showSetDefaultSort, setShowSetDefaultSort] = useState(false)
-  const [defaultAnswerIdsToGraph, setDefaultAnswerIdsToGraph] = useState<
-    string[]
-  >([])
-
-  useEffect(() => {
-    if (
-      ((contract.sort && sort !== contract.sort) ||
-        (!contract.sort && sort !== defaultSort)) &&
-      currentUserId &&
-      (isModId(currentUserId) ||
-        isAdminId(currentUserId) ||
-        contract.creatorId === currentUserId)
-    )
-      setShowSetDefaultSort(true)
-  }, [sort, contract.sort])
-
   const {
     pointerMode,
     setPointerMode,
@@ -93,9 +71,14 @@ export const MultiGraphModal = (props: {
     setSelectedAnswerIds(filterDefined(contractPositionAnswerIds))
   }, [JSON.stringify(contractPositionAnswerIds)])
 
+  const primaryAnswerId = selectedAnswerIds[0]
+  const primaryAnswer = contract.answers.find((a) => a.id === primaryAnswerId)
+  console.log('primaryAnswer', primaryAnswer, primaryAnswerId)
+
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={MODAL_CLASS}>
+        <div className="text-lg font-semibold">{primaryAnswer?.text}</div>
         <Row className="relative w-full justify-end gap-2">
           <Row className={'relative gap-1'}>
             <UserPositionSearchButton
@@ -135,22 +118,13 @@ export const MultiGraphModal = (props: {
                   height={h}
                   multiPoints={points}
                   contract={contract}
-                  highlightAnswerId={hoverAnswerId}
                   selectedAnswerIds={
-                    selectedAnswerIds.length
-                      ? selectedAnswerIds
-                      : defaultAnswerIdsToGraph
+                    selectedAnswerIds.length ? selectedAnswerIds : []
                   }
                   pointerMode={pointerMode}
                   setHoveredAnnotation={setHoveredAnnotation}
                   hoveredAnnotation={hoveredAnnotation}
                   chartAnnotations={chartAnnotations}
-                  chartPositions={chartPositions?.filter((cp) =>
-                    hoverAnswerId
-                      ? cp.answerId === hoverAnswerId
-                      : selectedAnswerIds.length === 0 ||
-                        (cp.answerId && selectedAnswerIds.includes(cp.answerId))
-                  )}
                   hoveredChartPosition={hoveredChartPosition}
                   setHoveredChartPosition={setHoveredChartPosition}
                   zoomY={zoomY}

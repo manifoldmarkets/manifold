@@ -89,6 +89,55 @@ const SCROLL_OFFSET = 100
 // debounce when typing a query to ensure smoother autoscrolling
 const DEBOUNCE_DELAY = 100
 
+export function useAnswersToShow(
+  contract: MultiContract,
+  answers: Answer[],
+  sort: MultiSort,
+  query: string,
+  selectedAnswerIds: string[]
+) {
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+
+  const sortedAnswers = useMemo(
+    () => sortAnswers(contract, answers, sort),
+    [answers, contract.resolutions, contract.shouldAnswersSumToOne, sort]
+  )
+  const searchedAnswers = useMemo(() => {
+    if (!answers.length || !query) return []
+
+    return sortedAnswers.filter(
+      (answer) =>
+        selectedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
+    )
+  }, [sortedAnswers, query])
+  const allResolved =
+    (shouldAnswersSumToOne && !!contract.resolutions) ||
+    answers.every((a) => a.resolution)
+
+  return query
+    ? searchedAnswers
+    : showAll
+    ? sortedAnswers
+    : sortedAnswers
+        .filter((answer) => {
+          if (selectedAnswerIds.includes(answer.id)) {
+            return true
+          }
+
+          if (allResolved) return true
+          if (sort === 'prob-asc') {
+            return answer.prob < 0.99
+          } else if (sort === 'prob-desc') {
+            return answer.prob > 0.01
+          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
+            return !answer.resolution
+          }
+          return true
+        })
+        .slice(0, MAX_DEFAULT_ANSWERS)
+}
+
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
   contract: MultiContract
@@ -126,8 +175,6 @@ export function AnswersPanel(props: {
   const { outcomeType, resolutions } = contract
   const addAnswersMode =
     'addAnswersMode' in contract ? contract.addAnswersMode : 'DISABLED'
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
@@ -141,44 +188,14 @@ export function AnswersPanel(props: {
     (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
       answers.length <= 5
   )
-  const sortedAnswers = useMemo(
-    () => sortAnswers(contract, answers, sort),
-    [answers, resolutions, shouldAnswersSumToOne, sort]
+
+  const answersToShow = useAnswersToShow(
+    contract,
+    answers,
+    sort,
+    query,
+    selectedAnswerIds
   )
-  const searchedAnswers = useMemo(() => {
-    if (!answers.length || !query) return []
-
-    return sortedAnswers.filter(
-      (answer) =>
-        selectedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
-    )
-  }, [sortedAnswers, query])
-
-  const allResolved =
-    (shouldAnswersSumToOne && !!contract.resolutions) ||
-    answers.every((a) => a.resolution)
-
-  const answersToShow = query
-    ? searchedAnswers
-    : showAll
-    ? sortedAnswers
-    : sortedAnswers
-        .filter((answer) => {
-          if (selectedAnswerIds.includes(answer.id)) {
-            return true
-          }
-
-          if (allResolved) return true
-          if (sort === 'prob-asc') {
-            return answer.prob < 0.99
-          } else if (sort === 'prob-desc') {
-            return answer.prob > 0.01
-          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
-            return !answer.resolution
-          }
-          return true
-        })
-        .slice(0, MAX_DEFAULT_ANSWERS)
 
   useEffect(() => {
     if (!selectedAnswerIds.length)
