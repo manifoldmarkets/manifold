@@ -29,7 +29,7 @@ export const createPushNotifications = async (
 
     const pushToken = privateUser.pushToken
     if (!Expo.isExpoPushToken(pushToken)) {
-      log(`Push token ${pushToken} is not a valid Expo push token`)
+      log.error(`Push token ${pushToken} is not a valid Expo push token`)
       continue
     }
 
@@ -69,7 +69,7 @@ export const createPushNotifications = async (
     await Promise.all(
       errorTickets.map(async (ticket, index) => {
         if (ticket.status === 'error') {
-          log('Error generating push notification, ticket:', ticket)
+          log.error('Error generating push notification, ticket:', { ticket })
           if (ticket.details?.error === 'DeviceNotRegistered') {
             // set private user pushToken to null
             await updatePrivateUser(pg, userAndNotification[index][0].id, {
