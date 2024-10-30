@@ -19,6 +19,11 @@ export function hexToRgb(hex: string) {
   return { r, g, b }
 }
 
+export const ALSO_DEMOCRATIC = [
+  'Angus King (Independent)',
+  'Bernie Sanders (Independent)',
+]
+
 export const probToColor = (
   contract: Contract | null,
   data?: StateElectionMarket
@@ -39,16 +44,21 @@ export const probToColor = (
   let probDemocratic: number | undefined
   let probRepublican: number | undefined
   let probOther: number | undefined
+  let probDemocraticIndependent: number
 
   if (contract.mechanism === 'cpmm-multi-1') {
     const answers = contract.answers
-    probDemocratic = answers.find(
-      (a) => a.text == 'Democratic Party' || a.text.includes('Democratic Party')
-    )?.prob
+    probDemocraticIndependent =
+      answers.find((a) => ALSO_DEMOCRATIC.includes(a.text))?.prob ?? 0
+    probDemocratic =
+      (answers.find(
+        (a) =>
+          a.text == 'Democratic Party' || a.text.includes('Democratic Party')
+      )?.prob ?? 0) + probDemocraticIndependent
     probRepublican = answers.find(
       (a) => a.text == 'Republican Party' || a.text.includes('Republican Party')
     )?.prob
-    probOther = answers.find((a) => a.text == 'Other')?.prob
+    probOther = answers.find((a) => a.text == 'Other')?.prob ?? 0
   } else if (contract.mechanism === 'cpmm-1') {
     probRepublican = getDisplayProbability(contract)
     probDemocratic = 1 - probRepublican
@@ -68,9 +78,6 @@ export const probToColor = (
   )
     return undefined
 
-  if (data?.otherParty) {
-    console.log(data, probDemocratic, probRepublican, probOther)
-  }
   if (data && data.otherParty) {
     if (data.otherParty == 'Democratic Party') {
       probDemocratic += probOther
@@ -79,9 +86,7 @@ export const probToColor = (
       probRepublican += probOther
     }
   }
-  if (data?.otherParty) {
-    console.log('AFTER', data, probDemocratic, probRepublican, probOther)
-  }
+
   // Calculate the difference
   const repOverDem = probRepublican - probDemocratic
   const absoluteDifference = Math.abs(repOverDem)

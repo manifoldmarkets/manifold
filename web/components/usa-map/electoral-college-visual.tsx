@@ -1,6 +1,6 @@
 import { DATA } from './usa-map-data'
 import { Row } from 'web/components/layout/row'
-import { probToColor } from './state-election-map'
+import { ALSO_DEMOCRATIC, probToColor } from './state-election-map'
 import { Col } from 'web/components/layout/col'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
@@ -125,8 +125,14 @@ export function sortByDemocraticDiff(
             answer.text.includes('Democratic Party')
         )
 
+        const democraticIndependentAnswerProb =
+          contract.answers.find((answer) =>
+            ALSO_DEMOCRATIC.includes(answer.text)
+          )?.prob ?? 0
+
         diff = democraticAnswer
-          ? getAnswerProbability(contract, democraticAnswer.id)
+          ? getAnswerProbability(contract, democraticAnswer.id) +
+            democraticIndependentAnswerProb
           : 0
 
         const x = data?.find((d) => d.state === state)
