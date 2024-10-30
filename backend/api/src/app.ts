@@ -47,7 +47,7 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
       !isLocalhost ||
       (isLocalhost && !ignoredEndpoints.some((e) => endpoint.startsWith(e)))
     ) {
-      log(`${method} ${url}`)
+      log(`${method} ${url} ${process.env.PORT}`)
     }
     metrics.inc('http/request_count', { endpoint, baseEndpoint, method })
     res.on('close', () => {

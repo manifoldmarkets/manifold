@@ -8,30 +8,33 @@ pathMatchers:
   - name: method-matcher
     defaultService: global/backendServices/api-lb-service
     routeRules:
+      - priority: 0
+        matchRules:
+          - prefixMatch: /ws
+        service: global/backendServices/api-lb-service
       - priority: 1
         matchRules:
-          - prefixMatch: /
-            # - regexMatch: '^\/(?!(?:ws|health)(?:\/|$)).*$'
-            headerMatches:
-              - headerName: method
+          # - regexMatch: '^\/(?!(?:ws|health)(?:\/|$)).*$'
+          - headerMatches:
+              - headerName: :method
                 exactMatch: GET
+          # - headerName: method
+          # exactMatch: OPTIONS
+        service: global/backendServices/api-lb-service
         routeAction:
-          weightedBackendServices:
-            - backendService: global/backendServices/api-lb-service
-              weight: 33
-              headerAction:
-                requestHeadersToAdd:
-                  - headerName: Port
-                    headerValue: '8090'
-            - backendService: global/backendServices/api-lb-service
-              weight: 33
-              headerAction:
-                requestHeadersToAdd:
-                  - headerName: Port
-                    headerValue: '8091'
-            - backendService: global/backendServices/api-lb-service
-              weight: 34
-              headerAction:
-                requestHeadersToAdd:
-                  - headerName: Port
-                    headerValue: '8092'
+          urlRewrite:
+            hostRewrite: '{host}:8090'
+          # weightedBackendServices:
+          #   - backendService: global/backendServices/api-lb-service
+          #     weight: 33
+          #     routeAction:
+          #       urlRewrite:
+          #         hostRewrite: '{host}:8090'
+          #   - backendService: global/backendServices/api-lb-service
+          #     weight: 33
+          #     urlRewrite:
+          #       hostRewrite: '{host}:8090'
+          #     hostRewrite: '{host}:8091'
+          #   - backendService: global/backendServices/api-lb-service
+          #     weight: 34
+          #     hostRewrite: '{host}:8092'

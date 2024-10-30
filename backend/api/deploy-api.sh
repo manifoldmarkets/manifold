@@ -160,7 +160,7 @@ gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GRO
 # echo "Creating health check if it doesn't exist"
 # gcloud compute health-checks create http api-health-check \
 #         --global \
-#         --port 80 \
+#         --port 8088 \
 #         --request-path /health \
 #         --check-interval 5s \
 #         --timeout 5s \

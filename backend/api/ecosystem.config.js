@@ -11,7 +11,7 @@ module.exports = {
       // 16 GB on the box, give 12 GB to the JS heap
       node_args: '--max-old-space-size=12288',
       env: {
-        PORT: 8088,
+        PORT: 80,
       },
     },
     {
