@@ -32,7 +32,7 @@ import {
   cancelLimitOrdersQuery,
   insertBet,
 } from 'shared/supabase/bets'
-import { betsQueue } from 'shared/helpers/fn-queue'
+import { betsQueue, ordersQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
 import { partialAnswerToRow } from 'shared/supabase/answers'
@@ -55,6 +55,7 @@ import { bulkUpdateQuery, updateDataQuery } from 'shared/supabase/utils'
 import { convertTxn } from 'common/supabase/txns'
 import {
   fetchContractBetDataAndValidate,
+  getMakerIdsFromBetResult,
   getRoundedLimitProb,
   getUniqueBettorBonusQuery,
   updateMakers,
@@ -64,13 +65,56 @@ import { runTransactionWithRetries } from 'shared/transaction-with-retries'
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
   const { deps, contractId, dryRun } = props
-  if (dryRun) return await dryRunBet(props, auth, isApi)
+
+  if (deps === undefined || dryRun) {
+    return queueDependenciesThenBet(props, auth, isApi)
+  }
 
   // Worst thing that could happen from wrong deps is contention
   const fullDeps = [auth.uid, contractId, ...(deps ?? [])]
   return await betsQueue.enqueueFn(() => {
     return placeBetMain(props, auth.uid, isApi)
   }, fullDeps)
+}
+
+const queueDependenciesThenBet = async (
+  props: ValidatedAPIParams<'bet'>,
+  auth: AuthedUser,
+  isApi: boolean
+) => {
+  const { dryRun, contractId } = props
+  const minimalDeps = [auth.uid, contractId]
+  return await ordersQueue.enqueueFn(async () => {
+    const { user, contract, answers, unfilledBets, balanceByUserId } =
+      await fetchContractBetDataAndValidate(
+        createSupabaseDirectClient(),
+        props,
+        auth.uid,
+        isApi
+      )
+    // Simulate bet to see whose limit orders you match.
+    const simulatedResult = calculateBetResult(
+      props,
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId
+    )
+    if (dryRun)
+      return {
+        result: {
+          ...simulatedResult.newBet,
+          betId: 'dry-run',
+        },
+        continue: () => Promise.resolve(),
+      }
+
+    const makerIds = getMakerIdsFromBetResult(simulatedResult)
+    return await betsQueue.enqueueFn(async () => {
+      return placeBetMain(props, auth.uid, isApi)
+    }, [...minimalDeps, ...makerIds])
+  }, minimalDeps)
 }
 
 export const placeBetMain = async (
@@ -567,35 +611,5 @@ export const executeNewBetResult = async (
     streakIncremented,
     bonusTxn,
     updatedMetrics: bettorRedemptionUpdatedMetrics,
-  }
-}
-
-const dryRunBet = async (
-  props: ValidatedAPIParams<'bet'>,
-  auth: AuthedUser,
-  isApi: boolean
-) => {
-  const { user, contract, answers, unfilledBets, balanceByUserId } =
-    await fetchContractBetDataAndValidate(
-      createSupabaseDirectClient(),
-      props,
-      auth.uid,
-      isApi
-    )
-  const simulatedResult = calculateBetResult(
-    props,
-    user,
-    contract,
-    answers,
-    unfilledBets,
-    balanceByUserId
-  )
-
-  return {
-    result: {
-      ...simulatedResult.newBet,
-      betId: 'dry-run',
-    },
-    continue: () => Promise.resolve(),
   }
 }
