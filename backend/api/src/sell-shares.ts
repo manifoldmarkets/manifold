@@ -123,10 +123,12 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   req
 ) => {
   const userId = auth.uid
-  const { contractId } = props
-  // TODO: add deps from front-end
-  const deps = [userId, contractId]
-  return await betsQueue.enqueueFn(() => sellSharesMain(props, auth, req), deps)
+  const { contractId, deps } = props
+  const fullDeps = [userId, contractId, ...(deps ?? [])]
+  return await betsQueue.enqueueFn(
+    () => sellSharesMain(props, auth, req),
+    fullDeps
+  )
 }
 
 const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
