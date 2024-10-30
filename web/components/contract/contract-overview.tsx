@@ -87,6 +87,7 @@ export const ContractOverview = memo(
     onAnswerCommentClick: (answer: Answer) => void
     chartAnnotations: ChartAnnotation[]
     hideGraph: boolean
+    setHideGraph: (hide: boolean) => void
   }) => {
     const {
       betPoints,
@@ -97,6 +98,7 @@ export const ContractOverview = memo(
       onAnswerCommentClick,
       chartAnnotations,
       hideGraph,
+      setHideGraph,
     } = props
 
     switch (contract.outcomeType) {
@@ -145,6 +147,7 @@ export const ContractOverview = memo(
             onAnswerCommentClick={onAnswerCommentClick}
             chartAnnotations={chartAnnotations}
             hideGraph={hideGraph}
+            setHideGraph={setHideGraph}
             zoomY
           />
         )
@@ -296,6 +299,7 @@ const ChoiceOverview = (props: {
   chartAnnotations: ChartAnnotation[]
   zoomY?: boolean
   hideGraph: boolean
+  setHideGraph: (hide: boolean) => void
 }) => {
   const {
     points,
@@ -306,6 +310,7 @@ const ChoiceOverview = (props: {
     onAnswerCommentClick,
     zoomY,
     hideGraph,
+    setHideGraph,
   } = props
 
   const currentUser = useUser()
@@ -481,7 +486,14 @@ const ChoiceOverview = (props: {
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
             onAnswerHover={(ans) => setHoverAnswerId(ans?.id)}
-            onAnswerClick={hideGraph ? undefined : addAnswerToGraph}
+            onAnswerClick={
+              hideGraph
+                ? (ans) => {
+                    setSelectedAnswerIds([ans.id])
+                    setHideGraph(false)
+                  }
+                : addAnswerToGraph
+            }
             sort={sort}
             setSort={setSort}
             query={query}

@@ -414,6 +414,7 @@ export function ContractPageContent(props: ContractParams) {
                 onAnswerCommentClick={setReplyTo}
                 chartAnnotations={chartAnnotations}
                 hideGraph={hideGraph}
+                setHideGraph={setHideGraph}
               />
               {!tradingAllowed(liveContract) && (
                 <UserBetsSummary
