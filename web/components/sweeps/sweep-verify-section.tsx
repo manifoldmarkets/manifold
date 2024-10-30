@@ -69,11 +69,11 @@ export function SweepVerifySection(props: { className?: string }) {
 
   return (
     <div
-      className={`relative rounded-lg bg-gradient-to-b from-indigo-700 to-indigo-400 px-5 py-4 text-sm text-white shadow-lg  ${className}`}
+      className={`relative rounded-lg bg-gradient-to-b from-indigo-800 to-indigo-500 px-5 py-4 text-sm text-white shadow-lg  ${className}`}
     >
       <RainingCoins />
-      <Col className="my-12 gap-4">
-        <div className=" w-full text-lg sm:text-center sm:text-xl">
+      <Col className="mb-8 mt-12 gap-4">
+        <div className=" w-full text-xl sm:text-center sm:text-2xl">
           Start earning <b>real cash prizes</b> today.
         </div>
 

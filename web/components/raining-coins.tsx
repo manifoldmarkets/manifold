@@ -18,7 +18,7 @@ const BASE_COINS = [
     y: -2,
     size: 38,
     rotation: 15,
-    opacity: 0.7,
+    opacity: 0.6,
     image: 'isometric-top.png',
   },
   {
@@ -26,7 +26,7 @@ const BASE_COINS = [
     y: 2,
     size: 42,
     rotation: -20,
-    opacity: 0.8,
+    opacity: 0.5,
     image: 'off-axis-top.png',
   },
   {
@@ -34,34 +34,26 @@ const BASE_COINS = [
     y: 5,
     size: 40,
     rotation: 30,
-    opacity: 0.6,
+    opacity: 0.54,
     image: 'isometric-top.png',
   },
 
   // Middle layer coins - smaller and more opaque
   {
     x: 15,
-    y: 35,
+    y: 15,
     size: 22,
     rotation: -15,
     opacity: 0.15,
     image: 'isometric-left.png',
   },
   {
-    x: 75,
-    y: 42,
+    x: 90,
+    y: 15,
     size: 20,
     rotation: 25,
-    opacity: 0.12,
+    opacity: 0.4,
     image: 'off-axis-left.png',
-  },
-  {
-    x: 35,
-    y: 48,
-    size: 18,
-    rotation: -30,
-    opacity: 0.1,
-    image: 'isometric-right.png',
   },
 
   // Bottom coins - larger again
@@ -70,7 +62,7 @@ const BASE_COINS = [
     y: 85,
     size: 44,
     rotation: 20,
-    opacity: 0.8,
+    opacity: 0.4,
     image: 'isometric-bottom.png',
   },
   {
@@ -86,18 +78,18 @@ const BASE_COINS = [
     y: 92,
     size: 42,
     rotation: 35,
-    opacity: 0.7,
+    opacity: 0.55,
     image: 'isometric-bottom.png',
   },
 ]
 
 const ADDITIONAL_MD_COINS = [
   {
-    x: 90,
-    y: 15,
+    x: 10,
+    y: 60,
     size: 36,
     rotation: 25,
-    opacity: 0.28,
+    opacity: 0.6,
     image: 'off-axis-top.png',
   },
   {
@@ -113,10 +105,10 @@ const ADDITIONAL_MD_COINS = [
 const ADDITIONAL_LG_COINS = [
   {
     x: 30,
-    y: 70,
+    y: 80,
     size: 40,
     rotation: 30,
-    opacity: 0.25,
+    opacity: 0.4,
     image: 'isometric-left.png',
   },
   {
@@ -124,7 +116,7 @@ const ADDITIONAL_LG_COINS = [
     y: 65,
     size: 42,
     rotation: -20,
-    opacity: 0.28,
+    opacity: 0.6,
     image: 'off-axis-left.png',
   },
   {
@@ -132,7 +124,7 @@ const ADDITIONAL_LG_COINS = [
     y: 45,
     size: 38,
     rotation: 15,
-    opacity: 0.3,
+    opacity: 0.6,
     image: 'isometric-right.png',
   },
 ]
