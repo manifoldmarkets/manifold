@@ -56,11 +56,6 @@ export const RegisterUserForm = (props: {
       user.kycDocumentStatus === 'pending' ||
       user.kycDocumentStatus === 'fail'
       ? 'final'
-      : (redirect === 'checkout' || redirect === 'redeem') &&
-        !user.verifiedPhone
-      ? 'phone'
-      : user.verifiedPhone
-      ? 'location'
       : 'intro'
   )
   const [initialUserState, _] = useState(props.user)
