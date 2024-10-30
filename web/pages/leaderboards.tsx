@@ -60,7 +60,7 @@ export default function Leaderboards() {
 
       const { count: numUsers } = await db
         .from('users')
-        .select('*', { count: 'exact' })
+        .select('*', { head: true, count: 'exact' })
 
       // TODO: my ranks are inaccurate for cash stats
       setMyScores({
