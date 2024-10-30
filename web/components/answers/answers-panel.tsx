@@ -77,11 +77,14 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { buildArray } from 'common/util/array'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { floatingEqual } from 'common/util/math'
-import { getShouldHideGraph } from '../contract/contract-overview'
+import {
+  getShouldHideGraph,
+  getSortedAnswers,
+} from '../contract/contract-overview'
 import { GoGraph } from 'react-icons/go'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
-const MAX_DEFAULT_ANSWERS = 20
+export const MAX_DEFAULT_ANSWERS = 20
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 
 // the offset in which the top of answers is visible
@@ -89,53 +92,18 @@ const SCROLL_OFFSET = 100
 // debounce when typing a query to ensure smoother autoscrolling
 const DEBOUNCE_DELAY = 100
 
-export function useAnswersToShow(
-  contract: MultiContract,
-  answers: Answer[],
-  sort: MultiSort,
-  query: string,
-  selectedAnswerIds: string[]
-) {
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+function getShouldAnswersSumToOne(contract: MultiContract) {
+  return 'shouldAnswersSumToOne' in contract
+    ? contract.shouldAnswersSumToOne
+    : true
+}
 
-  const sortedAnswers = useMemo(
-    () => sortAnswers(contract, answers, sort),
-    [answers, contract.resolutions, contract.shouldAnswersSumToOne, sort]
-  )
-  const searchedAnswers = useMemo(() => {
-    if (!answers.length || !query) return []
-
-    return sortedAnswers.filter(
-      (answer) =>
-        selectedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
-    )
-  }, [sortedAnswers, query])
-  const allResolved =
+export function getAllResolved(contract: MultiContract, answers: Answer[]) {
+  const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
+  return (
     (shouldAnswersSumToOne && !!contract.resolutions) ||
     answers.every((a) => a.resolution)
-
-  return query
-    ? searchedAnswers
-    : showAll
-    ? sortedAnswers
-    : sortedAnswers
-        .filter((answer) => {
-          if (selectedAnswerIds.includes(answer.id)) {
-            return true
-          }
-
-          if (allResolved) return true
-          if (sort === 'prob-asc') {
-            return answer.prob < 0.99
-          } else if (sort === 'prob-desc') {
-            return answer.prob > 0.01
-          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
-            return !answer.resolution
-          }
-          return true
-        })
-        .slice(0, MAX_DEFAULT_ANSWERS)
+  )
 }
 
 // full resorting, hover, clickiness, search and add
@@ -154,7 +122,6 @@ export function AnswersPanel(props: {
   defaultAddAnswer?: boolean
   floatingSearchClassName?: string
   className?: string
-  onSeeGraphClick?: (answer: Answer) => void
 }) {
   const {
     contract,
@@ -170,7 +137,6 @@ export function AnswersPanel(props: {
     setDefaultAnswerIdsToGraph,
     floatingSearchClassName,
     className,
-    onSeeGraphClick,
   } = props
   const { outcomeType, resolutions } = contract
   const addAnswersMode =
@@ -189,13 +155,24 @@ export function AnswersPanel(props: {
       answers.length <= 5
   )
 
-  const answersToShow = useAnswersToShow(
-    contract,
-    answers,
-    sort,
-    query,
-    selectedAnswerIds
+  const sortedAnswers = useMemo(
+    () => sortAnswers(contract, answers, sort),
+    [answers, contract.resolutions, contract.shouldAnswersSumToOne, sort]
   )
+  const searchedAnswers = useMemo(() => {
+    if (!answers.length || !query) return []
+
+    return sortedAnswers.filter(
+      (answer) =>
+        selectedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
+    )
+  }, [sortedAnswers, query])
+
+  const answersToShow = query
+    ? searchedAnswers
+    : showAll
+    ? sortedAnswers
+    : getSortedAnswers(contract, sortedAnswers, sort, selectedAnswerIds)
 
   useEffect(() => {
     if (!selectedAnswerIds.length)
@@ -214,7 +191,10 @@ export function AnswersPanel(props: {
     enabled: isAdvancedTrader && shouldShowLimitOrderChart,
   })
 
+  const allResolved = getAllResolved(contract, answers)
+
   const [shouldShowPositions, setShouldShowPositions] = useState(!allResolved)
+  const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
 
   const moreCount = answers.length - answersToShow.length
   // Note: Hide answers if there is just one "Other" answer.
@@ -323,7 +303,6 @@ export function AnswersPanel(props: {
                 shouldShowLimitOrderChart={
                   isAdvancedTrader && shouldShowLimitOrderChart
                 }
-                onSeeGraphClick={onSeeGraphClick}
               />
             ))}
 
@@ -600,7 +579,6 @@ export function Answer(props: {
   shouldShowLimitOrderChart: boolean
   feedReason?: string
   className?: string
-  onSeeGraphClick?: (answer: Answer) => void
 }) {
   const {
     answer,
@@ -615,7 +593,6 @@ export function Answer(props: {
     feedReason,
     shouldShowLimitOrderChart,
     className,
-    onSeeGraphClick,
   } = props
 
   const prob = getAnswerProbability(contract, answer.id)
@@ -655,7 +632,6 @@ export function Answer(props: {
   const answerCreator = useDisplayUserByIdOrAnswer(answer)
   const answerCreatorIsNotContractCreator =
     !!answerCreator && answerCreator.username !== contract.creatorUsername
-  const shouldHideGraph = getShouldHideGraph(contract)
 
   const dropdownItems = buildArray(
     {
@@ -717,13 +693,7 @@ export function Answer(props: {
       icon: <ScaleIcon className="h-4 w-4" />,
       name: getOrderBookButtonLabel(unfilledBets),
       onClick: () => setLimitBetModalOpen(true),
-    },
-    shouldHideGraph &&
-      onSeeGraphClick && {
-        icon: <GoGraph className="h-4 w-4" />,
-        name: 'See graph',
-        onClick: () => onSeeGraphClick(answer),
-      }
+    }
   )
 
   return (

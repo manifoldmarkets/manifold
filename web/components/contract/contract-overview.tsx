@@ -1,24 +1,41 @@
-import { ReactNode, memo, useState, useEffect } from 'react'
 import clsx from 'clsx'
+import { ReactNode, memo, useEffect, useState } from 'react'
 
+import { Answer, MultiSort, getDefaultSort, sortAnswers } from 'common/answer'
 import { Bet } from 'common/bet'
+import { getAutoBountyPayoutPerHour } from 'common/bounty'
+import { getAnswerProbability } from 'common/calculate'
 import { HistoryPoint, MultiPoints } from 'common/chart'
 import {
   BinaryContract,
-  StonkContract,
+  BinaryOrPseudoNumericContract,
+  BountiedQuestionContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
   Contract,
   MultiContract,
   PseudoNumericContract,
-  isBinaryMulti,
-  CPMMMultiContract,
+  StonkContract,
   getMainBinaryMCAnswer,
-  CPMMNumericContract,
-  BountiedQuestionContract,
-  BinaryOrPseudoNumericContract,
+  isBinaryMulti,
+  tradingAllowed,
 } from 'common/contract'
-import { MultiBinaryChart, SizedBinaryChart } from '../charts/contract/binary'
-import { ChoiceContractChart, getAnswerColor } from '../charts/contract/choice'
-import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
+import { isAdminId, isModId } from 'common/envs/constants'
+import { NEW_GRAPH_COLOR } from 'common/multi-numeric'
+import { Period, periodDurations } from 'common/period'
+import { type ChartAnnotation } from 'common/supabase/chart-annotations'
+import { User } from 'common/user'
+import { filterDefined } from 'common/util/array'
+import { formatMoney, formatPercent } from 'common/util/format'
+import { orderBy } from 'lodash'
+import { FaChartArea } from 'react-icons/fa'
+import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
+import {
+  MultiNumericDistributionChart,
+  NumericBetPanel,
+} from 'web/components/answers/numeric-bet-panel'
+import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
+import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
 import {
   BinaryResolutionOrChance,
   MultiNumericResolutionOrExpectation,
@@ -26,54 +43,39 @@ import {
   StonkPrice,
 } from 'web/components/contract/contract-price'
 import { SizedContainer } from 'web/components/sized-container'
+import { useAnnotateChartTools } from 'web/hooks/use-chart-annotations'
+import { useChartPositions } from 'web/hooks/use-chart-positions'
+import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useUser } from 'web/hooks/use-user'
-import { tradingAllowed } from 'common/contract'
-import { Period, periodDurations } from 'common/period'
-import { StonkContractChart } from '../charts/contract/stonk'
-import { getEndDate, useZoom } from '../charts/helpers'
-import { TimeRangePicker } from '../charts/time-range-picker'
-import { Row } from '../layout/row'
-import { AnswersPanel } from '../answers/answers-panel'
-import { Answer, MultiSort, getDefaultSort } from 'common/answer'
-import { UserBetsSummary } from '../bet/bet-summary'
 import {
   AnswersResolvePanel,
   IndependentAnswersResolvePanel,
 } from '../answers/answer-resolve-panel'
-import { CancelLabel } from '../outcome-label'
-import { PollPanel } from '../poll/poll-panel'
-import { Col } from '../layout/col'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { getAnswerProbability } from 'common/calculate'
-import { useAnnotateChartTools } from 'web/hooks/use-chart-annotations'
-import { type ChartAnnotation } from 'common/supabase/chart-annotations'
-import { formatMoney, formatPercent } from 'common/util/format'
-import { isAdminId, isModId } from 'common/envs/constants'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
-import { AlertBox } from '../widgets/alert-box'
-import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
-import { orderBy } from 'lodash'
-import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
 import {
-  MultiNumericDistributionChart,
-  NumericBetPanel,
-} from 'web/components/answers/numeric-bet-panel'
-import { getAutoBountyPayoutPerHour } from 'common/bounty'
-import { NEW_GRAPH_COLOR } from 'common/multi-numeric'
-import { FaChartArea } from 'react-icons/fa'
-import { filterDefined } from 'common/util/array'
-import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
-import { useChartPositions } from 'web/hooks/use-chart-positions'
+  AnswersPanel,
+  MAX_DEFAULT_ANSWERS,
+  getAllResolved,
+} from '../answers/answers-panel'
 import { BuyPanel } from '../bet/bet-panel'
-import { User } from 'common/user'
+import { UserBetsSummary } from '../bet/bet-summary'
 import {
   ChartAnnotations,
   EditChartAnnotationsButton,
 } from '../charts/chart-annotations'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
-import { Modal, MODAL_CLASS } from '../layout/modal'
-import { MultiGraphModal } from './multi-graph-modal'
+import { MultiBinaryChart, SizedBinaryChart } from '../charts/contract/binary'
+import { ChoiceContractChart, getAnswerColor } from '../charts/contract/choice'
+import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
+import { StonkContractChart } from '../charts/contract/stonk'
+import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
+import { getEndDate, useZoom } from '../charts/helpers'
+import { TimeRangePicker } from '../charts/time-range-picker'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { CancelLabel } from '../outcome-label'
+import { PollPanel } from '../poll/poll-panel'
+import { AlertBox } from '../widgets/alert-box'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export const ContractOverview = memo(
   (props: {
@@ -84,6 +86,7 @@ export const ContractOverview = memo(
     setShowResolver: (show: boolean) => void
     onAnswerCommentClick: (answer: Answer) => void
     chartAnnotations: ChartAnnotation[]
+    hideGraph: boolean
   }) => {
     const {
       betPoints,
@@ -93,6 +96,7 @@ export const ContractOverview = memo(
       setShowResolver,
       onAnswerCommentClick,
       chartAnnotations,
+      hideGraph,
     } = props
 
     switch (contract.outcomeType) {
@@ -140,6 +144,7 @@ export const ContractOverview = memo(
             resolutionRating={resolutionRating}
             onAnswerCommentClick={onAnswerCommentClick}
             chartAnnotations={chartAnnotations}
+            hideGraph={hideGraph}
             zoomY
           />
         )
@@ -243,8 +248,42 @@ export const BinaryOverview = (props: {
   )
 }
 
-export const getShouldHideGraph = (contract: MultiContract) => {
-  return contract.mechanism == 'cpmm-multi-1' && contract.answers.length > 3
+const ANSWERS_TO_HIDE_GRAPH = 3
+
+export function getSortedAnswers(
+  contract: MultiContract,
+  sortedAnswers: Answer[],
+  sort: MultiSort,
+  selectedAnswerIds?: string[]
+) {
+  const answers = contract.answers
+  const allResolved = getAllResolved(contract, answers)
+  return sortedAnswers
+    .filter((answer) => {
+      if (selectedAnswerIds?.includes(answer.id)) {
+        return true
+      }
+
+      if (allResolved) return true
+      if (sort === 'prob-asc') {
+        return answer.prob < 0.99
+      } else if (sort === 'prob-desc') {
+        return answer.prob > 0.01
+      } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
+        return !answer.resolution
+      }
+      return true
+    })
+    .slice(0, MAX_DEFAULT_ANSWERS)
+}
+
+export const getShouldHideGraph = (contract: Contract) => {
+  if (contract.mechanism !== 'cpmm-multi-1') return false
+  const defaultSort = getDefaultSort(contract)
+  const sortedAnswers = sortAnswers(contract, contract.answers, defaultSort)
+  const initialAnswers = getSortedAnswers(contract, sortedAnswers, defaultSort)
+
+  return initialAnswers.length > ANSWERS_TO_HIDE_GRAPH
 }
 
 const ChoiceOverview = (props: {
@@ -256,6 +295,7 @@ const ChoiceOverview = (props: {
   onAnswerCommentClick: (answer: Answer) => void
   chartAnnotations: ChartAnnotation[]
   zoomY?: boolean
+  hideGraph: boolean
 }) => {
   const {
     points,
@@ -265,6 +305,7 @@ const ChoiceOverview = (props: {
     setShowResolver,
     onAnswerCommentClick,
     zoomY,
+    hideGraph,
   } = props
 
   const currentUser = useUser()
@@ -323,10 +364,6 @@ const ChoiceOverview = (props: {
   useEffect(() => {
     setSelectedAnswerIds(filterDefined(contractPositionAnswerIds))
   }, [JSON.stringify(contractPositionAnswerIds)])
-
-  const hideGraph = getShouldHideGraph(contract)
-
-  const [graphModalOpen, setGraphModalOpen] = useState(false)
 
   function addAnswerToGraph(answer: Answer) {
     setSelectedAnswerIds((answers) =>
@@ -437,16 +474,6 @@ const ChoiceOverview = (props: {
         )
       ) : (
         <>
-          <MultiGraphModal
-            points={points}
-            contract={contract}
-            zoomY={zoomY}
-            chartAnnotations={chartAnnotations}
-            open={graphModalOpen}
-            setOpen={setGraphModalOpen}
-            selectedAnswerIds={selectedAnswerIds}
-            setSelectedAnswerIds={setSelectedAnswerIds}
-          />
           {resolutionRating}
           <AnswersPanel
             setDefaultAnswerIdsToGraph={setDefaultAnswerIdsToGraph}
@@ -461,14 +488,6 @@ const ChoiceOverview = (props: {
             setQuery={setQuery}
             showSetDefaultSort={showSetDefaultSort}
             className={hideGraph ? '-mt-4' : ''}
-            onSeeGraphClick={
-              hideGraph
-                ? ({ id }) => {
-                    setSelectedAnswerIds([id])
-                    setGraphModalOpen(true)
-                  }
-                : undefined
-            }
           />
           {tradingAllowed(contract) && (
             <UserBetsSummary

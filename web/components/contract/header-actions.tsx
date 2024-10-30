@@ -31,12 +31,22 @@ import { AddLiquidityModal } from './liquidity-modal'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { WatchMarketModal } from './watch-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
+import { GoGraph } from 'react-icons/go'
 
 export function HeaderActions(props: {
   playContract: Contract
   currentContract: Contract
+  initialHideGraph: boolean
+  hideGraph: boolean
+  setHideGraph: (hideGraph: boolean) => void
 }) {
-  const { playContract, currentContract } = props
+  const {
+    playContract,
+    currentContract,
+    initialHideGraph,
+    hideGraph,
+    setHideGraph,
+  } = props
   const user = useUser()
   const privateUser = usePrivateUser()
   const isCreator = user?.id === playContract.creatorId
@@ -176,6 +186,17 @@ export function HeaderActions(props: {
       onClick: () => setDetailsOpen(true),
       icon: <InformationCircleIcon className="h-5 w-5" />,
     },
+    ...(initialHideGraph
+      ? [
+          {
+            name: hideGraph ? 'Show graph' : 'Hide graph',
+            onClick: () => {
+              setHideGraph(!hideGraph)
+            },
+            icon: <GoGraph className="h-5 w-5" />,
+          },
+        ]
+      : []),
     ...(user
       ? [
           {
