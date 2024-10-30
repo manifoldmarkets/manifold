@@ -77,15 +77,34 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { buildArray } from 'common/util/array'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { floatingEqual } from 'common/util/math'
+import {
+  getShouldHideGraph,
+  getSortedAnswers,
+} from '../contract/contract-overview'
+import { GoGraph } from 'react-icons/go'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
-const MAX_DEFAULT_ANSWERS = 20
+export const MAX_DEFAULT_ANSWERS = 20
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 
 // the offset in which the top of answers is visible
 const SCROLL_OFFSET = 100
 // debounce when typing a query to ensure smoother autoscrolling
 const DEBOUNCE_DELAY = 100
+
+function getShouldAnswersSumToOne(contract: MultiContract) {
+  return 'shouldAnswersSumToOne' in contract
+    ? contract.shouldAnswersSumToOne
+    : true
+}
+
+export function getAllResolved(contract: MultiContract, answers: Answer[]) {
+  const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
+  return (
+    (shouldAnswersSumToOne && !!contract.resolutions) ||
+    answers.every((a) => a.resolution)
+  )
+}
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
@@ -97,11 +116,12 @@ export function AnswersPanel(props: {
   setQuery: (query: string) => void
   onAnswerCommentClick?: (answer: Answer) => void
   onAnswerHover: (answer: Answer | undefined) => void
-  onAnswerClick: (answer: Answer) => void
+  onAnswerClick?: (answer: Answer) => void
   showSetDefaultSort?: boolean
   setDefaultAnswerIdsToGraph?: (ids: string[]) => void
   defaultAddAnswer?: boolean
   floatingSearchClassName?: string
+  className?: string
 }) {
   const {
     contract,
@@ -116,12 +136,11 @@ export function AnswersPanel(props: {
     showSetDefaultSort,
     setDefaultAnswerIdsToGraph,
     floatingSearchClassName,
+    className,
   } = props
   const { outcomeType, resolutions } = contract
   const addAnswersMode =
     'addAnswersMode' in contract ? contract.addAnswersMode : 'DISABLED'
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
 
@@ -135,6 +154,9 @@ export function AnswersPanel(props: {
     (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
       answers.length <= 5
   )
+
+  const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
+
   const sortedAnswers = useMemo(
     () => sortAnswers(contract, answers, sort),
     [answers, resolutions, shouldAnswersSumToOne, sort]
@@ -148,31 +170,11 @@ export function AnswersPanel(props: {
     )
   }, [sortedAnswers, query])
 
-  const allResolved =
-    (shouldAnswersSumToOne && !!contract.resolutions) ||
-    answers.every((a) => a.resolution)
-
   const answersToShow = query
     ? searchedAnswers
     : showAll
     ? sortedAnswers
-    : sortedAnswers
-        .filter((answer) => {
-          if (selectedAnswerIds.includes(answer.id)) {
-            return true
-          }
-
-          if (allResolved) return true
-          if (sort === 'prob-asc') {
-            return answer.prob < 0.99
-          } else if (sort === 'prob-desc') {
-            return answer.prob > 0.01
-          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
-            return !answer.resolution
-          }
-          return true
-        })
-        .slice(0, MAX_DEFAULT_ANSWERS)
+    : getSortedAnswers(contract, sortedAnswers, sort, selectedAnswerIds)
 
   useEffect(() => {
     if (!selectedAnswerIds.length)
@@ -190,6 +192,8 @@ export function AnswersPanel(props: {
   const unfilledBets = useUnfilledBets(contract.id, {
     enabled: isAdvancedTrader && shouldShowLimitOrderChart,
   })
+
+  const allResolved = getAllResolved(contract, answers)
 
   const [shouldShowPositions, setShouldShowPositions] = useState(!allResolved)
 
@@ -247,7 +251,7 @@ export function AnswersPanel(props: {
   }, [query, scrollToAnswers])
 
   return (
-    <Col>
+    <Col className={className}>
       <SearchCreateAnswerPanel
         contract={contract}
         canAddAnswer={canAddAnswer}
@@ -273,7 +277,8 @@ export function AnswersPanel(props: {
               <Answer
                 className={
                   selectedAnswerIds.length &&
-                  !selectedAnswerIds.includes(answer.id)
+                  !selectedAnswerIds.includes(answer.id) &&
+                  !!onAnswerClick
                     ? 'opacity-70'
                     : ''
                 }
@@ -504,8 +509,7 @@ export function SimpleAnswerBars(props: {
 }) {
   const { contract, maxAnswers = Infinity, barColor, feedReason } = props
 
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+  const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
   const user = useUser()
   const answers = contract.answers.map((a) => ({
     ...a,
@@ -628,6 +632,7 @@ export function Answer(props: {
   const answerCreator = useDisplayUserByIdOrAnswer(answer)
   const answerCreatorIsNotContractCreator =
     !!answerCreator && answerCreator.username !== contract.creatorUsername
+
   const dropdownItems = buildArray(
     {
       name: 'author info',

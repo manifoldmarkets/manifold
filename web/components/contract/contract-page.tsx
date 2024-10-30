@@ -29,7 +29,10 @@ import { ChangeBannerButton } from 'web/components/contract/change-banner-button
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
-import { ContractOverview } from 'web/components/contract/contract-overview'
+import {
+  ContractOverview,
+  getShouldHideGraph,
+} from 'web/components/contract/contract-overview'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
@@ -226,6 +229,9 @@ export function ContractPageContent(props: ContractParams) {
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
 
+  const initialHideGraph = getShouldHideGraph(liveContract)
+  const [hideGraph, setHideGraph] = useState(initialHideGraph)
+
   useEffect(() => {
     if (replyTo) {
       setActiveTabIndex(0)
@@ -338,6 +344,9 @@ export function ContractPageContent(props: ContractParams) {
                 <HeaderActions
                   playContract={livePlayContract}
                   currentContract={liveContract}
+                  initialHideGraph={initialHideGraph}
+                  hideGraph={hideGraph}
+                  setHideGraph={setHideGraph}
                 />
               )}
             </Row>
@@ -351,6 +360,9 @@ export function ContractPageContent(props: ContractParams) {
               <HeaderActions
                 playContract={livePlayContract}
                 currentContract={liveContract}
+                initialHideGraph={initialHideGraph}
+                hideGraph={hideGraph}
+                setHideGraph={setHideGraph}
               />
             </Row>
           )}
@@ -401,6 +413,7 @@ export function ContractPageContent(props: ContractParams) {
                 setShowResolver={setShowResolver}
                 onAnswerCommentClick={setReplyTo}
                 chartAnnotations={chartAnnotations}
+                hideGraph={hideGraph}
               />
               {!tradingAllowed(liveContract) && (
                 <UserBetsSummary
