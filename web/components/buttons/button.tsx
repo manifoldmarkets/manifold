@@ -19,6 +19,7 @@ export type ColorType =
   | 'gray-outline'
   | 'gradient'
   | 'gradient-pink'
+  | 'pink'
   | 'gray-white'
   | 'yellow-outline'
   | 'gold'
@@ -84,6 +85,7 @@ export function buttonClass(size: SizeType, color: ColorType) {
     color === 'gray-outline' && [outline, 'text-ink-600 hover:bg-ink-500'],
     color === 'gradient' && [gradient, 'from-primary-500 to-blue-400'],
     color === 'gradient-pink' && [gradient, 'from-primary-500 to-fuchsia-500'],
+    color === 'pink' && [solid, 'bg-fuchsia-500 hover:bg-fuchsia-600'],
     color === 'gray-white' &&
       'text-ink-600 hover:bg-ink-200 disabled:text-ink-300 disabled:bg-transparent',
     color === 'gold' && [
