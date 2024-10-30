@@ -49,6 +49,9 @@ Sentry.init({
 })
 // NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address. ie:
 // "cross-env NEXT_PUBLIC_API_URL=192.168.1.229:8088 \
+// Then, set the native url in the app on the user settings page: http://192.168.1.229:3000/
+
+// If you're changing native code: uncomment the line below
 // const BASE_URI = 'http://192.168.1.229:3000/'
 
 const BASE_URI =
