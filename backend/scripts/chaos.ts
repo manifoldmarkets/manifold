@@ -2,7 +2,6 @@ import { runScript } from './run-script'
 import { isProd, log } from 'shared/utils'
 import { convertContract } from 'common/supabase/contracts'
 import { Contract } from 'common/contract'
-import { formatApiUrlWithParams } from 'common/util/api'
 import { pgp } from 'shared/supabase/init'
 import { getTestUsers } from 'shared/test/users'
 import { getRandomTestBet } from 'shared/test/bets'
@@ -16,11 +15,11 @@ const URL = `https://${DEV_CONFIG.apiEndpoint}/v0`
 // const URL = `http://localhost:8088/v0`
 const OLD_MARKET_SLUG = undefined // 'test-8yr5oj'
 const USE_OLD_MARKET = !!OLD_MARKET_SLUG
-const LIMIT_ORDER_RATE = 0.05
+const LIMIT_ORDER_RATE = 0.02
 const VISIT_MARKETS = true
 const USERS = 100
 
-// TODO Does it lock down without using limit orders?
+// TODO How many limit orders causes a lock down?
 
 async function promptForRunInfo() {
   const rl = readline.createInterface({
@@ -326,7 +325,7 @@ if (require.main === module) {
 }
 
 async function visitContract(contract: Contract) {
-  return fetch(formatApiUrlWithParams('market', { contractId: contract.id }), {
+  return fetch(URL + `/market?contractId=${contract.id}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

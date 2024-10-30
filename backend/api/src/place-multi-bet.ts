@@ -5,7 +5,7 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
 import { log } from 'shared/utils'
-import { runShortTrans } from 'shared/short-transaction'
+import { runTransactionWithRetries } from 'shared/transaction-with-retries'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   fetchContractBetDataAndValidate,
@@ -27,7 +27,7 @@ export const placeMultiBetMain = async (
   uid: string,
   isApi: boolean
 ) => {
-  const results = await runShortTrans(async (pgTrans) => {
+  const results = await runTransactionWithRetries(async (pgTrans) => {
     log(
       `Inside main transaction for ${uid} placing a bet on ${body.contractId}.`
     )
@@ -39,7 +39,12 @@ export const placeMultiBetMain = async (
       unfilledBets,
       balanceByUserId,
       contractMetrics,
-    } = await fetchContractBetDataAndValidate(pgTrans, body, uid, isApi)
+    } = await fetchContractBetDataAndValidate(
+      pgTrans,
+      { ...body, outcome: 'YES' },
+      uid,
+      isApi
+    )
 
     const { mechanism } = contract
 

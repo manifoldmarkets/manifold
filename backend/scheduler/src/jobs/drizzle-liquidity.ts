@@ -16,7 +16,7 @@ import {
 } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import { getAnswer, updateAnswer, updateAnswers } from 'shared/supabase/answers'
-import { runShortTrans } from 'shared/short-transaction'
+import { runTransactionWithRetries } from 'shared/transaction-with-retries'
 import { getContract, log } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
 
@@ -43,7 +43,7 @@ export const drizzleLiquidity = async () => {
 }
 
 const drizzleMarket = async (contractId: string) => {
-  await runShortTrans(async (pgTrans) => {
+  await runTransactionWithRetries(async (pgTrans) => {
     const fetched = await getContract(pgTrans, contractId)
     if (!fetched) throw new APIError(404, 'Contract not found.')
     const contract = fetched as CPMMContract | CPMMMultiContract

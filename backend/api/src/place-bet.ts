@@ -1,4 +1,4 @@
-import { first, isEqual, mapValues, maxBy, sumBy } from 'lodash'
+import { first, mapValues, maxBy, sumBy } from 'lodash'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { Contract, CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
@@ -26,14 +26,13 @@ import {
   bulkIncrementBalancesQuery,
   incrementStreakQuery,
 } from 'shared/supabase/users'
-import { runShortTrans } from 'shared/short-transaction'
 import { convertBet } from 'common/supabase/bets'
 import {
   bulkInsertBetsQuery,
   cancelLimitOrdersQuery,
   insertBet,
 } from 'shared/supabase/bets'
-import { betsQueue, ordersQueue } from 'shared/helpers/fn-queue'
+import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
 import { partialAnswerToRow } from 'shared/supabase/answers'
@@ -56,58 +55,22 @@ import { bulkUpdateQuery, updateDataQuery } from 'shared/supabase/utils'
 import { convertTxn } from 'common/supabase/txns'
 import {
   fetchContractBetDataAndValidate,
-  getMakerIdsFromBetResult,
   getRoundedLimitProb,
   getUniqueBettorBonusQuery,
-  getUserBalancesAndMetrics,
   updateMakers,
 } from 'api/helpers/bets'
+import { runTransactionWithRetries } from 'shared/transaction-with-retries'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  const { deps, contractId } = props
-
-  // Most likely path for api users as they won't pass their deps
-  if (deps === undefined) {
-    return queueDependenciesThenBet(props, auth, isApi)
-  }
+  const { deps, contractId, dryRun } = props
+  if (dryRun) return await dryRunBet(props, auth, isApi)
 
   // Worst thing that could happen from wrong deps is contention
-  const fullDeps = [auth.uid, contractId, ...deps]
+  const fullDeps = [auth.uid, contractId, ...(deps ?? [])]
   return await betsQueue.enqueueFn(() => {
     return placeBetMain(props, auth.uid, isApi)
   }, fullDeps)
-}
-
-const queueDependenciesThenBet = async (
-  props: ValidatedAPIParams<'bet'>,
-  auth: AuthedUser,
-  isApi: boolean
-) => {
-  const minimalDeps = [auth.uid, props.contractId]
-  return await ordersQueue.enqueueFn(async () => {
-    const { user, contract, answers, unfilledBets, balanceByUserId } =
-      await fetchContractBetDataAndValidate(
-        createSupabaseDirectClient(),
-        props,
-        auth.uid,
-        isApi
-      )
-    // Simulate bet to see whose limit orders you match.
-    const simulatedResult = calculateBetResult(
-      props,
-      user,
-      contract,
-      answers,
-      unfilledBets,
-      balanceByUserId
-    )
-    const makerIds = getMakerIdsFromBetResult(simulatedResult)
-
-    return await betsQueue.enqueueFn(async () => {
-      return placeBetMain(props, auth.uid, isApi)
-    }, [...minimalDeps, ...makerIds])
-  }, minimalDeps)
 }
 
 export const placeBetMain = async (
@@ -116,65 +79,18 @@ export const placeBetMain = async (
   isApi: boolean
 ) => {
   const startTime = Date.now()
+  const { contractId, replyToCommentId, deterministic } = body
 
-  const { contractId, replyToCommentId, dryRun, deterministic, answerId } = body
-
-  // Fetch data outside transaction first.
-  const {
-    user,
-    contract,
-    answers,
-    unfilledBets,
-    balanceByUserId,
-    unfilledBetUserIds,
-  } = await fetchContractBetDataAndValidate(
-    createSupabaseDirectClient(),
-    body,
-    uid,
-    isApi
-  )
-  // TODO: Try running all simulations on single worker thread
-  // Simulate bet to see whose limit orders you match.
-  const simulatedResult = calculateBetResult(
-    body,
-    user,
-    contract,
-    answers,
-    unfilledBets,
-    balanceByUserId
-  )
-  if (dryRun) {
-    log('Dry run complete.')
-    return {
-      result: {
-        ...simulatedResult.newBet,
-        betId: 'dry-run',
-      },
-      continue: () => Promise.resolve(),
-    }
-  }
-  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
-
-  const result = await runShortTrans(async (pgTrans) => {
+  const result = await runTransactionWithRetries(async (pgTrans) => {
+    const {
+      user,
+      contract,
+      answers,
+      unfilledBets,
+      balanceByUserId,
+      contractMetrics,
+    } = await fetchContractBetDataAndValidate(pgTrans, body, uid, isApi)
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)
-    // Refetch just user balance and metrics in transaction, since queue only enforces contract and bets not changing.
-    const { balanceByUserId, contractMetrics } =
-      await getUserBalancesAndMetrics(
-        pgTrans,
-        [uid, ...simulatedMakerIds], // Fetch just the makers that matched in the simulation.
-        contract,
-        answerId
-      )
-    user.balance = balanceByUserId[uid]
-    if (user.balance < body.amount)
-      throw new APIError(403, 'Insufficient balance.')
-
-    for (const userId of unfilledBetUserIds) {
-      if (!(userId in balanceByUserId)) {
-        // Assume other makers have infinite balance since they are not involved in this bet.
-        balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
-      }
-    }
 
     const newBetResult = calculateBetResult(
       body,
@@ -189,18 +105,6 @@ export const placeBetMain = async (
       throw new APIError(400, 'Betting allowed only between 1-99%.')
     }
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
-
-    const actualMakerIds = getMakerIdsFromBetResult(newBetResult)
-    log(
-      'simulated makerIds',
-      simulatedMakerIds,
-      'actualMakerIds',
-      actualMakerIds
-    )
-    if (!isEqual(simulatedMakerIds, actualMakerIds)) {
-      log.warn('Matched limit orders changed from simulated values.')
-      throw new APIError(503, 'Please try betting again.')
-    }
 
     const betGroupId =
       contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
@@ -230,6 +134,8 @@ export const placeBetMain = async (
     streakIncremented,
     bonusTxn,
     updatedMetrics,
+    contract,
+    user,
   } = result
 
   log(`Main transaction finished - auth ${uid}.`)
@@ -661,5 +567,35 @@ export const executeNewBetResult = async (
     streakIncremented,
     bonusTxn,
     updatedMetrics: bettorRedemptionUpdatedMetrics,
+  }
+}
+
+const dryRunBet = async (
+  props: ValidatedAPIParams<'bet'>,
+  auth: AuthedUser,
+  isApi: boolean
+) => {
+  const { user, contract, answers, unfilledBets, balanceByUserId } =
+    await fetchContractBetDataAndValidate(
+      createSupabaseDirectClient(),
+      props,
+      auth.uid,
+      isApi
+    )
+  const simulatedResult = calculateBetResult(
+    props,
+    user,
+    contract,
+    answers,
+    unfilledBets,
+    balanceByUserId
+  )
+
+  return {
+    result: {
+      ...simulatedResult.newBet,
+      betId: 'dry-run',
+    },
+    continue: () => Promise.resolve(),
   }
 }

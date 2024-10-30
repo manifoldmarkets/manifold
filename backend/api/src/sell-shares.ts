@@ -1,4 +1,3 @@
-import { isEqual } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { MarketContract } from 'common/contract'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
@@ -6,51 +5,14 @@ import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { executeNewBetResult } from './place-bet'
 import { onCreateBets } from 'api/on-create-bet'
 import { log } from 'shared/utils'
-import * as crypto from 'crypto'
-import { runShortTrans } from 'shared/short-transaction'
+import { runTransactionWithRetries } from 'shared/transaction-with-retries'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import {
-  createSupabaseDirectClient,
-  SupabaseDirectClient,
-  SupabaseTransaction,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { ContractMetric } from 'common/contract-metric'
-import {
-  fetchContractBetDataAndValidate,
-  getMakerIdsFromBetResult,
-  getUserBalancesAndMetrics,
-} from 'api/helpers/bets'
-
-const fetchSellSharesDataAndValidate = async (
-  pgTrans: SupabaseTransaction | SupabaseDirectClient,
-  contractId: string,
-  answerId: string | undefined,
-  userId: string,
-  isApi: boolean
-) => {
-  const res = await fetchContractBetDataAndValidate(
-    pgTrans,
-    {
-      contractId,
-      amount: undefined,
-      answerId,
-    },
-    userId,
-    isApi
-  )
-  const { contract } = res
-  const { mechanism } = contract
-
-  if (mechanism !== 'cpmm-1' && mechanism !== 'cpmm-multi-1')
-    throw new APIError(
-      403,
-      'You can only sell shares on cpmm-1 or cpmm-multi-1 contracts'
-    )
-
-  return res
-}
+import { fetchContractBetDataAndValidate } from 'api/helpers/bets'
+import { randomString } from 'common/util/random'
 
 const calculateSellResult = (
   contract: MarketContract,
@@ -161,32 +123,9 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   req
 ) => {
   const userId = auth.uid
-  const isApi = auth.creds.kind === 'key'
-  const { contractId, shares, outcome, answerId } = props
-  const pg = createSupabaseDirectClient()
-  const { contract, answers, balanceByUserId, unfilledBets, contractMetrics } =
-    await fetchSellSharesDataAndValidate(
-      pg,
-      contractId,
-      answerId,
-      userId,
-      isApi
-    )
-  const simulatedResult = calculateSellResult(
-    contract,
-    answers,
-    unfilledBets,
-    balanceByUserId,
-    answerId,
-    outcome,
-    shares,
-    contractMetrics.find(
-      (m) => m.answerId == answerId && m.userId === auth.uid
-    )!
-  )
-  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
-  const deps = [userId, contractId, ...simulatedMakerIds]
-
+  const { contractId } = props
+  // TODO: add deps from front-end
+  const deps = [userId, contractId]
   return await betsQueue.enqueueFn(() => sellSharesMain(props, auth, req), deps)
 }
 
@@ -198,58 +137,25 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   const userId = auth.uid
   const isApi = auth.creds.kind === 'key'
   const pg = createSupabaseDirectClient()
+  const oppositeOutcome = outcome === 'YES' ? 'NO' : 'YES'
 
-  const {
-    user,
-    contract,
-    answers,
-    balanceByUserId,
-    unfilledBets,
-    contractMetrics: staleMetrics,
-    unfilledBetUserIds,
-  } = await fetchSellSharesDataAndValidate(
-    pg,
-    contractId,
-    answerId,
-    userId,
-    isApi
-  )
-  const simulatedResult = calculateSellResult(
-    contract,
-    answers,
-    unfilledBets,
-    balanceByUserId,
-    answerId,
-    outcome,
-    shares,
-    staleMetrics.find((m) => m.answerId == answerId && m.userId === auth.uid)!
-  )
-  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
-
-  const result = await runShortTrans(async (pgTrans) => {
+  const result = await runTransactionWithRetries(async (pgTrans) => {
     log(
       `Inside main transaction sellshares for user ${userId} on contract id ${contractId}.`
     )
-
-    // Refetch just user balances in transaction, since queue only enforces contract and bets not changing.
-    const { balanceByUserId, contractMetrics } =
-      await getUserBalancesAndMetrics(
-        pgTrans,
-        [
-          userId,
-          ...simulatedMakerIds, // Fetch just the makers that matched in the simulation.
-        ],
-        contract,
-        answerId
-      )
-    user.balance = balanceByUserId[userId]
-
-    for (const userId of unfilledBetUserIds) {
-      if (!(userId in balanceByUserId)) {
-        // Assume other makers have infinite balance since they are not involved in this bet.
-        balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
-      }
-    }
+    const {
+      user,
+      contract,
+      answers,
+      balanceByUserId,
+      unfilledBets,
+      contractMetrics,
+    } = await fetchContractBetDataAndValidate(
+      pg,
+      { ...props, amount: undefined, outcome: oppositeOutcome },
+      userId,
+      isApi
+    )
 
     const newBetResult = calculateSellResult(
       contract,
@@ -265,21 +171,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     )
     log(`Calculated sale information for ${user.username} - auth ${userId}.`)
 
-    const actualMakerIds = getMakerIdsFromBetResult(newBetResult)
-    log(
-      'simulated makerIds',
-      simulatedMakerIds,
-      'actualMakerIds',
-      actualMakerIds
-    )
-    if (!isEqual(simulatedMakerIds, actualMakerIds)) {
-      throw new APIError(
-        503,
-        'Please try betting again. (Matched limit orders changed from simulated values.)'
-      )
-    }
-
-    const betGroupId = crypto.randomBytes(12).toString('hex')
+    const betGroupId = randomString(12)
 
     return await executeNewBetResult(
       pgTrans,
@@ -302,6 +194,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     allOrdersToCancel,
     streakIncremented,
     updatedMetrics,
+    user,
+    contract,
   } = result
 
   const continuation = async () => {

@@ -40,59 +40,55 @@ export const fetchContractBetDataAndValidate = async (
     amount: number | undefined
     answerId?: string
     answerIds?: string[]
+    outcome: 'YES' | 'NO'
   },
   uid: string,
   isApi: boolean
 ) => {
   const startTime = Date.now()
-  const { amount, contractId } = body
+  const { amount, contractId, outcome } = body
   const answerIds =
     'answerIds' in body
       ? body.answerIds
       : 'answerId' in body && body.answerId !== undefined
       ? [body.answerId]
       : undefined
-
+  const whereLimitOrderBets = `
+    (
+     ($3 is null or b.answer_id in ($3:list)) or
+     (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
+    ) 
+    and not b.is_filled and not b.is_cancelled
+    and (
+      $4 != b.outcome or
+      (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
+    )
+    and b.contract_id = $2
+    `
   const queries = `
-      select *
-      from users
-      where id = $1;
-      select ${contractColumnsToSelect}
-      from contracts
-      where id = $2;
-      select *
-      from answers
-      where contract_id = $2
-        and (
+    select * from users where id = $1;
+    select ${contractColumnsToSelect} from contracts where id = $2;
+    select * from answers
+      where contract_id = $2 and (
           ($3 is null or id in ($3:list)) or
-          (select (data -> 'shouldAnswersSumToOne')::boolean from contracts where id = $2)
+          (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
           );
-      select b.*, u.balance, u.cash_balance
-      from contract_bets b
-               join users u on b.user_id = u.id
-      where b.contract_id = $2
-        and (
-          ($3 is null or b.answer_id in ($3:list)) or
-          (select (data -> 'shouldAnswersSumToOne')::boolean from contracts where id = $2)
-          )
-        and not b.is_filled
-        and not b.is_cancelled;
-      select data
-      from user_contract_metrics
-      where user_id = $1
-        and contract_id = $2
-        and ($3 is null or answer_id in ($3:list) or answer_id is null or
-             (select (data -> 'shouldAnswersSumToOne')::boolean from contracts where id = $2)
-          );
-      select status
-      from system_trading_status
-      where token = (select token from contracts where id = $2);
+    select b.*, u.balance, u.cash_balance from contract_bets b join users u on b.user_id = u.id
+        where ${whereLimitOrderBets};
+    select data from user_contract_metrics ucm where 
+       (user_id = $1 or user_id in (select distinct user_id from contract_bets b where ${whereLimitOrderBets}))
+       and contract_id = $2 and
+       ($3 is null or ucm.answer_id in ($3:list) or ucm.answer_id is null or
+       (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
+       );
+    select status from system_trading_status where token = (select token from contracts where id = $2);
   `
 
   const results = await pgTrans.multi(queries, [
     uid,
     contractId,
     answerIds ?? null,
+    outcome,
   ])
   const user = convertUser(results[0][0])
   const contract = convertContract(results[1][0])

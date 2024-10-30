@@ -1,7 +1,7 @@
 import { removeCpmmLiquidity } from 'common/calculate-cpmm'
 import { getTierFromLiquidity } from 'common/tier'
 import { formatMoneyWithDecimals } from 'common/util/format'
-import { runShortTrans } from 'shared/short-transaction'
+import { runTransactionWithRetries } from 'shared/transaction-with-retries'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { runTxn } from 'shared/txn/run-txn'
@@ -19,7 +19,7 @@ import {
 export const removeLiquidity: APIHandler<
   'market/:contractId/remove-liquidity'
 > = async ({ contractId, amount: totalAmount }, auth) => {
-  const liquidity = await runShortTrans(async (pgTrans) => {
+  const liquidity = await runTransactionWithRetries(async (pgTrans) => {
     const contract = await getContract(pgTrans, contractId)
     if (!contract) throw new APIError(404, `Contract not found`)
 

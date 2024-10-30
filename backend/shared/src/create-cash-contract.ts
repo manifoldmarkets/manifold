@@ -12,7 +12,7 @@ import { randomString } from 'common/util/random'
 import { getNewContract } from 'common/new-contract'
 import { convertContract } from 'common/supabase/contracts'
 import { clamp } from 'lodash'
-import { runShortTrans } from './short-transaction'
+import { runTransactionWithRetries } from './transaction-with-retries'
 
 // cribbed from backend/api/src/create-market.ts
 
@@ -20,92 +20,94 @@ export async function createCashContractMain(
   manaContractId: string,
   subsidyAmount: number
 ) {
-  const { cashContract, manaContract } = await runShortTrans(async (tx) => {
-    const manaContract = await getContract(tx, manaContractId)
-    if (!manaContract) {
-      throw new APIError(404, `Mana contract ${manaContractId} not found`)
-    }
+  const { cashContract, manaContract } = await runTransactionWithRetries(
+    async (tx) => {
+      const manaContract = await getContract(tx, manaContractId)
+      if (!manaContract) {
+        throw new APIError(404, `Mana contract ${manaContractId} not found`)
+      }
 
-    const creator = await getUser(manaContract.creatorId)
+      const creator = await getUser(manaContract.creatorId)
 
-    if (!creator) {
-      throw new APIError(404, `Creator ${manaContract.creatorId} not found`)
-    }
+      if (!creator) {
+        throw new APIError(404, `Creator ${manaContract.creatorId} not found`)
+      }
 
-    if (manaContract.token !== 'MANA') {
-      throw new APIError(
-        400,
-        `Contract ${manaContractId} is not a MANA contract`
+      if (manaContract.token !== 'MANA') {
+        throw new APIError(
+          400,
+          `Contract ${manaContractId} is not a MANA contract`
+        )
+      }
+
+      if (manaContract.outcomeType !== 'BINARY') {
+        throw new APIError(
+          400,
+          `Contract ${manaContractId} is not a binary contract`
+        )
+
+        // TODO: Add support for multi
+      }
+
+      if (manaContract.siblingContractId) {
+        throw new APIError(
+          400,
+          `Contract ${manaContractId} already has a sweepstakes sibling contract ${manaContract.siblingContractId}`
+        )
+      }
+
+      const contract = getNewContract({
+        id: randomString(),
+        ante: subsidyAmount,
+        token: 'CASH',
+        description: htmlToRichText('<p></p>'),
+        initialProb: clamp(Math.round(manaContract.prob * 100), 1, 99),
+
+        creator,
+        slug: manaContract.slug + '--cash',
+        question: manaContract.question,
+        outcomeType: manaContract.outcomeType,
+        closeTime: manaContract.closeTime,
+        visibility: manaContract.visibility,
+        isTwitchContract: manaContract.isTwitchContract,
+
+        min: 0,
+        max: 0,
+        isLogScale: false,
+        answers: [],
+      })
+
+      const newRow = await tx.one(
+        `insert into contracts (id, data, token) values ($1, $2, $3) returning *`,
+        [contract.id, JSON.stringify(contract), contract.token]
       )
-    }
+      const cashContract = convertContract(newRow)
 
-    if (manaContract.outcomeType !== 'BINARY') {
-      throw new APIError(
-        400,
-        `Contract ${manaContractId} is not a binary contract`
+      // Set sibling contract IDs
+      await updateContract(tx, manaContractId, {
+        siblingContractId: cashContract.id,
+      })
+      await updateContract(tx, cashContract.id, {
+        siblingContractId: manaContractId,
+      })
+
+      // Add initial liquidity
+      await runTxnFromBank(tx, {
+        amount: subsidyAmount,
+        category: 'CREATE_CONTRACT_ANTE',
+        toId: cashContract.id,
+        toType: 'CONTRACT',
+        fromType: 'BANK',
+        token: 'CASH',
+      })
+
+      log(
+        `Created cash contract ${cashContract.id} for mana contract ${manaContractId}`
       )
 
-      // TODO: Add support for multi
+      return { cashContract, manaContract }
     }
-
-    if (manaContract.siblingContractId) {
-      throw new APIError(
-        400,
-        `Contract ${manaContractId} already has a sweepstakes sibling contract ${manaContract.siblingContractId}`
-      )
-    }
-
-    const contract = getNewContract({
-      id: randomString(),
-      ante: subsidyAmount,
-      token: 'CASH',
-      description: htmlToRichText('<p></p>'),
-      initialProb: clamp(Math.round(manaContract.prob * 100), 1, 99),
-
-      creator,
-      slug: manaContract.slug + '--cash',
-      question: manaContract.question,
-      outcomeType: manaContract.outcomeType,
-      closeTime: manaContract.closeTime,
-      visibility: manaContract.visibility,
-      isTwitchContract: manaContract.isTwitchContract,
-
-      min: 0,
-      max: 0,
-      isLogScale: false,
-      answers: [],
-    })
-
-    const newRow = await tx.one(
-      `insert into contracts (id, data, token) values ($1, $2, $3) returning *`,
-      [contract.id, JSON.stringify(contract), contract.token]
-    )
-    const cashContract = convertContract(newRow)
-
-    // Set sibling contract IDs
-    await updateContract(tx, manaContractId, {
-      siblingContractId: cashContract.id,
-    })
-    await updateContract(tx, cashContract.id, {
-      siblingContractId: manaContractId,
-    })
-
-    // Add initial liquidity
-    await runTxnFromBank(tx, {
-      amount: subsidyAmount,
-      category: 'CREATE_CONTRACT_ANTE',
-      toId: cashContract.id,
-      toType: 'CONTRACT',
-      fromType: 'BANK',
-      token: 'CASH',
-    })
-
-    log(
-      `Created cash contract ${cashContract.id} for mana contract ${manaContractId}`
-    )
-
-    return { cashContract, manaContract }
-  })
+  )
 
   await revalidateContractStaticProps(manaContract)
   return cashContract

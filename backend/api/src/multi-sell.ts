@@ -6,7 +6,7 @@ import { getContract, getUser, log } from 'shared/utils'
 import { groupBy, mapValues, sum, sumBy } from 'lodash'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { incrementBalance } from 'shared/supabase/users'
-import { runShortTrans } from 'shared/short-transaction'
+import { runTransactionWithRetries } from 'shared/transaction-with-retries'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
@@ -27,7 +27,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
   const user = await getUser(uid)
   if (!user) throw new APIError(401, 'Your account was not found')
 
-  const results = await runShortTrans(async (pgTrans) => {
+  const results = await runTransactionWithRetries(async (pgTrans) => {
     const contract = await getContract(pgTrans, contractId)
     if (!contract) throw new APIError(404, 'Contract not found')
     const { closeTime, isResolved, mechanism } = contract

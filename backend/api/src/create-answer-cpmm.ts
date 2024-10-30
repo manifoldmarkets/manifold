@@ -40,7 +40,7 @@ import {
 import { getTierFromLiquidity } from 'common/tier'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
-import { runShortTrans } from 'shared/short-transaction'
+import { runTransactionWithRetries } from 'shared/transaction-with-retries'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import { followContractInternal } from 'api/follow-contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -101,102 +101,104 @@ export const createAnswerCpmmMain = async (
     getTierFromLiquidity(contract, contract.totalLiquidity)
   )
 
-  const { newAnswer, user } = await runShortTrans(async (pgTrans) => {
-    const user = await getUser(creatorId, pgTrans)
-    if (!user) throw new APIError(401, 'Your account was not found')
-    if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
+  const { newAnswer, user } = await runTransactionWithRetries(
+    async (pgTrans) => {
+      const user = await getUser(creatorId, pgTrans)
+      if (!user) throw new APIError(401, 'Your account was not found')
+      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    if (user.balance < answerCost && !specialLiquidityPerAnswer)
-      throw new APIError(403, 'Insufficient balance, need M' + answerCost)
+      if (user.balance < answerCost && !specialLiquidityPerAnswer)
+        throw new APIError(403, 'Insufficient balance, need M' + answerCost)
 
-    if (!specialLiquidityPerAnswer) {
-      await incrementBalance(pgTrans, user.id, {
-        balance: -answerCost,
-        totalDeposits: -answerCost,
-      })
-    }
+      if (!specialLiquidityPerAnswer) {
+        await incrementBalance(pgTrans, user.id, {
+          balance: -answerCost,
+          totalDeposits: -answerCost,
+        })
+      }
 
-    const answers = await getAnswersForContract(pgTrans, contractId)
-    const unresolvedAnswers = answers.filter((a) => !a.resolution)
-    const maxAnswers = getMaximumAnswers(shouldAnswersSumToOne)
-    if (unresolvedAnswers.length >= maxAnswers) {
-      throw new APIError(
-        403,
-        `Cannot add an answer: Maximum number (${maxAnswers}) of open answers reached.`
-      )
-    }
-
-    let poolYes = answerCost
-    let poolNo = answerCost
-    let totalLiquidity = answerCost
-    let prob = 0.5
-
-    if (specialLiquidityPerAnswer) {
-      if (shouldAnswersSumToOne)
+      const answers = await getAnswersForContract(pgTrans, contractId)
+      const unresolvedAnswers = answers.filter((a) => !a.resolution)
+      const maxAnswers = getMaximumAnswers(shouldAnswersSumToOne)
+      if (unresolvedAnswers.length >= maxAnswers) {
         throw new APIError(
-          500,
-          "Can't specify specialLiquidityPerAnswer and shouldAnswersSumToOne"
+          403,
+          `Cannot add an answer: Maximum number (${maxAnswers}) of open answers reached.`
         )
-      prob = 0.02
-      poolYes = specialLiquidityPerAnswer
-      poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
-      totalLiquidity = specialLiquidityPerAnswer
-    }
+      }
 
-    const id = randomString()
-    const n = answers.length
-    const createdTime = Date.now()
-    const newAnswer: Answer = removeUndefinedProps({
-      id,
-      index: n,
-      contractId,
-      createdTime,
-      userId: user.id,
-      text,
-      isOther: false,
-      poolYes,
-      poolNo,
-      prob,
-      totalLiquidity,
-      subsidyPool: 0,
-      probChanges: { day: 0, week: 0, month: 0 },
-      loverUserId,
-    })
+      let poolYes = answerCost
+      let poolNo = answerCost
+      let totalLiquidity = answerCost
+      let prob = 0.5
 
-    const updatedAnswers: Answer[] = []
-    if (shouldAnswersSumToOne) {
-      await createAnswerAndSumAnswersToOne(
-        pgTrans,
-        user,
-        contract,
-        answers,
-        newAnswer,
-        answerCost
-      )
-      const updatedAnswers = await getAnswersForContract(pgTrans, contract.id)
-      await convertOtherAnswerShares(pgTrans, updatedAnswers, newAnswer.id)
-    } else {
-      await insertAnswer(pgTrans, newAnswer)
-    }
+      if (specialLiquidityPerAnswer) {
+        if (shouldAnswersSumToOne)
+          throw new APIError(
+            500,
+            "Can't specify specialLiquidityPerAnswer and shouldAnswersSumToOne"
+          )
+        prob = 0.02
+        poolYes = specialLiquidityPerAnswer
+        poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
+        totalLiquidity = specialLiquidityPerAnswer
+      }
 
-    if (!specialLiquidityPerAnswer) {
-      await updateContract(pgTrans, contractId, {
-        totalLiquidity: FieldVal.increment(answerCost),
+      const id = randomString()
+      const n = answers.length
+      const createdTime = Date.now()
+      const newAnswer: Answer = removeUndefinedProps({
+        id,
+        index: n,
+        contractId,
+        createdTime,
+        userId: user.id,
+        text,
+        isOther: false,
+        poolYes,
+        poolNo,
+        prob,
+        totalLiquidity,
+        subsidyPool: 0,
+        probChanges: { day: 0, week: 0, month: 0 },
+        loverUserId,
       })
 
-      const lp = getCpmmInitialLiquidity(
-        user.id,
-        contract,
-        answerCost,
-        createdTime,
-        newAnswer.id
-      )
+      const updatedAnswers: Answer[] = []
+      if (shouldAnswersSumToOne) {
+        await createAnswerAndSumAnswersToOne(
+          pgTrans,
+          user,
+          contract,
+          answers,
+          newAnswer,
+          answerCost
+        )
+        const updatedAnswers = await getAnswersForContract(pgTrans, contract.id)
+        await convertOtherAnswerShares(pgTrans, updatedAnswers, newAnswer.id)
+      } else {
+        await insertAnswer(pgTrans, newAnswer)
+      }
 
-      await insertLiquidity(pgTrans, lp)
+      if (!specialLiquidityPerAnswer) {
+        await updateContract(pgTrans, contractId, {
+          totalLiquidity: FieldVal.increment(answerCost),
+        })
+
+        const lp = getCpmmInitialLiquidity(
+          user.id,
+          contract,
+          answerCost,
+          createdTime,
+          newAnswer.id
+        )
+
+        await insertLiquidity(pgTrans, lp)
+      }
+
+      return { newAnswer, updatedAnswers, user }
     }
-
-    return { newAnswer, updatedAnswers, user }
-  })
+  )
 
   const continuation = async () => {
     await createNewAnswerOnContractNotification(

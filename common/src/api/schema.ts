@@ -312,7 +312,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         shares: z.number().positive().optional(), // leave it out to sell all shares
-        outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
+        outcome: z.enum(['YES', 'NO']),
         answerId: z.string().optional(), // Required for multi binary markets
         deterministic: z.boolean().optional(),
       })
