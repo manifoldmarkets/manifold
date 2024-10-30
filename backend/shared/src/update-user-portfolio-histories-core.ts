@@ -31,6 +31,7 @@ const userToPortfolioMetrics: {
     timeCachedPeriodProfits: number
   }
 } = {}
+type RankedContractMetric = ContractMetric & { isRanked: boolean }
 
 export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
   const LIMIT = isProd() ? 400 : 10
@@ -50,10 +51,7 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
       from users
         left join user_portfolio_history_latest uph on uph.user_id = users.id
       where (
-       users.id not in (select distinct user_id from user_events
-                where ts > now() - interval '10 minutes' and user_id is not null)
-       and
-       (users.id in (
+      users.id in (
            select distinct user_id from user_contract_interactions
            where created_time > now() - interval '6 weeks'
        ) or
@@ -68,7 +66,7 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
              where contracts.resolution_time is null
              and user_contract_metrics.has_shares = true
       ))
-    ))
+    )
         order by uph.last_calculated nulls first limit $3`,
         [random, BOT_USERNAMES, LIMIT],
         (r) => r.id as string
@@ -159,7 +157,13 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
       ),
       profit:
         // Resolved profits are already included in the user's balance - deposits
-        sumBy(userMetrics, (m) => m.profit) + balance - totalDeposits,
+        getPayoutValue(
+          'MANA',
+          userMetrics.filter((m) => m.isRanked),
+          contractsById
+        ) +
+        balance -
+        totalDeposits,
     }
 
     const didPortfolioChange =
@@ -235,8 +239,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
       and case when c.mechanism = 'cpmm-multi-1' then ucm.answer_id is not null else true end;
     `,
     [userIds],
-    (r) =>
-      ({ ...r.data, profit: r.is_ranked ? r.data.profit : 0 } as ContractMetric)
+    (r) => ({ ...r.data, isRanked: r.is_ranked } as RankedContractMetric)
   )
   if (metrics.length === 0) {
     return {
@@ -321,12 +324,12 @@ const getPortfolioHistoricalProfits = async (
   )
 }
 
-export const calculateNewPortfolioMetricsWithContractMetrics = (
-  user: User,
-  contractsById: { [k: string]: Contract },
-  contractMetrics: ContractMetric[]
-) => {
-  const getPayouts = (token: ContractToken) =>
+const getPayoutValue = (
+  token: ContractToken,
+  contractMetrics: ContractMetric[],
+  contractsById: { [k: string]: Contract }
+) =>
+  sum(
     contractMetrics.map((cm) => {
       const contract = contractsById[cm.contractId] as MarketContract
       if (contract.token !== token || contract.isResolved) return 0
@@ -346,8 +349,15 @@ export const calculateNewPortfolioMetricsWithContractMetrics = (
         (cm.loan ?? 0)
       )
     })
-  const cashPayouts = sum(getPayouts('CASH'))
-  const manaPayouts = sum(getPayouts('MANA'))
+  )
+
+export const calculateNewPortfolioMetricsWithContractMetrics = (
+  user: User,
+  contractsById: { [k: string]: Contract },
+  contractMetrics: ContractMetric[]
+) => {
+  const cashPayouts = getPayoutValue('CASH', contractMetrics, contractsById)
+  const manaPayouts = getPayoutValue('MANA', contractMetrics, contractsById)
   const loanTotal = sumBy(contractMetrics, (cm) => cm.loan)
   return {
     investmentValue: manaPayouts,

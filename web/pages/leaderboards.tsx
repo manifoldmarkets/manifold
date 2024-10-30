@@ -54,6 +54,7 @@ export default function Leaderboards() {
         cashProfit = 0
       if (p) {
         manaProfit =
+          p.profit ??
           p.balance + p.spiceBalance + p.investmentValue - p.totalDeposits
         cashProfit = p.cashBalance + p.cashInvestmentValue - p.totalCashDeposits
       }
