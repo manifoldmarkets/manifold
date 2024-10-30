@@ -115,7 +115,10 @@ const BlockedTopicsModal = (props: {
         <span className={'text-primary-700 mt-2 text-lg'}>
           Block more topics
         </span>
-        <TopicSelector setSelectedGroup={(group) => blockGroup(group.slug)} />
+        <TopicSelector
+          addingToContract={false}
+          setSelectedGroup={(group) => blockGroup(group.slug)}
+        />
         <div className={'mb-[10rem]'} />
       </Col>
     </Modal>

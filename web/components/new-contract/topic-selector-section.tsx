@@ -47,6 +47,7 @@ export const TopicSelectorSection = (props: {
         </Row>
       )}
       <TopicSelector
+        addingToContract={true}
         setSelectedGroup={(group) => {
           setSelectedGroups((groups) =>
             uniqBy([...(groups ?? []), group], 'id')

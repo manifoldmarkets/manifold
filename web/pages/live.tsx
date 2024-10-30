@@ -29,6 +29,7 @@ export default function LivePage() {
             {topicFromRouter ? topicFromRouter.name : 'Site'} activity feed
           </span>
           <TopicSelector
+            addingToContract={false}
             setSelectedGroup={(group) => {
               setTopicSlug(group.slug)
             }}

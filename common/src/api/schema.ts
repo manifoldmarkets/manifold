@@ -18,7 +18,7 @@ import {
 import { MAX_COMMENT_LENGTH, type ContractComment } from 'common/comment'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
-import { contentSchema } from 'common/api/zod-types'
+import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { Lover } from 'common/love/lover'
 import { Contract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
@@ -84,13 +84,6 @@ type APIGenericSchema = {
   // Cache-Control header. like, 'max-age=60'
   cache?: string
 }
-
-// Zod doesn't handle z.coerce.boolean() properly for GET requests
-const coerceBoolean = z
-  .union([z.boolean(), z.literal('true'), z.literal('false')])
-  .transform(
-    (value) => value === true || value === 'true'
-  ) as z.ZodType<boolean>
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
 export const API = (_apiTypeCheck = {

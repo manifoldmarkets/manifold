@@ -58,6 +58,7 @@ export function ContractTopicsList(props: {
                 Add topics
               </Row>
               <TopicSelector
+                addingToContract={true}
                 selectedIds={topics.map((g) => g.id)}
                 max={MAX_GROUPS_PER_MARKET}
                 setSelectedGroup={(topic) =>

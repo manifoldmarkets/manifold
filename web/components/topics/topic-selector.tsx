@@ -23,6 +23,7 @@ export function TopicSelector(props: {
   onCreateTopic?: (group: Group) => void
   className?: string
   placeholder?: string
+  addingToContract: boolean
 }) {
   const {
     setSelectedGroup,
@@ -32,11 +33,13 @@ export function TopicSelector(props: {
     selectedIds,
     className,
     placeholder,
+    addingToContract,
   } = props
   const user = useUser()
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
 
-  const { query, setQuery, searchedGroups, loading } = useSearchGroups()
+  const { query, setQuery, searchedGroups, loading } =
+    useSearchGroups(addingToContract)
 
   const handleSelectGroup = (group: Group | null | 'new') => {
     if (group === 'new') {
@@ -161,7 +164,7 @@ const LoadingOption = (props: { className: string }) => (
   </div>
 )
 
-const useSearchGroups = () => {
+const useSearchGroups = (addingToContract: boolean) => {
   const [query, setQuery] = useState('')
   const [searchedGroups, setSearchedGroups] = useState<LiteGroup[]>([])
   const [loading, setLoading] = useState(false)
@@ -176,7 +179,7 @@ const useSearchGroups = () => {
     searchGroups({
       term: query,
       limit: 10,
-      addingToContract: true,
+      addingToContract,
       type: 'lite',
     }).then((result) => {
       if (requestNumber.current === requestId) {
@@ -201,7 +204,7 @@ export function TopicPillSelector(props: {
   setTopic: (topic: LiteGroup | undefined) => void
 }) {
   const { topic, setTopic } = props
-  const { query, setQuery, searchedGroups } = useSearchGroups()
+  const { query, setQuery, searchedGroups } = useSearchGroups(false)
 
   const currentName = topic?.name ?? 'All topics'
 

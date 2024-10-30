@@ -48,6 +48,7 @@ export function DashboardSetTopics(props: {
       </Row>
 
       <TopicSelector
+        addingToContract={true}
         selectedIds={selectedGroups.map((g) => g.id)}
         setSelectedGroup={(group) =>
           setSelectedGroups([...selectedGroups, group])

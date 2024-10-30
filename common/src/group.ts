@@ -1,7 +1,7 @@
 import { Row } from './supabase/utils'
 import { JSONContent } from '@tiptap/core'
 import { z, ZodRawShape } from 'zod'
-import { contentSchema } from './api/zod-types'
+import { contentSchema, coerceBoolean } from './api/zod-types'
 
 export type Group = {
   id: string
@@ -66,10 +66,10 @@ export const MySearchGroupShape = {
   term: z.string(),
   offset: z.coerce.number().gte(0).default(0),
   limit: z.coerce.number().gt(0),
-  addingToContract: z.coerce.boolean().optional(),
+  addingToContract: coerceBoolean.optional(),
   type: z.enum(['full', 'lite']).default('full'),
 }
 export const SearchGroupShape = {
   ...MySearchGroupShape,
-  memberGroupsOnly: z.coerce.boolean().optional(),
+  memberGroupsOnly: coerceBoolean.optional(),
 }
