@@ -111,6 +111,17 @@ export function HeaderActions(props: {
   }, [user?.id, followingOpen])
 
   const dropdownItems = [
+    ...(initialHideGraph
+      ? [
+          {
+            name: hideGraph ? 'Show graph' : 'Hide graph',
+            onClick: () => {
+              setHideGraph(!hideGraph)
+            },
+            icon: <GoGraph className="h-5 w-5" />,
+          },
+        ]
+      : []),
     ...(user
       ? [
           {
@@ -186,17 +197,6 @@ export function HeaderActions(props: {
       onClick: () => setDetailsOpen(true),
       icon: <InformationCircleIcon className="h-5 w-5" />,
     },
-    ...(initialHideGraph
-      ? [
-          {
-            name: hideGraph ? 'Show graph' : 'Hide graph',
-            onClick: () => {
-              setHideGraph(!hideGraph)
-            },
-            icon: <GoGraph className="h-5 w-5" />,
-          },
-        ]
-      : []),
     ...(user
       ? [
           {
