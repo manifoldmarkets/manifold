@@ -58,7 +58,7 @@ export function SenateBar(props: {
           ([stateKey, contract]) => {
             const fill = probToColor(
               contract,
-              senate2024.filter((s) => s.state === stateKey)[0],
+              senate2024.filter((s) => s.state === stateKey)[0]
             )
 
             return (
