@@ -12,7 +12,9 @@ import { randomString } from 'common/util/random'
 import { handlers } from './routes'
 import { addOldRoutes } from './old-routes'
 
-export const allowCorsUnrestricted: RequestHandler = cors({})
+export const allowCorsUnrestricted: RequestHandler = cors({
+  origin: '*',
+})
 
 function cacheController(policy?: string): RequestHandler {
   return (_req, res, next) => {
@@ -45,7 +47,7 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
       !isLocalhost ||
       (isLocalhost && !ignoredEndpoints.some((e) => endpoint.startsWith(e)))
     ) {
-      log(`${method} ${url}`)
+      log(`${method} ${url} ${process.env.PORT}`)
     }
     metrics.inc('http/request_count', { endpoint, baseEndpoint, method })
     res.on('close', () => {
