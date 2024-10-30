@@ -2,23 +2,25 @@ import { Placement } from '@floating-ui/react'
 import clsx from 'clsx'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
-import { capitalize } from 'lodash'
-import Link from 'next/link'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Button, buttonClass } from '../buttons/button'
-import { Row } from '../layout/row'
-import { CoinNumber } from '../widgets/coin-number'
-import { Tooltip } from '../widgets/tooltip'
-import { ReactNode, useEffect, useState } from 'react'
-import { db } from 'web/lib/supabase/db'
-import { type User } from 'common/user'
 import {
   getVerificationStatus,
   PROMPT_USER_VERIFICATION_MESSAGES,
 } from 'common/gidx/user'
-import { SweepsInfographic } from '../sweeps-explainer'
+import { type User } from 'common/user'
+import { capitalize } from 'lodash'
+import Link from 'next/link'
+import { ReactNode, useEffect, useState } from 'react'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { db } from 'web/lib/supabase/db'
+import { Button, buttonClass, ColorType } from '../buttons/button'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { SweepsInfographic } from '../sweeps-explainer'
+import { CoinNumber } from '../widgets/coin-number'
+import { Tooltip } from '../widgets/tooltip'
+import { RainingCoins } from '../raining-coins'
 
 export function SweepVerifySection(props: { className?: string }) {
   const { className } = props
@@ -67,24 +69,38 @@ export function SweepVerifySection(props: { className?: string }) {
 
   return (
     <div
-      className={`border-ink-300 bg-canvas-50 text-ink-800 relative rounded-lg border px-5 py-4 text-sm shadow-lg ${className}`}
+      className={`relative rounded-lg bg-gradient-to-b from-indigo-800 to-indigo-500 px-5 py-4 text-sm text-white shadow-lg  ${className}`}
     >
-      <SweepsInfographic />
+      <RainingCoins />
+      <Col className="mb-8 mt-12 gap-4">
+        <div className=" w-full text-xl sm:text-center sm:text-2xl">
+          Start earning <b>real cash prizes</b> today.
+        </div>
 
-      <div className="text-ink-700 mt-4 text-sm">
-        Verify your identity and start earning <b>real cash prizes</b> today.
-      </div>
+        <div className="text-ink-100 dark:text-ink-900 w-full text-sm sm:text-center">
+          Winnings on {SWEEPIES_NAME} can be redeemed for USD at a{' '}
+          <CoinNumber
+            amount={1}
+            coinType="CASH"
+            className="font-semibold text-amber-300"
+            isInline
+          />{' '}
+          → <b>$1</b> rate
+        </div>
 
-      <VerifyButton className="mt-2" />
+        <Col className="gap-2">
+          <VerifyButton className=" !hover:from-amber-800 !hover:via-amber-700 !hover:to-amber-800 !mx-auto !w-fit !bg-gradient-to-r !from-amber-700 !via-amber-600 !to-amber-700 !text-white drop-shadow-lg" />
 
-      <Row className="mt-1 w-full">
-        <button
-          onClick={() => setDismissed(true)}
-          className="text-ink-500 hover:text-ink-600 mx-auto underline"
-        >
-          Dismiss
-        </button>
-      </Row>
+          <Row className=" w-full">
+            <button
+              onClick={() => setDismissed(true)}
+              className="text-ink-200 dark:text-ink-800 hover:text-ink-600 mx-auto underline"
+            >
+              Dismiss
+            </button>
+          </Row>
+        </Col>
+      </Col>
     </div>
   )
 }
@@ -152,8 +168,9 @@ export function CalloutFrame(props: {
 export function VerifyButton(props: {
   className?: string
   content?: ReactNode
+  color?: ColorType
 }) {
-  const { className, content } = props
+  const { className, content, color } = props
 
   const user = useUser()
   const amount = useKYCGiftAmount(user)
@@ -162,7 +179,7 @@ export function VerifyButton(props: {
     <Link
       href={'/gidx/register'}
       className={clsx(
-        buttonClass('xl', 'gradient-pink'),
+        buttonClass('xl', color ?? 'gradient-pink'),
         'w-full font-semibold',
         className
       )}
