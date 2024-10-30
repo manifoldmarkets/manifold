@@ -315,6 +315,7 @@ export const API = (_apiTypeCheck = {
         outcome: z.enum(['YES', 'NO']),
         answerId: z.string().optional(), // Required for multi binary markets
         deterministic: z.boolean().optional(),
+        deps: z.array(z.string()).optional(),
       })
       .strict(),
   },

@@ -1,6 +1,6 @@
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { sumBy } from 'lodash'
+import { sumBy, uniq } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -39,7 +39,6 @@ import {
   TRADE_TERM,
   TWOMBA_ENABLED,
 } from 'common/envs/constants'
-import { getFeeTotal } from 'common/fees'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { getTierFromLiquidity } from 'common/tier'
@@ -114,7 +113,6 @@ export function BuyPanel(props: {
     pseudonym,
   } = props
 
-  const user = useUser()
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
@@ -283,8 +281,7 @@ export const BuyPanelBody = (props: {
 
   const unfilledBets =
     isCpmmMulti && !shouldAnswersSumToOne
-      ? // Always filter to answer for non-sum-to-one cpmm multi
-        unfilledBetsMatchingAnswer
+      ? unfilledBetsMatchingAnswer
       : allUnfilledBets
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -324,7 +321,7 @@ export const BuyPanelBody = (props: {
             contractId: contract.id,
             answerId: multiProps?.answerToBuy.id,
             replyToCommentId,
-            deps: betDeps.current?.map((b) => b.userId),
+            deps: uniq(betDeps.current?.map((b) => b.userId)),
           })
         ),
         {
@@ -392,7 +389,7 @@ export const BuyPanelBody = (props: {
   let currentPayout: number
   let probBefore: number
   let probAfter: number
-  let fees: number
+  // let fees: number
   let filledAmount: number
 
   try {
@@ -418,9 +415,9 @@ export const BuyPanelBody = (props: {
         probBefore = answerToBuy.prob
         probAfter = getCpmmProbability(pool, p)
       }
-      fees =
-        getFeeTotal(newBetResult.totalFees) +
-        sumBy(otherBetResults, (result) => getFeeTotal(result.totalFees))
+      // fees =
+      //   getFeeTotal(newBetResult.totalFees) +
+      //   sumBy(otherBetResults, (result) => getFeeTotal(result.totalFees))
       betDeps.current = newBetResult.makers
         .map((m) => m.bet)
         .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
@@ -455,7 +452,7 @@ export const BuyPanelBody = (props: {
       filledAmount = result.amount
       probBefore = result.probBefore
       probAfter = result.probAfter
-      fees = getFeeTotal(result.fees)
+      // fees = getFeeTotal(result.fees)
       betDeps.current = result.makers
         .map((m) => m.bet)
         .concat(result.ordersToCancel)
@@ -470,7 +467,7 @@ export const BuyPanelBody = (props: {
     currentPayout = 0
     probBefore = 0
     probAfter = 0
-    fees = 0
+    // fees = 0
     filledAmount = 0
   }
 

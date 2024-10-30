@@ -25,7 +25,7 @@ import {
   formatWithToken,
 } from 'common/util/format'
 import { addObjects } from 'common/util/object'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { api } from 'web/lib/api/api'
@@ -37,6 +37,7 @@ import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
 import { MoneyDisplay } from './money-display'
 import { ContractMetric } from 'common/contract-metric'
+import { uniq } from 'lodash'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
@@ -80,9 +81,10 @@ export function SellPanel(props: {
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(contract.id)
 
-  const unfilledBets = answerId
-    ? allUnfilledBets.filter((b) => b.answerId === answerId)
-    : allUnfilledBets
+  const unfilledBets =
+    answerId && !isMultiSumsToOne
+      ? allUnfilledBets.filter((b) => b.answerId === answerId)
+      : allUnfilledBets
 
   const [displayAmount, setDisplayAmount] = useState<number | undefined>(() => {
     const probChange = isMultiSumsToOne
@@ -135,6 +137,7 @@ export function SellPanel(props: {
 
   const invested = metric?.invested ?? 0
   const costBasis = invested * saleFrac
+  const betDeps = useRef<LimitBet[]>()
 
   async function submitSell() {
     if (!user || !amount) return
@@ -147,6 +150,7 @@ export function SellPanel(props: {
       outcome: sharesOutcome,
       contractId: contract.id,
       answerId,
+      deps: uniq(betDeps.current?.map((b) => b.userId)),
     })
       .then(() => {
         setIsSubmitting(false)
@@ -178,11 +182,12 @@ export function SellPanel(props: {
     })
   }
 
-  let initialProb: number, saleValue: number, buyAmount: number
+  let initialProb: number, saleValue: number
   let fees: Fees
   let cpmmState
+  let makers: LimitBet[]
   if (isMultiSumsToOne) {
-    ;({ initialProb, cpmmState, saleValue, fees, buyAmount } =
+    ;({ initialProb, cpmmState, saleValue, fees, makers } =
       getSaleResultMultiSumsToOne(
         contract,
         answerId!,
@@ -192,7 +197,7 @@ export function SellPanel(props: {
         balanceByUserId
       ))
   } else {
-    ;({ initialProb, cpmmState, saleValue, fees, buyAmount } = getSaleResult(
+    ;({ initialProb, cpmmState, saleValue, fees, makers } = getSaleResult(
       contract,
       sellQuantity,
       sharesOutcome,
@@ -201,7 +206,7 @@ export function SellPanel(props: {
       answer
     ))
   }
-
+  betDeps.current = makers
   const totalFees = getFeeTotal(fees)
   const netProceeds = saleValue - loanPaid
   const profit = saleValue - costBasis
@@ -388,7 +393,14 @@ const getSaleResult = (
         collectedFees: contract.collectedFees,
       }
 
-  const { cpmmState, saleValue, buyAmount, fees } = calculateCpmmSale(
+  const {
+    cpmmState,
+    saleValue,
+    buyAmount,
+    fees,
+    makers: wholeMakers,
+    ordersToCancel,
+  } = calculateCpmmSale(
     initialCpmmState,
     shares,
     outcome,
@@ -397,7 +409,7 @@ const getSaleResult = (
   )
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
   const probChange = Math.abs(resultProb - initialProb)
-
+  const makers = wholeMakers.map((m) => m.bet).concat(ordersToCancel)
   return {
     saleValue,
     buyAmount,
@@ -406,6 +418,7 @@ const getSaleResult = (
     resultProb,
     probChange,
     fees,
+    makers,
   }
 }
 
@@ -438,7 +451,11 @@ export const getSaleResultMultiSumsToOne = (
     totalFees,
     otherBetResults.map((r) => r.totalFees).reduce(addObjects, noFees)
   )
-
+  const makers = newBetResult.makers
+    .map((m) => m.bet)
+    .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
+    .concat(newBetResult.ordersToCancel)
+    .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
   return {
     saleValue,
     buyAmount,
@@ -447,6 +464,7 @@ export const getSaleResultMultiSumsToOne = (
     resultProb,
     probChange,
     fees,
+    makers,
   }
 }
 
