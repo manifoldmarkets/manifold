@@ -82,7 +82,9 @@ export const NativeMessageProvider = (props: { children: React.ReactNode }) => {
         await handlePushNotificationPermissionStatus(status)
       } else if (type === 'pushToken') {
         const { token } = data as MesageTypeMap['pushToken']
-        await setPushToken(token)
+        if (token !== privateUser?.pushToken) {
+          await setPushToken(token)
+        }
       } else if (type === 'notification') {
         const notification = data as Notification
         // TODO: mark the notification as seen

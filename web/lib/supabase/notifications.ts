@@ -1,5 +1,6 @@
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { api } from '../api/api'
+import { DELETE_PUSH_TOKEN } from 'common/notification'
 
 export const setPushToken = async (pushToken: string) => {
   try {
@@ -15,7 +16,7 @@ export const handlePushNotificationPermissionStatus = async (
   status: 'denied' | 'undetermined'
 ) => {
   const privateUser = await api('me/private')
-  if (!privateUser || privateUser.pushToken) return
+  if (!privateUser) return
   if (status === 'denied') {
     await setPushTokenRequestDenied()
   }
@@ -26,5 +27,6 @@ export const setPushTokenRequestDenied = async () => {
   await api('me/private/update', {
     rejectedPushNotificationsOn: Date.now(),
     interestedInPushNotifications: false,
+    pushToken: DELETE_PUSH_TOKEN,
   })
 }

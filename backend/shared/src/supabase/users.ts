@@ -87,7 +87,7 @@ export const updateUser = async (
 }
 
 // private_users has 2 columns that aren't in the data column
-type UpdateType =
+export type UpdateType =
   | Partial<PrivateUser>
   | {
       [key in keyof PrivateUser]?: FieldValFunction

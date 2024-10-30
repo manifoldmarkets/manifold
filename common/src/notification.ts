@@ -506,3 +506,5 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'bet_fill',
   'mana_payment_received',
 ]
+
+export const DELETE_PUSH_TOKEN = 'delete'

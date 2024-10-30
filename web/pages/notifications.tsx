@@ -32,10 +32,10 @@ import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { XIcon } from '@heroicons/react/outline'
-import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { track } from 'web/lib/service/analytics'
+import { useNativeInfo } from 'web/components/native-message-provider'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -43,7 +43,7 @@ export default function NotificationsPage() {
   useRedirectIfSignedOut()
 
   const [navigateToSection, setNavigateToSection] = useState<string>()
-  const { isNative } = getNativePlatform()
+  const { isNative } = useNativeInfo()
   const router = useRouter()
   useEffect(() => {
     if (!router.isReady) return
@@ -174,7 +174,12 @@ function NotificationsContent(props: {
             {
               queryString: 'Settings',
               title: 'Settings',
-              content: <NotificationSettings navigateToSection={section} />,
+              content: (
+                <NotificationSettings
+                  navigateToSection={section}
+                  privateUser={privateUser}
+                />
+              ),
             },
           ]}
         />
@@ -250,6 +255,7 @@ export function NotificationsList(props: {
   }, [JSON.stringify(groupedNotifications), page])
 
   const isPageVisible = useIsPageVisible()
+  const { isNative } = useNativeInfo()
 
   // Mark all notifications as seen. Rerun as new notifications come in.
   useEffect(() => {
@@ -274,7 +280,7 @@ export function NotificationsList(props: {
           setPage={setPage}
         />
       )}
-      {privateUser && groupedNotifications && user && (
+      {privateUser && groupedNotifications && user && isNative && (
         <PushNotificationsModal
           user={user}
           privateUser={privateUser}

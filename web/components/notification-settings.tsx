@@ -32,13 +32,13 @@ import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SwitchSetting } from 'web/components/switch-setting'
-import { getIsNative } from 'web/lib/native/is-native'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { api } from 'web/lib/api/api'
+import { useNativeInfo } from './native-message-provider'
 
 const emailsEnabled: Array<notification_preference> = [
   'all_comments_on_watched_markets',
@@ -190,15 +190,16 @@ export const SectionRoutingContext = createContext<string | undefined>(
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
+  privateUser: PrivateUser
 }) {
-  const { navigateToSection } = props
+  const { navigateToSection, privateUser } = props
   const user = useUser()
   const [showWatchModal, setShowWatchModal] = useState(false)
 
   return (
     <SectionRoutingContext.Provider value={navigateToSection}>
       <Col className={'gap-6 p-2'}>
-        <PushNotificationsBanner />
+        <PushNotificationsBanner privateUser={privateUser} />
         <Row className={'text-ink-700 gap-2 text-xl'}>
           {user ? (
             <UserWatchedContractsButton user={user} />
@@ -422,15 +423,17 @@ export const NotificationSection = (props: {
   )
 }
 
-export const PushNotificationsBanner = () => {
-  const privateUser = usePrivateUser()!
+export const PushNotificationsBanner = (props: {
+  privateUser: PrivateUser
+}) => {
+  const { privateUser } = props
   const {
     interestedInPushNotifications,
     rejectedPushNotificationsOn,
     pushToken,
   } = privateUser
 
-  const isNative = getIsNative()
+  const { isNative } = useNativeInfo()
 
   if (pushToken || !isNative) return <div />
 
