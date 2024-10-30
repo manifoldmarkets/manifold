@@ -852,22 +852,9 @@ Sell shares in a market.
 
 Parameters:
 
-- `outcome`: `YES` or `NO`. Optional. Which kind of shares you are selling - defaults to the kind you have.
+- `outcome`: `YES` or `NO`. Which kind of shares you are selling - defaults to the kind you have.
 - `shares`: Optional. How many shares you are selling - defaults to all.
 - `answerId`: Required on multi choice. The ID of the answer you are selling your position in.
-
-[Requires Auth](#authentication).
-
-Response type: A `Bet`
-
-### `POST /v0/sell-shares-dpm`
-
-Sell a position in a multi choice or "free response" market that's on the deprecated contract mechanism `dpm-2`. The mechanism is inferior in that you can only bet YES and you can only sell an entire bet.
-
-Parameters:
-
-- `contractId`: the ID of the market
-- `betId`: the ID of the bet to sell
 
 [Requires Auth](#authentication).
 
@@ -1192,6 +1179,7 @@ Parameters:
 
 ## Changelog
 
+- 2024-10-30: Remove undefined parameter from `/v0/market/[marketId]/sell` and remove `sell-shares-dpm` endpoint
 - 2024-02-01: Add Manifold Love endpoints `/get-lovers`, `/get-lover-answers?userId=[user_id]`, `/get-compatibility-questions`
 - 2023-12-19: Formatting & copy improvements. Updated parameters and return types.
 - 2023-12-18: `manifold.markets/api` -> `api.manifold.markets`. Please migrate old code.
