@@ -3,8 +3,8 @@
 FROM node:19-alpine
 WORKDIR /usr/src/app
 
-# Install PM2 globally
-RUN yarn global add pm2
+# Install PM2 and nginx globally
+RUN apk add --no-cache nginx && yarn global add pm2
 
 # first get dependencies in for efficient docker layering
 COPY dist/package.json dist/yarn.lock ./
@@ -13,11 +13,11 @@ RUN yarn install --frozen-lockfile --production
 # then copy over typescript payload
 COPY dist ./
 
-# Copy the PM2 ecosystem configuration
+# Copy the PM2 ecosystem configuration and nginx config
 COPY ecosystem.config.js ./
+COPY nginx.conf /etc/nginx/nginx.conf
 
-ENV PORT=80
 EXPOSE 80/tcp
 
-# # Use PM2 to run the application with the ecosystem config
-CMD ["pm2-runtime", "ecosystem.config.js"]
+# Start both nginx and PM2
+CMD nginx && pm2-runtime ecosystem.config.js
