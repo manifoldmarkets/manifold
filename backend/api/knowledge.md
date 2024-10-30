@@ -9,6 +9,14 @@ This directory contains the implementation of various API endpoints for the Mani
 - We use Supabase for database operations.
 - Authentication is handled using the `APIHandler` type, which automatically manages user authentication based on the schema definition.
 
+## Architecture
+
+- The API runs in a Docker container with nginx for load balancing
+- The API is split into write and read-only instances:
+  - Write instance (port 8090): Handles POST endpoints and websockets
+  - Read-only instances (ports 8091-8093): Handles GET and OPTIONS endpoints
+- We use PM2 cluster mode to run multiple instances on different cores
+
 ## Adding a New API Endpoint
 
 To add a new API endpoint, follow these steps:
