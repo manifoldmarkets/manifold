@@ -155,9 +155,11 @@ export function AnswersPanel(props: {
       answers.length <= 5
   )
 
+  const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
+
   const sortedAnswers = useMemo(
     () => sortAnswers(contract, answers, sort),
-    [answers, contract.resolutions, contract.shouldAnswersSumToOne, sort]
+    [answers, resolutions, shouldAnswersSumToOne, sort]
   )
   const searchedAnswers = useMemo(() => {
     if (!answers.length || !query) return []
@@ -194,7 +196,6 @@ export function AnswersPanel(props: {
   const allResolved = getAllResolved(contract, answers)
 
   const [shouldShowPositions, setShouldShowPositions] = useState(!allResolved)
-  const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
 
   const moreCount = answers.length - answersToShow.length
   // Note: Hide answers if there is just one "Other" answer.
@@ -508,8 +509,7 @@ export function SimpleAnswerBars(props: {
 }) {
   const { contract, maxAnswers = Infinity, barColor, feedReason } = props
 
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+  const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
   const user = useUser()
   const answers = contract.answers.map((a) => ({
     ...a,
