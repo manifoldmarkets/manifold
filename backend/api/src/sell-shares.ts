@@ -5,7 +5,7 @@ import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { executeNewBetResult } from './place-bet'
 import { onCreateBets } from 'api/on-create-bet'
 import { log } from 'shared/utils'
-import { runTransactionWithRetries } from 'shared/transaction-with-retries'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { LimitBet } from 'common/bet'
@@ -188,29 +188,10 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     )
   })
 
-  const {
-    newBet,
-    betId,
-    makers,
-    fullBets,
-    allOrdersToCancel,
-    streakIncremented,
-    updatedMetrics,
-    user,
-    contract,
-  } = result
+  const { newBet, betId } = result
 
   const continuation = async () => {
-    await onCreateBets(
-      fullBets,
-      contract,
-      user,
-      allOrdersToCancel,
-      makers,
-      streakIncremented,
-      undefined,
-      updatedMetrics
-    )
+    await onCreateBets(result)
   }
   return { result: { ...newBet, betId }, continue: continuation }
 }

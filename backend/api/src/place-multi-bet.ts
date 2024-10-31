@@ -5,7 +5,7 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
 import { log } from 'shared/utils'
-import { runTransactionWithRetries } from 'shared/transaction-with-retries'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   fetchContractBetDataAndValidate,
@@ -108,21 +108,25 @@ export const placeMultiBetMain = async (
 
   const continuation = async () => {
     const fullBets = results.flatMap((result) => result.fullBets)
-    const allOrdersToCancel = results.flatMap(
-      (result) => result.allOrdersToCancel
+    const cancelledLimitOrders = results.flatMap(
+      (result) => result.cancelledLimitOrders
     )
     const makers = results.flatMap((result) => result.makers ?? [])
     const user = results[0].user
-    await onCreateBets(
+    await onCreateBets({
       fullBets,
       contract,
       user,
-      allOrdersToCancel,
+      cancelledLimitOrders,
       makers,
-      results.some((r) => r.streakIncremented),
-      results.find((r) => r.bonusTxn)?.bonusTxn,
-      undefined
-    )
+      streakIncremented: results.some((r) => r.streakIncremented),
+      bonusTxn: results.find((r) => r.bonusTxn)?.bonusTxn,
+      reloadMetrics: true,
+      updatedMetrics: [],
+      userUpdates: undefined,
+      contractUpdate: undefined,
+      answerUpdates: undefined,
+    })
   }
 
   return {

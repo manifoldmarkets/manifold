@@ -196,17 +196,17 @@ export const bulkIncrementBalances = async (
   const results = await db.many(query)
   broadcastUserUpdates(results)
 }
-export const broadcastUserUpdates = (
-  userUpdates: Pick<
-    Row<'users'>,
-    | 'id'
-    | 'balance'
-    | 'cash_balance'
-    | 'spice_balance'
-    | 'total_deposits'
-    | 'total_cash_deposits'
-  >[]
-) => {
+
+export type UserUpdate = Pick<
+  Row<'users'>,
+  | 'id'
+  | 'balance'
+  | 'cash_balance'
+  | 'spice_balance'
+  | 'total_deposits'
+  | 'total_cash_deposits'
+>
+export const broadcastUserUpdates = (userUpdates: UserUpdate[]) => {
   for (const row of userUpdates) {
     broadcastUpdatedUser({
       id: row.id,

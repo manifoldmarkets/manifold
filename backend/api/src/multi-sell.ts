@@ -6,7 +6,7 @@ import { getContract, getUser, log } from 'shared/utils'
 import { groupBy, mapValues, sum, sumBy } from 'lodash'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { incrementBalance } from 'shared/supabase/users'
-import { runTransactionWithRetries } from 'shared/transaction-with-retries'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
@@ -36,10 +36,6 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     if (isResolved) throw new APIError(403, 'Market is resolved.')
     if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract))
       throw new APIError(400, 'Contract type/mechanism not supported')
-
-    log(
-      `Checking for limit orders and bets in sellshares for user ${uid} on contract id ${contractId}.`
-    )
 
     const answersToSell = contract.answers.filter((a) =>
       answerIds.includes(a.id)
@@ -133,21 +129,25 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
 
   const continuation = async () => {
     const fullBets = results.flatMap((result) => result.fullBets)
-    const allOrdersToCancel = results.flatMap(
-      (result) => result.allOrdersToCancel
+    const cancelledLimitOrders = results.flatMap(
+      (result) => result.cancelledLimitOrders
     )
     const makers = results.flatMap((result) => result.makers ?? [])
     const user = results[0].user
-    await onCreateBets(
+    await onCreateBets({
       fullBets,
-      results[0].contract,
+      contract: results[0].contract,
       user,
-      allOrdersToCancel,
+      cancelledLimitOrders,
       makers,
-      results.some((b) => b.streakIncremented),
-      undefined,
-      undefined
-    )
+      streakIncremented: results.some((b) => b.streakIncremented),
+      bonusTxn: results.find((r) => r.bonusTxn)?.bonusTxn,
+      reloadMetrics: true,
+      updatedMetrics: [],
+      userUpdates: undefined,
+      contractUpdate: undefined,
+      answerUpdates: undefined,
+    })
   }
 
   return {

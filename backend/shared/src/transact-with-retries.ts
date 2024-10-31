@@ -10,10 +10,10 @@ export const runTransactionWithRetries = async <T>(
   callback: (trans: SupabaseTransaction) => Promise<T>
 ) => {
   const pg = createSupabaseDirectClient()
-  return transactionWithRetries(pg, 3, callback)
+  return transactWithRetries(pg, 3, callback)
 }
 
-async function transactionWithRetries<T>(
+async function transactWithRetries<T>(
   pg: SupabaseDirectClient,
   maxAttempts = 5,
   fn: (t: SupabaseTransaction) => Promise<T>
@@ -25,6 +25,7 @@ async function transactionWithRetries<T>(
       log(`Attempt ${attempt} of ${maxAttempts}`)
       return await pg.tx({ mode: SERIAL_MODE }, fn)
     } catch (error: any) {
+      log.error(`Attempt ${attempt} of ${maxAttempts} failed: ${error.message}`)
       const isRetryable =
         error.code === '40001' || // serialization_failure
         error.code === '40P01' // deadlock_detected

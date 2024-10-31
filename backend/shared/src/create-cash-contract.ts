@@ -12,7 +12,7 @@ import { randomString } from 'common/util/random'
 import { getNewContract } from 'common/new-contract'
 import { convertContract } from 'common/supabase/contracts'
 import { clamp } from 'lodash'
-import { runTransactionWithRetries } from './transaction-with-retries'
+import { runTransactionWithRetries } from './transact-with-retries'
 
 // cribbed from backend/api/src/create-market.ts
 

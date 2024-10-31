@@ -16,7 +16,7 @@ import {
 } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import { getAnswer, updateAnswer, updateAnswers } from 'shared/supabase/answers'
-import { runTransactionWithRetries } from 'shared/transaction-with-retries'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getContract, log } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
 

@@ -1,7 +1,7 @@
 import { removeCpmmLiquidity } from 'common/calculate-cpmm'
 import { getTierFromLiquidity } from 'common/tier'
 import { formatMoneyWithDecimals } from 'common/util/format'
-import { runTransactionWithRetries } from 'shared/transaction-with-retries'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { runTxn } from 'shared/txn/run-txn'

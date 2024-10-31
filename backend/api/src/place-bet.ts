@@ -1,6 +1,6 @@
-import { first, isEqual, mapValues, maxBy, sumBy } from 'lodash'
+import { first, isEqual, maxBy, sumBy } from 'lodash'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
-import { Contract, CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
+import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
 import {
   BetInfo,
@@ -25,6 +25,7 @@ import {
   broadcastUserUpdates,
   bulkIncrementBalancesQuery,
   incrementStreakQuery,
+  UserUpdate,
 } from 'shared/supabase/users'
 import { convertBet } from 'common/supabase/bets'
 import {
@@ -46,10 +47,8 @@ import {
 } from 'shared/helpers/user-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import {
-  broadcastOrders,
   broadcastUpdatedAnswers,
   broadcastUpdatedContract,
-  broadcastUpdatedUser,
 } from 'shared/websockets/helpers'
 import { bulkUpdateQuery, updateDataQuery } from 'shared/supabase/utils'
 import { convertTxn } from 'common/supabase/txns'
@@ -60,7 +59,7 @@ import {
   getUniqueBettorBonusQuery,
   updateMakers,
 } from 'api/helpers/bets'
-import { runTransactionWithRetries } from 'shared/transaction-with-retries'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -168,34 +167,13 @@ export const placeBetMain = async (
     )
   })
 
-  const {
-    newBet,
-    fullBets,
-    allOrdersToCancel,
-    betId,
-    makers,
-    betGroupId,
-    streakIncremented,
-    bonusTxn,
-    updatedMetrics,
-    contract,
-    user,
-  } = result
+  const { newBet, betId, betGroupId } = result
 
   log(`Main transaction finished - auth ${uid}.`)
   metrics.inc('app/bet_count', { contract_id: contractId })
 
   const continuation = async () => {
-    await onCreateBets(
-      fullBets,
-      contract,
-      user,
-      allOrdersToCancel,
-      makers,
-      streakIncremented,
-      bonusTxn,
-      updatedMetrics
-    )
+    await onCreateBets(result)
   }
 
   const time = Date.now() - startTime
@@ -243,9 +221,6 @@ export const calculateBetResult = (
       limitProb = Math.round(limitProb * 100) / 100
     }
 
-    log(
-      `Checking for limit orders in placebet for user ${user.id} on contract id ${contractId}.`
-    )
     return getBinaryCpmmBetInfo(
       contract,
       outcome,
@@ -373,15 +348,19 @@ export const executeNewBetResult = async (
       newBet,
       betId: betRow.bet_id,
       makers,
-      allOrdersToCancel: [],
+      cancelledLimitOrders: [],
       fullBets: [convertBet(betRow)],
       user,
       betGroupId,
       streakIncremented: false,
+      updatedMetrics: [],
       bonusTxn: undefined,
-      updatedMetrics: contractMetrics,
+      userUpdates: undefined,
+      contractUpdate: undefined,
+      answerUpdates: undefined,
     }
   }
+  const isNumberContract = contract.outcomeType === 'NUMBER'
   const apiFee = isApi ? FLAT_TRADE_FEE : 0
   const betsToInsert: Bet[] = [candidateBet]
   const allOrdersToCancel: LimitBet[] = filterDefined(ordersToCancel ?? [])
@@ -406,7 +385,7 @@ export const executeNewBetResult = async (
     contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
   let bonusTxnQuery = 'select 1 where false'
   if (
-    (contract.outcomeType !== 'NUMBER' || firstBetInMultiBet) &&
+    (!isNumberContract || firstBetInMultiBet) &&
     !contractMetrics.find(
       (m) =>
         m.userId === user.id &&
@@ -462,25 +441,27 @@ export const executeNewBetResult = async (
     betsToInsert.push(...otherBetsToInsert)
   }
   const isUniqueBettor =
-    (contract.outcomeType !== 'NUMBER' || firstBetInMultiBet) &&
+    (!isNumberContract || firstBetInMultiBet) &&
     !contractMetrics.find((m) => m.userId === user.id)
   const lastBetTime =
     maxBy(betsToInsert, (b) => b.createdTime)?.createdTime ?? Date.now()
-  const contractUpdate: Partial<MarketContract> = removeUndefinedProps({
-    id: contract.id,
-    lastBetTime,
-    volume: contract.volume + sumBy(betsToInsert, (b) => Math.abs(b.amount)),
-    lastUpdatedTime: lastBetTime,
-    uniqueBettorCount: contract.uniqueBettorCount + (isUniqueBettor ? 1 : 0),
-    ...(contract.mechanism === 'cpmm-1'
-      ? {
-          pool: newPool,
-          p: newP,
-          totalLiquidity: newTotalLiquidity,
-          prob: newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
-        }
-      : {}),
-  })
+  const contractUpdate: Partial<MarketContract> & { id: string } =
+    removeUndefinedProps({
+      id: contract.id,
+      lastBetTime,
+      volume: contract.volume + sumBy(betsToInsert, (b) => Math.abs(b.amount)),
+      lastUpdatedTime: lastBetTime,
+      uniqueBettorCount: contract.uniqueBettorCount + (isUniqueBettor ? 1 : 0),
+      ...(contract.mechanism === 'cpmm-1'
+        ? {
+            pool: newPool,
+            p: newP,
+            totalLiquidity: newTotalLiquidity,
+            prob:
+              newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
+          }
+        : {}),
+    })
   // Multi-cpmm-1 contract
   if (newBet.answerId && newPool) {
     const { YES: poolYes, NO: poolNo } = newPool
@@ -494,7 +475,7 @@ export const executeNewBetResult = async (
   }
 
   const metrics =
-    contract.outcomeType === 'NUMBER' && !firstBetInMultiBet
+    isNumberContract && !firstBetInMultiBet
       ? await getContractMetrics(
           pgTrans,
           [user.id],
@@ -574,44 +555,35 @@ export const executeNewBetResult = async (
     ${bonusTxnQuery}; --8
      `
   )
-  const endTime = Date.now()
-  log(`placeBet bulk insert/update took ${endTime - startTime}ms`)
-  const userUpdates = results[0]
+  log(`placeBet bulk insert/update took ${Date.now() - startTime}ms`)
+  const userUpdates = results[0] as UserUpdate[]
   const streakIncremented = results[1][0].streak_incremented
-  broadcastUserUpdates(userUpdates)
-  broadcastUpdatedUser(
-    removeUndefinedProps({
-      id: user.id,
-      currentBettingStreak: streakIncremented
-        ? (user?.currentBettingStreak ?? 0) + 1
-        : undefined,
-      lastBetTime: newBet.createdTime,
-    })
-  )
   const newContract = results[4].map(convertContract)[0]
-  log('updated contract', newContract)
-  const updatedValues = mapValues(
-    contractUpdate,
-    (_, k) => newContract[k as keyof Contract] ?? null
-  ) as any
-  broadcastUpdatedContract(newContract.visibility, updatedValues)
-  broadcastUpdatedAnswers(newContract.id, answerUpdates)
-  broadcastOrders(cancelledLimitOrders)
   const bonusTxn = first(results[8].map(convertTxn)) as
     | UniqueBettorBonusTxn
     | undefined
+
+  // On normal contracts, we do this in on-create-bet
+  if (isNumberContract) {
+    broadcastUserUpdates(userUpdates)
+    broadcastUpdatedContract(newContract.visibility, contractUpdate)
+    broadcastUpdatedAnswers(newContract.id, answerUpdates)
+  }
 
   return {
     contract,
     newBet,
     betId: betsToInsert[0].id,
     makers,
-    allOrdersToCancel,
+    cancelledLimitOrders: cancelledLimitOrders,
     fullBets: insertedBets,
     user,
     betGroupId,
     streakIncremented,
     bonusTxn,
     updatedMetrics: bettorRedemptionUpdatedMetrics,
+    answerUpdates,
+    contractUpdate,
+    userUpdates,
   }
 }

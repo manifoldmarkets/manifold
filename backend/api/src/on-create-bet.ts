@@ -1,11 +1,6 @@
 import { log, getUsers, revalidateContractStaticProps } from 'shared/utils'
-import { Bet, LimitBet, maker } from 'common/bet'
-import {
-  CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-  Contract,
-} from 'common/contract'
+import { Bet, LimitBet } from 'common/bet'
+import { Contract } from 'common/contract'
 import { humanish, User } from 'common/user'
 import { groupBy, keyBy, sortBy, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
@@ -47,35 +42,79 @@ import { debounce } from 'api/helpers/debounce'
 import {
   broadcastNewBets,
   broadcastOrders,
+  broadcastUpdatedAnswers,
+  broadcastUpdatedContract,
   broadcastUpdatedMetrics,
+  broadcastUpdatedUser,
 } from 'shared/websockets/helpers'
 import { followContractInternal } from 'api/follow-contract'
-import { ContractMetric } from 'common/contract-metric'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
+import { removeUndefinedProps } from 'common/util/object'
+import { executeNewBetResult } from './place-bet'
+import { broadcastUserUpdates } from 'shared/supabase/users'
 
-export const onCreateBets = async (
-  bets: Bet[],
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
-  originalBettor: User,
-  ordersToCancel: LimitBet[] | undefined,
-  makers: maker[] | undefined,
-  streakIncremented: boolean,
-  txn: UniqueBettorBonusTxn | undefined,
-  updatedMetrics: ContractMetric[] | undefined
-) => {
+type ExecuteNewBetResult = Omit<
+  Awaited<ReturnType<typeof executeNewBetResult>>,
+  'betId' | 'betGroupId' | 'newBet'
+> & {
+  reloadMetrics?: boolean
+}
+
+export const onCreateBets = async (result: ExecuteNewBetResult) => {
+  const {
+    fullBets: bets,
+    contract,
+    user: originalBettor,
+    cancelledLimitOrders,
+    makers,
+    streakIncremented,
+    bonusTxn: creatorBonusTxn,
+    reloadMetrics,
+    userUpdates,
+    contractUpdate,
+    answerUpdates,
+  } = result
+
   const pg = createSupabaseDirectClient()
-  broadcastNewBets(contract.id, contract.visibility, bets)
-  if (!updatedMetrics) {
-    updatedMetrics = await getContractMetrics(
-      pg,
-      [originalBettor.id],
-      contract.id,
-      [],
-      true
+  if (userUpdates) {
+    broadcastUserUpdates(userUpdates)
+  }
+  if (contractUpdate) {
+    broadcastUpdatedContract(contract.visibility, contractUpdate)
+  }
+  if (answerUpdates) {
+    broadcastUpdatedAnswers(contract.id, answerUpdates)
+  }
+  if (cancelledLimitOrders) {
+    broadcastOrders(cancelledLimitOrders)
+    await Promise.all(
+      cancelledLimitOrders.map((order) => {
+        createLimitBetCanceledNotification(
+          originalBettor,
+          order.userId,
+          order,
+          makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
+          contract
+        )
+      })
     )
   }
+  broadcastUpdatedUser(
+    removeUndefinedProps({
+      id: originalBettor.id,
+      currentBettingStreak: streakIncremented
+        ? (originalBettor?.currentBettingStreak ?? 0) + 1
+        : undefined,
+      lastBetTime: bets[0].createdTime,
+    })
+  )
+
+  broadcastNewBets(contract.id, contract.visibility, bets)
+  const updatedMetrics = reloadMetrics
+    ? await getContractMetrics(pg, [originalBettor.id], contract.id, [], true)
+    : result.updatedMetrics
   broadcastUpdatedMetrics(updatedMetrics)
-  debouncedContractUpdates(contract)
+  debounceRevalidateContractStaticProps(contract)
   const matchedBetIds = filterDefined(
     bets.flatMap((b) => b.fills?.map((f) => f.matchedBetId) ?? [])
   )
@@ -86,18 +125,6 @@ export const onCreateBets = async (
     )) as LimitBet[]
     broadcastOrders(updatedLimitBets)
   }
-
-  await Promise.all(
-    ordersToCancel?.map((order) => {
-      createLimitBetCanceledNotification(
-        originalBettor,
-        order.userId,
-        order,
-        makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
-        contract
-      )
-    }) ?? []
-  )
 
   const usersToRefreshMetrics = bets.some((b) => !b.isApi && b.shares !== 0)
     ? [originalBettor]
@@ -138,20 +165,21 @@ export const onCreateBets = async (
       (await payBettingStreak(originalBettor, earliestBet, contract)),
     replyBet &&
       (await handleBetReplyToComment(replyBet, contract, originalBettor, pg)),
-    followContractInternal(pg, contract.id, true, originalBettor.id),
-    txn &&
+    creatorBonusTxn &&
+      followContractInternal(pg, contract.id, true, originalBettor.id),
+    creatorBonusTxn &&
       sendUniqueBettorNotificationToCreator(
         contract,
         originalBettor,
         earliestBet,
-        txn,
+        creatorBonusTxn,
         nonRedemptionNonApiBets
       ),
     addToLeagueIfNotInOne(pg, originalBettor.id),
   ])
 }
 
-const debouncedContractUpdates = (contract: Contract) => {
+const debounceRevalidateContractStaticProps = (contract: Contract) => {
   const writeUpdates = async () => {
     await revalidateContractStaticProps(contract)
     log('Contract static props revalidated.')

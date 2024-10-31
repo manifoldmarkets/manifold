@@ -40,7 +40,7 @@ import {
 import { getTierFromLiquidity } from 'common/tier'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
-import { runTransactionWithRetries } from 'shared/transaction-with-retries'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import { followContractInternal } from 'api/follow-contract'
 import { ContractMetric } from 'common/contract-metric'
