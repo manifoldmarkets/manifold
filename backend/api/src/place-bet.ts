@@ -1,4 +1,4 @@
-import { first, mapValues, maxBy, sumBy } from 'lodash'
+import { first, isEqual, mapValues, maxBy, sumBy } from 'lodash'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { Contract, CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
@@ -546,9 +546,16 @@ export const executeNewBetResult = async (
     ...bettorRedemptionBetsToInsert,
   ]
   const insertBetsQuery = bulkInsertBetsQuery(insertedBets)
-  const metricsQuery = bulkUpdateContractMetricsQuery(
-    bettorRedemptionUpdatedMetrics
-  )
+  const newMetrics = bettorRedemptionUpdatedMetrics.filter((m) => {
+    const existingMetric = metrics.find(
+      (m2) =>
+        m2.userId === m.userId &&
+        m2.answerId === m.answerId &&
+        m2.contractId === m.contractId
+    )
+    return !existingMetric || !isEqual(existingMetric, m)
+  })
+  const metricsQuery = bulkUpdateContractMetricsQuery(newMetrics)
   const streakIncrementedQuery = incrementStreakQuery(user, newBet.createdTime)
   const contractUpdateQuery = updateDataQuery('contracts', 'id', contractUpdate)
   const answerUpdateQuery = bulkUpdateQuery(

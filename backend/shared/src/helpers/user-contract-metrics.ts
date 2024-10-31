@@ -1,7 +1,5 @@
 import { groupBy, uniq, uniqBy } from 'lodash'
-import {
-  Contract,
-} from 'common/contract'
+import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import {
   calculateAnswerMetricsWithNewBetsOnly,
@@ -85,11 +83,12 @@ export function bulkUpdateContractMetricsQuery(
 
 export const bulkUpdateUserMetricsWithNewBetsOnly = async (
   pgTrans: SupabaseDirectClient,
-  marginalBets: MarginalBet[],
+  newBets: MarginalBet[],
   contractMetrics: ContractMetric[],
   writeUpdates: boolean
 ) => {
-  if (marginalBets.every((b) => b.shares === 0 && b.amount === 0)) {
+  const marginalBets = newBets.filter((b) => b.amount !== 0 || b.shares !== 0)
+  if (marginalBets.length === 0) {
     return contractMetrics
   }
   const userIds = uniq(marginalBets.map((b) => b.userId))
@@ -100,8 +99,6 @@ export const bulkUpdateUserMetricsWithNewBetsOnly = async (
   // TODO: remove this bit if we never see the missing metrics log
   const missingMetricsBets = marginalBets.filter(
     (b) =>
-      b.amount !== 0 &&
-      b.shares !== 0 &&
       !contractMetrics.some(
         (m) =>
           m.userId === b.userId &&
