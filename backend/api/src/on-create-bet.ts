@@ -76,17 +76,33 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
   } = result
 
   const pg = createSupabaseDirectClient()
+  const startNewBets = Date.now()
+  broadcastNewBets(contract.id, contract.visibility, bets)
+  log(`Broadcasting new bets took ${Date.now() - startNewBets}ms`)
   if (userUpdates) {
+    const startUserUpdates = Date.now()
     broadcastUserUpdates(userUpdates)
+    log(`Broadcasting user updates took ${Date.now() - startUserUpdates}ms`)
   }
   if (contractUpdate) {
+    const startContractUpdate = Date.now()
     broadcastUpdatedContract(contract.visibility, contractUpdate)
+    log(
+      `Broadcasting contract update took ${Date.now() - startContractUpdate}ms`
+    )
   }
   if (answerUpdates) {
+    const startAnswerUpdates = Date.now()
     broadcastUpdatedAnswers(contract.id, answerUpdates)
+    log(`Broadcasting answer updates took ${Date.now() - startAnswerUpdates}ms`)
   }
   if (cancelledLimitOrders) {
+    const startCancelOrders = Date.now()
     broadcastOrders(cancelledLimitOrders)
+    log(
+      `Broadcasting cancelled orders took ${Date.now() - startCancelOrders}ms`
+    )
+    const startNotifications = Date.now()
     await Promise.all(
       cancelledLimitOrders.map((order) => {
         createLimitBetCanceledNotification(
@@ -98,6 +114,11 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
         )
       })
     )
+    log(
+      `Creating limit order cancel notifications took ${
+        Date.now() - startNotifications
+      }ms`
+    )
   }
   broadcastUpdatedUser(
     removeUndefinedProps({
@@ -108,8 +129,6 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
       lastBetTime: bets[0].createdTime,
     })
   )
-
-  broadcastNewBets(contract.id, contract.visibility, bets)
   const updatedMetrics = reloadMetrics
     ? await getContractMetrics(pg, [originalBettor.id], contract.id, [], true)
     : result.updatedMetrics
