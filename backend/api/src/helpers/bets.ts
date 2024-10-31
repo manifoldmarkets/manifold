@@ -53,34 +53,61 @@ export const fetchContractBetDataAndValidate = async (
       : 'answerId' in body && body.answerId !== undefined
       ? [body.answerId]
       : undefined
+
+  const isSumsToOne = `(select coalesce((data->>'shouldAnswersSumToOne')::boolean, false) from contracts where id = $2)`
   const whereLimitOrderBets = `
-    (
-     ($3 is null or b.answer_id in ($3:list)) or
-     (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
-    ) 
-    and not b.is_filled and not b.is_cancelled
-    and (
-      $4 != b.outcome or
-      (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
+    b.contract_id = $2 and not b.is_filled and not b.is_cancelled and (
+      -- For sums to one markets:
+      (${isSumsToOne} and (
+        -- Get opposite outcome bets for selected answers
+        ($3 is null or b.answer_id in ($3:list)) and b.outcome != $4
+        or
+        -- Get same outcome bets for other answers
+        ($3 is null or b.answer_id not in ($3:list)) and b.outcome = $4
+      ))
+      or
+      -- For non-sums to one markets, just get opposite outcome bets
+      (not ${isSumsToOne} and ($3 is null or b.answer_id in ($3:list)) and b.outcome != $4)
     )
-    and b.contract_id = $2
-    `
+  `
+
   const queries = `
     select * from users where id = $1;
     select ${contractColumnsToSelect} from contracts where id = $2;
     select * from answers
       where contract_id = $2 and (
-          ($3 is null or id in ($3:list)) or
-          (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
-          );
+        $3 is null or id in ($3:list) or ${isSumsToOne}
+      );
     select b.*, u.balance, u.cash_balance from contract_bets b join users u on b.user_id = u.id
-        where ${whereLimitOrderBets};
+      where ${whereLimitOrderBets};
+    -- My contract metrics
     select data from user_contract_metrics ucm where 
-       (user_id = $1 or user_id in (select distinct user_id from contract_bets b where ${whereLimitOrderBets}))
-       and contract_id = $2 and
-       ($3 is null or ucm.answer_id in ($3:list) or ucm.answer_id is null or
-       (select (data->'shouldAnswersSumToOne')::boolean from contracts where id = $2)
-       );
+      contract_id = $2 and user_id = $1
+      and (
+        -- Get metrics for selected answers
+        $3 is null or ucm.answer_id in ($3:list)
+        or
+        -- Get null answer metrics
+        ucm.answer_id is null
+      ); 
+    -- Limit orderers' contract metrics
+    select data from user_contract_metrics ucm where 
+      contract_id = $2 
+      and (
+        -- Get metrics for limit order user_id, answer_id pairs
+        ($3 is not null and (user_id, answer_id) in (
+          select distinct user_id, answer_id 
+          from contract_bets b 
+          where ${whereLimitOrderBets}
+        ))
+        or
+        -- Get null answer metrics for limit orderers
+        answer_id is null and user_id in (
+          select distinct user_id
+          from contract_bets b
+          where ${whereLimitOrderBets}
+        )
+      );
     select status from system_trading_status where token = (select token from contracts where id = $2);
   `
 
@@ -97,8 +124,15 @@ export const fetchContractBetDataAndValidate = async (
     balance: number
     cash_balance: number
   })[]
-  const contractMetrics = results[4].map((r) => r.data) as ContractMetric[]
-  const systemStatus = results[5][0]
+  const myContractMetrics = results[4].map((r) => r.data as ContractMetric)
+  const limitOrderersContractMetrics = results[5].map(
+    (r) => r.data as ContractMetric
+  )
+  const contractMetrics = uniqBy(
+    [...myContractMetrics, ...limitOrderersContractMetrics],
+    (m) => m.userId + m.answerId + m.contractId
+  )
+  const systemStatus = results[6][0]
 
   if (!systemStatus.status) {
     throw new APIError(
