@@ -17,6 +17,7 @@ import { Sweepstakes } from 'web/components/sweepstakes-provider'
 import { capitalize } from 'lodash'
 import { useThemeManager } from 'web/hooks/use-theme'
 import { DevtoolsDetector, setupDevtoolsDetector } from 'web/lib/util/devtools'
+import { useRouter } from 'next/router'
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
 
@@ -107,6 +108,23 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   // ian: Required by GambleId
   const devToolsOpen = false //useDevtoolsDetector()
   useThemeManager()
+  const router = useRouter()
+
+  useEffect(() => {
+    const handleRouteChange = (url: string) => {
+      ;(window as any).dataLayer?.push({
+        event: 'page_view',
+        page_path: url,
+        page_location: window.location.href,
+        page_title: document.title,
+        'gtm.start': new Date().getTime(),
+      })
+    }
+    router.events.on('routeChangeComplete', handleRouteChange)
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange)
+    }
+  }, [router.events])
 
   const title = 'Manifold'
   const description = `Manifold is a social prediction game. ${capitalize(
