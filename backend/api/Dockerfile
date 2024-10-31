@@ -16,8 +16,11 @@ COPY dist ./
 # Copy the PM2 ecosystem configuration
 COPY ecosystem.config.js ./
 
-ENV PORT=80
+# ENV PORT=80
 EXPOSE 80/tcp
+EXPOSE 8090/tcp
+EXPOSE 8091/tcp
+EXPOSE 8092/tcp
 
 # # Use PM2 to run the application with the ecosystem config
 CMD ["pm2-runtime", "ecosystem.config.js"]

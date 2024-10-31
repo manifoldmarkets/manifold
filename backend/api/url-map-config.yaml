@@ -7,45 +7,53 @@ hostRules:
 pathMatchers:
   - name: matcher-1
     defaultService: global/backendServices/api-lb-service
-    pathRules:
-      - service: global/backendServices/api-lb-service-1
-        paths:
-          - /v0/bets
-          - /v0/comments
-          - /get-best-comments
-          - /get-contract
-          - /v0/market/*
-          - /v0/market/*/groups
-          - /v0/market/*/positions
-          - /v0/markets
-          - /v0/search-markets
-          - /search-markets-full
-          - /get-related-markets
-          - /get-related-markets-by-group
-          - /v0/groups
-          - /search-groups
-          - /search-my-groups
-          - /v0/get-followed-groups
-          - /get-groups-with-top-contracts
-          - /v0/me
-          - /v0/me/private
-          - /v0/user/by-id/*
-          - /v0/user/by-id/*/lite
-          - /v0/user/*
-          - /v0/user/*/lite
-          - /v0/user/*/bets
-          - /get-balance-changes
-          - /get-user-limit-orders-with-contracts
-          - /get-user-portfolio
-          - /get-user-portfolio-history
-          - /v0/users
-          - /search-users
-          - /v0/managrams
-          - /v0/txns
-          - /headlines
-          - /politics-headlines
-          - /get-dashboard-from-slug
-          - /get-feed
-          - /v0/leagues
-          - /v0/get-mod-reports
-          - /get-notifications
+    routeRules:
+      - priority: 1
+        routeAction:
+          weightedBackendServices:
+            - backendService: global/backendServices/api-lb-read-service-0
+              weight: 33
+            - backendService: global/backendServices/api-lb-read-service-1
+              weight: 33
+            - backendService: global/backendServices/api-lb-read-service-2
+              weight: 33
+        matchRules:
+          - pathTemplateMatch: /v0/bets
+          - pathTemplateMatch: /v0/comments
+          - pathTemplateMatch: /get-best-comments
+          - pathTemplateMatch: /get-contract
+          - pathTemplateMatch: /v0/market/*
+          - pathTemplateMatch: /v0/market/*/groups
+          - pathTemplateMatch: /v0/market/*/positions
+          - pathTemplateMatch: /v0/markets
+          - pathTemplateMatch: /v0/search-markets
+          - pathTemplateMatch: /search-markets-full
+          - pathTemplateMatch: /get-related-markets
+          - pathTemplateMatch: /get-related-markets-by-group
+          - pathTemplateMatch: /v0/groups
+          - pathTemplateMatch: /search-groups
+          - pathTemplateMatch: /search-my-groups
+          - pathTemplateMatch: /v0/get-followed-groups
+          - pathTemplateMatch: /get-groups-with-top-contracts
+          - pathTemplateMatch: /v0/me
+          - pathTemplateMatch: /v0/me/private
+          - pathTemplateMatch: /v0/user/by-id/*
+          - pathTemplateMatch: /v0/user/by-id/*/lite
+          - pathTemplateMatch: /v0/user/*
+          - pathTemplateMatch: /v0/user/*/lite
+          - pathTemplateMatch: /v0/user/*/bets
+          - pathTemplateMatch: /get-balance-changes
+          - pathTemplateMatch: /get-user-limit-orders-with-contracts
+          - pathTemplateMatch: /get-user-portfolio
+          - pathTemplateMatch: /get-user-portfolio-history
+          - pathTemplateMatch: /v0/users
+          - pathTemplateMatch: /search-users
+          - pathTemplateMatch: /v0/managrams
+          - pathTemplateMatch: /v0/txns
+          - pathTemplateMatch: /headlines
+          - pathTemplateMatch: /politics-headlines
+          - pathTemplateMatch: /get-dashboard-from-slug
+          - pathTemplateMatch: /get-feed
+          - pathTemplateMatch: /v0/leagues
+          - pathTemplateMatch: /v0/get-mod-reports
+          - pathTemplateMatch: /get-notifications

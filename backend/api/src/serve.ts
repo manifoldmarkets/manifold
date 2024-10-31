@@ -49,7 +49,11 @@ const startupProcess = async () => {
     log.info(`Serving API on port ${PORT}.`)
   })
 
-  webSocketListen(httpServer, '/ws')
+  if (!process.env.READ_ONLY) {
+    webSocketListen(httpServer, '/ws')
+    log.info('Web socket server listening on /ws')
+  }
+
   log('Server started successfully')
 }
 startupProcess()
