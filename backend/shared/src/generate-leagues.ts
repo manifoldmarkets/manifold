@@ -149,7 +149,7 @@ const generateCohorts = async (
       for (const userId of cohortOfUsers) {
         userCohorts[userId] = { division, cohort }
       }
-      remainingUserIds = divisionUserIds.filter((uid) => !userCohorts[uid])
+      remainingUserIds = remainingUserIds.filter((uid) => !userCohorts[uid])
       i++
       console.log('cohort', cohort, cohortOfUsers.length)
     }
