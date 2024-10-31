@@ -1,4 +1,8 @@
-import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
+import {
+  pgp,
+  SupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
 import { Contract, MarketContract } from 'common/contract'
 import { groupBy, mapValues, orderBy, sumBy, uniq, uniqBy } from 'lodash'
 import { LimitBet, maker } from 'common/bet'
@@ -70,8 +74,8 @@ export const fetchContractBetDataAndValidate = async (
       (not ${isSumsToOne} and ($3 is null or b.answer_id in ($3:list)) and b.outcome != $4)
     )
   `
-
-  const queries = `
+  const queries = pgp.as.format(
+    `
     select * from users where id = $1;
     select ${contractColumnsToSelect} from contracts where id = $2;
     select * from answers
@@ -91,32 +95,21 @@ export const fetchContractBetDataAndValidate = async (
         ucm.answer_id is null
       ); 
     -- Limit orderers' contract metrics
-    select data from user_contract_metrics ucm where 
-      contract_id = $2 
-      and (
-        -- Get metrics for limit order user_id, answer_id pairs
-        ($3 is not null and (user_id, answer_id) in (
-          select distinct user_id, answer_id 
-          from contract_bets b 
-          where ${whereLimitOrderBets}
-        ))
-        or
-        -- Get null answer metrics for limit orderers
-        answer_id is null and user_id in (
-          select distinct user_id
-          from contract_bets b
-          where ${whereLimitOrderBets}
-        )
-      );
+    with matching_user_answer_pairs as (
+      select distinct b.user_id, b.answer_id
+      from contract_bets b
+      where ${whereLimitOrderBets}
+    )
+    select data from user_contract_metrics ucm
+    where contract_id = $2
+      and user_id in (select user_id from matching_user_answer_pairs)
+      and (answer_id in (select answer_id from matching_user_answer_pairs)
+        or answer_id is null);
     select status from system_trading_status where token = (select token from contracts where id = $2);
-  `
-
-  const results = await pgTrans.multi(queries, [
-    uid,
-    contractId,
-    answerIds ?? null,
-    outcome,
-  ])
+  `,
+    [uid, contractId, answerIds ?? null, outcome]
+  )
+  const results = await pgTrans.multi(queries)
   const user = convertUser(results[0][0])
   const contract = convertContract(results[1][0])
   const answers = results[2].map(convertAnswer)
@@ -125,9 +118,17 @@ export const fetchContractBetDataAndValidate = async (
     cash_balance: number
   })[]
   const myContractMetrics = results[4].map((r) => r.data as ContractMetric)
-  const limitOrderersContractMetrics = results[5].map(
-    (r) => r.data as ContractMetric
-  )
+  // We get slightly more contract metrics than we need bc the contract_metrics index works poorly when selecting
+  // (user_id, answer_id) in (select user_id, answer_id from matching_user_answer_pairs)
+  const limitOrderersContractMetrics = results[5]
+    .map((r) => r.data as ContractMetric)
+    .filter((m) =>
+      unfilledBets.some(
+        (b) =>
+          b.userId === m.userId &&
+          (b.answerId === m.answerId || m.answerId === null)
+      )
+    )
   const contractMetrics = uniqBy(
     [...myContractMetrics, ...limitOrderersContractMetrics],
     (m) => m.userId + m.answerId + m.contractId
