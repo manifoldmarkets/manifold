@@ -91,7 +91,6 @@ export function USElectionsPage(
         includeHead
       />
 
-
       <HomepageMap
         rawPresidencyStateContracts={rawPresidencyStateContracts}
         rawPresidencySwingCashContracts={rawPresidencySwingCashContracts}
