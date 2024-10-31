@@ -1,4 +1,4 @@
-name: api-url-map
+name: api-lb
 defaultService: global/backendServices/api-lb-service
 hostRules:
   - hosts:

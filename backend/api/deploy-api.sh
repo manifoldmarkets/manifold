@@ -126,7 +126,7 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --address ${STATIC_IP_ADDRESS}
 
 echo "Importing url-map config"
-gcloud compute url-maps import api-url-map \
+gcloud compute url-maps import api-lb \
         --source=url-map-config.yaml \
         --project ${GCLOUD_PROJECT} \
         --global \
