@@ -143,6 +143,14 @@ export const insertBet = async (
   ])
   return { updatedMetrics, insertedBet }
 }
+
+export const insertZeroAmountLimitBet = async (
+  bet: Bet,
+  pg: SupabaseDirectClient
+) => {
+  return await insert(pg, 'contract_bets', betToRow(bet))
+}
+
 export const bulkInsertBets = async (
   pg: SupabaseDirectClient,
   bets: Bet[],

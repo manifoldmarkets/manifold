@@ -30,7 +30,7 @@ import { convertBet } from 'common/supabase/bets'
 import {
   bulkInsertBetsQuery,
   cancelLimitOrdersQuery,
-  insertBet,
+  insertZeroAmountLimitBet,
 } from 'shared/supabase/bets'
 import { betsQueue, ordersQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
@@ -364,15 +364,10 @@ export const executeNewBetResult = async (
     ...newBet,
   })
 
-  // Just an unfilled limit order, no need to update metrics or maker shares
+  // Just an unfilled limit order, no need to update metrics, maker shares, contract, etc.
   if (newBet.amount === 0) {
-    const { insertedBet: betRow, updatedMetrics } = await insertBet(
-      candidateBet,
-      pgTrans,
-      contractMetrics
-    )
-    log(`Inserted bet for ${user.username} - auth ${user.id}.`)
-
+    const betRow = await insertZeroAmountLimitBet(candidateBet, pgTrans)
+    log(`Inserted limit bet for ${user.username} - auth ${user.id}.`)
     return {
       contract,
       newBet,
@@ -384,7 +379,7 @@ export const executeNewBetResult = async (
       betGroupId,
       streakIncremented: false,
       bonusTxn: undefined,
-      updatedMetrics,
+      updatedMetrics: contractMetrics,
     }
   }
   const apiFee = isApi ? FLAT_TRADE_FEE : 0
