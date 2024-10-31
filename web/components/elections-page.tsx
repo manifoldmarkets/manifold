@@ -91,7 +91,6 @@ export function USElectionsPage(
         includeHead
       />
 
-      {trending}
 
       <HomepageMap
         rawPresidencyStateContracts={rawPresidencyStateContracts}
@@ -101,11 +100,13 @@ export function USElectionsPage(
         houseContract={houseContract as MultiContract}
       />
 
-      <PoliticsCard
+      {trending}
+
+      {/* <PoliticsCard
         contract={electionCandidateContract as MultiContract}
         viewType="CANDIDATE"
         className="-mt-4"
-      />
+      /> */}
 
       <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
       {/* 
