@@ -43,6 +43,7 @@ export function TierTooltip(props: {
       placement={placement}
       noTap
       className={clsx('flex flex-row items-center gap-0.5', className)}
+      tooltipClassName="z-40"
     >
       <TierIcon tier={tier} className={iconClassName} />
       {!noTitle && (

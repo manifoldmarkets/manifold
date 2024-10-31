@@ -12,6 +12,7 @@ import {
   useRole,
 } from '@floating-ui/react'
 import { Transition } from '@headlessui/react'
+import clsx from 'clsx'
 import { ReactNode, useRef, useState } from 'react'
 
 // See https://floating-ui.com/docs/react-dom
@@ -20,6 +21,7 @@ export function Tooltip(props: {
   text: string | false | undefined | null | ReactNode
   children: ReactNode
   className?: string
+  tooltipClassName?: string
   placement?: Placement
   noTap?: boolean
   noFade?: boolean
@@ -30,6 +32,7 @@ export function Tooltip(props: {
     text,
     children,
     className,
+    tooltipClassName,
     noTap,
     noFade,
     hasSafePolygon,
@@ -102,7 +105,10 @@ export function Tooltip(props: {
         role="tooltip"
         ref={floating}
         style={{ position: strategy, top: y ?? 0, left: x ?? 0 }}
-        className="text-ink-0 bg-ink-700 z-20 w-max max-w-xs whitespace-normal rounded px-2 py-1 text-center text-sm font-medium"
+        className={clsx(
+          'text-ink-0 bg-ink-700 z-20 w-max max-w-xs whitespace-normal rounded px-2 py-1 text-center text-sm font-medium',
+          tooltipClassName
+        )}
         suppressHydrationWarning={suppressHydrationWarning}
         {...getFloatingProps()}
       >

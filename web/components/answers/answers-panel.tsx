@@ -254,7 +254,7 @@ export function AnswersPanel(props: {
         text={query}
         setText={setQuery}
         className={clsx(
-          'bg-canvas-0 sticky z-40',
+          'bg-canvas-0 sticky z-[30]',
           floatingSearchClassName ?? 'top-[48px]'
         )}
         sort={sort}

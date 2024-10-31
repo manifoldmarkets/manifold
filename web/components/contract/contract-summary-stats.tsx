@@ -57,6 +57,7 @@ export function ContractSummaryStats(props: {
             placement="bottom"
             noTap
             className="flex flex-row items-center gap-0.5"
+            tooltipClassName="z-40"
           >
             <UserIcon className="text-ink-500 h-4 w-4" />
             <div>{shortFormatNumber(contract.uniqueBettorCount ?? 0)}</div>
@@ -71,6 +72,7 @@ export function ContractSummaryStats(props: {
               placement="bottom"
               noTap
               className="flex flex-row items-center gap-0.5"
+              tooltipClassName="z-40"
             >
               <ChartBarIcon className="text-ink-500 h-4 w-4" />
               <MoneyDisplay

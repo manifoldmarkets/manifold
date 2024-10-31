@@ -137,6 +137,7 @@ export const LikeButton = memo(function LikeButton(props: {
         noTap
         hasSafePolygon={showList}
         className="flex items-center"
+        tooltipClassName="z-40"
       >
         {size == '2xs' ? (
           <button
