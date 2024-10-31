@@ -1,0 +1,51 @@
+name: api-url-map
+defaultService: global/backendServices/api-lb-service
+hostRules:
+  - hosts:
+      - '*'
+    pathMatcher: matcher-1
+pathMatchers:
+  - name: matcher-1
+    defaultService: global/backendServices/api-lb-service
+    pathRules:
+      - service: global/backendServices/api-lb-service-1
+        paths:
+          - /v0/bets
+          - /v0/comments
+          - /get-best-comments
+          - /get-contract
+          - /v0/market/*
+          - /v0/market/*/groups
+          - /v0/market/*/positions
+          - /v0/markets
+          - /v0/search-markets
+          - /search-markets-full
+          - /get-related-markets
+          - /get-related-markets-by-group
+          - /v0/groups
+          - /search-groups
+          - /search-my-groups
+          - /v0/get-followed-groups
+          - /get-groups-with-top-contracts
+          - /v0/me
+          - /v0/me/private
+          - /v0/user/by-id/*
+          - /v0/user/by-id/*/lite
+          - /v0/user/*
+          - /v0/user/*/lite
+          - /v0/user/*/bets
+          - /get-balance-changes
+          - /get-user-limit-orders-with-contracts
+          - /get-user-portfolio
+          - /get-user-portfolio-history
+          - /v0/users
+          - /search-users
+          - /v0/managrams
+          - /v0/txns
+          - /headlines
+          - /politics-headlines
+          - /get-dashboard-from-slug
+          - /get-feed
+          - /v0/leagues
+          - /v0/get-mod-reports
+          - /get-notifications
