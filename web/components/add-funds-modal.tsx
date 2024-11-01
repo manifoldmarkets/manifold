@@ -133,6 +133,19 @@ export function PriceTile(props: {
   const disabled = props.disabled || (loadingPrice && !isCurrentlyLoading)
 
   const useStripe = bonusInDollars === 0 && !isIOS
+
+  const onClickHandler = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault()
+      firebaseLogin()
+      return
+    }
+
+    if (!useStripe && onClick) {
+      onClick()
+    }
+  }
+
   const tile = (
     <button
       className={clsx(
@@ -144,7 +157,7 @@ export function PriceTile(props: {
         newUsersOnly && 'border-4 border-green-500 '
       )}
       type={useStripe ? 'submit' : 'button'}
-      onClick={useStripe ? undefined : onClick}
+      onClick={onClickHandler}
     >
       {originalPriceInDollars && originalPriceInDollars !== priceInDollars && (
         <div
