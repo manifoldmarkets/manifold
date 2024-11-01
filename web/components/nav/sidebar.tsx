@@ -154,12 +154,6 @@ const getDesktopNav = (
         icon: NotificationsIcon,
       },
       {
-        name: 'Add funds',
-        href: '/checkout',
-        icon: TbPigMoney,
-        label: <span className="text-red-500 text-sm ml-2">(64% off)</span>
-      },
-      {
         name: 'US Election',
         href: '/election',
         icon: GiCapitol,
