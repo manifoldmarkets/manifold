@@ -92,9 +92,9 @@ export function ContractPageContent(props: ContractParams) {
   // sync query state with context
   const { prefersPlay } = useSweepstakes()
   const router = useRouter()
-  const [isPlay, setIsPlay] = useState<boolean | undefined>(prefersPlay)
   const livePlayContract = useLiveContractWithAnswers(props.contract)
   const sweepsIsPossible = !!livePlayContract.siblingContractId
+  const [isPlay, setIsPlay] = useState<boolean | undefined>(prefersPlay)
   const liveCashContract = props.cash
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
       useLiveContractWithAnswers(props.cash.contract)
@@ -119,6 +119,7 @@ export function ContractPageContent(props: ContractParams) {
       (playQuery === undefined &&
         !sweepsIsPossible &&
         prefersPlay === undefined)
+
     if (queryIndicatesSweeps) {
       if (sweepsIsPossible && isPlay) {
         setIsPlay(false)
@@ -150,10 +151,12 @@ export function ContractPageContent(props: ContractParams) {
 
   const setPlayStateInQuery = (play: boolean) => {
     const newQuery = { ...router.query, play: play.toString() }
+
     if (JSON.stringify(newQuery) !== JSON.stringify(router.query)) {
       router.replace(
         {
           query: newQuery,
+          hash: router.asPath.split('#')[1],
         },
         undefined,
         { shallow: true }
