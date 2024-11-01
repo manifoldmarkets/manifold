@@ -1,6 +1,5 @@
 import { safeJsonParse } from 'common/util/json'
-import { useEffect } from 'react'
-import { useStateCheckEquality } from './use-state-check-equality'
+import { useEffect, useState } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 
 const store: { [key: string]: any } = {}
@@ -10,7 +9,7 @@ export function isFunction<T>(
   return typeof value === 'function'
 }
 export const usePersistentInMemoryState = <T>(initialValue: T, key: string) => {
-  const [state, setState] = useStateCheckEquality<T>(
+  const [state, setState] = useState<T>(
     safeJsonParse(store[key]) ?? initialValue
   )
 
