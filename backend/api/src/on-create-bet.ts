@@ -2,7 +2,7 @@ import { log, getUsers, revalidateContractStaticProps } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { humanish, User } from 'common/user'
-import { groupBy, keyBy, sortBy, sumBy } from 'lodash'
+import { groupBy, keyBy, sortBy, sumBy, uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
   createBetFillNotification,
@@ -79,6 +79,15 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
   const startNewBets = Date.now()
   broadcastNewBets(contract.id, contract.visibility, bets)
   log(`Broadcasting new bets took ${Date.now() - startNewBets}ms`)
+  broadcastUpdatedUser(
+    removeUndefinedProps({
+      id: originalBettor.id,
+      currentBettingStreak: streakIncremented
+        ? (originalBettor?.currentBettingStreak ?? 0) + 1
+        : undefined,
+      lastBetTime: bets[0].createdTime,
+    })
+  )
   if (userUpdates) {
     const startUserUpdates = Date.now()
     broadcastUserUpdates(userUpdates)
@@ -120,44 +129,25 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
       }ms`
     )
   }
-  broadcastUpdatedUser(
-    removeUndefinedProps({
-      id: originalBettor.id,
-      currentBettingStreak: streakIncremented
-        ? (originalBettor?.currentBettingStreak ?? 0) + 1
-        : undefined,
-      lastBetTime: bets[0].createdTime,
-    })
-  )
   const updatedMetrics = reloadMetrics
     ? await getContractMetrics(pg, [originalBettor.id], contract.id, [], true)
     : result.updatedMetrics
   broadcastUpdatedMetrics(updatedMetrics)
   debounceRevalidateContractStaticProps(contract)
-  const matchedBetIds = filterDefined(
-    bets.flatMap((b) => b.fills?.map((f) => f.matchedBetId) ?? [])
+  const matchedBetIds = uniq(
+    filterDefined(
+      bets.flatMap((b) => b.fills?.map((f) => f.matchedBetId) ?? [])
+    )
   )
   if (matchedBetIds.length > 0) {
-    const updatedLimitBets = (await getBetsDirect(
-      pg,
-      matchedBetIds
-    )) as LimitBet[]
-    broadcastOrders(updatedLimitBets)
+    const updatedLimitBets = await getBetsDirect(pg, matchedBetIds)
+    broadcastOrders(updatedLimitBets as LimitBet[])
   }
-
-  const usersToRefreshMetrics = bets.some((b) => !b.isApi && b.shares !== 0)
-    ? [originalBettor]
-    : []
 
   await Promise.all(
     bets.map(async (bet) => {
       const idempotentId = bet.id + bet.contractId + '-limit-fill'
-      const notifiedUsers = await notifyUsersOfLimitFills(
-        bet,
-        contract,
-        idempotentId
-      )
-      usersToRefreshMetrics.push(...(notifiedUsers ?? []))
+      await notifyUsersOfLimitFills(bet, contract, idempotentId)
     })
   )
 
