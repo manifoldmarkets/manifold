@@ -19,6 +19,7 @@ export type ColorType =
   | 'gray-outline'
   | 'gradient'
   | 'gradient-pink'
+  | 'gradient-amber'
   | 'pink'
   | 'gray-white'
   | 'yellow-outline'
@@ -94,7 +95,11 @@ export function buttonClass(size: SizeType, color: ColorType) {
     ],
     color === 'white-outline' && [outline, 'text-white hover:bg-white'],
     color === 'azure' && [solid, 'bg-azure-500 hover:bg-azure-700'],
-    color === 'sienna' && [solid, 'bg-sienna-500 hover:bg-sienna-700']
+    color === 'sienna' && [solid, 'bg-sienna-500 hover:bg-sienna-700'],
+    color === 'gradient-amber' && [
+      gradient,
+      'from-amber-700 via-amber-600 to-amber-700 hover:from-amber-800 hover:via-amber-700 hover:to-amber-800'
+    ]
   )
 }
 
