@@ -7,6 +7,7 @@ import Custom404 from './404'
 import { ENV } from 'common/envs/constants'
 import { useTracking } from 'web/hooks/use-tracking'
 import { PromotionalPanel } from 'web/components/promotional-panel'
+import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
 
 const revalidate = 60
 
@@ -45,6 +46,12 @@ export default function Pakman(props: ElectionsPageProps) {
         header={
           <>
             Welcome, from <b>David Pakman</b>
+          </>
+        }
+        description={
+          <>
+            Referral bonus has been applied. Register to claim free 3 <SweepiesFlatCoin/> and unlock our
+            purchase offer!
           </>
         }
         loginTrackingText="Sign up from /pakman"

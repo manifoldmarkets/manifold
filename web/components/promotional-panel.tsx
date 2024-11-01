@@ -12,15 +12,18 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { withTracking } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
 
 export function PromotionalPanel(props: {
   darkModeImg: string
   lightModeImg: string
   header: React.ReactNode
+  description?: React.ReactNode
   loginTrackingText: string
 }) {
   const user = useUser()
-  const { darkModeImg, lightModeImg, header, loginTrackingText } = props
+  const { darkModeImg, lightModeImg, header, description, loginTrackingText } =
+    props
   const isMobile = useIsMobile()
   return (
     <div
@@ -46,9 +49,7 @@ export function PromotionalPanel(props: {
 
         <div className="text-2xl">{header}</div>
         <Col className="w-full items-center text-lg text-indigo-300">
-          <div className="mx-auto mt-2">
-            Register today and get a limited time offer in store!
-          </div>
+          <div className="mx-auto mt-2">{description}</div>
           <Row
             className={`md::text-4xl relative mx-auto mt-4 items-center gap-2 rounded-xl border border-indigo-300 p-5 text-2xl `}
           >
@@ -136,4 +137,13 @@ export function PromotionalPanel(props: {
       </Col>
     </div>
   )
+}
+
+PromotionalPanel.defaultProps = {
+  description: (
+    <>
+      Register today to get your free sweepcash <SweepiesFlatCoin /> and unlock
+      a limited time offer in store!
+    </>
+  ),
 }
