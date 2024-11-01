@@ -74,7 +74,6 @@ Feel free to use the API for any purpose you'd like. There is a rate limit of 50
 
 ## Fees
 
-- A non-refundable transaction fee of $M0.25 will be levied on any bet, sell, or limit order placed through the API, or by any account marked as a bot. (The fee has been levied even if the returned "bet" object claims there was no fee; this is a known bug.)
 - Comments placed through the API will incur a $M1 transaction fee.
 
 ## Trade history dumps

@@ -34,7 +34,7 @@ export const getFeesSplit = (
   }
 }
 
-export const FLAT_TRADE_FEE = 0.1
+export const FLAT_TRADE_FEE = 0
 export const FLAT_COMMENT_FEE = 1
 
 export const DPM_PLATFORM_FEE = 0.0
