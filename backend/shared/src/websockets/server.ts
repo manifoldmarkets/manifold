@@ -87,21 +87,33 @@ function processMessage(ws: WebSocket, data: RawData): ServerMessage<'ack'> {
 }
 
 export function broadcastMulti(topics: string[], data: BroadcastPayload) {
+  // ian: Don't await this: we don't need to hear back from all the clients and can take a dozen ms
+  const sendToSubscribers = (topic: string, msg: any) => {
+    const json = JSON.stringify(msg)
+    const subscribers = SWITCHBOARD.getSubscribers(topic)
+    return Promise.allSettled(
+      subscribers.map(
+        ([ws, _]) =>
+          new Promise<void>((resolve) =>
+            ws.send(json, (err) => {
+              if (err) log.error('Broadcast error', { error: err })
+              resolve()
+            })
+          )
+      )
+    ).catch((err) => log.error('Broadcast failed', { error: err }))
+  }
+
   // mqp: it isn't secure to do this in prod because we rely on security-through-
   // topic-id-obscurity for unlisted contracts. but it's super convenient for testing
   if (LOCAL_DEV) {
     const msg = { type: 'broadcast', topic: '*', topics, data }
-    const json = JSON.stringify(msg)
-    for (const [ws, _] of SWITCHBOARD.getSubscribers('*')) {
-      ws.send(json)
-    }
+    sendToSubscribers('*', msg)
   }
+
   for (const topic of topics) {
-    const msg = { type: 'broadcast', topic, data } as ServerMessage<'broadcast'>
-    const json = JSON.stringify(msg)
-    for (const [ws, _] of SWITCHBOARD.getSubscribers(topic)) {
-      ws.send(json)
-    }
+    const msg = { type: 'broadcast', topic, data }
+    sendToSubscribers(topic, msg)
     metrics.inc('ws/broadcasts_sent', { topic })
   }
 }
