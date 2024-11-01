@@ -189,11 +189,13 @@ const getDesktopNav = (
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon },
-    { 
-      name: 'Add funds', 
-      href: '/checkout', 
+    {
+      name: 'Add funds',
+      href: '/checkout',
       icon: TbPigMoney,
-      label: <span className="text-green-500 text-sm ml-2">(Sale 64% off)</span>
+      label: (
+        <span className="ml-2 text-sm text-green-500">(Sale 64% off)</span>
+      ),
     }
   )
 }

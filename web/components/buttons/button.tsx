@@ -98,7 +98,7 @@ export function buttonClass(size: SizeType, color: ColorType) {
     color === 'sienna' && [solid, 'bg-sienna-500 hover:bg-sienna-700'],
     color === 'gradient-amber' && [
       gradient,
-      'from-amber-700 via-amber-600 to-amber-700 hover:from-amber-800 hover:via-amber-700 hover:to-amber-800'
+      'from-amber-700 via-amber-600 to-amber-700 hover:from-amber-800 hover:via-amber-700 hover:to-amber-800',
     ]
   )
 }

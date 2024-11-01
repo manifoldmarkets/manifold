@@ -39,26 +39,29 @@ export function SweepVerifySection(props: { className?: string }) {
         className={`relative rounded-lg bg-gradient-to-b from-indigo-800 to-indigo-500 px-5 py-4 text-sm text-white shadow-lg  ${className}`}
       >
         <RainingCoins />
-        <Col className="mb-8 mt-12 gap-4 items-center">
+        <Col className="mb-8 mt-12 items-center gap-4">
           <div className=" w-full text-xl sm:text-center sm:text-2xl">
             Start earning <b>real cash prizes</b> today.
           </div>
 
           <div>
-            <div className='flex gap-1 items-center'> Step 1: Verify and claim your free sweepcash<SweepiesFlatCoin/> </div>
+            <div className="flex items-center gap-1">
+              {' '}
+              Step 1: Verify and claim your free sweepcash
+              <SweepiesFlatCoin />{' '}
+            </div>
             <div> Step 2: Correctly predict on sweepstakes markets.</div>
             <div> Step 3: Withdraw winnings!</div>
           </div>
           <Col className="text-ink-100 dark:text-ink-900 w-full text-sm sm:text-center">
             <div>
-              
               <CoinNumber
                 amount={1}
                 coinType="CASH"
                 className="font-semibold text-amber-300"
                 isInline
-              />{' '}won
-              → <b>$1</b>
+              />{' '}
+              won → <b>$1</b>
             </div>
           </Col>
 
