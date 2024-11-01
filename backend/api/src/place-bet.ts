@@ -193,7 +193,7 @@ export const calculateBetResult = (
   unfilledBets: LimitBet[],
   balanceByUserId: Record<string, number>
 ) => {
-  const { amount, contractId } = body
+  const { amount } = body
   const { outcomeType, mechanism } = contract
 
   if (
