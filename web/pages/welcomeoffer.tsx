@@ -42,7 +42,7 @@ export default function WelcomeOffer(props: ElectionsPageProps) {
       <PromotionalPanel
         darkModeImg={'/welcome/manipurple.png'}
         lightModeImg={'/welcome/manipurple.png'}
-        header={<>Welcome offer</>}
+        header={<>Welcome offer applied</>}
         loginTrackingText="sign up from /welcomeoffer"
       />
 

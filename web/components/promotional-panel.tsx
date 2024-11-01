@@ -142,8 +142,8 @@ export function PromotionalPanel(props: {
 PromotionalPanel.defaultProps = {
   description: (
     <>
-      Register today to get your free sweepcash <SweepiesFlatCoin /> and unlock
-      a limited time offer in store!
+      Register today to get your free 3 <SweepiesFlatCoin /> and unlock this
+      limited time purchase offer!
     </>
   ),
 }

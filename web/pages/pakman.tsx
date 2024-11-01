@@ -50,7 +50,7 @@ export default function Pakman(props: ElectionsPageProps) {
         }
         description={
           <>
-            Referral bonus has been applied. Register to claim free 3 <SweepiesFlatCoin/> and unlock our
+            Referral bonus has been applied. Register today to claim free 3 <SweepiesFlatCoin/> and unlock this
             purchase offer!
           </>
         }
