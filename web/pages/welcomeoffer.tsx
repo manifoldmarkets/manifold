@@ -25,29 +25,25 @@ export async function getStaticProps() {
   }
 }
 
-export default function Pakman(props: ElectionsPageProps) {
-  useTracking('pakman page view')
+export default function WelcomeOffer(props: ElectionsPageProps) {
+  useTracking('welcome offer page view')
 
   if (Object.keys(props).length === 0) {
     return <Custom404 />
   }
 
   return (
-    <Page trackPageView="Pakman page">
+    <Page trackPageView="Welcome offer page">
       <SEO
-        title="Pakman Manifold"
-        description="The David Pakman Show on Manifold."
-        url="/pakman"
+        title="Welcome offer"
+        description="Landing page containing welcome offer for sweepstakes"
+        url="/welcomeoffer"
       />
       <PromotionalPanel
-        darkModeImg={'/pakman/pakman_show_white.png'}
-        lightModeImg={'/pakman/pakman_show.png'}
-        header={
-          <>
-            Welcome, from <b>David Pakman</b>
-          </>
-        }
-        loginTrackingText="Sign up from /pakman"
+        darkModeImg={'/welcome/manipurple.png'}
+        lightModeImg={'/welcome/manipurple.png'}
+        header={<>Welcome offer</>}
+        loginTrackingText="sign up from /welcomeoffer"
       />
 
       <USElectionsPage {...props} hideTitle />

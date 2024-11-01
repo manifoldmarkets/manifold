@@ -10,7 +10,7 @@ import { initSupabaseAdmin } from '../lib/supabase/admin-db'
 import Custom404 from './404'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
-import { PromotionalPanel } from './pakman'
+import { PromotionalPanel } from 'web/components/promotional-panel'
 
 const revalidate = 60
 
@@ -56,7 +56,12 @@ export default function ComplexSystems(
       <PromotionalPanel
         darkModeImg={'/complex-systems/complex-systems.jpg'}
         lightModeImg={'/complex-systems/complex-systems.jpg'}
-        welcomerName="Patrick McKenzie"
+        header={
+          <>
+            Welcome, from <b>Patrick McKenzie</b>
+          </>
+        }
+        loginTrackingText="Sign up from /complexsystems"
       />
 
       <FeedContractCard

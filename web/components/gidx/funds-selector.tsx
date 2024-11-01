@@ -80,6 +80,29 @@ export function FundsSelector(props: {
         </p>
       </div>
 
+      {(!user || !user.sweepstakesVerified) && !isNativeIOS && (
+        <>
+          <Row className="items-baseline justify-between text-3xl text-green-500">
+            Verify for limited time offer!
+          </Row>
+          <Col className="mb-2 gap-2 py-4">
+            <div className="grid grid-cols-2 gap-4 gap-y-6">
+              {newUserPrices.map((amounts, index) => (
+                <PriceTile
+                  key={`price-tile-${amounts.mana}`}
+                  amounts={amounts}
+                  index={index}
+                  loadingPrice={loadingPrice}
+                  disabled={pastLimit}
+                  user={user}
+                  onClick={() => onSelectPriceInDollars(amounts.priceInDollars)}
+                />
+              ))}
+            </div>
+          </Col>
+        </>
+      )}
+
       {eligibleForNewUserOffer && (
         <>
           <Row className="items-baseline justify-between text-3xl text-green-500">
