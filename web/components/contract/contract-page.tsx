@@ -136,7 +136,10 @@ export function ContractPageContent(props: ContractParams) {
     if (prefersPlay === undefined) return
     const shouldBePlay =
       (prefersPlay && !isPlay) || (!sweepsIsPossible && !isPlay)
-    const shouldBeSweeps = !prefersPlay && isPlay === true && sweepsIsPossible
+    const shouldBeSweeps =
+      !prefersPlay &&
+      (isPlay === undefined || isPlay === true) &&
+      sweepsIsPossible
     if (shouldBePlay) {
       setIsPlay(true)
       setPlayStateInQuery(true)
