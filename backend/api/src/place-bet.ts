@@ -57,6 +57,7 @@ import {
   getMakerIdsFromBetResult,
   getRoundedLimitProb,
   getUniqueBettorBonusQuery,
+  getUserBalancesAndMetrics,
   updateMakers,
 } from 'api/helpers/bets'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
@@ -122,19 +123,52 @@ export const placeBetMain = async (
   isApi: boolean
 ) => {
   const startTime = Date.now()
-  const { contractId, replyToCommentId, deterministic } = body
+  const { contractId, replyToCommentId, deterministic, answerId } = body
+  // Fetch data outside transaction first to avoid locking all limit orderers
+  const {
+    user,
+    contract,
+    answers,
+    unfilledBets,
+    balanceByUserId,
+    unfilledBetUserIds,
+  } = await fetchContractBetDataAndValidate(
+    createSupabaseDirectClient(),
+    body,
+    uid,
+    isApi
+  )
+  // Simulate bet to see whose limit orders you match.
+  const simulatedResult = calculateBetResult(
+    body,
+    user,
+    contract,
+    answers,
+    unfilledBets,
+    balanceByUserId
+  )
+  const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
 
   const result = await runTransactionWithRetries(async (pgTrans) => {
-    const {
-      user,
-      contract,
-      answers,
-      unfilledBets,
-      balanceByUserId,
-      contractMetrics,
-    } = await fetchContractBetDataAndValidate(pgTrans, body, uid, isApi)
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)
+    // Refetch just user balance and metrics in transaction, since queue only enforces contract and bets not changing.
+    const { balanceByUserId, contractMetrics } =
+      await getUserBalancesAndMetrics(
+        pgTrans,
+        [uid, ...simulatedMakerIds], // Fetch just the makers that matched in the simulation.
+        contract,
+        answerId
+      )
+    user.balance = balanceByUserId[uid]
+    if (user.balance < body.amount)
+      throw new APIError(403, 'Insufficient balance.')
 
+    for (const userId of unfilledBetUserIds) {
+      if (!(userId in balanceByUserId)) {
+        // Assume other makers have infinite balance since they are not involved in this bet.
+        balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
+      }
+    }
     const newBetResult = calculateBetResult(
       body,
       user,
