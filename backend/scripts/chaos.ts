@@ -5,7 +5,7 @@ import { Contract } from 'common/contract'
 import { pgp } from 'shared/supabase/init'
 import { getTestUsers } from 'shared/test/users'
 import { getRandomTestBet } from 'shared/test/bets'
-import { MONTH_MS } from 'common/util/time'
+import { YEAR_MS } from 'common/util/time'
 import { LiteMarket } from 'common/api/market-types'
 import { sumBy } from 'lodash'
 import * as readline from 'readline'
@@ -59,27 +59,29 @@ if (require.main === module) {
     let markets: LiteMarket[] = []
     if (!USE_OLD_MARKET) {
       const marketCreations = [
-        // {
-        //   question: 'test ' + Math.random().toString(36).substring(7),
-        //   outcomeType: 'MULTIPLE_CHOICE',
-        //   answers: Array(50)
-        //     .fill(0)
-        //     .map((_, i) => 'answer ' + i),
-        //   shouldAnswersSumToOne: true,
-        // },
+        {
+          question: 'test ' + Math.random().toString(36).substring(7),
+          outcomeType: 'MULTIPLE_CHOICE',
+          answers: Array(50)
+            .fill(0)
+            .map((_, i) => 'answer ' + i),
+          shouldAnswersSumToOne: true,
+          closeTime: Date.now() + YEAR_MS,
+        },
         {
           question: 'test ' + Math.random().toString(36).substring(7),
           outcomeType: 'BINARY',
-          closeTime: Date.now() + MONTH_MS,
+          closeTime: Date.now() + YEAR_MS,
         },
-        // {
-        //   question: 'test ' + Math.random().toString(36).substring(7),
-        //   outcomeType: 'MULTIPLE_CHOICE',
-        //   answers: Array(50)
-        //     .fill(0)
-        //     .map((_, i) => 'answer ' + i),
-        //   shouldAnswersSumToOne: false,
-        // },
+        {
+          question: 'test ' + Math.random().toString(36).substring(7),
+          outcomeType: 'MULTIPLE_CHOICE',
+          answers: Array(50)
+            .fill(0)
+            .map((_, i) => 'answer ' + i),
+          shouldAnswersSumToOne: false,
+          closeTime: Date.now() + YEAR_MS,
+        },
       ]
       log('creating markets')
       markets = await Promise.all(
@@ -325,7 +327,7 @@ if (require.main === module) {
 }
 
 async function visitContract(contract: Contract) {
-  return fetch(URL + `/market?contractId=${contract.id}`, {
+  return fetch(URL + `/market/contractId=${contract.id}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
