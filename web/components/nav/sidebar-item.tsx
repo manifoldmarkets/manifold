@@ -14,6 +14,7 @@ export type NavItem = {
   alwaysShowName?: boolean
   prefetch?: boolean
   children?: React.ReactNode
+  label?: React.ReactNode
 }
 
 export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
@@ -56,6 +57,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
         />
       )}
       <span className="truncate">{item.children ?? item.name}</span>
+      {item.label}
       {item.external && <ExternalLinkIcon className="ml-2 h-4 w-4" />}
     </>
   )

@@ -36,6 +36,7 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { Col } from '../layout/col'
+import { TbPigMoney } from 'react-icons/tb'
 
 export default function Sidebar(props: {
   className?: string
@@ -153,6 +154,12 @@ const getDesktopNav = (
         icon: NotificationsIcon,
       },
       {
+        name: 'Add funds',
+        href: '/checkout',
+        icon: TbPigMoney,
+        label: <span className="text-red-500 text-sm ml-2">(64% off)</span>
+      },
+      {
         name: 'US Election',
         href: '/election',
         icon: GiCapitol,
@@ -187,7 +194,13 @@ const getDesktopNav = (
     },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
+    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon },
+    { 
+      name: 'Add funds', 
+      href: '/checkout', 
+      icon: TbPigMoney,
+      label: <span className="text-green-500 text-sm ml-2">(64% off)</span>
+    }
   )
 }
 
