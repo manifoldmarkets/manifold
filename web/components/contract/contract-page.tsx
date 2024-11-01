@@ -92,9 +92,9 @@ export function ContractPageContent(props: ContractParams) {
   // sync query state with context
   const { prefersPlay } = useSweepstakes()
   const router = useRouter()
-  const [isPlay, setIsPlay] = useState<boolean | undefined>(prefersPlay)
   const livePlayContract = useLiveContractWithAnswers(props.contract)
   const sweepsIsPossible = !!livePlayContract.siblingContractId
+  const [isPlay, setIsPlay] = useState<boolean | undefined>(prefersPlay)
   const liveCashContract = props.cash
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
       useLiveContractWithAnswers(props.cash.contract)
@@ -119,6 +119,7 @@ export function ContractPageContent(props: ContractParams) {
       (playQuery === undefined &&
         !sweepsIsPossible &&
         prefersPlay === undefined)
+
     if (queryIndicatesSweeps) {
       if (sweepsIsPossible && isPlay) {
         setIsPlay(false)
@@ -134,12 +135,8 @@ export function ContractPageContent(props: ContractParams) {
   useEffect(() => {
     if (prefersPlay === undefined) return
     const shouldBePlay =
-      (prefersPlay && isPlay === false) ||
-      (!sweepsIsPossible && isPlay === false)
-    const shouldBeSweeps =
-      !prefersPlay &&
-      (isPlay === undefined || isPlay === true) &&
-      sweepsIsPossible
+      (prefersPlay && !isPlay) || (!sweepsIsPossible && !isPlay)
+    const shouldBeSweeps = !prefersPlay && isPlay === true && sweepsIsPossible
     if (shouldBePlay) {
       setIsPlay(true)
       setPlayStateInQuery(true)
@@ -156,6 +153,7 @@ export function ContractPageContent(props: ContractParams) {
       router.replace(
         {
           query: newQuery,
+          hash: router.asPath.split('#')[1],
         },
         undefined,
         { shallow: true }
