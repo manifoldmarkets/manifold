@@ -325,6 +325,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         useHashInUrl()
       : // eslint-disable-next-line react-hooks/rules-of-hooks
         useHashInUrlPageRouter('')
+
+  console.log('ID TO HIGHLIGHT', idToHighlight, appRouter)
   useEffect(() => {
     if (idToHighlight) {
       const currentlyVisible = visibleCommentIds.includes(idToHighlight)
