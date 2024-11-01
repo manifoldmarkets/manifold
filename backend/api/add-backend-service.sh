@@ -48,6 +48,7 @@ ALL_PORTS="${CURRENT_PORTS}${PORT_NAME}:${PORT}"
 
 gcloud compute instance-groups unmanaged set-named-ports \
     ${SERVICE_GROUP} \
+    --project=${GCLOUD_PROJECT} \
     --named-ports=${ALL_PORTS} \
     --zone=${ZONE}
 
@@ -55,12 +56,15 @@ HEALTH_CHECK_NAME="${BACKEND_NAME}-health-check"
 
 echo "Creating health check"
 gcloud compute health-checks create tcp ${HEALTH_CHECK_NAME} \
+    --project=${GCLOUD_PROJECT} \
     --port-name ${PORT_NAME} \
     --global
+
 
 # backend type instance group
 echo "Creating backend service ${BACKEND_NAME}"
 gcloud compute backend-services create ${BACKEND_NAME} \
+    --project ${GCLOUD_PROJECT} \
     --global \
     --description "${DESCRIPTION}" \
     --load-balancing-scheme "EXTERNAL_MANAGED" \
@@ -76,6 +80,7 @@ gcloud compute backend-services create ${BACKEND_NAME} \
 
 echo "Adding backend service ${BACKEND_NAME} to ${SERVICE_GROUP} in ${ZONE}..."
 gcloud compute backend-services add-backend ${BACKEND_NAME} \
+    --project ${GCLOUD_PROJECT} \
     --instance-group ${SERVICE_GROUP} \
     --instance-group-zone ${ZONE} \
     --global \
