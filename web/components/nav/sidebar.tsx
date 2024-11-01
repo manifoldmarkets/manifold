@@ -193,7 +193,7 @@ const getDesktopNav = (
       name: 'Add funds', 
       href: '/checkout', 
       icon: TbPigMoney,
-      label: <span className="text-green-500 text-sm ml-2">(64% off)</span>
+      label: <span className="text-green-500 text-sm ml-2">(Sale 64% off)</span>
     }
   )
 }

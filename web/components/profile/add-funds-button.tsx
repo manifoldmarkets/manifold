@@ -44,7 +44,7 @@ export function AddFundsButton(props: {
       </Button>
       {eligibleForNewUserOffer && !hideDiscount && (
         <Link href="/checkout" className="text-center text-sm text-amber-500">
-          ✨ Special offer expires in
+          ✨ 64% discount expires in
           <RelativeTimestamp
             className="text-amber-500 "
             time={expirationStart.valueOf()}
