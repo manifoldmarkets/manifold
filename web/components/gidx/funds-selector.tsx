@@ -65,6 +65,21 @@ export function FundsSelector(props: {
           <CashoutLimitWarning user={user} className="mt-2" />
         </div>
       </div>
+
+      <div className="mx-auto mb-8 max-w-xl rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-700 dark:bg-indigo-900">
+        <p className="text-indigo-700 dark:text-indigo-300">
+          🇺🇸🗳️ <span className="font-semibold">Special Election Offer</span>:
+          Get 5% off purchases between $5,000 - $250,000! Contact{' '}
+          <a
+            href="mailto:info@manifold.markets"
+            className="underline hover:text-indigo-600 dark:hover:text-indigo-400"
+          >
+            info@manifold.markets
+          </a>{' '}
+          for details.
+        </p>
+      </div>
+
       {eligibleForNewUserOffer && (
         <>
           <Row className="items-baseline justify-between text-3xl text-green-500">
@@ -116,19 +131,6 @@ export function FundsSelector(props: {
           {formatMoneyUSD(DOLLAR_PURCHASE_LIMIT)}. Please try again tomorrow.
         </AlertBox>
       )}
-
-      <div className="mx-auto mt-8 max-w-xl rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-700 dark:bg-indigo-900">
-        <p className="text-indigo-700 dark:text-indigo-300">
-          If you wish to purchase $5,000 - $100,000, please reach out to{' '}
-          <a
-            href="mailto:info@manifold.markets"
-            className="underline hover:text-indigo-600 dark:hover:text-indigo-400"
-          >
-            info@manifold.markets
-          </a>{' '}
-          for a special discount.
-        </p>
-      </div>
 
       <div className="text-ink-500 mt-4 text-sm">
         Please see our{' '}
