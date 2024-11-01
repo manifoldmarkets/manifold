@@ -7,6 +7,7 @@ import Custom404 from './404'
 import { ENV } from 'common/envs/constants'
 import { useTracking } from 'web/hooks/use-tracking'
 import { PromotionalPanel } from 'web/components/promotional-panel'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 
 const revalidate = 60
 
@@ -27,6 +28,7 @@ export async function getStaticProps() {
 
 export default function WelcomeOffer(props: ElectionsPageProps) {
   useTracking('welcome offer page view')
+  useSaveCampaign()
 
   if (Object.keys(props).length === 0) {
     return <Custom404 />
