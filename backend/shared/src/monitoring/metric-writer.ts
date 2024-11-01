@@ -77,7 +77,10 @@ function serializeEntries(
     },
     metric: {
       type: `custom.googleapis.com/${entry.type}`,
-      labels: entry.labels ?? {},
+      labels: {
+        ...(entry.labels ?? {}),
+        instance_type: process.env.READ_ONLY ? 'read' : 'write',
+      },
     },
     points: [
       {
