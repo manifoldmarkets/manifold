@@ -155,7 +155,6 @@ export function ContractPageContent(props: ContractParams) {
     if (JSON.stringify(newQuery) !== JSON.stringify(router.query)) {
       router.replace(
         {
-          pathname: router.pathname,
           query: newQuery,
         },
         undefined,
