@@ -134,7 +134,8 @@ export function ContractPageContent(props: ContractParams) {
   useEffect(() => {
     if (prefersPlay === undefined) return
     const shouldBePlay =
-      (prefersPlay && !isPlay) || (!sweepsIsPossible && !isPlay)
+      (prefersPlay && isPlay === false) ||
+      (!sweepsIsPossible && isPlay === false)
     const shouldBeSweeps =
       !prefersPlay &&
       (isPlay === undefined || isPlay === true) &&
@@ -150,9 +151,11 @@ export function ContractPageContent(props: ContractParams) {
 
   const setPlayStateInQuery = (play: boolean) => {
     const newQuery = { ...router.query, play: play.toString() }
+
     if (JSON.stringify(newQuery) !== JSON.stringify(router.query)) {
       router.replace(
         {
+          pathname: router.pathname,
           query: newQuery,
         },
         undefined,
