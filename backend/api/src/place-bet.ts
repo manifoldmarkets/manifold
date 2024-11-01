@@ -177,11 +177,22 @@ export const placeBetMain = async (
       unfilledBets,
       balanceByUserId
     )
+    log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const { newBet } = newBetResult
     if (!newBet.amount && !newBet.orderAmount && !newBet.shares) {
       throw new APIError(400, 'Betting allowed only between 1-99%.')
     }
-    log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
+    const actualMakerIds = getMakerIdsFromBetResult(newBetResult)
+    log(
+      'simulated makerIds',
+      simulatedMakerIds,
+      'actualMakerIds',
+      actualMakerIds
+    )
+    if (!isEqual(simulatedMakerIds, actualMakerIds)) {
+      log.warn('Matched limit orders changed from simulated values.')
+      throw new APIError(503, 'Please try betting again.')
+    }
 
     const betGroupId =
       contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
