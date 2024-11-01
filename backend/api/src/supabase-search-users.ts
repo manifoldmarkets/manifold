@@ -21,14 +21,16 @@ export const searchUsers: APIHandler<'search-users'> = async (props, auth) => {
 
   const offset = page * limit
   const userId = auth?.uid
+  const searchExactSQL = getSearchExactUserSQL({ term })
   const searchFollowersSQL = getSearchUserSQL({ term, offset, limit, userId })
   const searchAllSQL = getSearchUserSQL({ term, offset, limit })
-  const [followers, all] = await Promise.all([
+  const [exact, followers, all] = await Promise.all([
+    pg.map(searchExactSQL, null, convertUser),
     pg.map(searchFollowersSQL, null, convertUser),
     pg.map(searchAllSQL, null, convertUser),
   ])
 
-  return uniqBy([...followers, ...all], 'id')
+  return uniqBy([...exact, ...followers, ...all], 'id')
     .map(toUserAPIResponse)
     .slice(0, limit)
 }
@@ -66,5 +68,18 @@ function getSearchUserSQL(props: {
         ]
       : orderBy(`data->'creatorTraders'->'allTime' desc nulls last`),
     limit(props.limit, props.offset)
+  )
+}
+
+function getSearchExactUserSQL(props: {
+  term: string
+}) {
+  const { term } = props
+
+  return renderSql(
+    select('*'),
+    from('users'),
+    where(`username = $1`, [term]),
+    limit(1)
   )
 }
