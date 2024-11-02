@@ -10,7 +10,7 @@ import {
   ProcessSessionCode,
 } from 'common/gidx/gidx'
 import { introductoryTimeWindow, User } from 'common/user'
-import { getIp, track } from 'shared/analytics'
+import { getIp, track, trackPublicEvent } from 'shared/analytics'
 import {
   getGIDXStandardParams,
   getLocalServerIP,
@@ -275,5 +275,14 @@ const sendCoins = async (
         referrerInfo.sweepsVerified
       )
     }
+  })
+
+  await trackPublicEvent(user.id, 'M$ purchase', {
+    amount: amount.mana,
+    priceInDollars: amount.priceInDollars,
+    bonusInDollars: amount.bonusInDollars,
+    transactionId,
+    sessionId,
+    source: 'gidx',
   })
 }
