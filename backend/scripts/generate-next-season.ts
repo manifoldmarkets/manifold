@@ -4,7 +4,7 @@ import { generateNextSeason, insertBots } from 'shared/generate-leagues'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
-    const newSeason = 18
+    const newSeason = 19
     if ((newSeason as any) <= CURRENT_SEASON) {
       console.log('Are you sure you want to generate the current season?')
       return
