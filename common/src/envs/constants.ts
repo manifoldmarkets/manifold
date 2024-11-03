@@ -14,7 +14,6 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 export const TWOMBA_ENABLED = true
 export const CASH_BETS_ENABLED = true
 export const TWOMBA_CASHOUT_ENABLED = true
-export const PRODUCT_MARKET_FIT_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
 export const CASH_TO_MANA_CONVERSION_RATE = 100
