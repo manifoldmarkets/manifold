@@ -379,8 +379,6 @@ export function ContractParamsForm(props: {
     'EDITING' | 'LOADING' | 'DONE'
   >('EDITING')
 
-  console.log('shouldAnswersSumToOne', shouldAnswersSumToOne)
-
   async function submit() {
     if (!isValid) return
     setSubmitState('LOADING')
