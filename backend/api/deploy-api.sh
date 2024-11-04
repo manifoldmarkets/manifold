@@ -119,6 +119,7 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --image-family "cos-109-lts" \
        --container-image ${IMAGE_URL} \
        --machine-type ${MACHINE_TYPE} \
+       --boot-disk-size=100GB \
        --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
        --no-user-output-enabled \
        --scopes default,cloud-platform \
