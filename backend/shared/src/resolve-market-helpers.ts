@@ -34,21 +34,12 @@ import {
   createSupabaseDirectClient,
 } from './supabase/init'
 import { Answer } from 'common/answer'
-import {
-  SPICE_PRODUCTION_ENABLED,
-  isAdminId,
-  isModId,
-} from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { convertTxn } from 'common/supabase/txns'
 import { bulkIncrementBalances } from './supabase/users'
 import { convertBet } from 'common/supabase/bets'
 import { convertLiquidity } from 'common/supabase/liquidity'
-import {
-  getAnswer,
-  getAnswersForContract,
-  updateAnswer,
-  updateAnswers,
-} from './supabase/answers'
+import { updateAnswer, updateAnswers } from './supabase/answers'
 import { updateContract } from './supabase/contracts'
 
 export type ResolutionParams = {
@@ -237,13 +228,12 @@ export const resolveMarketHelper = async (
       }
       log('processing payouts', { payouts })
       await payUsersTransactions(tx, payouts, contractId, answerId, {
-        payoutSpice: !!contract.isSpicePayout && outcome !== 'CANCEL',
         payoutCash: contract.token === 'CASH',
       })
 
       // TODO: we may want to support clawing back trader bonuses on MC markets too
-      if (!answerId) {
-        await undoUniqueBettorRewardsIfCancelResolution(tx, contract, outcome)
+      if (!answerId && outcome === 'CANCEL') {
+        await undoUniqueBettorRewardsIfCancelResolution(tx, contract)
       }
       return { contract, bets, payoutsWithoutLoans, updatedContractAttrs }
     })
@@ -348,14 +338,6 @@ export const getDataAndPayoutInfo = async (
     : undefined
   const loanPayouts = getLoanPayouts(bets)
 
-  let answer: Answer | undefined
-  let answers: Answer[] | undefined
-  if (answerId) {
-    answer = (await getAnswer(pg, answerId)) ?? undefined
-  } else if (unresolvedContract.mechanism === 'cpmm-multi-1') {
-    answers = await getAnswersForContract(pg, contractId)
-  }
-
   const { payouts: traderPayouts, liquidityPayouts } = getPayouts(
     outcome,
     unresolvedContract,
@@ -363,8 +345,7 @@ export const getDataAndPayoutInfo = async (
     liquidities,
     resolutionProbs,
     resolutionProbability,
-    answer,
-    answers
+    answerId
   )
   const payoutsWithoutLoans = [
     ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
@@ -379,7 +360,9 @@ export const getDataAndPayoutInfo = async (
       'loan payouts:',
       loanPayouts
     )
-  const payouts = [...payoutsWithoutLoans, ...loanPayouts]
+  const payouts = [...payoutsWithoutLoans, ...loanPayouts].filter(
+    (p) => p.payout !== 0
+  )
   return {
     payoutsWithoutLoans,
     bets,
@@ -390,54 +373,50 @@ export const getDataAndPayoutInfo = async (
 }
 async function undoUniqueBettorRewardsIfCancelResolution(
   pg: SupabaseTransaction,
-  contract: Contract,
-  outcome: string
+  contract: Contract
 ) {
-  if (outcome === 'CANCEL') {
-    const bonusTxnsOnThisContract = await pg.map<Txn>(
-      `select * from txns where category = 'UNIQUE_BETTOR_BONUS'
+  const bonusTxnsOnThisContract = await pg.map<Txn>(
+    `select * from txns where category = 'UNIQUE_BETTOR_BONUS'
       and to_id = $1
       and data->'data'->>'contractId' = $2`,
-      [contract.creatorId, contract.id],
-      (row) => convertTxn(row)
+    [contract.creatorId, contract.id],
+    (row) => convertTxn(row)
+  )
+
+  log('total bonusTxnsOnThisContract ' + bonusTxnsOnThisContract.length)
+  const totalBonusAmount = sumBy(bonusTxnsOnThisContract, (txn) => txn.amount)
+  log('totalBonusAmount to be withdrawn ' + totalBonusAmount)
+
+  if (totalBonusAmount === 0) {
+    log('No bonus to cancel')
+    return
+  }
+
+  const bonusTxn = {
+    fromId: contract.creatorId,
+    fromType: 'USER',
+    toId: isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+    toType: 'BANK',
+    amount: totalBonusAmount,
+    token: 'M$',
+    category: 'CANCEL_UNIQUE_BETTOR_BONUS',
+    data: {
+      contractId: contract.id,
+    },
+  } as Omit<CancelUniqueBettorBonusTxn, 'id' | 'createdTime'>
+
+  try {
+    const txn = await pg.tx((tx) => runTxn(tx, bonusTxn))
+    log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
+  } catch (e) {
+    log.error(
+      `Couldn't cancel bonus for user: ${contract.creatorId} - status: failure`,
+      { e }
     )
-
-    log('total bonusTxnsOnThisContract ' + bonusTxnsOnThisContract.length)
-    const totalBonusAmount = sumBy(bonusTxnsOnThisContract, (txn) => txn.amount)
-    log('totalBonusAmount to be withdrawn ' + totalBonusAmount)
-
-    if (totalBonusAmount === 0) {
-      log('No bonus to cancel')
-      return
-    }
-
-    const bonusTxn = {
-      fromId: contract.creatorId,
-      fromType: 'USER',
-      toId: isProd()
-        ? HOUSE_LIQUIDITY_PROVIDER_ID
-        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-      toType: 'BANK',
-      amount: totalBonusAmount,
-      token: 'M$',
-      category: 'CANCEL_UNIQUE_BETTOR_BONUS',
-      data: {
-        contractId: contract.id,
-      },
-    } as Omit<CancelUniqueBettorBonusTxn, 'id' | 'createdTime'>
-
-    try {
-      const txn = await pg.tx((tx) => runTxn(tx, bonusTxn))
-      log(
-        `Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`
-      )
-    } catch (e) {
-      log.error(
-        `Couldn't cancel bonus for user: ${contract.creatorId} - status: failure`
-      )
-      if (e instanceof APIError) {
-        log.error(e.message)
-      }
+    if (e instanceof APIError) {
+      log.error(e.message)
     }
   }
 }
@@ -452,11 +431,10 @@ export const payUsersTransactions = async (
   contractId: string,
   answerId: string | undefined,
   options?: {
-    payoutSpice: boolean
     payoutCash: boolean
   }
 ) => {
-  const { payoutSpice, payoutCash } = options ?? {}
+  const { payoutCash } = options ?? {}
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutStartTime = Date.now()
 
@@ -469,51 +447,27 @@ export const payUsersTransactions = async (
   const txns: TxnData[] = []
 
   for (const { userId, payout, deposit } of mergedPayouts) {
-    if (SPICE_PRODUCTION_ENABLED && payoutSpice) {
-      balanceUpdates.push({
-        id: userId,
-        spiceBalance: payout,
-        totalDeposits: deposit ?? 0,
-      })
+    balanceUpdates.push({
+      id: userId,
+      [payoutCash ? 'cashBalance' : 'balance']: payout,
+      totalDeposits: deposit ?? 0,
+    })
 
-      txns.push({
-        category: 'PRODUCE_SPICE',
-        fromType: 'CONTRACT',
-        fromId: contractId,
-        toType: 'USER',
-        toId: userId,
-        amount: payout,
-        token: 'SPICE',
-        data: removeUndefinedProps({
-          deposit: deposit ?? 0,
-          payoutStartTime,
-          answerId,
-        }),
-        description: 'Contract payout for resolution',
-      })
-    } else {
-      balanceUpdates.push({
-        id: userId,
-        [payoutCash ? 'cashBalance' : 'balance']: payout,
-        totalDeposits: deposit ?? 0,
-      })
-
-      txns.push({
-        category: 'CONTRACT_RESOLUTION_PAYOUT',
-        fromType: 'CONTRACT',
-        fromId: contractId,
-        toType: 'USER',
-        toId: userId,
-        amount: payout,
-        token: payoutCash ? 'CASH' : 'M$',
-        data: removeUndefinedProps({
-          deposit: deposit ?? 0,
-          payoutStartTime,
-          answerId,
-        }),
-        description: 'Contract payout for resolution: ' + contractId,
-      })
-    }
+    txns.push({
+      category: 'CONTRACT_RESOLUTION_PAYOUT',
+      fromType: 'CONTRACT',
+      fromId: contractId,
+      toType: 'USER',
+      toId: userId,
+      amount: payout,
+      token: payoutCash ? 'CASH' : 'M$',
+      data: removeUndefinedProps({
+        deposit: deposit ?? 0,
+        payoutStartTime,
+        answerId,
+      }),
+      description: 'Contract payout for resolution: ' + contractId,
+    })
   }
 
   await bulkIncrementBalances(pg, balanceUpdates)
