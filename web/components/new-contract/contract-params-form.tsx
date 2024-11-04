@@ -129,11 +129,8 @@ export function ContractParamsForm(props: {
       params?.addAnswersMode ?? 'DISABLED',
       'new-add-answers-mode' + paramsKey
     )
-  const [shouldAnswersSumToOne, setShouldAnswersSumToOne] =
-    usePersistentLocalState(
-      params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER' ?? true,
-      'new-should-answers-sum-to-one' + paramsKey
-    )
+  const shouldAnswersSumToOne =
+    params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER'
   // NOTE: if you add another user-controlled state variable here, you should also add it to the duplication parameters
 
   const hasOtherAnswer =
