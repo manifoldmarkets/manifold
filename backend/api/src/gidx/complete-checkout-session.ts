@@ -255,6 +255,9 @@ const sendCoins = async (
     description: `Free sweepcash bonus for purchasing mana.`,
   } as const
 
+  const referrerInfo = user.usedReferralCode
+    ? await getReferrerInfo(pg, user.referredByUserId)
+    : undefined
   await pg.tx(async (tx) => {
     await runTxnInBetQueue(tx, manaPurchaseTxn)
     if (isSweepsVerified) {
@@ -264,9 +267,6 @@ const sendCoins = async (
       purchasedMana: true,
       purchasedSweepcash: isSweepsVerified,
     })
-    const referrerInfo = user.usedReferralCode
-      ? await getReferrerInfo(pg, user.referredByUserId)
-      : undefined
     if (referrerInfo && paidInCents / 100 >= REFERRAL_MIN_PURCHASE_DOLLARS) {
       await distributeReferralBonusIfNoneGiven(
         tx,
