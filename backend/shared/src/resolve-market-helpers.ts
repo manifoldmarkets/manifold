@@ -17,7 +17,7 @@ import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { createContractResolvedNotifications } from './create-notification'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
-import { TxnData, runTxnInBetQueue, txnToRow } from './txn/run-txn'
+import { TxnData, insertTxn, txnToRow } from './txn/run-txn'
 import {
   revalidateStaticProps,
   isProd,
@@ -38,7 +38,7 @@ import { convertTxn } from 'common/supabase/txns'
 import { updateAnswer, updateAnswers } from './supabase/answers'
 import { updateContract } from './supabase/contracts'
 import { bulkInsertQuery } from './supabase/utils'
-import { bulkIncrementBalancesQuery } from './supabase/users'
+import { bulkIncrementBalancesQuery, incrementBalance } from './supabase/users'
 
 export type ResolutionParams = {
   outcome: string
@@ -344,7 +344,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
       and to_id = $1
       and data->'data'->>'contractId' = $2`,
     [contract.creatorId, contract.id],
-    (row) => convertTxn(row)
+    convertTxn
   )
 
   log('total bonusTxnsOnThisContract ' + bonusTxnsOnThisContract.length)
@@ -356,7 +356,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
     return
   }
 
-  const bonusTxn = {
+  const undoBonusTxn = {
     fromId: contract.creatorId,
     fromType: 'USER',
     toId: isProd()
@@ -371,18 +371,12 @@ async function undoUniqueBettorRewardsIfCancelResolution(
     },
   } as Omit<CancelUniqueBettorBonusTxn, 'id' | 'createdTime'>
 
-  try {
-    const txn = await pg.tx((tx) => runTxnInBetQueue(tx, bonusTxn))
-    log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
-  } catch (e) {
-    log.error(
-      `Couldn't cancel bonus for user: ${contract.creatorId} - status: failure`,
-      { e }
-    )
-    if (e instanceof APIError) {
-      log.error(e.message)
-    }
-  }
+  const txn = await insertTxn(pg, undoBonusTxn)
+  await incrementBalance(pg, contract.creatorId, {
+    balance: -totalBonusAmount,
+    totalDeposits: -totalBonusAmount,
+  })
+  log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
 }
 
 export const payUsersTransactions = async (
