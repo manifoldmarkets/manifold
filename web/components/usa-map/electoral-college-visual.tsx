@@ -2,7 +2,7 @@ import { DATA } from './usa-map-data'
 import { Row } from 'web/components/layout/row'
 import { ALSO_DEMOCRATIC, probToColor } from './state-election-map'
 import { Col } from 'web/components/layout/col'
-import { ChevronDownIcon } from '@heroicons/react/solid'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
 import clsx from 'clsx'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -12,7 +12,7 @@ import {
 } from 'web/public/data/elections-data'
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { BinaryContract } from 'common/contract'
-
+import Image from 'next/image'
 export function ElectoralCollegeVisual(props: {
   sortedContractsDictionary: MapContractsDictionary
   handleClick: (newTargetState: string | undefined) => void
@@ -33,10 +33,32 @@ export function ElectoralCollegeVisual(props: {
   const isMobile = useIsMobile()
   return (
     <Col className="mt-2 w-full text-xs sm:text-base">
-      <Col className="text-ink-700 mx-auto items-center">
-        <div className="-mb-1">270 to win</div>
-        <ChevronDownIcon className="h-5 w-5" />
-      </Col>
+      <Row className="w-full justify-between">
+        <Row className="gap-2">
+          <Image
+            src="/political-candidates/harris.png"
+            height={60}
+            width={60}
+          />
+          <Col className="mt-2">
+            <div className="text-ink-700">Harris</div>
+            <div>
+              X Electoral Votes{' '}
+              <span className="text-ink-500">(+Y likely)</span>
+            </div>
+          </Col>
+        </Row>
+        <Row className="gap-2">
+          <Col className="mt-2 text-right">
+            <div className="text-ink-700">Trump</div>
+            <div>
+              X Electoral Votes{' '}
+              <span className="text-ink-500">(+Y likely)</span>
+            </div>
+          </Col>
+          <Image src="/political-candidates/trump.png" height={60} width={60} />
+        </Row>
+      </Row>
       <Row className="overflow-none relative gap-[1px] rounded sm:gap-0.5">
         {Object.entries(sortedContractsDictionary).map(
           ([stateKey, contract], index) => {
@@ -87,6 +109,10 @@ export function ElectoralCollegeVisual(props: {
           }
         )}
       </Row>
+      <Col className="text-ink-700 mx-auto items-center">
+        <div className="-mb-1">270 to win</div>
+        <ChevronUpIcon className="h-5 w-5" />
+      </Col>
     </Col>
   )
 }
