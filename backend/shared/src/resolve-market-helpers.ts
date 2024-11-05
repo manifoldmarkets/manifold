@@ -36,9 +36,9 @@ import { Answer } from 'common/answer'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { convertTxn } from 'common/supabase/txns'
 import { updateAnswer, updateAnswers } from './supabase/answers'
-import { updateContract } from './supabase/contracts'
-import { bulkInsertQuery } from './supabase/utils'
+import { bulkInsertQuery, updateDataQuery } from './supabase/utils'
 import { bulkIncrementBalancesQuery } from './supabase/users'
+import { broadcastUpdatedContract } from './websockets/helpers'
 
 export type ResolutionParams = {
   outcome: string
@@ -83,7 +83,7 @@ export const resolveMarketHelper = async (
 
       // ian: TODO: just use contract metrics for this (but after the election)
       const { resolutionProbability, payouts, payoutsWithoutLoans } =
-        await getPayoutInfo(
+        getPayoutInfo(
           outcome,
           unresolvedContract,
           resolutions,
@@ -101,8 +101,9 @@ export const resolveMarketHelper = async (
           : unresolvedContract.answers.find((a) => a.id === answerId)?.prob
       const newProb =
         outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : probBeforeResolution
-      let updatedContractAttrs: Partial<Contract> | undefined =
+      let updatedContractAttrs: Partial<Contract> & { id: string } =
         removeUndefinedProps({
+          id: unresolvedContract.id,
           isResolved: true,
           resolution: outcome,
           resolutionValue: value,
@@ -136,12 +137,16 @@ export const resolveMarketHelper = async (
           // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
           (!unresolvedContract.specialLiquidityPerAnswer ||
             hasAnswerResolvedYes)
-        )
+        ) {
           updatedContractAttrs = {
             ...updatedContractAttrs,
             resolution: finalResolution,
           }
-        else updatedContractAttrs = undefined
+        } else {
+          updatedContractAttrs = {
+            id: unresolvedContract.id,
+          }
+        }
         updateAnswerAttrs = removeUndefinedProps({
           resolution: outcome,
           resolutionTime,
@@ -151,7 +156,7 @@ export const resolveMarketHelper = async (
         }) as Partial<Answer>
         // We have to update the denormalized answer data on the contract for the updateContractMetrics call
         updatedContractAttrs = {
-          ...(updatedContractAttrs ?? {}),
+          ...updatedContractAttrs,
           answers: unresolvedContract.answers.map((a) =>
             a.id === answerId
               ? {
@@ -160,7 +165,7 @@ export const resolveMarketHelper = async (
                 }
               : a
           ),
-        } as Partial<CPMMMultiContract>
+        } as Partial<CPMMMultiContract> & { id: string }
       } else if (
         unresolvedContract.mechanism === 'cpmm-multi-1' &&
         updatedContractAttrs.isResolved
@@ -171,14 +176,14 @@ export const resolveMarketHelper = async (
         }) as Partial<Answer>
         // We have to update the denormalized answer data on the contract for the updateContractMetrics call
         updatedContractAttrs = {
-          ...(updatedContractAttrs ?? {}),
+          ...updatedContractAttrs,
           answers: unresolvedContract.answers.map((a) => ({
             ...a,
             ...updateAnswerAttrs,
             prob: resolutions ? (resolutions[a.id] ?? 0) / 100 : undefined,
             resolutionProbability: a.prob,
           })),
-        } as Partial<CPMMMultiContract>
+        } as Partial<CPMMMultiContract> & { id: string }
       }
 
       const contract = {
@@ -210,11 +215,6 @@ export const resolveMarketHelper = async (
         )
       }
 
-      if (updatedContractAttrs) {
-        log('updating contract', { updatedContractAttrs })
-        await updateContract(tx, contractId, updatedContractAttrs)
-        log('contract resolved')
-      }
       if (updateAnswerAttrs && answerId) {
         const props = removeUndefinedProps(updateAnswerAttrs)
         await updateAnswer(tx, answerId, props)
@@ -230,9 +230,27 @@ export const resolveMarketHelper = async (
         await updateAnswers(tx, contractId, answerUpdates)
       }
       log('processing payouts', { payouts })
-      await payUsersTransactions(tx, payouts, contractId, answerId, {
-        payoutCash: contract.token === 'CASH',
-      })
+      const { balanceUpdatesQuery, insertTxnsQuery } = getPayUsersQueries(
+        payouts,
+        contractId,
+        answerId,
+        {
+          payoutCash: contract.token === 'CASH',
+        }
+      )
+
+      log('updating contract', { updatedContractAttrs })
+      const contractUpdateQuery = updateDataQuery(
+        'contracts',
+        'id',
+        updatedContractAttrs
+      )
+
+      await tx.multi(`
+      ${balanceUpdatesQuery};
+      ${insertTxnsQuery};
+      ${contractUpdateQuery};
+      `)
 
       // TODO: we may want to support clawing back trader bonuses on MC markets too
       if (!answerId && outcome === 'CANCEL') {
@@ -241,6 +259,7 @@ export const resolveMarketHelper = async (
       return { contract, bets, payoutsWithoutLoans, updatedContractAttrs }
     })
 
+  broadcastUpdatedContract(contract.visibility, updatedContractAttrs)
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
 
   const userIdToContractMetrics = mapValues(
@@ -281,7 +300,7 @@ export const resolveMarketHelper = async (
   return contract
 }
 
-export const getPayoutInfo = async (
+export const getPayoutInfo = (
   outcome: string | undefined,
   unresolvedContract: Contract,
   resolutions: { [key: string]: number } | undefined,
@@ -375,8 +394,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
   log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
 }
 
-export const payUsersTransactions = async (
-  pg: SupabaseTransaction,
+export const getPayUsersQueries = (
   payouts: {
     userId: string
     payout: number
@@ -427,10 +445,7 @@ export const payUsersTransactions = async (
   const balanceUpdatesQuery = bulkIncrementBalancesQuery(balanceUpdates)
   const insertTxnsQuery = bulkInsertQuery('txns', txns.map(txnToRow), false)
 
-  await pg.multi(`
-    ${balanceUpdatesQuery};
-    ${insertTxnsQuery};
-  `)
+  return { balanceUpdatesQuery, insertTxnsQuery }
 }
 
 const checkAndMergePayouts = (
