@@ -152,7 +152,7 @@ export function createSupabaseDirectClient(
     // Although we don't yet know the cause, setting this timeout will limit the damage
     // from these connections. We should figure out the cause ASAP.
     idle_in_transaction_session_timeout: 15_000,
-    max: 20,
+    max: 40,
   })
   const pool = client.$pool
   pool.on('connect', () => metrics.inc('pg/connections_established'))
