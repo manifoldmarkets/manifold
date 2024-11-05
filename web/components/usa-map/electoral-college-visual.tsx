@@ -110,8 +110,8 @@ export function ElectoralCollegeVisual(props: {
         )}
       </Row>
       <Col className="text-ink-700 mx-auto items-center">
-        <div className="-mb-1">270 to win</div>
         <ChevronUpIcon className="h-5 w-5" />
+        <div className="-mb-1">270 to win</div>
       </Col>
     </Col>
   )
