@@ -43,11 +43,10 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
     }
     const startTs = hrtime.bigint()
     const isLocalhost = req.get('host')?.includes('localhost')
-    if (
-      !isLocalhost ||
-      (isLocalhost && !ignoredEndpoints.some((e) => endpoint.startsWith(e)))
-    ) {
+    if (!isLocalhost) {
       log(`${method} ${url} ${process.env.PORT}`)
+    } else if (!ignoredEndpoints.some((e) => endpoint.startsWith(e))) {
+      log(`${method} ${url}`)
     }
     metrics.inc('http/request_count', { endpoint, baseEndpoint, method })
     res.on('close', () => {
