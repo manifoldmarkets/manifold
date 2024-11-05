@@ -4,7 +4,7 @@ import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { MarketAdCreateTxn } from 'common/txn'
 import { log, getContractSupabase } from 'shared/utils'
 import { MIN_AD_COST_PER_VIEW } from 'common/boost'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 
 const schema = z
@@ -57,7 +57,7 @@ export const boostmarket = authEndpoint(async (req, auth) => {
     // use supabase to add txn from user to the ad. deducts from user
     log('starting transaction to deduct funds.')
 
-    await runTxn(tx, {
+    await runTxnInBetQueue(tx, {
       category: 'MARKET_BOOST_CREATE',
       fromType: 'USER',
       fromId: auth.uid,

@@ -44,7 +44,7 @@ import {
 } from 'shared/supabase/init'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { anythingToRichText } from 'shared/tiptap'
-import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
+import { runTxnInBetQueue, runTxnFromBank } from 'shared/txn/run-txn'
 import {
   addGroupToContract,
   canUserAddGroupToMarket,
@@ -134,9 +134,15 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     : unmodifiedAnte
   const ante = Math.min(unmodifiedAnte, totalMarketCost)
 
-  const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(idempotencyKey, pg)
+  const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(
+    idempotencyKey,
+    pg
+  )
   if (duplicateSubmissionUrl) {
-    throw new APIError(400, 'Contract has already been created at ' + duplicateSubmissionUrl)
+    throw new APIError(
+      400,
+      'Contract has already been created at ' + duplicateSubmissionUrl
+    )
   }
 
   return await pg.tx(async (tx) => {
@@ -244,7 +250,7 @@ const runCreateMarketTxn = async (args: {
   } = args
 
   if (amountSuppliedByUser > 0) {
-    await runTxn(transaction, {
+    await runTxnInBetQueue(transaction, {
       fromId: userId,
       fromType: 'USER',
       toId: contractId,
@@ -271,12 +277,12 @@ async function getDuplicateSubmissionUrl(
   idempotencyKey: string | undefined,
   pg: SupabaseDirectClient
 ): Promise<string | undefined> {
-  if (!idempotencyKey) return undefined;
+  if (!idempotencyKey) return undefined
   const contracts = await getContractsDirect([idempotencyKey], pg)
   if (contracts.length > 0) {
     return contractUrl(contracts[0])
   }
-  return undefined;
+  return undefined
 }
 
 async function getCloseTimestamp(
@@ -583,7 +589,7 @@ export async function generateAntes(
     (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
   ) {
     return await pg.txIf(async (tx) => {
-      await runTxn(tx, {
+      await runTxnInBetQueue(tx, {
         fromId: providerId,
         amount: drizzledAmount,
         toId: contract.id,

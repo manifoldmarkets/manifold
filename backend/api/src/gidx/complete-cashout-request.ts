@@ -2,7 +2,7 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { PaymentMethod } from 'common/gidx/gidx'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getIp, track } from 'shared/analytics'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getUser } from 'shared/utils'
@@ -113,7 +113,7 @@ const debitCoins = async (
         { response: props }
       )
     }
-    const txn = await runTxn(tx, manaCashoutTxn)
+    const txn = await runTxnInBetQueue(tx, manaCashoutTxn)
     await tx.none(
       `
       insert into redemption_status (user_id, status, session_id, transaction_id, txn_id) values ($1, $2, $3, $4, $5)

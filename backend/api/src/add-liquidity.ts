@@ -1,7 +1,7 @@
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { SUBSIDY_FEE } from 'common/economy'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContract, getUser } from 'shared/utils'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
@@ -44,7 +44,7 @@ export const addContractLiquidity = async (
 
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance')
 
-    await runTxn(tx, {
+    await runTxnInBetQueue(tx, {
       fromId: userId,
       amount: amount,
       toId: contractId,

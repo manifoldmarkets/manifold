@@ -6,7 +6,7 @@ import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { sendThankYouEmail } from 'shared/emails'
 import { trackPublicEvent } from 'shared/analytics'
 import { APIError } from 'common/api/utils'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
 import { WEB_PRICES } from 'common/economy'
@@ -163,7 +163,7 @@ const issueMoneys = async (session: StripeSession) => {
   let success = false
   try {
     await pg.tx(async (tx) => {
-      await runTxn(tx, manaPurchaseTxn)
+      await runTxnInBetQueue(tx, manaPurchaseTxn)
       await updateUser(tx, userId, {
         purchasedMana: true,
       })

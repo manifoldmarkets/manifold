@@ -14,7 +14,7 @@ import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 import { millisToTs } from 'common/supabase/utils'
 import { convertBet } from 'common/supabase/bets'
 import { Bet } from 'common/bet'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { broadcastNewComment } from 'shared/websockets/helpers'
 import { buildArray } from 'common/util/array'
 import { type Contract } from 'common/contract'
@@ -124,7 +124,7 @@ export const createCommentOnContractInternal = async (
     continue: async () => {
       if (isApi) {
         await pg.tx((tx) =>
-          runTxn(tx, {
+          runTxnInBetQueue(tx, {
             category: 'BOT_COMMENT_FEE',
             token: 'M$',
             fromId: creator.id,

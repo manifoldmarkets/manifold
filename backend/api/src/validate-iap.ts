@@ -6,7 +6,7 @@ import * as admin from 'firebase-admin'
 import { IapTransaction, PurchaseData } from 'common/iap'
 import { ManaPurchaseTxn } from 'common/txn'
 import { sendThankYouEmail } from 'shared/emails'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { IOS_PRICES } from 'common/economy'
 import { TWOMBA_ENABLED } from 'common/envs/constants'
@@ -119,31 +119,32 @@ export const validateiap = authEndpoint(async (req, auth) => {
 
   const isBonusEligible = TWOMBA_ENABLED && user.sweepstakesVerified
 
-  const bonusPurchaseTxn = isBonusEligible && bonusInDollars
-    ? ({
-        fromId: 'EXTERNAL',
-        fromType: 'BANK',
-        toId: userId,
-        toType: 'USER',
-        amount: bonusInDollars,
-        token: 'CASH',
-        category: 'CASH_BONUS',
-        data: {
-          iapTransactionId: iapTransRef.id,
-          type: IAP_TYPES_PROCESSED,
-          paidInCents: priceInDollars * 100 * quantity,
-        },
-        description: `Deposit ${bonusInDollars} mana cash from BANK for mana purchase bonus`,
-      } as const)
-    : null
+  const bonusPurchaseTxn =
+    isBonusEligible && bonusInDollars
+      ? ({
+          fromId: 'EXTERNAL',
+          fromType: 'BANK',
+          toId: userId,
+          toType: 'USER',
+          amount: bonusInDollars,
+          token: 'CASH',
+          category: 'CASH_BONUS',
+          data: {
+            iapTransactionId: iapTransRef.id,
+            type: IAP_TYPES_PROCESSED,
+            paidInCents: priceInDollars * 100 * quantity,
+          },
+          description: `Deposit ${bonusInDollars} mana cash from BANK for mana purchase bonus`,
+        } as const)
+      : null
 
   const pg = createSupabaseDirectClient()
   // TODO: retry transactions on failure!
   await pg
     .tx(async (tx) => {
-      await runTxn(tx, manaPurchaseTxn)
+      await runTxnInBetQueue(tx, manaPurchaseTxn)
       if (bonusPurchaseTxn) {
-        await runTxn(tx, bonusPurchaseTxn)
+        await runTxnInBetQueue(tx, bonusPurchaseTxn)
       }
     })
     .catch((e) => {

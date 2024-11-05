@@ -17,7 +17,7 @@ import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { createContractResolvedNotifications } from './create-notification'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
-import { TxnData, runTxn, txnToRow } from './txn/run-txn'
+import { TxnData, runTxnInBetQueue, txnToRow } from './txn/run-txn'
 import {
   revalidateStaticProps,
   isProd,
@@ -372,7 +372,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
   } as Omit<CancelUniqueBettorBonusTxn, 'id' | 'createdTime'>
 
   try {
-    const txn = await pg.tx((tx) => runTxn(tx, bonusTxn))
+    const txn = await pg.tx((tx) => runTxnInBetQueue(tx, bonusTxn))
     log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
   } catch (e) {
     log.error(

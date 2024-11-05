@@ -12,7 +12,7 @@ import { buildArray } from 'common/util/array'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
-export async function runTxn(
+export async function runTxnInBetQueue(
   pgTransaction: SupabaseTransaction,
   data: TxnData,
   affectsProfit = false
@@ -144,7 +144,11 @@ export async function runTxnFromBank(
   data: Omit<TxnData, 'fromId'> & { fromType: 'BANK' },
   affectsProfit = false
 ) {
-  return await runTxn(pgTransaction, { fromId: 'BANK', ...data }, affectsProfit)
+  return await runTxnInBetQueue(
+    pgTransaction,
+    { fromId: 'BANK', ...data },
+    affectsProfit
+  )
 }
 
 // inserts into supabase

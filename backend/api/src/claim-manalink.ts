@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { canSendMana } from 'common/can-send-mana'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row, tsToMillis } from 'common/supabase/utils'
 import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
@@ -88,7 +88,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       description: `Manalink ${slug} claimed: ${amount} from ${toUser.username} to ${auth.uid}`,
     } as const
 
-    const txn = await runTxn(tx, data)
+    const txn = await runTxnInBetQueue(tx, data)
     await tx.none(
       `insert into manalink_claims (txn_id, manalink_id) values ($1, $2)`,
       [txn.id, slug]

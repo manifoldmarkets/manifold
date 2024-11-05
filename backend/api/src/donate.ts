@@ -1,7 +1,7 @@
 import { type APIHandler } from './helpers/endpoint'
 import { charities } from 'common/charity'
 import { APIError } from 'api/helpers/endpoint'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { MIN_CASH_DONATION } from 'common/envs/constants'
 import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
@@ -64,6 +64,6 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
       token: 'CASH',
     } as const
 
-    await runTxn(tx, donationTxn)
+    await runTxnInBetQueue(tx, donationTxn)
   })
 }

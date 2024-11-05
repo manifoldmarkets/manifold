@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from './helpers/endpoint'
-import { type TxnData, runTxn } from 'shared/txn/run-txn'
+import { type TxnData, runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { CASH_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
@@ -31,7 +31,7 @@ export const convertCashToMana: APIHandler<'convert-cash-to-mana'> = async (
       description: 'Convert cash to mana',
       data: { insertTime },
     }
-    await runTxn(tx, toBank)
+    await runTxnInBetQueue(tx, toBank)
 
     const toYou: TxnData = {
       category: 'CONVERT_CASH_DONE',
@@ -44,6 +44,6 @@ export const convertCashToMana: APIHandler<'convert-cash-to-mana'> = async (
       description: 'Convert cash to mana',
       data: { insertTime },
     }
-    await runTxn(tx, toYou)
+    await runTxnInBetQueue(tx, toYou)
   })
 }

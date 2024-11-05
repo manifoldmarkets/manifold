@@ -20,7 +20,7 @@ import {
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getReferrerInfo, updateUser } from 'shared/supabase/users'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getUser, LOCAL_DEV } from 'shared/utils'
 import { distributeReferralBonusIfNoneGiven } from 'shared/distribute-referral-bonus'
 
@@ -256,9 +256,9 @@ const sendCoins = async (
   } as const
 
   await pg.tx(async (tx) => {
-    await runTxn(tx, manaPurchaseTxn)
+    await runTxnInBetQueue(tx, manaPurchaseTxn)
     if (isSweepsVerified) {
-      await runTxn(tx, cashBonusTxn)
+      await runTxnInBetQueue(tx, cashBonusTxn)
     }
     await updateUser(tx, userId, {
       purchasedMana: true,

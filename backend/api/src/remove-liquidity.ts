@@ -4,7 +4,7 @@ import { formatMoneyWithDecimals } from 'common/util/format'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getContract, log } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
@@ -73,7 +73,7 @@ export const removeLiquidity: APIHandler<
       ),
     })
 
-    await runTxn(pgTrans, {
+    await runTxnInBetQueue(pgTrans, {
       fromType: 'CONTRACT',
       fromId: contract.id,
       toType: 'USER',

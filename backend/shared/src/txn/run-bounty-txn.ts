@@ -1,6 +1,6 @@
 import { BountyAddedTxn, BountyAwardedTxn, BountyCanceledTxn } from 'common/txn'
 import { APIError } from 'common//api/utils'
-import { runTxn } from './run-txn'
+import { runTxnInBetQueue } from './run-txn'
 import {
   SupabaseTransaction,
   createSupabaseDirectClient,
@@ -26,7 +26,7 @@ export async function runAddBountyTxn(
   }
 
   const txn = await pg.tx(async (tx) => {
-    const txn = await runTxn(tx, txnData)
+    const txn = await runTxnInBetQueue(tx, txnData)
 
     // update bountied contract
     await updateContract(tx, toId, {
@@ -53,7 +53,7 @@ export async function runAwardBountyTxn(
     )
   }
 
-  const txn = await runTxn(tx, txnData)
+  const txn = await runTxnInBetQueue(tx, txnData)
   const { bountyLeft } = contract
   if (bountyLeft < amount) {
     throw new APIError(
@@ -94,7 +94,7 @@ export async function runCancelBountyTxn(
       totalDeposits: txnData.amount,
     })
 
-    const txn = await runTxn(tx, txnData)
+    const txn = await runTxnInBetQueue(tx, txnData)
 
     const amount = contract.bountyLeft
     if (amount != txnData.amount) {
