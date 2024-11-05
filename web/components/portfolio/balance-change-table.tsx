@@ -588,6 +588,8 @@ const txnTypeToDescription = (txnCategory: string) => {
   switch (txnCategory) {
     case 'MARKET_BOOST_CREATE':
       return 'Boost'
+    case 'CANCEL_UNIQUE_BETTOR_BONUS':
+      return 'Cancel unique trader bonus'
     case 'PRODUCE_SPICE':
     case 'CONTRACT_RESOLUTION_PAYOUT':
       return 'Payout'
