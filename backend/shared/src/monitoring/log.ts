@@ -74,7 +74,12 @@ function writeLog(
     const data = { ...(contextData ?? {}), ...(props ?? {}) }
     if (IS_GCP) {
       const severity = JS_TO_GCP_LEVELS[level]
-      const output: LogDetails = { severity, message, ...data }
+      const output: LogDetails = {
+        severity,
+        port: process.env.PORT ?? 'unknown',
+        message,
+        ...data,
+      }
       if (msg instanceof Error) {
         // record error properties in GCP if you just do log(err)
         output['error'] = msg

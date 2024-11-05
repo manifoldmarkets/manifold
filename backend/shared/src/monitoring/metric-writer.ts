@@ -80,6 +80,7 @@ function serializeEntries(
       labels: {
         ...(entry.labels ?? {}),
         instance_type: process.env.READ_ONLY ? 'read' : 'write',
+        port: process.env.PORT ?? 'unknown',
       },
     },
     points: [
