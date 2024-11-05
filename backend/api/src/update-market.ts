@@ -26,7 +26,6 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     sort,
     question,
     coverImageUrl,
-    isSpicePayout,
 
     description: raw,
     descriptionHtml: html,
@@ -38,18 +37,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   const pg = createSupabaseDirectClient()
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
-  if (contract.creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
-  if (isSpicePayout !== undefined) {
-    if (!isAdminId(auth.uid)) {
-      throw new APIError(403, 'Only admins choose prize markets')
-    }
-    if (isSpicePayout === true) {
-      throw new APIError(
-        403,
-        `We not making spice markets anymore! If you're sure, comment this out. - Sinclair`
-      )
-    }
-  }
+  if (contract.creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
 
   if (contract.isResolved && closeTime !== undefined) {
     throw new APIError(403, 'Cannot update closeTime for resolved contracts')
@@ -67,17 +55,6 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     )
   }
 
-  await trackPublicEvent(
-    auth.uid,
-    'update market',
-    removeUndefinedProps({
-      contractId,
-      visibility,
-      closeTime,
-      addAnswersMode,
-    })
-  )
-
   const update = removeUndefinedProps({
     question,
     coverImageUrl,
@@ -87,7 +64,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     addAnswersMode,
     sort,
     description,
-    isSpicePayout,
+    lastUpdatedTime: Date.now(),
   })
   await updateContract(pg, contractId, {
     ...update,
@@ -96,26 +73,31 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
 
   log(`updated fields: ${Object.keys(fields).join(', ')}`)
 
-  if (question || closeTime || visibility || description) {
-    await recordContractEdit(
-      contract,
-      auth.uid,
-      buildArray([
-        question && 'question',
-        closeTime && 'closeTime',
-        visibility && 'visibility',
-        description && 'description',
-      ])
-    )
-  }
-
   const continuation = async () => {
     log(`Revalidating contract ${contract.id}.`)
     await revalidateContractStaticProps(contract)
-    log(`Updating lastUpdatedTime for contract ${contract.id}.`)
-    await updateContract(pg, contract.id, {
-      lastUpdatedTime: Date.now(),
-    })
+    await trackPublicEvent(
+      auth.uid,
+      'update market',
+      removeUndefinedProps({
+        contractId,
+        visibility,
+        closeTime,
+        addAnswersMode,
+      })
+    )
+    if (question || closeTime || visibility || description) {
+      await recordContractEdit(
+        contract,
+        auth.uid,
+        buildArray([
+          question && 'question',
+          closeTime && 'closeTime',
+          visibility && 'visibility',
+          description && 'description',
+        ])
+      )
+    }
   }
 
   return {
