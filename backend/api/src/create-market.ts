@@ -44,7 +44,7 @@ import {
 } from 'shared/supabase/init'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { anythingToRichText } from 'shared/tiptap'
-import { runTxnInBetQueue, runTxnFromBank } from 'shared/txn/run-txn'
+import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import {
   addGroupToContract,
   canUserAddGroupToMarket,
@@ -60,15 +60,17 @@ import { z } from 'zod'
 type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
-  const market = await createMarketHelper(body, auth)
-  const pg = createSupabaseDirectClient()
+  const { contract: market, user } = await createMarketHelper(body, auth)
   // Should have the embedding ready for the related contracts cache
-  const embedding = await generateContractEmbeddings(market, pg).catch((e) =>
-    log.error(`Failed to generate embeddings, returning ${market.id} `, e)
-  )
   return {
     result: toLiteMarket(market),
     continue: async () => {
+      const pg = createSupabaseDirectClient()
+      const embedding = await generateContractEmbeddings(market, pg).catch(
+        (e) =>
+          log.error(`Failed to generate embeddings, returning ${market.id} `, e)
+      )
+      broadcastNewContract(market, user)
       await onCreateMarket(market, embedding)
     },
   }
@@ -194,12 +196,14 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       [contract.id, JSON.stringify(contract), contract.token]
     )
 
-    await runCreateMarketTxn({
-      contractId: contract.id,
-      userId,
-      amountSuppliedByUser: ante,
-      amountSuppliedByHouse: 0,
-      transaction: tx,
+    await runTxnOutsideBetQueue(tx, {
+      fromId: userId,
+      fromType: 'USER',
+      toId: contract.id,
+      toType: 'CONTRACT',
+      amount: ante,
+      token: 'M$',
+      category: 'CREATE_CONTRACT_ANTE',
     })
 
     log('created contract ', {
@@ -229,48 +233,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       totalMarketCost
     )
 
-    broadcastNewContract(contract, user)
-    return contract
+    return { contract, user }
   })
-}
-
-const runCreateMarketTxn = async (args: {
-  contractId: string
-  userId: string
-  amountSuppliedByUser: number
-  amountSuppliedByHouse: number
-  transaction: SupabaseTransaction
-}) => {
-  const {
-    contractId,
-    userId,
-    amountSuppliedByUser,
-    amountSuppliedByHouse,
-    transaction,
-  } = args
-
-  if (amountSuppliedByUser > 0) {
-    await runTxnInBetQueue(transaction, {
-      fromId: userId,
-      fromType: 'USER',
-      toId: contractId,
-      toType: 'CONTRACT',
-      amount: amountSuppliedByUser,
-      token: 'M$',
-      category: 'CREATE_CONTRACT_ANTE',
-    })
-  }
-
-  if (amountSuppliedByHouse > 0) {
-    await runTxnFromBank(transaction, {
-      amount: amountSuppliedByHouse,
-      category: 'CREATE_CONTRACT_ANTE',
-      toId: contractId,
-      toType: 'CONTRACT',
-      fromType: 'BANK',
-      token: 'M$',
-    })
-  }
 }
 
 async function getDuplicateSubmissionUrl(
@@ -589,7 +553,7 @@ export async function generateAntes(
     (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
   ) {
     return await pg.txIf(async (tx) => {
-      await runTxnInBetQueue(tx, {
+      await runTxnOutsideBetQueue(tx, {
         fromId: providerId,
         amount: drizzledAmount,
         toId: contract.id,

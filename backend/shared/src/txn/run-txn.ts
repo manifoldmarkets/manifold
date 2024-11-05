@@ -12,17 +12,35 @@ import { buildArray } from 'common/util/array'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
+export async function runTxnOutsideBetQueue(
+  pgTransaction: SupabaseTransaction,
+  data: TxnData,
+  affectsProfit = false
+) {
+  return await runTxnInternal(pgTransaction, data, affectsProfit, false)
+}
+
 export async function runTxnInBetQueue(
   pgTransaction: SupabaseTransaction,
   data: TxnData,
   affectsProfit = false
+) {
+  return await runTxnInternal(pgTransaction, data, affectsProfit, true)
+}
+
+async function runTxnInternal(
+  pgTransaction: SupabaseTransaction,
+  data: TxnData,
+  affectsProfit = false,
+  useQueue = true
 ) {
   const { amount, fromType, fromId, toId, toType, token } = data
   const deps = buildArray(
     (fromType === 'USER' || fromType === 'CONTRACT') && fromId,
     (toType === 'USER' || toType === 'CONTRACT') && toId
   )
-  return await betsQueue.enqueueFn(async () => {
+
+  const runTxn = async () => {
     if (!isFinite(amount)) {
       throw new APIError(400, 'Invalid amount')
     }
@@ -136,7 +154,13 @@ export async function runTxnInBetQueue(
     }
 
     return await insertTxn(pgTransaction, data)
-  }, deps)
+  }
+
+  if (useQueue) {
+    return await betsQueue.enqueueFn(runTxn, deps)
+  } else {
+    return await runTxn()
+  }
 }
 
 export async function runTxnFromBank(
