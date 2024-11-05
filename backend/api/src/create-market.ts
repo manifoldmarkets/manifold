@@ -14,7 +14,6 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import {
   BinaryContract,
   CPMMMultiContract,
-  CPMMNumericContract,
   Contract,
   MULTI_NUMERIC_CREATION_ENABLED,
   NO_CLOSE_TIME_TYPES,
@@ -49,28 +48,50 @@ import {
   addGroupToContract,
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
-import { getUser, getUserByUsername, htmlToRichText, log } from 'shared/utils'
-import { broadcastNewContract } from 'shared/websockets/helpers'
+import { getUser, htmlToRichText, log } from 'shared/utils'
+import {
+  broadcastNewAnswer,
+  broadcastNewContract,
+} from 'shared/websockets/helpers'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { Row } from 'common/supabase/utils'
-import { bulkInsertAnswers } from 'shared/supabase/answers'
-import { FieldVal } from 'shared/supabase/utils'
+import { bulkInsertQuery, FieldVal } from 'shared/supabase/utils'
 import { z } from 'zod'
+import { answerToRow } from 'shared/supabase/answers'
+import { convertAnswer } from 'common/supabase/contracts'
 
 type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
   const { contract: market, user } = await createMarketHelper(body, auth)
+
+  const pg = createSupabaseDirectClient()
+  const { groupIds } = body
+  const groups = groupIds
+    ? await Promise.all(
+        groupIds.map(async (gId) => getGroupCheckPermissions(pg, gId, user.id))
+      )
+    : null
+
+  if (groups) {
+    await Promise.all(
+      groups.map(async (g) => {
+        await addGroupToContract(pg, market, g)
+      })
+    )
+  }
   // Should have the embedding ready for the related contracts cache
   return {
     result: toLiteMarket(market),
     continue: async () => {
-      const pg = createSupabaseDirectClient()
       const embedding = await generateContractEmbeddings(market, pg).catch(
         (e) =>
           log.error(`Failed to generate embeddings, returning ${market.id} `, e)
       )
       broadcastNewContract(market, user)
+      if ('answers' in market) {
+        market.answers.forEach(broadcastNewAnswer)
+      }
       await onCreateMarket(market, embedding)
     },
   }
@@ -85,7 +106,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     descriptionJson,
     closeTime: closeTimeRaw,
     outcomeType,
-    groupIds,
     extraLiquidity,
     isTwitchContract,
     utcOffset,
@@ -106,12 +126,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const userId = auth.uid
 
   const pg = createSupabaseDirectClient()
-
-  const groups = groupIds
-    ? await Promise.all(
-        groupIds.map(async (gId) => getGroupCheckPermissions(pg, gId, userId))
-      )
-    : null
 
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
@@ -190,12 +204,18 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         token: 'MANA',
       })
     )
-
-    await tx.none(
-      `insert into contracts (id, data, token) values ($1, $2, $3)`,
+    const insertAnswersQuery =
+      contract.mechanism === 'cpmm-multi-1'
+        ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
+        : 'select 1 where false'
+    const result = await tx.multi(
+      `insert into contracts (id, data, token) values ($1, $2, $3);
+      ${insertAnswersQuery};`,
       [contract.id, JSON.stringify(contract), contract.token]
     )
-
+    if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
+      contract.answers = result[1].map(convertAnswer)
+    }
     await runTxnOutsideBetQueue(tx, {
       fromId: userId,
       fromType: 'USER',
@@ -212,17 +232,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       question,
       ante: ante || 0,
     })
-
-    if (answers && contract.mechanism === 'cpmm-multi-1')
-      await createAnswers(tx, contract)
-
-    if (groups) {
-      await Promise.all(
-        groups.map(async (g) => {
-          await addGroupToContract(tx, contract, g)
-        })
-      )
-    }
 
     await generateAntes(
       tx,
@@ -474,34 +483,6 @@ async function getGroupCheckPermissions(
   }
 
   return group
-}
-
-async function createAnswers(
-  pg: SupabaseDirectClient,
-  contract: CPMMMultiContract | CPMMNumericContract
-) {
-  const { isLove } = contract
-  let { answers } = contract
-
-  if (isLove) {
-    // Add loverUserId to the answer.
-    answers = await Promise.all(
-      answers.map(async (a) => {
-        // Parse username from answer text.
-        const matches = a.text.match(/@(\w+)/)
-        const loverUsername = matches ? matches[1] : null
-        if (!loverUsername) return a
-        const loverUserId = (await getUserByUsername(loverUsername))?.id
-        if (!loverUserId) return a
-        return {
-          ...a,
-          loverUserId,
-        }
-      })
-    )
-  }
-
-  await bulkInsertAnswers(pg, answers)
 }
 
 export async function generateAntes(

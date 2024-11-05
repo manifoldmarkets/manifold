@@ -2,7 +2,7 @@ import { type SupabaseDirectClient } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
 import { groupBy, mapValues, sortBy } from 'lodash'
 import { Answer } from 'common/answer'
-import { bulkInsert, bulkUpdate, insert, update } from './utils'
+import { bulkUpdate, insert, update } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { millisToTs, Row } from 'common/supabase/utils'
 import {
@@ -54,16 +54,6 @@ export const insertAnswer = async (
   broadcastNewAnswer(convertAnswer(row))
 }
 
-export const bulkInsertAnswers = async (
-  pg: SupabaseDirectClient,
-  answers: Omit<Answer, 'id'>[]
-) => {
-  if (answers.length > 0) {
-    const rows = await bulkInsert(pg, 'answers', answers.map(answerToRow))
-    rows.map(convertAnswer).forEach(broadcastNewAnswer)
-  }
-}
-
 export const updateAnswer = async (
   pg: SupabaseDirectClient,
   answerId: string,
@@ -98,7 +88,7 @@ export const bulkUpdateAnswers = async (
   await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
 }
 
-const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
+export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
   id: answer.id,
   index: answer.index,
   contract_id: answer.contractId,
