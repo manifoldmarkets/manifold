@@ -40,6 +40,7 @@ import {
   SupabaseDirectClient,
   SupabaseTransaction,
   createSupabaseDirectClient,
+  pgp,
 } from 'shared/supabase/init'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { anythingToRichText } from 'shared/tiptap'
@@ -208,10 +209,13 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       contract.mechanism === 'cpmm-multi-1'
         ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
         : 'select 1 where false'
-    const result = await tx.multi(
-      `insert into contracts (id, data, token) values ($1, $2, $3);
-      ${insertAnswersQuery};`,
+    const contractQuery = pgp.as.format(
+      `insert into contracts (id, data, token) values ($1, $2, $3);`,
       [contract.id, JSON.stringify(contract), contract.token]
+    )
+    const result = await tx.multi(
+      `${contractQuery};
+       ${insertAnswersQuery};`
     )
     if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
       contract.answers = result[1].map(convertAnswer)
