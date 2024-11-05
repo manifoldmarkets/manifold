@@ -1,15 +1,16 @@
 import { generateJSON } from '@tiptap/html'
 import { APIError, getCloudRunServiceUrl } from 'common/api/utils'
-import { Contract, contractPath } from 'common/contract'
+import { Contract, contractPath, MarketContract } from 'common/contract'
 import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
 import * as admin from 'firebase-admin'
-import { first, groupBy, mapValues, sumBy } from 'lodash'
+import { first } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
 import { DAY_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
+  SupabaseTransaction,
 } from 'shared/supabase/init'
 import {
   ENV_CONFIG,
@@ -20,6 +21,8 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Row, tsToMillis } from 'common/supabase/utils'
 import { log } from 'shared/monitoring/log'
 import { metrics } from 'shared/monitoring/metrics'
+import { convertBet } from 'common/supabase/bets'
+import { convertLiquidity } from 'common/supabase/liquidity'
 
 export { metrics }
 export { log }
@@ -124,6 +127,42 @@ export const getContract = async (
     contract.answers = answers
   }
   return contract
+}
+
+export const getContractAndBetsAndLiquidities = async (
+  pg: SupabaseTransaction,
+  unresolvedContract: MarketContract,
+  answerId: string | undefined
+) => {
+  const { id: contractId, mechanism, outcomeType } = unresolvedContract
+  // Filter out initial liquidity if set up with special liquidity per answer.
+  const filterAnte =
+    mechanism === 'cpmm-multi-1' &&
+    outcomeType !== 'NUMBER' &&
+    unresolvedContract.specialLiquidityPerAnswer
+  const results = await pg.multi(
+    `select ${contractColumnsToSelect} from contracts where id = $1;
+     select * from answers where contract_id = $1 order by index;
+     select * from contract_bets
+      where contract_id = $1
+      and (shares != 0 or loan_amount != 0)
+      ${answerId ? `and data->>'answerId' = $2` : ''};
+     select * from contract_liquidity where contract_id = $1 ${
+       filterAnte ? `and data->>'answerId' = $2` : ''
+     };`,
+    [contractId, answerId]
+  )
+
+  const contract = first(results[0].map(convertContract)) as MarketContract
+  if (!contract) throw new APIError(500, 'Contract not found')
+  const answers = results[1].map(convertAnswer)
+  if ('answers' in contract) {
+    contract.answers = answers
+  }
+  const bets = results[2].map(convertBet)
+  const liquidities = results[3].map(convertLiquidity)
+
+  return { contract, bets, liquidities }
 }
 
 export const getContractSupabase = async (contractId: string) => {
@@ -257,34 +296,7 @@ export const getUserByUsername = async (
     `select * from users where username = $1`,
     username
   )
-
   return res ? convertUser(res) : null
-}
-
-export const checkAndMergePayouts = (
-  payouts: {
-    userId: string
-    payout: number
-    deposit?: number
-  }[]
-) => {
-  for (const { payout, deposit } of payouts) {
-    if (!isFinite(payout)) {
-      throw new Error('Payout is not finite: ' + payout)
-    }
-    if (deposit !== undefined && !isFinite(deposit)) {
-      throw new Error('Deposit is not finite: ' + deposit)
-    }
-  }
-
-  const groupedPayouts = groupBy(payouts, 'userId')
-  return Object.values(
-    mapValues(groupedPayouts, (payouts, userId) => ({
-      userId,
-      payout: sumBy(payouts, 'payout'),
-      deposit: sumBy(payouts, (p) => p.deposit ?? 0),
-    }))
-  )
 }
 
 export function contractUrl(contract: Contract) {

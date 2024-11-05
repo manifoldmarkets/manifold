@@ -31,7 +31,7 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { UniqueBettorBonusTxn } from 'common/txn'
 import { getInsertQuery } from 'shared/supabase/utils'
-import { txnDataToRow } from 'shared/txn/run-txn'
+import { txnToRow } from 'shared/txn/run-txn'
 import { contractColumnsToSelect, isProd } from 'shared/utils'
 import { convertUser } from 'common/supabase/users'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
@@ -487,7 +487,7 @@ export const getUniqueBettorBonusQuery = (
     balance: bonusAmount,
     totalDeposits: bonusAmount,
   }
-  const txnQuery = getInsertQuery('txns', txnDataToRow(bonusTxn))
+  const txnQuery = getInsertQuery('txns', txnToRow(bonusTxn))
 
   log(`Bonus txn for user: ${contract.creatorId} constructed:`, bonusTxn)
   return {

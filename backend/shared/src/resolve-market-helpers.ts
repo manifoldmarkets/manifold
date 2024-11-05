@@ -17,13 +17,12 @@ import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { createContractResolvedNotifications } from './create-notification'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
-import { TxnData, insertTxns, runTxn } from './txn/run-txn'
+import { TxnData, runTxn, txnToRow } from './txn/run-txn'
 import {
   revalidateStaticProps,
   isProd,
-  checkAndMergePayouts,
   log,
-  getContract,
+  getContractAndBetsAndLiquidities,
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common//api/utils'
@@ -36,11 +35,10 @@ import {
 import { Answer } from 'common/answer'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { convertTxn } from 'common/supabase/txns'
-import { bulkIncrementBalances } from './supabase/users'
-import { convertBet } from 'common/supabase/bets'
-import { convertLiquidity } from 'common/supabase/liquidity'
 import { updateAnswer, updateAnswers } from './supabase/answers'
 import { updateContract } from './supabase/contracts'
+import { bulkInsertQuery } from './supabase/utils'
+import { bulkIncrementBalancesQuery } from './supabase/users'
 
 export type ResolutionParams = {
   outcome: string
@@ -60,34 +58,39 @@ export const resolveMarketHelper = async (
 
   const { contract, bets, payoutsWithoutLoans, updatedContractAttrs } =
     await pg.tx(async (tx) => {
-      // Fetch fresh contract & check if resolved within lock.
-      const fetch = (await getContract(
+      const { closeTime, id: contractId, outcomeType } = unresolvedContract
+      const {
+        contract: c,
+        bets,
+        liquidities,
+      } = await getContractAndBetsAndLiquidities(
         tx,
-        unresolvedContract.id
-      )) as MarketContract
-      if (!fetch) {
+        unresolvedContract,
+        answerId
+      )
+      if (!c) {
         throw new APIError(500, 'Contract not found')
       }
-      unresolvedContract = fetch
+      unresolvedContract = c as MarketContract
       if (unresolvedContract.isResolved) {
         throw new APIError(403, 'Contract is already resolved')
       }
-
-      const { closeTime, id: contractId, outcomeType } = unresolvedContract
 
       const resolutionTime = Date.now()
       const newCloseTime = closeTime
         ? Math.min(closeTime, resolutionTime)
         : closeTime
 
-      const { bets, resolutionProbability, payouts, payoutsWithoutLoans } =
-        await getDataAndPayoutInfo(
-          tx,
+      // ian: TODO: just use contract metrics for this (but after the election)
+      const { resolutionProbability, payouts, payoutsWithoutLoans } =
+        await getPayoutInfo(
           outcome,
           unresolvedContract,
           resolutions,
           probabilityInt,
-          answerId
+          answerId,
+          bets,
+          liquidities
         )
       // Keep MKT resolution prob for consistency's sake
       const probBeforeResolution =
@@ -278,55 +281,15 @@ export const resolveMarketHelper = async (
   return contract
 }
 
-export const getDataAndPayoutInfo = async (
-  pg: SupabaseTransaction,
+export const getPayoutInfo = async (
   outcome: string | undefined,
   unresolvedContract: Contract,
   resolutions: { [key: string]: number } | undefined,
   probabilityInt: number | undefined,
-  answerId: string | undefined
+  answerId: string | undefined,
+  bets: Bet[],
+  liquidities: LiquidityProvision[]
 ) => {
-  const { id: contractId, outcomeType } = unresolvedContract
-
-  // Filter out initial liquidity if set up with special liquidity per answer.
-  const filterAnte =
-    unresolvedContract.mechanism === 'cpmm-multi-1' &&
-    outcomeType !== 'NUMBER' &&
-    unresolvedContract.specialLiquidityPerAnswer
-
-  const liquidities = await pg.map<LiquidityProvision>(
-    `select * from contract_liquidity where contract_id = $1 ${
-      filterAnte ? `and data->>'answerId' = $2` : ''
-    }`,
-    [contractId, answerId],
-    convertLiquidity
-  )
-
-  let bets: Bet[]
-  if (
-    unresolvedContract.mechanism === 'cpmm-multi-1' &&
-    unresolvedContract.shouldAnswersSumToOne
-  ) {
-    // Load bets from supabase as an optimization.
-    // This type of multi choice generates a lot of extra bets that have shares = 0.
-    bets = await pg.map(
-      `select * from contract_bets
-      where contract_id = $1
-      and (shares != 0 or loan_amount != 0)
-      `,
-      [contractId],
-      convertBet
-    )
-  } else {
-    bets = await pg.map(
-      `select * from contract_bets
-      where contract_id = $1
-      ${answerId ? `and data->>'answerId' = $2` : ''}`,
-      [contractId, answerId],
-      convertBet
-    )
-  }
-
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
 
@@ -371,6 +334,7 @@ export const getDataAndPayoutInfo = async (
     payouts,
   }
 }
+
 async function undoUniqueBettorRewardsIfCancelResolution(
   pg: SupabaseTransaction,
   contract: Contract
@@ -470,6 +434,37 @@ export const payUsersTransactions = async (
     })
   }
 
-  await bulkIncrementBalances(pg, balanceUpdates)
-  await insertTxns(pg, txns)
+  const balanceUpdatesQuery = bulkIncrementBalancesQuery(balanceUpdates)
+  const insertTxnsQuery = bulkInsertQuery('txns', txns.map(txnToRow), false)
+
+  await pg.multi(`
+    ${balanceUpdatesQuery};
+    ${insertTxnsQuery};
+  `)
+}
+
+const checkAndMergePayouts = (
+  payouts: {
+    userId: string
+    payout: number
+    deposit?: number
+  }[]
+) => {
+  for (const { payout, deposit } of payouts) {
+    if (!isFinite(payout)) {
+      throw new Error('Payout is not finite: ' + payout)
+    }
+    if (deposit !== undefined && !isFinite(deposit)) {
+      throw new Error('Deposit is not finite: ' + deposit)
+    }
+  }
+
+  const groupedPayouts = groupBy(payouts, 'userId')
+  return Object.values(
+    mapValues(groupedPayouts, (payouts, userId) => ({
+      userId,
+      payout: sumBy(payouts, 'payout'),
+      deposit: sumBy(payouts, (p) => p.deposit ?? 0),
+    }))
+  ).filter((p) => p!.payout !== 0 || p!.deposit !== 0)
 }

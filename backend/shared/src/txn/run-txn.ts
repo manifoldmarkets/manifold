@@ -152,7 +152,7 @@ export async function insertTxn(
   pgTransaction: SupabaseTransaction,
   txn: TxnData
 ) {
-  const row = await insert(pgTransaction, 'txns', txnDataToRow(txn))
+  const row = await insert(pgTransaction, 'txns', txnToRow(txn))
   return convertTxn(row)
 }
 
@@ -161,10 +161,10 @@ export async function insertTxns(
   pgTransaction: SupabaseTransaction,
   txns: TxnData[]
 ) {
-  await bulkInsert(pgTransaction, 'txns', txns.map(txnDataToRow))
+  await bulkInsert(pgTransaction, 'txns', txns.map(txnToRow))
 }
 
-export const txnDataToRow = (data: TxnData) => {
+export const txnToRow = (data: TxnData) => {
   return {
     data: JSON.stringify(
       // data is nested an extra level for legacy reasons
