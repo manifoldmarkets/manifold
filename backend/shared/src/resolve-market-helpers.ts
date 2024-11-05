@@ -17,7 +17,7 @@ import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { createContractResolvedNotifications } from './create-notification'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
-import { TxnData, insertTxn, txnToRow } from './txn/run-txn'
+import { TxnData, runTxnOutsideBetQueue, txnToRow } from './txn/run-txn'
 import {
   revalidateStaticProps,
   isProd,
@@ -38,7 +38,7 @@ import { convertTxn } from 'common/supabase/txns'
 import { updateAnswer, updateAnswers } from './supabase/answers'
 import { updateContract } from './supabase/contracts'
 import { bulkInsertQuery } from './supabase/utils'
-import { bulkIncrementBalancesQuery, incrementBalance } from './supabase/users'
+import { bulkIncrementBalancesQuery } from './supabase/users'
 
 export type ResolutionParams = {
   outcome: string
@@ -371,11 +371,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
     },
   } as Omit<CancelUniqueBettorBonusTxn, 'id' | 'createdTime'>
 
-  const txn = await insertTxn(pg, undoBonusTxn)
-  await incrementBalance(pg, contract.creatorId, {
-    balance: -totalBonusAmount,
-    totalDeposits: -totalBonusAmount,
-  })
+  const txn = await runTxnOutsideBetQueue(pg, undoBonusTxn)
   log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
 }
 
