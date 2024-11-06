@@ -51,7 +51,6 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
     <>
       <HouseBar
         liveAnswers={answers}
-        liveHouseContract={liveHouseContract}
         handleClick={handleClick}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}

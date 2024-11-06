@@ -3,15 +3,14 @@ import { DEM_DARK_HEX, REP_DARK_HEX } from './state-election-map'
 import { Col } from 'web/components/layout/col'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Answer, sortAnswers } from 'common/answer'
+import { Answer } from 'common/answer'
 import { useMemo } from 'react'
-import { CPMMMultiContract } from 'common/contract'
 import { StateBar } from './senate-bar'
 import { houseProbToColor } from './house-table-helpers'
+import { sortBy } from 'lodash'
 
 export function HouseBar(props: {
   liveAnswers: Answer[]
-  liveHouseContract: CPMMMultiContract
   handleClick: (newTargetAnswer: string | undefined) => void
   onMouseEnter: (hoverState: string) => void
   onMouseLeave: () => void
@@ -20,7 +19,6 @@ export function HouseBar(props: {
 }) {
   const {
     liveAnswers,
-    liveHouseContract,
     handleClick,
     onMouseEnter,
     onMouseLeave,
@@ -29,7 +27,10 @@ export function HouseBar(props: {
   } = props
 
   const sortedAnswers = useMemo(
-    () => sortAnswers(liveHouseContract, liveAnswers, 'prob-asc'),
+    () =>
+      sortBy(liveAnswers, (answer) =>
+        answer.resolution ? (answer.resolution === 'YES' ? 1 : 0) : answer.prob
+      ),
     [liveAnswers]
   )
   const isMobile = useIsMobile()
