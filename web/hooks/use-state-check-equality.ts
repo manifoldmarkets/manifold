@@ -1,5 +1,5 @@
 import { isEqual } from 'lodash'
-import { useCallback, useRef, useState } from 'react'
+import { SetStateAction, useMemo, useRef, useState } from 'react'
 
 export const useStateCheckEquality = <T>(initialState: T) => {
   const [state, setState] = useState(initialState)
@@ -7,11 +7,12 @@ export const useStateCheckEquality = <T>(initialState: T) => {
   const stateRef = useRef(state)
   stateRef.current = state
 
-  const checkSetState = useCallback(
-    (next: T) => {
+  const checkSetState = useMemo(
+    () => (next: SetStateAction<T>) => {
       const state = stateRef.current
-      if (!isEqual(state, next)) {
-        setState(next)
+      const newState = next instanceof Function ? next(state) : next
+      if (!isEqual(state, newState)) {
+        setState(newState)
       }
     },
     [stateRef]
