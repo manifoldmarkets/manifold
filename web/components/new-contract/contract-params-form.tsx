@@ -13,6 +13,7 @@ import {
   MAX_QUESTION_LENGTH,
   MULTI_NUMERIC_BUCKETS_MAX,
   NON_BETTING_OUTCOMES,
+  twombaContractPath,
   Visibility,
 } from 'common/contract'
 import {
@@ -424,7 +425,9 @@ export function ContractParamsForm(props: {
       router.events.on('routeChangeComplete', clearFormOnNavigate)
 
       try {
-        await router.push(contractPath(newContract))
+        const path = twombaContractPath(newContract)
+        console.log('Attempting to navigate to:', path)
+        await router.push(path)
       } catch (error) {
         console.error(error)
       }
