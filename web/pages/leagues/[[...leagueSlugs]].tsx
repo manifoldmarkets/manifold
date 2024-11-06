@@ -220,14 +220,15 @@ export default function Leagues() {
 
           <Col className="text-ink-700 my-2 justify-center gap-1">
             <div>
-              Compete for{' '}
+              Win{' '}
               <span
                 className="border-primary-600 text-primary-600 hover:text-primary-800 cursor-help border-b border-dotted"
                 onClick={togglePrizesModal}
               >
                 prizes
               </span>{' '}
-              and promotion by earning the most mana this month!
+              by earning the most mana from on trades this month! Includes
+              unrealized profits.
             </div>
             <div>
               Looking for the all time leaderboard? It's{' '}

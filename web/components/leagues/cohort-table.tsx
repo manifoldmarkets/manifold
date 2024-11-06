@@ -77,11 +77,7 @@ export const CohortTable = (props: {
           <tr>
             <th className={clsx('pb-1 pl-10 pr-2')}>User</th>
             <th className={clsx('px-2 pb-1 text-right sm:pr-10')}>
-              <InfoTooltip
-                text={`Includes both realized and unrealized profits from ${TRADE_TERM}s placed this month plus creator earnings.`}
-              >
-                Mana earned{' '}
-              </InfoTooltip>
+              Mana earned
             </th>
           </tr>
         </thead>
