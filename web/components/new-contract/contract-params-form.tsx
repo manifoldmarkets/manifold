@@ -6,7 +6,6 @@ import { generateJSON } from '@tiptap/core'
 import {
   add_answers_mode,
   Contract,
-  contractPath,
   CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
   CreateableOutcomeType,
   MAX_DESCRIPTION_LENGTH,
