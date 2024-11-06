@@ -1,18 +1,18 @@
+import { generateJSON } from '@tiptap/core'
 import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
-import { generateJSON } from '@tiptap/core'
 
 import {
   add_answers_mode,
   Contract,
-  contractPath,
   CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
   CreateableOutcomeType,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MULTI_NUMERIC_BUCKETS_MAX,
   NON_BETTING_OUTCOMES,
+  twombaContractPath,
   Visibility,
 } from 'common/contract'
 import {
@@ -22,9 +22,26 @@ import {
   UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
+import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
+import { STONK_NO, STONK_YES } from 'common/stonk'
+import { MarketTierType } from 'common/tier'
+import { User } from 'common/user'
+import { filterDefined } from 'common/util/array'
+import { formatWithToken } from 'common/util/format'
+import { removeUndefinedProps } from 'common/util/object'
+import { extensions } from 'common/util/parse'
+import { randomString } from 'common/util/random'
+import { compareTwoStrings } from 'string-similarity'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
+import { CloseTimeSection } from 'web/components/new-contract/close-time-section'
+import { CostSection } from 'web/components/new-contract/cost-section'
+import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
+import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-numeric-range-section'
+import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
+import { TopicSelectorSection } from 'web/components/new-contract/topic-selector-section'
 import {
   getEditorLocalStorageKey,
   TextEditor,
@@ -33,11 +50,7 @@ import {
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
-import { STONK_NO, STONK_YES } from 'common/stonk'
-import { User } from 'common/user'
-import { removeUndefinedProps } from 'common/util/object'
-import { extensions } from 'common/util/parse'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
   api,
@@ -51,19 +64,6 @@ import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeFromValue } from './create-contract-types'
 import { NewQuestionParams } from './new-contract-panel'
-import { filterDefined } from 'common/util/array'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { compareTwoStrings } from 'string-similarity'
-import { CostSection } from 'web/components/new-contract/cost-section'
-import { CloseTimeSection } from 'web/components/new-contract/close-time-section'
-import { TopicSelectorSection } from 'web/components/new-contract/topic-selector-section'
-import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-numeric-range-section'
-import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
-import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
-import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
-import { MarketTierType } from 'common/tier'
-import { randomString } from 'common/util/random'
-import { formatWithToken } from 'common/util/format'
 
 export function ContractParamsForm(props: {
   creator: User
