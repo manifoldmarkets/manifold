@@ -426,7 +426,6 @@ export function ContractParamsForm(props: {
 
       try {
         const path = twombaContractPath(newContract)
-        console.log('Attempting to navigate to:', path)
         await router.push(path)
       } catch (error) {
         console.error(error)
