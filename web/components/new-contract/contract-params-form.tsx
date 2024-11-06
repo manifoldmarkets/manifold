@@ -415,19 +415,10 @@ export function ContractParamsForm(props: {
         outcomeType,
       })
 
-      // Clear form data from localstorage on navigate, since market is created.
-      // Don't clear before navigate, because looks like a bug.
-      const clearFormOnNavigate = () => {
-        resetProperties()
-        router.events.off('routeChangeComplete', clearFormOnNavigate)
-      }
-      router.events.on('routeChangeComplete', clearFormOnNavigate)
+      resetProperties()
 
-      try {
-        await router.push(contractPath(newContract))
-      } catch (error) {
-        console.error(error)
-      }
+      const path = twombaContractPath(newContract)
+      router.push(path)
     } catch (e) {
       console.error('error creating contract', e)
       setErrorText((e as any).message || 'Error creating contract')
