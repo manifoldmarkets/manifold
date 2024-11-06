@@ -397,6 +397,7 @@ export const sendMarketCloseEmail = async (
   contract: Contract
 ) => {
   if (!privateUser.email) return
+  if (contract.token === 'CASH') return
 
   const { username, name, id: userId } = user
   const firstName = name.split(' ')[0]
