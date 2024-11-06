@@ -314,7 +314,7 @@ export function ReplyToBetRow(props: {
     betLimitProb,
     betOrderAmount,
   } = props
-  const isCashContract = contract.token === 'CASH'
+  const isCashContract = false
   const { bought, money } = getBoughtMoney(betAmount, isCashContract)
   const user = useDisplayUserById(bettorId)
 
