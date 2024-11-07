@@ -482,7 +482,9 @@ export const BuyPanelBody = (props: {
     ? formatLargeNumber(probAfter)
     : formatPercent(probAfter)
 
-  const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
+  const balance = isCashContract ? user?.cashBalance ?? 0 : user?.balance ?? 0
+
+  const bankrollFraction = (betAmount ?? 0) / (balance ?? 1e9)
 
   // warnings
   const highBankrollSpend =
@@ -495,7 +497,7 @@ export const BuyPanelBody = (props: {
         bankrollFraction
       )} of your balance on a single trade. \n\nCurrent balance: ${formatWithToken(
         {
-          amount: user?.balance ?? 0,
+          amount: balance,
           token: isCashContract ? 'CASH' : 'M$',
         }
       )}`
