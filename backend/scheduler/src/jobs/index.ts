@@ -123,7 +123,9 @@ export function createJobs() {
     createJob(
       'update-user-metric-periods',
       '0 0 2 * * *', // 2 AM daily
-      () => updateUserMetricPeriods()
+      async () => {
+        await updateUserMetricPeriods()
+      }
     ),
     createJob(
       'reset-pg-stats',
