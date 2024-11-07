@@ -34,7 +34,9 @@ export async function updateContractMetricsForUsers(
     if (!user) {
       log('User not found', userId)
     } else {
-      metrics.push(...calculateUserMetrics(contract, userBets, user, answers))
+      metrics.push(
+        ...calculateUserMetrics(contract, userBets, user.id, answers)
+      )
     }
   }
 

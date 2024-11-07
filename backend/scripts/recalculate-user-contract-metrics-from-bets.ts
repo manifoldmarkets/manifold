@@ -44,6 +44,7 @@ if (require.main === module) {
 }
 
 const fixUserPeriods = async (pg: SupabaseDirectClient) => {
+  // const allUserIds = [['AJwLWoo3xue32XIiAVrL5SyR1WB2', 0]] as [string, number][]
   const allUserIds = await pg.map(
     `
       select distinct ucm.user_id from user_contract_metrics ucm
@@ -59,10 +60,7 @@ const fixUserPeriods = async (pg: SupabaseDirectClient) => {
   const chunks = chunk(allUserIds, chunkSize)
   let total = 0
   for (const userIds of chunks) {
-    await updateUserMetricPeriods(
-      userIds.map((u) => u[0]),
-      0
-    )
+    await updateUserMetricPeriods(userIds.map((u) => u[0]))
     total += userIds.length
     console.log(`Updated ${userIds.length} users, total ${total} users updated`)
     console.log('last created time:', userIds[userIds.length - 1][1])

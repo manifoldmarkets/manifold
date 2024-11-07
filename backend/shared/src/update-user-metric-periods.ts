@@ -16,9 +16,8 @@ import { convertBet } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
 import { bulkUpdateData } from './supabase/utils'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { convertUser } from 'common/supabase/users'
 
-const LIMIT = isProd() ? 400 : 10
+const CHUNK_SIZE = isProd() ? 400 : 10
 export async function updateUserMetricPeriods(
   userIds?: string[],
   since?: number
@@ -76,7 +75,14 @@ export async function updateUserMetricPeriods(
       )
 
   log(`Loaded ${allActiveUserIds.length} active users.`)
-  const chunks = chunk(allActiveUserIds, LIMIT)
+  const chunks = chunk(allActiveUserIds, CHUNK_SIZE)
+  const statsByUser: Record<
+    string,
+    {
+      profit: number
+      value: number
+    }
+  > = {}
   for (const activeUserIds of chunks) {
     log('Loading bets for', activeUserIds)
     const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
@@ -104,15 +110,12 @@ export async function updateUserMetricPeriods(
       select id, data from user_contract_metrics
       where user_id in ($2:list)
       and contract_id in ($1:list);
-
-      select * from users where id in ($2:list);
     `,
       [uniq(allBets.map((b) => b.contractId)), activeUserIds]
     )
     const contracts = results[0].map(convertContract)
     const answers = results[1].map(convertAnswer)
     const answersByContractId = groupBy(answers, (a) => a.contractId)
-    const users = results[3].map(convertUser)
     const currentContractMetrics = results[2].map(
       (r) => ({ id: r.id, ...r.data } as ContractMetric)
     )
@@ -120,7 +123,6 @@ export async function updateUserMetricPeriods(
     log(
       `Loaded ${contracts.length} contracts,
        ${answers.length} answers,
-       ${users.length} users,
        and ${currentContractMetrics.length} contract metrics.`
     )
 
@@ -140,8 +142,8 @@ export async function updateUserMetricPeriods(
     const contractMetricUpdates: Pick<ContractMetric, 'from' | 'id'>[] = []
 
     log('Computing metric updates...')
-    for (const user of users) {
-      const userMetricRelevantBets = metricRelevantBets[user.id] ?? []
+    for (const userId of activeUserIds) {
+      const userMetricRelevantBets = metricRelevantBets[userId] ?? []
 
       const metricRelevantBetsByContract = groupBy(
         userMetricRelevantBets,
@@ -150,10 +152,16 @@ export async function updateUserMetricPeriods(
       const freshMetrics = calculateMetricsByContractAndAnswer(
         metricRelevantBetsByContract,
         contractsById,
-        user,
+        userId,
         answersByContractId
       ).flat()
-      const currentMetricsForUser = currentMetricsByUserId[user.id] ?? []
+      const nullFreshMetrics = freshMetrics.filter((m) => !m.answerId)
+      statsByUser[userId] = {
+        profit: sumBy(nullFreshMetrics, (m) => m.from?.day?.profit ?? 0),
+        value: sumBy(nullFreshMetrics, (m) => m.payout ?? 0),
+      }
+
+      const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
       contractMetricUpdates.push(
         ...filterDefined(
           freshMetrics.map((freshMetric) => {
@@ -165,7 +173,7 @@ export async function updateUserMetricPeriods(
             if (!currentMetric) {
               !isEmptyMetric(freshMetric) &&
                 log.error(
-                  `Current metric not found for user ${user.id}, contract ${freshMetric.contractId}, answer ${freshMetric.answerId}`
+                  `Current metric not found for user ${userId}, contract ${freshMetric.contractId}, answer ${freshMetric.answerId}`
                 )
               return undefined
             }
@@ -206,6 +214,7 @@ export async function updateUserMetricPeriods(
     }
   }
   log('Finished updating user period metrics')
+  return statsByUser
 }
 
 const getUnresolvedOrRecentlyResolvedBets = async (

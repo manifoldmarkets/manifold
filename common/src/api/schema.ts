@@ -20,7 +20,7 @@ import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { Lover } from 'common/love/lover'
-import { Contract } from 'common/contract'
+import { Contract, MarketContract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
@@ -385,6 +385,24 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
       })
       .strict(),
+  },
+  'get-daily-changed-metrics-and-contracts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'public, max-age=600, stale-while-revalidate=60', // 10 minute cache
+    props: z
+      .object({
+        limit: z.coerce.number(),
+        offset: z.coerce.number().gte(0).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      metrics: ContractMetric[]
+      contracts: MarketContract[]
+      dailyProfit: number
+      investmentValue: number
+    },
   },
   // deprecated. use /bets?username= instead
   'user/:username/bets': {

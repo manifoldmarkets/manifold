@@ -78,7 +78,7 @@ export const ManaEarnedBreakdown = (props: {
         ? calculateUserMetrics(
             contract,
             bets,
-            user,
+            user.id,
             'answers' in contract ? contract.answers : []
           ).find((cm) => !cm.answerId)
         : undefined

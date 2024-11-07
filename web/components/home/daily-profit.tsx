@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useState } from 'react'
+import { memo, useState } from 'react'
 import clsx from 'clsx'
 import { ArrowUpIcon } from '@heroicons/react/solid'
 import { User } from 'common/user'
@@ -6,22 +6,17 @@ import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { ContractMetric } from 'common/contract-metric'
-import { CPMMContract } from 'common/contract'
-import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
+import { CPMMContract, MarketContract } from 'common/contract'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { keyBy, partition, sortBy } from 'lodash'
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { db } from 'web/lib/supabase/db'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { Table } from '../widgets/table'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
-import { LivePortfolioMetrics } from 'common/portfolio-metrics'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
@@ -30,47 +25,15 @@ export const DailyProfit = memo(function DailyProfit(props: {
   isCurrentUser?: boolean
 }) {
   const { user } = props
-
-  const [cachedPortfolio, setCachedPortfolio] = usePersistentLocalState<
-    LivePortfolioMetrics | undefined
-  >(undefined, `portfolio-${user?.id}`)
-  const { data: fetchedPortfolio } = useAPIGetter(
-    'get-user-portfolio',
-    user
-      ? {
-          userId: user.id,
-        }
-      : undefined
-  )
-
-  const portfolio = fetchedPortfolio ?? cachedPortfolio
-
-  useEffect(() => {
-    if (portfolio) setCachedPortfolio(portfolio)
-  }, [portfolio])
-  const { dailyProfit, investmentValue } = portfolio ?? {
-    dailyProfit: 0,
-    investmentValue: 0,
-  }
+  const { data } = useAPIGetter('get-daily-changed-metrics-and-contracts', {
+    limit: 20,
+  })
+  const dailyProfit = data?.dailyProfit ?? 0
+  const investmentValue = data?.investmentValue ?? 0
   const networth =
     investmentValue + (user?.balance ?? 0) + (user?.spiceBalance ?? 0)
 
   const [open, setOpen] = useState(false)
-
-  const refreshContractMetrics = useCallback(async () => {
-    if (user)
-      return getUserContractMetricsByProfitWithContracts(user.id, db, 'day')
-  }, [user])
-
-  const [data, setData] = usePersistentLocalState<
-    { metrics: ContractMetric[]; contracts: CPMMContract[] } | undefined
-  >(undefined, `daily-profit-${user?.id}`)
-
-  useEffect(() => {
-    if (open) refreshContractMetrics().then(setData)
-  }, [open, refreshContractMetrics, setData])
-
-  if (!user) return <div />
 
   return (
     <>
@@ -83,9 +46,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
         <Row>
           <Col className="items-center">
             <div>
-              {portfolio
-                ? formatMoney(networth)
-                : `${ENV_CONFIG.moneyMoniker}----`}
+              {data ? formatMoney(networth) : `${ENV_CONFIG.moneyMoniker}----`}
             </div>
             <div className="text-ink-600 text-xs ">Net worth</div>
           </Col>
@@ -103,16 +64,14 @@ export const DailyProfit = memo(function DailyProfit(props: {
           )}
         </Row>
       </button>
-      {user && (
-        <DailyProfitModal
-          setOpen={setOpen}
-          open={open}
-          metrics={data?.metrics}
-          contracts={data?.contracts}
-          dailyProfit={dailyProfit}
-          investment={networth}
-        />
-      )}
+      <DailyProfitModal
+        setOpen={setOpen}
+        open={open}
+        metrics={data?.metrics}
+        contracts={data?.contracts}
+        dailyProfit={dailyProfit}
+        investment={networth}
+      />
     </>
   )
 })
@@ -121,7 +80,7 @@ export function DailyProfitModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   metrics?: ContractMetric[]
-  contracts?: CPMMContract[]
+  contracts?: MarketContract[]
   dailyProfit: number
   investment: number
 }) {
@@ -153,7 +112,7 @@ export function DailyProfitModal(props: {
       </Row>
 
       {!metrics || !contracts ? (
-        <LoadingIndicator />
+        <LoadingProfitRows />
       ) : (
         <ProfitChangeTable
           contracts={contracts}
@@ -166,9 +125,36 @@ export function DailyProfitModal(props: {
     </Modal>
   )
 }
+function LoadingProfitRows() {
+  return (
+    <Col className=" w-full gap-2">
+      <LoadingProfitRow />
+      <LoadingProfitRow />
+      <LoadingProfitRow />
+      <LoadingProfitRow />
+      <LoadingProfitRow />
+    </Col>
+  )
+}
+
+function LoadingProfitRow() {
+  // You can add any UI inside Loading, including a Skeleton.
+  return (
+    <div className="border-ink-200 flex w-full animate-pulse border-b p-2 last:border-none sm:rounded-md sm:border-none">
+      <Row className="w-full  justify-between gap-1 sm:gap-4">
+        <Row className={clsx('sm:w-[calc(100%-12rem] w-full gap-2 sm:gap-4')}>
+          <div className="h-5 w-2/3 rounded-full bg-gray-500" />
+        </Row>
+        <div className="">
+          <div className="h-5 w-12 rounded-full bg-gray-500" />
+        </div>
+      </Row>
+    </div>
+  )
+}
 
 export function ProfitChangeTable(props: {
-  contracts: CPMMContract[]
+  contracts: MarketContract[]
   metrics: ContractMetric[]
   from: 'day' | 'week' | 'month'
   rowsPerSection: number

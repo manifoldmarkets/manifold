@@ -5,11 +5,7 @@ import {
   getContractBetMetricsPerAnswer,
 } from './calculate'
 import { Bet, LimitBet } from './bet'
-import {
-  Contract,
-  CPMMMultiContract,
-  CPMMMultiNumeric,
-} from './contract'
+import { Contract, CPMMMultiContract, CPMMMultiNumeric } from './contract'
 import { User } from './user'
 import { computeFills } from './new-bet'
 import { CpmmState, getCpmmProbability } from './calculate-cpmm'
@@ -18,7 +14,6 @@ import { floatingEqual, logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer } from 'common/answer'
 import { noFees } from './fees'
-import { DisplayUser } from './api/user-types'
 
 export const computeInvestmentValue = (
   bets: Bet[],
@@ -237,13 +232,13 @@ export const calculateNewPortfolioMetrics = (
 export const calculateMetricsByContractAndAnswer = (
   betsByContractId: Dictionary<Bet[]>,
   contractsById: Dictionary<Contract>,
-  user: User,
+  userId: string,
   answersByContractId: Dictionary<Answer[]>
 ) => {
   return Object.entries(betsByContractId).map(([contractId, bets]) => {
     const contract: Contract = contractsById[contractId]
     const answers = answersByContractId[contractId]
-    return calculateUserMetrics(contract, bets, user, answers)
+    return calculateUserMetrics(contract, bets, userId, answers)
   })
 }
 
@@ -262,7 +257,7 @@ export const isEmptyMetric = (m: ContractMetric) => {
 export const calculateUserMetrics = (
   contract: Contract,
   bets: Bet[],
-  user: DisplayUser,
+  userId: string,
   answers: Answer[]
 ) => {
   // ContractMetrics will have an answerId for every answer, and a null for the overall metrics.
@@ -272,7 +267,7 @@ export const calculateUserMetrics = (
     return removeUndefinedProps({
       ...current,
       contractId: contract.id,
-      userId: user.id,
+      userId,
     } as ContractMetric)
   })
 }
