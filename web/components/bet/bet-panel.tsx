@@ -793,7 +793,7 @@ export const BuyPanelBody = (props: {
               </span>
               <span className="text-ink-700 font-semibold">
                 <MoneyDisplay
-                  amount={isCashContract ? user.cashBalance : user.balance}
+                  amount={balance}
                   isCashContract={isCashContract}
                 />
               </span>
