@@ -69,9 +69,6 @@ export function SweepsWelcomePage() {
             setName(e.target.value)
           }}
           onBlur={() => {
-            // if (name.length <= 0 || !name) {
-            //   setName(user ? user.name : 'Name')
-            // }
             saveName()
           }}
           onMouseEnter={() => setUsernameHover(true)}
