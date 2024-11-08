@@ -22,93 +22,39 @@ export function OgMarket(props: OgCardProps) {
     : undefined
   const data = points ? (base64toPoints(points) as Point[]) : []
   const numTraders = Number(props.numTraders ?? 0)
-
   const showGraph = data && data.length > 5
 
   return (
-    <div className="relative flex h-full w-full flex-col items-stretch justify-between bg-white pt-4">
-      <div
-        className={clsx(
-          'mx-6 flex overflow-hidden leading-tight text-indigo-700',
-          showGraph ? 'text-2xl' : 'text-3xl'
-        )}
-      >
-        {question}
-      </div>
-      {topAnswer ? (
-        <div className="flex w-full flex-row items-center justify-between px-8 text-black">
-          <Answer {...props} />
-        </div>
-      ) : showGraph ? (
-        <div className="flex w-full justify-center">
-          <ProbGraph
-            color={numericValue ? '#14bbFF' : undefined}
-            data={data}
-            height={120}
-            aspectRatio={5}
-          />
-        </div>
-      ) : bountyLeft ? (
-        <BountyLeft bountyLeft={bountyLeft} />
-      ) : null}
-      {!topAnswer && (probability || numericValue || resolution) && (
-        <div
-          className={
-            'absolute left-0 right-0 flex w-full justify-center ' +
-            (showGraph ? 'top-[11rem]' : 'top-[12rem]')
-          }
+    <div className="relative flex h-full w-full flex-col items-stretch bg-gradient-to-b from-indigo-700 to-indigo-400">
+      {/* Manifold logo */}
+      <div className="mx-auto flex items-center gap-0.5">
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          strokeWidth=".6"
         >
-          {probabilityAsFloat && !resolution ? (
-            <div className="flex w-full justify-center text-2xl text-white">
-              <div
-                className={
-                  'mr-3 flex h-12 w-2/5 items-center justify-center rounded-lg bg-green-500'
-                }
-              >
-                Yes {probabilityAsFloat.toFixed(0)}%
-              </div>
-              <div
-                className={
-                  'ml-3 flex h-12 w-2/5 items-center justify-center rounded-lg bg-red-600'
-                }
-              >
-                No {(100 - probabilityAsFloat).toFixed(0)}%
-              </div>
-            </div>
-          ) : resolution ? (
-            <Resolution
-              resolution={resolution}
-              label={numericValue ?? probability}
-            />
-          ) : numericValue ? (
-            <EndValue value={numericValue} label="expected" />
-          ) : probability ? (
-            <EndValue value={probability} label="chance" />
-          ) : null}
-        </div>
-      )}
-
-      {/* Bottom row */}
-      <div className="flex w-full flex-row items-center justify-between px-4 text-lg text-gray-600">
-        {/* Manifold logo */}
-        <div className="flex items-center pb-1">
-          <img
-            className="mr-1.5 h-12 w-12"
-            src="https://manifold.markets/logo.svg"
-            width={48}
-            height={48}
+          <path
+            d="M5.24854 17.0952L18.7175 6.80301L14.3444 20M5.24854 17.0952L9.79649 18.5476M5.24854 17.0952L4.27398 6.52755M14.3444 20L9.79649 18.5476M14.3444 20L22 12.638L16.3935 13.8147M9.79649 18.5476L12.3953 15.0668M4.27398 6.52755L10.0714 13.389M4.27398 6.52755L2 9.0818L4.47389 8.85643M12.9451 11.1603L10.971 5L8.65369 11.6611"
+            stroke="#ffffff"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
-          <span
-            className="text-3xl font-thin uppercase text-indigo-700"
-            style={{ fontFamily: 'var(--font-main), Figtree-light' }}
-          >
-            Manifold
-          </span>
-        </div>
+        </svg>
 
+        <span
+          className="text-3xl font-thin uppercase text-white"
+          style={{ fontFamily: 'var(--font-main), Figtree-light' }}
+        >
+          Manifold
+        </span>
+      </div>
+      <div className="m-4 mt-1 h-full rounded-lg bg-white px-6 py-4 shadow-lg">
         {/* Details */}
-        <div className="flex pt-1">
-          <div className="mr-3 flex items-center">
+        <div className="mb-1 flex w-full flex-row justify-between text-gray-600">
+          <div className="flex items-center">
             {/* Profile image */}
             {creatorAvatarUrl && (
               <img
@@ -118,13 +64,84 @@ export function OgMarket(props: OgCardProps) {
             )}
             <span>{creatorName}</span>
           </div>
-
           {!!numTraders && (
             <div className={'flex items-center'}>
-              {numTraders.toLocaleString('en-US')} traders
+              <svg
+                className="mr-0.5 h-4 w-4 text-gray-500"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+
+              {numTraders.toLocaleString('en-US')}
             </div>
           )}
         </div>
+        <div
+          className={clsx(
+            'flex max-h-[6rem] overflow-hidden text-2xl leading-tight text-black'
+          )}
+        >
+          {question}
+        </div>
+        {topAnswer ? (
+          <div className="flex h-full w-full items-center">
+            <Answer {...props} />
+          </div>
+        ) : showGraph ? (
+          <div className="-mx-6 flex w-[calc(100%+48px)] justify-center">
+            <ProbGraph
+              color={numericValue ? '#14bbFF' : '#14b8a6'}
+              data={data}
+              height={120}
+              aspectRatio={5}
+            />
+          </div>
+        ) : bountyLeft ? (
+          <BountyLeft bountyLeft={bountyLeft} />
+        ) : null}
+        {!topAnswer && (probability || numericValue || resolution) && (
+          <div
+            className={
+              'absolute left-0 right-0 flex w-full justify-center ' +
+              (showGraph ? 'top-[14.5rem]' : 'top-[13rem]')
+            }
+        >
+            {probabilityAsFloat && !resolution ? (
+              <div className="flex w-full flex-row justify-center gap-4 text-2xl text-white">
+                <div
+                  className={
+                    'flex h-12 w-[calc(50%-3rem)] items-center justify-center rounded-lg bg-teal-500'
+                  }
+                >
+                  Yes {probabilityAsFloat.toFixed(0)}%
+                </div>
+                <div
+                  className={
+                    'bg-scarlet-500 dark:bg-scarlet-400 flex h-12 w-[calc(50%-3rem)] items-center justify-center rounded-lg'
+                  }
+                >
+                  No {(100 - probabilityAsFloat).toFixed(0)}%
+                </div>
+              </div>
+            ) : resolution ? (
+              <Resolution
+                resolution={resolution}
+                label={numericValue ?? probability}
+              />
+            ) : numericValue ? (
+              <EndValue value={numericValue} label="expected" />
+            ) : probability ? (
+              <EndValue value={probability} label="chance" />
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -132,14 +149,28 @@ export function OgMarket(props: OgCardProps) {
 
 function Answer(props: OgCardProps) {
   const { probability, topAnswer, resolution } = props
+  const probabilityAsFloat = probability
+    ? parseFloat(probability.replace('%', ''))
+    : undefined
+
   return (
     <>
-      <span className="max-h-[4rem] w-[460px] overflow-hidden text-2xl">
-        {topAnswer}
-      </span>
-      {!resolution && probability && (
-        <EndValue value={probability} label="chance" />
-      )}
+      <div className="relative my-auto mt-2 flex w-full flex-row justify-between overflow-hidden rounded bg-gray-100 px-4 py-2 text-xl text-black">
+        <span className="relative z-10 max-h-[2rem] overflow-hidden">
+          {topAnswer}
+        </span>
+        {!resolution && probability && (
+          <div className="relative z-10 my-auto font-semibold">
+            {probability}
+          </div>
+        )}
+        <div
+          className="absolute bottom-0 left-0 top-0 bg-indigo-200"
+          style={{
+            right: `${100 - (probabilityAsFloat ?? 0)}%`,
+          }}
+        />
+      </div>
     </>
   )
 }
