@@ -50,8 +50,6 @@ export function SweepsWelcomePage() {
     }
   }
 
-  const [usernameHover, setUsernameHover] = useState(false)
-
   return (
     <>
       <Row className=" text-primary-700 mb-6 mt-2 h-10 gap-2 text-center text-2xl font-normal">
@@ -61,8 +59,7 @@ export function SweepsWelcomePage() {
           placeholder="Name"
           value={name}
           className={clsx(
-            'decoration-ink-500 border-none bg-transparent px-0 text-2xl font-semibold underline decoration-dotted underline-offset-[6px] outline-none focus:underline focus:decoration-solid focus:underline-offset-[6px] focus:outline-none focus:ring-0 focus-visible:outline-none',
-            usernameHover && ' decoration-solid '
+            'decoration-ink-500 border-none bg-transparent px-0 text-2xl font-semibold underline decoration-dotted underline-offset-[6px] outline-none hover:decoration-solid focus:underline focus:decoration-solid focus:underline-offset-[6px] focus:outline-none focus:ring-0 focus-visible:outline-none'
           )}
           maxLength={30}
           onChange={(e) => {
@@ -71,8 +68,6 @@ export function SweepsWelcomePage() {
           onBlur={() => {
             saveName()
           }}
-          onMouseEnter={() => setUsernameHover(true)}
-          onMouseLeave={() => setUsernameHover(false)}
         />
       </Row>
       <div>
