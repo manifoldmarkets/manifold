@@ -43,7 +43,7 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
   // Refresh the cache, and use the old one in the meantime
   if (lastRefreshTime < Date.now() - HOUR_MS) refreshActiveTopics(pg)
 
-  const chunks = chunk(userIds, 1000)
+  const chunks = chunk(userIds, 25)
   for (const userIds of chunks) {
     await Promise.all(
       userIds.map(async (userId) => {
