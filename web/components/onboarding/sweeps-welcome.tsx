@@ -35,7 +35,7 @@ export function SweepsWelcomePage() {
 
   const saveName = async () => {
     let newName = cleanDisplayName(name)
-    if (!newName) newName = 'User'
+    if (!newName) newName = 'Name'
     if (newName === user?.name) return
     setName(newName)
 
@@ -50,48 +50,38 @@ export function SweepsWelcomePage() {
     }
   }
 
-  const [showOnHover, setShowOnHover] = useState(false)
-  const [isEditingUsername, setIsEditingUsername] = useState(false)
+  const [usernameHover, setUsernameHover] = useState(false)
 
   return (
     <>
-      <div className="text-primary-700 mx-auto mb-6 flex h-10 flex-row gap-2 text-center text-2xl font-normal">
-        <div className="mt-2">Welcome,</div>
-        {isEditingUsername || showOnHover ? (
-          <div>
-            <Input
-              type="text"
-              placeholder="Name"
-              value={name}
-              className="text-lg font-semibold"
-              maxLength={30}
-              onChange={(e) => {
-                setName(e.target.value)
-              }}
-              onBlur={() => {
-                setIsEditingUsername(false)
-                saveName()
-              }}
-              onFocus={() => {
-                setIsEditingUsername(true)
-                setShowOnHover(false)
-              }}
-              onMouseLeave={() => setShowOnHover(false)}
-            />
-          </div>
-        ) : (
-          <div className="mt-2">
-            <span
-              className="hover:cursor-pointer hover:border"
-              onClick={() => setIsEditingUsername(true)}
-              onMouseEnter={() => setShowOnHover(true)}
-            >
-              <span className="font-semibold">{name}</span>{' '}
-              <PencilIcon className="mb-1 inline h-4 w-4" />
-            </span>
-          </div>
-        )}
-      </div>
+      <Row className=" text-primary-700 mb-6 mt-2 h-10 gap-2 text-center text-2xl font-normal">
+        <div className="mt-1">Welcome,</div>
+        <Row
+          className="items-center gap-1"
+          onMouseEnter={() => setUsernameHover(true)}
+          onMouseLeave={() => setUsernameHover(false)}
+        >
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            className={clsx(
+              'decoration-ink-500 border-none bg-transparent px-0 text-2xl font-semibold underline decoration-dotted underline-offset-[6px] outline-none focus:underline focus:decoration-solid focus:underline-offset-[6px] focus:outline-none focus:ring-0 focus-visible:outline-none',
+              usernameHover && ' decoration-solid '
+            )}
+            maxLength={30}
+            onChange={(e) => {
+              setName(e.target.value)
+            }}
+            onBlur={() => {
+              if (name.length <= 0 || !name) {
+                setName(user ? user.name : 'Name')
+              }
+              saveName()
+            }}
+          />
+        </Row>
+      </Row>
       <div>
         We've sent you <strong>{formatMoney(STARTING_BALANCE)}</strong> in play
         money. {capitalize(TRADE_TERM)} on the answer you think is right.
