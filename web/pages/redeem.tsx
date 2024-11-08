@@ -90,7 +90,6 @@ export default function CashoutPage() {
   const [state, setState] = useState('')
   const [zipCode, setZipCode] = useState('')
   const [sessionStatus, setSessionStatus] = useState<string>()
-  const [completedCashout, setCompletedCashout] = useState(0)
   const kycAmount = useKYCGiftAmount(user)
   const [deviceGPS, setDeviceGPS] = useState<GPSData>()
 
@@ -118,11 +117,10 @@ export default function CashoutPage() {
       setSessionStatus(StatusMessage as string)
     },
   })
-  const { data: redeemable } = useAPIGetter('get-redeemable-prize-cash', {})
-  const redeemableCash =
-    (redeemable?.redeemablePrizeCash ?? 0) - completedCashout
+  const redeemable = useAPIGetter('get-redeemable-prize-cash', {})
+  const redeemableCash = redeemable?.data?.redeemablePrizeCash
 
-  const roundedRedeemableCash = Math.floor(redeemableCash * 100) / 100
+  const roundedRedeemableCash = Math.floor((redeemableCash ?? 0) * 100) / 100
   const {
     requestLocationThenFetchMonitorStatus,
     loading: loadingMonitorStatus,
@@ -194,7 +192,7 @@ export default function CashoutPage() {
         setError(message)
       } else {
         setPage('waiting')
-        setCompletedCashout(sweepCashAmount)
+        redeemable.refresh()
       }
     } catch (err) {
       if (err instanceof APIError) {
@@ -378,7 +376,7 @@ export default function CashoutPage() {
           <SelectCashoutOptions
             redeemForUSDPageName={mustUploadDocs ? 'documents' : 'location'}
             user={user}
-            redeemableCash={redeemableCash}
+            redeemableCash={redeemableCash ?? 0}
             setPage={setPage}
             allDisabled={true}
           />
@@ -411,14 +409,14 @@ export default function CashoutPage() {
             <SelectCashoutOptions
               redeemForUSDPageName={mustUploadDocs ? 'documents' : 'location'}
               user={user}
-              redeemableCash={redeemableCash}
+              redeemableCash={redeemableCash ?? 0}
               setPage={setPage}
             />
           </>
         ) : page == 'custom-mana' ? (
           <CashToManaForm
             onBack={() => setPage('select-cashout-method')}
-            redeemableCash={redeemableCash}
+            redeemableCash={redeemableCash ?? 0}
           />
         ) : page == 'documents' ? (
           <UploadDocuments
@@ -602,7 +600,7 @@ export default function CashoutPage() {
 }
 
 function SweepiesStats(props: {
-  redeemableCash: number
+  redeemableCash?: number
   cashBalance: number
   className?: string
 }) {
