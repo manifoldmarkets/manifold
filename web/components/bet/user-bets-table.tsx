@@ -167,7 +167,7 @@ export function UserBetsTable(props: { user: User }) {
 
   useEffect(() => {
     if (isNotYou) {
-      onSetTokenFilter(prefersPlay ? 'MANA' : 'CASH')
+      onSetTokenFilter(prefersPlay ? 'ALL' : 'CASH')
     }
   }, [prefersPlay])
 
@@ -247,7 +247,7 @@ export function UserBetsTable(props: { user: User }) {
                 sweepsEnabled
                 onClick={() => {
                   if (tokenFilter == 'CASH') {
-                    onSetTokenFilter('MANA')
+                    onSetTokenFilter('ALL')
                   } else {
                     onSetTokenFilter('CASH')
                   }
