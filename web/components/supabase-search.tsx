@@ -8,14 +8,12 @@ import { ReactNode, useEffect, useRef, useState } from 'react'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 import { useEvent } from 'web/hooks/use-event'
-import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Input } from './widgets/input'
-
 import { FullUser } from 'common/api/user-types'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
@@ -148,8 +146,8 @@ export type SearchParams = {
 
 export const QUERY_KEY = 'q'
 export const SORT_KEY = 's'
-const FILTER_KEY = 'f'
-const CONTRACT_TYPE_KEY = 'ct'
+export const FILTER_KEY = 'f'
+export const CONTRACT_TYPE_KEY = 'ct'
 export const SEARCH_TYPE_KEY = 't'
 export const PRIZE_MARKET_KEY = 'p'
 export const FOR_YOU_KEY = 'fy'
@@ -327,8 +325,6 @@ export function SupabaseSearch(props: {
     ]
   )
 
-  const searchCountRef = useRef(0)
-
   const emptyContractsState =
     props.emptyState ??
     (filter !== 'all' ||
@@ -436,7 +432,6 @@ export function SupabaseSearch(props: {
             }
             topicSlug={topicSlug}
             initialTopics={initialTopics}
-            isHomePage={persistPrefix === 'search'}
           />
         )}
       </Col>
@@ -754,58 +749,57 @@ const useSearchQueryState = (props: {
   const {
     persistPrefix,
     defaultSort,
-    defaultFilter = 'all',
-    defaultContractType = 'ALL',
+    defaultFilter,
+    defaultContractType,
     defaultSearchType,
     useUrlParams,
-    defaultPrizeMarket = '0',
-    defaultForYou = '0',
-    defaultMarketTier = DEFAULT_TIER,
-    defaultTopicFilter = '',
-    defaultSweepies = '0',
+    defaultPrizeMarket,
+    defaultForYou,
+    defaultMarketTier,
+    defaultTopicFilter,
+    defaultSweepies,
   } = props
-
-  const [lastSort, setLastSort, localStateReady] =
-    usePersistentLocalState<Sort>(
-      defaultSort ?? 'score',
-      `${persistPrefix}-last-search-sort-2`
-    )
 
   const defaults = {
     [QUERY_KEY]: '',
-    [SORT_KEY]: lastSort,
-    [FILTER_KEY]: defaultFilter,
-    [CONTRACT_TYPE_KEY]: defaultContractType,
+    [SORT_KEY]: defaultSort ?? 'score',
+    [FILTER_KEY]: defaultFilter ?? 'all',
+    [CONTRACT_TYPE_KEY]: defaultContractType ?? 'ALL',
     [SEARCH_TYPE_KEY]: defaultSearchType,
-    [PRIZE_MARKET_KEY]: defaultPrizeMarket,
-    [FOR_YOU_KEY]: defaultForYou,
-    [MARKET_TIER_KEY]: defaultMarketTier,
-    [TOPIC_FILTER_KEY]: defaultTopicFilter,
-    [SWEEPIES_KEY]: defaultSweepies,
+    [PRIZE_MARKET_KEY]: defaultPrizeMarket ?? '0',
+    [FOR_YOU_KEY]: defaultForYou ?? '0',
+    [MARKET_TIER_KEY]: defaultMarketTier ?? DEFAULT_TIER,
+    [TOPIC_FILTER_KEY]: defaultTopicFilter ?? '',
+    [SWEEPIES_KEY]: defaultSweepies ?? '0',
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : useShim
   const [state, setState, ready] = useHook(defaults, persistPrefix)
-
-  const isFirstRun = useRef(true)
-  useEffect(() => {
-    if (localStateReady) {
-      if (isFirstRun.current) {
-        isFirstRun.current = false
-        setState({ s: lastSort })
-      } else {
-        setLastSort(state.s)
-      }
-    }
-  }, [state.s, localStateReady])
 
   return [state, setState, ready] as const
 }
 
 const useShim = <T extends Record<string, string | undefined>>(
   x: T,
-  _persistPrefix: string
+  persistPrefix: string
 ) => {
-  const [state, setState] = usePartialUpdater(x)
-  return [state, setState, true] as const
+  const [state, setState, ready] = usePersistentLocalState(
+    x,
+    searchLocalKey(persistPrefix)
+  )
+
+  const updateState = (
+    newState: Partial<T> | ((prevState: T) => Partial<T>)
+  ) => {
+    if (typeof newState === 'function') {
+      setState((prevState) => ({ ...prevState, ...newState(prevState) }))
+    } else {
+      setState((prevState) => ({ ...prevState, ...newState }))
+    }
+  }
+
+  return [state, updateState, ready] as const
 }
+
+export const searchLocalKey = (persistPrefix: string) =>
+  `${persistPrefix}-local-state`

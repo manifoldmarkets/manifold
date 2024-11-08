@@ -61,7 +61,6 @@ export function ContractFilters(props: {
   updateParams: (params: Partial<SearchParams>) => void
   topicSlug?: string
   initialTopics?: LiteGroup[]
-  isHomePage?: boolean
 }) {
   const { className, params, updateParams, topicSlug, initialTopics } = props
 

@@ -11,11 +11,16 @@ import {
   getTotalPublicContractsCreated,
 } from 'web/lib/supabase/users'
 import { db } from 'web/lib/supabase/db'
-import { SupabaseSearch } from 'web/components/supabase-search'
+import {
+  searchLocalKey,
+  FILTER_KEY,
+  SupabaseSearch,
+} from 'web/components/supabase-search'
 import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { UserReviews } from '../reviews/user-reviews'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { setPersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export function UserContractsList(props: {
   creator: User
@@ -39,12 +44,14 @@ export function UserContractsList(props: {
   }, [creator.id, allTime])
 
   const user = useUser()
-  // reset the key to force a re-render when the filter changes
-  const [key, setKey] = useState(0)
-  const [filter, setFilter] = useState<'all' | 'closed'>('all')
+
+  const persistPrefix = `user-contracts-list-${creator.id}`
+
   const seeClosed = () => {
-    setFilter('closed')
-    setKey((k) => k + 1)
+    setPersistentLocalState(searchLocalKey(persistPrefix), (state: any) => ({
+      ...state,
+      [FILTER_KEY]: 'closed',
+    }))
   }
 
   return (
@@ -112,13 +119,12 @@ export function UserContractsList(props: {
         />
       </Row>
       <SupabaseSearch
-        key={key}
-        defaultFilter={filter}
+        defaultFilter="all"
         defaultSort="newest"
         additionalFilter={{
           creatorId: creator.id,
         }}
-        persistPrefix={`user-contracts-list-${creator.id}`}
+        persistPrefix={persistPrefix}
         emptyState={
           <>
             <div className="text-ink-700 mx-2 mt-3 text-center">
