@@ -131,7 +131,7 @@ import { refreshAllClients } from './refresh-all-clients'
 import { getLeaderboard } from './get-leaderboard'
 import { toggleSystemTradingStatus } from './toggle-system-status'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
-import { getDailyChangedMetricsAndContracts } from './get-user-contract-metrics-with-contracts-direct'
+import { getDailyChangedMetricsAndContracts } from './get-daily-changed-metrics-and-contracts'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {

@@ -9,7 +9,6 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { User } from 'web/lib/firebase/users'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
-import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { Y_AXIS_MARGIN, useZoom } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Col } from '../layout/col'
@@ -23,6 +22,7 @@ import { PortfolioGraph, ProfitGraph, PortfolioMode } from './portfolio-graph'
 import { getPortfolioValues } from '../portfolio-helpers'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
+import { useUser } from 'web/hooks/use-user'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
@@ -157,7 +157,6 @@ export const PortfolioValueSection = memo(
           profitGraphElement={noHistoryGraphElement}
           disabled={true}
           size={size}
-          portfolio={portfolio}
           user={user}
           portfolioFocus={portfolioFocus}
           setPortfolioFocus={onSetPortfolioFocus}
@@ -270,7 +269,6 @@ export const PortfolioValueSection = memo(
         size={size}
         portfolioValues={portfolioValues}
         graphValues={graphValues}
-        portfolio={portfolio}
         user={user}
       />
     )
@@ -291,7 +289,6 @@ function TwombaPortfolioValueSkeleton(props: {
   size?: 'sm' | 'md'
   portfolioValues?: PortfolioValueType
   graphValues: GraphValueType
-  portfolio: PortfolioSnapshot | undefined
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
   user: User
@@ -309,14 +306,13 @@ function TwombaPortfolioValueSkeleton(props: {
     graphValues,
     portfolioFocus,
     setPortfolioFocus,
-    portfolio,
     user,
   } = props
 
   function togglePortfolioFocus(toggleTo: PortfolioMode) {
     setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
   }
-
+  const currentUser = useUser()
   const { prefersPlay } = useSweepstakes()
 
   return (
@@ -444,7 +440,10 @@ function TwombaPortfolioValueSkeleton(props: {
                 profit
               </span>
             </span>
-            {prefersPlay && <ProfitWidget user={user} portfolio={portfolio} />}
+            {/* TODO: make work for sweeps */}
+            {prefersPlay && currentUser?.id === user.id && (
+              <ProfitWidget user={user} />
+            )}
           </Col>
           {profitGraphElement && (
             <SizedContainer

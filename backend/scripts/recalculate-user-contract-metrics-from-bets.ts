@@ -3,32 +3,34 @@ import { chunk } from 'lodash'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { updateUserMetricPeriods } from 'shared/update-user-metric-periods'
 import { updateUserMetricsWithBets } from 'shared/update-user-metrics-with-bets'
+import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
 
 const chunkSize = 10
-const FIX_PERIODS = true
+const FIX_PERIODS = false
+const UPDATE_PORTFOLIO_HISTORIES = true
 if (require.main === module) {
   runScript(async ({ pg }) => {
-    // const allUserIds = [['AJwLWoo3xue32XIiAVrL5SyR1WB2', 0]] as [
-    //   string,
-    //   number
-    // ][]
     if (FIX_PERIODS) {
       await fixUserPeriods(pg)
       return
     }
+    const allUserIds = [['AJwLWoo3xue32XIiAVrL5SyR1WB2', 0]] as [
+      string,
+      number
+    ][]
+    // const startTime = new Date(0).toISOString()
+    //     const allUserIds = await pg.map(
+    //       `
+    //        select distinct users.id, users.created_time from users
+    //        join contract_bets cb on users.id = cb.user_id
+    //        where users.created_time > $1
+    // --        and cb.created_time > now () - interval '2 week'
+    //        order by users.created_time
+    //                 `,
+    //       [startTime],
+    //       (row) => [row.id, row.created_time]
+    //     )
 
-    const startTime = new Date(0).toISOString()
-    const allUserIds = await pg.map(
-      `
-       select distinct users.id, users.created_time from users
-       join contract_bets cb on users.id = cb.user_id
-       where users.created_time > $1
---        and cb.created_time > now () - interval '2 week'
-       order by users.created_time
-                `,
-      [startTime],
-      (row) => [row.id, row.created_time]
-    )
     console.log('Total users:', allUserIds.length)
     const chunks = chunk(allUserIds, chunkSize)
     let total = 0
@@ -39,6 +41,10 @@ if (require.main === module) {
         `Updated ${userIds.length} users, total ${total} users updated`
       )
       console.log('last created time:', userIds[userIds.length - 1][1])
+    }
+
+    if (UPDATE_PORTFOLIO_HISTORIES) {
+      await updateUserPortfolioHistoriesCore(allUserIds.map((u) => u[0]))
     }
   })
 }

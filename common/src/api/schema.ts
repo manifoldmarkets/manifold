@@ -390,18 +390,20 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
-    cache: 'public, max-age=600, stale-while-revalidate=60', // 10 minute cache
+    cache: 'public, max-age=900, stale-while-revalidate=90', // 15 minute cache
     props: z
       .object({
         limit: z.coerce.number(),
-        offset: z.coerce.number().gte(0).optional(),
       })
       .strict(),
     returns: {} as {
-      metrics: ContractMetric[]
+      manaMetrics: ContractMetric[]
+      cashMetrics: ContractMetric[]
       contracts: MarketContract[]
-      dailyProfit: number
-      investmentValue: number
+      manaProfit: number
+      cashProfit: number
+      manaInvestmentValue: number
+      cashInvestmentValue: number
     },
   },
   // deprecated. use /bets?username= instead

@@ -4,8 +4,8 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelect, isProd, log } from 'shared/utils'
-import { chunk, groupBy, sortBy, sumBy, uniq } from 'lodash'
-import { CPMMMultiContract } from 'common/contract'
+import { chunk, groupBy, sortBy, sumBy, uniq, uniqBy } from 'lodash'
+import { Contract, CPMMMultiContract } from 'common/contract'
 import {
   calculateMetricsByContractAndAnswer,
   isEmptyMetric,
@@ -20,7 +20,8 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 const CHUNK_SIZE = isProd() ? 400 : 10
 export async function updateUserMetricPeriods(
   userIds?: string[],
-  since?: number
+  since?: number,
+  skipUpdates?: boolean
 ) {
   log('Starting user period metrics update')
   const useSince = since !== undefined
@@ -76,13 +77,8 @@ export async function updateUserMetricPeriods(
 
   log(`Loaded ${allActiveUserIds.length} active users.`)
   const chunks = chunk(allActiveUserIds, CHUNK_SIZE)
-  const statsByUser: Record<
-    string,
-    {
-      profit: number
-      value: number
-    }
-  > = {}
+  const metricsByUser: Record<string, ContractMetric[]> = {}
+  const contractsById: Record<string, Contract> = {}
   for (const activeUserIds of chunks) {
     log('Loading bets for', activeUserIds)
     const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
@@ -98,6 +94,7 @@ export async function updateUserMetricPeriods(
     )
 
     const allBets = Object.values(metricRelevantBets).flat()
+    const contractIds = uniq(allBets.map((b) => b.contractId))
     log('Loading contracts, answers, users, and current contract metrics...')
     // We could cache the contracts and answers to query for less data
     const results = await pg.multi(
@@ -109,9 +106,9 @@ export async function updateUserMetricPeriods(
 
       select id, data from user_contract_metrics
       where user_id in ($2:list)
-      and contract_id in ($1:list);
+      and contract_id in ($3:list);
     `,
-      [uniq(allBets.map((b) => b.contractId)), activeUserIds]
+      [contractIds.filter((c) => !contractsById[c]), activeUserIds, contractIds]
     )
     const contracts = results[0].map(convertContract)
     const answers = results[1].map(convertAnswer)
@@ -126,13 +123,14 @@ export async function updateUserMetricPeriods(
        and ${currentContractMetrics.length} contract metrics.`
     )
 
-    const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
-
-    for (const [contractId, answers] of Object.entries(answersByContractId)) {
-      // Denormalize answers onto the contract.
-      // eslint-disable-next-line no-extra-semi
-      ;(contractsById[contractId] as CPMMMultiContract).answers = answers
-    }
+    contracts.forEach((c) => {
+      const answers = answersByContractId[c.id] ?? []
+      if (c.mechanism === 'cpmm-multi-1') {
+        // eslint-disable-next-line no-extra-semi
+        ;(c as CPMMMultiContract).answers = answers
+      }
+      contractsById[c.id] = c
+    })
 
     const currentMetricsByUserId = groupBy(
       currentContractMetrics,
@@ -155,13 +153,11 @@ export async function updateUserMetricPeriods(
         userId,
         answersByContractId
       ).flat()
-      const nullFreshMetrics = freshMetrics.filter((m) => !m.answerId)
-      statsByUser[userId] = {
-        profit: sumBy(nullFreshMetrics, (m) => m.from?.day?.profit ?? 0),
-        value: sumBy(nullFreshMetrics, (m) => m.payout ?? 0),
-      }
-
       const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
+      metricsByUser[userId] = uniqBy(
+        [...freshMetrics, ...currentMetricsForUser],
+        (m) => m.contractId + m.answerId
+      )
       contractMetricUpdates.push(
         ...filterDefined(
           freshMetrics.map((freshMetric) => {
@@ -200,8 +196,8 @@ export async function updateUserMetricPeriods(
     }
     log(`Computed ${contractMetricUpdates.length} metric updates.`)
 
-    log('Writing updates')
-    if (contractMetricUpdates.length > 0) {
+    if (contractMetricUpdates.length > 0 && !skipUpdates) {
+      log('Writing updates')
       await bulkUpdateData(pg, 'user_contract_metrics', contractMetricUpdates)
         .catch((e) => log.error('Error upserting contract metrics', e))
         .then(() =>
@@ -214,7 +210,7 @@ export async function updateUserMetricPeriods(
     }
   }
   log('Finished updating user period metrics')
-  return statsByUser
+  return { metricsByUser, contractsById }
 }
 
 const getUnresolvedOrRecentlyResolvedBets = async (

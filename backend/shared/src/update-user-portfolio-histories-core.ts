@@ -1,10 +1,9 @@
-import { DAY_MS, HOUR_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelect, getUsers, isProd, log } from 'shared/utils'
-import { groupBy, sum, sumBy, uniq } from 'lodash'
+import { groupBy, sumBy, uniq } from 'lodash'
 import {
   Contract,
   ContractToken,
@@ -26,9 +25,6 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 const userToPortfolioMetrics: {
   [userId: string]: {
     currentPortfolio: PortfolioMetrics | undefined
-    dayAgoProfit: number | undefined
-    weekAgoProfit: number | undefined
-    timeCachedPeriodProfits: number
   }
 } = {}
 type RankedContractMetric = ContractMetric & { isRanked: boolean }
@@ -37,8 +33,6 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
   const LIMIT = isProd() ? 400 : 10
 
   const now = Date.now()
-  const yesterday = now - DAY_MS
-  const weekAgo = now - DAY_MS * 7
   const pg = createSupabaseDirectClient()
 
   log('Loading active users...')
@@ -75,10 +69,7 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
   log(`Loaded ${activeUserIds.length} active users.`)
 
   const userIdsNeedingUpdate = activeUserIds.filter(
-    (id) =>
-      !userToPortfolioMetrics[id]?.currentPortfolio ||
-      (userToPortfolioMetrics[id]?.timeCachedPeriodProfits ?? 0) <
-        now - 6 * HOUR_MS
+    (id) => !userToPortfolioMetrics[id]?.currentPortfolio
   )
 
   if (userIdsNeedingUpdate.length > 0) {
@@ -101,23 +92,11 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
       userIdsMissingPortfolio
     )
     log(`Loaded current portfolio snapshot.`)
-
-    log('Loading historical profits...')
-    const [dayAgoProfits, weekAgoProfits] = await Promise.all(
-      [yesterday, weekAgo].map((t) =>
-        getPortfolioHistoricalProfits(pg, userIdsNeedingUpdate, t)
-      )
-    )
-    log(`Loaded historical profits.`)
     for (const userId of userIdsNeedingUpdate) {
       userToPortfolioMetrics[userId] = {
         currentPortfolio:
           currentPortfolios[userId] ??
           userToPortfolioMetrics[userId]?.currentPortfolio,
-        dayAgoProfit: dayAgoProfits[userId]?.mana,
-        weekAgoProfit: weekAgoProfits[userId]?.mana,
-        // TODO: cash profits
-        timeCachedPeriodProfits: Date.now(),
       }
     }
   }
@@ -149,21 +128,24 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
     const userMetrics = currentMetricsByUserId[user.id] ?? []
     const { currentPortfolio } = userToPortfolioMetrics[user.id]
     const { balance, totalDeposits } = user
+    const { value: manaPayouts } = getUnresolvedStatsForToken(
+      'MANA',
+      userMetrics.filter((m) => m.isRanked),
+      contractsById
+    )
+    const { invested: unrankedManaInvested } = getUnresolvedStatsForToken(
+      'MANA',
+      userMetrics.filter((m) => !m.isRanked),
+      contractsById
+    )
+    // TODO: cash profits
     const newPortfolio = {
       ...calculateNewPortfolioMetricsWithContractMetrics(
         user,
         contractsById,
         userMetrics
       ),
-      profit:
-        // Resolved profits are already included in the user's balance - deposits
-        getPayoutValue(
-          'MANA',
-          userMetrics.filter((m) => m.isRanked),
-          contractsById
-        ) +
-        balance -
-        totalDeposits,
+      profit: manaPayouts + balance - totalDeposits - unrankedManaInvested,
     }
 
     const didPortfolioChange =
@@ -298,66 +280,71 @@ const getPortfolioSnapshot = async (
   )
 }
 
-const getPortfolioHistoricalProfits = async (
-  pg: SupabaseDirectClient,
-  userIds: string[],
-  when: number
-) => {
-  // We don't load the leaderboard profit here bc these numbers are used for comparing to the daily/weekly profit from contract metrics
-  return Object.fromEntries(
-    await pg.map(
-      `select distinct on (user_id) user_id,
-        spice_balance + investment_value + balance - total_deposits as profit,
-        cash_balance - total_cash_deposits as cash_profit
-      from user_portfolio_history
-      where ts < $2 and user_id in ($1:list)
-      order by user_id, ts desc`,
-      [userIds, new Date(when).toISOString()],
-      (r) => [
-        r.user_id as string,
-        {
-          mana: parseFloat(r.profit as string),
-          cash: parseFloat(r.cash_profit as string),
-        },
-      ]
-    )
-  )
-}
-
-const getPayoutValue = (
+export const getUnresolvedStatsForToken = (
   token: ContractToken,
   contractMetrics: ContractMetric[],
   contractsById: { [k: string]: Contract }
-) =>
-  sum(
-    contractMetrics.map((cm) => {
-      const contract = contractsById[cm.contractId] as MarketContract
-      if (contract.token !== token || contract.isResolved) return 0
-      // ignore summary metrics
-      if (contract.mechanism === 'cpmm-multi-1') {
-        if (!cm.answerId) return 0
-        const answer = contract.answers.find((a) => a.id === cm.answerId)
-        // Might not get an answer if it's not denormalized and resolved already, (excluded by the sql query)
-        if (!answer || answer.resolutionTime) return 0
-        return (
+) => {
+  const metrics = contractMetrics.map((cm) => {
+    const contract = contractsById[cm.contractId] as MarketContract
+    if (contract.token !== token) {
+      return { value: 0, invested: 0, dailyProfit: 0 }
+    }
+    if (contract.isResolved) {
+      return { value: 0, invested: 0, dailyProfit: cm.from?.day?.profit ?? 0 }
+    }
+
+    // ignore summary metrics
+    if (contract.mechanism === 'cpmm-multi-1') {
+      if (!cm.answerId) return { value: 0, invested: 0, dailyProfit: 0 }
+      const answer = contract.answers.find((a) => a.id === cm.answerId)
+      // Might not get an answer if it's not denormalized and resolved already, (excluded by the sql query)
+      if (!answer || answer.resolutionTime)
+        return {
+          value: 0,
+          invested: 0,
+          dailyProfit: cm.from?.day?.profit ?? 0,
+        }
+      return {
+        value:
           calculateProfitMetricsWithProb(answer.prob, cm).payout -
-          (cm.loan ?? 0)
-        )
+          (cm.loan ?? 0),
+        invested: cm.invested ?? 0,
+        dailyProfit: cm.from?.day?.profit ?? 0,
       }
-      return (
+    }
+
+    return {
+      value:
         calculateProfitMetricsWithProb(contract.prob, cm).payout -
-        (cm.loan ?? 0)
-      )
-    })
-  )
+        (cm.loan ?? 0),
+      invested: cm.invested ?? 0,
+      dailyProfit: cm.from?.day?.profit ?? 0,
+    }
+  })
+
+  return {
+    value: sumBy(metrics, (m) => m.value),
+    invested: sumBy(metrics, (m) => m.invested),
+    dailyProfit: sumBy(metrics, (m) => m.dailyProfit),
+  }
+}
 
 export const calculateNewPortfolioMetricsWithContractMetrics = (
   user: User,
   contractsById: { [k: string]: Contract },
   contractMetrics: ContractMetric[]
 ) => {
-  const cashPayouts = getPayoutValue('CASH', contractMetrics, contractsById)
-  const manaPayouts = getPayoutValue('MANA', contractMetrics, contractsById)
+  const cashPayouts = getUnresolvedStatsForToken(
+    'CASH',
+    contractMetrics,
+    contractsById
+  ).value
+  const manaPayouts = getUnresolvedStatsForToken(
+    'MANA',
+    contractMetrics,
+    contractsById
+  ).value
   const loanTotal = sumBy(contractMetrics, (cm) => cm.loan)
   return {
     investmentValue: manaPayouts,
