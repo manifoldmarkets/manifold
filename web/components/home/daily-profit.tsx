@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { ArrowUpIcon } from '@heroicons/react/solid'
 import { User } from 'common/user'
@@ -29,9 +29,14 @@ export const DailyProfit = function DailyProfit(props: {
   isCurrentUser?: boolean
 }) {
   const { user } = props
-  const { data } = useAPIGetter('get-daily-changed-metrics-and-contracts', {
-    limit: 20,
-  })
+  const { data, refresh } = useAPIGetter(
+    'get-daily-changed-metrics-and-contracts',
+    {
+      limit: 24,
+      userId: user?.id ?? '',
+    }
+  )
+
   const manaProfit = data?.manaProfit ?? 0
   const cashProfit = data?.cashProfit ?? 0
   const manaInvestmentValue = data?.manaInvestmentValue ?? 0
@@ -41,6 +46,11 @@ export const DailyProfit = function DailyProfit(props: {
 
   const [openMana, setOpenMana] = useState(false)
   const [openCash, setOpenCash] = useState(false)
+  useEffect(() => {
+    if ((openMana || openCash) && !data && user) {
+      refresh()
+    }
+  }, [user?.id, openMana, openCash])
 
   return (
     <>

@@ -1,4 +1,4 @@
-import { APIHandler } from './helpers/endpoint'
+import { APIError, APIHandler } from './helpers/endpoint'
 import { updateUserMetricPeriods } from 'shared/update-user-metric-periods'
 import { DAY_MS } from 'common/util/time'
 import { getUnresolvedStatsForToken } from 'shared/update-user-portfolio-histories-core'
@@ -8,8 +8,10 @@ import { MarketContract } from 'common/contract'
 export const getDailyChangedMetricsAndContracts: APIHandler<
   'get-daily-changed-metrics-and-contracts'
 > = async (props, auth) => {
-  const { limit } = props
-  const userId = auth.uid
+  if (props.userId != auth.uid) {
+    throw new APIError(403, 'You can only query your own changes')
+  }
+  const { userId, limit } = props
 
   const since = Date.now() - DAY_MS
   // First update the user's metrics

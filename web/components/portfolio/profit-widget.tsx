@@ -10,7 +10,8 @@ export function ProfitWidget(props: { user: User }) {
   const [open, setOpen] = useState(false)
 
   const { data } = useAPIGetter('get-daily-changed-metrics-and-contracts', {
-    limit: 22,
+    limit: 24,
+    userId: user.id,
   })
 
   const contractMetrics = data?.manaMetrics ?? []
