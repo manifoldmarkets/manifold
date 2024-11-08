@@ -22,6 +22,7 @@ import { Table } from '../widgets/table'
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { api } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
@@ -30,9 +31,9 @@ export const DailyProfit = function DailyProfit(props: {
   isCurrentUser?: boolean
 }) {
   const { user } = props
-  const [data, setData] = useState<
+  const [data, setData] = usePersistentInMemoryState<
     APIResponse<'get-daily-changed-metrics-and-contracts'> | undefined
-  >(undefined)
+  >(undefined, 'daily-profit-' + user?.id)
 
   useEffect(() => {
     if (!user) return

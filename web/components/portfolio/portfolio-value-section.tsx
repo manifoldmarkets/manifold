@@ -441,7 +441,7 @@ function TwombaPortfolioValueSkeleton(props: {
               </span>
             </span>
             {/* TODO: make work for sweeps */}
-            {prefersPlay && currentUser && currentUser.id === user.id && (
+            {prefersPlay && currentUser?.id === user.id && (
               <ProfitWidget user={user} />
             )}
           </Col>

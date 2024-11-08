@@ -1,22 +1,30 @@
 import { DailyProfitModal } from '../home/daily-profit'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '../buttons/button'
 import { User } from 'common/user'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Spacer } from '../layout/spacer'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { api } from 'web/lib/api/api'
+import { APIResponse } from 'common/api/schema'
 
-export function ProfitWidget(props: { user: User }) {
+export function ProfitWidget(props: { user: User | null | undefined }) {
   const { user } = props
   const [open, setOpen] = useState(false)
+  const [data, setData] = usePersistentInMemoryState<
+    APIResponse<'get-daily-changed-metrics-and-contracts'> | undefined
+  >(undefined, 'daily-profit-' + user?.id)
 
-  const { data } = useAPIGetter('get-daily-changed-metrics-and-contracts', {
-    limit: 24,
-    userId: user.id,
-  })
+  useEffect(() => {
+    if (!user) return
+    api('get-daily-changed-metrics-and-contracts', {
+      limit: 24,
+      userId: user.id,
+    }).then(setData)
+  }, [user?.id])
 
   const contractMetrics = data?.manaMetrics ?? []
   const dailyProfit = data?.manaProfit ?? 0
-  const netWorth = (data?.manaInvestmentValue ?? 0) + user.balance
+  const netWorth = (data?.manaInvestmentValue ?? 0) + (user?.balance ?? 0)
 
   const visibleMetrics = contractMetrics.filter(
     (m) => Math.floor(Math.abs(m.from?.day.profit ?? 0)) !== 0
