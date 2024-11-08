@@ -51,7 +51,7 @@ export function OgMarket(props: OgCardProps) {
           Manifold
         </span>
       </div>
-      <div className="m-4 mt-1 h-full rounded-lg bg-white px-6 py-4 shadow-lg">
+      <div className="m-4 mt-1 flex h-full flex-col rounded-lg bg-white px-6 py-4 text-black shadow-lg">
         {/* Details */}
         <div className="mb-1 flex w-full flex-row justify-between text-gray-600">
           <div className="flex items-center">
@@ -91,8 +91,10 @@ export function OgMarket(props: OgCardProps) {
           {question}
         </div>
         {topAnswer ? (
-          <div className="flex h-full w-full items-center">
-            <Answer {...props} />
+          <div className="flex w-full flex-1">
+            <div className="my-auto w-full">
+              <Answer {...props} />
+            </div>
           </div>
         ) : showGraph ? (
           <div className="-mx-6 flex w-[calc(100%+48px)] justify-center">
@@ -104,17 +106,21 @@ export function OgMarket(props: OgCardProps) {
             />
           </div>
         ) : bountyLeft ? (
-          <BountyLeft bountyLeft={bountyLeft} />
+          <div className="flex w-full flex-1">
+            <div className="my-auto w-full">
+              <BountyLeft bountyLeft={bountyLeft} />
+            </div>
+          </div>
         ) : null}
         {!topAnswer && (probability || numericValue || resolution) && (
           <div
             className={
               'absolute left-0 right-0 flex w-full justify-center ' +
-              (showGraph ? 'top-[14.5rem]' : 'top-[13rem]')
+              (showGraph ? 'top-[13rem]' : 'top-[12rem]')
             }
-        >
+          >
             {probabilityAsFloat && !resolution ? (
-              <div className="flex w-full flex-row justify-center gap-4 text-2xl text-white">
+              <div className="mt-8 flex w-full flex-row justify-center gap-4 text-2xl text-white">
                 <div
                   className={
                     'flex h-12 w-[calc(50%-3rem)] items-center justify-center rounded-lg bg-teal-500'
@@ -124,7 +130,7 @@ export function OgMarket(props: OgCardProps) {
                 </div>
                 <div
                   className={
-                    'bg-scarlet-500 dark:bg-scarlet-400 flex h-12 w-[calc(50%-3rem)] items-center justify-center rounded-lg'
+                    'flex h-12 w-[calc(50%-3rem)] items-center justify-center rounded-lg bg-red-500 dark:bg-red-400'
                   }
                 >
                   No {(100 - probabilityAsFloat).toFixed(0)}%
@@ -156,12 +162,19 @@ function Answer(props: OgCardProps) {
   return (
     <>
       <div className="relative my-auto mt-2 flex w-full flex-row justify-between overflow-hidden rounded bg-gray-100 px-4 py-2 text-xl text-black">
-        <span className="relative z-10 max-h-[2rem] overflow-hidden">
+        <span className="relative z-10 max-h-[3.5rem] overflow-hidden">
           {topAnswer}
         </span>
-        {!resolution && probability && (
+        {probability && (
           <div className="relative z-10 my-auto font-semibold">
-            {probability}
+            <span
+              className={clsx(
+                !!resolution && 'mr-1 font-normal text-gray-500 line-through'
+              )}
+            >
+              {probability}
+            </span>
+            {!!resolution && <span>100%</span>}
           </div>
         )}
         <div
@@ -177,7 +190,7 @@ function Answer(props: OgCardProps) {
 
 function EndValue(props: { value: string; label: string }) {
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="z-20 flex flex-col items-center justify-center">
       <span className="text-3xl">{props.value}</span>
       <span className="text-xl">{props.label}</span>
     </div>
@@ -195,7 +208,7 @@ function Resolution(props: { resolution: string; label?: string }) {
   }[resolution]
 
   const color = {
-    YES: 'bg-green-500',
+    YES: 'bg-teal-500',
     NO: 'bg-red-600',
     MKT: 'bg-blue-500',
     CANCEL: 'bg-amber-400',
@@ -203,9 +216,9 @@ function Resolution(props: { resolution: string; label?: string }) {
 
   return (
     <div
-      className={`flex min-w-[15rem] flex-col rounded-lg px-12 py-2 text-white ${color} items-center justify-center`}
+      className={`mt-8 flex min-w-[15rem] flex-col rounded-lg px-12 py-2 text-white ${color} items-center justify-center`}
     >
-      <span className="text-4xl">{text}</span>
+      <span className="text-2xl">{text}</span>
     </div>
   )
 }
@@ -213,9 +226,9 @@ function Resolution(props: { resolution: string; label?: string }) {
 function BountyLeft(props: { bountyLeft: string }) {
   const { bountyLeft } = props
   return (
-    <div className="mx-auto flex flex-col text-center text-6xl">
-      <div className="mx-auto flex flex-row text-teal-600">M{bountyLeft}</div>
-      <span className="mx-auto text-5xl text-gray-600">bounty</span>
+    <div className="mx-auto flex flex-col text-center text-6xl text-gray-700">
+      <span className="mx-auto flex flex-row">M{bountyLeft}</span>
+      <span className="mx-auto text-xl text-gray-600">bounty</span>
     </div>
   )
 }
