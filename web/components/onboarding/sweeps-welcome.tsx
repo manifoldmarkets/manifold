@@ -35,7 +35,7 @@ export function SweepsWelcomePage() {
 
   const saveName = async () => {
     let newName = cleanDisplayName(name)
-    if (!newName) newName = 'Name'
+    if (!newName || newName.length <= 0) newName = 'Name'
     if (newName === user?.name) return
     setName(newName)
 
@@ -69,9 +69,9 @@ export function SweepsWelcomePage() {
             setName(e.target.value)
           }}
           onBlur={() => {
-            if (name.length <= 0 || !name) {
-              setName(user ? user.name : 'Name')
-            }
+            // if (name.length <= 0 || !name) {
+            //   setName(user ? user.name : 'Name')
+            // }
             saveName()
           }}
           onMouseEnter={() => setUsernameHover(true)}
