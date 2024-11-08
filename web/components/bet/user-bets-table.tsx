@@ -160,6 +160,7 @@ export function UserBetsTable(props: { user: User }) {
   const onSetTokenFilter = (f: BetTokenFilter) => {
     if (tokenFilter === f) return
     setTokenFilter(f)
+    setPage(0)
     if (isNotYou) {
       setPrefersPlay(f == 'CASH' ? false : true)
     }
