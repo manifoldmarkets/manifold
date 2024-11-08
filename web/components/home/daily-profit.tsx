@@ -20,7 +20,8 @@ import { Pagination } from 'web/components/widgets/pagination'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { Table } from '../widgets/table'
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { api } from 'web/lib/api/api'
+import { APIResponse } from 'common/api/schema'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
@@ -29,13 +30,17 @@ export const DailyProfit = function DailyProfit(props: {
   isCurrentUser?: boolean
 }) {
   const { user } = props
-  const { data, refresh } = useAPIGetter(
-    'get-daily-changed-metrics-and-contracts',
-    {
+  const [data, setData] = useState<
+    APIResponse<'get-daily-changed-metrics-and-contracts'> | undefined
+  >(undefined)
+
+  useEffect(() => {
+    if (!user) return
+    api('get-daily-changed-metrics-and-contracts', {
       limit: 24,
-      userId: user?.id ?? '',
-    }
-  )
+      userId: user.id,
+    }).then(setData)
+  }, [user?.id])
 
   const manaProfit = data?.manaProfit ?? 0
   const cashProfit = data?.cashProfit ?? 0
@@ -48,7 +53,10 @@ export const DailyProfit = function DailyProfit(props: {
   const [openCash, setOpenCash] = useState(false)
   useEffect(() => {
     if ((openMana || openCash) && !data && user) {
-      refresh()
+      api('get-daily-changed-metrics-and-contracts', {
+        limit: 24,
+        userId: user.id,
+      }).then(setData)
     }
   }, [user?.id, openMana, openCash])
 
