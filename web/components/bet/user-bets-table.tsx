@@ -57,6 +57,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { useContractBets } from 'web/hooks/use-bets'
 import { SweepsToggle } from '../sweeps/sweeps-toggle'
+import { useSweepstakes } from '../sweepstakes-provider'
 
 type BetSort =
   | 'newest'
@@ -143,6 +144,8 @@ export function UserBetsTable(props: { user: User }) {
     'bets-list-token-filter'
   )
 
+  const { prefersPlay, setPrefersPlay } = useSweepstakes()
+
   const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
 
   const [query, setQuery] = usePersistentQueryState('b', '')
@@ -152,10 +155,21 @@ export function UserBetsTable(props: { user: User }) {
     setPage(0)
   }
 
+  const isNotYou = !signedInUser || signedInUser.id !== user.id
+
   const onSetTokenFilter = (f: BetTokenFilter) => {
     setTokenFilter(f)
+    if (isNotYou) {
+      setPrefersPlay(f == 'CASH' ? false : true)
+    }
     setPage(0)
   }
+
+  useEffect(() => {
+    if (isNotYou) {
+      onSetTokenFilter(prefersPlay ? 'MANA' : 'CASH')
+    }
+  }, [prefersPlay])
 
   const nullableMetricsByContract = useMemo(() => {
     if (!metricsByContract || !initialContracts) {
@@ -233,7 +247,7 @@ export function UserBetsTable(props: { user: User }) {
                 sweepsEnabled
                 onClick={() => {
                   if (tokenFilter == 'CASH') {
-                    onSetTokenFilter('ALL')
+                    onSetTokenFilter('MANA')
                   } else {
                     onSetTokenFilter('CASH')
                   }
