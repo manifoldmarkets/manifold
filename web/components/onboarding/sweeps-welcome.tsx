@@ -56,31 +56,27 @@ export function SweepsWelcomePage() {
     <>
       <Row className=" text-primary-700 mb-6 mt-2 h-10 gap-2 text-center text-2xl font-normal">
         <div className="mt-1">Welcome,</div>
-        <Row
-          className="items-center gap-1"
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          className={clsx(
+            'decoration-ink-500 border-none bg-transparent px-0 text-2xl font-semibold underline decoration-dotted underline-offset-[6px] outline-none focus:underline focus:decoration-solid focus:underline-offset-[6px] focus:outline-none focus:ring-0 focus-visible:outline-none',
+            usernameHover && ' decoration-solid '
+          )}
+          maxLength={30}
+          onChange={(e) => {
+            setName(e.target.value)
+          }}
+          onBlur={() => {
+            if (name.length <= 0 || !name) {
+              setName(user ? user.name : 'Name')
+            }
+            saveName()
+          }}
           onMouseEnter={() => setUsernameHover(true)}
           onMouseLeave={() => setUsernameHover(false)}
-        >
-          <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            className={clsx(
-              'decoration-ink-500 border-none bg-transparent px-0 text-2xl font-semibold underline decoration-dotted underline-offset-[6px] outline-none focus:underline focus:decoration-solid focus:underline-offset-[6px] focus:outline-none focus:ring-0 focus-visible:outline-none',
-              usernameHover && ' decoration-solid '
-            )}
-            maxLength={30}
-            onChange={(e) => {
-              setName(e.target.value)
-            }}
-            onBlur={() => {
-              if (name.length <= 0 || !name) {
-                setName(user ? user.name : 'Name')
-              }
-              saveName()
-            }}
-          />
-        </Row>
+        />
       </Row>
       <div>
         We've sent you <strong>{formatMoney(STARTING_BALANCE)}</strong> in play
