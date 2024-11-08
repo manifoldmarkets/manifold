@@ -158,11 +158,11 @@ export function UserBetsTable(props: { user: User }) {
   const isNotYou = !signedInUser || signedInUser.id !== user.id
 
   const onSetTokenFilter = (f: BetTokenFilter) => {
+    if (tokenFilter === f) return
     setTokenFilter(f)
     if (isNotYou) {
       setPrefersPlay(f == 'CASH' ? false : true)
     }
-    setPage(0)
   }
 
   useEffect(() => {
