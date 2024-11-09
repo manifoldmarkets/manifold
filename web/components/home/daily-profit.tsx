@@ -1,28 +1,26 @@
-import { useEffect, useState } from 'react'
-import clsx from 'clsx'
 import { ArrowUpIcon } from '@heroicons/react/solid'
-import { User } from 'common/user'
-import { withTracking } from 'web/lib/service/analytics'
-import { Row } from 'web/components/layout/row'
-import {
-  formatMoney,
-  shortFormatNumber,
-  SWEEPIES_MONIKER,
-} from 'common/util/format'
-import { ContractMetric } from 'common/contract-metric'
+import clsx from 'clsx'
+import { APIResponse } from 'common/api/schema'
 import { ContractToken, CPMMContract, MarketContract } from 'common/contract'
-import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
-import { Col } from 'web/components/layout/col'
-import { keyBy, partition, sortBy } from 'lodash'
+import { ContractMetric } from 'common/contract-metric'
+import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { User } from 'common/user'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { capitalize, keyBy, partition, sortBy } from 'lodash'
+import { useEffect, useState } from 'react'
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
+import { Col } from 'web/components/layout/col'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { Row } from 'web/components/layout/row'
 import { Pagination } from 'web/components/widgets/pagination'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { Table } from '../widgets/table'
-import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
-import { api } from 'web/lib/api/api'
-import { APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { api } from 'web/lib/api/api'
+import { withTracking } from 'web/lib/service/analytics'
+import { UncontrolledTabs } from '../layout/tabs'
+import { CoinNumber } from '../widgets/coin-number'
+import { Table } from '../widgets/table'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
@@ -50,121 +48,135 @@ export const DailyProfit = function DailyProfit(props: {
   const manaNetWorth = manaInvestmentValue + (user?.balance ?? 0)
   const cashNetWorth = cashInvestmentValue + (user?.cashBalance ?? 0)
 
-  const [openMana, setOpenMana] = useState(false)
-  const [openCash, setOpenCash] = useState(false)
+  const [openModal, setOpenModal] = useState(false)
   useEffect(() => {
-    if ((openMana || openCash) && !data && user) {
+    if (openModal && !data && user) {
       api('get-daily-changed-metrics-and-contracts', {
         limit: 24,
         userId: user.id,
       }).then(setData)
     }
-  }, [user?.id, openMana, openCash])
+  }, [user?.id, openModal])
 
   return (
     <>
       <button
         className={clsx(dailyStatsClass)}
         onClick={withTracking(() => {
-          setOpenMana(true)
+          setOpenModal(true)
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
         <Row>
           <Col className="items-center">
-            <div>
-              {data
-                ? formatMoney(manaNetWorth)
-                : `${ENV_CONFIG.moneyMoniker}----`}
-            </div>
-            <div className="text-ink-600 text-xs ">net worth</div>
-          </Col>
+            <Row className="gap-2">
+              <Row>
+                <CoinNumber
+                  amount={!!data ? manaNetWorth : undefined}
+                  coinType="mana"
+                  coinClassName="top-[0.25rem] sm:top-[0.1rem]"
+                  className="text-purple-700 dark:text-purple-300"
+                  numberType="short"
+                />
+                {manaProfit !== 0 && (
+                  <span
+                    className={clsx(
+                      'ml-0.5 mt-0.5 h-fit rounded-full px-1 py-0.5 text-xs',
+                      manaProfit >= 0
+                        ? 'bg-teal-600/10 text-teal-600'
+                        : 'text-scarlet-600 bg-scarlet-600/10'
+                    )}
+                  >
+                    {manaProfit >= 0 ? '+' : '-'}
+                    {shortFormatNumber(Math.abs(manaProfit))}
+                  </span>
+                )}
+              </Row>
+              <Row>
+                <div>
+                  <CoinNumber
+                    amount={!!data ? cashNetWorth : undefined}
+                    coinType="CASH"
+                    coinClassName="top-[0.25rem] sm:top-[0.1rem]"
+                    className="text-amber-700 dark:text-amber-300"
+                    numberType="short"
+                  />
+                </div>
 
-          {manaProfit !== 0 && (
-            <span
-              className={clsx(
-                'ml-1 mt-1 text-xs',
-                manaProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
-              )}
-            >
-              {manaProfit >= 0 ? '+' : '-'}
-              {shortFormatNumber(Math.abs(manaProfit))}
-            </span>
-          )}
+                {cashProfit !== 0 && (
+                  <span
+                    className={clsx(
+                      'ml-0.5 mt-1 h-fit rounded-full px-1 py-0.5 text-xs',
+                      cashProfit >= 0
+                        ? 'bg-teal-600/10 text-teal-600'
+                        : 'text-scarlet-600 bg-scarlet-600/10'
+                    )}
+                  >
+                    {cashProfit >= 0 ? '+' : '-'}
+                    {shortFormatNumber(Math.abs(cashProfit))}
+                  </span>
+                )}
+              </Row>
+            </Row>
+            <div className="text-ink-600 text-xs ">Net Worth</div>
+          </Col>
         </Row>
       </button>
-
-      <button
-        className={clsx(dailyStatsClass)}
-        onClick={withTracking(() => {
-          setOpenCash(true)
-        }, DAILY_PROFIT_CLICK_EVENT)}
+      <Modal
+        open={openModal}
+        setOpen={setOpenModal}
+        className={clsx(MODAL_CLASS, 'min-h-[30rem]')}
+        size={'lg'}
       >
-        <Row>
-          <Col className="items-center">
-            <div>
-              {data
-                ? formatMoney(cashNetWorth, 'CASH')
-                : `${SWEEPIES_MONIKER}----`}
-            </div>
-            <div className="text-ink-600 text-xs ">net worth</div>
-          </Col>
-
-          {cashProfit !== 0 && (
-            <span
-              className={clsx(
-                'ml-1 mt-1 text-xs',
-                cashProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
-              )}
-            >
-              {cashProfit >= 0 ? '+' : '-'}
-              {shortFormatNumber(Math.abs(cashProfit))}
-            </span>
-          )}
-        </Row>
-      </button>
-
-      <DailyProfitModal
-        setOpen={setOpenMana}
-        open={openMana}
-        metrics={data?.manaMetrics}
-        contracts={data?.contracts}
-        dailyProfit={manaProfit}
-        netWorth={manaNetWorth}
-        token="MANA"
-      />
-
-      <DailyProfitModal
-        setOpen={setOpenCash}
-        open={openCash}
-        metrics={data?.cashMetrics}
-        contracts={data?.contracts}
-        dailyProfit={cashProfit}
-        netWorth={cashNetWorth}
-        token="CASH"
-      />
+        <UncontrolledTabs
+          className="w-full"
+          tabs={[
+            {
+              title: `Mana`,
+              content: (
+                <DailyProfitSection
+                  metrics={data?.manaMetrics}
+                  contracts={data?.contracts}
+                  dailyProfit={manaProfit}
+                  netWorth={manaNetWorth}
+                  token="MANA"
+                />
+              ),
+            },
+            {
+              title: `${capitalize(SWEEPIES_NAME)}`,
+              content: (
+                <DailyProfitSection
+                  metrics={data?.cashMetrics}
+                  contracts={data?.contracts}
+                  dailyProfit={cashProfit}
+                  netWorth={cashNetWorth}
+                  token="CASH"
+                />
+              ),
+            },
+          ]}
+        />
+      </Modal>
     </>
   )
 }
 
-export function DailyProfitModal(props: {
-  open: boolean
-  setOpen: (open: boolean) => void
+export function DailyProfitSection(props: {
   metrics?: ContractMetric[]
   contracts?: MarketContract[]
   dailyProfit: number
   netWorth: number
   token: ContractToken
 }) {
-  const { open, setOpen, metrics, contracts, dailyProfit, netWorth, token } =
-    props
+  const { metrics, contracts, dailyProfit, netWorth, token } = props
 
   return (
-    <Modal open={open} setOpen={setOpen} className={MODAL_CLASS} size={'lg'}>
-      <Row className={'mx-2 justify-between'}>
+    <>
+      <Row className={'mb-2 mt-4 justify-between px-2'}>
         <Col>
           <span className={'ml-1'}>Your net worth</span>
           <span className={'mb-1 text-2xl'}>
-            {formatMoney(netWorth, token)}
+            <CoinNumber amount={netWorth} coinType={token} />
           </span>
         </Col>
         <Col>
@@ -180,7 +192,7 @@ export function DailyProfitModal(props: {
             ) : (
               <ArrowUpIcon className={'mr-1 h-4 w-4 rotate-180 transform'} />
             )}
-            {formatMoney(dailyProfit, token)}
+            <CoinNumber amount={dailyProfit} coinType={token} />
           </span>
         </Col>
       </Row>
@@ -197,7 +209,7 @@ export function DailyProfitModal(props: {
           token={token}
         />
       )}
-    </Modal>
+    </>
   )
 }
 function LoadingProfitRows() {
