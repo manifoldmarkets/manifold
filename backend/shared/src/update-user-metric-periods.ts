@@ -95,24 +95,42 @@ export async function updateUserMetricPeriods(
 
     const allBets = Object.values(metricRelevantBets).flat()
     const contractIds = uniq(allBets.map((b) => b.contractId))
+    if (contractIds.length === 0) continue
+    const newContractIds: string[] = contractIds.filter(
+      (c) => !contractsById[c]
+    )
     log('Loading contracts, answers, users, and current contract metrics...')
     // We could cache the contracts and answers to query for less data
     const results = await pg.multi(
       `
-      select ${contractColumnsToSelect} from contracts where id in ($1:list);
-
-      select * from answers
-      where contract_id in ($1:list);
+      ${
+        newContractIds.length > 0
+          ? `select ${contractColumnsToSelect} from contracts where id in ($1:list);`
+          : 'select 1 where false;'
+      }
+      ${
+        newContractIds.length > 0
+          ? `select * from answers where contract_id in ($1:list);`
+          : 'select 1 where false;'
+      }
 
       select id, data from user_contract_metrics
       where user_id in ($2:list)
       and contract_id in ($3:list);
     `,
-      [contractIds.filter((c) => !contractsById[c]), activeUserIds, contractIds]
+      [newContractIds, activeUserIds, contractIds]
     )
     const contracts = results[0].map(convertContract)
     const answers = results[1].map(convertAnswer)
-    const answersByContractId = groupBy(answers, (a) => a.contractId)
+    contracts.forEach((c) => {
+      if (c.mechanism === 'cpmm-multi-1')
+        contractsById[c.id] = {
+          ...c,
+          answers: answers.filter((a) => a.contractId === c.id),
+        } as CPMMMultiContract
+      else contractsById[c.id] = c
+    })
+
     const currentContractMetrics = results[2].map(
       (r) => ({ id: r.id, ...r.data } as ContractMetric)
     )
@@ -122,15 +140,6 @@ export async function updateUserMetricPeriods(
        ${answers.length} answers,
        and ${currentContractMetrics.length} contract metrics.`
     )
-
-    contracts.forEach((c) => {
-      const answers = answersByContractId[c.id] ?? []
-      if (c.mechanism === 'cpmm-multi-1') {
-        // eslint-disable-next-line no-extra-semi
-        ;(c as CPMMMultiContract).answers = answers
-      }
-      contractsById[c.id] = c
-    })
 
     const currentMetricsByUserId = groupBy(
       currentContractMetrics,
@@ -150,8 +159,7 @@ export async function updateUserMetricPeriods(
       const freshMetrics = calculateMetricsByContractAndAnswer(
         metricRelevantBetsByContract,
         contractsById,
-        userId,
-        answersByContractId
+        userId
       ).flat()
       const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
       metricsByUser[userId] = uniqBy(

@@ -277,7 +277,7 @@ export const resolveMarketHelper = async (
     Object.keys(updatedContractAttrs ?? {})
   )
 
-  await updateContractMetricsForUsers(pg, contract, bets)
+  await updateContractMetricsForUsers(contract, bets)
   await revalidateStaticProps(contractPath(contract))
 
   await createContractResolvedNotifications(

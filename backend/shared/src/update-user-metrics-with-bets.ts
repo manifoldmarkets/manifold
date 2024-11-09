@@ -102,8 +102,7 @@ export async function updateUserMetricsWithBets(
     const freshMetrics = calculateMetricsByContractAndAnswer(
       metricRelevantBetsByContract,
       contractsById,
-      user.id,
-      answersByContractId
+      user.id
     ).flat()
     const currentMetricsForUser = currentMetricsByUserId[user.id] ?? []
     contractMetricUpdates.push(

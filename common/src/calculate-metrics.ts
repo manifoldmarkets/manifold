@@ -12,7 +12,6 @@ import { CpmmState, getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { floatingEqual, logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
-import { Answer } from 'common/answer'
 import { noFees } from './fees'
 
 export const computeInvestmentValue = (
@@ -232,13 +231,11 @@ export const calculateNewPortfolioMetrics = (
 export const calculateMetricsByContractAndAnswer = (
   betsByContractId: Dictionary<Bet[]>,
   contractsById: Dictionary<Contract>,
-  userId: string,
-  answersByContractId: Dictionary<Answer[]>
+  userId: string
 ) => {
   return Object.entries(betsByContractId).map(([contractId, bets]) => {
     const contract: Contract = contractsById[contractId]
-    const answers = answersByContractId[contractId]
-    return calculateUserMetrics(contract, bets, userId, answers)
+    return calculateUserMetrics(contract, bets, userId)
   })
 }
 
@@ -257,11 +254,14 @@ export const isEmptyMetric = (m: ContractMetric) => {
 export const calculateUserMetrics = (
   contract: Contract,
   bets: Bet[],
-  userId: string,
-  answers: Answer[]
+  userId: string
 ) => {
   // ContractMetrics will have an answerId for every answer, and a null for the overall metrics.
-  const currentMetrics = getContractBetMetricsPerAnswer(contract, bets, answers)
+  const currentMetrics = getContractBetMetricsPerAnswer(
+    contract,
+    bets,
+    'answers' in contract ? contract.answers : undefined
+  )
 
   return currentMetrics.map((current) => {
     return removeUndefinedProps({
