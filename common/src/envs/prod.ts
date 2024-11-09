@@ -5,7 +5,6 @@ export type EnvConfig = {
   firebaseConfig: FirebaseConfig
   amplitudeApiKey: string
   supabaseInstanceId: string
-  supabaseLoadBalancerInstanceId?: string
   supabaseAnonKey: string
   twitchBotEndpoint: string
   apiEndpoint: string
@@ -53,7 +52,6 @@ export const PROD_CONFIG: EnvConfig = {
   loveDomainAlternate: 'manifoldlove.com',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
   supabaseInstanceId: 'pxidrgkatumlvfqaxcll',
-  supabaseLoadBalancerInstanceId: 'pxidrgkatumlvfqaxcll-all',
   supabaseAnonKey:
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4aWRyZ2thdHVtbHZmcWF4Y2xsIiwicm9sZSI6ImFub24iLCJpYXQiOjE2Njg5OTUzOTgsImV4cCI6MTk4NDU3MTM5OH0.d_yYtASLzAoIIGdXUBIgRAGLBnNow7JG2SoaNMQ8ySg',
   googleAnalyticsId: 'GTM-MLMPXHJ6',

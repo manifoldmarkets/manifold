@@ -79,13 +79,7 @@ export function getInstanceId() {
   )
 }
 export function getRestInstanceId() {
-  return (
-    process.env.SUPABASE_REST_INSTANCE_ID ??
-    (isProd()
-      ? PROD_CONFIG.supabaseLoadBalancerInstanceId
-      : DEV_CONFIG.supabaseLoadBalancerInstanceId) ??
-    getInstanceId()
-  )
+  return process.env.SUPABASE_REST_INSTANCE_ID ?? getInstanceId()
 }
 
 export function getInstanceHostname(instanceId: string) {
