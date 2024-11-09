@@ -4,11 +4,7 @@ import { ArrowUpIcon } from '@heroicons/react/solid'
 import { User } from 'common/user'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import {
-  formatMoney,
-  shortFormatNumber,
-  SWEEPIES_MONIKER,
-} from 'common/util/format'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractToken, CPMMContract, MarketContract } from 'common/contract'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
@@ -19,10 +15,11 @@ import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { Table } from '../widgets/table'
-import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
+import { TRADE_TERM } from 'common/envs/constants'
 import { api } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { CoinNumber } from '../widgets/coin-number'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
@@ -63,65 +60,62 @@ export const DailyProfit = function DailyProfit(props: {
 
   return (
     <>
-      <button
-        className={clsx(dailyStatsClass)}
-        onClick={withTracking(() => {
-          setOpenMana(true)
-        }, DAILY_PROFIT_CLICK_EVENT)}
-      >
-        <Row>
-          <Col className="items-center">
-            <div>
-              {data
-                ? formatMoney(manaNetWorth)
-                : `${ENV_CONFIG.moneyMoniker}----`}
-            </div>
-            <div className="text-ink-600 text-xs ">net worth</div>
-          </Col>
+      <div className={clsx(dailyStatsClass)}>
+        <Row className="gap-2">
+          <button
+            onClick={withTracking(() => {
+              setOpenMana(true)
+            }, DAILY_PROFIT_CLICK_EVENT)}
+          >
+            <Row>
+              <CoinNumber
+                amount={data ? manaNetWorth : undefined}
+                numberType="short"
+                isInline
+              />
 
-          {manaProfit !== 0 && (
-            <span
-              className={clsx(
-                'ml-1 mt-1 text-xs',
-                manaProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+              {manaProfit !== 0 && (
+                <span
+                  className={clsx(
+                    'ml-1 mt-1 text-xs',
+                    manaProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                  )}
+                >
+                  {manaProfit >= 0 ? '+' : '-'}
+                  {shortFormatNumber(Math.abs(manaProfit))}
+                </span>
               )}
-            >
-              {manaProfit >= 0 ? '+' : '-'}
-              {shortFormatNumber(Math.abs(manaProfit))}
-            </span>
-          )}
-        </Row>
-      </button>
+            </Row>
+          </button>
+          <button
+            onClick={withTracking(() => {
+              setOpenCash(true)
+            }, DAILY_PROFIT_CLICK_EVENT)}
+          >
+            <Row>
+              <CoinNumber
+                amount={data ? cashNetWorth : undefined}
+                numberType="short"
+                coinType="sweepies"
+                isInline
+              />
 
-      <button
-        className={clsx(dailyStatsClass)}
-        onClick={withTracking(() => {
-          setOpenCash(true)
-        }, DAILY_PROFIT_CLICK_EVENT)}
-      >
-        <Row>
-          <Col className="items-center">
-            <div>
-              {data
-                ? formatMoney(cashNetWorth, 'CASH')
-                : `${SWEEPIES_MONIKER}----`}
-            </div>
-            <div className="text-ink-600 text-xs ">net worth</div>
-          </Col>
-
-          {cashProfit !== 0 && (
-            <span
-              className={clsx(
-                'ml-1 mt-1 text-xs',
-                cashProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+              {cashProfit !== 0 && (
+                <span
+                  className={clsx(
+                    'ml-1 mt-1 text-xs',
+                    cashProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                  )}
+                >
+                  {cashProfit >= 0 ? '+' : '-'}
+                  {shortFormatNumber(Math.abs(cashProfit))}
+                </span>
               )}
-            >
-              {cashProfit >= 0 ? '+' : '-'}
-              {shortFormatNumber(Math.abs(cashProfit))}
-            </span>
-          )}
+            </Row>
+          </button>
         </Row>
-      </button>
+        <div className="text-ink-600 text-center text-xs ">Net worth</div>
+      </div>
 
       <DailyProfitModal
         setOpen={setOpenMana}
