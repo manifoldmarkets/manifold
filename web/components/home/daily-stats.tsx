@@ -14,7 +14,7 @@ export function DailyStats(props: {
 }) {
   const { user, className } = props
   return (
-    <Row className={clsx('items-center gap-3', className)}>
+    <Row className={clsx('items-center gap-2', className)}>
       <QuestsOrStreak user={user} />
       <DailyLeagueStat user={user} />
       <DailyProfit user={user} />
