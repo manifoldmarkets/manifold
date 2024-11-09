@@ -75,6 +75,7 @@ export const DailyProfit = function DailyProfit(props: {
                   coinType="mana"
                   coinClassName="top-[0.25rem] sm:top-[0.1rem]"
                   className="text-purple-700 dark:text-purple-300"
+                  numberType="short"
                 />
                 {manaProfit !== 0 && (
                   <span
@@ -97,14 +98,17 @@ export const DailyProfit = function DailyProfit(props: {
                     coinType="CASH"
                     coinClassName="top-[0.25rem] sm:top-[0.1rem]"
                     className="text-amber-700 dark:text-amber-300"
+                    numberType="short"
                   />
                 </div>
 
                 {cashProfit !== 0 && (
                   <span
                     className={clsx(
-                      'ml-0.5 mt-1 text-xs',
-                      cashProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                      'ml-0.5 mt-1 h-fit rounded-full px-1 py-0.5 text-xs',
+                      cashProfit >= 0
+                        ? 'bg-teal-600/10 text-teal-600'
+                        : 'text-scarlet-600 bg-scarlet-600/10'
                     )}
                   >
                     {cashProfit >= 0 ? '+' : '-'}
