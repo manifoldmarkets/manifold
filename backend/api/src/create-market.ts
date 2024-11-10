@@ -149,7 +149,9 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const totalMarketCost = marketTier
     ? getTieredCost(unmodifiedAnte, marketTier, outcomeType)
     : unmodifiedAnte
-  const ante = Math.min(unmodifiedAnte, totalMarketCost)
+  const ante = outcomeType === 'MULTIPLE_CHOICE' && !shouldAnswersSumToOne
+    ? totalMarketCost
+    : Math.min(unmodifiedAnte, totalMarketCost)
 
   const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(
     idempotencyKey,
