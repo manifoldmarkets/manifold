@@ -1,22 +1,22 @@
-import { WebPriceInDollars } from 'common/economy'
-import { usePrices } from 'web/hooks/use-prices'
-import { useUser } from 'web/hooks/use-user'
-import { introductoryTimeWindow } from 'common/user'
-import { DOLLAR_PURCHASE_LIMIT, TWOMBA_ENABLED } from 'common/envs/constants'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { FaStore } from 'react-icons/fa6'
 import clsx from 'clsx'
-import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
-import { Countdown } from 'web/components/widgets/countdown'
+import { WebPriceInDollars } from 'common/economy'
+import { DOLLAR_PURCHASE_LIMIT } from 'common/envs/constants'
+import { introductoryTimeWindow } from 'common/user'
+import { formatMoneyUSD } from 'common/util/format'
+import Link from 'next/link'
+import { FaStore } from 'react-icons/fa6'
 import {
   PriceTile,
   use24hrUsdPurchasesInDollars,
 } from 'web/components/add-funds-modal'
-import Link from 'next/link'
-import { AlertBox } from '../widgets/alert-box'
-import { formatMoneyUSD } from 'common/util/format'
+import { CashoutLimitWarning } from 'web/components/bet/cashout-limit-warning'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { useIsNativeIOS } from 'web/components/native-message-provider'
+import { Countdown } from 'web/components/widgets/countdown'
+import { usePrices } from 'web/hooks/use-prices'
+import { useUser } from 'web/hooks/use-user'
+import { AlertBox } from '../widgets/alert-box'
 
 export function FundsSelector(props: {
   onSelectPriceInDollars: (amount: WebPriceInDollars) => void
@@ -41,10 +41,6 @@ export function FundsSelector(props: {
   const prices = basePrices.filter((p) => !p.newUsersOnly)
   const totalPurchased = use24hrUsdPurchasesInDollars(user?.id || '')
   const pastLimit = totalPurchased >= DOLLAR_PURCHASE_LIMIT
-
-  if (!TWOMBA_ENABLED) {
-    return <div>Sweepstaked are not enabled, sorry!</div>
-  }
 
   return (
     <Col className="mx-auto max-w-xl">

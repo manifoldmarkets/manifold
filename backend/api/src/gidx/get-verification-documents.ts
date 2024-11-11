@@ -1,20 +1,18 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getUser, log } from 'shared/utils'
+import { getDocumentsStatus } from 'common/gidx/document'
+import { GIDXDocument } from 'common/gidx/gidx'
 import {
   getGIDXStandardParams,
   GIDX_BASE_URL,
   throwIfIPNotWhitelisted,
 } from 'shared/gidx/helpers'
-import { GIDXDocument } from 'common/gidx/gidx'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { getDocumentsStatus } from 'common/gidx/document'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getUser, log } from 'shared/utils'
 import { assessDocumentStatus } from './get-verification-status'
 
 export const getVerificationDocuments: APIHandler<
   'get-verification-documents-gidx'
 > = async (_, auth) => {
-  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const pg = createSupabaseDirectClient()
   const user = await getUser(auth.uid, pg)
   if (!user) {

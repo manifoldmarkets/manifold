@@ -1,16 +1,16 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   PaymentAmount,
-  WEB_PRICES,
   REFERRAL_MIN_PURCHASE_DOLLARS,
+  WEB_PRICES,
 } from 'common/economy'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 import {
   CompleteSessionDirectCashierResponse,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
 import { introductoryTimeWindow, User } from 'common/user'
 import { getIp, track, trackPublicEvent } from 'shared/analytics'
+import { distributeReferralBonusIfNoneGiven } from 'shared/distribute-referral-bonus'
 import {
   getGIDXStandardParams,
   getLocalServerIP,
@@ -22,7 +22,6 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getReferrerInfo, updateUser } from 'shared/supabase/users'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getUser, LOCAL_DEV } from 'shared/utils'
-import { distributeReferralBonusIfNoneGiven } from 'shared/distribute-referral-bonus'
 
 const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 
@@ -40,8 +39,6 @@ const getPaymentAmountForWebPriceDollars = (priceInDollars: number) => {
 export const completeCheckoutSession: APIHandler<
   'complete-checkout-session-gidx'
 > = async (props, auth, req) => {
-  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
-
   const userId = auth.uid
   const user = await getUser(userId)
   if (!user) throw new APIError(500, 'Your account was not found')

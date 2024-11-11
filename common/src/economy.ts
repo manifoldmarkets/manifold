@@ -3,7 +3,6 @@ import {
   OutcomeType,
 } from 'common/contract'
 import { MarketTierType, tiers } from './tier'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const FIXED_ANTE = 1000
 const BASE_ANSWER_COST = FIXED_ANTE / 10
@@ -157,49 +156,26 @@ export const WEB_PRICES = PaymentAmounts
 export type WebPriceInDollars =
   (typeof PaymentAmounts)[number]['priceInDollars']
 // TODO: these prices should be a function of whether the user is sweepstakes verified or not
-export const IOS_PRICES = TWOMBA_ENABLED
-  ? [
-      {
-        mana: 1_000,
-        priceInDollars: 14.99,
-        bonusInDollars: 10,
-        sku: 'mana_1000',
-      },
-      {
-        mana: 2_500,
-        priceInDollars: 35.99,
-        bonusInDollars: 25,
-        sku: 'mana_2500',
-      },
-      {
-        mana: 10_000,
-        priceInDollars: 142.99,
-        bonusInDollars: 100,
-        sku: 'mana_10000',
-      },
-      // No 1M option on ios: the fees are too high
-    ]
-  : [
-      {
-        mana: 10_000,
-        priceInDollars: 14.99,
-        bonusInDollars: 0,
-        sku: 'mana_1000',
-      },
-      {
-        mana: 25_000,
-        priceInDollars: 35.99,
-        bonusInDollars: 0,
-        sku: 'mana_2500',
-      },
-      {
-        mana: 100_000,
-        priceInDollars: 142.99,
-        bonusInDollars: 0,
-        sku: 'mana_10000',
-      },
-      // No 1M option on ios: the fees are too high
-    ]
+export const IOS_PRICES = [
+  {
+    mana: 1_000,
+    priceInDollars: 14.99,
+    bonusInDollars: 10,
+    sku: 'mana_1000',
+  },
+  {
+    mana: 2_500,
+    priceInDollars: 35.99,
+    bonusInDollars: 25,
+    sku: 'mana_2500',
+  },
+  {
+    mana: 10_000,
+    priceInDollars: 142.99,
+    bonusInDollars: 100,
+    sku: 'mana_10000',
+  },
+]
 
 export const SWEEPIES_CASHOUT_FEE = 0.05
 export const MIN_CASHOUT_AMOUNT = 25

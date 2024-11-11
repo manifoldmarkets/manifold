@@ -1,27 +1,25 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
+  ENABLE_FAKE_CUSTOMER,
+  FAKE_CUSTOMER_BODY,
+  GIDXMonitorResponse,
+} from 'common/gidx/gidx'
+import { getIp, track } from 'shared/analytics'
+import {
   getGIDXStandardParams,
   getLocalServerIP,
   GIDX_BASE_URL,
   throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
-import {
-  ENABLE_FAKE_CUSTOMER,
-  FAKE_CUSTOMER_BODY,
-  GIDXMonitorResponse,
-} from 'common/gidx/gidx'
-import { getUserAndPrivateUserOrThrow, LOCAL_DEV, log } from 'shared/utils'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { getIp, track } from 'shared/analytics'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getUserAndPrivateUserOrThrow, LOCAL_DEV, log } from 'shared/utils'
 
 export const getMonitorStatus: APIHandler<'get-monitor-status-gidx'> = async (
   props,
   auth,
   req
 ) => {
-  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const userId = auth.uid
   const pg = createSupabaseDirectClient()
   const userAndPrivateUser = await getUserAndPrivateUserOrThrow(userId, pg)

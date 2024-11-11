@@ -10,7 +10,6 @@ import { getShareUrl } from 'common/util/share'
 import TwitterLogo from 'web/lib/icons/twitter-logo.svg'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export function TweetButton(props: { tweetText: string; className?: string }) {
   const { tweetText, className } = props
@@ -49,9 +48,9 @@ export const getPositionTweet = (
   const prob = formatPercent(position > 0 ? p : 1 - p)
   const side = position > 0 ? 'greater' : 'less'
 
-  return `I'm ${
-    TWOMBA_ENABLED ? 'predicting' : 'betting'
-  } there's a ${side} than ${prob} chance. ${getShareUrl(contract)}`
+  return `I'm predicting there's a ${side} than ${prob} chance. ${getShareUrl(
+    contract
+  )}`
 }
 
 export const getWinningTweet = (profit: number, contract: Contract) => {

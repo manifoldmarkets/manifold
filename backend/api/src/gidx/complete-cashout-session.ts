@@ -1,8 +1,10 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { isAdminId } from 'common/envs/constants'
 import {
   CompleteSessionDirectCashierResponse,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
+import { track } from 'shared/analytics'
 import {
   getGIDXStandardParams,
   getUserRegistrationRequirements,
@@ -10,15 +12,12 @@ import {
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { track } from 'shared/analytics'
-import { isAdminId, TWOMBA_ENABLED } from 'common/envs/constants'
 import { getUser } from 'shared/utils'
 
 const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CompleteSession'
 export const completeCashoutSession: APIHandler<
   'complete-cashout-session-gidx'
 > = async (props, auth) => {
-  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const pg = createSupabaseDirectClient()
 
   if (!isAdminId(auth.uid)) {

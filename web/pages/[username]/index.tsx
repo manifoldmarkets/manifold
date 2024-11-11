@@ -1,27 +1,34 @@
 import {
   CashIcon,
   ChatAlt2Icon,
-  ScaleIcon,
-  PresentationChartLineIcon,
   ChevronDownIcon,
+  PresentationChartLineIcon,
+  ScaleIcon,
   ViewListIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import { isBetChange } from 'common/balance-change'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
+import { getUserForStaticProps } from 'common/supabase/users'
+import { isUserLikelySpammer } from 'common/user'
+import { unauthedApi } from 'common/util/api'
+import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
+import dayjs from 'dayjs'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import dayjs from 'dayjs'
-import { SEO } from 'web/components/SEO'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { FaCrown } from 'react-icons/fa6'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { FollowButton } from 'web/components/buttons/follow-button'
-import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { TextButton } from 'web/components/buttons/text-button'
+import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { UserCommentsList } from 'web/components/comments/profile-comments'
+import { BackButton } from 'web/components/contract/back-button'
 import { FollowList } from 'web/components/follow-list'
+import { VerifyMe } from 'web/components/gidx/verify-me'
+import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Page } from 'web/components/layout/page'
@@ -29,9 +36,17 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
+import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
+import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
+import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
+import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { BlockedUser } from 'web/components/profile/blocked-user'
+import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import { SEO } from 'web/components/SEO'
+import { UserHandles } from 'web/components/user/user-handles'
+import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
@@ -40,9 +55,12 @@ import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -50,25 +68,6 @@ import { db } from 'web/lib/supabase/db'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
-import { UserHandles } from 'web/components/user/user-handles'
-import { BackButton } from 'web/components/contract/back-button'
-import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { isUserLikelySpammer } from 'common/user'
-import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
-import { isBetChange } from 'common/balance-change'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { buildArray } from 'common/util/array'
-import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
-import { FaCrown } from 'react-icons/fa6'
-import { getUserForStaticProps } from 'common/supabase/users'
-import { VerifyMe } from 'web/components/gidx/verify-me'
-import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
-import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
-import { unauthedApi } from 'common/util/api'
-import { AddFundsButton } from 'web/components/profile/add-funds-button'
-import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
 
 export const getStaticProps = async (props: {
   params: {
@@ -326,18 +325,14 @@ function UserProfile(props: {
 
           <Row className={'items-center gap-1 sm:gap-2'}>
             {isCurrentUser ? (
-              TWOMBA_ENABLED ? (
-                <Row className="my-2 hidden items-center gap-2 px-4 sm:flex">
-                  <AddFundsButton
-                    userId={user.id}
-                    className="whitespace-nowra w-full lg:hidden"
-                    hideDiscount
-                  />
-                  <RedeemSweepsButtons user={user} className="shrink-0" />
-                </Row>
-              ) : (
-                <></>
-              )
+              <Row className="my-2 hidden items-center gap-2 px-4 sm:flex">
+                <AddFundsButton
+                  userId={user.id}
+                  className="whitespace-nowra w-full lg:hidden"
+                  hideDiscount
+                />
+                <RedeemSweepsButtons user={user} className="shrink-0" />
+              </Row>
             ) : (
               <>
                 <SendMessageButton toUser={user} currentUser={currentUser} />
@@ -365,7 +360,7 @@ function UserProfile(props: {
           </Col>
         )}
 
-        {isCurrentUser && TWOMBA_ENABLED && (
+        {isCurrentUser && (
           <Row className="my-2 w-full items-center gap-2 px-4 sm:hidden">
             <AddFundsButton
               userId={user.id}

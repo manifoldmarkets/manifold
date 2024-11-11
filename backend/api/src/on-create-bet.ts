@@ -17,7 +17,6 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getBetsDirect, getBetsRepliedToComment } from 'shared/supabase/bets'
@@ -331,7 +330,7 @@ const payBettingStreak = async (
 
     let sweepsTxn = null
     let sweepsBonusAmount = 0
-    if (oldUser.sweepstakesVerified && TWOMBA_ENABLED) {
+    if (oldUser.sweepstakesVerified) {
       sweepsBonusAmount = Math.min(
         BETTING_STREAK_SWEEPS_BONUS_AMOUNT * newBettingStreak,
         BETTING_STREAK_SWEEPS_BONUS_MAX

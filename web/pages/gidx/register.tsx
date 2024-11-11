@@ -1,25 +1,23 @@
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { RegisterUserForm } from 'web/components/gidx/register-user-form'
 import { Page } from 'web/components/layout/page'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { RegisterUserForm } from 'web/components/gidx/register-user-form'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { ageBlocked, locationBlocked } from 'common/gidx/user'
+import { PrivateUser, User } from 'common/user'
+import { RiUserForbidLine } from 'react-icons/ri'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { UsOnlyDisclaimer } from 'web/components/sweeps/us-only-disclaimer'
-import { Button } from 'web/components/buttons/button'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { ageBlocked, locationBlocked } from 'common/gidx/user'
-import { PrivateUser, User } from 'common/user'
-import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
-import { RiUserForbidLine } from 'react-icons/ri'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
 
 const HomePage = () => {
   const user = useUser()
   const privateUser = usePrivateUser()
 
-  if (!TWOMBA_ENABLED) return null
   return (
     <Page trackPageView={'register user gidx'}>
       <Col className="bg-canvas-0 relative mx-auto w-full max-w-lg gap-4 px-6 py-4">

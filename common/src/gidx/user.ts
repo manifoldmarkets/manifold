@@ -1,12 +1,11 @@
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { FRAUD_THRESHOLD } from 'common/gidx/gidx'
-import { intersection } from 'lodash'
 import {
   identityBlockedCodes,
   locationBlockedCodes,
   underageErrorCodes,
 } from 'common/reason-codes'
 import { humanish, PrivateUser, User } from 'common/user'
+import { intersection } from 'lodash'
 
 export const blockFromSweepstakes = (user: User | undefined | null) =>
   user && (!user.idVerified || !user.sweepstakesVerified)
@@ -35,9 +34,7 @@ export const getVerificationStatus = (
   status: 'success' | 'error'
   message: string
 } => {
-  if (!TWOMBA_ENABLED) {
-    return { status: 'error', message: GIDX_DISABLED_MESSAGE }
-  } else if (!user || !privateUser) {
+  if (!user || !privateUser) {
     return { status: 'error', message: USER_IS_UNDEFINED_MESSAGE }
   } else if (!humanish(user)) {
     return { status: 'error', message: PHONE_NOT_VERIFIED_MESSAGE }

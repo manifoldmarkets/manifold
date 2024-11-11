@@ -1,15 +1,14 @@
-import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getGIDXStandardParams, GIDX_BASE_URL } from 'shared/gidx/helpers'
-import { isProd, log } from 'shared/utils'
-import * as admin from 'firebase-admin'
-import { PROD_CONFIG } from 'common/envs/prod'
-import { DEV_CONFIG } from 'common/envs/dev'
-import { DocumentRegistrationResponse } from 'common/gidx/gidx'
 import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
+import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { DEV_CONFIG } from 'common/envs/dev'
+import { PROD_CONFIG } from 'common/envs/prod'
+import { DocumentRegistrationResponse } from 'common/gidx/gidx'
+import * as admin from 'firebase-admin'
+import { track } from 'shared/analytics'
+import { getGIDXStandardParams, GIDX_BASE_URL } from 'shared/gidx/helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { track } from 'shared/analytics'
+import { isProd, log } from 'shared/utils'
 
 const ENDPOINT =
   GIDX_BASE_URL + '/v3.0/api/DocumentLibrary/DocumentRegistration'
@@ -17,7 +16,6 @@ export const uploadDocument: APIHandler<'upload-document-gidx'> = async (
   props,
   auth
 ) => {
-  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const { fileUrl, CategoryType, fileName } = props
 
   const form = new FormData()

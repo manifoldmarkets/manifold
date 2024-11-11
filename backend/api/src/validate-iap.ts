@@ -9,7 +9,6 @@ import { sendThankYouEmail } from 'shared/emails'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { IOS_PRICES } from 'common/economy'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 const bodySchema = z
   .object({
@@ -117,7 +116,7 @@ export const validateiap = authEndpoint(async (req, auth) => {
     description: `Deposit M$${manaPayout} from BANK for mana purchase`,
   } as Omit<ManaPurchaseTxn, 'id' | 'createdTime'>
 
-  const isBonusEligible = TWOMBA_ENABLED && user.sweepstakesVerified
+  const isBonusEligible = user.sweepstakesVerified
 
   const bonusPurchaseTxn =
     isBonusEligible && bonusInDollars

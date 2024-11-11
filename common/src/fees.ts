@@ -1,5 +1,4 @@
 import { addObjects } from 'common/util/object'
-import { TWOMBA_ENABLED } from './envs/constants'
 
 export const FEE_START_TIME = 1713292320000
 
@@ -8,28 +7,10 @@ export const getTakerFee = (shares: number, prob: number) => {
   return TAKER_FEE_CONSTANT * prob * (1 - prob) * shares
 }
 
-const CREATORS_EARN_WHOLE_FEE_UP_TO = 1000
-export const getFeesSplit = (
-  totalFees: number,
-  previouslyCollectedFees: Fees
-) => {
-  if (TWOMBA_ENABLED) {
-    return {
-      creatorFee: 0,
-      platformFee: totalFees,
-      liquidityFee: 0,
-    }
-  }
-
-  const before1k = Math.max(
-    0,
-    CREATORS_EARN_WHOLE_FEE_UP_TO - previouslyCollectedFees.creatorFee
-  )
-  const allToCreatorAmount = Math.min(totalFees, before1k)
-  const splitWithCreatorAmount = totalFees - allToCreatorAmount
+export const getFeesSplit = (totalFees: number) => {
   return {
-    creatorFee: allToCreatorAmount + splitWithCreatorAmount * 0.5,
-    platformFee: splitWithCreatorAmount * 0.5,
+    creatorFee: 0,
+    platformFee: totalFees,
     liquidityFee: 0,
   }
 }

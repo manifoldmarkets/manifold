@@ -9,7 +9,6 @@ import {
   ENV_CONFIG,
   SWEEPIES_MARKET_TOOLTIP,
   TRADE_TERM,
-  TWOMBA_ENABLED,
 } from 'common/envs/constants'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
@@ -40,6 +39,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Carousel } from 'web/components/widgets/carousel'
 import { Input } from 'web/components/widgets/input'
 import { Pagination } from 'web/components/widgets/pagination'
+import { useContractBets } from 'web/hooks/use-bets'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -48,16 +48,15 @@ import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { getUserContractsMetricsWithContracts } from 'web/lib/api/api'
 import { User } from 'web/lib/firebase/users'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
+import { SweepsToggle } from '../sweeps/sweeps-toggle'
+import { useSweepstakes } from '../sweepstakes-provider'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { linkClass } from '../widgets/site-link'
 import { Tooltip } from '../widgets/tooltip'
-import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { useContractBets } from 'web/hooks/use-bets'
-import { SweepsToggle } from '../sweeps/sweeps-toggle'
-import { useSweepstakes } from '../sweepstakes-provider'
 
 type BetSort =
   | 'newest'
@@ -243,20 +242,19 @@ export function UserBetsTable(props: { user: User }) {
             onChange={(e) => setQuery(e.target.value)}
           />
           <Carousel labelsParentClassName={'gap-1'}>
-            {TWOMBA_ENABLED && (
-              <SweepsToggle
-                sweepsEnabled
-                onClick={() => {
-                  if (tokenFilter == 'CASH') {
-                    onSetTokenFilter('ALL')
-                  } else {
-                    onSetTokenFilter('CASH')
-                  }
-                }}
-                isPlay={tokenFilter !== 'CASH'}
-                isSmall
-              />
-            )}
+            <SweepsToggle
+              sweepsEnabled
+              onClick={() => {
+                if (tokenFilter == 'CASH') {
+                  onSetTokenFilter('ALL')
+                } else {
+                  onSetTokenFilter('CASH')
+                }
+              }}
+              isPlay={tokenFilter !== 'CASH'}
+              isSmall
+            />
+
             {(
               [
                 'all',

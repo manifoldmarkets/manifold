@@ -1,15 +1,15 @@
+import { TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
 import { TbBrandDiscord } from 'react-icons/tb'
+import { AboutManifold } from 'web/components/about-manifold'
+import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { ExplainerPanel } from 'web/components/explainer-panel'
 import { LabCard } from './lab'
-import { TRADE_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
-import { capitalize } from 'lodash'
-import { AboutManifold } from 'web/components/about-manifold'
 
 export default function AboutPage() {
   getNativePlatform()
@@ -72,14 +72,12 @@ export default function AboutPage() {
                 target="_blank"
                 description="For a more comprehensive overview"
               />
-              {TWOMBA_ENABLED && (
-                <LabCard
-                  title="Sweepstakes FAQ"
-                  href="https://docs.manifold.markets/sweepstakes"
-                  target="_blank"
-                  description="For questions about sweepstakes"
-                />
-              )}
+              <LabCard
+                title="Sweepstakes FAQ"
+                href="https://docs.manifold.markets/sweepstakes"
+                target="_blank"
+                description="For questions about sweepstakes"
+              />
               <LabCard
                 title="Community guidelines"
                 href="https://manifoldmarkets.notion.site/New-WIP-Community-Guidelines-2b986d33f0c646478d4921667c272f21"
