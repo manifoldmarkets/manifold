@@ -20,20 +20,21 @@ export const getDailyChangedMetricsAndContracts: APIHandler<
     since,
     true
   )
+  const userMetrics = metricsByUser[userId] ?? []
   const manaStats = getUnresolvedStatsForToken(
     'MANA',
-    metricsByUser[userId],
+    userMetrics,
     contractsById
   )
   const cashStats = getUnresolvedStatsForToken(
     'CASH',
-    metricsByUser[userId],
+    userMetrics,
     contractsById
   )
-  const manaMetrics = metricsByUser[userId].filter(
+  const manaMetrics = userMetrics.filter(
     (m) => contractsById[m.contractId]?.token === 'MANA'
   )
-  const cashMetrics = metricsByUser[userId].filter(
+  const cashMetrics = userMetrics.filter(
     (m) => contractsById[m.contractId]?.token === 'CASH'
   )
   const topManaMetrics = sortBy(
