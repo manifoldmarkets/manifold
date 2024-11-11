@@ -34,10 +34,7 @@ import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
-import {
-  SWEEPIES_NAME,
-  TRADE_TERM
-} from 'common/envs/constants'
+import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
 import {
   getVerificationStatus,
   PROMPT_USER_VERIFICATION_MESSAGES,
