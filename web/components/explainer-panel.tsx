@@ -1,25 +1,20 @@
-import clsx from 'clsx'
-import { Col } from './layout/col'
 import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
-import { Card } from './widgets/card'
+import clsx from 'clsx'
+import { CHARITY_FEE, SWEEPIES_NAME, TRADING_TERM } from 'common/envs/constants'
+import Link from 'next/link'
 import React from 'react'
-import { Row } from './layout/row'
+import { GoGraph } from 'react-icons/go'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
-import {
-  CHARITY_FEE,
-  SWEEPIES_NAME,
-  TRADING_TERM,
-  TWOMBA_ENABLED,
-} from 'common/envs/constants'
-import { AboutManifold } from './about-manifold'
-import { GoGraph } from 'react-icons/go'
-import Link from 'next/link'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { AboutManifold } from './about-manifold'
+import { Col } from './layout/col'
+import { Row } from './layout/row'
+import { Card } from './widgets/card'
 
+import { GiTakeMyMoney } from 'react-icons/gi'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { CoinNumber } from './widgets/coin-number'
-import { GiTakeMyMoney } from 'react-icons/gi'
 
 export const ExplainerPanel = (props: {
   className?: string
@@ -40,9 +35,7 @@ export const ExplainerPanel = (props: {
     <Col className={clsx(className)}>
       {showWhatIsManifold && <WhatIsManifold onClick={handleSectionClick} />}
       {showAccuracy && <Accuracy onClick={handleSectionClick} />}
-      {showSweepstakes && TWOMBA_ENABLED && (
-        <Sweepstakes onClick={handleSectionClick} />
-      )}
+      {showSweepstakes && <Sweepstakes onClick={handleSectionClick} />}
     </Col>
   )
 }

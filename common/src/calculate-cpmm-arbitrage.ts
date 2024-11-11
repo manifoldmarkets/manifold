@@ -972,7 +972,7 @@ export function calculateCpmmMultiArbitrageSellNo(
           noSharesInOtherAnswers,
           netNoAmount / noSharesInOtherAnswers
         )
-  const arbitrageFees = getFeesSplit(arbitrageFee, noFees)
+  const arbitrageFees = getFeesSplit(arbitrageFee)
   yesBetResult.takers.push({
     matchedBetId: null,
     amount: netNoAmount + arbitrageFee,
@@ -1166,7 +1166,7 @@ export function calculateCpmmMultiArbitrageSellYes(
           yesSharesInOtherAnswers,
           totalYesAmount / yesSharesInOtherAnswers
         )
-  const arbitrageFees = getFeesSplit(arbitrageFee, noFees)
+  const arbitrageFees = getFeesSplit(arbitrageFee)
   noBetResult.takers.push({
     matchedBetId: null,
     amount: totalYesAmount + arbitrageFee,

@@ -1,20 +1,8 @@
-import { PrivateUser, User } from 'common/user'
-import { Col } from 'web/components/layout/col'
-import Link from 'next/link'
-import clsx from 'clsx'
-import { Button, buttonClass, IconButton } from 'web/components/buttons/button'
-import { api } from 'web/lib/api/api'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { GIDXDocument, idNameToCategoryType } from 'common/gidx/gidx'
-import { useState } from 'react'
-import { Row } from 'web/components/layout/row'
-import { SWEEPIES_NAME, TWOMBA_ENABLED } from 'common/envs/constants'
-import { getDocumentsStatus } from 'common/gidx/document'
-import { useMonitorStatus } from 'web/hooks/use-monitor-status'
-import { VerifyButton } from '../sweeps/sweep-verify-section'
-import { MdBlock } from 'react-icons/md'
 import { XIcon } from '@heroicons/react/solid'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import clsx from 'clsx'
+import { SWEEPIES_NAME } from 'common/envs/constants'
+import { getDocumentsStatus } from 'common/gidx/document'
+import { GIDXDocument, idNameToCategoryType } from 'common/gidx/gidx'
 import {
   ageBlocked,
   documentsFailed,
@@ -22,6 +10,18 @@ import {
   identityBlocked,
   locationBlocked,
 } from 'common/gidx/user'
+import { PrivateUser, User } from 'common/user'
+import Link from 'next/link'
+import { useState } from 'react'
+import { MdBlock } from 'react-icons/md'
+import { Button, buttonClass, IconButton } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { useMonitorStatus } from 'web/hooks/use-monitor-status'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { api } from 'web/lib/api/api'
+import { VerifyButton } from '../sweeps/sweep-verify-section'
 
 const HideVerifyMeButton = ({
   hideVerifyMe,
@@ -49,11 +49,10 @@ export const VerifyMe = (props: { user: User; privateUser: PrivateUser }) => {
   const user = useUser() ?? props.user
   const privateUser = usePrivateUser() ?? props.privateUser
   const [show, setShow] = useState(
-    TWOMBA_ENABLED &&
-      (!user.sweepstakesVerified ||
-        !user.idVerified ||
-        user.kycDocumentStatus === 'fail' ||
-        user.kycDocumentStatus === 'pending')
+    !user.sweepstakesVerified ||
+      !user.idVerified ||
+      user.kycDocumentStatus === 'fail' ||
+      user.kycDocumentStatus === 'pending'
   )
 
   const [documents, setDocuments] = useState<GIDXDocument[] | null>(null)

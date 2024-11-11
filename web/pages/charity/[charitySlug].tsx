@@ -1,38 +1,37 @@
-import { useCallback, useEffect, useState } from 'react'
-import Image from 'next/legacy/image'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/layout/page'
-import { Title } from 'web/components/widgets/title'
-import { AmountInput } from 'web/components/widgets/amount-input'
-import { Spacer } from 'web/components/layout/spacer'
-import { User } from 'common/user'
-import { useUser } from 'web/hooks/use-user'
-import { usePagination } from 'web/hooks/use-pagination'
-import { Linkify } from 'web/components/widgets/linkify'
-import { APIError, api } from 'web/lib/api/api'
 import { charities, Charity } from 'common/charity'
-import Custom404 from '../404'
+import {
+  CASH_TO_CHARITY_DOLLARS,
+  MIN_CASH_DONATION,
+} from 'common/envs/constants'
+import { User } from 'common/user'
+import { formatMoneyUSD, formatSweepies } from 'common/util/format'
+import Image from 'next/legacy/image'
+import { useCallback, useEffect, useState } from 'react'
+import { SEO } from 'web/components/SEO'
+import { Button } from 'web/components/buttons/button'
+import { Donation } from 'web/components/charity/feed-items'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { Spacer } from 'web/components/layout/spacer'
+import { AmountInput } from 'web/components/widgets/amount-input'
+import { CoinNumber } from 'web/components/widgets/coin-number'
+import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
+import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { Linkify } from 'web/components/widgets/linkify'
+import { PaginationNextPrev } from 'web/components/widgets/pagination'
+import { Title } from 'web/components/widgets/title'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { usePagination } from 'web/hooks/use-pagination'
+import { useUser } from 'web/hooks/use-user'
+import { api, APIError } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 import {
   getDonationsByCharity,
   getDonationsPageQuery,
 } from 'web/lib/supabase/txns'
-import { Donation } from 'web/components/charity/feed-items'
-import { formatMoneyUSD, formatSweepies } from 'common/util/format'
-import { track } from 'web/lib/service/analytics'
-import { SEO } from 'web/components/SEO'
-import { Button } from 'web/components/buttons/button'
-import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
-import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
-import { PaginationNextPrev } from 'web/components/widgets/pagination'
-import { CoinNumber } from 'web/components/widgets/coin-number'
-import {
-  CASH_TO_CHARITY_DOLLARS,
-  MIN_CASH_DONATION,
-  TWOMBA_ENABLED,
-} from 'common/envs/constants'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import Custom404 from '../404'
 
 type DonationItem = { user: User; ts: number; amount: number }
 
@@ -262,12 +261,8 @@ function DonationBox(props: {
       )}
 
       <div className="mt-2 text-xs">
-        <CoinNumber
-          amount={min}
-          isInline
-          coinType={TWOMBA_ENABLED ? 'sweepies' : 'spice'}
-        />{' '}
-        donation minimum
+        <CoinNumber amount={min} isInline coinType={'sweepies'} /> donation
+        minimum
       </div>
     </div>
   )

@@ -94,7 +94,7 @@ export function getCpmmFees(
   }
 
   const totalFees = betAmount === 0 ? 0 : fee
-  const fees = getFeesSplit(totalFees, state.collectedFees)
+  const fees = getFeesSplit(totalFees)
 
   const remainingBet = betAmount - totalFees
 

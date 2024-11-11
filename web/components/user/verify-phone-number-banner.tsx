@@ -1,13 +1,12 @@
-import { humanish, User } from 'common/user'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
-import { Button } from 'web/components/buttons/button'
+import { humanish, User } from 'common/user'
 import { useState } from 'react'
-import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
-import { Modal } from 'web/components/layout/modal'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
+import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
 import { CoinNumber } from 'web/components/widgets/coin-number'
 import { useUser } from 'web/hooks/use-user'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const VerifyPhoneNumberBanner = (props: {
   user: User | null | undefined
@@ -22,12 +21,7 @@ export const VerifyPhoneNumberBanner = (props: {
         'border-primary-500 bg-primary-100 items-center justify-between gap-2 rounded border p-2 px-4 sm:flex-row'
       }
     >
-      <span>
-        {TWOMBA_ENABLED
-          ? 'Verify your phone number'
-          : `Prove that you're not a robot`}
-        .{' '}
-      </span>
+      <span>Verify your phone number. </span>
       <Button
         className={'w-full whitespace-nowrap font-semibold sm:w-fit'}
         onClick={() => setShowVerifyPhone(true)}

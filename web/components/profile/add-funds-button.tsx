@@ -1,14 +1,13 @@
+import { introductoryTimeWindow } from 'common/user'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
-import { AddFundsModal } from '../add-funds-modal'
-import { Button, SizeType } from '../buttons/button'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { useRouter } from 'next/router'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { introductoryTimeWindow } from 'common/user'
+import { AddFundsModal } from '../add-funds-modal'
+import { Button, SizeType } from '../buttons/button'
 import { RelativeTimestamp } from '../relative-timestamp'
-import Link from 'next/link'
 
 export function AddFundsButton(props: {
   userId?: string
@@ -30,11 +29,9 @@ export function AddFundsButton(props: {
     <>
       <Button
         onClick={() =>
-          TWOMBA_ENABLED
-            ? router.asPath.includes('/checkout')
-              ? router.reload()
-              : router.push('/checkout')
-            : setOpen(true)
+          router.asPath.includes('/checkout')
+            ? router.reload()
+            : router.push('/checkout')
         }
         size={size ?? 'md'}
         color="gradient-pink"

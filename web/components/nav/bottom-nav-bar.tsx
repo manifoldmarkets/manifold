@@ -8,10 +8,10 @@ import {
 } from '@heroicons/react/outline'
 import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import Link from 'next/link'
-import { Fragment, useState } from 'react'
 import { User } from 'common/user'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Fragment, useState } from 'react'
 import { GiCapitol } from 'react-icons/gi'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { NotificationsIcon } from 'web/components/notifications-icon'
@@ -20,12 +20,11 @@ import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { CoinNumber } from '../widgets/coin-number'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
-import { Row } from '../layout/row'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -167,25 +166,14 @@ function NavBarItem(props: {
               isInline
               coinClassName="!top-[0.15em]"
             />
-            {TWOMBA_ENABLED ? (
-              <CoinNumber
-                amount={user?.cashBalance}
-                className="text-amber-600 dark:text-amber-400"
-                coinType="sweepies"
-                numberType="short"
-                isInline
-                coinClassName="!top-[0.15em]"
-              />
-            ) : (
-              <CoinNumber
-                amount={user?.spiceBalance}
-                className="text-amber-600 dark:text-amber-400"
-                coinType="spice"
-                numberType="short"
-                isInline
-                coinClassName="!top-[0.15em]"
-              />
-            )}
+            <CoinNumber
+              amount={user?.cashBalance}
+              className="text-amber-600 dark:text-amber-400"
+              coinType="sweepies"
+              numberType="short"
+              isInline
+              coinClassName="!top-[0.15em]"
+            />
           </Row>
         </Col>
       </Link>

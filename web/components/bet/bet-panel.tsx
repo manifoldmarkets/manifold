@@ -36,9 +36,12 @@ import { getCpmmProbability } from 'common/calculate-cpmm'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
   SWEEPIES_NAME,
-  TRADE_TERM,
-  TWOMBA_ENABLED,
+  TRADE_TERM
 } from 'common/envs/constants'
+import {
+  getVerificationStatus,
+  PROMPT_USER_VERIFICATION_MESSAGES,
+} from 'common/gidx/user'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { getTierFromLiquidity } from 'common/tier'
@@ -55,18 +58,14 @@ import { isAndroid, isIOS } from 'web/lib/util/device'
 import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { getAnswerColor } from '../charts/contract/choice'
+import { LocationMonitor } from '../gidx/location-monitor'
+import { InBeta, VerifyButton } from '../sweeps/sweep-verify-section'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { CashoutLimitWarning } from './cashout-limit-warning'
 import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
-import { CashoutLimitWarning } from './cashout-limit-warning'
-import { InBeta, VerifyButton } from '../sweeps/sweep-verify-section'
-import { LocationMonitor } from '../gidx/location-monitor'
-import {
-  getVerificationStatus,
-  PROMPT_USER_VERIFICATION_MESSAGES,
-} from 'common/gidx/user'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -164,7 +163,7 @@ export function BuyPanel(props: {
         <BuyPanelBody
           {...props}
           panelClassName={
-            TWOMBA_ENABLED || !!pseudonym
+            !!pseudonym
               ? 'bg-canvas-50'
               : outcome === 'NO'
               ? 'bg-scarlet-50'
@@ -783,12 +782,7 @@ export const BuyPanelBody = (props: {
                   isAdvancedTrader ? '' : 'min-w-[110px]'
                 )}
               >
-                Your{' '}
-                {TWOMBA_ENABLED
-                  ? isCashContract
-                    ? SWEEPIES_NAME
-                    : 'mana'
-                  : ''}
+                Your {isCashContract ? SWEEPIES_NAME : 'mana'}
                 {' balance'}
               </span>
               <span className="text-ink-700 font-semibold">

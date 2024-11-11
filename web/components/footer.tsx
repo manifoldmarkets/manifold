@@ -1,4 +1,3 @@
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 import Link from 'next/link'
 import { track } from 'web/lib/service/analytics'
 
@@ -40,18 +39,14 @@ export const Footer = ({ showAbout = false }: { showAbout?: boolean }) => (
     >
       Privacy
     </a>
-    {TWOMBA_ENABLED && (
-      <>
-        <span className="mx-2">&bull;</span>
-        <a
-          href="/sweepstakes-rules"
-          target="_blank"
-          className="hover:underline"
-          onClick={() => track('Click Sweepstakes Rules')}
-        >
-          Rules
-        </a>
-      </>
-    )}
+    <span className="mx-2">&bull;</span>
+    <a
+      href="/sweepstakes-rules"
+      target="_blank"
+      className="hover:underline"
+      onClick={() => track('Click Sweepstakes Rules')}
+    >
+      Rules
+    </a>
   </div>
 )

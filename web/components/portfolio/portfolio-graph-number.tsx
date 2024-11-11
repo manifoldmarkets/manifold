@@ -1,8 +1,7 @@
 import clsx from 'clsx'
-import { CoinNumber } from '../widgets/coin-number'
 import { Col } from '../layout/col'
 import { useSweepstakes } from '../sweepstakes-provider'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
+import { CoinNumber } from '../widgets/coin-number'
 import { PortfolioMode } from './portfolio-graph'
 
 export function PortfolioGraphNumber(props: {
@@ -43,15 +42,7 @@ export function PortfolioGraphNumber(props: {
         <CoinNumber
           amount={displayedAmount}
           className={clsx('font-bold transition-all', className)}
-          coinType={
-            isSpice
-              ? 'spice'
-              : TWOMBA_ENABLED
-              ? prefersPlay
-                ? 'mana'
-                : 'sweepies'
-              : 'mana'
-          }
+          coinType={isSpice ? 'spice' : prefersPlay ? 'mana' : 'sweepies'}
         />
 
         <div

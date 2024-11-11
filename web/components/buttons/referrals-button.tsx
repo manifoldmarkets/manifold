@@ -1,24 +1,23 @@
 import clsx from 'clsx'
+import { DisplayUser } from 'common/api/user-types'
+import { REFERRAL_AMOUNT } from 'common/economy'
+import { getReferralCount } from 'common/supabase/referrals'
 import { User } from 'common/user'
+import { getReferralCodeFromUser } from 'common/util/share'
 import { useEffect, useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
-import { Col } from '../layout/col'
+import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
-import { getReferrals } from 'web/lib/supabase/referrals'
-import { DisplayUser } from 'common/api/user-types'
-import { getReferralCount } from 'common/supabase/referrals'
-import { db } from 'web/lib/supabase/db'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { REFERRAL_AMOUNT } from 'common/economy'
-import { Subtitle } from '../widgets/subtitle'
-import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { CoinNumber } from 'web/components/widgets/coin-number'
-import { getReferralCodeFromUser } from 'common/util/share'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { UserLink } from 'web/components/widgets/user-link'
+import { useUser } from 'web/hooks/use-user'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { db } from 'web/lib/supabase/db'
+import { getReferrals } from 'web/lib/supabase/referrals'
+import { Col } from '../layout/col'
 import { CASH_COLOR } from '../portfolio/portfolio-graph'
+import { Subtitle } from '../widgets/subtitle'
 
 export const useReferralCount = (user: User) => {
   const [referralCount, setReferralCount] = useState(0)
@@ -53,7 +52,7 @@ export function Referrals(props: { user: User }) {
             Refer a friend for{' '}
             <span className={'text-teal-500'}>
               <CoinNumber
-                coinType={TWOMBA_ENABLED ? 'MANA' : 'spice'}
+                coinType={'MANA'}
                 amount={REFERRAL_AMOUNT}
                 style={{
                   color: CASH_COLOR,

@@ -3,11 +3,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import { Contract } from 'common/contract'
-import {
-  HIDE_FROM_NEW_USER_SLUGS,
-  TRADE_TERM,
-  TWOMBA_ENABLED,
-} from 'common/envs/constants'
+import { HIDE_FROM_NEW_USER_SLUGS, TRADE_TERM } from 'common/envs/constants'
 import {
   contractFields,
   convertContract,
@@ -26,6 +22,7 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import { SweepsExplainer } from 'web/components/sweeps-explainer'
 import { TestimonialsPanel } from 'web/components/testimonials-panel'
 import { Carousel } from 'web/components/widgets/carousel'
@@ -34,7 +31,6 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
-import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
@@ -187,17 +183,10 @@ export default function LandingPage(props: {
                 <div className="mb-2">
                   The largest social prediction market.
                 </div>
-                {TWOMBA_ENABLED ? (
-                  <div className="mb-2">
-                    Get real-time odds on politics, tech, and sports. Win cash
-                    prizes for your predictions!
-                  </div>
-                ) : (
-                  <div className="mb-2">
-                    Bet against others on our play money markets to progress up
-                    the leaderboards and contribute to the market's probability!
-                  </div>
-                )}
+                <div className="mb-2">
+                  Get real-time odds on politics, tech, and sports. Win cash
+                  prizes for your predictions!
+                </div>
               </div>
 
               <Button
@@ -220,7 +209,7 @@ export default function LandingPage(props: {
             </Col>
           </Row>
         </Col>
-        {TWOMBA_ENABLED && <SweepsExplainer />}
+        <SweepsExplainer />
         <Col>
           <Row className={'mb-3 mt-2 text-xl'}>🔥 Trending Topics</Row>
           <Carousel labelsParentClassName={'gap-2'} className="mx-1">

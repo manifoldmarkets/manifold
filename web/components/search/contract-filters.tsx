@@ -3,11 +3,20 @@ import { track } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { getLabelFromValue } from './search-dropdown-helpers'
 
+import { LiteGroup } from 'common/group'
+import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { useState } from 'react'
 import { FaSortAmountDownAlt } from 'react-icons/fa'
 import { FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
 import { IconButton } from 'web/components/buttons/button'
 import { Carousel } from 'web/components/widgets/carousel'
+import { useUser } from 'web/hooks/use-user'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import {
+  CrystalTier,
+  PlusTier,
+  PremiumTier,
+} from 'web/public/custom-components/tiers'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import {
@@ -35,25 +44,15 @@ import {
   bountySorts,
   predictionMarketSorts,
 } from '../supabase-search'
+import { SweepsToggle } from '../sweeps/sweeps-toggle'
+import { useSweepstakes } from '../sweepstakes-provider'
 import {
   AdditionalFilterPill,
   FilterDropdownPill,
   FilterPill,
+  TierDropdownPill,
   TopicDropdownPill,
 } from './filter-pills'
-import { MarketTierType, TierParamsType, tiers } from 'common/tier'
-import { TierDropdownPill } from './filter-pills'
-import { useUser } from 'web/hooks/use-user'
-import {
-  CrystalTier,
-  PlusTier,
-  PremiumTier,
-} from 'web/public/custom-components/tiers'
-import { LiteGroup } from 'common/group'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { useSweepstakes } from '../sweepstakes-provider'
-import { SweepsToggle } from '../sweeps/sweeps-toggle'
 
 export function ContractFilters(props: {
   className?: string
@@ -153,14 +152,12 @@ export function ContractFilters(props: {
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
       <Carousel labelsParentClassName="gap-1 items-center">
-        {TWOMBA_ENABLED && (
-          <SweepsToggle
-            sweepsEnabled={true}
-            isPlay={!isSweeps}
-            onClick={toggleSweepies}
-            isSmall
-          />
-        )}
+        <SweepsToggle
+          sweepsEnabled={true}
+          isPlay={!isSweeps}
+          onClick={toggleSweepies}
+          isSmall
+        />
 
         <Row className="bg-ink-200 dark:bg-ink-300 items-center rounded-full">
           <button

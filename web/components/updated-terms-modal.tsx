@@ -1,11 +1,10 @@
-import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { Modal, MODAL_CLASS } from './layout/modal'
-import { Col } from './layout/col'
-import { LogoIcon } from './icons/logo-icon'
-import { Button } from './buttons/button'
-import { useUser } from 'web/hooks/use-user'
 import { useRouter } from 'next/router'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useUser } from 'web/hooks/use-user'
+import { Button } from './buttons/button'
+import { LogoIcon } from './icons/logo-icon'
+import { Col } from './layout/col'
+import { Modal, MODAL_CLASS } from './layout/modal'
 
 export function UpdatedTermsModal() {
   const user = useUser()
@@ -26,8 +25,7 @@ export function UpdatedTermsModal() {
   // Check if the user was created after the terms update
   const isNewUser = user && new Date(user.createdTime) > TERMS_UPDATE_DATE
 
-  if (agreedToTerms || !user || !TWOMBA_ENABLED || isExceptionPage || isNewUser)
-    return null
+  if (agreedToTerms || !user || isExceptionPage || isNewUser) return null
 
   return (
     <Modal open={true} onClose={() => {}}>

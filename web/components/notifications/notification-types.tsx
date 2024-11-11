@@ -1,6 +1,7 @@
 import { GiftIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { REFERRAL_AMOUNT } from 'common/economy'
+import { TRADED_TERM } from 'common/envs/constants'
 import {
   AirdropData,
   BetFillData,
@@ -24,6 +25,7 @@ import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useState } from 'react'
+import { BsBank } from 'react-icons/bs'
 import { Referrals } from 'web/components/buttons/referrals-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -36,9 +38,9 @@ import {
   ManaPaymentReceivedNotification,
   PushNotificationBonusNotification,
   QuestIncomeNotification,
+  ReferralNotification,
   UniqueBettorBonusIncomeNotification,
   UniqueBettorNotification,
-  ReferralNotification,
 } from 'web/components/notifications/income-summary-notifications'
 import {
   BinaryOutcomeLabel,
@@ -50,11 +52,12 @@ import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useReview } from 'web/hooks/use-review'
 import { useUser } from 'web/hooks/use-user'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Rating, ReviewPanel } from '../reviews/stars'
-import { Linkify } from '../widgets/linkify'
 import { CoinNumber } from '../widgets/coin-number'
+import { Linkify } from '../widgets/linkify'
 import { linkClass } from '../widgets/site-link'
 import {
   AvatarNotificationIcon,
@@ -66,9 +69,6 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { TRADED_TERM, TWOMBA_ENABLED } from 'common/envs/constants'
-import { BsBank } from 'react-icons/bs'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -1448,7 +1448,7 @@ function ReferralProgramNotification(props: {
       <span>
         Refer friends and get{' '}
         <CoinNumber
-          coinType={TWOMBA_ENABLED ? 'MANA' : 'spice'}
+          coinType={'MANA'}
           amount={REFERRAL_AMOUNT}
           className={clsx('mr-1 font-bold')}
           isInline

@@ -1,8 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
-import { SPICE_PRODUCTION_ENABLED, TWOMBA_ENABLED } from 'common/envs/constants'
 import { User } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Avatar } from '../widgets/avatar'
@@ -11,7 +9,6 @@ import { CoinNumber } from '../widgets/coin-number'
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props
 
-  const [buyModalOpen, setBuyModalOpen] = useState(false)
   const currentPage = usePathname() ?? ''
   const url = `/${user.username}`
   return (
@@ -40,21 +37,11 @@ export function ProfileSummary(props: { user: User; className?: string }) {
             className="mr-2 text-violet-600 dark:text-violet-400"
           />
         </div>
-        {TWOMBA_ENABLED ? (
-          <CoinNumber
-            className="text-sm text-amber-600 dark:text-amber-400"
-            amount={user.cashBalance}
-            coinType="sweepies"
-          />
-        ) : (
-          SPICE_PRODUCTION_ENABLED && (
-            <CoinNumber
-              className="text-sm text-amber-600 dark:text-amber-400"
-              amount={user.spiceBalance}
-              coinType="spice"
-            />
-          )
-        )}
+        <CoinNumber
+          className="text-sm text-amber-600 dark:text-amber-400"
+          amount={user.cashBalance}
+          coinType="sweepies"
+        />
       </div>
       <div className="w-2 shrink" />
     </Link>

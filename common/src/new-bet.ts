@@ -148,7 +148,7 @@ const computeFill = (
   const shares = Math.min(maxTakerShares, maxMakerShares)
 
   const takerFee = freeFees ? 0 : getTakerFee(shares, takerPrice)
-  const fees = getFeesSplit(takerFee, cpmmState.collectedFees)
+  const fees = getFeesSplit(takerFee)
 
   const maker = {
     bet: matchedBet,
