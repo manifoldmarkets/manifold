@@ -432,7 +432,7 @@ export function ContractPageContent(props: ContractParams) {
               )}
               <YourTrades contract={liveContract} yourNewBets={yourNewBets} />
             </Col>
-            {showReview && user && (
+            {showReview && user && liveContract.isResolved && (
               <div className="relative my-2">
                 <ReviewPanel
                   marketId={props.contract.id}
