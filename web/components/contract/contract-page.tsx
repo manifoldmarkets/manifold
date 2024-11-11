@@ -224,7 +224,6 @@ export function ContractPageContent(props: ContractParams) {
   const isCreator = creatorId === user?.id
   const isClosed = !!(closeTime && closeTime < Date.now())
   const [showResolver, setShowResolver] = useState(false)
-  const [showReview, setShowReview] = useState(false)
   const [imageError, setImageError] = useState(false)
 
   const [replyTo, setReplyTo] = useState<Answer | Bet>()
@@ -260,6 +259,12 @@ export function ContractPageContent(props: ContractParams) {
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(props.contract.id, user?.id)
   const userHasReviewed = userReview || justNowReview
+
+  const [showReview, setShowReview] = useState(!userHasReviewed)
+
+  useEffect(() => {
+    setShowReview(!userHasReviewed)
+  }, [userHasReviewed])
 
   const isSpiceMarket = !!liveContract.isSpicePayout
   const isCashContract = liveContract.token === 'CASH'
