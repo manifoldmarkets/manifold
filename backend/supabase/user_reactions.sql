@@ -6,7 +6,7 @@ create table if not exists
     content_type text not null,
     created_time timestamp with time zone default now() not null,
     reaction_id text default random_alphanumeric (12) not null,
-    reaction_type text default 'like'::character varying,
+    reaction_type text default 'like'::text not null,
     user_id text not null,
     constraint primary key (user_id, reaction_id)
   );

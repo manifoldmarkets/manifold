@@ -3,7 +3,7 @@ create table if not exists
   contract_bets (
     amount numeric,
     answer_id text,
-    bet_id text default random_alphanumeric (12) not null,
+    bet_id text primary key default random_alphanumeric (12) not null,
     contract_id text not null,
     created_time timestamp with time zone default now() not null,
     data jsonb not null,
@@ -100,6 +100,10 @@ create index contract_bets_created_time_only on public.contract_bets using btree
 drop index if exists contract_bets_historical_probs;
 
 create index contract_bets_historical_probs on public.contract_bets using btree (contract_id, answer_id, created_time desc) include (prob_before, prob_after);
+
+drop index if exists contract_bets_pkey;
+
+create unique index contract_bets_pkey on public.contract_bets using btree (bet_id);
 
 drop index if exists contract_bets_user_id_created_time;
 
