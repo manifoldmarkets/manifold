@@ -1,26 +1,24 @@
-import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
+import { APIHandler } from 'api/helpers/endpoint'
+import { GIDXCustomerProfile } from 'common/gidx/gidx'
+import { User } from 'common/user'
+import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
 import {
   getGIDXCustomerProfile,
   getUserRegistrationRequirements,
   throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
-import { GIDXCustomerProfile } from 'common/gidx/gidx'
-import { getIdentityVerificationDocuments } from 'api/gidx/get-verification-documents'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
 import { getUserAndPrivateUserOrThrow, log } from 'shared/utils'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { User } from 'common/user'
-import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
 
 export const getVerificationStatus: APIHandler<
   'get-verification-status-gidx'
 > = async (_, auth) => {
-  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const customerProfile = await getGIDXCustomerProfile(auth.uid)
   throwIfIPNotWhitelisted(
     customerProfile.ResponseCode,

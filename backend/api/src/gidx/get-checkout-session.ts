@@ -1,36 +1,31 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { WEB_PRICES } from 'common/economy'
+import { isAdminId, TWOMBA_CASHOUT_ENABLED } from 'common/envs/constants'
 import {
   CheckoutSession,
   CheckoutSessionResponse,
   CustomerProfileResponse,
 } from 'common/gidx/gidx'
+import { getVerificationStatus } from 'common/gidx/user'
+import { randomBytes } from 'crypto'
+import { getIp, track } from 'shared/analytics'
 import {
-  GIDXCallbackUrl,
-  GIDX_BASE_URL,
   getGIDXStandardParams,
   getLocalServerIP,
+  GIDX_BASE_URL,
+  GIDXCallbackUrl,
   throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
-import { getIp, track } from 'shared/analytics'
 import { log } from 'shared/monitoring/log'
-import { randomBytes } from 'crypto'
-import {
-  isAdminId,
-  TWOMBA_CASHOUT_ENABLED,
-  TWOMBA_ENABLED,
-} from 'common/envs/constants'
-import { getUserAndPrivateUserOrThrow, LOCAL_DEV } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getVerificationStatus } from 'common/gidx/user'
-import { WEB_PRICES } from 'common/economy'
+import { getUserAndPrivateUserOrThrow, LOCAL_DEV } from 'shared/utils'
 
 const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CreateSession'
 
 export const getCheckoutSession: APIHandler<
   'get-checkout-session-gidx'
 > = async (props, auth, req) => {
-  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   if (!TWOMBA_CASHOUT_ENABLED && props.PayActionCode === 'PAYOUT') {
     throw new APIError(400, 'Cashouts will be enabled soon!')
   }

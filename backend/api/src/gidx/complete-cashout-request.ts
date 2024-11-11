@@ -1,21 +1,19 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { ValidatedAPIParams } from 'common/api/schema'
+import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import { PaymentMethod } from 'common/gidx/gidx'
+import { CashOutPendingTxn } from 'common/txn'
+import { floatingEqual } from 'common/util/math'
+import { getIp, track } from 'shared/analytics'
+import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
-import { getIp, track } from 'shared/analytics'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
 import { getUser } from 'shared/utils'
-import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
-import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
-import { floatingEqual } from 'common/util/math'
-import { ValidatedAPIParams } from 'common/api/schema'
-import { CashOutPendingTxn } from 'common/txn'
 
 export const completeCashoutRequest: APIHandler<
   'complete-cashout-request'
 > = async (props, auth, req) => {
-  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const pg = createSupabaseDirectClient()
   const {
     PaymentMethod,

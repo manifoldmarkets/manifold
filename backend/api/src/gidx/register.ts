@@ -1,7 +1,11 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getUser, LOCAL_DEV, log } from 'shared/utils'
-import { getUserIdFromReferralCode, updateUser } from 'shared/supabase/users'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  ENABLE_FAKE_CUSTOMER,
+  GIDXRegistrationResponse,
+} from 'common/gidx/gidx'
+import { parsePhoneNumber } from 'libphonenumber-js'
+import { getIp, track } from 'shared/analytics'
+import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
 import {
   getGIDXStandardParams,
   getLocalServerIP,
@@ -10,14 +14,9 @@ import {
   throwIfIPNotWhitelisted,
   verifyReasonCodes,
 } from 'shared/gidx/helpers'
-import {
-  ENABLE_FAKE_CUSTOMER,
-  GIDXRegistrationResponse,
-} from 'common/gidx/gidx'
-import { TWOMBA_ENABLED } from 'common/envs/constants'
-import { parsePhoneNumber } from 'libphonenumber-js'
-import { getIp, track } from 'shared/analytics'
-import { distributeKycBonus } from 'shared/distribute-kyc-bonus'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getUserIdFromReferralCode, updateUser } from 'shared/supabase/users'
+import { getUser, LOCAL_DEV, log } from 'shared/utils'
 
 const ENDPOINT =
   GIDX_BASE_URL + '/v3.0/api/CustomerIdentity/CustomerRegistration'
@@ -27,7 +26,6 @@ export const register: APIHandler<'register-gidx'> = async (
   auth,
   req
 ) => {
-  if (!TWOMBA_ENABLED) throw new APIError(400, 'GIDX registration is disabled')
   const { privateUser, phoneNumberWithCode } =
     await getUserRegistrationRequirements(auth.uid)
   const EmailAddress = props.EmailAddress ?? privateUser.email
