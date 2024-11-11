@@ -14,7 +14,6 @@ export type Database = {
           color: string | null
           contract_id: string | null
           created_time: string | null
-          data: Json | null
           id: string
           index: number | null
           is_other: boolean
@@ -38,7 +37,6 @@ export type Database = {
           color?: string | null
           contract_id?: string | null
           created_time?: string | null
-          data?: Json | null
           id?: string
           index?: number | null
           is_other?: boolean
@@ -62,7 +60,6 @@ export type Database = {
           color?: string | null
           contract_id?: string | null
           created_time?: string | null
-          data?: Json | null
           id?: string
           index?: number | null
           is_other?: boolean

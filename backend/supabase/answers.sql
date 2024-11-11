@@ -4,7 +4,6 @@ create table if not exists
     color text,
     contract_id text,
     created_time timestamp with time zone default now(),
-    data jsonb,
     id text primary key default random_alphanumeric (12) not null,
     index integer,
     is_other boolean default false not null,
