@@ -6,10 +6,15 @@ import { api } from 'web/lib/api/api'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { Reaction } from 'common/reaction'
 import { Contract } from 'common/contract'
+import { getContractIdsWithMetrics } from 'common/supabase/contract-metrics'
 
 const pendingRequests: Map<
   string,
-  { ids: Set<string>; filterCallback: FilterCallback<any> }
+  {
+    ids: Set<string>
+    filterCallback: FilterCallback<any>
+    userId?: string
+  }
 > = new Map()
 const pendingCallbacks: Map<string, ((data: any) => void)[]> = new Map()
 
@@ -18,11 +23,10 @@ type FilterCallback<T> = (data: T[], id: string) => T | undefined
 const executeBatchQuery = debounce(async () => {
   for (const [
     queryType,
-    { ids, filterCallback },
+    { ids, filterCallback, userId },
   ] of pendingRequests.entries()) {
     if (!ids.size) continue
-    console.log('executing batch query', queryType, ids)
-    let data: Contract[] | Reaction[]
+    let data: Contract[] | Reaction[] | string[]
     try {
       switch (queryType) {
         case 'markets':
@@ -39,6 +43,13 @@ const executeBatchQuery = debounce(async () => {
               .in('content_id', Array.from(ids))
           )
           data = likesData
+          break
+        case 'contract-metrics':
+          if (!userId) {
+            data = []
+            break
+          }
+          data = await getContractIdsWithMetrics(db, userId, Array.from(ids))
           break
       }
 
@@ -59,19 +70,25 @@ const executeBatchQuery = debounce(async () => {
 
 const defaultFilters: Record<string, FilterCallback<any>> = {
   markets: (data: Contract[], id: string) =>
-    (data ?? []).find((item) => item.id === id),
+    data.find((item) => item.id === id),
   'comment-likes': (data: Reaction[], id: string) =>
-    (data || []).filter((item) => item.content_id === id),
+    data.filter((item) => item.content_id === id),
   'contract-likes': (data: Reaction[], id: string) =>
-    (data || []).filter((item) => item.content_id === id),
+    data.filter((item) => item.content_id === id),
+  'contract-metrics': (data: string[], id: string) => data.includes(id),
 }
 
 export const useBatchedGetter = <T>(
-  queryType: 'markets' | 'comment-likes' | 'contract-likes',
+  queryType:
+    | 'markets'
+    | 'comment-likes'
+    | 'contract-likes'
+    | 'contract-metrics',
   id: string,
   initialValue: T,
   enabled = true,
-  customFilter?: FilterCallback<T>
+  customFilter?: FilterCallback<T>,
+  userId?: string
 ) => {
   useEffect(() => {
     if (!enabled) return
@@ -80,6 +97,7 @@ export const useBatchedGetter = <T>(
       pendingRequests.set(queryType, {
         ids: new Set(),
         filterCallback: customFilter ?? defaultFilters[queryType],
+        userId,
       })
     }
     pendingRequests.get(queryType)!.ids.add(id)
@@ -108,7 +126,7 @@ export const useBatchedGetter = <T>(
         }
       }
     }
-  }, [queryType, id, enabled])
+  }, [queryType, id, enabled, userId])
 
   const [state, setState] = usePersistentInMemoryState<T>(
     initialValue,
