@@ -1,4 +1,4 @@
-import { Reaction, ReactionContentTypes } from 'common/reaction'
+import { Reaction, ReactionContentTypes, ReactionType } from 'common/reaction'
 import { db } from 'web/lib/supabase/db'
 import { useEffect } from 'react'
 import { run } from 'common/supabase/utils'
@@ -8,7 +8,7 @@ import { debounce } from 'lodash'
 const pendingRequests: Map<ReactionContentTypes, Set<string>> = new Map()
 const pendingCallbacks: Map<string, ((data: Reaction[]) => void)[]> = new Map()
 
-const executeBatchLikesQuery = debounce(async () => {
+const executeBatchLikesQuery = debounce(async (reactionType: ReactionType) => {
   for (const [contentType, contentIds] of pendingRequests.entries()) {
     if (!contentIds.size) continue
 
@@ -17,11 +17,12 @@ const executeBatchLikesQuery = debounce(async () => {
         .from('user_reactions')
         .select()
         .eq('content_type', contentType)
+        .eq('reaction_type', reactionType)
         .in('content_id', Array.from(contentIds))
     )
 
     contentIds.forEach((contentId) => {
-      const key = `${contentType}-${contentId}`
+      const key = `${contentType}-${contentId}-${reactionType}`
       const callbacks = pendingCallbacks.get(key) || []
       const filteredData = (data || []).filter(
         (item) => item.content_id === contentId
@@ -34,14 +35,14 @@ const executeBatchLikesQuery = debounce(async () => {
   }
 }, 50)
 
-export const useLikesOnContent = (
+export const useReactionsOnContent = (
   contentType: ReactionContentTypes,
-  contentId: string
+  contentId: string,
+  reactionType: ReactionType
 ) => {
-  const [likes, setLikes] = usePersistentInMemoryState<Reaction[] | undefined>(
-    undefined,
-    `${contentType}-likes-on-${contentId}`
-  )
+  const [reactions, setReactions] = usePersistentInMemoryState<
+    Reaction[] | undefined
+  >(undefined, `${contentType}-${reactionType}-on-${contentId}`)
 
   useEffect(() => {
     if (!pendingRequests.has(contentType)) {
@@ -53,14 +54,14 @@ export const useLikesOnContent = (
     if (!pendingCallbacks.has(key)) {
       pendingCallbacks.set(key, [])
     }
-    pendingCallbacks.get(key)!.push(setLikes)
+    pendingCallbacks.get(key)!.push(setReactions)
 
-    executeBatchLikesQuery()
+    executeBatchLikesQuery(reactionType)
 
     return () => {
       const callbacks = pendingCallbacks.get(key)
       if (callbacks) {
-        const index = callbacks.indexOf(setLikes)
+        const index = callbacks.indexOf(setReactions)
         if (index > -1) {
           callbacks.splice(index, 1)
         }
@@ -71,5 +72,5 @@ export const useLikesOnContent = (
     }
   }, [contentType, contentId])
 
-  return likes
+  return reactions
 }

@@ -2,20 +2,20 @@ import { ReplyIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
+import { TRADE_TERM } from 'common/envs/constants'
 import { richTextToString } from 'common/util/parse'
 import { useState } from 'react'
-import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
-import { useUser, usePrivateUser, isBlocked } from 'web/hooks/use-user'
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { track } from 'web/lib/service/analytics'
 import { BuyPanel } from '../bet/bet-panel'
 import { IconButton } from '../buttons/button'
-import { LikeButton } from '../contract/like-button'
+import { AwardBountyButton } from '../contract/bountied-question'
+import { ReactButton } from '../contract/react-button'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
-import { track } from 'web/lib/service/analytics'
-import { AwardBountyButton } from '../contract/bountied-question'
-import { TRADE_TERM } from 'common/envs/constants'
 
 export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
@@ -99,7 +99,7 @@ export function CommentActions(props: {
           </Tooltip>
         </IconButton>
       )}
-      <LikeButton
+      <ReactButton
         contentCreatorId={comment.userId}
         contentId={comment.id}
         user={user}
@@ -108,6 +108,20 @@ export function CommentActions(props: {
         contentText={richTextToString(comment.content)}
         disabled={isBlocked(privateUser, comment.userId)}
         trackingLocation={trackingLocation}
+        iconType={'thumb'}
+        reactionType={'like'}
+      />
+      <ReactButton
+        contentCreatorId={comment.userId}
+        contentId={comment.id}
+        user={user}
+        contentType={'comment'}
+        size={'xs'}
+        contentText={richTextToString(comment.content)}
+        disabled={isBlocked(privateUser, comment.userId)}
+        trackingLocation={trackingLocation}
+        iconType={'thumb'}
+        reactionType={'dislike'}
       />
       {showBetModal && (
         <Modal

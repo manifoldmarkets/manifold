@@ -1014,6 +1014,7 @@ export const API = (_apiTypeCheck = {
         contentId: z.string(),
         contentType: z.enum(['comment', 'contract']),
         remove: z.boolean().optional(),
+        reactionType: z.string().optional().default('like'),
       })
       .strict(),
     returns: { success: true },

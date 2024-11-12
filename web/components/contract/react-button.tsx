@@ -1,33 +1,34 @@
-import { HeartIcon } from '@heroicons/react/outline'
+import { HeartIcon, ThumbDownIcon, ThumbUpIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Reaction, ReactionContentTypes } from 'common/reaction'
+import { DisplayUser } from 'common/api/user-types'
+import { Reaction, ReactionContentTypes, ReactionType } from 'common/reaction'
 import { User } from 'common/user'
+import { buildArray } from 'common/util/array'
+import { removeUndefinedProps } from 'common/util/object'
 import { memo, useEffect, useState } from 'react'
-import { useLikesOnContent } from 'web/hooks/use-likes'
+import toast from 'react-hot-toast'
+import { Button, SizeType } from 'web/components/buttons/button'
 import useLongTouch from 'web/hooks/use-long-touch'
-import { like, unLike } from 'web/lib/supabase/reactions'
+import { useUsers } from 'web/hooks/use-user-supabase'
+import { track } from 'web/lib/service/analytics'
+import { react, unreact } from 'web/lib/supabase/reactions'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import {
   MultiUserLinkInfo,
   MultiUserTransactionModal,
 } from '../multi-user-transaction-link'
+import { UserHovercard } from '../user/user-hovercard'
 import { Avatar } from '../widgets/avatar'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { Button, SizeType } from 'web/components/buttons/button'
-import toast from 'react-hot-toast'
-import { track } from 'web/lib/service/analytics'
-import { buildArray } from 'common/util/array'
-import { UserHovercard } from '../user/user-hovercard'
-import { removeUndefinedProps } from 'common/util/object'
-import { useUsers } from 'web/hooks/use-user-supabase'
-import { DisplayUser } from 'common/api/user-types'
+import { useReactionsOnContent } from 'web/hooks/use-reactions'
+import { capitalize } from 'lodash'
 
 const LIKES_SHOWN = 3
 
-export const LikeButton = memo(function LikeButton(props: {
+export const ReactButton = memo(function ReactButton(props: {
   contentId: string
   contentCreatorId: string
   user: User | null | undefined
@@ -36,6 +37,8 @@ export const LikeButton = memo(function LikeButton(props: {
   trackingLocation: string
   className?: string
   placement?: 'top' | 'bottom'
+  reactionType?: ReactionType
+  iconType?: 'heart' | 'thumb'
   size?: SizeType
   disabled?: boolean
   feedReason?: string
@@ -54,29 +57,31 @@ export const LikeButton = memo(function LikeButton(props: {
     placement = 'bottom',
     feedReason,
     size,
+    iconType = 'heart',
     contractId,
     commentId,
     heartClassName,
+    reactionType = 'like',
   } = props
-  const likes = useLikesOnContent(contentType, contentId)
-  const [liked, setLiked] = useState(false)
+  const reactions = useReactionsOnContent(contentType, contentId, reactionType)
+  const [reacted, setReacted] = useState(false)
   useEffect(() => {
-    if (likes) setLiked(likes.some((l) => l.user_id === user?.id))
-  }, [likes, user])
+    if (reactions) setReacted(reactions.some((l) => l.user_id === user?.id))
+  }, [reactions, user])
 
   const totalLikes =
-    (likes ? likes.filter((l) => l.user_id != user?.id).length : 0) +
-    (liked ? 1 : 0)
+    (reactions ? reactions.filter((l) => l.user_id != user?.id).length : 0) +
+    (reacted ? 1 : 0)
 
   const disabled = props.disabled || !user
   const isMe = contentCreatorId === user?.id
   const [modalOpen, setModalOpen] = useState(false)
 
-  const onLike = async (shouldLike: boolean) => {
+  const onReact = async (shouldReact: boolean) => {
     if (!user) return
-    setLiked(shouldLike)
-    if (shouldLike) {
-      await like(contentId, contentType)
+    setReacted(shouldReact)
+    if (shouldReact) {
+      await react(contentId, contentType, reactionType)
 
       track(
         'like',
@@ -91,12 +96,12 @@ export const LikeButton = memo(function LikeButton(props: {
         })
       )
     } else {
-      await unLike(contentId, contentType)
+      await unreact(contentId, contentType, reactionType)
     }
   }
 
   function handleLiked(liked: boolean) {
-    onLike(liked)
+    onReact(liked)
   }
 
   const likeLongPress = useLongTouch(
@@ -108,14 +113,15 @@ export const LikeButton = memo(function LikeButton(props: {
         if (isMe) {
           toast("Of course you'd like yourself", { icon: '🙄' })
         } else {
-          handleLiked(!liked)
+          handleLiked(!reacted)
         }
       }
     }
   )
 
-  const otherLikes = liked ? totalLikes - 1 : totalLikes
+  const otherLikes = reacted ? totalLikes - 1 : totalLikes
   const showList = otherLikes > 0
+  const thumbIcon = iconType == 'thumb' || reactionType == 'dislike'
 
   return (
     <>
@@ -127,10 +133,11 @@ export const LikeButton = memo(function LikeButton(props: {
               contentId={contentId}
               onRequestModal={() => setModalOpen(true)}
               user={user}
-              userLiked={liked}
+              userReacted={reacted}
+              reactionType={reactionType}
             />
           ) : (
-            'Like'
+            capitalize(reactionType)
           )
         }
         placement={placement}
@@ -151,13 +158,31 @@ export const LikeButton = memo(function LikeButton(props: {
           >
             <Row className={'text-ink-600 items-center gap-0.5'}>
               <div className="relative">
-                <HeartIcon
-                  className={clsx(
-                    'stroke-ink-500 h-4 w-4',
-                    liked &&
-                      'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
-                  )}
-                />
+                {thumbIcon ? (
+                  reactionType == 'dislike' ? (
+                    <ThumbDownIcon
+                      className={clsx(
+                        'stroke-ink-500 h-4 w-4',
+                        reacted && 'stroke-scarlet-500 fill-scarlet-200'
+                      )}
+                    />
+                  ) : (
+                    <ThumbUpIcon
+                      className={clsx(
+                        'stroke-ink-500 h-4 w-4',
+                        reacted && 'fill-teal-200 stroke-teal-500'
+                      )}
+                    />
+                  )
+                ) : (
+                  <HeartIcon
+                    className={clsx(
+                      'stroke-ink-500 h-4 w-4',
+                      reacted &&
+                        'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
+                    )}
+                  />
+                )}
               </div>
               {totalLikes > 0 && (
                 <div className=" text-sm disabled:opacity-50">{totalLikes}</div>
@@ -178,14 +203,34 @@ export const LikeButton = memo(function LikeButton(props: {
           >
             <Row className={'items-center gap-1.5'}>
               <div className="relative">
-                <HeartIcon
-                  className={clsx(
-                    'h-6 w-6',
-                    heartClassName,
-                    liked &&
-                      'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
-                  )}
-                />
+                {thumbIcon ? (
+                  reactionType == 'dislike' ? (
+                    <ThumbDownIcon
+                      className={clsx(
+                        'h-6 w-6',
+                        heartClassName,
+                        reacted && 'fill-scarlet-200 stroke-scarlet-500'
+                      )}
+                    />
+                  ) : (
+                    <ThumbUpIcon
+                      className={clsx(
+                        'h-6 w-6',
+                        heartClassName,
+                        reacted && 'fill-teal-200 stroke-teal-500'
+                      )}
+                    />
+                  )
+                ) : (
+                  <HeartIcon
+                    className={clsx(
+                      'h-6 w-6',
+                      heartClassName,
+                      reacted &&
+                        'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
+                    )}
+                  />
+                )}
               </div>
               {totalLikes > 0 && (
                 <div className="my-auto h-5  text-sm disabled:opacity-50">
@@ -197,20 +242,21 @@ export const LikeButton = memo(function LikeButton(props: {
         )}
       </Tooltip>
       {modalOpen && (
-        <UserLikedFullList
+        <UserReactedFullList
           contentType={contentType}
           contentId={contentId}
           user={user}
-          userLiked={liked}
+          userReacted={reacted}
           setOpen={setModalOpen}
           titleName={contentText}
+          reactionType={reactionType}
         />
       )}
     </>
   )
 })
 
-function useLikeDisplayList(
+function useReactedDisplayList(
   reacts: Reaction[] = [],
   self?: User | null,
   prependSelf?: boolean
@@ -223,17 +269,26 @@ function useLikeDisplayList(
   ])
 }
 
-function UserLikedFullList(props: {
+function UserReactedFullList(props: {
   contentType: ReactionContentTypes
   contentId: string
   user?: User | null
-  userLiked?: boolean
+  userReacted?: boolean
   setOpen: (isOpen: boolean) => void
   titleName?: string
+  reactionType: ReactionType
 }) {
-  const { contentType, contentId, user, userLiked, setOpen, titleName } = props
-  const reacts = useLikesOnContent(contentType, contentId)
-  const displayInfos = useLikeDisplayList(reacts, user, userLiked)
+  const {
+    contentType,
+    contentId,
+    user,
+    userReacted,
+    setOpen,
+    titleName,
+    reactionType,
+  } = props
+  const reacts = useReactionsOnContent(contentType, contentId, reactionType)
+  const displayInfos = useReactedDisplayList(reacts, user, userReacted)
 
   return (
     <MultiUserTransactionModal
@@ -262,11 +317,19 @@ function UserLikedPopup(props: {
   contentId: string
   onRequestModal: () => void
   user?: User | null
-  userLiked?: boolean
+  userReacted?: boolean
+  reactionType: ReactionType
 }) {
-  const { contentType, contentId, onRequestModal, user, userLiked } = props
-  const reacts = useLikesOnContent(contentType, contentId)
-  const displayInfos = useLikeDisplayList(reacts, user, userLiked)
+  const {
+    contentType,
+    contentId,
+    onRequestModal,
+    user,
+    userReacted,
+    reactionType,
+  } = props
+  const reacts = useReactionsOnContent(contentType, contentId, reactionType)
+  const displayInfos = useReactedDisplayList(reacts, user, userReacted)
 
   if (displayInfos == null) {
     return (
