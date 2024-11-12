@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { updateData } from 'shared/supabase/utils'
 
 const bodySchema = z
   .object({
@@ -37,9 +36,10 @@ export const updategroupprivacy = authEndpoint(async (req, auth) => {
     throw new APIError(403, 'Group privacy is already set to this!')
   }
 
-  await updateData(pg, 'groups', 'id', {
-    privacyStatus: privacy,
-  })
+  await pg.none(`update groups set privacy_status = $1 where id = $2`, [
+    privacy,
+    group.id,
+  ])
 
   return { status: 'success', message: 'Group privacy updated' }
 })

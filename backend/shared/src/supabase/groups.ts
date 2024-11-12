@@ -4,7 +4,7 @@ import {
 } from 'shared/supabase/init'
 import { APIError } from 'common//api/utils'
 import { getPrivateUser } from 'shared/utils'
-import { convertTopic, TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
+import { convertGroup, TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 import { updatePrivateUser } from './users'
 import { FieldVal } from './utils'
 
@@ -29,7 +29,7 @@ export const getMemberTopics = async (
         select group_id from group_members where member_id = $1
     ) order by importance_score desc`,
     [userId],
-    convertTopic
+    convertGroup
   )
 }
 export const getGroupIdFromSlug = async (

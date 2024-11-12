@@ -1063,7 +1063,6 @@ export type Database = {
           banner_url: string | null
           created_time: string
           creator_id: string | null
-          data: Json
           id: string
           importance_score: number | null
           name: string
@@ -1077,7 +1076,6 @@ export type Database = {
           banner_url?: string | null
           created_time?: string
           creator_id?: string | null
-          data: Json
           id?: string
           importance_score?: number | null
           name: string
@@ -1091,7 +1089,6 @@ export type Database = {
           banner_url?: string | null
           created_time?: string
           creator_id?: string | null
-          data?: Json
           id?: string
           importance_score?: number | null
           name?: string

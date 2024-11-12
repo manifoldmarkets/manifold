@@ -5,7 +5,6 @@ create table if not exists
     banner_url text,
     created_time timestamp with time zone default now() not null,
     creator_id text,
-    data jsonb not null,
     id text primary key default uuid_generate_v4 () not null,
     importance_score numeric default 0,
     name text not null,
@@ -14,26 +13,6 @@ create table if not exists
     slug text not null,
     total_members numeric default 0
   );
-
--- Triggers
-create trigger group_populate before insert
-or
-update on public.groups for each row
-execute function group_populate_cols ();
-
--- Functions
-create
-or replace function public.group_populate_cols () returns trigger language plpgsql as $function$ begin 
-    if new.data is not null then 
-    new.privacy_status := (new.data)->>'privacyStatus';
-    new.slug := (new.data)->>'slug';
-    new.name := (new.data)->>'name';
-    new.about := (new.data)->'about';
-    new.creator_id := (new.data)->>'creatorId';
-    new.banner_url := (new.data)->>'bannerUrl';
-    end if;
-    return new;
-end $function$;
 
 -- Row Level Security
 alter table groups enable row level security;

@@ -144,7 +144,7 @@ export async function getContractParams(
       topics,
       (t) => t.importanceScore + (t.privacyStatus === 'public' ? 1 : 0),
       'desc'
-    ),
+    ).map(removeUndefinedProps),
     dashboards,
   })
 }

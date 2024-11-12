@@ -25,9 +25,7 @@ export async function getGroupContractIds(groupId: string) {
 }
 
 export async function getGroup(groupId: string) {
-  const { data } = await run(
-    db.from('groups').select('data, id').eq('id', groupId)
-  )
+  const { data } = await run(db.from('groups').select().eq('id', groupId))
   if (data && data.length > 0) {
     return convertGroup(data[0])
   } else {

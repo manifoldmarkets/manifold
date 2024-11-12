@@ -1,4 +1,10 @@
-import { Row, SupabaseClient, convertSQLtoTS, run } from 'common/supabase/utils'
+import {
+  Row,
+  SupabaseClient,
+  convertSQLtoTS,
+  run,
+  tsToMillis,
+} from 'common/supabase/utils'
 import { Group, Topic } from 'common/group'
 
 export const UNRANKED_GROUP_ID = 'f141b8ca-eac3-4400-962a-72973b3ceb62'
@@ -51,24 +57,18 @@ export async function getGroupMemberIds(db: SupabaseClient, groupId: string) {
   return data ? data.map((member) => member.member_id) : []
 }
 
-export const convertGroup = (
-  sqlGroup: Partial<Row<'groups'>> & { id: string }
-) =>
-  convertSQLtoTS<'groups', Group>(sqlGroup, {
-    name_fts: false,
-  })
-
-export const convertTopic = (
-  sqlGroup: Partial<Row<'groups'>> & { id: string }
-) =>
-  convertSQLtoTS<'groups', Topic>(
-    sqlGroup,
-    {
-      name_fts: false,
-      creator_id: false,
-    },
-    false
-  )
+export const convertGroup = (row: Row<'groups'>): Group => ({
+  id: row.id,
+  slug: row.slug,
+  name: row.name,
+  about: row.about as any,
+  creatorId: row.creator_id!,
+  createdTime: tsToMillis(row.created_time),
+  totalMembers: row.total_members ?? 0,
+  bannerUrl: row.banner_url || undefined,
+  privacyStatus: row.privacy_status as any,
+  importanceScore: row.importance_score ?? 0,
+})
 
 export async function getTopicsOnContract(
   contractId: string,

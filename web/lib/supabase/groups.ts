@@ -71,9 +71,7 @@ export async function getGroupBySlug(groupSlug: string) {
 }
 
 export async function getGroups(groupIds: string[]) {
-  const { data } = await run(
-    db.from('groups').select('id,data').in('id', groupIds)
-  )
+  const { data } = await run(db.from('groups').select().in('id', groupIds))
   return data?.map(convertGroup)
 }
 
