@@ -13,16 +13,6 @@ export type Group = {
   anyoneCanJoin?: boolean
   totalMembers: number
   postIds: string[]
-  cachedLeaderboard?: {
-    topTraders: {
-      userId: string
-      score: number
-    }[]
-    topCreators: {
-      userId: string
-      score: number
-    }[]
-  }
   bannerUrl?: string
   privacyStatus: PrivacyStatusType
   importanceScore: number

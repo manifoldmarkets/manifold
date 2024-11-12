@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { type DisplayUser } from 'common/api/user-types'
 import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { removeEmojis } from 'common/util/string'
@@ -26,27 +25,11 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
-import { getDisplayUsers } from 'web/lib/supabase/users'
 import Custom404 from 'web/pages/404'
 
-type UserStat = { user: DisplayUser; score: number }
 type TopicParams = {
   name: string
   slug: string
-  topTraders: UserStat[]
-  topCreators: UserStat[]
-}
-const toTopUsers = async (
-  cachedUserIds: { userId: string; score: number }[]
-): Promise<{ user: DisplayUser; score: number }[]> => {
-  const userData = await getDisplayUsers(cachedUserIds.map((u) => u.userId))
-  const usersById = Object.fromEntries(userData.map((u) => [u?.id, u]))
-  return cachedUserIds
-    .map((e) => ({
-      user: usersById[e.userId],
-      score: e.score,
-    }))
-    .filter((e) => e.user != null)
 }
 
 export async function getStaticProps(props: { params: { slug: string[] } }) {
@@ -70,19 +53,12 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
     }
   }
 
-  const cachedTopTraderIds = topic.cachedLeaderboard?.topTraders ?? []
-  const cachedTopCreatorIds = topic.cachedLeaderboard?.topCreators ?? []
-  const topTraders = await toTopUsers(cachedTopTraderIds)
-  const topCreators = await toTopUsers(cachedTopCreatorIds)
-
   return {
     props: removeUndefinedProps({
       slug: slug ?? null,
       staticTopicParams: {
         name: topic.name,
         slug: topic.slug,
-        topTraders: topTraders ?? [],
-        topCreators: topCreators ?? [],
       },
       revalidate: 60 * 10, // regenerate after 10 minutes
     }),

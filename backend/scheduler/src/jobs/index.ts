@@ -65,11 +65,6 @@ export function createJobs() {
       updateLeague
     ),
     createJob(
-      'update-group-metrics',
-      '0 */17 * * * *', // every 17 minutes - (on the 8th minute of every hour)
-      updateGroupMetricsCore
-    ),
-    createJob(
       'check-push-receipts',
       '0 15 * * * *', // on the 15th minute of every hour
       checkPushNotificationReceipts
