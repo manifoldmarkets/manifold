@@ -1,7 +1,6 @@
 import {
   Row,
   SupabaseClient,
-  convertSQLtoTS,
   run,
   tsToMillis,
 } from 'common/supabase/utils'

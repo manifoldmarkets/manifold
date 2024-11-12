@@ -1,5 +1,5 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { update, updateData } from 'shared/supabase/utils'
+import { update } from 'shared/supabase/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { isAdminId, isModId } from 'common/envs/constants'
