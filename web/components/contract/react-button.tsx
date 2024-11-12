@@ -5,10 +5,12 @@ import { Reaction, ReactionContentTypes, ReactionType } from 'common/reaction'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
+import { capitalize } from 'lodash'
 import { memo, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button, SizeType } from 'web/components/buttons/button'
 import useLongTouch from 'web/hooks/use-long-touch'
+import { useReactionsOnContent } from 'web/hooks/use-reactions'
 import { useUsers } from 'web/hooks/use-user-supabase'
 import { track } from 'web/lib/service/analytics'
 import { react, unreact } from 'web/lib/supabase/reactions'
@@ -23,8 +25,6 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
-import { useReactionsOnContent } from 'web/hooks/use-reactions'
-import { capitalize } from 'lodash'
 
 const LIKES_SHOWN = 3
 
@@ -63,15 +63,27 @@ export const ReactButton = memo(function ReactButton(props: {
     heartClassName,
     reactionType = 'like',
   } = props
-  const reactions = useReactionsOnContent(contentType, contentId, reactionType)
+  const allReactions = useReactionsOnContent(contentType, contentId)
+  const reactions = allReactions?.filter(
+    (reaction: Reaction) => reaction.reaction_type === reactionType
+  )
+
+  console.log('REACTIONS', reactions, allReactions)
   const [reacted, setReacted] = useState(false)
   useEffect(() => {
-    if (reactions) setReacted(reactions.some((l) => l.user_id === user?.id))
-  }, [reactions, user])
+    if (reactions)
+      setReacted(
+        reactions.some(
+          (l: Reaction) =>
+            l.user_id === user?.id && l.reaction_type == reactionType
+        )
+      )
+  }, [allReactions, user])
 
   const totalLikes =
-    (reactions ? reactions.filter((l) => l.user_id != user?.id).length : 0) +
-    (reacted ? 1 : 0)
+    (reactions
+      ? reactions.filter((l: Reaction) => l.user_id != user?.id).length
+      : 0) + (reacted ? 1 : 0)
 
   const disabled = props.disabled || !user
   const isMe = contentCreatorId === user?.id
@@ -84,7 +96,7 @@ export const ReactButton = memo(function ReactButton(props: {
       await react(contentId, contentType, reactionType)
 
       track(
-        'like',
+        reactionType,
         removeUndefinedProps({
           itemId: contentId,
           location: trackingLocation,
@@ -100,7 +112,7 @@ export const ReactButton = memo(function ReactButton(props: {
     }
   }
 
-  function handleLiked(liked: boolean) {
+  function handleReacted(liked: boolean) {
     onReact(liked)
   }
 
@@ -110,10 +122,10 @@ export const ReactButton = memo(function ReactButton(props: {
     },
     () => {
       if (!disabled) {
-        if (isMe) {
+        if (isMe && reactionType === 'like') {
           toast("Of course you'd like yourself", { icon: '🙄' })
         } else {
-          handleLiked(!reacted)
+          handleReacted(!reacted)
         }
       }
     }
@@ -128,7 +140,7 @@ export const ReactButton = memo(function ReactButton(props: {
       <Tooltip
         text={
           showList ? (
-            <UserLikedPopup
+            <UserReactedPopup
               contentType={contentType}
               contentId={contentId}
               onRequestModal={() => setModalOpen(true)}
@@ -170,7 +182,7 @@ export const ReactButton = memo(function ReactButton(props: {
                     <ThumbUpIcon
                       className={clsx(
                         'stroke-ink-500 h-4 w-4',
-                        reacted && 'fill-teal-200 stroke-teal-500'
+                        reacted && 'fill-teal-200 stroke-teal-500 '
                       )}
                     />
                   )
@@ -209,7 +221,7 @@ export const ReactButton = memo(function ReactButton(props: {
                       className={clsx(
                         'h-6 w-6',
                         heartClassName,
-                        reacted && 'fill-scarlet-200 stroke-scarlet-500'
+                        reacted && 'fill-scarlet-200 stroke-scarlet-500 '
                       )}
                     />
                   ) : (
@@ -217,7 +229,7 @@ export const ReactButton = memo(function ReactButton(props: {
                       className={clsx(
                         'h-6 w-6',
                         heartClassName,
-                        reacted && 'fill-teal-200 stroke-teal-500'
+                        reacted && 'fill-teal-200 stroke-teal-500 '
                       )}
                     />
                   )
@@ -287,7 +299,11 @@ function UserReactedFullList(props: {
     titleName,
     reactionType,
   } = props
-  const reacts = useReactionsOnContent(contentType, contentId, reactionType)
+  const reacts = useReactionsOnContent(contentType, contentId)?.filter(
+    (reaction: Reaction) => {
+      reaction.reaction_type == reactionType
+    }
+  )
   const displayInfos = useReactedDisplayList(reacts, user, userReacted)
 
   return (
@@ -295,7 +311,7 @@ function UserReactedFullList(props: {
       userInfos={displayInfos}
       modalLabel={
         <span>
-          💖 Liked{' '}
+          {capitalize(reactionType + 'd')}
           <span className="font-bold">
             {titleName
               ? titleName
@@ -312,7 +328,7 @@ function UserReactedFullList(props: {
   )
 }
 
-function UserLikedPopup(props: {
+function UserReactedPopup(props: {
   contentType: ReactionContentTypes
   contentId: string
   onRequestModal: () => void
@@ -328,13 +344,17 @@ function UserLikedPopup(props: {
     userReacted,
     reactionType,
   } = props
-  const reacts = useReactionsOnContent(contentType, contentId, reactionType)
+  const reacts = useReactionsOnContent(contentType, contentId)?.filter(
+    (reaction: Reaction) => {
+      reaction.reaction_type == reactionType
+    }
+  )
   const displayInfos = useReactedDisplayList(reacts, user, userReacted)
 
   if (displayInfos == null) {
     return (
       <Col className="min-w-[6rem] items-start">
-        <div className="mb-1 font-bold">Like</div>
+        <div className="mb-1 font-bold">{capitalize(reactionType)}</div>
         <LoadingIndicator className="mx-auto my-2" size="sm" />
       </Col>
     )
