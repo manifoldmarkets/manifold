@@ -9,12 +9,11 @@ export type Group = {
   name: string
   about?: string | JSONContent
   creatorId: string // User id
-  createdTime: number
-  anyoneCanJoin?: boolean
-  totalMembers: number
+  createdTime: number // native col only
+  totalMembers: number // native col only
   bannerUrl?: string
   privacyStatus: PrivacyStatusType
-  importanceScore: number
+  importanceScore: number // native col only
 }
 
 export type GroupResponse = Row<'groups'>

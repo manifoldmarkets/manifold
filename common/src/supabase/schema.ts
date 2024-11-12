@@ -1059,6 +1059,9 @@ export type Database = {
       }
       groups: {
         Row: {
+          about: Json | null
+          banner_url: string | null
+          created_time: string
           creator_id: string | null
           data: Json
           id: string
@@ -1070,6 +1073,9 @@ export type Database = {
           total_members: number | null
         }
         Insert: {
+          about?: Json | null
+          banner_url?: string | null
+          created_time?: string
           creator_id?: string | null
           data: Json
           id?: string
@@ -1081,6 +1087,9 @@ export type Database = {
           total_members?: number | null
         }
         Update: {
+          about?: Json | null
+          banner_url?: string | null
+          created_time?: string
           creator_id?: string | null
           data?: Json
           id?: string
