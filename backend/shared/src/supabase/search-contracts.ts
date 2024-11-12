@@ -194,7 +194,7 @@ export function getSearchContractSQL(args: {
   if (isUrl) {
     const slug = term.split('/').pop()
     return renderSql(
-      select('data, importance_score, view_count'),
+      select('data, importance_score, view_count, token'),
       from('contracts'),
       whereSql,
       where('slug = $1', [slug])
@@ -209,7 +209,7 @@ export function getSearchContractSQL(args: {
 
   // Normal full text search
   return renderSql(
-    select('data, importance_score, view_count'),
+    select('data, importance_score, view_count, token'),
     from('contracts'),
     groupId && [
       join(`group_contracts gc on gc.contract_id = contracts.id`),
