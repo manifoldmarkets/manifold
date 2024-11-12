@@ -98,9 +98,6 @@ export default function Sidebar(props: {
     >
       <ManifoldLogo className="pb-3 pt-6" />
 
-      {/* causes jumping around in signed out sidebar */}
-      {/* {user === undefined && <div className="h-[56px]" />} */}
-
       {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
       <div className="mb-4 flex flex-col gap-1">
@@ -114,7 +111,7 @@ export default function Sidebar(props: {
           setIsModalOpen={setIsModalOpen}
         />
 
-        {user === null && <SidebarSignUpButton />}
+        {!user && <SidebarSignUpButton />}
 
         <Col className="gap-2">
           {createMarketButton}
@@ -124,9 +121,7 @@ export default function Sidebar(props: {
       <div
         className={clsx('mb-6 mt-auto flex flex-col gap-1', isMobile && 'pb-8')}
       >
-        {user !== null && (
-          <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
-        )}
+        {!!user && <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />}
         {bottomNavOptions.map((item) => (
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
