@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
-import { Group } from 'common/group'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateData } from 'shared/supabase/utils'
 
 const bodySchema = z
   .object({
@@ -14,29 +14,18 @@ const bodySchema = z
 export const updategroupprivacy = authEndpoint(async (req, auth) => {
   const { groupId, privacy } = validate(bodySchema, req.body)
 
-  // TODO: move to single supabase transaction
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
-  const userMembership = (
-    await db
-      .from('group_members')
-      .select()
-      .eq('member_id', auth.uid)
-      .eq('group_id', groupId)
-      .limit(1)
-  ).data
+  const requester = await pg.oneOrNone(
+    `select * from group_members where member_id = $1 and group_id = $2`,
+    [auth.uid, groupId]
+  )
 
-  const requester = userMembership?.length ? userMembership[0] : null
+  const group = await pg.oneOrNone(`select * from groups where id = $1`, [
+    groupId,
+  ])
 
-  const groupQuery = await db.from('groups').select().eq('id', groupId).limit(1)
-
-  if (groupQuery.error) throw new APIError(500, groupQuery.error.message)
-  if (!groupQuery.data.length) throw new APIError(404, 'Group cannot be found')
-  if (!userMembership?.length)
-    throw new APIError(404, 'You cannot be found in group')
-
-  const group = groupQuery.data[0]
-  console.log(group)
+  if (!group) throw new APIError(404, 'Group cannot be found')
 
   if (requester?.role !== 'admin' && !isAdminId(auth.uid))
     throw new APIError(
@@ -47,16 +36,10 @@ export const updategroupprivacy = authEndpoint(async (req, auth) => {
   if (privacy == group.privacy_status) {
     throw new APIError(403, 'Group privacy is already set to this!')
   }
-  // TODO: we need to figure out the role of the data column for the migration plan
-  await db
-    .from('groups')
-    .update({
-      data: {
-        ...(group.data as Group),
-        privacyStatus: privacy,
-      },
-    })
-    .eq('id', groupId)
+
+  await updateData(pg, 'groups', 'id', {
+    privacyStatus: privacy,
+  })
 
   return { status: 'success', message: 'Group privacy updated' }
 })
