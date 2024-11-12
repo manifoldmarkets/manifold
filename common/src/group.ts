@@ -12,7 +12,6 @@ export type Group = {
   createdTime: number
   anyoneCanJoin?: boolean
   totalMembers: number
-  postIds: string[]
   bannerUrl?: string
   privacyStatus: PrivacyStatusType
   importanceScore: number

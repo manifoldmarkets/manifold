@@ -225,9 +225,6 @@ export function GroupPageContent(props: {
                             className="!text-ink-500"
                           />{' '}
                           • {currentTopic.totalMembers ?? 0} followers
-                          {currentTopic.postIds?.length
-                            ? ` • ${currentTopic.postIds.length} posts`
-                            : undefined}
                         </div>
 
                         {currentTopic.about && (
