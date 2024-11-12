@@ -2,19 +2,28 @@ import { uniqBy } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
 import { convertGroup } from 'common/supabase/groups'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  from,
+  limit as limitClause,
+  orderBy,
+  renderSql,
+  select,
+  where,
+} from 'shared/supabase/sql-builder'
 
 export const getGroups: APIHandler<'groups'> = async (props) => {
   const { availableToUserId, beforeTime, limit } = props
   const pg = createSupabaseDirectClient()
   const publicGroups = await pg.map(
-    `
-    select * from groups
-    where privacy_status = 'public'
-    and ($1 is null or (data->'createdTime')::bigint < $1)
-    order by data->'createdTime' desc
-    limit $2
-    `,
-    [beforeTime, limit],
+    renderSql(
+      select('*'),
+      from('groups'),
+      where('privacy_status', 'public'),
+      beforeTime && where('created_time < ts_to_millis($1)', [beforeTime]),
+      orderBy('created_time', 'desc'),
+      limitClause(limit)
+    ),
+    [],
     convertGroup
   )
 
