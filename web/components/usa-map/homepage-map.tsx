@@ -8,7 +8,7 @@ import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import { useLiveContract } from 'web/hooks/use-contract'
 import {
   ElectoralCollegeVisual,
   sortByDemocraticDiff,
@@ -61,7 +61,7 @@ export function HomepageMap(props: {
         ? rawPresidencySwingCashContracts[key]
         : rawPresidencyStateContracts[key]
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    acc[key] = useLiveContractWithAnswers(currentContract!)
+    acc[key] = useLiveContract(currentContract!)
 
     return acc
   }, {} as MapContractsDictionary)
@@ -73,7 +73,7 @@ export function HomepageMap(props: {
   const senateContractsDictionary = Object.keys(rawSenateStateContracts).reduce(
     (acc, key) => {
       // eslint-disable-next-line react-hooks/rules-of-hooks
-      acc[key] = useLiveContractWithAnswers(rawSenateStateContracts[key]!)
+      acc[key] = useLiveContract(rawSenateStateContracts[key]!)
       return acc
     },
     {} as MapContractsDictionary
@@ -83,11 +83,11 @@ export function HomepageMap(props: {
     rawGovernorStateContracts
   ).reduce((acc, key) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    acc[key] = useLiveContractWithAnswers(rawGovernorStateContracts[key]!)
+    acc[key] = useLiveContract(rawGovernorStateContracts[key]!)
     return acc
   }, {} as MapContractsDictionary)
 
-  const liveHouseContract = useLiveContractWithAnswers(houseContract)
+  const liveHouseContract = useLiveContract(houseContract)
 
   const [mode, setMode] = useState<MapMode>('presidency')
 

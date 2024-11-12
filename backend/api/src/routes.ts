@@ -132,6 +132,7 @@ import { getLeaderboard } from './get-leaderboard'
 import { toggleSystemTradingStatus } from './toggle-system-status'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
 import { getDailyChangedMetricsAndContracts } from './get-daily-changed-metrics-and-contracts'
+import { getMarketsByIds } from './get-markets'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -167,6 +168,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   groups: getGroups,
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
+  'markets-by-ids': getMarketsByIds,
   'slug/:slug': getMarket,
   'market/:contractId/update': updateMarket,
   'market/:contractId/close': closeMarket,

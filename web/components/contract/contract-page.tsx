@@ -56,7 +56,7 @@ import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { useContractBets } from 'web/hooks/use-bets'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
@@ -92,12 +92,12 @@ export function ContractPageContent(props: ContractParams) {
   // sync query state with context
   const { prefersPlay } = useSweepstakes()
   const router = useRouter()
-  const livePlayContract = useLiveContractWithAnswers(props.contract)
+  const livePlayContract = useLiveContract(props.contract)
   const sweepsIsPossible = !!livePlayContract.siblingContractId
   const [isPlay, setIsPlay] = useState<boolean | undefined>(prefersPlay)
   const liveCashContract = props.cash
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useLiveContractWithAnswers(props.cash.contract)
+      useLiveContract(props.cash.contract)
     : null
 
   const liveContract =
