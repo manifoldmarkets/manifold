@@ -81,9 +81,10 @@ drop index if exists contract_metrics_answer_id;
 
 create index contract_metrics_answer_id on public.user_contract_metrics using btree (contract_id, answer_id);
 
-drop index if exists idx_user_contract_metrics_contract_profit;
+drop index if exists user_contract_metrics_contract_profit_null;
 
-create index idx_user_contract_metrics_contract_profit on public.user_contract_metrics using btree (contract_id, profit);
+create index concurrently user_contract_metrics_contract_profit_null on public.user_contract_metrics using btree (contract_id, profit)
+  where answer_id is null;
 
 drop index if exists unique_user_contract_answer;
 
