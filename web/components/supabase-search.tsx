@@ -206,7 +206,6 @@ export function SupabaseSearch(props: {
   hideSearchTypes?: boolean
   hideAvatars?: boolean
   initialTopics?: LiteGroup[]
-  setTopicSlug?: (slug: string) => void
 }) {
   const {
     defaultSort,
@@ -230,7 +229,6 @@ export function SupabaseSearch(props: {
     hideSearchTypes,
     hideAvatars,
     initialTopics,
-    setTopicSlug,
   } = props
 
   const isMobile = useIsMobile()
@@ -283,10 +281,9 @@ export function SupabaseSearch(props: {
     additionalFilter
   )
 
-  const showTopics =
-    topics && topics.length > 0 && query && query.length > 0 && setTopicSlug
+  const showTopics = topics && topics.length > 0 && query && query.length > 0
 
-  const showUsers = users && users.length > 0 && query !== '' && !topicSlug
+  const showUsers = users && users.length > 0 && query !== ''
 
   const onChange = (changes: Partial<SearchParams>) => {
     const updatedParams = { ...changes }
@@ -393,7 +390,7 @@ export function SupabaseSearch(props: {
               placeholder={
                 searchType === 'Users'
                   ? 'Search users'
-                  : searchType === 'Questions' || topicSlug || contractsOnly
+                  : searchType === 'Questions' || contractsOnly
                   ? 'Search questions'
                   : isMobile
                   ? 'Search'
@@ -455,10 +452,6 @@ export function SupabaseSearch(props: {
               <BrowseTopicPills
                 className={'relative w-full px-2 pb-4'}
                 topics={topics}
-                currentTopicSlug={topicSlug}
-                onClick={(newSlug: string) => {
-                  setTopicSlug(newSlug)
-                }}
               />
             </>
           )}

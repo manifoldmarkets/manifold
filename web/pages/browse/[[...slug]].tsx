@@ -1,33 +1,21 @@
 import clsx from 'clsx'
-import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
 import { Group } from 'common/group'
-import { removeEmojis } from 'common/util/string'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
+import { removeEmojis } from 'common/util/string'
 import { first, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import {
   useTrendingTopics,
   useUserTrendingTopics,
 } from 'web/components/search/query-topics'
 import { SupabaseSearch } from 'web/components/supabase-search'
-import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
-import Custom404 from 'web/pages/404'
-
-type TopicParams = {
-  name: string
-  slug: string
-}
 
 export async function getStaticProps(props: { params: { slug: string[] } }) {
   const slug = first(props.params.slug)
@@ -52,11 +40,6 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
 
   return {
     props: removeUndefinedProps({
-      slug: slug ?? null,
-      staticTopicParams: {
-        name: topic.name,
-        slug: topic.slug,
-      },
       revalidate: 60 * 10, // regenerate after 10 minutes
     }),
   }
@@ -66,35 +49,16 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function BrowseGroupPage(props: {
-  slug: string
-  staticTopicParams?: TopicParams
-}) {
-  const { slug, staticTopicParams } = props
-  if (!staticTopicParams && slug !== null) {
-    return <Custom404 />
-  }
-
+export default function BrowsePage() {
   return (
-    <>
-      <SEO
-        title={`${staticTopicParams?.name ?? 'Browse'}`}
-        description={`Browse ${staticTopicParams?.name ?? 'all'} questions`}
-        url={`/browse${staticTopicParams ? `/${staticTopicParams.slug}` : ''}`}
-      />
-      <Page trackPageView={'questions page'}>
-        <GroupPageContent slug={slug} staticTopicParams={staticTopicParams} />
-      </Page>
-    </>
+    <Page trackPageView={'questions page'}>
+      <SEO title={`Browse`} description={`Browse questions`} url={`/browse`} />
+      <BrowsePageContent />
+    </Page>
   )
 }
 
-export function GroupPageContent(props: {
-  staticTopicParams?: TopicParams
-  slug: string | null
-}) {
-  const { staticTopicParams } = props
-  const slug = props.slug ?? undefined
+export function BrowsePageContent() {
   const user = useUser()
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -103,7 +67,7 @@ export function GroupPageContent(props: {
   const autoFocus = !isMobile && !q
   const privateUser = usePrivateUser()
 
-  const shouldFilterDestiny = false // useShouldBlockDestiny(user?.id)
+  // const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
 
   const trendingTopics = useTrendingTopics(
     50,
@@ -111,100 +75,37 @@ export function GroupPageContent(props: {
   ) as Group[]
   const userTrendingTopics = useUserTrendingTopics(user, 25)
 
-  const topicSlug = useFirstSlugFromRouter() ?? slug
-  const { slug: _, ...otherQueryParams } = router.query
-  const queryParams = new URLSearchParams(
-    otherQueryParams as Record<string, string>
-  )
-
-  const setTopicSlugClearQuery = (slug: string) => {
-    queryParams.delete('q')
-    queryParams.delete('t')
-    queryParams.delete('tf')
-    const queryStr = queryParams.toString()
-    const q = queryStr ? `?${queryStr}` : ''
-    router.push(`/browse/${slug}${q}`, undefined, { shallow: true })
-  }
-
   const topicsByImportance = combineGroupsByImportance(
     trendingTopics ?? [],
     userTrendingTopics ?? []
   ).filter((t) => !EXCLUDED_TOPIC_SLUGS.includes(t.slug))
 
-  const topicFromRouter = useTopicFromRouter(topicSlug)
-  const [topicsFromRouter, setTopicsFromRouter] = usePersistentInMemoryState<
-    Group[]
-  >([], 'topics-from-router')
-
-  useEffect(() => {
-    const newTopic =
-      topicFromRouter &&
-      !topicsByImportance.map((g) => g.id).includes(topicFromRouter.id) &&
-      !topicsFromRouter.map((g) => g.id).includes(topicFromRouter.id)
-    if (newTopic) setTopicsFromRouter((topics) => [...topics, topicFromRouter])
-  }, [topicFromRouter])
-
-  const allTopics = buildArray(topicsFromRouter, topicsByImportance)
   const initialTopics = topicsByImportance
 
-  const currentTopic = allTopics.find((t) => t.slug === topicSlug)
-  const staticTopicIsCurrent = staticTopicParams?.slug === currentTopic?.slug
-
-  const searchComponent = (
-    <SupabaseSearch
-      persistPrefix="search"
-      autoFocus={autoFocus}
-      additionalFilter={{
-        excludeContractIds: privateUser?.blockedContractIds,
-        excludeGroupSlugs: buildArray(
-          privateUser?.blockedGroupSlugs,
-          shouldFilterDestiny &&
-            DESTINY_GROUP_SLUG != topicSlug &&
-            DESTINY_GROUP_SLUG
-        ),
-        excludeUserIds: privateUser?.blockedUserIds,
-      }}
-      useUrlParams
-      isWholePage
-      headerClassName={'pt-0 px-2 bg-canvas-50'}
-      topicSlug={topicSlug}
-      defaultFilter="open"
-      defaultSort="score"
-      defaultForYou="1"
-      initialTopics={initialTopics}
-      setTopicSlug={(slug) => {
-        setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
-      }}
-    />
-  )
-
   return (
-    <div>
-      <QuestionsTopicTitle
-        currentTopic={currentTopic}
-        topicSlug={topicSlug}
-        user={user}
-        setTopicSlug={setTopicSlugClearQuery}
+    <Col className={clsx('relative col-span-8 mx-auto w-full')}>
+      <SupabaseSearch
+        persistPrefix="search"
+        autoFocus={autoFocus}
+        additionalFilter={{
+          excludeContractIds: privateUser?.blockedContractIds,
+          excludeGroupSlugs: buildArray(
+            privateUser?.blockedGroupSlugs
+            // shouldFilterDestiny &&
+            //   DESTINY_GROUP_SLUG != topicSlug &&
+            //   DESTINY_GROUP_SLUG
+          ),
+          excludeUserIds: privateUser?.blockedUserIds,
+        }}
+        useUrlParams
+        isWholePage
+        headerClassName={'pt-0 px-2 bg-canvas-50'}
+        defaultFilter="open"
+        defaultSort="score"
+        defaultForYou="1"
+        initialTopics={initialTopics}
       />
-      <div className="flex md:contents">
-        <Col className={clsx('relative col-span-8 mx-auto w-full')}>
-          {!currentTopic && searchComponent}
-          {currentTopic && (
-            <QueryUncontrolledTabs
-              className={'px-1'}
-              renderAllTabs={false}
-              tabs={buildArray(
-                {
-                  content: searchComponent,
-                  title: 'Browse',
-                },
-                currentTopic && []
-              )}
-            />
-          )}
-        </Col>
-      </div>
-    </div>
+    </Col>
   )
 }
 
@@ -223,11 +124,4 @@ const combineGroupsByImportance = (
   ]
 
   return uniqBy(combined, (g) => removeEmojis(g.name).toLowerCase())
-}
-
-const useFirstSlugFromRouter = () => {
-  const router = useRouter()
-  const { slug } = router.query
-  if (!router.isReady) return undefined
-  return first(slug) ?? ''
 }
