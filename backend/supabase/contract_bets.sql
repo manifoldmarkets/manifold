@@ -93,9 +93,13 @@ drop index if exists contract_bets_created_time_only;
 
 create index contract_bets_created_time_only on public.contract_bets using btree (created_time desc);
 
-drop index if exists contract_bets_historical_probs;
+drop index if exists contract_bets_historical_probs_non_redemption;
 
-create index contract_bets_historical_probs on public.contract_bets using btree (contract_id, answer_id, created_time desc) include (prob_before, prob_after);
+create index concurrently contract_bets_historical_probs_non_redemption on public.contract_bets using btree
+  (contract_id, answer_id, created_time desc)
+  include (prob_before, prob_after)
+  where not is_redemption;
+
 
 drop index if exists contract_bets_pkey;
 

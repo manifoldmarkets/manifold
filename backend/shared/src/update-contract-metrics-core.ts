@@ -244,6 +244,7 @@ const getBetProbsAt = async (
         from contract_bets
         where created_time < millis_to_ts($1)
         and contract_id = any($2) 
+        and not is_redemption
         order by contract_id, answer_id, created_time desc
       ), probs_after as (
         select distinct on (contract_id, answer_id)
@@ -251,6 +252,7 @@ const getBetProbsAt = async (
         from contract_bets
         where created_time >= millis_to_ts($1)
         and contract_id = any($2)
+        and not is_redemption
         order by contract_id, answer_id, created_time
       )
       select
