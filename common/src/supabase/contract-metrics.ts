@@ -1,7 +1,6 @@
 import { chunk, Dictionary, flatMap, groupBy, uniqBy } from 'lodash'
 import { Row, run, selectJson, SupabaseClient } from './utils'
-import { getContracts } from './contracts'
-import { Contract, CPMMContract } from '../contract'
+import { Contract } from '../contract'
 import { ContractMetric } from 'common/contract-metric'
 
 export async function getTopContractMetrics(
@@ -96,50 +95,6 @@ export async function getUserContractMetricsWithContracts(
     contracts.push(d.contract as Contract)
   })
   return { metricsByContract, contracts }
-}
-
-// To optimize this we should join on the contracts table
-export async function getUserContractMetricsByProfitWithContracts(
-  userId: string,
-  db: SupabaseClient,
-  from: 'day' | 'week' | 'month' | 'all',
-  limit = 20
-) {
-  const cms = await getBestAndWorstUserContractMetrics(userId, db, from, limit)
-  const contracts = (await getContracts(
-    db,
-    cms.map((cm) => cm.contractId)
-  )) as CPMMContract[]
-  return {
-    metrics: cms,
-    contracts,
-  }
-}
-
-export async function getBestAndWorstUserContractMetrics(
-  userId: string,
-  db: SupabaseClient,
-  from: 'day' | 'week' | 'month' | 'all',
-  limit: number
-) {
-  const orderString = from == 'all' ? 'profit' : `data->from->${from}->profit`
-  const { data: negative } = await run(
-    selectJson(db, 'user_contract_metrics')
-      .eq('user_id', userId)
-      .is('answer_id', null)
-      .order(orderString, { ascending: true })
-      .limit(limit)
-  )
-  const { data: profit } = await run(
-    selectJson(db, 'user_contract_metrics')
-      .eq('user_id', userId)
-      .is('answer_id', null)
-      .order(orderString, { ascending: false, nullsFirst: false })
-      .limit(limit)
-  )
-  return uniqBy([...profit, ...negative], (d) => d.data.contractId).map(
-    (d) => d.data
-  ) as ContractMetric[]
 }
 
 export async function getUsersContractMetricsOrderedByProfit(
