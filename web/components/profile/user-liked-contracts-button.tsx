@@ -1,18 +1,18 @@
+import { XIcon } from '@heroicons/react/outline'
 import { User } from 'common/user'
+import Link from 'next/link'
 import { memo, useEffect, useState } from 'react'
 import { TextButton } from 'web/components/buttons/text-button'
-import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import Link from 'next/link'
+import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import {
-  unLike,
-  getLikedContracts,
-  getLikedContractsCount,
-} from 'web/lib/supabase/reactions'
 import { Input } from 'web/components/widgets/input'
 import { withTracking } from 'web/lib/service/analytics'
-import { XIcon } from '@heroicons/react/outline'
+import {
+  getLikedContracts,
+  getLikedContractsCount,
+  unreact,
+} from 'web/lib/supabase/reactions'
 
 type SearchLikedContent = Awaited<ReturnType<typeof getLikedContracts>>[number]
 
@@ -82,7 +82,7 @@ export const UserLikedContractsButton = memo(
                   <XIcon
                     className="ml-2 h-5 w-5 shrink-0 cursor-pointer"
                     onClick={() => {
-                      unLike(contract.id, 'contract')
+                      unreact(contract.id, 'contract', 'like')
                       setLikedContent(
                         filteredLikedContent.filter((c) => c.id !== contract.id)
                       )

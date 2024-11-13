@@ -1,36 +1,36 @@
+import clsx from 'clsx'
+import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract, contractPath } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { Repost } from 'common/repost'
+import { PrivateUser, User } from 'common/user'
+import { formatWithToken, shortFormatNumber } from 'common/util/format'
+import { removeUndefinedProps } from 'common/util/object'
+import { richTextToString } from 'common/util/parse'
+import router from 'next/router'
+import { memo, useState } from 'react'
+import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { Button } from 'web/components/buttons/button'
+import { CommentsButton } from 'web/components/comments/comments-button'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { TradesButton } from 'web/components/contract/trades-button'
+import { FeedDropdown } from 'web/components/feed/card-dropdown'
+import { CardReason } from 'web/components/feed/card-reason'
+import { Row } from 'web/components/layout/row'
+import { Avatar } from 'web/components/widgets/avatar'
+import { ClickFrame } from 'web/components/widgets/click-frame'
+import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
+import { track } from 'web/lib/service/analytics'
 import {
   CommentReplyHeaderWithBet,
   FeedCommentHeader,
 } from '../comments/comment-header'
+import { ReactButton } from '../contract/react-button'
 import { Col } from '../layout/col'
-import clsx from 'clsx'
-import { memo, useState } from 'react'
-import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
-import { FeedContractCard } from 'web/components/contract/feed-contract-card'
-import { PrivateUser, User } from 'common/user'
-import { TradesButton } from 'web/components/contract/trades-button'
-import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { formatWithToken, shortFormatNumber } from 'common/util/format'
-import { Button } from 'web/components/buttons/button'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { LikeButton } from 'web/components/contract/like-button'
-import { richTextToString } from 'common/util/parse'
-import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
-import { CommentsButton } from 'web/components/comments/comments-button'
-import router from 'next/router'
-import { ClickFrame } from 'web/components/widgets/click-frame'
-import { CardReason } from 'web/components/feed/card-reason'
 import { UserHovercard } from '../user/user-hovercard'
-import { track } from 'web/lib/service/analytics'
-import { removeUndefinedProps } from 'common/util/object'
-import { Bet } from 'common/bet'
-import { FeedDropdown } from 'web/components/feed/card-dropdown'
-import { Repost } from 'common/repost'
-import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 
 export const ScoredFeedRepost = memo(function (props: {
   contract: Contract
@@ -282,7 +282,7 @@ export const BottomActionRow = (props: {
         />
       </BottomRowButtonWrapper>
       <BottomRowButtonWrapper>
-        <LikeButton
+        <ReactButton
           contentCreatorId={comment.userId}
           contentId={comment.id}
           user={user}

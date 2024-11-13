@@ -34,17 +34,17 @@ const executeBatchQuery = debounce(async () => {
         case 'markets':
           data = await api('markets-by-ids', { ids: Array.from(ids) })
           break
-        case 'comment-likes':
-        case 'contract-likes':
+        case 'comment-reactions':
+        case 'contract-reactions':
           const contentType = queryType.split('-')[0]
-          const { data: likesData } = await run(
+          const { data: reactionsData } = await run(
             db
               .from('user_reactions')
               .select()
               .eq('content_type', contentType)
               .in('content_id', Array.from(ids))
           )
-          data = likesData
+          data = reactionsData
           break
         case 'contract-metrics':
           if (!userId) {
@@ -80,9 +80,9 @@ const executeBatchQuery = debounce(async () => {
 const defaultFilters: Record<string, FilterCallback<any>> = {
   markets: (data: Contract[], id: string) =>
     data.find((item) => item.id === id),
-  'comment-likes': (data: Reaction[], id: string) =>
+  'comment-reactions': (data: Reaction[], id: string) =>
     data.filter((item) => item.content_id === id),
-  'contract-likes': (data: Reaction[], id: string) =>
+  'contract-reactions': (data: Reaction[], id: string) =>
     data.filter((item) => item.content_id === id),
   'contract-metrics': (data: string[], id: string) => data.includes(id),
   user: (data: DisplayUser[], id: string) =>
@@ -94,8 +94,8 @@ const defaultFilters: Record<string, FilterCallback<any>> = {
 export const useBatchedGetter = <T>(
   queryType:
     | 'markets'
-    | 'comment-likes'
-    | 'contract-likes'
+    | 'comment-reactions'
+    | 'contract-reactions'
     | 'contract-metrics'
     | 'user'
     | 'users',

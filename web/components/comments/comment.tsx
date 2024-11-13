@@ -318,8 +318,14 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
 function HideableContent(props: { comment: ContractComment }) {
   const { comment } = props
   const { text, content } = comment
+  //hides if enough dislikes
+  const dislikes = comment.dislikes ?? 0
+  const likes = comment.likes ?? 0
+  const majorityDislikes = dislikes > 10 && dislikes / (likes + dislikes) >= 0.8
+  const initiallyHidden = majorityDislikes || comment.hidden
   const [showHidden, setShowHidden] = useState(false)
-  return comment.hidden && !showHidden ? (
+
+  return initiallyHidden && !showHidden ? (
     <div
       className="hover text-ink-600 text-sm font-thin italic hover:cursor-pointer"
       onClick={() => {

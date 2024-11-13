@@ -51,7 +51,7 @@ import { PollPanel } from '../poll/poll-panel'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { UserHovercard } from '../user/user-hovercard'
 import { ClickFrame } from '../widgets/click-frame'
-import { LikeButton } from './like-button'
+import { ReactButton } from './react-button'
 import { TradesButton } from './trades-button'
 
 const DEBUG_FEED_CARDS =
@@ -456,7 +456,7 @@ const BottomActionRow = (props: {
         <CommentsButton contract={contract} user={user} className={'h-full'} />
       </BottomRowButtonWrapper>
       <BottomRowButtonWrapper>
-        <LikeButton
+        <ReactButton
           contentId={contract.id}
           contentCreatorId={contract.creatorId}
           user={user}

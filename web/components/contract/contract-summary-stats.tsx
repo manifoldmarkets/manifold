@@ -3,12 +3,12 @@ import { Contract } from 'common/contract'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { MoneyDisplay } from '../bet/money-display'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
-import { LikeButton } from './like-button'
-import { MoneyDisplay } from '../bet/money-display'
+import { ReactButton } from './react-button'
 
 export function ContractSummaryStats(props: {
   contractId: string
@@ -42,7 +42,7 @@ export function ContractSummaryStats(props: {
         <Row className="ml-auto gap-4">
           {marketTier && <TierTooltip tier={marketTier} contract={contract} />}
           {!isBlocked(privateUser, contract.creatorId) && (
-            <LikeButton
+            <ReactButton
               user={user}
               size={'2xs'}
               contentId={contractId}

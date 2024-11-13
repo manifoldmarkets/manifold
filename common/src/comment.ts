@@ -24,7 +24,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   userAvatarUrl?: string
   /** @deprecated Not actually deprecated, only in supabase column, and not in data column */
   likes?: number
-
+  dislikes?: number
   hidden?: boolean
   hiddenTime?: number
   hiderId?: string
