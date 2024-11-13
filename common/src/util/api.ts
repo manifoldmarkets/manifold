@@ -20,7 +20,10 @@ export const formatApiUrlWithParams = (
   // parse any params that should part of the path (like market/:id)
   let url = getApiUrl(path)
   forEach(params, (v, k) => {
-    url = url.replace(`:${k}`, v + '')
+    if (url.includes(`:${k}`)) {
+      url = url.replace(`:${k}`, v + '')
+      delete (params as any)[k]
+    }
   })
   return url
 }

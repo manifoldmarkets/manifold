@@ -5,21 +5,18 @@ import { removeEmojis } from 'common/util/string'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import { first, uniqBy } from 'lodash'
-import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import {
   useTrendingTopics,
   useUserTrendingTopics,
 } from 'web/components/search/query-topics'
 import { SupabaseSearch } from 'web/components/supabase-search'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
-import { Content } from 'web/components/widgets/editor'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
@@ -201,43 +198,7 @@ export function GroupPageContent(props: {
                   content: searchComponent,
                   title: 'Browse',
                 },
-                currentTopic && [
-                  {
-                    title: 'About',
-                    content: (
-                      <Col className="w-full">
-                        {currentTopic.bannerUrl && (
-                          <div className="relative h-[200px]">
-                            <Image
-                              fill
-                              src={currentTopic.bannerUrl}
-                              sizes="100vw"
-                              className="object-cover"
-                              alt=""
-                            />
-                          </div>
-                        )}
-                        <div className="text-ink-500 mb-4 mt-2 text-sm">
-                          {currentTopic.privacyStatus} topic created
-                          {currentTopic.creatorId === user?.id && ' by you'}
-                          <RelativeTimestamp
-                            time={currentTopic.createdTime}
-                            className="!text-ink-500"
-                          />{' '}
-                          • {currentTopic.totalMembers ?? 0} followers
-                        </div>
-
-                        {currentTopic.about && (
-                          <Content
-                            size="lg"
-                            className="p-4 sm:p-6"
-                            content={currentTopic.about}
-                          />
-                        )}
-                      </Col>
-                    ),
-                  },
-                ]
+                currentTopic && []
               )}
             />
           )}

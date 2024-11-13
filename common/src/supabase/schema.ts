@@ -970,6 +970,50 @@ export type Database = {
           }
         ]
       }
+      group_groups: {
+        Row: {
+          bottom_id: string
+          top_id: string
+        }
+        Insert: {
+          bottom_id: string
+          top_id: string
+        }
+        Update: {
+          bottom_id?: string
+          top_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'group_groups_bottom_id_fkey'
+            columns: ['bottom_id']
+            isOneToOne: false
+            referencedRelation: 'group_role'
+            referencedColumns: ['group_id']
+          },
+          {
+            foreignKeyName: 'group_groups_bottom_id_fkey'
+            columns: ['bottom_id']
+            isOneToOne: false
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_groups_top_id_fkey'
+            columns: ['top_id']
+            isOneToOne: false
+            referencedRelation: 'group_role'
+            referencedColumns: ['group_id']
+          },
+          {
+            foreignKeyName: 'group_groups_top_id_fkey'
+            columns: ['top_id']
+            isOneToOne: false
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       group_invites: {
         Row: {
           created_time: string

@@ -39,7 +39,7 @@ export type LiteGroup = Pick<
 >
 
 export function groupPath(groupSlug: string) {
-  return `/browse/${groupSlug}`
+  return `/topic/${groupSlug}`
 }
 
 // note: changing these breaks old urls. if you do, make sure to update omnisearch and opensearch.xml

@@ -5,9 +5,8 @@ create table if not exists
     contract_id text not null,
     created_time timestamp with time zone not null,
     data jsonb not null,
-    downvotes integer default 0,
+    dislikes integer default 0,
     likes integer default 0 not null,
-    upvotes integer default 0,
     user_id text not null,
     visibility text,
     constraint primary key (contract_id, comment_id)

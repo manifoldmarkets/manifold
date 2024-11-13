@@ -1,15 +1,13 @@
-## Database Migrations and Schema Updates
+@@ -18,8 +18,9 @@
+ 
+ #### Topics and Groups
+ - Topics in the UI are called "groups" in the database and code
+-- Topics can have hierarchical relationships via the group_groups table
+-- Topics use top/bottom terminology for hierarchical relationships, not parent/child
++- Topics can have hierarchical relationships via the group_groups table 
++- Topics use top/bottom terminology for hierarchical relationships, not parent/child, to emphasize that relationships are directional but not strictly hierarchical
++- This design allows for more flexible topic organization than traditional parent/child trees, as topics can appear in multiple hierarchies
+ - A topic can have multiple topics above (top_id) and below (bottom_id) it
+ - Topics are used to categorize markets/contracts
+ 
 
-### Applying Migrations
-
-The project does not use a migrate script. Instead, migrations are typically applied manually by running the SQL directly against the database.
-
-### Regenerating Types and Schema
-
-To regenerate TypeScript types and database schema for the development environment, use the following command:
-
-```
-(cd backend/supabase && make regen-types-dev regen-schema-dev)
-```
-
-This command should be run after making changes to the database structure or when updating the development environment.
