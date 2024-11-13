@@ -3,9 +3,6 @@ import { createLikeNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
-import { hideComment } from './hide-comment'
-import { updateData } from 'shared/supabase/utils'
-import { getComment } from 'shared/supabase/contract-comments'
 
 export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
   const { contentId, contentType, remove, reactionType = 'like' } = props
