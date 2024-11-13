@@ -7,6 +7,8 @@ import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { Reaction } from 'common/reaction'
 import { Contract } from 'common/contract'
 import { getContractIdsWithMetrics } from 'common/supabase/contract-metrics'
+import { DisplayUser } from 'common/api/user-types'
+import { getDisplayUsers } from 'web/lib/supabase/users'
 
 const pendingRequests: Map<
   string,
@@ -26,7 +28,7 @@ const executeBatchQuery = debounce(async () => {
     { ids, filterCallback, userId },
   ] of pendingRequests.entries()) {
     if (!ids.size) continue
-    let data: Contract[] | Reaction[] | string[]
+    let data: Contract[] | Reaction[] | string[] | DisplayUser[]
     try {
       switch (queryType) {
         case 'markets':
@@ -50,6 +52,13 @@ const executeBatchQuery = debounce(async () => {
             break
           }
           data = await getContractIdsWithMetrics(db, userId, Array.from(ids))
+          break
+        case 'user':
+          data = await getDisplayUsers(Array.from(ids))
+          break
+        case 'users':
+          const userIds = Array.from(ids).flatMap((id) => id.split(','))
+          data = await getDisplayUsers(userIds)
           break
       }
 
@@ -76,6 +85,10 @@ const defaultFilters: Record<string, FilterCallback<any>> = {
   'contract-likes': (data: Reaction[], id: string) =>
     data.filter((item) => item.content_id === id),
   'contract-metrics': (data: string[], id: string) => data.includes(id),
+  user: (data: DisplayUser[], id: string) =>
+    data.find((item) => item.id === id),
+  users: (data: DisplayUser[], id: string) =>
+    id.split(',').map((userId) => data.find((u) => u.id === userId) ?? null),
 }
 
 export const useBatchedGetter = <T>(
@@ -83,7 +96,9 @@ export const useBatchedGetter = <T>(
     | 'markets'
     | 'comment-likes'
     | 'contract-likes'
-    | 'contract-metrics',
+    | 'contract-metrics'
+    | 'user'
+    | 'users',
   id: string,
   initialValue: T,
   enabled = true,
