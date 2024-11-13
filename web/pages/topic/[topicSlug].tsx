@@ -1,4 +1,6 @@
+import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { Group, groupPath } from 'common/group'
 import { removeUndefinedProps } from 'common/util/object'
 import Link from 'next/link'
@@ -9,14 +11,14 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { SupabaseSearch } from 'web/components/supabase-search'
+import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { TopicSelector } from 'web/components/topics/topic-selector'
 import { Content } from 'web/components/widgets/editor'
-import { Title } from 'web/components/widgets/title'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
-import { XIcon } from '@heroicons/react/outline'
-import { isAdminId, isModId } from 'common/envs/constants'
-import { useUser } from 'web/hooks/use-user'
+import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
   const { topicSlug } = ctx.params
@@ -49,14 +51,21 @@ export default function TopicPage(props: {
 }) {
   const { topic, above, below } = props
 
+  const privateUser = usePrivateUser()
+
   return (
     <Page
       trackPageView={'group page'}
       className="col-span-10 grid grid-cols-10 gap-4"
       hideFooter
     >
-      {/* <SEO title={group.name} description={group.about} /> */}
-      <Col className="col-span-6">
+      <SEO
+        title={topic.name}
+        description="hi"
+        // description={topic.about}
+        url={groupPath(topic.slug)}
+      />
+      <Col className="col-span-7">
         {/* {topic.bannerUrl && (
             <div className="relative h-[200px]">
               <Image
@@ -68,7 +77,8 @@ export default function TopicPage(props: {
               />
             </div>
           )} */}
-        <Title>{topic.name}</Title>
+        <QuestionsTopicTitle topic={topic} />
+        <Details topic={topic} />
         <Col className="w-full">
           <QueryUncontrolledTabs
             tabs={[
@@ -86,6 +96,23 @@ export default function TopicPage(props: {
                   </Col>
                 ),
               },
+              {
+                title: 'Questions',
+                content: (
+                  <SupabaseSearch
+                    headerClassName={'pt-4 bg-canvas-50'}
+                    persistPrefix="group-search"
+                    additionalFilter={{
+                      excludeContractIds: privateUser?.blockedContractIds,
+                      excludeUserIds: privateUser?.blockedUserIds,
+                    }}
+                    contractsOnly
+                    defaultFilter="all"
+                    defaultSort="score"
+                    topicSlug={topic.slug}
+                  />
+                ),
+              },
             ]}
           />
         </Col>
@@ -96,18 +123,22 @@ export default function TopicPage(props: {
         topicId={topic.id}
         above={above}
         below={below}
-        className="col-span-4 w-full justify-self-center px-2"
-      >
-        <div className="text-ink-500 mb-4 mt-8 text-sm">
-          {topic.privacyStatus} topic created
-          <RelativeTimestamp
-            time={topic.createdTime}
-            className="!text-ink-500"
-          />{' '}
-          • {topic.totalMembers ?? 0} followers
-        </div>
-      </TopicsSidebar>
+        className="col-span-3 w-full justify-self-center px-2"
+      ></TopicsSidebar>
     </Page>
+  )
+}
+
+const Details = (props: { topic: Group }) => {
+  const { topic } = props
+  return (
+    <div className="text-ink-500 mb-4 text-sm">
+      {topic.privacyStatus} topic created
+      <RelativeTimestamp
+        time={topic.createdTime}
+        className="!text-ink-500"
+      /> • {topic.totalMembers ?? 0} followers
+    </div>
   )
 }
 
