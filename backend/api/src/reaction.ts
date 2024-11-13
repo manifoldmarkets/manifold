@@ -107,7 +107,13 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
           dislikeCount > 10 &&
           dislikeCount / (likeCount + dislikeCount) > 0.8
         ) {
-          await hideComment({ commentId: contentId }, auth)
+          //hide comment if above a certain threshold
+          await updateData(pg, 'contract_comments', 'comment_id', {
+            comment_id: contentId,
+            hidden: true,
+            hiddenTime: Date.now(),
+            hiderId: 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
+          })
         }
         await pg.none(
           `update contract_comments set likes = $1 where comment_id = $2`,

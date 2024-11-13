@@ -528,7 +528,7 @@ export function DotMenu(props: {
               updateComment({ hidden: !wasHidden })
 
               try {
-                await api('hide-comment', { commentId: comment.id })
+                await api('hide-comment', { commentPath })
               } catch (e) {
                 toast.error(
                   wasHidden ? 'Error unhiding comment' : 'Error hiding comment'

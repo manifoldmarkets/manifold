@@ -21,7 +21,9 @@ async function superBanUser(userId: string) {
     if (comments.length > 0) {
       const commentsToHide = comments.filter((comment) => !comment.hidden)
       for (const comment of commentsToHide) {
-        await api('hide-comment', { commentId: comment.id })
+        await api('hide-comment', {
+          commentPath: `contracts/${comment.contractId}/comments/${comment.id}`,
+        })
       }
       commentsStatus = 'successfully hidden'
     } else {

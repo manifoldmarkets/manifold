@@ -161,7 +161,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    props: z.object({ commentId: z.string() }).strict(),
+    props: z.object({ commentPath: z.string() }).strict(),
   },
   'pin-comment': {
     method: 'POST',
