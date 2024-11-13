@@ -36,6 +36,7 @@ import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { capitalize } from 'lodash'
 import { TRADE_TERM } from 'common/envs/constants'
 import { SweepsCoinsPage, SweepsWelcomePage } from './sweeps-welcome'
+import { convertGroup } from 'common/supabase/groups'
 
 const FORCE_SHOW_WELCOME_MODAL = false
 
@@ -103,7 +104,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       run(
         db
           .from('groups')
-          .select('id,data')
+          .select('*')
           .not('id', 'in', `(${hardCodedTopicIds.join(',')})`)
           .not(
             'slug',
@@ -120,10 +121,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       'importanceScore',
       'desc'
     )
-    const trendingTopics = trendingTopicsRes.data?.map((groupData) => ({
-      ...(groupData?.data as Group),
-      id: groupData.id,
-    }))
+    const trendingTopics = trendingTopicsRes.data?.map(convertGroup)
 
     setTrendingTopics(
       uniqBy(

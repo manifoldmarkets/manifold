@@ -57,3 +57,4 @@ pathMatchers:
           - pathTemplateMatch: /v0/leagues
           - pathTemplateMatch: /v0/get-mod-reports
           - pathTemplateMatch: /get-notifications
+          - pathTemplateMatch: /markets-by-ids

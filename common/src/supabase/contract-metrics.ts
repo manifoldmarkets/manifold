@@ -284,3 +284,19 @@ export async function getUserContractMetrics(
   const { data } = await run(q)
   return data.map((r) => r.data) as ContractMetric[]
 }
+
+export async function getContractIdsWithMetrics(
+  db: SupabaseClient,
+  userId: string,
+  contractIds: string[]
+) {
+  const { data } = await db
+    .from('user_contract_metrics')
+    .select('contract_id')
+    .eq('user_id', userId)
+    .eq('has_shares', true)
+    .in('contract_id', contractIds)
+    .is('answer_id', null)
+
+  return data?.map((d) => d.contract_id) ?? []
+}

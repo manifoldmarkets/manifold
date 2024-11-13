@@ -10,7 +10,6 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { searchContracts } from 'web/lib/api/api'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { useContract } from 'web/hooks/use-contract'
@@ -94,10 +93,7 @@ const CompanyRow = (props: { company: Company; index: number }) => {
     | null
     | undefined
 
-  const answers = useAnswersCpmm(contractId)
-  if (answers && contract) {
-    contract.answers = answers
-  }
+  const answers = contract?.answers
 
   const valuation = answers ? getValuation(answers) : company.valuation
   const [expanded, setExpanded] = useState(false)

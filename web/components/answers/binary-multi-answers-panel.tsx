@@ -13,14 +13,13 @@ import { BuyPanelBody } from 'web/components/bet/bet-panel'
 import { getAnswerColor } from '../charts/contract/choice'
 import { useUser } from 'web/hooks/use-user'
 import { PencilIcon } from '@heroicons/react/solid'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
   feedReason?: string
 }) {
   const { feedReason, contract } = props
-  const answers = useAnswersCpmm(contract.id) ?? contract.answers
+  const answers = contract.answers
 
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 

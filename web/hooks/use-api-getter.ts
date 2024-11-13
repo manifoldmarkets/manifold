@@ -43,13 +43,11 @@ export const useAPIGetter = <P extends APIPath>(
   })
 
   useEffect(() => {
-    setData(undefined)
     getAndSetData()
   }, [propsStringToTriggerRefresh])
 
   const refresh = async () => {
     promiseCache[key] = undefined
-    setData(undefined)
     await getAndSetData()
   }
 
