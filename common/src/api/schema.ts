@@ -502,6 +502,7 @@ export const API = (_apiTypeCheck = {
         remove: z.boolean().optional(),
       })
       .strict(),
+    returns: {} as { status: 'success' },
   },
   groups: {
     method: 'GET',

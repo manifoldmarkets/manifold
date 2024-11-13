@@ -1,6 +1,8 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { revalidateStaticProps } from 'shared/utils'
+import { groupPath } from 'common/group'
 
 export const addOrRemoveTopicFromTopic: APIHandler<
   'group/by-id/:topId/group/:bottomId'
@@ -26,5 +28,20 @@ export const addOrRemoveTopicFromTopic: APIHandler<
       `insert into group_groups (top_id, bottom_id) values ($1, $2)`,
       [topId, bottomId]
     )
+  }
+  const continuation = async () => {
+    const data = await pg.many(
+      `select slug from groups where id = $1 or id = $2`,
+      [topId, bottomId]
+    )
+    await Promise.all([
+      revalidateStaticProps(groupPath(data[0].slug)),
+      revalidateStaticProps(groupPath(data[1].slug)),
+    ])
+  }
+
+  return {
+    result: { status: 'success' },
+    continue: continuation,
   }
 }

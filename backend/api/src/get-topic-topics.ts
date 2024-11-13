@@ -1,7 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertGroup } from 'common/supabase/groups'
 import { APIError } from 'common/api/utils'
-import { partition } from 'lodash'
 
 export const getTopicTopics = async (
   props: { slug: string } | { id: string }
@@ -19,13 +18,16 @@ export const getTopicTopics = async (
     id = group.id
   }
 
-  const topics = await pg.manyOrNone(
-    `select g.*, gg.bottom_id
-    from groups g join group_groups gg
-    on g.id = gg.top_id or g.id = gg.bottom_id`,
+  const [above, below] = await pg.multi(
+    `select g.* from groups g join group_groups gg
+     on g.id = gg.top_id where gg.bottom_id = $1;
+     select g.* from groups g join group_groups gg
+     on g.id = gg.bottom_id where gg.top_id = $1`,
     [id]
   )
 
-  const [above, below] = partition(topics, (t) => t.id === t.bottom_id)
-  return { above: above.map(convertGroup), below: below.map(convertGroup) }
+  return {
+    above: above.map(convertGroup),
+    below: below.map(convertGroup),
+  }
 }
