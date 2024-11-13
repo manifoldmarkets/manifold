@@ -70,6 +70,5 @@ export const useReactionsOnContent = (
     }
   }, [contentType, contentId])
 
-  console.log(contentType, contentId, 'reactions', reactions)
   return reactions
 }
