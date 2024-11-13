@@ -47,6 +47,12 @@ export function CommentActions(props: {
 
   return (
     <Row className="grow items-center justify-end">
+      <LikeAndDislikeComment
+        comment={comment}
+        trackingLocation={trackingLocation}
+        privateUser={privateUser}
+        user={user}
+      />
       {canGiveBounty && (
         <AwardBountyButton
           contract={liveContract}
@@ -54,7 +60,7 @@ export function CommentActions(props: {
           onAward={onAward}
           user={user}
           disabled={liveContract.bountyLeft <= 0}
-          buttonClassName={'mr-1'}
+          buttonClassName={'mr-1 min-w-[60px]'}
         />
       )}
       {user && liveContract.outcomeType === 'BINARY' && !isCashContract && (
@@ -68,6 +74,7 @@ export function CommentActions(props: {
             setShowBetModal(true)
           }}
           size={'xs'}
+          className={'min-w-[60px]'}
         >
           <Tooltip text={`Reply with a ${TRADE_TERM}`} placement="bottom">
             <Row className="gap-1">
@@ -93,19 +100,14 @@ export function CommentActions(props: {
             e.stopPropagation()
             onReplyClick(comment)
           }}
-          className={'text-ink-500'}
+          className={'text-ink-500 min-w-[60px]'}
         >
           <Tooltip text="Reply with a comment" placement="bottom">
             <ReplyIcon className="h-5 w-5 " />
           </Tooltip>
         </IconButton>
       )}
-      <LikeAndDislikeComment
-        comment={comment}
-        trackingLocation={trackingLocation}
-        privateUser={privateUser}
-        user={user}
-      />
+
       {showBetModal && (
         <Modal
           open={showBetModal}
