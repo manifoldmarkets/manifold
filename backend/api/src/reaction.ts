@@ -108,9 +108,8 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
         const comment = await getComment(pg, contentId)
 
         if (
-          // dislikeCount > 10 &&
-          // dislikeCount / (likeCount + dislikeCount) > 0.8
-          dislikeCount > 0
+          dislikeCount > 10 &&
+          dislikeCount / (likeCount + dislikeCount) > 0.8
         ) {
           //hide comment if above a certain threshold
           await updateData(pg, 'contract_comments', 'comment_id', {
@@ -120,6 +119,7 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
             hiderId: 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
           })
         } else if (comment.hidden) {
+          // if was previously hidden and breaks threshold, unhide
           await updateData(pg, 'contract_comments', 'comment_id', {
             comment_id: contentId,
             hidden: false,
