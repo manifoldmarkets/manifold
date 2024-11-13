@@ -71,10 +71,6 @@ $function$;
 alter table contract_bets enable row level security;
 
 -- Indexes
-drop index if exists contract_bets_bet_id_key;
-
-create unique index contract_bets_bet_id_key on public.contract_bets using btree (bet_id);
-
 drop index if exists contract_bets_contract_limit_orders;
 
 create index contract_bets_contract_limit_orders on public.contract_bets using btree (
