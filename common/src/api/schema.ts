@@ -434,7 +434,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: {} as { above: Group[]; below: Group[] },
+    returns: {} as { above: LiteGroup[]; below: LiteGroup[] },
     props: z.object({ slug: z.string() }).strict(),
   },
   'group/by-id/:id/groups': {
@@ -442,7 +442,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: {} as { above: Group[]; below: Group[] },
+    returns: {} as { above: LiteGroup[]; below: LiteGroup[] },
     props: z.object({ id: z.string() }).strict(),
   },
   'group/by-id/:id': {

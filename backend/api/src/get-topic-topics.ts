@@ -19,10 +19,12 @@ export const getTopicTopics = async (
   }
 
   const [above, below] = await pg.multi(
-    `select g.* from groups g join group_groups gg
-     on g.id = gg.top_id where gg.bottom_id = $1;
-     select g.* from groups g join group_groups gg
-     on g.id = gg.bottom_id where gg.top_id = $1`,
+    `select id, slug, name, importance_score, privacy_status, total_members
+    from groups g join group_groups gg
+    on g.id = gg.top_id where gg.bottom_id = $1;
+    select id, slug, name, importance_score, privacy_status, total_members
+    from groups g join group_groups gg
+    on g.id = gg.bottom_id where gg.top_id = $1`,
     [id]
   )
 
