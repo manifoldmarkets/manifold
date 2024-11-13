@@ -1,12 +1,17 @@
 import { XIcon } from '@heroicons/react/outline'
+import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { Group, groupPath } from 'common/group'
+import { Group, LiteGroup, groupPath } from 'common/group'
+import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import Link from 'next/link'
 import { useState } from 'react'
 import { BsPeopleFill } from 'react-icons/bs'
+import { SEO } from 'web/components/SEO'
 import { Button, IconButton } from 'web/components/buttons/button'
+import { JSONEmpty } from 'web/components/contract/contract-description'
+import { DashboardText } from 'web/components/dashboard/dashboard-text-card'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
@@ -14,11 +19,9 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { SupabaseSearch } from 'web/components/supabase-search'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { TopicSelector } from 'web/components/topics/topic-selector'
-import { Content } from 'web/components/widgets/editor'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/api/api'
+import { api, updateGroup } from 'web/lib/api/api'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
-import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
   const { topicSlug } = ctx.params
@@ -46,17 +49,23 @@ export async function getStaticPaths() {
 
 export default function TopicPage(props: {
   topic: Group
-  above: Group[]
-  below: Group[]
+  above: LiteGroup[]
+  below: LiteGroup[]
 }) {
   const { topic, above, below } = props
 
+  const user = useUser()
   const privateUser = usePrivateUser()
+
+  // TODO: let members edit
+  const canEdit = !!user && (isAdminId(user.id) || isModId(user.id))
+  const showAbout = canEdit || (!!topic.about && !JSONEmpty(topic.about))
+  const [editingAbout, setEditingAbout] = useState(false)
 
   return (
     <Page
       trackPageView={'group page'}
-      className="col-span-10 grid grid-cols-10 gap-4"
+      className="!col-span-10 grid grid-cols-10 gap-4"
       hideFooter
     >
       <SEO
@@ -81,17 +90,30 @@ export default function TopicPage(props: {
         <Details topic={topic} />
         <Col className="w-full">
           <QueryUncontrolledTabs
-            tabs={[
-              {
+            tabs={buildArray(
+              showAbout && {
                 title: 'About',
                 content: (
                   <Col className="w-full">
-                    {topic.about && (
-                      <Content
-                        size="lg"
-                        className="p-4 sm:p-6"
-                        content={topic.about}
-                      />
+                    <DashboardText
+                      content={topic.about as any}
+                      editing={editingAbout}
+                      onSave={(content) => {
+                        setEditingAbout(false)
+                        updateGroup({
+                          id: topic.id,
+                          about: content,
+                        })
+                      }}
+                    />
+                    {canEdit && !editingAbout && (
+                      <Button
+                        className="mt-4 gap-1"
+                        onClick={() => setEditingAbout(true)}
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                        Edit
+                      </Button>
                     )}
                   </Col>
                 ),
@@ -112,8 +134,8 @@ export default function TopicPage(props: {
                     topicSlug={topic.slug}
                   />
                 ),
-              },
-            ]}
+              }
+            )}
           />
         </Col>
       </Col>
@@ -144,8 +166,8 @@ const Details = (props: { topic: Group }) => {
 
 const TopicsSidebar = (props: {
   topicId: string
-  above: Group[]
-  below: Group[]
+  above: LiteGroup[]
+  below: LiteGroup[]
   className?: string
   children?: React.ReactNode
 }) => {
@@ -153,7 +175,7 @@ const TopicsSidebar = (props: {
   const [above, setAbove] = useState(props.above)
   const [below, setBelow] = useState(props.below)
 
-  const onAddAbove = (topic: Group) => {
+  const onAddAbove = (topic: LiteGroup) => {
     setAbove([...above, topic])
     api('group/by-id/:topId/group/:bottomId', {
       topId: topic.id,
@@ -161,7 +183,7 @@ const TopicsSidebar = (props: {
     })
   }
 
-  const onRemoveAbove = (topic: Group) => {
+  const onRemoveAbove = (topic: LiteGroup) => {
     setAbove(above.filter((g) => g.id !== topic.id))
     api('group/by-id/:topId/group/:bottomId', {
       topId: props.topicId,
@@ -170,7 +192,7 @@ const TopicsSidebar = (props: {
     })
   }
 
-  const onAddBelow = (topic: Group) => {
+  const onAddBelow = (topic: LiteGroup) => {
     setBelow([...below, topic])
     api('group/by-id/:topId/group/:bottomId', {
       topId: props.topicId,
@@ -178,7 +200,7 @@ const TopicsSidebar = (props: {
     })
   }
 
-  const onRemoveBelow = (topic: Group) => {
+  const onRemoveBelow = (topic: LiteGroup) => {
     setBelow(below.filter((g) => g.id !== topic.id))
     api('group/by-id/:topId/group/:bottomId', {
       topId: topic.id,
@@ -196,7 +218,11 @@ const TopicsSidebar = (props: {
 
   return (
     <Col className={clsx(props.className, 'gap-1')}>
-      <h2 className="font-semibold">Main topic</h2>
+      {above.length > 0 ? (
+        <h2 className="font-semibold">Main topic</h2>
+      ) : (
+        <div>Top-level topic</div>
+      )}
 
       {above.map((t) => (
         <TopicRow
@@ -227,7 +253,11 @@ const TopicsSidebar = (props: {
           </Button>
         ))}
 
-      <h2 className="font-semibold">Sub-topics</h2>
+      {below.length > 0 ? (
+        <h2 className="font-semibold">Sub-topics</h2>
+      ) : (
+        <div>No sub-topics</div>
+      )}
 
       {below.map((t) => (
         <TopicRow
@@ -263,8 +293,8 @@ const TopicsSidebar = (props: {
 }
 
 const TopicRow = (props: {
-  topic: Group
-  onRemove?: (topic: Group) => void
+  topic: LiteGroup
+  onRemove?: (topic: LiteGroup) => void
 }) => {
   const { topic, onRemove } = props
   return (
