@@ -15,35 +15,6 @@ import {
 import { SupabaseSearch } from 'web/components/supabase-search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { getGroupFromSlug } from 'web/lib/supabase/group'
-
-export async function getStaticProps(props: { params: { slug: string[] } }) {
-  const slug = first(props.params.slug)
-  const topic = slug ? await getGroupFromSlug(slug) : null
-
-  if (!topic) {
-    return {
-      props: {
-        slug: slug ?? null,
-      },
-    }
-  }
-
-  if (slug != topic.slug) {
-    return {
-      redirect: {
-        destination: `/browse/${topic.slug}`,
-        permanent: true,
-      },
-    }
-  }
-
-  return {
-    props: removeUndefinedProps({
-      revalidate: 60 * 10, // regenerate after 10 minutes
-    }),
-  }
-}
 
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
