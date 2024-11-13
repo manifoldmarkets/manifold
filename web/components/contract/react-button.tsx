@@ -72,10 +72,6 @@ export const ReactButton = memo(function ReactButton(props: {
     (reaction: Reaction) => reaction.reaction_type === reactionType
   )
 
-  if (contentId == 'e3umnhh7qft') {
-    console.log('REACTIONZ', reactions, allReactions, reactionType)
-  }
-
   const [reacted, setReacted] = useState(
     userReactedWith ? userReactedWith == reactionType : false
   )
