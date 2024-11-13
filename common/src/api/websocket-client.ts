@@ -5,7 +5,7 @@ const VERBOSE_LOGGING = false
 
 // mqp: no way should our server ever take 5 seconds to reply
 const TIMEOUT_MS = 5000
-
+const HEARTBEAT_MS = 10_000
 const RECONNECT_WAIT_MS = 5000
 
 type ConnectingState = typeof WebSocket.CONNECTING
@@ -69,6 +69,10 @@ export class APIRealtimeClient {
   }
 
   close() {
+    if (this.heartbeat) {
+      clearInterval(this.heartbeat)
+      this.heartbeat = undefined
+    }
     this.ws.close(1000, 'Closed manually.')
     clearTimeout(this.connectTimeout)
   }
@@ -90,9 +94,12 @@ export class APIRealtimeClient {
       if (VERBOSE_LOGGING) {
         console.info('API websocket opened.')
       }
+      if (this.heartbeat) {
+        clearInterval(this.heartbeat)
+      }
       this.heartbeat = setInterval(
         async () => this.sendMessage('ping', {}).catch(console.error),
-        30000
+        HEARTBEAT_MS
       )
       if (this.subscriptions.size > 0) {
         this.sendMessage('subscribe', {
@@ -188,6 +195,14 @@ export class APIRealtimeClient {
         }, TIMEOUT_MS)
         this.txns.set(txid, { resolve, reject, timeout })
         this.ws.send(JSON.stringify({ type, txid, ...data }))
+      }).catch((error) => {
+        // If this is a heartbeat message that failed, trigger reconnection
+        if (type === 'ping') {
+          console.error('Heartbeat failed, attempting to reconnect:', error)
+          this.ws.close()
+          this.waitAndReconnect()
+        }
+        throw error // Re-throw the error for other message types
       })
     } else {
       // expected if components in the code try to subscribe or unsubscribe

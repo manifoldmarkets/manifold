@@ -3,6 +3,7 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { contractColumnsToSelect } from 'shared/utils'
 import { CPMMMultiContract } from 'common/contract'
 import { APIHandler } from './helpers/endpoint'
+import { sortBy } from 'lodash'
 
 export const getMarketsByIds: APIHandler<'markets-by-ids'> = async (props) => {
   const pg = createSupabaseDirectClient()
@@ -17,8 +18,9 @@ export const getMarketsByIds: APIHandler<'markets-by-ids'> = async (props) => {
   const answers = results[1].map(convertAnswer)
   const multiContracts = contracts.filter((c) => c.mechanism === 'cpmm-multi-1')
   for (const contract of multiContracts) {
-    ;(contract as CPMMMultiContract).answers = answers.filter(
-      (a) => a.contractId === contract.id
+    ;(contract as CPMMMultiContract).answers = sortBy(
+      answers.filter((a) => a.contractId === contract.id),
+      (a) => a.index
     )
   }
   return contracts

@@ -31,7 +31,6 @@ import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Button } from 'web/components/buttons/button'
 import { buildArray } from 'common/util/array'
 import { getCurrentPortfolio } from 'common/supabase/portfolio-metrics'
-import { Banner } from 'web/components/nav/banner'
 
 export default function Leaderboards() {
   const [topicSlug, setTopicSlug] = usePersistentQueryState(TOPIC_KEY, '')
@@ -170,13 +169,6 @@ export default function Leaderboards() {
         description={`Manifold's leaderboards show the top ${BETTORS}, question creators, and referrers.`}
         url="/leaderboards"
       />
-      <Banner
-        className="border-primary-300 from-primary-100 to-primary-200 my-2 border bg-gradient-to-b py-2"
-        link="https://manifoldmarkets.notion.site/Election-Season-Tournament-12654492ea7a805289bfca70d3dce0bd"
-      >
-        🗳️ Join our Election Season Tournament! Predict election outcomes and
-        win prizes. Learn more
-      </Banner>
       <Col className="mx-4 mb-10 w-full items-stretch self-center p-2 sm:mx-0 sm:w-[36rem]">
         <Col className={'mb-4 w-full gap-2 self-start'}>
           <Row className={'items-center gap-2'}>

@@ -227,7 +227,7 @@ export default function Leagues() {
               >
                 prizes
               </span>{' '}
-              by earning the most mana from on trades this month! Includes
+              by earning the most mana from trades placed this month! Includes
               unrealized profits.
             </div>
             <div>
