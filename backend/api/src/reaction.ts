@@ -1,8 +1,9 @@
-import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { APIError, APIHandler } from './helpers/endpoint'
-import { createLikeNotification } from 'shared/create-notification'
 import { assertUnreachable } from 'common/util/types'
+import { createLikeNotification } from 'shared/create-notification'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
+import { APIError, APIHandler } from './helpers/endpoint'
+import { hideComment } from './hide-comment'
 
 export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
   const { contentId, contentType, remove, reactionType = 'like' } = props
@@ -57,28 +58,16 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
       [contentId, contentType, userId]
     )
 
-    console.log(
-      'existingReactions*****************************************************************',
-      existingReactions
-    )
     if (existingReactions.length > 0) {
       const existingReactionType = existingReactions[0].reaction_type
       // if it's the same reaction type, do nothing
       if (existingReactionType === reactionType) {
-        log('Reaction already exists, do nothing')
         return { result: { success: true }, continue: async () => {} }
       } else {
-        console.log(
-          'NOT EQUAL, DELETING***************************************************************8'
-        )
         // otherwise, remove the other reaction type
         await deleteReaction(existingReactionType)
       }
     }
-
-    console.log(
-      'DOINT INSERT NOW ***************************************************************8'
-    )
 
     // actually do the insert
     const reactionRow = await pg.one(
@@ -87,11 +76,6 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
        values ($1, $2, $3, $4, $5)
        returning *`,
       [contentId, contentType, ownerId, userId, reactionType]
-    )
-
-    console.log(
-      'INSERT RESULT*****************************************************************',
-      reactionRow
     )
 
     if (reactionType === 'like') {
@@ -119,6 +103,12 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
         log('new like count ' + likeCount)
         log('new dislike count ' + dislikeCount)
 
+        if (
+          dislikeCount > 10 &&
+          dislikeCount / (likeCount + dislikeCount) > 0.8
+        ) {
+          await hideComment({ commentId: contentId }, auth)
+        }
         await pg.none(
           `update contract_comments set likes = $1 where comment_id = $2`,
           [likeCount, contentId]

@@ -16,6 +16,7 @@ import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
+import { PrivateUser, User } from 'common/user'
 
 export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
@@ -99,29 +100,11 @@ export function CommentActions(props: {
           </Tooltip>
         </IconButton>
       )}
-      <ReactButton
-        contentCreatorId={comment.userId}
-        contentId={comment.id}
-        user={user}
-        contentType={'comment'}
-        size={'xs'}
-        contentText={richTextToString(comment.content)}
-        disabled={isBlocked(privateUser, comment.userId)}
+      <LikeAndDislikeComment
+        comment={comment}
         trackingLocation={trackingLocation}
-        iconType={'thumb'}
-        reactionType={'like'}
-      />
-      <ReactButton
-        contentCreatorId={comment.userId}
-        contentId={comment.id}
+        privateUser={privateUser}
         user={user}
-        contentType={'comment'}
-        size={'xs'}
-        contentText={richTextToString(comment.content)}
-        disabled={isBlocked(privateUser, comment.userId)}
-        trackingLocation={trackingLocation}
-        iconType={'thumb'}
-        reactionType={'dislike'}
       />
       {showBetModal && (
         <Modal
@@ -149,5 +132,53 @@ export function CommentActions(props: {
         </Modal>
       )}
     </Row>
+  )
+}
+
+export function LikeAndDislikeComment(props: {
+  comment: ContractComment
+  trackingLocation: string
+  privateUser: PrivateUser | null | undefined
+  user: User | null | undefined
+}) {
+  const { comment, trackingLocation, privateUser, user } = props
+  const [userReactedWith, setUserReactedWith] = useState<
+    'like' | 'dislike' | 'none'
+  >('none')
+  return (
+    <>
+      <ReactButton
+        contentCreatorId={comment.userId}
+        contentId={comment.id}
+        user={user}
+        contentType={'comment'}
+        size={'xs'}
+        contentText={richTextToString(comment.content)}
+        disabled={isBlocked(privateUser, comment.userId)}
+        trackingLocation={trackingLocation}
+        iconType={'thumb'}
+        reactionType={'like'}
+        userReactedWith={userReactedWith}
+        onReact={() => setUserReactedWith('like')}
+        onUnreact={() => setUserReactedWith('none')}
+        className={'min-w-[60px]'}
+      />
+      <ReactButton
+        contentCreatorId={comment.userId}
+        contentId={comment.id}
+        user={user}
+        contentType={'comment'}
+        size={'xs'}
+        contentText={richTextToString(comment.content)}
+        disabled={isBlocked(privateUser, comment.userId)}
+        trackingLocation={trackingLocation}
+        iconType={'thumb'}
+        reactionType={'dislike'}
+        userReactedWith={userReactedWith}
+        onReact={() => setUserReactedWith('dislike')}
+        onUnreact={() => setUserReactedWith('none')}
+        className={'min-w-[60px]'}
+      />
+    </>
   )
 }

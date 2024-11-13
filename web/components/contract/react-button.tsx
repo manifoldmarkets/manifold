@@ -45,6 +45,9 @@ export const ReactButton = memo(function ReactButton(props: {
   contractId?: string
   commentId?: string
   heartClassName?: string
+  userReactedWith?: 'like' | 'dislike' | 'none'
+  onReact?: () => void
+  onUnreact?: () => void
 }) {
   const {
     user,
@@ -62,14 +65,25 @@ export const ReactButton = memo(function ReactButton(props: {
     commentId,
     heartClassName,
     reactionType = 'like',
+    userReactedWith,
   } = props
   const allReactions = useReactionsOnContent(contentType, contentId)
   const reactions = allReactions?.filter(
     (reaction: Reaction) => reaction.reaction_type === reactionType
   )
 
-  console.log('REACTIONS', reactions, allReactions)
-  const [reacted, setReacted] = useState(false)
+  if (contentId == 'e3umnhh7qft') {
+    console.log('REACTIONZ', reactions, allReactions, reactionType)
+  }
+
+  const [reacted, setReacted] = useState(
+    userReactedWith ? userReactedWith == reactionType : false
+  )
+
+  useEffect(() => {
+    setReacted(userReactedWith == reactionType)
+  }, [userReactedWith])
+
   useEffect(() => {
     if (reactions)
       setReacted(
@@ -80,7 +94,7 @@ export const ReactButton = memo(function ReactButton(props: {
       )
   }, [allReactions, user])
 
-  const totalLikes =
+  const totalReactions =
     (reactions
       ? reactions.filter((l: Reaction) => l.user_id != user?.id).length
       : 0) + (reacted ? 1 : 0)
@@ -93,6 +107,7 @@ export const ReactButton = memo(function ReactButton(props: {
     if (!user) return
     setReacted(shouldReact)
     if (shouldReact) {
+      if (props.onReact) props.onReact()
       await react(contentId, contentType, reactionType)
 
       track(
@@ -108,6 +123,7 @@ export const ReactButton = memo(function ReactButton(props: {
         })
       )
     } else {
+      if (props.onUnreact) props.onUnreact()
       await unreact(contentId, contentType, reactionType)
     }
   }
@@ -131,7 +147,7 @@ export const ReactButton = memo(function ReactButton(props: {
     }
   )
 
-  const otherLikes = reacted ? totalLikes - 1 : totalLikes
+  const otherLikes = reacted ? totalReactions - 1 : totalReactions
   const showList = otherLikes > 0
   const thumbIcon = iconType == 'thumb' || reactionType == 'dislike'
 
@@ -196,8 +212,10 @@ export const ReactButton = memo(function ReactButton(props: {
                   />
                 )}
               </div>
-              {totalLikes > 0 && (
-                <div className=" text-sm disabled:opacity-50">{totalLikes}</div>
+              {totalReactions > 0 && (
+                <div className=" text-sm disabled:opacity-50">
+                  {totalReactions}
+                </div>
               )}
             </Row>
           </button>
@@ -244,9 +262,9 @@ export const ReactButton = memo(function ReactButton(props: {
                   />
                 )}
               </div>
-              {totalLikes > 0 && (
+              {totalReactions > 0 && (
                 <div className="my-auto h-5  text-sm disabled:opacity-50">
-                  {totalLikes}
+                  {totalReactions}
                 </div>
               )}
             </Row>
