@@ -325,7 +325,7 @@ function UserReactedFullList(props: {
       userInfos={displayInfos}
       modalLabel={
         <span>
-          {capitalize(reactionType + 'd')}
+          {capitalize(reactionType + 'd ')}
           <span className="font-bold">
             {titleName
               ? titleName
@@ -359,10 +359,9 @@ function UserReactedPopup(props: {
     reactionType,
   } = props
   const reacts = useReactionsOnContent(contentType, contentId)?.filter(
-    (reaction: Reaction) => {
-      reaction.reaction_type == reactionType
-    }
+    (reaction: Reaction) => reaction.reaction_type == reactionType
   )
+
   const displayInfos = useReactedDisplayList(reacts, user, userReacted)
 
   if (displayInfos == null) {
@@ -384,7 +383,7 @@ function UserReactedPopup(props: {
     <Col className="min-w-[6rem] items-start">
       <div className="mb-1 font-bold">Like</div>
       {shown.map((u, i) => {
-        return <UserLikedItem key={i} userInfo={u} />
+        return <UserReactedItem key={i} userInfo={u} />
       })}
       {displayInfos.length > shown.length && (
         <div
@@ -398,7 +397,7 @@ function UserReactedPopup(props: {
   )
 }
 
-function UserLikedItem(props: { userInfo: MultiUserLinkInfo }) {
+function UserReactedItem(props: { userInfo: MultiUserLinkInfo }) {
   const { userInfo } = props
   return (
     <UserHovercard userId={userInfo.id}>
