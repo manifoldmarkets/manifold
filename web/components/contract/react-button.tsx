@@ -69,7 +69,7 @@ export const ReactButton = memo(function ReactButton(props: {
   } = props
   const allReactions = useReactionsOnContent(contentType, contentId)
   const reactions = allReactions?.filter(
-    (reaction: Reaction) => reaction.reaction_type === reactionType
+    (reaction: Reaction) => reaction.reaction_type == reactionType
   )
 
   const [reacted, setReacted] = useState(
@@ -314,10 +314,9 @@ function UserReactedFullList(props: {
     reactionType,
   } = props
   const reacts = useReactionsOnContent(contentType, contentId)?.filter(
-    (reaction: Reaction) => {
-      reaction.reaction_type == reactionType
-    }
+    (reaction: Reaction) => reaction.reaction_type == reactionType
   )
+  console.log(reacts)
   const displayInfos = useReactedDisplayList(reacts, user, userReacted)
 
   return (
