@@ -28,7 +28,6 @@ import {
   DEFAULT_CONTRACT_TYPES,
   DEFAULT_FILTER,
   DEFAULT_FILTERS,
-  DEFAULT_POLL_SORTS,
   DEFAULT_SORT,
   DEFAULT_SORTS,
   DEFAULT_TIER,
@@ -123,12 +122,8 @@ export function ContractFilters(props: {
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
 
-  const sortItems =
-    contractType == 'BOUNTIED_QUESTION'
-      ? DEFAULT_BOUNTY_SORTS
-      : contractType == 'POLL'
-      ? DEFAULT_POLL_SORTS
-      : []
+  const extraSortOptions =
+    contractType == 'BOUNTIED_QUESTION' ? DEFAULT_BOUNTY_SORTS : []
 
   const [openFilterModal, setOpenFilterModal] = useState(false)
 
@@ -218,7 +213,7 @@ export function ContractFilters(props: {
             New
           </button>
         </Row>
-        {sortItems.map((sortValue) => (
+        {extraSortOptions.map((sortValue) => (
           <FilterPill
             key={sortValue}
             selected={sortValue === sort}
