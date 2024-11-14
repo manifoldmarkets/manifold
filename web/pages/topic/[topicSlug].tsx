@@ -122,7 +122,9 @@ export default function TopicPage(props: {
                         onClick={() => setEditingAbout(true)}
                       >
                         <PencilIcon className="h-4 w-4" />
-                        Edit
+                        {!topic.about || JSONEmpty(topic.about)
+                          ? 'Add description'
+                          : 'Edit description'}
                       </Button>
                     )}
                     {isMobile && (
@@ -167,13 +169,15 @@ export default function TopicPage(props: {
         </Col>
       </Col>
 
-      <TopicsSidebar
-        key={topic.id}
-        topicId={topic.id}
-        above={above}
-        below={below}
-        className="col-span-3 w-full justify-self-center px-2"
-      ></TopicsSidebar>
+      {!isMobile && (
+        <TopicsSidebar
+          key={topic.id}
+          topicId={topic.id}
+          above={above}
+          below={below}
+          className="col-span-3 w-full justify-self-center px-2"
+        />
+      )}
     </Page>
   )
 }
@@ -236,20 +240,14 @@ const TopicsSidebar = (props: {
     })
   }
 
-  // for topic search
-  const [addingAbove, setAddingAbove] = useState(false)
-  const [addingBelow, setAddingBelow] = useState(false)
-
   const user = useUser()
   const canEdit = !!user && (isAdminId(user.id) || isModId(user.id))
 
   return (
     <Col className={clsx(props.className, 'gap-1')}>
-      {above.length > 0 ? (
-        <h2 className="font-semibold">Main topic</h2>
-      ) : (
-        <div>Top-level topic</div>
-      )}
+      <div className="ml-2 text-lg font-semibold">
+        {above.length > 0 ? <h2>Main topic</h2> : <>Top-level topic</>}
+      </div>
 
       {above.map((t) => (
         <TopicRow
@@ -259,32 +257,20 @@ const TopicsSidebar = (props: {
         />
       ))}
 
-      {canEdit &&
-        (addingAbove ? (
-          <TopicSelector
-            setSelectedGroup={(group) => onAddAbove(group)}
-            placeholder="Add main topic"
-            selectedIds={above.map((g) => g.id)}
-            onCreateTopic={(group) => setAbove((a) => [...a, group])}
-            addingToContract={false}
-            className="[&_input]:bg-canvas-50 focus:[&_input]:bg-canvas-0"
-          />
-        ) : (
-          <Button
-            size="xs"
-            color="gray-white"
-            className="!justify-start"
-            onClick={() => setAddingAbove(true)}
-          >
-            + Add main topic
-          </Button>
-        ))}
-
-      {below.length > 0 ? (
-        <h2 className="font-semibold">Sub-topics</h2>
-      ) : (
-        <div>No sub-topics</div>
+      {canEdit && (
+        <TopicSelector
+          setSelectedGroup={(group) => onAddAbove(group)}
+          placeholder="Add main topic"
+          selectedIds={above.map((g) => g.id)}
+          onCreateTopic={(group) => setAbove((a) => [...a, group])}
+          addingToContract={false}
+          className="[&_input]:bg-canvas-50 focus:[&_input]:bg-canvas-0"
+        />
       )}
+
+      <div className="ml-2 mt-6 text-lg font-semibold">
+        {below.length > 0 ? <h2>Subtopics</h2> : <>No subtopics yet</>}
+      </div>
 
       {below.map((t) => (
         <TopicRow
@@ -294,26 +280,16 @@ const TopicsSidebar = (props: {
         />
       ))}
 
-      {canEdit &&
-        (addingBelow ? (
-          <TopicSelector
-            setSelectedGroup={(group) => onAddBelow(group)}
-            placeholder="Add sub-topic"
-            selectedIds={below.map((g) => g.id)}
-            onCreateTopic={(group) => setBelow((b) => [...b, group])}
-            addingToContract={false}
-            className="[&_input]:bg-canvas-50 focus:[&_input]:bg-canvas-0"
-          />
-        ) : (
-          <Button
-            size="xs"
-            color="gray-white"
-            className="!justify-start"
-            onClick={() => setAddingBelow(true)}
-          >
-            + Add sub-topic
-          </Button>
-        ))}
+      {canEdit && (
+        <TopicSelector
+          setSelectedGroup={(group) => onAddBelow(group)}
+          placeholder="Add sub-topic"
+          selectedIds={below.map((g) => g.id)}
+          onCreateTopic={(group) => setBelow((b) => [...b, group])}
+          addingToContract={false}
+          className="[&_input]:bg-canvas-50 focus:[&_input]:bg-canvas-0"
+        />
+      )}
       {props.children}
     </Col>
   )
@@ -329,7 +305,7 @@ const TopicRow = (props: {
       className="hover:bg-primary-100 active:bg-primary-200 group flex items-center gap-2 rounded-md px-2 py-1 transition-colors"
       href={groupPath(topic.slug)}
     >
-      <div className="text-ink-900 group-hover:text-primary-700 mr-auto truncate">
+      <div className="text-ink-700 group-hover:text-primary-700 mr-auto truncate">
         {topic.name}
       </div>
       <div className="text-ink-500 group-hover:text-ink-600 flex gap-1 text-sm">
