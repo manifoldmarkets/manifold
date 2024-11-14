@@ -134,7 +134,7 @@ import { toggleSystemTradingStatus } from './toggle-system-status'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
 import { getDailyChangedMetricsAndContracts } from './get-daily-changed-metrics-and-contracts'
 import { getTopicTopics } from './get-topic-topics'
-import { getGroupDashboards } from './get-group-dashboards'
+import { getTopicDashboards } from './get-topic-dashboards'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -169,7 +169,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'group/:slug/unblock': unblockGroup,
   'group/by-id/:topId/group/:bottomId': addOrRemoveTopicFromTopic,
   'group/:slug/groups': getTopicTopics,
-  'group/:slug/dashboards': getGroupDashboards,
+  'group/:slug/dashboards': getTopicDashboards,
   'group/by-id/:id/groups': getTopicTopics,
   groups: getGroups,
   'market/:id': getMarket,

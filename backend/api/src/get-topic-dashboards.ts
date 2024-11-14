@@ -1,7 +1,7 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from './helpers/endpoint'
 
-export const getGroupDashboards: APIHandler<'group/:slug/dashboards'> = async ({
+export const getTopicDashboards: APIHandler<'group/:slug/dashboards'> = async ({
   slug,
 }) => {
   const pg = createSupabaseDirectClient()
