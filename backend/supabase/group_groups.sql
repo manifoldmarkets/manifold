@@ -8,10 +8,10 @@ create table if not exists
 
 -- Foreign Keys
 alter table group_groups
-add constraint group_groups_bottom_id_fkey foreign key (bottom_id) references groups (id) on update cascade;
+add constraint group_groups_bottom_id_fkey foreign key (bottom_id) references groups (id) on update cascade on delete cascade;
 
 alter table group_groups
-add constraint group_groups_top_id_fkey foreign key (top_id) references groups (id) on update cascade;
+add constraint group_groups_top_id_fkey foreign key (top_id) references groups (id) on update cascade on delete cascade;
 
 -- Row Level Security
 alter table group_groups enable row level security;

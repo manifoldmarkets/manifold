@@ -1,14 +1,13 @@
-import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { type SupabaseDirectClient } from 'shared/supabase/init'
 import { bulkUpsert } from 'shared/supabase/utils'
 import { runScript } from 'run-script'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
+import { updateContract } from 'shared/supabase/contracts'
 
 // note: you should turn off the on-update-contract trigger (notifications, embedding recalculation) if it's a ton of contracts
 
 export async function mergeGroups(
   pg: SupabaseDirectClient,
-  firestore: any,
   fromSlug: string,
   toSlug: string
 ) {
@@ -42,11 +41,11 @@ export async function mergeGroups(
     (row) => row.contract_id
   )
 
-  // if (contracts.length > 100) {
-  //   throw new Error(
-  //     `found ${contracts.length} contracts in group ${from}. are you sure?`
-  //   )
-  // }
+  if (contracts.length > 100) {
+    throw new Error(
+      `found ${contracts.length} contracts in group ${from}. are you sure?`
+    )
+  }
 
   if (contracts.length > 0) {
     console.log(`re-tagging ${contracts.length} contracts`)
@@ -63,7 +62,7 @@ export async function mergeGroups(
     await pg.none('delete from group_contracts where group_id = $1', [from])
 
     console.log('correcting contract group slugs')
-    await updateGroupLinksOnContracts(pg, firestore, contracts)
+    await updateGroupLinksOnContracts(pg, contracts)
 
     console.log('recalculating group embedding')
     await upsertGroupEmbedding(pg, to)
@@ -103,14 +102,9 @@ export async function mergeGroups(
 
 export async function updateGroupLinksOnContracts(
   pg: SupabaseDirectClient,
-  firestore: any,
   contractIds: string[]
 ) {
-  const bulkWriter = new SafeBulkWriter()
-
   for (const contractId of contractIds) {
-    const contractRef = firestore.collection('contracts').doc(contractId)
-
     const groups = await pg.manyOrNone<{
       group_id: string
       slug: string
@@ -122,17 +116,10 @@ export async function updateGroupLinksOnContracts(
       [contractId]
     )
 
-    bulkWriter.update(contractRef, {
+    await updateContract(pg, contractId, {
       groupSlugs: groups.map((g) => g.slug),
-      groupLinks: groups.map((g) => ({
-        groupId: g.group_id,
-        slug: g.slug,
-        name: g.name,
-      })),
     })
   }
-
-  await bulkWriter.flush()
 }
 
 if (require.main === module) {
@@ -141,7 +128,7 @@ if (require.main === module) {
     process.exit(1)
   }
 
-  runScript(async ({ pg, firestore }) => {
-    await mergeGroups(pg, firestore, process.argv[2], process.argv[3])
+  runScript(async ({ pg }) => {
+    await mergeGroups(pg, process.argv[2], process.argv[3])
   })
 }
