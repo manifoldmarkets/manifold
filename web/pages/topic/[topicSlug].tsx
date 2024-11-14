@@ -25,6 +25,7 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, updateGroup } from 'web/lib/api/api'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { AboutEditor } from 'web/components/topics/about-editor'
 
 export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
   const { topicSlug } = ctx.params
@@ -69,7 +70,6 @@ export default function TopicPage(props: {
   const canEdit = !!user && (isAdminId(user.id) || isModId(user.id))
   const showAbout =
     canEdit || (!!topic.about && !JSONEmpty(topic.about)) || isMobile
-  const [editingAbout, setEditingAbout] = useState(false)
 
   return (
     <Page
@@ -105,28 +105,16 @@ export default function TopicPage(props: {
                 title: 'About',
                 content: (
                   <Col className="w-full">
-                    <DashboardText
-                      content={topic.about as any}
-                      editing={editingAbout}
+                    <AboutEditor
+                      initialContent={topic.about}
                       onSave={(content) => {
-                        setEditingAbout(false)
                         updateGroup({
                           id: topic.id,
                           about: content,
                         })
                       }}
+                      canEdit={canEdit}
                     />
-                    {canEdit && !editingAbout && (
-                      <Button
-                        className="mt-4 gap-1"
-                        onClick={() => setEditingAbout(true)}
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                        {!topic.about || JSONEmpty(topic.about)
-                          ? 'Add description'
-                          : 'Edit description'}
-                      </Button>
-                    )}
                     {isMobile && (
                       <TopicsSidebar
                         key={`${topic.id}-mobile`}
