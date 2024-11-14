@@ -225,6 +225,7 @@ export function ContractPageContent(props: ContractParams) {
   const isClosed = !!(closeTime && closeTime < Date.now())
   const [showResolver, setShowResolver] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [showReview, setShowReview] = useState(false)
 
   const [replyTo, setReplyTo] = useState<Answer | Bet>()
 
@@ -259,12 +260,6 @@ export function ContractPageContent(props: ContractParams) {
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(props.contract.id, user?.id)
   const userHasReviewed = userReview || justNowReview
-
-  const [showReview, setShowReview] = useState(!userHasReviewed)
-
-  useEffect(() => {
-    setShowReview(!userHasReviewed)
-  }, [userHasReviewed])
 
   const isSpiceMarket = !!liveContract.isSpicePayout
   const isCashContract = liveContract.token === 'CASH'
@@ -432,7 +427,7 @@ export function ContractPageContent(props: ContractParams) {
               )}
               <YourTrades contract={liveContract} yourNewBets={yourNewBets} />
             </Col>
-            {showReview && user && liveContract.isResolved && (
+            {showReview && user && (
               <div className="relative my-2">
                 <ReviewPanel
                   marketId={props.contract.id}

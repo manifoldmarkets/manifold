@@ -81,10 +81,11 @@ export function DangerZone(props: {
     if (
       canReview &&
       userHasBet &&
-      // resolved less than week ago
       Date.now() - (contract.resolutionTime ?? 0) < WEEK_MS
     ) {
       setShowReview(true)
+    } else {
+      setShowReview(false)
     }
   }, [canReview, userHasBet, contract.resolutionTime])
 
