@@ -99,6 +99,7 @@ export const FILTERS = [
   { label: 'Open', value: 'open' },
   { label: 'Closing this month', value: 'closing-this-month' },
   { label: 'Closing next month', value: 'closing-next-month' },
+  { label: 'Closing in 30 days', value: 'closing' },
   { label: 'Closed', value: 'closed' },
   { label: 'Resolved', value: 'resolved' },
 ] as const

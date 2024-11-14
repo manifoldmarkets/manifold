@@ -280,6 +280,7 @@ function getSearchContractWhereSQL(args: {
     // Include an extra day to capture markets that close on the first of the month. Add 7 hours to shift UTC time zone to PT.
     'closing-this-month': `close_time > now() AND close_time < (date_trunc('month', now()) + interval '1 month' + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
     'closing-next-month': `close_time > ((date_trunc('month', now()) + interval '1 month') + interval '1 day' + interval '7 hours') AND close_time < (date_trunc('month', now()) + interval '2 month' + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
+    closing: `close_time > now() AND close_time < now() + interval '1 month' + interval '1 day' + interval '7 hours' AND resolution_time IS NULL`,
     resolved: 'resolution_time IS NOT NULL',
     all: '',
   }

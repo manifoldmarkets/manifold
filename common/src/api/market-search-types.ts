@@ -10,6 +10,7 @@ export const searchProps = z
         z.literal('open'),
         z.literal('closing-this-month'),
         z.literal('closing-next-month'),
+        z.literal('closing'),
         z.literal('closed'),
         z.literal('resolved'),
         z.literal('all'),
