@@ -144,7 +144,6 @@ export const useHasContractMetrics = (contractId: string) => {
     contractId,
     false,
     !!user?.id,
-    undefined,
     user?.id
   )
 

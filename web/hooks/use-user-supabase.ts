@@ -28,9 +28,9 @@ export function useUserById(userId: string | undefined) {
 }
 
 export function useDisplayUserById(userId: string | undefined) {
-  const [user] = useBatchedGetter<DisplayUser | null | undefined>(
+  const [user] = useBatchedGetter<DisplayUser | undefined>(
     'user',
-    userId ?? '',
+    userId ?? '_',
     undefined,
     !!userId
   )

@@ -23,61 +23,69 @@ const pendingCallbacks: Map<string, ((data: any) => void)[]> = new Map()
 type FilterCallback<T> = (data: T[], id: string) => T | undefined
 
 const executeBatchQuery = debounce(async () => {
-  for (const [
-    queryType,
-    { ids, filterCallback, userId },
-  ] of pendingRequests.entries()) {
-    if (!ids.size) continue
-    let data: Contract[] | Reaction[] | string[] | DisplayUser[]
-    try {
-      switch (queryType) {
-        case 'markets':
-          data = await api('markets-by-ids', { ids: Array.from(ids) })
-          break
-        case 'comment-reactions':
-        case 'contract-reactions':
-          const contentType = queryType.split('-')[0]
-          const { data: reactionsData } = await run(
-            db
-              .from('user_reactions')
-              .select()
-              .eq('content_type', contentType)
-              .in('content_id', Array.from(ids))
-          )
-          data = reactionsData
-          break
-        case 'contract-metrics':
-          if (!userId) {
-            data = []
+  const requestsToProcess = new Map(pendingRequests)
+  pendingRequests.clear()
+  const key = (queryType: string, id: string) => `${queryType}-${id}`
+  const batchPromises = Array.from(requestsToProcess.entries()).map(
+    async ([queryType, { ids, filterCallback, userId }]) => {
+      if (!ids.size) return
+
+      try {
+        let data: Contract[] | Reaction[] | string[] | DisplayUser[]
+
+        switch (queryType) {
+          case 'markets':
+            data = await api('markets-by-ids', { ids: Array.from(ids) })
             break
-          }
-          data = await getContractIdsWithMetrics(db, userId, Array.from(ids))
-          break
-        case 'user':
-          data = await getDisplayUsers(Array.from(ids))
-          break
-        case 'users':
-          const userIds = Array.from(ids).flatMap((id) => id.split(','))
-          data = await getDisplayUsers(userIds)
-          break
+          case 'comment-reactions':
+          case 'contract-reactions':
+            const contentType = queryType.split('-')[0]
+            const { data: reactionsData } = await run(
+              db
+                .from('user_reactions')
+                .select()
+                .eq('content_type', contentType)
+                .in('content_id', Array.from(ids))
+            )
+            data = reactionsData
+            break
+          case 'contract-metrics':
+            if (!userId) {
+              data = []
+              break
+            }
+            data = await getContractIdsWithMetrics(db, userId, Array.from(ids))
+            break
+          case 'user':
+            data = await getDisplayUsers(Array.from(ids))
+            break
+          case 'users':
+            const userIds = Array.from(ids).flatMap((id) => id.split(','))
+            data = await getDisplayUsers(userIds)
+            break
+        }
+
+        ids.forEach((id) => {
+          const callbacks = pendingCallbacks.get(key(queryType, id)) || []
+          pendingCallbacks.delete(key(queryType, id))
+          const filteredData = filterCallback(data, id)
+          callbacks.forEach((callback) => callback(filteredData))
+        })
+      } catch (error) {
+        console.error(`Error fetching batch data for ${queryType}:`, error)
       }
-
-      ids.forEach((id) => {
-        const key = `${queryType}-${id}`
-        const callbacks = pendingCallbacks.get(key) || []
-        const filteredData = filterCallback(data, id)
-        callbacks.forEach((callback) => callback(filteredData))
-        pendingCallbacks.delete(key)
-      })
-    } catch (error) {
-      console.error('Error fetching batch data:', error)
     }
+  )
 
-    pendingRequests.delete(queryType)
+  await Promise.allSettled(batchPromises)
+
+  // If there are new pending requests, trigger another batch
+  if (pendingRequests.size > 0) {
+    executeBatchQuery()
   }
 }, 10)
 
-const defaultFilters: Record<string, FilterCallback<any>> = {
+const filtersByQueryType: Record<string, FilterCallback<any>> = {
   markets: (data: Contract[], id: string) =>
     data.find((item) => item.id === id),
   'comment-reactions': (data: Reaction[], id: string) =>
@@ -102,37 +110,34 @@ export const useBatchedGetter = <T>(
   id: string,
   initialValue: T,
   enabled = true,
-  customFilter?: FilterCallback<T>,
   userId?: string
 ) => {
+  const key = `${queryType}-${id}`
+  const [state, setState] = usePersistentInMemoryState<T>(initialValue, key)
+
   useEffect(() => {
     if (!enabled) return
 
     if (!pendingRequests.has(queryType)) {
       pendingRequests.set(queryType, {
         ids: new Set(),
-        filterCallback: customFilter ?? defaultFilters[queryType],
+        filterCallback: filtersByQueryType[queryType],
         userId,
       })
     }
     pendingRequests.get(queryType)!.ids.add(id)
 
-    const key = `${queryType}-${id}`
     if (!pendingCallbacks.has(key)) {
       pendingCallbacks.set(key, [])
     }
-
-    const setData = (data: T) => {
-      setState(data)
-    }
-    pendingCallbacks.get(key)!.push(setData)
+    pendingCallbacks.get(key)!.push(setState)
 
     executeBatchQuery()
 
     return () => {
       const callbacks = pendingCallbacks.get(key)
       if (callbacks) {
-        const index = callbacks.indexOf(setData)
+        const index = callbacks.indexOf(setState)
         if (index > -1) {
           callbacks.splice(index, 1)
         }
@@ -142,11 +147,6 @@ export const useBatchedGetter = <T>(
       }
     }
   }, [queryType, id, enabled, userId])
-
-  const [state, setState] = usePersistentInMemoryState<T>(
-    initialValue,
-    `${queryType}-${id}`
-  )
 
   return [state, setState] as const
 }
