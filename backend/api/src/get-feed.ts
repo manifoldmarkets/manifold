@@ -27,7 +27,7 @@ import { getFollowedReposts, getTopicReposts } from 'shared/supabase/reposts'
 import { FeedContract, GROUP_SCORE_PRIOR } from 'common/feed'
 
 const DEBUG_USER_ID = undefined
-const DEBUG_FEED = process.platform === 'darwin'
+const DEBUG_FEED = false //process.platform === 'darwin'
 export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const { limit, offset, ignoreContractIds } = props
   const pg = createSupabaseDirectClient()
