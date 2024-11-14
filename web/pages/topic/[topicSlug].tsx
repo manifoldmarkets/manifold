@@ -24,6 +24,7 @@ import { TopicSelector } from 'web/components/topics/topic-selector'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, updateGroup } from 'web/lib/api/api'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
   const { topicSlug } = ctx.params
@@ -59,18 +60,21 @@ export default function TopicPage(props: {
 }) {
   const { topic, above, below, dashboards } = props
 
+  const isMobile = useIsMobile()
+
   const user = useUser()
   const privateUser = usePrivateUser()
 
   // TODO: let members edit
   const canEdit = !!user && (isAdminId(user.id) || isModId(user.id))
-  const showAbout = canEdit || (!!topic.about && !JSONEmpty(topic.about))
+  const showAbout =
+    canEdit || (!!topic.about && !JSONEmpty(topic.about)) || isMobile
   const [editingAbout, setEditingAbout] = useState(false)
 
   return (
     <Page
       trackPageView={'group page'}
-      className="!col-span-10 grid grid-cols-10 gap-4"
+      className="!col-span-10 flex grid-cols-10 gap-4 lg:grid"
       hideFooter
     >
       <SEO
@@ -79,7 +83,7 @@ export default function TopicPage(props: {
         // description={topic.about}
         url={groupPath(topic.slug)}
       />
-      <Col className="col-span-7">
+      <Col className="col-span-7 px-4">
         {/* {topic.bannerUrl && (
             <div className="relative h-[200px]">
               <Image
@@ -120,6 +124,15 @@ export default function TopicPage(props: {
                         <PencilIcon className="h-4 w-4" />
                         Edit
                       </Button>
+                    )}
+                    {isMobile && (
+                      <TopicsSidebar
+                        key={`${topic.id}-mobile`}
+                        topicId={topic.id}
+                        above={above}
+                        below={below}
+                        className="mt-6"
+                      />
                     )}
                   </Col>
                 ),
