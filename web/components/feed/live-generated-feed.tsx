@@ -1,7 +1,6 @@
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import {
   FeedContractCard,
   LoadingCards,
@@ -20,6 +19,8 @@ import { Bet } from 'common/bet'
 import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
+import { api } from 'web/lib/api/api'
+import { useEvent } from 'web/hooks/use-event'
 
 const defaultValue: APIResponse<'get-feed'> & { offset: number } = {
   contracts: [],
@@ -31,12 +32,8 @@ const defaultValue: APIResponse<'get-feed'> & { offset: number } = {
   offset: 0,
 }
 
-export function LiveGeneratedFeed(props: {
-  userId: string
-  reload: boolean
-  hidden?: boolean
-}) {
-  const { userId, reload, hidden } = props
+export function LiveGeneratedFeed(props: { userId: string; hidden?: boolean }) {
+  const { userId, hidden } = props
   const user = useUser()
 
   const limit = 7
@@ -45,32 +42,30 @@ export function LiveGeneratedFeed(props: {
     `feed-data-${userId}`
   )
   const ignoreContractIds = feedData.contracts.map((c) => c.id)
-  const { data, error, refresh, setData } = useAPIGetter(
-    'get-feed',
-    {
-      userId,
-      offset: feedData.offset,
-      limit,
-      ignoreContractIds,
-    },
-    ['ignoreContractIds', 'offset']
-  )
-  const [loading, setLoading] = useState(false)
+  const [data, setData] = usePersistentInMemoryState<
+    APIResponse<'get-feed'> | undefined
+  >(undefined, `feed-data`)
 
-  useEffect(() => {
-    if (reload) {
-      setData(undefined)
-      setFeedData(defaultValue)
-      setLoading(true)
-      setTimeout(async () => {
-        refresh()
-      }, 100)
+  const refresh = useEvent(async () => {
+    try {
+      const data = await api('get-feed', {
+        userId,
+        offset: feedData.offset,
+        limit,
+        ignoreContractIds,
+      })
+      setData(data)
+    } catch (e) {
+      console.error(e)
     }
-  }, [reload])
+  })
+  useEffect(() => {
+    if (!data) {
+      refresh()
+    }
+  }, [])
 
-  if (error) {
-    console.error(error.message)
-  }
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!data) return
