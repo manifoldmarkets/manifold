@@ -16,10 +16,6 @@ import { SupabaseSearch } from 'web/components/supabase-search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 
-export async function getStaticPaths() {
-  return { paths: [], fallback: 'blocking' }
-}
-
 export default function BrowsePage() {
   return (
     <Page trackPageView={'questions page'}>
