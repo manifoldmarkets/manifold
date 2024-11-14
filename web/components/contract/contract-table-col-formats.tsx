@@ -6,7 +6,7 @@ import { Row } from '../layout/row'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { Action } from './contract-table-action'
 import { ContractStatusLabel } from './contracts-table'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useHasContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { Tooltip } from '../widgets/tooltip'
 
 export type ColumnFormat = {
@@ -17,7 +17,7 @@ export type ColumnFormat = {
 const TradersColumnComponent = (props: { contract: Contract }) => {
   const { contract } = props
   const { outcomeType, uniqueBettorCount } = contract
-  const metric = useSavedContractMetrics(contract)
+  const hasMetric = useHasContractMetrics(contract.id)
   return outcomeType == 'BOUNTIED_QUESTION' ? (
     <div className="text-ink-700 h-min align-top">
       <BountiedContractComments contractId={contract.id} />
@@ -25,14 +25,14 @@ const TradersColumnComponent = (props: { contract: Contract }) => {
   ) : (
     <Tooltip
       text={`${contract.uniqueBettorCount} unique traders ${
-        metric ? '(including you)' : ''
+        hasMetric ? '(including you)' : ''
       }`}
     >
       <div className="text-ink-700 ml-1 h-min align-top">
         <Row className="align-left text-ink-700 h-full shrink-0 items-center justify-start gap-0.5">
           <UserIcon
             className={
-              !metric
+              !hasMetric
                 ? 'text-ink-400 h-4 w-4 shrink-0'
                 : 'text-primary-600 h-4 w-4 shrink-0'
             }

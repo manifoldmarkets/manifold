@@ -69,7 +69,7 @@ export default function Home(props: { headlines: Headline[] }) {
         </button>
       )}
       {/* Preload feed */}
-      {user && <LiveGeneratedFeed userId={user.id} reload={false} hidden />}
+      {user && <LiveGeneratedFeed userId={user.id} hidden />}
     </Page>
   )
 }

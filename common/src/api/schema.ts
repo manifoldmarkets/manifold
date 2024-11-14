@@ -539,6 +539,17 @@ export const API = (_apiTypeCheck = {
     cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ id: z.string(), lite: coerceBoolean.optional() }),
   },
+  'markets-by-ids': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as Contract[],
+    props: z
+      .object({
+        ids: z.array(z.string()).max(200),
+      })
+      .strict(),
+  },
   // deprecated. use /market/:id?lite=true instead
   'market/:id/lite': {
     method: 'GET',
@@ -1056,6 +1067,7 @@ export const API = (_apiTypeCheck = {
         contentId: z.string(),
         contentType: z.enum(['comment', 'contract']),
         remove: z.boolean().optional(),
+        reactionType: z.enum(['like', 'dislike']).optional().default('like'),
       })
       .strict(),
     returns: { success: true },

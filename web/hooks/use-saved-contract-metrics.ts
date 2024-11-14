@@ -15,6 +15,7 @@ import {
   applyMetricToSummary,
 } from 'common/calculate-metrics'
 import { useUser } from './use-user'
+import { useBatchedGetter } from './use-batched-getter'
 
 export const useSavedContractMetrics = (
   contract: Contract,
@@ -134,4 +135,18 @@ export const useTopContractMetrics = (props: {
   }, [cashContract?.resolution])
 
   return topContractMetrics
+}
+
+export const useHasContractMetrics = (contractId: string) => {
+  const user = useUser()
+  const [hasMetric] = useBatchedGetter<boolean>(
+    'contract-metrics',
+    contractId,
+    false,
+    !!user?.id,
+    undefined,
+    user?.id
+  )
+
+  return hasMetric
 }

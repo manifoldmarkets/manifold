@@ -16,7 +16,7 @@ import { ContractMinibar } from '../charts/minibar'
 import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { Col } from '../layout/col'
 import {
   actionColumn,
@@ -80,7 +80,7 @@ function ContractRow(props: {
   onClick?: () => void
   hideAvatar?: boolean
 }) {
-  const contract = useLiveContractWithAnswers(props.contract)
+  const contract = useLiveContract(props.contract)
 
   const { columns, hideAvatar, highlighted, faded, onClick } = props
   return (

@@ -99,6 +99,7 @@ export const FILTERS = [
   { label: 'Open', value: 'open' },
   { label: 'Closing this month', value: 'closing-this-month' },
   { label: 'Closing next month', value: 'closing-next-month' },
+  { label: 'Closing in 30 days', value: 'closing' },
   { label: 'Closed', value: 'closed' },
   { label: 'Resolved', value: 'resolved' },
 ] as const
@@ -117,8 +118,7 @@ export const CONTRACT_TYPES = [
 
 export const DEFAULT_SORT = 'score'
 export const DEFAULT_SORTS = ['freshness-score', 'newest']
-export const DEFAULT_BOUNTY_SORTS = ['bounty-amount', 'newest']
-export const DEFAULT_POLL_SORTS = ['newest']
+export const DEFAULT_BOUNTY_SORTS = ['bounty-amount']
 
 export const DEFAULT_FILTERS = []
 export const DEFAULT_FILTER = 'all'

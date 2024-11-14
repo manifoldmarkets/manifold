@@ -36,7 +36,7 @@ import { SizedContainer } from 'web/components/sized-container'
 import { getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from '../bet/fees'
 import { XIcon } from '@heroicons/react/solid'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { getTierFromLiquidity } from 'common/tier'
 import { MoneyDisplay } from '../bet/money-display'
 import { TRADE_TERM } from 'common/envs/constants'
@@ -55,7 +55,7 @@ export const NumericBetPanel = (props: {
       higher: 'Higher',
     },
   } = props
-  const contract = useLiveContractWithAnswers(props.contract)
+  const contract = useLiveContract(props.contract)
   const { answers, min: minimum, max: maximum } = contract
   const [expectedValue, setExpectedValue] = useState(getExpectedValue(contract))
   const [betAmount, setBetAmount] = useState<number | undefined>(10)

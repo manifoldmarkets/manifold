@@ -35,7 +35,6 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { GradientContainer } from '../widgets/gradient-container'
 import { AmountInput } from '../widgets/amount-input'
 import { getAnswerColor } from '../charts/contract/choice'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -217,7 +216,7 @@ export const AnswersResolvePanel = (props: {
   inModal?: boolean
 }) => {
   const { contract, onClose, inModal } = props
-  const answers = useAnswersCpmm(contract.id) ?? contract.answers
+  const answers = contract.answers
 
   const user = useUser()
 

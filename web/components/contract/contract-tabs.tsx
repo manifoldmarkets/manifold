@@ -261,7 +261,11 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
             ? -Infinity
             : c.hidden
             ? Infinity
-            : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
+            : -(
+                (c.bountyAwarded ?? 0) * 1000 +
+                (c.likes ?? 0) -
+                (c.dislikes ?? 0)
+              )
       : sort === 'Yes bets'
       ? (c: ContractComment) => -(c.betReplyAmountsByOutcome?.['YES'] ?? 0)
       : sort === 'No bets'

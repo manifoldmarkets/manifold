@@ -28,7 +28,6 @@ import {
   DEFAULT_CONTRACT_TYPES,
   DEFAULT_FILTER,
   DEFAULT_FILTERS,
-  DEFAULT_POLL_SORTS,
   DEFAULT_SORT,
   DEFAULT_SORTS,
   DEFAULT_TIER,
@@ -123,12 +122,8 @@ export function ContractFilters(props: {
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
 
-  const sortItems =
-    contractType == 'BOUNTIED_QUESTION'
-      ? DEFAULT_BOUNTY_SORTS
-      : contractType == 'POLL'
-      ? DEFAULT_POLL_SORTS
-      : []
+  const extraSortOptions =
+    contractType == 'BOUNTIED_QUESTION' ? DEFAULT_BOUNTY_SORTS : []
 
   const [openFilterModal, setOpenFilterModal] = useState(false)
 
@@ -172,8 +167,9 @@ export function ContractFilters(props: {
             onClick={() => {
               if (sort === 'score') {
                 selectSort('freshness-score')
+              } else {
+                selectSort('score')
               }
-              selectSort('score')
             }}
           >
             Best
@@ -190,8 +186,9 @@ export function ContractFilters(props: {
             onClick={() => {
               if (sort === 'freshness-score') {
                 selectSort('score')
+              } else {
+                selectSort('freshness-score')
               }
-              selectSort('freshness-score')
             }}
           >
             Hot
@@ -208,14 +205,15 @@ export function ContractFilters(props: {
             onClick={() => {
               if (sort === 'newest') {
                 selectSort('score')
+              } else {
+                selectSort('newest')
               }
-              selectSort('newest')
             }}
           >
             New
           </button>
         </Row>
-        {sortItems.map((sortValue) => (
+        {extraSortOptions.map((sortValue) => (
           <FilterPill
             key={sortValue}
             selected={sortValue === sort}
@@ -230,6 +228,25 @@ export function ContractFilters(props: {
             {getLabelFromValue(SORTS, sortValue)}
           </FilterPill>
         ))}
+        <button
+          key="closing"
+          className={clsx(
+            'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
+            filter == 'closing'
+              ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+              : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
+            className
+          )}
+          onClick={() => {
+            if (filter === 'closing') {
+              selectFilter('open')
+            } else {
+              selectFilter('closing')
+            }
+          }}
+        >
+          Closing
+        </button>
         {initialTopics && !topicSlug && (
           <TopicDropdownPill
             initialTopics={initialTopics}

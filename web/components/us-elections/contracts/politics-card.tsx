@@ -13,7 +13,7 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { SweepsToggle } from 'web/components/sweeps/sweeps-toggle'
 import { ClickFrame } from 'web/components/widgets/click-frame'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { track } from 'web/lib/service/analytics'
 import { CandidatePanel } from './candidates-panel/candidates-panel'
 import { SmallCandidatePanel } from './candidates-panel/small-candidate-panel'
@@ -49,7 +49,7 @@ export function PoliticsCard(props: {
     includeHead,
   } = props
 
-  const contract = useLiveContractWithAnswers(props.contract)
+  const contract = useLiveContract(props.contract)
 
   const path = contractPath(contract)
 

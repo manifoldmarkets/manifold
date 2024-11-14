@@ -1,4 +1,13 @@
-import { Dictionary, groupBy, min, orderBy, sum, sumBy, uniq } from 'lodash'
+import {
+  cloneDeep,
+  Dictionary,
+  groupBy,
+  min,
+  orderBy,
+  sum,
+  sumBy,
+  uniq,
+} from 'lodash'
 import {
   calculatePayout,
   calculateTotalSpentAndShares,
@@ -415,11 +424,13 @@ export const calculateAnswerMetricsWithNewBetsOnly = (
 
   return Object.entries(betsByUser).flatMap(([userId, bets]) => {
     // If it's a multi market, we need to summarize the stats for the null answer
-    const oldSummary = userMetrics.find(
-      (m) =>
-        m.answerId === null &&
-        m.userId === userId &&
-        m.contractId === contractId
+    const oldSummary = cloneDeep(
+      userMetrics.find(
+        (m) =>
+          m.answerId === null &&
+          m.userId === userId &&
+          m.contractId === contractId
+      )
     )
     const userBetsByAnswer = groupBy(bets, 'answerId')
     const newMetrics = Object.entries(userBetsByAnswer).map(

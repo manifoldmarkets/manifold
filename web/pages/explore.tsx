@@ -27,7 +27,7 @@ export default function Explore() {
         <LoadingCards />
       ) : (
         <Col className="mt-2 w-full items-center self-center pb-4 sm:px-4">
-          {user && <LiveGeneratedFeed userId={user.id} reload={false} />}
+          {user && <LiveGeneratedFeed userId={user.id} />}
         </Col>
       )}
     </Page>

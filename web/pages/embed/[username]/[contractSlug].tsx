@@ -38,7 +38,7 @@ import { PollPanel } from 'web/components/poll/poll-panel'
 import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
 import { QRCode } from 'web/components/widgets/qr-code'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { track } from 'web/lib/service/analytics'
 import { getBetPoints } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
@@ -110,10 +110,10 @@ export default function ContractEmbedPage(props: {
   const [isCash, setIsCash] = useState(false)
   const { cashContract, points, multiPoints, cashPoints } = props
 
-  const contract = useLiveContractWithAnswers(props.contract)
+  const contract = useLiveContract(props.contract)
   const liveCashContract = cashContract
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useLiveContractWithAnswers(cashContract)
+      useLiveContract(cashContract)
     : null
 
   const router = useRouter()

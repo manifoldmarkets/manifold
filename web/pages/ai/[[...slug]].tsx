@@ -26,7 +26,7 @@ import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { getContract } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 
@@ -121,7 +121,7 @@ function MultiDashboard(props: MultiDashboardProps) {
     ENDPOINT,
     TOP_SLUG
   )
-  const whenAgi = useLiveContractWithAnswers(props.whenAgi)
+  const whenAgi = useLiveContract(props.whenAgi)
 
   const expectedValueAGI = getExpectedValue(whenAgi)
   const eventYear = Math.floor(expectedValueAGI)

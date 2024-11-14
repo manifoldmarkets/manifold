@@ -5,11 +5,11 @@ import { getPublicContractIdsInTopics } from 'web/lib/supabase/contracts'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { difference, uniqBy } from 'lodash'
 import { useApiSubscription } from './use-api-subscription'
-import { useAnswersCpmm } from './use-answers'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsPageVisible } from './use-page-visible'
 import { api } from 'web/lib/api/api'
 import { db } from 'web/lib/supabase/db'
+import { useBatchedGetter } from './use-batched-getter'
+import { Answer } from 'common/answer'
 
 export const usePublicContracts = (
   contractIds: string[] | undefined,
@@ -94,43 +94,63 @@ export function useLiveAllNewContracts(limit: number) {
 }
 
 export function useLiveContract<C extends Contract = Contract>(initial: C) {
-  const [contract, setContract] = usePersistentInMemoryState<C>(
+  const isPageVisible = useIsPageVisible()
+  // ian: Batching is helpful on pages like /browse
+  const [contract, setContract] = useBatchedGetter<C>(
+    'markets',
+    initial.id,
     initial,
-    `contract-${initial.id}`
+    isPageVisible
   )
 
-  const isPageVisible = useIsPageVisible()
-
-  useEffect(() => {
-    if (isPageVisible) {
-      getContract(db, initial.id).then((result) => {
-        if (result) setContract(result as C)
+  useApiSubscription({
+    topics: [`contract/${initial.id}/new-answer`],
+    enabled: initial.mechanism === 'cpmm-multi-1',
+    onBroadcast: ({ data }) => {
+      setContract((contract) => {
+        return {
+          ...contract,
+          answers: [
+            ...('answers' in contract ? contract.answers : []),
+            data.answer as Answer,
+          ],
+        }
       })
-    }
-  }, [initial.id, isPageVisible])
+    },
+  })
+
+  useApiSubscription({
+    topics: [`contract/${initial.id}/updated-answers`],
+    enabled: initial.mechanism === 'cpmm-multi-1',
+    onBroadcast: ({ data }) => {
+      const newAnswerUpdates = data.answers as (Partial<Answer> & {
+        id: string
+      })[]
+      setContract((contract) => {
+        return {
+          ...contract,
+          answers: ('answers' in contract ? contract.answers : []).map(
+            (answer) => {
+              const update = newAnswerUpdates.find(
+                (newAnswer) => newAnswer.id === answer.id
+              )
+              if (!update) return answer
+              return { ...answer, ...update }
+            }
+          ),
+        }
+      })
+    },
+  })
 
   useApiSubscription({
     topics: [`contract/${initial.id}`],
     onBroadcast: ({ data }) => {
-      setContract((contract) => ({ ...contract, ...(data.contract as C) }))
+      setContract((contract) => {
+        return { ...contract, ...(data.contract as C) }
+      })
     },
   })
 
-  return contract
-}
-
-export function useLiveContractWithAnswers<C extends Contract = Contract>(
-  initial: C
-) {
-  const contract = useLiveContract(initial)
-
-  if (contract.mechanism === 'cpmm-multi-1') {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const answers = useAnswersCpmm(contract.id)
-    if (answers) {
-      contract.answers = answers
-    }
-  }
-
-  return contract
+  return contract ?? initial
 }

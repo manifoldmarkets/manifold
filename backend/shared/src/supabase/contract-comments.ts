@@ -37,7 +37,7 @@ export async function getCommentsDirect(
   const { userId, contractId, limit = 5000, page = 0 } = filters
   return await pg.map(
     `
-        select cc.data, likes from contract_comments cc
+        select cc.data, likes, dislikes from contract_comments cc
           join contracts on cc.contract_id = contracts.id
         where contracts.visibility = 'public'
           and ($3 is null or contract_id = $3)

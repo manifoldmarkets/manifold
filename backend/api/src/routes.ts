@@ -133,6 +133,7 @@ import { getLeaderboard } from './get-leaderboard'
 import { toggleSystemTradingStatus } from './toggle-system-status'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
 import { getDailyChangedMetricsAndContracts } from './get-daily-changed-metrics-and-contracts'
+import { getMarketsByIds } from './get-markets'
 import { getTopicTopics } from './get-topic-topics'
 import { getTopicDashboards } from './get-topic-dashboards'
 
@@ -174,6 +175,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   groups: getGroups,
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
+  'markets-by-ids': getMarketsByIds,
   'slug/:slug': getMarket,
   'market/:contractId/update': updateMarket,
   'market/:contractId/close': closeMarket,

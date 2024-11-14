@@ -45,7 +45,7 @@ import {
 import { SizedContainer } from 'web/components/sized-container'
 import { useAnnotateChartTools } from 'web/hooks/use-chart-annotations'
 import { useChartPositions } from 'web/hooks/use-chart-positions'
-import { useLiveContractWithAnswers } from 'web/hooks/use-contract'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useUser } from 'web/hooks/use-user'
 import {
@@ -775,7 +775,7 @@ const BinaryChoiceOverview = (props: {
 }
 
 export const SimpleMultiOverview = (props: { contract: CPMMMultiContract }) => {
-  const contract = useLiveContractWithAnswers(props.contract)
+  const contract = useLiveContract(props.contract)
   const user = useUser()
   const defaultSort = getDefaultSort(contract)
 

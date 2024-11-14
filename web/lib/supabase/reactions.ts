@@ -1,27 +1,31 @@
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { api } from '../api/api'
-import { ReactionContentTypes } from 'common/reaction'
+import { ReactionContentTypes, ReactionType } from 'common/reaction'
 
-export const unLike = async (
+export const unreact = async (
   contentId: string,
-  contentType: ReactionContentTypes
+  contentType: ReactionContentTypes,
+  reactionType: ReactionType
 ) => {
   api('react', {
     remove: true,
     contentId,
     contentType,
+    reactionType,
   })
 }
 
-export const like = async (
+export const react = async (
   contentId: string,
-  contentType: ReactionContentTypes
+  contentType: ReactionContentTypes,
+  reactionType: ReactionType
 ) => {
   api('react', {
     remove: false,
     contentId,
     contentType,
+    reactionType,
   })
 }
 
