@@ -11,6 +11,7 @@ import { BsPeopleFill } from 'react-icons/bs'
 import { SEO } from 'web/components/SEO'
 import { Button, IconButton } from 'web/components/buttons/button'
 import { JSONEmpty } from 'web/components/contract/contract-description'
+import { DashboardCards } from 'web/components/dashboard/dashboard-cards'
 import { DashboardText } from 'web/components/dashboard/dashboard-text-card'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -32,12 +33,14 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
   }
 
   const { above, below } = await api('group/:slug/groups', { slug: topicSlug })
+  const dashboards = await api('group/:slug/dashboards', { slug: topicSlug })
 
   return {
     props: {
       topic: removeUndefinedProps(topic),
       above,
       below,
+      dashboards,
     },
     revalidate: 240,
   }
@@ -51,8 +54,9 @@ export default function TopicPage(props: {
   topic: Group
   above: LiteGroup[]
   below: LiteGroup[]
+  dashboards: { id: string; title: string; slug: string; creatorId: string }[]
 }) {
-  const { topic, above, below } = props
+  const { topic, above, below, dashboards } = props
 
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -90,6 +94,7 @@ export default function TopicPage(props: {
         <Details topic={topic} />
         <Col className="w-full">
           <QueryUncontrolledTabs
+            className="mb-4"
             tabs={buildArray(
               showAbout && {
                 title: 'About',
@@ -122,7 +127,7 @@ export default function TopicPage(props: {
                 title: 'Questions',
                 content: (
                   <SupabaseSearch
-                    headerClassName={'pt-4 bg-canvas-50'}
+                    headerClassName={'bg-canvas-50'}
                     persistPrefix="group-search"
                     additionalFilter={{
                       excludeContractIds: privateUser?.blockedContractIds,
@@ -134,6 +139,10 @@ export default function TopicPage(props: {
                     topicSlug={topic.slug}
                   />
                 ),
+              },
+              dashboards.length && {
+                title: 'Dashboards',
+                content: <DashboardCards dashboards={dashboards} />,
               }
             )}
           />

@@ -437,6 +437,19 @@ export const API = (_apiTypeCheck = {
     returns: {} as { above: LiteGroup[]; below: LiteGroup[] },
     props: z.object({ slug: z.string() }).strict(),
   },
+  'group/:slug/dashboards': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as {
+      id: string
+      title: string
+      slug: string
+      creatorId: string
+    }[],
+    props: z.object({ slug: z.string() }).strict(),
+  },
   'group/by-id/:id/groups': {
     method: 'GET',
     visibility: 'public',

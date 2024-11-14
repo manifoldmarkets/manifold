@@ -9,9 +9,12 @@ import { ClickFrame } from '../widgets/click-frame'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { UserHovercard } from '../user/user-hovercard'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+
+type LiteDashboard = Pick<Dashboard, 'id' | 'title' | 'slug' | 'creatorId'>
 
 export function DashboardCards(props: {
-  dashboards?: Dashboard[]
+  dashboards?: LiteDashboard[]
   loadMore?: () => Promise<boolean>
 }) {
   const { dashboards, loadMore } = props
@@ -24,7 +27,7 @@ export function DashboardCards(props: {
   return (
     <>
       <Col className="gap-2">
-        {dashboards.map((dashboard: Dashboard) => (
+        {dashboards.map((dashboard) => (
           <DashboardCard key={dashboard.id} dashboard={dashboard} />
         ))}
       </Col>
@@ -33,9 +36,11 @@ export function DashboardCards(props: {
   )
 }
 
-function DashboardCard(props: { dashboard: Dashboard }) {
-  const { id, title, slug, creatorId, creatorAvatarUrl, creatorUsername } =
-    props.dashboard
+function DashboardCard(props: { dashboard: LiteDashboard }) {
+  const { id, title, slug, creatorId } = props.dashboard
+
+  const creator = useDisplayUserById(creatorId)
+
   const router = useRouter()
 
   const href = `/news/${slug}`
@@ -54,8 +59,8 @@ function DashboardCard(props: { dashboard: Dashboard }) {
             <Avatar
               size={'xs'}
               className={'mr-0.5'}
-              avatarUrl={creatorAvatarUrl}
-              username={creatorUsername}
+              avatarUrl={creator?.avatarUrl}
+              username={creator?.username}
               noLink
             />
           </UserHovercard>
