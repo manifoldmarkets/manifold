@@ -380,7 +380,7 @@ function UserReactedPopup(props: {
 
   return (
     <Col className="min-w-[6rem] items-start">
-      <div className="mb-1 font-bold">Like</div>
+      <div className="mb-1 font-bold">{capitalize(reactionType)}</div>
       {shown.map((u, i) => {
         return <UserReactedItem key={i} userInfo={u} />
       })}
