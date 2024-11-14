@@ -205,8 +205,8 @@ const TopicsSidebar = (props: {
   const onRemoveAbove = (topic: LiteGroup) => {
     setAbove(above.filter((g) => g.id !== topic.id))
     api('group/by-id/:topId/group/:bottomId', {
-      topId: props.topicId,
-      bottomId: topic.id,
+      topId: topic.id,
+      bottomId: props.topicId,
       remove: true,
     })
   }
@@ -222,8 +222,8 @@ const TopicsSidebar = (props: {
   const onRemoveBelow = (topic: LiteGroup) => {
     setBelow(below.filter((g) => g.id !== topic.id))
     api('group/by-id/:topId/group/:bottomId', {
-      topId: topic.id,
-      bottomId: props.topicId,
+      topId: props.topicId,
+      bottomId: topic.id,
       remove: true,
     })
   }
@@ -241,7 +241,7 @@ const TopicsSidebar = (props: {
         <TopicRow
           key={t.id}
           topic={t}
-          onRemove={canEdit ? onRemoveBelow : undefined}
+          onRemove={canEdit ? onRemoveAbove : undefined}
         />
       ))}
 
@@ -264,7 +264,7 @@ const TopicsSidebar = (props: {
         <TopicRow
           key={t.id}
           topic={t}
-          onRemove={canEdit ? onRemoveAbove : undefined}
+          onRemove={canEdit ? onRemoveBelow : undefined}
         />
       ))}
 
