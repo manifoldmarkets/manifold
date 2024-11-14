@@ -97,9 +97,9 @@ export type Sort = (typeof SORTS)[number]['value']
 export const FILTERS = [
   { label: 'Any status', value: 'all' },
   { label: 'Open', value: 'open' },
-  { label: 'Closing this month', value: 'closing-this-month' },
-  { label: 'Closing next month', value: 'closing-next-month' },
-  { label: 'Closing in 30 days', value: 'closing' },
+  { label: 'Closing in 7 days', value: 'closing-week' },
+  { label: 'Closing in 30 days', value: 'closing-month' },
+  { label: 'Closing in 90 days', value: 'closing-90-days' },
   { label: 'Closed', value: 'closed' },
   { label: 'Resolved', value: 'resolved' },
 ] as const

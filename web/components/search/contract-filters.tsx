@@ -232,16 +232,16 @@ export function ContractFilters(props: {
           key="closing"
           className={clsx(
             'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
-            filter == 'closing'
+            filter == 'closing-month'
               ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
               : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
             className
           )}
           onClick={() => {
-            if (filter === 'closing') {
+            if (filter === 'closing-month') {
               selectFilter('open')
             } else {
-              selectFilter('closing')
+              selectFilter('closing-month')
             }
           }}
         >

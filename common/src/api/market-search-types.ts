@@ -8,9 +8,9 @@ export const searchProps = z
     filter: z
       .union([
         z.literal('open'),
-        z.literal('closing-this-month'),
-        z.literal('closing-next-month'),
-        z.literal('closing'),
+        z.literal('closing-90-days'),
+        z.literal('closing-week'),
+        z.literal('closing-month'),
         z.literal('closed'),
         z.literal('resolved'),
         z.literal('all'),
