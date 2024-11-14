@@ -10,7 +10,8 @@ export const getGroupDashboards: APIHandler<'group/:slug/dashboards'> = async ({
     `select d.id, d.title, d.slug, d.creator_id from dashboards d
     join dashboard_groups dg on d.id = dg.dashboard_id
     join groups g on dg.group_id = g.id
-    where g.slug = $1`,
+    where g.slug = $1
+    and d.visibility = 'public'`,
     [slug],
     (row) => ({
       id: row.id,
