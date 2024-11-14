@@ -1,4 +1,5 @@
 import { XIcon } from '@heroicons/react/outline'
+import { TopicLeaderboard } from 'web/components/topics/topic-leaderboard'
 import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { isAdminId, isModId } from 'common/envs/constants'
@@ -143,6 +144,10 @@ export default function TopicPage(props: {
               dashboards.length && {
                 title: 'Dashboards',
                 content: <DashboardCards dashboards={dashboards} />,
+              },
+              {
+                title: 'Leaderboard',
+                content: <TopicLeaderboard topicId={topic.id} />,
               }
             )}
           />

@@ -9,8 +9,15 @@ export function SweepsToggle(props: {
   isPlay?: boolean
   onClick?: () => void
   isSmall?: boolean
+  className?: string
 }) {
-  const { sweepsEnabled, isPlay: isPlayProp, onClick, isSmall } = props
+  const {
+    sweepsEnabled,
+    isPlay: isPlayProp,
+    onClick,
+    isSmall,
+    className,
+  } = props
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
   const isPlay =
     isPlayProp !== undefined ? isPlayProp : sweepsEnabled ? prefersPlay : true
@@ -43,7 +50,8 @@ export function SweepsToggle(props: {
             : 'border-amber-500 dark:border-amber-200',
           sweepsEnabled
             ? ''
-            : '!dark:border-gray-400 cursor-not-allowed !border-gray-400 opacity-60' // Greys out the button when disabled
+            : '!dark:border-gray-400 cursor-not-allowed !border-gray-400 opacity-60', // Greys out the button when disabled
+          className
         )}
         onClick={handleClick}
       >
