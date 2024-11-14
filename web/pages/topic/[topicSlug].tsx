@@ -100,6 +100,7 @@ export default function TopicPage(props: {
         <Col className="w-full">
           <QueryUncontrolledTabs
             className="mb-4"
+            defaultIndex={showAbout && user ? 1 : 0}
             tabs={buildArray(
               showAbout && {
                 title: 'About',
