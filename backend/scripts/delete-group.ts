@@ -2,11 +2,7 @@ import { updateGroupLinksOnContracts } from 'merge-groups'
 import { runScript } from 'run-script'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
-async function deleteGroup(
-  pg: SupabaseDirectClient,
-  firestore: any,
-  slug: string
-) {
+async function deleteGroup(pg: SupabaseDirectClient, slug: string) {
   const groupId = await pg.one(
     'select id from groups where slug = $1',
     [slug],
@@ -28,7 +24,7 @@ async function deleteGroup(
     console.log('removing group from contracts')
     await pg.none('delete from group_contracts where group_id = $1', [groupId])
     console.log('correcting contract group slugs')
-    await updateGroupLinksOnContracts(pg, firestore, contracts)
+    await updateGroupLinksOnContracts(pg, contracts)
   }
 
   console.log('removing group members')
@@ -43,7 +39,7 @@ if (require.main === module) {
     process.exit(1)
   }
 
-  runScript(async ({ pg, firestore }) => {
-    await deleteGroup(pg, firestore, process.argv[2])
+  runScript(async ({ pg }) => {
+    await deleteGroup(pg, process.argv[2])
   })
 }
