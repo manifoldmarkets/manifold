@@ -149,70 +149,73 @@ export function PriceTile(props: {
   const tile = (
     <button
       className={clsx(
-        'group relative flex h-fit w-full flex-col items-center rounded text-center shadow transition-all ',
+        ' bg-canvas-0 group relative flex h-fit w-full flex-col items-center rounded text-center shadow transition-all ',
         disabled
           ? 'pointer-events-none cursor-not-allowed opacity-50'
-          : 'opacity-90 ring-2 ring-indigo-600 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
-        isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait',
-        newUsersOnly && 'border-4 border-green-500 '
+          : 'opacity-90 ring-2 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
+        newUsersOnly ? ' ring-green-600 ' : 'ring-indigo-600',
+        isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait'
       )}
       type={useStripe ? 'submit' : 'button'}
       onClick={onClickHandler}
     >
       {originalPriceInDollars && originalPriceInDollars !== priceInDollars && (
-        <div
-          className="absolute right-0 top-0
-        whitespace-nowrap  bg-green-500 px-2
-         py-0.5 text-white transition-colors
-           "
+        <Col
+          className={clsx(
+            'absolute -right-2 -top-2 z-10',
+            'rounded-md bg-green-600 px-2 py-1',
+            'text-center text-white'
+          )}
         >
-          {(
-            ((originalPriceInDollars - priceInDollars) /
-              originalPriceInDollars) *
-            100
-          ).toFixed(0)}
-          % off
-        </div>
+          <div className="font-semibold">
+            {Math.round(
+              ((originalPriceInDollars - priceInDollars) /
+                originalPriceInDollars) *
+                100
+            )}
+            % off
+          </div>
+          <div className="text-xs">Limited time</div>
+        </Col>
       )}
-      <Col
-        className={'bg-canvas-0 w-full items-center rounded-t px-4 pb-2 pt-4'}
-      >
+      <Col className={' w-full items-center rounded-t px-4 pb-2 pt-4'}>
         <Image
           src={BUY_MANA_GRAPHICS[Math.min(index, BUY_MANA_GRAPHICS.length - 1)]}
           alt={`${shortenNumber(mana)} mana`}
           className="100%"
-          width={80}
-          height={80}
+          width={120}
+          height={120}
         />
 
-        <div className="-mt-1 text-xl font-semibold text-violet-600 dark:text-violet-400">
+        <div className="text-ink-1000 -mt-5 text-lg font-semibold">
           Ṁ{shortenNumber(mana)}{' '}
         </div>
+        {bonusInDollars > 0 && (
+          <Row
+            className={clsx(
+              `mx-auto items-center justify-center gap-1 whitespace-nowrap text-sm text-amber-600 dark:text-amber-400 `
+            )}
+          >
+            <span>+</span>
+            <CoinNumber
+              coinType="sweepies"
+              className="text-lg font-bold"
+              amount={bonusInDollars}
+            />{' '}
+            <span>free</span>
+          </Row>
+        )}
       </Col>
-      {bonusInDollars > 0 && (
-        <Row
-          className={clsx(
-            `w-full items-center justify-center gap-1 whitespace-nowrap
-       bg-amber-100 px-2 py-0.5 text-sm
-         text-amber-800 transition-colors group-hover:bg-amber-200
-          group-hover:text-amber-900 dark:bg-amber-600 dark:text-white
-           group-hover:dark:bg-amber-500 group-hover:dark:text-white`,
-            !newUsersOnly && 'shadow'
-          )}
-        >
-          <span>+</span>
-          <CoinNumber
-            coinType="sweepies"
-            className="text-lg font-bold"
-            amount={bonusInDollars}
-          />{' '}
-          <span>free</span>
-        </Row>
-      )}
-      <div className="w-full bg-indigo-600 px-4 py-1 text-xl font-semibold text-white">
+
+      <div
+        className={clsx(
+          'w-full rounded-b px-4 py-1 text-lg font-semibold text-white sm:text-xl',
+          newUsersOnly ? ' bg-green-600 ' : 'bg-indigo-600'
+        )}
+      >
         Buy{' '}
         {originalPriceInDollars && (
-          <span className="font-normal text-slate-400 line-through">
+          <span className="font-normal text-neutral-300 line-through">
             -${originalPriceInDollars}-
           </span>
         )}{' '}
