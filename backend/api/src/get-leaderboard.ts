@@ -11,6 +11,7 @@ import {
   join,
   groupBy,
 } from 'shared/supabase/sql-builder'
+import { assertUnreachable } from 'common/util/types'
 
 export const getLeaderboard: APIHandler<'leaderboard'> = async ({
   groupId,
@@ -84,10 +85,17 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     where('c.token = ${token}', { token }),
 
     groupId &&
-      where(
-        'c.id in (select contract_id from group_contracts where group_id = ${groupId})',
-        { groupId }
-      ),
+      (token === 'MANA'
+        ? where(
+            `c.id in (select contract_id from group_contracts where group_id = $<groupId>)`,
+            { groupId }
+          )
+        : token === 'CASH'
+        ? where(
+            `c.data->>'siblingContractId' in (select contract_id from group_contracts where group_id = $<groupId>)`,
+            { groupId }
+          )
+        : assertUnreachable(token)),
     orderBy(kind === 'loss' ? 'score asc' : 'score desc nulls last'),
     limit(limitValue)
   )
