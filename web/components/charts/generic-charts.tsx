@@ -416,6 +416,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     chartPositions = [],
     setHoveredChartPosition,
     hoveredChartPosition,
+    yKind = 'percent',
   } = props
 
   useLayoutEffect(() => {
@@ -453,10 +454,12 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis = axisRight<number>(yScale)
       .tickValues(yTickValues)
-      .tickFormat((n) => formatPct(n))
+      .tickFormat((n) =>
+        yKind === 'percent' ? formatPct(n) : formatWithCommas(Math.round(n))
+      )
 
     return { xAxis, yAxis }
-  }, [w, h, xScale, yScale])
+  }, [w, h, xScale, yScale, yKind])
 
   const sortedLines = useMemo(
     () =>
