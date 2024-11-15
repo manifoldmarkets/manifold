@@ -154,20 +154,23 @@ export function UserBetsTable(props: { user: User }) {
     setPage(0)
   }
 
-  const isNotYou = !signedInUser || signedInUser.id !== user.id
+  const isNotYou = signedInUser == null || signedInUser.id !== user.id
 
-  const onSetTokenFilter = (f: BetTokenFilter) => {
+  const onSetTokenFilter = (
+    f: BetTokenFilter,
+    triggeredByAbsoluteToggle?: boolean
+  ) => {
     if (tokenFilter === f) return
     setTokenFilter(f)
     setPage(0)
-    if (isNotYou) {
+    if (isNotYou && !triggeredByAbsoluteToggle) {
       setPrefersPlay(f == 'CASH' ? false : true)
     }
   }
 
   useEffect(() => {
     if (isNotYou) {
-      onSetTokenFilter(prefersPlay ? 'ALL' : 'CASH')
+      onSetTokenFilter(prefersPlay ? 'ALL' : 'CASH', true)
     }
   }, [prefersPlay])
 
