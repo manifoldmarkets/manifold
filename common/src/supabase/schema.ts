@@ -560,6 +560,7 @@ export type Database = {
           start_date: string
           w1: number | null
           wau: number | null
+          topic_daus: Json | null
         }
         Insert: {
           activation?: number | null
@@ -586,6 +587,7 @@ export type Database = {
           start_date: string
           w1?: number | null
           wau?: number | null
+          topic_daus?: Json | null
         }
         Update: {
           activation?: number | null
@@ -612,6 +614,7 @@ export type Database = {
           start_date?: string
           w1?: number | null
           wau?: number | null
+          topic_daus?: Json | null
         }
         Relationships: []
       }

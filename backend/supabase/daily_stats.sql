@@ -24,7 +24,8 @@ create table if not exists
     signups_real numeric,
     start_date date primary key not null,
     w1 numeric,
-    wau numeric
+    wau numeric,
+    topic_daus jsonb
   );
 
 -- Row Level Security

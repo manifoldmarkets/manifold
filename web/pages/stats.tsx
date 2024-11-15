@@ -33,6 +33,7 @@ import { capitalize, partition } from 'lodash'
 import { KYCStats } from 'web/components/stats/kyc-stats'
 import { formatTimeShort } from 'web/lib/util/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { TopicDauSummary } from 'web/components/stats/topic-dau-summary'
 
 export const getStaticProps = async () => {
   try {
@@ -588,6 +589,8 @@ export function CustomAnalytics(props: {
       <p className="text-ink-500">Interactions/views</p>
       <Spacer h={4} />
       <DailyChart values={dataFor('feed_conversion')} pct />,
+      <Spacer h={8} />
+      <TopicDauSummary stats={stats} />
       <Spacer h={8} />
     </Col>
   )

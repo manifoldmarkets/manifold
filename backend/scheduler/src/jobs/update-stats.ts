@@ -440,6 +440,17 @@ export const updateActivityStats = async (
 
     await bulkUpsertStats(pg, fracDaysActiveD1ToD3)
   }
+
+  log('calculate topic DAUs')
+  const topicDaus = await calculateTopicDaus(pg, start, end)
+
+  await bulkUpsertStats(
+    pg,
+    Object.entries(topicDaus).map(([date, topicCounts]) => ({
+      start_date: date,
+      topic_daus: topicCounts,
+    }))
+  )
 }
 
 const isUserLikelySpammer = (user: StatUser) =>
@@ -511,4 +522,69 @@ const bulkUpsertStats = async (
   stats: Tables['daily_stats']['Insert'][]
 ) => {
   await bulkUpsert(pg, 'daily_stats', 'start_date', stats)
+}
+
+async function calculateTopicDaus(
+  pg: SupabaseDirectClient,
+  start: string,
+  end: string
+) {
+  // Get daily active users per group with 50+ users filter
+  const dailyGroupUsers = await pg.manyOrNone<{
+    day: string
+    group_counts: Record<string, number>
+  }>(
+    `
+    with daily_active as (
+      select 
+        date_trunc('day', b.created_time at time zone 'america/los_angeles')::date as day,
+        b.user_id,
+        gc.group_id
+      from contract_bets b
+      join contracts c on b.contract_id = c.id 
+      join group_contracts gc on c.id = gc.contract_id
+      where b.created_time >= date_to_midnight_pt($1)
+        and b.created_time < date_to_midnight_pt($2)
+      union
+      select 
+        date_trunc('day', cc.created_time at time zone 'america/los_angeles')::date as day,
+        user_id,
+        gc.group_id
+      from contract_comments cc
+      join contracts c on cc.contract_id = c.id
+      join group_contracts gc on c.id = gc.contract_id
+      where cc.created_time >= date_to_midnight_pt($1)
+        and cc.created_time < date_to_midnight_pt($2)
+      union
+      select
+        date_trunc('day', created_time at time zone 'america/los_angeles')::date as day,
+        creator_id as user_id,
+        gc.group_id
+      from contracts c
+      join group_contracts gc on c.id = gc.contract_id
+      where c.created_time >= date_to_midnight_pt($1)
+        and c.created_time < date_to_midnight_pt($2)
+    ),
+    group_counts as (
+      select 
+        day,
+        group_id,
+        count(distinct user_id) as user_count
+      from daily_active
+      group by day, group_id
+      having count(distinct user_id) > 50
+    )
+    select 
+      day,
+      jsonb_object_agg(group_id, user_count) as group_counts
+    from group_counts
+    group by day
+  `,
+    [start, end]
+  )
+
+  // Convert to the expected format
+  return Object.fromEntries(
+    dailyGroupUsers.map(({ day, group_counts }) => [day, group_counts])
+  )
 }
