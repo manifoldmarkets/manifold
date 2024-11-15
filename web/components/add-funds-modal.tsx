@@ -146,6 +146,8 @@ export function PriceTile(props: {
     }
   }
 
+  const imgSrc =
+    BUY_MANA_GRAPHICS[Math.min(index, BUY_MANA_GRAPHICS.length - 1)]
   const tile = (
     <button
       className={clsx(
@@ -180,14 +182,22 @@ export function PriceTile(props: {
       )}
       <Col className={' w-full items-center rounded-t px-4 pb-2 pt-4'}>
         <Image
-          src={BUY_MANA_GRAPHICS[Math.min(index, BUY_MANA_GRAPHICS.length - 1)]}
+          src={imgSrc}
           alt={`${shortenNumber(mana)} mana`}
           className="100%"
           width={120}
           height={120}
         />
 
-        <div className="text-ink-1000 -mt-5 text-lg font-semibold">
+        <div
+          className={clsx(
+            'text-ink-1000 text-lg font-semibold',
+            imgSrc == '/buy-mana-graphics/10k.png' ||
+              imgSrc == '/buy-mana-graphics/25k.png'
+              ? '-mt-6'
+              : '-mt-3'
+          )}
+        >
           Ṁ{shortenNumber(mana)}{' '}
         </div>
         {bonusInDollars > 0 && (
