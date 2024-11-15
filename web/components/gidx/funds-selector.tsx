@@ -78,9 +78,6 @@ export function FundsSelector(props: {
 
       {(!user || !user.sweepstakesVerified) && !isNativeIOS && (
         <>
-          <Row className="items-baseline justify-between text-3xl text-green-500">
-            Verify for limited time offer!
-          </Row>
           <Col className="mb-2 gap-2 py-4">
             <div className="grid grid-cols-2 gap-4 gap-y-6">
               {newUserPrices.map((amounts, index) => (
@@ -113,7 +110,7 @@ export function FundsSelector(props: {
             </span>
           </Row>
           <Col className="mb-2 gap-2 py-4">
-            <div className="grid grid-cols-2 gap-4 gap-y-6">
+            <div className="grid grid-cols-2 gap-4 gap-y-4">
               {newUserPrices.map((amounts, index) => (
                 <PriceTile
                   key={`price-tile-${amounts.mana}`}
