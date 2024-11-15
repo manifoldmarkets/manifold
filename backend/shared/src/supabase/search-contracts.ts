@@ -25,6 +25,7 @@ import { log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { GROUP_SCORE_PRIOR } from 'common/feed'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
+import { assertUnreachable } from 'common/util/types'
 
 const DEFAULT_THRESHOLD = 1000
 const DEBUG = false
@@ -185,7 +186,8 @@ export function getSearchContractSQL(args: {
   marketTier: TierParamsType
   token: TokenInputType
 }) {
-  const { term, sort, offset, limit, groupId, creatorId, searchType } = args
+  const { term, sort, offset, limit, groupId, creatorId, searchType, token } =
+    args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
 
@@ -212,7 +214,18 @@ export function getSearchContractSQL(args: {
     select('data, importance_score, view_count, token'),
     from('contracts'),
     groupId && [
-      join(`group_contracts gc on gc.contract_id = contracts.id`),
+      // TODO: improve performance of joining on siblingContractId
+      token === 'MANA'
+        ? join(`group_contracts gc on gc.contract_id = contracts.id`)
+        : token === 'CASH'
+        ? join(
+            `group_contracts gc on gc.contract_id = contracts.data->>'siblingContractId'`
+          )
+        : token === 'ALL'
+        ? join(
+            `group_contracts gc on (gc.contract_id = contracts.id or gc.contract_id = contracts.data->>'siblingContractId')`
+          )
+        : assertUnreachable(token),
       where('gc.group_id = $1', [groupId]),
     ],
     searchType === 'answer' &&
