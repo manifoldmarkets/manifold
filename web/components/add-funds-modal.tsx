@@ -201,6 +201,7 @@ export function PriceTile(props: {
               coinType="sweepies"
               className="text-lg font-bold"
               amount={bonusInDollars}
+              numberType="short"
             />{' '}
             <span>free</span>
           </Row>
