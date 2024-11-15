@@ -57,6 +57,7 @@ import { useSweepstakes } from '../sweepstakes-provider'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { linkClass } from '../widgets/site-link'
 import { Tooltip } from '../widgets/tooltip'
+import { floatingEqual } from 'common/util/math'
 
 type BetSort =
   | 'newest'
@@ -219,7 +220,11 @@ export function UserBetsTable(props: { user: User }) {
     .filter(FILTERS[filter])
     .filter((c) => {
       if (filter === 'all') return true
-      const { hasShares } = nullableMetricsByContract[c.id]
+      const { totalShares } = nullableMetricsByContract[c.id]
+      // The hasShares wasn't properly set for null metrics for a while, so using totalShares instead
+      const hasShares = Object.values(totalShares).some(
+        (s) => !floatingEqual(s, 0)
+      )
       if (filter === 'sold') return !hasShares
       if (filter === 'limit_bet')
         return openLimitBetsByContract[c.id]?.length > 0
