@@ -1,13 +1,12 @@
 import { PencilAltIcon } from '@heroicons/react/solid'
 import Router from 'next/router'
 import clsx from 'clsx'
-
 import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { GroupPageContent } from '../browse/[[...slug]]'
+import { BrowsePageContent } from '../browse'
 import { api } from 'web/lib/api/api'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
@@ -52,7 +51,7 @@ export default function Home(props: { headlines: Headline[] }) {
         className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
         user={user}
       />
-      <GroupPageContent slug={''} staticTopicParams={undefined} />
+      <BrowsePageContent />
       {user && (
         <button
           type="button"

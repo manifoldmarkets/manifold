@@ -429,6 +429,35 @@ export const API = (_apiTypeCheck = {
     returns: {} as Group,
     props: z.object({ slug: z.string() }),
   },
+  'group/:slug/groups': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as { above: LiteGroup[]; below: LiteGroup[] },
+    props: z.object({ slug: z.string() }).strict(),
+  },
+  'group/:slug/dashboards': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as {
+      id: string
+      title: string
+      slug: string
+      creatorId: string
+    }[],
+    props: z.object({ slug: z.string() }).strict(),
+  },
+  'group/by-id/:id/groups': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as { above: LiteGroup[]; below: LiteGroup[] },
+    props: z.object({ id: z.string() }).strict(),
+  },
   'group/by-id/:id': {
     method: 'GET',
     visibility: 'public',
@@ -473,7 +502,20 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    props: z.object({ slug: z.string() }),
+    props: z.object({ slug: z.string() }).strict(),
+  },
+  'group/by-id/:topId/group/:bottomId': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        topId: z.string(),
+        bottomId: z.string(),
+        remove: z.boolean().optional(),
+      })
+      .strict(),
+    returns: {} as { status: 'success' },
   },
   groups: {
     method: 'GET',

@@ -39,6 +39,7 @@ import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
 import { getContract } from './get-contract'
 import { addOrRemoveTopicFromContract } from './add-topic-to-market'
+import { addOrRemoveTopicFromTopic } from './add-topic-to-topic'
 import { searchUsers } from './supabase-search-users'
 import {
   searchMarketsLite,
@@ -133,6 +134,8 @@ import { toggleSystemTradingStatus } from './toggle-system-status'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
 import { getDailyChangedMetricsAndContracts } from './get-daily-changed-metrics-and-contracts'
 import { getMarketsByIds } from './get-markets'
+import { getTopicTopics } from './get-topic-topics'
+import { getTopicDashboards } from './get-topic-dashboards'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -165,6 +168,10 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'group/by-id/:id/delete': deleteGroup,
   'group/:slug/block': blockGroup,
   'group/:slug/unblock': unblockGroup,
+  'group/by-id/:topId/group/:bottomId': addOrRemoveTopicFromTopic,
+  'group/:slug/groups': getTopicTopics,
+  'group/:slug/dashboards': getTopicDashboards,
+  'group/by-id/:id/groups': getTopicTopics,
   groups: getGroups,
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),

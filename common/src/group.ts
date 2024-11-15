@@ -2,6 +2,7 @@ import { Row } from './supabase/utils'
 import { JSONContent } from '@tiptap/core'
 import { z, ZodRawShape } from 'zod'
 import { contentSchema, coerceBoolean } from './api/zod-types'
+import { pick } from 'lodash'
 
 export type Group = {
   id: string
@@ -39,7 +40,18 @@ export type LiteGroup = Pick<
 >
 
 export function groupPath(groupSlug: string) {
-  return `/browse/${groupSlug}`
+  return `/topic/${groupSlug}`
+}
+
+export function toLiteGroup(group: Group): LiteGroup {
+  return pick(group, [
+    'id',
+    'slug',
+    'name',
+    'importanceScore',
+    'privacyStatus',
+    'totalMembers',
+  ] as const)
 }
 
 // note: changing these breaks old urls. if you do, make sure to update omnisearch and opensearch.xml

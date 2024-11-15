@@ -154,26 +154,18 @@ module.exports = {
       },
       {
         source: '/group/:slug*',
-        destination: '/browse/:slug*',
+        destination: '/topic/:slug*',
         permanent: true,
+      },
+      {
+        source: '/browse/:slug*',
+        destination: '/topic/:slug*',
+        permanent: false,
       },
       {
         source: '/old-posts/:slug*',
         destination: '/post/:slug*',
         permanent: true,
-      },
-      {
-        source: '/questions:slug*',
-        has: [
-          {
-            type: 'query',
-            key: 'topic',
-            // Using a named capture group to capture the value of 'topic'
-            value: '(?<slug>.*)',
-          },
-        ],
-        permanent: true,
-        destination: '/browse/:slug', // Using the captured value here
       },
       {
         source: '/questions',

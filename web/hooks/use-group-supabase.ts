@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { Group, GroupRole, LiteGroup, Topic } from 'common/group'
+import { Group, GroupRole, Topic } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { api, getUserIsFollowingTopic } from 'web/lib/api/api'
@@ -15,7 +15,6 @@ import {
 } from 'web/lib/supabase/groups'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized } from './use-user'
-import { Row } from 'common/supabase/utils'
 import { useAsyncData } from 'web/hooks/use-async-data'
 import { isAdminId, isModId } from 'common/envs/constants'
 
