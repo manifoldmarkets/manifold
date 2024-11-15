@@ -10,24 +10,21 @@ import { getContractIdsWithMetrics } from 'common/supabase/contract-metrics'
 import { DisplayUser } from 'common/api/user-types'
 import { getDisplayUsers } from 'web/lib/supabase/users'
 
-const pendingRequests: Map<
-  string,
-  {
-    ids: Set<string>
-    filterCallback: FilterCallback<any>
-    userId?: string
-  }
-> = new Map()
+const pendingRequests: {
+  queryType: string
+  ids: Set<string>
+  userId?: string
+}[] = []
 const pendingCallbacks: Map<string, ((data: any) => void)[]> = new Map()
 
 type FilterCallback<T> = (data: T[], id: string) => T | undefined
 
 const executeBatchQuery = debounce(async () => {
-  const requestsToProcess = new Map(pendingRequests)
-  pendingRequests.clear()
+  const requestsToProcess = pendingRequests.splice(0, pendingRequests.length)
   const key = (queryType: string, id: string) => `${queryType}-${id}`
-  const batchPromises = Array.from(requestsToProcess.entries()).map(
-    async ([queryType, { ids, filterCallback, userId }]) => {
+
+  const batchPromises = requestsToProcess.map(
+    async ({ queryType, ids, userId }) => {
       if (!ids.size) return
 
       try {
@@ -68,7 +65,7 @@ const executeBatchQuery = debounce(async () => {
         ids.forEach((id) => {
           const callbacks = pendingCallbacks.get(key(queryType, id)) || []
           pendingCallbacks.delete(key(queryType, id))
-          const filteredData = filterCallback(data, id)
+          const filteredData = filtersByQueryType[queryType](data, id)
           callbacks.forEach((callback) => callback(filteredData))
         })
       } catch (error) {
@@ -80,7 +77,7 @@ const executeBatchQuery = debounce(async () => {
   await Promise.allSettled(batchPromises)
 
   // If there are new pending requests, trigger another batch
-  if (pendingRequests.size > 0) {
+  if (pendingRequests.length > 0) {
     executeBatchQuery()
   }
 }, 10)
@@ -115,17 +112,27 @@ export const useBatchedGetter = <T>(
   const key = `${queryType}-${id}`
   const [state, setState] = usePersistentInMemoryState<T>(initialValue, key)
 
+  const MAX_BATCH_SIZE = 60
+
   useEffect(() => {
     if (!enabled) return
 
-    if (!pendingRequests.has(queryType)) {
-      pendingRequests.set(queryType, {
+    // Find the latest batch for this query type
+    let currentBatch = pendingRequests.findLast(
+      (batch) => batch.queryType === queryType
+    )
+
+    // Create new batch if needed
+    if (!currentBatch || currentBatch.ids.size >= MAX_BATCH_SIZE) {
+      currentBatch = {
+        queryType,
         ids: new Set(),
-        filterCallback: filtersByQueryType[queryType],
         userId,
-      })
+      }
+      pendingRequests.push(currentBatch)
     }
-    pendingRequests.get(queryType)!.ids.add(id)
+
+    currentBatch.ids.add(id)
 
     if (!pendingCallbacks.has(key)) {
       pendingCallbacks.set(key, [])

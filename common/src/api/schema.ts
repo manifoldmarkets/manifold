@@ -504,7 +504,7 @@ export const API = (_apiTypeCheck = {
     returns: [] as Contract[],
     props: z
       .object({
-        ids: z.array(z.string()).max(200),
+        ids: z.array(z.string()).max(100),
       })
       .strict(),
   },
