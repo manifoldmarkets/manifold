@@ -1,10 +1,8 @@
 import {
-  Group,
   GroupAboutSchema,
   GroupNameSchema,
   MAX_ID_LENGTH,
 } from 'common/group'
-import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { log, getUser } from 'shared/utils'
