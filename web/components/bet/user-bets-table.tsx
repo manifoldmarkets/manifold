@@ -139,11 +139,6 @@ export function UserBetsTable(props: { user: User }) {
     'bets-list-filter'
   )
 
-  const [tokenFilter, setTokenFilter] = usePersistentLocalState<BetTokenFilter>(
-    'ALL',
-    'bets-list-token-filter'
-  )
-
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
 
   const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
@@ -155,25 +150,10 @@ export function UserBetsTable(props: { user: User }) {
     setPage(0)
   }
 
-  const isNotYou = signedInUser == null || signedInUser.id !== user.id
-
-  const onSetTokenFilter = (
-    f: BetTokenFilter,
-    triggeredByAbsoluteToggle?: boolean
-  ) => {
-    if (tokenFilter === f) return
-    setTokenFilter(f)
+  const toggleTokenFilter = () => {
+    setPrefersPlay(!prefersPlay)
     setPage(0)
-    if (isNotYou && !triggeredByAbsoluteToggle) {
-      setPrefersPlay(f == 'CASH' ? false : true)
-    }
   }
-
-  useEffect(() => {
-    if (isNotYou) {
-      onSetTokenFilter(prefersPlay ? 'ALL' : 'CASH', true)
-    }
-  }, [prefersPlay])
 
   const nullableMetricsByContract = useMemo(() => {
     if (!metricsByContract || !initialContracts) {
@@ -234,9 +214,8 @@ export function UserBetsTable(props: { user: User }) {
       return hasShares
     })
     .filter((c) => {
-      if (tokenFilter === 'CASH') return c.token === 'CASH'
-      if (tokenFilter === 'MANA') return c.token === 'MANA'
-      return true
+      if (!prefersPlay) return c.token === 'CASH'
+      else return c.token === 'MANA' || !c.token
     })
 
   return (
@@ -250,19 +229,7 @@ export function UserBetsTable(props: { user: User }) {
             onChange={(e) => setQuery(e.target.value)}
           />
           <Carousel labelsParentClassName={'gap-1'}>
-            <SweepsToggle
-              sweepsEnabled
-              onClick={() => {
-                if (tokenFilter == 'CASH') {
-                  onSetTokenFilter('ALL')
-                } else {
-                  onSetTokenFilter('CASH')
-                }
-              }}
-              isPlay={tokenFilter !== 'CASH'}
-              isSmall
-            />
-
+            <SweepsToggle sweepsEnabled isSmall onClick={toggleTokenFilter} />
             {(
               [
                 'all',
