@@ -89,11 +89,6 @@ export async function runCancelBountyTxn(
     const user = await getUser(toId, tx)
     if (!user) throw new APIError(404, `User ${toId} not found`)
 
-    await incrementBalance(tx, toId, {
-      balance: txnData.amount,
-      totalDeposits: txnData.amount,
-    })
-
     const txn = await runTxnInBetQueue(tx, txnData)
 
     const amount = contract.bountyLeft
