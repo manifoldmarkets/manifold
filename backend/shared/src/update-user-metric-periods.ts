@@ -20,15 +20,14 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 const CHUNK_SIZE = isProd() ? 400 : 10
 export async function updateUserMetricPeriods(
   userIds?: string[],
-  since?: number,
+  customSince?: number,
   skipUpdates?: boolean
 ) {
   log('Starting user period metrics update')
-  const useSince = since !== undefined
   const now = Date.now()
   const eightDays = DAY_MS * 8
-  const eightDaysAgo = now - eightDays
-  const daysAgo = Math.round(useSince ? (now - since) / DAY_MS : eightDays)
+  const since = customSince ?? now - eightDays
+  const daysAgo = Math.round((now - since) / DAY_MS)
   const pg = createSupabaseDirectClient()
 
   log('Loading active contract ids...')
@@ -38,8 +37,8 @@ export async function updateUserMetricPeriods(
         `
     with recent_bets as (
       select distinct contract_id
-    from contract_bets
-    where created_time > now() - interval '${daysAgo} day'
+      from contract_bets
+      where created_time > now() - interval '${daysAgo} day'
     ),
     recent_contracts as (
       select distinct id as contract_id
@@ -84,7 +83,7 @@ export async function updateUserMetricPeriods(
     const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
       pg,
       activeUserIds,
-      useSince ? since : eightDaysAgo
+      since
     )
     log(
       `Loaded ${sumBy(
