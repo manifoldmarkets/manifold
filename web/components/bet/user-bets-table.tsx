@@ -150,13 +150,8 @@ export function UserBetsTable(props: { user: User }) {
     setPage(0)
   }
 
-  const isNotYou = signedInUser == null || signedInUser.id !== user.id
-
-  const onSetTokenFilter = (
-    f: BetTokenFilter,
-    triggeredByAbsoluteToggle?: boolean
-  ) => {
-    setPrefersPlay(f == 'CASH' ? false : true)
+  const toggleTokenFilter = () => {
+    setPrefersPlay(!prefersPlay)
     setPage(0)
   }
 
@@ -219,9 +214,8 @@ export function UserBetsTable(props: { user: User }) {
       return hasShares
     })
     .filter((c) => {
-      if (prefersPlay) return c.token === 'MANA'
       if (!prefersPlay) return c.token === 'CASH'
-      return true
+      else return c.token === 'MANA' || !c.token
     })
 
   return (
@@ -235,7 +229,7 @@ export function UserBetsTable(props: { user: User }) {
             onChange={(e) => setQuery(e.target.value)}
           />
           <Carousel labelsParentClassName={'gap-1'}>
-            <SweepsToggle sweepsEnabled isSmall />
+            <SweepsToggle sweepsEnabled isSmall onClick={toggleTokenFilter} />
             {(
               [
                 'all',
