@@ -6,7 +6,6 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getContract, getUser } from 'shared/utils'
-import { incrementBalance } from 'shared/supabase/users'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 
