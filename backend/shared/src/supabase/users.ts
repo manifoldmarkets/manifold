@@ -133,6 +133,11 @@ export const incrementBalance = async (
     [id]
   )
 
+  console.log(
+    'USER RESULT ****************************************************',
+    result
+  )
+
   broadcastUpdatedUser(
     removeUndefinedProps({
       id,
