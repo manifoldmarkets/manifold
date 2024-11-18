@@ -75,10 +75,6 @@ export async function runCancelBountyTxn(
 ) {
   const { fromId, toId } = txnData
   const pg = createSupabaseDirectClient()
-  console.log(
-    'BOUNTY LEFT ****************************************************',
-    txnData.amount
-  )
 
   return await pg.tx(async (tx) => {
     const contract = await getContract(tx, fromId)
