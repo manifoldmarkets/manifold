@@ -197,7 +197,7 @@ export function HeaderActions(props: {
       onClick: () => setDetailsOpen(true),
       icon: <InformationCircleIcon className="h-5 w-5" />,
     },
-    ...(user
+    ...((user || privateUser) && !isCreator
       ? [
           {
             name: 'line',
