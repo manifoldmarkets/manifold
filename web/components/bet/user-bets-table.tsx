@@ -139,11 +139,6 @@ export function UserBetsTable(props: { user: User }) {
     'bets-list-filter'
   )
 
-  const [tokenFilter, setTokenFilter] = usePersistentLocalState<BetTokenFilter>(
-    'ALL',
-    'bets-list-token-filter'
-  )
-
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
 
   const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
@@ -161,19 +156,9 @@ export function UserBetsTable(props: { user: User }) {
     f: BetTokenFilter,
     triggeredByAbsoluteToggle?: boolean
   ) => {
-    if (tokenFilter === f) return
-    setTokenFilter(f)
+    setPrefersPlay(f == 'CASH' ? false : true)
     setPage(0)
-    if (isNotYou && !triggeredByAbsoluteToggle) {
-      setPrefersPlay(f == 'CASH' ? false : true)
-    }
   }
-
-  useEffect(() => {
-    if (isNotYou) {
-      onSetTokenFilter(prefersPlay ? 'ALL' : 'CASH', true)
-    }
-  }, [prefersPlay])
 
   const nullableMetricsByContract = useMemo(() => {
     if (!metricsByContract || !initialContracts) {
@@ -234,8 +219,8 @@ export function UserBetsTable(props: { user: User }) {
       return hasShares
     })
     .filter((c) => {
-      if (tokenFilter === 'CASH') return c.token === 'CASH'
-      if (tokenFilter === 'MANA') return c.token === 'MANA'
+      if (prefersPlay) return c.token === 'MANA'
+      if (!prefersPlay) return c.token === 'CASH'
       return true
     })
 
@@ -250,19 +235,7 @@ export function UserBetsTable(props: { user: User }) {
             onChange={(e) => setQuery(e.target.value)}
           />
           <Carousel labelsParentClassName={'gap-1'}>
-            <SweepsToggle
-              sweepsEnabled
-              onClick={() => {
-                if (tokenFilter == 'CASH') {
-                  onSetTokenFilter('ALL')
-                } else {
-                  onSetTokenFilter('CASH')
-                }
-              }}
-              isPlay={tokenFilter !== 'CASH'}
-              isSmall
-            />
-
+            <SweepsToggle sweepsEnabled isSmall />
             {(
               [
                 'all',
