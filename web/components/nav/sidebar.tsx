@@ -11,7 +11,6 @@ import {
   SearchIcon,
 } from '@heroicons/react/outline'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
-import { GiCapitol } from 'react-icons/gi'
 import clsx from 'clsx'
 import { useState } from 'react'
 
@@ -148,11 +147,6 @@ const getDesktopNav = (
         href: `/notifications`,
         icon: NotificationsIcon,
       },
-      {
-        name: 'US Election',
-        href: '/election',
-        icon: GiCapitol,
-      },
       // {
       //   name: 'TV',
       //   href: '/tv',
@@ -176,11 +170,6 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Browse', href: '/browse', icon: SearchIcon },
-    {
-      name: 'US Election',
-      href: '/election',
-      icon: GiCapitol,
-    },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon },
@@ -208,11 +197,6 @@ const getMobileNav = (
   const { isAdminOrMod } = options
 
   return buildArray<NavItem>(
-    {
-      name: 'US Election',
-      href: '/election',
-      icon: GiCapitol,
-    },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
 
     {
