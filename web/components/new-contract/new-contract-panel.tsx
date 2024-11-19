@@ -2,16 +2,26 @@ import clsx from 'clsx'
 import { ReactNode, useEffect, useState } from 'react'
 import { ChevronRightIcon } from '@heroicons/react/solid'
 import { User } from 'common/user'
-import { CreateableOutcomeType, add_answers_mode } from 'common/contract'
+import {
+  AIGeneratedMarket,
+  CreateableOutcomeType,
+  add_answers_mode,
+} from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ChoosingContractForm } from './choosing-contract-form'
 import { ContractParamsForm } from './contract-params-form'
-import { getContractTypeFromValue } from './create-contract-types'
+import {
+  determineOutcomeType,
+  getContractTypeFromValue,
+} from './create-contract-types'
 import { capitalize } from 'lodash'
 import { track } from 'web/lib/service/analytics'
-import { FaQuestion, FaUsers } from 'react-icons/fa'
+import { FaMagic, FaQuestion, FaUsers } from 'react-icons/fa'
 import { ExpandSection } from 'web/components/explainer-panel'
+import { AIMarketSuggestionsPanel } from './ai-market-suggestions-panel'
+import { Button } from '../buttons/button'
+import { Spacer } from '../layout/spacer'
 import { WEEK_MS } from 'common/util/time'
 
 export type NewQuestionParams = {
@@ -36,30 +46,50 @@ export type NewQuestionParams = {
 export type CreateContractStateType =
   | 'choosing contract'
   | 'filling contract params'
+  | 'ai chat'
 
 // Allow user to create a new contract
 export function NewContractPanel(props: {
   creator: User
   params?: NewQuestionParams
-  setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
 }) {
-  const { creator, params, setShouldAnswersSumToOne } = props
-  const [outcomeType, setOutcomeType] = useState<
-    CreateableOutcomeType | undefined
-  >(params?.outcomeType ?? undefined)
+  const { creator } = props
+  const [params, setParams] = useState<Partial<NewQuestionParams> | undefined>(
+    props.params
+  )
+  useEffect(() => {
+    if (props.params) {
+      setParams(props.params)
+      setState(
+        props.params.outcomeType
+          ? 'filling contract params'
+          : 'choosing contract'
+      )
+    }
+  }, [props.params])
 
   const [state, setState] = useState<CreateContractStateType>(
     params?.outcomeType ? 'filling contract params' : 'choosing contract'
   )
+  const setKeyOnParams = (key: keyof NewQuestionParams, value: any) => {
+    setParams((prev) => ({ ...(prev ?? {}), [key]: value }))
+  }
 
-  useEffect(() => {
-    if (outcomeType !== params?.outcomeType) {
-      setOutcomeType(params?.outcomeType)
-    }
-    if (params?.outcomeType) {
-      setState('filling contract params')
-    }
-  }, [params?.outcomeType])
+  // Add function to handle AI suggestions
+  const handleAISuggestion = (m: AIGeneratedMarket) => {
+    const { outcomeType, shouldSumToOne } = determineOutcomeType(m.outcomeType)
+    setParams({
+      q: m.question,
+      outcomeType,
+      answers: m.answers,
+      description: JSON.stringify(m.description),
+      closeTime: new Date(m.closeDate).getTime(),
+      visibility: 'public',
+      shouldAnswersSumToOne: shouldSumToOne,
+      addAnswersMode: m.addAnswersMode,
+    })
+    setState('filling contract params')
+  }
 
   return (
     <Col
@@ -68,26 +98,54 @@ export function NewContractPanel(props: {
       )}
     >
       <CreateStepTracker
-        outcomeType={outcomeType}
-        setState={setState}
+        outcomeType={params?.outcomeType}
         shouldAnswersSumToOne={params?.shouldAnswersSumToOne}
+        setState={setState}
+        state={state}
       />
       <Col className={clsx('px-6 py-2')}>
         {state == 'choosing contract' && (
           <>
+            <span className="mb-3 text-lg">Create from an idea:</span>
+            <Button
+              className="hover:ring-primary-200 bg-primary-600/5 cursor-pointer rounded-lg px-4 py-2 text-left transition-all hover:ring-2"
+              color="none"
+              onClick={() => setState('ai chat')}
+            >
+              <Row className="w-full items-center justify-start gap-8">
+                <FaMagic className="h-10 w-10 text-fuchsia-500" />
+                <Col className="w-full items-start gap-0.5">
+                  <div className="py-0.5 font-semibold sm:text-lg">
+                    AI-assisted creation
+                  </div>
+                  <span className="text-sm">
+                    Get high-quality questions with clear resolution criteria
+                    from your prompt
+                  </span>
+                </Col>
+              </Row>
+            </Button>
+            <Spacer h={4} />
             <ChoosingContractForm
-              outcomeType={outcomeType}
-              setOutcomeType={setOutcomeType}
+              outcomeType={params?.outcomeType}
+              setOutcomeType={(outcomeType) => {
+                setKeyOnParams('outcomeType', outcomeType)
+              }}
               shouldAnswersSumToOne={params?.shouldAnswersSumToOne}
-              setShouldAnswersSumToOne={setShouldAnswersSumToOne}
+              setShouldAnswersSumToOne={(bool) => {
+                setKeyOnParams('shouldAnswersSumToOne', bool)
+              }}
               setState={setState}
             />
             {creator.createdTime > Date.now() - WEEK_MS && <ExplainerPanel />}
           </>
         )}
-        {state == 'filling contract params' && outcomeType && (
+        {state === 'ai chat' && (
+          <AIMarketSuggestionsPanel onSelectSuggestion={handleAISuggestion} />
+        )}
+        {state == 'filling contract params' && params?.outcomeType && (
           <ContractParamsForm
-            outcomeType={outcomeType}
+            outcomeType={params.outcomeType}
             creator={creator}
             params={params}
           />
@@ -101,8 +159,9 @@ function CreateStepTracker(props: {
   outcomeType: CreateableOutcomeType | undefined
   shouldAnswersSumToOne: boolean | undefined
   setState: (state: CreateContractStateType) => void
+  state: CreateContractStateType
 }) {
-  const { outcomeType, setState, shouldAnswersSumToOne } = props
+  const { outcomeType, shouldAnswersSumToOne, setState, state } = props
   const outcomeKey =
     outcomeType == 'MULTIPLE_CHOICE'
       ? shouldAnswersSumToOne
@@ -120,23 +179,32 @@ function CreateStepTracker(props: {
         Choose question type
       </CreateStepButton>
       <ChevronRightIcon className={clsx('h-5 w-5')} />
-      <CreateStepButton
-        disabled={!outcomeType}
-        onClick={() => {
-          if (outcomeType) {
-            setState('filling contract params')
-          }
-        }}
-      >
-        {outcomeType
-          ? `${capitalize(
-              getContractTypeFromValue(
-                outcomeKey as CreateableOutcomeType,
-                'name'
+      {state === 'ai chat' ? (
+        <CreateStepButton
+          disabled={false}
+          onClick={() => setState('choosing contract')}
+        >
+          AI Assistant
+        </CreateStepButton>
+      ) : (
+        <CreateStepButton
+          disabled={!outcomeType}
+          onClick={() => {
+            if (outcomeType) {
+              setState('filling contract params')
+            }
+          }}
+        >
+          {outcomeKey
+            ? capitalize(
+                getContractTypeFromValue(
+                  outcomeKey as CreateableOutcomeType,
+                  'name'
+                )
               )
-            )}`
-          : ''}
-      </CreateStepButton>
+            : ''}
+        </CreateStepButton>
+      )}
     </Row>
   )
 }

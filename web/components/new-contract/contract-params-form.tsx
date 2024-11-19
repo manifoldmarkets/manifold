@@ -68,7 +68,7 @@ import { formatWithToken } from 'common/util/format'
 export function ContractParamsForm(props: {
   creator: User
   outcomeType: CreateableOutcomeType
-  params?: NewQuestionParams
+  params?: Partial<NewQuestionParams>
 }) {
   const { creator, params, outcomeType } = props
   const DEFAULT_TIER = CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(

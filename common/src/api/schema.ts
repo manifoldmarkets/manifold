@@ -20,7 +20,7 @@ import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { Lover } from 'common/love/lover'
-import { Contract, MarketContract } from 'common/contract'
+import { AIGeneratedMarket, Contract, MarketContract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
@@ -1803,6 +1803,17 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: [] as Txn[],
+  },
+  'generate-ai-market-suggestions': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: [] as AIGeneratedMarket[],
+    props: z
+      .object({
+        prompt: z.string(),
+      })
+      .strict(),
   },
 } as const)
 

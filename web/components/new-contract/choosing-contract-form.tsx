@@ -7,7 +7,10 @@ import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
-import { ALL_CONTRACT_TYPES } from './create-contract-types'
+import {
+  ALL_CONTRACT_TYPES,
+  determineOutcomeType,
+} from './create-contract-types'
 import { CreateContractStateType } from './new-contract-panel'
 
 export function ChoosingContractForm(props: {
@@ -24,9 +27,10 @@ export function ChoosingContractForm(props: {
     setShouldAnswersSumToOne,
     setState,
   } = props
+
   return (
     <Col>
-      <div className="text-lg">Choose your question type.</div>
+      <div className="text-lg">Or, create manually from a template:</div>
       <Spacer h={4} />
       <Col className="gap-2">
         {[
@@ -45,15 +49,10 @@ export function ChoosingContractForm(props: {
               outcomeType={outcomeType}
               shouldAnswersSumToOne={shouldAnswersSumToOne}
               onClick={() => {
-                if (value == 'INDEPENDENT_MULTIPLE_CHOICE') {
-                  setShouldAnswersSumToOne(false)
-                  setOutcomeType('MULTIPLE_CHOICE')
-                } else if (value == 'DEPENDENT_MULTIPLE_CHOICE') {
-                  setShouldAnswersSumToOne(true)
-                  setOutcomeType('MULTIPLE_CHOICE')
-                } else {
-                  setOutcomeType(value)
-                }
+                const { outcomeType, shouldSumToOne } =
+                  determineOutcomeType(value)
+                setShouldAnswersSumToOne(shouldSumToOne)
+                setOutcomeType(outcomeType)
                 setState('filling contract params')
               }}
             />

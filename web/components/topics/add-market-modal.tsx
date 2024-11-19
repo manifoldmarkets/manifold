@@ -90,15 +90,6 @@ export function NewContractFromGroup(props: { group: Group; user: User }) {
     groupIds: [group.id],
     shouldAnswersSumToOne: false,
   } as NewQuestionParams)
-  const setShouldAnswersSumToOne = (shouldAnswersSumToOne: boolean) => {
-    setParams({ ...params, shouldAnswersSumToOne: shouldAnswersSumToOne })
-  }
 
-  return (
-    <NewContractPanel
-      params={params}
-      creator={user}
-      setShouldAnswersSumToOne={setShouldAnswersSumToOne}
-    />
-  )
+  return <NewContractPanel params={params} creator={user} />
 }

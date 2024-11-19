@@ -7,7 +7,7 @@ import {
 import { Col } from 'web/components/layout/col'
 import { CgPoll } from 'react-icons/cg'
 import { GoNumber } from 'react-icons/go'
-import { OutcomeType } from 'common/contract'
+import { CreateableOutcomeType, OutcomeType } from 'common/contract'
 import { GiReceiveMoney } from 'react-icons/gi'
 import { formatMoney } from 'common/util/format'
 
@@ -81,9 +81,6 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
       </Col>
     ),
     className: 'hover:ring-teal-500/50',
-    backgroundColor: 'bg-teal-500/5',
-    selectClassName:
-      'dark:from-teal-500/20 from-teal-500/30 ring-teal-500 bg-gradient-to-br to-transparent ring-2',
   },
   POLL: {
     label: 'Poll',
@@ -92,14 +89,11 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
     descriptor: `A multiple choice question that people can vote on. Each person can only vote once.`,
     example: `Which color should I wear to prom?`,
     visual: (
-      <Col className="relative my-auto h-12 w-12 text-fuchsia-400">
+      <Col className="relative my-auto h-12 w-12 text-orange-300">
         <CgPoll className="h-12 w-12" />
       </Col>
     ),
-    className: 'hover:!ring-fuchsia-500/50',
-    backgroundColor: 'bg-fuchsia-500/5',
-    selectClassName:
-      'dark:from-fuchsia-500/20 from-fuchsia-500/30 ring-fuchsia-500 bg-gradient-to-br to-transparent ring-2',
+    className: 'hover:!ring-orange-500/50',
   },
 } as const
 
@@ -115,4 +109,22 @@ export function getContractTypeFromValue(
   return Object.keys(ALL_CONTRACT_TYPES).includes(outcomeType)
     ? ALL_CONTRACT_TYPES[outcomeType as keyof typeof ALL_CONTRACT_TYPES][key]
     : undefined
+}
+
+export const determineOutcomeType = (
+  value: keyof typeof ALL_CONTRACT_TYPES
+): {
+  outcomeType: CreateableOutcomeType
+  shouldSumToOne: boolean
+} => {
+  if (value === 'INDEPENDENT_MULTIPLE_CHOICE') {
+    return { outcomeType: 'MULTIPLE_CHOICE', shouldSumToOne: false }
+  } else if (value === 'DEPENDENT_MULTIPLE_CHOICE') {
+    return { outcomeType: 'MULTIPLE_CHOICE', shouldSumToOne: true }
+  } else {
+    return {
+      outcomeType: value,
+      shouldSumToOne: false,
+    }
+  }
 }

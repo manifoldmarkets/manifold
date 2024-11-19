@@ -34,6 +34,7 @@ export const secrets = (
     'GIDX_DEVICE_TYPE_ID',
     'GIDX_ACTIVITY_TYPE_ID',
     'ANTHROPIC_API_KEY',
+    'PERPLEXITY_API_KEY',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()

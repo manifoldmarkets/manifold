@@ -509,3 +509,22 @@ export const getAdjustedProfit = (
     ? undefined
     : -1 * profit
 }
+
+// Add the AIGeneratedMarket type definition here, before the API object
+export type AIGeneratedMarket = Pick<
+  MarketContract,
+  'question' | 'description'
+> & {
+  outcomeType:
+    | 'INDEPENDENT_MULTIPLE_CHOICE'
+    | 'DEPENDENT_MULTIPLE_CHOICE'
+    | 'BINARY'
+    | 'POLL'
+  descriptionMarkdown: string
+  closeDate: string
+  shouldAnswersSumToOne?: boolean
+  initialProb?: number
+  answers?: string[]
+  reasoning?: string
+  addAnswersMode?: add_answers_mode
+}

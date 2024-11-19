@@ -3,8 +3,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import { removeUndefinedProps } from 'common/util/object'
 
 export const models = {
-  sonnet: 'claude-3-5-sonnet-20240620' as const,
-  haiku: 'claude-3-haiku-20240307' as const,
+  sonnet: 'claude-3-5-sonnet-20241022' as const,
+  haiku: 'claude-3-5-haiku-20241022' as const,
 }
 
 export type model_types = (typeof models)[keyof typeof models]
@@ -39,7 +39,10 @@ export const promptClaudeStream = async function* (
   )
 
   for await (const chunk of stream) {
-    if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+    if (
+      chunk.type === 'content_block_delta' &&
+      chunk.delta.type === 'text_delta'
+    ) {
       yield chunk.delta.text
     }
   }

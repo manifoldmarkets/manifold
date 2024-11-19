@@ -136,6 +136,7 @@ import { getDailyChangedMetricsAndContracts } from './get-daily-changed-metrics-
 import { getMarketsByIds } from './get-markets'
 import { getTopicTopics } from './get-topic-topics'
 import { getTopicDashboards } from './get-topic-dashboards'
+import { generateAIMarketSuggestions } from './generate-ai-market-suggestions'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -285,4 +286,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'toggle-system-trading-status': toggleSystemTradingStatus,
   leaderboard: getLeaderboard,
   'get-daily-changed-metrics-and-contracts': getDailyChangedMetricsAndContracts,
+  'generate-ai-market-suggestions': generateAIMarketSuggestions,
 }
