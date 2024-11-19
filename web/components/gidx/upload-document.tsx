@@ -149,10 +149,10 @@ export const UploadDocuments = (props: {
             </option>
           ))}
         </Select>
-        {file && (
+        {file && file.type.startsWith('image/') && (
           <img
             alt={'Document'}
-            src={file ? URL.createObjectURL(file) : ''}
+            src={URL.createObjectURL(file)}
             width={500}
             height={500}
             className="bg-ink-400 flex items-center justify-center"
