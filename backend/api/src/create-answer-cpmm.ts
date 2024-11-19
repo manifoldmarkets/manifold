@@ -53,37 +53,49 @@ export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
 ) => {
   const { contractId, text } = props
   return await betsQueue.enqueueFn(
-    () => createAnswerCpmmMain(contractId, text, auth.uid),
+    () => createAnswerCpmmFull(contractId, text, auth.uid),
     [contractId, auth.uid]
   )
 }
-
-export const createAnswerCpmmMain = async (
+const createAnswerCpmmFull = async (
   contractId: string,
   text: string,
-  creatorId: string,
-  options: {
-    overrideAddAnswersMode?: add_answers_mode
-    specialLiquidityPerAnswer?: number
-    loverUserId?: string
-  } = {}
+  userId: string
 ) => {
-  const { overrideAddAnswersMode, specialLiquidityPerAnswer, loverUserId } =
-    options
   log('Received ' + contractId + ' ' + text)
+  const contract = await verifyContract(contractId, userId)
+  const response = await createAnswerCpmmMain(contract, text, userId)
 
+  // copy answer if this is sweeps question
+  if (contract.siblingContractId) {
+    const cashContract = await getContractSupabase(contract.siblingContractId)
+    if (!cashContract) throw new APIError(500, 'Cash contract not found')
+    await createAnswerCpmmMain(cashContract as any, text, userId)
+    // ignore continuation of sweepstakes answer, since don't need to notify twice
+  }
+
+  return response
+}
+
+const verifyContract = async (contractId: string, creatorId: string) => {
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
+  if (contract.token !== 'MANA') {
+    throw new APIError(
+      403,
+      'Must add answer to the mana version of the contract'
+    )
+  }
   if (contract.mechanism !== 'cpmm-multi-1')
     throw new APIError(403, 'Requires a cpmm multiple choice contract')
   if (contract.outcomeType === 'NUMBER')
     throw new APIError(403, 'Cannot create new answers for numeric contracts')
 
-  const { closeTime, shouldAnswersSumToOne } = contract
+  const { closeTime } = contract
   if (closeTime && Date.now() > closeTime)
     throw new APIError(403, 'Trading is closed')
 
-  const addAnswersMode = overrideAddAnswersMode ?? contract.addAnswersMode
+  const addAnswersMode = contract.addAnswersMode
 
   if (!addAnswersMode || addAnswersMode === 'DISABLED') {
     throw new APIError(400, 'Adding answers is disabled')
@@ -97,6 +109,16 @@ export const createAnswerCpmmMain = async (
     throw new APIError(403, 'Only the creator or an admin can create an answer')
   }
 
+  return contract
+}
+
+const createAnswerCpmmMain = async (
+  contract: Awaited<ReturnType<typeof verifyContract>>,
+  text: string,
+  creatorId: string
+) => {
+  const { shouldAnswersSumToOne } = contract
+
   const answerCost = getTieredAnswerCost(
     getTierFromLiquidity(contract, contract.totalLiquidity)
   )
@@ -107,17 +129,15 @@ export const createAnswerCpmmMain = async (
       if (!user) throw new APIError(401, 'Your account was not found')
       if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-      if (user.balance < answerCost && !specialLiquidityPerAnswer)
+      if (user.balance < answerCost)
         throw new APIError(403, 'Insufficient balance, need M' + answerCost)
 
-      if (!specialLiquidityPerAnswer) {
-        await incrementBalance(pgTrans, user.id, {
-          balance: -answerCost,
-          totalDeposits: -answerCost,
-        })
-      }
+      await incrementBalance(pgTrans, user.id, {
+        balance: -answerCost,
+        totalDeposits: -answerCost,
+      })
 
-      const answers = await getAnswersForContract(pgTrans, contractId)
+      const answers = await getAnswersForContract(pgTrans, contract.id)
       const unresolvedAnswers = answers.filter((a) => !a.resolution)
       const maxAnswers = getMaximumAnswers(shouldAnswersSumToOne)
       if (unresolvedAnswers.length >= maxAnswers) {
@@ -132,25 +152,13 @@ export const createAnswerCpmmMain = async (
       let totalLiquidity = answerCost
       let prob = 0.5
 
-      if (specialLiquidityPerAnswer) {
-        if (shouldAnswersSumToOne)
-          throw new APIError(
-            500,
-            "Can't specify specialLiquidityPerAnswer and shouldAnswersSumToOne"
-          )
-        prob = 0.02
-        poolYes = specialLiquidityPerAnswer
-        poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
-        totalLiquidity = specialLiquidityPerAnswer
-      }
-
       const id = randomString()
       const n = answers.length
       const createdTime = Date.now()
       const newAnswer: Answer = removeUndefinedProps({
         id,
         index: n,
-        contractId,
+        contractId: contract.id,
         createdTime,
         userId: user.id,
         text,
@@ -161,7 +169,6 @@ export const createAnswerCpmmMain = async (
         totalLiquidity,
         subsidyPool: 0,
         probChanges: { day: 0, week: 0, month: 0 },
-        loverUserId,
       })
 
       const updatedAnswers: Answer[] = []
@@ -180,21 +187,19 @@ export const createAnswerCpmmMain = async (
         await insertAnswer(pgTrans, newAnswer)
       }
 
-      if (!specialLiquidityPerAnswer) {
-        await updateContract(pgTrans, contractId, {
-          totalLiquidity: FieldVal.increment(answerCost),
-        })
+      await updateContract(pgTrans, contract.id, {
+        totalLiquidity: FieldVal.increment(answerCost),
+      })
 
-        const lp = getCpmmInitialLiquidity(
-          user.id,
-          contract,
-          answerCost,
-          createdTime,
-          newAnswer.id
-        )
+      const lp = getCpmmInitialLiquidity(
+        user.id,
+        contract,
+        answerCost,
+        createdTime,
+        newAnswer.id
+      )
 
-        await insertLiquidity(pgTrans, lp)
-      }
+      await insertLiquidity(pgTrans, lp)
 
       return { newAnswer, updatedAnswers, user }
     }
@@ -208,7 +213,7 @@ export const createAnswerCpmmMain = async (
       contract
     )
     const pg = createSupabaseDirectClient()
-    await followContractInternal(pg, contractId, true, creatorId)
+    await followContractInternal(pg, contract.id, true, creatorId)
   }
   return { result: { newAnswerId: newAnswer.id }, continue: continuation }
 }

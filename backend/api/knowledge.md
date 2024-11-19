@@ -9,6 +9,15 @@ This directory contains the implementation of various API endpoints for the Mani
 - We use Supabase for database operations.
 - Authentication is handled using the `APIHandler` type, which automatically manages user authentication based on the schema definition.
 
+## Mana/Sweepstakes Market Relationships
+
+- Mana markets can have sweepstakes counterpart markets (siblingContractId)
+- The mana market is the source of truth - changes to mana markets should propagate to their sweepstakes counterparts
+- Changes that need to propagate include:
+  - Adding new answers to multiple choice markets
+  - Market metadata updates
+  - Market resolution
+
 ## Adding a New API Endpoint
 
 To add a new API endpoint, follow these steps:
