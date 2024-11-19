@@ -21,6 +21,11 @@ export function getTierFromLiquidity(
 
   let numAnswers = undefined
   if ('answers' in contract) {
+    console.log(
+      'ANSWERS*************************************************',
+      contract.answers,
+      contract.answers.length
+    )
     numAnswers = contract.answers.length
   }
 
@@ -30,6 +35,7 @@ export function getTierFromLiquidity(
   for (let i = tiers.length - 1; i >= 0; i--) {
     const tier = tiers[i]
     const tierLiquidity = getTieredCost(ante, tier, outcomeType)
+
     // Return the first tier where the liquidity is greater or equal to the tier's requirement
     if (liquidity >= tierLiquidity) {
       return tier as MarketTierType
