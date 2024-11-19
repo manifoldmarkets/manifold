@@ -21,11 +21,6 @@ export function getTierFromLiquidity(
 
   let numAnswers = undefined
   if ('answers' in contract) {
-    console.log(
-      'ANSWERS*************************************************',
-      contract.answers,
-      contract.answers.length
-    )
     numAnswers = contract.answers.length
   }
 

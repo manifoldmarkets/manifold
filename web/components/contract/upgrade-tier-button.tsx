@@ -36,8 +36,6 @@ export function UpgradeTierButton(props: {
     contract.marketTier === 'crystal' ||
     getTierFromLiquidity(contract, contract.totalLiquidity) === 'crystal'
 
-  console.log(getTierFromLiquidity(contract, contract.totalLiquidity))
-
   return (
     <Button
       onClick={() => setOpen(true)}
