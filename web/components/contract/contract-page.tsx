@@ -493,7 +493,7 @@ export function ContractPageContent(props: ContractParams) {
                 isCreator={isCreator}
                 showResolver={showResolver}
                 // TODO: upgrade tier
-                contract={props.contract}
+                contract={liveContract}
               />
             )}
 

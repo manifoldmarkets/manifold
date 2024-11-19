@@ -19,7 +19,6 @@ import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
-
   return (
     <GradientContainer className="mb-8 flex w-full">
       <div className="mb-2 flex flex-wrap gap-2">
