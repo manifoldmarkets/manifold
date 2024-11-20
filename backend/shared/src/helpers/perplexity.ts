@@ -27,8 +27,12 @@ export const perplexity = async (
           content: perplexitySystemPrompt,
         },
         {
+          role: 'system',
+          content: guidelinesPrompt,
+        },
+        {
           role: 'user',
-          content: `${guidelinesPrompt}\n\nHere is the user's prompt:\n${query}`,
+          content: query,
         },
       ],
       temperature: 0.2,

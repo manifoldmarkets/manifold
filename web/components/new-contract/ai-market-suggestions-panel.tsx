@@ -11,6 +11,7 @@ import { Content } from '../widgets/editor'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { ALL_CONTRACT_TYPES } from './create-contract-types'
+import { track } from 'web/lib/service/analytics'
 
 export function AIMarketSuggestionsPanel(props: {
   onSelectSuggestion: (suggestion: AIGeneratedMarket) => void
@@ -55,6 +56,9 @@ export function AIMarketSuggestionsPanel(props: {
     market: AIGeneratedMarket,
     index: number
   ) => {
+    track('ai-market-suggestion-selected', {
+      market: market.question,
+    })
     setCreating(index)
     onSelectSuggestion(market)
     setCreating(null)
