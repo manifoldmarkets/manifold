@@ -16,7 +16,7 @@ export const generateAIMarketSuggestions: APIHandler<
   const { prompt } = props
   // TODO: if the prompt is a url, either fetch the content or use gpt4 to summarize it
 
-  const perplexityResponse = await perplexity(`${prompt}`, {
+  const perplexityResponse = await perplexity(prompt, {
     model: largePerplexityModel,
   })
   const { messages, citations } = perplexityResponse

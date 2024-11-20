@@ -8,13 +8,21 @@ EVIDENCE-BASED
 - Avoid highly unlikely scenarios
 
 QUICK RESOLUTION
+- Try to include at least one market that resolves by ${new Date(
+  Date.now() + 1 * MONTH_MS
+).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+})}, unless otherwise specified by the user
 - At least half of the markets should resolve no later than ${new Date(
   Date.now() + 3 * MONTH_MS
 ).toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
-})}. All of them should resolve no later than ${new Date(
+})}, unless otherwise specified by the user
+- None of the markets should resolve later than ${new Date(
   Date.now() + 6 * MONTH_MS
 ).toLocaleDateString('en-US', {
   year: 'numeric',
@@ -22,7 +30,7 @@ QUICK RESOLUTION
   day: 'numeric',
 })} unless otherwise specified by the user
 - Prioritize markets that resolve sooner, using leading indicators when possible, ie stock performance of a company upon earliest possible news release, etc.
-- Include markets with known, upcoming resolution dates, i.e. elections, sports events, sentencing/court dates, etc.
+- When possible, include markets with known, upcoming resolution dates, i.e. elections, sports events, sentencing/court dates, etc. as long as they are not too far in the future.
 - Be sure to include 'before [date]' or 'on [event]' in the title
 
 CLEAR RESOLUTION CRITERIA
