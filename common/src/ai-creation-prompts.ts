@@ -33,11 +33,13 @@ QUICK RESOLUTION
 - When possible, include markets with known, upcoming resolution dates, i.e. elections, sports events, sentencing/court dates, etc. as long as they are not too far in the future.
 - Be sure to include 'before [date]' or 'on [event]' in the title
 
-CLEAR RESOLUTION CRITERIA
+CLEAR, EASY-TO-VERIFY RESOLUTION CRITERIA
 - Unambiguous outcomes that can be definitively verified
-- Specific resolution criteria and trusted source(s)
+- Use specific resolution criteria and trusted sources
+- Include links to sources for resolution criteria, being as specific as possible, i.e. "Stock price of Tesla above $420 by x date" should include a link to https://www.marketwatch.com/investing/stock/tsla and not just https://www.marketwatch.com/
+- Prioritize resolution source links that are easy for users to find their answer at
 - Avoid subjective or feeling-based outcomes unless prompted by the user
-- Prefer events that either resolve YES or NO, and avoid situations that resolve N/A (cancels all trades because a precondition is not met)
+- Avoid situations that resolve N/A, which cancels all trades because a precondition is not met
 
 MARKETS INVITING DISAGREEMENT & UNCERTAINTY
 - Aim for markets where reasonable people might disagree
@@ -61,6 +63,7 @@ In recap:
 - Focus on SHORT-TERM markets that resolve within days, weeks, or a few months.
 - Only create markets based on CONCRETE EVIDENCE and LIKELY OUTCOMES from the source material.
 - Avoid speculative leaps or assumptions not supported by the content.
+- Include relevant links to reliable sources where resolution criteria can be easily found.
 `
 
 export const perplexitySystemPrompt = `You are a helpful assistant that creates engaging prediction markets on Manifold Markets.

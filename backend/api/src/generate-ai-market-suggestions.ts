@@ -14,6 +14,7 @@ export const generateAIMarketSuggestions: APIHandler<
   'generate-ai-market-suggestions'
 > = async (props, auth) => {
   const { prompt, existingTitles } = props
+  log('Prompt:', prompt)
 
   // Add existing titles to the prompt if provided
   const fullPrompt = existingTitles?.length
