@@ -18,6 +18,7 @@ export function AIMarketSuggestionsPanel(props: {
 }) {
   const { onSelectSuggestion } = props
   const [prompt, setPrompt] = usePersistentLocalState('', 'ai-chat-prompt')
+  const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState('')
   const [markets, setMarkets] = usePersistentInMemoryState<AIGeneratedMarket[]>(
     [],
     'ai-chat-form-markets'
@@ -32,14 +33,29 @@ export function AIMarketSuggestionsPanel(props: {
         setLoadingMore(true)
       } else {
         setLoadingSuggestions(true)
+        setLastGeneratedPrompt(prompt)
       }
       try {
         const existingTitles = regenerate ? markets.map((m) => m.question) : []
-        const result = await api('generate-ai-market-suggestions', {
-          prompt,
-          existingTitles,
-        })
-        setMarkets(regenerate ? [...result, ...markets] : result)
+        const [result1, result2] = await Promise.all([
+          api('generate-ai-market-suggestions', {
+            prompt,
+            existingTitles,
+          }),
+          api('generate-ai-market-suggestions-2', {
+            prompt,
+            existingTitles,
+          }),
+        ])
+
+        // Randomly sort results by promptVersion
+        const combinedResults = [...result1, ...result2].sort(
+          () => Math.random() - 0.5
+        )
+
+        setMarkets(
+          regenerate ? [...combinedResults, ...markets] : combinedResults
+        )
       } catch (e) {
         console.error(e)
       }
@@ -58,6 +74,7 @@ export function AIMarketSuggestionsPanel(props: {
   ) => {
     track('ai-market-suggestion-selected', {
       market: market.question,
+      promptVersion: market.promptVersion,
     })
     setCreating(index)
     onSelectSuggestion(market)
@@ -96,14 +113,16 @@ export function AIMarketSuggestionsPanel(props: {
         <Button
           color="indigo"
           size="lg"
-          onClick={() => getSuggestions()}
+          onClick={() => getSuggestions(prompt === lastGeneratedPrompt)}
           disabled={!prompt || loadingSuggestions || loadingMore}
         >
-          {loadingSuggestions ? (
+          {loadingSuggestions || loadingMore ? (
             <Row className="items-center gap-2">
               <LoadingIndicator />
               <span>Hold tight, this can take 30 seconds!</span>
             </Row>
+          ) : prompt === lastGeneratedPrompt ? (
+            'Generate more'
           ) : (
             'Get suggestions'
           )}
@@ -114,79 +133,82 @@ export function AIMarketSuggestionsPanel(props: {
         <Col className="gap-4">
           <Row className="items-center justify-between">
             <div className="text-ink-600 font-semibold">Suggested markets:</div>
-            <Button
-              color="indigo"
-              size="sm"
-              onClick={() => getSuggestions(true)}
-              disabled={loadingMore || loadingSuggestions}
-            >
-              {loadingMore ? (
-                <Row className="items-center gap-2">
-                  <LoadingIndicator size="sm" />
-                  <span>Hold tight, this can take 30 seconds!</span>
-                </Row>
-              ) : (
-                'Generate more'
-              )}
-            </Button>
           </Row>
-          {markets.map((market, i) => {
-            return (
-              <div key={i} className="rounded-lg border p-4">
-                <Col className="gap-2">
-                  <div className="font-semibold">{market.question}</div>
-                  {market.description && (
-                    <Content
-                      content={market.description}
-                      className="text-ink-600"
-                      size="sm"
-                    />
-                  )}
-                  <Row className="items-center justify-between">
-                    <div className="text-ink-500 text-sm">
-                      Closes: {new Date(market.closeDate).toLocaleDateString()}
-                    </div>
-                    <div className="text-ink-500 text-sm">
-                      Type: {ALL_CONTRACT_TYPES[market.outcomeType]?.name}
-                    </div>
-                  </Row>
-                  {market.reasoning && (
-                    <div className="bg-primary-50 mt-2 rounded-md p-3 text-sm">
-                      <div className="text-primary-800 mb-1 font-medium">
-                        AI's reasoning:
-                      </div>
-                      <div className="text-primary-700">{market.reasoning}</div>
-                    </div>
-                  )}
-                  <Row className="items-center justify-between">
-                    <Button
-                      color="gray"
-                      size="sm"
-                      onClick={() =>
-                        setMarkets((prev) => prev.filter((_, j) => j !== i))
-                      }
-                    >
-                      Dismiss
-                    </Button>
-                    <Button
-                      color="indigo"
-                      size="sm"
-                      onClick={() => createSuggestedMarket(market, i)}
-                      disabled={creating === i}
-                    >
-                      {creating === i ? (
-                        <LoadingIndicator />
-                      ) : (
-                        'Continue editing'
-                      )}
-                    </Button>
-                  </Row>
-                </Col>
-              </div>
-            )
-          })}
+          <MarketList
+            markets={markets}
+            setMarkets={setMarkets}
+            creating={creating}
+            createSuggestedMarket={createSuggestedMarket}
+          />
         </Col>
       )}
     </Col>
   )
 }
+
+type MarketListProps = {
+  markets: AIGeneratedMarket[]
+  setMarkets: (markets: AIGeneratedMarket[]) => void
+  creating: number | null
+  createSuggestedMarket: (market: AIGeneratedMarket, index: number) => void
+}
+
+const MarketList = ({
+  markets,
+  setMarkets,
+  creating,
+  createSuggestedMarket,
+}: MarketListProps) => (
+  <Col className="gap-4">
+    {markets.map((market, i) => (
+      <div key={i} className="rounded-lg border p-4">
+        <Col className="relative gap-2">
+          <div className="font-semibold">{market.question}</div>
+          <span className="text-ink-500 absolute -right-2 -top-2.5 text-xs">
+            v{market.promptVersion}
+          </span>
+          {market.description && (
+            <Content
+              content={market.description}
+              className="text-ink-600"
+              size="sm"
+            />
+          )}
+          <Row className="items-center justify-between">
+            <div className="text-ink-500 text-sm">
+              Closes: {new Date(market.closeDate).toLocaleDateString()}
+            </div>
+            <div className="text-ink-500 text-sm">
+              Type: {ALL_CONTRACT_TYPES[market.outcomeType]?.name}
+            </div>
+          </Row>
+          {market.reasoning && (
+            <div className="bg-primary-50 mt-2 rounded-md p-3 text-sm">
+              <div className="text-primary-800 mb-1 font-medium">
+                AI's reasoning:
+              </div>
+              <div className="text-primary-700">{market.reasoning}</div>
+            </div>
+          )}
+          <Row className="items-center justify-between">
+            <Button
+              color="gray"
+              size="sm"
+              onClick={() => setMarkets(markets.filter((_, j) => j !== i))}
+            >
+              Dismiss
+            </Button>
+            <Button
+              color="indigo"
+              size="sm"
+              onClick={() => createSuggestedMarket(market, i)}
+              disabled={creating === i}
+            >
+              {creating === i ? <LoadingIndicator /> : 'Continue editing'}
+            </Button>
+          </Row>
+        </Col>
+      </div>
+    ))}
+  </Col>
+)

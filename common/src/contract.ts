@@ -527,4 +527,5 @@ export type AIGeneratedMarket = Pick<
   answers?: string[]
   reasoning?: string
   addAnswersMode?: add_answers_mode
+  promptVersion: number
 }
