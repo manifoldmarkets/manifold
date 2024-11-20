@@ -191,17 +191,57 @@ export const ChoiceContractChart = (props: {
   const [lowestPoint, highestPoint] = useMemo(() => {
     if (!zoomY) return [0, 1]
 
-    const [minXDate, maxXDate] = zoomParams?.viewXScale.domain() ?? [null, null]
-    const minX = minXDate ? minXDate.getTime() : start
-    const maxX = maxXDate ? maxXDate.getTime() : end
+    let minX = start
+    let maxX = end
 
-    const allVisiblePoints = Object.values(graphedData).flatMap(({ points }) =>
-      points
-        .filter((p) => p.x >= minX && p.x <= (maxX ?? Infinity))
-        .map((p) => p.y)
-    )
+    if (zoomParams) {
+      const [minXDate, maxXDate] = zoomParams.viewXScale.domain()
+      minX = minXDate.getTime() - 1
+      maxX = maxXDate.getTime() + 1
+    }
 
-    const [min, max] = extent(allVisiblePoints) as [number, number]
+    let min = Infinity
+    let max = -Infinity
+
+    // Single pass through the data
+    Object.values(graphedData).forEach(({ points }) => {
+      let foundInRange = false
+      let lastTimestamp = null
+      let lastTimestampMin = Infinity
+      let lastTimestampMax = -Infinity
+
+      for (const point of points) {
+        if (point.x >= minX && point.x <= (maxX ?? Infinity)) {
+          foundInRange = true
+          min = Math.min(min, point.y)
+          max = Math.max(max, point.y)
+        } else if (point.x < minX) {
+          // If we're at a new timestamp, reset the min/max
+          if (point.x !== lastTimestamp) {
+            if (lastTimestamp !== null) {
+              min = Math.min(min, lastTimestampMin)
+              max = Math.max(max, lastTimestampMax)
+            }
+            lastTimestamp = point.x
+            lastTimestampMin = point.y
+            lastTimestampMax = point.y
+          } else {
+            // Same timestamp, update min/max
+            lastTimestampMin = Math.min(lastTimestampMin, point.y)
+            lastTimestampMax = Math.max(lastTimestampMax, point.y)
+          }
+        } else if (foundInRange) {
+          break
+        }
+      }
+
+      // Don't forget to include the last timestamp's min/max if we found any
+      if (lastTimestamp !== null) {
+        min = Math.min(min, lastTimestampMin)
+        max = Math.max(max, lastTimestampMax)
+      }
+    })
+
     return [
       Math.floor(min * GRAPH_Y_DIVISOR) / GRAPH_Y_DIVISOR,
       Math.ceil(max * GRAPH_Y_DIVISOR) / GRAPH_Y_DIVISOR,
