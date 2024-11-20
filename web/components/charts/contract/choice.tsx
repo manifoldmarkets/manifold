@@ -26,7 +26,6 @@ import {
   TooltipProps,
   ZoomParams,
 } from '../helpers'
-import { extent } from 'd3-array'
 import { GRAPH_Y_DIVISOR } from './binary'
 
 const CHOICE_ANSWER_COLORS = [
