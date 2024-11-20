@@ -13,15 +13,23 @@ import { track } from 'shared/analytics'
 export const generateAIMarketSuggestions: APIHandler<
   'generate-ai-market-suggestions'
 > = async (props, auth) => {
-  const { prompt } = props
-  // TODO: if the prompt is a url, either fetch the content or use gpt4 to summarize it
+  const { prompt, existingTitles } = props
 
-  const perplexityResponse = await perplexity(prompt, {
+  // Add existing titles to the prompt if provided
+  const fullPrompt = existingTitles?.length
+    ? `${prompt}\n\nPlease suggest new market ideas that are different from these ones:\n${existingTitles
+        .map((t) => `- ${t}`)
+        .join('\n')}`
+    : prompt
+
+  const perplexityResponse = await perplexity(fullPrompt, {
     model: largePerplexityModel,
   })
+
   const { messages, citations } = perplexityResponse
   log('Perplexity response:', messages.join('\n'))
   log('Sources:', citations.join('\n'))
+
   // Format the perplexity suggestions for Claude
   const claudePrompt = `  
     Convert these prediction market ideas into valid JSON objects that abide by the following Manifold Market schema. Each object should include:

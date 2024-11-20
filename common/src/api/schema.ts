@@ -1812,6 +1812,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         prompt: z.string(),
+        existingTitles: z.array(z.string()).optional(),
       })
       .strict(),
   },

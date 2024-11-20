@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { api } from 'web/lib/api/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
@@ -21,19 +21,35 @@ export function AIMarketSuggestionsPanel(props: {
     [],
     'ai-chat-form-markets'
   )
-  const [loading, setLoading] = useState(false)
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [creating, setCreating] = useState<number | null>(null)
 
-  const getSuggestions = async () => {
-    setLoading(true)
-    try {
-      const result = await api('generate-ai-market-suggestions', { prompt })
-      setMarkets(result)
-    } catch (e) {
-      console.error(e)
-    }
-    setLoading(false)
-  }
+  const getSuggestions = useCallback(
+    async (regenerate?: boolean) => {
+      if (regenerate) {
+        setLoadingMore(true)
+      } else {
+        setLoadingSuggestions(true)
+      }
+      try {
+        const existingTitles = regenerate ? markets.map((m) => m.question) : []
+        const result = await api('generate-ai-market-suggestions', {
+          prompt,
+          existingTitles,
+        })
+        setMarkets(regenerate ? [...result, ...markets] : result)
+      } catch (e) {
+        console.error(e)
+      }
+      if (regenerate) {
+        setLoadingMore(false)
+      } else {
+        setLoadingSuggestions(false)
+      }
+    },
+    [prompt, markets]
+  )
 
   const createSuggestedMarket = async (
     market: AIGeneratedMarket,
@@ -42,6 +58,12 @@ export function AIMarketSuggestionsPanel(props: {
     setCreating(index)
     onSelectSuggestion(market)
     setCreating(null)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && e.metaKey) {
+      getSuggestions()
+    }
   }
 
   return (
@@ -54,6 +76,7 @@ export function AIMarketSuggestionsPanel(props: {
             placeholder="What are you curious about? You can paste in tweets, headlines, articles, etc."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
           {prompt && (
             <button
@@ -69,10 +92,10 @@ export function AIMarketSuggestionsPanel(props: {
         <Button
           color="indigo"
           size="lg"
-          onClick={getSuggestions}
-          disabled={!prompt || loading}
+          onClick={() => getSuggestions()}
+          disabled={!prompt || loadingSuggestions || loadingMore}
         >
-          {loading ? (
+          {loadingSuggestions ? (
             <Row className="items-center gap-2">
               <LoadingIndicator />
               <span>Hold tight, this can take 30 seconds!</span>
@@ -85,7 +108,24 @@ export function AIMarketSuggestionsPanel(props: {
 
       {markets.length > 0 && (
         <Col className="gap-4">
-          <div className="text-ink-600 font-semibold">Suggested markets:</div>
+          <Row className="items-center justify-between">
+            <div className="text-ink-600 font-semibold">Suggested markets:</div>
+            <Button
+              color="indigo"
+              size="sm"
+              onClick={() => getSuggestions(true)}
+              disabled={loadingMore || loadingSuggestions}
+            >
+              {loadingMore ? (
+                <Row className="items-center gap-2">
+                  <LoadingIndicator size="sm" />
+                  <span>Hold tight, this can take 30 seconds!</span>
+                </Row>
+              ) : (
+                'Generate more'
+              )}
+            </Button>
+          </Row>
           {markets.map((market, i) => {
             return (
               <div key={i} className="rounded-lg border p-4">
