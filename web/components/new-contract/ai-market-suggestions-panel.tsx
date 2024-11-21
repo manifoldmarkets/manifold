@@ -18,11 +18,17 @@ export function AIMarketSuggestionsPanel(props: {
   onSelectSuggestion: (suggestion: AIGeneratedMarket) => void
 }) {
   const { onSelectSuggestion } = props
-  const [prompt, setPrompt] = usePersistentLocalState('', 'ai-chat-prompt')
-  const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState('')
+  const [prompt, setPrompt] = usePersistentLocalState(
+    '',
+    'ai-market-suggestions-prompt'
+  )
+  const [lastGeneratedPrompt, setLastGeneratedPrompt] = usePersistentLocalState(
+    '',
+    'ai-market-suggestions-last-generated-prompt'
+  )
   const [markets, setMarkets] = usePersistentInMemoryState<AIGeneratedMarket[]>(
     [],
-    'ai-chat-form-markets'
+    'ai-market-suggestions-markets'
   )
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
