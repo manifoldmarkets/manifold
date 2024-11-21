@@ -140,7 +140,12 @@ export function ContractParamsForm(props: {
   const numAnswers = hasOtherAnswer ? answers.length + 1 : answers.length
 
   useEffect(() => {
-    if (params?.q) setQuestion(params?.q ?? '')
+    if (!params?.q) return
+
+    setQuestion(params.q)
+    if (!params.groupIds?.length && !params.groupSlugs?.length) {
+      findTopicsAndSimilarQuestions(params.q)
+    }
   }, [params?.q])
 
   useEffect(() => {
@@ -437,7 +442,7 @@ export function ContractParamsForm(props: {
   }
   const [bountyError, setBountyError] = useState<string | undefined>(undefined)
 
-  const finishedTypingQuestion = async () => {
+  const findTopicsAndSimilarQuestions = async (question: string) => {
     const trimmed = question.toLowerCase().trim()
     if (trimmed === '') {
       setHasChosenCategory(false)
@@ -485,7 +490,7 @@ export function ContractParamsForm(props: {
           maxLength={MAX_QUESTION_LENGTH}
           value={question}
           onChange={(e) => setQuestion(e.target.value || '')}
-          onBlur={finishedTypingQuestion}
+          onBlur={(e) => findTopicsAndSimilarQuestions(e.target.value || '')}
         />
       </Col>
       {similarContracts.length ? (
