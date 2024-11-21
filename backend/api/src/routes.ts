@@ -10,10 +10,7 @@ import { getMe } from './get-me'
 import { saveTwitchCredentials } from './save-twitch-credentials'
 import { addLiquidity } from './add-liquidity'
 import { removeLiquidity } from './remove-liquidity'
-import {
-  supabasesearchgroups,
-  supabasesearchmygroups,
-} from './supabase-search-groups'
+import { searchGroups, searchMyGroups } from './search-groups'
 import { awardBounty } from './award-bounty'
 import { addBounty } from './add-bounty'
 import { createAnswerCPMM } from './create-answer-cpmm'
@@ -40,11 +37,8 @@ import { getLeagues } from './get-leagues'
 import { getContract } from './get-contract'
 import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { addOrRemoveTopicFromTopic } from './add-topic-to-topic'
-import { searchUsers } from './supabase-search-users'
-import {
-  searchMarketsLite,
-  searchMarketsFull,
-} from './supabase-search-contract'
+import { searchUsers } from './search-users'
+import { searchMarketsLite, searchMarketsFull } from './search-contracts'
 import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler } from './helpers/endpoint'
@@ -240,8 +234,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-lovers': getLovers,
   'get-lover-answers': getLoverAnswers,
   'set-news': setnews,
-  'search-groups': supabasesearchgroups,
-  'search-my-groups': supabasesearchmygroups,
+  'search-groups': searchGroups,
+  'search-my-groups': searchMyGroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
   'get-balance-changes': getBalanceChanges,
   'get-partner-stats': getPartnerStats,

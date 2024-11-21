@@ -15,7 +15,7 @@ import {
 } from 'shared/helpers/search'
 import { LiteGroup } from 'common/group'
 
-export const supabasesearchgroups: APIHandler<'search-groups'> = async (
+export const searchGroups: APIHandler<'search-groups'> = async (
   props,
   auth
 ) => {
@@ -24,10 +24,9 @@ export const supabasesearchgroups: APIHandler<'search-groups'> = async (
 
   const pg = createSupabaseDirectClient()
   const uid = auth?.uid
-  const cleanTerm = term.replace(/[''"]/g, '')
 
   const searchGroupSQL = getSearchGroupSQL({
-    term: cleanTerm,
+    term,
     offset,
     limit,
     uid,
@@ -89,9 +88,9 @@ function getSearchGroupSQL(props: {
   )
 }
 
-export const supabasesearchmygroups: APIHandler<'search-my-groups'> = async (
+export const searchMyGroups: APIHandler<'search-my-groups'> = async (
   props,
   ...rest
 ) => {
-  return supabasesearchgroups({ ...props, memberGroupsOnly: true }, ...rest)
+  return searchGroups({ ...props, memberGroupsOnly: true }, ...rest)
 }

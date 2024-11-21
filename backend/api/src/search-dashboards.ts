@@ -11,7 +11,7 @@ const bodySchema = z
   })
   .strict()
 
-export const supabasesearchdashboards = MaybeAuthedEndpoint(async (req) => {
+export const searchDashboards = MaybeAuthedEndpoint(async (req) => {
   const { term, offset, limit } = validate(bodySchema, req.body)
 
   const pg = createSupabaseDirectClient()

@@ -34,7 +34,7 @@ import { report } from './report'
 import { createdashboard } from './create-dashboard'
 import { getyourdashboards } from './get-your-dashboards'
 import { followdashboard } from './follow-dashboard'
-import { supabasesearchdashboards } from './supabase-search-dashboards'
+import { searchDashboards } from './search-dashboards'
 import { getyourfolloweddashboards } from './get-your-followed-dashboards'
 import { updatedashboard } from './update-dashboard'
 import { deletedashboard } from './delete-dashboard'
@@ -131,7 +131,7 @@ export const addOldRoutes = (app: express.Application) => {
   app.post('/createdashboard', ...apiRoute(createdashboard))
   app.post('/getyourdashboards', ...apiRoute(getyourdashboards))
   app.post('/followdashboard', ...apiRoute(followdashboard))
-  app.post('/supabasesearchdashboards', ...apiRoute(supabasesearchdashboards))
+  app.post('/supabasesearchdashboards', ...apiRoute(searchDashboards))
   app.post('/getyourfolloweddashboards', ...apiRoute(getyourfolloweddashboards))
   app.post('/updatedashboard', ...apiRoute(updatedashboard))
   app.post('/delete-dashboard', ...apiRoute(deletedashboard))
