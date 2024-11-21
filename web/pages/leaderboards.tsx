@@ -110,6 +110,7 @@ export default function Leaderboards() {
     data: entries,
     error,
     refresh,
+    loading,
   } = useAPIGetter('leaderboard', {
     kind: type,
     groupId: topic?.id,
@@ -191,7 +192,9 @@ export default function Leaderboards() {
             </button>
           </div>
         </Col>
-        {entries ? (
+        {loading ? (
+          <LoadingLeaderboard columns={columns} />
+        ) : entries ? (
           <Leaderboard
             entries={buildArray(entries, myEntry)}
             columns={columns}
@@ -206,9 +209,7 @@ export default function Leaderboards() {
               <Button onClick={refresh}>Try again</Button>
             </div>
           </div>
-        ) : (
-          <LoadingLeaderboard columns={columns} />
-        )}
+        ) : null}
       </Col>
     </Page>
   )

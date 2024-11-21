@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { APIError, api } from 'web/lib/api/api'
@@ -6,16 +6,19 @@ import { useEvent } from './use-event'
 
 const promiseCache: Record<string, Promise<any> | undefined> = {}
 
+// react query at home
 export const useAPIGetter = <P extends APIPath>(
   path: P,
   props: APIParams<P> | undefined,
-  ingoreDependencies?: string[],
+  ignoreDependencies?: string[],
   overrideKey?: string
 ) => {
   const propsString = JSON.stringify(props)
   const propsStringToTriggerRefresh = JSON.stringify(
-    deepCopyWithoutKeys(props, ingoreDependencies || [])
+    deepCopyWithoutKeys(props, ignoreDependencies || [])
   )
+
+  const [loading, setLoading] = useState(false)
 
   const [data, setData] = usePersistentInMemoryState<
     APIResponse<P> | undefined
@@ -33,7 +36,10 @@ export const useAPIGetter = <P extends APIPath>(
 
     let promise = promiseCache[key]
     if (!promise) {
-      promise = api(path, props).catch(setError)
+      setLoading(true)
+      promise = api(path, props)
+        .catch(setError)
+        .finally(() => setLoading(false))
       promiseCache[key] = promise
     }
 
@@ -44,6 +50,9 @@ export const useAPIGetter = <P extends APIPath>(
 
   useEffect(() => {
     getAndSetData()
+    return () => {
+      setLoading(false)
+    }
   }, [propsStringToTriggerRefresh])
 
   const refresh = async () => {
@@ -51,7 +60,7 @@ export const useAPIGetter = <P extends APIPath>(
     await getAndSetData()
   }
 
-  return { data, error, refresh, setData }
+  return { data, error, refresh, setData, loading }
 }
 
 function deepCopyWithoutKeys(obj: any, keysToRemove: string[]): any {
