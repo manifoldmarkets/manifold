@@ -62,6 +62,27 @@ Following each market suggestion, add a "Reasoning:" section that addresses the 
 2. Why it's a good prediction market (e.g., has clear resolution criteria, neither a yes nor no outcome is overwhelmingly likely, etc. from above)
 `
 
+export const formattingPrompt = `
+    Convert these prediction market ideas into valid JSON objects that abide by the following Manifold Market schema. Each object should include:
+    - question (string with 120 characters or less, required)
+      - Question should be worded as a statement, i.e. Stock price of Tesla above $420 by x date, not Will the stock price of Tesla be above $420 by x date?
+    - descriptionMarkdown (markdown string, required)
+      - The description should be a concise summary of the market's context, possible outcomes, sources, and resolution criteria.
+    - closeDate (string, date in YYYY-MM-DD format, required)
+      - The close date is when trading stops for the market, and resolution can be made. E.g. if the title includes 'by january 1st 2025', the close date should be 2025-12-31
+    - outcomeType ("BINARY", "INDEPENDENT_MULTIPLE_CHOICE", "DEPENDENT_MULTIPLE_CHOICE", "POLL", required)
+      - "BINARY" means there are only two answers, true (yes) or false (no)
+      - "INDEPENDENT_MULTIPLE_CHOICE" means there are multiple answers, and ANY of them can resolve yes, e.g. What will happen during the next presidential debate? Which companies will express interest in buying twitter?
+      - "DEPENDENT_MULTIPLE_CHOICE" means there are multiple answers, but ONLY one can resolve yes, (while the rest resolve no) e.g. Who will win the presidential election?, Who will be the first to express interest in buying twitter?
+      - "POLL" means the question is about a personal matter, i.e. "Should I move to a new city?", "Should I get a new job?", etc.
+    - answers (array of strings, recommended only if outcomeType is one of the "DEPENDENT_MULTIPLE_CHOICE" or "INDEPENDENT_MULTIPLE_CHOICE" types)
+    - addAnswersMode ("DISABLED", "ONLY_CREATOR", or "ANYONE", required if one of the "DEPENDENT_MULTIPLE_CHOICE" or "INDEPENDENT_MULTIPLE_CHOICE" types is provided)
+      - "DISABLED" means that the answers list covers all possible outcomes and no more answers can be added after the market is created
+      - "ONLY_CREATOR" means that only the creator can add answers after the market is created
+      - "ANYONE" means that anyone can add answers after the market is created
+      - If the addAnswersMode is "ONLY_CREATOR" or "ANYONE", while the outcomeType is "DEPENDENT_MULTIPLE_CHOICE", then Manifold will automatically add the 'Other' option to the answers list, so you do not need to include it in the array.
+    - reasoning (string, required - extract the reasoning section from each market suggestion)`
+
 export const perplexitySystemPrompt = `You are a helpful assistant that creates engaging prediction markets on Manifold Markets.
 Your role is to transform a user's prompt into at least approximately 6 well-structured prediction markets that encourage participation and meaningful forecasting.
 `

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { ExpandingInput } from '../widgets/expanding-input'
@@ -12,6 +12,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { ALL_CONTRACT_TYPES } from './create-contract-types'
 import { track } from 'web/lib/service/analytics'
+import { toast } from 'react-hot-toast'
 
 export function AIMarketSuggestionsPanel(props: {
   onSelectSuggestion: (suggestion: AIGeneratedMarket) => void
@@ -48,7 +49,6 @@ export function AIMarketSuggestionsPanel(props: {
           }),
         ])
 
-        // Randomly sort results by promptVersion
         const combinedResults = [...result1, ...result2].sort(
           () => Math.random() - 0.5
         )
@@ -57,7 +57,11 @@ export function AIMarketSuggestionsPanel(props: {
           regenerate ? [...combinedResults, ...markets] : combinedResults
         )
       } catch (e) {
-        console.error(e)
+        if (e instanceof APIError) {
+          toast.error(e.message)
+        } else {
+          console.error(e)
+        }
       }
       if (regenerate) {
         setLoadingMore(false)
@@ -119,7 +123,7 @@ export function AIMarketSuggestionsPanel(props: {
           {loadingSuggestions || loadingMore ? (
             <Row className="items-center gap-2">
               <LoadingIndicator />
-              <span>Hold tight, this can take 30 seconds!</span>
+              <span>Hang on, this can take up to a minute!</span>
             </Row>
           ) : prompt === lastGeneratedPrompt ? (
             'Generate more'

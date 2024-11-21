@@ -4,6 +4,7 @@ import { AIGeneratedMarket } from 'common/contract'
 import { log } from 'shared/utils'
 import {
   claudeSystemPrompt,
+  formattingPrompt,
   guidelinesPrompt,
 } from 'common/ai-creation-prompts'
 import { anythingToRichText } from 'shared/tiptap'
@@ -12,20 +13,26 @@ import {
   largePerplexityModel,
   smallPerplexityModel,
 } from 'shared/helpers/perplexity'
+import { getContentFromPrompt } from './generate-ai-market-suggestions'
+
+// In this version, we use Perplexity to generate context for the prompt, and then Claude to generate market suggestions
 export const generateAIMarketSuggestions2: APIHandler<
   'generate-ai-market-suggestions-2'
 > = async (props, auth) => {
   const { prompt, existingTitles } = props
   log('Prompt:', prompt)
 
-  // Add existing titles to the prompt if provided
-  const fullPrompt = existingTitles?.length
+  const promptIncludingTitlesToIgnore = existingTitles?.length
     ? `${prompt}\n\nPlease suggest new market ideas that are different from these ones:\n${existingTitles
         .map((t) => `- ${t}`)
         .join('\n')}`
     : prompt
 
-  const perplexityResponse = await perplexity(prompt, {
+  const promptIncludingUrlContent = await getContentFromPrompt(
+    promptIncludingTitlesToIgnore
+  )
+
+  const perplexityResponse = await perplexity(promptIncludingUrlContent, {
     model: largePerplexityModel,
   })
 
@@ -51,28 +58,9 @@ export const generateAIMarketSuggestions2: APIHandler<
     }
 
     Here is the user's prompt:
-    ${fullPrompt}
+    ${promptIncludingUrlContent}
 
-
-    Now, suggest approximately 6 ideas for prediction markets as valid JSON objects that abide by the following Manifold Market schema. Each object should include:
-    - question (string with 120 characters or less, required)
-      - Question should be worded as a statement, i.e. Stock price of Tesla above $420 by x date, not Will the stock price of Tesla be above $420 by x date?
-    - descriptionMarkdown (markdown string, required)
-      - The description should be a concise summary of the market's context, possible outcomes, sources, and resolution criteria.
-      - Use any references provided in the References section in the description. Format them with a references header and a bulleted list
-    - closeDate (string, date in YYYY-MM-DD format, required)
-      - The close date is when trading stops for the market, and resolution can be made. E.g. if the title includes 'by january 1st 2025', the close date should be 2025-12-31
-    - outcomeType ("BINARY", "INDEPENDENT_MULTIPLE_CHOICE", "DEPENDENT_MULTIPLE_CHOICE", "POLL", required)
-      - "BINARY" means there are only two answers, true (yes) or false (no)
-      - "INDEPENDENT_MULTIPLE_CHOICE" means there are multiple answers, but they are independent of each other (e.g. What will happen during the next presidential debate?)
-      - "DEPENDENT_MULTIPLE_CHOICE" means there are multiple answers, but they are dependent on each other (e.g. Who will win the presidential election?)
-      - "POLL" means the question is about a personal matter, i.e. "Should I move to a new city?", "Should I get a new job?", etc.
-    - answers (array of strings, recommended only if outcomeType is one of the "MULTIPLE_CHOICE" types)
-    - addAnswersMode ("DISABLED", "ONLY_CREATOR", or "ANYONE", required if one of the "MULTIPLE_CHOICE" types is provided)
-      - "DISABLED" means that the answers list covers all possible outcomes and no more answers can be added after the market is created
-      - "ONLY_CREATOR" means that only the creator can add answers after the market is created
-      - "ANYONE" means that anyone can add answers after the market is created
-    - reasoning (string, required - extract the reasoning section from each market suggestion)
+    ${formattingPrompt}
 
     ONLY return a valid JSON array of market objects and do NOT include any other text.
   `
@@ -105,6 +93,8 @@ export const generateAIMarketSuggestions2: APIHandler<
     marketTitles: parsedMarkets.map((m) => m.question),
     prompt,
     regenerate: !!existingTitles,
+    hasScrapedContent:
+      promptIncludingUrlContent !== promptIncludingTitlesToIgnore,
   })
 
   return parsedMarkets

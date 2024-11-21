@@ -5,25 +5,30 @@ import { AIGeneratedMarket } from 'common/contract'
 import { log } from 'shared/utils'
 import {
   claudeSystemPrompt,
+  formattingPrompt,
   guidelinesPrompt,
 } from 'common/ai-creation-prompts'
 import { anythingToRichText } from 'shared/tiptap'
 import { track } from 'shared/analytics'
+import { scrapeUrl } from './helpers/crawl'
 
+// In this version, we use Perplexity to generate market suggestions, and then refine them with Claude
 export const generateAIMarketSuggestions: APIHandler<
   'generate-ai-market-suggestions'
 > = async (props, auth) => {
   const { prompt, existingTitles } = props
   log('Prompt:', prompt)
 
-  // Add existing titles to the prompt if provided
-  const fullPrompt = existingTitles?.length
+  const promptIncludingTitlesToIgnore = existingTitles?.length
     ? `${prompt}\n\nPlease suggest new market ideas that are different from these ones:\n${existingTitles
         .map((t) => `- ${t}`)
         .join('\n')}`
     : prompt
 
-  const perplexityResponse = await perplexity(fullPrompt, {
+  const promptIncludingUrlContent = await getContentFromPrompt(
+    promptIncludingTitlesToIgnore
+  )
+  const perplexityResponse = await perplexity(promptIncludingUrlContent, {
     model: largePerplexityModel,
   })
 
@@ -33,30 +38,13 @@ export const generateAIMarketSuggestions: APIHandler<
 
   // Format the perplexity suggestions for Claude
   const claudePrompt = `  
-    Convert these prediction market ideas into valid JSON objects that abide by the following Manifold Market schema. Each object should include:
-    - question (string with 120 characters or less, required)
-      - Question should be worded as a statement, i.e. Stock price of Tesla above $420 by x date, not Will the stock price of Tesla be above $420 by x date?
-    - descriptionMarkdown (markdown string, required)
-      - The description should be a concise summary of the market's context, possible outcomes, sources, and resolution criteria.
-    - closeDate (string, date in YYYY-MM-DD format, required)
-      - The close date is when trading stops for the market, and resolution can be made. E.g. if the title includes 'by january 1st 2025', the close date should be 2025-12-31
-    - outcomeType ("BINARY", "INDEPENDENT_MULTIPLE_CHOICE", "DEPENDENT_MULTIPLE_CHOICE", "POLL", required)
-      - "BINARY" means there are only two answers, true (yes) or false (no)
-      - "INDEPENDENT_MULTIPLE_CHOICE" means there are multiple answers, but they are independent of each other (e.g. What will happen during the next presidential debate?)
-      - "DEPENDENT_MULTIPLE_CHOICE" means there are multiple answers, but they are dependent on each other (e.g. Who will win the presidential election?)
-      - "POLL" means the question is about a personal matter, i.e. "Should I move to a new city?", "Should I get a new job?", etc.
-    - answers (array of strings, recommended only if outcomeType is one of the "MULTIPLE_CHOICE" types)
-    - addAnswersMode ("DISABLED", "ONLY_CREATOR", or "ANYONE", required if one of the "MULTIPLE_CHOICE" types is provided)
-      - "DISABLED" means that the answers list covers all possible outcomes and no more answers can be added after the market is created
-      - "ONLY_CREATOR" means that only the creator can add answers after the market is created
-      - "ANYONE" means that anyone can add answers after the market is created
-    - reasoning (string, required - extract the reasoning section from each market suggestion)
+    ${formattingPrompt}
 
     Please review the market suggestions and refine them according to the following guidelines:
     ${guidelinesPrompt}
     
     Here is the original user's prompt:
-    ${prompt}
+    ${promptIncludingUrlContent}
     
     Here are the market suggestions to refine and convert into valid JSON objects:
     ${messages.join('\n')}
@@ -100,7 +88,56 @@ export const generateAIMarketSuggestions: APIHandler<
     marketTitles: parsedMarkets.map((m) => m.question),
     prompt,
     regenerate: !!existingTitles,
+    hasScrapedContent:
+      promptIncludingUrlContent !== promptIncludingTitlesToIgnore,
   })
 
   return parsedMarkets
+}
+
+// Updated regex to match both http(s) and www URLs
+const URL_REGEX = /(https?:\/\/[^\s]+|www\.[^\s]+)/g
+
+const extractUrls = (text: string) => {
+  return text.match(URL_REGEX) || []
+}
+export const getContentFromPrompt = async (prompt: string) => {
+  // Check if the prompt is a URL or contains URLs
+  const urls = extractUrls(prompt)
+  const urlToContent: Record<string, string | undefined> = Object.fromEntries(
+    urls.map((url) => [url, undefined])
+  )
+  if (urls.length > 0) {
+    try {
+      // Scrape all found URLs
+      const scrapeResults = await Promise.allSettled(
+        urls.map((url) => scrapeUrl(url))
+      )
+
+      // Match each URL with its scraped content
+      urls.forEach((url, i) => {
+        const result = scrapeResults[i]
+        if (result.status === 'fulfilled') {
+          urlToContent[url] = result.value.markdown
+        }
+      })
+
+      log('Scrape results:', urlToContent)
+    } catch (e) {
+      log.error('Failed to scrape URLs:', {
+        error: e,
+        urls,
+      })
+    }
+  }
+  // Add scraped content to the prompt if available
+  const promptIncludingUrlContent = urlToContent
+    ? `${prompt}\n\nWe found the following content from the provided URL(s):\n\n${Object.entries(
+        urlToContent
+      )
+        .map(([url, content]) => `${url}:\n${content}`)
+        .join('\n\n')}`
+    : prompt
+
+  return promptIncludingUrlContent
 }
