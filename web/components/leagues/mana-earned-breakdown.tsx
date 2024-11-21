@@ -11,7 +11,6 @@ import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Subtitle } from '../widgets/subtitle'
-import { Table } from '../widgets/table'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { Contract, contractPath } from 'common/contract'
 import { Bet } from 'common/bet'
@@ -102,16 +101,24 @@ export const ManaEarnedBreakdown = (props: {
         <Row className="mb-2 items-center gap-4">
           <UserAvatarAndBadge user={user} />
         </Row>
-        <Subtitle className="text-ink-800 !mb-2 !mt-2">Mana earned</Subtitle>
-        <Table className="text-base">
-          <thead className={clsx('text-ink-600 text-left font-semibold')}>
+        <Row className="items-baseline justify-between">
+          <Subtitle className="text-ink-800 !mb-2 !mt-2">
+            Profit earned since {start.toLocaleDateString()}:
+          </Subtitle>
+          {formatMoney(mana_earned)}
+        </Row>
+        <span className="text-ink-600 text-sm">
+          Only counts profit earned this season.
+        </span>
+        {/* <Table className="text-base">
+           <thead className={clsx('text-ink-600 text-left font-semibold')}>
             <tr>
               <th className={clsx('px-2 pb-1')}>Category</th>
               <th className={clsx('px-2 pb-1 text-right')}>Amount</th>
             </tr>
           </thead>
           <tbody>
-            {Object.keys(MANA_EARNED_CATEGORY_LABELS).map((category) =>
+             {Object.keys(MANA_EARNED_CATEGORY_LABELS).map((category) =>
               (category === 'CREATOR_FEE' ||
                 category === 'UNIQUE_BETTOR_BONUS') &&
               !breakdown[category] ? null : (
@@ -124,7 +131,7 @@ export const ManaEarnedBreakdown = (props: {
                   </td>
                 </tr>
               )
-            )}
+            )} 
             <tr className="font-semibold">
               <td className={clsx('pl-2')}>Total</td>
               <td className={clsx('pr-2 text-right')}>
@@ -132,14 +139,11 @@ export const ManaEarnedBreakdown = (props: {
               </td>
             </tr>
           </tbody>
-        </Table>
+        </Table> */}
 
         {contracts && contracts.length > 0 && (
           <Col>
-            <Subtitle className="text-ink-800 mt-6">
-              Profit by question
-            </Subtitle>
-            <Row className="mb-4 gap-2">
+            <Row className="my-4 gap-2">
               <ShortToggle on={showHighestFirst} setOn={setShowHighestFirst} />{' '}
               Highest first
             </Row>
