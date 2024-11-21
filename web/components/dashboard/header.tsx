@@ -30,7 +30,6 @@ export function HeadlineTabs(props: {
       )}
     >
       <Carousel labelsParentClassName="gap-px">
-        {user && <Tab label="US Election" href="/election" />}
         {headlines.map(({ id, slug, title }) => (
           <Tab
             key={id}
