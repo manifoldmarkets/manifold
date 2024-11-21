@@ -130,7 +130,9 @@ export function getNewContract(props: {
     elasticity:
       propsByOutcomeType.mechanism === 'cpmm-1'
         ? computeBinaryCpmmElasticityFromAnte(ante)
-        : 4.99,
+        : propsByOutcomeType.mechanism === 'cpmm-multi-1'
+        ? 4.99 // TODO: calculate
+        : 1_000_000,
 
     collectedFees: {
       creatorFee: 0,
