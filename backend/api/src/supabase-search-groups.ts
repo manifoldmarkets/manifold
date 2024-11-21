@@ -24,9 +24,10 @@ export const supabasesearchgroups: APIHandler<'search-groups'> = async (
 
   const pg = createSupabaseDirectClient()
   const uid = auth?.uid
+  const cleanTerm = term.replace(/[''"]/g, '')
 
   const searchGroupSQL = getSearchGroupSQL({
-    term,
+    term: cleanTerm,
     offset,
     limit,
     uid,

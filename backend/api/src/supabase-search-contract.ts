@@ -94,6 +94,7 @@ const search = async (
       convertContract
     )
   } else {
+    const cleanTerm = term.replace(/[''"]/g, '')
     const searchTypes: SearchTypes[] = [
       'prefix',
       'without-stopwords',
@@ -110,7 +111,7 @@ const search = async (
     ] = await Promise.all(
       searchTypes.map(async (searchType) => {
         const searchSQL = getSearchContractSQL({
-          term,
+          term: cleanTerm,
           filter,
           sort,
           contractType,

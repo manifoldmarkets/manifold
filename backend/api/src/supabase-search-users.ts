@@ -21,8 +21,14 @@ export const searchUsers: APIHandler<'search-users'> = async (props, auth) => {
 
   const offset = page * limit
   const userId = auth?.uid
-  const searchFollowersSQL = getSearchUserSQL({ term, offset, limit, userId })
-  const searchAllSQL = getSearchUserSQL({ term, offset, limit })
+  const cleanTerm = term.replace(/[''"]/g, '')
+  const searchFollowersSQL = getSearchUserSQL({
+    term: cleanTerm,
+    offset,
+    limit,
+    userId,
+  })
+  const searchAllSQL = getSearchUserSQL({ term: cleanTerm, offset, limit })
   const [followers, all] = await Promise.all([
     pg.map(searchFollowersSQL, null, convertUser),
     pg.map(searchAllSQL, null, convertUser),
