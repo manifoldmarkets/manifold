@@ -58,3 +58,5 @@ pathMatchers:
           - pathTemplateMatch: /v0/get-mod-reports
           - pathTemplateMatch: /get-notifications
           - pathTemplateMatch: /markets-by-ids
+          - pathTemplateMatch: /v0/generate-ai-market-suggestions
+          - pathTemplateMatch: /v0/generate-ai-market-suggestions-2
