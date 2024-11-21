@@ -10,7 +10,6 @@ import { usePublicContracts } from 'web/hooks/use-contract'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { Subtitle } from '../widgets/subtitle'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { Contract, contractPath } from 'common/contract'
 import { Bet } from 'common/bet'
@@ -39,16 +38,16 @@ export const ManaEarnedBreakdown = (props: {
     showDialog,
     setShowDialog,
     mana_earned,
-    mana_earned_breakdown,
+    // mana_earned_breakdown,
   } = props
 
-  const breakdown = {
-    PROFIT: mana_earned_breakdown.profit,
-    ...mana_earned_breakdown,
-    MARKET_BOOST_REDEEM:
-      (mana_earned_breakdown.MARKET_BOOST_REDEEM ?? 0) +
-      (mana_earned_breakdown.AD_REDEEM ?? 0),
-  } as { [key: string]: number }
+  // const breakdown = {
+  //   PROFIT: mana_earned_breakdown.profit,
+  //   ...mana_earned_breakdown,
+  //   MARKET_BOOST_REDEEM:
+  //     (mana_earned_breakdown.MARKET_BOOST_REDEEM ?? 0) +
+  //     (mana_earned_breakdown.AD_REDEEM ?? 0),
+  // } as { [key: string]: number }
 
   const { start, end } = getSeasonDates(season)
   const loadingBets = useBetsOnce({
@@ -102,13 +101,14 @@ export const ManaEarnedBreakdown = (props: {
           <UserAvatarAndBadge user={user} />
         </Row>
         <Row className="items-baseline justify-between">
-          <Subtitle className="text-ink-800 !mb-2 !mt-2">
-            Profit earned since {start.toLocaleDateString()}:
-          </Subtitle>
+          <span className="text-primary-700 mb-2 text-lg">
+            Profit on trades placed this season:
+          </span>
           {formatMoney(mana_earned)}
         </Row>
         <span className="text-ink-600 text-sm">
-          Only counts profit earned this season.
+          Only counts profit on trades placed on/after{' '}
+          {start.toLocaleDateString()}.
         </span>
         {/* <Table className="text-base">
            <thead className={clsx('text-ink-600 text-left font-semibold')}>
@@ -238,7 +238,7 @@ const ContractBetsEntry = (props: {
   )
 }
 
-const MANA_EARNED_CATEGORY_LABELS = {
-  PROFIT: 'Profit',
-  UNIQUE_BETTOR_BONUS: 'Trader bonuses',
-} as { [key: string]: string }
+// const MANA_EARNED_CATEGORY_LABELS = {
+//   PROFIT: 'Profit',
+//   UNIQUE_BETTOR_BONUS: 'Trader bonuses',
+// } as { [key: string]: string }
