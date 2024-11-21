@@ -1,5 +1,5 @@
 import { chunk, Dictionary, flatMap, groupBy, uniqBy } from 'lodash'
-import { Row, run, selectJson, SupabaseClient } from './utils'
+import { Row, run, SupabaseClient } from './utils'
 import { Contract } from '../contract'
 import { ContractMetric } from 'common/contract-metric'
 
@@ -106,13 +106,17 @@ export async function getUsersContractMetricsOrderedByProfit(
   const promises = chunks.map(async (chunk) => {
     const orderString = from == 'all' ? 'profit' : `data->from->${from}->profit`
     const { data: negative } = await run(
-      selectJson(db, 'user_contract_metrics')
+      db
+        .from('user_contract_metrics')
+        .select('data')
         .in('user_id', chunk)
         .is('answer_id', null)
         .order(orderString, { ascending: true })
     )
     const { data: profit } = await run(
-      selectJson(db, 'user_contract_metrics')
+      db
+        .from('user_contract_metrics')
+        .select('data')
         .in('user_id', chunk)
         .is('answer_id', null)
         .order(orderString, { ascending: false, nullsFirst: false })
@@ -136,20 +140,6 @@ export async function getUsersContractMetricsOrderedByProfit(
     allContractMetrics[id] = uniqBy(topAndLowestMetrics, 'contractId')
   })
   return allContractMetrics
-}
-
-export async function getContractMetricsForContractIds(
-  db: SupabaseClient,
-  userId: string,
-  contractIds: string[]
-) {
-  const { data } = await run(
-    selectJson(db, 'user_contract_metrics')
-      .eq('user_id', userId)
-      .in('contract_id', contractIds)
-      .is('answer_id', null)
-  )
-  return data.map((d) => d.data) as ContractMetric[]
 }
 
 export async function getContractMetricsCount(
@@ -227,7 +217,9 @@ export async function getUserContractMetrics(
   db: SupabaseClient,
   answerId: string | undefined | null // undefined means any answer id goes
 ) {
-  const q = selectJson(db, 'user_contract_metrics')
+  const q = db
+    .from('user_contract_metrics')
+    .select('data')
     .eq('user_id', userId)
     .eq('contract_id', contractId)
   if (answerId === null) {

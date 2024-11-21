@@ -5,7 +5,6 @@ import {
   SupabaseClient as SupabaseClientGeneric,
   SupabaseClientOptions as SupabaseClientOptionsGeneric,
 } from '@supabase/supabase-js'
-
 import { Database } from './schema'
 import { User } from '../user'
 import { Contract } from '../contract'
@@ -73,13 +72,6 @@ type JsonTypes = {
 export type DataFor<T extends Selectable> = T extends keyof JsonTypes
   ? JsonTypes[T]
   : any
-
-export function selectJson<T extends TableName | ViewName>(
-  db: SupabaseClient,
-  table: T
-) {
-  return db.from(table).select<string, { data: DataFor<T> }>('data')
-}
 
 export function millisToTs(millis: number) {
   return new Date(millis).toISOString()
