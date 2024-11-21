@@ -81,16 +81,6 @@ export function selectJson<T extends TableName | ViewName>(
   return db.from(table).select<string, { data: DataFor<T> }>('data')
 }
 
-export function selectFrom<
-  T extends TableName,
-  TData extends DataFor<T>,
-  TFields extends (string & keyof TData)[],
-  TResult = Pick<TData, TFields[number]>
->(db: SupabaseClient, table: T, ...fields: TFields) {
-  const query = fields.map((f) => `data->${f}`).join(', ')
-  return db.from(table).select<string, TResult>(query)
-}
-
 export function millisToTs(millis: number) {
   return new Date(millis).toISOString()
 }

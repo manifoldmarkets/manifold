@@ -1,12 +1,11 @@
 import { db } from './db'
-import { run, selectFrom } from 'common/supabase/utils'
+import { run } from 'common/supabase/utils'
 import { type User } from 'common/user'
 import { APIError, api } from '../api/api'
 import { DAY_MS, WEEK_MS } from 'common/util/time'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
-export type { DisplayUser } from 'common/api/user-types'
-
-const defaultFields = ['id', 'name', 'username', 'avatarUrl'] as const
+import type { DisplayUser } from 'common/api/user-types'
+export type { DisplayUser }
 
 export async function getUserById(id: string) {
   return api('user/by-id/:id/lite', { id })
@@ -48,15 +47,16 @@ export async function searchUsers(prompt: string, limit: number) {
 }
 
 export async function getDisplayUsers(userIds: string[]) {
-  // note: random order
   const { data } = await run(
-    selectFrom(db, 'users', ...defaultFields, 'isBannedFromPosting').in(
-      'id',
-      userIds
-    )
+    db
+      .from('users')
+      .select(
+        `id, name, username, data->'avatarUrl', data->'isBannedFromPosting'`
+      )
+      .in('id', userIds)
   )
 
-  return data
+  return data as unknown as DisplayUser[]
 }
 
 // leaderboards
