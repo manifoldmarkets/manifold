@@ -17,7 +17,11 @@ import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { createContractResolvedNotifications } from './create-notification'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
-import { TxnData, runTxnOutsideBetQueue, txnToRow } from './txn/run-txn'
+import {
+  TxnData,
+  runTxnInBetQueueIgnoringBalance,
+  txnToRow,
+} from './txn/run-txn'
 import {
   revalidateStaticProps,
   isProd,
@@ -390,7 +394,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
     },
   } as Omit<CancelUniqueBettorBonusTxn, 'id' | 'createdTime'>
 
-  const txn = await runTxnOutsideBetQueue(pg, undoBonusTxn)
+  const txn = await runTxnInBetQueueIgnoringBalance(pg, undoBonusTxn)
   log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
 }
 
