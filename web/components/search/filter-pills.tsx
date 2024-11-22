@@ -171,7 +171,9 @@ export function FilterDropdownPill(props: {
       })}
       menuItemsClass={clsx()}
       buttonContent={(open) => (
-        <DropdownPill open={open}>{currentFilterLabel}</DropdownPill>
+        <DropdownPill color="indigo" open={open}>
+          {currentFilterLabel}
+        </DropdownPill>
       )}
       selectedItemName={currentFilterLabel}
       closeOnClick
@@ -238,7 +240,9 @@ export function TopicDropdownPill(props: {
       withinOverflowContainer
       items={items}
       buttonContent={(open) => (
-        <DropdownPill open={open}>{currentTopicLabel}</DropdownPill>
+        <DropdownPill color={'indigo'} open={open}>
+          {currentTopicLabel}
+        </DropdownPill>
       )}
       selectedItemName={currentTopicLabel}
       closeOnClick
