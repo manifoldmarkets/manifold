@@ -83,7 +83,6 @@ export function QuestsModal(props: {
   const streakStatus = questToCompletionStatus['BETTING_STREAK']
   const shareStatus = questToCompletionStatus['SHARES']
   const createStatus = questToCompletionStatus['MARKETS_CREATED']
-  // const referralsStatus = questToCompletionStatus['REFERRALS']
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
