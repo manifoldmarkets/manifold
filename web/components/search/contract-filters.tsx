@@ -247,6 +247,10 @@ export function ContractFilters(props: {
         >
           Closing
         </button>
+        <FilterDropdownPill
+          selectFilter={selectFilter}
+          currentFilter={filter}
+        />
         {initialTopics && !topicSlug && (
           <TopicDropdownPill
             initialTopics={initialTopics}
@@ -256,10 +260,6 @@ export function ContractFilters(props: {
             updateParams={updateParams}
           />
         )}
-        <FilterDropdownPill
-          selectFilter={selectFilter}
-          currentFilter={filter}
-        />
         {!hideFilter && currentTiers !== DEFAULT_TIER && (
           <AdditionalFilterPill
             type="filter"

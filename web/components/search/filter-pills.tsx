@@ -159,19 +159,28 @@ export function FilterDropdownPill(props: {
   currentFilter: Filter
 }) {
   const { selectFilter, currentFilter } = props
-  const currentFilterLabel = getLabelFromValue(FILTERS, currentFilter)
+  // Remove the closing-month filter from the list while it's in its own button
+  const currentFilterLabel =
+    currentFilter === 'closing-month'
+      ? getLabelFromValue(FILTERS, 'open')
+      : getLabelFromValue(FILTERS, currentFilter)
+
   return (
     <DropdownMenu
       withinOverflowContainer
-      items={FILTERS.map((filter) => {
-        return {
-          name: filter.label,
-          onClick: () => selectFilter(filter.value),
+      items={FILTERS.filter((filter) => filter.value !== 'closing-month').map(
+        (filter) => {
+          return {
+            name: filter.label,
+            onClick: () => selectFilter(filter.value),
+          }
         }
-      })}
-      menuItemsClass={clsx()}
+      )}
       buttonContent={(open) => (
-        <DropdownPill color="indigo" open={open}>
+        <DropdownPill
+          color={currentFilter !== 'closing-month' ? 'indigo' : 'light-gray'}
+          open={open}
+        >
           {currentFilterLabel}
         </DropdownPill>
       )}
