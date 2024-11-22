@@ -281,7 +281,8 @@ export function ContractParamsForm(props: {
     }
   }, [outcomeType])
 
-  const isValidQuestion = question.length > 0
+  const isValidQuestion =
+    question.length > 0 && question.length <= MAX_QUESTION_LENGTH
   const hasAnswers = outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'POLL'
   const isValidMultipleChoice =
     !hasAnswers || answers.every((answer) => answer.trim().length > 0)
@@ -324,20 +325,24 @@ export function ContractParamsForm(props: {
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
     setErrorText('')
+    if (isValid) return
 
-    if (!isValid) {
-      if (!isValidDate) {
-        setErrorText('Close date must be in the future')
-      } else if (!isValidMultipleChoice) {
-        setErrorText(
-          `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
-        )
-      } else if (!isValidTopics) {
-        // can happen in rare cases when duplicating old question
-        setErrorText(
-          `A question can can have at most up to ${MAX_GROUPS_PER_MARKET} topic tags.`
-        )
-      }
+    if (!isValidDate) {
+      setErrorText('Close date must be in the future')
+    } else if (!isValidMultipleChoice) {
+      setErrorText(
+        `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
+      )
+    } else if (!isValidTopics) {
+      // can happen in rare cases when duplicating old question
+      setErrorText(
+        `A question can can have at most up to ${MAX_GROUPS_PER_MARKET} topic tags.`
+      )
+    }
+    if (!isValidQuestion) {
+      setErrorText(
+        `Question must be between 1 and ${MAX_QUESTION_LENGTH} characters`
+      )
     }
   }, [
     isValid,
