@@ -176,7 +176,11 @@ export function BetStatusesText(props: {
         {bought} {money}{' '}
         <OutcomeLabel
           outcome={outcome}
-          answerId={answerId}
+          answer={
+            contract.mechanism === 'cpmm-multi-1'
+              ? contract.answers?.find((a) => a.id === answerId)
+              : undefined
+          }
           contract={contract}
           truncate="short"
         />{' '}
@@ -232,6 +236,11 @@ export function BetStatusText(props: {
     ? getFormattedMappedValue(contract, probAfter)
     : getFormattedMappedValue(contract, limitProb ?? probAfter)
 
+  const answer =
+    contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers?.find((a) => a.id === answerId)
+      : undefined
+
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>
       {!inTimeline ? (
@@ -256,7 +265,7 @@ export function BetStatusText(props: {
           )}{' '}
           <OutcomeLabel
             outcome={outcome}
-            answerId={answerId}
+            answer={answer}
             contract={contract}
             truncate="short"
           />{' '}
@@ -267,7 +276,7 @@ export function BetStatusText(props: {
           {bought} {money}{' '}
           <OutcomeLabel
             outcome={outcome}
-            answerId={answerId}
+            answer={answer}
             contract={contract}
             truncate="short"
           />{' '}

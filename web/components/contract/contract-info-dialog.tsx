@@ -535,7 +535,7 @@ export function ContractInfoDialog(props: {
             {isAdmin || isTrusted ? (
               <SuperBanControl userId={playContract.creatorId} />
             ) : null}
-            {isAdmin && !playContract.siblingContractId && (
+            {!playContract.siblingContractId && (
               <ConfirmationButton
                 openModalBtn={{
                   label: 'Make sweepcash',

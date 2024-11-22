@@ -3,8 +3,8 @@ import { getProbability } from 'common/calculate'
 import {
   BinaryContract,
   Contract,
-  getMainBinaryMCAnswer,
-  MultiContract,
+  // getMainBinaryMCAnswer,
+  // MultiContract,
   OutcomeType,
   resolution,
 } from 'common/contract'
@@ -12,12 +12,13 @@ import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Bet } from 'common/bet'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { AnswerLabel } from './answers/answer-components'
+import { Answer } from 'common/answer'
 
 export function OutcomeLabel(props: {
-  contract: Contract
+  contract: Pick<Contract, 'outcomeType' | 'mechanism'>
   outcome: resolution | string
   truncate: 'short' | 'long' | 'none'
-  answerId?: string
+  answer?: Answer
   pseudonym?: {
     YES: {
       pseudonymName: string
@@ -29,9 +30,9 @@ export function OutcomeLabel(props: {
     }
   }
 }) {
-  const { outcome, contract, truncate, answerId, pseudonym } = props
+  const { outcome, contract, truncate, answer, pseudonym } = props
   const { outcomeType, mechanism } = contract
-  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+  // const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
   const { pseudonymName, pseudonymColor } =
     pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
 
@@ -51,18 +52,18 @@ export function OutcomeLabel(props: {
     )
   }
 
-  if (mainBinaryMCAnswer && mechanism === 'cpmm-multi-1') {
-    return (
-      <MultiOutcomeLabel
-        contract={contract}
-        resolution={
-          outcome === 'YES' ? mainBinaryMCAnswer.id : contract.answers[1].id
-        }
-        truncate={truncate}
-        answerClassName={'font-bold text-base-400 !break-normal'}
-      />
-    )
-  }
+  // TODO: fix
+  // if (mainBinaryMCAnswer && mechanism === 'cpmm-multi-1') {
+  //   return (
+  //     <MultiOutcomeLabel
+  //       contract={contract}
+  //       resolution={answer.id}
+  //       }
+  //       truncate={truncate}
+  //       answerClassName={'font-bold text-base-400 !break-normal'}
+  //     />
+  //   )
+  // }
   if (outcomeType === 'PSEUDO_NUMERIC')
     return <PseudoNumericOutcomeLabel outcome={outcome as any} />
 
@@ -77,10 +78,10 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'NUMBER') {
     return (
       <span>
-        {answerId && (
+        {answer && (
           <MultiOutcomeLabel
-            contract={contract}
-            resolution={answerId}
+            answer={answer}
+            resolution={outcome}
             truncate={truncate}
             answerClassName={'font-bold text-base-400 !break-normal'}
           />
@@ -93,10 +94,10 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'MULTIPLE_CHOICE' && mechanism === 'cpmm-multi-1') {
     return (
       <span>
-        {answerId && (
+        {answer && (
           <MultiOutcomeLabel
-            contract={contract}
-            resolution={answerId}
+            answer={answer}
+            resolution={outcome}
             truncate={truncate}
             answerClassName={'font-bold text-base-400 !break-normal'}
           />
@@ -114,14 +115,7 @@ export function OutcomeLabel(props: {
     return <></>
   }
 
-  return (
-    <MultiOutcomeLabel
-      contract={contract}
-      resolution={outcome}
-      truncate={truncate}
-      answerClassName={'font-bold text-base-400 !break-normal'}
-    />
-  )
+  return <>???</>
 }
 
 export function BinaryOutcomeLabel(props: { outcome: resolution }) {
@@ -165,21 +159,20 @@ export function BinaryContractOutcomeLabel(props: {
 }
 
 export function MultiOutcomeLabel(props: {
-  contract: MultiContract
+  answer: Answer
   resolution: string | 'CANCEL' | 'MKT'
   truncate: 'short' | 'long' | 'none'
   answerClassName?: string
 }) {
-  const { contract, resolution, truncate, answerClassName } = props
+  const { answer, resolution, truncate, answerClassName } = props
 
   if (resolution === 'CANCEL') return <CancelLabel />
   if (resolution === 'MKT' || resolution === 'CHOOSE_MULTIPLE')
     return <MultiLabel />
 
-  const chosen = contract.answers?.find((answer) => answer.id === resolution)
   return (
     <AnswerLabel
-      text={chosen ? chosen.text : `Answer #${resolution}`}
+      text={answer.text}
       truncate={truncate}
       className={answerClassName}
     />

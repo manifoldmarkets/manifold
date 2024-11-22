@@ -101,14 +101,11 @@ export const RepostModal = (props: {
               (bet ? (
                 <CommentReplyHeaderWithBet
                   comment={comment}
-                  liveContract={liveContract}
+                  answers={[]}
                   bet={bet}
                 />
               ) : (
-                <CommentReplyHeader
-                  comment={comment}
-                  liveContract={liveContract}
-                />
+                <CommentReplyHeader comment={comment} answers={[]} />
               ))}
             <Row className={'gap-1'}>
               <UserHovercard userId={comment.userId}>
@@ -160,7 +157,6 @@ export const RepostModal = (props: {
             autoFocus
             replyTo={bet}
             playContract={playContract}
-            liveContract={liveContract}
             trackingLocation={'contract page'}
             commentTypes={['repost']}
             onClearInput={() => setOpen(false)}

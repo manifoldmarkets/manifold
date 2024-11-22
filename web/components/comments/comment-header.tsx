@@ -47,6 +47,7 @@ import { CommentEditHistoryButton } from './comment-edit-history-button'
 import DropdownMenu from './dropdown-menu'
 import { EditCommentModal } from './edit-comment-modal'
 import { RepostModal } from './repost-modal'
+import { type Answer } from 'common/answer'
 
 export function FeedCommentHeader(props: {
   comment: ContractComment
@@ -118,9 +119,9 @@ export function FeedCommentHeader(props: {
                 />
               </span>{' '}
               <OutcomeLabel
-                outcome={betOutcome ? betOutcome : ''}
-                answerId={betAnswerId}
-                contract={liveContract}
+                outcome={betOutcome || ''}
+                answer={answer}
+                contract={playContract}
                 truncate="short"
               />{' '}
               at {formatPercent(betLimitProb)} order
@@ -129,9 +130,9 @@ export function FeedCommentHeader(props: {
             <span>
               {bought} <span className="text-ink-1000">{money}</span>{' '}
               <OutcomeLabel
-                outcome={betOutcome ? betOutcome : ''}
-                answerId={betAnswerId}
-                contract={liveContract}
+                outcome={betOutcome || ''}
+                answerId={answer}
+                contract={playContract}
                 truncate="short"
               />
             </span>
@@ -147,16 +148,20 @@ export function FeedCommentHeader(props: {
           {/* Hide my status if replying to a bet, it's too much clutter*/}
           {!isReplyToBet && !inTimeline && (
             <span className="text-ink-500">
-              <CommentStatus contract={liveContract} comment={comment} />
+              <CommentStatus
+                contract={playContract}
+                answer={answer}
+                comment={comment}
+              />
               {bought} {money}
               {shouldDisplayOutcome && (
                 <>
                   {' '}
                   of{' '}
                   <OutcomeLabel
-                    outcome={betOutcome ? betOutcome : ''}
-                    answerId={betAnswerId}
-                    contract={liveContract}
+                    outcome={betOutcome || ''}
+                    answer={answer}
+                    contract={playContract}
                     truncate="short"
                   />
                 </>
@@ -223,9 +228,9 @@ const getBoughtMoney = (
 export function CommentReplyHeaderWithBet(props: {
   comment: ContractComment
   bet: Bet
-  liveContract: Contract
+  answers: Answer[]
 }) {
-  const { comment, bet, liveContract } = props
+  const { comment, bet, answers } = props
   const { outcome, answerId, amount, orderAmount, limitProb } = bet
   return (
     <CommentReplyHeader
@@ -237,17 +242,17 @@ export function CommentReplyHeaderWithBet(props: {
         betLimitProb: limitProb,
         answerOutcome: answerId,
       }}
-      liveContract={liveContract}
+      answers={answers}
     />
   )
 }
 
 export function CommentReplyHeader(props: {
   comment: ContractComment
-  liveContract: Contract
+  answers: Answer[]
   hideBetHeader?: boolean
 }) {
-  const { comment, liveContract, hideBetHeader } = props
+  const { comment, answers, hideBetHeader } = props
   const {
     bettorName,
     bettorId,
@@ -276,12 +281,11 @@ export function CommentReplyHeader(props: {
         betAmount={betAmount}
         betOrderAmount={betOrderAmount}
         betLimitProb={betLimitProb}
-        liveContract={liveContract}
       />
     )
   }
-  if (answerOutcome && 'answers' in liveContract) {
-    const answer = liveContract.answers.find((a) => a.id === answerOutcome)
+  if (answerOutcome) {
+    const answer = answers.find((a) => a.id === answerOutcome)
     if (answer) return <CommentOnAnswer answer={answer} />
   }
 
@@ -289,7 +293,7 @@ export function CommentReplyHeader(props: {
 }
 
 export function ReplyToBetRow(props: {
-  liveContract: Contract
+  contract: Pick<Contract, 'outcomeType' | 'mechanism'>
   commenterIsBettor: boolean
   betOutcome: string
   betAmount: number
@@ -298,7 +302,7 @@ export function ReplyToBetRow(props: {
   bettorUsername?: string
   betOrderAmount?: number
   betLimitProb?: number
-  betAnswerId?: string
+  betAnswer?: Answer
   clearReply?: () => void
 }) {
   const {
@@ -308,8 +312,8 @@ export function ReplyToBetRow(props: {
     bettorUsername,
     bettorName,
     bettorId,
-    betAnswerId,
-    liveContract: contract,
+    betAnswer,
+    contract,
     clearReply,
     betLimitProb,
     betOrderAmount,
@@ -337,14 +341,14 @@ export function ReplyToBetRow(props: {
         {!commenterIsBettor && bettorId && (
           <UserHovercard userId={bettorId}>
             <UserLink
-              short={(isLimitBet || betAnswerId !== undefined) && isMobile}
+              short={(isLimitBet || betAnswer) && isMobile}
               user={user}
             />
           </UserHovercard>
         )}
         {!commenterIsBettor && !bettorId && bettorName && bettorUsername && (
           <UserLink
-            short={(isLimitBet || betAnswerId !== undefined) && isMobile}
+            short={(isLimitBet || betAnswer) && isMobile}
             user={{
               id: bettorId ?? bettorName + bettorUsername,
               name: bettorName,
@@ -369,8 +373,8 @@ export function ReplyToBetRow(props: {
               />
             </span>
             <OutcomeLabel
-              outcome={betOutcome ? betOutcome : ''}
-              answerId={betAnswerId}
+              outcome={betOutcome || ''}
+              answer={betAnswer}
               contract={contract}
               truncate="short"
             />{' '}
@@ -381,8 +385,8 @@ export function ReplyToBetRow(props: {
             {bought}
             <span className="text-ink-1000">{money}</span>
             <OutcomeLabel
-              outcome={betOutcome ? betOutcome : ''}
-              answerId={betAnswerId}
+              outcome={betOutcome || ''}
+              answer={betAnswer}
               contract={contract}
               truncate="short"
             />
@@ -404,17 +408,20 @@ export function ReplyToBetRow(props: {
 }
 
 function CommentStatus(props: {
-  contract: Contract
+  contract: Pick<Contract, 'outcomeType' | 'mechanism'>
+  answer?: Answer
   comment: ContractComment
 }) {
   const { contract, comment } = props
-  const { resolution } = contract
   const {
     commenterPositionProb,
     commenterPositionOutcome,
     commenterPositionAnswerId,
     commenterPositionShares,
   } = comment
+
+  // TODO: what to do here? get the answer? pass another answer in?
+  // casche on the comment?
 
   if (
     comment.betId == null &&
@@ -425,10 +432,10 @@ function CommentStatus(props: {
   )
     return (
       <>
-        {resolution ? 'predicted ' : `predicts `}
+        predicted
         <OutcomeLabel
           outcome={commenterPositionOutcome}
-          answerId={commenterPositionAnswerId}
+          answer={answer}
           contract={contract}
           truncate="short"
         />

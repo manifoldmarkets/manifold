@@ -1,4 +1,9 @@
-import { log, getUsers, revalidateContractStaticProps } from 'shared/utils'
+import {
+  log,
+  getUsers,
+  revalidateContractStaticProps,
+  getContract,
+} from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { humanish, User } from 'common/user'
@@ -257,7 +262,20 @@ const handleBetReplyToComment = async (
 
   if (!comment) return
 
-  const allBetReplies = await getBetsRepliedToComment(pg, comment, contract.id)
+  const manaContract =
+    contract.token === 'CASH'
+      ? await getContract(pg, contract.siblingContractId!)
+      : contract
+
+  if (!manaContract) return
+
+  const allBetReplies = await getBetsRepliedToComment(
+    pg,
+    comment,
+    contract.id,
+    contract.siblingContractId
+  )
+
   const bets = filterDefined(allBetReplies)
   // This could potentially miss some bets if they're not replicated in time
   if (!bets.some((b) => b.id === bet.id)) bets.push(bet)

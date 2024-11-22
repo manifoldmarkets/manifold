@@ -16,6 +16,7 @@ import {
 import { insertModReport } from 'shared/create-mod-report'
 import { updateContract } from 'shared/supabase/contracts'
 import { followContractInternal } from 'api/follow-contract'
+import { getAnswer } from 'shared/supabase/answers'
 
 export const onCreateCommentOnContract = async (props: {
   contract: Contract
@@ -51,12 +52,8 @@ const getReplyInfo = async (
   comment: ContractComment,
   contract: Contract
 ) => {
-  if (
-    comment.answerOutcome &&
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.answers
-  ) {
-    const answer = contract.answers.find((a) => a.id === comment.answerOutcome)
+  if (comment.answerOutcome && contract.outcomeType === 'MULTIPLE_CHOICE') {
+    const answer = await getAnswer(pg, comment.answerOutcome)
     const comments = await pg.manyOrNone(
       `select comment_id, user_id
       from contract_comments

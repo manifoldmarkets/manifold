@@ -47,6 +47,7 @@ import { TRADE_TERM } from 'common/envs/constants'
 export function ContractTabs(props: {
   mainContract: Contract
   liveContract: Contract
+  answers: Answer[]
   bets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
@@ -65,6 +66,7 @@ export function ContractTabs(props: {
   const {
     mainContract,
     liveContract,
+    answers,
     comments,
     bets,
     replyTo,
@@ -119,6 +121,7 @@ export function ContractTabs(props: {
             <CommentsTabContent
               playContract={mainContract}
               liveContract={liveContract}
+              answers={answers}
               comments={comments}
               pinnedComments={pinnedComments}
               setCommentsLength={setTotalComments}
@@ -172,6 +175,7 @@ export function ContractTabs(props: {
 const LOAD_MORE = 10
 export const CommentsTabContent = memo(function CommentsTabContent(props: {
   playContract: Contract // contains the comments
+  answers: Answer[]
   liveContract: Contract // you trade on this
   comments: ContractComment[]
   blockedUserIds: string[]
@@ -187,6 +191,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 }) {
   const {
     playContract,
+    answers,
     liveContract,
     blockedUserIds,
     setCommentsLength,
@@ -375,7 +380,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         replyTo={replyTo}
         className="mb-4 mr-px mt-px"
         playContract={playContract}
-        liveContract={liveContract}
+        answers={answers}
         clearReply={clearReply}
         trackingLocation={'contract page'}
         commentTypes={['comment', 'repost']}

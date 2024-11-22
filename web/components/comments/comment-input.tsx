@@ -247,7 +247,7 @@ export function CommentInputTextArea(props: {
 
 export function ContractCommentInput(props: {
   playContract: Contract
-  liveContract: Contract
+  answers?: Answer[]
   autoFocus: boolean
   className?: string
   replyTo?: Answer | Bet
@@ -261,7 +261,7 @@ export function ContractCommentInput(props: {
 }) {
   const {
     playContract,
-    liveContract,
+    answers,
     autoFocus,
     replyTo,
     parentCommentId,
@@ -326,8 +326,8 @@ export function ContractCommentInput(props: {
           bettorId={replyTo.userId}
           betOrderAmount={replyTo.orderAmount}
           betLimitProb={replyTo.limitProb}
-          betAnswerId={replyTo.answerId}
-          liveContract={liveContract}
+          betAnswer={answers?.find((a) => a.id === replyTo.answerId)}
+          contract={playContract}
           clearReply={clearReply}
         />
       ) : replyTo ? (
