@@ -6,9 +6,7 @@ export async function getReferrals(userId: string) {
   const { data } = await run(
     db
       .from('users')
-      .select(
-        `id, name, username, data->'avatarUrl', data->'isBannedFromPosting'`
-      )
+      .select(`id, name, username, data->avatarUrl, data->isBannedFromPosting`)
       .contains('data', {
         referredByUserId: userId,
       })

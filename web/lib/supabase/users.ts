@@ -50,9 +50,7 @@ export async function getDisplayUsers(userIds: string[]) {
   const { data } = await run(
     db
       .from('users')
-      .select(
-        `id, name, username, data->'avatarUrl', data->'isBannedFromPosting'`
-      )
+      .select(`id, name, username, data->avatarUrl, data->isBannedFromPosting`)
       .in('id', userIds)
   )
 

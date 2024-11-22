@@ -316,7 +316,7 @@ function UserReactedFullList(props: {
   const reacts = useReactionsOnContent(contentType, contentId)?.filter(
     (reaction: Reaction) => reaction.reaction_type == reactionType
   )
-  console.log(reacts)
+
   const displayInfos = useReactedDisplayList(reacts, user, userReacted)
 
   return (
