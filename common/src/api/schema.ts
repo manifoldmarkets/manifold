@@ -65,6 +65,7 @@ import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
+import { JSONContent } from '@tiptap/core'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -1825,6 +1826,18 @@ export const API = (_apiTypeCheck = {
       .object({
         prompt: z.string(),
         existingTitles: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
+  'generate-ai-description': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { description: JSONContent | undefined },
+    props: z
+      .object({
+        question: z.string(),
+        description: z.string().optional(),
       })
       .strict(),
   },

@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
-import { generateJSON } from '@tiptap/core'
+import { generateJSON, JSONContent } from '@tiptap/core'
 
 import {
   add_answers_mode,
@@ -64,6 +64,7 @@ import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MarketTierType } from 'common/tier'
 import { randomString } from 'common/util/random'
 import { formatWithToken } from 'common/util/format'
+import { BiUndo } from 'react-icons/bi'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -482,6 +483,43 @@ export function ContractParamsForm(props: {
 
   const isMulti = outcomeType === 'MULTIPLE_CHOICE'
   const isNumericMulti = outcomeType === 'NUMBER'
+
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
+  const [preGenerateContent, setPreGenerateContent] = useState<
+    JSONContent | undefined
+  >()
+
+  const generateAIDescription = async () => {
+    if (!question) return
+    setIsGeneratingDescription(true)
+    try {
+      // Store current content before generating
+      setPreGenerateContent(editor?.getJSON())
+
+      const result = await api('generate-ai-description', {
+        question,
+        description: editor?.getHTML(),
+      })
+      if (result.description && editor) {
+        const endPos = editor.state.doc.content.size
+        editor.commands.setTextSelection(endPos)
+        editor.commands.insertContent(result.description)
+      }
+    } catch (e) {
+      console.error('Error generating description:', e)
+      // Reset preGenerateContent on error
+      setPreGenerateContent(undefined)
+    }
+    setIsGeneratingDescription(false)
+  }
+
+  const undoGeneration = () => {
+    if (preGenerateContent && editor) {
+      editor.commands.setContent(preGenerateContent)
+      setPreGenerateContent(undefined)
+    }
+  }
+
   return (
     <Col className="gap-6">
       <Col>
@@ -592,9 +630,33 @@ export function ContractParamsForm(props: {
         question={question}
       />
       <Col className="items-start gap-3">
-        <label className="px-1">
-          <span>Description</span>
-        </label>
+        <Row className="w-full items-center justify-between">
+          <label className="px-1">
+            <span>Description</span>
+          </label>
+          <Row className="gap-2">
+            {preGenerateContent && (
+              <Button
+                color="gray-outline"
+                size="xs"
+                disabled={isGeneratingDescription}
+                onClick={undoGeneration}
+                className="gap-1"
+              >
+                <BiUndo className="h-4 w-4" />
+              </Button>
+            )}
+            <Button
+              color="indigo-outline"
+              size="xs"
+              loading={isGeneratingDescription}
+              onClick={generateAIDescription}
+              disabled={!question || isGeneratingDescription}
+            >
+              Generate with AI
+            </Button>
+          </Row>
+        </Row>
         <TextEditor editor={editor} />
       </Col>
       <CloseTimeSection

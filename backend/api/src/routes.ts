@@ -132,6 +132,7 @@ import { getTopicTopics } from './get-topic-topics'
 import { getTopicDashboards } from './get-topic-dashboards'
 import { generateAIMarketSuggestions } from './generate-ai-market-suggestions'
 import { generateAIMarketSuggestions2 } from './generate-ai-market-suggestions-2'
+import { generateAIDescription } from './generate-ai-description'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -283,4 +284,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-daily-changed-metrics-and-contracts': getDailyChangedMetricsAndContracts,
   'generate-ai-market-suggestions': generateAIMarketSuggestions,
   'generate-ai-market-suggestions-2': generateAIMarketSuggestions2,
+  'generate-ai-description': generateAIDescription,
 }

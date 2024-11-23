@@ -9,12 +9,9 @@ import {
 } from 'common/ai-creation-prompts'
 import { anythingToRichText } from 'shared/tiptap'
 import { track } from 'shared/analytics'
-import {
-  largePerplexityModel,
-  smallPerplexityModel,
-} from 'shared/helpers/perplexity'
+import { largePerplexityModel, perplexity } from 'shared/helpers/perplexity'
 import { getContentFromPrompt } from './generate-ai-market-suggestions'
-
+const perplexitySystemPrompt = `You are a helpful assistant that uses the internet to research all relevant information to a user's prompt and supplies the user with as much information as possible.`
 // In this version, we use Perplexity to generate context for the prompt, and then Claude to generate market suggestions
 export const generateAIMarketSuggestions2: APIHandler<
   'generate-ai-market-suggestions-2'
@@ -34,6 +31,7 @@ export const generateAIMarketSuggestions2: APIHandler<
 
   const perplexityResponse = await perplexity(promptIncludingUrlContent, {
     model: largePerplexityModel,
+    systemPrompts: [perplexitySystemPrompt],
   })
 
   const { messages, citations } = perplexityResponse
@@ -98,56 +96,4 @@ export const generateAIMarketSuggestions2: APIHandler<
   })
 
   return parsedMarkets
-}
-
-const perplexitySystemPrompt = `You are a helpful assistant that uses the internet to research all relevant information to a user's prompt and supplies the user with as much information as possible.`
-export const perplexity = async (
-  query: string,
-  options: { model?: string } = {}
-) => {
-  const apiKey = process.env.PERPLEXITY_API_KEY
-  const { model = smallPerplexityModel } = options
-  const requestOptions = {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: perplexitySystemPrompt,
-        },
-        {
-          role: 'user',
-          content: query,
-        },
-      ],
-      temperature: 0.2,
-      return_citations: true,
-    }),
-  }
-
-  try {
-    const response = await fetch(
-      'https://api.perplexity.ai/chat/completions',
-      requestOptions
-    )
-    const data = await response.json()
-
-    // Extract citations if they exist
-    const citations = data.citations || []
-
-    // Map the choices and attach only referenced citations
-    const messages = data.choices.map(
-      (choice: any) => choice.message.content
-    ) as string[]
-
-    return { messages, citations }
-  } catch (err) {
-    console.error(err)
-    throw new APIError(500, 'Failed to generate markets')
-  }
 }

@@ -9,10 +9,16 @@ export const hugePerplexityModel = 'llama-3.1-sonar-huge-128k-online'
 
 export const perplexity = async (
   query: string,
-  options: { model?: string } = {}
+  options: {
+    model?: string
+    systemPrompts?: string[]
+  } = {}
 ) => {
   const apiKey = process.env.PERPLEXITY_API_KEY
-  const { model = smallPerplexityModel } = options
+  const {
+    model = smallPerplexityModel,
+    systemPrompts = [perplexitySystemPrompt, guidelinesPrompt],
+  } = options
   const requestOptions = {
     method: 'POST',
     headers: {
@@ -22,14 +28,10 @@ export const perplexity = async (
     body: JSON.stringify({
       model,
       messages: [
-        {
+        ...systemPrompts.map((prompt) => ({
           role: 'system',
-          content: perplexitySystemPrompt,
-        },
-        {
-          role: 'system',
-          content: guidelinesPrompt,
-        },
+          content: prompt,
+        })),
         {
           role: 'user',
           content: query,
@@ -48,7 +50,7 @@ export const perplexity = async (
     const data = await response.json()
 
     // Extract citations if they exist
-    const citations = data.citations || []
+    const citations = (data.citations || []) as string[]
 
     // Map the choices and attach only referenced citations
     const messages = data.choices.map(
