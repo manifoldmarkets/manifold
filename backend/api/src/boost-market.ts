@@ -22,7 +22,7 @@ export const boostmarket = authEndpoint(async (req, auth) => {
     throw new APIError(400, `Total cost must be at least ${costPerView}`)
   }
 
-  log('boosting market')
+  log('boosting market:', marketId)
   const pg = createSupabaseDirectClient()
 
   const contractEmbedding = await pg.oneOrNone(
