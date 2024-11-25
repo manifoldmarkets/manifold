@@ -61,7 +61,14 @@ export function ContractFilters(props: {
   initialTopics?: LiteGroup[]
   hideSweepsToggle?: boolean
 }) {
-  const { className, params, updateParams, topicSlug, initialTopics, hideSweepsToggle } = props
+  const {
+    className,
+    params,
+    updateParams,
+    topicSlug,
+    initialTopics,
+    hideSweepsToggle,
+  } = props
 
   const {
     s: sort,
@@ -151,8 +158,8 @@ export function ContractFilters(props: {
         {!hideSweepsToggle && (
           <SweepsToggle
             sweepsEnabled={true}
-          isPlay={!isSweeps}
-          onClick={toggleSweepies}
+            isPlay={!isSweeps}
+            onClick={toggleSweepies}
             isSmall
           />
         )}
