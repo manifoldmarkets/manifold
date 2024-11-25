@@ -4,15 +4,31 @@ import { track } from 'shared/analytics'
 import { anythingToRichText } from 'shared/tiptap'
 import { largePerplexityModel, perplexity } from 'shared/helpers/perplexity'
 import { models, promptClaude } from 'shared/helpers/claude'
+import { outcomeTypeDescriptions } from 'common/ai-creation-prompts'
 
 export const generateAIDescription: APIHandler<
   'generate-ai-description'
 > = async (props, auth) => {
-  const { question, description } = props
+  const { question, description, answers, outcomeType, shouldAnswersSumToOne } =
+    props
+  const includeAnswers =
+    answers &&
+    answers.length > 0 &&
+    outcomeType &&
+    ['MULTIPLE_CHOICE', 'POLL'].includes(outcomeType)
+  const outcomeKey =
+    outcomeType == 'MULTIPLE_CHOICE'
+      ? shouldAnswersSumToOne
+        ? 'DEPENDENT_MULTIPLE_CHOICE'
+        : 'INDEPENDENT_MULTIPLE_CHOICE'
+      : outcomeType
 
   const userQuestionAndDescription = `Question: ${question} ${
-    description ? `\n\nCurrent description: ${description}` : ''
-  }`
+    description && description !== '<p></p>'
+      ? `\nDescription: ${description}`
+      : ''
+  } ${includeAnswers ? `\nMaybe: ${answers.join(', ')}` : ''}
+  `
 
   log('Generating AI description for:', userQuestionAndDescription)
   try {
@@ -28,18 +44,26 @@ export const generateAIDescription: APIHandler<
     const perplexityResponse =
       [messages].join('\n') + '\n\nSources:\n' + citations.join('\n\n')
 
-    const systemPrompt = `You are a helpful AI assistant that generates detailed descriptions for prediction markets. Your goal is to provide relevant context, background information, and clear resolution criteria that will help traders make informed predictions.
-Guidelines:
-- Keep descriptions concise but informative
-- Include relevant sources and data when available
-- Clearly state how the market will be resolved
-- Try to think of any edge cases or special scenarios that traders should be aware of, mention them in the description and how the market will be resolved in those cases
-- Don't repeat the question in the description
-- Focus on objective facts rather than opinions
-- Format the response as markdown with sections such as "Background", "Resolution criteria", "Things to consider", etc.
-- Here is current information from the internet that is related to the user's prompt. Include information from it in the description that traders or other readers may want to know if it's relevant to the user's question:
-${perplexityResponse}
-`
+    const systemPrompt = `
+    You are a helpful AI assistant that generates detailed descriptions for prediction markets. Your goal is to provide relevant context, background information, and clear resolution criteria that will help traders make informed predictions.
+    ${
+      outcomeKey
+        ? `Their market is of type ${outcomeKey}\n${outcomeTypeDescriptions}`
+        : ''
+    }
+    Guidelines:
+    - Keep descriptions concise but informative
+    - If the market is personal, (i.e. I will attend the most parties, or I will get a girlfriend) word resolution criteria in the first person
+    - Include relevant sources and data when available
+    - Clearly state how the market will be resolved
+    - Try to think of any edge cases or special scenarios that traders should be aware of, mention them in the description and how the market will be resolved in those cases
+    - Don't repeat the question in the description
+    - Focus on objective facts rather than opinions
+    - If the market has a precondition, such as 'If I attend, will I enjoy the party?', or 'If Biden runs, will he win?', markets should resolve N/A if the precondition is not met
+    - Format the response as markdown with sections such as "Background", "Resolution criteria", "Things to consider", etc.
+    - Here is current information from the internet that is related to the user's prompt. Include information from it in the description that traders or other readers may want to know if it's relevant to the user's question:
+    ${perplexityResponse}
+    `
 
     const prompt = `${userQuestionAndDescription}\n\n Only return the markdown description, nothing else`
     const claudeResponse = await promptClaude(prompt, {

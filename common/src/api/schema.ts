@@ -1838,6 +1838,9 @@ export const API = (_apiTypeCheck = {
       .object({
         question: z.string(),
         description: z.string().optional(),
+        answers: z.array(z.string()).optional(),
+        outcomeType: z.string().optional(),
+        shouldAnswersSumToOne: coerceBoolean.optional(),
       })
       .strict(),
   },

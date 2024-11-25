@@ -499,6 +499,9 @@ export function ContractParamsForm(props: {
       const result = await api('generate-ai-description', {
         question,
         description: editor?.getHTML(),
+        answers,
+        outcomeType,
+        shouldAnswersSumToOne,
       })
       if (result.description && editor) {
         const endPos = editor.state.doc.content.size
