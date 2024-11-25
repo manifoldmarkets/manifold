@@ -187,6 +187,7 @@ export const ChoiceContractChart = (props: {
 
   const graphedData = pick(data, chosenAnswerIds)
 
+  console.log(zoomParams)
   const [lowestPoint, highestPoint] = useMemo(() => {
     if (!zoomY) return [0, 1]
 
