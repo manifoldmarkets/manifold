@@ -59,8 +59,9 @@ export function ContractFilters(props: {
   updateParams: (params: Partial<SearchParams>) => void
   topicSlug?: string
   initialTopics?: LiteGroup[]
+  hideSweepsToggle?: boolean
 }) {
-  const { className, params, updateParams, topicSlug, initialTopics } = props
+  const { className, params, updateParams, topicSlug, initialTopics, hideSweepsToggle } = props
 
   const {
     s: sort,
@@ -147,12 +148,14 @@ export function ContractFilters(props: {
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
       <Carousel labelsParentClassName="gap-1 items-center">
-        <SweepsToggle
-          sweepsEnabled={true}
+        {!hideSweepsToggle && (
+          <SweepsToggle
+            sweepsEnabled={true}
           isPlay={!isSweeps}
           onClick={toggleSweepies}
-          isSmall
-        />
+            isSmall
+          />
+        )}
 
         <Row className="bg-ink-200 dark:bg-ink-300 items-center rounded-full">
           <button
