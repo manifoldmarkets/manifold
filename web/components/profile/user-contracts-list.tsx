@@ -124,6 +124,7 @@ export function UserContractsList(props: {
         additionalFilter={{
           creatorId: creator.id,
         }}
+        hideSweepsToggle
         persistPrefix={persistPrefix}
         emptyState={
           <>

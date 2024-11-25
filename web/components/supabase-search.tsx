@@ -193,6 +193,7 @@ export function SupabaseSearch(props: {
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
   hideActions?: boolean
+  hideSweepsToggle?: boolean
   headerClassName?: string
   isWholePage?: boolean
   // used to determine if search params should be updated in the URL
@@ -216,6 +217,7 @@ export function SupabaseSearch(props: {
     additionalFilter,
     onContractClick,
     hideActions,
+    hideSweepsToggle,
     highlightContractIds,
     headerClassName,
     persistPrefix,
@@ -278,7 +280,8 @@ export function SupabaseSearch(props: {
     searchParams,
     showSearchTypes,
     topicSlug,
-    additionalFilter
+    additionalFilter,
+    hideSweepsToggle
   )
 
   const showTopics = topics && topics.length > 0 && query && query.length > 0
@@ -429,6 +432,7 @@ export function SupabaseSearch(props: {
             }
             topicSlug={topicSlug}
             initialTopics={initialTopics}
+            hideSweepsToggle={hideSweepsToggle}
           />
         )}
       </Col>
@@ -568,7 +572,8 @@ const useSearchResults = (
   searchParams: SearchParams,
   showSearchTypes: boolean,
   topicSlug: string,
-  additionalFilter?: SupabaseAdditionalFilter
+  additionalFilter?: SupabaseAdditionalFilter,
+  hideSweepsToggle?: boolean
 ) => {
   const [state, setState] = usePersistentInMemoryState<SearchState>(
     FRESH_SEARCH_CHANGED_STATE,
@@ -641,7 +646,11 @@ const useSearchResults = (
               isPrizeMarket: isPrizeMarketString,
               marketTier,
               forYou,
-              token: isSweepiesString === '1' ? 'CASH' : 'MANA',
+              token: hideSweepsToggle
+                ? 'ALL'
+                : isSweepiesString === '1'
+                ? 'CASH'
+                : 'MANA',
             }),
           ]
 
