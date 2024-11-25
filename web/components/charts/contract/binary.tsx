@@ -40,8 +40,6 @@ const getVisibleYRange = (params: {
 }) => {
   const { data, zoomY, start, end, zoomParams } = params
 
-  console.log(zoomParams)
-
   if (!zoomY || !zoomParams?.xScale) return [0, 1]
 
   const [minXDate, maxXDate] = zoomParams?.viewXScale.domain() ?? [null, null]
@@ -53,7 +51,7 @@ const getVisibleYRange = (params: {
   ) {
     return [0, 1]
   }
-  
+
   const minX = minXDate ? minXDate.getTime() : start
   const maxX = maxXDate ? maxXDate.getTime() : end
 
