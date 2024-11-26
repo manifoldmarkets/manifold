@@ -7,41 +7,42 @@ import {
   multiChoiceOutcomeTypeDescriptions,
 } from 'common/ai-creation-prompts'
 import { log } from 'shared/utils'
+import { rateLimitByUser } from './helpers/rate-limit'
+import { HOUR_MS } from 'common/util/time'
 
-export const generateAIAnswers: APIHandler<'generate-ai-answers'> = async (
-  props,
-  auth
-) => {
-  const { question, shouldAnswersSumToOne, description, answers } = props
-  const answersString = answers.filter(Boolean).join(', ')
-  const prompt = `Question: ${question} ${
-    description && description !== '<p></p>'
-      ? `\nDescription: ${description}`
-      : ''
-  } ${
-    answersString.length
-      ? `\nHere are my suggested answers: ${answersString}`
-      : ''
-  }`
-  log('generateAIAnswers prompt', prompt)
-  const outcomeKey = shouldAnswersSumToOne
-    ? 'DEPENDENT_MULTIPLE_CHOICE'
-    : 'INDEPENDENT_MULTIPLE_CHOICE'
-  log('generateAIAnswers', { props })
-  try {
-    // First use perplexity to research the topic
-    const { messages, citations } = await perplexity(prompt, {
-      model: largePerplexityModel,
-      systemPrompts: [
-        `You are a helpful AI assistant that researches information to help generate possible answers for a multiple choice question.`,
-      ],
-    })
+export const generateAIAnswers: APIHandler<'generate-ai-answers'> =
+  rateLimitByUser(
+    async (props, auth) => {
+      const { question, shouldAnswersSumToOne, description, answers } = props
+      const answersString = answers.filter(Boolean).join(', ')
+      const prompt = `Question: ${question} ${
+        description && description !== '<p></p>'
+          ? `\nDescription: ${description}`
+          : ''
+      } ${
+        answersString.length
+          ? `\nHere are my suggested answers: ${answersString}`
+          : ''
+      }`
+      log('generateAIAnswers prompt', prompt)
+      const outcomeKey = shouldAnswersSumToOne
+        ? 'DEPENDENT_MULTIPLE_CHOICE'
+        : 'INDEPENDENT_MULTIPLE_CHOICE'
+      log('generateAIAnswers', { props })
+      try {
+        // First use perplexity to research the topic
+        const { messages, citations } = await perplexity(prompt, {
+          model: largePerplexityModel,
+          systemPrompts: [
+            `You are a helpful AI assistant that researches information to help generate possible answers for a multiple choice question.`,
+          ],
+        })
 
-    const perplexityResponse =
-      [messages].join('\n') + '\n\nSources:\n' + citations.join('\n\n')
+        const perplexityResponse =
+          [messages].join('\n') + '\n\nSources:\n' + citations.join('\n\n')
 
-    // Then use Claude to generate the answers
-    const systemPrompt = `
+        // Then use Claude to generate the answers
+        const systemPrompt = `
     You are a helpful AI assistant that generates possible answers for multiple choice prediction market questions.
     The question type is ${outcomeKey}.
     ${multiChoiceOutcomeTypeDescriptions}
@@ -66,23 +67,25 @@ export const generateAIAnswers: APIHandler<'generate-ai-answers'> = async (
     ${perplexityResponse}
     `
 
-    const claudePrompt = `${prompt}\n\nReturn ONLY a JSON object containing "answers" string array and "addAnswersMode" string.`
+        const claudePrompt = `${prompt}\n\nReturn ONLY a JSON object containing "answers" string array and "addAnswersMode" string.`
 
-    const claudeResponse = await promptClaude(claudePrompt, {
-      model: models.sonnet,
-      system: systemPrompt,
-    })
-    log('claudeResponse', claudeResponse)
+        const claudeResponse = await promptClaude(claudePrompt, {
+          model: models.sonnet,
+          system: systemPrompt,
+        })
+        log('claudeResponse', claudeResponse)
 
-    const result = JSON.parse(claudeResponse)
+        const result = JSON.parse(claudeResponse)
 
-    track(auth.uid, 'generate-ai-answers', {
-      question,
-    })
+        track(auth.uid, 'generate-ai-answers', {
+          question,
+        })
 
-    return result
-  } catch (e) {
-    console.error('Failed to generate answers:', e)
-    throw new APIError(500, 'Failed to generate answers. Please try again.')
-  }
-}
+        return result
+      } catch (e) {
+        console.error('Failed to generate answers:', e)
+        throw new APIError(500, 'Failed to generate answers. Please try again.')
+      }
+    },
+    { maxCalls: 60, windowMs: HOUR_MS }
+  )

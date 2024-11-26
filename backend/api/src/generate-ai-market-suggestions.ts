@@ -11,33 +11,34 @@ import {
 import { anythingToRichText } from 'shared/tiptap'
 import { track } from 'shared/analytics'
 import { scrapeUrl } from './helpers/crawl'
-
+import { rateLimitByUser } from './helpers/rate-limit'
+import { HOUR_MS } from 'common/util/time'
 // In this version, we use Perplexity to generate market suggestions, and then refine them with Claude
-export const generateAIMarketSuggestions: APIHandler<
-  'generate-ai-market-suggestions'
-> = async (props, auth) => {
-  const { prompt, existingTitles } = props
-  log('Prompt:', prompt)
+export const generateAIMarketSuggestions: APIHandler<'generate-ai-market-suggestions'> =
+  rateLimitByUser(
+    async (props, auth) => {
+      const { prompt, existingTitles } = props
+      log('Prompt:', prompt)
 
-  const promptIncludingTitlesToIgnore = existingTitles?.length
-    ? `${prompt}\n\nPlease suggest new market ideas that are different from these ones:\n${existingTitles
-        .map((t) => `- ${t}`)
-        .join('\n')}`
-    : prompt
+      const promptIncludingTitlesToIgnore = existingTitles?.length
+        ? `${prompt}\n\nPlease suggest new market ideas that are different from these ones:\n${existingTitles
+            .map((t) => `- ${t}`)
+            .join('\n')}`
+        : prompt
 
-  const promptIncludingUrlContent = await getContentFromPrompt(
-    promptIncludingTitlesToIgnore
-  )
-  const perplexityResponse = await perplexity(promptIncludingUrlContent, {
-    model: largePerplexityModel,
-  })
+      const promptIncludingUrlContent = await getContentFromPrompt(
+        promptIncludingTitlesToIgnore
+      )
+      const perplexityResponse = await perplexity(promptIncludingUrlContent, {
+        model: largePerplexityModel,
+      })
 
-  const { messages, citations } = perplexityResponse
-  log('Perplexity response:', messages.join('\n'))
-  log('Sources:', citations.join('\n'))
+      const { messages, citations } = perplexityResponse
+      log('Perplexity response:', messages.join('\n'))
+      log('Sources:', citations.join('\n'))
 
-  // Format the perplexity suggestions for Claude
-  const claudePrompt = `  
+      // Format the perplexity suggestions for Claude
+      const claudePrompt = `  
     ${formattingPrompt}
 
     Please review the market suggestions and refine them according to the following guidelines:
@@ -60,40 +61,42 @@ export const generateAIMarketSuggestions: APIHandler<
     ONLY return a valid JSON array of market objects and do NOT include any other text.
   `
 
-  const claudeResponse = await promptClaude(claudePrompt, {
-    model: models.sonnet,
-    system: claudeSystemPrompt,
-  })
-
-  // Parse the JSON response
-  let parsedMarkets: AIGeneratedMarket[] = []
-  try {
-    parsedMarkets = JSON.parse(claudeResponse).map(
-      (market: AIGeneratedMarket) => ({
-        ...market,
-        description: anythingToRichText({
-          markdown: market.descriptionMarkdown,
-        }),
-        promptVersion: 1,
+      const claudeResponse = await promptClaude(claudePrompt, {
+        model: models.sonnet,
+        system: claudeSystemPrompt,
       })
-    )
-  } catch (e) {
-    console.error('Failed to parse Claude response:', e)
-    throw new APIError(
-      500,
-      'Failed to parse market suggestions from Claude. Please try again.'
-    )
-  }
-  track(auth.uid, 'generate-ai-market-suggestions', {
-    marketTitles: parsedMarkets.map((m) => m.question),
-    prompt,
-    regenerate: !!existingTitles,
-    hasScrapedContent:
-      promptIncludingUrlContent !== promptIncludingTitlesToIgnore,
-  })
 
-  return parsedMarkets
-}
+      // Parse the JSON response
+      let parsedMarkets: AIGeneratedMarket[] = []
+      try {
+        parsedMarkets = JSON.parse(claudeResponse).map(
+          (market: AIGeneratedMarket) => ({
+            ...market,
+            description: anythingToRichText({
+              markdown: market.descriptionMarkdown,
+            }),
+            promptVersion: 1,
+          })
+        )
+      } catch (e) {
+        console.error('Failed to parse Claude response:', e)
+        throw new APIError(
+          500,
+          'Failed to parse market suggestions from Claude. Please try again.'
+        )
+      }
+      track(auth.uid, 'generate-ai-market-suggestions', {
+        marketTitles: parsedMarkets.map((m) => m.question),
+        prompt,
+        regenerate: !!existingTitles,
+        hasScrapedContent:
+          promptIncludingUrlContent !== promptIncludingTitlesToIgnore,
+      })
+
+      return parsedMarkets
+    },
+    { maxCalls: 60, windowMs: HOUR_MS }
+  )
 
 // Updated regex to match both http(s) and www URLs
 const URL_REGEX = /(https?:\/\/[^\s]+|www\.[^\s]+)/g

@@ -8,52 +8,54 @@ import {
   addAnswersModeDescription,
   outcomeTypeDescriptions,
 } from 'common/ai-creation-prompts'
+import { HOUR_MS } from 'common/util/time'
+import { rateLimitByUser } from './helpers/rate-limit'
 
-export const generateAIDescription: APIHandler<
-  'generate-ai-description'
-> = async (props, auth) => {
-  const {
-    question,
-    description,
-    answers,
-    outcomeType,
-    shouldAnswersSumToOne,
-    addAnswersMode,
-  } = props
-  const includeAnswers =
-    answers &&
-    answers.length > 0 &&
-    outcomeType &&
-    ['MULTIPLE_CHOICE', 'POLL'].includes(outcomeType)
-  const outcomeKey =
-    outcomeType == 'MULTIPLE_CHOICE'
-      ? shouldAnswersSumToOne
-        ? 'DEPENDENT_MULTIPLE_CHOICE'
-        : 'INDEPENDENT_MULTIPLE_CHOICE'
-      : outcomeType
+export const generateAIDescription: APIHandler<'generate-ai-description'> =
+  rateLimitByUser(
+    async (props, auth) => {
+      const {
+        question,
+        description,
+        answers,
+        outcomeType,
+        shouldAnswersSumToOne,
+        addAnswersMode,
+      } = props
+      const includeAnswers =
+        answers &&
+        answers.length > 0 &&
+        outcomeType &&
+        ['MULTIPLE_CHOICE', 'POLL'].includes(outcomeType)
+      const outcomeKey =
+        outcomeType == 'MULTIPLE_CHOICE'
+          ? shouldAnswersSumToOne
+            ? 'DEPENDENT_MULTIPLE_CHOICE'
+            : 'INDEPENDENT_MULTIPLE_CHOICE'
+          : outcomeType
 
-  const userQuestionAndDescription = `Question: ${question} ${
-    description && description !== '<p></p>'
-      ? `\nDescription: ${description}`
-      : ''
-  } ${includeAnswers ? `\nMaybe: ${answers.join(', ')}` : ''}
+      const userQuestionAndDescription = `Question: ${question} ${
+        description && description !== '<p></p>'
+          ? `\nDescription: ${description}`
+          : ''
+      } ${includeAnswers ? `\nMaybe: ${answers.join(', ')}` : ''}
   `
 
-  log('Generating AI description for:', userQuestionAndDescription)
-  try {
-    const { messages, citations } = await perplexity(
-      userQuestionAndDescription,
-      {
-        model: largePerplexityModel,
-        systemPrompts: [
-          `You are a helpful AI assistant that researches information about the user's prompt`,
-        ],
-      }
-    )
-    const perplexityResponse =
-      [messages].join('\n') + '\n\nSources:\n' + citations.join('\n\n')
+      log('Generating AI description for:', userQuestionAndDescription)
+      try {
+        const { messages, citations } = await perplexity(
+          userQuestionAndDescription,
+          {
+            model: largePerplexityModel,
+            systemPrompts: [
+              `You are a helpful AI assistant that researches information about the user's prompt`,
+            ],
+          }
+        )
+        const perplexityResponse =
+          [messages].join('\n') + '\n\nSources:\n' + citations.join('\n\n')
 
-    const systemPrompt = `
+        const systemPrompt = `
     You are a helpful AI assistant that generates detailed descriptions for prediction markets. Your goal is to provide relevant context, background information, and clear resolution criteria that will help traders make informed predictions.
     ${
       outcomeKey
@@ -89,20 +91,25 @@ export const generateAIDescription: APIHandler<
     ${perplexityResponse}
     `
 
-    const prompt = `${userQuestionAndDescription}\n\n Only return the markdown description, nothing else`
-    const claudeResponse = await promptClaude(prompt, {
-      model: models.sonnet,
-      system: systemPrompt,
-    })
+        const prompt = `${userQuestionAndDescription}\n\n Only return the markdown description, nothing else`
+        const claudeResponse = await promptClaude(prompt, {
+          model: models.sonnet,
+          system: systemPrompt,
+        })
 
-    track(auth.uid, 'generate-ai-description', {
-      question,
-      hasExistingDescription: !!description,
-    })
+        track(auth.uid, 'generate-ai-description', {
+          question,
+          hasExistingDescription: !!description,
+        })
 
-    return { description: anythingToRichText({ markdown: claudeResponse }) }
-  } catch (e) {
-    console.error('Failed to generate description:', e)
-    throw new APIError(500, 'Failed to generate description. Please try again.')
-  }
-}
+        return { description: anythingToRichText({ markdown: claudeResponse }) }
+      } catch (e) {
+        console.error('Failed to generate description:', e)
+        throw new APIError(
+          500,
+          'Failed to generate description. Please try again.'
+        )
+      }
+    },
+    { maxCalls: 60, windowMs: HOUR_MS }
+  )
