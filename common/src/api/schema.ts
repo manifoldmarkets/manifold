@@ -1841,6 +1841,26 @@ export const API = (_apiTypeCheck = {
         answers: z.array(z.string()).optional(),
         outcomeType: z.string().optional(),
         shouldAnswersSumToOne: coerceBoolean.optional(),
+        addAnswersMode: z
+          .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
+          .optional(),
+      })
+      .strict(),
+  },
+  'generate-ai-answers': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      answers: string[]
+      addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+    },
+    props: z
+      .object({
+        question: z.string(),
+        answers: z.array(z.string()),
+        shouldAnswersSumToOne: coerceBoolean,
+        description: z.string().optional(),
       })
       .strict(),
   },

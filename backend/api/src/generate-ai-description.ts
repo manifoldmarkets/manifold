@@ -4,13 +4,22 @@ import { track } from 'shared/analytics'
 import { anythingToRichText } from 'shared/tiptap'
 import { largePerplexityModel, perplexity } from 'shared/helpers/perplexity'
 import { models, promptClaude } from 'shared/helpers/claude'
-import { outcomeTypeDescriptions } from 'common/ai-creation-prompts'
+import {
+  addAnswersModeDescription,
+  outcomeTypeDescriptions,
+} from 'common/ai-creation-prompts'
 
 export const generateAIDescription: APIHandler<
   'generate-ai-description'
 > = async (props, auth) => {
-  const { question, description, answers, outcomeType, shouldAnswersSumToOne } =
-    props
+  const {
+    question,
+    description,
+    answers,
+    outcomeType,
+    shouldAnswersSumToOne,
+    addAnswersMode,
+  } = props
   const includeAnswers =
     answers &&
     answers.length > 0 &&
@@ -51,16 +60,31 @@ export const generateAIDescription: APIHandler<
         ? `Their market is of type ${outcomeKey}\n${outcomeTypeDescriptions}`
         : ''
     }
+    ${
+      addAnswersMode
+        ? `\nThe user has specified that the addAnswersMode is ${addAnswersMode}\n${addAnswersModeDescription}`
+        : ''
+    }
     Guidelines:
     - Keep descriptions concise but informative
+    - Incorporate any relevant information from the user's description into your own description
+    - If the user supplied answers, provide any relevant background information for each answer
     - If the market is personal, (i.e. I will attend the most parties, or I will get a girlfriend) word resolution criteria in the first person
     - Include relevant sources and data when available
     - Clearly state how the market will be resolved
-    - Try to think of any edge cases or special scenarios that traders should be aware of, mention them in the description and how the market will be resolved in those cases
+    - Try to think of likely edge cases that traders should be aware of, mention them in the description and how the market will be resolved in those cases
     - Don't repeat the question in the description
     - Focus on objective facts rather than opinions
     - If the market has a precondition, such as 'If I attend, will I enjoy the party?', or 'If Biden runs, will he win?', markets should resolve N/A if the precondition is not met
-    - Format the response as markdown with sections such as "Background", "Resolution criteria", "Things to consider", etc.
+    - Format the response as markdown
+    - Include a "Background" section that includes information readers/traders may want to know if it's relevant to the user's question AND it's not common knowledge. Keep it concise.
+    - Include a "Resolution criteria" section that describes how the market will be resolved. Include any special resolution criteria for likely edge cases.
+    - Only include a "Considerations" section if there are unexpected considerations that traders may want to know about. E.g. if the question is about something that has never happened before, etc. ${
+      addAnswersMode === 'DISABLED' &&
+      outcomeKey === 'DEPENDENT_MULTIPLE_CHOICE'
+        ? 'E.g. if the answers are not exhaustive, traders should be warned that the market may resolve N/A.'
+        : ''
+    }
     - Here is current information from the internet that is related to the user's prompt. Include information from it in the description that traders or other readers may want to know if it's relevant to the user's question:
     ${perplexityResponse}
     `

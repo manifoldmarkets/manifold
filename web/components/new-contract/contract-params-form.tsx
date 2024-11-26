@@ -502,6 +502,7 @@ export function ContractParamsForm(props: {
         answers,
         outcomeType,
         shouldAnswersSumToOne,
+        addAnswersMode,
       })
       if (result.description && editor) {
         const endPos = editor.state.doc.content.size
@@ -514,6 +515,25 @@ export function ContractParamsForm(props: {
       setPreGenerateContent(undefined)
     }
     setIsGeneratingDescription(false)
+  }
+  const [isGeneratingAnswers, setIsGeneratingAnswers] = useState(false)
+
+  const generateAnswers = async () => {
+    if (!question || outcomeType !== 'MULTIPLE_CHOICE') return
+    setIsGeneratingAnswers(true)
+    try {
+      const result = await api('generate-ai-answers', {
+        question,
+        description: editor?.getHTML(),
+        shouldAnswersSumToOne,
+        answers,
+      })
+      setAnswers([...answers, ...result.answers])
+      setAddAnswersMode(result.addAnswersMode)
+    } catch (e) {
+      console.error('Error generating answers:', e)
+    }
+    setIsGeneratingAnswers(false)
   }
 
   const undoGeneration = () => {
@@ -557,6 +577,9 @@ export function ContractParamsForm(props: {
           shouldAnswersSumToOne={shouldAnswersSumToOne}
           outcomeType={outcomeType}
           placeholder={isMulti ? 'Type your answer..' : undefined}
+          question={question}
+          generateAnswers={generateAnswers}
+          isGeneratingAnswers={isGeneratingAnswers}
         />
       )}
       {outcomeType == 'BOUNTIED_QUESTION' && (

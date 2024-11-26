@@ -61,12 +61,23 @@ Following each market suggestion, add a "Reasoning:" section that addresses the 
 1. A clear explanation of why this market follows from the user's prompt and related source material
 2. Why it's a good prediction market (e.g., has clear resolution criteria, neither a yes nor no outcome is overwhelmingly likely, etc. from above)
 `
+
+export const multiChoiceOutcomeTypeDescriptions = `
+- "INDEPENDENT_MULTIPLE_CHOICE" means there are multiple answers, and ANY of them can resolve yes, no, or N/A e.g. What will happen during the next presidential debate? Which companies will express interest in buying twitter?
+- "DEPENDENT_MULTIPLE_CHOICE" means there are multiple answers, but ONLY one can resolve yes, (while the rest resolve no, or alternatively the entire market resolves N/A if a precondition is not met) e.g. Who will win the presidential election?, Who will be the first to express interest in buying twitter?
+`
+
 export const outcomeTypeDescriptions = `
-     - "BINARY" means there are only two answers, true (yes) or false (no)
-     - "INDEPENDENT_MULTIPLE_CHOICE" means there are multiple answers, and ANY of them can resolve yes, no, or N/A e.g. What will happen during the next presidential debate? Which companies will express interest in buying twitter?
-     - "DEPENDENT_MULTIPLE_CHOICE" means there are multiple answers, but ONLY one can resolve yes, (while the rest resolve no, or alternatively the entire market resolves N/A if a precondition is not met) e.g. Who will win the presidential election?, Who will be the first to express interest in buying twitter?
-     - "POLL" means the question is about a personal matter, i.e. "Should I move to a new city?", "Should I get a new job?", etc.
+- "BINARY" means there are only two answers, true (yes) or false (no)
+${multiChoiceOutcomeTypeDescriptions}
+- "POLL" means the question is about a personal matter, i.e. "Should I move to a new city?", "Should I get a new job?", etc.
  `
+export const addAnswersModeDescription = `
+- "DISABLED" means that the answers list covers all possible outcomes and no more answers can be added after the market is created
+- "ONLY_CREATOR" means that only the creator can add answers after the market is created
+- "ANYONE" means that anyone can add answers after the market is created
+- If the addAnswersMode is "ONLY_CREATOR" or "ANYONE", while the outcomeType is "DEPENDENT_MULTIPLE_CHOICE", then Manifold will automatically add the 'Other' option to the answers list, so you do not need to include it in the array.
+`
 
 export const formattingPrompt = `
     Convert these prediction market ideas into valid JSON objects that abide by the following Manifold Market schema. Each object should include:
@@ -80,10 +91,7 @@ export const formattingPrompt = `
       ${outcomeTypeDescriptions}
     - answers (array of strings, recommended only if outcomeType is one of the "DEPENDENT_MULTIPLE_CHOICE" or "INDEPENDENT_MULTIPLE_CHOICE" types)
     - addAnswersMode ("DISABLED", "ONLY_CREATOR", or "ANYONE", required if one of the "DEPENDENT_MULTIPLE_CHOICE" or "INDEPENDENT_MULTIPLE_CHOICE" types is provided)
-      - "DISABLED" means that the answers list covers all possible outcomes and no more answers can be added after the market is created
-      - "ONLY_CREATOR" means that only the creator can add answers after the market is created
-      - "ANYONE" means that anyone can add answers after the market is created
-      - If the addAnswersMode is "ONLY_CREATOR" or "ANYONE", while the outcomeType is "DEPENDENT_MULTIPLE_CHOICE", then Manifold will automatically add the 'Other' option to the answers list, so you do not need to include it in the array.
+      ${addAnswersModeDescription}
     - reasoning (string, required - extract the reasoning section from each market suggestion)`
 
 export const perplexitySystemPrompt = `You are a helpful assistant that creates engaging prediction markets on Manifold Markets.
