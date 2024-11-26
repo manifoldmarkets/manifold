@@ -1,5 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { APIPath } from 'common/api/schema'
+import { HOUR_MS } from 'common/util/time'
 
 type RateLimitOptions = {
   maxCalls?: number // Maximum number of calls allowed in the time window
@@ -16,7 +17,7 @@ export const rateLimitByUser = <N extends APIPath>(
   f: APIHandler<N>,
   options: RateLimitOptions = {}
 ) => {
-  const { maxCalls = 10, windowMs = 60 * 60 * 1000 } = options // Default: 10 calls per hour
+  const { maxCalls = 10, windowMs = HOUR_MS } = options
 
   // Track rate limits by user ID and endpoint
   const rateLimits = new Map<string, Map<N, RateLimitData>>()
