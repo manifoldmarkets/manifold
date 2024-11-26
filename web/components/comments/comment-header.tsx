@@ -48,11 +48,12 @@ import DropdownMenu from './dropdown-menu'
 import { EditCommentModal } from './edit-comment-modal'
 import { RepostModal } from './repost-modal'
 import { type Answer } from 'common/answer'
+import { useLiveAnswers } from 'web/hooks/use-answers'
 
 export function FeedCommentHeader(props: {
   comment: ContractComment
   playContract: Contract
-  liveContract: Contract
+  liveContractId: string
   updateComment?: (comment: Partial<ContractComment>) => void
   inTimeline?: boolean
   isParent?: boolean
@@ -63,7 +64,7 @@ export function FeedCommentHeader(props: {
     comment,
     updateComment,
     playContract,
-    liveContract,
+    liveContractId,
     inTimeline,
     isPinned,
     className,
@@ -90,6 +91,8 @@ export function FeedCommentHeader(props: {
   const marketCreator = playContract.creatorId === userId
   const { bought, money } = getBoughtMoney(betAmount, betOnCashContract)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
+  const answer = useLiveAnswer(betAnswerId)
+
   const isReplyToBet = betAmount !== undefined
   const commenterIsBettor = commenterAndBettorMatch(comment)
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
@@ -131,7 +134,7 @@ export function FeedCommentHeader(props: {
               {bought} <span className="text-ink-1000">{money}</span>{' '}
               <OutcomeLabel
                 outcome={betOutcome || ''}
-                answerId={answer}
+                answer={answer}
                 contract={playContract}
                 truncate="short"
               />
@@ -188,7 +191,7 @@ export function FeedCommentHeader(props: {
               updateComment={updateComment}
               comment={comment}
               playContract={playContract}
-              liveContract={liveContract}
+              liveContractId={liveContractId}
             />
           )}
         </Row>
@@ -198,7 +201,7 @@ export function FeedCommentHeader(props: {
               +
               <MoneyDisplay
                 amount={bountyAwarded}
-                isCashContract={liveContract.token === 'CASH'}
+                isCashContract={liveContractId !== playContract.id}
               />
             </span>
           )}
@@ -445,13 +448,13 @@ function CommentStatus(props: {
   return <span />
 }
 
-export function DotMenu(props: {
+function DotMenu(props: {
   comment: ContractComment
   updateComment: (update: Partial<ContractComment>) => void
   playContract: Contract
-  liveContract: Contract
+  liveContractId: string
 }) {
-  const { comment, updateComment, playContract, liveContract } = props
+  const { comment, updateComment, playContract, liveContractId } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -570,7 +573,7 @@ export function DotMenu(props: {
         <AnnotateChartModal
           open={annotating}
           setOpen={setAnnotating}
-          contractId={liveContract.id}
+          contractId={liveContractId}
           atTime={comment.createdTime}
           comment={comment}
         />

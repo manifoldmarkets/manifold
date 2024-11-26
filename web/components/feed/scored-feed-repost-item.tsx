@@ -99,7 +99,7 @@ export const ScoredFeedRepost = memo(function (props: {
                     comment={comment}
                     // TODO: fix
                     playContract={contract}
-                    liveContract={contract}
+                    liveContractId={contract.id}
                     inTimeline={true}
                     className="truncate"
                   />

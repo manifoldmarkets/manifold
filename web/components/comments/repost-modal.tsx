@@ -64,13 +64,13 @@ export const RepostButton = (props: {
 
 export const RepostModal = (props: {
   playContract: Contract
-  liveContract: Contract
+  liveContractId: string
   bet?: Bet
   comment?: ContractComment
   open: boolean
   setOpen: (open: boolean) => void
 }) => {
-  const { playContract, liveContract, comment, bet, open, setOpen } = props
+  const { playContract, liveContractId, comment, bet, open, setOpen } = props
   const [loading, setLoading] = useState(false)
   const repost = async () =>
     api('post', {
@@ -125,7 +125,7 @@ export const RepostModal = (props: {
                 <FeedCommentHeader
                   comment={comment}
                   playContract={playContract}
-                  liveContract={liveContract}
+                  liveContractId={liveContractId}
                   inTimeline={false}
                   isParent={true}
                 />

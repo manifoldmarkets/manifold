@@ -1,9 +1,50 @@
-import { useState } from 'react'
+// @ts-nocheck
+import { useEffect, useState } from 'react'
 import { type Answer } from 'common/answer'
 import { useApiSubscription } from './use-api-subscription'
+import { api } from 'web/lib/api/api'
+
+// TODOS
+// export function useAnswer(answerId: string) {
+
+export function useLiveAnswer(answerId: string | undefined) {
+  const [answer, setAnswer] = useState<Answer | null>(null)
+
+  useEffect(() => {
+    if (answerId) {
+      // TODO: create api
+      api('answer/:answerId', {
+        answerId,
+      }).then(setAnswer)
+    }
+  }, [answerId])
+
+  useApiSubscription({
+    enabled: answerId != undefined,
+    topics: [`answer/${answerId}/update`],
+    onBroadcast: ({ data }) => {
+      setAnswer((a) =>
+        a ? { ...a, ...(data.answer as Answer) } : (data.answer as Answer)
+      )
+    },
+  })
+
+  return answer
+}
+
+// export function useAnswers(contractId: string | undefined) {
 
 export function useLiveAnswers(contractId: string | undefined) {
   const [answers, setAnswers] = useState<Answer[]>([])
+
+  useEffect(() => {
+    if (contractId) {
+      // TODO: create api
+      api('market/:contractId/answers', {
+        contractId,
+      }).then(setAnswers)
+    }
+  }, [contractId])
 
   useApiSubscription({
     enabled: contractId != undefined,
