@@ -18,6 +18,7 @@ import { Group } from 'common/group'
 import {
   getSubtopics,
   GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW,
+  TOPICS_TO_HIDE_FROM_WELCOME_FLOW,
   TOPICS_TO_SUBTOPICS,
 } from 'common/topics'
 import { intersection, orderBy, uniq, uniqBy } from 'lodash'
@@ -338,7 +339,9 @@ function TopicsPage(props: {
     string[] | undefined
   >()
 
-  const topics = Object.keys(TOPICS_TO_SUBTOPICS)
+  const topics = Object.keys(TOPICS_TO_SUBTOPICS).filter(
+    (topic) => !TOPICS_TO_HIDE_FROM_WELCOME_FLOW.includes(topic)
+  )
 
   useEffect(() => {
     if (userBetInTopics.length > 0) {

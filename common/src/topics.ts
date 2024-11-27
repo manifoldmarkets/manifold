@@ -85,7 +85,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
         '9a003f6b-9fd1-46ab-871d-2904953c4d5b', // March Madness 2024
         'beeb69e0-b36f-451a-80e1-e059df456bb1', // College Basketball
         'i0v3cXwuxmO9fpcInVYb', // NBA
-        // TODO: merge these groups
       ],
     },
     {
@@ -98,21 +97,28 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '⚾ Baseball', groupIds: ['786nRQzgVyUnuUtaLTGW'] },
     { name: '🏎️ F1', groupIds: ['OyHBKJOz9YaGkDctpwuY'] },
     { name: '🚲 Cycling', groupIds: ['2yisxJryUq9V5sG7P6Gy'] },
-    // { name: '🎾 Tennis', groupIds: ['1mvN9vIVIopcWiAsXhzp'] },
+    { name: '🎾 Tennis', groupIds: ['1mvN9vIVIopcWiAsXhzp'] },
     // { name: '🏏 Cricket', groupIds: ['LcPYoqxSRdeQMms4lR3g'] },
   ],
   '🎬 Entertainment': [
-    // Movies, TV Shows, Music, Celebrities
     {
       name: '🍿 Movies, TV, & Music',
       groupIds: [
-        'KSeNIu7AWgiBBM5FqVuB',
-        'Xuc2UY8gGfjQqFXwxq5d',
-        '4QIcUOfCSSha0JZHAg9X',
-        'EUSEngFk1dGGBfaMeAmh',
+        'KSeNIu7AWgiBBM5FqVuB', // Movies
+        'Xuc2UY8gGfjQqFXwxq5d', // Music
+        '4QIcUOfCSSha0JZHAg9X', // Celebrities
+        'EUSEngFk1dGGBfaMeAmh', // TV and Film
+        'eJZecx6r22G2NriYYXcC', // Culture
+        'XU1fOYURSnb58lgsqaly', // Entertainment & Pop culture
       ],
     },
-    { name: '🎮 Gaming', groupIds: ['5FaFmmaNNFTSA5r0vTAi'] },
+    {
+      name: '🎮 Gaming',
+      groupIds: [
+        '5FaFmmaNNFTSA5r0vTAi', // Gaming
+        '9FaZmHrfS8IcDJyu6pUD', // Video Games
+      ],
+    },
     {
       name: '🎮️ Destiny.gg',
       groupIds: ['W2ES30fRo6CCbPNwMTTj'],
@@ -122,15 +128,14 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       groupIds: ['uJSql24HUqpEpVU0FrjI'],
     },
   ],
-  '💼 Business': [
+  '💵 Econ & Finance': [
     {
-      // Finance, Economics
       name: '💵 Econ',
-      groupIds: ['CgB83AAMkkOHSrTnzani', 'p88Ycq6yFd5ECKqq9PFO'],
-    },
-    {
-      name: '🦄 Startups',
-      groupIds: ['19c319ca-033c-474f-b417-5f07efe88ec0'],
+      groupIds: [
+        'CgB83AAMkkOHSrTnzani', // Finance
+        'p88Ycq6yFd5ECKqq9PFO', // Economics
+        'pmK8sntWL1SDkMm53UBR', // Business
+      ],
     },
     {
       // Stocks, Tech Stocks
@@ -151,7 +156,22 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       groupIds: ['3syjPCC7PxE5KurTiTT3', 'j3ZE8fkeqiKmRGumy3O1'],
     },
   ],
+  '🎲 Random': [
+    {
+      name: '🤠 Fun',
+      groupIds: ['bBwafyeaiuwWwobwm2c4'],
+    },
+    {
+      name: '💪 Personal Goals',
+      groupIds: [
+        'izQp87CKagOVJp9Olm1p', // Personal goals
+        'wxAGTtNee5f2PTzjqSI2', // Personal
+      ],
+    },
+  ],
 }
+
+export const TOPICS_TO_HIDE_FROM_WELCOME_FLOW = ['🎲 Random']
 
 export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'world-default',

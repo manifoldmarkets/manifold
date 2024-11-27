@@ -259,7 +259,7 @@ export function ContractFilters(props: {
               })
             }}
           >
-            Your topics
+            For you
           </FilterPill>
         )}
         {!hideFilter && currentTiers !== DEFAULT_TIER && (
