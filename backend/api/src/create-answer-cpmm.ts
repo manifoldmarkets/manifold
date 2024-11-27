@@ -144,10 +144,10 @@ const createAnswerCpmmMain = async (
         )
       }
 
-      let poolYes = answerCost
-      let poolNo = answerCost
-      let totalLiquidity = answerCost
-      let prob = 0.5
+      const poolYes = answerCost
+      const poolNo = answerCost
+      const totalLiquidity = answerCost
+      const prob = 0.5
 
       const id = randomString()
       const n = answers.length
