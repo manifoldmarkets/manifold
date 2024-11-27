@@ -123,10 +123,7 @@ export const FeedComment = memo(function FeedComment(props: {
       <CommentReplyHeader
         hideBetHeader={commenterAndBettorMatch(comment)}
         comment={comment}
-        answers={buildArray(
-          'answers' in playContract && playContract.answers,
-          cashContract && 'answers' in cashContract && cashContract.answers
-        )}
+        contract={playContract}
       />
       <Row ref={ref} className={clsx(isParent ? 'gap-2' : 'gap-1')}>
         <Row className="relative">
@@ -183,9 +180,11 @@ export const FeedComment = memo(function FeedComment(props: {
         >
           <FeedCommentHeader
             comment={comment}
-            updateComment={updateComment}
+            menuProps={{
+              liveContractId: liveContract.id,
+              updateComment: updateComment,
+            }}
             playContract={playContract}
-            liveContract={liveContract}
             inTimeline={inTimeline}
             isParent={isParent}
             isPinned={isPinned}

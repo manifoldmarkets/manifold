@@ -97,9 +97,7 @@ export const ScoredFeedRepost = memo(function (props: {
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <FeedCommentHeader
                     comment={comment}
-                    // TODO: fix
                     playContract={contract}
-                    liveContractId={contract.id}
                     inTimeline={true}
                     className="truncate"
                   />
@@ -183,7 +181,11 @@ function RepostLabel(props: {
   )
 
   const header = bet && (
-    <CommentReplyHeaderWithBet comment={comment} answers={[]} bet={bet} />
+    <CommentReplyHeaderWithBet
+      contract={contract}
+      comment={comment}
+      bet={bet}
+    />
   )
 
   if (creatorRepostedTheirComment) {

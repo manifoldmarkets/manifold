@@ -25,6 +25,7 @@ import { api } from 'web/lib/api/api'
 import { CommentOnAnswer } from '../feed/comment-on-answer'
 import { ReplyToUserInfo } from './comment'
 import { ReplyToBetRow } from './comment-header'
+import { useAnswer } from 'web/hooks/use-answers'
 
 export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
@@ -247,7 +248,6 @@ export function CommentInputTextArea(props: {
 
 export function ContractCommentInput(props: {
   playContract: Contract
-  answers?: Answer[]
   autoFocus: boolean
   className?: string
   replyTo?: Answer | Bet
@@ -261,7 +261,6 @@ export function ContractCommentInput(props: {
 }) {
   const {
     playContract,
-    answers,
     autoFocus,
     replyTo,
     parentCommentId,
@@ -316,6 +315,10 @@ export function ContractCommentInput(props: {
     }
   )
 
+  const { answer: betAnswer } = useAnswer(
+    isReplyToBet ? replyTo.answerId : undefined
+  )
+
   return (
     <>
       {isReplyToBet ? (
@@ -326,7 +329,7 @@ export function ContractCommentInput(props: {
           bettorId={replyTo.userId}
           betOrderAmount={replyTo.orderAmount}
           betLimitProb={replyTo.limitProb}
-          betAnswer={answers?.find((a) => a.id === replyTo.answerId)}
+          betAnswer={betAnswer}
           contract={playContract}
           clearReply={clearReply}
         />

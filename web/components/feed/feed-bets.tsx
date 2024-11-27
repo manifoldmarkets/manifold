@@ -305,7 +305,6 @@ function BetActions(props: {
         bet={bet}
         size={'2xs'}
         className={'!p-1'}
-        liveContract={contract}
         playContract={contract}
       />
       {onReply && (

@@ -48,27 +48,23 @@ import DropdownMenu from './dropdown-menu'
 import { EditCommentModal } from './edit-comment-modal'
 import { RepostModal } from './repost-modal'
 import { type Answer } from 'common/answer'
-import { useLiveAnswers } from 'web/hooks/use-answers'
+import { useAnswer, useLiveAnswer } from 'web/hooks/use-answers'
 
 export function FeedCommentHeader(props: {
   comment: ContractComment
   playContract: Contract
-  liveContractId: string
-  updateComment?: (comment: Partial<ContractComment>) => void
+  menuProps?: {
+    liveContractId: string
+    updateComment: (comment: Partial<ContractComment>) => void
+  }
   inTimeline?: boolean
   isParent?: boolean
   isPinned?: boolean
   className?: string
 }) {
-  const {
-    comment,
-    updateComment,
-    playContract,
-    liveContractId,
-    inTimeline,
-    isPinned,
-    className,
-  } = props
+  const { comment, playContract, menuProps, inTimeline, isPinned, className } =
+    props
+
   const {
     userUsername,
     userName,
@@ -151,11 +147,7 @@ export function FeedCommentHeader(props: {
           {/* Hide my status if replying to a bet, it's too much clutter*/}
           {!isReplyToBet && !inTimeline && (
             <span className="text-ink-500">
-              <CommentStatus
-                contract={playContract}
-                answer={answer}
-                comment={comment}
-              />
+              <CommentStatus contract={playContract} comment={comment} />
               {bought} {money}
               {shouldDisplayOutcome && (
                 <>
@@ -186,12 +178,12 @@ export function FeedCommentHeader(props: {
           {!inTimeline && isApi && (
             <InfoTooltip text="Placed via API">🤖</InfoTooltip>
           )}
-          {!inTimeline && updateComment && (
+          {!inTimeline && menuProps && (
             <DotMenu
-              updateComment={updateComment}
               comment={comment}
               playContract={playContract}
-              liveContractId={liveContractId}
+              updateComment={menuProps.updateComment}
+              liveContractId={menuProps.liveContractId}
             />
           )}
         </Row>
@@ -199,10 +191,7 @@ export function FeedCommentHeader(props: {
           {bountyAwarded && bountyAwarded > 0 && (
             <span className="select-none text-teal-600">
               +
-              <MoneyDisplay
-                amount={bountyAwarded}
-                isCashContract={liveContractId !== playContract.id}
-              />
+              <MoneyDisplay amount={bountyAwarded} isCashContract={false} />
             </span>
           )}
           {isPinned && <TiPin className="text-primary-500 inline h-4 w-4" />}
@@ -230,10 +219,10 @@ const getBoughtMoney = (
 
 export function CommentReplyHeaderWithBet(props: {
   comment: ContractComment
+  contract: Pick<Contract, 'outcomeType' | 'mechanism'>
   bet: Bet
-  answers: Answer[]
 }) {
-  const { comment, bet, answers } = props
+  const { comment, contract, bet } = props
   const { outcome, answerId, amount, orderAmount, limitProb } = bet
   return (
     <CommentReplyHeader
@@ -245,17 +234,17 @@ export function CommentReplyHeaderWithBet(props: {
         betLimitProb: limitProb,
         answerOutcome: answerId,
       }}
-      answers={answers}
+      contract={contract}
     />
   )
 }
 
 export function CommentReplyHeader(props: {
   comment: ContractComment
-  answers: Answer[]
+  contract: Pick<Contract, 'outcomeType' | 'mechanism'>
   hideBetHeader?: boolean
 }) {
-  const { comment, answers, hideBetHeader } = props
+  const { comment, contract, hideBetHeader } = props
   const {
     bettorName,
     bettorId,
@@ -267,6 +256,10 @@ export function CommentReplyHeader(props: {
     betOrderAmount,
     betLimitProb,
   } = comment
+
+  const { answer: betAnswer } = useAnswer(betAnswerId)
+  const { answer: answerToReply } = useAnswer(answerOutcome)
+
   if (
     (bettorId || (bettorUsername && bettorName)) &&
     betOutcome &&
@@ -276,20 +269,20 @@ export function CommentReplyHeader(props: {
     return (
       <ReplyToBetRow
         bettorId={bettorId}
+        contract={contract}
         commenterIsBettor={commenterAndBettorMatch(comment)}
         betOutcome={betOutcome}
         bettorName={bettorName}
         bettorUsername={bettorUsername}
-        betAnswerId={betAnswerId}
+        betAnswer={betAnswer}
         betAmount={betAmount}
         betOrderAmount={betOrderAmount}
         betLimitProb={betLimitProb}
       />
     )
   }
-  if (answerOutcome) {
-    const answer = answers.find((a) => a.id === answerOutcome)
-    if (answer) return <CommentOnAnswer answer={answer} />
+  if (answerToReply) {
+    return <CommentOnAnswer answer={answerToReply} />
   }
 
   return null
@@ -412,7 +405,6 @@ export function ReplyToBetRow(props: {
 
 function CommentStatus(props: {
   contract: Pick<Contract, 'outcomeType' | 'mechanism'>
-  answer?: Answer
   comment: ContractComment
 }) {
   const { contract, comment } = props
@@ -423,8 +415,7 @@ function CommentStatus(props: {
     commenterPositionShares,
   } = comment
 
-  // TODO: what to do here? get the answer? pass another answer in?
-  // casche on the comment?
+  const { answer } = useAnswer(commenterPositionAnswerId)
 
   if (
     comment.betId == null &&
@@ -581,7 +572,6 @@ function DotMenu(props: {
       {user && reposting && (
         <RepostModal
           playContract={playContract}
-          liveContract={liveContract}
           open={reposting}
           setOpen={setReposting}
           comment={comment}

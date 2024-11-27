@@ -121,7 +121,6 @@ export function ContractTabs(props: {
             <CommentsTabContent
               playContract={mainContract}
               liveContract={liveContract}
-              answers={answers}
               comments={comments}
               pinnedComments={pinnedComments}
               setCommentsLength={setTotalComments}
@@ -175,7 +174,6 @@ export function ContractTabs(props: {
 const LOAD_MORE = 10
 export const CommentsTabContent = memo(function CommentsTabContent(props: {
   playContract: Contract // contains the comments
-  answers: Answer[]
   liveContract: Contract // you trade on this
   comments: ContractComment[]
   blockedUserIds: string[]
@@ -191,7 +189,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 }) {
   const {
     playContract,
-    answers,
     liveContract,
     blockedUserIds,
     setCommentsLength,
@@ -380,7 +377,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         replyTo={replyTo}
         className="mb-4 mr-px mt-px"
         playContract={playContract}
-        answers={answers}
         clearReply={clearReply}
         trackingLocation={'contract page'}
         commentTypes={['comment', 'repost']}

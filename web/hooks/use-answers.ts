@@ -4,12 +4,10 @@ import { type Answer } from 'common/answer'
 import { useApiSubscription } from './use-api-subscription'
 import { api } from 'web/lib/api/api'
 
-// TODOS
-// export function useAnswer(answerId: string) {
+// TODO: use API getter
 
-export function useLiveAnswer(answerId: string | undefined) {
-  const [answer, setAnswer] = useState<Answer | null>(null)
-
+export function useAnswer(answerId: string | undefined) {
+  const [answer, setAnswer] = useState<Answer>()
   useEffect(() => {
     if (answerId) {
       // TODO: create api
@@ -18,6 +16,12 @@ export function useLiveAnswer(answerId: string | undefined) {
       }).then(setAnswer)
     }
   }, [answerId])
+
+  return { answer, setAnswer }
+}
+
+export function useLiveAnswer(answerId: string | undefined) {
+  const { answer, setAnswer } = useAnswer(answerId)
 
   useApiSubscription({
     enabled: answerId != undefined,
