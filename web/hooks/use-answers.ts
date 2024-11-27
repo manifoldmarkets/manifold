@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
 import { type Answer } from 'common/answer'
 import { useApiSubscription } from './use-api-subscription'
@@ -10,7 +9,6 @@ export function useAnswer(answerId: string | undefined) {
   const [answer, setAnswer] = useState<Answer>()
   useEffect(() => {
     if (answerId) {
-      // TODO: create api
       api('answer/:answerId', {
         answerId,
       }).then(setAnswer)
