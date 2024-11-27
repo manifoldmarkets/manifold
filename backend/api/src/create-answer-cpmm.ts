@@ -1,5 +1,5 @@
 import { groupBy, partition, sumBy } from 'lodash'
-import { CPMMMultiContract, add_answers_mode } from 'common/contract'
+import { CPMMMultiContract } from 'common/contract'
 import { User } from 'common/user'
 import { getBetDownToOneMultiBetInfo } from 'common/new-bet'
 import { Answer, getMaximumAnswers } from 'common/answer'
