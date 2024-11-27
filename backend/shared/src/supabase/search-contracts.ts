@@ -218,12 +218,30 @@ export function getSearchContractSQL(args: {
     where(`a.text_fts @@ websearch_to_tsquery('english_extended', $1)`, [term])
   )
 
+  const groupIdsFilter =
+    groupIds &&
+    where(
+      `
+    exists (
+      select 1 from group_contracts gc 
+      where ${
+        token === 'MANA'
+          ? 'gc.contract_id = contracts.id'
+          : token === 'CASH'
+          ? "gc.contract_id = contracts.data->>'siblingContractId'"
+          : "(gc.contract_id = contracts.id or gc.contract_id = contracts.data->>'siblingContractId')"
+      }
+      and gc.group_id = any(string_to_array($1, ','))
+    )`,
+      [groupIds]
+    )
+
   // Normal full text search
   return renderSql(
     select('data, importance_score, view_count, token'),
     from('contracts'),
-    (groupIds || groupId) &&
-      (token === 'MANA'
+    groupId && [
+      token === 'MANA'
         ? join(`group_contracts gc on gc.contract_id = contracts.id`)
         : token === 'CASH'
         ? // TODO: improve performance of joining on siblingContractId
@@ -232,10 +250,10 @@ export function getSearchContractSQL(args: {
           )
         : join(
             `group_contracts gc on (gc.contract_id = contracts.id or gc.contract_id = contracts.data->>'siblingContractId')`
-          )),
-    groupId && where('gc.group_id = $1', [groupId]),
-    groupIds &&
-      where("gc.group_id = any(string_to_array($1, ','))", [groupIds]),
+          ),
+      where('gc.group_id = $1', [groupId]),
+    ],
+    groupIdsFilter,
     searchType === 'answer' &&
       join(
         `(${answersSubQuery}) as matched_answers on matched_answers.contract_id = contracts.id`
