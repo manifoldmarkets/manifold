@@ -59,7 +59,7 @@ export async function getForYouSQL(items: {
   } = items
 
   let userId = items.userId
-
+  // let userId = 'hqdXgp0jK2YMMhPs067eFK4afEH3' // Eliza
   if (
     importanceScoreThreshold === undefined ||
     freshnessScoreThreshold === undefined
@@ -150,7 +150,7 @@ export async function getForYouSQL(items: {
       // If the user has no contract-matching topic score, use only the contract's importance score
       orderBy(`case
       when bool_or(uti.avg_conversion_score is not null)
-      then avg(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}) * contracts.${sortByScore})
+      then avg(power(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}), 4) * contracts.${sortByScore})
       else avg(contracts.${sortByScore}*${GROUP_SCORE_PRIOR})
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
