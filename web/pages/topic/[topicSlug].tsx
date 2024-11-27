@@ -16,7 +16,7 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { SupabaseSearch } from 'web/components/supabase-search'
+import { Search } from 'web/components/search'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { TopicSelector } from 'web/components/topics/topic-selector'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -129,7 +129,7 @@ export default function TopicPage(props: {
               {
                 title: 'Questions',
                 content: (
-                  <SupabaseSearch
+                  <Search
                     headerClassName={'bg-canvas-50'}
                     persistPrefix="group-search"
                     additionalFilter={{

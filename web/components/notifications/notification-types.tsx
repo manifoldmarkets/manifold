@@ -48,7 +48,7 @@ import {
   NumericValueLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
-import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
+import { SEARCH_TYPE_KEY } from 'web/components/search'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useReview } from 'web/hooks/use-review'
 import { useUser } from 'web/hooks/use-user'

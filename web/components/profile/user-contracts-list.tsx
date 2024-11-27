@@ -11,11 +11,7 @@ import {
   getTotalPublicContractsCreated,
 } from 'web/lib/supabase/users'
 import { db } from 'web/lib/supabase/db'
-import {
-  searchLocalKey,
-  FILTER_KEY,
-  SupabaseSearch,
-} from 'web/components/supabase-search'
+import { searchLocalKey, FILTER_KEY, Search } from 'web/components/search'
 import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { UserReviews } from '../reviews/user-reviews'
@@ -118,7 +114,7 @@ export function UserContractsList(props: {
           }
         />
       </Row>
-      <SupabaseSearch
+      <Search
         defaultFilter="all"
         defaultSort="newest"
         additionalFilter={{

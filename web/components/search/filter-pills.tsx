@@ -15,7 +15,7 @@ import {
   Filter,
   SearchParams,
   TOPIC_FILTER_KEY,
-} from '../supabase-search'
+} from '../search'
 import DropdownMenu from '../comments/dropdown-menu'
 import { getLabelFromValue } from './search-dropdown-helpers'
 import { LiteGroup } from 'common/group'

@@ -182,7 +182,7 @@ export type SearchState = {
   }
 }
 
-export function SupabaseSearch(props: {
+export function Search(props: {
   persistPrefix: string
   defaultSort?: Sort
   defaultFilter?: Filter

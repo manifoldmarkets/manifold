@@ -11,7 +11,7 @@ import {
   useTrendingTopics,
   useUserTrendingTopics,
 } from 'web/components/search/query-topics'
-import { SupabaseSearch } from 'web/components/supabase-search'
+import { Search } from 'web/components/search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 
@@ -50,7 +50,7 @@ export function BrowsePageContent() {
 
   return (
     <Col className={clsx('relative col-span-8 mx-auto w-full')}>
-      <SupabaseSearch
+      <Search
         persistPrefix="search"
         autoFocus={autoFocus}
         additionalFilter={{

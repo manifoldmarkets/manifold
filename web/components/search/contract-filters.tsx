@@ -42,7 +42,7 @@ import {
   Sort,
   bountySorts,
   predictionMarketSorts,
-} from '../supabase-search'
+} from '../search'
 import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { useSweepstakes } from '../sweepstakes-provider'
 import {
