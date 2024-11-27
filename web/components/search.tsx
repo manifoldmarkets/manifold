@@ -10,7 +10,7 @@ import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
-import { trackCallback } from 'web/lib/service/analytics'
+import { track, trackCallback } from 'web/lib/service/analytics'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Input } from './widgets/input'
@@ -37,6 +37,9 @@ import { BinaryDigit, TierParamsType } from 'common/tier'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Spacer } from './layout/spacer'
 import { useSweepstakes } from './sweepstakes-provider'
+import { FilterPill } from './search/filter-pills'
+import { ALL_PARENT_TOPICS, TOPICS_TO_SUBTOPICS } from 'common/topics'
+import { Carousel } from './widgets/carousel'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -142,6 +145,7 @@ export type SearchParams = {
   [MARKET_TIER_KEY]: TierParamsType
   [TOPIC_FILTER_KEY]: string
   [SWEEPIES_KEY]: BinaryDigit
+  [GROUP_IDS_KEY]: string
 }
 
 export const QUERY_KEY = 'q'
@@ -154,6 +158,7 @@ export const FOR_YOU_KEY = 'fy'
 export const MARKET_TIER_KEY = 'mt'
 export const TOPIC_FILTER_KEY = 'tf'
 export const SWEEPIES_KEY = 'sw'
+export const GROUP_IDS_KEY = 'gids'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
@@ -179,6 +184,7 @@ export type SearchState = {
     marketTier: TierParamsType
     topicFilter: string
     isSweepies: '1' | '0'
+    gids: string
   }
 }
 
@@ -207,6 +213,7 @@ export function Search(props: {
   hideSearchTypes?: boolean
   hideAvatars?: boolean
   initialTopics?: LiteGroup[]
+  showTopicsFilterPills?: boolean
 }) {
   const {
     defaultSort,
@@ -230,7 +237,7 @@ export function Search(props: {
     hideSearch,
     hideSearchTypes,
     hideAvatars,
-    initialTopics,
+    showTopicsFilterPills,
   } = props
 
   const isMobile = useIsMobile()
@@ -248,16 +255,11 @@ export function Search(props: {
 
   const query = searchParams[QUERY_KEY]
   const searchType = searchParams[SEARCH_TYPE_KEY]
-
-  const sort = searchParams[SORT_KEY]
   const filter = searchParams[FILTER_KEY]
   const contractType = searchParams[CONTRACT_TYPE_KEY]
   const prizeMarketState = searchParams[PRIZE_MARKET_KEY]
   const sweepiesState = searchParams[SWEEPIES_KEY]
-  const forYou = searchParams[FOR_YOU_KEY] === '1'
-  const marketTiers = searchParams[MARKET_TIER_KEY]
-  const topicFilter = searchParams[TOPIC_FILTER_KEY]
-
+  const groupIds = searchParams[GROUP_IDS_KEY]
   useEffect(() => {
     const isSweeps = sweepiesState === '1'
     if (prefersPlay !== isSweeps) return
@@ -309,20 +311,8 @@ export function Search(props: {
         querySearchResults(true)
       }
     },
-    100,
-    [
-      query,
-      topicSlug,
-      sort,
-      filter,
-      contractType,
-      isReady,
-      prizeMarketState,
-      forYou,
-      marketTiers,
-      topicFilter,
-      sweepiesState,
-    ]
+    50,
+    [topicSlug, isReady, JSON.stringify(searchParams)]
   )
 
   const emptyContractsState =
@@ -372,7 +362,13 @@ export function Search(props: {
     ))
 
   const hasQuery = query !== ''
-
+  const selectedTopic = groupIds
+    ? ALL_PARENT_TOPICS.find((topic) =>
+        TOPICS_TO_SUBTOPICS[topic].some((subtopic) =>
+          groupIds.split(',').some((id) => subtopic.groupIds.includes(id))
+        )
+      )
+    : undefined
   return (
     <Col className="w-full">
       <Col
@@ -427,14 +423,67 @@ export function Search(props: {
           <ContractFilters
             params={searchParams}
             updateParams={onChange}
+            topicSlug={topicSlug}
             className={
               searchType && searchType !== 'Questions' ? 'invisible' : ''
             }
-            topicSlug={topicSlug}
-            initialTopics={initialTopics}
             hideSweepsToggle={hideSweepsToggle}
           />
         )}
+        <Col className="mb-2">
+          {/* Main topics row */}
+          {showTopicsFilterPills && (
+            <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
+              {ALL_PARENT_TOPICS.map((topic) => (
+                <FilterPill
+                  key={topic}
+                  selected={selectedTopic === topic}
+                  onSelect={() => {
+                    if (selectedTopic === topic) {
+                      onChange({ [GROUP_IDS_KEY]: '' })
+                    } else {
+                      track('select search topic', { topic })
+                      // Join all group IDs for this topic's subtopics
+                      const allGroupIds = TOPICS_TO_SUBTOPICS[topic]
+                        .map((subtopic) => subtopic.groupIds)
+                        .flat()
+                      onChange({ [GROUP_IDS_KEY]: allGroupIds.join(',') })
+                    }
+                  }}
+                >
+                  {topic}
+                </FilterPill>
+              ))}
+            </Carousel>
+          )}
+
+          {/* Subtopics row */}
+          {selectedTopic && (
+            <Carousel fadeEdges labelsParentClassName="gap-1 mt-1">
+              {TOPICS_TO_SUBTOPICS[selectedTopic].map(({ name, groupIds }) => (
+                <FilterPill
+                  key={name}
+                  selected={searchParams[GROUP_IDS_KEY] === groupIds.join(',')}
+                  onSelect={() => {
+                    if (searchParams[GROUP_IDS_KEY] === groupIds.join(',')) {
+                      onChange({
+                        [GROUP_IDS_KEY]: TOPICS_TO_SUBTOPICS[selectedTopic]
+                          .map((subtopic) => subtopic.groupIds)
+                          .flat()
+                          .join(','),
+                      })
+                    } else {
+                      track('select search subtopic', { subtopic: name })
+                      onChange({ [GROUP_IDS_KEY]: groupIds.join(',') })
+                    }
+                  }}
+                >
+                  {name}
+                </FilterPill>
+              ))}
+            </Carousel>
+          )}
+        </Col>
       </Col>
       <Spacer h={2} />
       {showSearchTypes && (
@@ -595,6 +644,7 @@ const useSearchResults = (
         mt: marketTier,
         tf: topicFilter,
         sw: isSweepiesString,
+        gids,
       } = searchParams
       // if fresh query and the search params haven't changed (like user clicked back) do nothing
       if (
@@ -609,7 +659,8 @@ const useSearchResults = (
         forYou == state.lastSearchParams?.forYou &&
         marketTier == state.lastSearchParams?.marketTier &&
         topicFilter == state.lastSearchParams?.topicFilter &&
-        isSweepiesString == state.lastSearchParams?.isSweepies
+        isSweepiesString == state.lastSearchParams?.isSweepies &&
+        gids == state.lastSearchParams?.gids
       ) {
         return state.shouldLoadMore
       }
@@ -651,6 +702,7 @@ const useSearchResults = (
                 : isSweepiesString === '1'
                 ? 'CASH'
                 : 'MANA',
+              gids,
             }),
           ]
 
@@ -694,6 +746,7 @@ const useSearchResults = (
                 marketTier,
                 topicFilter,
                 isSweepies: isSweepiesString,
+                gids,
               },
             })
             clearTimeout(timeoutId)
@@ -773,6 +826,7 @@ const useSearchQueryState = (props: {
     [MARKET_TIER_KEY]: defaultMarketTier ?? DEFAULT_TIER,
     [TOPIC_FILTER_KEY]: defaultTopicFilter ?? '',
     [SWEEPIES_KEY]: defaultSweepies ?? '0',
+    [GROUP_IDS_KEY]: '',
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : useShim

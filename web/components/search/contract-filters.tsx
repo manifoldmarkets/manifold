@@ -3,14 +3,12 @@ import { track } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { getLabelFromValue } from './search-dropdown-helpers'
 
-import { LiteGroup } from 'common/group'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { useState } from 'react'
 import { FaSortAmountDownAlt } from 'react-icons/fa'
 import { FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
 import { IconButton } from 'web/components/buttons/button'
 import { Carousel } from 'web/components/widgets/carousel'
-import { useUser } from 'web/hooks/use-user'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import {
   CrystalTier,
@@ -34,6 +32,7 @@ import {
   FILTERS,
   FOR_YOU_KEY,
   Filter,
+  GROUP_IDS_KEY,
   POLL_SORTS,
   PREDICTION_MARKET_PROB_SORTS,
   PREDICTION_MARKET_SORTS,
@@ -50,7 +49,6 @@ import {
   FilterDropdownPill,
   FilterPill,
   TierDropdownPill,
-  TopicDropdownPill,
 } from './filter-pills'
 
 export function ContractFilters(props: {
@@ -58,24 +56,15 @@ export function ContractFilters(props: {
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
   topicSlug?: string
-  initialTopics?: LiteGroup[]
   hideSweepsToggle?: boolean
 }) {
-  const {
-    className,
-    params,
-    updateParams,
-    topicSlug,
-    initialTopics,
-    hideSweepsToggle,
-  } = props
+  const { className, params, updateParams, hideSweepsToggle, topicSlug } = props
 
   const {
     s: sort,
     f: filter,
     ct: contractType,
     mt: currentTiers,
-    tf: topicFilter,
     sw: isSweepiesString,
   } = params
   const isSweeps = isSweepiesString === '1'
@@ -141,8 +130,7 @@ export function ContractFilters(props: {
     !DEFAULT_CONTRACT_TYPES.some((ct) => ct == contractType) &&
     contractType !== DEFAULT_CONTRACT_TYPE
 
-  const forYou = params[FOR_YOU_KEY] === '1'
-  const user = useUser()
+  const forYou = params[FOR_YOU_KEY] === '1' && !params[GROUP_IDS_KEY]
 
   const toggleTier = (tier: MarketTierType) => {
     const tierIndex = tiers.indexOf(tier)
@@ -154,7 +142,7 @@ export function ContractFilters(props: {
   }
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
-      <Carousel labelsParentClassName="gap-1 items-center">
+      <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
         {!hideSweepsToggle && (
           <SweepsToggle
             sweepsEnabled={true}
@@ -261,14 +249,18 @@ export function ContractFilters(props: {
           selectFilter={selectFilter}
           currentFilter={filter}
         />
-        {initialTopics && !topicSlug && (
-          <TopicDropdownPill
-            initialTopics={initialTopics}
-            currentTopicFilter={topicFilter}
-            user={user}
-            forYou={forYou}
-            updateParams={updateParams}
-          />
+        {!topicSlug && (
+          <FilterPill
+            selected={forYou}
+            onSelect={() => {
+              updateParams({
+                [FOR_YOU_KEY]: forYou ? '0' : '1',
+                [GROUP_IDS_KEY]: '', // Clear any topic selection when toggling For You
+              })
+            }}
+          >
+            Your topics
+          </FilterPill>
         )}
         {!hideFilter && currentTiers !== DEFAULT_TIER && (
           <AdditionalFilterPill

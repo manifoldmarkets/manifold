@@ -46,8 +46,8 @@ const search = async (
     creatorId,
     marketTier,
     token,
+    gids: groupIds,
   } = props
-
   const isPrizeMarket =
     props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
 
@@ -70,7 +70,8 @@ const search = async (
     userId &&
     (sort === 'score' || sort === 'freshness-score') &&
     !topicSlug &&
-    token !== 'CASH'
+    token !== 'CASH' &&
+    (!groupIds || groupIds.length === 0)
   ) {
     const forYouSql = await getForYouSQL({
       userId,
@@ -124,6 +125,7 @@ const search = async (
           searchType,
           isPrizeMarket,
           token,
+          groupIds,
           marketTier: marketTier as TierParamsType,
         })
 

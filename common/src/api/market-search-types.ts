@@ -68,5 +68,6 @@ export const searchProps = z
     token: z
       .union([z.literal('MANA'), z.literal('CASH'), z.literal('ALL')])
       .default('ALL'),
+    gids: z.string().optional(),
   })
   .strict()

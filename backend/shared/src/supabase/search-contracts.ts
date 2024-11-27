@@ -25,7 +25,6 @@ import { log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { GROUP_SCORE_PRIOR } from 'common/feed'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
-import { assertUnreachable } from 'common/util/types'
 
 const DEFAULT_THRESHOLD = 1000
 const DEBUG = false
@@ -185,9 +184,19 @@ export function getSearchContractSQL(args: {
   isPrizeMarket?: boolean
   marketTier: TierParamsType
   token: TokenInputType
+  groupIds?: string
 }) {
-  const { term, sort, offset, limit, groupId, creatorId, searchType, token } =
-    args
+  const {
+    term,
+    sort,
+    offset,
+    limit,
+    groupId,
+    creatorId,
+    searchType,
+    token,
+    groupIds,
+  } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
 
@@ -213,21 +222,20 @@ export function getSearchContractSQL(args: {
   return renderSql(
     select('data, importance_score, view_count, token'),
     from('contracts'),
-    groupId && [
-      // TODO: improve performance of joining on siblingContractId
-      token === 'MANA'
+    (groupIds || groupId) &&
+      (token === 'MANA'
         ? join(`group_contracts gc on gc.contract_id = contracts.id`)
         : token === 'CASH'
-        ? join(
+        ? // TODO: improve performance of joining on siblingContractId
+          join(
             `group_contracts gc on gc.contract_id = contracts.data->>'siblingContractId'`
           )
-        : token === 'ALL'
-        ? join(
+        : join(
             `group_contracts gc on (gc.contract_id = contracts.id or gc.contract_id = contracts.data->>'siblingContractId')`
-          )
-        : assertUnreachable(token),
-      where('gc.group_id = $1', [groupId]),
-    ],
+          )),
+    groupId && where('gc.group_id = $1', [groupId]),
+    groupIds &&
+      where("gc.group_id = any(string_to_array($1, ','))", [groupIds]),
     searchType === 'answer' &&
       join(
         `(${answersSubQuery}) as matched_answers on matched_answers.contract_id = contracts.id`

@@ -51,6 +51,7 @@ export function BrowsePageContent() {
   return (
     <Col className={clsx('relative col-span-8 mx-auto w-full')}>
       <Search
+        showTopicsFilterPills
         persistPrefix="search"
         autoFocus={autoFocus}
         additionalFilter={{

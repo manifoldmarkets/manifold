@@ -76,27 +76,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       groupIds: ['S1tbcVt1t5Bd9O5mVCx1'],
     },
   ],
-  '💼 Business': [
-    {
-      // Finance, Economics
-      name: '💵 Econ',
-      groupIds: ['CgB83AAMkkOHSrTnzani', 'p88Ycq6yFd5ECKqq9PFO'],
-    },
-    {
-      name: '🦄 Startups',
-      groupIds: ['19c319ca-033c-474f-b417-5f07efe88ec0'],
-    },
-    {
-      // Stocks, Tech Stocks
-      name: '📈 Stocks',
-      groupIds: ['QDQfgsFiQrNNlZhsRGf5', 'pK06hNX8MsNw8zaBsX2N'],
-    },
-    {
-      // Crypto, Bitcoin
-      name: '🪙 Crypto',
-      groupIds: ['YuJw0M1xvUHrpiRRuKso', 'WBeBD6FyMd0NvSL0qjMb'],
-    },
-  ],
   '🏟️ Sports': [
     {
       name: '🏀 Basketball',
@@ -122,10 +101,10 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     // { name: '🎾 Tennis', groupIds: ['1mvN9vIVIopcWiAsXhzp'] },
     // { name: '🏏 Cricket', groupIds: ['LcPYoqxSRdeQMms4lR3g'] },
   ],
-  '🍿 Media': [
+  '🎨 Entertainment': [
     // Movies, TV Shows, Music, Celebrities
     {
-      name: '🍿 Media',
+      name: '🍿 Movies, TV, & Music',
       groupIds: [
         'KSeNIu7AWgiBBM5FqVuB',
         'Xuc2UY8gGfjQqFXwxq5d',
@@ -141,6 +120,27 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     {
       name: '🏴‍☠️ One Piece',
       groupIds: ['uJSql24HUqpEpVU0FrjI'],
+    },
+  ],
+  '💼 Business': [
+    {
+      // Finance, Economics
+      name: '💵 Econ',
+      groupIds: ['CgB83AAMkkOHSrTnzani', 'p88Ycq6yFd5ECKqq9PFO'],
+    },
+    {
+      name: '🦄 Startups',
+      groupIds: ['19c319ca-033c-474f-b417-5f07efe88ec0'],
+    },
+    {
+      // Stocks, Tech Stocks
+      name: '📈 Stocks',
+      groupIds: ['QDQfgsFiQrNNlZhsRGf5', 'pK06hNX8MsNw8zaBsX2N'],
+    },
+    {
+      // Crypto, Bitcoin
+      name: '🪙 Crypto',
+      groupIds: ['YuJw0M1xvUHrpiRRuKso', 'WBeBD6FyMd0NvSL0qjMb'],
     },
   ],
 
@@ -194,3 +194,7 @@ export const getSubtopics = (topic: string) =>
 export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))
   .flat()
+
+export const ALL_PARENT_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS).filter(
+  (topic) => topic !== '🪂 NSFW'
+)
