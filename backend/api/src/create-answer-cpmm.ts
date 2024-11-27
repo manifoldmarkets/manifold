@@ -81,10 +81,7 @@ const verifyContract = async (contractId: string, creatorId: string) => {
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
   if (contract.token !== 'MANA') {
-    throw new APIError(
-      403,
-      'Must add answer to the mana version of the contract'
-    )
+    throw new APIError(403, 'Cannot add answers to sweepstakes question')
   }
   if (contract.mechanism !== 'cpmm-multi-1')
     throw new APIError(403, 'Requires a cpmm multiple choice contract')

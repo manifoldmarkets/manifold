@@ -67,10 +67,10 @@ export async function createCashContractMain(
 
       let answers: Answer[] = []
       if (manaContract.outcomeType === 'MULTIPLE_CHOICE') {
-        if (manaContract.addAnswersMode === 'ANYONE')
+        if (manaContract.addAnswersMode !== 'DISABLED')
           throw new APIError(
             400,
-            `Cannot make sweepstakes question for free response contract`
+            `Cannot add answers to multi sweepstakes question`
           )
 
         answers = await getAnswersForContract(tx, manaContractId)
