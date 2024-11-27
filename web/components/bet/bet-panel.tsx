@@ -691,7 +691,10 @@ export const BuyPanelBody = (props: {
           <Col className="gap-2">
             {user ? (
               shouldPromptVerification ? (
-                <VerifyButton content={<span>Verify to {TRADE_TERM}</span>} />
+                <VerifyButton
+                  redirectHereAfterVerify
+                  content={<span>Verify to {TRADE_TERM}</span>}
+                />
               ) : (
                 <>
                   <LocationMonitor
