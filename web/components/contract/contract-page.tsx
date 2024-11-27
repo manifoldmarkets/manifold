@@ -74,8 +74,6 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { useRouter } from 'next/router'
-import { buildArray } from 'common/util/array'
-import { useLiveAnswers } from 'web/hooks/use-answers'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -105,10 +103,6 @@ export function ContractPageContent(props: ContractParams) {
   const liveContract =
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
   const user = useUser()
-
-  const manaAnswers = useLiveAnswers(props.contract.id)
-  const cashAnswers = useLiveAnswers(props.cash?.contract.id)
-  const answers = buildArray(manaAnswers, cashAnswers)
 
   // Read and set play state from the query if the user hasn't set their preference
   useEffect(() => {
@@ -522,7 +516,6 @@ export function ContractPageContent(props: ContractParams) {
               <ContractTabs
                 mainContract={props.contract}
                 liveContract={liveContract}
-                answers={answers}
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}

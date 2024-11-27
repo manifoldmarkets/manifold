@@ -47,7 +47,6 @@ import { TRADE_TERM } from 'common/envs/constants'
 export function ContractTabs(props: {
   mainContract: Contract
   liveContract: Contract
-  answers: Answer[]
   bets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
@@ -66,7 +65,6 @@ export function ContractTabs(props: {
   const {
     mainContract,
     liveContract,
-    answers,
     comments,
     bets,
     replyTo,

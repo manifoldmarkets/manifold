@@ -191,7 +191,7 @@ function RepostLabel(props: {
   if (creatorRepostedTheirComment) {
     return (
       <Row className="grow-x bg-canvas-100/50 -mx-4 -mt-4 mb-3 rounded-t-lg px-4 pb-1 pt-2">
-        {header}i''
+        {header}
         {dropdown}
       </Row>
     )
