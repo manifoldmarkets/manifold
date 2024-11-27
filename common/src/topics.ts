@@ -101,7 +101,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     // { name: '🎾 Tennis', groupIds: ['1mvN9vIVIopcWiAsXhzp'] },
     // { name: '🏏 Cricket', groupIds: ['LcPYoqxSRdeQMms4lR3g'] },
   ],
-  '🎨 Entertainment': [
+  '🎬 Entertainment': [
     // Movies, TV Shows, Music, Celebrities
     {
       name: '🍿 Movies, TV, & Music',
