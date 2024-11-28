@@ -103,12 +103,7 @@ export function UserBetsTable(props: { user: User }) {
       offset: 0,
       limit: 5000,
     }).then((res) => {
-      const { data, error } = res
-      if (error) {
-        console.error(error)
-        return
-      }
-      const { contracts, metricsByContract } = data
+      const { contracts, metricsByContract } = res
       setMetricsByContract(metricsByContract)
       setInitialContracts((c) =>
         uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')

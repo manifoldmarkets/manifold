@@ -548,3 +548,56 @@ export const applyMetricToSummary = <
   // summaryMetric.hasShares
   return summary
 }
+
+export const calculateUpdatedMetricsForContracts = (
+  contractsWithMetrics: {
+    contract: Contract
+    metrics: ContractMetric[]
+  }[]
+) => {
+  const metricsByContract: Dictionary<Omit<ContractMetric, 'id'>> = {}
+  const contracts: Contract[] = []
+
+  for (const { contract, metrics } of contractsWithMetrics) {
+    const contractId = contract.id
+    const userId = metrics[0].userId
+    contracts.push(contract)
+
+    if (contract.mechanism === 'cpmm-1') {
+      // For binary markets, update metrics with current probability
+      const metric = metrics.find((m) => m.answerId === null)
+      if (metric) {
+        metricsByContract[contractId] = calculateProfitMetricsWithProb(
+          contract.prob,
+          metric
+        )
+      }
+    } else if (contract.mechanism === 'cpmm-multi-1') {
+      // For multiple choice markets, update each answer's metrics and compute summary
+      const answerMetrics = metrics.filter((m) => m.answerId !== null)
+
+      const updatedAnswerMetrics = answerMetrics.map((m) => {
+        const answer = contract.answers.find((a) => a.id === m.answerId)
+        return answer
+          ? calculateProfitMetricsWithProb(
+              answer.resolution === 'YES'
+                ? 1
+                : answer.resolution === 'NO'
+                ? 0
+                : answer.prob,
+              m
+            )
+          : m
+      })
+
+      // Calculate summary metrics
+      const summaryMetric = getDefaultMetric(userId, contractId, null)
+      updatedAnswerMetrics.forEach((m) =>
+        applyMetricToSummary(m, summaryMetric, true)
+      )
+      metricsByContract[contractId] = summaryMetric
+    }
+  }
+
+  return { metricsByContract, contracts }
+}
