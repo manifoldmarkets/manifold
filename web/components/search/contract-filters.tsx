@@ -249,7 +249,7 @@ export function ContractFilters(props: {
           selectFilter={selectFilter}
           currentFilter={filter}
         />
-        {!topicSlug && (
+        {!topicSlug && !hideSweepsToggle && (
           <FilterPill
             selected={forYou}
             onSelect={() => {
