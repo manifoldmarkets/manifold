@@ -1,19 +1,12 @@
-import { useEffect, useState } from 'react'
 import { type Answer } from 'common/answer'
+import { prepopulateCache, useAPIGetter } from './use-api-getter'
 import { useApiSubscription } from './use-api-subscription'
-import { api } from 'web/lib/api/api'
-
-// TODO: use API getter
 
 export function useAnswer(answerId: string | undefined) {
-  const [answer, setAnswer] = useState<Answer>()
-  useEffect(() => {
-    if (answerId) {
-      api('answer/:answerId', {
-        answerId,
-      }).then(setAnswer)
-    }
-  }, [answerId])
+  const { data: answer, setData: setAnswer } = useAPIGetter(
+    'answer/:answerId',
+    answerId ? { answerId } : undefined
+  )
 
   return { answer, setAnswer }
 }
@@ -32,4 +25,10 @@ export function useLiveAnswer(answerId: string | undefined) {
   })
 
   return answer
+}
+
+export function precacheAnswers(answers: Answer[]) {
+  for (const answer of answers) {
+    prepopulateCache('answer/:answerId', { answerId: answer.id }, answer)
+  }
 }

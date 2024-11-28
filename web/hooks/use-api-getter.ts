@@ -6,6 +6,16 @@ import { useEvent } from './use-event'
 
 const promiseCache: Record<string, Promise<any> | undefined> = {}
 
+// Prepopulate cache with data, e.g. from static props
+export function prepopulateCache<P extends APIPath>(
+  path: P,
+  props: APIParams<P>,
+  data: APIResponse<P>
+) {
+  const key = `${path}-${JSON.stringify(props)}`
+  promiseCache[key] = Promise.resolve(data)
+}
+
 // react query at home
 export const useAPIGetter = <P extends APIPath>(
   path: P,
@@ -24,7 +34,7 @@ export const useAPIGetter = <P extends APIPath>(
     APIResponse<P> | undefined
   >(undefined, `${overrideKey ?? path}`)
 
-  const key = `${path}-${propsString}-error`
+  const key = `${path}-${propsString}`
   const [error, setError] = usePersistentInMemoryState<APIError | undefined>(
     undefined,
     key

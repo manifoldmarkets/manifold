@@ -74,6 +74,7 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { useRouter } from 'next/router'
+import { precacheAnswers } from 'web/hooks/use-answers'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -189,6 +190,15 @@ export function ContractPageContent(props: ContractParams) {
     [user?.id] // track user view market event if they sign up/sign in on this page
   )
   useSaveContractVisitsLocally(user === null, props.contract.id)
+
+  useEffect(() => {
+    if ('answers' in props.contract) {
+      precacheAnswers(props.contract.answers)
+    }
+    if (props.cash?.contract && 'answers' in props.cash.contract) {
+      precacheAnswers(props.cash.contract.answers)
+    }
+  }, [])
 
   const playBetData = useBetData({
     contractId: props.contract.id,
