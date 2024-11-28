@@ -64,17 +64,7 @@ const createAnswerCpmmFull = async (
 ) => {
   log('Received ' + contractId + ' ' + text)
   const contract = await verifyContract(contractId, userId)
-  const response = await createAnswerCpmmMain(contract, text, userId)
-
-  // copy answer if this is sweeps question
-  if (contract.siblingContractId) {
-    const cashContract = await getContractSupabase(contract.siblingContractId)
-    if (!cashContract) throw new APIError(500, 'Cash contract not found')
-    await createAnswerCpmmMain(cashContract as any, text, userId)
-    // ignore continuation of sweepstakes answer, since don't need to notify twice
-  }
-
-  return response
+  return await createAnswerCpmmMain(contract, text, userId)
 }
 
 const verifyContract = async (contractId: string, creatorId: string) => {
