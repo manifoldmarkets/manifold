@@ -13,6 +13,8 @@ import { getNewContract } from 'common/new-contract'
 import { convertContract } from 'common/supabase/contracts'
 import { clamp } from 'lodash'
 import { runTransactionWithRetries } from './transact-with-retries'
+import { getTierFromLiquidity } from 'common/tier'
+import { MarketContract } from 'common/contract'
 
 // cribbed from backend/api/src/create-market.ts
 
@@ -70,7 +72,6 @@ export async function createCashContractMain(
         closeTime: manaContract.closeTime,
         visibility: manaContract.visibility,
         isTwitchContract: manaContract.isTwitchContract,
-
         min: 0,
         max: 0,
         isLogScale: false,
@@ -99,6 +100,13 @@ export async function createCashContractMain(
         toType: 'CONTRACT',
         fromType: 'BANK',
         token: 'CASH',
+      })
+
+      await updateContract(tx, cashContract.id, {
+        marketTier: getTierFromLiquidity(
+          cashContract as MarketContract,
+          subsidyAmount
+        ),
       })
 
       log(
