@@ -5,6 +5,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
 import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
+import { mapValues } from 'lodash'
 
 const bodySchema = z
   .object({
@@ -42,7 +43,11 @@ export const getusercontractmetricswithcontracts = MaybeAuthedEndpoint(
       (row) => row as { contract: Contract; metrics: ContractMetric[] }
     )
 
-    const { metricsByContract } = calculateUpdatedMetricsForContracts(results)
+    const { metricsByContract: allMetrics } =
+      calculateUpdatedMetricsForContracts(results)
+    const metricsByContract = mapValues(allMetrics, (metrics) =>
+      metrics.find((m) => m.answerId === null)
+    )
 
     return {
       metricsByContract,

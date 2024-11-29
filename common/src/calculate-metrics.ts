@@ -555,7 +555,7 @@ export const calculateUpdatedMetricsForContracts = (
     metrics: ContractMetric[]
   }[]
 ) => {
-  const metricsByContract: Dictionary<Omit<ContractMetric, 'id'>> = {}
+  const metricsByContract: Dictionary<Omit<ContractMetric, 'id'>[]> = {}
   const contracts: Contract[] = []
 
   for (const { contract, metrics } of contractsWithMetrics) {
@@ -567,10 +567,9 @@ export const calculateUpdatedMetricsForContracts = (
       // For binary markets, update metrics with current probability
       const metric = metrics.find((m) => m.answerId === null)
       if (metric) {
-        metricsByContract[contractId] = calculateProfitMetricsWithProb(
-          contract.prob,
-          metric
-        )
+        metricsByContract[contractId] = [
+          calculateProfitMetricsWithProb(contract.prob, metric),
+        ]
       }
     } else if (contract.mechanism === 'cpmm-multi-1') {
       // For multiple choice markets, update each answer's metrics and compute summary
@@ -595,7 +594,7 @@ export const calculateUpdatedMetricsForContracts = (
       updatedAnswerMetrics.forEach((m) =>
         applyMetricToSummary(m, summaryMetric, true)
       )
-      metricsByContract[contractId] = summaryMetric
+      metricsByContract[contractId] = [...updatedAnswerMetrics, summaryMetric]
     }
   }
 

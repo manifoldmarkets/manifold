@@ -27,10 +27,7 @@ export const useSavedContractMetrics = (
     const { metricsByContract } = calculateUpdatedMetricsForContracts([
       { contract, metrics },
     ])
-    return metrics.map((metric) => ({
-      ...metricsByContract[metric.contractId],
-      id: metric.id,
-    }))
+    return metricsByContract[contract.id] as ContractMetric[]
   }
 
   const refreshMyMetrics = useEvent(async () => {
