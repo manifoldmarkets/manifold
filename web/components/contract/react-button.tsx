@@ -151,8 +151,6 @@ export const ReactButton = memo(function ReactButton(props: {
   const showList = otherLikes > 0 && !hideReactList
   const thumbIcon = iconType == 'thumb' || reactionType == 'dislike'
 
-  console.log(reactionType, 'showList', showList)
-
   return (
     <>
       <Tooltip
