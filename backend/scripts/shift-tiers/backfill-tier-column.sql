@@ -1,5 +1,6 @@
 -- Create a function to update contracts in batches
-drop function if exists update_contract_tiers_efficient(batch_size INTEGER, start_time TIMESTAMP );
+drop function if exists update_contract_tiers_efficient (batch_size integer, start_time timestamp);
+
 create
 or replace function update_contract_tiers_efficient (batch_size integer, start_time timestamp) returns table (
   updated_count integer,
@@ -19,7 +20,9 @@ BEGIN
         COALESCE((data->>'totalLiquidity')::NUMERIC, 0)
       ) AS new_tier
     FROM contracts
-    WHERE created_time > start_time
+    -- WHERE created_time > start_time
+    WHERE token = 'CASH'    -- Added condition
+    AND tier IS NULL      -- Added condition
     AND (data->>'totalLiquidity' IS NOT NULL)
     ORDER BY created_time
     LIMIT batch_size
@@ -48,4 +51,3 @@ $$ language plpgsql;
 
 -- Commit the transaction to save the functions
 commit;
-

@@ -48,6 +48,7 @@ export const ReactButton = memo(function ReactButton(props: {
   userReactedWith?: 'like' | 'dislike' | 'none'
   onReact?: () => void
   onUnreact?: () => void
+  hideReactList?: boolean
 }) {
   const {
     user,
@@ -66,6 +67,7 @@ export const ReactButton = memo(function ReactButton(props: {
     heartClassName,
     reactionType = 'like',
     userReactedWith,
+    hideReactList,
   } = props
   const allReactions = useReactionsOnContent(contentType, contentId)
   const reactions = allReactions?.filter(
@@ -130,7 +132,9 @@ export const ReactButton = memo(function ReactButton(props: {
 
   const likeLongPress = useLongTouch(
     () => {
-      setModalOpen(true)
+      if (!hideReactList) {
+        setModalOpen(true)
+      }
     },
     () => {
       if (!disabled) {
@@ -144,7 +148,7 @@ export const ReactButton = memo(function ReactButton(props: {
   )
 
   const otherLikes = reacted ? totalReactions - 1 : totalReactions
-  const showList = otherLikes > 0
+  const showList = otherLikes > 0 && !hideReactList
   const thumbIcon = iconType == 'thumb' || reactionType == 'dislike'
 
   return (
