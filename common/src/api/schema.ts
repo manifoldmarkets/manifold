@@ -84,6 +84,8 @@ type APIGenericSchema = {
   returns?: Record<string, any>
   // Cache-Control header. like, 'max-age=60'
   cache?: string
+  // whether the endpoint should prefer authentication even if not required
+  preferAuth?: boolean
 }
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
@@ -756,6 +758,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
+    preferAuth: true,
     cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as Contract[],
     props: searchProps,
