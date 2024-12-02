@@ -483,7 +483,9 @@ export function ContractPageContent(props: ContractParams) {
               hasReviewed={!!userHasReviewed}
             />
             <ContractDescription
-              contract={liveContract}
+              contractId={props.contract.id}
+              creatorId={props.contract.creatorId}
+              isSweeps={isCashContract}
               description={description}
             />
             <Row className="items-center gap-2">
