@@ -31,7 +31,6 @@ import { OrderTable } from 'web/components/bet/order-book'
 import { Button, IconButton } from 'web/components/buttons/button'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
-import { Row } from 'web/components/layout/row'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { ProfitBadge } from 'web/components/profit-badge'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -50,7 +49,6 @@ import { getUserContractsMetricsWithContracts } from 'web/lib/api/api'
 import { User } from 'web/lib/firebase/users'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import DropdownMenu from '../comments/dropdown-menu'
-import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { useSweepstakes } from '../sweepstakes-provider'
@@ -58,7 +56,8 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { linkClass } from '../widgets/site-link'
 import { Tooltip } from '../widgets/tooltip'
 import { floatingEqual } from 'common/util/math'
-
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 type BetSort =
   | 'newest'
   | 'profit'
@@ -87,7 +86,7 @@ export function UserBetsTable(props: { user: User }) {
     Dictionary<ContractMetric> | undefined
   >(undefined, `user-contract-metrics-${user.id}`)
 
-  const [initialContracts, setInitialContracts] = usePersistentInMemoryState<
+  const [contracts, setContracts] = usePersistentInMemoryState<
     Contract[] | undefined
   >(undefined, `user-contract-metrics-contracts-${user.id}`)
 
@@ -103,14 +102,9 @@ export function UserBetsTable(props: { user: User }) {
       offset: 0,
       limit: 5000,
     }).then((res) => {
-      const { data, error } = res
-      if (error) {
-        console.error(error)
-        return
-      }
-      const { contracts, metricsByContract } = data
+      const { contracts, metricsByContract } = res
       setMetricsByContract(metricsByContract)
-      setInitialContracts((c) =>
+      setContracts((c) =>
         uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
       )
     })
@@ -128,11 +122,11 @@ export function UserBetsTable(props: { user: User }) {
     }).then((betsWithContracts) => {
       const { contracts, betsByContract } = betsWithContracts
       setOpenLimitBetsByContract(betsByContract)
-      setInitialContracts((c) =>
+      setContracts((c) =>
         uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
       )
     })
-  }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
+  }, [setContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
   const [filter, setFilter] = usePersistentLocalState<BetFilter>(
     'open',
@@ -156,13 +150,11 @@ export function UserBetsTable(props: { user: User }) {
   }
 
   const nullableMetricsByContract = useMemo(() => {
-    if (!metricsByContract || !initialContracts) {
+    if (!metricsByContract || !contracts) {
       return undefined
     }
     // check if we have any contracts that don't have contractMetrics, if so, add them in as getContractBetNullMetrics
-    const missingContracts = initialContracts.filter(
-      (c) => !metricsByContract[c.id]
-    )
+    const missingContracts = contracts.filter((c) => !metricsByContract[c.id])
     const missingMetrics = Object.fromEntries(
       missingContracts.map((c) => [c.id, getContractBetNullMetrics()])
     )
@@ -171,23 +163,13 @@ export function UserBetsTable(props: { user: User }) {
       ...metricsByContract,
       ...missingMetrics,
     }
-  }, [JSON.stringify(initialContracts), metricsByContract])
+  }, [JSON.stringify(contracts), metricsByContract])
 
-  if (
-    !nullableMetricsByContract ||
-    !openLimitBetsByContract ||
-    !initialContracts
-  ) {
-    return <LoadingIndicator />
-  }
-  if (Object.keys(nullableMetricsByContract).length === 0)
-    return <NoBets user={user} />
-
-  const contracts = query
-    ? initialContracts.filter((c) =>
+  const queriedContracts = query
+    ? contracts?.filter((c) =>
         searchInAny(query, c.question, c.creatorName, c.creatorUsername)
       )
-    : initialContracts
+    : contracts
 
   const FILTERS: Record<BetFilter, (c: Contract) => boolean> = {
     resolved: (c) => !!c.resolutionTime,
@@ -198,25 +180,29 @@ export function UserBetsTable(props: { user: User }) {
     sold: () => true,
     limit_bet: (c) => FILTERS.open(c),
   }
+  const loaded =
+    nullableMetricsByContract && openLimitBetsByContract && contracts
 
-  const filteredContracts = contracts
-    .filter(FILTERS[filter])
-    .filter((c) => {
-      if (filter === 'all') return true
-      const { totalShares } = nullableMetricsByContract[c.id]
-      // The hasShares wasn't properly set for null metrics for a while, so using totalShares instead
-      const hasShares = Object.values(totalShares).some(
-        (s) => !floatingEqual(s, 0)
-      )
-      if (filter === 'sold') return !hasShares
-      if (filter === 'limit_bet')
-        return openLimitBetsByContract[c.id]?.length > 0
-      return hasShares
-    })
-    .filter((c) => {
-      if (!prefersPlay) return c.token === 'CASH'
-      else return c.token === 'MANA' || !c.token
-    })
+  const filteredContracts = loaded
+    ? queriedContracts
+        ?.filter(FILTERS[filter])
+        .filter((c) => {
+          if (filter === 'all') return true
+          const { totalShares } = nullableMetricsByContract[c.id]
+          // The hasShares wasn't properly set for null metrics for a while, so using totalShares instead
+          const hasShares = Object.values(totalShares).some(
+            (s) => !floatingEqual(s, 0)
+          )
+          if (filter === 'sold') return !hasShares
+          if (filter === 'limit_bet')
+            return openLimitBetsByContract[c.id]?.length > 0
+          return hasShares
+        })
+        .filter((c) => {
+          if (!prefersPlay) return c.token === 'CASH'
+          else return c.token === 'MANA' || !c.token
+        })
+    : []
 
   return (
     <Col>
@@ -262,24 +248,26 @@ export function UserBetsTable(props: { user: User }) {
         </Col>
       </div>
 
-      <Col className="divide-ink-300 mt-2 divide-y">
-        {filteredContracts.length === 0 ? (
-          <NoMatchingBets />
-        ) : (
-          nullableMetricsByContract && (
-            <BetsTable
-              contracts={filteredContracts as CPMMContract[]}
-              metricsByContractId={nullableMetricsByContract}
-              openLimitBetsByContract={openLimitBetsByContract}
-              page={page}
-              user={user}
-              setPage={setPage}
-              filter={filter}
-              signedInUser={signedInUser}
-            />
-          )
-        )}
-      </Col>
+      {!loaded ? (
+        <Col className="divide-ink-300 mt-6 divide-y">
+          <LoadingMetricRow />
+          <LoadingMetricRow />
+          <LoadingMetricRow />
+        </Col>
+      ) : Object.keys(nullableMetricsByContract).length === 0 ? (
+        <NoBets user={user} />
+      ) : (
+        <BetsTable
+          contracts={filteredContracts as CPMMContract[]}
+          metricsByContractId={nullableMetricsByContract}
+          openLimitBetsByContract={openLimitBetsByContract}
+          page={page}
+          user={user}
+          setPage={setPage}
+          filter={filter}
+          signedInUser={signedInUser}
+        />
+      )}
     </Col>
   )
 }
@@ -933,5 +921,25 @@ const Header = (props: {
       )}
       <span>{children}</span>
     </Row>
+  )
+}
+
+function LoadingMetricRow() {
+  return (
+    <div className="animate-pulse py-4">
+      <Row className="mb-2 items-center gap-2">
+        <div className="h-6 w-6 rounded-full bg-gray-200" />
+        <div className="h-4 w-48 rounded bg-gray-200 sm:w-96" />
+      </Row>
+
+      <Row className="mt-2 justify-between gap-4">
+        <div className="h-4 w-16 rounded bg-gray-200" />
+        <div className="h-4 w-20 rounded bg-gray-200" />
+        <div className="h-4 w-20 rounded bg-gray-200" />
+        <div className="h-4 w-16 rounded bg-gray-200" />
+        <div className="h-4 w-16 rounded bg-gray-200" />
+        <div className="h-4 w-16 rounded bg-gray-200" />
+      </Row>
+    </div>
   )
 }

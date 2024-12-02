@@ -9,11 +9,7 @@ import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { useEvent } from 'web/hooks/use-event'
 import { useApiSubscription } from 'web/hooks/use-api-subscription'
-import {
-  calculateProfitMetricsWithProb,
-  getDefaultMetric,
-  applyMetricToSummary,
-} from 'common/calculate-metrics'
+import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
 import { useUser } from './use-user'
 import { useBatchedGetter } from './use-batched-getter'
 
@@ -28,29 +24,10 @@ export const useSavedContractMetrics = (
 
   const updateMetricsWithNewProbs = (metrics: ContractMetric[]) => {
     if (!user) return metrics
-    if (contract.mechanism === 'cpmm-1') {
-      return [calculateProfitMetricsWithProb(contract.prob, metrics[0])]
-    }
-    if (contract.mechanism === 'cpmm-multi-1') {
-      const updatedMetrics = metrics.map((metric) => {
-        const answer = contract.answers.find((a) => a.id === metric.answerId)
-        return answer
-          ? calculateProfitMetricsWithProb(
-              answer.resolution === 'YES'
-                ? 1
-                : answer.resolution === 'NO'
-                ? 0
-                : answer.prob,
-              metric
-            )
-          : metric
-      })
-      const nonNullMetrics = updatedMetrics.filter((m) => m.answerId != null)
-      const nullMetric = getDefaultMetric(user.id, contract.id, null)
-      nonNullMetrics.forEach((m) => applyMetricToSummary(m, nullMetric, true))
-      return [...nonNullMetrics, nullMetric] as ContractMetric[]
-    }
-    return metrics
+    const { metricsByContract } = calculateUpdatedMetricsForContracts([
+      { contract, metrics },
+    ])
+    return metricsByContract[contract.id] as ContractMetric[]
   }
 
   const refreshMyMetrics = useEvent(async () => {

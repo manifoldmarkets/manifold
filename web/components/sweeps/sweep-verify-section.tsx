@@ -21,6 +21,7 @@ import { CoinNumber } from '../widgets/coin-number'
 import { Tooltip } from '../widgets/tooltip'
 import { RainingCoins } from '../raining-coins'
 import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
+import { useRouter } from 'next/router'
 
 export function SweepVerifySection(props: { className?: string }) {
   const { className } = props
@@ -105,7 +106,10 @@ export function SweepVerifySection(props: { className?: string }) {
         </div>
 
         <Col className="gap-2">
-          <VerifyButton className=" !hover:from-amber-800 !hover:via-amber-700 !hover:to-amber-800 !mx-auto !w-fit !bg-gradient-to-r !from-amber-700 !via-amber-600 !to-amber-700 !text-white drop-shadow-lg" />
+          <VerifyButton
+            redirectHereAfterVerify
+            className=" !hover:from-amber-800 !hover:via-amber-700 !hover:to-amber-800 !mx-auto !w-fit !bg-gradient-to-r !from-amber-700 !via-amber-600 !to-amber-700 !text-white drop-shadow-lg"
+          />
 
           <Row className=" w-full">
             <button
@@ -185,15 +189,20 @@ export function VerifyButton(props: {
   className?: string
   content?: ReactNode
   color?: ColorType
+  redirectHereAfterVerify?: boolean
 }) {
-  const { className, content, color } = props
-
+  const { className, content, color, redirectHereAfterVerify } = props
+  const router = useRouter()
   const user = useUser()
   const amount = useKYCGiftAmount(user)
 
   return (
     <Link
-      href={'/gidx/register'}
+      href={`/gidx/register${
+        redirectHereAfterVerify
+          ? `?redirect=${encodeURIComponent(router.asPath)}`
+          : ''
+      }`}
       className={clsx(
         buttonClass('xl', color ?? 'gradient-pink'),
         'w-full font-semibold',

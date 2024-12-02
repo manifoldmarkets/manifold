@@ -180,6 +180,7 @@ export function LikeAndDislikeComment(props: {
         onReact={() => setUserReactedWith('dislike')}
         onUnreact={() => setUserReactedWith('none')}
         className={'min-w-[60px]'}
+        hideReactList
       />
     </>
   )

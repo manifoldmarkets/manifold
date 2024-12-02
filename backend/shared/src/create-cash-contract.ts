@@ -18,6 +18,8 @@ import { Answer } from 'common/answer'
 import { bulkInsertQuery } from './supabase/utils'
 import { pgp } from './supabase/init'
 import { generateAntes } from 'shared/create-contract-helpers'
+import { getTierFromLiquidity } from 'common/tier'
+import { MarketContract } from 'common/contract'
 
 // cribbed from backend/api/src/create-market.ts
 
@@ -161,6 +163,13 @@ export async function createCashContractMain(
         amount: subsidyAmount,
         token: 'CASH',
         category: 'CREATE_CONTRACT_ANTE',
+      })
+
+      await updateContract(tx, cashContract.id, {
+        marketTier: getTierFromLiquidity(
+          cashContract as MarketContract,
+          subsidyAmount
+        ),
       })
 
       log(

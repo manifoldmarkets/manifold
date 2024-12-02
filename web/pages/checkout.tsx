@@ -77,7 +77,7 @@ const CheckoutPage = () => {
     setError(null)
     setLoading(true)
     if (!user.idVerified) {
-      router.push('/gidx/register?redirect=checkout')
+      router.push('/gidx/register')
       return
     }
     const { status, message } = getVerificationStatus(user, privateUser)

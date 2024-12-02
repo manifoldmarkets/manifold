@@ -26,8 +26,10 @@ export async function api<P extends APIPath>(
   path: P,
   params: APIParams<P> = {}
 ) {
+  const pathProps = API[path]
+  const preferAuth = 'preferAuth' in pathProps && pathProps.preferAuth
   // If the api is authed and the user is not loaded, wait for the user to load.
-  if (API[path].authed && !auth.currentUser) {
+  if ((pathProps.authed || preferAuth) && !auth.currentUser) {
     let i = 0
     while (!auth.currentUser) {
       i++
@@ -41,7 +43,7 @@ export async function api<P extends APIPath>(
 
   return (await call(
     formatApiUrlWithParams(path, params),
-    API[path].method,
+    pathProps.method,
     params
   )) as Promise<APIResponse<P>>
 }

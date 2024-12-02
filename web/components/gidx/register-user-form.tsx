@@ -50,7 +50,6 @@ export const RegisterUserForm = (props: {
   const user = useUser() ?? props.user
   const privateUser = usePrivateUser() ?? props.privateUser
   const router = useRouter()
-  const { redirect } = router.query
   const [page, setPage] = useState(
     user.idVerified ||
       user.kycDocumentStatus === 'pending' ||
@@ -96,7 +95,11 @@ export const RegisterUserForm = (props: {
   useEffect(() => {
     if (userSuccesfullyVerified) {
       setTimeout(() => {
-        router.push('/checkout')
+        const { redirect } = router.query
+
+        // Get the redirect URL from query params, defaulting to /checkout
+        const redirectTo = redirect ?? '/checkout'
+        router.push(redirectTo as string)
       }, TIME_TO_REDIRECT)
     }
   }, [userSuccesfullyVerified, router])
