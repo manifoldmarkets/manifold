@@ -35,6 +35,8 @@ import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
 import { getContract } from './get-contract'
+import { getSingleAnswer } from './get-answer'
+import { getContractAnswers } from './get-contract-answers'
 import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { addOrRemoveTopicFromTopic } from './add-topic-to-topic'
 import { searchUsers } from './search-users'
@@ -173,6 +175,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   groups: getGroups,
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
+  'answer/:answerId': getSingleAnswer,
+  'market/:contractId/answers': getContractAnswers,
   'markets-by-ids': getMarketsByIds,
   'slug/:slug': getMarket,
   'market/:contractId/update': updateMarket,

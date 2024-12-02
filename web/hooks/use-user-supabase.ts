@@ -82,12 +82,5 @@ export function useUsersInStore(
 
 export function useDisplayUserByIdOrAnswer(answer: Answer) {
   const userId = answer.userId
-  const user = useDisplayUserById(userId)
-  if (!user) return user
-  return {
-    id: userId,
-    name: user.name,
-    username: user.username,
-    avatarUrl: user.avatarUrl,
-  }
+  return useDisplayUserById(userId)
 }

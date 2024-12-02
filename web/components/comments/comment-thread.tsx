@@ -131,7 +131,6 @@ export function FeedCommentThread(props: {
         {replyToUserInfo && (
           <ContractCommentInput
             playContract={playContract}
-            liveContract={liveContract}
             parentCommentId={parentComment.id}
             replyToUserInfo={replyToUserInfo}
             clearReply={clearReply}

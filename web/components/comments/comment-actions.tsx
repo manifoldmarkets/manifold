@@ -63,7 +63,7 @@ export function CommentActions(props: {
           buttonClassName={'mr-1 min-w-[60px]'}
         />
       )}
-      {user && liveContract.outcomeType === 'BINARY' && !isCashContract && (
+      {user && liveContract.outcomeType === 'BINARY' && (
         <IconButton
           onClick={() => {
             track('bet intent', {

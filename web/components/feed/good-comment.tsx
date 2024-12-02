@@ -80,9 +80,7 @@ export const GoodComment = memo(function (props: {
                 <Col>
                   <FeedCommentHeader
                     comment={comment}
-                    // TODO: fix
                     playContract={contract}
-                    liveContract={contract}
                     inTimeline={true}
                   />
                   <Content size={'md'} content={comment.content} />

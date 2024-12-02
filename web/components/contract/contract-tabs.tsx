@@ -375,7 +375,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         replyTo={replyTo}
         className="mb-4 mr-px mt-px"
         playContract={playContract}
-        liveContract={liveContract}
         clearReply={clearReply}
         trackingLocation={'contract page'}
         commentTypes={['comment', 'repost']}

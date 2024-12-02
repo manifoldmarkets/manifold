@@ -119,15 +119,20 @@ export const getBetsWithFilter = async (
 export const getBetsRepliedToComment = async (
   pg: SupabaseDirectClient,
   comment: ContractComment,
-  contractId: string
+  contractId: string,
+  siblingContractId?: string
 ) => {
   return await pg.map(
     `select * from contract_bets
-         where data->>'replyToCommentId' = $1
-         and contract_id = $2
-         and created_time>=$3
-         `,
-    [comment.id, contractId, new Date(comment.createdTime).toISOString()],
+    where data->>'replyToCommentId' = $1
+    and created_time>=$2
+    and (contract_id = $3 or contract_id = $4)`,
+    [
+      comment.id,
+      millisToTs(comment.createdTime),
+      contractId,
+      siblingContractId,
+    ],
     convertBet
   )
 }

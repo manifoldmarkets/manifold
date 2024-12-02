@@ -15,6 +15,7 @@ import {
   FullMarket,
   updateMarketProps,
 } from './market-types'
+import { type Answer } from 'common/answer'
 import { MAX_COMMENT_LENGTH, type ContractComment } from 'common/comment'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
@@ -59,12 +60,12 @@ import {
   PendingCashoutStatusData,
   cashoutParams,
 } from 'common/gidx/gidx'
-
 import { notification_preference } from 'common/user-notification-preferences'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
+
 import { JSONContent } from '@tiptap/core'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -159,6 +160,20 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
       })
       .strict(),
+  },
+  'answer/:answerId': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as Answer,
+    props: z.object({ answerId: z.string() }).strict(),
+  },
+  'market/:contractId/answers': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: [] as Answer[],
+    props: z.object({ contractId: z.string() }).strict(),
   },
   'hide-comment': {
     method: 'POST',

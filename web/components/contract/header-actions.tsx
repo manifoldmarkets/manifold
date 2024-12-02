@@ -287,7 +287,6 @@ export function HeaderActions(props: {
       {repostOpen && (
         <RepostModal
           playContract={playContract}
-          liveContract={currentContract}
           open={repostOpen}
           setOpen={setRepostOpen}
         />

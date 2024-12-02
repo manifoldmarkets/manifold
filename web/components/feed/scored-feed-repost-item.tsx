@@ -97,9 +97,7 @@ export const ScoredFeedRepost = memo(function (props: {
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <FeedCommentHeader
                     comment={comment}
-                    // TODO: fix
                     playContract={contract}
-                    liveContract={contract}
                     inTimeline={true}
                     className="truncate"
                   />
@@ -170,54 +168,48 @@ function RepostLabel(props: {
     commenterIsBettor,
     repost,
   } = props
-  if (showTopLevelRow && creatorRepostedTheirComment)
+  if (!showTopLevelRow) return <></>
+
+  const dropdown = (
+    <FeedDropdown
+      contract={contract}
+      itemCreatorId={repost.user_id}
+      interesting={true}
+      toggleInteresting={hide}
+      importanceScore={props.contract.importanceScore}
+    />
+  )
+
+  const header = bet && (
+    <CommentReplyHeaderWithBet
+      contract={contract}
+      comment={comment}
+      bet={bet}
+    />
+  )
+
+  if (creatorRepostedTheirComment) {
     return (
       <Row className="grow-x bg-canvas-100/50 -mx-4 -mt-4 mb-3 rounded-t-lg px-4 pb-1 pt-2">
-        {bet && (
-          <CommentReplyHeaderWithBet
-            comment={comment}
-            liveContract={contract}
-            bet={bet}
-          />
-        )}
-        <FeedDropdown
-          contract={contract}
-          itemCreatorId={repost.user_id}
-          interesting={true}
-          toggleInteresting={hide}
-          importanceScore={props.contract.importanceScore}
-        />
+        {header}
+        {dropdown}
       </Row>
     )
-
-  if (showTopLevelRow && !creatorRepostedTheirComment) {
-    return (
-      <Col className="grow-x bg-canvas-100/50 -mx-4 -mt-4 mb-3 rounded-t-lg px-4 pb-1 pt-2">
-        <Row className={'mb-1 w-full justify-between gap-1'}>
-          <CardReason
-            repost={repost}
-            reason={'reposted'}
-            className="text-ink-600"
-          />
-          <FeedDropdown
-            contract={contract}
-            itemCreatorId={repost.user_id}
-            interesting={true}
-            toggleInteresting={hide}
-            importanceScore={props.contract.importanceScore}
-          />
-        </Row>
-        {!commenterIsBettor && bet && (
-          <CommentReplyHeaderWithBet
-            comment={comment}
-            liveContract={contract}
-            bet={bet}
-          />
-        )}
-      </Col>
-    )
   }
-  return <></>
+
+  return (
+    <Col className="grow-x bg-canvas-100/50 -mx-4 -mt-4 mb-3 rounded-t-lg px-4 pb-1 pt-2">
+      <Row className={'mb-1 w-full justify-between gap-1'}>
+        <CardReason
+          repost={repost}
+          reason={'reposted'}
+          className="text-ink-600"
+        />
+        {dropdown}
+      </Row>
+      {!commenterIsBettor && header}
+    </Col>
+  )
 }
 
 export const BottomActionRow = (props: {

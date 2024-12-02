@@ -109,10 +109,10 @@ export function broadcastUpdatedAnswers(
 ) {
   if (answers.length === 0) return
 
-  const payload = { answers }
-  const topics = [`contract/${contractId}/updated-answers`]
-  // TODO: broadcast to global
-  broadcastMulti(topics, payload)
+  broadcast(`contract/${contractId}/updated-answers`, { answers })
+  for (const a of answers) {
+    broadcast(`answer/${a.id}/update`, { answer: a })
+  }
 }
 
 export function broadcastTVScheduleUpdate() {

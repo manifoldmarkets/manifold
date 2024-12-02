@@ -19,6 +19,7 @@ import { MoneyDisplay } from './money-display'
 import { SellPanel } from './sell-panel'
 import { ContractMetric } from 'common/contract-metric'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useAnswer } from 'web/hooks/use-answers'
 
 export function SellRow(props: {
   contract: CPMMContract
@@ -144,6 +145,7 @@ export function SellSharesModal(props: {
   } = props
   const isStonk = contract.outcomeType === 'STONK'
   const isCashContract = contract.token === 'CASH'
+  const { answer } = useAnswer(answerId)
 
   return (
     <Modal open={true} setOpen={setOpen}>
@@ -164,7 +166,7 @@ export function SellSharesModal(props: {
             outcome={sharesOutcome}
             contract={contract}
             truncate={'short'}
-            answerId={answerId}
+            answer={answer}
             pseudonym={binaryPseudonym}
           />
           .
