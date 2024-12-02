@@ -8,7 +8,7 @@ export function useAnswer(answerId: string | undefined) {
     answerId ? { answerId } : undefined
   )
 
-  return { answer, setAnswer }
+  return { answer: answerId ? answer : undefined, setAnswer }
 }
 
 export function useLiveAnswer(answerId: string | undefined) {
@@ -29,6 +29,7 @@ export function useLiveAnswer(answerId: string | undefined) {
 
 export function precacheAnswers(answers: Answer[]) {
   for (const answer of answers) {
-    prepopulateCache('answer/:answerId', { answerId: answer.id }, answer)
+    if (answer.id)
+      prepopulateCache('answer/:answerId', { answerId: answer.id }, answer)
   }
 }
