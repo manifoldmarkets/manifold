@@ -21,7 +21,6 @@ import { UserHovercard } from '../user/user-hovercard'
 import Link from 'next/link'
 import { CommentReplyHeader, FeedCommentHeader } from './comment-header'
 import { CommentActions } from './comment-actions'
-import { buildArray } from 'common/util/array'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
