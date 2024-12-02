@@ -102,15 +102,18 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   ],
   '🎬 Entertainment': [
     {
-      name: '🍿 Movies, TV, & Music',
+      name: '🍿 Movies & TV',
       groupIds: [
         'KSeNIu7AWgiBBM5FqVuB', // Movies
-        'Xuc2UY8gGfjQqFXwxq5d', // Music
         '4QIcUOfCSSha0JZHAg9X', // Celebrities
         'EUSEngFk1dGGBfaMeAmh', // TV and Film
         'eJZecx6r22G2NriYYXcC', // Culture
         'XU1fOYURSnb58lgsqaly', // Entertainment & Pop culture
       ],
+    },
+    {
+      name: '🎶 Music',
+      groupIds: ['Xuc2UY8gGfjQqFXwxq5d'],
     },
     {
       name: '🎮 Gaming',
