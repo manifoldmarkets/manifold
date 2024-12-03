@@ -36,7 +36,7 @@ import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { Col } from '../layout/col'
 import { TbPigMoney } from 'react-icons/tb'
-import { PiRobotBold } from 'react-icons/pi'
+// import { PiRobotBold } from 'react-icons/pi'
 
 export default function Sidebar(props: {
   className?: string
@@ -148,11 +148,11 @@ const getDesktopNav = (
         href: `/notifications`,
         icon: NotificationsIcon,
       },
-      {
-        name: 'AI',
-        href: '/ai',
-        icon: PiRobotBold,
-      },
+      // {
+      //   name: 'AI',
+      //   href: '/ai',
+      //   icon: PiRobotBold,
+      // },
       // {
       //   name: 'TV',
       //   href: '/tv',
@@ -204,11 +204,11 @@ const getMobileNav = (
 
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    {
-      name: 'AI',
-      href: '/ai',
-      icon: PiRobotBold,
-    },
+    // {
+    //   name: 'AI',
+    //   href: '/ai',
+    //   icon: PiRobotBold,
+    // },
     {
       name: 'Messages',
       href: '/messages',
