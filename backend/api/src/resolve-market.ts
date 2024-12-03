@@ -19,6 +19,7 @@ import {
 import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { broadcastUserUpdates } from 'shared/supabase/users'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   props,
@@ -98,13 +99,18 @@ export const resolveMarketMain: APIHandler<
     )
   }
 
-  await resolveMarketHelper(
+  const { userUpdates } = await resolveMarketHelper(
     contract as MarketContract,
     caller,
     creator,
     resolutionParams
   )
-  return { message: 'success' }
+  return {
+    result: { message: 'success' },
+    continue: async () => {
+      broadcastUserUpdates(userUpdates)
+    },
+  }
 }
 
 function getResolutionParams(

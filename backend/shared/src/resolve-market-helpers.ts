@@ -41,7 +41,7 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { convertTxn } from 'common/supabase/txns'
 import { updateAnswer, updateAnswers } from './supabase/answers'
 import { bulkInsertQuery, updateDataQuery } from './supabase/utils'
-import { bulkIncrementBalancesQuery } from './supabase/users'
+import { bulkIncrementBalancesQuery, UserUpdate } from './supabase/users'
 import { broadcastUpdatedContract } from './websockets/helpers'
 
 export type ResolutionParams = {
@@ -60,208 +60,215 @@ export const resolveMarketHelper = async (
 ) => {
   const pg = createSupabaseDirectClient()
 
-  const { contract, bets, payoutsWithoutLoans, updatedContractAttrs } =
-    await pg.tx(async (tx) => {
-      const { closeTime, id: contractId, outcomeType } = unresolvedContract
-      const {
-        contract: c,
-        bets,
-        liquidities,
-      } = await getContractAndBetsAndLiquidities(
-        tx,
+  const {
+    contract,
+    bets,
+    payoutsWithoutLoans,
+    updatedContractAttrs,
+    userUpdates,
+  } = await pg.tx(async (tx) => {
+    const { closeTime, id: contractId, outcomeType } = unresolvedContract
+    const {
+      contract: c,
+      bets,
+      liquidities,
+    } = await getContractAndBetsAndLiquidities(tx, unresolvedContract, answerId)
+    if (!c) {
+      throw new APIError(500, 'Contract not found')
+    }
+    unresolvedContract = c as MarketContract
+    if (unresolvedContract.isResolved) {
+      throw new APIError(403, 'Contract is already resolved')
+    }
+
+    const resolutionTime = Date.now()
+    const newCloseTime = closeTime
+      ? Math.min(closeTime, resolutionTime)
+      : closeTime
+
+    // ian: TODO: just use contract metrics for this (but after the election)
+    const { resolutionProbability, payouts, payoutsWithoutLoans } =
+      getPayoutInfo(
+        outcome,
         unresolvedContract,
-        answerId
-      )
-      if (!c) {
-        throw new APIError(500, 'Contract not found')
-      }
-      unresolvedContract = c as MarketContract
-      if (unresolvedContract.isResolved) {
-        throw new APIError(403, 'Contract is already resolved')
-      }
-
-      const resolutionTime = Date.now()
-      const newCloseTime = closeTime
-        ? Math.min(closeTime, resolutionTime)
-        : closeTime
-
-      // ian: TODO: just use contract metrics for this (but after the election)
-      const { resolutionProbability, payouts, payoutsWithoutLoans } =
-        getPayoutInfo(
-          outcome,
-          unresolvedContract,
-          resolutions,
-          probabilityInt,
-          answerId,
-          bets,
-          liquidities
-        )
-      // Keep MKT resolution prob for consistency's sake
-      const probBeforeResolution =
-        outcome === 'MKT'
-          ? resolutionProbability
-          : unresolvedContract.mechanism === 'cpmm-1'
-          ? unresolvedContract.prob
-          : unresolvedContract.answers.find((a) => a.id === answerId)?.prob
-      const newProb =
-        outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : probBeforeResolution
-      let updatedContractAttrs: Partial<Contract> & { id: string } =
-        removeUndefinedProps({
-          id: unresolvedContract.id,
-          isResolved: true,
-          resolution: outcome,
-          resolutionValue: value,
-          resolutionTime,
-          closeTime: newCloseTime,
-          prob: newProb,
-          resolutionProbability: probBeforeResolution,
-          resolutions,
-          resolverId: resolver.id,
-          subsidyPool: 0,
-          lastUpdatedTime: newCloseTime,
-        })
-      let updateAnswerAttrs: Partial<Answer> | undefined
-
-      if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
-        // Only resolve the contract if all other answers are resolved.
-        const allAnswersResolved = unresolvedContract.answers
-          .filter((a) => a.id !== answerId)
-          .every((a) => a.resolution)
-
-        const hasAnswerResolvedYes =
-          unresolvedContract.answers.some((a) => a.resolution === 'YES') ||
-          outcome === 'YES'
-        const marketCancelled = unresolvedContract.answers.every(
-          (a) => a.resolution === 'CANCEL'
-        )
-        const finalResolution = marketCancelled ? 'CANCEL' : 'MKT'
-        if (
-          allAnswersResolved &&
-          outcomeType !== 'NUMBER' &&
-          // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
-          (!unresolvedContract.specialLiquidityPerAnswer ||
-            hasAnswerResolvedYes)
-        ) {
-          updatedContractAttrs = {
-            ...updatedContractAttrs,
-            resolution: finalResolution,
-          }
-        } else {
-          updatedContractAttrs = {
-            id: unresolvedContract.id,
-          }
-        }
-        updateAnswerAttrs = removeUndefinedProps({
-          resolution: outcome,
-          resolutionTime,
-          resolutionProbability: probBeforeResolution,
-          prob: newProb,
-          resolverId: resolver.id,
-        }) as Partial<Answer>
-        // We have to update the denormalized answer data on the contract for the updateContractMetrics call
-        updatedContractAttrs = {
-          ...updatedContractAttrs,
-          answers: unresolvedContract.answers.map((a) =>
-            a.id === answerId
-              ? {
-                  ...a,
-                  ...updateAnswerAttrs,
-                }
-              : a
-          ),
-        } as Partial<CPMMMultiContract> & { id: string }
-      } else if (
-        unresolvedContract.mechanism === 'cpmm-multi-1' &&
-        updatedContractAttrs.isResolved
-      ) {
-        updateAnswerAttrs = removeUndefinedProps({
-          resolutionTime,
-          resolverId: resolver.id,
-        }) as Partial<Answer>
-        // We have to update the denormalized answer data on the contract for the updateContractMetrics call
-        updatedContractAttrs = {
-          ...updatedContractAttrs,
-          answers: unresolvedContract.answers.map((a) => ({
-            ...a,
-            ...updateAnswerAttrs,
-            prob: resolutions ? (resolutions[a.id] ?? 0) / 100 : undefined,
-            resolutionProbability: a.prob,
-          })),
-        } as Partial<CPMMMultiContract> & { id: string }
-      }
-
-      const contract = {
-        ...unresolvedContract,
-        ...updatedContractAttrs,
-      } as Contract
-
-      // handle exploit where users can get negative payouts
-      const negPayoutThreshold = contract.uniqueBettorCount < 100 ? 0 : -1000
-
-      const userPayouts = groupPayoutsByUser(payouts)
-      log('user payouts', { userPayouts })
-
-      const negativePayouts = Object.values(userPayouts).filter(
-        (p) => p < negPayoutThreshold
-      )
-
-      log('negative payouts', { negativePayouts })
-
-      if (
-        outcome === 'CANCEL' &&
-        !isAdminId(resolver.id) &&
-        !isModId(resolver.id) &&
-        negativePayouts.length > 0
-      ) {
-        throw new APIError(
-          403,
-          'Negative payouts too large for resolution. Contact admin or mod.'
-        )
-      }
-
-      if (updateAnswerAttrs && answerId) {
-        const props = removeUndefinedProps(updateAnswerAttrs)
-        await updateAnswer(tx, answerId, props)
-      } else if (updateAnswerAttrs && contract.mechanism === 'cpmm-multi-1') {
-        const answerUpdates = contract.answers.map((a) =>
-          removeUndefinedProps({
-            id: a.id,
-            ...updateAnswerAttrs,
-            prob: a.prob,
-            resolutionProbability: a.resolutionProbability,
-          })
-        )
-        await updateAnswers(tx, contractId, answerUpdates)
-      }
-      log('processing payouts', { payouts })
-      const { balanceUpdatesQuery, insertTxnsQuery } = getPayUsersQueries(
-        payouts,
-        contractId,
+        resolutions,
+        probabilityInt,
         answerId,
-        {
-          payoutCash: contract.token === 'CASH',
+        bets,
+        liquidities
+      )
+    // Keep MKT resolution prob for consistency's sake
+    const probBeforeResolution =
+      outcome === 'MKT'
+        ? resolutionProbability
+        : unresolvedContract.mechanism === 'cpmm-1'
+        ? unresolvedContract.prob
+        : unresolvedContract.answers.find((a) => a.id === answerId)?.prob
+    const newProb =
+      outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : probBeforeResolution
+    let updatedContractAttrs: Partial<Contract> & { id: string } =
+      removeUndefinedProps({
+        id: unresolvedContract.id,
+        isResolved: true,
+        resolution: outcome,
+        resolutionValue: value,
+        resolutionTime,
+        closeTime: newCloseTime,
+        prob: newProb,
+        resolutionProbability: probBeforeResolution,
+        resolutions,
+        resolverId: resolver.id,
+        subsidyPool: 0,
+        lastUpdatedTime: newCloseTime,
+      })
+    let updateAnswerAttrs: Partial<Answer> | undefined
+
+    if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
+      // Only resolve the contract if all other answers are resolved.
+      const allAnswersResolved = unresolvedContract.answers
+        .filter((a) => a.id !== answerId)
+        .every((a) => a.resolution)
+
+      const hasAnswerResolvedYes =
+        unresolvedContract.answers.some((a) => a.resolution === 'YES') ||
+        outcome === 'YES'
+      const marketCancelled = unresolvedContract.answers.every(
+        (a) => a.resolution === 'CANCEL'
+      )
+      const finalResolution = marketCancelled ? 'CANCEL' : 'MKT'
+      if (
+        allAnswersResolved &&
+        outcomeType !== 'NUMBER' &&
+        // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
+        (!unresolvedContract.specialLiquidityPerAnswer || hasAnswerResolvedYes)
+      ) {
+        updatedContractAttrs = {
+          ...updatedContractAttrs,
+          resolution: finalResolution,
         }
-      )
-
-      log('updating contract', { updatedContractAttrs })
-      const contractUpdateQuery = updateDataQuery(
-        'contracts',
-        'id',
-        updatedContractAttrs
-      )
-
-      await tx.multi(`
-      ${balanceUpdatesQuery};
-      ${insertTxnsQuery};
-      ${contractUpdateQuery};
-      `)
-
-      // TODO: we may want to support clawing back trader bonuses on MC markets too
-      if (!answerId && outcome === 'CANCEL') {
-        await undoUniqueBettorRewardsIfCancelResolution(tx, contract)
+      } else {
+        updatedContractAttrs = {
+          id: unresolvedContract.id,
+        }
       }
-      return { contract, bets, payoutsWithoutLoans, updatedContractAttrs }
-    })
+      updateAnswerAttrs = removeUndefinedProps({
+        resolution: outcome,
+        resolutionTime,
+        resolutionProbability: probBeforeResolution,
+        prob: newProb,
+        resolverId: resolver.id,
+      }) as Partial<Answer>
+      // We have to update the denormalized answer data on the contract for the updateContractMetrics call
+      updatedContractAttrs = {
+        ...updatedContractAttrs,
+        answers: unresolvedContract.answers.map((a) =>
+          a.id === answerId
+            ? {
+                ...a,
+                ...updateAnswerAttrs,
+              }
+            : a
+        ),
+      } as Partial<CPMMMultiContract> & { id: string }
+    } else if (
+      unresolvedContract.mechanism === 'cpmm-multi-1' &&
+      updatedContractAttrs.isResolved
+    ) {
+      updateAnswerAttrs = removeUndefinedProps({
+        resolutionTime,
+        resolverId: resolver.id,
+      }) as Partial<Answer>
+      // We have to update the denormalized answer data on the contract for the updateContractMetrics call
+      updatedContractAttrs = {
+        ...updatedContractAttrs,
+        answers: unresolvedContract.answers.map((a) => ({
+          ...a,
+          ...updateAnswerAttrs,
+          prob: resolutions ? (resolutions[a.id] ?? 0) / 100 : undefined,
+          resolutionProbability: a.prob,
+        })),
+      } as Partial<CPMMMultiContract> & { id: string }
+    }
+
+    const contract = {
+      ...unresolvedContract,
+      ...updatedContractAttrs,
+    } as Contract
+
+    // handle exploit where users can get negative payouts
+    const negPayoutThreshold = contract.uniqueBettorCount < 100 ? 0 : -1000
+
+    const userPayouts = groupPayoutsByUser(payouts)
+    log('user payouts', { userPayouts })
+
+    const negativePayouts = Object.values(userPayouts).filter(
+      (p) => p < negPayoutThreshold
+    )
+
+    log('negative payouts', { negativePayouts })
+
+    if (
+      outcome === 'CANCEL' &&
+      !isAdminId(resolver.id) &&
+      !isModId(resolver.id) &&
+      negativePayouts.length > 0
+    ) {
+      throw new APIError(
+        403,
+        'Negative payouts too large for resolution. Contact admin or mod.'
+      )
+    }
+
+    if (updateAnswerAttrs && answerId) {
+      const props = removeUndefinedProps(updateAnswerAttrs)
+      await updateAnswer(tx, answerId, props)
+    } else if (updateAnswerAttrs && contract.mechanism === 'cpmm-multi-1') {
+      const answerUpdates = contract.answers.map((a) =>
+        removeUndefinedProps({
+          id: a.id,
+          ...updateAnswerAttrs,
+          prob: a.prob,
+          resolutionProbability: a.resolutionProbability,
+        })
+      )
+      await updateAnswers(tx, contractId, answerUpdates)
+    }
+    log('processing payouts', { payouts })
+    const { balanceUpdatesQuery, insertTxnsQuery } = getPayUsersQueries(
+      payouts,
+      contractId,
+      answerId,
+      {
+        payoutCash: contract.token === 'CASH',
+      }
+    )
+
+    log('updating contract', { updatedContractAttrs })
+    const contractUpdateQuery = updateDataQuery(
+      'contracts',
+      'id',
+      updatedContractAttrs
+    )
+
+    const results = await tx.multi(`
+      ${balanceUpdatesQuery}; -- 1
+      ${insertTxnsQuery}; -- 2
+      ${contractUpdateQuery}; -- 3
+      `)
+    const userUpdates = results[0] as UserUpdate[]
+
+    // TODO: we may want to support clawing back trader bonuses on MC markets too
+    if (!answerId && outcome === 'CANCEL') {
+      await undoUniqueBettorRewardsIfCancelResolution(tx, contract)
+    }
+    return {
+      contract,
+      bets,
+      payoutsWithoutLoans,
+      updatedContractAttrs,
+      userUpdates,
+    }
+  })
 
   broadcastUpdatedContract(contract.visibility, updatedContractAttrs)
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
@@ -301,7 +308,7 @@ export const resolveMarketHelper = async (
     }
   )
 
-  return contract
+  return { contract, userUpdates }
 }
 
 export const getPayoutInfo = (
