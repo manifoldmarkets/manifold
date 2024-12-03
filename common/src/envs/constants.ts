@@ -173,6 +173,7 @@ export const BOT_USERNAMES = [
   'spacedroplet',
   'AriZernerBot',
   'PV_bot',
+  'ataraxia',
 ]
 
 export const MOD_IDS = [
