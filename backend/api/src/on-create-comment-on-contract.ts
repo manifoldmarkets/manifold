@@ -228,7 +228,12 @@ Only return the JSON, nothing else.`
 
   try {
     const response = await promptClaude(prompt)
-    log('Clarification response:', response)
+    log('Clarification response:', {
+      question: contract.question,
+      contractId: contract.id,
+      slug: contract.slug,
+      response,
+    })
     const clarification = JSON.parse(response) as ClarificationResponse
 
     if (clarification.isClarification && clarification.description) {
@@ -240,6 +245,7 @@ Only return the JSON, nothing else.`
       const appendDescription = anythingToRichText({
         markdown: markdownToAppend,
       })
+      // Create deep copy of the old description to update history correctly
       const oldDescription = cloneDeep(contract.description)
       let newDescription: JSONContent | undefined
 
@@ -248,7 +254,6 @@ Only return the JSON, nothing else.`
           markdown: `${oldDescription}${appendDescription}`,
         })
       } else {
-        // Create deep copy of the old description to update history correctly
         oldDescription.content?.push(...(appendDescription?.content ?? []))
         newDescription = oldDescription
       }
@@ -269,6 +274,7 @@ Only return the JSON, nothing else.`
       )
       track(editorID, 'ai clarification added', {
         contractId: contract.id,
+        slug: contract.slug,
         question: contract.question,
       })
     }
