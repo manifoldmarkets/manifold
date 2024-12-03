@@ -26,6 +26,9 @@ import { updateSupabaseAuth } from 'web/lib/supabase/db'
 import { useWebsocketUser, useWebsocketPrivateUser } from 'web/hooks/use-user'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { getPrivateUserSafe, getUserSafe } from 'web/lib/supabase/users'
+import toast from 'react-hot-toast'
+import { Row } from './layout/row'
+import { CoinNumber } from './widgets/coin-number'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -214,7 +217,17 @@ export function AuthProvider(props: {
 
   const listenUser = useWebsocketUser(uid ?? undefined)
   useEffectCheckEquality(() => {
-    if (authLoaded && listenUser) setUser(listenUser)
+    if (authLoaded && listenUser) {
+      if (user) {
+        const balanceChange = listenUser.balance - user.balance
+        const cashBalanceChange = listenUser.cashBalance - user.cashBalance
+
+        if (balanceChange > 0 || cashBalanceChange > 0) {
+          showToast(balanceChange, cashBalanceChange)
+        }
+      }
+      setUser(listenUser)
+    }
   }, [authLoaded, listenUser])
 
   const listenPrivateUser = useWebsocketPrivateUser(uid ?? undefined)
@@ -231,5 +244,35 @@ export function AuthProvider(props: {
 
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>
+  )
+}
+
+const showToast = (manaChange: number, cashChange: number) => {
+  toast.success(
+    <Row className="gap-1">
+      <span>Cha-ching! Received</span>
+      {manaChange > 0 && (
+        <Row className="items-center justify-center">
+          +
+          <CoinNumber
+            amount={manaChange}
+            className="font-bold"
+            coinType="MANA"
+          />
+          {cashChange > 0 && <span className="mx-1">&</span>}
+        </Row>
+      )}
+      {cashChange > 0 && (
+        <Row className="items-center justify-center">
+          +
+          <CoinNumber
+            amount={cashChange}
+            className="font-bold"
+            coinType="CASH"
+          />
+        </Row>
+      )}
+    </Row>,
+    { duration: 5000, icon: '🎉' }
   )
 }
