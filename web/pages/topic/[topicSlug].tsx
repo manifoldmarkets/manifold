@@ -25,6 +25,7 @@ import { api, updateGroup } from 'web/lib/api/api'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { AboutEditor } from 'web/components/topics/about-editor'
+import { ActivityLog } from 'web/components/activity-log'
 
 export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
   const { topicSlug } = ctx.params
@@ -151,6 +152,10 @@ export default function TopicPage(props: {
                     topicSlug={topic.slug}
                   />
                 ),
+              },
+              {
+                title: 'Live',
+                content: <ActivityLog count={20} topicSlugs={[topic.slug]} />,
               },
               dashboards.length && {
                 title: 'Dashboards',
