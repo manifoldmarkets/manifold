@@ -148,7 +148,7 @@ export function JSONEmpty(text: string | JSONContent) {
     return !(
       text.content &&
       text.content.length > 0 &&
-      (text.content[0].content || text.content[0].attrs)
+      text.content.some((node) => node.content || node.attrs)
     )
   }
   return true
