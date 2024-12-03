@@ -1,8 +1,5 @@
 import { Group } from 'common/group'
-import {
-  BookmarkIcon,
-  PlusCircleIcon,
-} from '@heroicons/react/outline'
+import { BookmarkIcon, PlusCircleIcon } from '@heroicons/react/outline'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupModal } from 'web/components/topics/add-contract-to-group-modal'
