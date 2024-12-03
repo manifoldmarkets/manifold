@@ -32,9 +32,18 @@ export async function getCommentsDirect(
     contractId?: string
     limit?: number
     page?: number
+    replyToCommentId?: string
+    commentId?: string
   }
 ) {
-  const { userId, contractId, limit = 5000, page = 0 } = filters
+  const {
+    userId,
+    contractId,
+    limit = 5000,
+    page = 0,
+    replyToCommentId,
+    commentId,
+  } = filters
   return await pg.map(
     `
         select cc.data, likes, dislikes from contract_comments cc
@@ -42,11 +51,13 @@ export async function getCommentsDirect(
         where contracts.visibility = 'public'
           and ($3 is null or contract_id = $3)
           and ($4 is null or user_id = $4)
+          and ($5 is null or cc.data->>'replyToCommentId' = $5)
+          and ($6 is null or cc.comment_id = $6)
         order by cc.created_time desc
         limit $1
         offset $2
     `,
-    [limit, page * limit, contractId, userId],
+    [limit, page * limit, contractId, userId, replyToCommentId, commentId],
     (r) => convertContractComment(r)
   )
 }

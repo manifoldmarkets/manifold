@@ -10,6 +10,8 @@ import { isEmpty } from 'lodash'
 import { isAdminId } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateContract } from 'shared/supabase/contracts'
+import { Contract } from 'common/contract'
+import { JSONContent } from '@tiptap/core'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,
@@ -73,35 +75,53 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
 
   log(`updated fields: ${Object.keys(fields).join(', ')}`)
 
-  const continuation = async () => {
-    log(`Revalidating contract ${contract.id}.`)
-    await revalidateContractStaticProps(contract)
-    await trackPublicEvent(
-      auth.uid,
-      'update market',
-      removeUndefinedProps({
-        contractId,
+  return {
+    result: { success: true },
+    continue: async () =>
+      updateMarketContinuation(
+        contract,
+        auth.uid,
         visibility,
         closeTime,
         addAnswersMode,
-      })
-    )
-    if (question || closeTime || visibility || description) {
-      await recordContractEdit(
-        contract,
-        auth.uid,
-        buildArray([
-          question && 'question',
-          closeTime && 'closeTime',
-          visibility && 'visibility',
-          description && 'description',
-        ])
-      )
-    }
+        question,
+        description
+      ),
   }
+}
 
-  return {
-    result: { success: true },
-    continue: continuation,
+// Note: the contract data passed, which should not be the new data, is saved to the contract_edits table
+export const updateMarketContinuation = async (
+  contract: Contract,
+  userId: string,
+  visibility: string | undefined,
+  closeTime: number | undefined,
+  addAnswersMode: string | undefined,
+  question: string | undefined,
+  description: JSONContent | undefined
+) => {
+  log(`Revalidating contract ${contract.id}.`)
+  await revalidateContractStaticProps(contract)
+  await trackPublicEvent(
+    userId,
+    'update market',
+    removeUndefinedProps({
+      contractId: contract.id,
+      visibility,
+      closeTime,
+      addAnswersMode,
+    })
+  )
+  if (question || closeTime || visibility || description) {
+    await recordContractEdit(
+      contract,
+      userId,
+      buildArray([
+        question && 'question',
+        closeTime && 'closeTime',
+        visibility && 'visibility',
+        description && 'description',
+      ])
+    )
   }
 }

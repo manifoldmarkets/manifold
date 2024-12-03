@@ -1,5 +1,5 @@
 import { compact } from 'lodash'
-import { log, revalidateStaticProps } from 'shared/utils'
+import { isProd, log, revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import {
@@ -17,6 +17,20 @@ import { insertModReport } from 'shared/create-mod-report'
 import { updateContract } from 'shared/supabase/contracts'
 import { followContractInternal } from 'api/follow-contract'
 import { getAnswer } from 'shared/supabase/answers'
+import { promptClaude } from 'shared/helpers/claude'
+import { anythingToRichText } from 'shared/tiptap'
+import { getCommentsDirect } from 'shared/supabase/contract-comments'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { updateMarketContinuation } from './update-market'
+import { JSONContent } from '@tiptap/core'
+import { cloneDeep } from 'lodash'
+import { track } from 'shared/analytics'
+import { DEV_HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+
+type ClarificationResponse = {
+  isClarification: boolean
+  description?: string
+}
 
 export const onCreateCommentOnContract = async (props: {
   contract: Contract
@@ -43,6 +57,10 @@ export const onCreateCommentOnContract = async (props: {
     lastCommentTime,
     lastUpdatedTime: Date.now(),
   })
+
+  if (creator.id === contract.creatorId && !contract.isResolved) {
+    await checkForClarification(pg, contract, comment)
+  }
 
   await handleCommentNotifications(pg, comment, contract, creator, bet)
 }
@@ -150,4 +168,111 @@ export const handleCommentNotifications = async (
     }
   )
   return [...mentionedUsers, ...Object.keys(repliedUsers)]
+}
+
+const checkForClarification = async (
+  pg: SupabaseDirectClient,
+  contract: Contract,
+  comment: ContractComment
+) => {
+  let commentsContext = ''
+  if (comment.replyToCommentId) {
+    const originalComment = await getCommentsDirect(pg, {
+      contractId: contract.id,
+      commentId: comment.replyToCommentId,
+    })
+    const relatedComments = await getCommentsDirect(pg, {
+      contractId: contract.id,
+      replyToCommentId: comment.replyToCommentId,
+    })
+    commentsContext = [...originalComment, ...relatedComments]
+      .filter((c) => c.id !== comment.id)
+      .map((c) => {
+        const isCreator = c.userId === contract.creatorId
+        return `${isCreator ? 'Creator' : 'User'}: ${richTextToString(
+          c.content
+        )}`
+      })
+      .join('\n')
+  }
+
+  const prompt = `You are analyzing a ${
+    commentsContext ? 'comment thread' : 'comment'
+  } on a prediction market (that is managed by a creator) to determine if the creator's latest comment clarifies the resolution criteria.
+
+Market question: ${contract.question}
+Current description: ${
+    typeof contract.description === 'string'
+      ? contract.description
+      : richTextToString(contract.description)
+  }
+
+${commentsContext ? `Comment thread:\n${commentsContext}` : ''}
+
+Latest comment from creator: ${richTextToString(comment.content)}
+
+Please analyze if the creator's latest comment appears to be clarifying or adding important details about how the market will be resolved. 
+If they say they're going to update the description themselves, do not issue a clarification. Consider the context of any questions or discussions in the comment thread. Only choose to issue a clarification if the creator's comment is unambiguously changing the resolution criteria.
+Return a JSON response with:
+{
+  "isClarification": boolean, // true if the comment clarifies resolution criteria
+  "description": string // If isClarification is true, provide markdown formatted text to append to the current description. Use bold for important terms and bullet points for lists. Otherwise, return an empty string.
+}
+
+Format the description in markdown, sticking to just the following:
+- Use **bold** for important terms
+- Use bullet points for lists
+
+I will append the title of 'Update from creator' to the beginning of the description. You do not need to include this in your response.
+Only return the JSON, nothing else.`
+
+  try {
+    const response = await promptClaude(prompt)
+    log('Clarification response:', response)
+    const clarification = JSON.parse(response) as ClarificationResponse
+
+    if (clarification.isClarification && clarification.description) {
+      const markdownToAppend = `\n\n**[Possible clarification from creator (AI generated)](https://${
+        ENV_CONFIG.domain
+      }${contractPath(contract)}#${comment.id}):**\n${
+        clarification.description
+      }`
+      const appendDescription = anythingToRichText({
+        markdown: markdownToAppend,
+      })
+      const oldDescription = cloneDeep(contract.description)
+      let newDescription: JSONContent | undefined
+
+      if (typeof oldDescription === 'string') {
+        newDescription = anythingToRichText({
+          markdown: `${oldDescription}${appendDescription}`,
+        })
+      } else {
+        // Create deep copy of the old description to update history correctly
+        oldDescription.content?.push(...(appendDescription?.content ?? []))
+        newDescription = oldDescription
+      }
+      await updateContract(pg, contract.id, {
+        description: newDescription,
+      })
+      const editorID = isProd()
+        ? '8lZo8X5lewh4hnCoreI7iSc0GxK2' // ManifoldAI user id, lol
+        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+      await updateMarketContinuation(
+        contract,
+        editorID,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        newDescription
+      )
+      track(editorID, 'ai clarification added', {
+        contractId: contract.id,
+        question: contract.question,
+      })
+    }
+  } catch (e) {
+    console.error('Error checking for clarification:', e)
+  }
 }
