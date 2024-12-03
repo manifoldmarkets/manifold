@@ -23,8 +23,8 @@ import { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
 
 export const QuestionsTopicTitle = forwardRef(
-  (props: { topic: Group }, ref: Ref<HTMLDivElement>) => {
-    const { topic } = props
+  (props: { topic: Group; addAbout: () => void }, ref: Ref<HTMLDivElement>) => {
+    const { topic, addAbout } = props
     const { isFollowing, setIsFollowing } = useIsFollowingTopic(topic.slug)
     const [showAddContract, setShowAddContract] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -118,6 +118,7 @@ export const QuestionsTopicTitle = forwardRef(
                 setIsFollowing(true)
               )
             }}
+            addAbout={addAbout}
             user={user}
             className={'flex [&_*]:flex [&_button]:pr-2'}
           />

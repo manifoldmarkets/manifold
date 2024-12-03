@@ -101,9 +101,18 @@ export function useTextEditor(props: {
   size?: 'sm' | 'md' | 'lg'
   key?: string // unique key for autosave. If set, plz call `editor.commands.clearContent(true)` on submit to clear autosave
   extensions?: Extensions
+  autofocus?: boolean
   className?: string
 }) {
-  const { placeholder, className, max, defaultValue, size = 'md', key } = props
+  const {
+    placeholder,
+    className,
+    max,
+    defaultValue,
+    size = 'md',
+    key,
+    autofocus,
+  } = props
   const simple = size === 'sm'
 
   const [content, setContent] = usePersistentLocalState<
@@ -157,6 +166,7 @@ export function useTextEditor(props: {
       ...(props.extensions ?? []),
     ],
     content: defaultValue ?? (key && content ? content : ''),
+    autofocus,
   })
 
   useEffect(() => {

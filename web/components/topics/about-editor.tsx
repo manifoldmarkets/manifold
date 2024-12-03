@@ -11,11 +11,11 @@ import { Content, TextEditor, useTextEditor } from '../widgets/editor'
 export const AboutEditor = (props: {
   initialContent?: JSONContent | string | undefined
   onSave: (content: JSONContent | string | undefined) => void
+  editing: boolean
+  setEditing: (editing: boolean) => void
   canEdit: boolean
 }) => {
-  const { initialContent, onSave, canEdit } = props
-
-  const [editing, setEditing] = useState(false)
+  const { initialContent, onSave, editing, setEditing, canEdit } = props
   const [content, setContent] = useState(initialContent)
 
   const isEmpty = !content || JSONEmpty(content)
@@ -33,7 +33,12 @@ export const AboutEditor = (props: {
       {canEdit &&
         (editing ? (
           <Row className="mt-4 justify-end gap-2">
-            <Button onClick={() => setEditing(false)} color="red">
+            <Button
+              onClick={() => {
+                setEditing(false)
+              }}
+              color="red"
+            >
               Cancel
             </Button>
             <Button
@@ -66,6 +71,7 @@ function AboutTextEditor(props: {
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: `Background info, question inclusion criteria, moderation policy.\nBe thorough or don't write at all.`,
     defaultValue: initialContent,
+    autofocus: true,
   })
 
   const editorContent = editor?.getJSON()

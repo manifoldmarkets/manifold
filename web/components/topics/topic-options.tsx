@@ -6,6 +6,7 @@ import { buildArray } from 'common/util/array'
 import {
   DotsVerticalIcon,
   PencilIcon,
+  PlusIcon,
   PlusCircleIcon,
   TrashIcon,
 } from '@heroicons/react/solid'
@@ -27,15 +28,17 @@ import { usePrivateUser } from 'web/hooks/use-user'
 import { blockGroup, unBlockGroup } from 'web/components/topics/topic-dropdown'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { DeleteTopicModal } from './delete-topic-modal'
+import { JSONEmpty } from 'web/components/contract/contract-description'
 
 export function TopicOptions(props: {
   group: Group
   user: User | null | undefined
   isMember: boolean
   unfollow: () => void
+  addAbout: () => void
   className?: string
 }) {
-  const { group, user, isMember, unfollow, className } = props
+  const { group, user, isMember, unfollow, addAbout, className } = props
   const privateUser = usePrivateUser()
   const [editingName, setEditingName] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
@@ -43,6 +46,8 @@ export function TopicOptions(props: {
   const userRole = useGroupRole(group.id, user)
   const isCreator = group.creatorId == user?.id
   const isMobile = useIsMobile()
+
+  const hasAbout = !!group.about && !JSONEmpty(group.about)
 
   const groupOptionItems = buildArray(
     isMember &&
@@ -56,6 +61,12 @@ export function TopicOptions(props: {
       icon: <PencilIcon className="h-5 w-5" />,
       onClick: () => setEditingName(true),
     },
+    userRole === 'admin' &&
+      !hasAbout && {
+        name: 'Add description',
+        icon: <PlusIcon className="h-5 w-5" />,
+        onClick: addAbout,
+      },
     isMember &&
       !isCreator && {
         name: 'Unfollow',

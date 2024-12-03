@@ -6,6 +6,7 @@ import { Group, LiteGroup, groupPath } from 'common/group'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import Link from 'next/link'
+import router from 'next/router'
 import { useState } from 'react'
 import { BsPeopleFill } from 'react-icons/bs'
 import { SEO } from 'web/components/SEO'
@@ -66,8 +67,9 @@ export default function TopicPage(props: {
 
   // TODO: let members edit
   const canEdit = !!user && (isAdminId(user.id) || isModId(user.id))
+  const [addingAbout, setAddingAbout] = useState(false)
   const showAbout =
-    canEdit || (!!topic.about && !JSONEmpty(topic.about)) || isMobile
+    addingAbout || (!!topic.about && !JSONEmpty(topic.about)) || isMobile
 
   return (
     <Page
@@ -93,12 +95,17 @@ export default function TopicPage(props: {
               />
             </div>
           )} */}
-        <QuestionsTopicTitle topic={topic} />
+        <QuestionsTopicTitle
+          topic={topic}
+          addAbout={() => {
+            setAddingAbout(true)
+            router.replace(groupPath(topic.slug) + '?tab=about')
+          }}
+        />
         <Details topic={topic} />
         <Col className="w-full">
           <QueryUncontrolledTabs
             className="mb-4"
-            defaultIndex={showAbout && user ? 1 : 0}
             tabs={buildArray(
               showAbout && {
                 title: 'About',
@@ -112,6 +119,8 @@ export default function TopicPage(props: {
                           about: content,
                         })
                       }}
+                      editing={addingAbout}
+                      setEditing={setAddingAbout}
                       canEdit={canEdit}
                     />
                     {isMobile && (
