@@ -5,6 +5,7 @@ import { DAY_MS } from 'common/util/time'
 import { convertContract } from 'common/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { bulkUpdate, bulkUpdateData } from 'shared/supabase/utils'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
 
@@ -48,7 +49,13 @@ export async function sendMarketCloseEmails() {
       contract.closeTime
     )
 
-    const user = await getUser(contract.creatorId)
+    // TODO: set up a more sensible way to keep track of these?
+    const sendToId =
+      contract.token === 'CASH'
+        ? HOUSE_LIQUIDITY_PROVIDER_ID
+        : contract.creatorId
+
+    const user = await getUser(sendToId)
     if (!user) continue
 
     const privateUser = await getPrivateUser(user.id)
