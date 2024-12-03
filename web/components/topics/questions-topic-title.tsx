@@ -1,6 +1,5 @@
 import { Group } from 'common/group'
 import {
-  ArrowLeftIcon,
   BookmarkIcon,
   PlusCircleIcon,
 } from '@heroicons/react/outline'
