@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { User } from 'common/user'
-import { formatMoney } from 'common/util/format'
 import { LoansModal } from 'web/components/profile/loans-modal'
 import { api, requestLoan } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
@@ -11,7 +10,6 @@ import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { track } from 'web/lib/service/analytics'
-import { DAY_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
 import clsx from 'clsx'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
@@ -19,6 +17,7 @@ import { Row } from 'web/components/layout/row'
 import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
 import { Col } from 'web/components/layout/col'
 import { TRADE_TERM } from 'common/envs/constants'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -29,7 +28,7 @@ export function DailyLoan(props: {
   showChest?: boolean
   className?: string
 }) {
-  const { user, showChest, refreshPortfolio, className } = props
+  const { user, showChest = true, refreshPortfolio, className } = props
 
   const [showLoansModal, setShowLoansModal] = useState(false)
   const [loaning, setLoaning] = useState(false)
@@ -39,8 +38,10 @@ export function DailyLoan(props: {
   )
   const { receivedLoanToday: receivedTxnLoan, checkTxns } =
     useHasReceivedLoanToday(user)
-  const notEligibleForLoan = false //user.nextLoanCached < 1
-  const receivedLoanToday = receivedTxnLoan || justReceivedLoan
+  const { data } = useAPIGetter('get-next-loan-amount', {})
+  const notEligibleForLoan = (data?.amount ?? 0) < 1
+
+  const receivedLoanToday = false //receivedTxnLoan || justReceivedLoan
 
   const getLoan = async () => {
     if (receivedLoanToday || notEligibleForLoan) {
@@ -48,7 +49,6 @@ export function DailyLoan(props: {
       return
     }
     setLoaning(true)
-    const id = toast.loading('Requesting loan...')
     const res = await requestLoan().catch((e) => {
       console.error(e)
       toast.error('Error requesting loan')
@@ -56,10 +56,8 @@ export function DailyLoan(props: {
     })
     if (res) {
       await checkTxns()
-      toast.success(`${formatMoney(res.payout)} loan collected!`)
       setJustReceivedLoan(true)
     }
-    toast.dismiss(id)
     if (!user.hasSeenLoanModal) setTimeout(() => setShowLoansModal(true), 1000)
     setLoaning(false)
     track('request loan', {
@@ -77,10 +75,10 @@ export function DailyLoan(props: {
       api('me/update', { hasSeenLoanModal: true })
   }, [showLoansModal])
 
-  const createdRecently = user.createdTime > Date.now() - 2 * DAY_MS
-  if (createdRecently) {
-    return null
-  }
+  // const createdRecently = user.createdTime > Date.now() - 2 * DAY_MS
+  // if (createdRecently) {
+  //   return null
+  // }
   if (showChest) {
     return (
       <Col

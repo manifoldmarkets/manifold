@@ -4,6 +4,7 @@ import { Row } from 'web/components/layout/row'
 import { QuestsOrStreak } from 'web/components/home/quests-or-streak'
 import { DailyLeagueStat } from './daily-league-stat'
 import { DailyProfit } from './daily-profit'
+import { DailyLoan } from './daily-loan'
 
 export const dailyStatsClass =
   'bg-canvas-0 rounded-lg px-3 py-1 shadow min-w-[60px]'
@@ -18,6 +19,7 @@ export function DailyStats(props: {
       <QuestsOrStreak user={user} />
       <DailyLeagueStat user={user} />
       <DailyProfit user={user} />
+      {user && <DailyLoan user={user} />}
     </Row>
   )
 }

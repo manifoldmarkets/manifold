@@ -3,14 +3,17 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelect, getUsers, isProd, log } from 'shared/utils'
-import { groupBy, sumBy, uniq } from 'lodash'
+import { Dictionary, groupBy, sumBy, uniq } from 'lodash'
 import {
   Contract,
   ContractToken,
   CPMMMultiContract,
   MarketContract,
 } from 'common/contract'
-import { calculateProfitMetricsWithProb } from 'common/calculate-metrics'
+import {
+  calculateProfitMetricsWithProb,
+  calculateUpdatedMetricsForContracts,
+} from 'common/calculate-metrics'
 import { buildArray, filterDefined } from 'common/util/array'
 
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
@@ -21,6 +24,7 @@ import { BOT_USERNAMES } from 'common/envs/constants'
 import { bulkInsert } from 'shared/supabase/utils'
 import { type User } from 'common/user'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import { Answer } from 'common/answer'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -207,7 +211,12 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
 export const getUnresolvedContractMetricsContractsAnswers = async (
   pg: SupabaseDirectClient,
   userIds: string[]
-) => {
+): Promise<{
+  metrics: RankedContractMetric[]
+  contracts: MarketContract[]
+  answers: Answer[]
+  metricsByContract: Dictionary<Omit<ContractMetric, 'id'>[]>
+}> => {
   const metrics = await pg.map(
     `
     select ucm.data, coalesce((c.data->'isRanked')::boolean, true) as is_ranked
@@ -228,21 +237,30 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
       metrics: [],
       contracts: [],
       answers: [],
+      metricsByContract: {},
     }
   }
+
   const contractIds = uniq(metrics.map((m) => m.contractId))
   const answerIds = filterDefined(uniq(metrics.map((m) => m.answerId)))
   const selectContracts = `select ${contractColumnsToSelect} from contracts where id in ($1:list);`
   if (answerIds.length === 0) {
-    const contracts = await pg.map(
+    const contracts = await pg.map<MarketContract>(
       selectContracts,
       [contractIds],
       convertContract
     )
+    const contractsWithMetrics = contracts.map((c) => ({
+      contract: c,
+      metrics: metrics.filter((m) => m.contractId === c.id),
+    }))
+    const { metricsByContract } =
+      calculateUpdatedMetricsForContracts(contractsWithMetrics)
     return {
       metrics,
       contracts,
       answers: [],
+      metricsByContract: metricsByContract,
     }
   }
   const results = await pg.multi(
@@ -252,12 +270,19 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
     `,
     [contractIds, answerIds]
   )
-  const contracts = results[0].map(convertContract)
+  const contracts = results[0].map(convertContract) as MarketContract[]
   const answers = results[1].map(convertAnswer)
+  const { metricsByContract } = calculateUpdatedMetricsForContracts(
+    contracts.map((c) => ({
+      contract: c,
+      metrics: metrics.filter((m) => m.contractId === c.id),
+    }))
+  )
   return {
     metrics,
     contracts,
     answers,
+    metricsByContract: metricsByContract,
   }
 }
 

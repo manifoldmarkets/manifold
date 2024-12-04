@@ -1,14 +1,8 @@
-import { Dictionary, sumBy, minBy, groupBy } from 'lodash'
-import { Bet } from './bet'
-import { getProfitMetrics, getSimpleCpmmInvested } from './calculate'
-import {
-  Contract,
-  CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-} from './contract'
+import { Dictionary, orderBy, sumBy, first } from 'lodash'
+import { MarketContract } from './contract'
+import { PortfolioMetrics } from './portfolio-metrics'
+import { ContractMetric } from './contract-metric'
 import { filterDefined } from './util/array'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 export const LOAN_DAILY_RATE = 0.04
 
@@ -18,10 +12,10 @@ const calculateNewLoan = (investedValue: number, loanTotal: number) => {
 }
 
 export const getUserLoanUpdates = (
-  betsByContractId: { [contractId: string]: Bet[] },
-  contractsById: { [contractId: string]: Contract }
+  metricsByContractId: Dictionary<Omit<ContractMetric, 'id'>[]>,
+  contractsById: Dictionary<MarketContract>
 ) => {
-  const updates = calculateLoanBetUpdates(betsByContractId, contractsById)
+  const updates = calculateLoanMetricUpdates(metricsByContractId, contractsById)
   return { updates, payout: sumBy(updates, (update) => update.newLoan) }
 }
 
@@ -29,62 +23,63 @@ export const overLeveraged = (loanTotal: number, investmentValue: number) =>
   loanTotal / investmentValue >= 8
 
 export const isUserEligibleForLoan = (
-  portfolio: (PortfolioMetrics & { userId: string }) | undefined
+  portfolio: PortfolioMetrics & { userId: string }
 ) => {
-  if (!portfolio) return true
-
   const { investmentValue, loanTotal } = portfolio
   return investmentValue > 0 && !overLeveraged(loanTotal ?? 0, investmentValue)
 }
 
-const calculateLoanBetUpdates = (
-  betsByContractId: Dictionary<Bet[]>,
-  contractsById: Dictionary<Contract>
+const calculateLoanMetricUpdates = (
+  metricsByContractId: Dictionary<Omit<ContractMetric, 'id'>[]>,
+  contractsById: Dictionary<MarketContract>
 ) => {
-  const contracts = filterDefined(
-    Object.keys(betsByContractId).map((contractId) => contractsById[contractId])
-  ).filter((c) => !c.isResolved)
-
-  return contracts.flatMap((c) => {
-    const bets = betsByContractId[c.id]
-    if (c.mechanism === 'cpmm-1') {
-      return getCpmmContractLoanUpdate(c, bets) ?? []
-    } else if (c.mechanism === 'cpmm-multi-1') {
-      const betsByAnswerId = groupBy(bets, (bet) => bet.answerId)
-      return filterDefined(
-        Object.entries(betsByAnswerId).map(([answerId, bets]) => {
-          const answer = c.answers.find((a) => a.id === answerId)
-          if (!answer) return undefined
-          if (answer.resolution) return undefined
-          return getCpmmContractLoanUpdate(c, bets)
-        })
-      )
-    } else {
-      // Unsupported contract / mechanism for loans.
-      return []
-    }
-  })
+  return filterDefined(
+    Object.entries(metricsByContractId).flatMap(([contractId, metrics]) => {
+      const c = contractsById[contractId]
+      if (!c || c.isResolved || c.token !== 'MANA') return undefined
+      if (!metrics) {
+        console.error(`No metrics found for contract ${contractId}`)
+        return undefined
+      }
+      if (c.mechanism === 'cpmm-multi-1') {
+        return metrics
+          .filter(
+            (m) =>
+              m.answerId !== null &&
+              !c.answers.find((a) => a.id === m.answerId)?.resolutionTime
+          )
+          .map((m) => getCpmmContractLoanUpdate(c, [m]))
+      } else {
+        return getCpmmContractLoanUpdate(c, metrics)
+      }
+    })
+  )
 }
 
+export const getLoanMetric = (metrics: Omit<ContractMetric, 'id'>[]) =>
+  first(orderBy(metrics, (m) => m.answerId))
+
 const getCpmmContractLoanUpdate = (
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
-  bets: Bet[]
+  contract: MarketContract,
+  metrics: Omit<ContractMetric, 'id'>[]
 ) => {
-  const invested = getSimpleCpmmInvested(bets)
-  const { payout: currentValue } = getProfitMetrics(contract, bets)
-  const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
+  const metric = first(metrics)
+  if (!metric) return undefined
+
+  const invested = metric.invested
+  const currentValue = metric.payout
+  const loanAmount = metric.loan ?? 0
 
   const loanBasis = Math.min(invested, currentValue)
   const newLoan = calculateNewLoan(loanBasis, loanAmount)
-  const oldestBet = minBy(bets, (bet) => bet.createdTime)
-  if (!isFinite(newLoan) || newLoan <= 0 || !oldestBet) return undefined
+  if (!isFinite(newLoan) || newLoan <= 0) return undefined
 
-  const loanTotal = (oldestBet.loanAmount ?? 0) + newLoan
+  const loanTotal = loanAmount + newLoan
 
   return {
-    userId: oldestBet.userId,
+    userId: metric.userId,
     contractId: contract.id,
-    betId: oldestBet.id,
+    answerId: metric.answerId,
     newLoan,
     loanTotal,
   }

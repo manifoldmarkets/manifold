@@ -136,6 +136,7 @@ import { generateAIMarketSuggestions } from './generate-ai-market-suggestions'
 import { generateAIMarketSuggestions2 } from './generate-ai-market-suggestions-2'
 import { generateAIDescription } from './generate-ai-description'
 import { generateAIAnswers } from './generate-ai-answers'
+import { getNextLoanAmount } from './get-next-loan-amount'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -291,4 +292,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-ai-market-suggestions-2': generateAIMarketSuggestions2,
   'generate-ai-description': generateAIDescription,
   'generate-ai-answers': generateAIAnswers,
+  'get-next-loan-amount': getNextLoanAmount,
 }

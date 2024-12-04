@@ -13,7 +13,7 @@ export function LoansModal(props: {
 }) {
   const { isOpen, user, setOpen } = props
   const { receivedLoanToday } = useHasReceivedLoanToday(user)
-  const { latestPortfolio, isEligible } = useIsEligibleForLoans(user?.id)
+  const { latestPortfolio, isEligible } = useIsEligibleForLoans(user.id)
 
   return (
     <Modal open={isOpen} setOpen={setOpen}>
