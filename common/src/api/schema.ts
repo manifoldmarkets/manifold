@@ -1886,9 +1886,11 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     cache: DEFAULT_CACHE_STRATEGY,
-    authed: true,
+    authed: false,
     returns: {} as { amount: number },
-    props: z.object({}),
+    props: z.object({
+      userId: z.string(),
+    }),
   },
 } as const)
 
