@@ -127,5 +127,5 @@ export const getNextLoanAmountResults = async (userId: string) => {
   const contractsById = keyBy(contracts, 'id')
 
   const result = getUserLoanUpdates(metricsByContract, contractsById)
-  return { result, user, metricsByContract, contracts }
+  return { result, user, metricsByContract }
 }
