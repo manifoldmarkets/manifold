@@ -1304,7 +1304,7 @@ function UserLikeNotification(props: {
       icon={
         <MultipleAvatarIcons
           notification={notification}
-          symbol={'💖'}
+          symbol={sourceType == 'comment_like' ? '👍' : '💖'}
           setOpen={setOpen}
         />
       }
