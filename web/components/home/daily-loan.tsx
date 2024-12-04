@@ -18,6 +18,7 @@ import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
 import { Col } from 'web/components/layout/col'
 import { TRADE_TERM } from 'common/envs/constants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { DAY_MS } from 'common/util/time'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -41,7 +42,7 @@ export function DailyLoan(props: {
   const { data } = useAPIGetter('get-next-loan-amount', {})
   const notEligibleForLoan = (data?.amount ?? 0) < 1
 
-  const receivedLoanToday = false //receivedTxnLoan || justReceivedLoan
+  const receivedLoanToday = receivedTxnLoan || justReceivedLoan
 
   const getLoan = async () => {
     if (receivedLoanToday || notEligibleForLoan) {
@@ -75,10 +76,10 @@ export function DailyLoan(props: {
       api('me/update', { hasSeenLoanModal: true })
   }, [showLoansModal])
 
-  // const createdRecently = user.createdTime > Date.now() - 2 * DAY_MS
-  // if (createdRecently) {
-  //   return null
-  // }
+  const createdRecently = user.createdTime > Date.now() - 2 * DAY_MS
+  if (createdRecently) {
+    return null
+  }
   if (showChest) {
     return (
       <Col
