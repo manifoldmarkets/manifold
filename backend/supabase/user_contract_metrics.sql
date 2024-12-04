@@ -12,7 +12,7 @@ create table if not exists
     total_shares_no numeric,
     total_shares_yes numeric,
     user_id text not null,
-    loan numeric
+    loan numeric default 0
   );
 
 -- Triggers
