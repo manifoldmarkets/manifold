@@ -8,6 +8,7 @@ import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { AddFundsModal } from '../add-funds-modal'
 import { Button, SizeType } from '../buttons/button'
 import { RelativeTimestamp } from '../relative-timestamp'
+import { useIsNativeIOS } from '../native-message-provider'
 
 export function AddFundsButton(props: {
   userId?: string
@@ -19,12 +20,20 @@ export function AddFundsButton(props: {
   const [open, setOpen] = useState(false)
   const user = useUser()
   const router = useRouter()
+  const isNativeIOS = useIsNativeIOS()
+
   if (!userId || user?.id !== userId) return null
+
   const expirationStart = user
     ? new Date(introductoryTimeWindow(user))
     : new Date()
+
   const eligibleForNewUserOffer =
-    user && Date.now() < expirationStart.valueOf() && !user.purchasedSweepcash
+    user &&
+    Date.now() < expirationStart.valueOf() &&
+    !user.purchasedSweepcash &&
+    !isNativeIOS
+
   return (
     <>
       <Button
