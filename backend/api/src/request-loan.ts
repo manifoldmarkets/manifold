@@ -19,45 +19,11 @@ import { filterDefined } from 'common/util/array'
 import { getUnresolvedContractMetricsContractsAnswers } from 'shared/update-user-portfolio-histories-core'
 import { keyBy } from 'lodash'
 
-export const requestloan: APIHandler<'request-loan'> = async (_, auth) => {
+export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
   const pg = createSupabaseDirectClient()
-
-  const portfolioMetric = await pg.oneOrNone(
-    `select user_id, ts, investment_value, balance, total_deposits
-     from user_portfolio_history_latest
-     where user_id = $1`,
-    [auth.uid],
-    (r) =>
-      ({
-        userId: r.user_id as string,
-        timestamp: Date.parse(r.ts as string),
-        investmentValue: parseFloat(r.investment_value as string),
-        balance: parseFloat(r.balance as string),
-        totalDeposits: parseFloat(r.total_deposits as string),
-      } as PortfolioMetrics & { userId: string })
+  const { result, metricsByContract, user } = await getNextLoanAmountResults(
+    auth.uid
   )
-  if (!portfolioMetric) {
-    throw new APIError(404, `No portfolio found for user ${auth.uid}`)
-  }
-  log(`Loaded portfolio.`)
-
-  if (!isUserEligibleForLoan(portfolioMetric)) {
-    throw new APIError(400, `User ${auth.uid} is not eligible for a loan`)
-  }
-
-  const user = await getUser(auth.uid)
-  if (!user) {
-    throw new APIError(404, `User ${auth.uid} not found`)
-  }
-  log(`Loaded user ${user.id}`)
-
-  const { contracts, metricsByContract } =
-    await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
-  log(`Loaded ${contracts.length} contracts.`)
-
-  const contractsById = keyBy(contracts, 'id')
-
-  const result = getUserLoanUpdates(metricsByContract, contractsById)
   const { updates, payout } = result
   if (payout < 1) {
     throw new APIError(400, `User ${auth.uid} is not eligible for a loan`)
@@ -94,18 +60,18 @@ const payUserLoan = async (
     .toISOString()
 
   // make sure we don't already have a txn for this user/questType
-  // const { count } = await tx.one(
-  //   `select count(*) from txns
-  //   where to_id = $1
-  //   and category = 'LOAN'
-  //   and created_time >= $2
-  //   limit 1`,
-  //   [userId, startOfDay]
-  // )
+  const { count } = await tx.one(
+    `select count(*) from txns
+    where to_id = $1
+    and category = 'LOAN'
+    and created_time >= $2
+    limit 1`,
+    [userId, startOfDay]
+  )
 
-  // if (count) {
-  //   throw new APIError(400, 'Already awarded loan today')
-  // }
+  if (count) {
+    throw new APIError(400, 'Already awarded loan today')
+  }
 
   const loanTxn: Omit<LoanTxn, 'fromId' | 'id' | 'createdTime'> = {
     fromType: 'BANK',
@@ -120,4 +86,46 @@ const payUserLoan = async (
     },
   }
   await runTxnFromBank(tx, loanTxn, true)
+}
+
+export const getNextLoanAmountResults = async (userId: string) => {
+  const pg = createSupabaseDirectClient()
+
+  const portfolioMetric = await pg.oneOrNone(
+    `select user_id, ts, investment_value, balance, total_deposits
+     from user_portfolio_history_latest
+     where user_id = $1`,
+    [userId],
+    (r) =>
+      ({
+        userId: r.user_id as string,
+        timestamp: Date.parse(r.ts as string),
+        investmentValue: parseFloat(r.investment_value as string),
+        balance: parseFloat(r.balance as string),
+        totalDeposits: parseFloat(r.total_deposits as string),
+      } as PortfolioMetrics & { userId: string })
+  )
+  if (!portfolioMetric) {
+    throw new APIError(404, `No portfolio found for user ${userId}`)
+  }
+  log(`Loaded portfolio.`)
+
+  if (!isUserEligibleForLoan(portfolioMetric)) {
+    throw new APIError(400, `User ${userId} is not eligible for a loan`)
+  }
+
+  const user = await getUser(userId)
+  if (!user) {
+    throw new APIError(404, `User ${userId} not found`)
+  }
+  log(`Loaded user ${user.id}`)
+
+  const { contracts, metricsByContract } =
+    await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
+  log(`Loaded ${contracts.length} contracts.`)
+
+  const contractsById = keyBy(contracts, 'id')
+
+  const result = getUserLoanUpdates(metricsByContract, contractsById)
+  return { result, user, metricsByContract, contracts }
 }

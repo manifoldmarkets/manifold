@@ -44,7 +44,7 @@ import { searchMarketsLite, searchMarketsFull } from './search-contracts'
 import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler } from './helpers/endpoint'
-import { requestloan } from 'api/request-loan'
+import { requestLoan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
 import { getadanalytics } from 'api/get-ad-analytics'
@@ -226,7 +226,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'compatible-lovers': getCompatibleLovers,
   post: post,
   'fetch-link-preview': fetchLinkPreview,
-  'request-loan': requestloan,
+  'request-loan': requestLoan,
   'remove-pinned-photo': removePinnedPhoto,
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
