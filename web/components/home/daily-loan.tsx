@@ -40,7 +40,6 @@ export function DailyLoan(props: {
   const { receivedLoanToday: receivedTxnLoan, checkTxns } =
     useHasReceivedLoanToday(user)
   const { data } = useAPIGetter('get-next-loan-amount', { userId: user.id })
-  console.log('data', data)
   const notEligibleForLoan = (data?.amount ?? 0) < 1
 
   const receivedLoanToday = receivedTxnLoan || justReceivedLoan
