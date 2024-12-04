@@ -11,7 +11,8 @@ create table if not exists
     profit numeric,
     total_shares_no numeric,
     total_shares_yes numeric,
-    user_id text not null
+    user_id text not null,
+    loan numeric
   );
 
 -- Triggers
@@ -28,18 +29,21 @@ DECLARE
     sum_has_yes_shares BOOLEAN := FALSE;
     sum_has_no_shares BOOLEAN := FALSE;
     sum_has_shares BOOLEAN := FALSE;
+    sum_loan NUMERIC := 0;
 BEGIN
     -- Check if the new row has a non-null answer_id
     IF NEW.answer_id IS NOT NULL THEN
-        -- Aggregate boolean fields from rows with the same user_id and contract_id
+        -- Aggregate boolean fields and loan from rows with the same user_id and contract_id
         SELECT
             BOOL_OR(has_yes_shares),
             BOOL_OR(has_no_shares),
-            BOOL_OR(has_shares)
+            BOOL_OR(has_shares),
+            COALESCE(SUM(loan), 0)
         INTO
             sum_has_yes_shares,
             sum_has_no_shares,
-            sum_has_shares
+            sum_has_shares,
+            sum_loan
         FROM user_contract_metrics
         WHERE user_id = NEW.user_id
           AND contract_id = NEW.contract_id
@@ -50,7 +54,8 @@ BEGIN
             data = data || jsonb_build_object('hasYesShares', sum_has_yes_shares, 'hasNoShares', sum_has_no_shares, 'hasShares', sum_has_shares),
             has_yes_shares = sum_has_yes_shares,
             has_no_shares = sum_has_no_shares,
-            has_shares = sum_has_shares
+            has_shares = sum_has_shares,
+            loan = sum_loan
         WHERE user_id = NEW.user_id
           AND contract_id = NEW.contract_id
           AND answer_id IS NULL;
@@ -84,7 +89,8 @@ create index contract_metrics_answer_id on public.user_contract_metrics using bt
 drop index if exists user_contract_metrics_contract_profit_null;
 
 create index concurrently user_contract_metrics_contract_profit_null on public.user_contract_metrics using btree (contract_id, profit)
-  where answer_id is null;
+where
+  answer_id is null;
 
 drop index if exists unique_user_contract_answer;
 

@@ -45,6 +45,7 @@ const getColumnsFromMetrics = (metrics: Omit<ContractMetric, 'id'>[]) =>
         total_shares_no: m.totalShares['NO'] ?? null,
         total_shares_yes: m.totalShares['YES'] ?? null,
         answer_id: m.answerId,
+        loan: m.loan,
       } as Tables['user_contract_metrics']['Insert'])
   )
 
