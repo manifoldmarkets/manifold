@@ -1,4 +1,4 @@
-import { Dictionary, orderBy, sumBy, first } from 'lodash'
+import { Dictionary, sumBy, first } from 'lodash'
 import { MarketContract } from './contract'
 import { PortfolioMetrics } from './portfolio-metrics'
 import { ContractMetric } from './contract-metric'
@@ -55,9 +55,6 @@ const calculateLoanMetricUpdates = (
     })
   )
 }
-
-export const getLoanMetric = (metrics: Omit<ContractMetric, 'id'>[]) =>
-  first(orderBy(metrics, (m) => m.answerId))
 
 const getCpmmContractLoanUpdate = (
   contract: MarketContract,

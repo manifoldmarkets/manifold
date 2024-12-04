@@ -4,12 +4,18 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { updateUserMetricPeriods } from 'shared/update-user-metric-periods'
 import { updateUserMetricsWithBets } from 'shared/update-user-metrics-with-bets'
 import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
+import { log } from 'shared/utils'
 
 const chunkSize = 10
 const FIX_PERIODS = false
 const UPDATE_PORTFOLIO_HISTORIES = true
+const MIGRATE_LOAN_DATA = true
 if (require.main === module) {
   runScript(async ({ pg }) => {
+    if (MIGRATE_LOAN_DATA) {
+      await migrateLoanData(pg)
+      return
+    }
     if (FIX_PERIODS) {
       await fixUserPeriods(pg)
       return
@@ -71,4 +77,35 @@ const fixUserPeriods = async (pg: SupabaseDirectClient) => {
     console.log(`Updated ${userIds.length} users, total ${total} users updated`)
     console.log('last created time:', userIds[userIds.length - 1][1])
   }
+}
+
+// Migrate loan data from data jsonb to native column
+export async function migrateLoanData(
+  pg: SupabaseDirectClient,
+  chunkSize = 100
+) {
+  log('Getting all users with contract metrics...')
+  const userIds = await pg.map(
+    `select distinct user_id from user_contract_metrics`,
+    [],
+    (r) => r.user_id as string
+  )
+
+  log(`Found ${userIds.length} users with metrics`)
+  const chunks = chunk(userIds, chunkSize)
+
+  for (const userChunk of chunks) {
+    await pg.none(
+      `
+      update user_contract_metrics 
+      set loan = coalesce((data->>'loan')::numeric, 0)
+      where user_id = any($1)
+    `,
+      [userChunk]
+    )
+
+    log(`Updated loan data for ${userChunk.length} users`)
+  }
+
+  log('Finished migrating loan data')
 }
