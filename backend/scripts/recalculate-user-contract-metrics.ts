@@ -82,7 +82,7 @@ const fixUserPeriods = async (pg: SupabaseDirectClient) => {
 // Migrate loan data from data jsonb to native column
 export async function migrateLoanData(
   pg: SupabaseDirectClient,
-  chunkSize = 100
+  chunkSize = 200
 ) {
   log('Getting all users with contract metrics...')
   const userIds = await pg.map(

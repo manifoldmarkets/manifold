@@ -51,7 +51,12 @@ BEGIN
         -- Update the row where answer_id is null with the aggregated metrics
         UPDATE user_contract_metrics
         SET
-            data = data || jsonb_build_object('hasYesShares', sum_has_yes_shares, 'hasNoShares', sum_has_no_shares, 'hasShares', sum_has_shares),
+            data = data || jsonb_build_object(
+              'hasYesShares', sum_has_yes_shares,
+              'hasNoShares', sum_has_no_shares,
+              'hasShares', sum_has_shares,
+              'loan', sum_loan
+            ),
             has_yes_shares = sum_has_yes_shares,
             has_no_shares = sum_has_no_shares,
             has_shares = sum_has_shares,
