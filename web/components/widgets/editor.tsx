@@ -166,7 +166,8 @@ export function useTextEditor(props: {
       ...(props.extensions ?? []),
     ],
     content: defaultValue ?? (key && content ? content : ''),
-    autofocus,
+    // idk why but `autofocus: undefined` and `autofocus: false` don't work right
+    ...(autofocus ? { autofocus: true } : {}),
   })
 
   useEffect(() => {
