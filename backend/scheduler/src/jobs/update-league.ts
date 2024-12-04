@@ -87,6 +87,7 @@ export async function updateLeague() {
       const contract = contractsById[contractId]
       if (
         contract &&
+        contract.token === 'MANA' &&
         contract.visibility === 'public' &&
         contract.isRanked !== false &&
         !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)
