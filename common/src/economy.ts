@@ -4,7 +4,7 @@ import {
 } from 'common/contract'
 import { MarketTierType, tiers } from './tier'
 
-export const DEFAULT_CASH_ANTE = 100
+export const DEFAULT_CASH_ANTE = 50
 
 export const FIXED_ANTE = 1000
 const BASE_ANSWER_COST = FIXED_ANTE / 10
