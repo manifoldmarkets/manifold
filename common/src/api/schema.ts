@@ -1342,7 +1342,8 @@ export const API = (_apiTypeCheck = {
     returns: [] as AnyBalanceChangeType[],
     props: z
       .object({
-        after: z.coerce.number(),
+        before: z.coerce.number().optional(),
+        after: z.coerce.number().default(0),
         userId: z.string(),
       })
       .strict(),
