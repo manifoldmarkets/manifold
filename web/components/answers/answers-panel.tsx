@@ -262,68 +262,67 @@ export function AnswersPanel(props: {
         showDefaultSort={showSetDefaultSort && contract.sort !== sort}
         setDefaultSort={setDefaultSort}
       />
-      <div className="relative isolate">
-        <Col ref={answersContainerRef}>
-          {showNoAnswers ? (
-            <div className="text-ink-500 p-4 pt-20 text-center">
-              No answers yet
-            </div>
-          ) : (
-            <Col className="mx-[2px] mt-1 gap-2">
-              {answersToShow.map((answer) => (
-                <Answer
-                  className={
-                    selectedAnswerIds.length &&
-                    !selectedAnswerIds.includes(answer.id) &&
-                    !!onAnswerClick
-                      ? 'opacity-70'
-                      : ''
-                  }
-                  key={answer.id}
-                  user={user}
-                  answer={answer}
-                  contract={contract}
-                  onCommentClick={
-                    onAnswerCommentClick
-                      ? () => onAnswerCommentClick(answer)
-                      : undefined
-                  }
-                  onHover={(hovering) =>
-                    onAnswerHover?.(hovering ? answer : undefined)
-                  }
-                  onClick={() => {
-                    onAnswerClick?.(answer)
-                  }}
-                  unfilledBets={unfilledBets?.filter(
-                    (b) => b.answerId === answer.id
-                  )}
-                  color={getAnswerColor(answer)}
-                  shouldShowLimitOrderChart={
-                    isAdvancedTrader && shouldShowLimitOrderChart
-                  }
-                />
-              ))}
+      {/* <div className="relative isolate"> */}
+      <Col ref={answersContainerRef}>
+        {showNoAnswers ? (
+          <div className="text-ink-500 p-4 pt-20 text-center">
+            No answers yet
+          </div>
+        ) : (
+          <Col className="mx-[2px] mt-1 gap-2">
+            {answersToShow.map((answer) => (
+              <Answer
+                className={
+                  selectedAnswerIds.length &&
+                  !selectedAnswerIds.includes(answer.id) &&
+                  !!onAnswerClick
+                    ? 'opacity-70'
+                    : ''
+                }
+                key={answer.id}
+                user={user}
+                answer={answer}
+                contract={contract}
+                onCommentClick={
+                  onAnswerCommentClick
+                    ? () => onAnswerCommentClick(answer)
+                    : undefined
+                }
+                onHover={(hovering) =>
+                  onAnswerHover?.(hovering ? answer : undefined)
+                }
+                onClick={() => {
+                  onAnswerClick?.(answer)
+                }}
+                unfilledBets={unfilledBets?.filter(
+                  (b) => b.answerId === answer.id
+                )}
+                color={getAnswerColor(answer)}
+                shouldShowLimitOrderChart={
+                  isAdvancedTrader && shouldShowLimitOrderChart
+                }
+              />
+            ))}
 
-              {moreCount > 0 &&
-                (query ? (
-                  <div className="text-ink-600 pb-4 text-center">
-                    {moreCount} answers hidden by search
-                  </div>
-                ) : (
-                  <Button
-                    color="gray-white"
-                    onClick={() => setShowAll(true)}
-                    size="xs"
-                  >
-                    <ChevronDownIcon className="mr-1 h-4 w-4" />
-                    Show {moreCount} more{' '}
-                    {moreCount === 1 ? 'answer' : 'answers'}
-                  </Button>
-                ))}
-            </Col>
-          )}
-        </Col>
-      </div>
+            {moreCount > 0 &&
+              (query ? (
+                <div className="text-ink-600 pb-4 text-center">
+                  {moreCount} answers hidden by search
+                </div>
+              ) : (
+                <Button
+                  color="gray-white"
+                  onClick={() => setShowAll(true)}
+                  size="xs"
+                >
+                  <ChevronDownIcon className="mr-1 h-4 w-4" />
+                  Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
+                </Button>
+              ))}
+          </Col>
+        )}
+      </Col>
+      {/* </div> */}
       <Row className="justify-end gap-4">
         {!floatingEqual(metrics?.invested ?? 0, 0) && (
           <Row className="mt-2 items-center gap-2">
