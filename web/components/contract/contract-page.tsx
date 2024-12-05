@@ -294,7 +294,7 @@ export function ContractPageContent(props: ContractParams) {
         >
           <div
             className={clsx(
-              'sticky z-10 flex items-end',
+              'sticky z-20 flex items-end',
               !coverImageUrl
                 ? 'bg-canvas-0 top-0 w-full'
                 : 'top-[-92px] h-[140px]'
