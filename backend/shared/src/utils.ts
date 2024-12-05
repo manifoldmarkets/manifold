@@ -21,8 +21,8 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Row, tsToMillis } from 'common/supabase/utils'
 import { log } from 'shared/monitoring/log'
 import { metrics } from 'shared/monitoring/metrics'
-import { convertBet } from 'common/supabase/bets'
 import { convertLiquidity } from 'common/supabase/liquidity'
+import { ContractMetric } from 'common/contract-metric'
 
 export { metrics }
 export { log }
@@ -129,24 +129,27 @@ export const getContract = async (
   return contract
 }
 
-export const getContractAndBetsAndLiquidities = async (
+export const getContractAndMetricsAndLiquidities = async (
   pg: SupabaseTransaction,
   unresolvedContract: MarketContract,
   answerId: string | undefined
 ) => {
   const { id: contractId, mechanism, outcomeType } = unresolvedContract
+  const isMulti = mechanism === 'cpmm-multi-1'
   // Filter out initial liquidity if set up with special liquidity per answer.
   const filterAnte =
-    mechanism === 'cpmm-multi-1' &&
+    isMulti &&
     outcomeType !== 'NUMBER' &&
     unresolvedContract.specialLiquidityPerAnswer
   const results = await pg.multi(
     `select ${contractColumnsToSelect} from contracts where id = $1;
      select * from answers where contract_id = $1 order by index;
-     select * from contract_bets
-      where contract_id = $1
-      and (shares != 0 or loan_amount != 0)
-      ${answerId ? `and data->>'answerId' = $2` : ''};
+     select data from user_contract_metrics 
+     where contract_id = $1 and
+     ${isMulti ? 'answer_id is not null and' : ''}
+     ($2 is null or exists (select 1 from user_contract_metrics ucm
+      where ucm.contract_id = $1
+      and ucm.answer_id = $2));
      select * from contract_liquidity where contract_id = $1 ${
        filterAnte ? `and data->>'answerId' = $2` : ''
      };`,
@@ -154,15 +157,16 @@ export const getContractAndBetsAndLiquidities = async (
   )
 
   const contract = first(results[0].map(convertContract)) as MarketContract
-  if (!contract) throw new APIError(500, 'Contract not found')
+  if (!contract) throw new APIError(404, 'Contract not found')
   const answers = results[1].map(convertAnswer)
   if ('answers' in contract) {
     contract.answers = answers
   }
-  const bets = results[2].map(convertBet)
+  // We don't get the summary metric, we recreate them from all the answer metrics
+  const contractMetrics = results[2].map((row) => row.data as ContractMetric)
   const liquidities = results[3].map(convertLiquidity)
 
-  return { contract, bets, liquidities }
+  return { contract, contractMetrics, liquidities }
 }
 
 export const getContractSupabase = async (contractId: string) => {

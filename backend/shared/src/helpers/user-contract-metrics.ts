@@ -64,6 +64,9 @@ export async function bulkUpdateContractMetrics(
 export function bulkUpdateContractMetricsQuery(
   metrics: Omit<ContractMetric, 'id'>[]
 ) {
+  if (metrics.length === 0) {
+    return 'select 1 where false'
+  }
   return bulkUpsertQuery(
     'user_contract_metrics',
     [],

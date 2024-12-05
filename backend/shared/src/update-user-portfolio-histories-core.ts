@@ -11,7 +11,7 @@ import {
   MarketContract,
 } from 'common/contract'
 import {
-  calculateProfitMetricsWithProb,
+  calculateProfitMetricsAtProbOrCancel,
   calculateUpdatedMetricsForContracts,
 } from 'common/calculate-metrics'
 import { buildArray, filterDefined } from 'common/util/array'
@@ -332,7 +332,7 @@ export const getUnresolvedStatsForToken = (
         }
       return {
         value:
-          calculateProfitMetricsWithProb(answer.prob, cm).payout -
+          calculateProfitMetricsAtProbOrCancel(answer.prob, cm).payout -
           (cm.loan ?? 0),
         invested: cm.invested ?? 0,
         dailyProfit: cm.from?.day?.profit ?? 0,
@@ -341,7 +341,7 @@ export const getUnresolvedStatsForToken = (
 
     return {
       value:
-        calculateProfitMetricsWithProb(contract.prob, cm).payout -
+        calculateProfitMetricsAtProbOrCancel(contract.prob, cm).payout -
         (cm.loan ?? 0),
       invested: cm.invested ?? 0,
       dailyProfit: cm.from?.day?.profit ?? 0,

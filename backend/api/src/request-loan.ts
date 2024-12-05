@@ -5,7 +5,6 @@ import {
 } from 'shared/supabase/init'
 import { createLoanIncomeNotification } from 'shared/create-notification'
 import { getUser, log } from 'shared/utils'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
@@ -18,6 +17,7 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
 import { getUnresolvedContractMetricsContractsAnswers } from 'shared/update-user-portfolio-histories-core'
 import { keyBy } from 'lodash'
+import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 
 export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
   const pg = createSupabaseDirectClient()
@@ -92,18 +92,11 @@ export const getNextLoanAmountResults = async (userId: string) => {
   const pg = createSupabaseDirectClient()
 
   const portfolioMetric = await pg.oneOrNone(
-    `select user_id, ts, investment_value, balance, total_deposits
+    `select *
      from user_portfolio_history_latest
      where user_id = $1`,
     [userId],
-    (r) =>
-      ({
-        userId: r.user_id as string,
-        timestamp: Date.parse(r.ts as string),
-        investmentValue: parseFloat(r.investment_value as string),
-        balance: parseFloat(r.balance as string),
-        totalDeposits: parseFloat(r.total_deposits as string),
-      } as PortfolioMetrics & { userId: string })
+    convertPortfolioHistory
   )
   if (!portfolioMetric) {
     throw new APIError(404, `No portfolio found for user ${userId}`)

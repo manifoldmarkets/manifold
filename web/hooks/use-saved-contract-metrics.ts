@@ -54,10 +54,10 @@ export const useSavedContractMetrics = (
   useApiSubscription({
     topics: [`contract/${contract.id}/user-metrics/${user?.id}`],
     onBroadcast: (msg) => {
-      const metrics = (msg.data.metrics as ContractMetric[]).filter((m) =>
-        answerId ? m.answerId === answerId : true
+      const metrics = (msg.data.metrics as Omit<ContractMetric, 'id'>[]).filter(
+        (m) => (answerId ? m.answerId === answerId : true)
       )
-      if (metrics.length > 0) setSavedMetrics(metrics)
+      if (metrics.length > 0) setSavedMetrics(metrics as ContractMetric[])
     },
     enabled: !!user?.id,
   })
