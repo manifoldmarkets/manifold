@@ -1,23 +1,27 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import {
-  createSupabaseDirectClient,
-  SupabaseTransaction,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createLoanIncomeNotification } from 'shared/create-notification'
 import { getUser, log } from 'shared/utils'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
-import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
+import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-metrics'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 import { LoanTxn } from 'common/txn'
-import { runTxnFromBank } from 'shared/txn/run-txn'
+import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
 import { getUnresolvedContractMetricsContractsAnswers } from 'shared/update-user-portfolio-histories-core'
 import { keyBy } from 'lodash'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { getInsertQuery } from 'shared/supabase/utils'
+import {
+  broadcastUserUpdates,
+  bulkIncrementBalancesQuery,
+  UserUpdate,
+} from 'shared/supabase/users'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
   const pg = createSupabaseDirectClient()
@@ -40,40 +44,47 @@ export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
       }
     })
   )
-  await pg.tx(async (tx) => {
-    await payUserLoan(user.id, payout, tx)
-    await bulkUpdateContractMetrics(updatedMetrics, tx)
-  })
+  const bulkUpdateContractMetricsQ =
+    bulkUpdateContractMetricsQuery(updatedMetrics)
+  const { txnQuery, balanceUpdateQuery } = payUserLoan(user.id, payout)
+
+  const { userUpdates } = await betsQueue.enqueueFn(async () => {
+    const startOfDay = dayjs()
+      .tz('America/Los_Angeles')
+      .startOf('day')
+      .toISOString()
+
+    const res = await pg.oneOrNone(
+      `select 1 as count from txns
+      where to_id = $1
+      and category = 'LOAN'
+      and created_time >= $2
+      limit 1;
+    `,
+      [auth.uid, startOfDay]
+    )
+    if (res) {
+      throw new APIError(400, 'Already awarded loan today')
+    }
+    return pg.tx(async (tx) => {
+      const res = await tx.multi(
+        `${balanceUpdateQuery};
+         ${txnQuery};
+         ${bulkUpdateContractMetricsQ}`
+      )
+      const userUpdates = res[0] as UserUpdate[]
+      return { userUpdates }
+    })
+  }, [auth.uid])
+  broadcastUserUpdates(userUpdates)
   log(`Paid out ${payout} to user ${user.id}.`)
   await createLoanIncomeNotification(user, payout)
-  return { payout }
+  return result
 }
 
-const payUserLoan = async (
-  userId: string,
-  payout: number,
-  tx: SupabaseTransaction
-) => {
-  const startOfDay = dayjs()
-    .tz('America/Los_Angeles')
-    .startOf('day')
-    .toISOString()
-
-  // make sure we don't already have a txn for this user/questType
-  const { count } = await tx.one(
-    `select count(*) from txns
-    where to_id = $1
-    and category = 'LOAN'
-    and created_time >= $2
-    limit 1`,
-    [userId, startOfDay]
-  )
-
-  if (count) {
-    throw new APIError(400, 'Already awarded loan today')
-  }
-
-  const loanTxn: Omit<LoanTxn, 'fromId' | 'id' | 'createdTime'> = {
+const payUserLoan = (userId: string, payout: number) => {
+  const loanTxn: Omit<LoanTxn, 'id' | 'createdTime'> = {
+    fromId: 'BANK',
     fromType: 'BANK',
     toId: userId,
     toType: 'USER',
@@ -85,7 +96,16 @@ const payUserLoan = async (
       countsAsProfit: true,
     },
   }
-  await runTxnFromBank(tx, loanTxn, true)
+  const balanceUpdate = {
+    id: loanTxn.toId,
+    balance: payout,
+  }
+  const balanceUpdateQuery = bulkIncrementBalancesQuery([balanceUpdate])
+  const txnQuery = getInsertQuery('txns', txnToRow(loanTxn))
+  return {
+    txnQuery,
+    balanceUpdateQuery,
+  }
 }
 
 export const getNextLoanAmountResults = async (userId: string) => {
