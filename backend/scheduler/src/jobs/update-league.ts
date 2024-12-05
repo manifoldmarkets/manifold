@@ -1,4 +1,4 @@
-import { groupBy, sum, uniq, zipObject } from 'lodash'
+import { groupBy, keyBy, sum, uniq, zipObject } from 'lodash'
 import { log } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -9,6 +9,7 @@ import {
 import { bulkUpdate } from 'shared/supabase/utils'
 import { CURRENT_SEASON, getSeasonDates } from 'common/leagues'
 import { getProfitMetrics } from 'common/calculate'
+import { convertContract } from 'common/supabase/contracts'
 
 export async function updateLeague() {
   const pg = createSupabaseDirectClient()
@@ -71,7 +72,7 @@ export async function updateLeague() {
 
   log('Loading contracts...')
   const contracts = await getRelevantContracts(pg, bets)
-  const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
+  const contractsById = keyBy(contracts, 'id')
 
   log(`Loaded ${contracts.length} contracts.`)
 
@@ -145,9 +146,13 @@ export async function updateLeague() {
 const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
   const betContractIds = uniq(bets.map((b) => b.contractId))
   return await pg.map(
-    `select data from contracts where id in ($1:list)`,
+    `select * from contracts
+    where id in ($1:list)
+    and token = 'MANA'
+    and visibility = 'public'
+    and (data->'isRanked')::boolean is not false`,
     [betContractIds],
-    (r) => r.data as Contract
+    convertContract
   )
 }
 
