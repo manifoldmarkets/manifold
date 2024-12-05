@@ -262,7 +262,6 @@ export function AnswersPanel(props: {
         showDefaultSort={showSetDefaultSort && contract.sort !== sort}
         setDefaultSort={setDefaultSort}
       />
-      {/* <div className="relative isolate"> */}
       <Col ref={answersContainerRef}>
         {showNoAnswers ? (
           <div className="text-ink-500 p-4 pt-20 text-center">
@@ -322,7 +321,6 @@ export function AnswersPanel(props: {
           </Col>
         )}
       </Col>
-      {/* </div> */}
       <Row className="justify-end gap-4">
         {!floatingEqual(metrics?.invested ?? 0, 0) && (
           <Row className="mt-2 items-center gap-2">
