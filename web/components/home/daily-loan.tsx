@@ -18,6 +18,7 @@ import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
 import { Col } from 'web/components/layout/col'
 import { TRADE_TERM } from 'common/envs/constants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { DAY_MS } from 'common/util/time'
 
 dayjs.extend(utc)
@@ -106,7 +107,9 @@ export function DailyLoan(props: {
                 'items-center justify-center whitespace-nowrap px-1'
               )}
             >
-              {receivedLoanToday || notEligibleForLoan ? (
+              {loaning ? (
+                <LoadingIndicator size={'md'} />
+              ) : receivedLoanToday || notEligibleForLoan ? (
                 <GiOpenChest className="h-6 w-6 text-yellow-900" />
               ) : (
                 <GiTwoCoins className="h-6 w-6 text-yellow-300" />
