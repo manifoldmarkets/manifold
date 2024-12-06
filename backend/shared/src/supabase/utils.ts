@@ -83,10 +83,34 @@ export function bulkUpdateQuery<
   ColumnValues extends Tables[T]['Update']
 >(table: T, idFields: Column<T>[], values: ColumnValues[]) {
   if (!values.length) return 'select 1 where false'
-  const columnNames = Object.keys(values[0])
-  const cs = new pgp.helpers.ColumnSet(columnNames, { table })
+
+  // Filter out idFields from the columns to update to avoid pg errors about generated ALWAYS columns
+  const updateColumns = Object.keys(values[0]).filter(
+    (col) => !idFields.includes(col as Column<T>)
+  )
+  const allColumns = [...idFields, ...updateColumns]
+  const cs = new pgp.helpers.ColumnSet(updateColumns, { table })
+
+  // Format values array to ensure correct column order
+  const formattedValues = values
+    .map(
+      (row) =>
+        `(${allColumns
+          .map((col) => {
+            const val = row[col as keyof ColumnValues]
+            return typeof val === 'string' ? `'${val}'` : val
+          })
+          .join(',')})`
+    )
+    .join(',')
+
   const clause = idFields.map((f) => `v.${f} = t.${f}`).join(' and ')
-  const query = pgp.helpers.update(values, cs) + ` WHERE ${clause}`
+  const columnDefs = allColumns.map((c) => `"${c}"`).join(',')
+
+  const query =
+    `update ${table} as t set ${cs.assignColumns({ from: 'v' })} ` +
+    `from (values ${formattedValues}) as v(${columnDefs}) ` +
+    `WHERE ${clause}`
   // Hack to properly cast values.
   return query.replace(/::(\w*)'/g, "'::$1")
 }
@@ -144,30 +168,35 @@ export function bulkUpsertQuery<
   )
 }
 
-// Replacement for BulkWriter
-export async function bulkUpdateData<T extends TableName>(
-  db: SupabaseDirectClient,
+export function bulkUpdateDataQuery<T extends TableName>(
   table: T,
   // TODO: explicit id field
   updates: (Partial<DataFor<T>> & { id: string | number })[]
 ) {
-  if (updates.length > 0) {
-    const values = updates
-      .map(
-        (update) =>
-          `(${
-            typeof update.id === 'string' ? `'${update.id}'` : update.id
-          }, '${JSON.stringify(update)}'::jsonb)`
-      )
-      .join(',\n')
+  if (updates.length === 0) return 'select 1 where false'
 
-    await db.none(
-      `update ${table} as c
-        set data = data || v.update
-      from (values ${values}) as v(id, update)
-      where c.id = v.id`
+  const values = updates
+    .map(
+      (update) =>
+        `(${
+          typeof update.id === 'string' ? `'${update.id}'` : update.id
+        }, '${JSON.stringify(update)}'::jsonb)`
     )
-  }
+    .join(',\n')
+
+  return `update ${table} as c
+    set data = data || v.update
+    from (values ${values}) as v(id, update)
+    where c.id = v.id`
+}
+
+export async function bulkUpdateData<T extends TableName>(
+  db: SupabaseDirectClient,
+  table: T,
+  updates: (Partial<DataFor<T>> & { id: string | number })[]
+) {
+  const query = bulkUpdateDataQuery(table, updates)
+  await db.none(query)
 }
 export function updateDataQuery<T extends TableName>(
   table: T,
