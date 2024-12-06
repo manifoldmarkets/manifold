@@ -11,7 +11,7 @@ import { PlusCircleIcon } from '@heroicons/react/outline'
 import { HiNoSymbol } from 'react-icons/hi2'
 import DropdownMenu, {
   DropdownItem,
-} from 'web/components/comments/dropdown-menu'
+} from 'web/components/widgets/dropdown-menu'
 import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
 import { api } from 'web/lib/api/api'
@@ -45,7 +45,9 @@ export const TopicDropdown = (props: {
       <DropdownMenu
         items={groupOptionItems}
         menuWidth={'w-50'}
-        icon={<DotsVerticalIcon className="h-5 w-5" aria-hidden="true" />}
+        buttonContent={
+          <DotsVerticalIcon className="h-5 w-5" aria-hidden="true" />
+        }
         withinOverflowContainer={true}
         className={className}
         closeOnClick

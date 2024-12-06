@@ -59,7 +59,7 @@ import {
   getOrderBookButtonLabel,
 } from '../bet/order-book'
 import { getAnswerColor } from '../charts/contract/choice'
-import DropdownMenu from '../comments/dropdown-menu'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { Col } from '../layout/col'
 import { UserHovercard } from '../user/user-hovercard'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
@@ -738,7 +738,9 @@ export function Answer(props: {
               feedReason={feedReason}
             />
             <DropdownMenu
-              icon={<DotsVerticalIcon className="h-5 w-5" aria-hidden />}
+              buttonContent={
+                <DotsVerticalIcon className="h-5 w-5" aria-hidden />
+              }
               items={dropdownItems}
               withinOverflowContainer
             />

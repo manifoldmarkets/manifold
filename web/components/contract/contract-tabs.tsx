@@ -38,7 +38,7 @@ import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
 import { Button } from '../buttons/button'
-import DropdownMenu from '../comments/dropdown-menu'
+import DropdownMenu from '../widgets/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { api } from 'web/lib/api/api'
@@ -432,7 +432,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                     })
                   }
                 )}
-                icon={
+                buttonContent={
                   <Row className="text-ink-600 w-20 items-center text-sm">
                     <span className="whitespace-nowrap">
                       {getSortLabel(sort)}

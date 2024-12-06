@@ -13,7 +13,7 @@ import { User } from 'common/user'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { Contract } from 'common/contract'
 import { XIcon } from '@heroicons/react/solid'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { track } from 'web/lib/service/analytics'
 
@@ -41,7 +41,7 @@ export const UserPositionSearchButton = (props: {
     <Row className={'flex-row-reverse items-center'}>
       {!searchUsers && displayUser ? (
         <DropdownMenu
-          icon={
+          buttonContent={
             <div
               className={
                 'hover:bg-ink-200 cursor-pointer rounded-lg px-2 py-1.5'

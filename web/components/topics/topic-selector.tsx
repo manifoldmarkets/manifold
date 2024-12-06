@@ -12,7 +12,7 @@ import { PRIVACY_STATUS_ITEMS } from './topic-privacy-modal'
 import { uniqBy } from 'lodash'
 import { Col } from '../layout/col'
 import { buildArray } from 'common/util/array'
-import DropdownMenu from '../comments/dropdown-menu'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { DropdownPill } from '../search/filter-pills'
 
 export function TopicSelector(props: {

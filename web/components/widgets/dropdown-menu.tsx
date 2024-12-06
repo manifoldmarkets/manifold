@@ -2,7 +2,7 @@ import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { ReactNode } from 'react'
-import { CustomizeableDropdown } from 'web/components/widgets/customizeable-dropdown'
+import { CustomizeableDropdown } from './customizeable-dropdown'
 
 export type DropdownItem = {
   name: string
@@ -17,33 +17,29 @@ export type DropdownItem = {
 
 export default function DropdownMenu(props: {
   items: DropdownItem[]
-  icon?: ReactNode
-  menuWidth?: string
-  buttonClass?: string
   className?: string
-  menuItemsClass?: string
+  /** usually an icon */
+  buttonContent?: ReactNode | ((open: boolean) => ReactNode)
   buttonDisabled?: boolean
+  buttonClass?: string
+  menuWidth?: string
+  menuItemsClass?: string
   selectedItemName?: string
   closeOnClick?: boolean
   withinOverflowContainer?: boolean
-  buttonContent?: (open: boolean) => ReactNode
 }) {
   const {
     items,
-    menuItemsClass,
-    menuWidth,
-    buttonClass,
     className,
+    buttonContent,
     buttonDisabled,
+    buttonClass,
+    menuWidth,
+    menuItemsClass,
     selectedItemName,
     closeOnClick,
     withinOverflowContainer,
-    buttonContent,
   } = props
-
-  const icon = props.icon ?? (
-    <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
-  )
 
   return (
     <CustomizeableDropdown
@@ -53,7 +49,13 @@ export default function DropdownMenu(props: {
       buttonContent={(open) => (
         <>
           <span className="sr-only">Open options</span>
-          {buttonContent ? buttonContent(open) : icon}
+          {!buttonContent ? (
+            <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
+          ) : typeof buttonContent === 'function' ? (
+            buttonContent(open)
+          ) : (
+            buttonContent
+          )}
         </>
       )}
       withinOverflowContainer={withinOverflowContainer}
