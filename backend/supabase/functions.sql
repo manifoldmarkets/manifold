@@ -377,45 +377,6 @@ END;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.get_monthly_bet_count_and_amount(user_id_input text)
- RETURNS TABLE(month text, bet_count bigint, total_amount numeric)
- LANGUAGE plpgsql
-AS $function$
-begin
-  return query
-  with months as (
-    select 
-      to_char(generate_series(
-        '2024-01-01'::timestamp with time zone,
-        '2024-12-01'::timestamp with time zone,
-        '1 month'::interval
-      ), 'YYYY-MM') as month
-  ),
-  user_bets as (
-    select
-      to_char(date_trunc('month', created_time), 'YYYY-MM') as month,
-      count(*) as bet_count,
-      coalesce(sum(abs(amount)), 0) as total_amount
-    from contract_bets
-    where 
-      user_id = user_id_input
-      and created_time >= '2024-01-01'::timestamp with time zone
-      and created_time < '2025-01-01'::timestamp with time zone
-      and not coalesce(is_cancelled, false)
-      and not coalesce(is_redemption, false)
-    group by date_trunc('month', created_time)
-  )
-  select
-    months.month,
-    coalesce(user_bets.bet_count, 0) as bet_count,
-    coalesce(user_bets.total_amount, 0) as total_amount
-  from months
-  left join user_bets on months.month = user_bets.month
-  order by months.month;
-end;
-$function$
-;
-
 CREATE OR REPLACE FUNCTION public.get_non_empty_private_message_channel_ids(p_user_id text, p_limit integer DEFAULT NULL::integer)
  RETURNS TABLE(id bigint)
  LANGUAGE plpgsql
@@ -579,40 +540,6 @@ AS $function$
     join manalinks as m on mc.manalink_id = m.id
     join txns as tx on mc.txn_id = tx.id
     where m.creator_id = creator_id
-$function$
-;
-
-CREATE OR REPLACE FUNCTION public.get_user_portfolio_at_2024_end(p_user_id text)
- RETURNS SETOF user_portfolio_history
- LANGUAGE plpgsql
-AS $function$
-begin
-  return query
-  select *
-  from user_portfolio_history
-  where 
-    user_id = p_user_id
-    and ts <= '2024-12-31 23:59:59'::timestamp
-  order by ts desc
-  limit 1;
-end;
-$function$
-;
-
-CREATE OR REPLACE FUNCTION public.get_user_portfolio_at_2024_start(p_user_id text)
- RETURNS SETOF user_portfolio_history
- LANGUAGE plpgsql
-AS $function$
-begin
-  return query
-  select *
-  from user_portfolio_history
-  where 
-    user_id = p_user_id
-    and ts >= '2024-01-01'::timestamp
-  order by ts asc
-  limit 1;
-end;
 $function$
 ;
 
