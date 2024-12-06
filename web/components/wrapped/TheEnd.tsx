@@ -78,4 +78,4 @@ export function TheEnd(props: {
 }
 
 export const getWrappedUrl = (username: string | undefined) =>
-  `https://${ENV_CONFIG.domain}/${username}/wrapped2023`
+  `https://${ENV_CONFIG.domain}/${username}/wrapped2024`
