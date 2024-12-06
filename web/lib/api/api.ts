@@ -363,3 +363,7 @@ export function getAdAnalytics(params: { contractId: string }) {
 export function requestLoan() {
   return call(getApiUrl('request-loan'), 'GET')
 }
+
+export function getMonthlyBets2024(params: { userId: string }) {
+  return call(getApiUrl('get-monthly-bets-2024'), 'POST', params)
+}

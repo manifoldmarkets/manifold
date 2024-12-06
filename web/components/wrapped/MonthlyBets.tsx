@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import { MonthlyBetsType } from 'web/hooks/use-wrapped-2023'
+import { MonthlyBetsType } from 'web/hooks/use-wrapped-2024'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { numberWithCommas } from 'web/lib/util/formatNumber'
 import { Spacer } from '../layout/spacer'

@@ -1883,6 +1883,25 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-monthly-bets-2024': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ userId: z.string() }),
+    returns: [] as { month: string; bet_count: number; total_amount: number }[],
+  },
+  'get-max-min-profit-2024': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ userId: z.string() }),
+    returns: [] as {
+      profit: number
+      data: Contract
+      has_no_shares: boolean
+      has_yes_shares: boolean
+    }[],
+  },
 } as const)
 
 export type APIPath = keyof typeof API

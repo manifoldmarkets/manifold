@@ -2,12 +2,10 @@ import clsx from 'clsx'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
-import { ProfitType, useMaxAndMinProfit } from 'web/hooks/use-wrapped-2023'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { NavButtons } from './NavButtons'
-import { Row } from '../layout/row'
-import { useContract } from 'web/hooks/use-contract'
+import { ProfitType, useMaxAndMinProfit } from 'web/hooks/use-wrapped-2024'
 import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { NavButtons } from './NavButtons'
 
 export function MaxMinProfit(props: {
   goToPrevPage: () => void
@@ -20,9 +18,6 @@ export function MaxMinProfit(props: {
   const [animateOut, setAnimateOut] = useState(false)
 
   const { maxProfit, minProfit } = useMaxAndMinProfit(user.id)
-  const maxContract = useContract(maxProfit?.contractId)
-  const minContract = useContract(minProfit?.contractId)
-
   //triggers for animation in
   useEffect(() => {
     if (!animateIn) return
@@ -45,15 +40,8 @@ export function MaxMinProfit(props: {
     }, 1000)
   }
 
-  if (maxContract == undefined || minContract == undefined) {
-    return (
-      <div className="mx-auto my-auto">
-        <LoadingIndicator />
-      </div>
-    )
-  }
-
-  if (maxContract == null || minContract == null) {
+  console.log('MAX PROFIT', maxProfit, 'MIN PROFIT', minProfit)
+  if (!maxProfit || !minProfit) {
     return <>An error occured</>
   }
 
@@ -94,7 +82,7 @@ export function MaxMinProfit(props: {
             >
               You made the most betting
               <BettingDirection profit={maxProfit} /> on{' '}
-              <b>{maxContract.question}</b>
+              <b>{maxProfit.contract.question}</b>
             </div>
             <div
               className={clsx(
@@ -108,7 +96,7 @@ export function MaxMinProfit(props: {
             >
               You lost the most betting
               <BettingDirection profit={minProfit} />
-              on <b>{minContract.question}</b>
+              on <b>{minProfit.contract.question}</b>
             </div>
           </Col>
         </Row>

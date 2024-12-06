@@ -74,6 +74,7 @@ export const getStaticProps = async (props: {
   const { username } = props.params
 
   const user = await getUserForStaticProps(db, username)
+
   const { data } = user
     ? await db.from('contracts').select('id').eq('creator_id', user.id).limit(1)
     : { data: null }

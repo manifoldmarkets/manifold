@@ -10,7 +10,7 @@ import Snowfall from 'react-snowfall'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { Unwrap } from 'web/components/wrapped/Unwrap'
 import { MonthlyBets } from 'web/components/wrapped/MonthlyBets'
-import { useMonthlyBets } from 'web/hooks/use-wrapped-2023'
+import { useMonthlyBets } from 'web/hooks/use-wrapped-2024'
 import { GeneralStats } from 'web/components/wrapped/GeneralStats'
 import { TotalProfit } from 'web/components/wrapped/TotalProfit'
 import { Row } from 'web/components/layout/row'
@@ -27,14 +27,13 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserForStaticProps(db, username)
-
   return {
     props: removeUndefinedProps({
       user,
       username,
     }),
     // revalidate: 60 * 5, // Regenerate after 5 minutes
-    revalidate: 4,
+    revalidate: 60,
   }
 }
 
@@ -42,7 +41,7 @@ export const getStaticPaths = () => {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function Wrapped2023(props: {
+export default function Wrapped2024(props: {
   user: User | null
   username: string
 }) {
@@ -56,11 +55,11 @@ export default function Wrapped2023(props: {
   return privateUser && blockedByCurrentUser ? (
     <BlockedUser user={user} privateUser={privateUser} />
   ) : (
-    <Wrapped2023Content user={user} {...profileProps} />
+    <Wrapped2024Content user={user} {...profileProps} />
   )
 }
 
-function Wrapped2023Content(props: { user: User; username: string }) {
+function Wrapped2024Content(props: { user: User; username: string }) {
   const { user, username } = props
   const [state, updateState] = usePersistentQueriesState(
     { page: '0' },
@@ -78,6 +77,7 @@ function Wrapped2023Content(props: { user: User; username: string }) {
   }
 
   const monthlyBets = useMonthlyBets(user.id)
+
   return (
     <Col
       className={clsx(
@@ -85,8 +85,8 @@ function Wrapped2023Content(props: { user: User; username: string }) {
       )}
     >
       <SEO
-        title={`${user.name}'s Manifold Wrapped 2023`}
-        description={`See ${user.name}'s biggest gains and losses on Manifold in 2023.`}
+        title={`${user.name}'s Manifold Wrapped 2024`}
+        description={`See ${user.name}'s biggest gains and losses on Manifold in 2024.`}
         image="/manifold-wrapped.png"
       />
 
