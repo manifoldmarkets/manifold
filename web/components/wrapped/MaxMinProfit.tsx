@@ -102,8 +102,10 @@ export function MaxMinProfit(props: {
             >
               You made the most trading
               <BettingDirection profit={maxProfit} /> on{' '}
-              <b>{maxBetOnAnswer ?? maxProfit.contract.question}</b>{' '}
-              {maxBetOnAnswer && <>on {maxProfit.contract.question}</>}
+              <b>
+                {maxBetOnAnswer ? maxBetOnAnswer.text : maxContract.question}
+              </b>{' '}
+              {maxBetOnAnswer && <>on {maxContract.question}</>}
             </div>
             <div
               className={clsx(
@@ -117,8 +119,11 @@ export function MaxMinProfit(props: {
             >
               You lost the most trading
               <BettingDirection profit={minProfit} />
-              on <b>{minBetOnAnswer ?? minProfit.contract.question}</b>{' '}
-              {maxBetOnAnswer && <>on {maxProfit.contract.question}</>}
+              on{' '}
+              <b>
+                {minBetOnAnswer ? minBetOnAnswer.text : minContract.question}
+              </b>{' '}
+              {minBetOnAnswer && <>on {minContract.question}</>}
             </div>
           </Col>
         </Row>
