@@ -7,9 +7,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { NavButtons } from './NavButtons'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { useLiveContract } from 'web/hooks/use-contract'
-import Link from 'next/link'
-import { contractPath } from 'common/contract'
 
 export function MaxMinProfit(props: {
   goToPrevPage: () => void
