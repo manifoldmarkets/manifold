@@ -97,7 +97,7 @@ export function MonthlyBets(props: {
               : 'invisible'
           )}
         >
-          You've bet a total of{' '}
+          You've traded a total of{' '}
           <span className="font-bold text-fuchsia-300">
             {numberWithCommas(totalBetsThisYear)}
           </span>{' '}
@@ -114,7 +114,7 @@ export function MonthlyBets(props: {
               : 'invisible'
           )}
         >
-          You bet the most in{' '}
+          You traded the most in{' '}
           <span className={clsx('highlight-black font-bold text-fuchsia-300')}>
             {monthName}
           </span>
@@ -122,7 +122,7 @@ export function MonthlyBets(props: {
           <span className="font-bold text-fuchsia-300">
             {numberWithCommas(monthWithMaxBets.bet_count)}
           </span>{' '}
-          bets!
+          trades!
         </div>
       </div>
       <NavButtons goToPrevPage={goToPrevPage} goToNextPage={onGoToNext} />

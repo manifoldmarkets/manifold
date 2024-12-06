@@ -40,7 +40,8 @@ select
 from 
     filtered_data fd
 join 
-    min_max_profits mmp on fd.profit = mmp.max_profit or fd.profit = mmp.min_profit;
+    min_max_profits mmp on fd.profit = mmp.max_profit or fd.profit = mmp.min_profit
+    order by fd.profit desc
       `,
     [userId]
   )

@@ -52,6 +52,7 @@ export function TotalProfit(props: {
     return <>An error occured</>
   }
 
+  const positiveProfit = totalProfit >= 0
   return (
     <>
       <div className="relative mx-auto my-auto">
@@ -61,14 +62,14 @@ export function TotalProfit(props: {
             animateOut ? 'animate-fade-out' : 'animate-fade-in'
           )}
         >
-          On those bets, you made{' '}
+          On those trades, you{positiveProfit ? ' made' : ' lost'}{' '}
           <span
             className={clsx(
               'font-bold ',
-              totalProfit < 0 ? 'text-red-300' : 'text-green-300'
+              positiveProfit ? 'text-green-300' : 'text-red-300'
             )}
           >
-            {formatMoney(totalProfit)}
+            {formatMoney(Math.abs(totalProfit))}
           </span>
         </div>
         <Spacer h={4} />

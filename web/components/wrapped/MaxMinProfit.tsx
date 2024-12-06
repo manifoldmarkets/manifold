@@ -6,6 +6,7 @@ import { ProfitType, useMaxAndMinProfit } from 'web/hooks/use-wrapped-2024'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { NavButtons } from './NavButtons'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function MaxMinProfit(props: {
   goToPrevPage: () => void
@@ -39,7 +40,15 @@ export function MaxMinProfit(props: {
       goToNextPage()
     }, 1000)
   }
-  if (!maxProfit || !minProfit) {
+  if (maxProfit == undefined || minProfit == undefined) {
+    return (
+      <div className="mx-auto my-auto">
+        <LoadingIndicator />
+      </div>
+    )
+  }
+
+  if (maxProfit == null || minProfit == null) {
     return <>An error occured</>
   }
 
@@ -78,7 +87,7 @@ export function MaxMinProfit(props: {
                 animateOut ? 'animate-fade-out' : 'animate-fade-in'
               )}
             >
-              You made the most betting
+              You made the most trading
               <BettingDirection profit={maxProfit} /> on{' '}
               <b>{maxProfit.contract.question}</b>
             </div>
@@ -92,7 +101,7 @@ export function MaxMinProfit(props: {
                   : 'invisible'
               )}
             >
-              You lost the most betting
+              You lost the most trading
               <BettingDirection profit={minProfit} />
               on <b>{minProfit.contract.question}</b>
             </div>
