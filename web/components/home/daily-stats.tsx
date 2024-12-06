@@ -7,7 +7,7 @@ import { DailyProfit } from './daily-profit'
 import { DailyLoan } from './daily-loan'
 
 export const dailyStatsClass =
-  'bg-canvas-0 rounded-lg px-3 py-1 shadow min-w-[60px]'
+  'bg-canvas-0 rounded-lg px-2 sm:px-3 py-1 shadow min-w-[60px]'
 
 export function DailyStats(props: {
   user: User | null | undefined
@@ -15,7 +15,7 @@ export function DailyStats(props: {
 }) {
   const { user, className } = props
   return (
-    <Row className={clsx('items-center gap-3', className)}>
+    <Row className={clsx('items-center gap-2 sm:gap-3', className)}>
       <QuestsOrStreak user={user} />
       <DailyLeagueStat user={user} />
       <DailyProfit user={user} />

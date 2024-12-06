@@ -87,9 +87,7 @@ export function DailyLoan(props: {
           className,
           'items-center',
           dailyStatsClass,
-          receivedLoanToday || notEligibleForLoan
-            ? ''
-            : 'hover:bg-canvas-100 ring-[1.7px] ring-amber-300'
+          receivedLoanToday || notEligibleForLoan ? '' : 'hover:bg-canvas-100'
         )}
       >
         <Tooltip
