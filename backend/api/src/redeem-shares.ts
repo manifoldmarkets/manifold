@@ -51,6 +51,7 @@ export const redeemShares = async (
   for (const userId of userIds) {
     // This should work for any sum-to-one cpmm-multi contract, as well
     if (contract.outcomeType === 'NUMBER') {
+      const myMetrics = contractMetrics.filter((m) => m.userId === userId)
       const userNonRedemptionBetsByAnswer = groupBy(
         bets.filter((bet) => bet.shares !== 0 && bet.userId === userId),
         (bet) => bet.answerId
@@ -67,8 +68,11 @@ export const redeemShares = async (
       const minShares = min(allShares) ?? 0
       if (minShares > 0 && allShares.length === contract.answers.length) {
         const loanAmountByAnswerId = mapValues(
-          groupBy(bets, 'answerId'),
-          (bets) => sumBy(bets, (bet) => bet.loanAmount ?? 0)
+          groupBy(
+            myMetrics.filter((m) => m.answerId !== null),
+            'answerId'
+          ),
+          (metrics) => sumBy(metrics, (m) => m.loan ?? 0)
         )
 
         const saleBets = getSellAllRedemptionPreliminaryBets(
