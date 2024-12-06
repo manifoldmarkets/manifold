@@ -14,7 +14,7 @@ import { filterDefined } from 'common/util/array'
 import { hasSignificantDeepChanges } from 'common/util/object'
 import { convertBet } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
-import { bulkUpdateData } from './supabase/utils'
+import { bulkUpdateDataQuery, bulkUpdateQuery } from './supabase/utils'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 
 const CHUNK_SIZE = isProd() ? 400 : 10
@@ -145,7 +145,10 @@ export async function updateUserMetricPeriods(
       (m) => m.userId
     )
 
-    const contractMetricUpdates: Pick<ContractMetric, 'from' | 'id'>[] = []
+    const contractMetricUpdates: Pick<
+      ContractMetric,
+      'from' | 'id' | 'profit' | 'payout' | 'profitPercent'
+    >[] = []
 
     log('Computing metric updates...')
     for (const userId of activeUserIds) {
@@ -155,12 +158,13 @@ export async function updateUserMetricPeriods(
         userMetricRelevantBets,
         (b) => b.contractId
       )
+      const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
       const freshMetrics = calculateMetricsByContractAndAnswer(
         metricRelevantBetsByContract,
         contractsById,
-        userId
-      ).flat()
-      const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
+        userId,
+        currentMetricsForUser
+      )
       metricsByUser[userId] = uniqBy(
         [...freshMetrics, ...currentMetricsForUser],
         (m) => m.contractId + m.answerId
@@ -205,14 +209,25 @@ export async function updateUserMetricPeriods(
 
     if (contractMetricUpdates.length > 0 && !skipUpdates) {
       log('Writing updates')
-      await bulkUpdateData(pg, 'user_contract_metrics', contractMetricUpdates)
-        .catch((e) => log.error('Error upserting contract metrics', e))
+      const updateDataQuery = bulkUpdateDataQuery(
+        'user_contract_metrics',
+        contractMetricUpdates
+      )
+      const updateColumnsQuery = bulkUpdateQuery(
+        'user_contract_metrics',
+        ['id'],
+        contractMetricUpdates.map((m) => ({
+          id: m.id,
+          profit: m.profit,
+        })) as any[]
+      )
+      await pg
+        .multi(`${updateDataQuery}; ${updateColumnsQuery};`)
+        .catch((e) => log.error('Error updating contract metrics', e))
         .then(() =>
-          log(
-            'Finished updating ' +
-              contractMetricUpdates.length +
-              ' user period metrics.'
-          )
+          log('Finished updating user period metrics.', {
+            totalUpdates: contractMetricUpdates.length,
+          })
         )
     }
   }

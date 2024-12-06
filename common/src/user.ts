@@ -32,7 +32,6 @@ export type User = {
   /**@deprecated 2023-01-015 */
   fractionResolvedCorrectly?: number
 
-  nextLoanCached: number
   /** @deprecated */
   followerCountCached?: number
 

@@ -295,21 +295,21 @@ const undoResolution = async (
   } else if (answerId) {
     const answer = await pg.one(
       `
-      with last_bet as (
-        select prob_after from contract_bets
-        where answer_id = $1
-        and contract_id = $2
-        order by created_time desc
-        limit 1
-      )
       update answers
       set
         resolution = null,
         resolution_time = null,
         resolution_probability = null,
-        prob = coalesce(last_bet.prob_after,0.5),
+        prob = coalesce(
+          (select prob_after 
+           from contract_bets 
+           where answer_id = $1 
+           and contract_id = $2
+           order by created_time desc 
+           limit 1),
+          0.5
+        ),
         resolver_id = null
-      from last_bet
       where id = $1
       returning *`,
       [answerId, contractId],

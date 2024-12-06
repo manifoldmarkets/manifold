@@ -1,6 +1,5 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
-import { Bet } from './bet'
 import { Contract, CPMMContract, CPMMMultiContract } from './contract'
 import { LiquidityProvision } from './liquidity-provision'
 import {
@@ -13,17 +12,17 @@ import {
 } from './payouts-fixed'
 import { getProbability } from './calculate'
 import { Answer } from './answer'
+import { ContractMetric } from './contract-metric'
 
 export type Payout = {
   userId: string
   payout: number
 }
-
-export const getLoanPayouts = (bets: Bet[]): Payout[] => {
-  const betsWithLoans = bets.filter((bet) => bet.loanAmount)
-  const betsByUser = groupBy(betsWithLoans, (bet) => bet.userId)
-  const loansByUser = mapValues(betsByUser, (bets) =>
-    sumBy(bets, (bet) => -(bet.loanAmount ?? 0))
+export const getLoanPayouts = (contractMetrics: ContractMetric[]): Payout[] => {
+  const metricsWithLoans = contractMetrics.filter((metric) => metric.loan)
+  const metricsByUser = groupBy(metricsWithLoans, (metric) => metric.userId)
+  const loansByUser = mapValues(metricsByUser, (metrics) =>
+    sumBy(metrics, (metric) => -(metric.loan ?? 0))
   )
   return Object.entries(loansByUser).map(([userId, payout]) => ({
     userId,
@@ -37,14 +36,14 @@ export const groupPayoutsByUser = (payouts: Payout[]) => {
 }
 
 export type PayoutInfo = {
-  payouts: Payout[]
+  traderPayouts: Payout[]
   liquidityPayouts: Payout[]
 }
 
 export const getPayouts = (
   outcome: string | undefined,
   contract: Contract,
-  bets: Bet[],
+  contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[],
   resolutions?: {
     [outcome: string]: number
@@ -57,7 +56,7 @@ export const getPayouts = (
     return getFixedPayouts(
       outcome,
       contract,
-      bets,
+      contractMetrics,
       liquidities,
       resolutionProbability ?? prob
     )
@@ -75,14 +74,14 @@ export const getPayouts = (
       answer,
       outcome,
       contract as CPMMMultiContract,
-      bets,
+      contractMetrics,
       liquidities,
       resolutionProbability ?? answer.prob
     )
   }
   if (contract.mechanism === 'cpmm-multi-1') {
     if (outcome === 'CANCEL') {
-      return getFixedCancelPayouts(contract, bets, liquidities)
+      return getFixedCancelPayouts(contractMetrics, liquidities)
     }
     if (!resolutions) {
       throw new Error('getPayouts: resolutions required for cpmm-multi-1')
@@ -91,7 +90,7 @@ export const getPayouts = (
     return getMultiFixedPayouts(
       contract.answers,
       resolutions,
-      bets,
+      contractMetrics,
       liquidities
     )
   }
@@ -100,27 +99,30 @@ export const getPayouts = (
 
 export const getFixedPayouts = (
   outcome: string | undefined,
-  contract:
-    | CPMMContract
-    | (CPMMMultiContract & { shouldAnswersSumToOne: false }),
-  bets: Bet[],
+  contract: CPMMContract,
+  contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[],
   resolutionProbability: number
 ) => {
   switch (outcome) {
     case 'YES':
     case 'NO':
-      return getStandardFixedPayouts(outcome, contract, bets, liquidities)
+      return getStandardFixedPayouts(
+        outcome,
+        contract,
+        contractMetrics,
+        liquidities
+      )
     case 'MKT':
       return getMktFixedPayouts(
         contract,
-        bets,
+        contractMetrics,
         liquidities,
         resolutionProbability
       )
     default:
     case 'CANCEL':
-      return getFixedCancelPayouts(contract, bets, liquidities)
+      return getFixedCancelPayouts(contractMetrics, liquidities)
   }
 }
 
@@ -128,7 +130,7 @@ export const getIndependentMultiFixedPayouts = (
   answer: Answer,
   outcome: string | undefined,
   contract: CPMMMultiContract,
-  bets: Bet[],
+  contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[],
   resolutionProbability: number
 ) => {
@@ -146,18 +148,18 @@ export const getIndependentMultiFixedPayouts = (
       return getIndependentMultiYesNoPayouts(
         answer,
         outcome,
-        bets,
+        contractMetrics,
         filteredLiquidities
       )
     case 'MKT':
       return getIndependentMultiMktPayouts(
         answer,
-        bets,
+        contractMetrics,
         filteredLiquidities,
         resolutionProbability
       )
     default:
     case 'CANCEL':
-      return getFixedCancelPayouts(contract, bets, filteredLiquidities)
+      return getFixedCancelPayouts(contractMetrics, filteredLiquidities)
   }
 }

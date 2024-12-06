@@ -1,10 +1,8 @@
-import { mapValues, groupBy, sum, sumBy } from 'lodash'
+import { mapValues, groupBy, sum, sumBy, keyBy } from 'lodash'
 import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import { Bet } from 'common/bet'
-import { getContractBetMetrics } from 'common/calculate'
 import {
   Contract,
   contractPath,
@@ -16,17 +14,17 @@ import { Txn, CancelUniqueBettorBonusTxn } from 'common/txn'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { createContractResolvedNotifications } from './create-notification'
-import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
+import { bulkUpdateContractMetricsQuery } from './helpers/user-contract-metrics'
 import {
   TxnData,
-  runTxnInBetQueueIgnoringBalance,
+  runTxnOutsideBetQueueIgnoringBalance,
   txnToRow,
 } from './txn/run-txn'
 import {
   revalidateStaticProps,
   isProd,
   log,
-  getContractAndBetsAndLiquidities,
+  getContractAndMetricsAndLiquidities,
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common//api/utils'
@@ -42,7 +40,12 @@ import { convertTxn } from 'common/supabase/txns'
 import { updateAnswer, updateAnswers } from './supabase/answers'
 import { bulkInsertQuery, updateDataQuery } from './supabase/utils'
 import { bulkIncrementBalancesQuery, UserUpdate } from './supabase/users'
-import { broadcastUpdatedContract } from './websockets/helpers'
+import {
+  broadcastUpdatedContract,
+  broadcastUpdatedMetrics,
+} from './websockets/helpers'
+import { ContractMetric } from 'common/contract-metric'
+import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
 
 export type ResolutionParams = {
   outcome: string
@@ -61,8 +64,8 @@ export const resolveMarketHelper = async (
   const pg = createSupabaseDirectClient()
 
   const {
-    contract,
-    bets,
+    resolvedContract,
+    updatedContractMetrics,
     payoutsWithoutLoans,
     updatedContractAttrs,
     userUpdates,
@@ -70,12 +73,14 @@ export const resolveMarketHelper = async (
     const { closeTime, id: contractId, outcomeType } = unresolvedContract
     const {
       contract: c,
-      bets,
       liquidities,
-    } = await getContractAndBetsAndLiquidities(tx, unresolvedContract, answerId)
-    if (!c) {
-      throw new APIError(500, 'Contract not found')
-    }
+      contractMetrics,
+    } = await getContractAndMetricsAndLiquidities(
+      tx,
+      unresolvedContract,
+      answerId
+    )
+
     unresolvedContract = c as MarketContract
     if (unresolvedContract.isResolved) {
       throw new APIError(403, 'Contract is already resolved')
@@ -86,7 +91,6 @@ export const resolveMarketHelper = async (
       ? Math.min(closeTime, resolutionTime)
       : closeTime
 
-    // ian: TODO: just use contract metrics for this (but after the election)
     const { resolutionProbability, payouts, payoutsWithoutLoans } =
       getPayoutInfo(
         outcome,
@@ -94,7 +98,7 @@ export const resolveMarketHelper = async (
         resolutions,
         probabilityInt,
         answerId,
-        bets,
+        contractMetrics,
         liquidities
       )
     // Keep MKT resolution prob for consistency's sake
@@ -184,19 +188,20 @@ export const resolveMarketHelper = async (
         answers: unresolvedContract.answers.map((a) => ({
           ...a,
           ...updateAnswerAttrs,
-          prob: resolutions ? (resolutions[a.id] ?? 0) / 100 : undefined,
+          prob: resolutions ? (resolutions[a.id] ?? 0) / 100 : a.prob,
           resolutionProbability: a.prob,
         })),
       } as Partial<CPMMMultiContract> & { id: string }
     }
 
-    const contract = {
+    const resolvedContract = {
       ...unresolvedContract,
       ...updatedContractAttrs,
     } as Contract
 
     // handle exploit where users can get negative payouts
-    const negPayoutThreshold = contract.uniqueBettorCount < 100 ? 0 : -1000
+    const negPayoutThreshold =
+      resolvedContract.uniqueBettorCount < 100 ? 0 : -1000
 
     const userPayouts = groupPayoutsByUser(payouts)
     log('user payouts', { userPayouts })
@@ -222,8 +227,11 @@ export const resolveMarketHelper = async (
     if (updateAnswerAttrs && answerId) {
       const props = removeUndefinedProps(updateAnswerAttrs)
       await updateAnswer(tx, answerId, props)
-    } else if (updateAnswerAttrs && contract.mechanism === 'cpmm-multi-1') {
-      const answerUpdates = contract.answers.map((a) =>
+    } else if (
+      updateAnswerAttrs &&
+      resolvedContract.mechanism === 'cpmm-multi-1'
+    ) {
+      const answerUpdates = resolvedContract.answers.map((a) =>
         removeUndefinedProps({
           id: a.id,
           ...updateAnswerAttrs,
@@ -239,7 +247,7 @@ export const resolveMarketHelper = async (
       contractId,
       answerId,
       {
-        payoutCash: contract.token === 'CASH',
+        payoutCash: resolvedContract.token === 'CASH',
       }
     )
 
@@ -249,37 +257,43 @@ export const resolveMarketHelper = async (
       'id',
       updatedContractAttrs
     )
+    const { metricsByContract } = calculateUpdatedMetricsForContracts([
+      { contract: resolvedContract, metrics: contractMetrics },
+    ])
+    const updatedContractMetrics = metricsByContract[resolvedContract.id] ?? []
+    const updateMetricsQuery = bulkUpdateContractMetricsQuery(
+      updatedContractMetrics
+    )
 
     const results = await tx.multi(`
       ${balanceUpdatesQuery}; -- 1
       ${insertTxnsQuery}; -- 2
       ${contractUpdateQuery}; -- 3
+      ${updateMetricsQuery}; -- 4
       `)
     const userUpdates = results[0] as UserUpdate[]
 
     // TODO: we may want to support clawing back trader bonuses on MC markets too
     if (!answerId && outcome === 'CANCEL') {
-      await undoUniqueBettorRewardsIfCancelResolution(tx, contract)
+      await undoUniqueBettorRewardsIfCancelResolution(tx, resolvedContract)
     }
+
     return {
-      contract,
-      bets,
+      resolvedContract,
       payoutsWithoutLoans,
       updatedContractAttrs,
       userUpdates,
+      updatedContractMetrics,
     }
   })
 
-  broadcastUpdatedContract(contract.visibility, updatedContractAttrs)
+  broadcastUpdatedContract(resolvedContract.visibility, updatedContractAttrs)
+  broadcastUpdatedMetrics(updatedContractMetrics)
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
 
-  const userIdToContractMetrics = mapValues(
-    groupBy(bets, (bet) => bet.userId),
-    (bets) => getContractBetMetrics(contract, bets)
-  )
   await trackPublicEvent(resolver.id, 'resolve market', {
     resolution: outcome,
-    contractId: contract.id,
+    contractId: resolvedContract.id,
   })
 
   await recordContractEdit(
@@ -288,11 +302,15 @@ export const resolveMarketHelper = async (
     Object.keys(updatedContractAttrs ?? {})
   )
 
-  await updateContractMetricsForUsers(contract, bets)
-  await revalidateStaticProps(contractPath(contract))
-
+  await revalidateStaticProps(contractPath(resolvedContract))
+  const userIdToContractMetric = keyBy(
+    updatedContractMetrics.filter((m) =>
+      answerId ? m.answerId === answerId : m.answerId == null
+    ),
+    'userId'
+  )
   await createContractResolvedNotifications(
-    contract,
+    resolvedContract,
     resolver,
     creator,
     outcome,
@@ -300,15 +318,15 @@ export const resolveMarketHelper = async (
     value,
     answerId,
     {
-      userIdToContractMetrics,
+      userIdToContractMetric,
       userPayouts: userPayoutsWithoutLoans,
       creatorPayout: 0,
-      resolutionProbability: contract.resolutionProbability,
+      resolutionProbability: resolvedContract.resolutionProbability,
       resolutions,
     }
   )
 
-  return { contract, userUpdates }
+  return { contract: resolvedContract, userUpdates }
 }
 
 export const getPayoutInfo = (
@@ -317,7 +335,7 @@ export const getPayoutInfo = (
   resolutions: { [key: string]: number } | undefined,
   probabilityInt: number | undefined,
   answerId: string | undefined,
-  bets: Bet[],
+  contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[]
 ) => {
   const resolutionProbability =
@@ -329,21 +347,26 @@ export const getPayoutInfo = (
         return mapValues(resolutions, (p) => p / total)
       })()
     : undefined
-  const loanPayouts = getLoanPayouts(bets)
 
-  const { payouts: traderPayouts, liquidityPayouts } = getPayouts(
+  // Calculate loan payouts from contract metrics
+  const loanPayouts = getLoanPayouts(contractMetrics)
+
+  // Calculate payouts using contract metrics instead of bets
+  const { traderPayouts, liquidityPayouts } = getPayouts(
     outcome,
     unresolvedContract,
-    bets,
+    contractMetrics,
     liquidities,
     resolutionProbs,
     resolutionProbability,
     answerId
   )
+
   const payoutsWithoutLoans = [
     ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
     ...traderPayouts,
   ]
+
   if (!isProd())
     console.log(
       'trader payouts:',
@@ -353,12 +376,14 @@ export const getPayoutInfo = (
       'loan payouts:',
       loanPayouts
     )
+
   const payouts = [...payoutsWithoutLoans, ...loanPayouts].filter(
     (p) => p.payout !== 0
   )
+
   return {
     payoutsWithoutLoans,
-    bets,
+    contractMetrics,
     resolutionProbs,
     resolutionProbability,
     payouts,
@@ -401,7 +426,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
     },
   } as Omit<CancelUniqueBettorBonusTxn, 'id' | 'createdTime'>
 
-  const txn = await runTxnInBetQueueIgnoringBalance(pg, undoBonusTxn)
+  const txn = await runTxnOutsideBetQueueIgnoringBalance(pg, undoBonusTxn)
   log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
 }
 

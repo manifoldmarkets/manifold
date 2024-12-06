@@ -119,7 +119,6 @@ export const createUserMain = async (
       totalDeposits: 0,
       totalCashDeposits: 0,
       createdTime: Date.now(),
-      nextLoanCached: 0,
       streakForgiveness: 1,
       shouldShowWelcome: true,
       creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },

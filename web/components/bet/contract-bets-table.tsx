@@ -25,16 +25,23 @@ import { Table } from 'web/components/widgets/table'
 import { formatTimeShort } from 'web/lib/util/time'
 import { Pagination } from '../widgets/pagination'
 import { MoneyDisplay } from './money-display'
+import { ContractMetric } from 'common/contract-metric'
 
 export function ContractBetsTable(props: {
   contract: Contract
   bets: Bet[]
   isYourBets: boolean
+  contractMetric: ContractMetric
   hideRedemptionAndLoanMessages?: boolean
   paginate?: boolean
 }) {
-  const { contract, isYourBets, hideRedemptionAndLoanMessages, paginate } =
-    props
+  const {
+    contract,
+    isYourBets,
+    hideRedemptionAndLoanMessages,
+    paginate,
+    contractMetric,
+  } = props
   const { isResolved, mechanism, outcomeType } = contract
 
   const bets = sortBy(
@@ -51,7 +58,7 @@ export function ContractBetsTable(props: {
     )
   )
 
-  const amountLoaned = sumBy(bets, (bet) => bet.loanAmount ?? 0)
+  const amountLoaned = contractMetric.loan
 
   const isCPMM = mechanism === 'cpmm-1'
   const isCpmmMulti = mechanism === 'cpmm-multi-1'

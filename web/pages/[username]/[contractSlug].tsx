@@ -24,6 +24,7 @@ import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useSweepstakes } from 'web/components/sweepstakes-provider'
+import { ContractMetric } from 'common/contract-metric'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -144,8 +145,12 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   )
 }
 
-export function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
-  const { contract, yourNewBets } = props
+export function YourTrades(props: {
+  contract: Contract
+  contractMetric: ContractMetric | undefined
+  yourNewBets: Bet[]
+}) {
+  const { contract, contractMetric, yourNewBets } = props
   const user = useUser()
 
   const staticBets = useBetsOnce({
@@ -188,10 +193,11 @@ export function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
         />
       )}
 
-      {visibleUserBets.length > 0 && (
+      {visibleUserBets.length > 0 && contractMetric && (
         <>
           <div className="pl-2 font-semibold">Your trades</div>
           <ContractBetsTable
+            contractMetric={contractMetric}
             contract={contract}
             bets={userBets}
             isYourBets

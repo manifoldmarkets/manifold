@@ -748,7 +748,7 @@ function BetsTable(props: {
                         contract={contract}
                         user={user}
                         signedInUser={signedInUser}
-                        contractMetrics={metricsByContractId[contract.id]}
+                        contractMetric={metricsByContractId[contract.id]}
                         areYourBets={areYourBets}
                       />
                     )}
@@ -806,10 +806,10 @@ const ExpandedBetRow = (props: {
   contract: Contract
   user: User
   signedInUser: User | null | undefined
-  contractMetrics: ContractMetric
+  contractMetric: ContractMetric
   areYourBets: boolean
 }) => {
-  const { contract, user, signedInUser, contractMetrics, areYourBets } = props
+  const { contract, user, signedInUser, contractMetric, areYourBets } = props
   const hideBetsBefore = areYourBets ? 0 : JUNE_1_2022
   const bets = useContractBets(contract.id, {
     userId: user.id,
@@ -838,7 +838,7 @@ const ExpandedBetRow = (props: {
       <BetsSummary
         className="!mb-6 mt-6 flex"
         contract={contract}
-        metrics={contractMetrics}
+        metrics={contractMetric}
         hideTweet
         includeSellButton={includeSellButtonForUser}
         hideProfit={true}
@@ -860,6 +860,7 @@ const ExpandedBetRow = (props: {
         contract={contract}
         bets={bets}
         isYourBets={areYourBets}
+        contractMetric={contractMetric}
         paginate
       />
     </Col>

@@ -44,7 +44,7 @@ import { searchMarketsLite, searchMarketsFull } from './search-contracts'
 import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler } from './helpers/endpoint'
-import { requestloan } from 'api/request-loan'
+import { requestLoan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
 import { getadanalytics } from 'api/get-ad-analytics'
@@ -138,6 +138,7 @@ import { generateAIDescription } from './generate-ai-description'
 import { generateAIAnswers } from './generate-ai-answers'
 import { getmonthlybets2024 } from './get-monthly-bets-2024'
 import { getmaxminprofit2024 } from './get-max-min-profit-2024'
+import { getNextLoanAmount } from './get-next-loan-amount'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -227,7 +228,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'compatible-lovers': getCompatibleLovers,
   post: post,
   'fetch-link-preview': fetchLinkPreview,
-  'request-loan': requestloan,
+  'request-loan': requestLoan,
   'remove-pinned-photo': removePinnedPhoto,
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
@@ -295,4 +296,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-ai-answers': generateAIAnswers,
   'get-monthly-bets-2024': getmonthlybets2024,
   'get-max-min-profit-2024': getmaxminprofit2024,
+  'get-next-loan-amount': getNextLoanAmount,
 }

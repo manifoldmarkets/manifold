@@ -1,4 +1,3 @@
-import { getContractBetMetrics } from 'common/calculate'
 import {
   BetFillData,
   BetReplyNotificationData,
@@ -91,6 +90,7 @@ import {
   answerToMidpoint,
 } from 'common/multi-numeric'
 import { floatingEqual } from 'common/util/math'
+import { ContractMetric } from 'common/contract-metric'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
@@ -1213,8 +1213,8 @@ export const createContractResolvedNotifications = async (
   resolutionValue: number | undefined,
   answerId: string | undefined,
   resolutionData: {
-    userIdToContractMetrics: {
-      [userId: string]: ReturnType<typeof getContractBetMetrics>
+    userIdToContractMetric: {
+      [userId: string]: Omit<ContractMetric, 'id'>
     }
     userPayouts: { [userId: string]: number }
     creatorPayout: number
@@ -1261,7 +1261,7 @@ export const createContractResolvedNotifications = async (
   const bulkPushNotifications: [PrivateUser, Notification, string, string][] =
     []
   const {
-    userIdToContractMetrics,
+    userIdToContractMetric: userIdToContractMetrics,
     userPayouts,
     creatorPayout,
     resolutionProbability,

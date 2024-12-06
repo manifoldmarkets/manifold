@@ -1,6 +1,7 @@
 import {
   cloneDeep,
   Dictionary,
+  first,
   groupBy,
   min,
   orderBy,
@@ -9,55 +10,17 @@ import {
   uniq,
 } from 'lodash'
 import {
-  calculatePayout,
   calculateTotalSpentAndShares,
-  getContractBetMetricsPerAnswer,
+  getContractBetMetricsPerAnswerWithoutLoans,
 } from './calculate'
 import { Bet, LimitBet } from './bet'
 import { Contract, CPMMMultiContract, CPMMMultiNumeric } from './contract'
-import { User } from './user'
 import { computeFills } from './new-bet'
 import { CpmmState, getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { floatingEqual, logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { noFees } from './fees'
-
-export const computeInvestmentValue = (
-  bets: Bet[],
-  contractsDict: { [k: string]: Contract }
-) => {
-  let investmentValue = 0
-  let cashInvestmentValue = 0
-  for (const bet of bets) {
-    const contract = contractsDict[bet.contractId]
-    if (!contract || contract.isResolved) continue
-
-    let payout
-    try {
-      payout = calculatePayout(contract, bet, 'MKT')
-    } catch (e) {
-      console.log(
-        'contract',
-        contract.question,
-        contract.mechanism,
-        contract.id
-      )
-      console.error(e)
-      payout = 0
-    }
-    const value = payout - (bet.loanAmount ?? 0)
-    if (isNaN(value)) continue
-
-    if (contract.token === 'CASH') {
-      cashInvestmentValue += value
-    } else {
-      investmentValue += value
-    }
-  }
-
-  return { investmentValue, cashInvestmentValue }
-}
 
 export const computeInvestmentValueCustomProb = (
   bets: Bet[],
@@ -73,17 +36,6 @@ export const computeInvestmentValueCustomProb = (
     const value = betP * shares
     if (isNaN(value)) return 0
     return value
-  })
-}
-
-const getLoanTotal = (
-  bets: Bet[],
-  contractsDict: { [k: string]: Contract }
-) => {
-  return sumBy(bets, (bet) => {
-    const contract = contractsDict[bet.contractId]
-    if (!contract || contract.isResolved) return 0
-    return bet.loanAmount ?? 0
   })
 }
 
@@ -213,39 +165,29 @@ const computeMultiCpmmElasticity = (
   return min(elasticities) ?? 1_000_000
 }
 
-export const calculateNewPortfolioMetrics = (
-  user: User,
-  contractsById: { [k: string]: Contract },
-  unresolvedBets: Bet[]
-) => {
-  const { investmentValue, cashInvestmentValue } = computeInvestmentValue(
-    unresolvedBets,
-    contractsById
-  )
-  const loanTotal = getLoanTotal(unresolvedBets, contractsById)
-  return {
-    investmentValue,
-    cashInvestmentValue,
-    balance: user.balance,
-    cashBalance: user.cashBalance,
-    spiceBalance: user.spiceBalance,
-    totalDeposits: user.totalDeposits,
-    totalCashDeposits: user.totalCashDeposits,
-    loanTotal,
-    timestamp: Date.now(),
-    userId: user.id,
-  }
-}
-
 export const calculateMetricsByContractAndAnswer = (
   betsByContractId: Dictionary<Bet[]>,
   contractsById: Dictionary<Contract>,
-  userId: string
+  userId: string,
+  currentMetrics: ContractMetric[]
 ) => {
-  return Object.entries(betsByContractId).map(([contractId, bets]) => {
-    const contract: Contract = contractsById[contractId]
-    return calculateUserMetrics(contract, bets, userId)
+  const newMetrics = Object.entries(betsByContractId).flatMap(
+    ([contractId, bets]) => {
+      const contract: Contract = contractsById[contractId]
+      return calculateUserMetricsWithouLoans(contract, bets, userId)
+    }
+  )
+  // Find loan amounts from current metrics and paste them into the new metrics
+  const newMetricsWithLoan = newMetrics.map((m) => {
+    const currentMetric = currentMetrics.find(
+      (cm) =>
+        cm.contractId === m.contractId &&
+        cm.answerId == m.answerId &&
+        cm.userId === m.userId
+    )
+    return { ...m, loan: currentMetric?.loan ?? m.loan }
   })
+  return newMetricsWithLoan
 }
 
 // Produced from 0 filled limit orders
@@ -260,13 +202,13 @@ export const isEmptyMetric = (m: ContractMetric) => {
   )
 }
 
-export const calculateUserMetrics = (
+export const calculateUserMetricsWithouLoans = (
   contract: Contract,
   bets: Bet[],
   userId: string
 ) => {
   // ContractMetrics will have an answerId for every answer, and a null for the overall metrics.
-  const currentMetrics = getContractBetMetricsPerAnswer(
+  const currentMetrics = getContractBetMetricsPerAnswerWithoutLoans(
     contract,
     bets,
     'answers' in contract ? contract.answers : undefined
@@ -380,10 +322,10 @@ export const calculateUserMetricsWithNewBetsOnly = (
   }
 }
 
-export const calculateProfitMetricsWithProb = <
+export const calculateProfitMetricsAtProbOrCancel = <
   T extends Omit<ContractMetric, 'id'> | ContractMetric
 >(
-  newProb: number,
+  newState: number | 'CANCEL',
   um: T
 ) => {
   const {
@@ -393,15 +335,20 @@ export const calculateProfitMetricsWithProb = <
     totalShares,
     hasNoShares,
     hasYesShares,
+    invested,
   } = um
   const soldOut = !hasNoShares && !hasYesShares
-  const payout = soldOut
-    ? 0
-    : maxSharesOutcome
-    ? totalShares[maxSharesOutcome] *
-      (maxSharesOutcome === 'NO' ? 1 - newProb : newProb)
-    : 0
-  const profit = payout + totalAmountSold - totalAmountInvested
+  const payout =
+    newState === 'CANCEL'
+      ? invested
+      : soldOut
+      ? 0
+      : maxSharesOutcome
+      ? totalShares[maxSharesOutcome] *
+        (maxSharesOutcome === 'NO' ? 1 - newState : newState)
+      : 0
+  const profit =
+    newState === 'CANCEL' ? 0 : payout + totalAmountSold - totalAmountInvested
   const profitPercent = floatingEqual(totalAmountInvested, 0)
     ? 0
     : (profit / totalAmountInvested) * 100
@@ -546,6 +493,7 @@ export const applyMetricToSummary = <
   // summaryMetric.hasNoShares
   // summaryMetric.hasYesShares
   // summaryMetric.hasShares
+  // summaryMetric.loan
   return summary
 }
 
@@ -556,47 +504,58 @@ export const calculateUpdatedMetricsForContracts = (
   }[]
 ) => {
   const metricsByContract: Dictionary<Omit<ContractMetric, 'id'>[]> = {}
-  const contracts: Contract[] = []
 
   for (const { contract, metrics } of contractsWithMetrics) {
+    if (metrics.length === 0) continue
+
     const contractId = contract.id
-    const userId = metrics[0].userId
-    contracts.push(contract)
 
-    if (contract.mechanism === 'cpmm-1') {
-      // For binary markets, update metrics with current probability
-      const metric = metrics.find((m) => m.answerId === null)
-      if (metric) {
-        metricsByContract[contractId] = [
-          calculateProfitMetricsWithProb(contract.prob, metric),
-        ]
+    // Group metrics by userId
+    const metricsByUser = groupBy(metrics, 'userId')
+
+    metricsByContract[contractId] = Object.entries(metricsByUser).flatMap(
+      ([userId, userMetrics]) => {
+        if (contract.mechanism === 'cpmm-1') {
+          const state =
+            contract.resolution === 'CANCEL' ? 'CANCEL' : contract.prob
+          // For binary markets, update metrics with current probability
+          const metric = first(userMetrics)
+          return metric
+            ? [calculateProfitMetricsAtProbOrCancel(state, metric)]
+            : []
+        } else if (contract.mechanism === 'cpmm-multi-1') {
+          // For multiple choice markets, update each answer's metrics and compute summary per user
+          const answerMetrics = userMetrics.filter((m) => m.answerId !== null)
+
+          const updatedAnswerMetrics = answerMetrics.map((m) => {
+            const answer = contract.answers.find((a) => a.id === m.answerId)
+            if (answer) {
+              const state =
+                contract.resolution === 'CANCEL' ||
+                answer.resolution === 'CANCEL'
+                  ? 'CANCEL'
+                  : answer.resolution === 'YES'
+                  ? 1
+                  : answer.resolution === 'NO'
+                  ? 0
+                  : answer.prob
+              return calculateProfitMetricsAtProbOrCancel(state, m)
+            }
+            return m
+          })
+
+          // Calculate summary metrics for this user
+          const summaryMetric = getDefaultMetric(userId, contractId, null)
+          updatedAnswerMetrics.forEach((m) =>
+            applyMetricToSummary(m, summaryMetric, true)
+          )
+
+          return [...updatedAnswerMetrics, summaryMetric]
+        }
+        return []
       }
-    } else if (contract.mechanism === 'cpmm-multi-1') {
-      // For multiple choice markets, update each answer's metrics and compute summary
-      const answerMetrics = metrics.filter((m) => m.answerId !== null)
-
-      const updatedAnswerMetrics = answerMetrics.map((m) => {
-        const answer = contract.answers.find((a) => a.id === m.answerId)
-        return answer
-          ? calculateProfitMetricsWithProb(
-              answer.resolution === 'YES'
-                ? 1
-                : answer.resolution === 'NO'
-                ? 0
-                : answer.prob,
-              m
-            )
-          : m
-      })
-
-      // Calculate summary metrics
-      const summaryMetric = getDefaultMetric(userId, contractId, null)
-      updatedAnswerMetrics.forEach((m) =>
-        applyMetricToSummary(m, summaryMetric, true)
-      )
-      metricsByContract[contractId] = [...updatedAnswerMetrics, summaryMetric]
-    }
+    )
   }
 
-  return { metricsByContract, contracts }
+  return { metricsByContract }
 }
