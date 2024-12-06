@@ -7,13 +7,18 @@ import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-h
 import { log } from 'shared/utils'
 
 const chunkSize = 10
+const MIGRATE_PROFIT_DATA = true
 const FIX_PERIODS = false
-const UPDATE_PORTFOLIO_HISTORIES = true
-const MIGRATE_LOAN_DATA = true
-const USING_BETS = true
+const UPDATE_PORTFOLIO_HISTORIES = false
+const MIGRATE_LOAN_DATA = false
+const USING_BETS = false
 const FIXED_DEPRECATION_WARNING = false
 if (require.main === module) {
   runScript(async ({ pg }) => {
+    if (MIGRATE_PROFIT_DATA) {
+      await migrateProfitData(pg)
+      return
+    }
     if (MIGRATE_LOAN_DATA) {
       await migrateLoanData(pg)
       return
@@ -112,4 +117,35 @@ export async function migrateLoanData(
   }
 
   log('Finished migrating loan data')
+}
+
+// Migrate profit data from data jsonb to native column
+export async function migrateProfitData(
+  pg: SupabaseDirectClient,
+  chunkSize = 200
+) {
+  log('Getting all users with contract metrics...')
+  const userIds = await pg.map(
+    `select distinct user_id from user_contract_metrics`,
+    [],
+    (r) => r.user_id as string
+  )
+
+  log(`Found ${userIds.length} users with metrics`)
+  const chunks = chunk(userIds, chunkSize)
+
+  for (const userChunk of chunks) {
+    await pg.none(
+      `
+      update user_contract_metrics 
+      set profit = coalesce((data->>'profit')::numeric, 0)
+      where user_id = any($1)
+    `,
+      [userChunk]
+    )
+
+    log(`Updated profit data for ${userChunk.length} users`)
+  }
+
+  log('Finished migrating profit data')
 }
