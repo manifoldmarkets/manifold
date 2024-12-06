@@ -3,7 +3,7 @@ import { Ref, forwardRef, useEffect, useState } from 'react'
 import { getFullUserById } from 'web/lib/supabase/users'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import * as HoverCard from '@radix-ui/react-hover-card'
+import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react'
 import { Avatar } from '../widgets/avatar'
 import { FollowButton } from '../buttons/follow-button'
 import { StackedUserNames } from '../widgets/user-link'
@@ -27,17 +27,15 @@ export function UserHovercard({
   className,
 }: UserHovercardProps) {
   return (
-    <HoverCard.Root openDelay={150}>
-      {/* Use "asChild" and wrap children in a button to prevent nested links.
-          Use inline-flex for the same layout as a link tag. */}
-      <HoverCard.Trigger className={className} asChild>
-        <button className="inline-flex">{children}</button>
-      </HoverCard.Trigger>
+    <Popover className={className} data-hover>
+      <PopoverButton as="div" className="inline-flex">
+        {children}
+      </PopoverButton>
 
-      <HoverCard.Portal>
+      <PopoverPanel anchor="bottom start">
         <FetchUserHovercardContent userId={userId} />
-      </HoverCard.Portal>
-    </HoverCard.Root>
+      </PopoverPanel>
+    </Popover>
   )
 }
 
@@ -54,10 +52,9 @@ const FetchUserHovercardContent = forwardRef(
     const isMod = useAdminOrMod()
 
     return user ? (
-      <HoverCard.Content
+      <div
         ref={ref}
         className="animate-slide-up-and-fade bg-canvas-0 ring-ink-1000 divide-ink-300 z-30 mt-2 w-56 divide-y rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none"
-        align="start"
       >
         <div className="px-4 py-3">
           <Row className="items-start justify-between">
@@ -129,7 +126,7 @@ const FetchUserHovercardContent = forwardRef(
             </div>
           </div>
         )}
-      </HoverCard.Content>
+      </div>
     ) : null
   }
 )
