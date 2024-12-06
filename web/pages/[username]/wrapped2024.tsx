@@ -81,7 +81,7 @@ function Wrapped2024Content(props: { user: User; username: string }) {
   return (
     <Col
       className={clsx(
-        'relative mx-auto max-h-screen min-h-screen w-full overflow-hidden bg-indigo-800 text-white'
+        'relative mx-auto max-h-screen min-h-screen w-full overflow-hidden bg-gradient-to-b from-blue-800 to-blue-600 text-white'
       )}
     >
       <SEO
@@ -125,24 +125,37 @@ function Wrapped2024Content(props: { user: User; username: string }) {
           restart={() => updateState({ page: '0' })}
         />
       )}
-      <Tracker currentPage={page} maxPages={maxPages} />
+      <Tracker
+        currentPage={page}
+        maxPages={maxPages}
+        updateState={updateState}
+      />
     </Col>
   )
 }
 
-function Tracker(props: { currentPage: number; maxPages: number }) {
-  const { currentPage, maxPages } = props
+function Tracker(props: {
+  currentPage: number
+  maxPages: number
+  updateState: (
+    newState: Partial<{
+      page: string
+    }>
+  ) => void
+}) {
+  const { currentPage, maxPages, updateState } = props
   return (
     <Row className="absolute left-0 right-0 top-0 opacity-40">
       <Row className="mx-auto w-full max-w-lg">
         {Array.from({ length: maxPages }).map((_, i) => {
           return (
-            <div
+            <button
               key={i}
               className={clsx(
                 `mx-1 my-2 h-1.5 w-1/6 rounded-full transition-colors`,
                 i <= currentPage ? 'bg-gray-300' : ' bg-gray-700'
               )}
+              onClick={() => updateState({ page: `${i}` })}
             />
           )
         })}
