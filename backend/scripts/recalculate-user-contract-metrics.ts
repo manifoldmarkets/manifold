@@ -10,6 +10,8 @@ const chunkSize = 10
 const FIX_PERIODS = false
 const UPDATE_PORTFOLIO_HISTORIES = true
 const MIGRATE_LOAN_DATA = true
+const USING_BETS = true
+const FIXED_DEPRECATION_WARNING = false
 if (require.main === module) {
   runScript(async ({ pg }) => {
     if (MIGRATE_LOAN_DATA) {
@@ -20,10 +22,7 @@ if (require.main === module) {
       await fixUserPeriods(pg)
       return
     }
-    const allUserIds = [['AJwLWoo3xue32XIiAVrL5SyR1WB2', 0]] as [
-      string,
-      number
-    ][]
+    const allUserIds = ['AJwLWoo3xue32XIiAVrL5SyR1WB2'] as string[]
     // const startTime = new Date(0).toISOString()
     //     const allUserIds = await pg.map(
     //       `
@@ -36,24 +35,28 @@ if (require.main === module) {
     //       [startTime],
     //       (row) => [row.id, row.created_time]
     //     )
-
-    console.log('Total users:', allUserIds.length)
-    const chunks = chunk(allUserIds, chunkSize)
-    let total = 0
-    for (const userIds of chunks) {
-      // TODO: before using this, make sure to fix the deprecation warning
-      await updateUserMetricsWithBets(userIds.map((u) => u[0]))
-      total += userIds.length
-      console.log(
-        `Updated ${userIds.length} users, total ${total} users updated`
-      )
-      console.log('last created time:', userIds[userIds.length - 1][1])
+    if (USING_BETS && FIXED_DEPRECATION_WARNING) {
+      await recalculateUsingBets(allUserIds)
+      return
     }
 
     if (UPDATE_PORTFOLIO_HISTORIES) {
-      await updateUserPortfolioHistoriesCore(allUserIds.map((u) => u[0]))
+      await updateUserPortfolioHistoriesCore(allUserIds)
     }
   })
+}
+
+const recalculateUsingBets = async (allUserIds: string[]) => {
+  console.log('Total users:', allUserIds.length)
+  const chunks = chunk(allUserIds, chunkSize)
+  let total = 0
+  for (const userIds of chunks) {
+    // TODO: before using this, make sure to fix the deprecation warning
+    await updateUserMetricsWithBets(userIds)
+    total += userIds.length
+    console.log(`Updated ${userIds.length} users, total ${total} users updated`)
+    console.log('last created time:', userIds[userIds.length - 1])
+  }
 }
 
 const fixUserPeriods = async (pg: SupabaseDirectClient) => {
