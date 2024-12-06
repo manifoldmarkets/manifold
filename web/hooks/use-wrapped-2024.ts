@@ -80,7 +80,6 @@ async function getTotalProfit(userId: string) {
     .order('ts', { ascending: false })
     .limit(1)
 
-  console.log('YEAR START', yearStart, 'YEAR END', yearEnd)
   if (error1 || error2) {
     console.error(error1 ?? error2)
     return null
@@ -117,18 +116,16 @@ export type ProfitType = {
   contract: Contract
   hasYesShares: boolean | null
   hasNoShares: boolean | null
+  answerId: string | null
 }
 
 export function useMaxAndMinProfit(userId: string) {
   const [maxProfit, setMaxProfit] = usePersistentLocalState<
     ProfitType | undefined | null
-  >(undefined, `wrapped-2024-${userId}-max-profitz`)
+  >(undefined, `wrapped-2024-${userId}-max-profit`)
   const [minProfit, setMinProfit] = usePersistentLocalState<
     ProfitType | undefined | null
-  >(undefined, `wrapped-2024-${userId}-min-profitz`)
-
-  localStorage.removeItem(`wrapped-2024-${userId}-max-profit`)
-  localStorage.removeItem(`wrapped-2024-${userId}-min-profit`)
+  >(undefined, `wrapped-2024-${userId}-min-profit`)
 
   useEffect(() => {
     getMaxMinProfitMetric2024(userId).then((data) => {
@@ -139,12 +136,14 @@ export function useMaxAndMinProfit(userId: string) {
           contract: max.data,
           hasNoShares: max.has_no_shares,
           hasYesShares: max.has_yes_shares,
+          answerId: max.answer_id,
         })
         setMinProfit({
           profit: min.profit ?? 0,
           contract: min.data,
           hasNoShares: min.has_no_shares,
           hasYesShares: min.has_yes_shares,
+          answerId: min.answer_id,
         })
       }
     })

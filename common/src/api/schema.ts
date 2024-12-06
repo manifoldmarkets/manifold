@@ -1898,6 +1898,7 @@ export const API = (_apiTypeCheck = {
     returns: [] as {
       profit: number
       data: Contract
+      answer_id: string | null
       has_no_shares: boolean
       has_yes_shares: boolean
     }[],

@@ -14,6 +14,7 @@ with filtered_data as (
         ucm.profit,
         ucm.has_yes_shares,
         ucm.has_no_shares,
+        ucm.answer_id,
         c.data
     from 
         user_contract_metrics ucm
@@ -36,12 +37,13 @@ select
     fd.profit,
     fd.has_yes_shares,
     fd.has_no_shares,
+    fd.answer_id,
     fd.data
 from 
     filtered_data fd
 join 
     min_max_profits mmp on fd.profit = mmp.max_profit or fd.profit = mmp.min_profit
-    order by fd.profit desc
+    order by fd.profit desc;
       `,
     [userId]
   )

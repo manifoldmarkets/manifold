@@ -7,6 +7,9 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { NavButtons } from './NavButtons'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { useLiveContract } from 'web/hooks/use-contract'
+import Link from 'next/link'
+import { contractPath } from 'common/contract'
 
 export function MaxMinProfit(props: {
   goToPrevPage: () => void
@@ -19,6 +22,8 @@ export function MaxMinProfit(props: {
   const [animateOut, setAnimateOut] = useState(false)
 
   const { maxProfit, minProfit } = useMaxAndMinProfit(user.id)
+  console.log('MAX PROFIT', maxProfit)
+  console.log('MIN PROFIT', minProfit)
   //triggers for animation in
   useEffect(() => {
     if (!animateIn) return
@@ -40,6 +45,7 @@ export function MaxMinProfit(props: {
       goToNextPage()
     }, 1000)
   }
+
   if (maxProfit == undefined || minProfit == undefined) {
     return (
       <div className="mx-auto my-auto">
@@ -51,6 +57,18 @@ export function MaxMinProfit(props: {
   if (maxProfit == null || minProfit == null) {
     return <>An error occured</>
   }
+
+  function getBetOnThing(profit: ProfitType) {
+    const contract = profit.contract
+    const betOnAnswer =
+      profit.answerId && 'answers' in contract
+        ? contract.answers.find((a) => a.id === profit.answerId)
+        : undefined
+    return [contract, betOnAnswer]
+  }
+
+  const [maxContract, maxBetOnAnswer] = getBetOnThing(maxProfit)
+  const [minContract, minBetOnAnswer] = getBetOnThing(minProfit)
 
   return (
     <>
@@ -89,7 +107,8 @@ export function MaxMinProfit(props: {
             >
               You made the most trading
               <BettingDirection profit={maxProfit} /> on{' '}
-              <b>{maxProfit.contract.question}</b>
+              <b>{maxBetOnAnswer ?? maxProfit.contract.question}</b>{' '}
+              {maxBetOnAnswer && <>on {maxProfit.contract.question}</>}
             </div>
             <div
               className={clsx(
@@ -103,7 +122,8 @@ export function MaxMinProfit(props: {
             >
               You lost the most trading
               <BettingDirection profit={minProfit} />
-              on <b>{minProfit.contract.question}</b>
+              on <b>{minBetOnAnswer ?? minProfit.contract.question}</b>{' '}
+              {maxBetOnAnswer && <>on {maxProfit.contract.question}</>}
             </div>
           </Col>
         </Row>
