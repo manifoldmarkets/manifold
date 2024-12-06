@@ -102,6 +102,7 @@ export function Tooltip(props: {
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
         // div attributes
+        as="div"
         role="tooltip"
         ref={floating}
         style={{ position: strategy, top: y ?? 0, left: x ?? 0 }}

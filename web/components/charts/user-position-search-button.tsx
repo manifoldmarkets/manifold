@@ -5,7 +5,7 @@ import { DisplayUser } from 'common/api/user-types'
 import { Col } from 'web/components/layout/col'
 import { Input } from 'web/components/widgets/input'
 import clsx from 'clsx'
-import { Menu, Transition } from '@headlessui/react'
+import { Menu, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
 import { TbUserSearch } from 'react-icons/tb'
@@ -110,63 +110,52 @@ export const UserPositionSearchButton = (props: {
             value={term}
             onChange={(e) => setTerm(e.target.value)}
           />
-          {users && (
-            <Menu
-              as="div"
-              className={clsx(
-                'relative inline-block text-right',
-                users?.length && 'z-20 h-56'
-              )}
-            >
-              {({}) => (
-                <Transition
-                  show={users?.length > 0}
-                  as={Fragment}
-                  enter="transition ease-out duration-100"
-                  enterFrom="transform opacity-0 scale-95"
-                  enterTo="transform opacity-100 scale-100"
-                  leave="transition ease-in duration-75"
-                  leaveFrom="transform opacity-100 scale-100"
-                  leaveTo="transform opacity-0 scale-95"
+
+          <Menu
+            as="div"
+            className={clsx('relative z-20 inline-block h-56 text-right')}
+          >
+            {users && users.length > 0 && (
+              <Transition
+                show={users?.length > 0}
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <MenuItems
+                  static
+                  className="divide-ink-100 bg-canvas-0 ring-ink-1000 absolute -right-20 mt-2 w-48 origin-top-right cursor-pointer divide-y  rounded-md shadow-lg ring-1 ring-opacity-5 transition duration-100 ease-out focus:outline-none sm:right-0 sm:w-full"
                 >
-                  <Menu.Items
-                    static={true}
-                    className="divide-ink-100 bg-canvas-0 ring-ink-1000 absolute -right-20 mt-2 w-48 origin-top-right cursor-pointer divide-y  rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none sm:right-0 sm:w-full"
-                  >
-                    <div className="py-1">
-                      {users.map((user) => (
-                        <Menu.Item key={user.id}>
-                          {({ active }) => (
-                            <button
-                              className={clsx(
-                                active
-                                  ? 'bg-ink-100 text-ink-900'
-                                  : 'text-ink-700',
-                                'group flex w-full items-center px-4 py-2 text-sm'
-                              )}
-                              onClick={() => {
-                                setTerm('')
-                                setDisplayUser(user)
-                                setSearchUsers(false)
-                              }}
-                            >
-                              <Avatar
-                                username={user.username}
-                                avatarUrl={user.avatarUrl}
-                                size={'xs'}
-                                className={'mr-2'}
-                              />
-                              {user.name}
-                            </button>
-                          )}
-                        </Menu.Item>
-                      ))}
-                    </div>
-                  </Menu.Items>
-                </Transition>
-              )}
-            </Menu>
-          )}
+                  <div className="py-1">
+                    {users.map((user) => (
+                      <MenuItem key={user.id}>
+                        <button
+                          className="active:bg-ink-100 active:text-ink-900 hover:bg-ink-100 hover:text-ink-900 group flex w-full items-center px-4 py-2 text-sm"
+                          onClick={() => {
+                            setTerm('')
+                            setDisplayUser(user)
+                            setSearchUsers(false)
+                          }}
+                        >
+                          <Avatar
+                            username={user.username}
+                            avatarUrl={user.avatarUrl}
+                            size={'xs'}
+                            className={'mr-2'}
+                          />
+                          {user.name}
+                        </button>
+                      </MenuItem>
+                    ))}
+                  </div>
+                </MenuItems>
+              </Transition>
+            )}
+          </Menu>
         </Col>
       )}
     </Row>

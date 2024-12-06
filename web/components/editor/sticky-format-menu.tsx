@@ -15,7 +15,8 @@ import type { UploadMutation } from './upload-extension'
 import { PiGifFill } from 'react-icons/pi'
 import { GIFModal } from './gif-modal'
 import { Row } from 'web/components/layout/row'
-import ButtonDropdownMenu from 'web/components/comments/dropdown-button-menu'
+import { Col } from 'web/components/layout/col'
+import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
 
 /* Toolbar, with buttons for images and embeds */
 export function StickyFormatMenu(props: {
@@ -31,50 +32,55 @@ export function StickyFormatMenu(props: {
 
   return (
     <Row className="text-ink-600 ml-2 h-8 items-center">
-      <ButtonDropdownMenu
-        withinOverflowContainer={true}
-        icon={
+      <CustomizeableDropdown
+        withinOverflowContainer
+        buttonContent={
           <PlusCircleIcon
             className=" hover:text-ink-700 text-ink-500 h-5 w-5"
             aria-hidden
           />
         }
-        items={[
-          <UploadButton key={'upload-button'} upload={upload} />,
-          <ToolbarButton
-            key={'gif-button'}
-            label="Add GIF"
-            onClick={() => setGIFOpen(true)}
-          >
-            <PiGifFill className="h-5 w-5" aria-hidden />
-          </ToolbarButton>,
-          <ToolbarButton
-            key={'embed-button'}
-            label="Add embed"
-            onClick={(e) => {
-              e.stopPropagation()
-              e.preventDefault()
-              setIframeOpen(true)
-            }}
-          >
-            <CodeIcon className="h-5 w-5" aria-hidden="true" />
-          </ToolbarButton>,
-
-          <ToolbarButton
-            key={'market-button'}
-            label="Add question"
-            onClick={() => setMarketOpen(true)}
-          >
-            <PresentationChartLineIcon className="h-5 w-5" aria-hidden="true" />
-          </ToolbarButton>,
-          <ToolbarButton
-            key={'emoji-button'}
-            label="Add emoji"
-            onClick={() => insertEmoji(editor)}
-          >
-            <EmojiHappyIcon className="h-5 w-5" />
-          </ToolbarButton>,
-        ]}
+        menuWidth="w-34"
+        dropdownMenuContent={
+          <Col className="text-ink-600 gap-1">
+            <UploadButton key={'upload-button'} upload={upload} />
+            <ToolbarButton
+              key={'gif-button'}
+              label="Add GIF"
+              onClick={() => setGIFOpen(true)}
+            >
+              <PiGifFill className="h-5 w-5" aria-hidden />
+            </ToolbarButton>
+            <ToolbarButton
+              key={'embed-button'}
+              label="Add embed"
+              onClick={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                setIframeOpen(true)
+              }}
+            >
+              <CodeIcon className="h-5 w-5" aria-hidden="true" />
+            </ToolbarButton>
+            <ToolbarButton
+              key={'market-button'}
+              label="Add question"
+              onClick={() => setMarketOpen(true)}
+            >
+              <PresentationChartLineIcon
+                className="h-5 w-5"
+                aria-hidden="true"
+              />
+            </ToolbarButton>
+            <ToolbarButton
+              key={'emoji-button'}
+              label="Add emoji"
+              onClick={() => insertEmoji(editor)}
+            >
+              <EmojiHappyIcon className="h-5 w-5" />
+            </ToolbarButton>
+          </Col>
+        }
       />
 
       <EmbedModal editor={editor} open={iframeOpen} setOpen={setIframeOpen} />
@@ -93,7 +99,7 @@ function UploadButton(props: { upload: UploadMutation }) {
   return (
     <FileUploadButton
       onFiles={(files) => upload?.mutate(files)}
-      className=" hover:bg-canvas-100 active:bg-ink-300 relative flex p-1 transition-colors"
+      className="hover:bg-canvas-100 active:bg-ink-300 relative flex p-1 transition-colors"
     >
       <Row className={'items-center justify-start gap-2'}>
         <PhotographIcon className="h-5 w-5" aria-hidden="true" />
