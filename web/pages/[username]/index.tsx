@@ -1,4 +1,5 @@
 import {
+  ArrowRightIcon,
   CashIcon,
   ChatAlt2Icon,
   ChevronDownIcon,
@@ -18,6 +19,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { FaCrown } from 'react-icons/fa6'
+import Snowfall from 'react-snowfall'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { TextButton } from 'web/components/buttons/text-button'
@@ -74,6 +76,7 @@ export const getStaticProps = async (props: {
   const { username } = props.params
 
   const user = await getUserForStaticProps(db, username)
+
   const { data } = user
     ? await db.from('contracts').select('id').eq('creator_id', user.id).limit(1)
     : { data: null }
@@ -383,6 +386,32 @@ function UserProfile(props: {
                           user={currentUser}
                           privateUser={privateUser}
                         />
+                      )}
+                      {isCurrentUser && (
+                        <Link
+                          href={`${user.username}/wrapped2024`}
+                          className="group relative flex flex-row items-center justify-between gap-2 overflow-hidden rounded bg-gradient-to-b from-blue-700 to-blue-600 px-4 py-2 text-white transition-all hover:shadow-lg"
+                        >
+                          <Snowfall
+                            snowflakeCount={20}
+                            style={{
+                              position: 'absolute',
+                              width: '100%',
+                              height: '100%',
+                              opacity: 0.2,
+                            }}
+                          />
+                          <Row className="items-center gap-2">
+                            <span className="text-3xl">🎁</span>
+                            <span className="font-medium">
+                              Your Manifold Wrapped 2024 is here!
+                            </span>
+                          </Row>
+                          <Row className="text-ink-200 dark:text-ink-800 hidden items-center gap-1 font-normal transition-colors group-hover:text-white sm:flex">
+                            <div>See what's inside</div>
+                            <ArrowRightIcon className="h-4 w-4" />
+                          </Row>
+                        </Link>
                       )}
                       <VerifyPhoneNumberBanner user={currentUser} />
                     </Col>

@@ -1883,6 +1883,26 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-monthly-bets-2024': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ userId: z.string() }),
+    returns: [] as { month: string; bet_count: number; total_amount: number }[],
+  },
+  'get-max-min-profit-2024': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ userId: z.string() }),
+    returns: [] as {
+      profit: number
+      data: Contract
+      answer_id: string | null
+      has_no_shares: boolean
+      has_yes_shares: boolean
+    }[],
+  },
   'get-next-loan-amount': {
     method: 'GET',
     visibility: 'undocumented',
