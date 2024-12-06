@@ -26,24 +26,35 @@ with filtered_data as (
         and c.resolution_time >= '2024-01-01'::timestamp
         and c.resolution_time <= '2024-12-31 23:59:59'::timestamp
 ),
-min_max_profits as (
+max_profit as (
     select
-        max(profit) as max_profit,
-        min(profit) as min_profit
+        profit,
+        has_yes_shares,
+        has_no_shares,
+        answer_id,
+        data
     from 
         filtered_data
+    where 
+        profit = (select max(profit) from filtered_data)
+    limit 1  ),
+min_profit as (
+    select
+        profit,
+        has_yes_shares,
+        has_no_shares,
+        answer_id,
+        data
+    from 
+        filtered_data
+    where 
+        profit = (select min(profit) from filtered_data)
+    limit 1 
 )
-select
-    fd.profit,
-    fd.has_yes_shares,
-    fd.has_no_shares,
-    fd.answer_id,
-    fd.data
-from 
-    filtered_data fd
-join 
-    min_max_profits mmp on fd.profit = mmp.max_profit or fd.profit = mmp.min_profit
-    order by fd.profit desc;
+select * from max_profit
+union all
+select * from min_profit
+order by profit desc;
       `,
     [userId]
   )
