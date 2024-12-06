@@ -1,5 +1,5 @@
 import { removeUndefinedProps } from 'common/util/object'
-import { usePrivateUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { type User } from 'web/lib/firebase/users'
 import Custom404 from '../404'
 import { DeletedUser } from '.'
@@ -61,6 +61,8 @@ export default function Wrapped2024(props: {
 
 function Wrapped2024Content(props: { user: User; username: string }) {
   const { user, username } = props
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === user.id
   const [state, updateState] = usePersistentQueriesState(
     { page: '0' },
     'wrapped'
@@ -123,39 +125,27 @@ function Wrapped2024Content(props: { user: User; username: string }) {
           goToPrevPage={goToPrevPage}
           username={username}
           restart={() => updateState({ page: '0' })}
+          isCurrentUser={isCurrentUser}
         />
       )}
-      <Tracker
-        currentPage={page}
-        maxPages={maxPages}
-        updateState={updateState}
-      />
+      <Tracker currentPage={page} maxPages={maxPages} />
     </Col>
   )
 }
 
-function Tracker(props: {
-  currentPage: number
-  maxPages: number
-  updateState: (
-    newState: Partial<{
-      page: string
-    }>
-  ) => void
-}) {
-  const { currentPage, maxPages, updateState } = props
+function Tracker(props: { currentPage: number; maxPages: number }) {
+  const { currentPage, maxPages } = props
   return (
     <Row className="absolute left-0 right-0 top-0 opacity-40">
       <Row className="mx-auto w-full max-w-lg">
         {Array.from({ length: maxPages }).map((_, i) => {
           return (
-            <button
+            <div
               key={i}
               className={clsx(
                 `mx-1 my-2 h-1.5 w-1/6 rounded-full transition-colors`,
                 i <= currentPage ? 'bg-gray-300' : ' bg-gray-700'
               )}
-              onClick={() => updateState({ page: `${i}` })}
             />
           )
         })}
