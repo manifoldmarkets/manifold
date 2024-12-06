@@ -41,6 +41,7 @@ if (require.main === module) {
     const chunks = chunk(allUserIds, chunkSize)
     let total = 0
     for (const userIds of chunks) {
+      // TODO: before using this, make sure to fix the deprecation warning
       await updateUserMetricsWithBets(userIds.map((u) => u[0]))
       total += userIds.length
       console.log(

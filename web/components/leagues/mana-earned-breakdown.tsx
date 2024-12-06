@@ -231,6 +231,7 @@ const ContractBetsEntry = (props: {
           contract={contract}
           bets={bets}
           isYourBets={false}
+          contractMetric={metrics}
           hideRedemptionAndLoanMessages
         />
       )}

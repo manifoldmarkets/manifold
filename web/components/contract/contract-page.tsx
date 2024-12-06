@@ -435,7 +435,11 @@ export function ContractPageContent(props: ContractParams) {
                   contract={liveContract}
                 />
               )}
-              <YourTrades contract={liveContract} yourNewBets={yourNewBets} />
+              <YourTrades
+                contract={liveContract}
+                yourNewBets={yourNewBets}
+                contractMetric={myContractMetrics}
+              />
             </Col>
             {showReview && user && (
               <div className="relative my-2">

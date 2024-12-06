@@ -177,7 +177,7 @@ export const calculateMetricsByContractAndAnswer = (
       return calculateUserMetricsWithouLoans(contract, bets, userId)
     }
   )
-  // find loan amounts from current metrics and paste them into the new metrics
+  // Find loan amounts from current metrics and paste them into the new metrics
   const newMetricsWithLoan = newMetrics.map((m) => {
     const currentMetric = currentMetrics.find(
       (cm) =>
