@@ -17,6 +17,16 @@ export const useSavedContractMetrics = (
   contract: Contract,
   answerId?: string
 ) => {
+  const allMetrics = useAllSavedContractMetrics(contract, answerId)
+  return allMetrics?.find((m) =>
+    answerId ? m.answerId === answerId : m.answerId == null
+  )
+}
+
+export const useAllSavedContractMetrics = (
+  contract: Contract,
+  answerId?: string
+) => {
   const user = useUser()
   const [savedMetrics, setSavedMetrics] = usePersistentLocalState<
     ContractMetric[] | undefined
@@ -62,9 +72,7 @@ export const useSavedContractMetrics = (
     enabled: !!user?.id,
   })
 
-  return savedMetrics?.find((m) =>
-    answerId ? m.answerId === answerId : m.answerId == null
-  )
+  return savedMetrics
 }
 
 export const useReadLocalContractMetrics = (contractId: string) => {
