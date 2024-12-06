@@ -39,8 +39,6 @@ export function MaxMinProfit(props: {
       goToNextPage()
     }, 1000)
   }
-
-  console.log('MAX PROFIT', maxProfit, 'MIN PROFIT', minProfit)
   if (!maxProfit || !minProfit) {
     return <>An error occured</>
   }

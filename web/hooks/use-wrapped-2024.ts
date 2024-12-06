@@ -104,7 +104,6 @@ function calculateTotalProfit(
 async function getMaxMinProfitMetric2024(userId: string) {
   try {
     const data = await api('get-max-min-profit-2024', { userId })
-    console.log('MAX MIN PROFIT', data)
     return data
   } catch (error) {
     console.error('Error fetching max/min profit metrics:', error)
@@ -130,9 +129,6 @@ export function useMaxAndMinProfit(userId: string) {
   useEffect(() => {
     getMaxMinProfitMetric2024(userId).then((data) => {
       const [max, min] = data ?? [null, null]
-
-      console.log('MAX', max, 'MIN', min)
-      console.log('max profit', data)
       if (max && min) {
         setMaxProfit({
           profit: max.profit ?? 0,
