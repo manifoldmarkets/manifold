@@ -19,8 +19,6 @@ export function MaxMinProfit(props: {
   const [animateOut, setAnimateOut] = useState(false)
 
   const { maxProfit, minProfit } = useMaxAndMinProfit(user.id)
-  console.log('MAXPROFIT', maxProfit)
-  console.log('MINPROFIT', minProfit)
 
   //triggers for animation in
   useEffect(() => {

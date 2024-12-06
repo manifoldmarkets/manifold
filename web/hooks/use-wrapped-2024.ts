@@ -153,8 +153,7 @@ export function useMaxAndMinProfit(userId: string) {
       setMaxProfit(translateProfitObject(max))
       setMinProfit(translateProfitObject(min))
     })
-    // }, [userId])
-  }, [])
+  }, [userId])
 
   return { maxProfit, minProfit }
 }
