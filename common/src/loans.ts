@@ -4,7 +4,7 @@ import { PortfolioMetrics } from './portfolio-metrics'
 import { ContractMetric } from './contract-metric'
 import { filterDefined } from './util/array'
 
-export const LOAN_DAILY_RATE = 0.04
+export const LOAN_DAILY_RATE = 0.015
 
 const calculateNewLoan = (investedValue: number, loanTotal: number) => {
   const netValue = investedValue - loanTotal
