@@ -1,26 +1,8 @@
-import { partition, sumBy } from 'lodash'
-
 import { Bet, getNewBetId } from './bet'
 import { Contract } from './contract'
 import { noFees } from './fees'
 import { removeUndefinedProps } from './util/object'
 import { ContractMetric } from './contract-metric'
-
-type RedeemableBet = Pick<Bet, 'outcome' | 'shares' | 'loanAmount'>
-
-export const getBinaryRedeemableAmount = (bets: RedeemableBet[]) => {
-  const [yesBets, noBets] = partition(bets, (b) => b.outcome === 'YES')
-  const yesShares = sumBy(yesBets, (b) => b.shares)
-  const noShares = sumBy(noBets, (b) => b.shares)
-
-  const shares = Math.max(Math.min(yesShares, noShares), 0)
-  const soldFrac = shares > 0 ? shares / Math.max(yesShares, noShares) : 0
-
-  const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
-  const loanPayment = loanAmount * soldFrac
-  const netAmount = shares - loanPayment
-  return { shares, loanPayment, netAmount }
-}
 
 export const getBinaryRedeemableAmountFromContractMetric = (
   contractMetric: Omit<ContractMetric, 'id'>

@@ -17,6 +17,16 @@ export const useSavedContractMetrics = (
   contract: Contract,
   answerId?: string
 ) => {
+  const allMetrics = useAllSavedContractMetrics(contract, answerId)
+  return allMetrics?.find((m) =>
+    answerId ? m.answerId === answerId : m.answerId == null
+  )
+}
+
+export const useAllSavedContractMetrics = (
+  contract: Contract,
+  answerId?: string
+) => {
   const user = useUser()
   const [savedMetrics, setSavedMetrics] = usePersistentLocalState<
     ContractMetric[] | undefined
@@ -54,17 +64,15 @@ export const useSavedContractMetrics = (
   useApiSubscription({
     topics: [`contract/${contract.id}/user-metrics/${user?.id}`],
     onBroadcast: (msg) => {
-      const metrics = (msg.data.metrics as ContractMetric[]).filter((m) =>
-        answerId ? m.answerId === answerId : true
+      const metrics = (msg.data.metrics as Omit<ContractMetric, 'id'>[]).filter(
+        (m) => (answerId ? m.answerId === answerId : true)
       )
-      if (metrics.length > 0) setSavedMetrics(metrics)
+      if (metrics.length > 0) setSavedMetrics(metrics as ContractMetric[])
     },
     enabled: !!user?.id,
   })
 
-  return savedMetrics?.find((m) =>
-    answerId ? m.answerId === answerId : m.answerId == null
-  )
+  return savedMetrics
 }
 
 export const useReadLocalContractMetrics = (contractId: string) => {

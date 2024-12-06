@@ -33,13 +33,16 @@ import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { api } from 'web/lib/api/api'
 import { MoneyDisplay } from '../bet/money-display'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { ContractMetric } from 'common/contract-metric'
 
 export const NumericSellPanel = (props: {
   contract: CPMMNumericContract
   userBets: Bet[]
+  contractMetrics: ContractMetric[]
   cancel: () => void
 }) => {
-  const { contract, userBets, cancel } = props
+  const { contract, userBets, contractMetrics, cancel } = props
   const { answers, min: minimum, max: maximum } = contract
   const isCashContract = contract.token === 'CASH'
   const expectedValue = getExpectedValue(contract)
@@ -150,13 +153,16 @@ export const NumericSellPanel = (props: {
     const betsOnAnswersToSell = userBets.filter(
       (bet) => bet.answerId && answerIdsToSell.includes(bet.answerId)
     )
+    const metricsOnAnswersToSell = contractMetrics.filter(
+      (m) => m.answerId && answerIdsToSell.includes(m.answerId)
+    )
     const invested = getInvested(contract, betsOnAnswersToSell)
 
     const userBetsToSellByAnswerId = groupBy(
       betsOnAnswersToSell.filter((bet) => bet.shares !== 0),
       (bet) => bet.answerId
     )
-    const loanPaid = sumBy(betsOnAnswersToSell, (bet) => bet.loanAmount ?? 0)
+    const loanPaid = sumBy(metricsOnAnswersToSell, (m) => m.loan ?? 0)
     const { newBetResults, updatedAnswers, totalFee } =
       calculateCpmmMultiArbitrageSellYesEqually(
         contract.answers,
@@ -338,6 +344,9 @@ export const MultiNumericSellPanel = (props: {
   userId: string
 }) => {
   const { contract, userId } = props
+  const contractMetrics = useAllSavedContractMetrics(contract)?.filter(
+    (m) => m.answerId != null
+  )
   const userBets = useUserContractBets(userId, contract.id)
 
   const [showSellPanel, setShowSellPanel] = useState(false)
@@ -363,6 +372,7 @@ export const MultiNumericSellPanel = (props: {
           cancel={() => setShowSellPanel(false)}
           contract={contract}
           userBets={userBets}
+          contractMetrics={contractMetrics ?? []}
         />
       )}
     </Col>

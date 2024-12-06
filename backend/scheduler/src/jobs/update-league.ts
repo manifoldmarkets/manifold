@@ -1,7 +1,6 @@
 import { groupBy, keyBy, sum, uniq, zipObject } from 'lodash'
 import { log } from 'shared/utils'
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,

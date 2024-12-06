@@ -1883,6 +1883,16 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-next-loan-amount': {
+    method: 'GET',
+    visibility: 'undocumented',
+    cache: DEFAULT_CACHE_STRATEGY,
+    authed: false,
+    returns: {} as { amount: number },
+    props: z.object({
+      userId: z.string(),
+    }),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

@@ -413,7 +413,7 @@ export const executeNewBetResult = async (
     {
       id: user.id,
       [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
-        -newBet.amount - apiFee,
+        -newBet.amount - apiFee + (newBet.loanAmount ?? 0),
     },
   ]
   const makersByTakerBetId: Record<string, maker[]> = {

@@ -50,5 +50,6 @@ export const convertPortfolioHistory = (
     cashInvestmentValue: row.cash_investment_value ?? 0,
     totalCashDeposits: row.total_cash_deposits ?? 0,
     cashBalance: row.cash_balance ?? 0,
+    userId: row.user_id,
   } as PortfolioMetrics
 }

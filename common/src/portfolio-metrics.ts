@@ -9,6 +9,7 @@ export type PortfolioMetrics = {
   loanTotal: number
   timestamp: number
   profit?: number
+  userId: string
 }
 export type LivePortfolioMetrics = PortfolioMetrics & {
   dailyProfit: number

@@ -3,7 +3,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { getUsers, log } from 'shared/utils'
+import { log } from 'shared/utils'
 import { groupBy, sortBy, sumBy, uniq } from 'lodash'
 import { Contract, CPMMMultiContract } from 'common/contract'
 import { calculateMetricsByContractAndAnswer } from 'common/calculate-metrics'
@@ -15,7 +15,10 @@ import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 import { convertBet } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
 
-// NOTE: This function is just a script and isn't used regularly
+/** @deprecated between the time the bets are loaded and the metrics are written,
+ * the user could place a sell bet that repays a loan, which would not be
+ * applied to the updated metrics when written. It should check for any sale bets
+ * and rerun the metrics calculation. **/
 export async function updateUserMetricsWithBets(
   userIds?: string[],
   since?: number
@@ -88,23 +91,20 @@ export async function updateUserMetricsWithBets(
 
   const contractMetricUpdates = []
 
-  log('Loading user balances & deposit information...')
-  // Load user data right before calculating metrics to avoid out-of-date deposit/balance data (esp. for new users that
-  // get their first 9 deposits upon visiting new markets).
-  const users = await getUsers(activeUserIds)
   log('Computing metric updates...')
-  for (const user of users) {
-    const userMetricRelevantBets = metricRelevantBets[user.id] ?? []
+  for (const userId of activeUserIds) {
+    const userMetricRelevantBets = metricRelevantBets[userId] ?? []
     const metricRelevantBetsByContract = groupBy(
       userMetricRelevantBets,
       (b) => b.contractId
     )
+    const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
     const freshMetrics = calculateMetricsByContractAndAnswer(
       metricRelevantBetsByContract,
       contractsById,
-      user.id
-    ).flat()
-    const currentMetricsForUser = currentMetricsByUserId[user.id] ?? []
+      userId,
+      currentMetricsForUser
+    )
     contractMetricUpdates.push(
       ...freshMetrics.filter((freshMetric) => {
         const currentMetric = currentMetricsForUser.find(

@@ -8,7 +8,7 @@ import { api } from 'web/lib/api/api'
 
 export const useHasReceivedLoanToday = (user: User) => {
   const startOfDay = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
-  // user has either received a loan today or nextLoanCached is 0
+  // user has either received a loan today or nextLoan is 0
   const [lastLoanReceived, setLastLoanReceived] = usePersistentLocalState<
     number | undefined
   >(undefined, `last-loan-${user.id}`)

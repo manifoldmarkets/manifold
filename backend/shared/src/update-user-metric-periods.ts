@@ -158,12 +158,13 @@ export async function updateUserMetricPeriods(
         userMetricRelevantBets,
         (b) => b.contractId
       )
+      const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
       const freshMetrics = calculateMetricsByContractAndAnswer(
         metricRelevantBetsByContract,
         contractsById,
-        userId
-      ).flat()
-      const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
+        userId,
+        currentMetricsForUser
+      )
       metricsByUser[userId] = uniqBy(
         [...freshMetrics, ...currentMetricsForUser],
         (m) => m.contractId + m.answerId

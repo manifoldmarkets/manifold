@@ -1,76 +1,77 @@
-import { sumBy } from 'lodash'
-import { Bet } from './bet'
-import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
-import {
-  CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-} from './contract'
-import { LiquidityProvision } from './liquidity-provision'
 import { Answer } from './answer'
+import { CPMMContract } from './contract'
+import { LiquidityProvision } from './liquidity-provision'
+import { PayoutInfo } from './payouts'
+import { ContractMetric } from './contract-metric'
+import { sumBy } from 'lodash'
+import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
 
 export const getFixedCancelPayouts = (
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
-  bets: Bet[],
+  contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[]
-) => {
-  const liquidityPayouts = liquidities.map((lp) => ({
-    userId: lp.userId,
-    payout: lp.amount,
+): PayoutInfo => {
+  const traderPayouts = contractMetrics.map((metric) => ({
+    userId: metric.userId,
+    payout: metric.invested,
   }))
 
-  const payouts = bets.map((bet) => ({
-    userId: bet.userId,
-    // We keep the platform fee.
-    payout: bet.amount - bet.fees.platformFee,
+  const liquidityPayouts = liquidities.map((liquidity) => ({
+    userId: liquidity.userId,
+    payout: liquidity.amount,
   }))
+  // TODO we don't claw back fees from creators here, but we used to when using bets
 
-  // Creator pays back all creator fees for N/A resolution.
-  const creatorFees = sumBy(bets, (b) => b.fees.creatorFee)
-  payouts.push({
-    userId: contract.creatorId,
-    payout: -creatorFees,
-  })
-
-  return { payouts, liquidityPayouts }
+  return {
+    traderPayouts,
+    liquidityPayouts,
+  }
 }
 
 export const getStandardFixedPayouts = (
-  outcome: string,
-  contract:
-    | CPMMContract
-    | (CPMMMultiContract & { shouldAnswersSumToOne: false }),
-  bets: Bet[],
+  outcome: string, // Will be 'YES' or 'NO'
+  contract: CPMMContract,
+  contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[]
-) => {
-  const winningBets = bets.filter((bet) => bet.outcome === outcome)
+): PayoutInfo => {
+  const traderPayouts = contractMetrics.map((metric) => {
+    const shares = metric.totalShares[outcome] || 0
+    return {
+      userId: metric.userId,
+      payout: shares,
+    }
+  })
 
-  const payouts = winningBets.map(({ userId, shares }) => ({
-    userId,
-    payout: shares,
-  }))
+  const liquidityPayouts = getLiquidityPoolPayouts(
+    contract,
+    outcome,
+    liquidities
+  )
 
-  const liquidityPayouts =
-    contract.mechanism === 'cpmm-1'
-      ? getLiquidityPoolPayouts(contract, outcome, liquidities)
-      : []
-
-  return { payouts, liquidityPayouts }
+  return {
+    traderPayouts,
+    liquidityPayouts,
+  }
 }
 
 export const getMultiFixedPayouts = (
   answers: Answer[],
   resolutions: { [answerId: string]: number },
-  bets: Bet[],
+  contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[]
-) => {
-  const payouts = bets
-    .map(({ userId, shares, answerId, outcome }) => {
-      const weight = answerId ? resolutions[answerId] ?? 0 : 0
-      const outcomeWeight = outcome === 'YES' ? weight : 1 - weight
-      const payout = shares * outcomeWeight
+): PayoutInfo => {
+  const traderPayouts = contractMetrics
+    .map((metric) => {
+      let payout = 0
+      const answer = answers.find((answer) => answer.id === metric.answerId)
+      if (!answer) return { userId: metric.userId, payout }
+      for (const outcome of ['YES', 'NO']) {
+        const weight = resolutions[answer.id] ?? 0
+        const outcomeWeight = outcome === 'YES' ? weight : 1 - weight
+        const shares = metric.totalShares[outcome] ?? 0
+        payout += shares * outcomeWeight
+      }
       return {
-        userId,
+        userId: metric.userId,
         payout,
       }
     })
@@ -81,30 +82,40 @@ export const getMultiFixedPayouts = (
     resolutions,
     liquidities
   )
-  return { payouts, liquidityPayouts }
+
+  return {
+    traderPayouts,
+    liquidityPayouts,
+  }
 }
 
 export const getIndependentMultiYesNoPayouts = (
   answer: Answer,
-  outcome: string,
-  bets: Bet[],
+  outcome: 'YES' | 'NO',
+  contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[]
-) => {
-  const winningBets = bets.filter((bet) => bet.outcome === outcome)
-
-  const payouts = winningBets.map(({ userId, shares }) => ({
-    userId,
-    payout: shares,
-  }))
-
+): PayoutInfo => {
+  const traderPayouts = contractMetrics
+    .filter((metric) => metric.answerId === answer.id)
+    .map((metric) => {
+      const shares = metric.totalShares[outcome] || 0
+      return {
+        userId: metric.userId,
+        payout: shares,
+      }
+    })
   const resolution = outcome === 'YES' ? 1 : 0
+
   const liquidityPayouts = getIndependentMultiLiquidityPoolPayouts(
     answer,
     resolution,
     liquidities
   )
 
-  return { payouts, liquidityPayouts }
+  return {
+    traderPayouts,
+    liquidityPayouts,
+  }
 }
 
 export const getLiquidityPoolPayouts = (
@@ -159,22 +170,23 @@ export const getMultiLiquidityPoolPayouts = (
 }
 
 export const getMktFixedPayouts = (
-  contract:
-    | CPMMContract
-    | (CPMMMultiContract & { shouldAnswersSumToOne: false }),
-  bets: Bet[],
+  contract: CPMMContract,
+  contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[],
   resolutionProbability: number
-) => {
+): PayoutInfo => {
   const outcomeProbs = {
     YES: resolutionProbability,
     NO: 1 - resolutionProbability,
   }
 
-  const payouts = bets.map(({ userId, outcome, shares }) => {
-    const p = outcomeProbs[outcome as 'YES' | 'NO'] ?? 0
-    const payout = p * shares
-    return { userId, payout }
+  const traderPayouts = contractMetrics.map((metric) => {
+    const yesShares = metric.totalShares['YES'] || 0
+    const noShares = metric.totalShares['NO'] || 0
+    return {
+      userId: metric.userId,
+      payout: yesShares * outcomeProbs.YES + noShares * outcomeProbs.NO,
+    }
   })
 
   const liquidityPayouts =
@@ -182,25 +194,32 @@ export const getMktFixedPayouts = (
       ? getLiquidityPoolProbPayouts(contract, outcomeProbs, liquidities)
       : []
 
-  return { payouts, liquidityPayouts }
+  return {
+    traderPayouts,
+    liquidityPayouts,
+  }
 }
 
 export const getIndependentMultiMktPayouts = (
   answer: Answer,
-  bets: Bet[],
+  contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[],
   resolutionProbability: number
-) => {
+): PayoutInfo => {
   const outcomeProbs = {
     YES: resolutionProbability,
     NO: 1 - resolutionProbability,
   }
-
-  const payouts = bets.map(({ userId, outcome, shares }) => {
-    const p = outcomeProbs[outcome as 'YES' | 'NO'] ?? 0
-    const payout = p * shares
-    return { userId, payout }
-  })
+  const traderPayouts = contractMetrics
+    .filter((metric) => metric.answerId === answer.id)
+    .map((metric) => {
+      const yesShares = metric.totalShares['YES'] ?? 0
+      const noShares = metric.totalShares['NO'] ?? 0
+      return {
+        userId: metric.userId,
+        payout: yesShares * outcomeProbs.YES + noShares * outcomeProbs.NO,
+      }
+    })
 
   const liquidityPayouts = getIndependentMultiLiquidityPoolPayouts(
     answer,
@@ -208,7 +227,10 @@ export const getIndependentMultiMktPayouts = (
     liquidities
   )
 
-  return { payouts, liquidityPayouts }
+  return {
+    traderPayouts,
+    liquidityPayouts,
+  }
 }
 
 export const getLiquidityPoolProbPayouts = (

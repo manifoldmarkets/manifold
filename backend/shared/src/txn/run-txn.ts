@@ -29,12 +29,12 @@ export async function runTxnInBetQueue(
 }
 
 // Could also be named: confiscateFunds
-export async function runTxnInBetQueueIgnoringBalance(
+export async function runTxnOutsideBetQueueIgnoringBalance(
   pgTransaction: SupabaseTransaction,
   data: TxnData,
   affectsProfit = false
 ) {
-  return await runTxnInternal(pgTransaction, data, affectsProfit, true, false)
+  return await runTxnInternal(pgTransaction, data, affectsProfit, false, false)
 }
 
 async function runTxnInternal(
@@ -44,7 +44,7 @@ async function runTxnInternal(
   useQueue = true,
   checkBalance = true
 ) {
-  const { amount, fromType, fromId, toId, toType, token, category } = data
+  const { amount, fromType, fromId, toId, toType, token } = data
   const deps = buildArray(
     (fromType === 'USER' || fromType === 'CONTRACT') && fromId,
     (toType === 'USER' || toType === 'CONTRACT') && toId
