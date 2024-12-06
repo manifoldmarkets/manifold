@@ -3,7 +3,7 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
 import { getContract, getUser, log } from 'shared/utils'
-import { groupBy, mapValues, sumBy } from 'lodash'
+import { groupBy, keyBy, keyBy, mapValues, sumBy } from 'lodash'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { convertBet } from 'common/supabase/bets'
@@ -71,12 +71,13 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     )
 
     const loanAmountByAnswerId = mapValues(
-      groupBy(
+      keyBy(
         allMyMetrics.filter((m) => m.answerId !== null),
         'answerId'
       ),
-      (metrics) => sumBy(metrics, (bet) => bet.loan ?? 0)
+      (m) => m.loan ?? 0
     )
+
     const nonRedemptionBetsByAnswerId = groupBy(
       userBets.filter((bet) => bet.shares !== 0),
       (bet) => bet.answerId
