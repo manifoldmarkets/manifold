@@ -17,7 +17,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { FaCrown } from 'react-icons/fa6'
+import { FaCrown, FaDivide } from 'react-icons/fa6'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { TextButton } from 'web/components/buttons/text-button'
@@ -34,6 +34,7 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
+import { Banner } from 'web/components/nav/banner'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
@@ -361,6 +362,20 @@ function UserProfile(props: {
             />
             <RedeemSweepsButtons user={user} className="w-1/2" />
           </Row>
+        )}
+
+        {isCurrentUser && (
+          <Link
+            href={`${user.username}/wrapped2024`}
+            className="mx-4 my-2 rounded-lg bg-gradient-to-r from-blue-700 via-blue-300 to-blue-700 p-0.5 shadow-lg transition-all  hover:shadow-xl"
+          >
+            <div className="bg-canvas-0 flex items-center justify-between rounded-lg px-4 py-3 transition-colors hover:bg-transparent hover:text-white">
+              <span className="flex items-center gap-2 font-medium">
+                Your Manifold wrapped is here!
+              </span>
+              <span className="text-ink-600 hover:text-white">✨</span>
+            </div>
+          </Link>
         )}
 
         <Col className="mx-4">
