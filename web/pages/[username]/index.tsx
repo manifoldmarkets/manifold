@@ -7,14 +7,12 @@ import {
   ViewListIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { isBetChange } from 'common/balance-change'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { getUserForStaticProps } from 'common/supabase/users'
 import { isUserLikelySpammer } from 'common/user'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
-import dayjs from 'dayjs'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -55,7 +53,6 @@ import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -213,14 +210,8 @@ function UserProfile(props: {
     }
   }, [currentUser?.id, user?.id])
 
-  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
-    userId: user.id,
-    after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
-  })
-
-  const balanceChanges = newBalanceChanges ?? []
-  const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
   const balanceChangesKey = 'balance-changes'
+
   return (
     <Page
       key={user.id}
@@ -399,7 +390,7 @@ function UserProfile(props: {
                   </>
                 ),
               },
-              (!!user.lastBetTime || hasBetBalanceChanges) && {
+              !!user.lastBetTime && {
                 title: 'Trades',
                 prerender: true,
                 stackedTabIcon: <ManaCircleIcon className="h-5 w-5" />,
@@ -454,12 +445,7 @@ function UserProfile(props: {
               {
                 title: 'Balance log',
                 stackedTabIcon: <ViewListIcon className="h-5" />,
-                content: (
-                  <BalanceChangeTable
-                    user={user}
-                    balanceChanges={balanceChanges}
-                  />
-                ),
+                content: <BalanceChangeTable user={user} />,
                 queryString: balanceChangesKey,
               },
               {

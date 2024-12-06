@@ -13,29 +13,36 @@ import { convertContract } from 'common/supabase/contracts'
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   props
 ) => {
-  const { after, userId } = props
+  const { userId, before, after } = props
   const [betBalanceChanges, txnBalanceChanges] = await Promise.all([
-    getBetBalanceChanges(after, userId),
-    getTxnBalanceChanges(after, userId),
+    getBetBalanceChanges(before, after, userId),
+    getTxnBalanceChanges(before, after, userId),
   ])
-  return orderBy(
+  const allChanges = orderBy(
     [...betBalanceChanges, ...txnBalanceChanges],
     (change) => change.createdTime,
     'desc'
   )
+  return allChanges
 }
 
-const getTxnBalanceChanges = async (after: number, userId: string) => {
+const getTxnBalanceChanges = async (
+  before: number | undefined,
+  after: number,
+  userId: string
+) => {
   const pg = createSupabaseDirectClient()
   const balanceChanges = [] as TxnBalanceChange[]
 
   const txns = await pg.map(
     `select *
     from txns
-    where created_time > millis_to_ts($1)
-      and (to_id = $2 or from_id = $2)
+    where
+      ($1 is null or created_time < millis_to_ts($1)) and
+      created_time >= millis_to_ts($2)
+      and (to_id = $3 or from_id = $3)
     order by created_time`,
-    [after, userId],
+    [before, after, userId],
     convertTxn
   )
   const contractIds = filterDefined(
@@ -113,7 +120,11 @@ const getContractIdFromTxn = (txn: Txn) => {
   return null
 }
 
-const getBetBalanceChanges = async (after: number, userId: string) => {
+const getBetBalanceChanges = async (
+  before: number | undefined,
+  after: number,
+  userId: string
+) => {
   const pg = createSupabaseDirectClient()
   const contractToBets: {
     [contractId: string]: {
@@ -133,11 +144,13 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
      from contract_bets cb
         join contracts c on cb.contract_id = c.id
         left join answers a on a.id = cb.answer_id
-     where cb.updated_time > millis_to_ts($1)
-        and cb.user_id = $2
+     where
+        ($1 is null or cb.updated_time < millis_to_ts($1))
+        and cb.updated_time >= millis_to_ts($2)
+        and cb.user_id = $3
      group by c.id;
     `,
-    [after, userId],
+    [before, after, userId],
     (row) => {
       contractToBets[row.id] = {
         bets: orderBy(row.bets, (bet) => bet.createdTime, 'asc'),
