@@ -52,9 +52,12 @@ export function MaxMinProfit(props: {
 
   if (maxProfit === null || minProfit === null) {
     return (
-      <div className="mx-auto my-auto">
-        You don't have any resolved bets this year!
-      </div>
+      <>
+        <div className="mx-auto my-auto">
+          You don't have any resolved bets this year!
+        </div>
+        <NavButtons goToPrevPage={goToPrevPage} goToNextPage={onGoToNext} />
+      </>
     )
   }
 

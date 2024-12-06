@@ -94,6 +94,7 @@ async function getTotalProfit(userId: string) {
 function calculateTotalProfit(
   portfolioHistoryRow: rowFor<'user_portfolio_history'>
 ) {
+  if (!portfolioHistoryRow) return 0
   return (
     (portfolioHistoryRow.investment_value ?? 0) +
     (portfolioHistoryRow.balance ?? 0) -
@@ -149,7 +150,6 @@ export function useMaxAndMinProfit(userId: string) {
   useEffect(() => {
     getMaxMinProfitMetric2024(userId).then((data) => {
       const [max, min] = data && data.length > 0 ? data : [null, null]
-      console.log('DATA', data, max, min)
       setMaxProfit(translateProfitObject(max))
       setMinProfit(translateProfitObject(min))
     })
