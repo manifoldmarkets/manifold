@@ -13,7 +13,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { Contract, contractPath } from 'common/contract'
 import { Bet } from 'common/bet'
-import { calculateUserMetrics } from 'common/calculate-metrics'
+import { calculateUserMetricsWithouLoans } from 'common/calculate-metrics'
 import { ProfitBadge } from '../profit-badge'
 import { ContractMetric } from 'common/contract-metric'
 import { useBetsOnce } from 'web/hooks/use-bets'
@@ -73,7 +73,7 @@ export const ManaEarnedBreakdown = (props: {
     mapValues(betsByContract, (bets, contractId) => {
       const contract = contractsById[contractId]
       return contract
-        ? calculateUserMetrics(contract, bets, user.id).find(
+        ? calculateUserMetricsWithouLoans(contract, bets, user.id).find(
             (cm) => !cm.answerId
           )
         : undefined

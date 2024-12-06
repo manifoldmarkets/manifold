@@ -14,8 +14,8 @@ import { filterDefined } from 'common/util/array'
 import { hasSignificantDeepChanges } from 'common/util/object'
 import { convertBet } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
-import { bulkUpdateData } from './supabase/utils'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import { bulkUpdateData } from 'shared/supabase/utils'
 
 const CHUNK_SIZE = isProd() ? 400 : 10
 export async function updateUserMetricPeriods(
@@ -155,12 +155,13 @@ export async function updateUserMetricPeriods(
         userMetricRelevantBets,
         (b) => b.contractId
       )
+      const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
       const freshMetrics = calculateMetricsByContractAndAnswer(
         metricRelevantBetsByContract,
         contractsById,
-        userId
-      ).flat()
-      const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
+        userId,
+        currentMetricsForUser
+      )
       metricsByUser[userId] = uniqBy(
         [...freshMetrics, ...currentMetricsForUser],
         (m) => m.contractId + m.answerId
@@ -205,6 +206,7 @@ export async function updateUserMetricPeriods(
 
     if (contractMetricUpdates.length > 0 && !skipUpdates) {
       log('Writing updates')
+      // await bulkUpdateContractMetrics(contractMetricUpdates, pg)
       await bulkUpdateData(pg, 'user_contract_metrics', contractMetricUpdates)
         .catch((e) => log.error('Error upserting contract metrics', e))
         .then(() =>

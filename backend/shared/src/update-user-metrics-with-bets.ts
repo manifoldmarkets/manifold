@@ -99,12 +99,13 @@ export async function updateUserMetricsWithBets(
       userMetricRelevantBets,
       (b) => b.contractId
     )
+    const currentMetricsForUser = currentMetricsByUserId[user.id] ?? []
     const freshMetrics = calculateMetricsByContractAndAnswer(
       metricRelevantBetsByContract,
       contractsById,
-      user.id
-    ).flat()
-    const currentMetricsForUser = currentMetricsByUserId[user.id] ?? []
+      user.id,
+      currentMetricsForUser
+    )
     contractMetricUpdates.push(
       ...freshMetrics.filter((freshMetric) => {
         const currentMetric = currentMetricsForUser.find(

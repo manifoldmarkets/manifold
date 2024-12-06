@@ -374,7 +374,7 @@ export const getContractBetMetrics = (
     contractId: contract.id,
   }
 }
-export const getContractBetMetricsPerAnswer = (
+export const getContractBetMetricsPerAnswerWithoutLoans = (
   contract: Contract,
   bets: Bet[],
   answers?: Answer[]
