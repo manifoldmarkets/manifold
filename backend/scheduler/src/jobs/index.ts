@@ -50,7 +50,7 @@ export function createJobs() {
     ),
     createJob(
       'update-creator-metrics',
-      `0 */${CREATOR_UPDATE_FREQUENCY} * * * *`, // every 13 minutes - (on the 5th minute of every hour)
+      `0 */${CREATOR_UPDATE_FREQUENCY} * * * *`, // every 57 minutes - (on the 57th minute of every hour)
       updateCreatorMetricsCore
     ),
     createJob(
