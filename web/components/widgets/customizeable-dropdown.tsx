@@ -2,10 +2,13 @@ import {
   Popover,
   PopoverButton,
   PopoverPanel,
+  type PopoverPanelProps,
   Transition,
 } from '@headlessui/react'
 import clsx from 'clsx'
 import { Fragment, ReactNode } from 'react'
+
+export type AnchorProps = NonNullable<PopoverPanelProps['anchor']>
 
 export function CustomizeableDropdown(props: {
   menuWidth?: string
@@ -13,6 +16,7 @@ export function CustomizeableDropdown(props: {
   dropdownMenuContent:
     | React.ReactNode
     | ((close: () => void) => React.ReactNode)
+  anchor?: AnchorProps
   buttonClass?: string
   className?: string
   buttonDisabled?: boolean
@@ -24,6 +28,7 @@ export function CustomizeableDropdown(props: {
     menuWidth,
     buttonContent,
     dropdownMenuContent,
+    anchor,
     buttonClass,
     className,
     buttonDisabled,
@@ -49,9 +54,9 @@ export function CustomizeableDropdown(props: {
 
           <AnimationOrNothing show={open} animate={!withinOverflowContainer}>
             <PopoverPanel
-              anchor="bottom"
+              anchor={anchor ?? 'bottom'}
               className={clsx(
-                'bg-canvas-0 ring-ink-1000 absolute z-30 rounded-md px-4 py-2 shadow-lg ring-1 ring-opacity-5 focus:outline-none',
+                'bg-canvas-0 ring-ink-1000 absolute z-30 rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none',
                 menuWidth ?? 'w-36',
                 popoverClassName
               )}

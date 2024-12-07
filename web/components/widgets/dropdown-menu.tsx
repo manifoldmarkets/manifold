@@ -2,7 +2,10 @@ import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { ReactNode } from 'react'
-import { CustomizeableDropdown } from './customizeable-dropdown'
+import {
+  type AnchorProps,
+  CustomizeableDropdown,
+} from './customizeable-dropdown'
 
 export type DropdownItem = {
   name: string
@@ -22,6 +25,7 @@ export default function DropdownMenu(props: {
   buttonContent?: ReactNode | ((open: boolean) => ReactNode)
   buttonDisabled?: boolean
   buttonClass?: string
+  anchor?: AnchorProps
   menuWidth?: string
   menuItemsClass?: string
   selectedItemName?: string
@@ -34,6 +38,7 @@ export default function DropdownMenu(props: {
     buttonContent,
     buttonDisabled,
     buttonClass,
+    anchor,
     menuWidth,
     menuItemsClass,
     selectedItemName,
@@ -61,6 +66,7 @@ export default function DropdownMenu(props: {
       withinOverflowContainer={withinOverflowContainer}
       popoverClassName={clsx('mt-2 py-1', menuItemsClass)}
       menuWidth={menuWidth ?? 'w-34'}
+      anchor={anchor}
       dropdownMenuContent={items.map((item) => (
         <div key={item.name}>
           {!!item.nonButtonContent ? (

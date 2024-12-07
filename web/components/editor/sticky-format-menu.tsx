@@ -6,7 +6,7 @@ import {
   PresentationChartLineIcon,
 } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
-import { MouseEventHandler, useState } from 'react'
+import { useState } from 'react'
 import { FileUploadButton } from '../buttons/file-upload-button'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { EmbedModal } from './embed-modal'
@@ -15,8 +15,7 @@ import type { UploadMutation } from './upload-extension'
 import { PiGifFill } from 'react-icons/pi'
 import { GIFModal } from './gif-modal'
 import { Row } from 'web/components/layout/row'
-import { Col } from 'web/components/layout/col'
-import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
 
 /* Toolbar, with buttons for images and embeds */
 export function StickyFormatMenu(props: {
@@ -32,55 +31,48 @@ export function StickyFormatMenu(props: {
 
   return (
     <Row className="text-ink-600 ml-2 h-8 items-center">
-      <CustomizeableDropdown
+      <DropdownMenu
         withinOverflowContainer
+        anchor="bottom start"
         buttonContent={
           <PlusCircleIcon
             className=" hover:text-ink-700 text-ink-500 h-5 w-5"
             aria-hidden
           />
         }
-        menuWidth="w-34"
-        dropdownMenuContent={
-          <Col className="text-ink-600 gap-1">
-            <UploadButton key={'upload-button'} upload={upload} />
-            <ToolbarButton
-              key={'gif-button'}
-              label="Add GIF"
-              onClick={() => setGIFOpen(true)}
-            >
-              <PiGifFill className="h-5 w-5" aria-hidden />
-            </ToolbarButton>
-            <ToolbarButton
-              key={'embed-button'}
-              label="Add embed"
-              onClick={(e) => {
-                e.stopPropagation()
-                e.preventDefault()
-                setIframeOpen(true)
-              }}
-            >
-              <CodeIcon className="h-5 w-5" aria-hidden="true" />
-            </ToolbarButton>
-            <ToolbarButton
-              key={'market-button'}
-              label="Add question"
-              onClick={() => setMarketOpen(true)}
-            >
+        items={[
+          {
+            name: 'upload',
+            nonButtonContent: (
+              <UploadButton key={'upload-button'} upload={upload} />
+            ),
+          },
+          {
+            name: 'Add GIF',
+            onClick: () => setGIFOpen(true),
+            icon: <PiGifFill className="h-5 w-5" aria-hidden />,
+          },
+          {
+            name: 'Add embed',
+            onClick: () => setIframeOpen(true),
+            icon: <CodeIcon className="h-5 w-5" aria-hidden="true" />,
+          },
+          {
+            name: 'Add question',
+            onClick: () => setMarketOpen(true),
+            icon: (
               <PresentationChartLineIcon
                 className="h-5 w-5"
                 aria-hidden="true"
               />
-            </ToolbarButton>
-            <ToolbarButton
-              key={'emoji-button'}
-              label="Add emoji"
-              onClick={() => insertEmoji(editor)}
-            >
-              <EmojiHappyIcon className="h-5 w-5" />
-            </ToolbarButton>
-          </Col>
-        }
+            ),
+          },
+          {
+            name: 'Add emoji',
+            onClick: () => insertEmoji(editor),
+            icon: <EmojiHappyIcon className="h-5 w-5" />,
+          },
+        ]}
       />
 
       <EmbedModal editor={editor} open={iframeOpen} setOpen={setIframeOpen} />
@@ -99,7 +91,7 @@ function UploadButton(props: { upload: UploadMutation }) {
   return (
     <FileUploadButton
       onFiles={(files) => upload?.mutate(files)}
-      className="hover:bg-canvas-100 active:bg-ink-300 relative flex p-1 transition-colors"
+      className="hover:bg-ink-100 hover:text-ink-900 text-ink-700 active:bg-ink-300 relative flex items-center px-4 py-2 text-sm transition-colors"
     >
       <Row className={'items-center justify-start gap-2'}>
         <PhotographIcon className="h-5 w-5" aria-hidden="true" />
@@ -113,27 +105,6 @@ function UploadButton(props: { upload: UploadMutation }) {
         )}
       </Row>
     </FileUploadButton>
-  )
-}
-
-function ToolbarButton(props: {
-  label: string
-  onClick: MouseEventHandler
-  children: React.ReactNode
-}) {
-  const { label, onClick, children } = props
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="hover:bg-canvas-100 active:bg-ink-300 p-1 transition-colors"
-    >
-      <Row className={'w-full items-center justify-start gap-2'}>
-        {children}
-        {label}
-      </Row>
-    </button>
   )
 }
 
