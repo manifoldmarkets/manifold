@@ -19,6 +19,7 @@ export function MaxMinProfit(props: {
   const [animateOut, setAnimateOut] = useState(false)
 
   const { maxProfit, minProfit } = useMaxAndMinProfit(user.id)
+
   //triggers for animation in
   useEffect(() => {
     if (!animateIn) return
@@ -41,7 +42,7 @@ export function MaxMinProfit(props: {
     }, 1000)
   }
 
-  if (maxProfit == undefined || minProfit == undefined) {
+  if (maxProfit === undefined || minProfit === undefined) {
     return (
       <div className="mx-auto my-auto">
         <LoadingIndicator />
@@ -49,8 +50,15 @@ export function MaxMinProfit(props: {
     )
   }
 
-  if (maxProfit == null || minProfit == null) {
-    return <>An error occured</>
+  if (maxProfit === null || minProfit === null) {
+    return (
+      <>
+        <div className="mx-auto my-auto">
+          You don't have any resolved bets this year!
+        </div>
+        <NavButtons goToPrevPage={goToPrevPage} goToNextPage={onGoToNext} />
+      </>
+    )
   }
 
   function getBetOnThing(profit: ProfitType) {

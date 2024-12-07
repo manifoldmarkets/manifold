@@ -94,6 +94,7 @@ async function getTotalProfit(userId: string) {
 function calculateTotalProfit(
   portfolioHistoryRow: rowFor<'user_portfolio_history'>
 ) {
+  if (!portfolioHistoryRow) return 0
   return (
     (portfolioHistoryRow.investment_value ?? 0) +
     (portfolioHistoryRow.balance ?? 0) -
@@ -127,25 +128,30 @@ export function useMaxAndMinProfit(userId: string) {
     ProfitType | undefined | null
   >(undefined, `wrapped-2024-${userId}-min-profit`)
 
+  function translateProfitObject(
+    profitObject: {
+      profit: number
+      data: Contract
+      has_no_shares: boolean
+      has_yes_shares: boolean
+      answer_id: string | null
+    } | null
+  ) {
+    if (!profitObject) return null
+    return {
+      profit: profitObject.profit ?? 0,
+      contract: profitObject.data,
+      hasNoShares: profitObject.has_no_shares,
+      hasYesShares: profitObject.has_yes_shares,
+      answerId: profitObject.answer_id,
+    }
+  }
+
   useEffect(() => {
     getMaxMinProfitMetric2024(userId).then((data) => {
-      const [max, min] = data ?? [null, null]
-      if (max && min) {
-        setMaxProfit({
-          profit: max.profit ?? 0,
-          contract: max.data,
-          hasNoShares: max.has_no_shares,
-          hasYesShares: max.has_yes_shares,
-          answerId: max.answer_id,
-        })
-        setMinProfit({
-          profit: min.profit ?? 0,
-          contract: min.data,
-          hasNoShares: min.has_no_shares,
-          hasYesShares: min.has_yes_shares,
-          answerId: min.answer_id,
-        })
-      }
+      const [max, min] = data && data.length > 0 ? data : [null, null]
+      setMaxProfit(translateProfitObject(max))
+      setMinProfit(translateProfitObject(min))
     })
   }, [userId])
 
