@@ -280,7 +280,9 @@ export const AnswersResolvePanel = (props: {
           fullTitle={!inModal}
         />
         {!contract.shouldAnswersSumToOne ? (
-          <div className="text-scarlet-500">Independent multiple choice markets cannot currently be resolved.</div>
+          <div className="text-scarlet-500">
+            Independent multiple choice markets cannot currently be resolved.
+          </div>
         ) : (
           <>
             <AnswersResolveOptions
