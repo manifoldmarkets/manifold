@@ -45,9 +45,7 @@ export const resolveMarketMain: APIHandler<
   if (outcomeType === 'STONK') {
     throw new APIError(403, 'STONK contracts cannot be resolved')
   }
-  if (outcomeType === 'MULTIPLE_CHOICE' && contract.mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne) {
-    throw new APIError(403, 'Independent multiple choice markets cannot currently be resolved')
-  }
+
   const caller = await getUser(auth.uid)
   if (!caller) throw new APIError(400, 'Caller not found')
   if (caller.isBannedFromPosting || caller.userDeleted)

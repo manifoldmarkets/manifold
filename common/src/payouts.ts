@@ -18,8 +18,13 @@ export type Payout = {
   userId: string
   payout: number
 }
-export const getLoanPayouts = (contractMetrics: ContractMetric[]): Payout[] => {
-  const metricsWithLoans = contractMetrics.filter((metric) => metric.loan)
+export const getLoanPayouts = (
+  contractMetrics: ContractMetric[],
+  answerId?: string
+): Payout[] => {
+  const metricsWithLoans = contractMetrics
+    .filter((metric) => metric.loan)
+    .filter((metric) => (answerId ? metric.answerId === answerId : true))
   const metricsByUser = groupBy(metricsWithLoans, (metric) => metric.userId)
   const loansByUser = mapValues(metricsByUser, (metrics) =>
     sumBy(metrics, (metric) => -(metric.loan ?? 0))

@@ -349,7 +349,7 @@ export const getPayoutInfo = (
     : undefined
 
   // Calculate loan payouts from contract metrics
-  const loanPayouts = getLoanPayouts(contractMetrics)
+  const loanPayouts = getLoanPayouts(contractMetrics, answerId)
 
   // Calculate payouts using contract metrics instead of bets
   const { traderPayouts, liquidityPayouts } = getPayouts(
