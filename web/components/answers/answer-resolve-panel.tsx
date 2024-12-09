@@ -279,27 +279,33 @@ export const AnswersResolvePanel = (props: {
           onClose={onClose}
           fullTitle={!inModal}
         />
-        <AnswersResolveOptions
-          contract={contract}
-          resolveOption={resolveOption}
-          setResolveOption={setResolveOption}
-          chosenAnswers={chosenAnswers}
-        />
-        <Col className="gap-2">
-          {answers.map((answer) => (
-            <ResolutionAnswerItem
-              key={answer.id}
-              answer={answer}
+        {!contract.shouldAnswersSumToOne ? (
+          <div className="text-scarlet-500">Independent multiple choice markets cannot currently be resolved.</div>
+        ) : (
+          <>
+            <AnswersResolveOptions
               contract={contract}
-              showChoice={showChoice}
-              chosenProb={chosenAnswers[answer.id]}
-              totalChosenProb={chosenTotal}
-              onChoose={onChoose}
-              onDeselect={onDeselect}
-              showAvatar={showAvatars}
+              resolveOption={resolveOption}
+              setResolveOption={setResolveOption}
+              chosenAnswers={chosenAnswers}
             />
-          ))}
-        </Col>
+            <Col className="gap-2">
+              {answers.map((answer) => (
+                <ResolutionAnswerItem
+                  key={answer.id}
+                  answer={answer}
+                  contract={contract}
+                  showChoice={showChoice}
+                  chosenProb={chosenAnswers[answer.id]}
+                  totalChosenProb={chosenTotal}
+                  onChoose={onChoose}
+                  onDeselect={onDeselect}
+                  showAvatar={showAvatars}
+                />
+              ))}
+            </Col>
+          </>
+        )}
         <ResolutionExplainer />
       </Col>
     </GradientContainer>
