@@ -19,8 +19,8 @@ export async function testBackendFunction() {
     // await backfillUserTopicInterests(pg)
     // await calculateImportanceScore(db, pg)
     // await updateContractMetricsCore()
-    // await updateUserMetricPeriods(['xoo782zW9geixafwEaT7B9Ku3Bj1'])
-    await updateUserMetricsWithBets()
+    await updateUserMetricPeriods(['xoo782zW9geixafwEaT7B9Ku3Bj1'])
+    // await updateUserMetricsWithBets()
     // await updateUserPortfolioHistoriesCore(['AJwLWoo3xue32XIiAVrL5SyR1WB2'])
     // await updateCreatorMetricsCore()
   } catch (e) {

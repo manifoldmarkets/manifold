@@ -41,7 +41,7 @@ export const unresolve: APIHandler<'unresolve'> = async (
   )
 }
 
-const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
+export const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
   const { contractId, answerId } = props
 
   const result = await createSupabaseDirectClient().tx(async (tx) => {
