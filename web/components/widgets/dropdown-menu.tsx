@@ -1,11 +1,17 @@
+import {
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+  type MenuItemsProps,
+} from '@headlessui/react'
 import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { ReactNode } from 'react'
-import {
-  type AnchorProps,
-  CustomizeableDropdown,
-} from './customizeable-dropdown'
+import { Fragment, ReactNode } from 'react'
+import { AnimationOrNothing } from './customizeable-dropdown'
+
+type AnchorProps = NonNullable<MenuItemsProps['anchor']>
 
 export type DropdownItem = {
   name: string
@@ -45,74 +51,90 @@ export default function DropdownMenu(props: {
     closeOnClick,
     withinOverflowContainer,
   } = props
-
   return (
-    <CustomizeableDropdown
-      className={className}
-      buttonClass={clsx('text-ink-500 hover:text-ink-800', buttonClass)}
-      buttonDisabled={buttonDisabled}
-      buttonContent={(open) => (
+    <Menu
+      as="div"
+      className={clsx('relative inline-block text-left', className)}
+    >
+      {({ open, close }) => (
         <>
-          <span className="sr-only">Open options</span>
-          {!buttonContent ? (
-            <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
-          ) : typeof buttonContent === 'function' ? (
-            buttonContent(open)
-          ) : (
-            buttonContent
-          )}
+          <MenuButton
+            className={clsx(
+              'text-ink-500 hover:text-ink-800 flex items-center',
+              buttonClass
+            )}
+            disabled={buttonDisabled}
+          >
+            <span className="sr-only">Open options</span>
+            {!buttonContent ? (
+              <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
+            ) : typeof buttonContent === 'function' ? (
+              buttonContent(open)
+            ) : (
+              buttonContent
+            )}
+          </MenuButton>
+          <AnimationOrNothing show={open} animate={!withinOverflowContainer}>
+            <MenuItems
+              anchor={anchor ?? { to: 'bottom', gap: 8, padding: 4 }}
+              className={clsx(
+                'bg-canvas-0 ring-ink-1000 absolute z-30 rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none',
+                menuWidth ?? 'w-34',
+                menuItemsClass
+              )}
+            >
+              {items.map((item) =>
+                !!item.nonButtonContent ? (
+                  <Fragment key={item.name}>{item.nonButtonContent}</Fragment>
+                ) : (
+                  <MenuItem key={item.name}>
+                    {item.isLink && item.linkProps && item.linkProps.href ? (
+                      <Link
+                        href={item.linkProps?.href || '#'}
+                        {...item.linkProps}
+                        className={clsx(
+                          selectedItemName && item.name === selectedItemName
+                            ? 'bg-primary-100'
+                            : 'data-[focus]:bg-ink-100 data-[focus]:text-ink-900',
+                          'text-ink-700',
+                          'flex w-full items-center gap-2 px-4 py-2 text-left text-sm'
+                        )}
+                      >
+                        {item.icon && <div className="w-5">{item.icon}</div>}
+                        {item.buttonContent ?? item.name}
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          if (item.onClick) {
+                            item.onClick()
+                          }
+                          if (closeOnClick) {
+                            close()
+                          }
+                        }}
+                        className={clsx(
+                          selectedItemName && item.name === selectedItemName
+                            ? 'bg-primary-100'
+                            : 'data-[focus]:bg-ink-100 data-[focus]:text-ink-900',
+                          'text-ink-700',
+                          'flex w-full items-center gap-2 px-4 py-2 text-left text-sm',
+                          item.className
+                        )}
+                      >
+                        {item.icon && <div className="w-5">{item.icon}</div>}
+                        {item.buttonContent ?? item.name}
+                      </button>
+                    )}
+                  </MenuItem>
+                )
+              )}
+            </MenuItems>
+          </AnimationOrNothing>
         </>
       )}
-      withinOverflowContainer={withinOverflowContainer}
-      popoverClassName={clsx('mt-2 py-1', menuItemsClass)}
-      menuWidth={menuWidth ?? 'w-34'}
-      anchor={anchor}
-      dropdownMenuContent={items.map((item) => (
-        <div key={item.name}>
-          {!!item.nonButtonContent ? (
-            item.nonButtonContent
-          ) : item.isLink && item.linkProps && item.linkProps.href ? (
-            <Link
-              href={item.linkProps?.href || '#'}
-              {...item.linkProps}
-              className={clsx(
-                selectedItemName && item.name === selectedItemName
-                  ? 'bg-primary-100'
-                  : 'hover:bg-ink-100 hover:text-ink-900',
-                'text-ink-700',
-                'flex w-full items-center gap-2 px-4 py-2 text-left text-sm'
-              )}
-            >
-              {item.icon && <div className="w-5">{item.icon}</div>}
-              {item.buttonContent ?? item.name}
-            </Link>
-          ) : (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                e.preventDefault()
-                if (item.onClick) {
-                  item.onClick()
-                }
-                if (closeOnClick) {
-                  close()
-                }
-              }}
-              className={clsx(
-                selectedItemName && item.name === selectedItemName
-                  ? 'bg-primary-100'
-                  : 'hover:bg-ink-100 hover:text-ink-900',
-                'text-ink-700',
-                'flex w-full items-center gap-2 px-4 py-2 text-left text-sm',
-                item.className
-              )}
-            >
-              {item.icon && <div className="w-5">{item.icon}</div>}
-              {item.buttonContent ?? item.name}
-            </button>
-          )}
-        </div>
-      ))}
-    />
+    </Menu>
   )
 }

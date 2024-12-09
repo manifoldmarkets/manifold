@@ -13,6 +13,7 @@ import { FaDroplet } from 'react-icons/fa6'
 import { IoDuplicate, IoRocket } from 'react-icons/io5'
 import { MdOutlineReport } from 'react-icons/md'
 import { TiVolumeMute } from 'react-icons/ti'
+import { MenuSeparator } from '@headlessui/react'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { RepostModal } from 'web/components/comments/repost-modal'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -201,7 +202,9 @@ export function HeaderActions(props: {
       ? [
           {
             name: 'line',
-            nonButtonContent: <div className="bg-ink-400 mx-4 my-2 h-[1px]" />,
+            nonButtonContent: (
+              <MenuSeparator className="bg-ink-400 mx-4 my-2 h-[1px]" />
+            ),
           },
         ]
       : []),
@@ -214,14 +217,14 @@ export function HeaderActions(props: {
             },
             icon: <MdOutlineReport className="h-5 w-5" />,
             className:
-              'text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-100 dark:hover:bg-ink-100',
+              'text-orange-600 dark:text-orange-400 data-[focus]:!text-orange-700 dark:data-[focus]:!text-orange-300 data-[focus]:!bg-orange-100 dark:data-[focus]:!bg-ink-100',
           },
           {
             name: 'Uninterested',
             onClick: markUninteresting,
             icon: <TiVolumeMute className="h-5 w-5" />,
             className:
-              'text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-100 dark:hover:bg-ink-100',
+              'text-orange-600 dark:text-orange-400 data-[focus]:!text-orange-700 dark:data-[focus]:!text-orange-300 data-[focus]:!bg-orange-100 dark:data-[focus]:!bg-ink-100',
           },
         ]
       : []),
@@ -239,7 +242,7 @@ export function HeaderActions(props: {
             ),
             className: isBlocked
               ? ''
-              : 'text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-100 dark:hover:bg-ink-100',
+              : 'text-orange-600 dark:text-orange-400 data-[focus]:!text-orange-700 dark:data-[focus]:!text-orange-300 data-[focus]:!bg-orange-100 dark:data-[focus]:!bg-ink-100',
           },
         ]
       : []),

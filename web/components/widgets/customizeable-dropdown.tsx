@@ -8,8 +8,9 @@ import {
 import clsx from 'clsx'
 import { Fragment, ReactNode } from 'react'
 
-export type AnchorProps = NonNullable<PopoverPanelProps['anchor']>
+type AnchorProps = NonNullable<PopoverPanelProps['anchor']>
 
+// very similar to Dropdown Menu but without menu semantics
 export function CustomizeableDropdown(props: {
   menuWidth?: string
   buttonContent: React.ReactNode | ((open: boolean) => React.ReactNode)

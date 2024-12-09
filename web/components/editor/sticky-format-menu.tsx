@@ -16,6 +16,7 @@ import { PiGifFill } from 'react-icons/pi'
 import { GIFModal } from './gif-modal'
 import { Row } from 'web/components/layout/row'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
+import { MenuItem } from '@headlessui/react'
 
 /* Toolbar, with buttons for images and embeds */
 export function StickyFormatMenu(props: {
@@ -33,7 +34,7 @@ export function StickyFormatMenu(props: {
     <Row className="text-ink-600 ml-2 h-8 items-center">
       <DropdownMenu
         withinOverflowContainer
-        anchor="bottom start"
+        anchor={{ to: 'bottom start', gap: 8, padding: 4 }}
         buttonContent={
           <PlusCircleIcon
             className=" hover:text-ink-700 text-ink-500 h-5 w-5"
@@ -44,7 +45,9 @@ export function StickyFormatMenu(props: {
           {
             name: 'upload',
             nonButtonContent: (
-              <UploadButton key={'upload-button'} upload={upload} />
+              <MenuItem>
+                <UploadButton upload={upload} />
+              </MenuItem>
             ),
           },
           {
@@ -91,7 +94,7 @@ function UploadButton(props: { upload: UploadMutation }) {
   return (
     <FileUploadButton
       onFiles={(files) => upload?.mutate(files)}
-      className="hover:bg-ink-100 hover:text-ink-900 text-ink-700 active:bg-ink-300 relative flex items-center px-4 py-2 text-sm transition-colors"
+      className="data-[focus]:bg-ink-100 data-[focus]:text-ink-900 text-ink-700 relative flex items-center px-4 py-2 text-sm"
     >
       <Row className={'items-center justify-start gap-2'}>
         <PhotographIcon className="h-5 w-5" aria-hidden="true" />
