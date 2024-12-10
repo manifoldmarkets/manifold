@@ -397,7 +397,11 @@ export function ContractPageContent(props: ContractParams) {
               </Col>
               <Row className="text-ink-600 flex-wrap items-center justify-between gap-y-1 text-sm">
                 <AuthorInfo
-                  contract={props.contract}
+                  creatorId={props.contract.creatorId}
+                  creatorName={props.contract.creatorName}
+                  creatorUsername={props.contract.creatorUsername}
+                  creatorAvatarUrl={props.contract.creatorAvatarUrl}
+                  token={liveContract.token}
                   resolverId={liveContract.resolverId}
                 />
                 <ContractSummaryStats
