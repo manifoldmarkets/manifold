@@ -798,13 +798,27 @@ export function MarketResolvedNotification(props: {
 
   const resolvedByAdmin = sourceUserUsername != sourceContractCreatorUsername
 
+  const showManifoldAsResolver = token === 'CASH'
+
+  const resolverName = showManifoldAsResolver
+    ? MANIFOLD_USER_NAME
+    : resolvedByAdmin
+    ? 'A mod'
+    : sourceUserName
+  const resolverUsername = showManifoldAsResolver
+    ? MANIFOLD_USER_USERNAME
+    : sourceUserUsername
+  const resolverAvatarUrl = showManifoldAsResolver
+    ? MANIFOLD_AVATAR_URL
+    : notification.sourceUserAvatarUrl
+
   const content =
     sourceText === 'CANCEL' ? (
       <>
         <NotificationUserLink
           userId={sourceId}
-          name={resolvedByAdmin ? 'A mod' : sourceUserName}
-          username={sourceUserUsername}
+          name={resolverName}
+          username={resolverUsername}
         />{' '}
         cancelled {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -821,8 +835,8 @@ export function MarketResolvedNotification(props: {
       <>
         <NotificationUserLink
           userId={sourceId}
-          name={resolvedByAdmin ? 'A mod' : sourceUserName}
-          username={sourceUserUsername}
+          name={resolverName}
+          username={resolverUsername}
         />{' '}
         resolved {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -878,7 +892,10 @@ export function MarketResolvedNotification(props: {
         icon={
           <>
             <AvatarNotificationIcon
-              notification={notification}
+              notification={{
+                ...notification,
+                sourceUserAvatarUrl: resolverAvatarUrl,
+              }}
               symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
             />
             {!!secondaryTitle && (

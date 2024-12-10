@@ -1,6 +1,10 @@
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { useEffect } from 'react'
-import { useAdmin, useTrusted } from 'web/hooks/use-admin'
+import {
+  useAdmin,
+  useSweepstakesTrusted,
+  useTrusted,
+} from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { Button } from '../buttons/button'
 import { DeleteMarketButton } from '../buttons/delete-market-button'
@@ -41,6 +45,7 @@ export function DangerZone(props: {
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
+  const isSweepstakesTrusted = useSweepstakesTrusted()
   const user = useUser()
   const isCreator = user?.id === creatorId
   const isClosed = !!closeTime && closeTime < Date.now()
@@ -63,7 +68,7 @@ export function DangerZone(props: {
     !isResolved &&
     outcomeType !== 'STONK' &&
     mechanism !== 'none' &&
-    (token === 'CASH' ? isAdmin : isCreator || isAdmin || isMod)
+    (token === 'CASH' ? isSweepstakesTrusted : isCreator || isAdmin || isMod)
 
   const now = dayjs().utc()
   const creatorCanUnresolve =

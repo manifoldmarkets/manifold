@@ -20,6 +20,7 @@ import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUserUpdates } from 'shared/supabase/users'
+import { SWEEPSTAKES_MOD_IDS } from 'common/envs/constants'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   props,
@@ -65,11 +66,12 @@ export const resolveMarketMain: APIHandler<
   if (
     isProd() &&
     contract.token === 'CASH' &&
-    auth.uid !== HOUSE_LIQUIDITY_PROVIDER_ID
+    auth.uid !== HOUSE_LIQUIDITY_PROVIDER_ID &&
+    !SWEEPSTAKES_MOD_IDS.includes(auth.uid)
   ) {
     throw new APIError(
       403,
-      'Only the Manifold account can resolve prize cash markets'
+      'Only the Manifold account and approved mods can resolve prize cash markets'
     )
   }
 

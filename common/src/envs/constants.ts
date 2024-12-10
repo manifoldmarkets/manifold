@@ -44,6 +44,9 @@ export function isAdminId(id: string) {
 export function isModId(id: string) {
   return MOD_IDS.includes(id)
 }
+export function isSweepstakesModId(id: string) {
+  return SWEEPSTAKES_MOD_IDS.includes(id)
+}
 export const DOMAIN = ENV_CONFIG.domain
 export const LOVE_DOMAIN = ENV_CONFIG.loveDomain
 export const LOVE_DOMAIN_ALTERNATE = ENV_CONFIG.loveDomainAlternate
@@ -204,6 +207,10 @@ export const MOD_IDS = [
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
   'tO4DwIsujySUwtSnrr2hnU1WJtJ3', // WieDan
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
+]
+
+export const SWEEPSTAKES_MOD_IDS = [
+  'uglwf3YKOZNGjjEXKc5HampOFRE2', //SirSalty
 ]
 
 export const MVP = ['Eliza', 'Gabrielle', 'jacksonpolack']
