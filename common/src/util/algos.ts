@@ -2,7 +2,7 @@ export function binarySearch(
   min: number,
   max: number,
   comparator: (x: number) => number,
-  maxIterations = 20
+  maxIterations = 50
 ) {
   let mid = 0
   let i = 0
