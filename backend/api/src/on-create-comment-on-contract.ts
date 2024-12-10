@@ -20,7 +20,6 @@ import { getAnswer } from 'shared/supabase/answers'
 import { promptClaude } from 'shared/helpers/claude'
 import { anythingToRichText } from 'shared/tiptap'
 import { getCommentsDirect } from 'shared/supabase/contract-comments'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { updateMarketContinuation } from './update-market'
 import { JSONContent } from '@tiptap/core'
 import { cloneDeep } from 'lodash'
@@ -211,8 +210,10 @@ ${commentsContext ? `Comment thread:\n${commentsContext}` : ''}
 
 Latest comment from creator: ${richTextToString(comment.content)}
 
-Please analyze if the creator's latest comment appears to be clarifying or adding important details about how the market will be resolved. 
-If they say they're going to update the description themselves, do not issue a clarification. Consider the context of any questions or discussions in the comment thread. Only choose to issue a clarification if the creator's comment is unambiguously changing the resolution criteria.
+Please analyze if the creator's latest comment ${
+    commentsContext ? '(in context of the comment thread)' : ''
+  } appears to be clarifying or adding important details about how the market will be resolved. 
+If they say they're going to update the description themselves, or if the description already handles the comment's context, do not issue a clarification. Only choose to issue a clarification if the creator's comment is unambiguously changing the resolution criteria.
 Return a JSON response with:
 {
   "isClarification": boolean, // true if the comment clarifies resolution criteria
@@ -237,11 +238,37 @@ Only return the JSON, nothing else.`
     const clarification = JSON.parse(response) as ClarificationResponse
 
     if (clarification.isClarification && clarification.description) {
-      const markdownToAppend = `\n\n**[Possible clarification from creator (AI generated)](https://${
-        ENV_CONFIG.domain
-      }${contractPath(contract)}#${comment.id}):**\n${
-        clarification.description
-      }`
+      const date = new Date()
+        .toLocaleDateString('en-US', {
+          timeZone: 'America/Los_Angeles',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        })
+        .split('/')
+        .reverse()
+        .join('-')
+      const timeZone = new Date()
+        .toLocaleDateString('en-US', { timeZoneName: 'short' })
+        .includes('PDT')
+        ? 'PDT'
+        : 'PST'
+
+      const hasBulletPoints = ['\n- ', '\n• ', '\n* '].some((bullet) =>
+        clarification.description?.includes(bullet)
+      )
+      const formattedDescription = clarification.description.replace(
+        /\n[•\-*] /g,
+        '\n   - '
+      )
+      const summaryNote = `(AI summary of [creator comment](${contractPath(
+        contract
+      )}#${comment.id}))`
+
+      const markdownToAppend = hasBulletPoints
+        ? `- Update ${date} (${timeZone}) ${summaryNote}: ${formattedDescription}`
+        : `- Update ${date} (${timeZone}): ${formattedDescription} ${summaryNote}`
+
       const appendDescription = anythingToRichText({
         markdown: markdownToAppend,
       })
@@ -254,7 +281,10 @@ Only return the JSON, nothing else.`
           markdown: `${oldDescription}${appendDescription}`,
         })
       } else {
-        oldDescription.content?.push(...(appendDescription?.content ?? []))
+        oldDescription.content?.push(
+          { type: 'paragraph' }, // acts as newline
+          ...(appendDescription?.content ?? [])
+        )
         newDescription = oldDescription
       }
       await updateContract(pg, contract.id, {
