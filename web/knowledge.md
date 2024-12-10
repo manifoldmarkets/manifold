@@ -15,15 +15,14 @@ Component design patterns:
 - For shared UI elements like answer displays, prefer passing the specific data needed (answer text, probability, etc.) rather than passing the entire contract
 - Keep market-type-specific logic (mana vs sweepstakes) in container components, not shared display components
 
-Refactoring strategy for dual market support:
+### Components
 
-- Use grep to find all usages of a component before modifying it
-- Start with leaf components that have fewer dependencies
-- When threading props becomes complex, consider creating intermediate container components
-- Extract market-specific logic into hooks or container components
+Our design system can be found on pages/styles.tsx. You can can find reference implementation of colors, buttons, toggles, and input fields. If you make a new reusable component, add it to the styles page.
 
-### Dark Mode and Component Consistency
+- Use Headless UI (v2.2+) for dropdowns and popovers
+- Use tiptap for text editors
+- We wrap libraries in our own components, for convenience
 
-- Always consider dark mode when adding new UI components. Use color classes that respect the current theme (e.g., `text-ink-700 dark:text-ink-300` instead of fixed color classes).
-- Maintain consistent width with other components on the page. Use similar container classes or width settings to ensure new elements align well with existing ones.
-- When adding new components or modifying existing ones, check how they look in both light and dark modes, and at various screen sizes to ensure responsiveness.
+- Consider dark mode when adding new UI components. Use color classes that respect the current theme (like `outline-purple-700 dark:outline-purple-300`)
+  - `canvas`, `ink` (grays), `primary` (indigos), `teal` and `scarlet` already respect dark mode. like `text-ink-700` will be gray-700 in light mode and gray-300 in dark mode. this is defined in globals.css
+- Use container classes, wrapping, or width settings to ensure new elements align well with existing ones and are responsive at various screen sizes.

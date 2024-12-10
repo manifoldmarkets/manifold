@@ -44,7 +44,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { commenterAndBettorMatch, roundThreadColor } from './comment'
 import { CommentEditHistoryButton } from './comment-edit-history-button'
-import DropdownMenu from './dropdown-menu'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { EditCommentModal } from './edit-comment-modal'
 import { RepostModal } from './repost-modal'
 import { type Answer } from 'common/answer'
@@ -471,7 +471,7 @@ function DotMenu(props: {
       />
       <DropdownMenu
         menuWidth={'w-36'}
-        icon={
+        buttonContent={
           <DotsHorizontalIcon
             className="mt-[0.12rem] h-4 w-4"
             aria-hidden="true"

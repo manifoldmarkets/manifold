@@ -1,7 +1,7 @@
 import { XIcon } from '@heroicons/react/outline'
 import { Fragment, useRef, useEffect, useState } from 'react'
 import clsx from 'clsx'
-import { Menu, Transition } from '@headlessui/react'
+import { Menu, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -74,67 +74,59 @@ export function SelectUsers(props: {
               placeholder="e.g. Ian Philips"
             />
           </Col>
-          {queryReady && (
-            <Menu
-              as="div"
-              className={clsx(
-                'relative inline-block w-full overflow-y-scroll text-right',
-                queryReady && 'h-56'
-              )}
-            >
-              {({}) => (
-                <Transition
-                  show={queryReady}
-                  as={Fragment}
-                  enter="transition ease-out duration-100"
-                  enterFrom="transform opacity-0 scale-95"
-                  enterTo="transform opacity-100 scale-100"
-                  leave="transition ease-in duration-75"
-                  leaveFrom="transform opacity-100 scale-100"
-                  leaveTo="transform opacity-0 scale-95"
+
+          <Menu
+            as="div"
+            className={clsx(
+              'relative z-10 inline-block w-full text-right',
+              filteredUsers.length > 0 && 'h-56'
+            )}
+          >
+            {queryReady && filteredUsers.length > 0 && (
+              <Transition
+                show={queryReady}
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <MenuItems
+                  static
+                  className="divide-ink-100 bg-canvas-0 ring-ink-1000 absolute right-0 mt-2 w-full origin-top-right cursor-pointer divide-y rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none"
                 >
-                  <Menu.Items
-                    static={true}
-                    className="divide-ink-100 bg-canvas-0 ring-ink-1000 absolute right-0 mt-2 w-full origin-top-right cursor-pointer divide-y rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none"
-                  >
-                    <div className="py-1">
-                      {filteredUsers.map((user) => (
-                        <Menu.Item key={user.id}>
-                          {({ active }) => (
-                            <button
-                              className={clsx(
-                                active
-                                  ? 'bg-ink-100 text-ink-900'
-                                  : 'text-ink-700',
-                                'group flex w-full items-center px-4 py-2 text-sm'
-                              )}
-                              onClick={() => {
-                                setQuery('')
-                                setSelectedUsers([...selectedUsers, user])
-                              }}
-                            >
-                              <Avatar
-                                username={user.username}
-                                avatarUrl={user.avatarUrl}
-                                size={'xs'}
-                                className={'mr-2'}
-                              />
-                              {user.name}
-                              {showUserUsername && (
-                                <span className={'text-ink-500 ml-1'}>
-                                  @{user.username}
-                                </span>
-                              )}
-                            </button>
+                  <div className="py-1">
+                    {filteredUsers.map((user) => (
+                      <MenuItem key={user.id}>
+                        <button
+                          className="hover:bg-ink-50 hover:text-ink-800 data-[focus]:bg-ink-100 data-[focus]:text-ink-900 text-ink-700 group flex w-full items-center px-4 py-2 text-sm"
+                          onClick={() => {
+                            setQuery('')
+                            setSelectedUsers([...selectedUsers, user])
+                          }}
+                        >
+                          <Avatar
+                            username={user.username}
+                            avatarUrl={user.avatarUrl}
+                            size={'xs'}
+                            className={'mr-2'}
+                          />
+                          {user.name}
+                          {showUserUsername && (
+                            <span className={'text-ink-500 ml-1'}>
+                              @{user.username}
+                            </span>
                           )}
-                        </Menu.Item>
-                      ))}
-                    </div>
-                  </Menu.Items>
-                </Transition>
-              )}
-            </Menu>
-          )}
+                        </button>
+                      </MenuItem>
+                    ))}
+                  </div>
+                </MenuItems>
+              </Transition>
+            )}
+          </Menu>
         </>
       )}
       {selectedUsers.length > 0 && (

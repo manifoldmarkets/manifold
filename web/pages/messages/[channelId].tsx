@@ -36,7 +36,7 @@ import {
   BannedBadge,
   UserAvatarAndBadge,
 } from 'web/components/widgets/user-link'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { DotsVerticalIcon } from '@heroicons/react/solid'
 import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
 import { buildArray, filterDefined } from 'common/util/array'
@@ -224,7 +224,7 @@ export const PrivateChat = (props: {
         <DropdownMenu
           className={'ml-auto [&_button]:p-4'}
           menuWidth={'w-44'}
-          icon={<DotsVerticalIcon className="h-5 w-5" />}
+          buttonContent={<DotsVerticalIcon className="h-5 w-5" />}
           items={buildArray(
             {
               icon: <FaUserFriends className={'h-5 w-5'} />,

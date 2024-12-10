@@ -1,4 +1,11 @@
-import { Dialog, Transition } from '@headlessui/react'
+import {
+  CloseButton,
+  Dialog,
+  DialogBackdrop,
+  DialogPanel,
+  Transition,
+  TransitionChild,
+} from '@headlessui/react'
 import {
   GlobeAltIcon,
   NewspaperIcon,
@@ -229,13 +236,13 @@ export function MobileSidebar(props: {
   const { sidebarOpen, setSidebarOpen } = props
   return (
     <div>
-      <Transition.Root show={sidebarOpen} as={Fragment}>
+      <Transition show={sidebarOpen} as={Fragment}>
         <Dialog
           as="div"
           className="fixed inset-0 z-50 flex justify-end"
           onClose={setSidebarOpen}
         >
-          <Transition.Child
+          <TransitionChild
             as={Fragment}
             enter="transition-opacity ease-linear duration-300"
             enterFrom="opacity-0"
@@ -245,9 +252,9 @@ export function MobileSidebar(props: {
             leaveTo="opacity-0"
           >
             {/* background cover */}
-            <Dialog.Overlay className="bg-canvas-100/75 fixed inset-0" />
-          </Transition.Child>
-          <Transition.Child
+            <DialogBackdrop className="bg-canvas-100/75 fixed inset-0" />
+          </TransitionChild>
+          <TransitionChild
             as={Fragment}
             enter="transition ease-in-out duration-300 transform"
             enterFrom="translate-x-full"
@@ -256,18 +263,15 @@ export function MobileSidebar(props: {
             leaveFrom="translate-x-0"
             leaveTo="translate-x-full"
           >
-            <div className="bg-canvas-0 relative w-full max-w-xs">
+            <DialogPanel className="bg-canvas-0 relative w-full max-w-xs">
               <Sidebar className="mx-2 overflow-y-auto" isMobile />
-              <button
-                className="hover:text-primary-600 focus:text-primary-600 text-ink-500 absolute left-0 top-0 z-50 -translate-x-full outline-none"
-                onClick={() => setSidebarOpen(false)}
-              >
+              <CloseButton className="hover:text-primary-600 focus:text-primary-600 text-ink-500 absolute left-0 top-0 z-50 -translate-x-full outline-none">
                 <XIcon className="m-2 h-8 w-8" />
-              </button>
-            </div>
-          </Transition.Child>
+              </CloseButton>
+            </DialogPanel>
+          </TransitionChild>
         </Dialog>
-      </Transition.Root>
+      </Transition>
     </div>
   )
 }

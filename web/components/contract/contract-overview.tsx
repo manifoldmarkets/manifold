@@ -387,9 +387,8 @@ const ChoiceOverview = (props: {
             <CancelLabel />
           </div>
         ) : (
-          <></>
+          <div />
         )}
-
         {!hideGraph && (
           <>
             <Row className={'relative gap-1'}>
