@@ -43,27 +43,19 @@ export function Tooltip(props: {
 
   const [open, setOpen] = useState(false)
 
-  const {
-    x,
-    y,
-    reference,
-    floating,
-    strategy,
-    middlewareData,
-    context,
-    placement,
-  } = useFloating({
-    open: open,
-    onOpenChange: setOpen,
-    whileElementsMounted: autoUpdate,
-    placement: props.placement ?? 'top',
-    middleware: [
-      offset(8),
-      flip(),
-      shift({ padding: 4 }),
-      arrow({ element: arrowRef }),
-    ],
-  })
+  const { refs, floatingStyles, middlewareData, context, placement } =
+    useFloating({
+      open: open,
+      onOpenChange: setOpen,
+      whileElementsMounted: autoUpdate,
+      placement: props.placement ?? 'top',
+      middleware: [
+        offset(8),
+        flip(),
+        shift({ padding: 4 }),
+        arrow({ element: arrowRef }),
+      ],
+    })
 
   const { x: arrowX, y: arrowY } = middlewareData.arrow ?? {}
 
@@ -72,7 +64,7 @@ export function Tooltip(props: {
       mouseOnly: noTap,
       handleClose: hasSafePolygon ? safePolygon({ buffer: -0.5 }) : null,
     }),
-    useRole(context, { role: 'tooltip' }),
+    useRole(context, { role: 'label' }),
   ])
   // which side of tooltip arrow is on. like: if tooltip is top-left, arrow is on bottom of tooltip
   const arrowSide = {
@@ -87,7 +79,7 @@ export function Tooltip(props: {
       <span
         suppressHydrationWarning={suppressHydrationWarning}
         className={className}
-        ref={reference}
+        ref={refs.setReference}
         {...getReferenceProps()}
       >
         {children}
@@ -104,8 +96,8 @@ export function Tooltip(props: {
         // div attributes
         as="div"
         role="tooltip"
-        ref={floating}
-        style={{ position: strategy, top: y ?? 0, left: x ?? 0 }}
+        ref={refs.setFloating}
+        style={floatingStyles}
         className={clsx(
           'text-ink-0 bg-ink-700 z-20 w-max max-w-xs whitespace-normal rounded px-2 py-1 text-center text-sm font-medium',
           tooltipClassName

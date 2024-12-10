@@ -24,12 +24,11 @@
   },
   "dependencies": {
     "@amplitude/analytics-browser": "1.9.4",
-    "@floating-ui/react": "0.19.0",
+    "@floating-ui/react": "0.26.28",
     "@google-cloud/secret-manager": "4.2.1",
     "@headlessui/react": "2.2.0",
     "@hello-pangea/dnd": "16.3.0",
     "@heroicons/react": "1.0.6",
-    "@radix-ui/react-hover-card": "1.1.2",
     "@radix-ui/react-slider": "1.2.1",
     "@react-spring/web": "9.7.1",
     "@tiptap/core": "2.0.0-beta.204",
