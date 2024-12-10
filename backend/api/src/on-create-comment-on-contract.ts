@@ -195,25 +195,28 @@ const checkForClarification = async (
       .join('\n')
   }
 
-  const prompt = `You are analyzing a ${
+  const prompt = `SYSTEM: You are analyzing a ${
     commentsContext ? 'comment thread' : 'comment'
   } on a prediction market (that is managed by a creator) to determine if the creator's latest comment clarifies the resolution criteria.
 
+CONTEXT:
 Market question: ${contract.question}
-Current description: ${
+Market description: ${
     typeof contract.description === 'string'
       ? contract.description
       : richTextToString(contract.description)
   }
 
-${commentsContext ? `Comment thread:\n${commentsContext}` : ''}
+${commentsContext ? `COMMENT THREAD:\n${commentsContext}` : ''}
 
-Latest comment from creator: ${richTextToString(comment.content)}
+CREATOR'S LATEST COMMENT:
+${richTextToString(comment.content)}
 
-Please analyze if the creator's latest comment ${
+SYSTEM: Please analyze if the creator's latest comment ${
     commentsContext ? '(in context of the comment thread)' : ''
-  } appears to be clarifying or adding important details about how the market will be resolved. 
-If they say they're going to update the description themselves, or if the description already handles the comment's context, do not issue a clarification. Only choose to issue a clarification if the creator's comment is unambiguously changing the resolution criteria.
+  } appears to be clarifying or adding important details about how the market will be resolved, that is not already covered by the description. 
+If they say they're going to update the description themselves, do not issue a clarification. Only choose to issue a clarification if the creator's comment is unambiguously changing the resolution criteria as outlined in the description.
+
 Return a JSON response with:
 {
   "isClarification": boolean, // true if the comment clarifies resolution criteria
