@@ -214,8 +214,8 @@ ${richTextToString(comment.content)}
 
 SYSTEM: Please analyze if the creator's latest comment ${
     commentsContext ? '(in context of the comment thread)' : ''
-  } appears to be clarifying or adding important details about how the market will be resolved, that is not already covered by the description. 
-If they say they're going to update the description themselves, do not issue a clarification. Only choose to issue a clarification if the creator's comment is unambiguously changing the resolution criteria as outlined in the description.
+  } appears to be clarifying or adding important details about how the market will be resolved, that is not already covered by the market's description/question title. 
+If they say they're going to update the description themselves, do not issue a clarification. Only choose to issue a clarification if the creator's comment is unambiguously changing the resolution criteria as outlined in the description/question.
 
 Return a JSON response with:
 {
