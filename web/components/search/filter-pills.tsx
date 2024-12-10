@@ -16,7 +16,7 @@ import {
   SearchParams,
   TOPIC_FILTER_KEY,
 } from '../search'
-import DropdownMenu from '../comments/dropdown-menu'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { getLabelFromValue } from './search-dropdown-helpers'
 import { LiteGroup } from 'common/group'
 import { User } from 'common/user'

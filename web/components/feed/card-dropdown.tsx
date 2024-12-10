@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 
 import { buildArray } from 'common/util/array'
-import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
+import DropdownMenu, { DropdownItem } from '../widgets/dropdown-menu'
 import { useIsFollowing } from 'web/hooks/use-follows'
 import { useUser } from 'web/hooks/use-user'
 import {
@@ -70,7 +70,7 @@ export function FeedDropdown(props: {
   return (
     <DropdownMenu
       items={feedCardOptions}
-      icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
+      buttonContent={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
       menuWidth={'w-60'}
       menuItemsClass="bg-canvas-50"
     />

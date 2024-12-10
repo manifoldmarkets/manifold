@@ -48,7 +48,7 @@ import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { getUserContractsMetricsWithContracts } from 'web/lib/api/api'
 import { User } from 'web/lib/firebase/users'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import DropdownMenu from '../comments/dropdown-menu'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { useSweepstakes } from '../sweepstakes-provider'
@@ -663,7 +663,7 @@ function BetsTable(props: {
                     onClick: () => setModalOpen(true),
                   },
                 ]}
-                icon={<BsThreeDotsVertical className="h-4" />}
+                buttonContent={<BsThreeDotsVertical className="h-4" />}
               />
             </div>
           )}

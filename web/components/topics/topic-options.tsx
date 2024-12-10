@@ -12,7 +12,7 @@ import {
 } from '@heroicons/react/solid'
 import DropdownMenu, {
   DropdownItem,
-} from 'web/components/comments/dropdown-menu'
+} from 'web/components/widgets/dropdown-menu'
 import clsx from 'clsx'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -95,7 +95,7 @@ export function TopicOptions(props: {
       <DropdownMenu
         closeOnClick={true}
         items={groupOptionItems}
-        icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
+        buttonContent={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
         className={className}
         menuItemsClass="flex flex-col"
         withinOverflowContainer={true}
