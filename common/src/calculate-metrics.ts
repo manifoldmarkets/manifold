@@ -178,16 +178,15 @@ export const calculateMetricsByContractAndAnswer = (
     }
   )
   // Find loan amounts from current metrics and paste them into the new metrics
-  const newMetricsWithLoan = newMetrics.map((m) => {
+  return newMetrics.map((m) => {
     const currentMetric = currentMetrics.find(
       (cm) =>
         cm.contractId === m.contractId &&
         cm.answerId == m.answerId &&
         cm.userId === m.userId
     )
-    return { ...m, loan: currentMetric?.loan ?? m.loan }
+    return { ...m, loan: currentMetric?.loan ?? m.loan ?? 0 }
   })
-  return newMetricsWithLoan
 }
 
 // Produced from 0 filled limit orders
