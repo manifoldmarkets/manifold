@@ -35,7 +35,7 @@ export const unresolve: APIHandler<'unresolve'> = async (
   auth,
   request
 ) => {
-  return await betsQueue.enqueueFnFirst(
+  return await betsQueue.enqueueFn(
     () => unresolveMain(props, auth, request),
     [props.contractId, auth.uid]
   )
