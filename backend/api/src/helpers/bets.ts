@@ -81,7 +81,7 @@ export const fetchContractBetDataAndValidate = async (
     select * from answers
       where contract_id = $2 and (
         $3 is null or id in ($3:list) or ${isSumsToOne}
-      );
+      ) order by index;
     select b.*, u.balance, u.cash_balance from contract_bets b join users u on b.user_id = u.id
       where ${whereLimitOrderBets};
     -- My contract metrics
