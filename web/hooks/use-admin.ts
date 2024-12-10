@@ -1,5 +1,5 @@
 import { useUser } from './use-user'
-import { isAdminId, isModId } from 'common/envs/constants'
+import { isAdminId, isModId, isSweepstakesModId } from 'common/envs/constants'
 
 export const useAdmin = () => {
   const user = useUser()
@@ -14,6 +14,11 @@ export const useAdminOrMod = () => {
 export const useTrusted = () => {
   const user = useUser()
   return user ? isModId(user.id) : false
+}
+
+export const useSweepstakesTrusted = () => {
+  const user = useUser()
+  return user ? isAdminId(user.id) || isSweepstakesModId(user.id) : false
 }
 
 export const useDev = () => {
