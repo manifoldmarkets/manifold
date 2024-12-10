@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
@@ -71,6 +71,18 @@ function EditableDescription(props: {
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: description,
   })
+
+  useEffect(() => {
+    if (!editor || editing) return
+
+    const currentContent = editor.getJSON()
+    const newContent =
+      typeof description === 'string' ? description : description
+
+    if (JSON.stringify(currentContent) !== JSON.stringify(newContent)) {
+      editor.commands.setContent(newContent)
+    }
+  }, [description, editor, editing])
 
   const isDescriptionEmpty = JSONEmpty(description)
   const [saving, setSaving] = useState(false)
