@@ -1,27 +1,8 @@
 import clsx from 'clsx'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { filterDefined } from 'common/util/array'
-import {
-  groupBy,
-  keyBy,
-  orderBy,
-  partition,
-  range,
-  sortBy,
-  uniq,
-  uniqBy,
-} from 'lodash'
+import { groupBy, keyBy, orderBy } from 'lodash'
 import { memo } from 'react'
-import { useBetsOnce, useSubscribeGlobalBets } from 'web/hooks/use-bets'
-import {
-  useGlobalComments,
-  useSubscribeGlobalComments,
-} from 'web/hooks/use-comments'
-import {
-  usePublicContracts,
-  useLiveAllNewContracts,
-} from 'web/hooks/use-contract'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -33,27 +14,14 @@ import { Content } from './widgets/editor'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { UserHovercard } from './user/user-hovercard'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Bet } from 'common/bet'
-
-const filterBets = (bet: Bet, contract: Contract | undefined) =>
-  bet.amount >= 500 || (contract?.token === 'CASH' && bet.amount >= 5)
-
-const filterComments = (
-  comment: ContractComment,
-  contract: Contract | undefined
-) => (comment.likes ?? 0) - (comment.dislikes ?? 0) >= 2
-
-const filterNewContracts = (contract: Contract) =>
-  contract.marketTier !== 'play'
-
-const count = 50
 
 export function SiteActivity(props: {
   className?: string
   blockedUserIds?: string[]
 }) {
   const { className } = props
-
   const privateUser = usePrivateUser()
 
   const blockedGroupSlugs = privateUser?.blockedGroupSlugs ?? []
@@ -62,104 +30,38 @@ export function SiteActivity(props: {
     props.blockedUserIds ?? []
   )
 
-  const recentBets = useBetsOnce({
-    limit: count * 3,
-    filterRedemptions: true,
-    order: 'desc',
+  const { data, loading } = useAPIGetter('get-site-activity', {
+    // limit: 50,
+    // blockedUserIds,
+    // blockedGroupSlugs,
+    // blockedContractIds,
   })
-  const allRealtimeBets = useSubscribeGlobalBets({
-    filterRedemptions: true,
-  })
-  const realtimeBets = sortBy(allRealtimeBets, 'createdTime')
-    .reverse()
-    .slice(0, count * 3)
 
-  const recentComments = useGlobalComments(count * 3)
-  const realtimeComments = useSubscribeGlobalComments()
+  if (loading || !data) return <LoadingIndicator />
 
-  const newContracts = useLiveAllNewContracts(count * 3)?.filter(
-    (c) =>
-      !blockedContractIds.includes(c.id) &&
-      !blockedUserIds.includes(c.creatorId) &&
-      c.visibility === 'public' &&
-      (!c.groupSlugs?.some((slug) => blockedGroupSlugs.includes(slug)) || true)
-  )
-  const bets = uniqBy(
-    [...(realtimeBets ?? []), ...(recentBets ?? [])],
-    'id'
-  ).filter(
-    (bet) =>
-      !blockedContractIds.includes(bet.contractId) &&
-      !blockedUserIds.includes(bet.userId)
-  )
-  const comments = uniqBy(
-    [...(realtimeComments ?? []), ...(recentComments ?? [])],
-    'id'
-  ).filter(
-    (c) =>
-      c.commentType === 'contract' &&
-      !blockedContractIds.includes(c.contractId) &&
-      !blockedUserIds.includes(c.userId)
-  )
+  const { bets, comments, contracts } = data
+  console.log('contracts', contracts.find((c) => typeof c === 'string'))
+  console.log('comments', comments.find((c) => typeof c === 'string'))
+  console.log('bets', bets.find((c) => typeof c === 'string'))
 
-  const activeContractIds = uniq([
-    ...bets.map((b) => b.contractId),
-    ...comments.map((c) => c.contractId),
-  ])
-
-  const activeContracts = usePublicContracts(
-    activeContractIds,
-    undefined,
-    blockedGroupSlugs
-  )
-
-  const [contracts, _unlistedContracts] = partition(
-    filterDefined(activeContracts ?? []).concat(newContracts ?? []),
-    (c) => c.visibility === 'public'
-  )
   const contractsById = keyBy(contracts, 'id')
 
-  const displayedBets = bets.filter((bet) =>
-    filterBets(bet, contractsById[bet.contractId])
+  const items = orderBy(
+    [...bets, ...comments, ...contracts],
+    'createdTime',
+    'desc'
   )
 
-  const displayedComments = comments.filter((comment) =>
-    filterComments(comment, contractsById[comment.contractId])
-  )
+  console.log('first bet', bets[0])
+  console.log('first comment', comments[0])
+  console.log('first contract', contracts[0])
 
-  const displayedNewContracts = newContracts?.filter(filterNewContracts)
+  console.log('items', items)
 
-  const items = sortBy(
-    [...displayedBets, ...displayedComments, ...(displayedNewContracts ?? [])],
-    (i) => i.createdTime
-  )
-    .reverse()
-    .filter((i) =>
-      // filter out comments and bets on ignored/off-topic contracts
-      'contractId' in i ? contractsById[i.contractId] : true
-    )
-
-  const startIndex =
-    range(0, items.length - count).find((i) =>
-      items
-        .slice(i, i + count)
-        .every((item) =>
-          'contractId' in item ? contractsById[item.contractId] : true
-        )
-    ) ?? 0
-  const itemsSubset = items.slice(startIndex, startIndex + count)
-  const allLoaded =
-    realtimeBets &&
-    realtimeComments &&
-    contracts &&
-    activeContracts &&
-    itemsSubset.every((item) =>
-      'contractId' in item ? contractsById[item.contractId] : true
-    )
 
   const groups = orderBy(
     Object.entries(
-      groupBy(itemsSubset, (item) =>
+      groupBy(items, (item) =>
         'contractId' in item ? item.contractId : item.id
       )
     ).map(([parentId, items]) => ({
@@ -167,42 +69,40 @@ export function SiteActivity(props: {
       items,
     })),
     ({ items }) =>
-      // get the largest createdTime of any item in the group
       Math.max(...items.map((item) => item.createdTime)),
     'desc'
   )
 
+  console.log('groups', groups)
+
   return (
     <Col className={clsx('gap-4', className)}>
-      {!allLoaded && <LoadingIndicator />}
-      {allLoaded && (
-        <Col className="gap-0.5">
-          {groups.map(({ parentId, items }) => {
-            const contract = contractsById[parentId] as Contract
+      <Col className="gap-0.5">
+        {groups.map(({ parentId, items }) => {
+          const contract = contractsById[parentId] as Contract
 
-            return (
-              <Col key={parentId} className="bg-canvas-0 gap-2 px-4 py-3">
-                <ContractMention contract={contract} />
-                {items.map((item) =>
-                  'amount' in item ? (
-                    <FeedBet
-                      className="!pt-0"
-                      key={item.id}
-                      contract={contract}
-                      bet={item}
-                      avatarSize="xs"
-                    />
-                  ) : 'question' in item ? (
-                    <MarketCreatedLog key={item.id} contract={item} />
-                  ) : 'channelId' in item ? null : (
-                    <CommentLog key={item.id} comment={item} />
-                  )
-                )}
-              </Col>
-            )
-          })}
-        </Col>
-      )}
+          return (
+            <Col key={parentId} className="bg-canvas-0 gap-2 px-4 py-3">
+              <ContractMention contract={contract} />
+              {items.map((item) =>
+                'amount' in item ? (
+                  <FeedBet
+                    className="!pt-0"
+                    key={item.id}
+                    contract={contract}
+                    bet={item}
+                    avatarSize="xs"
+                  />
+                ) : 'question' in item ? (
+                  <MarketCreatedLog key={item.id} contract={item} />
+                ) : 'channelId' in item ? null : (
+                  <CommentLog key={item.id} comment={item} />
+                )
+              )}
+            </Col>
+          )
+        })}
+      </Col>
     </Col>
   )
 }
