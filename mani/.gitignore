@@ -1,0 +1,25 @@
+node_modules/
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+credentials.json
+credentials/
+*.apk
+*.aab
+*.ipa
+project.pbxproj
+ios/Manifold/GoogleService-Info.plist
+ios/Manifold.xcodeproj/project.pbxproj
+/google-services.json
+# macOS
+.DS_Store
+# simulator build
+*.tar.gz
+.env.local
