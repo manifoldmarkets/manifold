@@ -48,13 +48,6 @@ export function SiteActivity(props: {
     'desc'
   )
 
-  console.log('first bet', bets[0])
-  console.log('first comment', comments[0])
-  console.log('first contract', contracts[0])
-
-  console.log('items', items)
-
-
   const groups = orderBy(
     Object.entries(
       groupBy(items, (item) =>
@@ -68,8 +61,6 @@ export function SiteActivity(props: {
       Math.max(...items.map((item) => item.createdTime)),
     'desc'
   )
-
-  console.log('groups', groups)
 
   return (
     <Col className={clsx('gap-4', className)}>
