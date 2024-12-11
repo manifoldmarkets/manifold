@@ -15,7 +15,6 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { UserHovercard } from './user/user-hovercard'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { Bet } from 'common/bet'
 
 export function SiteActivity(props: {
   className?: string
@@ -32,9 +31,9 @@ export function SiteActivity(props: {
 
   const { data, loading } = useAPIGetter('get-site-activity', {
     limit: 10,
-    // blockedUserIds,
-    // blockedGroupSlugs,
-    // blockedContractIds,
+    blockedUserIds,
+    blockedGroupSlugs,
+    blockedContractIds,
   })
 
   if (loading || !data) return <LoadingIndicator />
