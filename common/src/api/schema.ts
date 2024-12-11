@@ -1920,10 +1920,11 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       bets: Bet[]
       comments: ContractComment[]
-      contracts: Contract[]
+      newContracts: Contract[]
+      relatedContracts: Contract[]
     },
     props: z.object({
-      limit: z.number().default(50),
+      limit: z.coerce.number().default(10),
       blockedUserIds: z.array(z.string()).optional(),
       blockedGroupSlugs: z.array(z.string()).optional(),
       blockedContractIds: z.array(z.string()).optional(),

@@ -31,7 +31,7 @@ export function SiteActivity(props: {
   )
 
   const { data, loading } = useAPIGetter('get-site-activity', {
-    // limit: 50,
+    limit: 10,
     // blockedUserIds,
     // blockedGroupSlugs,
     // blockedContractIds,
@@ -39,15 +39,12 @@ export function SiteActivity(props: {
 
   if (loading || !data) return <LoadingIndicator />
 
-  const { bets, comments, contracts } = data
-  console.log('contracts', contracts.find((c) => typeof c === 'string'))
-  console.log('comments', comments.find((c) => typeof c === 'string'))
-  console.log('bets', bets.find((c) => typeof c === 'string'))
-
+  const { bets, comments, newContracts, relatedContracts } = data
+  const contracts = [...newContracts, ...relatedContracts]
   const contractsById = keyBy(contracts, 'id')
 
   const items = orderBy(
-    [...bets, ...comments, ...contracts],
+    [...bets, ...comments, ...newContracts],
     'createdTime',
     'desc'
   )

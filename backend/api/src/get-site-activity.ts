@@ -56,14 +56,10 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (props) =>
     [contractIds]
   )
 
-  const contracts = filterDefined([
-    ...newContracts.map(convertContract),
-    ...relatedContracts.map(convertContract)
-  ])
-
   return {
     bets: recentBets.map(convertBet),
     comments: recentComments.map(convertContractComment),
-    contracts,
+    newContracts: filterDefined(newContracts.map(convertContract)),
+    relatedContracts: filterDefined(relatedContracts.map(convertContract))
   }
 }
