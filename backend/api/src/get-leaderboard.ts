@@ -23,8 +23,11 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
 
   if (kind === 'referral') {
     const data = await pg.any(
-      `select id, total_referrals, total_referred_profit, total_referred_cash_profit
-      from user_referrals_profit limit $1`,
+      `select ur.id, ur.total_referrals, ur.total_referred_profit, ur.total_referred_cash_profit
+      from user_referrals_profit ur
+      join users u on ur.id = u.id
+      where coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true
+      limit $1`,
       [limitValue]
     )
 
@@ -41,13 +44,15 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
   if ((kind == 'profit' || kind == 'loss') && !groupId) {
     const query = renderSql(
       from('user_portfolio_history_latest uph'),
+      join('users u on u.id = uph.user_id'),
       select('uph.user_id as user_id'),
       token === 'MANA'
-        ? select('uph.profit as score') // excludes unranked
+        ? select('uph.profit as score')
         : select(
             'uph.cash_balance + uph.cash_investment_value - uph.total_cash_deposits as score'
           ),
       where('user_id not in ($1:list)', [HIDE_FROM_LEADERBOARD_USER_IDS]),
+      where(`coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`),
       orderBy(kind === 'loss' ? 'score asc' : 'score desc nulls last'),
       limit(limitValue)
     )
@@ -60,8 +65,10 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
   const query = renderSql(
     from('contracts c'),
     join('user_contract_metrics ucm on ucm.contract_id = c.id'),
+    join('users u on u.id = ' + (kind === 'creator' ? 'c.creator_id' : 'ucm.user_id')),
     where('ucm.answer_id is null'),
     where(`coalesce((c.data->'isRanked')::boolean, true) = true`),
+    where(`coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`),
 
     kind === 'creator' && [
       select('c.creator_id as user_id, count(*) as score'),
