@@ -67,7 +67,7 @@ import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
 
 import { JSONContent } from '@tiptap/core'
-import { TaskCategory } from 'common/todo'
+import { Task, TaskCategory } from 'common/todo'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -1918,12 +1918,13 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as { id: number },
+    returns: {} as Task,
     props: z
       .object({
         text: z.string(),
-        categoryId: z.number().optional(),
+        category_id: z.number().optional(),
         priority: z.number().default(0),
+        assignee_id: z.string().optional(),
       })
       .strict(),
   },
@@ -1938,8 +1939,9 @@ export const API = (_apiTypeCheck = {
         text: z.string().optional(),
         completed: z.boolean().optional(),
         priority: z.number().optional(),
-        categoryId: z.number().optional(),
+        category_id: z.number().optional(),
         archived: z.boolean().optional(),
+        assignee_id: z.string().optional(),
       })
       .strict(),
   },
@@ -1977,6 +1979,13 @@ export const API = (_apiTypeCheck = {
         archived: z.boolean().optional(),
       })
       .strict(),
+  },
+  'get-tasks': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { tasks: Task[] },
+    props: z.object({}).strict(),
   },
 } as const)
 

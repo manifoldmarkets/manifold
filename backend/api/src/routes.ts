@@ -144,6 +144,7 @@ import { updateTask } from './update-task'
 import { createCategory } from './create-category'
 import { getCategories } from './get-categories'
 import { updateCategory } from './update-category'
+import { getTasks } from './get-tasks'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -307,4 +308,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'create-category': createCategory,
   'get-categories': getCategories,
   'update-category': updateCategory,
+  'get-tasks': getTasks,
 }

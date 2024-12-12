@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Modal } from 'web/components/layout/modal'
 import { Page } from 'web/components/layout/page'
@@ -10,7 +10,10 @@ import {
   MenuIcon,
   PlusIcon,
   ScaleIcon,
+  UserIcon,
 } from '@heroicons/react/solid'
+import { uniqBy } from 'lodash'
+
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -22,50 +25,58 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import DotsVerticalIcon from '@heroicons/react/outline/DotsVerticalIcon'
-import { ValidatedAPIParams } from 'common/api/schema'
 import { DAY_MS } from 'common/util/time'
 import { useRouter } from 'next/router'
 import toast from 'react-hot-toast'
-
-// Create audio element for the chaching sound
+import { AssignUserModal } from 'web/components/tasks/assign-user-modal'
+import { UserAvatar } from 'web/components/widgets/user-link'
+import { useUser } from 'web/hooks/use-user'
+import { ValidatedAPIParams } from 'common/api/schema'
 const chachingSound =
   typeof window !== 'undefined' ? new Audio('/sounds/droplet3.m4a') : null
 
 export default function TodoPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newCategoryColor, setNewCategoryColor] = useState('')
   // Persist todos and categories in local storage
-  const [tasks, setTasks] = usePersistentLocalState<Task[]>([], 'todos-4')
+  const [tasks, setTasks] = usePersistentLocalState<Task[]>([], 'todos-5')
   const { data: categoriesData, refresh: refreshCategories } = useAPIGetter(
     'get-categories',
     {}
   )
+  const user = useUser()
   const categories = categoriesData?.categories ?? []
   const [newTodoText, setNewTodoText] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState<number>(-1)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const router = useRouter()
+
+  // Only fetch tasks once on initial load
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        const result = await api('get-tasks', {})
+        setTasks(uniqBy([...tasks, ...result.tasks], 'id'))
+      } catch (error) {
+        console.error('Failed to load tasks:', error)
+      }
+    }
+    loadTasks()
+  }, [])
+
   const createTodo = async (text: string) => {
     try {
       // First create remotely
-      const { id } = await api('create-task', {
+      const newTask = await api('create-task', {
         text,
-        categoryId: selectedCategoryId ?? -1,
+        category_id: selectedCategoryId ?? -1,
         priority: 0,
       })
 
-      // Then update locally
-      const newTodo: Task = {
-        id,
-        text,
-        completed: false,
-        categoryId: selectedCategoryId,
-        createdAt: Date.now(),
-        priority: 0,
-        archived: false,
-      }
-      setTasks([...tasks, newTodo])
+      setTasks([...tasks, newTask])
       setNewTodoText('')
     } catch (error) {
       console.error('Failed to create todo:', error)
@@ -116,8 +127,8 @@ export default function TodoPage() {
 
   const filteredTasks = (
     selectedCategoryId
-      ? tasks.filter((task) => task.categoryId === selectedCategoryId)
-      : tasks.filter((task) => task.categoryId === -1)
+      ? tasks.filter((task) => task.category_id === selectedCategoryId)
+      : tasks.filter((task) => task.category_id === -1)
   )
     .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
     .filter((task) => !task.archived)
@@ -134,6 +145,14 @@ export default function TodoPage() {
     dateStyle: 'short',
     timeStyle: 'short',
   })
+
+  const handleAssign = async (userId: string) => {
+    if (selectedTaskId) {
+      await updateTask({ id: selectedTaskId, assignee_id: userId })
+    }
+  }
+  console.log(filteredTasks)
+
   return (
     <Page trackPageView="todo">
       <DragDropContext
@@ -168,7 +187,7 @@ export default function TodoPage() {
           try {
             await updateTask({
               id: todoId,
-              categoryId,
+              category_id: categoryId,
             })
           } catch (error) {
             console.error('Failed to update todo category:', error)
@@ -247,11 +266,26 @@ export default function TodoPage() {
                                 {(value) => <span>{value}</span>}
                               </EditInPlaceInput>
                             </Row>
+                            {task.assignee_id !== user?.id && (
+                              <UserAvatar
+                                user={{ id: task.assignee_id }}
+                                size="2xs"
+                                className="mt-0.5"
+                              />
+                            )}
                             <DropdownMenu
                               buttonContent={
                                 <DotsVerticalIcon className="h-5 w-5" />
                               }
                               items={[
+                                {
+                                  icon: <UserIcon className="h-4 w-4" />,
+                                  name: 'Assign to...',
+                                  onClick: () => {
+                                    setSelectedTaskId(task.id)
+                                    setIsAssignModalOpen(true)
+                                  },
+                                },
                                 {
                                   icon: <ArchiveIcon className="h-4 w-4" />,
                                   name: 'Archive',
@@ -477,6 +511,16 @@ export default function TodoPage() {
             </Row>
           </Col>
         </Modal>
+
+        {/* Assign user modal */}
+        <AssignUserModal
+          open={isAssignModalOpen}
+          onClose={() => {
+            setIsAssignModalOpen(false)
+            setSelectedTaskId(null)
+          }}
+          onAssign={handleAssign}
+        />
       </DragDropContext>
     </Page>
   )

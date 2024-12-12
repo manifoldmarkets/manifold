@@ -7,10 +7,12 @@ export const getCategories: APIHandler<'get-categories'> = async (_, auth) => {
   console.log('Getting categories for user', auth.uid)
 
   const categories = await pg.manyOrNone(
-    `select *
-     from categories
-     where user_id = $1
-     order by display_order, created_time`,
+    `select c.*
+     from categories c
+     left join tasks t on c.id = t.category_id
+     where c.user_id = $1
+     or t.assignee_id = $1
+     order by c.display_order, c.created_time`,
     [auth.uid]
   )
 

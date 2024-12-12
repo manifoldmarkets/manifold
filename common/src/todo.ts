@@ -8,10 +8,12 @@ export type TaskCategory = {
 
 export type Task = {
   id: number
+  creator_id: string
+  assignee_id: string
   text: string
   completed: boolean
-  categoryId: number // -1 for inbox
-  createdAt: number
+  category_id: number // -1 for inbox
+  created_time: number
   priority: number
   archived: boolean
 }
