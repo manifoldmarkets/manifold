@@ -32,6 +32,7 @@ import { AssignUserModal } from 'web/components/tasks/assign-user-modal'
 import { UserAvatar } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { ValidatedAPIParams } from 'common/api/schema'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 const chachingSound =
   typeof window !== 'undefined' ? new Audio('/sounds/droplet3.m4a') : null
 
@@ -56,17 +57,7 @@ export default function TodoPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const router = useRouter()
   const sidebarRef = useRef<HTMLDivElement>(null)
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+  const isMobile = useIsMobile()
 
   // Only fetch tasks once on initial load
   useEffect(() => {
