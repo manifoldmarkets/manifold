@@ -20,6 +20,11 @@ import DotsVerticalIcon from '@heroicons/react/outline/DotsVerticalIcon'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { DAY_MS } from 'common/util/time'
 import { useRouter } from 'next/router'
+import toast from 'react-hot-toast'
+
+// Create audio element for the chaching sound
+const chachingSound =
+  typeof window !== 'undefined' ? new Audio('/sounds/droplet3.m4a') : null
 
 export default function TodoPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -85,10 +90,22 @@ export default function TodoPage() {
     createTodo(newTodoText)
   }
 
-  const toggleTodo = (taskId: number) => {
+  const toggleTodo = async (taskId: number) => {
     const task = tasks.find((t) => t.id === taskId)
     if (task) {
-      updateTask({ id: taskId, completed: !task.completed })
+      const newCompleted = !task.completed
+      try {
+        await updateTask({ id: taskId, completed: newCompleted })
+        if (newCompleted) {
+          // Play sound and show toast only on completion
+          chachingSound?.play()
+          toast.success('Task completed! 🎉', {
+            duration: 2000,
+          })
+        }
+      } catch (error) {
+        console.error('Failed to toggle todo:', error)
+      }
     }
   }
 
@@ -202,7 +219,13 @@ export default function TodoPage() {
                             width: snapshot.isDragging ? '300px' : '100%',
                           }}
                         >
-                          <Row className="w-full items-start justify-between">
+                          <Row
+                            className={clsx(
+                              'w-full items-start justify-between',
+                              task.completed && 'opacity-50',
+                              task.archived && 'opacity-50'
+                            )}
+                          >
                             <Row className="flex-1 items-start">
                               <Checkbox
                                 label=""
