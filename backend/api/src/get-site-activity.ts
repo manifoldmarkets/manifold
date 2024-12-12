@@ -19,7 +19,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (props) =>
        and user_id != all($1)
        and contract_id != all($2)
        order by created_time desc limit $3`,
-      [blockedUserIds, blockedContractIds, limit * 3]
+      [blockedUserIds, blockedContractIds, limit * 5]
     ),
     pg.manyOrNone(
       `select * from contract_comments
@@ -27,7 +27,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (props) =>
        and user_id != all($1)
        and contract_id != all($2)
        order by created_time desc limit $3`,
-      [blockedUserIds, blockedContractIds, limit * 3]
+      [blockedUserIds, blockedContractIds, limit]
     ),
     pg.manyOrNone(
       `select * from contracts
@@ -42,7 +42,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (props) =>
          and g.slug = any($3)
        )
        order by created_time desc limit $4`,
-      [blockedUserIds, blockedContractIds, blockedGroupSlugs, limit * 3]
+      [blockedUserIds, blockedContractIds, blockedGroupSlugs, limit]
     ),
   ])
 
