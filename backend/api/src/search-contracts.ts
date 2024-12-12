@@ -128,7 +128,6 @@ const search = async (
           groupIds,
           marketTier: marketTier as TierParamsType,
         })
-
         return pg
           .map(searchSQL, null, (r) => ({
             data: convertContract(r),

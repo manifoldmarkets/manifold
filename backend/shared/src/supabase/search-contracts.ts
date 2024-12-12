@@ -283,7 +283,7 @@ export function getSearchContractSQL(args: {
         ),
     ],
 
-    orderBy(getSearchContractSortSQL(sort)),
+    orderBy(getSearchContractSortSQL(sort, args.contractType)),
     sqlLimit(limit, offset)
   )
 }
@@ -457,7 +457,8 @@ export const sortFields: SortFields = {
     order: 'DESC',
   },
   'prob-descending': {
-    sql: "resolution DESC, (data->>'p')::numeric",
+    // sql: "resolution DESC, (data->>'p')::numeric",
+    sql: "resolution DESC, (data->>'prob')::numeric",
     sortCallback: (c: Contract) => ('p' in c && c.p) || 0,
     order: 'DESC NULLS LAST',
   },
@@ -467,7 +468,10 @@ export const sortFields: SortFields = {
     order: 'ASC',
   },
 }
-function getSearchContractSortSQL(sort: string) {
+function getSearchContractSortSQL(sort: string, contractType?: string) {
+  if (sort === 'prob-descending' && contractType === 'STONK') {
+    return `resolution DESC, (data->>'prob')::numeric DESC NULLS LAST`
+  }
   return `${sortFields[sort].sql} ${sortFields[sort].order}`
 }
 

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 15, "column": 0}, "map": {"version":3,"sources":["file:///Users/ingawei/Documents/Manifold/manifold/stonks/stonks/pages/_app.tsx"],"sourcesContent":["import '../styles/globals.css'\nimport type { AppProps } from 'next/app'\n\nfunction MyApp({ Component, pageProps }: AppProps) {\n  return <Component {...pageProps} />\n}\n\nexport default MyApp\n"],"names":[],"mappings":";;;;;;AAGA,SAAS,MAAM,EAAE,SAAS,EAAE,SAAS,EAAY;IAC/C,qBAAO,qKAAC;QAAW,GAAG,SAAS;;;;;;AACjC;uCAEe"}},
+    {"offset": {"line": 31, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}}]
+}

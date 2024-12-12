@@ -139,6 +139,8 @@ import { generateAIAnswers } from './generate-ai-answers'
 import { getmonthlybets2024 } from './get-monthly-bets-2024'
 import { getmaxminprofit2024 } from './get-max-min-profit-2024'
 import { getNextLoanAmount } from './get-next-loan-amount'
+import { createStonkImage } from './create-stonk-image'
+import { getStonkImages } from './get-stonk-images'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -297,4 +299,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-monthly-bets-2024': getmonthlybets2024,
   'get-max-min-profit-2024': getmaxminprofit2024,
   'get-next-loan-amount': getNextLoanAmount,
+  'create-stonk-image': createStonkImage,
+  'get-stonk-images': getStonkImages,
 }

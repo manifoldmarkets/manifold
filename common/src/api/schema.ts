@@ -1,72 +1,72 @@
-import { z } from 'zod'
+import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
+import { coerceBoolean, contentSchema } from 'common/api/zod-types'
+import { AnyBalanceChangeType } from 'common/balance-change'
+import type { Bet, LimitBet } from 'common/bet'
+import { adContract } from 'common/boost'
+import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
+import { MAX_COMMENT_LENGTH, type ContractComment } from 'common/comment'
+import { AIGeneratedMarket, Contract, MarketContract } from 'common/contract'
+import { Dashboard } from 'common/dashboard'
+import { SWEEPS_MIN_BET } from 'common/economy'
 import {
   Group,
+  LiteGroup,
   MAX_ID_LENGTH,
   MySearchGroupShape,
-  LiteGroup,
   SearchGroupParams,
   SearchGroupShape,
   Topic,
 } from 'common/group'
-import {
-  createMarketProps,
-  resolveMarketProps,
-  type LiteMarket,
-  FullMarket,
-  updateMarketProps,
-} from './market-types'
-import { type Answer } from 'common/answer'
-import { MAX_COMMENT_LENGTH, type ContractComment } from 'common/comment'
-import { CandidateBet } from 'common/new-bet'
-import type { Bet, LimitBet } from 'common/bet'
-import { coerceBoolean, contentSchema } from 'common/api/zod-types'
-import { Lover } from 'common/love/lover'
-import { AIGeneratedMarket, Contract, MarketContract } from 'common/contract'
-import { CompatibilityScore } from 'common/love/compatibility-score'
-import type { Txn, ManaPayTxn } from 'common/txn'
-import { LiquidityProvision } from 'common/liquidity-provision'
-import { DisplayUser, FullUser } from './user-types'
 import { League } from 'common/leagues'
-import { searchProps } from './market-search-types'
-import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { type LinkPreview } from 'common/link-preview'
+import { LiquidityProvision } from 'common/liquidity-provision'
+import { CompatibilityScore } from 'common/love/compatibility-score'
+import { Lover } from 'common/love/lover'
+import { CandidateBet } from 'common/new-bet'
 import { Headline } from 'common/news'
-import { Row } from 'common/supabase/utils'
-import { LikeData, ShipData } from './love-types'
-import { AnyBalanceChangeType } from 'common/balance-change'
-import { Dashboard } from 'common/dashboard'
-import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
-import { PrivateUser, User } from 'common/user'
-import { ManaSupply } from 'common/stats'
-import { Repost } from 'common/repost'
-import { adContract } from 'common/boost'
 import { PERIODS } from 'common/period'
-import { SWEEPS_MIN_BET } from 'common/economy'
 import {
   LivePortfolioMetrics,
   PortfolioMetrics,
 } from 'common/portfolio-metrics'
+import { Repost } from 'common/repost'
+import { ManaSupply } from 'common/stats'
+import { Row } from 'common/supabase/utils'
+import type { ManaPayTxn, Txn } from 'common/txn'
+import { PrivateUser, User } from 'common/user'
+import { z } from 'zod'
 import { ModReport } from '../mod-report'
+import { LikeData, ShipData } from './love-types'
+import { searchProps } from './market-search-types'
+import {
+  FullMarket,
+  createMarketProps,
+  resolveMarketProps,
+  updateMarketProps,
+  type LiteMarket,
+} from './market-types'
+import { DisplayUser, FullUser } from './user-types'
 
-import { RegistrationReturnType } from 'common/reason-codes'
+import { ContractMetric } from 'common/contract-metric'
 import {
   CheckoutSession,
   GIDXDocument,
   GPSProps,
   PaymentDetail,
-  checkoutParams,
-  verificationParams,
-  cashoutRequestParams,
   PendingCashoutStatusData,
   cashoutParams,
+  cashoutRequestParams,
+  checkoutParams,
+  verificationParams,
 } from 'common/gidx/gidx'
-import { notification_preference } from 'common/user-notification-preferences'
-import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
+import { RegistrationReturnType } from 'common/reason-codes'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
-import { ContractMetric } from 'common/contract-metric'
+import { PrivateMessageChannel } from 'common/supabase/private-messages'
+import { notification_preference } from 'common/user-notification-preferences'
 
 import { JSONContent } from '@tiptap/core'
+import { StonkImage } from 'common/stonk-images'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -1912,6 +1912,25 @@ export const API = (_apiTypeCheck = {
     props: z.object({
       userId: z.string(),
     }),
+  },
+  'create-stonk-image': {
+    method: 'POST',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        contractId: z.string(),
+        imageUrl: z.string(),
+      })
+      .strict(),
+    returns: { success: true },
+  },
+  'get-stonk-images': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({ contracts: z.array(z.string()) }),
+    returns: { images: [] as StonkImage[] },
   },
 } as const)
 

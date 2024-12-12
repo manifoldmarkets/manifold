@@ -1,0 +1,15 @@
+(globalThis.TURBOPACK = globalThis.TURBOPACK || []).push([
+    "static/chunks/pages__app_5771e1._.js",
+    {},
+]);
+(globalThis.TURBOPACK_CHUNK_LISTS = globalThis.TURBOPACK_CHUNK_LISTS || []).push({
+  "path": "static/chunks/pages__app_5771e1._.js",
+  "chunks": [
+    "static/chunks/node_modules_next_dist_fda55f._.js",
+    "static/chunks/08b5e_react-dom_82bb97._.js",
+    "static/chunks/08b5e_4258f4._.js",
+    "static/chunks/[root of the server]__aee949._.js",
+    "static/chunks/[root of the server]__1fb947._.css"
+  ],
+  "source": "entry"
+});

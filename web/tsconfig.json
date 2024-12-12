@@ -32,7 +32,8 @@
     "**/*.ts",
     "**/*.tsx",
     "../common/src/**/*.ts",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "../stonks/components/bet/feed-bet-button.tsx"
   ],
   "exclude": ["node_modules"]
 }

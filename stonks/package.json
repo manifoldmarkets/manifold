@@ -1,0 +1,31 @@
+{
+  "name": "stonks",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@next/font": "14.2.15",
+    "common": "*",
+    "next": "^15.0.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "scripts": {
+    "serve": "next dev --turbo -p 3001",
+    "ts-watch": "tsc --watch --noEmit --incremental --preserveWatchOutput --pretty",
+    "dev": "concurrently -n NEXT,TS -c magenta,cyan \"yarn serve\" \"yarn ts-watch\"",
+    "dev:dev": "cross-env NEXT_PUBLIC_FIREBASE_ENV=DEV yarn dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "devDependencies": {
+    "@types/react": "18.0.25",
+    "@types/react-dom": "18.0.9",
+    "autoprefixer": "10.4.20",
+    "concurrently": "9.1.0",
+    "cross-env": "7.0.3",
+    "postcss": "8.4.49",
+    "tailwindcss": "3.4.16",
+    "typescript": "5.5.4"
+  }
+}

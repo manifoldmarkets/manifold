@@ -1,0 +1,22 @@
+{
+  "pages": {
+    "/_app": [
+      "static/chunks/node_modules_next_dist_fda55f._.js",
+      "static/chunks/08b5e_react-dom_82bb97._.js",
+      "static/chunks/08b5e_4258f4._.js",
+      "static/chunks/[root of the server]__aee949._.js",
+      "static/chunks/[root of the server]__1fb947._.css",
+      "static/chunks/pages__app_5771e1._.js",
+      "static/chunks/pages__app_519130._.js"
+    ]
+  },
+  "devFiles": [],
+  "ampDevFiles": [],
+  "polyfillFiles": [],
+  "lowPriorityFiles": [
+    "static/development/_ssgManifest.js",
+    "static/development/_buildManifest.js"
+  ],
+  "rootMainFiles": [],
+  "ampFirstPages": []
+}
