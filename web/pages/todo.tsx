@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Modal } from 'web/components/layout/modal'
 import { Page } from 'web/components/layout/page'
@@ -55,6 +55,18 @@ export default function TodoPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number>(-1)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const router = useRouter()
+  const sidebarRef = useRef<HTMLDivElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Only fetch tasks once on initial load
   useEffect(() => {
@@ -159,7 +171,24 @@ export default function TodoPage() {
       await updateTask({ id: selectedTaskId, assignee_id: userId })
     }
   }
-  console.log(filteredTasks)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        isMobile &&
+        isSidebarOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target as Node)
+      ) {
+        setIsSidebarOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isSidebarOpen, isMobile])
 
   return (
     <Page trackPageView="todo">
@@ -206,7 +235,7 @@ export default function TodoPage() {
           {/* Main content */}
           <Col className="flex-1 gap-4 p-4">
             <h1 className="text-2xl font-bold">
-              <Row className="items-center justify-between">
+              <Row className=" items-center gap-4 sm:justify-between">
                 <span>{getSelectedCategoryTitle()}</span>
                 <DropdownMenu
                   buttonContent={
@@ -452,6 +481,7 @@ export default function TodoPage() {
 
           {/* Sidebar */}
           <div
+            ref={sidebarRef}
             className={clsx(
               'bg-canvas-50 fixed right-0 top-0 h-full w-64 transform p-4 transition-transform duration-200 ease-in-out md:relative md:translate-x-0',
               isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
