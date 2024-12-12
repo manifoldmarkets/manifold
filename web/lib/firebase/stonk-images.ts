@@ -7,6 +7,7 @@ export const STONK_IMAGES_PATH = 'stonk-images'
 export async function uploadStonkImage(contractId: string, file: File) {
   // Get file extension from original file
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+<<<<<<< HEAD
 
   // Create a new file with the contract ID as the name
   const newFile = new File([file], `${contractId}.${ext}`, {
@@ -15,6 +16,20 @@ export async function uploadStonkImage(contractId: string, file: File) {
 
   // Upload using existing helper
   const imageUrl = await uploadPublicImage('system', newFile, STONK_IMAGES_PATH)
+=======
+  
+  // Create a new file with the contract ID as the name
+  const newFile = new File([file], `${contractId}.${ext}`, {
+    type: file.type
+  })
+
+  // Upload using existing helper
+  const imageUrl = await uploadPublicImage(
+    'system',
+    newFile,
+    STONK_IMAGES_PATH
+  )
+>>>>>>> 44ee46908fec23d1ee974ec84fde032d578a3d60
 
   return imageUrl
 }
@@ -26,4 +41,8 @@ export async function getStonkImageUrl(contractId: string) {
   } catch (error) {
     return null
   }
+<<<<<<< HEAD
 }
+=======
+} 
+>>>>>>> 44ee46908fec23d1ee974ec84fde032d578a3d60
