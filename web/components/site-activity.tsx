@@ -159,7 +159,7 @@ const MarketCreatedLog = memo(
     )
   }
 )
-
+// todo: add liking/disliking
 const CommentLog = memo(function FeedComment(props: {
   comment: ContractComment
 }) {
