@@ -148,12 +148,14 @@ const MarketCreatedLog = memo(
         </UserHovercard>
 
         {showDescription && props.contract.description && (
-          // TODO: truncate if too long
-          <Content
-            size="sm"
-            content={props.contract.description}
-            className="mt-2 text-left"
-          />
+          <div className="relative max-h-[120px] overflow-hidden">
+            <Content
+              size="sm"
+              content={props.contract.description}
+              className="mt-2 text-left"
+            />
+            <div className="dark:from-canvas-0 absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent" />
+          </div>
         )}
       </Col>
     )
