@@ -57,8 +57,7 @@ export function SiteActivity(props: {
       parentId,
       items,
     })),
-    ({ items }) =>
-      Math.max(...items.map((item) => item.createdTime)),
+    ({ items }) => Math.max(...items.map((item) => item.createdTime)),
     'desc'
   )
 
@@ -87,7 +86,11 @@ export function SiteActivity(props: {
                           avatarSize="xs"
                         />
                       ) : 'question' in item ? (
-                        <MarketCreatedLog key={item.id} contract={item} />
+                        <MarketCreatedLog
+                          key={item.id}
+                          contract={item}
+                          showDescription={items.length === 1}
+                        />
                       ) : 'channelId' in item ? null : (
                         <CommentLog key={item.id} comment={item} />
                       )
@@ -110,34 +113,50 @@ export function SiteActivity(props: {
   )
 }
 
-const MarketCreatedLog = memo((props: { contract: Contract }) => {
-  const {
-    creatorId,
-    creatorAvatarUrl,
-    creatorUsername,
-    creatorName,
-    createdTime,
-  } = props.contract
+const MarketCreatedLog = memo(
+  (props: { contract: Contract; showDescription?: boolean }) => {
+    const {
+      creatorId,
+      creatorAvatarUrl,
+      creatorUsername,
+      creatorName,
+      createdTime,
+    } = props.contract
+    const { showDescription = false } = props
 
-  return (
-    <UserHovercard userId={creatorId}>
-      <Row className="text-ink-600 items-center gap-2 text-sm">
-        <Avatar
-          avatarUrl={creatorAvatarUrl}
-          username={creatorUsername}
-          size="xs"
-        />
-        <UserLink
-          user={{ id: creatorId, name: creatorName, username: creatorUsername }}
-        />
-        <Row className="text-ink-400">
-          created
-          <RelativeTimestamp time={createdTime} />
+    return (
+      <UserHovercard userId={creatorId} className="flex-col gap-2">
+        <Row className="text-ink-600 items-center gap-2 text-sm">
+          <Avatar
+            avatarUrl={creatorAvatarUrl}
+            username={creatorUsername}
+            size="xs"
+          />
+          <UserLink
+            user={{
+              id: creatorId,
+              name: creatorName,
+              username: creatorUsername,
+            }}
+          />
+          <Row className="text-ink-400">
+            created
+            <RelativeTimestamp time={createdTime} />
+          </Row>
         </Row>
-      </Row>
-    </UserHovercard>
-  )
-})
+
+        {showDescription && props.contract.description && (
+          // TODO: truncate if too long
+          <Content
+            size="sm"
+            content={props.contract.description}
+            className="mt-2 text-left"
+          />
+        )}
+      </UserHovercard>
+    )
+  }
+)
 
 const CommentLog = memo(function FeedComment(props: {
   comment: ContractComment
