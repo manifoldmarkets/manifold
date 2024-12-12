@@ -9,8 +9,17 @@ export function Checkbox(props: {
   className?: string
   disabled?: boolean
   icon?: ReactNode
+  checkboxClassName?: string
 }) {
-  const { label, checked, toggle, className, disabled, icon } = props
+  const {
+    label,
+    checked,
+    toggle,
+    className,
+    disabled,
+    icon,
+    checkboxClassName,
+  } = props
 
   return (
     <div className={clsx(className, 'space-y-5')}>
@@ -19,7 +28,10 @@ export function Checkbox(props: {
           <input
             id={label}
             type="checkbox"
-            className="border-ink-300 bg-canvas-0 dark:border-ink-500 text-primary-600 focus:ring-primary-500 h-5 w-5 rounded"
+            className={clsx(
+              'border-ink-300 bg-canvas-0 dark:border-ink-500 text-primary-600 focus:ring-primary-500 h-5 w-5 rounded',
+              checkboxClassName
+            )}
             checked={checked}
             onChange={(e) => toggle(e.target.checked)}
             disabled={disabled}

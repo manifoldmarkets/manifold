@@ -38,22 +38,21 @@ import { buildArray } from 'common/util/array'
 const chachingSound =
   typeof window !== 'undefined' ? new Audio('/sounds/droplet3.m4a') : null
 
-export const TASK_PRIORITIES = {
-  URGENT: 3,
-  HIGH: 2,
-  MEDIUM: 1,
-  LOW: 0,
-  NONE: -1,
-} as const
-
-export const PRIORITY_COLORS: Record<number, string> = {
-  [TASK_PRIORITIES.URGENT]: 'text-red-500',
-  [TASK_PRIORITIES.HIGH]: 'text-orange-500',
-  [TASK_PRIORITIES.MEDIUM]: 'text-yellow-500',
-  [TASK_PRIORITIES.LOW]: 'text-blue-500',
-} as const
-
 export default function TodoPage() {
+  const TASK_PRIORITIES = {
+    URGENT: 3,
+    HIGH: 2,
+    MEDIUM: 1,
+    LOW: 0,
+    NONE: -1,
+  } as const
+
+  const PRIORITY_COLORS: Record<number, string> = {
+    [TASK_PRIORITIES.URGENT]: 'bg-red-700',
+    [TASK_PRIORITIES.HIGH]: 'bg-orange-500',
+    [TASK_PRIORITIES.MEDIUM]: 'bg-yellow-600',
+    [TASK_PRIORITIES.LOW]: 'bg-blue-600',
+  } as const
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
@@ -320,6 +319,9 @@ export default function TodoPage() {
                                 label=""
                                 checked={task.completed}
                                 toggle={() => toggleTodo(task.id)}
+                                checkboxClassName={
+                                  PRIORITY_COLORS[task.priority ?? 0]
+                                }
                               />
                               <EditInPlaceInput
                                 className="w-full"
@@ -328,15 +330,7 @@ export default function TodoPage() {
                                   updateTask({ id: task.id, text })
                                 }
                               >
-                                {(value) => (
-                                  <span
-                                    className={
-                                      PRIORITY_COLORS[task.priority ?? 0]
-                                    }
-                                  >
-                                    {value}
-                                  </span>
-                                )}
+                                {(value) => <span>{value}</span>}
                               </EditInPlaceInput>
                             </Row>
                             {task.assignee_id !== user?.id && (
@@ -474,6 +468,7 @@ export default function TodoPage() {
                               label=""
                               checked={task.completed}
                               toggle={() => toggleTodo(task.id)}
+                              className={PRIORITY_COLORS[task.priority ?? 0]}
                             />
                             <span className="line-through">{task.text}</span>
                           </Row>
@@ -517,6 +512,7 @@ export default function TodoPage() {
                               label=""
                               checked={task.completed}
                               toggle={() => toggleTodo(task.id)}
+                              className={PRIORITY_COLORS[task.priority ?? 0]}
                             />
                             <span className="line-through">{task.text}</span>
                           </Row>
