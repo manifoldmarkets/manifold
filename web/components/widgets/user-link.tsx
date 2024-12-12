@@ -14,7 +14,7 @@ import { SparklesIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
 import { BadgeCheckIcon, ShieldCheckIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
-import { Avatar } from './avatar'
+import { Avatar, AvatarSizeType } from './avatar'
 import { DAY_MS } from 'common/util/time'
 import ScalesIcon from 'web/lib/icons/scales-icon.svg'
 import { linkClass } from './site-link'
@@ -62,6 +62,28 @@ export function UserAvatarAndBadge(props: {
           noLink={noLink}
         />
         <UserLink short={short} user={user} noLink={noLink} />
+      </Row>
+    </UserHovercard>
+  )
+}
+export function UserAvatar(props: {
+  user: { id: string; name?: string; username?: string; avatarUrl?: string }
+  noLink?: boolean
+  className?: string
+  size?: AvatarSizeType
+}) {
+  const { noLink, className, size } = props
+  const user = useDisplayUserById(props.user.id) ?? props.user
+  const { username, avatarUrl } = user
+  return (
+    <UserHovercard userId={user.id}>
+      <Row className={clsx('items-center gap-2', className)}>
+        <Avatar
+          avatarUrl={avatarUrl}
+          username={username}
+          size={size}
+          noLink={noLink}
+        />
       </Row>
     </UserHovercard>
   )
