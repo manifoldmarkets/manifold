@@ -125,25 +125,27 @@ const MarketCreatedLog = memo(
     const { showDescription = false } = props
 
     return (
-      <UserHovercard userId={creatorId} className="flex-col gap-2">
-        <Row className="text-ink-600 items-center gap-2 text-sm">
-          <Avatar
-            avatarUrl={creatorAvatarUrl}
-            username={creatorUsername}
-            size="xs"
-          />
-          <UserLink
-            user={{
-              id: creatorId,
-              name: creatorName,
-              username: creatorUsername,
-            }}
-          />
-          <Row className="text-ink-400">
-            created
-            <RelativeTimestamp time={createdTime} />
+      <Col className="gap-2">
+        <UserHovercard userId={creatorId} className="flex-col">
+          <Row className="text-ink-600 items-center gap-2 text-sm">
+            <Avatar
+              avatarUrl={creatorAvatarUrl}
+              username={creatorUsername}
+              size="xs"
+            />
+            <UserLink
+              user={{
+                id: creatorId,
+                name: creatorName,
+                username: creatorUsername,
+              }}
+            />
+            <Row className="text-ink-400">
+              created
+              <RelativeTimestamp time={createdTime} />
+            </Row>
           </Row>
-        </Row>
+        </UserHovercard>
 
         {showDescription && props.contract.description && (
           // TODO: truncate if too long
@@ -153,7 +155,7 @@ const MarketCreatedLog = memo(
             className="mt-2 text-left"
           />
         )}
-      </UserHovercard>
+      </Col>
     )
   }
 )
