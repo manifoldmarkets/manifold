@@ -158,7 +158,7 @@ export default function TodoPage() {
                 value={newTodoText}
                 onChange={(e) => setNewTodoText(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addTodo()}
-                placeholder="Add a new todo..."
+                placeholder="Add a new task..."
                 className="flex-1"
               />
               <button
@@ -196,7 +196,7 @@ export default function TodoPage() {
                             width: snapshot.isDragging ? '300px' : '100%',
                           }}
                         >
-                          <Row className="w-full items-center justify-between">
+                          <Row className="w-full items-start justify-between">
                             <Row className="flex-1 items-start">
                               <Checkbox
                                 label=""
@@ -204,6 +204,7 @@ export default function TodoPage() {
                                 toggle={() => toggleTodo(task.id)}
                               />
                               <EditInPlaceInput
+                                className="w-full"
                                 initialValue={task.text}
                                 onSave={(text) =>
                                   updateTask({ id: task.id, text })
