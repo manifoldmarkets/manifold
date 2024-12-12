@@ -1914,6 +1914,7 @@ export const API = (_apiTypeCheck = {
       userId: z.string(),
     }),
   },
+
   'create-task': {
     method: 'POST',
     visibility: 'public',
@@ -1986,6 +1987,24 @@ export const API = (_apiTypeCheck = {
     authed: true,
     returns: {} as { tasks: Task[] },
     props: z.object({}).strict(),
+
+  'get-site-activity': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      bets: Bet[]
+      comments: ContractComment[]
+      newContracts: Contract[]
+      relatedContracts: Contract[]
+    },
+    props: z.object({
+      limit: z.coerce.number().default(10),
+      blockedUserIds: z.array(z.string()).optional(),
+      blockedGroupSlugs: z.array(z.string()).optional(),
+      blockedContractIds: z.array(z.string()).optional(),
+    }).strict(),
+
   },
 } as const)
 

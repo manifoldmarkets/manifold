@@ -139,12 +139,16 @@ import { generateAIAnswers } from './generate-ai-answers'
 import { getmonthlybets2024 } from './get-monthly-bets-2024'
 import { getmaxminprofit2024 } from './get-max-min-profit-2024'
 import { getNextLoanAmount } from './get-next-loan-amount'
+
 import { createTask } from './create-task'
 import { updateTask } from './update-task'
 import { createCategory } from './create-category'
 import { getCategories } from './get-categories'
 import { updateCategory } from './update-category'
 import { getTasks } from './get-tasks'
+
+import { getSiteActivity } from './get-site-activity'
+
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -309,4 +313,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-categories': getCategories,
   'update-category': updateCategory,
   'get-tasks': getTasks,
+  'get-site-activity': getSiteActivity,
 }
