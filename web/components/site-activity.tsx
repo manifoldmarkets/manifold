@@ -64,28 +64,33 @@ export function SiteActivity(props: {
 
   return (
     <Col className={clsx('gap-4', className)}>
-      <Col className="gap-0.5">
+      <Col className="gap-4">
         {groups.map(({ parentId, items }) => {
           const contract = contractsById[parentId] as Contract
 
           return (
-            <Col key={parentId} className="bg-canvas-0 gap-2 px-4 py-3">
+            <Col
+              key={parentId}
+              className="bg-canvas-0 gap-2 px-4 py-3 rounded-lg border border-canvas-50 hover:border-primary-300 transition-colors"
+            >
               <ContractMention contract={contract} />
-              {items.map((item) =>
-                'amount' in item ? (
-                  <FeedBet
-                    className="!pt-0"
-                    key={item.id}
-                    contract={contract}
-                    bet={item}
-                    avatarSize="xs"
-                  />
-                ) : 'question' in item ? (
-                  <MarketCreatedLog key={item.id} contract={item} />
-                ) : 'channelId' in item ? null : (
-                  <CommentLog key={item.id} comment={item} />
-                )
-              )}
+              <div className="space-y-2">
+                {items.map((item) =>
+                  'amount' in item ? (
+                    <FeedBet
+                      className="!pt-0"
+                      key={item.id}
+                      contract={contract}
+                      bet={item}
+                      avatarSize="xs"
+                    />
+                  ) : 'question' in item ? (
+                    <MarketCreatedLog key={item.id} contract={item} />
+                  ) : 'channelId' in item ? null : (
+                    <CommentLog key={item.id} comment={item} />
+                  )
+                )}
+              </div>
             </Col>
           )
         })}

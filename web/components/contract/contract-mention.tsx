@@ -28,14 +28,18 @@ export function ContractMention(props: {
       <span className="break-anywhere text-ink-900 group-hover:text-primary-500 group-focus:text-primary-500 mr-0.5 whitespace-normal font-medium transition-colors">
         {contract.question}
       </span>
-      <span
-        className={clsx(
-          probTextColor,
-          'ring-primary-100 group-hover:ring-primary-200 inline-flex rounded-full px-2 align-bottom font-semibold ring-1 ring-inset transition-colors'
-        )}
-      >
-        <ContractStatusLabel contract={contract} />
-      </span>
+
+      {contract.outcomeType === 'BINARY' && (
+        <span
+          className={clsx(
+            probTextColor,
+            'ring-primary-100 group-hover:ring-primary-200 inline-flex rounded-full px-2 align-bottom font-semibold ring-1 ring-inset transition-colors'
+          )}
+        >
+          <ContractStatusLabel contract={contract} />
+        </span>
+      )}
+
       {!contract.resolution && probChange && (
         <span className="text-ink-500 ml-0.5 text-xs">{probChange}</span>
       )}
