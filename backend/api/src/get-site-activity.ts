@@ -13,6 +13,10 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (props) =>
   log('getSiteActivity called', { limit })
 
   const [recentBets, recentComments, newContracts] = await Promise.all([
+    // todo: show
+    // [ ] sweepcash bets >= 5
+    // [ ] large limit orders
+    // [ ] personalization based on followed users & topics
     pg.manyOrNone(
       `select * from contract_bets 
        where amount >= 500 
