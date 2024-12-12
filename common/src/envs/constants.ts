@@ -285,6 +285,11 @@ export const BANNED_TRADING_USER_IDS = [
   'LIBAoi7tpqeNLYM1xxJ1QJBQqW32', //lastuserhere
   'p3ADzwIUS3fk0ka80XYEE3OM3S32', //PC
   '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
+  'iD1ObV4sInhkBXs3Ten96j4Co6O2', // BTE alt
+  'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
+  'wo2LRCvgaNSllK3q0Wnv8hlusTa2', // BTE alt
+  'os2ilMb1d8WDeXxiQAo6btlig1Z2', // BTE alt
+  'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
 ]
 
 export const PARTNER_USER_IDS: string[] = [
