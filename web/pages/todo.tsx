@@ -38,6 +38,21 @@ import { buildArray } from 'common/util/array'
 const chachingSound =
   typeof window !== 'undefined' ? new Audio('/sounds/droplet3.m4a') : null
 
+export const TASK_PRIORITIES = {
+  URGENT: 3,
+  HIGH: 2,
+  MEDIUM: 1,
+  LOW: 0,
+  NONE: -1,
+} as const
+
+export const PRIORITY_COLORS: Record<number, string> = {
+  [TASK_PRIORITIES.URGENT]: 'text-red-500',
+  [TASK_PRIORITIES.HIGH]: 'text-orange-500',
+  [TASK_PRIORITIES.MEDIUM]: 'text-yellow-500',
+  [TASK_PRIORITIES.LOW]: 'text-blue-500',
+} as const
+
 export default function TodoPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
@@ -81,7 +96,7 @@ export default function TodoPage() {
       const newTask = await api('create-task', {
         text,
         category_id: selectedCategoryId ?? -1,
-        priority: 0,
+        priority: TASK_PRIORITIES.NONE,
       })
 
       setTasks([...tasks, newTask])
@@ -138,11 +153,11 @@ export default function TodoPage() {
     : tasks.filter((task) => task.category_id === -1)
 
   const filteredTasks = categoryTasks
-    .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
+    .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
     .filter((task) => !task.archived && !task.completed)
 
   const archivedTasks = categoryTasks
-    .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
+    .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
     .filter((task) => task.archived)
 
   const completedTasks = categoryTasks.filter((task) => task.completed)
@@ -313,7 +328,15 @@ export default function TodoPage() {
                                   updateTask({ id: task.id, text })
                                 }
                               >
-                                {(value) => <span>{value}</span>}
+                                {(value) => (
+                                  <span
+                                    className={
+                                      PRIORITY_COLORS[task.priority ?? 0]
+                                    }
+                                  >
+                                    {value}
+                                  </span>
+                                )}
                               </EditInPlaceInput>
                             </Row>
                             {task.assignee_id !== user?.id && (
@@ -328,20 +351,45 @@ export default function TodoPage() {
                                 <DotsVerticalIcon className="text-ink-400 h-5 w-5" />
                               }
                               items={buildArray(
-                                isAdmin && {
-                                  icon: <UserIcon className="h-4 w-4" />,
-                                  name: 'Assign to...',
-                                  onClick: () => {
-                                    setSelectedTaskId(task.id)
-                                    setIsAssignModalOpen(true)
-                                  },
+                                {
+                                  name: '🔴 Set urgent',
+                                  onClick: () =>
+                                    updateTask({
+                                      id: task.id,
+                                      priority: TASK_PRIORITIES.URGENT,
+                                    }),
                                 },
                                 {
-                                  icon: <ArchiveIcon className="h-4 w-4" />,
-                                  name: 'Archive',
-                                  onClick: async () => {
-                                    updateTask({ id: task.id, archived: true })
-                                  },
+                                  name: '🟠 Set high',
+                                  onClick: () =>
+                                    updateTask({
+                                      id: task.id,
+                                      priority: TASK_PRIORITIES.HIGH,
+                                    }),
+                                },
+                                {
+                                  name: '🟡 Set medium',
+                                  onClick: () =>
+                                    updateTask({
+                                      id: task.id,
+                                      priority: TASK_PRIORITIES.MEDIUM,
+                                    }),
+                                },
+                                {
+                                  name: '🔵 Set low',
+                                  onClick: () =>
+                                    updateTask({
+                                      id: task.id,
+                                      priority: TASK_PRIORITIES.LOW,
+                                    }),
+                                },
+                                {
+                                  name: '⚫️ Set None',
+                                  onClick: () =>
+                                    updateTask({
+                                      id: task.id,
+                                      priority: TASK_PRIORITIES.NONE,
+                                    }),
                                 },
                                 {
                                   name: 'Convert to Market',
@@ -386,6 +434,21 @@ export default function TodoPage() {
                                       JSON.stringify(params)
                                     )}`
                                     router.push(url)
+                                  },
+                                },
+                                isAdmin && {
+                                  icon: <UserIcon className="h-4 w-4" />,
+                                  name: 'Assign to...',
+                                  onClick: () => {
+                                    setSelectedTaskId(task.id)
+                                    setIsAssignModalOpen(true)
+                                  },
+                                },
+                                {
+                                  icon: <ArchiveIcon className="h-4 w-4" />,
+                                  name: 'Archive',
+                                  onClick: async () => {
+                                    updateTask({ id: task.id, archived: true })
                                   },
                                 }
                               )}
