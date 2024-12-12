@@ -5,7 +5,7 @@ import { Page } from 'web/components/layout/page'
 import { Input } from 'web/components/widgets/input'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { Task } from 'common/src/todo'
-import { ArchiveIcon, PlusIcon } from '@heroicons/react/solid'
+import { ArchiveIcon, PlusIcon, ScaleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -18,6 +18,8 @@ import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import DotsVerticalIcon from '@heroicons/react/outline/DotsVerticalIcon'
 import { ValidatedAPIParams } from 'common/api/schema'
+import { DAY_MS } from 'common/util/time'
+import { useRouter } from 'next/router'
 
 export default function TodoPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -33,7 +35,7 @@ export default function TodoPage() {
   const [newTodoText, setNewTodoText] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState<number>(-1)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-
+  const router = useRouter()
   const createTodo = async (text: string) => {
     try {
       // First create remotely
@@ -105,7 +107,11 @@ export default function TodoPage() {
   }
 
   const filteredCategories = categories.filter((category) => !category.archived)
-
+  const closeTime = Date.now() + DAY_MS
+  const formattedCloseTime = new Date(closeTime).toLocaleString('en-US', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  })
   return (
     <Page trackPageView="todo">
       <DragDropContext
@@ -223,6 +229,51 @@ export default function TodoPage() {
                                   name: 'Archive',
                                   onClick: async () => {
                                     updateTask({ id: task.id, archived: true })
+                                  },
+                                },
+                                {
+                                  name: 'Convert to Market',
+                                  icon: <ScaleIcon className="h-4 w-4" />,
+                                  onClick: () => {
+                                    const params = {
+                                      q: `Will I complete ${task.text} by ${formattedCloseTime}?`,
+                                      closeTime,
+                                      description: JSON.stringify({
+                                        type: 'doc',
+                                        content: [
+                                          {
+                                            type: 'paragraph',
+                                            content: [
+                                              {
+                                                text: `Task id: ${task.id}. `,
+                                                type: 'text',
+                                              },
+                                              {
+                                                type: 'text',
+                                                marks: [
+                                                  {
+                                                    type: 'link',
+                                                    attrs: {
+                                                      href: '/todo',
+                                                      target: '_blank',
+                                                      class:
+                                                        'break-anywhere hover:underline hover:decoration-primary-400 hover:decoration-2 active:underline active:decoration-primary-400',
+                                                    },
+                                                  },
+                                                ],
+                                                text: 'Created from Manifold todo',
+                                              },
+                                            ],
+                                          },
+                                        ],
+                                      }),
+                                      outcomeType: 'BINARY',
+                                      visibility: 'public',
+                                    }
+                                    const url = `/create?params=${encodeURIComponent(
+                                      JSON.stringify(params)
+                                    )}`
+                                    router.push(url)
                                   },
                                 },
                               ]}
