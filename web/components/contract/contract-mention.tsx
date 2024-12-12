@@ -4,7 +4,6 @@ import { TRADED_TERM } from 'common/envs/constants'
 import { formatWithToken } from 'common/util/format'
 import Link from 'next/link'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { getIsNative } from 'web/lib/native/is-native'
 import { fromNow } from 'web/lib/util/time'
 import { ContractStatusLabel } from './contracts-table'
 import { getTextColor } from './text-color'
@@ -23,7 +22,7 @@ export function ContractMention(props: {
       href={contractPath(contract)}
       className={clsx('group inline whitespace-nowrap rounded-sm', className)}
       title={isClient ? tooltipLabel(contract) : undefined}
-      target={getIsNative() ? '_self' : '_blank'}
+      // target={getIsNative() ? '_self' : '_blank'}
     >
       <span className="break-anywhere text-ink-900 group-hover:text-primary-500 group-focus:text-primary-500 mr-0.5 whitespace-normal font-medium transition-colors">
         {contract.question}
