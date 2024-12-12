@@ -39,6 +39,8 @@ export default function TodoPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
+  const [showArchivedTasks, setShowArchivedTasks] = useState(false)
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newCategoryColor, setNewCategoryColor] = useState('')
   // Persist todos and categories in local storage
@@ -111,7 +113,6 @@ export default function TodoPage() {
     if (task) {
       const newCompleted = !task.completed
       try {
-        await updateTask({ id: taskId, completed: newCompleted })
         if (newCompleted) {
           // Play sound and show toast only on completion
           chachingSound?.play()
@@ -119,19 +120,26 @@ export default function TodoPage() {
             duration: 2000,
           })
         }
+        await updateTask({ id: taskId, completed: newCompleted })
       } catch (error) {
-        console.error('Failed to toggle todo:', error)
+        toast.error('Failed to toggle todo: ' + error)
       }
     }
   }
 
-  const filteredTasks = (
-    selectedCategoryId
-      ? tasks.filter((task) => task.category_id === selectedCategoryId)
-      : tasks.filter((task) => task.category_id === -1)
-  )
+  const categoryTasks = selectedCategoryId
+    ? tasks.filter((task) => task.category_id === selectedCategoryId)
+    : tasks.filter((task) => task.category_id === -1)
+
+  const filteredTasks = categoryTasks
     .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
-    .filter((task) => !task.archived)
+    .filter((task) => !task.archived && !task.completed)
+
+  const archivedTasks = categoryTasks
+    .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
+    .filter((task) => task.archived)
+
+  const completedTasks = categoryTasks.filter((task) => task.completed)
 
   const getSelectedCategoryTitle = () => {
     if (selectedCategoryId === -1) return 'Inbox'
@@ -197,7 +205,24 @@ export default function TodoPage() {
         <div className="flex min-h-screen overflow-x-hidden">
           {/* Main content */}
           <Col className="flex-1 gap-4 p-4">
-            <h1 className="text-2xl font-bold">{getSelectedCategoryTitle()}</h1>
+            <h1 className="text-2xl font-bold">
+              <Row className="items-center justify-between">
+                <span>{getSelectedCategoryTitle()}</span>
+                <DropdownMenu
+                  buttonContent={<DotsVerticalIcon className="h-5 w-5" />}
+                  items={[
+                    {
+                      name: `${showCompletedTasks ? 'Hide' : 'Show'} Completed`,
+                      onClick: () => setShowCompletedTasks(!showCompletedTasks),
+                    },
+                    {
+                      name: `${showArchivedTasks ? 'Hide' : 'Show'} Archived`,
+                      onClick: () => setShowArchivedTasks(!showArchivedTasks),
+                    },
+                  ]}
+                />
+              </Row>
+            </h1>
 
             <Row className="items-center gap-2">
               <Input
@@ -346,6 +371,78 @@ export default function TodoPage() {
                     </Draggable>
                   ))}
                   {provided.placeholder}
+                  {showArchivedTasks && archivedTasks.length > 0 && (
+                    <div className="mt-8">
+                      <h2 className="mb-4 text-lg font-semibold text-gray-500">
+                        Archived Tasks
+                      </h2>
+                      {archivedTasks.map((task, index) => (
+                        <Row
+                          key={task.id}
+                          className="mb-2 w-full items-start justify-between opacity-50"
+                        >
+                          <Row className="flex-1 items-start">
+                            <Checkbox
+                              label=""
+                              checked={task.completed}
+                              toggle={() => toggleTodo(task.id)}
+                            />
+                            <span className="line-through">{task.text}</span>
+                          </Row>
+                          {task.assignee_id !== user?.id && (
+                            <UserAvatar
+                              user={{ id: task.assignee_id }}
+                              size="2xs"
+                              className="mt-0.5"
+                            />
+                          )}
+                          <DropdownMenu
+                            buttonContent={
+                              <DotsVerticalIcon className="h-5 w-5" />
+                            }
+                            items={[
+                              {
+                                icon: <ArchiveIcon className="h-4 w-4" />,
+                                name: 'Unarchive',
+                                onClick: async () => {
+                                  updateTask({ id: task.id, archived: false })
+                                },
+                              },
+                            ]}
+                          />
+                        </Row>
+                      ))}
+                    </div>
+                  )}
+                  {showCompletedTasks && completedTasks.length > 0 && (
+                    <div className="mt-8">
+                      <h2 className="mb-4 text-lg font-semibold text-gray-500">
+                        Completed Tasks
+                      </h2>
+                      {completedTasks.map((task, index) => (
+                        <Row
+                          key={task.id}
+                          className="mb-2 w-full items-start justify-between opacity-50"
+                        >
+                          <Row className="flex-1 items-start">
+                            <Checkbox
+                              label=""
+                              checked={task.completed}
+                              toggle={() => toggleTodo(task.id)}
+                            />
+                            <span className="line-through">{task.text}</span>
+                          </Row>
+                          {task.assignee_id !== user?.id && (
+                            <UserAvatar
+                              user={{ id: task.assignee_id }}
+                              size="2xs"
+                              className="mt-0.5"
+                            />
+                          )}
+                        </Row>
+                      ))}
+                    </div>
+                  )}
                 </Col>
               )}
             </Droppable>
