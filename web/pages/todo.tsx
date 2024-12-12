@@ -33,6 +33,8 @@ import { UserAvatar } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { isAdminId } from 'common/envs/constants'
+import { buildArray } from 'common/util/array'
 const chachingSound =
   typeof window !== 'undefined' ? new Audio('/sounds/droplet3.m4a') : null
 
@@ -51,6 +53,7 @@ export default function TodoPage() {
     {}
   )
   const user = useUser()
+  const isAdmin = isAdminId(user?.id ?? '')
   const categories = categoriesData?.categories ?? []
   const [newTodoText, setNewTodoText] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState<number>(-1)
@@ -324,8 +327,8 @@ export default function TodoPage() {
                               buttonContent={
                                 <DotsVerticalIcon className="text-ink-400 h-5 w-5" />
                               }
-                              items={[
-                                {
+                              items={buildArray(
+                                isAdmin && {
                                   icon: <UserIcon className="h-4 w-4" />,
                                   name: 'Assign to...',
                                   onClick: () => {
@@ -384,8 +387,8 @@ export default function TodoPage() {
                                     )}`
                                     router.push(url)
                                   },
-                                },
-                              ]}
+                                }
+                              )}
                             />
                           </Row>
                         </div>
@@ -633,14 +636,16 @@ export default function TodoPage() {
         </Modal>
 
         {/* Assign user modal */}
-        <AssignUserModal
-          open={isAssignModalOpen}
-          onClose={() => {
-            setIsAssignModalOpen(false)
-            setSelectedTaskId(null)
-          }}
-          onAssign={handleAssign}
-        />
+        {isAssignModalOpen && (
+          <AssignUserModal
+            open={isAssignModalOpen}
+            onClose={() => {
+              setIsAssignModalOpen(false)
+              setSelectedTaskId(null)
+            }}
+            onAssign={handleAssign}
+          />
+        )}
       </DragDropContext>
     </Page>
   )
