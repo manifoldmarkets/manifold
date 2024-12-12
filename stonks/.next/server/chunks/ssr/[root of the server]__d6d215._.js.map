@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 55, "column": 0}, "map": {"version":3,"sources":["file:///Users/ingawei/Documents/Manifold/manifold/stonks/stonks/pages/_app.tsx"],"sourcesContent":["import type { AppProps } from 'next/app'\n\nexport default function App({ Component, pageProps }: AppProps) {\n  return <Component {...pageProps} />\n} "],"names":[],"mappings":";;;;;AAEe,SAAS,IAAI,EAAE,SAAS,EAAE,SAAS,EAAY;IAC5D,qBAAO,qKAAC;QAAW,GAAG,SAAS;;;;;;AACjC"}},
-    {"offset": {"line": 69, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}}]
-}

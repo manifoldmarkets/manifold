@@ -39,7 +39,6 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { SimpleAnswerBars } from '../answers/answers-panel'
-import { BetButton } from '../../../stonks/components/bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { CardReason } from '../feed/card-reason'
@@ -53,6 +52,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import { ClickFrame } from '../widgets/click-frame'
 import { ReactButton } from './react-button'
 import { TradesButton } from './trades-button'
+import { BetButton } from '../bet/feed-bet-button'
 
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
