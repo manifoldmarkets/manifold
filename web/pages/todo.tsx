@@ -5,7 +5,12 @@ import { Page } from 'web/components/layout/page'
 import { Input } from 'web/components/widgets/input'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { Task } from 'common/src/todo'
-import { ArchiveIcon, PlusIcon, ScaleIcon } from '@heroicons/react/solid'
+import {
+  ArchiveIcon,
+  MenuIcon,
+  PlusIcon,
+  ScaleIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -319,7 +324,7 @@ export default function TodoPage() {
               isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
             )}
           >
-            <Row className="mb-4 items-center justify-between">
+            <Row className="mb-4 items-center gap-6 sm:justify-between ">
               <h2 className="text-lg font-semibold">Categories</h2>
               <button
                 onClick={() => setIsModalOpen(true)}
@@ -423,10 +428,10 @@ export default function TodoPage() {
 
           {/* Mobile sidebar toggle */}
           <button
-            className="bg-primary-500 hover:bg-primary-600 fixed bottom-4 right-4 rounded-full p-3 text-white md:hidden"
+            className="bg-canvas-500 hover:bg-canvas-600 fixed right-2 top-1.5 rounded-full p-3 text-white md:hidden"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           >
-            <PlusIcon className="h-6 w-6" />
+            <MenuIcon className="h-6 w-6" />
           </button>
         </div>
 
