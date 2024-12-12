@@ -1913,6 +1913,23 @@ export const API = (_apiTypeCheck = {
       userId: z.string(),
     }),
   },
+  'get-site-activity': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      bets: Bet[]
+      comments: ContractComment[]
+      newContracts: Contract[]
+      relatedContracts: Contract[]
+    },
+    props: z.object({
+      limit: z.coerce.number().default(10),
+      blockedUserIds: z.array(z.string()).optional(),
+      blockedGroupSlugs: z.array(z.string()).optional(),
+      blockedContractIds: z.array(z.string()).optional(),
+    }).strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API
