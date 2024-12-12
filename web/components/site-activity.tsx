@@ -71,26 +71,37 @@ export function SiteActivity(props: {
           return (
             <Col
               key={parentId}
-              className="bg-canvas-0 gap-2 px-4 py-3 rounded-lg border border-canvas-50 hover:border-primary-300 transition-colors"
+              className="bg-canvas-0 border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border px-4 py-3 transition-colors"
             >
-              <ContractMention contract={contract} />
-              <div className="space-y-2">
-                {items.map((item) =>
-                  'amount' in item ? (
-                    <FeedBet
-                      className="!pt-0"
-                      key={item.id}
-                      contract={contract}
-                      bet={item}
-                      avatarSize="xs"
-                    />
-                  ) : 'question' in item ? (
-                    <MarketCreatedLog key={item.id} contract={item} />
-                  ) : 'channelId' in item ? null : (
-                    <CommentLog key={item.id} comment={item} />
-                  )
+              <Row className="gap-2">
+                <Col className="flex-1 gap-2">
+                  <ContractMention contract={contract} />
+                  <div className="space-y-2">
+                    {items.map((item) =>
+                      'amount' in item ? (
+                        <FeedBet
+                          className="!pt-0"
+                          key={item.id}
+                          contract={contract}
+                          bet={item}
+                          avatarSize="xs"
+                        />
+                      ) : 'question' in item ? (
+                        <MarketCreatedLog key={item.id} contract={item} />
+                      ) : 'channelId' in item ? null : (
+                        <CommentLog key={item.id} comment={item} />
+                      )
+                    )}
+                  </div>
+                </Col>
+                {contract.coverImageUrl && (
+                  <img
+                    src={contract.coverImageUrl}
+                    alt=""
+                    className="h-32 w-32 rounded-md object-cover"
+                  />
                 )}
-              </div>
+              </Row>
             </Col>
           )
         })}
