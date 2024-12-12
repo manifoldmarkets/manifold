@@ -12,10 +12,5 @@ create table if not exists
 -- Row Level Security
 alter table categories enable row level security;
 
--- Policies
-create policy "public read" on categories for
-select
-  using (true);
-
 -- Indexes
 create index categories_user_id_idx on categories (user_id);

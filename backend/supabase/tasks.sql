@@ -14,11 +14,6 @@ create table if not exists
 -- Row Level Security
 alter table tasks enable row level security;
 
--- Policies
-create policy "public read" on tasks for
-select
-  using (true);
-
 -- Indexes
 create index tasks_creator_id_idx on tasks (creator_id);
 
