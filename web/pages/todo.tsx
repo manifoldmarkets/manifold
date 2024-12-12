@@ -209,7 +209,9 @@ export default function TodoPage() {
               <Row className="items-center justify-between">
                 <span>{getSelectedCategoryTitle()}</span>
                 <DropdownMenu
-                  buttonContent={<DotsVerticalIcon className="h-5 w-5" />}
+                  buttonContent={
+                    <DotsVerticalIcon className="text-ink-400 h-5 w-5" />
+                  }
                   items={[
                     {
                       name: `${showCompletedTasks ? 'Hide' : 'Show'} Completed`,
@@ -300,7 +302,7 @@ export default function TodoPage() {
                             )}
                             <DropdownMenu
                               buttonContent={
-                                <DotsVerticalIcon className="h-5 w-5" />
+                                <DotsVerticalIcon className="text-ink-400 h-5 w-5" />
                               }
                               items={[
                                 {
@@ -398,7 +400,7 @@ export default function TodoPage() {
                           )}
                           <DropdownMenu
                             buttonContent={
-                              <DotsVerticalIcon className="h-5 w-5" />
+                              <DotsVerticalIcon className="text-ink-400 h-5 w-5" />
                             }
                             items={[
                               {
@@ -527,7 +529,7 @@ export default function TodoPage() {
                               <span>{category.name}</span>
                               <DropdownMenu
                                 buttonContent={
-                                  <DotsVerticalIcon className="h-5 w-5" />
+                                  <DotsVerticalIcon className="text-ink-400 h-5 w-5" />
                                 }
                                 items={[
                                   {
