@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useState } from 'react'
-import { FaUserCircle } from 'react-icons/fa'
+import { FaUser } from 'react-icons/fa'
 import { api } from 'web/lib/api/api'
 import { uploadStonkImage } from 'web/lib/firebase/stonk-images'
 
@@ -51,8 +51,8 @@ export function StonkImageUploader({
   }
 
   return (
-    <div className="relative mr-2 h-24 w-24 shrink-0">
-      <label className="group cursor-pointer">
+    <div className="bg-ink-300 relative mr-4 h-16 w-16 shrink-0 overflow-hidden rounded-lg object-cover shadow-sm sm:h-20 sm:w-20">
+      <label className="group h-full w-full cursor-pointer">
         <input
           type="file"
           accept="image/*"
@@ -61,19 +61,17 @@ export function StonkImageUploader({
           className="hidden"
         />
 
-        <div className="relative h-24 w-24 rounded-full bg-gray-200 dark:bg-gray-800">
-          <FaUserCircle className="h-full w-full text-gray-400" />
+        <FaUser className="text-ink-500 mx-auto mt-[10%] h-3/4 w-3/4" />
 
-          {/* Overlay */}
-          <div
-            className={clsx(
-              'absolute inset-0 flex items-center justify-center',
-              'rounded-full bg-black/50 text-sm text-white transition',
-              uploading ? 'opacity-50' : 'opacity-0 group-hover:opacity-100'
-            )}
-          >
-            {uploading ? 'Uploading...' : 'Upload Image'}
-          </div>
+        {/* Overlay */}
+        <div
+          className={clsx(
+            'absolute inset-0 flex items-center justify-center text-center',
+            'bg-ink-1000/50 rounded-lg text-sm text-white transition',
+            uploading ? 'opacity-50' : 'opacity-0 group-hover:opacity-100'
+          )}
+        >
+          {uploading ? 'Uploading...' : 'Upload Image'}
         </div>
       </label>
 

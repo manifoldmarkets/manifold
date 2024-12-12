@@ -469,8 +469,12 @@ export const sortFields: SortFields = {
   },
 }
 function getSearchContractSortSQL(sort: string, contractType?: string) {
-  if (sort === 'prob-descending' && contractType === 'STONK') {
-    return `resolution DESC, (data->>'prob')::numeric DESC NULLS LAST`
+  if (contractType === 'STONK') {
+    if (sort === 'prob-descending') {
+      return `resolution DESC, (data->>'prob')::numeric DESC NULLS LAST`
+    } else if (sort === 'prob-ascending') {
+      return `resolution DESC, (data->>'prob')::numeric ASC NULLS LAST`
+    }
   }
   return `${sortFields[sort].sql} ${sortFields[sort].order}`
 }

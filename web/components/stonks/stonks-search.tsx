@@ -1,194 +1,71 @@
 'use client'
 import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import { Contract, contractPath, StonkContract } from 'common/contract'
 import { LiteGroup } from 'common/group'
+import { StonkImage } from 'common/stonk-images'
+import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
+import { ALL_PARENT_TOPICS, TOPICS_TO_SUBTOPICS } from 'common/topics'
+import { buildArray } from 'common/util/array'
 import { capitalize, sample, uniqBy } from 'lodash'
+import Link from 'next/link'
 import { ReactNode, useEffect, useRef, useState } from 'react'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { useEvent } from 'web/hooks/use-event'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
-import { track, trackCallback } from 'web/lib/service/analytics'
-import { Col } from './layout/col'
-import { Row } from './layout/row'
-import { Input } from './widgets/input'
-import { FullUser } from 'common/api/user-types'
-import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
-import { buildArray } from 'common/util/array'
-import { Button, IconButton } from 'web/components/buttons/button'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { searchContracts, searchGroups } from 'web/lib/api/api'
-import { searchUsers } from 'web/lib/supabase/users'
-import {
-  actionColumn,
-  probColumn,
-  tierColumn,
-  traderColumn,
-} from './contract/contract-table-col-formats'
-import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
-import { ContractFilters } from './search/contract-filters'
-import { UserResults } from './search/user-results'
-import { BrowseTopicPills } from './topics/browse-topic-pills'
-import { LoadingIndicator } from './widgets/loading-indicator'
-import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
-import { BinaryDigit, TierParamsType } from 'common/tier'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Spacer } from './layout/spacer'
-import { useSweepstakes } from './sweepstakes-provider'
-import { FilterPill } from './search/filter-pills'
-import { ALL_PARENT_TOPICS, TOPICS_TO_SUBTOPICS } from 'common/topics'
-import { Carousel } from './widgets/carousel'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { searchContracts, searchGroups } from 'web/lib/api/api'
+import { track, trackCallback } from 'web/lib/service/analytics'
+import { searchUsers } from 'web/lib/supabase/users'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
+import {
+  CONTRACT_TYPE_KEY,
+  ContractTypeType,
+  Filter,
+  FILTER_KEY,
+  GROUP_IDS_KEY,
+  PRIZE_MARKET_KEY,
+  QUERY_KEY,
+  SEARCH_TYPE_KEY,
+  SearchParams,
+  SearchState,
+  SearchType,
+  Sort,
+  SupabaseAdditionalFilter,
+  SWEEPIES_KEY,
+  TOPIC_FILTER_KEY,
+  useSearchQueryState,
+} from '../search'
+import { FilterPill } from '../search/filter-pills'
+import { Carousel } from '../widgets/carousel'
+import { Input } from '../widgets/input'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { StonkPrice } from './StonkValue'
+import { StonkBetButton } from './bet/stonk-bet-button'
+import { StonkImageUploader } from './StonkImageUploader'
+import { useUser } from 'web/hooks/use-user'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
 
-export const SORTS = [
-  { label: 'Best', value: 'score' },
-  { label: 'Hot', value: 'freshness-score' },
-  { label: 'Liquidity', value: 'liquidity' },
-  { label: 'Subsidy', value: 'subsidy' },
-  { label: 'New', value: 'newest' },
-  { label: 'Closing soon', value: 'close-date' },
-  { label: 'Daily change', value: 'daily-score' },
-  { label: '24h volume', value: '24-hour-vol' },
-  { label: 'Total traders', value: 'most-popular' },
-  { label: 'Last activity', value: 'last-updated' },
-  { label: 'Just resolved', value: 'resolve-date' },
-  { label: 'Bounty amount', value: 'bounty-amount' },
-  { label: 'High %', value: 'prob-descending' },
-  { label: 'Low %', value: 'prob-ascending' },
-  { label: '🎲 Random!', value: 'random' },
+const STONK_SORTS = [
+  { label: 'Highest', value: 'prob-descending' },
+  { label: 'Lowest', value: 'prob-ascending' },
+  { label: 'Popular', value: 'most-popular' },
 ] as const
 
-export const predictionMarketSorts = new Set([
-  'daily-score',
-  '24-hour-vol',
-  'liquidity',
-  'subsidy',
-  'close-date',
-  'resolve-date',
-  'most-popular',
-  'prob-descending',
-  'prob-ascending',
-  'freshness-score',
-])
-
-export const bountySorts = new Set(['bounty-amount'])
-
-const probSorts = new Set(['prob-descending', 'prob-ascending'])
-
-export const BOUNTY_MARKET_SORTS = SORTS.filter(
-  (item) => !predictionMarketSorts.has(item.value)
-)
-
-export const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
-  (item) => !bountySorts.has(item.value)
-)
-
-export const PREDICTION_MARKET_SORTS = SORTS.filter(
-  (item) => !bountySorts.has(item.value) && !probSorts.has(item.value)
-)
-
-export const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
-  (item) => !bountySorts.has(item.value)
-)
-
-export type Sort = (typeof SORTS)[number]['value']
-
-export const FILTERS = [
-  { label: 'Any status', value: 'all' },
-  { label: 'Open', value: 'open' },
-  { label: 'Closing in 7 days', value: 'closing-week' },
-  { label: 'Closing in 30 days', value: 'closing-month' },
-  { label: 'Closing in 90 days', value: 'closing-90-days' },
-  { label: 'Closed', value: 'closed' },
-  { label: 'Resolved', value: 'resolved' },
+const STONK_TOPICS = [
+  { label: 'Destiny', value: 'destinygg' },
+  { label: 'One Piece', value: 'one-piece-stocks' },
+  { label: 'JasonTheWeen', value: 'jasontheween' },
 ] as const
 
-export type Filter = (typeof FILTERS)[number]['value']
-
-export const CONTRACT_TYPES = [
-  { label: 'Any type', value: 'ALL' },
-  { label: 'Yes/No', value: 'BINARY' },
-  { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
-  { label: 'Numeric', value: 'PSEUDO_NUMERIC' },
-  { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
-  { label: 'Stock', value: 'STONK' },
-  { label: 'Poll', value: 'POLL' },
-] as const
-
-export const DEFAULT_SORT = 'score'
-export const DEFAULT_SORTS = ['freshness-score', 'newest']
-export const DEFAULT_BOUNTY_SORTS = ['bounty-amount']
-
-export const DEFAULT_FILTERS = []
-export const DEFAULT_FILTER = 'all'
-
-export const DEFAULT_CONTRACT_TYPE = 'ALL'
-export const DEFAULT_CONTRACT_TYPES = []
-
-export const DEFAULT_TIER = '00000'
-
-export type ContractTypeType = (typeof CONTRACT_TYPES)[number]['value']
-export type SearchType = 'Users' | 'Questions' | undefined
-
-export type SearchParams = {
-  [QUERY_KEY]: string
-  [SORT_KEY]: Sort
-  [FILTER_KEY]: Filter
-  [CONTRACT_TYPE_KEY]: ContractTypeType
-  [SEARCH_TYPE_KEY]: SearchType
-  [PRIZE_MARKET_KEY]: BinaryDigit
-  [FOR_YOU_KEY]: BinaryDigit
-  [MARKET_TIER_KEY]: TierParamsType
-  [TOPIC_FILTER_KEY]: string
-  [SWEEPIES_KEY]: BinaryDigit
-  [GROUP_IDS_KEY]: string
-}
-
-export const QUERY_KEY = 'q'
-export const SORT_KEY = 's'
-export const FILTER_KEY = 'f'
-export const CONTRACT_TYPE_KEY = 'ct'
-export const SEARCH_TYPE_KEY = 't'
-export const PRIZE_MARKET_KEY = 'p'
-export const FOR_YOU_KEY = 'fy'
-export const MARKET_TIER_KEY = 'mt'
-export const TOPIC_FILTER_KEY = 'tf'
-export const SWEEPIES_KEY = 'sw'
-export const GROUP_IDS_KEY = 'gids'
-
-export type SupabaseAdditionalFilter = {
-  creatorId?: string
-  excludeContractIds?: string[]
-  excludeGroupSlugs?: string[]
-  excludeUserIds?: string[]
-}
-
-export type SearchState = {
-  contracts: Contract[] | undefined
-  users: FullUser[] | undefined
-  topics: LiteGroup[] | undefined
-  shouldLoadMore: boolean
-  // mirror of search param state, but to determine if the first load should load new data
-  lastSearchParams?: {
-    query: string
-    sort: Sort
-    filter: Filter
-    contractType: ContractTypeType
-    topicSlug: string
-    isPrizeMarket: '1' | '0'
-    forYou: '1' | '0'
-    marketTier: TierParamsType
-    topicFilter: string
-    isSweepies: '1' | '0'
-    gids: string
-  }
-}
-
-export function Search(props: {
+export function StonksSearch(props: {
   persistPrefix: string
   defaultSort?: Sort
   defaultFilter?: Filter
@@ -241,7 +118,6 @@ export function Search(props: {
   } = props
 
   const isMobile = useIsMobile()
-  const { prefersPlay, setPrefersPlay } = useSweepstakes()
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
@@ -250,7 +126,7 @@ export function Search(props: {
     defaultForYou,
     useUrlParams,
     persistPrefix,
-    defaultSweepies: prefersPlay ? '0' : '1',
+    defaultSweepies: '0',
   })
 
   const query = searchParams[QUERY_KEY]
@@ -260,15 +136,11 @@ export function Search(props: {
   const prizeMarketState = searchParams[PRIZE_MARKET_KEY]
   const sweepiesState = searchParams[SWEEPIES_KEY]
   const groupIds = searchParams[GROUP_IDS_KEY]
-  useEffect(() => {
-    const isSweeps = sweepiesState === '1'
-    if (prefersPlay !== isSweeps) return
-    setSearchParams({
-      [SWEEPIES_KEY]: prefersPlay ? '0' : '1',
-    })
-  }, [prefersPlay, sweepiesState])
 
   const showSearchTypes = !!query && !hideSearchTypes && !contractsOnly
+  const [images, setImages] = useState<StonkImage[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const user = useUser()
 
   const {
     contracts,
@@ -286,16 +158,23 @@ export function Search(props: {
     hideSweepsToggle
   )
 
-  const showTopics = topics && topics.length > 0 && query && query.length > 0
-
-  const showUsers = users && users.length > 0 && query !== ''
+  useEffectCheckEquality(() => {
+    const fetchStonks = async () => {
+      try {
+        const stonkImages = await api('get-stonk-images', {
+          contracts: contracts ? contracts.map((c) => c.id) : [],
+        })
+        setImages(stonkImages.images)
+      } catch (e) {
+        setError('Failed to load stonks')
+        console.error(e)
+      }
+    }
+    fetchStonks()
+  }, [contracts])
 
   const onChange = (changes: Partial<SearchParams>) => {
     const updatedParams = { ...changes }
-
-    if (changes[FOR_YOU_KEY] === '1' || topicSlug != '') {
-      updatedParams[TOPIC_FILTER_KEY] = ''
-    }
 
     setSearchParams(updatedParams)
     if (isWholePage) window.scrollTo(0, 0)
@@ -304,6 +183,7 @@ export function Search(props: {
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
   const showContractFilters = !hideContractFilters
+  console.log('contracts', contracts)
 
   useDebouncedEffect(
     () => {
@@ -323,16 +203,9 @@ export function Search(props: {
     sweepiesState === '1' ? (
       <Col className="mt-2 items-center gap-3">
         <span className="text-ink-700 text-center">
-          No {prefersPlay ? 'questions' : 'sweeps questions'} found under this
-          filter.
+          No stonks found under this filter.
         </span>
         <Col className="gap-2">
-          {!prefersPlay && (
-            <Button onClick={() => setPrefersPlay(true)} color="purple">
-              See mana markets
-            </Button>
-          )}
-
           <Button
             onClick={() =>
               onChange({
@@ -369,6 +242,8 @@ export function Search(props: {
         )
       )
     : undefined
+
+  console.log(selectedTopic)
   return (
     <Col className="w-full">
       <Col
@@ -419,43 +294,35 @@ export function Search(props: {
             </Row>
           </Row>
         )}
-        {showContractFilters && (
-          <ContractFilters
-            params={searchParams}
-            updateParams={onChange}
-            topicSlug={topicSlug}
-            className={
-              searchType && searchType !== 'Questions' ? 'invisible' : ''
-            }
-            hideSweepsToggle={hideSweepsToggle}
-          />
-        )}
+
         <Col className="mb-2">
           {/* Main topics row */}
-          {showTopicsFilterPills && (
-            <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
-              {ALL_PARENT_TOPICS.map((topic) => (
-                <FilterPill
-                  key={topic}
-                  selected={selectedTopic === topic}
-                  onSelect={() => {
-                    if (selectedTopic === topic) {
-                      onChange({ [GROUP_IDS_KEY]: '' })
-                    } else {
-                      track('select search topic', { topic })
-                      // Join all group IDs for this topic's subtopics
-                      const allGroupIds = TOPICS_TO_SUBTOPICS[topic]
-                        .map((subtopic) => subtopic.groupIds)
-                        .flat()
-                      onChange({ [GROUP_IDS_KEY]: allGroupIds.join(',') })
-                    }
-                  }}
-                >
-                  {topic}
-                </FilterPill>
-              ))}
-            </Carousel>
-          )}
+
+          <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
+            {STONK_TOPICS.map((topic) => (
+              <FilterPill
+                key={topic.value}
+                selected={selectedTopic === topic.value}
+                onSelect={() => {
+                  if (selectedTopic === topic.value) {
+                    onChange({ [GROUP_IDS_KEY]: '' })
+                  } else {
+                    onChange({ [GROUP_IDS_KEY]: topic.value })
+                  }
+                  //   } else {
+                  //     track('select search topic', { topic })
+                  //     // Join all group IDs for this topic's subtopics
+                  //     const allGroupIds = TOPICS_TO_SUBTOPICS[topic.value]
+                  //       .map((subtopic) => subtopic.groupIds)
+                  //       .flat()
+                  //     onChange({ [GROUP_IDS_KEY]: allGroupIds.join(',') })
+                  //   }
+                }}
+              >
+                {topic.label}
+              </FilterPill>
+            ))}
+          </Carousel>
 
           {/* Subtopics row */}
           {selectedTopic && (
@@ -486,47 +353,6 @@ export function Search(props: {
         </Col>
       </Col>
       <Spacer h={2} />
-      {showSearchTypes && (
-        <Col>
-          {showTopics && (
-            <>
-              <Row className="text-ink-500 items-center gap-1 text-sm">
-                <hr className="border-ink-300 ml-2 grow sm:ml-0" />
-                <span>
-                  {!query || !topics?.length
-                    ? ''
-                    : topics.length >= 100
-                    ? '100+'
-                    : `${topics.length}`}{' '}
-                  {!query || !topics?.length ? 'Topics' : 'topics'}
-                </span>
-                <hr className="border-ink-300 mr-2 grow sm:mr-0" />
-              </Row>
-              <BrowseTopicPills
-                className={'relative w-full px-2 pb-4'}
-                topics={topics}
-              />
-            </>
-          )}
-          {showUsers && <UserResults userResults={users} />}
-          {(showTopics || showUsers) && (
-            <Row className="text-ink-500 items-center gap-1 text-sm">
-              <hr className="border-ink-300 ml-2 grow sm:ml-0" />
-              <span>
-                {!query || !contracts?.length
-                  ? ''
-                  : contracts.length >= 100
-                  ? '100+'
-                  : shouldLoadMore && !loading
-                  ? `${contracts.length}+`
-                  : `${contracts.length}`}{' '}
-                {!query || !contracts?.length ? 'Questions' : 'questions'}
-              </span>
-              <hr className="border-ink-300 mr-2 grow sm:mr-0" />
-            </Row>
-          )}
-        </Col>
-      )}
 
       {!contracts ? (
         <LoadingResults />
@@ -534,43 +360,63 @@ export function Search(props: {
         emptyContractsState
       ) : (
         <>
-          <ContractsTable
-            hideAvatar={hideAvatars}
-            contracts={contracts}
-            onContractClick={onContractClick}
-            highlightContractIds={highlightContractIds}
-            columns={buildArray([
-              tierColumn,
-              traderColumn,
-              probColumn,
-              !hideActions && actionColumn,
-            ])}
-          />
-          <LoadMoreUntilNotVisible
-            loadMore={() => querySearchResults(false, true)}
-          />
-          {shouldLoadMore && <LoadingResults />}
-          {!shouldLoadMore &&
-            (filter !== 'all' ||
-              contractType !== 'ALL' ||
-              prizeMarketState === '1' ||
-              sweepiesState === '1') && (
-              <div className="text-ink-500 mx-2 my-8 text-center">
-                No more results under this filter.{' '}
-                <button
-                  className="text-primary-500 hover:underline focus:underline"
-                  onClick={() =>
-                    onChange({
-                      [FILTER_KEY]: 'all',
-                      [CONTRACT_TYPE_KEY]: 'ALL',
-                      p: '0',
-                    })
-                  }
-                >
-                  Clear filter
-                </button>
-              </div>
-            )}
+          {contracts.map((stonk: StonkContract, index) => {
+            const image = images.find((i) => i.contractId === stonk.id)
+            const cleanQuestion = (question: string) => {
+              return (
+                question
+                  // Remove "Stock", "stock", with optional special characters around them
+                  .replace(/[^\w\s]?stock[^\w\s]?/gi, '')
+                  // Remove "(Permanent)" or "[Permanent]" with optional special characters
+                  .replace(/[^\w\s]?\(permanent\)[^\w\s]?/gi, '')
+                  .replace(/[^\w\s]?\[permanent\][^\w\s]?/gi, '')
+                  .trim()
+              )
+            }
+
+            return (
+              <Row
+                key={stonk.id}
+                className="hover:bg-ink-100 w-full flex-wrap items-center rounded-lg p-4 transition-colors"
+              >
+                <div className="text-ink-500 mr-4 w-6 text-lg font-semibold sm:w-8 sm:text-xl">
+                  {index + 1}
+                </div>
+                {image?.imageUrl ? (
+                  <img
+                    src={image.imageUrl}
+                    alt={cleanQuestion(stonk.question)}
+                    className="mr-4 h-16 w-16 shrink-0 rounded-lg object-cover shadow-sm sm:h-20 sm:w-20"
+                  />
+                ) : (
+                  <StonkImageUploader
+                    stonkId={stonk.id}
+                    onImageUploaded={(imageUrl) => {
+                      setImages([...images, { contractId: stonk.id, imageUrl }])
+                    }}
+                  />
+                )}
+                <Col className="min-w-0 flex-1 gap-2">
+                  <div className="flex flex-col items-center sm:flex-row sm:justify-between sm:gap-2">
+                    <Link
+                      href={contractPath(stonk)}
+                      className="break-words font-semibold hover:text-indigo-500 hover:underline"
+                    >
+                      {cleanQuestion(stonk.question)}
+                    </Link>
+                    <div className="text-ink-500 whitespace-nowrap text-xs sm:text-sm">
+                      {stonk.uniqueBettorCount ?? 0} traders
+                    </div>
+                  </div>
+
+                  <Row className="flex-wrap items-center justify-between gap-2">
+                    <StonkPrice contract={stonk} />
+                    <StonkBetButton contract={stonk} user={user} />
+                  </Row>
+                </Col>
+              </Row>
+            )
+          })}
         </>
       )}
     </Col>
@@ -602,9 +448,7 @@ const NoResults = () => {
 const LoadingResults = () => {
   return (
     <Col className="w-full">
-      <LoadingContractRow />
-      <LoadingContractRow />
-      <LoadingContractRow />
+      <LoadingIndicator />
     </Col>
   )
 }
@@ -787,75 +631,3 @@ const useSearchResults = (
     querySearchResults,
   }
 }
-
-export const useSearchQueryState = (props: {
-  persistPrefix: string
-  defaultSort?: Sort
-  defaultFilter?: Filter
-  defaultContractType?: ContractTypeType
-  defaultSearchType?: SearchType
-  defaultPrizeMarket?: '1' | '0'
-  defaultSweepies?: '1' | '0'
-  defaultForYou?: '1' | '0'
-  useUrlParams?: boolean
-  defaultMarketTier?: TierParamsType
-  defaultTopicFilter?: string
-}) => {
-  const {
-    persistPrefix,
-    defaultSort,
-    defaultFilter,
-    defaultContractType,
-    defaultSearchType,
-    useUrlParams,
-    defaultPrizeMarket,
-    defaultForYou,
-    defaultMarketTier,
-    defaultTopicFilter,
-    defaultSweepies,
-  } = props
-
-  const defaults = {
-    [QUERY_KEY]: '',
-    [SORT_KEY]: defaultSort ?? 'score',
-    [FILTER_KEY]: defaultFilter ?? 'all',
-    [CONTRACT_TYPE_KEY]: defaultContractType ?? 'ALL',
-    [SEARCH_TYPE_KEY]: defaultSearchType,
-    [PRIZE_MARKET_KEY]: defaultPrizeMarket ?? '0',
-    [FOR_YOU_KEY]: defaultForYou ?? '0',
-    [MARKET_TIER_KEY]: defaultMarketTier ?? DEFAULT_TIER,
-    [TOPIC_FILTER_KEY]: defaultTopicFilter ?? '',
-    [SWEEPIES_KEY]: defaultSweepies ?? '0',
-    [GROUP_IDS_KEY]: '',
-  }
-
-  const useHook = useUrlParams ? usePersistentQueriesState : useShim
-  const [state, setState, ready] = useHook(defaults, persistPrefix)
-
-  return [state, setState, ready] as const
-}
-
-const useShim = <T extends Record<string, string | undefined>>(
-  x: T,
-  persistPrefix: string
-) => {
-  const [state, setState, ready] = usePersistentLocalState(
-    x,
-    searchLocalKey(persistPrefix)
-  )
-
-  const updateState = (
-    newState: Partial<T> | ((prevState: T) => Partial<T>)
-  ) => {
-    if (typeof newState === 'function') {
-      setState((prevState) => ({ ...prevState, ...newState(prevState) }))
-    } else {
-      setState((prevState) => ({ ...prevState, ...newState }))
-    }
-  }
-
-  return [state, updateState, ready] as const
-}
-
-export const searchLocalKey = (persistPrefix: string) =>
-  `${persistPrefix}-local-state`

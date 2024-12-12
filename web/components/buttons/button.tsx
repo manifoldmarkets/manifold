@@ -8,8 +8,10 @@ export type ColorType =
   | 'amber-outline'
   | 'green'
   | 'green-outline'
+  | 'green-transparent'
   | 'red'
   | 'red-outline'
+  | 'red-transparent'
   | 'blue'
   | 'sky-outline'
   | 'indigo'
@@ -57,8 +59,14 @@ export function buttonClass(size: SizeType, color: ColorType) {
     color === 'amber-outline' && [outline, 'text-amber-600 hover:bg-amber-500'],
     color === 'amber' && [solid, 'bg-amber-600 hover:bg-amber-700'],
     color === 'green' && [solid, 'bg-teal-500 hover:bg-teal-600'],
+    color === 'green-transparent' && [
+      'text-teal-600 bg-teal-600/20 hover:text-ink-0 hover:bg-teal-600',
+    ],
     color === 'green-outline' && [outline, 'text-teal-500 hover:bg-teal-500'],
     color === 'red' && [solid, 'bg-scarlet-500 hover:bg-scarlet-600'],
+    color === 'red-transparent' && [
+      'text-scarlet-600 bg-scarlet-600/20 hover:text-ink-0 hover:bg-scarlet-600',
+    ],
     color === 'red-outline' && [
       outline,
       'text-scarlet-500 hover:bg-scarlet-500',

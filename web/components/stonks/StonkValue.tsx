@@ -1,11 +1,8 @@
+import clsx from 'clsx'
 import { getProbability } from 'common/calculate'
 import { StonkContract } from 'common/contract'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { Row } from 'web/components/layout/row'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import clsx from 'clsx'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { animated } from '@react-spring/web'
 import { CoinNumber } from '../widgets/coin-number'
 export function StonkPrice(props: {
   contract: StonkContract
@@ -21,10 +18,7 @@ export function StonkPrice(props: {
         className
       )}
     >
-      <CoinNumber
-        amount={value}
-        className="text-purple-600 dark:text-purple-300"
-      />
+      <CoinNumber amount={value} />
 
       <div className="ml-1 font-sans text-sm text-gray-400"> per share</div>
     </Row>
