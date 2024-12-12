@@ -19,7 +19,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (props) =>
     // [ ] personalization based on followed users & topics
     pg.manyOrNone(
       `select * from contract_bets 
-       where amount >= 500 
+       where abs(amount) >= 500 
        and user_id != all($1)
        and contract_id != all($2)
        order by created_time desc limit $3`,
