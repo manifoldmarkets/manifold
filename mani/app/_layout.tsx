@@ -2,44 +2,42 @@ import 'expo-dev-client'
 import * as Notifications from 'expo-notifications'
 import { User as FirebaseUser } from 'firebase/auth'
 import React, { useEffect, useRef, useState } from 'react'
-import { Dimensions, Platform, SafeAreaView } from 'react-native'
-import { app, auth, ENV } from './init'
-// @ts-ignore
+import { Dimensions, Linking, Platform, SafeAreaView } from 'react-native'
+import { app, auth, ENV } from '../init'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { Notification } from 'common/notification'
 import { IosIapListener } from 'components/ios-iap-listener'
-import * as Linking from 'expo-linking'
 import { Subscription } from 'expo-modules-core'
 import { StatusBar } from 'expo-status-bar'
 import { withIAPContext } from 'react-native-iap'
-
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import * as Sentry from '@sentry/react-native'
 import { log } from 'components/logger'
 import { SplashAuth } from 'components/splash-auth'
-import Constants from 'expo-constants'
 import { getData } from 'lib/auth'
 import { useIsConnected } from 'lib/use-is-connected'
+import { TokenModeProvider } from 'hooks/useTokenMode'
+import { Stack } from 'expo-router'
+import Constants from 'expo-constants'
+import { StyleSheet } from 'react-native'
+import { Colors } from 'constants/colors'
 
+const HEADER_HEIGHT = 250
+
+// Initialize Sentry
+// Initialize Sentry
 Sentry.init({
   dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
   debug: ENV === 'DEV',
 })
-// NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address. ie:
-// "cross-env NEXT_PUBLIC_API_URL=192.168.1.229:8088 \
-// Then, set the native url in the app on the user settings page: http://192.168.1.229:3000/
 
-const isIOS = Platform.OS === 'ios'
-const App = () => {
-  // Init
+function RootLayout() {
+  // Your existing App.tsx logic here
   const notificationResponseListener = useRef<Subscription>()
   useFonts({ ReadexPro_400Regular })
 
-  // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
-  // Auth.currentUser didn't update, so we track the state manually
   auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null))
-
   const signInUserFromStorage = async () => {
     const user = await getData<FirebaseUser>('user')
     if (!user) return
@@ -119,14 +117,20 @@ const App = () => {
   const height = Dimensions.get('window').height //full height
 
   return (
-    <>
+    <TokenModeProvider>
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        {/* <Stack.Screen name="+not-found" options={{ title: 'Not Found' }} /> */}
+      </SafeAreaView>
+
       <SplashAuth
-        height={height}
-        width={width}
-        source={require('./assets/splash.png')}
+        source={require('../assets/splash.png')}
         fbUser={fbUser}
         isConnected={isConnected}
+        height={height}
+        width={width}
       />
+
       {Platform.OS === 'ios' && fullyLoaded && (
         <IosIapListener
           checkoutAmount={checkoutAmount}
@@ -134,13 +138,26 @@ const App = () => {
         />
       )}
 
-      <SafeAreaView
-      // style={styles.container}
-      >
-        <StatusBar animated={true} style={'dark'} hidden={false} />
-      </SafeAreaView>
-      {/*<ExportLogsButton />*/}
-    </>
+      <StatusBar style="dark" />
+    </TokenModeProvider>
   )
 }
-export default Sentry.wrap(withIAPContext(App))
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    paddingHorizontal: 20,
+  },
+  header: {
+    height: HEADER_HEIGHT,
+    overflow: 'hidden',
+  },
+  content: {
+    flex: 1,
+    gap: 16,
+    overflow: 'hidden',
+  },
+})
+
+export default Sentry.wrap(withIAPContext(RootLayout))
