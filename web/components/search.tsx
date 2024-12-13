@@ -370,7 +370,6 @@ export function Search(props: {
       )
     : undefined
 
-  console.log(contracts)
   return (
     <Col className="w-full">
       <Col
