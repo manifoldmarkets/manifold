@@ -17,11 +17,7 @@
     "_comment": "Place your admin json under /backend/functions/ to enable this:",
     "dev:dev": "cross-env GOOGLE_APPLICATION_CREDENTIALS_DEV=./dev-mantic-markets-firebase-adminsdk.json ./dev.sh dev"
   },
-  "dependencies": {
-    "glob": "^9.0.0",
-    "rimraf": "^4.0.0",
-    "@xmldom/xmldom": "^0.8.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "18.18.8",
     "@typescript-eslint/eslint-plugin": "7.4.0",
