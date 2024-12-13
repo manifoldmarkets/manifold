@@ -21,7 +21,7 @@ import { Stack } from 'expo-router'
 import Constants from 'expo-constants'
 import { StyleSheet } from 'react-native'
 import { Colors } from 'constants/Colors'
-import { UserProvider, useUser } from 'components/hooks/useUser'
+import { UserProvider, useUser } from 'hooks/useUser'
 
 const HEADER_HEIGHT = 250
 
