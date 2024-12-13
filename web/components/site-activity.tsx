@@ -101,7 +101,7 @@ export function SiteActivity(props: {
                   <img
                     src={contract.coverImageUrl}
                     alt=""
-                    className="h-12 w-12 sm:h-32 sm:w-32 rounded-md object-cover"
+                    className="h-12 w-12 rounded-md object-cover sm:h-32 sm:w-32"
                   />
                 )}
               </Row>
@@ -148,7 +148,7 @@ const MarketCreatedLog = memo(
         </UserHovercard>
 
         {showDescription && props.contract.description && (
-          <div className="relative max-h-[120px] overflow-hidden">
+          <div className="relative max-h-[120px] max-w-xs overflow-hidden sm:max-w-none">
             <Content
               size="sm"
               content={props.contract.description}
