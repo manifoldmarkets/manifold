@@ -240,7 +240,10 @@ const LEADERBOARD_TYPES = [
 
 type LeaderboardType = (typeof LEADERBOARD_TYPES)[number]['value']
 
-type Entry = LeaderboardEntry & { totalReferredProfit?: number }
+type Entry = LeaderboardEntry & { 
+  totalReferredProfit?: number
+  isBannedFromPosting?: boolean
+}
 type MyEntry = Omit<Entry, 'userId'>
 type MyScores = {
   [key in LeaderboardType]?: { mana: MyEntry; cash: MyEntry }
