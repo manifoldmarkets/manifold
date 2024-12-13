@@ -4,7 +4,7 @@ import Script from 'next/script'
 
 export default function Document() {
   return (
-    <Html lang="en">
+    <Html lang="en" className="font-figtree font-normal">
       {/* Prevent flash of light theme before stylesheet loads. See use-theme.ts */}
       <style>
         {`@media (prefers-color-scheme: dark) {

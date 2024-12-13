@@ -87,10 +87,10 @@ export function Tooltip(props: {
       {/* conditionally render tooltip and fade in/out */}
       <Transition
         show={open}
-        enter="transition ease-out duration-50"
+        enter="transition-opacity ease-out duration-50"
         enterFrom="opacity-0"
         enterTo="opacity-100"
-        leave={noFade ? '' : 'transition ease-in duration-150'}
+        leave={noFade ? '' : 'transition-opacity ease-in duration-150'}
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
         // div attributes
