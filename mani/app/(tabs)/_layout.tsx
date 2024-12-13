@@ -1,5 +1,5 @@
 import { HapticTab } from 'components/HapticTab'
-import { IconSymbol } from 'components/ui/IconSymbol.ios'
+import { IconSymbol } from 'components/ui/IconSymbol'
 import TabBarBackground from 'components/ui/TabBarBackground'
 import { Tabs } from 'expo-router'
 import { useColor } from 'hooks/useColor'
@@ -50,40 +50,40 @@ export default function TabLayout() {
         name="live"
         options={{
           title: 'Live',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol
-              size={28}
-              name="chart.line.uptrend.xyaxis"
-              color={color}
-            />
-          ),
+          // tabBarIcon: ({ color }) => (
+          //   <IconSymbol
+          //     size={28}
+          //     name="chart.line.uptrend.xyaxis"
+          //     color={color}
+          //   />
+          // ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Inga',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
-          ),
+          // tabBarIcon: ({ color }) => (
+          //   <IconSymbol size={28} name="paperplane.fill" color={color} />
+          // ),
         }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
           title: 'Notifications',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="bell" color={color} />
-          ),
+          // tabBarIcon: ({ color }) => (
+          //   <IconSymbol size={28} name="bell" color={color} />
+          // ),
         }}
       />
       <Tabs.Screen
         name="shop"
         options={{
           title: 'Shop',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="bag" color={color} />
-          ),
+          // tabBarIcon: ({ color }) => (
+          //   <IconSymbol size={28} name="bag" color={color} />
+          // ),
         }}
       />
     </Tabs>

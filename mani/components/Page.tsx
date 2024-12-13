@@ -1,30 +1,28 @@
-import type { PropsWithChildren, ReactElement } from "react";
-import { StyleSheet, View, Image } from "react-native";
+import type { PropsWithChildren, ReactElement } from 'react'
+import { StyleSheet, View, Image } from 'react-native'
 import Animated, {
   interpolate,
   useAnimatedRef,
   useAnimatedStyle,
   useScrollViewOffset,
-} from "react-native-reanimated";
+} from 'react-native-reanimated'
 // import { SvgUri } from "react-native-svg";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { ThemedView } from "@/components/ThemedView";
-import { useBottomTabOverflow } from "@/components/ui/TabBarBackground";
-import { Row } from "./layout/row";
-import { ThemedText } from "./ThemedText";
-import { useColor } from "@/hooks/useColor";
-import { Colors } from "@/constants/Colors";
-import { TokenSlider } from "./TokenSlider";
-import { SliderHeader } from "./layout/slider-header";
+import { TokenSlider } from './TokenSlider'
+import { SliderHeader } from './layout/slider-header'
+import { useBottomTabOverflow } from './ui/TabBarBackground.ios'
+import { useColor } from 'hooks/useColor'
+import { ThemedView } from './ThemedView'
+import { Colors } from 'constants/Colors'
 
-const HEADER_HEIGHT = 250;
+const HEADER_HEIGHT = 250
 
 export default function Page({ children }: PropsWithChildren) {
-  const scrollRef = useAnimatedRef<Animated.ScrollView>();
-  const bottom = useBottomTabOverflow();
+  const scrollRef = useAnimatedRef<Animated.ScrollView>()
+  const bottom = useBottomTabOverflow()
 
-  const color = useColor();
+  const color = useColor()
   return (
     <SafeAreaView style={styles.container}>
       <SliderHeader />
@@ -37,7 +35,7 @@ export default function Page({ children }: PropsWithChildren) {
         <ThemedView style={styles.content}>{children}</ThemedView>
       </Animated.ScrollView>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -48,11 +46,11 @@ const styles = StyleSheet.create({
   },
   header: {
     height: HEADER_HEIGHT,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   content: {
     flex: 1,
     gap: 16,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
-});
+})

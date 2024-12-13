@@ -49,7 +49,7 @@
     "expo-splash-screen": "~0.29.18",
     "expo-status-bar": "~2.0.0",
     "expo-store-review": "~8.0.0",
-    "expo-symbols": "0.2.0",
+    "expo-symbols": "~0.2.0",
     "expo-updates": "~0.26.10",
     "expo-web-browser": "~14.0.1",
     "firebase": "10.12.2",
