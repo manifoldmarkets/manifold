@@ -10,137 +10,90 @@ import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { useUser } from 'web/hooks/use-user'
 import { buildArray } from 'common/util/array'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import {
+  FeedContractCard,
+  LoadingCards,
+} from 'web/components/contract/feed-contract-card'
 import { uniqBy, orderBy } from 'lodash'
 import { APIParams } from 'common/api/schema'
 import { FaFire, FaGripLinesVertical } from 'react-icons/fa6'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Row } from 'web/components/layout/row'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { SiteActivity } from 'web/components/site-activity'
+import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { api } from 'web/lib/api/api'
 
-function useCombinedMarkets(
-  props: APIParams<'search-markets-full'> & {
-    sweepScoreBoost?: number
-  }
-) {
-  const { sweepScoreBoost, ...rest } = props
-  const { data: manaMarkets } = useAPIGetter('search-markets-full', {
-    ...rest,
-    token: 'MANA',
-  })
-
-  const { data: sweepMarkets } = useAPIGetter('search-markets-full', {
-    ...rest,
-    token: 'CASH',
-  })
-  const sweepMarketsAdjusted = (sweepMarkets ?? []).map((m) => ({
-    ...m,
-    importanceScore: m.importanceScore + (sweepScoreBoost ?? 0.25),
-  }))
-
-  const combinedMarkets = orderBy(
-    uniqBy([...sweepMarketsAdjusted, ...(manaMarkets ?? [])], 'id'),
-    (m) => m.importanceScore,
-    'desc'
-  )
-
-  return combinedMarkets
-}
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
 const NBA_ID = 'i0v3cXwuxmO9fpcInVYb'
 const EPL_ID = '5gsW3dPR3ySBRZCodrgm'
 const SPORTS_ID = '2hGlgVhIyvVaFyQAREPi'
 const colClass = 'gap-4 p-1'
 const ALL_IDS = [NFL_ID, SPORTS_ID, EPL_ID, NBA_ID].join(',')
-function LiveSoonContent() {
-  const contracts = useCombinedMarkets({
-    term: '',
-    filter: 'closing-day',
-    sort: 'close-date',
-    gids: ALL_IDS,
-    limit: 7,
-  })
 
+function LiveSoonContent() {
   return (
-    <Col className={colClass}>
-      {contracts.map((contract) => (
-        <FeedContractCard key={contract.id} contract={contract} />
-      ))}
-    </Col>
+    <MarketsList
+      fetchProps={{
+        term: '',
+        filter: 'closing-day',
+        sort: 'close-date',
+        gids: ALL_IDS,
+      }}
+    />
   )
 }
 
 function ForecastsContent() {
-  const contracts = useCombinedMarkets({
-    term: '',
-    filter: 'open',
-    sort: 'score',
-    gids: ALL_IDS,
-    limit: 7,
-    sweepScoreBoost: 0.2,
-  })
-
   return (
-    <Col className={colClass}>
-      {contracts.map((contract) => (
-        <FeedContractCard key={contract.id} contract={contract} />
-      ))}
-    </Col>
+    <MarketsList
+      fetchProps={{
+        term: '',
+        filter: 'open',
+        sort: 'score',
+        gids: ALL_IDS,
+      }}
+      sweepScoreBoost={0.2}
+    />
   )
 }
 
 function NFLContent() {
-  const contracts = useCombinedMarkets({
-    term: '',
-    filter: 'open',
-    gids: NFL_ID,
-    limit: 7,
-  })
-
   return (
-    <Col className={colClass}>
-      {contracts.map((contract) => (
-        <FeedContractCard key={contract.id} contract={contract} />
-      ))}
-    </Col>
+    <MarketsList
+      fetchProps={{
+        term: '',
+        filter: 'open',
+        gids: NFL_ID,
+      }}
+    />
   )
 }
 
 function NBAContent() {
-  const contracts = useCombinedMarkets({
-    term: '',
-    filter: 'open',
-    gids: NBA_ID,
-    limit: 7,
-  })
-
   return (
-    <Col className={colClass}>
-      {contracts.map((contract) => (
-        <FeedContractCard key={contract.id} contract={contract} />
-      ))}
-    </Col>
+    <MarketsList
+      fetchProps={{
+        term: '',
+        filter: 'open',
+        gids: NBA_ID,
+      }}
+    />
   )
 }
 
 function EPLContent() {
-  const contracts = useCombinedMarkets({
-    term: '',
-    filter: 'open',
-    sort: 'close-date',
-    gids: EPL_ID,
-    limit: 7,
-  })
-
   return (
-    <Col className={colClass}>
-      {contracts.map((contract) => (
-        <FeedContractCard key={contract.id} contract={contract} />
-      ))}
-    </Col>
+    <MarketsList
+      fetchProps={{
+        term: '',
+        filter: 'open',
+        sort: 'close-date',
+        gids: EPL_ID,
+      }}
+    />
   )
 }
 
@@ -181,6 +134,89 @@ function SportsTabs() {
         labelsParentClassName="mr-4"
         trackingName="sports-tabs"
       />
+    </Col>
+  )
+}
+
+function MarketsList(
+  props: {
+    fetchProps: APIParams<'search-markets-full'>
+  } & { sweepScoreBoost?: number }
+) {
+  const { sweepScoreBoost, fetchProps } = props
+  const limit = 7
+  const [loading, setLoading] = useState(false)
+  const [data, setData] = usePersistentInMemoryState<{
+    markets: any[]
+    manaOffset: number
+    cashOffset: number
+  }>(
+    { markets: [], manaOffset: 0, cashOffset: 0 },
+    `markets-list-${JSON.stringify(fetchProps)}`
+  )
+
+  const loadMore = async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      const [manaMarkets, cashMarkets] = await Promise.all([
+        api('search-markets-full', {
+          ...fetchProps,
+          token: 'MANA',
+          limit,
+          offset: data.manaOffset,
+        }),
+        api('search-markets-full', {
+          ...fetchProps,
+          token: 'CASH',
+          limit,
+          offset: data.cashOffset,
+        }),
+      ])
+
+      const cashMarketsAdjusted = cashMarkets.map((m) => ({
+        ...m,
+        importanceScore: m.importanceScore + (sweepScoreBoost ?? 0.25),
+      }))
+
+      const newMarkets = orderBy(
+        uniqBy([...cashMarketsAdjusted, ...manaMarkets], 'id'),
+        (m) => m.importanceScore,
+        'desc'
+      )
+
+      setData({
+        markets: uniqBy([...data.markets, ...newMarkets], 'id'),
+        manaOffset: data.manaOffset + manaMarkets.length,
+        cashOffset: data.cashOffset + cashMarkets.length,
+      })
+    } finally {
+      setTimeout(() => setLoading(false), 50)
+    }
+  }
+
+  useEffect(() => {
+    if (data.markets.length === 0) {
+      loadMore()
+    }
+  }, [])
+
+  return (
+    <Col className={colClass}>
+      {data.markets.map((contract) => (
+        <FeedContractCard key={contract.id} contract={contract} />
+      ))}
+      <div className="relative">
+        {loading && <LoadingCards rows={3} />}
+        <VisibilityObserver
+          className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
+          onVisibilityUpdated={(visible) => {
+            if (visible && !loading) {
+              loadMore()
+            }
+          }}
+        />
+      </div>
     </Col>
   )
 }
@@ -228,12 +264,8 @@ export default function TopicsPage() {
     .filter((tab): tab is Tab => !!tab)
 
   return (
-    <Page trackPageView="/topics">
-      <SEO
-        title="Topics"
-        description="Browse topics and categories"
-        url="/topics"
-      />
+    <Page trackPageView="/markets">
+      <SEO title="Markets" description="Explore markets" url="/markets" />
       <Col className="relative w-full p-1">
         <DragDropContext
           onDragEnd={(result) => {

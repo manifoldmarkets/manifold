@@ -530,9 +530,9 @@ export const LoadingCards = (props: { rows?: number }) => {
   const { rows = 3 } = props
   return (
     <Col className="w-full">
-      {[...Array(rows)].map((r) => (
+      {[...Array(rows)].map((r, i) => (
         <Col
-          key={'loading-' + r}
+          key={'loading-' + i}
           className="bg-canvas-0 border-canvas-0 mb-4 gap-2 rounded-xl border p-4 drop-shadow-md"
         >
           <Row className="mb-2 items-center gap-2">
