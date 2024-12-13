@@ -165,6 +165,9 @@ export const getIndependentMultiFixedPayouts = (
       )
     default:
     case 'CANCEL':
-      return getFixedCancelPayouts(contractMetrics, filteredLiquidities)
+      return getFixedCancelPayouts(
+        contractMetrics.filter((metric) => metric.answerId === answer.id),
+        filteredLiquidities
+      )
   }
 }
