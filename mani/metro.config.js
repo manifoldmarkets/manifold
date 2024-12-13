@@ -13,8 +13,10 @@ const defaultConfig = getSentryExpoConfig(projectRoot)
 
 const extraNodeModules = {
   common: path.resolve(__dirname + '/../common/src'),
+  hooks: __dirname + '/hooks',
   components: path.resolve(__dirname + '/components'),
   lib: path.resolve(__dirname + '/lib'),
+  constants: __dirname + '/constants',
 }
 module.exports = {
   ...defaultConfig,

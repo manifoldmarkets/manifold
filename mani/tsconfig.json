@@ -4,24 +4,13 @@
     "strict": true,
     "baseUrl": "./",
     "paths": {
-      "@firebase/auth": [
-        "./node_modules/@firebase/auth/dist/index.rn.d.ts"
-      ],
-      "components/*": [
-        "components/*"
-      ],
-      "lib/*": [
-        "lib/*"
-      ],
-      "common/*": [
-        "../common/src/*"
-      ]
+      "@firebase/auth": ["./node_modules/@firebase/auth/dist/index.rn.d.ts"],
+      "components/*": ["components/*"],
+      "lib/*": ["lib/*"],
+      "common/*": ["../common/src/*"],
+      "hooks/*": ["hooks/*"],
+      "constants/*": ["./constants/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }
