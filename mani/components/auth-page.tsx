@@ -33,12 +33,8 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { Text } from 'components/text'
 import { log } from 'components/logger'
 
-export const AuthPage = (props: {
-  webview: React.RefObject<WebView | undefined>
-  height: number
-  width: number
-}) => {
-  const { webview, height, width } = props
+export const AuthPage = (props: { height: number; width: number }) => {
+  const { height, width } = props
   const [loading, setLoading] = useState(false)
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
     // @ts-ignore
@@ -54,11 +50,6 @@ export const AuthPage = (props: {
         const credential = GoogleAuthProvider.credential(id_token)
         signInWithCredential(auth, credential).then((result) => {
           const fbUser = result.user.toJSON()
-          if (webview.current) {
-            webview.current.postMessage(
-              JSON.stringify({ type: 'nativeFbUser', data: fbUser })
-            )
-          }
         })
       }
     } catch (err) {
@@ -82,9 +73,6 @@ export const AuthPage = (props: {
         await updateProfile(user, { displayName: data.displayName })
       }
       const fbUser = user.toJSON()
-      webview.current?.postMessage(
-        JSON.stringify({ type: 'nativeFbUser', data: fbUser })
-      )
     } catch (error: any) {
       log('login with apple error:', error)
     }
@@ -339,7 +327,9 @@ function Eula() {
             {expanded === 'tos' && (
               <WebView
                 style={{ height: 500, width: 300 }}
-                source={{ uri: 'https://docs.manifold.markets/terms-and-conditions' }}
+                source={{
+                  uri: 'https://docs.manifold.markets/terms-and-conditions',
+                }}
               />
             )}
             {expanded === 'privacy' && (

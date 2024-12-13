@@ -14,9 +14,8 @@ const SKUS = ['mana_1000', 'mana_2500', 'mana_10000'] // skus created before rat
 export const IosIapListener = (props: {
   checkoutAmount: number | null
   setCheckoutAmount: (amount: number | null) => void
-  communicateWithWebview: (type: nativeToWebMessageType, data: object) => void
 }) => {
-  const { checkoutAmount, setCheckoutAmount, communicateWithWebview } = props
+  const { checkoutAmount, setCheckoutAmount } = props
   const [didGetPurchaseError, setDidGetPurchaseError] = useState<string | null>(
     null
   )
@@ -45,8 +44,6 @@ export const IosIapListener = (props: {
       }
 
       getAvailablePurchases()
-
-      communicateWithWebview('iapError', {})
     }
   }, [currentPurchaseError, initConnectionError])
 
@@ -80,8 +77,6 @@ export const IosIapListener = (props: {
               initConnectionError
             )
           }
-
-          communicateWithWebview('iapReceipt', { receipt })
         }
       } catch (error) {
         if (error instanceof PurchaseError) {

@@ -73,6 +73,10 @@
         "webcredentials:manifold.markets"
       ],
       "buildNumber": "1.0.49"
+    },
+    "experiments": {
+      "tsconfigPaths": true,
+      "typedRoutes": true
     }
   }
 }
