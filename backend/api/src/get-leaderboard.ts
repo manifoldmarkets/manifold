@@ -47,13 +47,38 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
       join('users u on u.id = uph.user_id'),
       select('uph.user_id as user_id'),
       token === 'MANA'
-        ? select('uph.profit as score')
+        ? select('uph.profit as score') // excludes unranked
         : select(
             'uph.cash_balance + uph.cash_investment_value - uph.total_cash_deposits as score'
           ),
       where('user_id not in ($1:list)', [HIDE_FROM_LEADERBOARD_USER_IDS]),
-      where(`coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`),
+      where(
+        `coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`
+      ),
       orderBy(kind === 'loss' ? 'score asc' : 'score desc nulls last'),
+      limit(limitValue)
+    )
+    return await pg.map(query, [], (r) => ({
+      userId: r.user_id,
+      score: r.score,
+    }))
+  }
+  if (kind === 'creator') {
+    const query = renderSql(
+      from('contracts c'),
+      join('users u on u.id = c.creator_id'),
+      select(
+        `c.creator_id as user_id, sum((c.data->'uniqueBettorCount')::bigint) as score`
+      ),
+      groupBy('c.creator_id'),
+      where(`coalesce((c.data->'isRanked')::boolean, true) = true`), // unranked included in portfolio
+      where(
+        `coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`
+      ),
+      where('c.token = ${token}', { token }),
+      where('c.outcome_type != ${outcomeType}', { outcomeType: 'POLL' }),
+      where('c.outcome_type != ${outcomeType}', { outcomeType: 'BOUNTY' }),
+      orderBy('score desc nulls last'),
       limit(limitValue)
     )
     return await pg.map(query, [], (r) => ({
@@ -65,15 +90,12 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
   const query = renderSql(
     from('contracts c'),
     join('user_contract_metrics ucm on ucm.contract_id = c.id'),
-    join('users u on u.id = ' + (kind === 'creator' ? 'c.creator_id' : 'ucm.user_id')),
+    join('users u on u.id = ucm.user_id'),
     where('ucm.answer_id is null'),
     where(`coalesce((c.data->'isRanked')::boolean, true) = true`),
-    where(`coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`),
-
-    kind === 'creator' && [
-      select('c.creator_id as user_id, count(*) as score'),
-      groupBy('c.creator_id'),
-    ],
+    where(
+      `coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`
+    ),
 
     (kind === 'profit' || kind === 'loss') && [
       select(`user_id, sum(profit) as score`),
