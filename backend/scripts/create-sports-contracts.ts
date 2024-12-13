@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { argv } from 'process' // To access command-line arguments
 
 interface Fixture {
   idEvent: string
@@ -7,70 +8,122 @@ interface Fixture {
   strHomeTeam: string
   strAwayTeam: string
   dateEvent: string
-  strEventTime?: string
+  strEventTime: string
 }
 
-function calculateCloseTime(date: string, time?: string): string {
-  const PST_OFFSET_HOURS = -8 
-  const CLOSE_TIME_HOURS = 2
-  const CLOSE_TIME_MINUTES = 15
-
-  if (time) {
-    const [hours, minutes] = time.split(':').map(Number)
-    const eventDate = new Date(`${date}T00:00:00`)
-    eventDate.setHours(hours, minutes)
-    eventDate.setMinutes(
-      eventDate.getMinutes() + CLOSE_TIME_HOURS * 60 + CLOSE_TIME_MINUTES
-    )
-
-    return eventDate.toISOString().replace('T', ' ').slice(0, 16)
-  } else {
-    const eventDate = new Date(`${date}T00:00:00`)
-    eventDate.setHours(23 + PST_OFFSET_HOURS, 59) 
-    return eventDate.toISOString().replace('T', ' ').slice(0, 16)
-  }
-}
-
-async function fetchUpcomingFixtures() {
-  const API_URL =
-    'https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php'
-  const LEAGUE_ID = '4328' // Premier League ID
-  const apiParams = {
-    id: LEAGUE_ID,
-  }
+async function fetchUpcomingFixtures(
+  leagueId: string,
+  apiKey: string
+): Promise<Fixture[]> {
+  const API_URL = `https://www.thesportsdb.com/api/v1/json/${apiKey}/eventsnextleague.php`
 
   try {
     const response = await axios.get<{ events: Fixture[] }>(API_URL, {
-      params: apiParams,
+      params: { id: leagueId },
     })
 
-    if (response.data.events) {
-      const fixtures: Fixture[] = response.data.events
+    return response.data.events || []
+  } catch (error) {
+    console.error('Error fetching fixtures:', error)
+    return []
+  }
+}
 
-      fixtures.forEach((fixture) => {
-        console.log('Match ID:', fixture.idEvent)
-        console.log('League:', fixture.strLeague)
-        console.log('Match:', fixture.strEvent)
-        console.log('Home Team:', fixture.strHomeTeam)
-        console.log('Away Team:', fixture.strAwayTeam)
-        console.log('Date:', fixture.dateEvent)
-        console.log('Start Time:', fixture.strEventTime || 'Unknown')
-        const closeTime = calculateCloseTime(
-          fixture.dateEvent,
-          fixture.strEventTime
-        )
-        console.log('Expected Close Time:', closeTime)
-      })
+function calculateCloseTime(date: string, time: string): number {
+  if (date && time) {
+    const matchTime = new Date(`${date}T${time}:00Z`)
+    return matchTime.getTime() + 2.5 * 60 * 60 * 1000
+  } else if (date) {
+    const endOfDay = new Date(`${date}T23:59:59Z`)
+    return endOfDay.getTime()
+  } else {
+    throw new Error('Missing date information for close time calculation.')
+  }
+}
+
+async function createMarketOnManifold(
+  apiUrl: string,
+  apiKey: string,
+  body: Record<string, any>
+) {
+  try {
+    const response = await axios.post(apiUrl, body, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Key ${apiKey}`,
+      },
+    })
+    console.log('Market created successfully:', response.data)
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error(
+        'Error creating market:',
+        error.response?.data || error.message
+      )
     } else {
-      console.error('No fixtures found.')
-    }
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error('Error fetching fixtures:', error.message)
-    } else {
-      console.error('An unknown error occurred:', error)
+      console.error('Unknown error:', error)
     }
   }
 }
 
-fetchUpcomingFixtures()
+async function createMarketsFromFixtures() {
+  const SPORTSDB_KEY = process.env.SPORTSDB_KEY
+  const MANIFOLD_API_KEY = process.env.MANIFOLD_API_KEY
+  const MANIFOLD_API_KEY_DEV = process.env.MANIFOLD_API_KEY_DEV
+
+  if (!SPORTSDB_KEY) {
+    throw new Error('SportsDB API key is missing. Set it in your environment.')
+  }
+
+  // Get the environment from command-line arguments
+  const env = argv[2] // "dev" or "prod"
+  if (!env || (env !== 'dev' && env !== 'prod')) {
+    throw new Error(
+      'Invalid environment. Pass "dev" or "prod" as a command-line argument.'
+    )
+  }
+
+  const apiUrl =
+    env === 'dev'
+      ? 'https://dev.manifold.markets/api/v0/market'
+      : 'https://manifold.markets/api/v0/market'
+
+  const apiKey = env === 'dev' ? MANIFOLD_API_KEY_DEV : MANIFOLD_API_KEY
+
+  if (!apiKey) {
+    throw new Error(
+      `Manifold API key is missing. Ensure ${
+        env === 'dev' ? 'MANIFOLD_API_KEY_DEV' : 'MANIFOLD_API_KEY'
+      } is set in your environment.`
+    )
+  }
+
+  const LEAGUE_ID = '4328'
+  const fixtures = await fetchUpcomingFixtures(LEAGUE_ID, SPORTSDB_KEY)
+
+  for (const fixture of fixtures) {
+    const closeTime = calculateCloseTime(
+      fixture.dateEvent,
+      fixture.strEventTime
+    )
+
+    const body = {
+      question: `Who will win: ${fixture.strHomeTeam} or ${fixture.strAwayTeam}?`,
+      description: `The match between ${fixture.strHomeTeam} and ${fixture.strAwayTeam} in the ${fixture.strLeague} is scheduled for ${fixture.dateEvent} at ${fixture.strEventTime}.`,
+      outcomeType: 'MULTIPLE_CHOICE',
+      closeTime,
+      answers: [fixture.strHomeTeam, fixture.strAwayTeam, 'Draw'],
+      visibility: 'public',
+      addAnswersMode: 'DISABLED',
+      idempotencyKey: fixture.idEvent,
+    }
+
+    console.log(`Creating market for fixture: ${fixture.strEvent}`)
+
+    await createMarketOnManifold(apiUrl, apiKey, body)
+  }
+}
+
+createMarketsFromFixtures()
+  .then(() => console.log('Finished creating markets.'))
+  .catch((error) => console.error('Error running the script:', error))
