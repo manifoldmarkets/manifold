@@ -32,6 +32,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
           ) THEN 5
           ELSE 500
        END
+     and is_api is not true
      and user_id != all($1)
      and contract_id != all($2)
      order by created_time desc limit $3`,
@@ -48,6 +49,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
          ) then 50
          else 5000
        end
+       and is_api is not true
        and (data->>'isFilled')::boolean = false
        and (data->>'isCancelled')::boolean = false
        and user_id != all($1)
