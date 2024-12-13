@@ -30,7 +30,7 @@ import { Avatar } from '../widgets/avatar'
 import { CoinNumber } from '../widgets/coin-number'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
-import { PiSquaresFourLight } from 'react-icons/pi'
+import { PiSquaresFour } from 'react-icons/pi'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -49,7 +49,7 @@ function getNavigation(user: User) {
     {
       name: 'Topics',
       href: '/topics',
-      icon: PiSquaresFourLight,
+      icon: PiSquaresFour,
     },
     {
       name: 'Profile',
@@ -68,7 +68,7 @@ const signedOutNavigation = () => [
   {
     name: 'Topics',
     href: '/topics',
-    icon: PiSquaresFourLight,
+    icon: PiSquaresFour,
     alwaysShowName: true,
     // prefetch: false, // should we not prefetch this?
   },
