@@ -15,6 +15,7 @@ import { useBottomTabOverflow } from './ui/TabBarBackground.ios'
 import { useColor } from 'hooks/useColor'
 import { ThemedView } from './ThemedView'
 import { Colors } from 'constants/Colors'
+import { Stack } from 'expo-router'
 
 const HEADER_HEIGHT = 250
 
@@ -24,7 +25,7 @@ export default function Page({ children }: PropsWithChildren) {
 
   const color = useColor()
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <SliderHeader />
       <Animated.ScrollView
         ref={scrollRef}
@@ -34,7 +35,7 @@ export default function Page({ children }: PropsWithChildren) {
       >
         <ThemedView style={styles.content}>{children}</ThemedView>
       </Animated.ScrollView>
-    </SafeAreaView>
+    </View>
   )
 }
 

@@ -36,7 +36,7 @@ export function IconSymbol({
   name: IconSymbolName
   size?: number
   color: string | OpaqueColorValue
-  style?: StyleProp<ViewStyle>
+  style?: StyleProp<TextStyle>
   weight?: SymbolWeight
 }) {
   return (

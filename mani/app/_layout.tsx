@@ -21,6 +21,7 @@ import { Stack } from 'expo-router'
 import Constants from 'expo-constants'
 import { StyleSheet } from 'react-native'
 import { Colors } from 'constants/Colors'
+import { UserProvider, useUser } from 'components/hooks/useUser'
 
 const HEADER_HEIGHT = 250
 
@@ -41,13 +42,23 @@ function RootLayout() {
     FigtreeItalic: require('../assets/fonts/Figtree-Italic-VariableFont_wght.ttf'),
   })
 
-  const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
-  auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null))
+  // const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
+  const { user, setUser } = useUser() // Add this
+  // auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null))
+
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      setUser(user) // Add this
+    } else {
+      setUser(null) // Add this
+    }
+  })
   const signInUserFromStorage = async () => {
     const user = await getData<FirebaseUser>('user')
     if (!user) return
     log('Got user from storage:', user.email)
-    setFbUser(user)
+    // setFbUser(user)
+    setUser(user)
     await setFirebaseUserViaJson(user, app)
   }
 
@@ -116,20 +127,24 @@ function RootLayout() {
   }
 
   const isConnected = useIsConnected()
-  const fullyLoaded = fbUser && isConnected
-
+  // const fullyLoaded = fbUser && isConnected
+  const fullyLoaded = user && isConnected
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
 
+  console.log(user)
+
   return (
     <TokenModeProvider>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
       <SafeAreaView style={styles.container}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
+
         <SplashAuth
           source={require('../assets/images/splash.png')}
-          fbUser={fbUser}
+          // fbUser={fbUser}
+          fbUser={user}
           isConnected={isConnected}
           height={height}
           width={width}
@@ -165,4 +180,13 @@ const styles = StyleSheet.create({
   },
 })
 
-export default Sentry.wrap(withIAPContext(RootLayout))
+// export default Sentry.wrap(withIAPContext(RootLayout))
+export default function App() {
+  const WrappedRoot = Sentry.wrap(withIAPContext(RootLayout))
+
+  return (
+    <UserProvider>
+      <WrappedRoot />
+    </UserProvider>
+  )
+}

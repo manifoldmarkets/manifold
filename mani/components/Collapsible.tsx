@@ -18,13 +18,13 @@ export function Collapsible({
         onPress={() => setIsOpen((value) => !value)}
         activeOpacity={0.8}
       >
-        <IconSymbol
+        {/* <IconSymbol
           name="chevron.right"
           size={18}
           weight="medium"
           color={Colors.icon}
           style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
-        />
+        /> */}
 
         <ThemedText>{title}</ThemedText>
       </TouchableOpacity>

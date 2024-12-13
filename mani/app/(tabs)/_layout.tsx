@@ -1,4 +1,5 @@
 import { HapticTab } from 'components/HapticTab'
+import { useUser } from 'components/hooks/useUser'
 import { IconSymbol } from 'components/ui/IconSymbol'
 import TabBarBackground from 'components/ui/TabBarBackground'
 import { Tabs } from 'expo-router'
@@ -21,6 +22,7 @@ export default function TabLayout() {
     position: 'absolute',
   }
 
+  const { user } = useUser()
   return (
     <Tabs
       screenOptions={{
@@ -41,9 +43,9 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house" color={color} />
-          ),
+          // tabBarIcon: ({ color }) => (
+          //   <IconSymbol size={28} name="house" color={color} />
+          // ),
         }}
       />
       <Tabs.Screen
@@ -60,9 +62,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name={'profile'}
         options={{
-          title: 'Inga',
+          title: user?.displayName || 'Profile',
           // tabBarIcon: ({ color }) => (
           //   <IconSymbol size={28} name="paperplane.fill" color={color} />
           // ),

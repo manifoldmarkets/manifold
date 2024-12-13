@@ -4,7 +4,7 @@ import Page from 'components/Page'
 import { ThemedText } from 'components/ThemedText'
 import { ThemedView } from 'components/ThemedView'
 import { useColor } from 'hooks/useColor'
-import { Image, Platform, StyleSheet } from 'react-native'
+import { Platform, StyleSheet } from 'react-native'
 
 export default function TabTwoScreen() {
   const color = useColor()
