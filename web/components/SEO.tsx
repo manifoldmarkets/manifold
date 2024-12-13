@@ -14,7 +14,7 @@ export function SEO<P extends Record<string, string | undefined>>(props: {
   const imageUrl =
     image ??
     (ogProps &&
-      buildOgUrl(removeUndefinedProps(ogProps.props) as any, ogProps.endpoint))
+      buildOgUrl(removeUndefinedProps(ogProps.props) as any, ogProps.endpoint)).replace('.webp', '.png')
 
   const absUrl = 'https://manifold.markets' + url
 
