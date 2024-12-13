@@ -197,7 +197,7 @@ const handleRenderError = (
       <Splash
         height={height}
         width={width}
-        source={require('../assets/splash.png')}
+        source={require('../assets/images/splash.png')}
       />
     </View>
   )

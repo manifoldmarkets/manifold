@@ -142,7 +142,7 @@ export const AuthPage = (props: { height: number; width: number }) => {
     <View style={computedStyles.container}>
       <View style={styles.centerFlex}>
         <Image
-          source={require('../assets/logo.png')}
+          source={require('../assets/images/logo.png')}
           style={{ height: 200, resizeMode: 'contain' }}
         />
         {loading ? (
@@ -159,7 +159,7 @@ export const AuthPage = (props: { height: number; width: number }) => {
             >
               <View style={styles.googleButtonContent}>
                 <Image
-                  source={require('../assets/square-google.png')}
+                  source={require('../assets/images/square-google.png')}
                   style={{
                     height: 28,
                     width: 28,

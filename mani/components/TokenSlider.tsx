@@ -1,26 +1,26 @@
-import { Row } from "@/components/layout/row";
-import { useColor } from "@/hooks/useColor";
-import { useTokenMode } from "@/hooks/useTokenMode";
-import React from "react";
-import { Animated, Image, TouchableOpacity } from "react-native";
+import { useColor } from 'hooks/useColor'
+import { useTokenMode } from 'hooks/useTokenMode'
+import React from 'react'
+import { Animated, Image, TouchableOpacity } from 'react-native'
+import { Row } from './layout/row'
 
 export function TokenSlider() {
-  const color = useColor();
-  const { mode, setMode } = useTokenMode();
+  const color = useColor()
+  const { mode, setMode } = useTokenMode()
 
   const slideAnim = React.useRef(
-    new Animated.Value(mode === "play" ? 0 : 1)
-  ).current;
+    new Animated.Value(mode === 'play' ? 0 : 1)
+  ).current
 
   const toggleMode = () => {
-    const newMode = mode === "play" ? "sweep" : "play";
-    setMode(newMode);
+    const newMode = mode === 'play' ? 'sweep' : 'play'
+    setMode(newMode)
     // Animate the slide
     Animated.spring(slideAnim, {
-      toValue: newMode === "play" ? 0 : 1,
+      toValue: newMode === 'play' ? 0 : 1,
       useNativeDriver: true,
-    }).start();
-  };
+    }).start()
+  }
 
   return (
     <TouchableOpacity onPress={toggleMode}>
@@ -30,8 +30,8 @@ export function TokenSlider() {
           backgroundColor: color.sliderBackground,
           padding: 2,
           borderRadius: 20,
-          alignItems: "center",
-          height: "auto",
+          alignItems: 'center',
+          height: 'auto',
         }}
       >
         {/* Add sliding indicator */}
@@ -40,8 +40,8 @@ export function TokenSlider() {
             width: 24,
             height: 24,
             borderRadius: 20,
-            backgroundColor: "white",
-            position: "absolute",
+            backgroundColor: 'white',
+            position: 'absolute',
             transform: [
               {
                 translateX: slideAnim.interpolate({
@@ -57,19 +57,19 @@ export function TokenSlider() {
           style={{
             width: 20,
             height: 20,
-            opacity: mode === "sweep" ? 0 : 1,
+            opacity: mode === 'sweep' ? 0 : 1,
           }}
-          source={require("@/assets/images/masses_mana_flat.png")}
+          source={require('../assets/images/masses_mana_flat.png')}
         />
         <Image
           style={{
             width: 20,
             height: 20,
-            opacity: mode === "play" ? 0 : 1,
+            opacity: mode === 'play' ? 0 : 1,
           }}
-          source={require("@/assets/images/masses_sweeps_flat.png")}
+          source={require('../assets/images/masses_sweeps_flat.png')}
         />
       </Row>
     </TouchableOpacity>
-  );
+  )
 }

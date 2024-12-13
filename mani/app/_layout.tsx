@@ -20,7 +20,7 @@ import { TokenModeProvider } from 'hooks/useTokenMode'
 import { Stack } from 'expo-router'
 import Constants from 'expo-constants'
 import { StyleSheet } from 'react-native'
-import { Colors } from 'constants/colors'
+import { Colors } from 'constants/Colors'
 
 const HEADER_HEIGHT = 250
 
@@ -34,7 +34,12 @@ Sentry.init({
 function RootLayout() {
   // Your existing App.tsx logic here
   const notificationResponseListener = useRef<Subscription>()
-  useFonts({ ReadexPro_400Regular })
+  const [loaded] = useFonts({
+    JetBrainsMono: require('../assets/fonts/JetBrainsMono[wght].ttf'),
+    JetBrainsMonoItalic: require('../assets/fonts/JetBrainsMono-Italic[wght].ttf'),
+    Figtree: require('../assets/fonts/Figtree-VariableFont_wght.ttf'),
+    FigtreeItalic: require('../assets/fonts/Figtree-Italic-VariableFont_wght.ttf'),
+  })
 
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
   auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null))
@@ -118,27 +123,27 @@ function RootLayout() {
 
   return (
     <TokenModeProvider>
-      <SafeAreaView style={styles.container}>
+      <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        {/* <Stack.Screen name="+not-found" options={{ title: 'Not Found' }} /> */}
-      </SafeAreaView>
-
-      <SplashAuth
-        source={require('../assets/splash.png')}
-        fbUser={fbUser}
-        isConnected={isConnected}
-        height={height}
-        width={width}
-      />
-
-      {Platform.OS === 'ios' && fullyLoaded && (
-        <IosIapListener
-          checkoutAmount={checkoutAmount}
-          setCheckoutAmount={setCheckoutAmount}
+      </Stack>
+      <SafeAreaView style={styles.container}>
+        <SplashAuth
+          source={require('../assets/images/splash.png')}
+          fbUser={fbUser}
+          isConnected={isConnected}
+          height={height}
+          width={width}
         />
-      )}
 
-      <StatusBar style="dark" />
+        {Platform.OS === 'ios' && fullyLoaded && (
+          <IosIapListener
+            checkoutAmount={checkoutAmount}
+            setCheckoutAmount={setCheckoutAmount}
+          />
+        )}
+
+        <StatusBar style="dark" />
+      </SafeAreaView>
     </TokenModeProvider>
   )
 }

@@ -6,7 +6,7 @@
     "jsEngine": "hermes",
     "version": "2.0.54",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
+    "icon": "./assets/images/logo.png",
     "userInterfaceStyle": "light",
     "plugins": [
       "./plugins/withAndroidVerifiedLinksWorkaround",
@@ -14,7 +14,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/logo-96.png"
+          "icon": "./assets/images/logo-96.png"
         }
       ],
       [
@@ -27,12 +27,12 @@
       ]
     ],
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/images/splash.png",
       "resizeMode": "cover",
       "backgroundColor": "#4337C9"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/images/favicon.png"
     },
     "platforms": ["ios", "android"],
     "updates": {
@@ -55,7 +55,7 @@
       ],
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#4337C9"
       },
       "package": "com.manifold.mani",

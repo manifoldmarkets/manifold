@@ -1,20 +1,19 @@
-import { useColor } from "@/hooks/useColor";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { BlurView } from "expo-blur";
-import { StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
+import { useColor } from 'hooks/useColor'
+import { StyleSheet, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function BlurTabBarBackground() {
-  const color = useColor();
+  const color = useColor()
   return (
     <View
       style={[StyleSheet.absoluteFill, { backgroundColor: color.background }]}
     />
-  );
+  )
 }
 
 export function useBottomTabOverflow() {
-  const tabHeight = useBottomTabBarHeight();
-  const { bottom } = useSafeAreaInsets();
-  return tabHeight - bottom;
+  const tabHeight = useBottomTabBarHeight()
+  const { bottom } = useSafeAreaInsets()
+  return tabHeight - bottom
 }

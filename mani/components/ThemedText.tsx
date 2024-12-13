@@ -1,39 +1,39 @@
-import { Text, type TextProps, StyleSheet } from "react-native";
-import { Colors } from "@/constants/Colors";
+import { Colors } from 'constants/Colors'
+import { Text, type TextProps, StyleSheet } from 'react-native'
 
 export type ThemedTextProps = TextProps & {
-  size?: FontSize;
-  weight?: FontWeight;
-  family?: FontFamily;
-  italics?: boolean;
-  color?: string;
-};
+  size?: FontSize
+  weight?: FontWeight
+  family?: FontFamily
+  italics?: boolean
+  color?: string
+}
 
 export type FontSize =
-  | "xs"
-  | "sm"
-  | "md"
-  | "lg"
-  | "xl"
-  | "2xl"
-  | "3xl"
-  | "4xl"
-  | "5xl"
-  | "6xl"
-  | "7xl"
-  | "8xl"
-  | "9xl";
+  | 'xs'
+  | 'sm'
+  | 'md'
+  | 'lg'
+  | 'xl'
+  | '2xl'
+  | '3xl'
+  | '4xl'
+  | '5xl'
+  | '6xl'
+  | '7xl'
+  | '8xl'
+  | '9xl'
 
 export type FontWeight =
-  | "thin"
-  | "light"
-  | "normal"
-  | "medium"
-  | "semibold"
-  | "bold"
-  | "black";
+  | 'thin'
+  | 'light'
+  | 'normal'
+  | 'medium'
+  | 'semibold'
+  | 'bold'
+  | 'black'
 
-export type FontFamily = "JetBrainsMono" | "Figtree";
+export type FontFamily = 'JetBrainsMono' | 'Figtree'
 
 export function ThemedText({
   size,
@@ -44,12 +44,12 @@ export function ThemedText({
   style,
   ...rest
 }: ThemedTextProps) {
-  console.log("Applied styles:", {
+  console.log('Applied styles:', {
     weight,
     family,
     fontWeight: weight && fontWeights[weight],
     fontFamily: family && fontFamilies[family],
-  });
+  })
 
   return (
     <Text
@@ -59,46 +59,46 @@ export function ThemedText({
         size && { ...fontSizes[size] },
         weight && { ...fontWeights[weight] },
         family && { ...fontFamilies[family] },
-        italics && { fontStyle: "italic" },
+        italics && { fontStyle: 'italic' },
         style,
       ]}
       {...rest}
     />
-  );
+  )
 }
 
 const fontFamilies = StyleSheet.create({
   JetBrainsMono: {
-    fontFamily: "JetBrainsMono",
+    fontFamily: 'JetBrainsMono',
   },
   Figtree: {
-    fontFamily: "Figtree",
+    fontFamily: 'Figtree',
   },
-});
+})
 
 const fontWeights = StyleSheet.create({
   thin: {
-    fontWeight: "100",
+    fontWeight: '100',
   },
   light: {
-    fontWeight: "300",
+    fontWeight: '300',
   },
   normal: {
-    fontWeight: "400",
+    fontWeight: '400',
   },
   medium: {
-    fontWeight: "500",
+    fontWeight: '500',
   },
   semibold: {
-    fontWeight: "600",
+    fontWeight: '600',
   },
   bold: {
-    fontWeight: "700",
+    fontWeight: '700',
   },
   black: {
-    fontWeight: "900",
+    fontWeight: '900',
   },
-});
+})
 
 const fontSizes = StyleSheet.create({
   xs: {
@@ -121,36 +121,36 @@ const fontSizes = StyleSheet.create({
     fontSize: 20,
     lineHeight: 28,
   },
-  "2xl": {
+  '2xl': {
     fontSize: 24,
     lineHeight: 32,
   },
-  "3xl": {
+  '3xl': {
     fontSize: 30,
     lineHeight: 36,
   },
-  "4xl": {
+  '4xl': {
     fontSize: 36,
     lineHeight: 40,
   },
-  "5xl": {
+  '5xl': {
     fontSize: 48,
     lineHeight: 100,
   },
-  "6xl": {
+  '6xl': {
     fontSize: 60,
     lineHeight: 100,
   },
-  "7xl": {
+  '7xl': {
     fontSize: 72,
     lineHeight: 100,
   },
-  "8xl": {
+  '8xl': {
     fontSize: 96,
     lineHeight: 100,
   },
-  "9xl": {
+  '9xl': {
     fontSize: 128,
     lineHeight: 100,
   },
-});
+})
