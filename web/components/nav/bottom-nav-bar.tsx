@@ -7,7 +7,7 @@ import {
   TransitionChild,
 } from '@headlessui/react'
 import {
-  GlobeAltIcon,
+  LightningBoltIcon,
   NewspaperIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
@@ -48,9 +48,9 @@ function getNavigation(user: User) {
       icon: SearchIcon,
     },
     {
-      name: 'Explore',
-      href: '/explore',
-      icon: GlobeAltIcon,
+      name: 'Activity',
+      href: '/activity',
+      icon: LightningBoltIcon,
     },
     {
       name: 'Profile',

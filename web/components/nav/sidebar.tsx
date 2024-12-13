@@ -209,8 +209,8 @@ const getMobileNav = (
   const { isAdminOrMod } = options
 
   return buildArray<NavItem>(
-    { name: 'Activity', href: '/activity', icon: LightningBoltIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'Explore', href: '/explore', icon: GlobeAltIcon },
     // {
     //   name: 'AI',
     //   href: '/ai',
