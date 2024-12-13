@@ -141,8 +141,8 @@ const getDesktopNav = (
     return buildArray(
       { name: 'Browse', href: '/home', icon: SearchIcon },
       {
-        name: 'Topics',
-        href: '/topics',
+        name: 'Markets',
+        href: '/markets',
         icon: PiSquaresFourLight,
       },
       {
@@ -215,7 +215,7 @@ const getMobileNav = (
   const { isAdminOrMod } = options
 
   return buildArray<NavItem>(
-    { name: 'Topics', href: '/topics', icon: PiSquaresFourLight },
+    { name: 'Markets', href: '/markets', icon: PiSquaresFourLight },
     { name: 'Activity', href: '/activity', icon: LightningBoltIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     // {

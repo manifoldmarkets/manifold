@@ -47,8 +47,8 @@ function getNavigation(user: User) {
       icon: SearchIcon,
     },
     {
-      name: 'Topics',
-      href: '/topics',
+      name: 'Markets',
+      href: '/markets',
       icon: PiSquaresFour,
     },
     {
@@ -66,8 +66,8 @@ function getNavigation(user: User) {
 const signedOutNavigation = () => [
   { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
   {
-    name: 'Topics',
-    href: '/topics',
+    name: 'Markets',
+    href: '/markets',
     icon: PiSquaresFour,
     alwaysShowName: true,
     // prefetch: false, // should we not prefetch this?

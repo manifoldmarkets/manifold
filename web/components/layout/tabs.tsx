@@ -14,6 +14,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export type Tab = {
   title: string
+  titleElement?: ReactNode
   content: ReactNode
   stackedTabIcon?: ReactNode
   inlineTabIcon?: ReactNode
@@ -80,7 +81,9 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
             )}
           >
             <Tooltip text={tab.tooltip}>
-              <Row className={'items-center'}>{tab.title}</Row>
+              <Row className={'items-center'}>
+                {tab.titleElement ?? tab.title}
+              </Row>
             </Tooltip>
           </a>
         ))}
@@ -166,7 +169,7 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
                   <Row className="justify-center">{tab.stackedTabIcon}</Row>
                 )}
                 <Row className={'items-center'}>
-                  {tab.title}
+                  {tab.titleElement ?? tab.title}
                   {tab.inlineTabIcon}
                 </Row>
               </Tooltip>

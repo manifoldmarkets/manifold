@@ -14,7 +14,12 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { uniqBy, orderBy } from 'lodash'
 import { APIParams } from 'common/api/schema'
-import { FaFire } from 'react-icons/fa6'
+import { FaFire, FaGripLinesVertical } from 'react-icons/fa6'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { Row } from 'web/components/layout/row'
+import { useEffect } from 'react'
+import { SiteActivity } from 'web/components/site-activity'
 
 function useCombinedMarkets(
   props: APIParams<'search-markets-full'> & {
@@ -170,6 +175,7 @@ function SportsTabs() {
   return (
     <Col className="w-full">
       <QueryUncontrolledTabs
+        className="bg-canvas-50 sticky top-[2.9rem] z-10"
         tabs={SPORTS_TABS}
         defaultIndex={0}
         labelsParentClassName="mr-4"
@@ -182,13 +188,44 @@ function SportsTabs() {
 export default function TopicsPage() {
   const user = useUser()
   useSaveScroll('topics', true)
-  const PARENT_TABS: Tab[] = buildArray(
+
+  // Create the base tabs array
+  const baseTabs: Tab[] = buildArray(
     { title: 'Sports', content: <SportsTabs /> },
     user && {
       title: 'Explore',
-      content: <LiveGeneratedFeed userId={user.id} />,
+      content: (
+        <Col className="pt-1">
+          <LiveGeneratedFeed userId={user.id} />
+        </Col>
+      ),
+    },
+    {
+      title: 'Activity',
+      content: (
+        <Col className="pt-1">
+          <SiteActivity />
+        </Col>
+      ),
     }
   )
+
+  // Store tab order in local storage
+  const [tabOrder, setTabOrder] = usePersistentLocalState<string[]>(
+    baseTabs.map((tab) => tab.title),
+    'topics-tab-order-3'
+  )
+  useEffect(() => {
+    if (!user?.id) return
+    if (tabOrder.length !== baseTabs.length) {
+      setTabOrder(baseTabs.map((tab) => tab.title))
+    }
+  }, [user?.id])
+
+  // Reorder tabs based on saved order
+  const PARENT_TABS = tabOrder
+    .map((title) => baseTabs.find((tab) => tab.title === title))
+    .filter((tab): tab is Tab => !!tab)
 
   return (
     <Page trackPageView="/topics">
@@ -198,15 +235,52 @@ export default function TopicsPage() {
         url="/topics"
       />
       <Col className="relative w-full p-1">
-        {/* <SweepsToggle
-          className="!absolute right-2 top-2"
-          sweepsEnabled={true}
-        /> */}
-        <QueryUncontrolledTabs
-          tabs={PARENT_TABS}
-          defaultIndex={0}
-          trackingName="topics-tabs"
-        />
+        <DragDropContext
+          onDragEnd={(result) => {
+            if (!result.destination) return
+
+            const newOrder = Array.from(tabOrder)
+            const [removed] = newOrder.splice(result.source.index, 1)
+            newOrder.splice(result.destination.index, 0, removed)
+            setTabOrder(newOrder)
+          }}
+        >
+          <Droppable droppableId="topics-tabs" direction="horizontal">
+            {(provided) => (
+              <div ref={provided.innerRef} {...provided.droppableProps}>
+                <QueryUncontrolledTabs
+                  className="bg-canvas-50 sticky top-0 z-10"
+                  tabs={PARENT_TABS.map((tab, index) => ({
+                    ...tab,
+                    title: tab.title,
+                    titleElement: (
+                      <Draggable
+                        key={tab.title}
+                        draggableId={tab.title}
+                        index={index}
+                      >
+                        {(provided) => (
+                          <Row
+                            className="items-center gap-2"
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                          >
+                            {tab.title}
+                            <FaGripLinesVertical className="text-ink-300" />
+                          </Row>
+                        )}
+                      </Draggable>
+                    ),
+                  }))}
+                  defaultIndex={0}
+                  trackingName="topics-tabs"
+                />
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       </Col>
     </Page>
   )
