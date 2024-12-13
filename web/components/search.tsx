@@ -369,7 +369,6 @@ export function Search(props: {
         )
       )
     : undefined
-
   return (
     <Col className="w-full">
       <Col
