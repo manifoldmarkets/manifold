@@ -240,7 +240,7 @@ const LEADERBOARD_TYPES = [
 
 type LeaderboardType = (typeof LEADERBOARD_TYPES)[number]['value']
 
-type Entry = LeaderboardEntry & { 
+type Entry = LeaderboardEntry & {
   totalReferredProfit?: number
   isBannedFromPosting?: boolean
 }
