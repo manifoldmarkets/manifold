@@ -67,6 +67,7 @@ import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
 
 import { JSONContent } from '@tiptap/core'
+import { Task, TaskCategory } from 'common/todo'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -1912,6 +1913,98 @@ export const API = (_apiTypeCheck = {
     props: z.object({
       userId: z.string(),
     }),
+  },
+  'create-task': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as Task,
+    props: z
+      .object({
+        text: z.string(),
+        category_id: z.number().optional(),
+        priority: z.number().default(0),
+        assignee_id: z.string().optional(),
+      })
+      .strict(),
+  },
+  'update-task': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        id: z.number(),
+        text: z.string().optional(),
+        completed: z.boolean().optional(),
+        priority: z.number().optional(),
+        category_id: z.number().optional(),
+        archived: z.boolean().optional(),
+        assignee_id: z.string().optional(),
+      })
+      .strict(),
+  },
+  'create-category': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { id: number },
+    props: z
+      .object({
+        name: z.string(),
+        color: z.string().optional(),
+        displayOrder: z.number().optional(),
+      })
+      .strict(),
+  },
+  'get-categories': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { categories: TaskCategory[] },
+    props: z.object({}).strict(),
+  },
+  'update-category': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        categoryId: z.number(),
+        name: z.string().optional(),
+        color: z.string().optional(),
+        displayOrder: z.number().optional(),
+        archived: z.boolean().optional(),
+      })
+      .strict(),
+  },
+  'get-tasks': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { tasks: Task[] },
+    props: z.object({}).strict(),
+  },
+  'get-site-activity': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      bets: Bet[]
+      comments: ContractComment[]
+      newContracts: Contract[]
+      relatedContracts: Contract[]
+    },
+    props: z
+      .object({
+        limit: z.coerce.number().default(10),
+        blockedUserIds: z.array(z.string()).optional(),
+        blockedGroupSlugs: z.array(z.string()).optional(),
+        blockedContractIds: z.array(z.string()).optional(),
+      })
+      .strict(),
   },
 } as const)
 
