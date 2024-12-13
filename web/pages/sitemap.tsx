@@ -134,6 +134,7 @@ export default function AboutPage() {
             <LabCard title="⚡️ Site activity" href="/live" />
             <LabCard title="🤖 AI" href="/ai" />
             <LabCard title="🇺🇸 US elections" href="/election" />
+            <LabCard title="✅ Todo" href="/todo" />
             {/* <LabCard title="️🧪 Lab" href="/lab" /> */}
           </div>
         </div>
