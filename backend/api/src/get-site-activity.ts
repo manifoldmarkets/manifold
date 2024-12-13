@@ -11,14 +11,14 @@ import { convertContractComment } from 'common/supabase/comments'
 export const getSiteActivity: APIHandler<'get-site-activity'> = async (
   props
 ) => {
-  const {
-    limit,
-    blockedUserIds = [],
-    blockedGroupSlugs = [],
-    blockedContractIds = [],
-  } = props
-  const pg = createSupabaseDirectClient()
+  const { limit, blockedGroupSlugs = [], blockedContractIds = [] } = props
   log('getSiteActivity called', { limit })
+
+  const blockedUserIds = [
+    'FDWTsTHFytZz96xmcKzf7S5asYL2', // yunabot (does a lot of manual trades)
+    ...(props.blockedUserIds ?? []),
+  ]
+  const pg = createSupabaseDirectClient()
 
   const [recentBets, limitOrders, recentComments, newContracts] =
     await Promise.all([
