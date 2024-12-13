@@ -48,6 +48,7 @@ export function BrowsePageContent() {
 
   const initialTopics = topicsByImportance
 
+
   return (
     <Col className={clsx('relative col-span-8 mx-auto w-full')}>
       <Search
