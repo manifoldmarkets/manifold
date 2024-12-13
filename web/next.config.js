@@ -158,8 +158,8 @@ module.exports = {
         permanent: true,
       },
       {
-        source: '/browse/:slug*',
-        destination: '/topic/:slug*',
+        source: '/browse/:slug+',
+        destination: '/topic/:slug+',
         permanent: false,
       },
       {
