@@ -55,8 +55,8 @@ export function Modal(props: {
       className="text-ink-1000 relative z-50 focus:outline-none"
       open={open}
       onClose={setOpen ?? (() => {})}
-        // prevent modal from re-opening from bubbled event if Modal is child of the open button
-        onClick={(e: any) => e.stopPropagation()}
+      // prevent modal from re-opening from bubbled event if Modal is child of the open button
+      onClick={(e: any) => e.stopPropagation()}
     >
       <DialogBackdrop
         transition
