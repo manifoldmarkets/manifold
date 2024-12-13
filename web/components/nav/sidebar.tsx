@@ -36,6 +36,7 @@ import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { Col } from '../layout/col'
 import { TbPigMoney } from 'react-icons/tb'
+import { LightningBoltIcon } from '@heroicons/react/outline'
 // import { PiRobotBold } from 'react-icons/pi'
 
 export default function Sidebar(props: {
@@ -139,6 +140,11 @@ const getDesktopNav = (
     return buildArray(
       { name: 'Browse', href: '/home', icon: SearchIcon },
       {
+        name: 'Activity',
+        href: '/activity',
+        icon: LightningBoltIcon,
+      },
+      {
         name: 'Explore',
         href: '/explore',
         icon: GlobeAltIcon,
@@ -203,6 +209,7 @@ const getMobileNav = (
   const { isAdminOrMod } = options
 
   return buildArray<NavItem>(
+    { name: 'Activity', href: '/activity', icon: LightningBoltIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     // {
     //   name: 'AI',
