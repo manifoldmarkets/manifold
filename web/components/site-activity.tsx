@@ -1,8 +1,8 @@
 import clsx from 'clsx'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { groupBy, keyBy, orderBy } from 'lodash'
-import { memo } from 'react'
+import { groupBy, keyBy, orderBy, uniqBy } from 'lodash'
+import { memo, useEffect, useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -15,6 +15,7 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { UserHovercard } from './user/user-hovercard'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { VisibilityObserver } from './widgets/visibility-observer'
 
 export function SiteActivity(props: {
   className?: string
@@ -29,16 +30,36 @@ export function SiteActivity(props: {
     props.blockedUserIds ?? []
   )
 
+  const [offset, setOffset] = useState(0)
+  const limit = 10
+  
   const { data, loading } = useAPIGetter('get-site-activity', {
-    limit: 10,
+    limit,
+    offset,
     blockedUserIds,
     blockedGroupSlugs,
     blockedContractIds,
   })
 
-  if (loading || !data) return <LoadingIndicator />
+  const [allData, setAllData] = useState<typeof data>()
 
-  const { bets, comments, newContracts, relatedContracts } = data
+  useEffect(() => {
+    if (data) {
+      setAllData((prev) => {
+        if (!prev) return data
+        return {
+          bets: uniqBy([...prev.bets, ...data.bets], 'id'),
+          comments: uniqBy([...prev.comments, ...data.comments], 'id'),
+          newContracts: uniqBy([...prev.newContracts, ...data.newContracts], 'id'),
+          relatedContracts: uniqBy([...prev.relatedContracts, ...data.relatedContracts], 'id')
+        }
+      })
+    }
+  }, [data])
+
+  if (!allData) return <LoadingIndicator />
+
+  const { bets, comments, newContracts, relatedContracts } = allData
   const contracts = [...newContracts, ...relatedContracts]
   const contractsById = keyBy(contracts, 'id')
 
@@ -121,6 +142,17 @@ export function SiteActivity(props: {
           )
         })}
       </Col>
+      <div className="relative">
+        {loading && <LoadingIndicator />}
+        <VisibilityObserver
+          className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
+          onVisibilityUpdated={(visible) => {
+            if (visible && !loading) {
+              setOffset((prev: number) => prev + limit)
+            }
+          }}
+        />
+      </div>
     </Col>
   )
 }

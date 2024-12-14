@@ -11,7 +11,7 @@ import { convertContractComment } from 'common/supabase/comments'
 export const getSiteActivity: APIHandler<'get-site-activity'> = async (
   props
 ) => {
-  const { limit, blockedGroupSlugs = [], blockedContractIds = [] } = props
+  const { limit, offset = 0, blockedGroupSlugs = [], blockedContractIds = [] } = props
   log('getSiteActivity called', { limit })
 
   const blockedUserIds = [
@@ -35,8 +35,8 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
      and is_api is not true
      and user_id != all($1)
      and contract_id != all($2)
-     order by created_time desc limit $3`,
-        [blockedUserIds, blockedContractIds, limit]
+     order by created_time desc limit $3 offset $4`,
+        [blockedUserIds, blockedContractIds, limit, offset]
       ),
       pg.manyOrNone(
         `select * from contract_bets
@@ -54,16 +54,16 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
        and (data->>'isCancelled')::boolean = false
        and user_id != all($1)
        and contract_id != all($2)
-       order by created_time desc limit $3`,
-        [blockedUserIds, blockedContractIds, limit]
+       order by created_time desc limit $3 offset $4`,
+        [blockedUserIds, blockedContractIds, limit, offset]
       ),
       pg.manyOrNone(
         `select * from contract_comments
        where (likes - coalesce(dislikes, 0)) >= 2
        and user_id != all($1)
        and contract_id != all($2)
-       order by created_time desc limit $3`,
-        [blockedUserIds, blockedContractIds, limit]
+       order by created_time desc limit $3 offset $4`,
+        [blockedUserIds, blockedContractIds, limit, offset]
       ),
       pg.manyOrNone(
         `select * from contracts
@@ -77,8 +77,8 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
          where gc.contract_id = contracts.id
          and g.slug = any($3)
        )
-       order by created_time desc limit $4`,
-        [blockedUserIds, blockedContractIds, blockedGroupSlugs, limit]
+       order by created_time desc limit $4 offset $5`,
+        [blockedUserIds, blockedContractIds, blockedGroupSlugs, limit, offset]
       ),
     ])
 
