@@ -8,7 +8,7 @@ export type SimpleContent = {
 
 // URL regex pattern that handles common URL formats
 const URL_REGEX =
-  /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi
+  /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/gi
 
 /** get first url in text. like "notion.so " -> "http://notion.so"; "notion" -> null */
 export function getUrl(text: string) {
