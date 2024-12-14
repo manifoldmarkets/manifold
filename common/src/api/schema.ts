@@ -2000,6 +2000,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         limit: z.coerce.number().default(10),
+        offset: z.coerce.number().default(0),
         blockedUserIds: z.array(z.string()).optional(),
         blockedGroupSlugs: z.array(z.string()).optional(),
         blockedContractIds: z.array(z.string()).optional(),
