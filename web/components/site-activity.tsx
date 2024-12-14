@@ -130,26 +130,28 @@ const MarketCreatedLog = memo(
 
     return (
       <Col className="gap-2">
-        <UserHovercard userId={creatorId} className="flex-col">
-          <Row className="text-ink-600 items-center gap-2 text-sm">
-            <Avatar
-              avatarUrl={creatorAvatarUrl}
-              username={creatorUsername}
-              size="xs"
-            />
-            <UserLink
-              user={{
-                id: creatorId,
-                name: creatorName,
-                username: creatorUsername,
-              }}
-            />
-            <Row className="text-ink-400">
-              created
-              <RelativeTimestamp time={createdTime} />
+        <Row className="text-ink-1000 items-center gap-2 text-sm">
+          <UserHovercard userId={creatorId}>
+            <Row className="items-center gap-2 font-semibold">
+              <Avatar
+                avatarUrl={creatorAvatarUrl}
+                username={creatorUsername}
+                size="xs"
+              />
+              <UserLink
+                user={{
+                  id: creatorId,
+                  name: creatorName,
+                  username: creatorUsername,
+                }}
+              />
             </Row>
+          </UserHovercard>
+          <div className="-ml-1">created this market</div>
+          <Row className="text-ink-400">
+            <RelativeTimestamp time={createdTime} shortened />
           </Row>
-        </UserHovercard>
+        </Row>
 
         {showDescription && props.contract.description && (
           <div className="relative max-h-[120px] max-w-xs overflow-hidden sm:max-w-none">
@@ -183,26 +185,30 @@ const CommentLog = memo(function FeedComment(props: {
 
   return (
     <Col>
-      <Row
-        id={comment.id}
-        className="text-ink-500 mb-1 items-center gap-2 text-sm"
-      >
+      <Row id={comment.id} className="mb-1 items-center gap-2 text-sm">
         <UserHovercard userId={userId}>
-          <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
-        </UserHovercard>
-        <span>
-          <UserHovercard userId={userId}>
-            <UserLink
-              user={{ id: userId, name: userName, username: userUsername }}
+          <Row className="items-center gap-2 font-semibold">
+            <Avatar
+              avatarUrl={userAvatarUrl}
+              username={userUsername}
+              size="xs"
             />
-          </UserHovercard>{' '}
-          commented
-        </span>
-        <RelativeTimestamp time={createdTime} />
+            <UserLink
+              user={{
+                id: userId,
+                name: userName,
+                username: userUsername,
+              }}
+            />
+          </Row>
+        </UserHovercard>
+        <div className="-ml-1">commented</div>
+        <Row className="text-ink-400">
+          <RelativeTimestamp time={createdTime} shortened />
+        </Row>
       </Row>
       <Content size="sm" className="grow" content={content || text} />
-      {showDivider && <div className="border-b border-ink-200/30 mt-4" />}
+      {showDivider && <div className="border-ink-200/30 mt-4 border-b" />}
     </Col>
   )
 })
-
