@@ -252,4 +252,3 @@ const CommentLog = memo(function FeedComment(props: {
     </Col>
   )
 })
-
