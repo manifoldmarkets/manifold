@@ -101,11 +101,19 @@ export function SiteActivity(props: {
                     )}
                   </div>
                 </Col>
+
                 {contract.coverImageUrl && (
                   <img
                     src={contract.coverImageUrl}
                     alt=""
-                    className="h-12 w-12 rounded-md object-cover sm:h-32 sm:w-32"
+                    className={clsx(
+                      'rounded-md object-cover',
+                      'h-12 w-12 sm:h-32 sm:w-32',
+                      // Only hide on desktop if single bet
+                      items.length === 1 &&
+                        'amount' in items[0] &&
+                        'sm:hidden'
+                    )}
                   />
                 )}
               </Row>
