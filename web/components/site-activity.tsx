@@ -32,7 +32,7 @@ export function SiteActivity(props: {
 
   const [offset, setOffset] = useState(0)
   const limit = 10
-  
+
   const { data, loading } = useAPIGetter('get-site-activity', {
     limit,
     offset,
@@ -50,8 +50,14 @@ export function SiteActivity(props: {
         return {
           bets: uniqBy([...prev.bets, ...data.bets], 'id'),
           comments: uniqBy([...prev.comments, ...data.comments], 'id'),
-          newContracts: uniqBy([...prev.newContracts, ...data.newContracts], 'id'),
-          relatedContracts: uniqBy([...prev.relatedContracts, ...data.relatedContracts], 'id')
+          newContracts: uniqBy(
+            [...prev.newContracts, ...data.newContracts],
+            'id'
+          ),
+          relatedContracts: uniqBy(
+            [...prev.relatedContracts, ...data.relatedContracts],
+            'id'
+          ),
         }
       })
     }
@@ -131,9 +137,7 @@ export function SiteActivity(props: {
                       'rounded-md object-cover',
                       'h-12 w-12 sm:h-32 sm:w-32',
                       // Only hide on desktop if single bet
-                      items.length === 1 &&
-                        'amount' in items[0] &&
-                        'sm:hidden'
+                      items.length === 1 && 'amount' in items[0] && 'sm:hidden'
                     )}
                   />
                 )}
