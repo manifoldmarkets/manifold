@@ -23,8 +23,11 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
 
   if (kind === 'referral') {
     const data = await pg.any(
-      `select id, total_referrals, total_referred_profit, total_referred_cash_profit
-      from user_referrals_profit limit $1`,
+      `select ur.id, ur.total_referrals, ur.total_referred_profit, ur.total_referred_cash_profit
+      from user_referrals_profit ur
+      join users u on ur.id = u.id
+      where coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true
+      limit $1`,
       [limitValue]
     )
 
@@ -41,6 +44,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
   if ((kind == 'profit' || kind == 'loss') && !groupId) {
     const query = renderSql(
       from('user_portfolio_history_latest uph'),
+      join('users u on u.id = uph.user_id'),
       select('uph.user_id as user_id'),
       token === 'MANA'
         ? select('uph.profit as score') // excludes unranked
@@ -48,7 +52,33 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
             'uph.cash_balance + uph.cash_investment_value - uph.total_cash_deposits as score'
           ),
       where('user_id not in ($1:list)', [HIDE_FROM_LEADERBOARD_USER_IDS]),
+      where(
+        `coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`
+      ),
       orderBy(kind === 'loss' ? 'score asc' : 'score desc nulls last'),
+      limit(limitValue)
+    )
+    return await pg.map(query, [], (r) => ({
+      userId: r.user_id,
+      score: r.score,
+    }))
+  }
+  if (kind === 'creator') {
+    const query = renderSql(
+      from('contracts c'),
+      join('users u on u.id = c.creator_id'),
+      select(
+        `c.creator_id as user_id, sum((c.data->'uniqueBettorCount')::bigint) as score`
+      ),
+      groupBy('c.creator_id'),
+      where(`coalesce((c.data->'isRanked')::boolean, true) = true`), // unranked included in portfolio
+      where(
+        `coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`
+      ),
+      where('c.token = ${token}', { token }),
+      where('c.outcome_type != ${outcomeType}', { outcomeType: 'POLL' }),
+      where('c.outcome_type != ${outcomeType}', { outcomeType: 'BOUNTY' }),
+      orderBy('score desc nulls last'),
       limit(limitValue)
     )
     return await pg.map(query, [], (r) => ({
@@ -60,13 +90,12 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
   const query = renderSql(
     from('contracts c'),
     join('user_contract_metrics ucm on ucm.contract_id = c.id'),
+    join('users u on u.id = ucm.user_id'),
     where('ucm.answer_id is null'),
     where(`coalesce((c.data->'isRanked')::boolean, true) = true`),
-
-    kind === 'creator' && [
-      select('c.creator_id as user_id, count(*) as score'),
-      groupBy('c.creator_id'),
-    ],
+    where(
+      `coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`
+    ),
 
     (kind === 'profit' || kind === 'loss') && [
       select(`user_id, sum(profit) as score`),

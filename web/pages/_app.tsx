@@ -9,7 +9,6 @@ import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
 import { Major_Mono_Display, Figtree } from 'next/font/google'
 import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
-import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
@@ -175,38 +174,33 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           title="Manifold"
         />
       </Head>
-      <div
-        className={clsx(
-          'font-figtree contents font-normal',
-          logoFont.variable,
-          mainFont.variable
-        )}
-      >
-        {/*
+      <style>
+        {`html {
+          --font-main: ${mainFont.style.fontFamily};
+          --font-variable: ${logoFont.style.fontFamily};
+        }`}
+      </style>
+
+      {/*
         ian: It would be nice to find a way to let people take screenshots of a crash + console log.
         One idea: just disable them for !user.sweepstakesVerified users.
         */}
-        {devToolsOpen ? (
-          <div
-            className={'flex h-screen flex-col items-center justify-center p-4'}
-          >
-            You cannot use developer tools with manifold. Please close them and
-            refresh.
-          </div>
-        ) : (
-          <AuthProvider serverUser={pageProps.auth}>
-            <Sweepstakes>
-              <NativeMessageProvider>
-                <Component {...pageProps} />
-              </NativeMessageProvider>
-            </Sweepstakes>
-          </AuthProvider>
-        )}
-        {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
-        <div id="headlessui-portal-root">
-          <div />
+      {devToolsOpen ? (
+        <div
+          className={'flex h-screen flex-col items-center justify-center p-4'}
+        >
+          You cannot use developer tools with manifold. Please close them and
+          refresh.
         </div>
-      </div>
+      ) : (
+        <AuthProvider serverUser={pageProps.auth}>
+          <Sweepstakes>
+            <NativeMessageProvider>
+              <Component {...pageProps} />
+            </NativeMessageProvider>
+          </Sweepstakes>
+        </AuthProvider>
+      )}
 
       <GoogleOneTapSetup />
 
