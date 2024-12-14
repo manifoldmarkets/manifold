@@ -76,7 +76,7 @@ export function SiteActivity(props: {
                 <Col className="flex-1 gap-2">
                   <ContractMention contract={contract} />
                   <div className="space-y-2">
-                    {items.map((item) =>
+                    {items.map((item, i) =>
                       'amount' in item ? (
                         <FeedBet
                           className="!pt-0"
@@ -92,7 +92,11 @@ export function SiteActivity(props: {
                           showDescription={items.length === 1}
                         />
                       ) : 'channelId' in item ? null : (
-                        <CommentLog key={item.id} comment={item} />
+                        <CommentLog
+                          key={item.id}
+                          comment={item}
+                          showDivider={i !== items.length - 1}
+                        />
                       )
                     )}
                   </div>
@@ -164,8 +168,9 @@ const MarketCreatedLog = memo(
 // todo: add liking/disliking
 const CommentLog = memo(function FeedComment(props: {
   comment: ContractComment
+  showDivider?: boolean
 }) {
-  const { comment } = props
+  const { comment, showDivider = true } = props
   const {
     userName,
     text,
@@ -196,6 +201,8 @@ const CommentLog = memo(function FeedComment(props: {
         <RelativeTimestamp time={createdTime} />
       </Row>
       <Content size="sm" className="grow" content={content || text} />
+      {showDivider && <div className="border-b border-ink-200/30 mt-4" />}
     </Col>
   )
 })
+
