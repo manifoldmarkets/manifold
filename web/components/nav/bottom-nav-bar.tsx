@@ -7,7 +7,7 @@ import {
   TransitionChild,
 } from '@headlessui/react'
 import {
-  GlobeAltIcon,
+  LightningBoltIcon,
   NewspaperIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
@@ -19,7 +19,6 @@ import { User } from 'common/user'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Fragment, useState } from 'react'
-import { GiCapitol } from 'react-icons/gi'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
@@ -32,6 +31,7 @@ import { Avatar } from '../widgets/avatar'
 import { CoinNumber } from '../widgets/coin-number'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
+import { PiSquaresFour } from 'react-icons/pi'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -48,9 +48,9 @@ function getNavigation(user: User) {
       icon: SearchIcon,
     },
     {
-      name: 'Explore',
-      href: '/explore',
-      icon: GlobeAltIcon,
+      name: 'Markets',
+      href: '/markets',
+      icon: PiSquaresFour,
     },
     {
       name: 'Profile',
@@ -67,9 +67,9 @@ function getNavigation(user: User) {
 const signedOutNavigation = () => [
   { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
   {
-    name: 'Election',
-    href: '/election',
-    icon: GiCapitol,
+    name: 'Markets',
+    href: '/markets',
+    icon: PiSquaresFour,
     alwaysShowName: true,
     // prefetch: false, // should we not prefetch this?
   },

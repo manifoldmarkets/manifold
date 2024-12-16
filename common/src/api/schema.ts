@@ -1987,6 +1987,13 @@ export const API = (_apiTypeCheck = {
     returns: {} as { tasks: Task[] },
     props: z.object({}).strict(),
   },
+  'is-sports-interested': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { isSportsInterested: boolean },
+    props: z.object({}).strict(),
+  },
   'get-site-activity': {
     method: 'GET',
     visibility: 'public',
@@ -2000,6 +2007,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         limit: z.coerce.number().default(10),
+        offset: z.coerce.number().default(0),
         blockedUserIds: z.array(z.string()).optional(),
         blockedGroupSlugs: z.array(z.string()).optional(),
         blockedContractIds: z.array(z.string()).optional(),

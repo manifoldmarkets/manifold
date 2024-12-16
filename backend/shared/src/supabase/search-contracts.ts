@@ -316,6 +316,7 @@ function getSearchContractWhereSQL(args: {
   const filterSQL: FilterSQL = {
     open: 'resolution_time IS NULL AND (close_time > NOW() or close_time is null)',
     closed: 'close_time < NOW() AND resolution_time IS NULL',
+    'closing-day': `close_time > now() AND close_time < (now() + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
     'closing-week': `close_time > now() AND close_time < (now() + interval '7 days' + interval '7 hours') AND resolution_time IS NULL`,
     'closing-month': `close_time > now() AND close_time < (now() + interval '30 days' + interval '7 hours') AND resolution_time IS NULL`,
     'closing-90-days': `close_time > now() AND close_time < (now() + interval '90 days' + interval '7 hours') AND resolution_time IS NULL`,

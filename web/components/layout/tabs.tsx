@@ -14,6 +14,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export type Tab = {
   title: string
+  titleElement?: ReactNode
   content: ReactNode
   stackedTabIcon?: ReactNode
   inlineTabIcon?: ReactNode
@@ -80,7 +81,9 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
             )}
           >
             <Tooltip text={tab.tooltip}>
-              <Row className={'items-center'}>{tab.title}</Row>
+              <Row className={'items-center'}>
+                {tab.titleElement ?? tab.title}
+              </Row>
             </Tooltip>
           </a>
         ))}
@@ -166,7 +169,7 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
                   <Row className="justify-center">{tab.stackedTabIcon}</Row>
                 )}
                 <Row className={'items-center'}>
-                  {tab.title}
+                  {tab.titleElement ?? tab.title}
                   {tab.inlineTabIcon}
                 </Row>
               </Tooltip>
@@ -237,6 +240,7 @@ export function QueryUncontrolledTabs(
     scrollToTop?: boolean
     minimalist?: boolean
     saveTabInLocalStorageKey?: string
+    tabInUrlKey?: string
   }
 ) {
   const {
@@ -245,13 +249,14 @@ export function QueryUncontrolledTabs(
     onClick,
     scrollToTop,
     saveTabInLocalStorageKey,
+    tabInUrlKey = 'tab',
     ...rest
   } = props
   const router = useRouter()
   const pathName = usePathname()
   const { searchParams, createQueryString } = useDefinedSearchParams()
   const selectedIdx = tabs.findIndex((t) =>
-    isTabSelected(searchParams, 'tab', t)
+    isTabSelected(searchParams, tabInUrlKey, t)
   )
   const [savedTabIndex, setSavedTabIndex] = usePersistentLocalState<
     number | undefined
@@ -280,7 +285,7 @@ export function QueryUncontrolledTabs(
         onClick={(title) => {
           if (scrollToTop) window.scrollTo({ top: 0 })
           router.replace(
-            pathName + '?' + createQueryString('tab', title),
+            pathName + '?' + createQueryString(tabInUrlKey, title),
             undefined,
             { shallow: true }
           )
@@ -296,7 +301,7 @@ export function QueryUncontrolledTabs(
       onClick={(title) => {
         if (scrollToTop) window.scrollTo({ top: 0 })
         router.replace(
-          pathName + '?' + createQueryString('tab', title),
+          pathName + '?' + createQueryString(tabInUrlKey, title),
           undefined,
           { shallow: true }
         )
