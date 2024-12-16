@@ -25,6 +25,8 @@ import { SiteActivity } from 'web/components/site-activity'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { api } from 'web/lib/api/api'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { User } from 'common/user'
 
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
 const NBA_ID = 'i0v3cXwuxmO9fpcInVYb'
@@ -66,6 +68,7 @@ function NFLContent() {
       fetchProps={{
         term: '',
         filter: 'open',
+        sort: 'score',
         gids: NFL_ID,
       }}
     />
@@ -78,6 +81,7 @@ function NBAContent() {
       fetchProps={{
         term: '',
         filter: 'open',
+        sort: 'score',
         gids: NBA_ID,
       }}
     />
@@ -90,7 +94,7 @@ function EPLContent() {
       fetchProps={{
         term: '',
         filter: 'open',
-        sort: 'close-date',
+        sort: 'score',
         gids: EPL_ID,
       }}
     />
@@ -144,7 +148,7 @@ function MarketsList(
   } & { sweepScoreBoost?: number }
 ) {
   const { sweepScoreBoost, fetchProps } = props
-  const limit = 7
+  const limit = 10
   const [loading, setLoading] = useState(false)
   const [data, setData] = usePersistentInMemoryState<{
     markets: any[]
@@ -154,7 +158,7 @@ function MarketsList(
     { markets: [], manaOffset: 0, cashOffset: 0 },
     `markets-list-${JSON.stringify(fetchProps)}`
   )
-
+  // We could also find all the sweeps markets, then when we run out, show mana markets
   const loadMore = async () => {
     if (loading) return
     setLoading(true)
@@ -221,13 +225,28 @@ function MarketsList(
   )
 }
 
-export default function TopicsPage() {
-  const user = useUser()
-  useSaveScroll('topics', true)
+export default function MarketsPage() {
+  return (
+    <Page trackPageView="/markets">
+      <SEO title="Markets" description="Explore markets" url="/markets" />
+      <MarketsContent />
+    </Page>
+  )
+}
 
-  // Create the base tabs array
+function MarketsContent() {
+  const user = useUser()
+  const likelyNerd = user && user.createdTime < 1734368703358 // Dec 16, 2024
   const baseTabs: Tab[] = buildArray(
-    { title: 'Sports', content: <SportsTabs /> },
+    !likelyNerd && { title: 'Sports', content: <SportsTabs /> },
+    {
+      title: 'Activity',
+      content: (
+        <Col className="pt-1">
+          <SiteActivity />
+        </Col>
+      ),
+    },
     user && {
       title: 'Explore',
       content: (
@@ -236,27 +255,25 @@ export default function TopicsPage() {
         </Col>
       ),
     },
-    {
-      title: 'Activity',
-      content: (
-        <Col className="pt-1">
-          <SiteActivity />
-        </Col>
-      ),
-    }
+    likelyNerd && { title: 'Sports', content: <SportsTabs /> }
   )
+
+  if (user === undefined) {
+    return <LoadingIndicator />
+  }
+
+  return <OrganizableMarketsPage user={user} tabs={baseTabs} />
+}
+
+const OrganizableMarketsPage = (props: { user: User | null; tabs: Tab[] }) => {
+  const { user, tabs: baseTabs } = props
+  useSaveScroll('topics', true)
 
   // Store tab order in local storage
   const [tabOrder, setTabOrder] = usePersistentLocalState<string[]>(
     baseTabs.map((tab) => tab.title),
-    'topics-tab-order-3'
+    `topics-tab-order-${user?.id}`
   )
-  useEffect(() => {
-    if (!user?.id) return
-    if (tabOrder.length !== baseTabs.length) {
-      setTabOrder(baseTabs.map((tab) => tab.title))
-    }
-  }, [user?.id])
 
   // Reorder tabs based on saved order
   const PARENT_TABS = tabOrder
@@ -264,56 +281,55 @@ export default function TopicsPage() {
     .filter((tab): tab is Tab => !!tab)
 
   return (
-    <Page trackPageView="/markets">
-      <SEO title="Markets" description="Explore markets" url="/markets" />
-      <Col className="relative w-full p-1">
-        <DragDropContext
-          onDragEnd={(result) => {
-            if (!result.destination) return
+    <Col className="relative w-full p-1">
+      <DragDropContext
+        onDragEnd={(result) => {
+          if (!result.destination) return
 
-            const newOrder = Array.from(tabOrder)
-            const [removed] = newOrder.splice(result.source.index, 1)
-            newOrder.splice(result.destination.index, 0, removed)
-            setTabOrder(newOrder)
-          }}
-        >
-          <Droppable droppableId="topics-tabs" direction="horizontal">
-            {(provided) => (
-              <div ref={provided.innerRef} {...provided.droppableProps}>
-                <QueryUncontrolledTabs
-                  className="bg-canvas-50 sticky top-0 z-10"
-                  tabs={PARENT_TABS.map((tab, index) => ({
-                    ...tab,
-                    title: tab.title,
-                    titleElement: (
-                      <Draggable
-                        key={tab.title}
-                        draggableId={tab.title}
-                        index={index}
-                      >
-                        {(provided) => (
-                          <Row
-                            className="items-center gap-2"
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                          >
-                            {tab.title}
+          const newOrder = Array.from(tabOrder)
+          const [removed] = newOrder.splice(result.source.index, 1)
+          newOrder.splice(result.destination.index, 0, removed)
+          setTabOrder(newOrder)
+        }}
+      >
+        <Droppable droppableId="topics-tabs" direction="horizontal">
+          {(provided) => (
+            <div ref={provided.innerRef} {...provided.droppableProps}>
+              <QueryUncontrolledTabs
+                className="bg-canvas-50 sticky top-0 z-10"
+                tabs={PARENT_TABS.map((tab, index) => ({
+                  ...tab,
+                  title: tab.title,
+                  titleElement: (
+                    <Draggable
+                      key={tab.title}
+                      draggableId={tab.title}
+                      index={index}
+                    >
+                      {(provided) => (
+                        <Row
+                          className="items-center gap-2"
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                        >
+                          {tab.title}
+                          {user && (
                             <FaGripLinesVertical className="text-ink-300" />
-                          </Row>
-                        )}
-                      </Draggable>
-                    ),
-                  }))}
-                  defaultIndex={0}
-                  trackingName="topics-tabs"
-                />
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
-      </Col>
-    </Page>
+                          )}
+                        </Row>
+                      )}
+                    </Draggable>
+                  ),
+                }))}
+                defaultIndex={0}
+                trackingName="topics-tabs"
+              />
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </Col>
   )
 }

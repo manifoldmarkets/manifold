@@ -8,8 +8,6 @@ import {
   NewspaperIcon,
   LoginIcon,
   SearchIcon,
-  GlobeAltIcon,
-  LightningBoltIcon,
 } from '@heroicons/react/outline'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import clsx from 'clsx'
@@ -146,16 +144,6 @@ const getDesktopNav = (
         icon: PiSquaresFourLight,
       },
       {
-        name: 'Activity',
-        href: '/activity',
-        icon: LightningBoltIcon,
-      },
-      {
-        name: 'Explore',
-        href: '/explore',
-        icon: GlobeAltIcon,
-      },
-      {
         name: 'Notifications',
         href: `/notifications`,
         icon: NotificationsIcon,
@@ -217,8 +205,11 @@ const getMobileNav = (
   return buildArray<NavItem>(
     { name: 'Markets', href: '/markets', icon: PiSquaresFourLight },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    { name: 'Explore', href: '/explore', icon: GlobeAltIcon },
-    // {
+    {
+      name: 'Markets',
+      href: '/markets',
+      icon: PiSquaresFourLight,
+    }, // {
     //   name: 'AI',
     //   href: '/ai',
     //   icon: PiRobotBold,
