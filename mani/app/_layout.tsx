@@ -22,6 +22,7 @@ import Constants from 'expo-constants'
 import { StyleSheet } from 'react-native'
 import { Colors } from 'constants/Colors'
 import { UserProvider, useUser } from 'hooks/useUser'
+import { Splash } from 'components/splash'
 
 const HEADER_HEIGHT = 250
 
@@ -132,7 +133,14 @@ function RootLayout() {
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
 
-  console.log(user)
+  if (!loaded)
+    return (
+      <Splash
+        height={height}
+        width={width}
+        source={require('../assets/images/splash.png')}
+      />
+    )
 
   return (
     <TokenModeProvider>
@@ -143,7 +151,6 @@ function RootLayout() {
 
         <SplashAuth
           source={require('../assets/images/splash.png')}
-          // fbUser={fbUser}
           fbUser={user}
           isConnected={isConnected}
           height={height}

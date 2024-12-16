@@ -114,6 +114,7 @@ export const Colors = {
   noButtonText: pink[500],
   dangerButtonBackground: withOpacity(red[500], 0.2),
   dangerButtonText: red[500],
+  blue: blue[500],
 } as const
 
 // Mode-specific colors (used for game modes)
