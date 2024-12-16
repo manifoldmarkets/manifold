@@ -40,6 +40,7 @@ import { useSweepstakes } from './sweepstakes-provider'
 import { FilterPill } from './search/filter-pills'
 import { ALL_PARENT_TOPICS, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { Carousel } from './widgets/carousel'
+import { isEqual } from 'lodash'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -829,18 +830,47 @@ const useSearchQueryState = (props: {
     [GROUP_IDS_KEY]: '',
   }
 
-  const useHook = useUrlParams ? usePersistentQueriesState : useShim
-  const [state, setState, ready] = useHook(defaults, persistPrefix)
+  const useHook = useUrlParams ? usePersistentQueriesState : useNothing
+  const [queryState, updateQueryState, queryReady] = useHook(
+    defaults,
+    persistPrefix
+  )
+  const [localState, updateLocalState, localReady] = useLocalPartialUpdater(
+    defaults,
+    persistPrefix
+  )
 
-  return [state, setState, ready] as const
+  // copy query state -> local state iff we are using query params and any params are set
+  // only do this once on first load.
+  useEffect(() => {
+    if (
+      queryReady &&
+      localReady &&
+      useUrlParams &&
+      !isEqual(queryState, defaults)
+    ) {
+      updateLocalState(queryState)
+    }
+  }, [queryReady, localReady])
+
+  const setState = useEvent((newState: Partial<SearchParams>) => {
+    updateLocalState(newState)
+    if (useUrlParams) updateQueryState(newState)
+  })
+
+  return [localState, setState, queryReady && localReady] as const
 }
 
-const useShim = <T extends Record<string, string | undefined>>(
-  x: T,
+// shim for hook rules and types
+const useNothing = <T,>(x: T, _: string) =>
+  [x, (_: Partial<T>) => {}, true] as const satisfies any[]
+
+const useLocalPartialUpdater = <T extends Record<string, string | undefined>>(
+  defaults: T,
   persistPrefix: string
 ) => {
   const [state, setState, ready] = usePersistentLocalState(
-    x,
+    defaults,
     searchLocalKey(persistPrefix)
   )
 
@@ -854,7 +884,8 @@ const useShim = <T extends Record<string, string | undefined>>(
     }
   }
 
-  return [state, updateState, ready] as const
+  // the first copy of data from local state may be missing values, so we return the full state
+  return [{ ...defaults, ...state }, updateState, ready] as const
 }
 
 export const searchLocalKey = (persistPrefix: string) =>
