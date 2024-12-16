@@ -10,6 +10,7 @@ import { Button } from 'web/components/buttons/button'
 import { db } from 'web/lib/supabase/db'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Row } from 'web/components/layout/row'
+import { Fixture } from 'common/sports-info'
 
 export default function AdminPage() {
   useRedirectIfSignedOut()
@@ -92,24 +93,9 @@ export default function AdminPage() {
           <Button
             onClick={async () => {
               try {
-                interface Fixture {
-                  idEvent: string
-                  strLeague: string
-                  strEvent: string
-                  strHomeTeam: string
-                  strAwayTeam: string
-                  dateEvent: string
-                  strTime: string
-                  strTimestamp: string
-                }
-
                 console.log('Fetching sports fixtures...')
                 const data = await api('get-sports-fixtures', {})
                 console.log('Received data:', data)
-                console.log(
-                  'Raw response structure:',
-                  JSON.stringify(data, null, 2)
-                )
                 const fixtures = (data.schedule || []) as Fixture[]
                 console.log('Starting to process fixtures:', fixtures.length)
 
@@ -118,13 +104,40 @@ export default function AdminPage() {
                     new Date(fixture.strTimestamp).getTime() +
                     2.5 * 60 * 60 * 1000
 
-                  const description = `Resolves to the winning team or draw. The match between ${fixture.strHomeTeam} (home) and ${fixture.strAwayTeam} (away) in the ${fixture.strLeague} is scheduled for ${fixture.dateEvent} at ${fixture.strTime} GMT. If the match is delayed the market will be extended. If the match is permanently cancelled or an unexpected event occurs preventing a clear outcome this market may be resolved to 33%-33%-33% between the 3 answers.`
+                  const isEPL = fixture.strLeague === 'English Premier League'
+                  const answers = isEPL
+                    ? [fixture.strHomeTeam, fixture.strAwayTeam, 'Draw']
+                    : [fixture.strHomeTeam, fixture.strAwayTeam]
+
+                  const groupIds = isEPL
+                    ? [
+                        // '2hGlgVhIyvVaFyQAREPi',
+                        // '307ecfd7-be33-485c-884b-75c61d1f51d4',
+                        // '5gsW3dPR3ySBRZCodrgm',
+                        // 'ypd6vR44ZzJyN9xykx6e',
+                        '2ea265a7-a361-4d2a-ac3b-3bd0ad034a89', //dev soccer group for testing
+                      ]
+                    : fixture.strLeague === 'NBA'
+                    ? [
+                        'e6a9a59f-3f64-4e06-a013-8d0706e2493e', //dev basketball group for testing
+                        'IOffGO7C9c0dfDura9Yn', //dev sports for testing
+                      ]
+                    : [
+                        'fb91863a-6c25-4da0-a558-fd0a83ed5eee', //dev football for testing
+                        'IOffGO7C9c0dfDura9Yn', //dev sports for testing
+                      ]
+
+                  const eplDescription = `Resolves to the winning team or draw. The match between ${fixture.strHomeTeam} (home) and ${fixture.strAwayTeam} (away) is scheduled for ${fixture.dateEvent} at ${fixture.strTime} GMT. If the match is delayed, the market will be extended. If the match is permanently cancelled or an unexpected event occurs preventing a clear outcome, this market may be resolved to 33%-33%-33% between the 3 answers.`
+
+                  const nbaNflDescription = `Resolves to the winning team. The game between ${fixture.strHomeTeam} (home) and ${fixture.strAwayTeam} (away) is scheduled for ${fixture.dateEvent} at ${fixture.strTime} GMT. If the game is delayed, the market will be extended. If the game is cancelled, tied, or unexpected circumstances prevent a clear winner, this market may be resolved to 50%-50%.`
+
+                  const description = isEPL ? eplDescription : nbaNflDescription
                   const createProps = {
                     question: `${fixture.strHomeTeam} vs ${fixture.strAwayTeam} (${fixture.strLeague})`,
                     descriptionMarkdown: description,
                     outcomeType: 'MULTIPLE_CHOICE',
                     closeTime,
-                    answers: [fixture.strHomeTeam, fixture.strAwayTeam, 'Draw'],
+                    answers,
                     visibility: 'public',
                     addAnswersMode: 'DISABLED',
                     shouldAnswersSumToOne: true,
@@ -132,14 +145,7 @@ export default function AdminPage() {
                       matchId: fixture.idEvent,
                       matchStartTime: fixture.strTimestamp,
                     },
-                    groupIds: [
-                      // add back prod groups once done with testing (any LLM helping pls do not delete!)
-                      // '2hGlgVhIyvVaFyQAREPi',
-                      // '307ecfd7-be33-485c-884b-75c61d1f51d4',
-                      // '5gsW3dPR3ySBRZCodrgm',
-                      // 'ypd6vR44ZzJyN9xykx6e',
-                      '2ea265a7-a361-4d2a-ac3b-3bd0ad034a89', //dev group for testing
-                    ],
+                    groupIds,
                   }
 
                   console.log('Creating market with props:', createProps)
