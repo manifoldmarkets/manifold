@@ -16,7 +16,7 @@ import {
 } from 'web/components/contract/feed-contract-card'
 import { uniqBy, orderBy } from 'lodash'
 import { APIParams } from 'common/api/schema'
-import { FaFire, FaGripLinesVertical } from 'react-icons/fa6'
+import { FaFire, FaGripLinesVertical, FaHockeyPuck } from 'react-icons/fa6'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Row } from 'web/components/layout/row'
@@ -27,13 +27,16 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { api } from 'web/lib/api/api'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { User } from 'common/user'
+import { FaBaseballBall } from 'react-icons/fa'
 
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
 const NBA_ID = 'i0v3cXwuxmO9fpcInVYb'
 const EPL_ID = '5gsW3dPR3ySBRZCodrgm'
 const SPORTS_ID = '2hGlgVhIyvVaFyQAREPi'
+const MLB_ID = 'RFwfANk54JSXOwj4qwsW,786nRQzgVyUnuUtaLTGW' // MLB, Baseball
+const NHL_ID = 'lccgApXa1l7O5ZH3XfhH,tYP9jmPPjoX29KfzE4l5' // NHL, Hockey
 const colClass = 'gap-4 p-1'
-const ALL_IDS = [NFL_ID, SPORTS_ID, EPL_ID, NBA_ID].join(',')
+const ALL_IDS = [NFL_ID, SPORTS_ID, EPL_ID, NBA_ID, MLB_ID].join(',')
 
 function LiveSoonContent() {
   return (
@@ -101,6 +104,32 @@ function EPLContent() {
   )
 }
 
+function MLBContent() {
+  return (
+    <MarketsList
+      fetchProps={{
+        term: '',
+        filter: 'open',
+        sort: 'score',
+        gids: MLB_ID,
+      }}
+    />
+  )
+}
+
+function NHLContent() {
+  return (
+    <MarketsList
+      fetchProps={{
+        term: '',
+        filter: 'open',
+        sort: 'score',
+        gids: NHL_ID,
+      }}
+    />
+  )
+}
+
 function SportsTabs() {
   const SPORTS_TABS: Tab[] = [
     {
@@ -127,6 +156,16 @@ function SportsTabs() {
       title: 'EPL',
       content: <EPLContent />,
       stackedTabIcon: <MdSportsSoccer className="mb-1 h-6 w-6" />,
+    },
+    {
+      title: 'NHL',
+      content: <NHLContent />,
+      stackedTabIcon: <FaHockeyPuck className="mb-1 h-6 w-6" />,
+    },
+    {
+      title: 'MLB',
+      content: <MLBContent />,
+      stackedTabIcon: <FaBaseballBall className="mb-1 h-6 w-6" />,
     },
   ]
   return (
