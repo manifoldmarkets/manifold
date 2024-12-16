@@ -7,7 +7,6 @@ import {
   QuestionMarkCircleIcon,
   NewspaperIcon,
   LoginIcon,
-  GlobeAltIcon,
   SearchIcon,
 } from '@heroicons/react/outline'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -36,7 +35,7 @@ import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { Col } from '../layout/col'
 import { TbPigMoney } from 'react-icons/tb'
-import { LightningBoltIcon } from '@heroicons/react/outline'
+import { PiSquaresFourLight } from 'react-icons/pi'
 // import { PiRobotBold } from 'react-icons/pi'
 
 export default function Sidebar(props: {
@@ -140,14 +139,9 @@ const getDesktopNav = (
     return buildArray(
       { name: 'Browse', href: '/home', icon: SearchIcon },
       {
-        name: 'Activity',
-        href: '/activity',
-        icon: LightningBoltIcon,
-      },
-      {
-        name: 'Explore',
-        href: '/explore',
-        icon: GlobeAltIcon,
+        name: 'Markets',
+        href: '/markets',
+        icon: PiSquaresFourLight,
       },
       {
         name: 'Notifications',
@@ -209,9 +203,13 @@ const getMobileNav = (
   const { isAdminOrMod } = options
 
   return buildArray<NavItem>(
+    { name: 'Markets', href: '/markets', icon: PiSquaresFourLight },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    { name: 'Explore', href: '/explore', icon: GlobeAltIcon },
-    // {
+    {
+      name: 'Markets',
+      href: '/markets',
+      icon: PiSquaresFourLight,
+    }, // {
     //   name: 'AI',
     //   href: '/ai',
     //   icon: PiRobotBold,

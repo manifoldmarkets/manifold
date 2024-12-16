@@ -12,7 +12,6 @@ import { User } from 'common/user'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { removeEmojis } from 'common/util/string'
-import { capitalize } from 'lodash'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
@@ -37,7 +36,6 @@ import { track } from 'web/lib/service/analytics'
 import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
@@ -53,6 +51,8 @@ import { UserHovercard } from '../user/user-hovercard'
 import { ClickFrame } from '../widgets/click-frame'
 import { ReactButton } from './react-button'
 import { TradesButton } from './trades-button'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { capitalize } from 'lodash'
 
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -167,9 +167,7 @@ export function FeedContractCard(props: {
   return (
     <ClickFrame
       className={clsx(
-        isPrizeMarket || isCashContract
-          ? 'mt-2 ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200'
-          : 'ring-primary-200 hover:ring-1',
+        'ring-primary-200 hover:ring-1',
 
         'relative cursor-pointer rounded-xl transition-all ',
         'flex w-full flex-col gap-0.5 px-4',
@@ -198,18 +196,6 @@ export function FeedContractCard(props: {
             <SpiceCoin className="-mt-0.5" /> Prize Market
           </span>
         </div>
-      ) : isCashContract ? (
-        <div
-          className={clsx(
-            'absolute right-4 top-0 z-40 -translate-y-1/2 transform bg-amber-200 text-amber-700',
-            'rounded-full px-2 py-0.5 text-xs font-semibold'
-          )}
-        >
-          <span>
-            <SweepiesCoin className="-mt-0.5" /> {capitalize(SWEEPIES_NAME)}{' '}
-            Market
-          </span>
-        </div>
       ) : (
         <></>
       )}
@@ -236,10 +222,22 @@ export function FeedContractCard(props: {
             </Row>
           </UserHovercard>
           <Row className="gap-2">
-            {promotedData && canAdPay && (
-              <div className="text-ink-400 w-12 text-sm">
-                Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
-              </div>
+            {isCashContract ? (
+              <span
+                className={clsx(
+                  ' bg-amber-200 text-amber-700',
+                  'rounded-full px-2 pt-1 text-xs font-semibold'
+                )}
+              >
+                <SweepiesCoin className="-mt-0.5" /> {capitalize(SWEEPIES_NAME)}{' '}
+              </span>
+            ) : (
+              promotedData &&
+              canAdPay && (
+                <div className="text-ink-400 w-12 text-sm">
+                  Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
+                </div>
+              )
             )}
             {marketTier ? (
               <TierTooltip tier={marketTier} contract={contract} />
@@ -532,9 +530,9 @@ export const LoadingCards = (props: { rows?: number }) => {
   const { rows = 3 } = props
   return (
     <Col className="w-full">
-      {[...Array(rows)].map((r) => (
+      {[...Array(rows)].map((r, i) => (
         <Col
-          key={'loading-' + r}
+          key={'loading-' + i}
           className="bg-canvas-0 border-canvas-0 mb-4 gap-2 rounded-xl border p-4 drop-shadow-md"
         >
           <Row className="mb-2 items-center gap-2">

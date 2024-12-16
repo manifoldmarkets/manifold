@@ -11,6 +11,7 @@ export const searchProps = z
         z.literal('closing-90-days'),
         z.literal('closing-week'),
         z.literal('closing-month'),
+        z.literal('closing-day'),
         z.literal('closed'),
         z.literal('resolved'),
         z.literal('all'),
