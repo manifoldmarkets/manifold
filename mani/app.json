@@ -1,5 +1,23 @@
 {
   "expo": {
+    "fonts": [
+      {
+        "asset": "./assets/fonts/JetBrainsMono[wght].ttf",
+        "family": "JetBrainsMono"
+      },
+      {
+        "asset": "./assets/fonts/JetBrainsMono-Italic[wght].ttf",
+        "family": "JetBrainsMonoItalic"
+      },
+      {
+        "asset": "./assets/fonts/Figtree-VariableFont_wght.ttf",
+        "family": "Figtree"
+      },
+      {
+        "asset": "./assets/fonts/Figtree-Italic-VariableFont_wght.ttf",
+        "family": "FigtreeItalic"
+      }
+    ],
     "name": "Mani",
     "slug": "mani",
     "owner": "manifold-markets",
