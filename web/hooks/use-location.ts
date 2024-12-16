@@ -11,6 +11,7 @@ import { useNativeInfo } from 'web/components/native-message-provider'
 import { removeUndefinedProps } from 'common/util/object'
 
 const MAX_RETRIES = 1 // Will try both high and low accuracy
+const isBrowser = typeof window !== 'undefined'
 
 export const useLocation = (
   setLocationError: (error: string | undefined) => void,
@@ -19,7 +20,8 @@ export const useLocation = (
   onFinishLocationCheck?: (location?: GPSData) => void
 ) => {
   const { version, isNative } = useNativeInfo()
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+  const isSafari =
+    isBrowser && /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
 
   const checkLocationPermission = useEvent(async () => {
     setLoading(true)
@@ -28,7 +30,7 @@ export const useLocation = (
       postMessageToNative('locationPermissionStatusRequested', {})
       return
     }
-    if ('permissions' in navigator) {
+    if (isBrowser && 'permissions' in navigator) {
       try {
         const permissionStatus = await navigator.permissions.query({
           name: 'geolocation',
@@ -90,7 +92,7 @@ export const useLocation = (
       onSuccess: (position: GeolocationPosition) => void,
       onError: (error: GeolocationPositionError) => void
     ) => {
-      if ('geolocation' in navigator) {
+      if (isBrowser && 'geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(onSuccess, onError, options)
       } else {
         onError({
