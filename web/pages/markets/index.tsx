@@ -236,9 +236,27 @@ export default function MarketsPage() {
 
 function MarketsContent() {
   const user = useUser()
-  const likelyNerd = user && user.createdTime < 1734368703358 // Dec 16, 2024
+  const [isSportsInterested, setIsSportsInterested] = usePersistentLocalState<
+    boolean | undefined
+  >(undefined, 'is-sports-interested')
+
+  const getIsSportsInterested = async () => {
+    const { isSportsInterested } = await api('is-sports-interested', {})
+    setIsSportsInterested(isSportsInterested)
+  }
+
+  useEffect(() => {
+    if (user && isSportsInterested === undefined) {
+      getIsSportsInterested()
+    }
+  }, [user])
+  const sportsFirst = isSportsInterested || user === null
+
   const baseTabs: Tab[] = buildArray(
-    !likelyNerd && { title: 'Sports', content: <SportsTabs /> },
+    sportsFirst && {
+      title: 'Sports',
+      content: <SportsTabs />,
+    },
     {
       title: 'Activity',
       content: (
@@ -255,7 +273,7 @@ function MarketsContent() {
         </Col>
       ),
     },
-    likelyNerd && { title: 'Sports', content: <SportsTabs /> }
+    !sportsFirst && { title: 'Sports', content: <SportsTabs /> }
   )
 
   if (user === undefined) {

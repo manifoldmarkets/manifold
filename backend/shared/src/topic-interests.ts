@@ -16,6 +16,10 @@ import {
 import { GROUP_SLUGS_TO_NOT_INTRODUCE_IN_FEED } from 'common/envs/constants'
 import { HOUR_MS } from 'common/util/time'
 import { buildArray } from 'common/util/array'
+import {
+  NEW_USER_FOLLOWED_TOPIC_SCORE_BOOST,
+  OLD_USER_FOLLOWED_TOPIC_SCORE_BOOST,
+} from 'common/feed'
 
 export type TopicToInterestWeights = { [groupId: string]: number }
 export const userIdsToAverageTopicConversionScores: {
@@ -88,7 +92,10 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
           } else {
             userIdsToAverageTopicConversionScores[userId][groupId] = Math.min(
               groupScore +
-                FOLLOWED_TOPIC_CONVERSION_PRIOR * (hasFewInterests ? 0.5 : 0.3),
+                FOLLOWED_TOPIC_CONVERSION_PRIOR *
+                  (hasFewInterests
+                    ? NEW_USER_FOLLOWED_TOPIC_SCORE_BOOST
+                    : OLD_USER_FOLLOWED_TOPIC_SCORE_BOOST),
               1
             )
           }
