@@ -3,6 +3,15 @@
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
+const withOpacity = (hexColor: string, opacity: number) => {
+  return (
+    hexColor +
+    Math.round(opacity * 255)
+      .toString(16)
+      .padStart(2, '0')
+  )
+}
+
 // Dark mode optimized grays
 const gray = {
   50: '#FAFAFA',
@@ -16,7 +25,7 @@ const gray = {
   800: '#27272A',
   900: '#18181B',
   950: '#09090B',
-} as const;
+} as const
 
 // Tailwind emerald colors
 const emerald = {
@@ -30,59 +39,82 @@ const emerald = {
   700: '#047857',
   800: '#065F46',
   900: '#064E3B',
-} as const;
+} as const
 
-// Tailwind purple colors
-// const purple = {
-//   50: '#FAF6FE',
-//   100: '#F3EAFD',
-//   200: '#E7D9FB',
-//   300: '#D5BCF6',
-//   400: '#BB90F0',
-//   500: '#9B5DE5',
-//   600: '#8A46D7',
-//   700: '#7534BC',
-//   800: '#642F9A',
-//   900: '#52277C',
-//   950: '#36115A',
-// } as const;
+const blue = {
+  50: '#eff6ff',
+  100: '#dbeafe',
+  200: '#bfdbfe',
+  300: '#93c5fd',
+  400: '#60a5fa',
+  500: '#3b82f6',
+  600: '#2563eb',
+  700: '#1d4ed8',
+  800: '#1e40af',
+  900: '#1e3a8a',
+}
+
+const pink = {
+  50: '#fdf2f8',
+  100: '#fce7f3',
+  200: '#fbcfe8',
+  300: '#f9a8d4',
+  400: '#f472b6',
+  500: '#ec4899',
+  600: '#db2777',
+  700: '#be185d',
+  800: '#9d174d',
+  900: '#831843',
+}
 
 const purple = {
-  50:  '#FAF6FE',  // Kept same - lightest shade
-  100: '#F3EAFD',  // Kept same
-  200: '#E7D9FB',  // Kept same
-  300: '#C8A6F4',  // Made darker (was D5BCF6)
-  400: '#BB90F0',  // Kept same
-  500: '#9B5DE5',  // Kept same
-  600: '#8A46D7',  // Kept same
-  700: '#7534BC',  // Kept same
-  800: '#642F9A',  // Kept same
-  900: '#52277C',  // Kept same
-  950: '#36115A',  // Kept same
-} as const;
+  50: '#FAF6FE',
+  100: '#F3EAFD',
+  200: '#E7D9FB',
+  300: '#C8A6F4',
+  400: '#BB90F0',
+  500: '#9B5DE5',
+  600: '#8A46D7',
+  700: '#7534BC',
+  800: '#642F9A',
+  900: '#52277C',
+  950: '#36115A',
+} as const
 
+const red = {
+  500: '#FF0000',
+}
 
-const white = '#FFFFFF';
+const white = '#FFFFFF'
 
 // Mode-specific colors
 export const modes = {
   play: {
     primary: purple[300],
     sliderBackground: purple[500],
+    primaryButton: purple[600],
   },
   sweep: {
     primary: emerald[300],
     sliderBackground: emerald[500],
+    primaryButton: emerald[600],
   },
-} as const;
+} as const
 
 // Theme colors (used for UI components)
 export const Colors = {
   text: white,
+  textSecondary: gray[300],
   background: gray[950],
   icon: gray[400],
   border: gray[800],
-} as const;
+  yesButtonBackground: withOpacity(blue[500], 0.2),
+  yesButtonText: blue[400],
+  noButtonBackground: withOpacity(pink[600], 0.2),
+  noButtonText: pink[500],
+  dangerButtonBackground: withOpacity(red[500], 0.2),
+  dangerButtonText: red[500],
+} as const
 
 // Mode-specific colors (used for game modes)
-export const ModeColors = modes;
+export const ModeColors = modes

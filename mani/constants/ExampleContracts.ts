@@ -580,7 +580,7 @@ export const EXAMPLE_CONTRACTS = [
       {
         id: '9gdzACl8AA',
         prob: 0.73,
-        text: 'Suns',
+        text: 'Suns sdflskf lskfjl sj fldj sdlf lsjflsdj lsjflksdjlfsjl fs lkf lksd flkdsjf lsdj fljdsf sldkjf lsd lsdj flksdjlkf fsjldf jlksdjf lkds  flsdj lfdsjf lkdsjl fkj',
         color: '#4e46dc',
         index: 0,
         poolNo: 41.10735718596873,

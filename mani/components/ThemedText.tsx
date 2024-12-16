@@ -54,13 +54,13 @@ export function ThemedText({
   return (
     <Text
       style={[
+        style,
         { color: color || Colors.text },
         // color && { color: color },
         size && { ...fontSizes[size] },
         weight && { ...fontWeights[weight] },
         family && { ...fontFamilies[family] },
         italics && { fontStyle: 'italic' },
-        style,
       ]}
       {...rest}
     />
