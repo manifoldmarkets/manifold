@@ -2006,6 +2006,13 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-sports-fixtures': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { schedule: any[] },
+    props: z.object({}).strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

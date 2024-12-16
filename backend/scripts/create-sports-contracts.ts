@@ -15,7 +15,7 @@ async function fetchUpcomingFixtures(
   leagueId: string,
   apiKey: string
 ): Promise<Fixture[]> {
-  const API_URL = `https://www.thesportsdb.com/api/v1/json/${apiKey}/eventsnextleague.php`
+  const API_URL = `https://www.thesportsdb.com/api/v2/json/${apiKey}/eventsnextleague.php`
 
   try {
     const response = await axios.get<{ events: Fixture[] }>(API_URL, {
@@ -75,8 +75,7 @@ async function createMarketsFromFixtures() {
     throw new Error('SportsDB API key is missing. Set it in your environment.')
   }
 
-  // Get the environment from command-line arguments
-  const env = argv[2] // "dev" or "prod"
+  const env = argv[2]
   if (!env || (env !== 'dev' && env !== 'prod')) {
     throw new Error(
       'Invalid environment. Pass "dev" or "prod" as a command-line argument.'
@@ -85,10 +84,14 @@ async function createMarketsFromFixtures() {
 
   const apiUrl =
     env === 'dev'
-      ? 'https://dev.manifold.markets/api/v0/market'
-      : 'https://manifold.markets/api/v0/market'
+      ? 'https://localhost:3000/api/v0/market'
+      : 'https://api.manifold.markets/v0/market'
 
   const apiKey = env === 'dev' ? MANIFOLD_API_KEY_DEV : MANIFOLD_API_KEY
+
+  console.log(`Environment: ${env}`)
+  console.log(`API URL: ${apiUrl}`)
+  console.log(`API Key: ${apiKey}`)
 
   if (!apiKey) {
     throw new Error(

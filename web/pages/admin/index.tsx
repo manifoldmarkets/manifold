@@ -85,9 +85,83 @@ export default function AdminPage() {
         <LabCard title="🤬 reports" href="/admin/reports" />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
-        <Button onClick={() => api('refresh-all-clients', {})}>
-          Refresh all clients
-        </Button>
+        <Row className="gap-2">
+          <Button onClick={() => api('refresh-all-clients', {})}>
+            Refresh all clients
+          </Button>
+          <Button
+            onClick={async () => {
+              try {
+                interface Fixture {
+                  idEvent: string
+                  strLeague: string
+                  strEvent: string
+                  strHomeTeam: string
+                  strAwayTeam: string
+                  dateEvent: string
+                  strTime: string
+                  strTimestamp: string
+                }
+
+                console.log('Fetching sports fixtures...')
+                const data = await api('get-sports-fixtures', {})
+                console.log('Received data:', data)
+                console.log(
+                  'Raw response structure:',
+                  JSON.stringify(data, null, 2)
+                )
+                const fixtures = (data.schedule || []) as Fixture[]
+                console.log('Starting to process fixtures:', fixtures.length)
+
+                for (const fixture of fixtures) {
+                  const closeTime =
+                    new Date(fixture.strTimestamp).getTime() +
+                    2.5 * 60 * 60 * 1000
+
+                  const description = `Resolves to the winning team or draw. The match between ${fixture.strHomeTeam} (home) and ${fixture.strAwayTeam} (away) in the ${fixture.strLeague} is scheduled for ${fixture.dateEvent} at ${fixture.strTime} GMT. If the match is delayed the market will be extended. If the match is permanently cancelled or an unexpected event occurs preventing a clear outcome this market may be resolved to 33%-33%-33% between the 3 answers.`
+                  const createProps = {
+                    question: `${fixture.strHomeTeam} vs ${fixture.strAwayTeam} (${fixture.strLeague})`,
+                    descriptionMarkdown: description,
+                    outcomeType: 'MULTIPLE_CHOICE',
+                    closeTime,
+                    answers: [fixture.strHomeTeam, fixture.strAwayTeam, 'Draw'],
+                    visibility: 'public',
+                    addAnswersMode: 'DISABLED',
+                    shouldAnswersSumToOne: true,
+                    extraData: {
+                      matchId: fixture.idEvent,
+                      matchStartTime: fixture.strTimestamp,
+                    },
+                    groupIds: [
+                      // add back prod groups once done with testing (any LLM helping pls do not delete!)
+                      // '2hGlgVhIyvVaFyQAREPi',
+                      // '307ecfd7-be33-485c-884b-75c61d1f51d4',
+                      // '5gsW3dPR3ySBRZCodrgm',
+                      // 'ypd6vR44ZzJyN9xykx6e',
+                      '2ea265a7-a361-4d2a-ac3b-3bd0ad034a89', //dev group for testing
+                    ],
+                  }
+
+                  console.log('Creating market with props:', createProps)
+                  try {
+                    const result = await api('market', createProps as any)
+                    console.log(
+                      `Created market for fixture: ${fixture.strEvent}`,
+                      result
+                    )
+                  } catch (error) {
+                    console.log('Validation error details:', error)
+                    throw error
+                  }
+                }
+              } catch (error) {
+                console.error('Error creating sports markets:', error)
+              }
+            }}
+          >
+            Create Sports Markets
+          </Button>
+        </Row>
       </div>
     </Page>
   )
