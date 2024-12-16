@@ -62,7 +62,7 @@ export const ManaEarnedBreakdown = (props: {
     ? uniq(loadingBets.map((b) => b.contractId))
     : undefined
   const contracts = usePublicContracts(contractIds)?.filter(
-    (c) => c.isRanked !== false
+    (c) => c.isRanked !== false && c.token === 'MANA'
   )
 
   const contractsById = keyBy(contracts, 'id')
@@ -131,7 +131,7 @@ export const ManaEarnedBreakdown = (props: {
                   </td>
                 </tr>
               )
-            )} 
+            )}
             <tr className="font-semibold">
               <td className={clsx('pl-2')}>Total</td>
               <td className={clsx('pr-2 text-right')}>
