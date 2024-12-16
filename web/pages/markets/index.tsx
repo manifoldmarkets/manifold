@@ -315,6 +315,7 @@ const OrganizableMarketsPage = (props: { user: User | null; tabs: Tab[] }) => {
             <div ref={provided.innerRef} {...provided.droppableProps}>
               <QueryUncontrolledTabs
                 className="bg-canvas-50 sticky top-0 z-10"
+                tabInUrlKey="top-tab"
                 tabs={PARENT_TABS.map((tab, index) => ({
                   ...tab,
                   title: tab.title,

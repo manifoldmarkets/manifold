@@ -240,6 +240,7 @@ export function QueryUncontrolledTabs(
     scrollToTop?: boolean
     minimalist?: boolean
     saveTabInLocalStorageKey?: string
+    tabInUrlKey?: string
   }
 ) {
   const {
@@ -248,13 +249,14 @@ export function QueryUncontrolledTabs(
     onClick,
     scrollToTop,
     saveTabInLocalStorageKey,
+    tabInUrlKey = 'tab',
     ...rest
   } = props
   const router = useRouter()
   const pathName = usePathname()
   const { searchParams, createQueryString } = useDefinedSearchParams()
   const selectedIdx = tabs.findIndex((t) =>
-    isTabSelected(searchParams, 'tab', t)
+    isTabSelected(searchParams, tabInUrlKey, t)
   )
   const [savedTabIndex, setSavedTabIndex] = usePersistentLocalState<
     number | undefined
@@ -283,7 +285,7 @@ export function QueryUncontrolledTabs(
         onClick={(title) => {
           if (scrollToTop) window.scrollTo({ top: 0 })
           router.replace(
-            pathName + '?' + createQueryString('tab', title),
+            pathName + '?' + createQueryString(tabInUrlKey, title),
             undefined,
             { shallow: true }
           )
@@ -299,7 +301,7 @@ export function QueryUncontrolledTabs(
       onClick={(title) => {
         if (scrollToTop) window.scrollTo({ top: 0 })
         router.replace(
-          pathName + '?' + createQueryString('tab', title),
+          pathName + '?' + createQueryString(tabInUrlKey, title),
           undefined,
           { shallow: true }
         )
