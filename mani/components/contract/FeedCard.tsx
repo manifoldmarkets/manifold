@@ -16,13 +16,17 @@ import { Button } from 'components/buttons/Button'
 import { YesNoButton } from 'components/buttons/YesNoButtons'
 import { getDisplayProbability } from 'common/calculate'
 import { AnswerProbability, BinaryProbability } from './Probability'
+import { useState } from 'react'
+import { BetPanel } from './bet/BetPanel'
+import { BinaryBetButtons } from './bet/BinaryBetButtons'
+import { MultiBetButtons } from './bet/MultiBetButtons'
 
 export function FeedCard({ contract }: { contract: Contract }) {
   const isBinaryMc = isBinaryMulti(contract)
   const isMultipleChoice =
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
-
+  const [betPanelOpen, setBetPanelOpen] = useState(false)
   const color = useColor()
   return (
     <Col
@@ -93,17 +97,14 @@ export function FeedCard({ contract }: { contract: Contract }) {
                 >
                   {answer.text}
                 </ThemedText>
-                <Row style={{ gap: 12, alignItems: 'center' }}>
+                <Row style={{ gap: 12, alignItems: 'center', flexShrink: 0 }}>
                   <AnswerProbability
                     contract={contract as MultiContract}
                     answerId={answer.id}
                     size="md"
                     style={{ flexShrink: 0 }}
                   />
-                  <Row style={{ gap: 8, alignItems: 'center' }}>
-                    <YesNoButton variant="yes" size="xs" />
-                    <YesNoButton variant="no" size="xs" />
-                  </Row>
+                  <MultiBetButtons contract={contract} answerId={answer.id} />
                 </Row>
               </Row>
             ))}
@@ -116,10 +117,7 @@ export function FeedCard({ contract }: { contract: Contract }) {
           </Row>
         </>
       ) : (
-        <Row style={{ gap: 12, alignItems: 'center' }}>
-          <YesNoButton variant="yes" size="sm" style={{ flex: 1 }} />
-          <YesNoButton variant="no" size="sm" style={{ flex: 1 }} />
-        </Row>
+        <BinaryBetButtons contract={contract} />
       )}
     </Col>
   )

@@ -9,7 +9,7 @@ export function YesNoButton(props: ButtonProps) {
   return (
     <Button
       {...props}
-      title={isYes ? 'Yes' : 'No'}
+      title={props.title ?? (isYes ? 'Yes' : 'No')}
       style={[{ width: getWidth(props.size) }, props.style]}
       textProps={{
         weight: 'normal',
