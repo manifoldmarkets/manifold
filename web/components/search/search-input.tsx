@@ -28,7 +28,10 @@ export const SearchInput = (props: {
         className={clsx('w-full', hasQuery && 'pr-10')}
       />
       {hasQuery && (
-        <IconButton className="absolute right-2 top-1/2 -translate-y-1/2">
+        <IconButton
+          className="absolute right-2 top-1/2 -translate-y-1/2"
+          onClick={() => setValue('')}
+        >
           {loading ? (
             <LoadingIndicator size="sm" />
           ) : (
