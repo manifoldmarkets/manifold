@@ -124,12 +124,7 @@ module.exports = {
       },
       {
         source: '/this-month',
-        destination: '/markets?f=closing-this-month&s=most-popular',
-        permanent: true,
-      },
-      {
-        source: '/markets',
-        destination: '/browse',
+        destination: '/browse?f=closing-this-month&s=most-popular',
         permanent: true,
       },
       {
@@ -158,8 +153,8 @@ module.exports = {
         permanent: true,
       },
       {
-        source: '/browse/:slug*',
-        destination: '/topic/:slug*',
+        source: '/browse/:slug+',
+        destination: '/topic/:slug+',
         permanent: false,
       },
       {
