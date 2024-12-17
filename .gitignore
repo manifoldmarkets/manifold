@@ -6,4 +6,4 @@ yarn-error.log
 dev
 firebase-debug.log
 dev-mantic-markets-firebase-adminsdk*.json
-mantic-markets-firebase-adminsdk*.json
+mantic-markets-firebase-adminsdk*.jsonbackend/scripts/fetch-sports.ts
