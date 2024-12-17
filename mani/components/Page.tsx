@@ -5,12 +5,21 @@ import { SliderHeader } from './layout/SliderHeader'
 import { useBottomTabOverflow } from './ui/TabBarBackground.ios'
 import { ThemedView } from './ThemedView'
 import { Colors } from 'constants/Colors'
+import { usePathname } from 'expo-router'
 
 const HEADER_HEIGHT = 250
 
+export const TabPaths = ['/', '/live', '/notifications', '/shop', 'profile']
+export function isTabPath(pathname: string) {
+  return TabPaths.includes(pathname)
+}
+
 export default function Page({ children }: PropsWithChildren) {
   const scrollRef = useAnimatedRef<Animated.ScrollView>()
-  const bottom = useBottomTabOverflow()
+  const pathname = usePathname()
+  const isInTabs = isTabPath(pathname)
+  const bottom = isInTabs ? useBottomTabOverflow() : 0
+  console.log('PATHNAME', pathname)
 
   return (
     <View style={styles.container}>
@@ -26,7 +35,6 @@ export default function Page({ children }: PropsWithChildren) {
     </View>
   )
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

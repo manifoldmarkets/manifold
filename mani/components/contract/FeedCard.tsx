@@ -1,29 +1,31 @@
-import {
-  BinaryContract,
-  Contract,
-  MultiContract,
-} from 'common/contract'
+import { BinaryContract, Contract, MultiContract } from 'common/contract'
 import { ThemedText } from 'components/ThemedText'
+import { TouchableOpacity } from 'react-native'
 import { isBinaryMulti } from 'common/contract'
 import { Row } from 'components/layout/row'
-import { Col } from 'components/layout/col'
 import { useColor } from 'hooks/useColor'
-import { YesNoButton } from 'components/buttons/YesNoButtons'
 import { AnswerProbability, BinaryProbability } from './Probability'
 import { useState } from 'react'
-import { BetPanel } from './bet/BetPanel'
 import { BinaryBetButtons } from './bet/BinaryBetButtons'
 import { MultiBetButtons } from './bet/MultiBetButtons'
+import { useRouter } from 'expo-router'
 
 export function FeedCard({ contract }: { contract: Contract }) {
+  const router = useRouter()
   const isBinaryMc = isBinaryMulti(contract)
   const isMultipleChoice =
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
   const [betPanelOpen, setBetPanelOpen] = useState(false)
   const color = useColor()
+
+  const handlePress = () => {
+    router.push(`/${contract.id}`)
+  }
+
   return (
-    <Col
+    <TouchableOpacity
+      onPress={handlePress}
       style={{
         gap: 12,
         paddingVertical: 16,
@@ -98,7 +100,11 @@ export function FeedCard({ contract }: { contract: Contract }) {
                     size="md"
                     style={{ flexShrink: 0 }}
                   />
-                  <MultiBetButtons contract={contract} answerId={answer.id} />
+                  <MultiBetButtons
+                    contract={contract}
+                    answerId={answer.id}
+                    size="xs"
+                  />
                 </Row>
               </Row>
             ))}
@@ -113,6 +119,6 @@ export function FeedCard({ contract }: { contract: Contract }) {
       ) : (
         <BinaryBetButtons contract={contract} />
       )}
-    </Col>
+    </TouchableOpacity>
   )
 }
