@@ -19,6 +19,7 @@ import { AnswerProbability, BinaryProbability } from './Probability'
 import { useState } from 'react'
 import { BetPanel } from './bet/BetPanel'
 import { BinaryBetButtons } from './bet/BinaryBetButtons'
+import { MultiBetButtons } from './bet/MultiBetButtons'
 
 export function FeedCard({ contract }: { contract: Contract }) {
   const isBinaryMc = isBinaryMulti(contract)
@@ -96,17 +97,14 @@ export function FeedCard({ contract }: { contract: Contract }) {
                 >
                   {answer.text}
                 </ThemedText>
-                <Row style={{ gap: 12, alignItems: 'center' }}>
+                <Row style={{ gap: 12, alignItems: 'center', flexShrink: 0 }}>
                   <AnswerProbability
                     contract={contract as MultiContract}
                     answerId={answer.id}
                     size="md"
                     style={{ flexShrink: 0 }}
                   />
-                  <Row style={{ gap: 8, alignItems: 'center' }}>
-                    <YesNoButton variant="yes" size="xs" />
-                    <YesNoButton variant="no" size="xs" />
-                  </Row>
+                  <MultiBetButtons contract={contract} answerId={answer.id} />
                 </Row>
               </Row>
             ))}

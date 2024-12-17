@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Pressable,
   TextInput,
+  Keyboard,
 } from 'react-native'
 
 export function BetAmountInput({
@@ -32,8 +33,6 @@ export function BetAmountInput({
     setAmount(validAmount)
     setDisplayValue(validAmount.toString())
   }
-
-  console.log('amount', amount)
 
   const handleTextInput = (text: string) => {
     // First, just update what's displayed
@@ -101,6 +100,12 @@ export function BetAmountInput({
             onChangeText={handleTextInput}
             keyboardType="decimal-pad"
             autoFocus={true}
+            returnKeyType="done"
+            onSubmitEditing={() => {
+              // Handle what happens when enter/done is pressed
+              // For example, you might want to blur the input
+              Keyboard.dismiss()
+            }}
           />
         </Row>
         <Col style={{ gap: 8 }}>
