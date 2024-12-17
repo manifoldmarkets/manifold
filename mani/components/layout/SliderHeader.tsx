@@ -6,6 +6,7 @@ import { TokenSlider } from 'components/TokenSlider'
 import { usePathname, useRouter } from 'expo-router'
 import { IconSymbol } from 'components/ui/IconSymbol'
 import { TouchableOpacity } from 'react-native'
+import { isTabPath } from 'components/Page'
 
 export function SliderHeader() {
   const color = useColor()
@@ -14,7 +15,7 @@ export function SliderHeader() {
   const router = useRouter()
 
   // Check if we're in a tab route - should match paths like /(tabs)/live, /(tabs)/profile, etc.
-  const isInTabs = pathname.includes('(tabs)')
+  const isInTabs = isTabPath(pathname)
 
   return (
     <Row
@@ -23,12 +24,13 @@ export function SliderHeader() {
         alignItems: 'center',
         width: '100%',
         gap: 8,
-        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: color.background,
       }}
     >
       {!isInTabs && (
         <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="chevron.left" size={24} color={color.primary} />
+          <IconSymbol name="arrow.left" size={24} color={color.textTertiary} />
         </TouchableOpacity>
       )}
 

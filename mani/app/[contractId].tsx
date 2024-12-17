@@ -1,83 +1,57 @@
 import { useLocalSearchParams } from 'expo-router'
-import { Contract } from 'common/contract'
-import { Col } from 'components/layout/col'
-import { Row } from 'components/layout/row'
 import { ThemedText } from 'components/ThemedText'
 import { useColor } from 'hooks/useColor'
-import { BinaryProbability } from 'components/contract/Probability'
-import { AnswerProbability } from 'components/contract/Probability'
+import {
+  BinaryContract,
+  Contract,
+  isBinaryMulti,
+  MultiContract,
+} from 'common/contract'
+import { EXAMPLE_CONTRACTS } from 'constants/ExampleContracts'
 import { BinaryBetButtons } from 'components/contract/bet/BinaryBetButtons'
-import { MultiBetButtons } from 'components/contract/bet/MultiBetButtons'
-import { isBinaryMulti } from 'common/contract'
 import Page from 'components/Page'
+import { BinaryOverview } from 'components/contract/overview/BinaryOverview'
+import { MultiOverview } from 'components/contract/overview/MultiOverview'
 
 export default function ContractPage() {
   const { contractId } = useLocalSearchParams()
   const color = useColor()
 
-  // TODO: Fetch contract data using contractId
-  //   const contract: Contract = {} // Replace with actual contract fetch
+  //   TODO: Fetch contract data using contractId
+  const contract = EXAMPLE_CONTRACTS.find((contract) => {
+    return contract.id === contractId
+  }) as Contract
 
-  //   const isBinaryMc = isBinaryMulti(contract)
-  //   const isMultipleChoice =
-  //     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
-  //   const isBinary = !isBinaryMc && !isMultipleChoice
+  if (!contract) {
+    return <ThemedText>Contract not found</ThemedText>
+  }
+
+  console.log('CONTRACT', contract)
+
+  const isBinaryMc = isBinaryMulti(contract)
+  const isMultipleChoice =
+    contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
+  const isBinary = !isBinaryMc && !isMultipleChoice
 
   return (
     <Page>
-      <Col style={{ padding: 16, gap: 16 }}>
-        <ThemedText>Contract Page</ThemedText>
-        {/* <ThemedText size="xl" weight="semibold">
-          {contract.question}
-        </ThemedText>
+      <ThemedText size="2xl" weight="semibold" style={{ paddingTop: 16 }}>
+        {contract.question}
+      </ThemedText>
 
-        {isBinary && (
-          <Row style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <BinaryProbability contract={contract} size="2xl" />
-          </Row>
-        )}
+      {isBinary && <BinaryOverview contract={contract as BinaryContract} />}
 
-        {isMultipleChoice ? (
-          <Col style={{ gap: 12 }}>
-            {contract.answers?.map((answer) => (
-              <Row
-                key={answer.id}
-                style={{
-                  width: '100%',
-                  justifyContent: 'space-between',
-                  gap: 8,
-                  alignItems: 'center',
-                }}
-              >
-                <ThemedText
-                  size="md"
-                  color={color.textSecondary}
-                  style={{ flex: 1 }}
-                >
-                  {answer.text}
-                </ThemedText>
+      {isMultipleChoice ? (
+        <MultiOverview contract={contract as MultiContract} />
+      ) : (
+        <BinaryBetButtons contract={contract} />
+      )}
 
-                <Row style={{ gap: 12, alignItems: 'center' }}>
-                  <AnswerProbability
-                    contract={contract}
-                    answerId={answer.id}
-                    size="lg"
-                  />
-                  <MultiBetButtons contract={contract} answerId={answer.id} />
-                </Row>
-              </Row>
-            ))}
-          </Col>
-        ) : (
-          <BinaryBetButtons contract={contract} />
-        )}
-
-        {contract.description && (
+      {/* {contract.description && (
           <ThemedText color={color.textSecondary}>
             {contract.description}
           </ThemedText>
         )} */}
-      </Col>
     </Page>
   )
 }

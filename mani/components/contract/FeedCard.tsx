@@ -100,7 +100,11 @@ export function FeedCard({ contract }: { contract: Contract }) {
                     size="md"
                     style={{ flexShrink: 0 }}
                   />
-                  <MultiBetButtons contract={contract} answerId={answer.id} />
+                  <MultiBetButtons
+                    contract={contract}
+                    answerId={answer.id}
+                    size="xs"
+                  />
                 </Row>
               </Row>
             ))}

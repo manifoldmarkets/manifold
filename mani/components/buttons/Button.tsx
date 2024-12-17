@@ -1,6 +1,11 @@
 import { FontSize, ThemedText, ThemedTextProps } from 'components/ThemedText'
 import { useColor } from 'hooks/useColor'
-import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
+import {
+  StyleProp,
+  TouchableOpacity,
+  TouchableOpacityProps,
+  ViewStyle,
+} from 'react-native'
 
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
 type ButtonVariant = 'primary' | 'yes' | 'no' | 'danger' // add more variants as needed
@@ -11,6 +16,7 @@ export interface ButtonProps extends TouchableOpacityProps {
   size?: ButtonSize
   variant?: ButtonVariant
   textProps?: ThemedTextProps
+  style?: StyleProp<ViewStyle>
 }
 
 const sizeStyles: Record<
@@ -19,17 +25,17 @@ const sizeStyles: Record<
 > = {
   xs: {
     padding: 2,
-    borderRadius: 4,
+    borderRadius: 1,
     fontSize: 'sm',
   },
   sm: {
-    padding: 4,
+    padding: 3,
     borderRadius: 4,
     fontSize: 'sm',
   },
   md: {
-    padding: 8,
-    borderRadius: 8,
+    padding: 4,
+    borderRadius: 4,
     fontSize: 'md',
   },
   lg: {

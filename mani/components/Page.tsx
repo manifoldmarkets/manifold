@@ -9,11 +9,17 @@ import { usePathname } from 'expo-router'
 
 const HEADER_HEIGHT = 250
 
+export const TabPaths = ['/', '/live', '/notifications', '/shop', 'profile']
+export function isTabPath(pathname: string) {
+  return TabPaths.includes(pathname)
+}
+
 export default function Page({ children }: PropsWithChildren) {
   const scrollRef = useAnimatedRef<Animated.ScrollView>()
   const pathname = usePathname()
-  const isInTabs = pathname.startsWith('/(tabs)/')
+  const isInTabs = isTabPath(pathname)
   const bottom = isInTabs ? useBottomTabOverflow() : 0
+  console.log('PATHNAME', pathname)
 
   return (
     <View style={styles.container}>
