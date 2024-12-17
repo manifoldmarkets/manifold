@@ -25,7 +25,7 @@ const sizeStyles: Record<
 > = {
   xs: {
     padding: 2,
-    borderRadius: 1,
+    borderRadius: 4,
     fontSize: 'sm',
   },
   sm: {

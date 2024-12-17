@@ -3,22 +3,18 @@ import { YesNoButton } from 'components/buttons/YesNoButtons'
 import { Row } from 'components/layout/row'
 import { useState } from 'react'
 import { BetPanel, BinaryOutcomes } from './BetPanel'
-import { ButtonProps } from 'react-native'
-import { StyleProp, ViewStyle } from 'react-native'
+import { ButtonProps } from 'components/buttons/Button'
 
 export function MultiBetButtons({
   contract,
   answerId,
   gap = 8,
-  style,
   ...rest
 }: {
   contract: Contract
   answerId: string
   gap?: number
-  style?: StyleProp<ViewStyle>
-  rest?: ButtonProps
-}) {
+} & ButtonProps) {
   const [openBetPanel, setOpenBetPanel] = useState(false)
   const [outcome, setOutcome] = useState<BinaryOutcomes>('YES')
 
@@ -33,13 +29,11 @@ export function MultiBetButtons({
         <YesNoButton
           onPress={() => handleBetClick('YES')}
           variant="yes"
-          style={style}
           {...rest}
         />
         <YesNoButton
           onPress={() => handleBetClick('NO')}
           variant="no"
-          style={style}
           {...rest}
         />
       </Row>
