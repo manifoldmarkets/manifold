@@ -15,13 +15,15 @@ import { useBottomTabOverflow } from './ui/TabBarBackground.ios'
 import { useColor } from 'hooks/useColor'
 import { ThemedView } from './ThemedView'
 import { Colors } from 'constants/Colors'
-import { Stack } from 'expo-router'
+import { Stack, usePathname } from 'expo-router'
 
 const HEADER_HEIGHT = 250
 
 export default function Page({ children }: PropsWithChildren) {
   const scrollRef = useAnimatedRef<Animated.ScrollView>()
-  const bottom = useBottomTabOverflow()
+  const pathname = usePathname()
+  const isInTabs = pathname.startsWith('/(tabs)/')
+  const bottom = isInTabs ? useBottomTabOverflow() : 0
 
   const color = useColor()
   return (
@@ -38,7 +40,6 @@ export default function Page({ children }: PropsWithChildren) {
     </View>
   )
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

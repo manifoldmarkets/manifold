@@ -147,6 +147,13 @@ function RootLayout() {
       <SafeAreaView style={styles.container}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="[contractId]"
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
         </Stack>
 
         <SplashAuth

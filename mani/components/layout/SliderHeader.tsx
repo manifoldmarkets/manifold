@@ -1,30 +1,52 @@
 import { useColor } from 'hooks/useColor'
 import { useTokenMode } from 'hooks/useTokenMode'
-import { Text } from 'react-native'
 import { Row } from './row'
 import { ThemedText } from 'components/ThemedText'
 import { TokenSlider } from 'components/TokenSlider'
+import { usePathname, useRouter } from 'expo-router'
+import { IconSymbol } from 'components/ui/IconSymbol'
+import { TouchableOpacity } from 'react-native'
 
 export function SliderHeader() {
   const color = useColor()
   const { mode } = useTokenMode()
-  console.log('MODE', mode)
+  const pathname = usePathname()
+  const router = useRouter()
+
+  // Check if we're in a tab route - should match paths like /(tabs)/live, /(tabs)/profile, etc.
+  const isInTabs = pathname.includes('(tabs)')
+
   return (
     <Row
       style={{
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
         gap: 8,
+        paddingHorizontal: 16,
       }}
     >
-      <ThemedText color={color.primary} family={'JetBrainsMono'} size="md">
-        <ThemedText weight={'bold'} color={color.primary}>
-          0{' '}
+      {!isInTabs && (
+        <TouchableOpacity onPress={() => router.back()}>
+          <IconSymbol name="chevron.left" size={24} color={color.primary} />
+        </TouchableOpacity>
+      )}
+
+      <Row
+        style={{
+          marginLeft: 'auto',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <ThemedText color={color.primary} family={'JetBrainsMono'} size="md">
+          <ThemedText weight={'bold'} color={color.primary}>
+            0{' '}
+          </ThemedText>
+          {mode === 'play' ? 'Mana' : 'Sweep'}
         </ThemedText>
-        {mode === 'play' ? 'Mana' : 'Sweep'}
-      </ThemedText>
-      <TokenSlider />
+        <TokenSlider />
+      </Row>
     </Row>
   )
 }
