@@ -95,12 +95,13 @@ export default function AdminPage() {
               try {
                 console.log('Fetching sports fixtures...')
                 const data = await api('get-sports-fixtures', {})
-                console.log('Received data:', data)
-                // For testing, just take the first fixture
                 const fixtures = (data.schedule || []) as Fixture[]
-                console.log('Total fixtures available:', fixtures.length)
-                const fixturesToProcess = process.env.NODE_ENV === 'development' ? fixtures.slice(0, 1) : fixtures
-                console.log('Processing fixtures:', fixturesToProcess.length)
+                const fixturesToProcess =
+                  process.env.NODE_ENV === 'development'
+                    ? fixtures.slice(0, 1)
+                    : fixtures
+
+                const createdMarkets: { id: string; isEPL: boolean }[] = []
 
                 for (const fixture of fixturesToProcess) {
                   const closeTime =
@@ -150,16 +151,33 @@ export default function AdminPage() {
                     groupIds,
                   }
 
-                  console.log('Creating market with props:', createProps)
                   try {
                     const result = await api('market', createProps as any)
+                    createdMarkets.push({ id: result.id, isEPL })
+                    console.log(`Created market: ${result.id}`)
+                  } catch (error) {
+                    console.error('Failed to create market:', error)
+                  }
+                }
+
+                console.log('Creating cash contracts for created markets...')
+                for (const { id: marketId, isEPL } of createdMarkets) {
+                  try {
+                    const subsidyAmount = isEPL ? 25 : 50
+
+                    await api('create-cash-contract', {
+                      manaContractId: marketId,
+                      subsidyAmount,
+                    })
+
                     console.log(
-                      `Created market for fixture: ${fixture.strEvent}`,
-                      result
+                      `Created cash contract for market ID: ${marketId} with subsidy ${subsidyAmount}`
                     )
                   } catch (error) {
-                    console.log('Validation error details:', error)
-                    throw error
+                    console.error(
+                      `Failed to create cash contract for ${marketId}:`,
+                      error
+                    )
                   }
                 }
               } catch (error) {
