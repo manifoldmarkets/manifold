@@ -15,12 +15,26 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:react/recommended',
     'plugin:react/jsx-runtime',
+    'prettier',
   ],
   settings: {
     react: { version: 'detect' },
   },
   rules: {
-    'no-unused-vars': 'off',
+    'react/display-name': 'off',
+    'react/no-unescaped-entities': 'off',
+    'react/jsx-no-target-blank': 'off',
+    'react/no-unstable-nested-components': ['error', { allowAsProps: true }],
+    '@typescript-eslint/no-empty-function': 'off',
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
+    'linebreak-style': [
+      'error',
+      process.platform === 'win32' ? 'windows' : 'unix',
+    ],
+    'lodash/import-scope': [2, 'member'],
+    'react-hooks/exhaustive-deps': 'off',
+    'no-constant-condition': 'off',
     '@typescript-eslint/no-unused-vars': [
       'warn',
       {
@@ -39,7 +53,5 @@ module.exports = {
         argsIgnorePattern: '^_',
       },
     ],
-    'react/display-name': 'off',
-    'react/prop-types': 'off',
   },
 }
