@@ -32,7 +32,6 @@ module.exports = {
       'error',
       process.platform === 'win32' ? 'windows' : 'unix',
     ],
-    'lodash/import-scope': [2, 'member'],
     'react-hooks/exhaustive-deps': 'off',
     'no-constant-condition': 'off',
     '@typescript-eslint/no-unused-vars': [
