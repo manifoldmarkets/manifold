@@ -1,5 +1,4 @@
 'use client'
-import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { LiteGroup } from 'common/group'
@@ -10,10 +9,9 @@ import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
-import { track, trackCallback } from 'web/lib/service/analytics'
+import { track } from 'web/lib/service/analytics'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { Input } from './widgets/input'
 import { FullUser } from 'common/api/user-types'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
@@ -41,6 +39,7 @@ import { FilterPill } from './search/filter-pills'
 import { ALL_PARENT_TOPICS, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { Carousel } from './widgets/carousel'
 import { isEqual } from 'lodash'
+import { SearchInput } from './search/search-input'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -145,7 +144,7 @@ export type SearchParams = {
   [FOR_YOU_KEY]: BinaryDigit
   [MARKET_TIER_KEY]: TierParamsType
   [TOPIC_FILTER_KEY]: string
-  [SWEEPIES_KEY]: BinaryDigit
+  [SWEEPIES_KEY]: '0' | '1' | '2'
   [GROUP_IDS_KEY]: string
 }
 
@@ -173,23 +172,9 @@ export type SearchState = {
   users: FullUser[] | undefined
   topics: LiteGroup[] | undefined
   shouldLoadMore: boolean
-  // mirror of search param state, but to determine if the first load should load new data
-  lastSearchParams?: {
-    query: string
-    sort: Sort
-    filter: Filter
-    contractType: ContractTypeType
-    topicSlug: string
-    isPrizeMarket: '1' | '0'
-    forYou: '1' | '0'
-    marketTier: TierParamsType
-    topicFilter: string
-    isSweepies: '1' | '0'
-    gids: string
-  }
 }
 
-export function Search(props: {
+type SearchProps = {
   persistPrefix: string
   defaultSort?: Sort
   defaultFilter?: Filter
@@ -215,7 +200,9 @@ export function Search(props: {
   hideAvatars?: boolean
   initialTopics?: LiteGroup[]
   showTopicsFilterPills?: boolean
-}) {
+}
+
+export function Search(props: SearchProps) {
   const {
     defaultSort,
     defaultFilter,
@@ -271,50 +258,36 @@ export function Search(props: {
 
   const showSearchTypes = !!query && !hideSearchTypes && !contractsOnly
 
+  const actuallySearchParams = searchParams
+  if (topicSlug) actuallySearchParams[TOPIC_FILTER_KEY] = topicSlug
+  if (hideSweepsToggle) actuallySearchParams[SWEEPIES_KEY] = '2'
+
   const {
     contracts,
     users,
     topics,
     loading,
     shouldLoadMore,
-    querySearchResults,
-  } = useSearchResults(
+    loadMoreContracts,
+  } = useSearchResults({
     persistPrefix,
-    searchParams,
-    showSearchTypes,
-    topicSlug,
+    searchParams: actuallySearchParams,
+    includeUsersAndTopics: showSearchTypes,
+    isReady,
     additionalFilter,
-    hideSweepsToggle
-  )
+  })
 
   const showTopics = topics && topics.length > 0 && query && query.length > 0
-
-  const showUsers = users && users.length > 0 && query !== ''
+  const showUsers = users && users.length > 0 && query && query.length > 0
 
   const onChange = (changes: Partial<SearchParams>) => {
     const updatedParams = { ...changes }
-
-    if (changes[FOR_YOU_KEY] === '1' || topicSlug != '') {
-      updatedParams[TOPIC_FILTER_KEY] = ''
-    }
 
     setSearchParams(updatedParams)
     if (isWholePage) window.scrollTo(0, 0)
   }
 
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
-
-  const showContractFilters = !hideContractFilters
-
-  useDebouncedEffect(
-    () => {
-      if (isReady) {
-        querySearchResults(true)
-      }
-    },
-    50,
-    [topicSlug, isReady, JSON.stringify(searchParams)]
-  )
 
   const emptyContractsState =
     props.emptyState ??
@@ -362,7 +335,6 @@ export function Search(props: {
       </Col>
     ))
 
-  const hasQuery = query !== ''
   const selectedTopic = groupIds
     ? ALL_PARENT_TOPICS.find((topic) =>
         TOPICS_TO_SUBTOPICS[topic].some((subtopic) =>
@@ -375,52 +347,28 @@ export function Search(props: {
       <Col
         className={clsx(
           'sticky top-0 z-20',
-          !headerClassName && ' bg-canvas-50',
+          !headerClassName && 'bg-canvas-50',
           headerClassName
         )}
       >
         {!hideSearch && (
-          <Row className="relative w-full">
-            <Input
-              type="text"
-              inputMode="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onBlur={trackCallback('search', { query: query })}
-              placeholder={
-                searchType === 'Users'
-                  ? 'Search users'
-                  : searchType === 'Questions' || contractsOnly
-                  ? 'Search questions'
-                  : isMobile
-                  ? 'Search'
-                  : 'Search questions, users, and topics'
-              }
-              className={clsx('w-full')}
-              style={{
-                paddingRight: hasQuery ? '40px' : '0px',
-              }}
-              autoFocus={autoFocus}
-            />
-            <Row className="absolute right-2 top-1/2 -translate-y-1/2">
-              {hasQuery && (
-                <IconButton
-                  size={'2xs'}
-                  onClick={() => {
-                    onChange({ [QUERY_KEY]: '' })
-                  }}
-                >
-                  {loading ? (
-                    <LoadingIndicator size="sm" />
-                  ) : (
-                    <XIcon className={'h-5 w-5 rounded-full'} />
-                  )}
-                </IconButton>
-              )}
-            </Row>
-          </Row>
+          <SearchInput
+            value={query}
+            setValue={setQuery}
+            placeholder={
+              searchType === 'Users'
+                ? 'Search users'
+                : searchType === 'Questions' || contractsOnly
+                ? 'Search questions'
+                : isMobile
+                ? 'Search'
+                : 'Search questions, users, and topics'
+            }
+            autoFocus={autoFocus}
+            loading={loading}
+          />
         )}
-        {showContractFilters && (
+        {!hideContractFilters && (
           <ContractFilters
             params={searchParams}
             updateParams={onChange}
@@ -530,7 +478,7 @@ export function Search(props: {
       )}
 
       {!contracts ? (
-        <LoadingResults />
+        <LoadingContractResults />
       ) : contracts.length === 0 ? (
         emptyContractsState
       ) : (
@@ -547,31 +495,11 @@ export function Search(props: {
               !hideActions && actionColumn,
             ])}
           />
-          <LoadMoreUntilNotVisible
-            loadMore={() => querySearchResults(false, true)}
-          />
-          {shouldLoadMore && <LoadingResults />}
-          {!shouldLoadMore &&
-            (filter !== 'all' ||
-              contractType !== 'ALL' ||
-              prizeMarketState === '1' ||
-              sweepiesState === '1') && (
-              <div className="text-ink-500 mx-2 my-8 text-center">
-                No more results under this filter.{' '}
-                <button
-                  className="text-primary-500 hover:underline focus:underline"
-                  onClick={() =>
-                    onChange({
-                      [FILTER_KEY]: 'all',
-                      [CONTRACT_TYPE_KEY]: 'ALL',
-                      p: '0',
-                    })
-                  }
-                >
-                  Clear filter
-                </button>
-              </div>
-            )}
+          <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
+          {shouldLoadMore && <LoadingContractResults />}
+          {!shouldLoadMore && (
+            <NoMoreResults params={searchParams} onChange={onChange} />
+          )}
         </>
       )}
     </Col>
@@ -600,13 +528,46 @@ const NoResults = () => {
   )
 }
 
-const LoadingResults = () => {
+export const LoadingContractResults = () => {
   return (
     <Col className="w-full">
       <LoadingContractRow />
       <LoadingContractRow />
       <LoadingContractRow />
     </Col>
+  )
+}
+
+export const NoMoreResults = (props: {
+  params: SearchParams
+  onChange: (changes: Partial<SearchParams>) => void
+}) => {
+  const { params, onChange } = props
+  const showReset =
+    params[FILTER_KEY] !== 'all' ||
+    params[CONTRACT_TYPE_KEY] !== 'ALL' ||
+    params[PRIZE_MARKET_KEY] === '1'
+  // params[SWEEPIES_KEY] === '1' //TODO
+
+  return (
+    <div className="text-ink-500 mx-2 my-8 text-center">
+      {showReset ? 'No more results under this filter. ' : 'No more results. '}
+      {showReset && (
+        <button
+          className="text-primary-500 hover:underline focus:underline"
+          onClick={() => {
+            onChange({
+              [FILTER_KEY]: 'all',
+              [CONTRACT_TYPE_KEY]: 'ALL',
+              [PRIZE_MARKET_KEY]: '0',
+              // [SWEEPIES_KEY]: '0',
+            })
+          }}
+        >
+          Clear filter
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -617,14 +578,15 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
   shouldLoadMore: true,
 }
 
-const useSearchResults = (
-  persistPrefix: string,
-  searchParams: SearchParams,
-  showSearchTypes: boolean,
-  topicSlug: string,
-  additionalFilter?: SupabaseAdditionalFilter,
-  hideSweepsToggle?: boolean
-) => {
+export const useSearchResults = (props: {
+  persistPrefix: string
+  searchParams: SearchParams
+  includeUsersAndTopics: boolean
+  isReady: boolean
+  additionalFilter?: SupabaseAdditionalFilter
+}) => {
+  const { persistPrefix, searchParams, isReady, additionalFilter } = props
+
   const [state, setState] = usePersistentInMemoryState<SearchState>(
     FRESH_SEARCH_CHANGED_STATE,
     `${persistPrefix}-supabase-contract-search`
@@ -643,30 +605,13 @@ const useSearchResults = (
         p: isPrizeMarketString,
         fy: forYou,
         mt: marketTier,
-        tf: topicFilter,
-        sw: isSweepiesString,
+        tf: topicSlug,
+        sw: sweepState,
         gids,
       } = searchParams
-      // if fresh query and the search params haven't changed (like user clicked back) do nothing
-      if (
-        freshQuery &&
-        query === state.lastSearchParams?.query &&
-        sort === state.lastSearchParams?.sort &&
-        filter === state.lastSearchParams?.filter &&
-        contractType === state.lastSearchParams?.contractType &&
-        topicSlug === state.lastSearchParams?.topicSlug &&
-        topicSlug !== 'recent' &&
-        isPrizeMarketString == state.lastSearchParams?.isPrizeMarket &&
-        forYou == state.lastSearchParams?.forYou &&
-        marketTier == state.lastSearchParams?.marketTier &&
-        topicFilter == state.lastSearchParams?.topicFilter &&
-        isSweepiesString == state.lastSearchParams?.isSweepies &&
-        gids == state.lastSearchParams?.gids
-      ) {
-        return state.shouldLoadMore
-      }
 
-      const includeUsersAndTopics = !contractsOnly && showSearchTypes
+      const includeUsersAndTopics =
+        !contractsOnly && props.includeUsersAndTopics
 
       if (freshQuery || state.shouldLoadMore) {
         const id = ++requestId.current
@@ -688,21 +633,17 @@ const useSearchResults = (
               contractType,
               offset: freshQuery ? 0 : state.contracts?.length ?? 0,
               limit: CONTRACTS_PER_SEARCH_PAGE,
-              topicSlug:
-                topicSlug !== ''
-                  ? topicSlug
-                  : topicFilter !== ''
-                  ? topicFilter
-                  : undefined,
+              topicSlug: topicSlug !== '' ? topicSlug : undefined,
               creatorId: additionalFilter?.creatorId,
               isPrizeMarket: isPrizeMarketString,
               marketTier,
               forYou,
-              token: hideSweepsToggle
-                ? 'ALL'
-                : isSweepiesString === '1'
-                ? 'CASH'
-                : 'MANA',
+              token:
+                sweepState === '2'
+                  ? 'ALL'
+                  : sweepState === '1'
+                  ? 'CASH'
+                  : 'MANA',
               gids,
             }),
           ]
@@ -736,19 +677,7 @@ const useSearchResults = (
               users: includeUsersAndTopics ? newUsers : state.users,
               topics: includeUsersAndTopics ? newTopics.lite : state.topics,
               shouldLoadMore,
-              lastSearchParams: {
-                query,
-                sort,
-                filter,
-                contractType,
-                topicSlug,
-                isPrizeMarket: isPrizeMarketString,
-                forYou,
-                marketTier,
-                topicFilter,
-                isSweepies: isSweepiesString,
-                gids,
-              },
+              // lastSearchParams: searchParams,
             })
             clearTimeout(timeoutId)
             setLoading(false)
@@ -762,6 +691,14 @@ const useSearchResults = (
       }
       return false
     }
+  )
+
+  useDebouncedEffect(
+    () => {
+      if (isReady) querySearchResults(true)
+    },
+    50,
+    [isReady, JSON.stringify(searchParams)]
   )
 
   const contracts = state.contracts
@@ -785,18 +722,18 @@ const useSearchResults = (
     topics: state.topics,
     loading,
     shouldLoadMore: state.shouldLoadMore,
-    querySearchResults,
+    loadMoreContracts: () => querySearchResults(false, true),
   }
 }
 
-const useSearchQueryState = (props: {
+export const useSearchQueryState = (props: {
   persistPrefix: string
   defaultSort?: Sort
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
   defaultPrizeMarket?: '1' | '0'
-  defaultSweepies?: '1' | '0'
+  defaultSweepies?: '2' | '1' | '0'
   defaultForYou?: '1' | '0'
   useUrlParams?: boolean
   defaultMarketTier?: TierParamsType
