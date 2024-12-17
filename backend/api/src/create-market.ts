@@ -116,6 +116,9 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     visibility,
     marketTier,
     idempotencyKey,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -143,9 +146,10 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const totalMarketCost = marketTier
     ? getTieredCost(unmodifiedAnte, marketTier, outcomeType)
     : unmodifiedAnte
-  const ante = outcomeType === 'MULTIPLE_CHOICE' && !shouldAnswersSumToOne
-    ? totalMarketCost
-    : Math.min(unmodifiedAnte, totalMarketCost)
+  const ante =
+    outcomeType === 'MULTIPLE_CHOICE' && !shouldAnswersSumToOne
+      ? totalMarketCost
+      : Math.min(unmodifiedAnte, totalMarketCost)
 
   const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(
     idempotencyKey,
@@ -167,6 +171,12 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
 
     const slug = await getSlug(tx, question)
+
+    console.log('Props before contract creation:', {
+      sportsStartTimestamp,
+      sportsEventId,
+      sportsLeague,
+    })
 
     const contract = getNewContract(
       removeUndefinedProps({
@@ -199,8 +209,14 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         isAutoBounty,
         marketTier,
         token: 'MANA',
+        sportsStartTimestamp,
+        sportsEventId,
+        sportsLeague,
       })
     )
+
+    console.log('Created contract object:', contract)
+
     const insertAnswersQuery =
       contract.mechanism === 'cpmm-multi-1'
         ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
@@ -213,6 +229,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       `${contractQuery};
        ${insertAnswersQuery};`
     )
+    console.log('Database insert result:', result)
+
     if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
       contract.answers = result[1].map(convertAnswer)
     }
@@ -302,7 +320,16 @@ function validateMarketBody(body: Body) {
     utcOffset,
     marketTier,
     idempotencyKey,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
   } = body
+
+  console.log('Sports props extracted:', {
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+  })
 
   if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
     throw new APIError(
@@ -423,6 +450,9 @@ function validateMarketBody(body: Body) {
     isAutoBounty,
     marketTier,
     idempotencyKey,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
   }
 }
 

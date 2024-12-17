@@ -96,10 +96,13 @@ export default function AdminPage() {
                 console.log('Fetching sports fixtures...')
                 const data = await api('get-sports-fixtures', {})
                 console.log('Received data:', data)
+                // For testing, just take the first fixture
                 const fixtures = (data.schedule || []) as Fixture[]
-                console.log('Starting to process fixtures:', fixtures.length)
+                console.log('Total fixtures available:', fixtures.length)
+                const fixturesToProcess = process.env.NODE_ENV === 'development' ? fixtures.slice(0, 1) : fixtures
+                console.log('Processing fixtures:', fixturesToProcess.length)
 
-                for (const fixture of fixtures) {
+                for (const fixture of fixturesToProcess) {
                   const closeTime =
                     new Date(fixture.strTimestamp).getTime() +
                     2.5 * 60 * 60 * 1000
@@ -141,10 +144,9 @@ export default function AdminPage() {
                     visibility: 'public',
                     addAnswersMode: 'DISABLED',
                     shouldAnswersSumToOne: true,
-                    extraData: {
-                      matchId: fixture.idEvent,
-                      matchStartTime: fixture.strTimestamp,
-                    },
+                    sportsStartTimestamp: fixture.strTimestamp,
+                    sportsEventId: fixture.idEvent,
+                    sportsLeague: fixture.strLeague,
                     groupIds,
                   }
 
