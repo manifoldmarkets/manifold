@@ -16,13 +16,16 @@ import { Button } from 'components/buttons/Button'
 import { YesNoButton } from 'components/buttons/YesNoButtons'
 import { getDisplayProbability } from 'common/calculate'
 import { AnswerProbability, BinaryProbability } from './Probability'
+import { useState } from 'react'
+import { BetPanel } from './bet/BetPanel'
+import { BinaryBetButtons } from './bet/BinaryBetButtons'
 
 export function FeedCard({ contract }: { contract: Contract }) {
   const isBinaryMc = isBinaryMulti(contract)
   const isMultipleChoice =
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
-
+  const [betPanelOpen, setBetPanelOpen] = useState(false)
   const color = useColor()
   return (
     <Col
@@ -116,10 +119,7 @@ export function FeedCard({ contract }: { contract: Contract }) {
           </Row>
         </>
       ) : (
-        <Row style={{ gap: 12, alignItems: 'center' }}>
-          <YesNoButton variant="yes" size="sm" style={{ flex: 1 }} />
-          <YesNoButton variant="no" size="sm" style={{ flex: 1 }} />
-        </Row>
+        <BinaryBetButtons contract={contract} />
       )}
     </Col>
   )

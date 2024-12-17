@@ -10,7 +10,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { TokenSlider } from './TokenSlider'
-import { SliderHeader } from './layout/slider-header'
+import { SliderHeader } from './layout/SliderHeader'
 import { useBottomTabOverflow } from './ui/TabBarBackground.ios'
 import { useColor } from 'hooks/useColor'
 import { ThemedView } from './ThemedView'

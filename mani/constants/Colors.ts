@@ -12,19 +12,18 @@ const withOpacity = (hexColor: string, opacity: number) => {
   )
 }
 
-// Dark mode optimized grays
 const gray = {
-  50: '#FAFAFA',
-  100: '#F4F4F5',
-  200: '#E4E4E7',
-  300: '#D4D4D8',
-  400: '#A1A1AA',
-  500: '#71717A',
-  600: '#52525B',
-  700: '#3F3F46',
-  800: '#27272A',
-  900: '#18181B',
-  950: '#09090B',
+  50: '#f8fafc',
+  100: '#f1f5f9',
+  200: '#e2e8f0',
+  300: '#cbd5e1',
+  400: '#94a3b8',
+  500: '#64748b',
+  600: '#475569',
+  700: '#334155',
+  800: '#1e293b',
+  900: '#0f172a',
+  950: '#020617',
 } as const
 
 // Tailwind emerald colors
@@ -106,6 +105,7 @@ export const Colors = {
   text: white,
   textSecondary: gray[300],
   background: gray[950],
+  backgroundSecondary: gray[900],
   icon: gray[400],
   border: gray[800],
   yesButtonBackground: withOpacity(blue[500], 0.2),
@@ -115,6 +115,7 @@ export const Colors = {
   dangerButtonBackground: withOpacity(red[500], 0.2),
   dangerButtonText: red[500],
   blue: blue[500],
+  modalOverlay: withOpacity(gray[950], 0.9),
 } as const
 
 // Mode-specific colors (used for game modes)
