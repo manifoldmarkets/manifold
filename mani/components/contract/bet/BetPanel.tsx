@@ -3,9 +3,18 @@ import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/ThemedText'
 import { useColor } from 'hooks/useColor'
 import React, { useState } from 'react'
-import { Modal, TouchableWithoutFeedback, View } from 'react-native'
+import {
+  Modal,
+  TouchableWithoutFeedback,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native'
 import { BetAmountInput } from './BetInput'
 import { Row } from 'components/layout/row'
+import { NumberText } from 'components/NumberText'
+import { Button } from 'components/buttons/Button'
 export type BinaryOutcomes = 'YES' | 'NO'
 
 export function BetPanel({
@@ -23,53 +32,87 @@ export function BetPanel({
 }) {
   const color = useColor()
   const [amount, setAmount] = useState(0)
+  // TODO: figure out keyboard clicking behavior
   return (
-    <Modal
-      visible={open}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setOpen(false)}
-    >
-      <TouchableWithoutFeedback onPress={() => setOpen(false)}>
-        <Col
-          style={{
-            flex: 1,
-            justifyContent: 'flex-end',
-            backgroundColor: color.modalOverlay,
-          }}
+    <ScrollView keyboardShouldPersistTaps="handled">
+      <Modal
+        visible={open}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setOpen(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
         >
-          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-            <View
+          <TouchableWithoutFeedback onPress={() => setOpen(false)}>
+            <Col
               style={{
-                backgroundColor: color.backgroundSecondary,
-                padding: 20,
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
-                width: '100%',
-                height: '70%',
+                flex: 1,
+                justifyContent: 'flex-end',
+                backgroundColor: color.modalOverlay,
               }}
             >
-              <ThemedText size="lg" weight="semibold">
-                {contract.question}
-              </ThemedText>
-              <ThemedText
-                color={
-                  outcome === 'YES' ? color.yesButtonText : color.noButtonText
-                }
-              >
-                {outcome === 'YES' ? 'Yes' : 'No'}
-              </ThemedText>
-              <BetAmountInput onAmountChange={setAmount} />
-              <Row style={{ justifyContent: 'space-between', width: '100%' }}>
-                <ThemedText>Payout if win</ThemedText>
-                <ThemedText>
-                  ${(amount * 2).toFixed(2)} <ThemedText>(+200%)</ThemedText>
-                </ThemedText>
-              </Row>
-            </View>
+              <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                <Col
+                  style={{
+                    backgroundColor: color.backgroundSecondary,
+                    padding: 20,
+                    borderTopLeftRadius: 20,
+                    borderTopRightRadius: 20,
+                    width: '100%',
+                    maxHeight: '70%',
+                    minHeight: 400,
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Col>
+                    <ThemedText size="lg" weight="semibold">
+                      {contract.question}
+                    </ThemedText>
+                    <ThemedText
+                      size="lg"
+                      color={
+                        outcome === 'YES'
+                          ? color.yesButtonText
+                          : color.noButtonText
+                      }
+                    >
+                      {outcome === 'YES' ? 'Yes' : 'No'}
+                    </ThemedText>
+                  </Col>
+                  <BetAmountInput amount={amount} setAmount={setAmount} />
+                  <Col style={{ gap: 8 }}>
+                    <Row
+                      style={{ justifyContent: 'space-between', width: '100%' }}
+                    >
+                      <ThemedText color={color.textTertiary} size="lg">
+                        Payout if win
+                      </ThemedText>
+
+                      {/* TODO: get real payout */}
+                      <NumberText size="lg" weight="semibold">
+                        ${(amount * 2).toFixed(2)}{' '}
+                        <ThemedText color={color.profitText}>
+                          (+200%)
+                        </ThemedText>
+                      </NumberText>
+                    </Row>
+                    <Button
+                      size="lg"
+                      title="Bet"
+                      onPress={() => {
+                        // TODO: add bet logic
+                        setOpen(false)
+                      }}
+                    />
+                  </Col>
+                </Col>
+              </TouchableWithoutFeedback>
+            </Col>
           </TouchableWithoutFeedback>
-        </Col>
-      </TouchableWithoutFeedback>
-    </Modal>
+        </KeyboardAvoidingView>
+      </Modal>
+    </ScrollView>
   )
 }

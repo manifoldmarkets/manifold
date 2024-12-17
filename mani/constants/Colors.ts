@@ -104,8 +104,10 @@ export const modes = {
 export const Colors = {
   text: white,
   textSecondary: gray[300],
+  textTertiary: gray[400],
   background: gray[950],
   backgroundSecondary: gray[900],
+  grayButtonBackground: gray[800],
   icon: gray[400],
   border: gray[800],
   yesButtonBackground: withOpacity(blue[500], 0.2),
@@ -115,6 +117,7 @@ export const Colors = {
   dangerButtonBackground: withOpacity(red[500], 0.2),
   dangerButtonText: red[500],
   blue: blue[500],
+  profitText: emerald[400],
   modalOverlay: withOpacity(gray[950], 0.9),
 } as const
 
