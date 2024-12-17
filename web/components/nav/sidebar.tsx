@@ -203,13 +203,8 @@ const getMobileNav = (
   const { isAdminOrMod } = options
 
   return buildArray<NavItem>(
-    { name: 'Markets', href: '/markets', icon: PiSquaresFourLight },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    {
-      name: 'Markets',
-      href: '/markets',
-      icon: PiSquaresFourLight,
-    }, // {
+    // {
     //   name: 'AI',
     //   href: '/ai',
     //   icon: PiRobotBold,
