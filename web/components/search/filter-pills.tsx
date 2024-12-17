@@ -224,6 +224,7 @@ export function TopicDropdownPill(props: {
         onClick: () =>
           updateParams({
             [FOR_YOU_KEY]: '1',
+            [TOPIC_FILTER_KEY]: '',
           }),
       }
     : null

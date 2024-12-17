@@ -32,10 +32,11 @@ export function FundsSelector(props: {
 
   const isNativeIOS = useIsNativeIOS()
   const eligibleForNewUserOffer =
-    user &&
-    Date.now() < expirationStart.valueOf() &&
-    !user.purchasedSweepcash &&
-    !isNativeIOS
+    (user &&
+      Date.now() < expirationStart.valueOf() &&
+      !user.purchasedSweepcash &&
+      !isNativeIOS) ||
+    !user
 
   const newUserPrices = basePrices.filter((p) => p.newUsersOnly)
   const prices = basePrices.filter((p) => !p.newUsersOnly)
@@ -62,38 +63,20 @@ export function FundsSelector(props: {
         </div>
       </div>
 
-      {(!user || !user.sweepstakesVerified) && !isNativeIOS && (
-        <>
-          <Col className="mb-2 gap-2 py-4">
-            <div className="grid grid-cols-2 gap-4 gap-y-6">
-              {newUserPrices.map((amounts, index) => (
-                <PriceTile
-                  key={`price-tile-${amounts.mana}`}
-                  amounts={amounts}
-                  index={index}
-                  loadingPrice={loadingPrice}
-                  disabled={pastLimit}
-                  user={user}
-                  onClick={() => onSelectPriceInDollars(amounts.priceInDollars)}
-                />
-              ))}
-            </div>
-          </Col>
-        </>
-      )}
-
       {eligibleForNewUserOffer && (
         <>
           <Row className="items-baseline justify-between text-3xl text-green-500">
             Welcome Deal
-            <span className="text-lg text-green-500">
-              expires in{' '}
-              <Countdown
-                includeSeconds
-                endDate={expirationStart}
-                className="ml-1 "
-              />
-            </span>
+            {user && (
+              <span className="text-lg text-green-500">
+                expires in{' '}
+                <Countdown
+                  includeSeconds
+                  endDate={expirationStart}
+                  className="ml-1 "
+                />
+              </span>
+            )}
           </Row>
           <Col className="mb-2 gap-2 py-4">
             <div className="grid grid-cols-2 gap-4 gap-y-4">
