@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Alert,
   StyleSheet,
@@ -73,7 +73,7 @@ export const AuthPage = (props: { height: number; width: number }) => {
         await updateProfile(user, { displayName: data.displayName })
       }
       const fbUser = user.toJSON()
-    } catch (error: any) {
+    } catch (error) {
       log('login with apple error:', error)
     }
     setLoading(false)
@@ -88,43 +88,39 @@ export const AuthPage = (props: { height: number; width: number }) => {
       AppleAuthenticationScope.EMAIL,
     ]
 
-    try {
-      const nonce = await digestStringAsync(
-        CryptoDigestAlgorithm.SHA256,
-        rawNonce
-      )
+    const nonce = await digestStringAsync(
+      CryptoDigestAlgorithm.SHA256,
+      rawNonce
+    )
 
-      const appleCredential = await signInAsync({
-        requestedScopes,
-        state,
-        nonce,
-      })
+    const appleCredential = await signInAsync({
+      requestedScopes,
+      state,
+      nonce,
+    })
 
-      const { identityToken, email, fullName } = appleCredential
+    const { identityToken, email, fullName } = appleCredential
 
-      if (!identityToken) {
-        throw new Error('No identity token provided.')
-      }
-
-      const provider = new OAuthProvider('apple.com')
-
-      provider.addScope('email')
-      provider.addScope('fullName')
-
-      const credential = provider.credential({
-        idToken: identityToken,
-        rawNonce,
-      })
-
-      const displayName = fullName
-        ? `${fullName.givenName} ${fullName.familyName}`
-        : undefined
-      const data = { email, displayName }
-
-      return { credential, data }
-    } catch (error: any) {
-      throw error
+    if (!identityToken) {
+      throw new Error('No identity token provided.')
     }
+
+    const provider = new OAuthProvider('apple.com')
+
+    provider.addScope('email')
+    provider.addScope('fullName')
+
+    const credential = provider.credential({
+      idToken: identityToken,
+      rawNonce,
+    })
+
+    const displayName = fullName
+      ? `${fullName.givenName} ${fullName.familyName}`
+      : undefined
+    const data = { email, displayName }
+
+    return { credential, data }
   }
 
   const computedStyles = StyleSheet.create({
@@ -202,7 +198,7 @@ function useAppleAuthentication() {
       try {
         const available = await isAvailableAsync()
         setAuthenticationLoaded(available)
-      } catch (error: any) {
+      } catch (error) {
         Alert.alert('Error', error?.message)
       }
     }

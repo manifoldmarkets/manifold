@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import 'expo-dev-client'
 import * as Notifications from 'expo-notifications'
 import { User as FirebaseUser } from 'firebase/auth'
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Dimensions, Linking, Platform, SafeAreaView } from 'react-native'
 import { app, auth, ENV } from '../init'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
@@ -10,10 +11,10 @@ import { IosIapListener } from 'components/ios-iap-listener'
 import { Subscription } from 'expo-modules-core'
 import { StatusBar } from 'expo-status-bar'
 import { withIAPContext } from 'react-native-iap'
-import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import * as Sentry from '@sentry/react-native'
 import { log } from 'components/logger'
 import { SplashAuth } from 'components/splash-auth'
+import { useFonts } from '@expo-google-fonts/readex-pro'
 import { getData } from 'lib/auth'
 import { useIsConnected } from 'lib/use-is-connected'
 import { TokenModeProvider } from 'hooks/useTokenMode'
@@ -88,10 +89,11 @@ function RootLayout() {
       )
 
     return () => {
-      notificationResponseListener.current &&
+      if (notificationResponseListener.current) {
         Notifications.removeNotificationSubscription(
           notificationResponseListener.current
         )
+      }
     }
   }, [])
 

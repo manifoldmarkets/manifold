@@ -2,19 +2,13 @@ import {
   BinaryContract,
   Contract,
   MultiContract,
-  PseudoNumericContract,
-  StonkContract,
 } from 'common/contract'
 import { ThemedText } from 'components/ThemedText'
-import { View } from 'react-native'
 import { isBinaryMulti } from 'common/contract'
 import { Row } from 'components/layout/row'
 import { Col } from 'components/layout/col'
-import { NumberText } from 'components/NumberText'
 import { useColor } from 'hooks/useColor'
-import { Button } from 'components/buttons/Button'
 import { YesNoButton } from 'components/buttons/YesNoButtons'
-import { getDisplayProbability } from 'common/calculate'
 import { AnswerProbability, BinaryProbability } from './Probability'
 import { useState } from 'react'
 import { BetPanel } from './bet/BetPanel'

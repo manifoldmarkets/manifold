@@ -2,10 +2,10 @@ import { fileAsyncTransport, logger } from 'react-native-logs'
 import * as FileSystem from 'expo-file-system'
 import * as Sharing from 'expo-sharing'
 import { Text, TouchableOpacity, View } from 'react-native'
-import React from 'react'
 import Constants from 'expo-constants'
 
-const NATIVE_BUILD = Constants.expoConfig?.extra?.eas.NATIVE_BUILD_TYPE ?? 'PREVIEW'
+const NATIVE_BUILD =
+  Constants.expoConfig?.extra?.eas.NATIVE_BUILD_TYPE ?? 'PREVIEW'
 const now = new Date()
 const fileName = `logs_${now.toISOString().replace(/:/g, '-')}.txt`
 const filePath = FileSystem.documentDirectory

@@ -7,7 +7,6 @@ import {
   Sku,
   useIAP,
 } from 'react-native-iap'
-import { nativeToWebMessageType } from 'common/native-message'
 
 const SKUS = ['mana_1000', 'mana_2500', 'mana_10000'] // skus created before rate change
 

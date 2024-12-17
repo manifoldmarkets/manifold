@@ -70,7 +70,13 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/plugin-proposal-export-namespace-from": "7.18.9",
+    "@typescript-eslint/eslint-plugin": "8.18.1",
+    "@typescript-eslint/parser": "8.18.1",
     "babel-plugin-transform-inline-environment-variables": "^0.4.4",
+    "eslint": "8.57.0",
+    "eslint-plugin-react": "7.37.2",
+    "eslint-plugin-react-hooks": "5.1.0",
+    "eslint-plugin-unused-imports": "4.1.4",
     "react-native-dotenv": "3.4.11",
     "url": "0.11.4"
   },

@@ -1,6 +1,5 @@
 import { useColor } from 'hooks/useColor'
 import { useTokenMode } from 'hooks/useTokenMode'
-import { Text } from 'react-native'
 import { Row } from './row'
 import { ThemedText } from 'components/ThemedText'
 import { TokenSlider } from 'components/TokenSlider'
