@@ -3,7 +3,7 @@ import { GPSData } from 'common/gidx/gidx'
 import { MINUTE_MS } from 'common/util/time'
 
 export const checkLocationPermission = async () => {
-  let { status } = await Location.getForegroundPermissionsAsync()
+  const { status } = await Location.getForegroundPermissionsAsync()
   return status
 }
 
@@ -19,7 +19,7 @@ export const getLocation = async () => {
   }
 
   if (status === 'undetermined') {
-    let { status } = await Location.requestForegroundPermissionsAsync()
+    const { status } = await Location.requestForegroundPermissionsAsync()
     if (status !== 'granted') {
       return { error }
     }

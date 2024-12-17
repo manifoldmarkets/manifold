@@ -1,11 +1,8 @@
-import WebView from 'react-native-webview'
-import { ImageSourcePropType, StyleSheet, Text, View } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo'
+import { ImageSourcePropType } from 'react-native'
+import { useEffect } from 'react'
 import { User as FirebaseUser } from '@firebase/auth'
 import { Splash } from 'components/splash'
 import { AuthPage } from 'components/auth-page'
-import { useIsConnected } from '../lib/use-is-connected'
 
 export const SplashAuth = (props: {
   height: number

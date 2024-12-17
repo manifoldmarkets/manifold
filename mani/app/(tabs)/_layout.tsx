@@ -4,7 +4,6 @@ import { IconSymbol } from 'components/ui/IconSymbol'
 import TabBarBackground from 'components/ui/TabBarBackground'
 import { Tabs } from 'expo-router'
 import { useColor } from 'hooks/useColor'
-import React from 'react'
 import { Platform, View, Image } from 'react-native'
 
 export default function TabLayout() {
@@ -95,6 +94,7 @@ export default function TabLayout() {
                   // user?.avatarUrl
                   //   ? { uri: user.avatarUrl }
                   //   :
+                  // eslint-disable-next-line @typescript-eslint/no-require-imports
                   require('assets/images/origami-icons/turtle.png')
                 }
               />

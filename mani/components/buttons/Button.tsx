@@ -1,11 +1,6 @@
 import { FontSize, ThemedText, ThemedTextProps } from 'components/ThemedText'
 import { useColor } from 'hooks/useColor'
-import {
-  TouchableOpacity,
-  TouchableOpacityProps,
-  Text,
-  TextProps,
-} from 'react-native'
+import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
 type ButtonVariant = 'primary' | 'yes' | 'no' | 'danger' // add more variants as needed
