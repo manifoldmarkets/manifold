@@ -220,6 +220,10 @@ export function ContractPageContent(props: ContractParams) {
     multiPointsString: cash?.multiPointsString,
   })
 
+  console.log('ID', props.contract.id)
+  console.log('cashBetData', cashBetData)
+  console.log('playBetData', playBetData)
+
   const { bets, totalBets, yourNewBets, betPoints } =
     cash && !isPlay ? cashBetData : playBetData
 

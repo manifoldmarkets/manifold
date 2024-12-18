@@ -4,11 +4,12 @@ import { BinaryContract } from 'common/contract'
 import { ThemedText } from 'components/ThemedText'
 import { useTokenMode } from 'hooks/useTokenMode'
 import { EXAMPLE_POINTS } from 'constants/examples/ExampleData'
-import { View } from 'react-native'
 import { BinaryGraph } from '../graph/BinaryGraph'
+import { Col } from 'components/layout/col'
 
 export function BinaryOverview({ contract }: { contract: BinaryContract }) {
   const data = EXAMPLE_POINTS[contract.id as keyof typeof EXAMPLE_POINTS]
+
   if (!data) return null
   const { cash: cashBetData, play: playBetData } = data
 
@@ -16,7 +17,7 @@ export function BinaryOverview({ contract }: { contract: BinaryContract }) {
   const { betPoints } = mode === 'sweep' ? cashBetData : playBetData
 
   return (
-    <View>
+    <Col style={{ gap: 8 }}>
       <Row
         style={{
           alignItems: 'center',
@@ -28,6 +29,6 @@ export function BinaryOverview({ contract }: { contract: BinaryContract }) {
       </Row>
 
       <BinaryGraph betPoints={betPoints} />
-    </View>
+    </Col>
   )
 }
