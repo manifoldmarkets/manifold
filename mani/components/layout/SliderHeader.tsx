@@ -25,6 +25,7 @@ export function SliderHeader() {
         width: '100%',
         gap: 8,
         paddingVertical: 8,
+        paddingHorizontal: 20,
         backgroundColor: color.background,
       }}
     >

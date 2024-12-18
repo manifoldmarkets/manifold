@@ -1,10 +1,10 @@
-import { HapticTab } from 'components/HapticTab'
 import { useUser } from 'hooks/useUser'
 import { IconSymbol } from 'components/ui/IconSymbol'
 import TabBarBackground from 'components/ui/TabBarBackground'
 import { Tabs } from 'expo-router'
 import { useColor } from 'hooks/useColor'
 import { Platform, View, Image } from 'react-native'
+import { PlatformPressable } from '@react-navigation/elements'
 
 export default function TabLayout() {
   const maniColor = useColor()
@@ -16,10 +16,15 @@ export default function TabLayout() {
     borderTopColor: maniColor.border,
     paddingTop: 4,
     paddingBottom: 4,
+    height: 64,
   }
 
   const iosSpecificStyle = {
     position: 'absolute',
+  }
+
+  const commonTabBarIconStyle = {
+    marginBottom: 4,
   }
 
   const { user } = useUser()
@@ -28,8 +33,9 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: maniColor.primary,
         headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarButton: PlatformPressable,
         tabBarBackground: TabBarBackground,
+        tabBarIconStyle: commonTabBarIconStyle,
         tabBarStyle: Platform.select({
           ios: {
             ...commonTabBarStyle,
@@ -105,7 +111,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Notifications',
+          title: 'Alerts',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="bell" color={color} />
           ),
