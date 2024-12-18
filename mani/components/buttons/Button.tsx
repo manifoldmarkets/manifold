@@ -5,7 +5,9 @@ import {
   TouchableOpacity,
   TouchableOpacityProps,
   ViewStyle,
+  Platform,
 } from 'react-native'
+import * as Haptics from 'expo-haptics'
 
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
 type ButtonVariant = 'primary' | 'gray' | 'yes' | 'no' | 'danger' // add more variants as needed
@@ -17,6 +19,7 @@ export interface ButtonProps extends TouchableOpacityProps {
   variant?: ButtonVariant
   textProps?: ThemedTextProps
   style?: StyleProp<ViewStyle>
+  isHaptic?: boolean
 }
 
 const sizeStyles: Record<
@@ -52,6 +55,8 @@ export function Button({
   size = 'md',
   variant = 'primary',
   textProps,
+  isHaptic,
+  onPressIn,
   ...props
 }: ButtonProps) {
   const color = useColor()
@@ -100,6 +105,12 @@ export function Button({
           alignItems: 'center',
         },
       ]}
+      onPressIn={(ev) => {
+        if (isHaptic && Platform.OS === 'ios') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+        }
+        onPressIn?.(ev)
+      }}
       {...props}
     >
       <ThemedText

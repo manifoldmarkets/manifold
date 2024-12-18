@@ -30,7 +30,9 @@ export default function Page({ children }: PropsWithChildren) {
         scrollIndicatorInsets={{ bottom }}
         contentContainerStyle={{ paddingBottom: bottom }}
       >
-        <ThemedView style={styles.content}>{children}</ThemedView>
+        <ThemedView style={styles.content}>
+          <View style={styles.contentPadding}>{children}</View>
+        </ThemedView>
       </Animated.ScrollView>
     </View>
   )
@@ -39,7 +41,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    paddingHorizontal: 20,
   },
   header: {
     height: HEADER_HEIGHT,
@@ -49,5 +50,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 16,
     overflow: 'hidden',
+  },
+  contentPadding: {
+    paddingHorizontal: 20,
   },
 })
