@@ -1,21 +1,19 @@
-import { Contract } from 'common/contract'
+import { Contract, isBinaryMulti } from 'common/contract'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/ThemedText'
 import { useColor } from 'hooks/useColor'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   Modal,
   TouchableWithoutFeedback,
-  View,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
 } from 'react-native'
 import { BetAmountInput } from './BetInput'
 import { Row } from 'components/layout/row'
 import { NumberText } from 'components/NumberText'
-import { Button } from 'components/buttons/Button'
 import { YesNoButton } from 'components/buttons/YesNoButtons'
+import { Button } from 'components/buttons/Button'
 export type BinaryOutcomes = 'YES' | 'NO'
 
 export function BetPanel({
@@ -30,6 +28,7 @@ export function BetPanel({
   setOpen: (open: boolean) => void
   outcome: BinaryOutcomes
   answerId?: string
+  isBinaryMulti?: boolean
 }) {
   const color = useColor()
   const [amount, setAmount] = useState(0)
@@ -38,6 +37,14 @@ export function BetPanel({
     answerId && 'answers' in contract
       ? contract.answers.find((a) => a.id === answerId)
       : null
+
+  console.log('ANSWER', answer)
+  const isBinaryMC = isBinaryMulti(contract)
+
+  // TODO: add bet logic
+  const onPress = () => {
+    setOpen(false)
+  }
 
   // TODO: figure out keyboard clicking behavior
   return (
@@ -64,6 +71,7 @@ export function BetPanel({
                 style={{
                   backgroundColor: color.backgroundSecondary,
                   padding: 20,
+                  paddingBottom: 32,
                   borderTopLeftRadius: 20,
                   borderTopRightRadius: 20,
                   width: '100%',
@@ -78,7 +86,7 @@ export function BetPanel({
                   </ThemedText>
 
                   <ThemedText size="md" color={color.textSecondary}>
-                    {answer && answer.text}
+                    {!!answer && !isBinaryMC && answer.text}
                   </ThemedText>
                 </Col>
                 <BetAmountInput amount={amount} setAmount={setAmount} />
@@ -96,15 +104,21 @@ export function BetPanel({
                       <ThemedText color={color.profitText}>(+200%)</ThemedText>
                     </NumberText>
                   </Row>
-                  <YesNoButton
-                    variant={outcome === 'YES' ? 'yes' : 'no'}
-                    size="lg"
-                    title={`Buy ${outcome === 'YES' ? 'Yes' : 'No'}`}
-                    onPress={() => {
-                      // TODO: add bet logic
-                      setOpen(false)
-                    }}
-                  />
+                  {isBinaryMC ? (
+                    <Button size="lg" onPress={onPress}>
+                      <ThemedText weight="normal">
+                        Buy{' '}
+                        <ThemedText weight="semibold">{answer.text}</ThemedText>
+                      </ThemedText>
+                    </Button>
+                  ) : (
+                    <YesNoButton
+                      variant={outcome === 'YES' ? 'yes' : 'no'}
+                      size="lg"
+                      title={`Buy ${outcome === 'YES' ? 'Yes' : 'No'}`}
+                      onPress={onPress}
+                    />
+                  )}
                 </Col>
               </Col>
             </TouchableWithoutFeedback>

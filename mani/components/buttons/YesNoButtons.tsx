@@ -13,7 +13,6 @@ export function YesNoButton(props: ButtonProps) {
       style={[{ width: getWidth(props.size) }, props.style]}
       textProps={{
         weight: 'normal',
-        size: props.size === 'xs' ? 'sm' : 'lg',
       }}
     />
   )

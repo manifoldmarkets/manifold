@@ -3,8 +3,12 @@ import { YesNoButton } from 'components/buttons/YesNoButtons'
 import { Row } from 'components/layout/row'
 import { useState } from 'react'
 import { BetPanel, BinaryOutcomes } from './BetPanel'
+import { ButtonProps } from 'components/buttons/Button'
 
-export function BinaryBetButtons({ contract }: { contract: Contract }) {
+export function BinaryBetButtons({
+  contract,
+  ...rest
+}: { contract: Contract } & ButtonProps) {
   const [openBetPanel, setOpenBetPanel] = useState(false)
   const [outcome, setOutcome] = useState<BinaryOutcomes>('YES')
 
@@ -19,14 +23,14 @@ export function BinaryBetButtons({ contract }: { contract: Contract }) {
         <YesNoButton
           onPress={() => handleBetClick('YES')}
           variant="yes"
-          size="sm"
           style={{ flex: 1 }}
+          {...rest}
         />
         <YesNoButton
           onPress={() => handleBetClick('NO')}
           variant="no"
-          size="sm"
           style={{ flex: 1 }}
+          {...rest}
         />
       </Row>
       <BetPanel

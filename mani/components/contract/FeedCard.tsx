@@ -1,4 +1,9 @@
-import { BinaryContract, Contract, MultiContract } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  CPMMMultiContract,
+  MultiContract,
+} from 'common/contract'
 import { ThemedText } from 'components/ThemedText'
 import { TouchableOpacity } from 'react-native'
 import { isBinaryMulti } from 'common/contract'
@@ -9,6 +14,7 @@ import { useState } from 'react'
 import { BinaryBetButtons } from './bet/BinaryBetButtons'
 import { MultiBetButtons } from './bet/MultiBetButtons'
 import { useRouter } from 'expo-router'
+import { MultiBinaryBetButtons } from './bet/MultiBinaryBetButtons'
 
 export function FeedCard({ contract }: { contract: Contract }) {
   const router = useRouter()
@@ -116,8 +122,10 @@ export function FeedCard({ contract }: { contract: Contract }) {
             )}
           </Row>
         </>
-      ) : (
+      ) : isBinary ? (
         <BinaryBetButtons contract={contract} />
+      ) : (
+        <MultiBinaryBetButtons contract={contract as CPMMMultiContract} />
       )}
     </TouchableOpacity>
   )
