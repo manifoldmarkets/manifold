@@ -1,14 +1,5 @@
 import axios from 'axios'
-
-interface Fixture {
-  idEvent: string
-  strLeague: string
-  strEvent: string
-  strHomeTeam: string
-  strAwayTeam: string
-  dateEvent: string
-  strTime: string
-}
+import { SportsGames } from 'common/sports-info'
 
 function calculateCloseTime(date: string, time?: string): string {
   const CLOSE_TIME_HOURS = 2
@@ -29,9 +20,9 @@ function calculateCloseTime(date: string, time?: string): string {
   }
 }
 
-async function fetchUpcomingFixturesForLeague(
+async function fetchUpcomingSportsGamesForLeague(
   leagueId: string
-): Promise<Fixture[]> {
+): Promise<SportsGames[]> {
   const API_URL = `https://www.thesportsdb.com/api/v2/json/schedule/next/league/${leagueId}`
 
   try {
@@ -48,18 +39,18 @@ async function fetchUpcomingFixturesForLeague(
       const oneWeekLater = new Date()
       oneWeekLater.setDate(today.getDate() + 7)
 
-      return schedule.filter((fixture: Fixture) => {
-        const fixtureDate = new Date(fixture.dateEvent)
-        return fixtureDate >= today && fixtureDate <= oneWeekLater
+      return schedule.filter((sportsGames: SportsGames) => {
+        const sportsGamesDate = new Date(sportsGames.dateEvent)
+        return sportsGamesDate >= today && sportsGamesDate <= oneWeekLater
       })
     } else {
-      console.log(`No fixtures found for league ${leagueId}.`)
+      console.log(`No sports games found for league ${leagueId}.`)
       return []
     }
   } catch (error) {
     if (error instanceof Error) {
       console.error(
-        `Error fetching fixtures for league ${leagueId}:`,
+        `Error fetching sports games for league ${leagueId}:`,
         error.message
       )
     } else {
@@ -71,7 +62,7 @@ async function fetchUpcomingFixturesForLeague(
   }
 }
 
-async function fetchUpcomingFixtures() {
+async function fetchUpcomingSportsGames() {
   const leagueIds = [
     '4328', //EPL
     '4387', //NBA
@@ -79,31 +70,31 @@ async function fetchUpcomingFixtures() {
   ]
 
   try {
-    const allFixtures = await Promise.all(
-      leagueIds.map((leagueId) => fetchUpcomingFixturesForLeague(leagueId))
+    const allSportsGamess = await Promise.all(
+      leagueIds.map((leagueId) => fetchUpcomingSportsGamesForLeague(leagueId))
     )
 
-    const flattenedFixtures = allFixtures.flat()
-    if (flattenedFixtures.length === 0) {
-      console.log('No fixtures found for the next week across all leagues.')
+    const flattenedSportsGamess = allSportsGamess.flat()
+    if (flattenedSportsGamess.length === 0) {
+      console.log('No sports games found for the next week across all leagues.')
       return
     }
 
-    flattenedFixtures.forEach((fixture: Fixture) => {
-      console.log('Match ID:', fixture.idEvent)
-      console.log('League:', fixture.strLeague)
-      console.log('Match:', fixture.strEvent)
-      console.log('Home Team:', fixture.strHomeTeam)
-      console.log('Away Team:', fixture.strAwayTeam)
-      console.log('Date:', fixture.dateEvent)
-      console.log('Start Time:', fixture.strTime)
-      const closeTime = calculateCloseTime(fixture.dateEvent, fixture.strTime)
+    flattenedSportsGamess.forEach((sportsGame: SportsGames) => {
+      console.log('Match ID:', sportsGame.idEvent)
+      console.log('League:', sportsGame.strLeague)
+      console.log('Match:', sportsGame.strEvent)
+      console.log('Home Team:', sportsGame.strHomeTeam)
+      console.log('Away Team:', sportsGame.strAwayTeam)
+      console.log('Date:', sportsGame.dateEvent)
+      console.log('Start Time:', sportsGame.strTime)
+      const closeTime = calculateCloseTime(sportsGame.dateEvent, sportsGame.strTime)
       console.log('Expected Close Time:', closeTime)
       console.log('-----------------------------------------')
     })
   } catch (error) {
-    console.error('Error fetching fixtures for multiple leagues:', error)
+    console.error('Error fetching sports games for multiple leagues:', error)
   }
 }
 
-fetchUpcomingFixtures()
+fetchUpcomingSportsGames()

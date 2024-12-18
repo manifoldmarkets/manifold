@@ -1,4 +1,4 @@
-export interface Fixture {
+export interface SportsGames {
   idEvent: string
   strLeague: string
   strEvent: string

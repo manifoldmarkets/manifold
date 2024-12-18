@@ -2014,7 +2014,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'get-sports-fixtures': {
+  'get-sports-games': {
     method: 'GET',
     visibility: 'public',
     authed: true,

@@ -1,5 +1,5 @@
 import { api } from 'web/lib/api/api'
-import { Fixture } from 'common/sports-info'
+import { SportsGames } from 'common/sports-info'
 import { log } from 'console'
 
 export const handleCreateSportsMarkets = async (
@@ -9,10 +9,10 @@ export const handleCreateSportsMarkets = async (
   setIsLoading(true)
   setIsFinished(false)
   try {
-    log('Fetching sports fixtures...')
-    const data = await api('get-sports-fixtures', {})
-    const fixtures = (data.schedule || []) as Fixture[]
-    const fixturesToProcess = fixtures
+    log('Fetching sportsGames...')
+    const data = await api('get-sports-games', {})
+    const sportsGames = (data.schedule || []) as SportsGames[]
+    const sportsGamesToProcess = sportsGames
 
     const createdMarkets: {
       id: string
@@ -21,16 +21,16 @@ export const handleCreateSportsMarkets = async (
       isNFL: boolean
     }[] = []
 
-    for (const fixture of fixturesToProcess) {
+    for (const sportsGames of sportsGamesToProcess) {
       const closeTime =
-        new Date(fixture.strTimestamp).getTime() + 2.5 * 60 * 60 * 1000
+        new Date(sportsGames.strTimestamp).getTime() + 2.5 * 60 * 60 * 1000
 
-      const isEPL = fixture.strLeague === 'English Premier League'
-      const isNBA = fixture.strLeague === 'NBA'
-      const isNFL = fixture.strLeague === 'NFL'
+      const isEPL = sportsGames.strLeague === 'English Premier League'
+      const isNBA = sportsGames.strLeague === 'NBA'
+      const isNFL = sportsGames.strLeague === 'NFL'
       const answers = isEPL
-        ? [fixture.strHomeTeam, fixture.strAwayTeam, 'Draw']
-        : [fixture.strHomeTeam, fixture.strAwayTeam]
+        ? [sportsGames.strHomeTeam, sportsGames.strAwayTeam, 'Draw']
+        : [sportsGames.strHomeTeam, sportsGames.strAwayTeam]
 
       const groupIds = isEPL
         ? [
@@ -40,7 +40,7 @@ export const handleCreateSportsMarkets = async (
             // 'ypd6vR44ZzJyN9xykx6e',
             '2ea265a7-a361-4d2a-ac3b-3bd0ad034a89', //dev soccer group for testing
           ]
-        : fixture.strLeague === 'NBA'
+        : sportsGames.strLeague === 'NBA'
         ? [
             'e6a9a59f-3f64-4e06-a013-8d0706e2493e', //dev basketball group for testing
             'IOffGO7C9c0dfDura9Yn', //dev sports for testing
@@ -50,13 +50,13 @@ export const handleCreateSportsMarkets = async (
             'IOffGO7C9c0dfDura9Yn', //dev sports for testing
           ]
 
-      const eplDescription = `Resolves to the winning team or draw. The match between ${fixture.strHomeTeam} (home) and ${fixture.strAwayTeam} (away) is scheduled for ${fixture.dateEvent} at ${fixture.strTime} GMT. If the match is delayed, the market will be extended. If the match is permanently cancelled or an unexpected event occurs preventing a clear outcome, this market may be resolved to 33%-33%-33% between the 3 answers.`
+      const eplDescription = `Resolves to the winning team or draw. The match between ${sportsGames.strHomeTeam} (home) and ${sportsGames.strAwayTeam} (away) is scheduled for ${sportsGames.dateEvent} at ${sportsGames.strTime} GMT. If the match is delayed, the market will be extended. If the match is permanently cancelled or an unexpected event occurs preventing a clear outcome, this market may be resolved to 33%-33%-33% between the 3 answers.`
 
-      const nbaNflDescription = `Resolves to the winning team. The game between ${fixture.strHomeTeam} (home) and ${fixture.strAwayTeam} (away) is scheduled for ${fixture.dateEvent} at ${fixture.strTime} GMT. If the game is delayed, the market will be extended. If the game is cancelled, tied, or unexpected circumstances prevent a clear winner, this market may be resolved to 50%-50%.`
+      const nbaNflDescription = `Resolves to the winning team. The game between ${sportsGames.strHomeTeam} (home) and ${sportsGames.strAwayTeam} (away) is scheduled for ${sportsGames.dateEvent} at ${sportsGames.strTime} GMT. If the game is delayed, the market will be extended. If the game is cancelled, tied, or unexpected circumstances prevent a clear winner, this market may be resolved to 50%-50%.`
 
       const description = isEPL ? eplDescription : nbaNflDescription
       const createProps = {
-        question: `${fixture.strHomeTeam} vs ${fixture.strAwayTeam} (${fixture.strLeague})`,
+        question: `${sportsGames.strHomeTeam} vs ${sportsGames.strAwayTeam} (${sportsGames.strLeague})`,
         descriptionMarkdown: description,
         outcomeType: 'MULTIPLE_CHOICE',
         closeTime,
@@ -64,9 +64,9 @@ export const handleCreateSportsMarkets = async (
         visibility: 'public',
         addAnswersMode: 'DISABLED',
         shouldAnswersSumToOne: true,
-        sportsStartTimestamp: fixture.strTimestamp,
-        sportsEventId: fixture.idEvent,
-        sportsLeague: fixture.strLeague,
+        sportsStartTimestamp: sportsGames.strTimestamp,
+        sportsEventId: sportsGames.idEvent,
+        sportsLeague: sportsGames.strLeague,
         groupIds,
       }
 
