@@ -28,3 +28,7 @@ export const usePersistentInMemoryState = <T>(initialValue: T, key: string) => {
 
   return [state, saveState] as const
 }
+
+export const removePersistentInMemoryState = (key: string) => {
+  delete store[key]
+}
