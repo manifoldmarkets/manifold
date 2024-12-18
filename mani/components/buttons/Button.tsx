@@ -8,7 +8,7 @@ import {
 } from 'react-native'
 
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
-type ButtonVariant = 'primary' | 'yes' | 'no' | 'danger' // add more variants as needed
+type ButtonVariant = 'primary' | 'gray' | 'yes' | 'no' | 'danger' // add more variants as needed
 
 export interface ButtonProps extends TouchableOpacityProps {
   title?: string
@@ -39,8 +39,8 @@ const sizeStyles: Record<
     fontSize: 'md',
   },
   lg: {
-    padding: 10,
-    borderRadius: 10,
+    padding: 8,
+    borderRadius: 4,
     fontSize: 'lg',
   },
 }
@@ -67,6 +67,11 @@ export function Button({
         return {
           background: color.noButtonBackground,
           text: color.noButtonText,
+        }
+      case 'gray':
+        return {
+          background: color.grayButtonBackground,
+          text: color.text,
         }
       case 'danger':
         return {
@@ -97,18 +102,14 @@ export function Button({
       ]}
       {...props}
     >
-      {title ? (
-        <ThemedText
-          color={buttonColors.text}
-          weight="semibold"
-          size={sizeStyles[size].fontSize}
-          {...textProps}
-        >
-          {title}
-        </ThemedText>
-      ) : (
-        children
-      )}
+      <ThemedText
+        color={buttonColors.text}
+        weight="semibold"
+        size={sizeStyles[size].fontSize}
+        {...textProps}
+      >
+        {title ? title : children}
+      </ThemedText>
     </TouchableOpacity>
   )
 }

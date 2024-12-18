@@ -4,6 +4,7 @@ import { useColor } from 'hooks/useColor'
 import {
   BinaryContract,
   Contract,
+  CPMMMultiContract,
   isBinaryMulti,
   MultiContract,
 } from 'common/contract'
@@ -12,6 +13,7 @@ import { BinaryBetButtons } from 'components/contract/bet/BinaryBetButtons'
 import Page from 'components/Page'
 import { BinaryOverview } from 'components/contract/overview/BinaryOverview'
 import { MultiOverview } from 'components/contract/overview/MultiOverview'
+import { MultiBinaryBetButtons } from 'components/contract/bet/MultiBinaryBetButtons'
 
 export default function ContractPage() {
   const { contractId } = useLocalSearchParams()
@@ -26,8 +28,6 @@ export default function ContractPage() {
     return <ThemedText>Contract not found</ThemedText>
   }
 
-  console.log('CONTRACT', contract)
-
   const isBinaryMc = isBinaryMulti(contract)
   const isMultipleChoice =
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
@@ -41,10 +41,15 @@ export default function ContractPage() {
 
       {isBinary && <BinaryOverview contract={contract as BinaryContract} />}
 
-      {isMultipleChoice ? (
+      {isBinaryMc ? (
+        <MultiBinaryBetButtons
+          contract={contract as CPMMMultiContract}
+          size="lg"
+        />
+      ) : isMultipleChoice ? (
         <MultiOverview contract={contract as MultiContract} />
       ) : (
-        <BinaryBetButtons contract={contract} />
+        <BinaryBetButtons contract={contract} size="lg" />
       )}
 
       {/* {contract.description && (

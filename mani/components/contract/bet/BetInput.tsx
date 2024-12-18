@@ -4,11 +4,10 @@ import { NumberText } from 'components/NumberText'
 import { Colors } from 'constants/Colors'
 import { useColor } from 'hooks/useColor'
 import { useTokenMode } from 'hooks/useTokenMode'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   Image,
   View,
-  Text,
   StyleSheet,
   Pressable,
   TextInput,
@@ -68,7 +67,7 @@ export function BetAmountInput({
         style={{
           alignItems: 'center',
           borderWidth: 1,
-          borderColor: color.border,
+          borderColor: color.borderSecondary,
           padding: 8,
           borderRadius: 6,
           gap: 8,

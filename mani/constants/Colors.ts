@@ -110,6 +110,7 @@ export const Colors = {
   grayButtonBackground: gray[800],
   icon: gray[400],
   border: gray[800],
+  borderSecondary: gray[700],
   yesButtonBackground: withOpacity(blue[500], 0.2),
   yesButtonText: blue[400],
   noButtonBackground: withOpacity(pink[600], 0.2),
