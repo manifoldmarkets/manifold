@@ -44,11 +44,5 @@
         <namedColor name="SplashScreenBackground">
             <color alpha="1.000" blue="0.788235294117647" green="0.215686274509804" red="0.262745098039216" customColorSpace="sRGB" colorSpace="custom"/>
         </namedColor>
-        <namedColor name="SplashScreenBackground">
-            <color alpha="1.000" blue="0.788235294117647" green="0.215686274509804" red="0.262745098039216" customColorSpace="sRGB" colorSpace="custom"/>
-        </namedColor>
-        <namedColor name="SplashScreenBackground">
-            <color alpha="1.000" blue="0.788235294117647" green="0.215686274509804" red="0.262745098039216" customColorSpace="sRGB" colorSpace="custom"/>
-        </namedColor>
     </resources>
 </document>
