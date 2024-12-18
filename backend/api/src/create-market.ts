@@ -172,12 +172,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
     const slug = await getSlug(tx, question)
 
-    console.log('Props before contract creation:', {
-      sportsStartTimestamp,
-      sportsEventId,
-      sportsLeague,
-    })
-
     const contract = getNewContract(
       removeUndefinedProps({
         id: idempotencyKey ?? randomString(),
@@ -215,8 +209,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       })
     )
 
-    console.log('Created contract object:', contract)
-
     const insertAnswersQuery =
       contract.mechanism === 'cpmm-multi-1'
         ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
@@ -229,7 +221,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       `${contractQuery};
        ${insertAnswersQuery};`
     )
-    console.log('Database insert result:', result)
 
     if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
       contract.answers = result[1].map(convertAnswer)
@@ -324,12 +315,6 @@ function validateMarketBody(body: Body) {
     sportsEventId,
     sportsLeague,
   } = body
-
-  console.log('Sports props extracted:', {
-    sportsStartTimestamp,
-    sportsEventId,
-    sportsLeague,
-  })
 
   if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
     throw new APIError(
