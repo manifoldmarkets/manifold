@@ -219,8 +219,12 @@ export function BinaryGraph({
             <LineChart
               style={{ flex: 1 }}
               data={chartData}
-              xAccessor={({ item }) => item.x}
-              yAccessor={({ item }) => item.y}
+              xAccessor={({ item }: { item: HistoryPoint<Partial<Bet>> }) =>
+                item.x
+              }
+              yAccessor={({ item }: { item: HistoryPoint<Partial<Bet>> }) =>
+                item.y
+              }
               contentInset={{ left: 0, right: 0, top: 10, bottom: 10 }}
               svg={{
                 strokeWidth: 2,
