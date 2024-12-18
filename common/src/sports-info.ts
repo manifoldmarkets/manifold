@@ -1,10 +1,10 @@
 export interface SportsGames {
   idEvent: string
-  league: string
-  event: string
-  homeTeam: string
-  awayTeam: string
+  strLeague: string
+  strEvent: string
+  strHomeTeam: string
+  strAwayTeam: string
   dateEvent: string
-  startTime: string
-  timestamp: string
+  strTime: string
+  strTimestamp: string
 }
