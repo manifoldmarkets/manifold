@@ -13,7 +13,24 @@
       "android": {
         "credentialsSource": "local"
       },
-      "ios": {}
+      "ios": {
+        "buildConfiguration": "Debug"
+      }
+    },
+    "development-simulator": {
+      "developmentClient": true,
+      "channel": "dev",
+      "distribution": "internal",
+      "env": {
+        "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
+      },
+      "android": {
+        "credentialsSource": "local"
+      },
+      "ios": {
+        "simulator": true,
+        "buildConfiguration": "Debug"
+      }
     },
     "prod-development": {
       "developmentClient": true,

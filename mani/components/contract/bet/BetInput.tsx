@@ -4,11 +4,10 @@ import { NumberText } from 'components/NumberText'
 import { Colors } from 'constants/Colors'
 import { useColor } from 'hooks/useColor'
 import { useTokenMode } from 'hooks/useTokenMode'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   Image,
   View,
-  Text,
   StyleSheet,
   Pressable,
   TextInput,
@@ -84,8 +83,8 @@ export function BetAmountInput({
             }}
             source={
               mode === 'play'
-                ? require('assets/images/masses_mana.png')
-                : require('assets/images/masses_sweeps.png')
+                ? require('../../../assets/images/masses_mana.png')
+                : require('../../../assets/images/masses_sweeps.png')
             }
           />
           <TextInput

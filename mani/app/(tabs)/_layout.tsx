@@ -95,7 +95,7 @@ export default function TabLayout() {
                   //   ? { uri: user.avatarUrl }
                   //   :
                   // eslint-disable-next-line @typescript-eslint/no-require-imports
-                  require('assets/images/origami-icons/turtle.png')
+                  require('../../assets/images/origami-icons/turtle.png')
                 }
               />
             </View>

@@ -36,10 +36,11 @@ import { log } from 'components/logger'
 export const AuthPage = (props: { height: number; width: number }) => {
   const { height, width } = props
   const [loading, setLoading] = useState(false)
-  const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
-    // @ts-ignore
-    ENV_CONFIG.expoConfig
-  )
+  const fixedConfig = {
+    ...ENV_CONFIG.expoConfig,
+    iosClientId: ENV_CONFIG.expoConfig.iosClientId2,
+  }
+  const [_, response, promptAsync] = Google.useIdTokenAuthRequest(fixedConfig)
   const appleAuthAvailable = useAppleAuthentication()
 
   // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
