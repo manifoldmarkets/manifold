@@ -45,7 +45,7 @@ const ChartTooltip = memo(
           left: position.x,
           top: TOOLTIP_HEIGHT,
           bottom: 0,
-          width: 1,
+          width: 0.5,
           backgroundColor: color.textTertiary,
         }}
       />
