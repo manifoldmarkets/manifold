@@ -4,6 +4,9 @@ const API_DOCS_URL = 'https://docs.manifold.markets/api'
 module.exports = {
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
+  eslint: {
+    ignoreDuringBuilds: true, // we lint in CI
+  },
   modularizeImports: {
     '@heroicons/react/solid/?(((\\w*)?/?)*)': {
       transform: '@heroicons/react/solid/{{ matches.[1] }}/{{member}}',
