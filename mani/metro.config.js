@@ -1,28 +1,38 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
 const { getSentryExpoConfig } = require('@sentry/react-native/metro')
 
-/**
- * Metro configuration for React Native
- * https://github.com/facebook/react-native
- *
- * @format
- */
 const path = require('path')
 const projectRoot = __dirname
+const workspaceRoot = path.resolve(projectRoot, '..')
 const defaultConfig = getSentryExpoConfig(projectRoot)
 
+// Explicitly list all shared dependencies
 const extraNodeModules = {
-  common: path.resolve(__dirname + '/../common/src'),
-  hooks: __dirname + '/hooks',
-  components: path.resolve(__dirname + '/components'),
-  lib: path.resolve(__dirname + '/lib'),
-  constants: __dirname + '/constants',
+  // Workspace modules
+  common: path.resolve(workspaceRoot, 'common/src'),
+  'client-common': path.resolve(workspaceRoot, 'client-common/src'),
+
+  // Local modules
+  hooks: path.resolve(projectRoot, 'hooks'),
+  components: path.resolve(projectRoot, 'components'),
+  lib: path.resolve(projectRoot, 'lib'),
+  constants: path.resolve(projectRoot, 'constants'),
+
+  // Core dependencies - ensure single copy
+  react: path.resolve(projectRoot, 'node_modules/react'),
+  'react-native': path.resolve(projectRoot, 'node_modules/react-native'),
+
+  // Other shared dependencies from common/client-common
+  firebase: path.resolve(projectRoot, 'node_modules/firebase'),
+  dayjs: path.resolve(projectRoot, 'node_modules/dayjs'),
 }
+
 module.exports = {
   ...defaultConfig,
   watchFolders: [
     ...defaultConfig.watchFolders,
-    path.resolve(__dirname + '/../common/src'),
+    path.resolve(workspaceRoot, 'common/src'),
+    path.resolve(workspaceRoot, 'client-common/src'),
   ],
   transformer: {
     ...defaultConfig.transformer,
@@ -35,14 +45,7 @@ module.exports = {
   },
   resolver: {
     ...defaultConfig.resolver,
-    nodeModulesPaths: [path.resolve(projectRoot, 'node_modules')],
-    extraNodeModules: new Proxy(extraNodeModules, {
-      get: (target, name) =>
-        //redirects dependencies referenced from common/ to local node_modules
-        name in target
-          ? target[name]
-          : path.join(process.cwd(), `node_modules/${name}`),
-    }),
+    extraNodeModules,
     assetExts: [...defaultConfig.resolver.assetExts, 'cjs'],
     sourceExts: [...defaultConfig.resolver.sourceExts, 'cjs'],
   },
