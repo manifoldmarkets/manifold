@@ -22,28 +22,6 @@ export function BinaryGraph({
   const rgb = hexToRgb(color.primary)
   const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('allTime')
 
-  // Filter data based on selected time period
-  const filteredData = useMemo(() => {
-    const now = dayjs()
-
-    const cutoffMs = now
-      .subtract(
-        currentTimePeriod === 'daily'
-          ? 1
-          : currentTimePeriod === 'weekly'
-          ? 7
-          : currentTimePeriod === 'monthly'
-          ? 30
-          : Number.MAX_SAFE_INTEGER,
-        'day'
-      )
-      .valueOf()
-
-    return betPoints
-      .filter((point) => point.x >= cutoffMs)
-      .map((point) => point.y * 100)
-  }, [betPoints, currentTimePeriod])
-
   // Calculate max range for TimeRangePicker
   const maxRange = useMemo(() => {
     if (betPoints.length < 2) return undefined
@@ -55,6 +33,15 @@ export function BinaryGraph({
   // Transform data to include both x and y values for proper scaling
   const chartData = useMemo(() => {
     const now = dayjs()
+
+    // For 'allTime', don't apply any time-based filtering
+    if (currentTimePeriod === 'allTime') {
+      return betPoints.map((point) => ({
+        x: point.x,
+        y: point.y * 100,
+      }))
+    }
+
     const cutoffMs = now
       .subtract(
         currentTimePeriod === 'daily'
@@ -63,7 +50,7 @@ export function BinaryGraph({
           ? 7
           : currentTimePeriod === 'monthly'
           ? 30
-          : Number.MAX_SAFE_INTEGER,
+          : 0,
         'day'
       )
       .valueOf()
