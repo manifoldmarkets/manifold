@@ -7,7 +7,6 @@ import {
   TransitionChild,
 } from '@headlessui/react'
 import {
-  LightningBoltIcon,
   NewspaperIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
