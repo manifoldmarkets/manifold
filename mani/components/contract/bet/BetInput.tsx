@@ -83,8 +83,8 @@ export function BetAmountInput({
             }}
             source={
               mode === 'play'
-                ? require('assets/images/masses_mana.png')
-                : require('assets/images/masses_sweeps.png')
+                ? require('../../../assets/images/masses_mana.png')
+                : require('../../../assets/images/masses_sweeps.png')
             }
           />
           <TextInput

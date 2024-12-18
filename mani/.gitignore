@@ -18,6 +18,7 @@ project.pbxproj
 ios/Manifold/GoogleService-Info.plist
 ios/Manifold.xcodeproj/project.pbxproj
 /google-services.json
+*.app/
 # macOS
 .DS_Store
 # simulator build
