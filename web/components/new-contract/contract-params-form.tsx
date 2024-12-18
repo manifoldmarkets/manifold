@@ -203,9 +203,9 @@ export function ContractParamsForm(props: {
   useEffect(() => {
     if (addAnswersMode === 'DISABLED' && answers.length < 2) {
       if (answers.length === 0) setAnswers(defaultAnswers)
-      else setAnswers(answers.concat(['']))
+      else setAnswers((a) => [...a, ''])
     }
-  })
+  }, [addAnswersMode, answers.length])
 
   const questionKey = 'new-question' + paramsKey
   const [question, setQuestion] = usePersistentLocalState('', questionKey)
@@ -462,20 +462,11 @@ export function ContractParamsForm(props: {
         outcomeType,
       })
 
-      // Clear form data from localstorage on navigate, since market is created.
+      // Await to clear form data from localstorage after navigate, since market is created.
       // Don't clear before navigate, because looks like a bug.
-      const clearFormOnNavigate = () => {
-        resetProperties()
-        router.events.off('routeChangeComplete', clearFormOnNavigate)
-      }
-      router.events.on('routeChangeComplete', clearFormOnNavigate)
-
-      try {
-        const path = twombaContractPath(newContract)
-        await router.push(path)
-      } catch (error) {
-        console.error(error)
-      }
+      const path = twombaContractPath(newContract)
+      await router.push(path)
+      resetProperties()
     } catch (e) {
       console.error('error creating contract', e)
       setErrorText((e as any).message || 'Error creating contract')
