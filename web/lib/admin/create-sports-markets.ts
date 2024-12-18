@@ -23,14 +23,14 @@ export const handleCreateSportsMarkets = async (
 
     for (const sportsGames of sportsGamesToProcess) {
       const closeTime =
-        new Date(sportsGames.strTimestamp).getTime() + 2.5 * 60 * 60 * 1000
+        new Date(sportsGames.timestamp).getTime() + 2.5 * 60 * 60 * 1000
 
-      const isEPL = sportsGames.strLeague === 'English Premier League'
-      const isNBA = sportsGames.strLeague === 'NBA'
-      const isNFL = sportsGames.strLeague === 'NFL'
+      const isEPL = sportsGames.league === 'English Premier League'
+      const isNBA = sportsGames.league === 'NBA'
+      const isNFL = sportsGames.league === 'NFL'
       const answers = isEPL
-        ? [sportsGames.strHomeTeam, sportsGames.strAwayTeam, 'Draw']
-        : [sportsGames.strHomeTeam, sportsGames.strAwayTeam]
+        ? [sportsGames.homeTeam, sportsGames.awayTeam, 'Draw']
+        : [sportsGames.homeTeam, sportsGames.awayTeam]
 
       const groupIds = isEPL
         ? [
@@ -40,7 +40,7 @@ export const handleCreateSportsMarkets = async (
             // 'ypd6vR44ZzJyN9xykx6e',
             '2ea265a7-a361-4d2a-ac3b-3bd0ad034a89', //dev soccer group for testing
           ]
-        : sportsGames.strLeague === 'NBA'
+        : sportsGames.league === 'NBA'
         ? [
             'e6a9a59f-3f64-4e06-a013-8d0706e2493e', //dev basketball group for testing
             'IOffGO7C9c0dfDura9Yn', //dev sports for testing
@@ -50,13 +50,13 @@ export const handleCreateSportsMarkets = async (
             'IOffGO7C9c0dfDura9Yn', //dev sports for testing
           ]
 
-      const eplDescription = `Resolves to the winning team or draw. The match between ${sportsGames.strHomeTeam} (home) and ${sportsGames.strAwayTeam} (away) is scheduled for ${sportsGames.dateEvent} at ${sportsGames.strTime} GMT. If the match is delayed, the market will be extended. If the match is permanently cancelled or an unexpected event occurs preventing a clear outcome, this market may be resolved to 33%-33%-33% between the 3 answers.`
+      const eplDescription = `Resolves to the winning team or draw. The match between ${sportsGames.homeTeam} (home) and ${sportsGames.awayTeam} (away) is scheduled for ${sportsGames.dateEvent} at ${sportsGames.startTime} GMT. If the match is delayed, the market will be extended. If the match is permanently cancelled or an unexpected event occurs preventing a clear outcome, this market may be resolved to 33%-33%-33% between the 3 answers.`
 
-      const nbaNflDescription = `Resolves to the winning team. The game between ${sportsGames.strHomeTeam} (home) and ${sportsGames.strAwayTeam} (away) is scheduled for ${sportsGames.dateEvent} at ${sportsGames.strTime} GMT. If the game is delayed, the market will be extended. If the game is cancelled, tied, or unexpected circumstances prevent a clear winner, this market may be resolved to 50%-50%.`
+      const nbaNflDescription = `Resolves to the winning team. The game between ${sportsGames.homeTeam} (home) and ${sportsGames.awayTeam} (away) is scheduled for ${sportsGames.dateEvent} at ${sportsGames.startTime} GMT. If the game is delayed, the market will be extended. If the game is cancelled, tied, or unexpected circumstances prevent a clear winner, this market may be resolved to 50%-50%.`
 
       const description = isEPL ? eplDescription : nbaNflDescription
       const createProps = {
-        question: `${sportsGames.strHomeTeam} vs ${sportsGames.strAwayTeam} (${sportsGames.strLeague})`,
+        question: `${sportsGames.homeTeam} vs ${sportsGames.awayTeam} (${sportsGames.league})`,
         descriptionMarkdown: description,
         outcomeType: 'MULTIPLE_CHOICE',
         closeTime,
@@ -64,9 +64,9 @@ export const handleCreateSportsMarkets = async (
         visibility: 'public',
         addAnswersMode: 'DISABLED',
         shouldAnswersSumToOne: true,
-        sportsStartTimestamp: sportsGames.strTimestamp,
+        sportsStartTimestamp: sportsGames.timestamp,
         sportsEventId: sportsGames.idEvent,
-        sportsLeague: sportsGames.strLeague,
+        sportsLeague: sportsGames.league,
         groupIds,
       }
 
