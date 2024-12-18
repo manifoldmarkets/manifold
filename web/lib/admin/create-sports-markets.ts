@@ -1,6 +1,5 @@
 import { api } from 'web/lib/api/api'
 import { SportsGames } from 'common/sports-info'
-import { log } from 'console'
 
 export const handleCreateSportsMarkets = async (
   setIsLoading: (loading: boolean) => void,
@@ -9,7 +8,7 @@ export const handleCreateSportsMarkets = async (
   setIsLoading(true)
   setIsFinished(false)
   try {
-    log('Fetching sportsGames...')
+    console.log('Fetching sportsGames...')
     const data = await api('get-sports-games', {})
     const sportsGames = (data.schedule || []) as SportsGames[]
     const sportsGamesToProcess = sportsGames

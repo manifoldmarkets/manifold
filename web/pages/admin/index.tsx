@@ -11,6 +11,7 @@ import { db } from 'web/lib/supabase/db'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Row } from 'web/components/layout/row'
 import { handleCreateSportsMarkets } from 'web/lib/admin/create-sports-markets'
+import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 
 export default function AdminPage() {
   useRedirectIfSignedOut()
@@ -40,10 +41,6 @@ export default function AdminPage() {
     } else {
       setCashStatus(result.status)
     }
-  }
-
-  const onCreateSportsMarkets = () => {
-    handleCreateSportsMarkets(setIsLoading, setIsFinished)
   }
 
   if (!isAdmin) return <></>
@@ -97,10 +94,26 @@ export default function AdminPage() {
           <Button onClick={() => api('refresh-all-clients', {})}>
             Refresh all clients
           </Button>
-          <Button onClick={onCreateSportsMarkets} disabled={isLoading}>
-            {isLoading ? 'Creating...' : 'Create Sports Markets'}
-            {isLoading && <span className="ml-2 animate-spin">🔄</span>}
-          </Button>
+          <ConfirmationButton
+            openModalBtn={{
+              label: isLoading ? 'Creating...' : 'Create Sports Markets',
+              disabled: isLoading,
+            }}
+            submitBtn={{
+              label: 'Create',
+              isSubmitting: isLoading,
+              color: 'green',
+            }}
+            onSubmit={() =>
+              handleCreateSportsMarkets(setIsLoading, setIsFinished)
+            }
+          >
+            <p>Are you sure you want to create new sports markets?</p>
+            <p>
+              Make sure you are logged into the Manifold account and have
+              ~40,000 mana and 2000 sweepcash.
+            </p>
+          </ConfirmationButton>
           {isFinished && (
             <div className="mt-4 text-green-600">
               ✅ Sports markets created successfully!
