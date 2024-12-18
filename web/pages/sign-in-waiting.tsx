@@ -2,9 +2,12 @@ import { Col } from 'web/components/layout/col'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Image from 'next/image'
+import { useStately } from 'client-common/hooks/use-stately'
 
 export default function SignInWaiting() {
   useRedirectIfSignedIn()
+  const size = useStately()
+  console.log('size', size)
   // Flappy is too small during an android native client side resizing, so we use dynamic sizing
   const { width, height } = useWindowSize()
   return (

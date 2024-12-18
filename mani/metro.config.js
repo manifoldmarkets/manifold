@@ -45,6 +45,7 @@ module.exports = {
   },
   resolver: {
     ...defaultConfig.resolver,
+    nodeModulesPaths: [path.resolve(projectRoot, 'node_modules')],
     extraNodeModules,
     assetExts: [...defaultConfig.resolver.assetExts, 'cjs'],
     sourceExts: [...defaultConfig.resolver.sourceExts, 'cjs'],

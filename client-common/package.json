@@ -1,0 +1,24 @@
+{
+  "name": "client-common",
+  "version": "1.0.0",
+  "private": true,
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf lib"
+  },
+  "dependencies": {
+    "firebase": "10.12.2",
+    "dayjs": "1.11.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "firebase": "10.12.2",
+    "react": "18.3.1",
+    "react-native": "0.76.5"
+  }
+}
