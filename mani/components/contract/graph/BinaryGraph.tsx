@@ -199,7 +199,7 @@ export function BinaryGraph({
 
   return (
     <Col style={{ width: '100%', gap: 8 }}>
-      <View style={{ width: '100%', height: 220 + CHART_PADDING_TOP }}>
+      <View style={{ width: '100%', height: 200 + CHART_PADDING_TOP }}>
         <View
           style={{
             flex: 1,
