@@ -15,6 +15,7 @@ import { BinaryBetButtons } from './bet/BinaryBetButtons'
 import { MultiBetButtons } from './bet/MultiBetButtons'
 import { useRouter } from 'expo-router'
 import { MultiBinaryBetButtons } from './bet/MultiBinaryBetButtons'
+import { LARGE_QUESTION_LENGTH } from 'app/[contractId]'
 
 export function FeedCard({ contract }: { contract: Contract }) {
   const router = useRouter()
@@ -48,9 +49,9 @@ export function FeedCard({ contract }: { contract: Contract }) {
         }}
       >
         <ThemedText
-          size="lg"
+          size={contract.question.length > LARGE_QUESTION_LENGTH ? 'md' : 'lg'}
           weight="semibold"
-          numberOfLines={2}
+          numberOfLines={3}
           style={{ flex: 1 }}
         >
           {contract.question}
