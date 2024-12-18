@@ -489,9 +489,11 @@ function BetsTable(props: {
         <button
           className={'z-10'}
           onClick={() => {
-            sort.field === 'profitPercent'
-              ? onSetSort('profit')
-              : onSetSort('profitPercent')
+            if (sort.field === 'profitPercent') {
+              onSetSort('profit')
+            } else {
+              onSetSort('profitPercent')
+            }
           }}
         >
           <div

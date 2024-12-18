@@ -32,7 +32,7 @@ export const GoodComment = memo(function (props: {
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
   const { ref } = useIsVisible(
     () => {
-      !DEBUG_FEED_CARDS &&
+      if (!DEBUG_FEED_CARDS)
         track('view good comment', {
           contractId: contract.id,
           commentId: comment.id,

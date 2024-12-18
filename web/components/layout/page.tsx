@@ -32,7 +32,7 @@ export function Page(props: {
   } = props
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
+  if (trackPageView) useTracking(`view ${trackPageView}`, trackPageProps)
   const isMobile = useIsMobile()
 
   return (

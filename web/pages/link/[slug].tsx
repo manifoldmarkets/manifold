@@ -81,7 +81,7 @@ export default function ClaimPage(props: {
                   throw new Error("You can't claim your own manalink.")
                 }
                 await claimManalink({ slug: link.slug })
-                user && router.push(`/${user.username}?claimed-mana=yes`)
+                if (user) router.push(`/${user.username}?claimed-mana=yes`)
               } catch (e) {
                 console.log(e)
                 const message =

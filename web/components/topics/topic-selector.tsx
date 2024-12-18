@@ -46,7 +46,7 @@ export function TopicSelector(props: {
       setIsCreatingNewGroup(true)
       return
     }
-    group && setSelectedGroup(group)
+    if (group) setSelectedGroup(group)
     setQuery('') // Clear the input
   }
 
