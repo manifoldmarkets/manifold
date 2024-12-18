@@ -1,6 +1,3 @@
-import { useLocalSearchParams } from 'expo-router'
-import { ThemedText } from 'components/ThemedText'
-import { useColor } from 'hooks/useColor'
 import {
   BinaryContract,
   Contract,
@@ -8,13 +5,15 @@ import {
   isBinaryMulti,
   MultiContract,
 } from 'common/contract'
-import { EXAMPLE_CONTRACTS } from 'constants/ExampleContracts'
 import { BinaryBetButtons } from 'components/contract/bet/BinaryBetButtons'
-import Page from 'components/Page'
+import { MultiBinaryBetButtons } from 'components/contract/bet/MultiBinaryBetButtons'
 import { BinaryOverview } from 'components/contract/overview/BinaryOverview'
 import { MultiOverview } from 'components/contract/overview/MultiOverview'
-import { MultiBinaryBetButtons } from 'components/contract/bet/MultiBinaryBetButtons'
-
+import Page from 'components/Page'
+import { ThemedText } from 'components/ThemedText'
+import { EXAMPLE_CONTRACTS } from 'constants/examples/ExampleContracts'
+import { useLocalSearchParams } from 'expo-router'
+import { useColor } from 'hooks/useColor'
 export default function ContractPage() {
   const { contractId } = useLocalSearchParams()
   const color = useColor()
