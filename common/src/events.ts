@@ -29,6 +29,7 @@ export type ShareEvent = {
   name: ShareEventName
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ShareEventNames = [
   'copy market link',
   'copy creator market link',
