@@ -9,7 +9,8 @@
       "lib/*": ["lib/*"],
       "common/*": ["../common/src/*"],
       "hooks/*": ["hooks/*"],
-      "constants/*": ["./constants/*"]
+      "constants/*": ["./constants/*"],
+      "assets/*": ["./assets/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]

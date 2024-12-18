@@ -17,6 +17,7 @@ const extraNodeModules = {
   components: path.resolve(__dirname + '/components'),
   lib: path.resolve(__dirname + '/lib'),
   constants: __dirname + '/constants',
+  assets: path.resolve(__dirname + '/assets'),
 }
 module.exports = {
   ...defaultConfig,

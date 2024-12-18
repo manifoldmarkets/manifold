@@ -38,7 +38,6 @@ export function BetPanel({
       ? contract.answers.find((a) => a.id === answerId)
       : null
 
-  console.log('ANSWER', answer)
   const isBinaryMC = isBinaryMulti(contract)
 
   // TODO: add bet logic
