@@ -2,7 +2,7 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isProd, log } from 'shared/utils'
 import { rateLimitByUser } from './helpers/rate-limit'
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const twilio = require('twilio')
 
 export const requestOTP: APIHandler<'request-otp'> = rateLimitByUser(
