@@ -44,13 +44,6 @@ export function ThemedText({
   style,
   ...rest
 }: ThemedTextProps) {
-  console.log('Applied styles:', {
-    weight,
-    family,
-    fontWeight: weight && fontWeights[weight],
-    fontFamily: family && fontFamilies[family],
-  })
-
   return (
     <Text
       style={[

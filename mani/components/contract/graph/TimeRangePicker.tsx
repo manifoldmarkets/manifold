@@ -52,7 +52,7 @@ export const TimeRangePicker = (props: {
             color={
               currentTimePeriod === period ? color.background : color.primary
             }
-            weight={currentTimePeriod === period ? 'bold' : 'normal'}
+            weight="medium"
           >
             {label}
           </ThemedText>
@@ -66,12 +66,12 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 4,
+    gap: 16,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
   button: {
-    paddingVertical: 6,
+    paddingVertical: 2,
     paddingHorizontal: 8,
     borderRadius: 4,
     backgroundColor: 'transparent',

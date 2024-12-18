@@ -2,7 +2,6 @@ import { Bet } from 'common/bet'
 import { HistoryPoint } from 'common/chart'
 import { Period } from 'common/period'
 import { useColor } from 'hooks/useColor'
-import { useTokenMode } from 'hooks/useTokenMode'
 import { View } from 'react-native'
 import { hexToRgb } from 'constants/Colors'
 import { LineChart } from 'react-native-svg-charts'
@@ -11,14 +10,16 @@ import { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
 import { Row } from 'components/layout/row'
 import { Col } from 'components/layout/col'
+import { BinaryContract } from 'common/contract'
 
 export function BinaryGraph({
   betPoints,
+  contract,
 }: {
   betPoints: HistoryPoint<Partial<Bet>>[]
+  contract: BinaryContract
 }) {
   const color = useColor()
-  const { mode } = useTokenMode()
   const rgb = hexToRgb(color.primary)
   const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('allTime')
 
@@ -32,36 +33,46 @@ export function BinaryGraph({
 
   // Transform data to include both x and y values for proper scaling
   const chartData = useMemo(() => {
-    const now = dayjs()
+    const referenceTime =
+      contract.closeTime && contract.closeTime < Date.now()
+        ? dayjs(contract.closeTime)
+        : dayjs()
+    const latestY = betPoints[betPoints.length - 1].y * 100
 
-    // For 'allTime', don't apply any time-based filtering
-    if (currentTimePeriod === 'allTime') {
-      return betPoints.map((point) => ({
-        x: point.x,
-        y: point.y * 100,
-      }))
+    const filteredPoints =
+      currentTimePeriod === 'allTime'
+        ? betPoints
+        : betPoints.filter(
+            (point) =>
+              point.x >=
+              referenceTime
+                .subtract(
+                  currentTimePeriod === 'daily'
+                    ? 1
+                    : currentTimePeriod === 'weekly'
+                    ? 7
+                    : currentTimePeriod === 'monthly'
+                    ? 30
+                    : 0,
+                  'day'
+                )
+                .valueOf()
+          )
+
+    // If filtered points is empty or has one point, create a straight line using the latest y value
+    if (filteredPoints.length <= 1) {
+      return [
+        { x: referenceTime.subtract(1, 'day').valueOf(), y: latestY },
+        { x: referenceTime.valueOf(), y: latestY },
+      ]
     }
 
-    const cutoffMs = now
-      .subtract(
-        currentTimePeriod === 'daily'
-          ? 1
-          : currentTimePeriod === 'weekly'
-          ? 7
-          : currentTimePeriod === 'monthly'
-          ? 30
-          : 0,
-        'day'
-      )
-      .valueOf()
-
-    return betPoints
-      .filter((point) => point.x >= cutoffMs)
-      .map((point) => ({
-        x: point.x,
-        y: point.y * 100,
-      }))
-  }, [betPoints, currentTimePeriod])
+    // Normal case with multiple points
+    return filteredPoints.map((point) => ({
+      x: point.x,
+      y: point.y * 100,
+    }))
+  }, [betPoints, currentTimePeriod, contract.closeTime])
 
   return (
     <Col style={{ width: '100%', gap: 8 }}>
@@ -69,8 +80,8 @@ export function BinaryGraph({
         <LineChart
           style={{ flex: 1 }}
           data={chartData}
-          xAccessor={({ item }) => item.x}
-          yAccessor={({ item }) => item.y}
+          xAccessor={({ item }: { item: HistoryPoint<Partial<Bet>> }) => item.x}
+          yAccessor={({ item }: { item: HistoryPoint<Partial<Bet>> }) => item.y}
           contentInset={{ left: 0, right: 0, top: 10, bottom: 10 }}
           //   curve={shape.curveNatural}
           svg={{

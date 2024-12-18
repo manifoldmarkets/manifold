@@ -28,7 +28,7 @@ export function BinaryOverview({ contract }: { contract: BinaryContract }) {
         <ThemedText size="xl">chance</ThemedText>
       </Row>
 
-      <BinaryGraph betPoints={betPoints} />
+      <BinaryGraph betPoints={betPoints} contract={contract} />
     </Col>
   )
 }
