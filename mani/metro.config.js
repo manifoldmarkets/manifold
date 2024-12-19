@@ -1,24 +1,45 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
 const { getSentryExpoConfig } = require('@sentry/react-native/metro')
 
-/**
- * Metro configuration for React Native
- * https://github.com/facebook/react-native
- *
- * @format
- */
 const path = require('path')
 const projectRoot = __dirname
 const defaultConfig = getSentryExpoConfig(projectRoot)
+const workspaceRoot = path.resolve(__dirname, '..')
 
+// Core shared dependencies to ensure single copy
 const extraNodeModules = {
-  common: path.resolve(__dirname + '/../common/src'),
-  hooks: __dirname + '/hooks',
-  components: path.resolve(__dirname + '/components'),
-  lib: path.resolve(__dirname + '/lib'),
-  constants: __dirname + '/constants',
-  assets: path.resolve(__dirname + '/assets'),
+  // Workspace modules
+  common: path.resolve(workspaceRoot, 'common/src'),
+  'client-common': path.resolve(workspaceRoot, 'client-common/src'),
+  // Core dependencies - ensure single copy
+  ...Object.fromEntries(
+    ['react', 'react-native', 'firebase', 'dayjs'].map((pkg) => [
+      pkg,
+      path.resolve(projectRoot, `node_modules/${pkg}`),
+    ])
+  ),
+
+  // Auto-map all subdirectories for easy imports
+  ...getSubdirectoryModules(projectRoot),
 }
+
+// Helper to automatically map all subdirectories
+function getSubdirectoryModules(root) {
+  const fs = require('fs')
+  const directories = fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory())
+    .filter(
+      (dirent) =>
+        !dirent.name.startsWith('.') &&
+        !['node_modules', 'android', 'ios'].includes(dirent.name)
+    )
+
+  return Object.fromEntries(
+    directories.map((dirent) => [dirent.name, path.resolve(root, dirent.name)])
+  )
+}
+
 module.exports = {
   ...defaultConfig,
   watchFolders: [
