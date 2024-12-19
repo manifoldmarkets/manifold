@@ -58,6 +58,7 @@ function RichContent({
 }
 
 function renderNode(node: JSONContent, index: string): React.ReactNode {
+  console.log('Rendering node type:', node.type)
   const color = useColor()
   switch (node.type) {
     case 'paragraph':
@@ -114,10 +115,10 @@ function renderNode(node: JSONContent, index: string): React.ReactNode {
         <ThemedText
           size="md"
           color={color.primary}
-          style={{ textDecorationLine: 'underline' }}
+          weight="semibold"
           key={`mention-${node.attrs?.id}-${index}`}
         >
-          {node.attrs?.label}
+          @{node.attrs?.label}
         </ThemedText>
       )
     case 'text':
@@ -266,3 +267,48 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
 })
+
+export function extractTextFromContent(content: JSONContent | string): string {
+  if (typeof content === 'string') {
+    return content
+  }
+
+  // Handle leaf nodes
+  switch (content.type) {
+    case 'text':
+      return content.text || ''
+    case 'mention':
+      return `@${content.attrs?.label || ''}`
+    case 'image':
+      return '[image]'
+    case 'linkPreview':
+      return content.attrs?.url || ''
+    case 'iframe':
+      return content.attrs?.src || ''
+  }
+
+  // If no content array, check for text property
+  if (!content.content) {
+    return content.text || ''
+  }
+
+  // Recursively process content array
+  return content.content
+    .map((node) => extractTextFromContent(node))
+    .join(' ')
+    .trim()
+}
+
+// Type guard to ensure all node types are handled
+type NodeType = JSONContent['type']
+type HandledTypes =
+  | 'paragraph'
+  | 'bulletList'
+  | 'listItem'
+  | 'image'
+  | 'mention'
+  | 'text'
+  | 'linkPreview'
+  | 'iframe'
+  | 'heading'
+  | undefined // for nodes without type
