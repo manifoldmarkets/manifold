@@ -52,6 +52,9 @@ export function getNewContract(props: {
   isAutoBounty?: boolean | undefined
   marketTier?: MarketTierType
   token: 'MANA' | 'CASH'
+  sportsStartTimestamp?: string
+  sportsEventId?: string
+  sportsLeague?: string
 }) {
   const {
     id,
@@ -75,6 +78,9 @@ export function getNewContract(props: {
     isAutoBounty,
     marketTier,
     token,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
   } = props
   const createdTime = Date.now()
 
@@ -143,6 +149,10 @@ export function getNewContract(props: {
     isTwitchContract,
     marketTier,
     token,
+
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
   })
   if (visibility === 'unlisted') {
     contract.unlistedById = creator.id

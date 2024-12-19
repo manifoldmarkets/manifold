@@ -3,28 +3,41 @@ const { getSentryExpoConfig } = require('@sentry/react-native/metro')
 
 const path = require('path')
 const projectRoot = __dirname
-const workspaceRoot = path.resolve(projectRoot, '..')
 const defaultConfig = getSentryExpoConfig(projectRoot)
+const workspaceRoot = path.resolve(__dirname, '..')
 
-// Explicitly list all shared dependencies
+// Core shared dependencies to ensure single copy
 const extraNodeModules = {
   // Workspace modules
   common: path.resolve(workspaceRoot, 'common/src'),
   'client-common': path.resolve(workspaceRoot, 'client-common/src'),
-
-  // Local modules
-  hooks: path.resolve(projectRoot, 'hooks'),
-  components: path.resolve(projectRoot, 'components'),
-  lib: path.resolve(projectRoot, 'lib'),
-  constants: path.resolve(projectRoot, 'constants'),
-
   // Core dependencies - ensure single copy
-  react: path.resolve(projectRoot, 'node_modules/react'),
-  'react-native': path.resolve(projectRoot, 'node_modules/react-native'),
+  ...Object.fromEntries(
+    ['react', 'react-native', 'firebase', 'dayjs'].map((pkg) => [
+      pkg,
+      path.resolve(projectRoot, `node_modules/${pkg}`),
+    ])
+  ),
 
-  // Other shared dependencies from common/client-common
-  firebase: path.resolve(projectRoot, 'node_modules/firebase'),
-  dayjs: path.resolve(projectRoot, 'node_modules/dayjs'),
+  // Auto-map all subdirectories for easy imports
+  ...getSubdirectoryModules(projectRoot),
+}
+
+// Helper to automatically map all subdirectories
+function getSubdirectoryModules(root) {
+  const fs = require('fs')
+  const directories = fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory())
+    .filter(
+      (dirent) =>
+        !dirent.name.startsWith('.') &&
+        !['node_modules', 'android', 'ios'].includes(dirent.name)
+    )
+
+  return Object.fromEntries(
+    directories.map((dirent) => [dirent.name, path.resolve(root, dirent.name)])
+  )
 }
 
 module.exports = {

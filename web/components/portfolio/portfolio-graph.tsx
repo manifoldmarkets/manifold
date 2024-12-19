@@ -171,11 +171,13 @@ export const PortfolioGraph = (props: {
         <PortfolioTooltip date={xScale.invert(props.x)} />
       )}
       onMouseOver={(p) => {
-        portfolioFocus == 'all'
-          ? updateGraphValues({ net: p ? p.y : null })
-          : portfolioFocus == 'balance'
-          ? updateGraphValues({ balance: p ? p.y : null })
-          : updateGraphValues({ invested: p ? p.y : null })
+        if (portfolioFocus == 'all') {
+          updateGraphValues({ net: p ? p.y : null })
+        } else if (portfolioFocus == 'balance') {
+          updateGraphValues({ balance: p ? p.y : null })
+        } else {
+          updateGraphValues({ invested: p ? p.y : null })
+        }
       }}
       onMouseLeave={() => {
         updateGraphValues(emptyGraphValues)

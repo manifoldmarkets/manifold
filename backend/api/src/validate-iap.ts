@@ -19,7 +19,7 @@ const bodySchema = z
 const IAP_TYPES_PROCESSED = 'apple'
 
 export const validateiap = authEndpoint(async (req, auth) => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const iap = require('@flat/in-app-purchase')
   const { receipt } = validate(bodySchema, req.body)
   const userId = auth.uid

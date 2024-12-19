@@ -48,9 +48,9 @@ export function FeedCard({ contract }: { contract: Contract }) {
         }}
       >
         <ThemedText
-          size="lg"
+          size={'lg'}
           weight="semibold"
-          numberOfLines={2}
+          numberOfLines={3}
           style={{ flex: 1 }}
         >
           {contract.question}

@@ -545,6 +545,47 @@ export const EXAMPLE_CONTRACTS = [
       content: [
         {
           type: 'paragraph',
+          content: [
+            {
+              text: 'Resolves by the stated decision in the Death Battle episode posted on the official channel (',
+              type: 'text',
+            },
+            {
+              text: 'https://www.youtube.com/@deathbattle',
+              type: 'text',
+              marks: [
+                {
+                  type: 'link',
+                  attrs: {
+                    href: 'https://www.youtube.com/@deathbattle',
+                    class:
+                      'break-anywhere hover:underline hover:decoration-primary-400 hover:decoration-2 active:underline active:decoration-primary-400',
+                    target: '_blank',
+                  },
+                },
+              ],
+            },
+            {
+              text: '). The episode is slated to release next month, and I reserve the right to edit closing time to coincide with the official release date. In the case of an ambiguous outcome (e.g. "Metal Sonic" winning in Eggman vs. Wily), I will resolve N/A. I may bet in this market.',
+              type: 'text',
+            },
+          ],
+        },
+        {
+          type: 'linkPreview',
+          attrs: {
+            id: '4cba9354-a064-4648-aac4-9f5dd8f284db',
+            url: 'https://www.youtube.com/@deathbattle',
+            image:
+              'https://yt3.googleusercontent.com/ytc/AIdro_nC3d3fI5NmYOkwtAEPoa3q5Sk_GbLIESSHMUZa9yV04w=s900-c-k-c0x00ffffff-no-rj',
+            title: 'DEATH BATTLE!',
+            inputKey: 'create market',
+            deleteNode: null,
+            description:
+              'Death Battle is the show that answers the question "Who would win in a fight?" between your favorite pop culture characters! ►Get extra perks as a Death Batt...',
+            deleteCallback: null,
+            hideCloseButton: false,
+          },
         },
       ],
     },
@@ -634,6 +675,58 @@ export const EXAMPLE_CONTRACTS = [
       content: [
         {
           type: 'paragraph',
+          content: [
+            {
+              text: 'Voter turnout in the 2020 US presidential election was the highest it has been in any presidential election since the 19th century. Even still, about as many people didn\'t vote at all as voted for Joe Biden (81 million). Thus, as we predict "who will win the electoral college" and "who will win the popular vote", we\'re also implicitly predicting who will vote.',
+              type: 'text',
+            },
+          ],
+        },
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'hardBreak',
+            },
+            {
+              text: 'Can we predict the voter turnout that will propel Joe Biden to victory ?',
+              type: 'text',
+            },
+          ],
+        },
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'hardBreak',
+            },
+            {
+              text: 'What about the voter turnout % that will play out if Trump wins?',
+              type: 'text',
+            },
+            {
+              type: 'hardBreak',
+            },
+          ],
+        },
+        {
+          type: 'iframe',
+          attrs: {
+            src: 'https://manifold.markets/embed/BlueDragon/-will-trump-win-if-voter-turnout-is',
+            frameBorder: 0,
+          },
+        },
+        {
+          type: 'paragraph',
+        },
+        {
+          type: 'paragraph',
+          content: [
+            {
+              text: 'Note: options are independent, because turnout could resolve to multiple (eg less than 49% and less than 55%), even though some options are mutually exclusive, for example if Biden DOESN’T win all other options resolve NO.',
+              type: 'text',
+            },
+          ],
         },
       ],
     },
@@ -722,7 +815,227 @@ export const EXAMPLE_CONTRACTS = [
       type: 'doc',
       content: [
         {
+          type: 'image',
+          attrs: {
+            alt: 'TV gif. Clip of Tim Robinson in "I Think You Should Leave" looking down with a sad or bewildered expression, saying, "Happy birthday."',
+            src: 'https://media0.giphy.com/media/32mwIZrQ5UMfDChMdx/giphy.gif?cid=5ff1f1caqcv1l97wik6ocow1pz9gyodldspmaezjfc70928b&ep=v1_gifs_trending&rid=giphy.gif&ct=g',
+            title: null,
+          },
+        },
+        {
           type: 'paragraph',
+          content: [
+            {
+              text: '❤ ',
+              type: 'text',
+            },
+            {
+              type: 'hardBreak',
+            },
+          ],
+        },
+        {
+          type: 'image',
+          attrs: {
+            alt: null,
+            src: 'https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/user-images%2Fdefault%2F1wgW_yrPKZ.png?alt=media&token=c1a3c2bf-d956-404d-94a5-8670e13fd347',
+            title: null,
+          },
+        },
+        {
+          type: 'iframe',
+          attrs: {
+            src: 'https://dev.manifold.markets/embed/ManifoldMarkets61be/washington-wizards-vs-charlotte-hor-5cp9pEpRgu?play=false',
+            frameBorder: 0,
+          },
+        },
+        {
+          type: 'heading',
+          attrs: {
+            level: 3,
+          },
+          content: [
+            {
+              text: 'Background',
+              type: 'text',
+            },
+          ],
+        },
+        {
+          type: 'paragraph',
+          content: [
+            {
+              text: '"I Think You Should Leave with Tim Robinson" is a critically acclaimed Netflix sketch comedy series known for its surreal and cringe-inducing humor. The show has aired three seasons since 2019, maintaining high ratings on review aggregators like Rotten Tomatoes"',
+              type: 'text',
+            },
+          ],
+        },
+        {
+          type: 'heading',
+          attrs: {
+            level: 3,
+          },
+          content: [
+            {
+              text: 'Considerations',
+              type: 'text',
+            },
+          ],
+        },
+        {
+          type: 'bulletList',
+          content: [
+            {
+              type: 'listItem',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [
+                    {
+                      text: 'Some formatting ',
+                      type: 'text',
+                    },
+                    {
+                      text: 'elements',
+                      type: 'text',
+                      marks: [
+                        {
+                          type: 'bold',
+                        },
+                        {
+                          type: 'italic',
+                        },
+                      ],
+                    },
+                    {
+                      text: ' may not display correctly on all devices or platforms',
+                      type: 'text',
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'listItem',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [
+                    {
+                      text: 'The market wi',
+                      type: 'text',
+                    },
+                    {
+                      text: 'll resolve NO if any of the requir',
+                      type: 'text',
+                      marks: [
+                        {
+                          type: 'bold',
+                        },
+                      ],
+                    },
+                    {
+                      text: 'ed elements are missing or improperly formatted',
+                      type: 'text',
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'listItem',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [
+                    {
+                      text: 'Embedded content must be vi',
+                      type: 'text',
+                      marks: [
+                        {
+                          type: 'link',
+                          attrs: {
+                            href: 'https://www.npmjs.com/package/@tiptap/react',
+                            class:
+                              'break-anywhere hover:underline hover:decoration-primary-400 hover:decoration-2 active:underline active:decoration-primary-400',
+                            target: '_blank',
+                          },
+                        },
+                      ],
+                    },
+                    {
+                      text: 'sible and functiona',
+                      type: 'text',
+                      marks: [
+                        {
+                          type: 'link',
+                          attrs: {
+                            href: 'https://www.npmjs.com/package/@tiptap/react',
+                            class:
+                              'break-anywhere hover:underline hover:decoration-primary-400 hover:decoration-2 active:underline active:decoration-primary-400',
+                            target: '_blank',
+                          },
+                        },
+                        {
+                          type: 'bold',
+                        },
+                      ],
+                    },
+                    {
+                      text: 'l when viewed on Manifold for it to count toward resolution',
+                      type: 'text',
+                      marks: [
+                        {
+                          type: 'link',
+                          attrs: {
+                            href: 'https://www.npmjs.com/package/@tiptap/react',
+                            class:
+                              'break-anywhere hover:underline hover:decoration-primary-400 hover:decoration-2 active:underline active:decoration-primary-400',
+                            target: '_blank',
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'listItem',
+              content: [
+                {
+                  type: 'paragraph',
+                },
+              ],
+            },
+            {
+              type: 'listItem',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [
+                    {
+                      type: 'mention',
+                      attrs: {
+                        id: '6hHpzvRG0pMq8PNJs7RZj2qlZGn2',
+                        label: 'IanPhilip',
+                      },
+                    },
+                    {
+                      text: ' ',
+                      type: 'text',
+                    },
+                    {
+                      type: 'hardBreak',
+                    },
+                    {
+                      type: 'hardBreak',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
         },
       ],
     },

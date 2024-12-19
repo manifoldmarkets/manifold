@@ -7,7 +7,7 @@ import { NativeMessageProvider } from 'web/components/native-message-provider'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
-import { Major_Mono_Display, Figtree } from 'next/font/google'
+import { Figtree } from 'next/font/google'
 import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
@@ -19,12 +19,6 @@ import { DevtoolsDetector, setupDevtoolsDetector } from 'web/lib/util/devtools'
 import { useRouter } from 'next/router'
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
-
-const logoFont = Major_Mono_Display({
-  weight: ['400'],
-  variable: '--font-logo',
-  subsets: ['latin'],
-})
 
 const mainFont = Figtree({
   weight: ['300', '400', '500', '600', '700'],
@@ -177,7 +171,6 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
       <style>
         {`html {
           --font-main: ${mainFont.style.fontFamily};
-          --font-variable: ${logoFont.style.fontFamily};
         }`}
       </style>
 

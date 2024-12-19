@@ -10,6 +10,8 @@ import { Button } from 'web/components/buttons/button'
 import { db } from 'web/lib/supabase/db'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Row } from 'web/components/layout/row'
+import { handleCreateSportsMarkets } from 'web/lib/admin/create-sports-markets'
+import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 
 export default function AdminPage() {
   useRedirectIfSignedOut()
@@ -17,6 +19,9 @@ export default function AdminPage() {
   const [manaStatus, setManaStatus] = useState(true)
   const [cashStatus, setCashStatus] = useState(true)
   const [togglesEnabled, setTogglesEnabled] = useState(false)
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [isFinished, setIsFinished] = useState(false)
 
   useEffect(() => {
     db.from('system_trading_status')
@@ -85,9 +90,36 @@ export default function AdminPage() {
         <LabCard title="🤬 reports" href="/admin/reports" />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
-        <Button onClick={() => api('refresh-all-clients', {})}>
-          Refresh all clients
-        </Button>
+        <Row className="gap-2">
+          <Button onClick={() => api('refresh-all-clients', {})}>
+            Refresh all clients
+          </Button>
+          <ConfirmationButton
+            openModalBtn={{
+              label: isLoading ? 'Creating...' : 'Create Sports Markets',
+              disabled: isLoading,
+            }}
+            submitBtn={{
+              label: 'Create',
+              isSubmitting: isLoading,
+              color: 'green',
+            }}
+            onSubmit={() =>
+              handleCreateSportsMarkets(setIsLoading, setIsFinished)
+            }
+          >
+            <p>Are you sure you want to create new sports markets?</p>
+            <p>
+              Make sure you are logged into the Manifold account and have
+              ~40,000 mana and 2000 sweepcash.
+            </p>
+          </ConfirmationButton>
+          {isFinished && (
+            <div className="mt-4 text-green-600">
+              ✅ Sports markets created successfully!
+            </div>
+          )}
+        </Row>
       </div>
     </Page>
   )

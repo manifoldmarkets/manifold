@@ -6,7 +6,7 @@ import { SignupBonusTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { rateLimitByUser } from './helpers/rate-limit'
 import { updateUser } from 'shared/supabase/users'
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const twilio = require('twilio')
 
 export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =

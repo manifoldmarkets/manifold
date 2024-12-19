@@ -19,7 +19,6 @@ export default function Page({ children }: PropsWithChildren) {
   const pathname = usePathname()
   const isInTabs = isTabPath(pathname)
   const bottom = isInTabs ? useBottomTabOverflow() : 0
-  console.log('PATHNAME', pathname)
 
   return (
     <View style={styles.container}>

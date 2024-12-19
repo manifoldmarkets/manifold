@@ -49,12 +49,7 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
           width="40"
           height="40"
         />
-        <div
-          className="mt-3 flex text-3xl lowercase"
-          style={{ fontFamily: 'Major Mono Display' }}
-        >
-          Manifold
-        </div>
+        <div className="mt-3 flex text-3xl lowercase">Manifold</div>
       </div>
 
       <div className={'relative mt-[6rem] flex w-full flex-row justify-center'}>

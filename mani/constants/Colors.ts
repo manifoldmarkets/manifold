@@ -3,7 +3,19 @@
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
-const withOpacity = (hexColor: string, opacity: number) => {
+export function hexToRgb(hex: string) {
+  // Remove # if present
+  hex = hex.replace('#', '')
+
+  // Parse the hex values
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+
+  return { r, g, b }
+}
+
+export const withOpacity = (hexColor: string, opacity: number) => {
   return (
     hexColor +
     Math.round(opacity * 255)

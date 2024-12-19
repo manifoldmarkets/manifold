@@ -79,7 +79,6 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
 }) {
   const { contract, bets, avatarSize, className } = props
   const showUser = bets.every((b) => dayjs(b.createdTime).isAfter('2022-06-01'))
-  useDisplayUserById
 
   const users = useUsers(bets.map((b) => b.userId))
 

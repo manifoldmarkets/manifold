@@ -140,7 +140,7 @@ export function TradesModal(props: {
     <Modal
       open={modalOpen}
       setOpen={setModalOpen}
-      className={clsx(MODAL_CLASS)}
+      className={clsx(MODAL_CLASS, 'w-full')}
       size={'lg'}
     >
       {modalOpen && (

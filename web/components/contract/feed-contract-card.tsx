@@ -113,13 +113,14 @@ export function FeedContractCard(props: {
   const [visible, setVisible] = useState(false)
   const { ref } = useIsVisible(
     () => {
-      !DEBUG_FEED_CARDS &&
+      if (!DEBUG_FEED_CARDS)
         track('view market card', {
           contractId: contract.id,
           creatorId: contract.creatorId,
           slug: contract.slug,
           isPromoted: !!promotedData,
         } as ContractCardView)
+
       setVisible(true)
     },
     false,
