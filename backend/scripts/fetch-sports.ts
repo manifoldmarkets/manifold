@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { SportsGames } from 'common/sports-info'
 
 function calculateCloseTime(date: string, time?: string): string {
@@ -27,21 +26,26 @@ async function fetchUpcomingSportsGamesForLeague(
 
   try {
     console.log(`Fetching data for league ${leagueId}...`)
-    const response = await axios.get(API_URL, {
+    const response = await fetch(API_URL, {
       headers: {
         'X-API-KEY': '', // see Notion
       },
     })
 
-    const schedule = response.data?.schedule
+    if (!response.ok) {
+      throw new Error(`Failed to fetch data: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    const schedule = data?.schedule
     if (schedule && Array.isArray(schedule)) {
       const today = new Date()
       const oneWeekLater = new Date()
       oneWeekLater.setDate(today.getDate() + 7)
 
-      return schedule.filter((sportsGames: SportsGames) => {
-        const sportsGamesDate = new Date(sportsGames.dateEvent)
-        return sportsGamesDate >= today && sportsGamesDate <= oneWeekLater
+      return schedule.filter((sportsGame: SportsGames) => {
+        const sportsGameDate = new Date(sportsGame.dateEvent)
+        return sportsGameDate >= today && sportsGameDate <= oneWeekLater
       })
     } else {
       console.log(`No sports games found for league ${leagueId}.`)
@@ -64,23 +68,23 @@ async function fetchUpcomingSportsGamesForLeague(
 
 async function fetchUpcomingSportsGames() {
   const leagueIds = [
-    '4328', //EPL
-    '4387', //NBA
+    '4328', // EPL
+    '4387', // NBA
     '4391', // NFL
   ]
 
   try {
-    const allSportsGamess = await Promise.all(
+    const allSportsGames = await Promise.all(
       leagueIds.map((leagueId) => fetchUpcomingSportsGamesForLeague(leagueId))
     )
 
-    const flattenedSportsGamess = allSportsGamess.flat()
-    if (flattenedSportsGamess.length === 0) {
+    const flattenedSportsGames = allSportsGames.flat()
+    if (flattenedSportsGames.length === 0) {
       console.log('No sports games found for the next week across all leagues.')
       return
     }
 
-    flattenedSportsGamess.forEach((sportsGame: SportsGames) => {
+    flattenedSportsGames.forEach((sportsGame: SportsGames) => {
       console.log('Match ID:', sportsGame.idEvent)
       console.log('League:', sportsGame.strLeague)
       console.log('Match:', sportsGame.strEvent)
@@ -88,7 +92,10 @@ async function fetchUpcomingSportsGames() {
       console.log('Away Team:', sportsGame.strAwayTeam)
       console.log('Date:', sportsGame.dateEvent)
       console.log('Start Time:', sportsGame.strTime)
-      const closeTime = calculateCloseTime(sportsGame.dateEvent, sportsGame.strTime)
+      const closeTime = calculateCloseTime(
+        sportsGame.dateEvent,
+        sportsGame.strTime
+      )
       console.log('Expected Close Time:', closeTime)
       console.log('-----------------------------------------')
     })

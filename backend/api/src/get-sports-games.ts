@@ -1,5 +1,4 @@
 import { type APIHandler } from './helpers/endpoint'
-import axios from 'axios'
 import { SportsGames } from 'common/sports-info'
 import { log } from 'shared/utils'
 
@@ -11,31 +10,43 @@ if (!apiKey) {
 }
 
 const leagueIds = [
-  '4328', //EPL
-  '4387', //NBA
+  '4328', // EPL
+  '4387', // NBA
   '4391', // NFL
 ]
 
-async function fetchSportsGamesForLeague(leagueId: string): Promise<SportsGames[]> {
+async function fetchSportsGamesForLeague(
+  leagueId: string
+): Promise<SportsGames[]> {
   const API_URL = `https://www.thesportsdb.com/api/v2/json/schedule/next/league/${leagueId}`
+
+  if (!apiKey) {
+    throw new Error('SPORTSDB_KEY is undefined.')
+  }
 
   try {
     log(`Fetching games for league ${leagueId}...`)
-    const response = await axios.get(API_URL, {
+    const response = await fetch(API_URL, {
       headers: {
         'X-API-KEY': apiKey,
-      },
+      } as HeadersInit, // Explicitly cast to HeadersInit
     })
 
-    const schedule = response.data?.schedule
-    if (schedule && Array.isArray(schedule)) {
-      const today = new Date()
-      const oneWeekLater = new Date()
-      oneWeekLater.setDate(today.getDate() + 7)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch data: ${response.statusText}`)
+    }
 
-      return schedule.filter((sportsGames: SportsGames) => {
-        const sportsGamesDate = new Date(sportsGames.dateEvent)
-        return sportsGamesDate >= today && sportsGamesDate <= oneWeekLater
+    const data = await response.json()
+    const schedule = data?.schedule
+    if (schedule?.length) {
+      const [today, oneWeekLater] = [
+        new Date(),
+        new Date(Date.now() + 7 * 86400000),
+      ]
+
+      return schedule.filter((sportsGame: SportsGames) => {
+        const sportsGameDate = new Date(sportsGame.dateEvent)
+        return sportsGameDate >= today && sportsGameDate <= oneWeekLater
       })
     } else {
       log(`No games found for league ${leagueId}.`)
@@ -47,9 +58,7 @@ async function fetchSportsGamesForLeague(leagueId: string): Promise<SportsGames[
   }
 }
 
-export const getSportsGames: APIHandler<
-  'get-sports-games'
-> = async () => {
+export const getSportsGames: APIHandler<'get-sports-games'> = async () => {
   log('Fetching sports games from multiple leagues...')
 
   const allSportsGames = await Promise.all(

@@ -1,6 +1,21 @@
 import { api } from 'web/lib/api/api'
 import { SportsGames } from 'common/sports-info'
 
+interface MarketCreationProps {
+  question: string
+  descriptionMarkdown: string | undefined
+  outcomeType: 'MULTIPLE_CHOICE'
+  closeTime: number
+  answers: string[]
+  visibility: 'public' | 'unlisted' | undefined
+  addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+  shouldAnswersSumToOne: boolean
+  sportsStartTimestamp: string
+  sportsEventId: string
+  sportsLeague: string
+  groupIds: string[]
+}
+
 export const handleCreateSportsMarkets = async (
   setIsLoading: (loading: boolean) => void,
   setIsFinished: (finished: boolean) => void
@@ -54,10 +69,10 @@ export const handleCreateSportsMarkets = async (
       const nbaNflDescription = `Resolves to the winning team. The game between ${sportsGames.strHomeTeam} (home) and ${sportsGames.strAwayTeam} (away) is scheduled for ${sportsGames.dateEvent} at ${sportsGames.strTime} GMT. If the game is delayed, the market will be extended. If the game is cancelled, tied, or unexpected circumstances prevent a clear winner, this market may be resolved to 50%-50%.`
 
       const description = isEPL ? eplDescription : nbaNflDescription
-      const createProps = {
+      const createProps: MarketCreationProps = {
         question: `${sportsGames.strHomeTeam} vs ${sportsGames.strAwayTeam} (${sportsGames.strLeague})`,
         descriptionMarkdown: description,
-        outcomeType: 'MULTIPLE_CHOICE',
+        outcomeType: 'MULTIPLE_CHOICE' as const,
         closeTime,
         answers,
         visibility: 'public',
@@ -69,7 +84,7 @@ export const handleCreateSportsMarkets = async (
         groupIds,
       }
 
-      const result = await api('market', createProps as any)
+      const result = await api('market', createProps) // No need for `as any`
 
       createdMarkets.push({
         id: result.id,
