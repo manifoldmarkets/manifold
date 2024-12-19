@@ -71,7 +71,6 @@ function RichContent({
 }
 
 function renderNode(node: JSONContent, index: string): React.ReactNode {
-  console.log('Rendering node type:', node.type)
   const color = useColor()
   switch (node.type) {
     case 'paragraph':
@@ -95,7 +94,6 @@ function renderNode(node: JSONContent, index: string): React.ReactNode {
       )
 
     case 'listItem':
-      console.log('Rendering listItem content:', node.content)
       return (
         <View key={`list-item-${index}`} style={styles.listItem}>
           <ThemedText size="md" style={styles.bullet}>
