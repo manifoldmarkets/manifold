@@ -50,23 +50,29 @@ export const handleCreateSportsMarkets = async (
 
       const groupIds = isEPL
         ? [
-            // '2hGlgVhIyvVaFyQAREPi',
-            // '307ecfd7-be33-485c-884b-75c61d1f51d4',
-            // '5gsW3dPR3ySBRZCodrgm',
-            // 'ypd6vR44ZzJyN9xykx6e',
-            '2ea265a7-a361-4d2a-ac3b-3bd0ad034a89', //dev soccer group for testing
+            '2hGlgVhIyvVaFyQAREPi', // sports_default
+            '307ecfd7-be33-485c-884b-75c61d1f51d4', // premier-league-20242025
+            '5gsW3dPR3ySBRZCodrgm', // premiere-league
+            'ypd6vR44ZzJyN9xykx6e', // soccer
           ]
         : sportsGames.strLeague === 'NBA'
         ? [
-            'e6a9a59f-3f64-4e06-a013-8d0706e2493e', //dev basketball group for testing
-            'IOffGO7C9c0dfDura9Yn', //dev sports for testing
+            '2hGlgVhIyvVaFyQAREPi', // sports_default
+            'i0v3cXwuxmO9fpcInVYb', // nba
+            '0ac78428-c1bc-4549-aa30-416fa1df36e2', // nba-20242025-season
+            'NjkFkdkvRvBHoeMDQ5NB', //basketball
           ]
         : sportsGames.strLeague === 'NFL'
         ? [
-            'fb91863a-6c25-4da0-a558-fd0a83ed5eee', //dev football for testing
-            'IOffGO7C9c0dfDura9Yn', //dev sports for testing
+            '2hGlgVhIyvVaFyQAREPi', // sports_default
+            'TNQwmbE5p6dnKx2e6Qlp', // nfl
+            'Vcf6CYTTSXAiStbKSqQq', // football
           ]
-        : ['1cf23469-685c-4c81-b22c-c59b68dcdbdc'] //dev ice hockey for testing
+        : [
+            '2hGlgVhIyvVaFyQAREPi', // sports_default
+            'lccgApXa1l7O5ZH3XfhH', // nhl
+            'tYP9jmPPjoX29KfzE4l5', // hockey
+          ]
 
       const eplDescription = `Resolves to the winning team or draw. The match between ${sportsGames.strHomeTeam} (home) and ${sportsGames.strAwayTeam} (away) is scheduled for ${sportsGames.dateEvent} at ${sportsGames.strTime} GMT. If the match is delayed, the market will be extended. If the match is permanently cancelled or an unexpected event occurs preventing a clear outcome, this market may be resolved to 33%-33%-33% between the 3 answers.`
 
