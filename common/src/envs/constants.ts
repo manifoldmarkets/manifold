@@ -213,6 +213,11 @@ export const MOD_IDS = [
 
 export const SWEEPSTAKES_MOD_IDS = [
   'uglwf3YKOZNGjjEXKc5HampOFRE2', //SirSalty
+  'KHX2ThSFtLQlau58hrjtCX7OL2h2', // shankypanky (stefanie)
+  '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
+  'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
+  'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
+  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
 ]
 
 export const MVP = ['Eliza', 'Gabrielle', 'jacksonpolack']
