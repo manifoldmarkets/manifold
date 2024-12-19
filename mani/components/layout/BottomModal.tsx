@@ -1,20 +1,16 @@
-import {
-  Modal,
-  TouchableWithoutFeedback,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native'
-import { Col } from 'components/layout/col'
+import { Modal, ScrollView, Pressable } from 'react-native'
 import { useColor } from 'hooks/useColor'
 
 export function BottomModal({
   open,
   setOpen,
   children,
+  scrollable = true,
 }: {
   open: boolean
   setOpen: (open: boolean) => void
   children: React.ReactNode
+  scrollable?: boolean
 }) {
   const color = useColor()
 
@@ -25,37 +21,52 @@ export function BottomModal({
       transparent={true}
       onRequestClose={() => setOpen(false)}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+      <Pressable
+        style={{
+          flex: 1,
+          justifyContent: 'flex-end',
+          backgroundColor: color.modalOverlay,
+        }}
+        onPress={() => setOpen(false)}
       >
-        <TouchableWithoutFeedback onPress={() => setOpen(false)}>
-          <Col
-            style={{
-              flex: 1,
-              justifyContent: 'flex-end',
-              backgroundColor: color.modalOverlay,
-            }}
-          >
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <Col
-                style={{
-                  backgroundColor: color.backgroundSecondary,
-                  padding: 20,
-                  paddingBottom: 32,
-                  borderTopLeftRadius: 20,
-                  borderTopRightRadius: 20,
-                  width: '100%',
-                  maxHeight: '70%',
-                  minHeight: 400,
-                }}
-              >
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation()
+          }}
+          style={{
+            backgroundColor: color.backgroundSecondary,
+            paddingVertical: 20,
+            paddingHorizontal: scrollable ? 0 : 20,
+            paddingBottom: 32,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            width: '100%',
+            maxHeight: '70%',
+          }}
+        >
+          {/* <View> */}
+          {scrollable ? (
+            <ScrollView
+              showsVerticalScrollIndicator={true}
+              bounces={false}
+              scrollEnabled={true}
+              onStartShouldSetResponder={() => true}
+              onMoveShouldSetResponder={() => true}
+              onResponderTerminationRequest={() => false}
+              style={{
+                paddingHorizontal: 20,
+              }}
+            >
+              <Pressable onPress={(e) => e.stopPropagation()}>
                 {children}
-              </Col>
-            </TouchableWithoutFeedback>
-          </Col>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+              </Pressable>
+            </ScrollView>
+          ) : (
+            children
+          )}
+          {/* </View> */}
+        </Pressable>
+      </Pressable>
     </Modal>
   )
 }

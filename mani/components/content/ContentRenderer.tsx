@@ -5,8 +5,21 @@ import { ThemedText } from 'components/ThemedText'
 import { useColor } from 'hooks/useColor'
 import React from 'react'
 
-type JSONContent = {
-  type?: string
+// Define the base node types
+type NodeType =
+  | 'paragraph'
+  | 'bulletList'
+  | 'listItem'
+  | 'image'
+  | 'mention'
+  | 'text'
+  | 'linkPreview'
+  | 'iframe'
+  | 'heading'
+  | string
+
+export type JSONContent = {
+  type?: NodeType
   attrs?: Record<string, any>
   content?: JSONContent[]
   marks?: {
@@ -267,48 +280,3 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
 })
-
-export function extractTextFromContent(content: JSONContent | string): string {
-  if (typeof content === 'string') {
-    return content
-  }
-
-  // Handle leaf nodes
-  switch (content.type) {
-    case 'text':
-      return content.text || ''
-    case 'mention':
-      return `@${content.attrs?.label || ''}`
-    case 'image':
-      return '[image]'
-    case 'linkPreview':
-      return content.attrs?.url || ''
-    case 'iframe':
-      return content.attrs?.src || ''
-  }
-
-  // If no content array, check for text property
-  if (!content.content) {
-    return content.text || ''
-  }
-
-  // Recursively process content array
-  return content.content
-    .map((node) => extractTextFromContent(node))
-    .join(' ')
-    .trim()
-}
-
-// Type guard to ensure all node types are handled
-type NodeType = JSONContent['type']
-type HandledTypes =
-  | 'paragraph'
-  | 'bulletList'
-  | 'listItem'
-  | 'image'
-  | 'mention'
-  | 'text'
-  | 'linkPreview'
-  | 'iframe'
-  | 'heading'
-  | undefined // for nodes without type

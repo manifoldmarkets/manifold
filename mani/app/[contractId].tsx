@@ -5,7 +5,6 @@ import {
   isBinaryMulti,
   MultiContract,
 } from 'common/contract'
-import { ContentRenderer } from 'components/content/ContentRenderer'
 import { BinaryBetButtons } from 'components/contract/bet/BinaryBetButtons'
 import { MultiBinaryBetButtons } from 'components/contract/bet/MultiBinaryBetButtons'
 import { BinaryOverview } from 'components/contract/overview/BinaryOverview'
@@ -16,10 +15,8 @@ import { ThemedText } from 'components/ThemedText'
 import { EXAMPLE_CONTRACTS } from 'constants/examples/ExampleContracts'
 import { useLocalSearchParams } from 'expo-router'
 import { useColor } from 'hooks/useColor'
-import { BottomModal } from 'components/layout/BottomModal'
 import { useState } from 'react'
-import { Pressable } from 'react-native'
-import { extractTextFromContent } from 'components/content/ContentRenderer'
+import { ContractDescription } from 'components/contract/ContractDescription'
 
 export const LARGE_QUESTION_LENGTH = 95
 
@@ -42,7 +39,6 @@ export default function ContractPage() {
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
 
-  console.log('DESCRIPTION', contract.description)
   return (
     <Page>
       <Col style={{ gap: 16 }}>
@@ -67,40 +63,7 @@ export default function ContractPage() {
           <BinaryBetButtons contract={contract} size="lg" />
         )}
 
-        {contract.description && (
-          <>
-            <Pressable
-              onPress={() => setDescriptionOpen(true)}
-              style={{
-                backgroundColor: color.backgroundSecondary,
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 4,
-                gap: 8,
-              }}
-            >
-              <ThemedText size="md" weight="bold">
-                Description
-              </ThemedText>
-              <ThemedText
-                size="sm"
-                numberOfLines={2}
-                color={color.textSecondary}
-              >
-                {extractTextFromContent(contract.description)}
-              </ThemedText>
-            </Pressable>
-
-            <BottomModal open={descriptionOpen} setOpen={setDescriptionOpen}>
-              <Col style={{ gap: 16 }}>
-                <ThemedText size="lg" weight="semibold">
-                  Description
-                </ThemedText>
-                <ContentRenderer content={contract.description} />
-              </Col>
-            </BottomModal>
-          </>
-        )}
+        <ContractDescription contract={contract} />
       </Col>
     </Page>
   )
