@@ -2,13 +2,6 @@ import { type APIHandler } from './helpers/endpoint'
 import { SportsGames } from 'common/sports-info'
 import { log } from 'shared/utils'
 
-const apiKey = process.env.SPORTSDB_KEY
-if (!apiKey) {
-  throw new Error(
-    'SPORTSDB_KEY environment variable is missing. Please set it in the environment.'
-  )
-}
-
 const leagueIds = [
   '4328', // EPL
   '4387', // NBA
@@ -20,6 +13,7 @@ async function fetchSportsGamesForLeague(
   leagueId: string
 ): Promise<SportsGames[]> {
   const API_URL = `https://www.thesportsdb.com/api/v2/json/schedule/next/league/${leagueId}`
+  const apiKey = process.env.SPORTSDB_KEY
 
   if (!apiKey) {
     throw new Error('SPORTSDB_KEY is undefined.')
