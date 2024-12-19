@@ -15,12 +15,15 @@ import { ThemedText } from 'components/ThemedText'
 import { EXAMPLE_CONTRACTS } from 'constants/examples/ExampleContracts'
 import { useLocalSearchParams } from 'expo-router'
 import { useColor } from 'hooks/useColor'
+import { useState } from 'react'
+import { ContractDescription } from 'components/contract/ContractDescription'
 
 export const LARGE_QUESTION_LENGTH = 95
 
 export default function ContractPage() {
   const { contractId } = useLocalSearchParams()
   const color = useColor()
+  const [descriptionOpen, setDescriptionOpen] = useState(false)
 
   //   TODO: Fetch contract data using contractId
   const contract = EXAMPLE_CONTRACTS.find((contract) => {
@@ -60,11 +63,7 @@ export default function ContractPage() {
           <BinaryBetButtons contract={contract} size="lg" />
         )}
 
-        {/* {contract.description && (
-          <ThemedText color={color.textSecondary}>
-            {contract.description}
-          </ThemedText>
-        )} */}
+        <ContractDescription contract={contract} />
       </Col>
     </Page>
   )
