@@ -8,6 +8,7 @@
       "components/*": ["components/*"],
       "lib/*": ["lib/*"],
       "common/*": ["../common/src/*"],
+      "client-common/*": ["../client-common/src/*"],
       "hooks/*": ["hooks/*"],
       "constants/*": ["./constants/*"],
       "assets/*": ["./assets/*"]
