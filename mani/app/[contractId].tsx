@@ -5,6 +5,7 @@ import {
   isBinaryMulti,
   MultiContract,
 } from 'common/contract'
+import { ContentRenderer } from 'components/content/ContentRenderer'
 import { BinaryBetButtons } from 'components/contract/bet/BinaryBetButtons'
 import { MultiBinaryBetButtons } from 'components/contract/bet/MultiBinaryBetButtons'
 import { BinaryOverview } from 'components/contract/overview/BinaryOverview'
@@ -36,6 +37,7 @@ export default function ContractPage() {
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
 
+  console.log('DESCRIPTION', contract.description)
   return (
     <Page>
       <Col style={{ gap: 16 }}>
@@ -65,6 +67,7 @@ export default function ContractPage() {
             {contract.description}
           </ThemedText>
         )} */}
+        <ContentRenderer content={contract.description} />
       </Col>
     </Page>
   )
