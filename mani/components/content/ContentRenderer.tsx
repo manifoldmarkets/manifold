@@ -200,7 +200,7 @@ function renderNode(node: JSONContent, index: string): React.ReactNode {
           style={{ textDecorationLine: 'underline' }}
           onPress={() => node.attrs?.src && Linking.openURL(node.attrs.src)}
         >
-          View embedded content
+          {node.attrs.src}
         </ThemedText>
       )
 
