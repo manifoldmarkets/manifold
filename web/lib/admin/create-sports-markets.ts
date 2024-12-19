@@ -33,6 +33,7 @@ export const handleCreateSportsMarkets = async (
       isEPL: boolean
       isNBA: boolean
       isNFL: boolean
+      isNHL: boolean
     }[] = []
 
     for (const sportsGames of sportsGamesToProcess) {
@@ -42,6 +43,7 @@ export const handleCreateSportsMarkets = async (
       const isEPL = sportsGames.strLeague === 'English Premier League'
       const isNBA = sportsGames.strLeague === 'NBA'
       const isNFL = sportsGames.strLeague === 'NFL'
+      const isNHL = sportsGames.strLeague === 'NHL'
       const answers = isEPL
         ? [sportsGames.strHomeTeam, sportsGames.strAwayTeam, 'Draw']
         : [sportsGames.strHomeTeam, sportsGames.strAwayTeam]
@@ -59,16 +61,18 @@ export const handleCreateSportsMarkets = async (
             'e6a9a59f-3f64-4e06-a013-8d0706e2493e', //dev basketball group for testing
             'IOffGO7C9c0dfDura9Yn', //dev sports for testing
           ]
-        : [
+        : sportsGames.strLeague === 'NFL'
+        ? [
             'fb91863a-6c25-4da0-a558-fd0a83ed5eee', //dev football for testing
             'IOffGO7C9c0dfDura9Yn', //dev sports for testing
           ]
+        : ['1cf23469-685c-4c81-b22c-c59b68dcdbdc'] //dev ice hockey for testing
 
       const eplDescription = `Resolves to the winning team or draw. The match between ${sportsGames.strHomeTeam} (home) and ${sportsGames.strAwayTeam} (away) is scheduled for ${sportsGames.dateEvent} at ${sportsGames.strTime} GMT. If the match is delayed, the market will be extended. If the match is permanently cancelled or an unexpected event occurs preventing a clear outcome, this market may be resolved to 33%-33%-33% between the 3 answers.`
 
-      const nbaNflDescription = `Resolves to the winning team. The game between ${sportsGames.strHomeTeam} (home) and ${sportsGames.strAwayTeam} (away) is scheduled for ${sportsGames.dateEvent} at ${sportsGames.strTime} GMT. If the game is delayed, the market will be extended. If the game is cancelled, tied, or unexpected circumstances prevent a clear winner, this market may be resolved to 50%-50%.`
+      const noTieDescription = `Resolves to the winning team. The game between ${sportsGames.strHomeTeam} (home) and ${sportsGames.strAwayTeam} (away) is scheduled for ${sportsGames.dateEvent} at ${sportsGames.strTime} GMT. If the game is delayed, the market will be extended. If the game is cancelled, tied, or unexpected circumstances prevent a clear winner, this market may be resolved to 50%-50%.`
 
-      const description = isEPL ? eplDescription : nbaNflDescription
+      const description = isEPL ? eplDescription : noTieDescription
       const createProps: MarketCreationProps = {
         question: `${sportsGames.strHomeTeam} vs ${sportsGames.strAwayTeam} (${sportsGames.strLeague})`,
         descriptionMarkdown: description,
@@ -84,17 +88,20 @@ export const handleCreateSportsMarkets = async (
         groupIds,
       }
 
-      const result = await api('market', createProps) // No need for `as any`
+      const result = await api('market', createProps)
 
       createdMarkets.push({
         id: result.id,
         isEPL,
         isNBA,
         isNFL,
+        isNHL,
       })
     }
 
-    for (const { id: marketId, isEPL } of createdMarkets) {
+    for (const { id: marketId, isEPL, isNBA, isNFL, isNHL } of createdMarkets) {
+      if (isNHL) continue
+
       let subsidyAmount = 50
       if (isEPL) subsidyAmount = 25
 

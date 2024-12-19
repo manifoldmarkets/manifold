@@ -13,6 +13,7 @@ const leagueIds = [
   '4328', // EPL
   '4387', // NBA
   '4391', // NFL
+  '4380', // NHL
 ]
 
 async function fetchSportsGamesForLeague(
