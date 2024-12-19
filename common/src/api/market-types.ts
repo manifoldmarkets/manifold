@@ -60,6 +60,9 @@ export type LiteMarket = {
   lastUpdatedTime?: number
   lastBetTime?: number
   marketTier?: MarketTierType
+  sportsStartTimestamp?: string
+  sportsEventId?: string
+  sportsLeague?: string
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -321,6 +324,9 @@ export const createMarketProps = z
     utcOffset: z.number().optional(),
     marketTier: z.enum(tiers).optional(),
     idempotencyKey: z.string().regex(randomStringRegex).length(10).optional(),
+    sportsStartTimestamp: z.string().optional(),
+    sportsEventId: z.string().optional(),
+    sportsLeague: z.string().optional(),
   })
   .and(
     z.union([

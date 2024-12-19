@@ -452,6 +452,9 @@ export function ContractParamsForm(props: {
         precision,
         marketTier,
         idempotencyKey,
+        sportsStartTimestamp: params?.sportsStartTimestamp,
+        sportsEventId: params?.sportsEventId,
+        sportsLeague: params?.sportsLeague,
       })
 
       const newContract = await api('market', createProps as any)

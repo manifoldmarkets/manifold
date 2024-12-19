@@ -98,6 +98,10 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   token: ContractToken
   siblingContractId?: string
 
+  sportsStartTimestamp?: string
+  sportsEventId?: string
+  sportsLeague?: string
+
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
