@@ -81,6 +81,7 @@ const editorExtensions = (simple = false): Extensions =>
     Upload,
   ])
 
+// also see tailwind.config.js
 const proseClass = (size: 'sm' | 'md' | 'lg') =>
   clsx(
     'prose dark:prose-invert max-w-none leading-relaxed',
