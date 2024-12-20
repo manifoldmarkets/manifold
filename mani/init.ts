@@ -1,9 +1,10 @@
 import * as Notifications from 'expo-notifications'
 import { log } from 'components/logger'
-import { getFirebaseAuth } from 'lib/firebase/auth'
-import { getApps, getApp, initializeApp } from 'firebase/app'
+import { getApps, getApp, initializeApp, FirebaseApp } from 'firebase/app'
 import { CONFIGS } from 'common/envs/constants'
 import Constants from 'expo-constants'
+import { Auth, initializeAuth, getReactNativePersistence } from 'firebase/auth'
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage'
 
 export const ENV =
   Constants.expoConfig?.extra?.eas.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
@@ -11,8 +12,17 @@ export const ENV_CONFIG = CONFIGS[ENV]
 export const app = getApps().length
   ? getApp()
   : initializeApp(ENV_CONFIG.firebaseConfig)
+let initAuth: Auth | null = null
 
-export const auth = getFirebaseAuth()
+export const getAuth = (app: FirebaseApp) => {
+  if (!initAuth) {
+    initAuth = initializeAuth(app, {
+      persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+    })
+  }
+  return initAuth
+}
+export const auth = getAuth(app)
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { User } from 'common/user'
 import { LoansModal } from 'web/components/profile/loans-modal'
-import { api, requestLoan } from 'web/lib/api/api'
+import { api } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -51,7 +51,7 @@ export function DailyLoan(props: {
       return
     }
     setLoaning(true)
-    const res = await requestLoan().catch((e) => {
+    const res = await api('request-loan').catch((e) => {
       console.error(e)
       toast.error('Error requesting loan')
       return null

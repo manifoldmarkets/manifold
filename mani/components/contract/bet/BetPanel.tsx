@@ -14,6 +14,7 @@ import { Row } from 'components/layout/row'
 import { NumberText } from 'components/NumberText'
 import { YesNoButton } from 'components/buttons/YesNoButtons'
 import { Button } from 'components/buttons/Button'
+import { api } from 'lib/api'
 export type BinaryOutcomes = 'YES' | 'NO'
 
 export function BetPanel({
@@ -42,7 +43,12 @@ export function BetPanel({
 
   // TODO: add bet logic
   const onPress = () => {
-    setOpen(false)
+    api('bet', {
+      contractId: contract.id,
+      outcome,
+      amount,
+    })
+    // setOpen(false)
   }
 
   // TODO: figure out keyboard clicking behavior
