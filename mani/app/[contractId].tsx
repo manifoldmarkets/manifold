@@ -65,19 +65,21 @@ export default function ContractPage() {
   const { token } = useTokenMode()
   // TODO: proof of concept, we may want the bet points in the market props or sth else.
   const [betPoints, setBetPoints] = useState<HistoryPoint<Partial<Bet>>[]>([])
-  useEffect(() => {
-    if (contractProps) {
-      getBetPoints(contractId as string).then((betPoints) => {
-        setBetPoints(betPoints)
-      })
-    }
-  }, [contractId])
   const contractToShow =
     contractProps?.contract.token === token
       ? contractProps?.contract
-      : (siblingContract as Contract)
+      : siblingContract
+      ? (siblingContract as Contract)
+      : undefined
   //   TODO: Fetch contract data using contractId
-  const contract = useContract(contractToShow.id) ?? contractToShow
+  const contract = useContract(contractToShow?.id) ?? contractToShow
+  useEffect(() => {
+    if (contractToShow) {
+      getBetPoints(contractToShow?.id as string).then((betPoints) => {
+        setBetPoints(betPoints)
+      })
+    }
+  }, [contractToShow?.id])
 
   if (!contract) {
     return <ThemedText>Contract not found</ThemedText>
@@ -103,9 +105,6 @@ export default function ContractPage() {
             contract={contract as BinaryContract}
             betPoints={betPoints}
           />
-        )}
-        {contract.mechanism === 'cpmm-1' && (
-          <BinaryProbability contract={contract as BinaryContract} size="xl" />
         )}
 
         {isBinaryMc ? (
