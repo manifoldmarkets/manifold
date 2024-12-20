@@ -282,21 +282,16 @@ function MarketsContent() {
     if (user && isSportsInterested === undefined) {
       getIsSportsInterested()
     }
-  }, [user])
+  }, [user?.id])
   const sportsFirst = isSportsInterested || user === null
 
+  if (user === undefined || (user && isSportsInterested === undefined)) {
+    return <LoadingIndicator />
+  }
   const baseTabs: Tab[] = buildArray(
     sportsFirst && {
       title: 'Sports',
       content: <SportsTabs />,
-    },
-    {
-      title: 'Activity',
-      content: (
-        <Col className="pt-1">
-          <SiteActivity />
-        </Col>
-      ),
     },
     user && {
       title: 'Explore',
@@ -306,12 +301,16 @@ function MarketsContent() {
         </Col>
       ),
     },
+    {
+      title: 'Activity',
+      content: (
+        <Col className="pt-1">
+          <SiteActivity />
+        </Col>
+      ),
+    },
     !sportsFirst && { title: 'Sports', content: <SportsTabs /> }
   )
-
-  if (user === undefined) {
-    return <LoadingIndicator />
-  }
 
   return <OrganizableMarketsPage user={user} tabs={baseTabs} />
 }
