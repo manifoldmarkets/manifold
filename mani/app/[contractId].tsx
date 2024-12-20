@@ -17,6 +17,7 @@ import { useLocalSearchParams } from 'expo-router'
 import { useColor } from 'hooks/useColor'
 import { useState } from 'react'
 import { ContractDescription } from 'components/contract/ContractDescription'
+import { CommentsSection } from 'components/contract/comments/CommentsSection'
 
 export const LARGE_QUESTION_LENGTH = 95
 
@@ -64,6 +65,7 @@ export default function ContractPage() {
         )}
 
         <ContractDescription contract={contract} />
+        <CommentsSection contract={contract} />
       </Col>
     </Page>
   )
