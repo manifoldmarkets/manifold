@@ -36,6 +36,7 @@ export const secrets = (
     'ANTHROPIC_API_KEY',
     'PERPLEXITY_API_KEY',
     'FIRECRAWL_API_KEY',
+    'SPORTSDB_KEY',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()

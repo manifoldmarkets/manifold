@@ -37,6 +37,11 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
 
   const { above, below } = await api('group/:slug/groups', { slug: topicSlug })
   const dashboards = await api('group/:slug/dashboards', { slug: topicSlug })
+  const topQuestions = await api('search-markets', {
+    sort: 'score',
+    topicSlug,
+    limit: 3,
+  })
 
   return {
     props: {
@@ -44,6 +49,7 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
       above,
       below,
       dashboards,
+      topQuestions: topQuestions.map((m) => m.question),
     },
     revalidate: 240,
   }
@@ -58,8 +64,9 @@ export default function TopicPage(props: {
   above: LiteGroup[]
   below: LiteGroup[]
   dashboards: { id: string; title: string; slug: string; creatorId: string }[]
+  topQuestions: string[]
 }) {
-  const { topic, above, below, dashboards } = props
+  const { topic, above, below, dashboards, topQuestions } = props
 
   const isMobile = useIsMobile()
 
@@ -80,9 +87,16 @@ export default function TopicPage(props: {
     >
       <SEO
         title={topic.name}
-        description="hi"
-        // description={topic.about}
+        description={`${topic.name} odds on Manifold`}
         url={groupPath(topic.slug)}
+        ogProps={{
+          props: {
+            name: topic.name,
+            totalMembers: String(topic.totalMembers ?? 0),
+            topQuestions,
+          },
+          endpoint: 'topic',
+        }}
       />
       <Col className="col-span-7 px-4">
         {/* {topic.bannerUrl && (

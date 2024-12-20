@@ -39,6 +39,7 @@ export function ContractDescription(props: {
           />
         ) : (
           <CollapsibleContent
+            mediaSize="md"
             content={description}
             stateKey={`isCollapsed-contract-${contractId}`}
             hideCollapse={!user}
@@ -68,6 +69,7 @@ function EditableDescription(props: {
   const [editing, setEditing] = useState(false)
 
   const editor = useTextEditor({
+    size: 'md',
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: description,
   })
@@ -125,6 +127,7 @@ function EditableDescription(props: {
       {!isDescriptionEmpty && (
         <CollapsibleContent
           content={description}
+          mediaSize="md"
           stateKey={`isCollapsed-contract-${contractId}`}
         />
       )}

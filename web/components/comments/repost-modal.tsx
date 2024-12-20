@@ -125,7 +125,7 @@ export const RepostModal = (props: {
                   isParent={true}
                 />
 
-                <Content content={comment.content} />
+                <Content size="sm" content={comment.content} />
               </Col>
             </Row>
             <Row className={'mt-4 justify-between'}>

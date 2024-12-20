@@ -388,6 +388,7 @@ export function ContractParamsForm(props: {
   const editorKey = 'create market' + paramsKey
   const editor = useTextEditor({
     key: editorKey,
+    size: 'md',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: 'Optional. Provide background info and details.',
     defaultValue: params?.description
