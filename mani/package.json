@@ -17,7 +17,7 @@
     "build:ios:preview": "yarn build:preview -p ios --profile preview",
     "build:ios:prod": "yarn build:prod -p ios --profile production",
     "clear": "npx expo start --clear",
-    "start": "npx expo start --dev-client",
+    "start": "NEXT_PUBLIC_FIREBASE_ENV=PROD npx expo start --dev-client",
     "start:dev": "NEXT_PUBLIC_FIREBASE_ENV=DEV npx expo start --dev-client",
     "android": "npx expo run:android",
     "ios": "npx expo run:ios"

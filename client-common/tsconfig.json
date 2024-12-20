@@ -13,8 +13,10 @@
     "incremental": true,
     "isolatedModules": true,
     "paths": {
-      "client-common/*": ["./src/*", "../lib/*"]
+      "client-common/*": ["./src/*", "../lib/*"],
+      "common/*": ["../common/src/*", "../common/lib/*"]
     }
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "references": [{ "path": "../common" }]
 }
