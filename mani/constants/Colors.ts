@@ -117,6 +117,7 @@ export const Colors = {
   text: white,
   textSecondary: gray[300],
   textTertiary: gray[400],
+  textQuaternary: gray[500],
   background: gray[950],
   backgroundSecondary: gray[900],
   grayButtonBackground: gray[800],

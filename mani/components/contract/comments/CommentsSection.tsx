@@ -6,7 +6,7 @@ import { ThemedText } from 'components/ThemedText'
 import { EXAMPLE_COMMENTS } from 'constants/examples/ExampleComments'
 import { groupBy, keyBy, sortBy } from 'lodash'
 import { useState } from 'react'
-import { CommentThread } from './CommentThread'
+import { ParentComment } from './ParentComment'
 
 // TODO: pinned comments
 // TODO: jump to comments
@@ -45,20 +45,20 @@ export function CommentsSection({ contract }: { contract: Contract }) {
     (c) => c.replyToCommentId ?? '_'
   )
 
-  console.log('COMMENTS BY PARENT', commentsByParent)
   const commentById = keyBy(comments, 'id')
 
   const parentComments = sortedComments.filter(
     (c) => c.replyToCommentId === undefined
   )
-
+  // TODO: add reply input
   return (
-    <Col>
+    <Col style={{ gap: 16 }}>
       <ThemedText size="xl" weight="semibold">
         Comments
       </ThemedText>
+
       {parentComments.map((parent) => (
-        <CommentThread
+        <ParentComment
           key={parent.id}
           parentComment={parent as ContractComment}
           threadComments={
