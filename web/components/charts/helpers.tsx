@@ -21,7 +21,7 @@ import React, {
   useRef,
   useState,
 } from 'react'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { ManaSvg, SpiceSvg, SweepiesSvg } from './mana-spice-chart'
 import { PositionsTooltip } from 'web/components/charts/contract/choice'

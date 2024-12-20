@@ -15,7 +15,7 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { UserHovercard } from './user/user-hovercard'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { VisibilityObserver } from './widgets/visibility-observer'
+import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 
 export function SiteActivity(props: {
   className?: string

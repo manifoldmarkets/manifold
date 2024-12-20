@@ -6,7 +6,7 @@ import {
   LoadingCards,
 } from 'web/components/contract/feed-contract-card'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Fragment, useEffect, useState } from 'react'
 import { APIResponse } from 'common/api/schema'
 import { uniqBy } from 'lodash'
@@ -20,7 +20,7 @@ import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 import { api } from 'web/lib/api/api'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 
 const defaultValue: APIResponse<'get-feed'> & { offset: number } = {
   contracts: [],

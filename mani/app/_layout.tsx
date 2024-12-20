@@ -24,6 +24,7 @@ import { StyleSheet } from 'react-native'
 import { Colors } from 'constants/Colors'
 import { UserProvider, useUser } from 'hooks/useUser'
 import { Splash } from 'components/splash'
+import Toast from 'react-native-toast-message'
 
 const HEADER_HEIGHT = 250
 
@@ -174,6 +175,7 @@ function RootLayout() {
         )}
 
         <StatusBar style="dark" />
+        <Toast />
       </SafeAreaView>
     </TokenModeProvider>
   )

@@ -11,7 +11,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { MULTI_NUMERIC_BUCKETS_MAX } from 'common/contract'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { track } from 'web/lib/service/analytics'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 
 export const MultiNumericRangeSection = (props: {
   minString: string

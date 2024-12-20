@@ -22,8 +22,8 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
 import { SiteActivity } from 'web/components/site-activity'
-import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { api } from 'web/lib/api/api'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { User } from 'common/user'
@@ -199,7 +199,7 @@ function MarketsList(
   )
   // We could also find all the sweeps markets, then when we run out, show mana markets
   const loadMore = async () => {
-    if (loading) return
+    if (loading) return false
     setLoading(true)
     try {
       const [manaMarkets, cashMarkets] = await Promise.all([
@@ -233,6 +233,7 @@ function MarketsList(
         manaOffset: data.manaOffset + manaMarkets.length,
         cashOffset: data.cashOffset + cashMarkets.length,
       })
+      return true
     } finally {
       setTimeout(() => setLoading(false), 50)
     }
@@ -251,14 +252,7 @@ function MarketsList(
       ))}
       <div className="relative">
         {loading && <LoadingCards rows={3} />}
-        <VisibilityObserver
-          className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
-          onVisibilityUpdated={(visible) => {
-            if (visible && !loading) {
-              loadMore()
-            }
-          }}
-        />
+        <LoadMoreUntilNotVisible loadMore={loadMore} />
       </div>
     </Col>
   )

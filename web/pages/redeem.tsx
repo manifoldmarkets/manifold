@@ -42,7 +42,7 @@ import {
   InputTitle,
 } from 'web/components/gidx/register-component-helpers'
 import { UsOnlyDisclaimer } from 'web/components/sweeps/us-only-disclaimer'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import {
   ageBlocked,
   fraudSession,

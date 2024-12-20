@@ -18,7 +18,7 @@ import { Table } from '../widgets/table'
 import { TRADE_TERM } from 'common/envs/constants'
 import { api } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { CoinNumber } from '../widgets/coin-number'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'

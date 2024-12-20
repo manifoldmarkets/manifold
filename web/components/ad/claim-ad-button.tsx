@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import { redeemBoost } from 'web/lib/api/api'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Button } from '../buttons/button'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 export function ClaimButton(props: {
   adId: string

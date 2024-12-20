@@ -7,7 +7,7 @@ import {
 import { db } from 'web/lib/supabase/db'
 import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from './use-persistent-local-state'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { useApiSubscription } from 'web/hooks/use-api-subscription'
 import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
 import { useUser } from './use-user'

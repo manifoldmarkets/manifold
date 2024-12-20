@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { useEvent } from './use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 
 // Focus helper from https://stackoverflow.com/a/54159564/1222351
 export function useFocus(): [React.RefObject<HTMLElement>, () => void] {

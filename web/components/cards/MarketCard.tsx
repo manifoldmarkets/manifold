@@ -6,7 +6,7 @@ import { Dictionary, sortBy, uniqBy } from 'lodash'
 import Image from 'next/image'
 import { useEffect } from 'react'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { db } from 'web/lib/supabase/db'
 
 // Find 100 top question in terms of value from this user
