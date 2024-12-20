@@ -7,9 +7,10 @@ import Constants from 'expo-constants'
 
 export const ENV =
   Constants.expoConfig?.extra?.eas.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
+export const ENV_CONFIG = CONFIGS[ENV]
 export const app = getApps().length
   ? getApp()
-  : initializeApp(CONFIGS[ENV].firebaseConfig)
+  : initializeApp(ENV_CONFIG.firebaseConfig)
 
 export const auth = getFirebaseAuth()
 
