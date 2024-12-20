@@ -31,7 +31,6 @@ import WebView from 'react-native-webview'
 import * as Google from 'expo-auth-session/providers/google'
 import { Text } from 'components/text'
 import { log } from 'components/logger'
-import { useStately } from 'client-common/hooks/use-stately'
 
 export const AuthPage = (props: { height: number; width: number }) => {
   const { height, width } = props
@@ -42,8 +41,6 @@ export const AuthPage = (props: { height: number; width: number }) => {
   }
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(fixedConfig)
   const appleAuthAvailable = useAppleAuthentication()
-  const size = useStately()
-  console.log('size', size)
 
   // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
   useEffect(() => {
