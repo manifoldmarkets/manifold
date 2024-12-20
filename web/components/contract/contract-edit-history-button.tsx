@@ -182,6 +182,7 @@ export const ContractHistoryButton = (props: {
                       <div className="bg-canvas-0 rounded-lg p-2">
                         <CollapsibleContent
                           content={edit.description}
+                          mediaSize="md"
                           stateKey={`isCollapsed-contract-${edit.id}`}
                           defaultCollapse
                         />

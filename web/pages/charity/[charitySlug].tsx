@@ -142,6 +142,7 @@ function CharityPage(props: {
           />
           <CollapsibleContent
             content={description}
+            mediaSize="md"
             stateKey={`isCollapsed-charity-${charity.id}`}
           />
           <Spacer h={8} />

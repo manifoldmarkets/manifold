@@ -48,7 +48,7 @@ export function CollapsibleContent(props: {
   stateKey: string
   defaultCollapse?: boolean
   hideCollapse?: boolean
-  mediaSize?: 'sm' | 'md' | 'lg'
+  mediaSize: 'sm' | 'md' | 'lg'
   collapseLines?: number
   showMorePlacement?: 'top' | 'bottom'
 }) {
@@ -94,7 +94,7 @@ function ActuallyCollapsibleContent(props: {
   content: JSONContent | string
   stateKey: string
   showMorePlacement: 'top' | 'bottom'
-  mediaSize?: 'sm' | 'md' | 'lg'
+  mediaSize: 'sm' | 'md' | 'lg'
   defaultCollapse?: boolean
 }) {
   const { content, mediaSize, stateKey, defaultCollapse, showMorePlacement } =

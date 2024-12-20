@@ -98,21 +98,14 @@ export function useTextEditor(props: {
   placeholder?: string
   max?: number
   defaultValue?: Content
-  size?: 'sm' | 'md' | 'lg'
+  size: 'sm' | 'md' | 'lg'
   key?: string // unique key for autosave. If set, plz call `editor.commands.clearContent(true)` on submit to clear autosave
   extensions?: Extensions
   autofocus?: boolean
   className?: string
 }) {
-  const {
-    placeholder,
-    className,
-    max,
-    defaultValue,
-    size = 'md',
-    key,
-    autofocus,
-  } = props
+  const { placeholder, className, max, defaultValue, size, key, autofocus } =
+    props
   const simple = size === 'sm'
 
   const [content, setContent] = usePersistentLocalState<
@@ -273,9 +266,9 @@ export function TextEditor(props: {
 function RichContent(props: {
   content: JSONContent
   className?: string
-  size?: 'sm' | 'md' | 'lg'
+  size: 'sm' | 'md' | 'lg'
 }) {
-  const { className, content, size = 'md' } = props
+  const { className, content, size } = props
 
   const jsxContent = useMemo(() => {
     try {
@@ -319,10 +312,10 @@ function RichContent(props: {
 export function Content(props: {
   content: JSONContent | string
   /** font/spacing */
-  size?: 'sm' | 'md' | 'lg'
+  size: 'sm' | 'md' | 'lg'
   className?: string
 }) {
-  const { className, size = 'md', content } = props
+  const { className, size, content } = props
   return typeof content === 'string' ? (
     <Linkify
       className={clsx('whitespace-pre-line', proseClass(size), className)}

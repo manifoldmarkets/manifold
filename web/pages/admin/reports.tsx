@@ -112,7 +112,7 @@ export default function Reports(props: { reports: LiteReport[] }) {
 
                 {contentType !== 'user' && (
                   <div className="bg-canvas-0 my-2 max-h-[300px] overflow-y-auto rounded-lg p-2">
-                    <Content content={text} />
+                    <Content size="md" content={text} />
                   </div>
                 )}
 
