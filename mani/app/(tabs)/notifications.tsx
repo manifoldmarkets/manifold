@@ -1,5 +1,5 @@
-import Page from 'components/Page'
-import { ThemedText } from 'components/ThemedText'
+import Page from 'components/page'
+import { ThemedText } from 'components/themed-text'
 
 export default function TabTwoScreen() {
   return (

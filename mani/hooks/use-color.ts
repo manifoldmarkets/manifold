@@ -1,5 +1,5 @@
-import { useTokenMode } from './useTokenMode'
-import { modes, Colors } from 'constants/Colors'
+import { useTokenMode } from './use-token-mode'
+import { modes, Colors } from 'constants/colors'
 
 export const useColor = () => {
   const { token } = useTokenMode()

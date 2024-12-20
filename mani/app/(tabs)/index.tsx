@@ -1,6 +1,6 @@
 import { Feed } from 'components/home/feed'
-import { TopTabs } from 'components/layout/TopTabs'
-import Page from 'components/Page'
+import { TopTabs } from 'components/layout/top-tabs'
+import Page from 'components/page'
 
 export type HomeTabs = 'home' | 'news' | 'sports' | 'politics' | 'entertainment'
 
