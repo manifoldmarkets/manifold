@@ -11,12 +11,11 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { getFirebaseAuth } from './auth'
-import { createFirebaseAuth } from 'common/auth/firebase'
 dayjs.extend(utc)
 
 export type { User }
 
-export const auth = createFirebaseAuth({ getFirebaseAuth })
+export const auth = getFirebaseAuth()
 export const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'
 const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'
 
