@@ -13,8 +13,8 @@ import { usePathname } from 'next/navigation'
 import { api } from 'web/lib/api/api'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { useApiSubscription } from 'web/hooks/use-api-subscription'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 export function usePrivateMessages(
   channelId: number,

@@ -14,6 +14,9 @@ import { Row } from 'components/layout/row'
 import { NumberText } from 'components/NumberText'
 import { YesNoButton } from 'components/buttons/YesNoButtons'
 import { Button } from 'components/buttons/Button'
+import { api } from 'lib/api'
+import Toast from 'react-native-toast-message'
+
 export type BinaryOutcomes = 'YES' | 'NO'
 
 export function BetPanel({
@@ -39,10 +42,32 @@ export function BetPanel({
       : null
 
   const isBinaryMC = isBinaryMulti(contract)
+  const [loading, setLoading] = useState(false)
 
   // TODO: add bet logic
-  const onPress = () => {
-    setOpen(false)
+  const onPress = async () => {
+    try {
+      setLoading(true)
+      await api('bet', {
+        contractId: contract.id,
+        outcome,
+        amount,
+      })
+      Toast.show({
+        type: 'success',
+        text1: '🎉  Bet placed successfully',
+      })
+      setOpen(false)
+    } catch (e) {
+      console.error(e)
+      Toast.show({
+        type: 'error',
+        text1: '💥  Failed to place bet',
+        text2: e.message ?? 'Please try again',
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   // TODO: figure out keyboard clicking behavior
@@ -104,7 +129,7 @@ export function BetPanel({
                     </NumberText>
                   </Row>
                   {isBinaryMC ? (
-                    <Button size="lg" onPress={onPress}>
+                    <Button size="lg" onPress={onPress} disabled={loading}>
                       <ThemedText weight="normal">
                         Buy{' '}
                         <ThemedText weight="semibold">{answer.text}</ThemedText>
@@ -112,6 +137,7 @@ export function BetPanel({
                     </Button>
                   ) : (
                     <YesNoButton
+                      disabled={loading}
                       variant={outcome === 'YES' ? 'yes' : 'no'}
                       size="lg"
                       title={`Buy ${outcome === 'YES' ? 'Yes' : 'No'}`}

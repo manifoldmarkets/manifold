@@ -1,7 +1,7 @@
 import { Dictionary, isEqual } from 'lodash'
 import { useEffect } from 'react'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { useEvent } from './use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { useForceUpdate } from './use-force-update'
 
 const store: Dictionary<any> = {}

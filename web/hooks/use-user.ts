@@ -6,7 +6,7 @@ import { db } from 'web/lib/supabase/db'
 import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { useLiveUpdates } from './use-persistent-supabase-polling'
 import { run } from 'common/supabase/utils'
-import { useApiSubscription } from './use-api-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { getFullUserById, getPrivateUserSafe } from 'web/lib/supabase/users'
 import { useIsPageVisible } from './use-page-visible'
 

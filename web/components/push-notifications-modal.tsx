@@ -11,7 +11,7 @@ import { api } from 'web/lib/api/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { nativeToWebMessageType } from 'common/native-message'
 import { MesageTypeMap } from 'common/native-message'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 
 export function PushNotificationsModal(props: {
   privateUser: PrivateUser

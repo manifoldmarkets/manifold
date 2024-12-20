@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { APIParams, APIPath, APIResponse } from 'common/api/schema'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { APIError, api } from 'web/lib/api/api'
-import { useEvent } from './use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 
 const promiseCache: Record<string, Promise<any> | undefined> = {}
 

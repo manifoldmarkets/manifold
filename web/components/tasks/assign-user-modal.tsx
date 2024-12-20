@@ -3,7 +3,7 @@ import { User } from 'common/user'
 import { Avatar } from '../widgets/avatar'
 import { Input } from '../widgets/input'
 import { Modal, MODAL_CLASS } from '../layout/modal'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { searchUsers } from 'web/lib/supabase/users'
 
 export function AssignUserModal(props: {

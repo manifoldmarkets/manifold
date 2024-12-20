@@ -1,6 +1,6 @@
 import { safeJsonParse } from 'common/util/json'
 import { useEffect, useState } from 'react'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 
 const store: { [key: string]: any } = {}
 export function isFunction<T>(

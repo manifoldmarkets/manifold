@@ -4,7 +4,7 @@ import { Answer } from 'common/answer'
 import { uniqBy, uniq } from 'lodash'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { filterDefined } from 'common/util/array'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import {
   DisplayUser,
   getDisplayUsers,

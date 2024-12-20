@@ -1,6 +1,6 @@
 import { createRef, useEffect, useRef, useState } from 'react'
 import { keyBy, mapValues } from 'lodash'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { useRouter } from 'next/router'
 import { Headline } from 'common/news'
 

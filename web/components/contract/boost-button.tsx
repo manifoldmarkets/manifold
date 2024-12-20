@@ -9,7 +9,7 @@ import { ReactNode, useState } from 'react'
 import toast from 'react-hot-toast'
 import { TbRocket } from 'react-icons/tb'
 import { useQuery } from 'web/hooks/use-query'
-import { boostMarket, getAdAnalytics } from 'web/lib/api/api'
+import { api, boostMarket } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { MoneyDisplay } from '../bet/money-display'
 import { Button } from '../buttons/button'
@@ -224,7 +224,7 @@ function FeedAnalytics(props: { contractId: string; isCashContract: boolean }) {
     error,
     isLoading,
   } = useQuery(async () =>
-    getAdAnalytics({
+    api('get-ad-analytics', {
       contractId,
     })
   )

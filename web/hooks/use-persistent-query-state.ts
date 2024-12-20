@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { pickBy, debounce, mapValues } from 'lodash'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 type UrlParams = Record<string, string | undefined>
 

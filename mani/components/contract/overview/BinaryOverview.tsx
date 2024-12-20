@@ -15,10 +15,10 @@ export function BinaryOverview({ contract }: { contract: BinaryContract }) {
   if (!data) return null
   const { cash: cashBetData, play: playBetData } = data
 
-  const { mode } = useTokenMode()
+  const { token } = useTokenMode()
 
   // TODO: actually grab data
-  const { betPoints } = mode === 'sweep' ? cashBetData : playBetData
+  const { betPoints } = token === 'CASH' ? cashBetData : playBetData
   const [graphProbability, setGraphProbability] = useState<number | undefined>(
     undefined
   )

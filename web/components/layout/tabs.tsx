@@ -8,7 +8,7 @@ import { Col } from './col'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
 import { Carousel } from 'web/components/widgets/carousel'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 

@@ -54,7 +54,7 @@ export function BetAmountInput({
     setAmount(roundedValue)
   }
 
-  const { mode } = useTokenMode()
+  const { token } = useTokenMode()
   const color = useColor()
 
   return (
@@ -82,7 +82,7 @@ export function BetAmountInput({
               height: 48,
             }}
             source={
-              mode === 'play'
+              token === 'MANA'
                 ? require('../../../assets/images/masses_mana.png')
                 : require('../../../assets/images/masses_sweeps.png')
             }

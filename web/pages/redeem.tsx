@@ -26,7 +26,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { useApiSubscription } from 'web/hooks/use-api-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
@@ -42,7 +42,7 @@ import {
   InputTitle,
 } from 'web/components/gidx/register-component-helpers'
 import { UsOnlyDisclaimer } from 'web/components/sweeps/us-only-disclaimer'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import {
   ageBlocked,
   fraudSession,

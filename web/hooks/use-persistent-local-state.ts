@@ -1,8 +1,8 @@
 import { safeJsonParse } from 'common/util/json'
 import { useEffect, useState } from 'react'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { isFunction } from 'web/hooks/use-persistent-in-memory-state'
-import { useEvent } from 'web/hooks/use-event'
+import { isFunction } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useEvent } from 'client-common/hooks/use-event'
 import { useIsClient } from 'web/hooks/use-is-client'
 
 export const usePersistentLocalState = <T>(initialValue: T, key: string) => {

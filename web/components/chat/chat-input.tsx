@@ -9,7 +9,7 @@ import { call } from 'web/lib/api/api'
 import { getApiUrl } from 'common/api/utils'
 import { Col } from 'web/components/layout/col'
 import { Extension } from '@tiptap/core'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { PaperAirplaneIcon, XIcon } from '@heroicons/react/solid'
 import { ChatIcon } from '@heroicons/react/outline'
 

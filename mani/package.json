@@ -17,7 +17,7 @@
     "build:ios:preview": "yarn build:preview -p ios --profile preview",
     "build:ios:prod": "yarn build:prod -p ios --profile production",
     "clear": "npx expo start --clear",
-    "start": "npx expo start --dev-client",
+    "start": "NEXT_PUBLIC_FIREBASE_ENV=PROD npx expo start --dev-client",
     "start:dev": "NEXT_PUBLIC_FIREBASE_ENV=DEV npx expo start --dev-client",
     "android": "npx expo run:android",
     "ios": "npx expo run:ios"
@@ -32,7 +32,7 @@
     "@supabase/supabase-js": "2.43.5",
     "dayjs": "1.11.13",
     "exo": "0.0.9",
-    "expo": "52.0.18",
+    "expo": "~52.0.19",
     "expo-apple-authentication": "~7.1.2",
     "expo-auth-session": "~6.0.1",
     "expo-blur": "14.0.1",
@@ -54,6 +54,7 @@
     "expo-updates": "~0.26.10",
     "expo-web-browser": "~14.0.1",
     "firebase": "10.12.2",
+    "lodash": "4.17.21",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native": "0.76.5",
@@ -66,6 +67,7 @@
     "react-native-screens": "~4.1.0",
     "react-native-svg": "15.10.1",
     "react-native-svg-charts": "5.4.0",
+    "react-native-toast-message": "2.2.1",
     "react-native-web": "~0.19.13",
     "react-native-webview": "13.12.5",
     "zod": "3.23.8"

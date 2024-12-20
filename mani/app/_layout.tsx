@@ -15,7 +15,7 @@ import * as Sentry from '@sentry/react-native'
 import { log } from 'components/logger'
 import { SplashAuth } from 'components/splash-auth'
 import { useFonts } from '@expo-google-fonts/readex-pro'
-import { getData } from 'lib/auth'
+import { getData } from 'lib/auth-storage'
 import { useIsConnected } from 'lib/use-is-connected'
 import { TokenModeProvider } from 'hooks/useTokenMode'
 import { Stack } from 'expo-router'
@@ -24,6 +24,7 @@ import { StyleSheet } from 'react-native'
 import { Colors } from 'constants/Colors'
 import { UserProvider, useUser } from 'hooks/useUser'
 import { Splash } from 'components/splash'
+import Toast from 'react-native-toast-message'
 
 const HEADER_HEIGHT = 250
 
@@ -174,6 +175,7 @@ function RootLayout() {
         )}
 
         <StatusBar style="dark" />
+        <Toast />
       </SafeAreaView>
     </TokenModeProvider>
   )
