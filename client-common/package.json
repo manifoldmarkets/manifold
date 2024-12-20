@@ -2,13 +2,8 @@
   "name": "client-common",
   "version": "1.0.0",
   "private": true,
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch",
-    "clean": "rm -rf lib"
-  },
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "dependencies": {
     "firebase": "10.12.2",
     "dayjs": "1.11.4"
