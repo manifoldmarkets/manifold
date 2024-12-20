@@ -2,7 +2,7 @@ import { db } from 'web/lib/supabase/db'
 import { orderBy, uniqBy } from 'lodash'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { useEffect } from 'react'
-import { useApiSubscription } from 'web/hooks/use-api-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { ChatMessage, convertPublicChatMessage } from 'common/chat-message'
 
 export function usePublicChat(channelId: string, limit: number) {

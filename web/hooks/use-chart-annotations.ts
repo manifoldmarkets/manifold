@@ -4,7 +4,7 @@ import { useUser } from 'web/hooks/use-user'
 import { Contract } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import { useApiSubscription } from 'web/hooks/use-api-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { sortBy } from 'lodash'
 
 export const useAnnotateChartTools = (

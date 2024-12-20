@@ -9,7 +9,7 @@ import {
 import { convertContractComment } from 'common/supabase/comments'
 import { api } from 'web/lib/api/api'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { useApiSubscription } from './use-api-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 
 export function useNumContractComments(contractId: string) {
   const [numComments, setNumComments] = useState<number>(0)
