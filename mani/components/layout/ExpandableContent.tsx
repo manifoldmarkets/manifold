@@ -1,4 +1,4 @@
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { useState } from 'react'
 import { Pressable } from 'react-native'
 import { BottomModal } from './BottomModal'

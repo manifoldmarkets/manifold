@@ -2,7 +2,7 @@ import { useUser } from 'hooks/useUser'
 import { IconSymbol } from 'components/ui/IconSymbol'
 import TabBarBackground from 'components/ui/TabBarBackground'
 import { Tabs } from 'expo-router'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { Platform, View, Image } from 'react-native'
 import { PlatformPressable } from '@react-navigation/elements'
 

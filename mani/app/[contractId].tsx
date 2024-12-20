@@ -13,12 +13,17 @@ import { Col } from 'components/layout/col'
 import Page from 'components/Page'
 import { ThemedText } from 'components/ThemedText'
 import { useLocalSearchParams } from 'expo-router'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { useEffect, useState } from 'react'
 import { ContractDescription } from 'components/contract/ContractDescription'
 import { api } from 'lib/api'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { BinaryProbability } from 'components/contract/Probability'
+import { useAPIGetter } from 'hooks/use-api-getter'
+import { getBetPoints } from 'common/bets'
+import { HistoryPoint } from 'common/chart'
+import { Bet } from 'common/bet'
+import { useTokenMode } from 'hooks/useTokenMode'
 export const LARGE_QUESTION_LENGTH = 95
 
 // TODO: this is just a placeholder, let's share the contract listener with web
@@ -53,8 +58,26 @@ export default function ContractPage() {
   const color = useColor()
   const [descriptionOpen, setDescriptionOpen] = useState(false)
 
+  const { data: contractProps } = useAPIGetter('get-market-props', {
+    id: contractId as string,
+  })
+  const siblingContract = contractProps?.siblingContract
+  const { token } = useTokenMode()
+  // TODO: proof of concept, we may want the bet points in the market props or sth else.
+  const [betPoints, setBetPoints] = useState<HistoryPoint<Partial<Bet>>[]>([])
+  useEffect(() => {
+    if (contractProps) {
+      getBetPoints(contractId as string).then((betPoints) => {
+        setBetPoints(betPoints)
+      })
+    }
+  }, [contractId])
+  const contractToShow =
+    contractProps?.contract.token === token
+      ? contractProps?.contract
+      : (siblingContract as Contract)
   //   TODO: Fetch contract data using contractId
-  const contract = useContract(contractId as string)
+  const contract = useContract(contractToShow.id) ?? contractToShow
 
   if (!contract) {
     return <ThemedText>Contract not found</ThemedText>
@@ -75,7 +98,12 @@ export default function ContractPage() {
           {contract.question}
         </ThemedText>
 
-        {isBinary && <BinaryOverview contract={contract as BinaryContract} />}
+        {isBinary && (
+          <BinaryOverview
+            contract={contract as BinaryContract}
+            betPoints={betPoints}
+          />
+        )}
         {contract.mechanism === 'cpmm-1' && (
           <BinaryProbability contract={contract as BinaryContract} size="xl" />
         )}

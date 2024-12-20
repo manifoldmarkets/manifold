@@ -5,7 +5,7 @@ import { CPMMMultiContract } from 'common/contract'
 import { Button, ButtonProps } from 'components/buttons/Button'
 import { AnswerProbability } from '../Probability'
 import { ThemedText } from 'components/ThemedText'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 
 export function MultiBinaryBetButtons({
   contract,

@@ -3,7 +3,7 @@ import { ThemedText } from 'components/ThemedText'
 import { MultiContract } from 'common/contract'
 import { Col } from 'components/layout/col'
 import { AnswerProbability } from 'components/contract/Probability'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { MultiBetButtons } from 'components/contract/bet/MultiBetButtons'
 
 export function MultiOverview({ contract }: { contract: MultiContract }) {

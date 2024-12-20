@@ -1,6 +1,6 @@
 import Page from 'components/Page'
 import { ThemedText } from 'components/ThemedText'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { StyleSheet } from 'react-native'
 
 export default function TabTwoScreen() {

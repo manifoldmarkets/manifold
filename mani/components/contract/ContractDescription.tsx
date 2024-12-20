@@ -7,7 +7,7 @@ import {
 import { Col } from 'components/layout/col'
 import { ExpandableContent } from 'components/layout/ExpandableContent'
 import { ThemedText } from 'components/ThemedText'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 
 export function ContractDescription({ contract }: { contract: Contract }) {
   const color = useColor()

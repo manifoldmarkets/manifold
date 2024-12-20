@@ -1,7 +1,7 @@
 import React from 'react'
 import { Animated, Image, TouchableOpacity } from 'react-native'
 import { Row } from './layout/row'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { useTokenMode } from 'hooks/useTokenMode'
 
 export function TokenSlider() {

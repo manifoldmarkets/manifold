@@ -1,4 +1,4 @@
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { useTokenMode } from 'hooks/useTokenMode'
 import { Row } from './row'
 import { ThemedText } from 'components/ThemedText'

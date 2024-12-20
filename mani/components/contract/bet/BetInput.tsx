@@ -2,7 +2,7 @@ import { Col } from 'components/layout/col'
 import { Row } from 'components/layout/row'
 import { NumberText } from 'components/NumberText'
 import { Colors } from 'constants/Colors'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { useTokenMode } from 'hooks/useTokenMode'
 import { useState } from 'react'
 import {

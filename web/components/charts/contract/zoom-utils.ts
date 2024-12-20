@@ -3,7 +3,7 @@ import { buildArray } from 'common/util/array'
 import { debounce } from 'lodash'
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
-import { getBetPoints } from 'web/lib/supabase/bets'
+import { getBetPoints } from 'common/bets'
 
 export async function getPointsBetween(
   contractId: string,

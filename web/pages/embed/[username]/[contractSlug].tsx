@@ -40,9 +40,9 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { track } from 'web/lib/service/analytics'
-import { getBetPoints } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
+import { getBetPoints } from 'common/bets'
 
 type Points = HistoryPoint<any>[]
 

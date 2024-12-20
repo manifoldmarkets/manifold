@@ -1,6 +1,6 @@
 import { View, TouchableOpacity, StyleSheet } from 'react-native'
 import { Period } from 'common/period'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { ThemedText } from 'components/ThemedText'
 
 const labels: { [label: string]: Period } = {

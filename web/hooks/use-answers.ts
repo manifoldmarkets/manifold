@@ -1,6 +1,7 @@
 import { type Answer } from 'common/answer'
-import { prepopulateCache, useAPIGetter } from './use-api-getter'
+import { useAPIGetter } from './use-api-getter'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { prepopulateCache } from 'client-common/hooks/use-api-getter'
 
 export function useAnswer(answerId: string | undefined) {
   const { data: answer, setData: setAnswer } = useAPIGetter(

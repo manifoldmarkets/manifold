@@ -75,6 +75,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/plugin-proposal-export-namespace-from": "7.18.9",
+    "@types/react-native-svg-charts": "5.0.16",
     "@typescript-eslint/eslint-plugin": "8.18.1",
     "@typescript-eslint/parser": "8.18.1",
     "babel-plugin-transform-inline-environment-variables": "^0.4.4",

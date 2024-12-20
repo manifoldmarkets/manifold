@@ -1,7 +1,7 @@
 import { Contract, isBinaryMulti } from 'common/contract'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/ThemedText'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { useState } from 'react'
 import {
   Modal,

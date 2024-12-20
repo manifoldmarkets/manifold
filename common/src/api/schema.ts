@@ -68,6 +68,7 @@ import { ContractMetric } from 'common/contract-metric'
 
 import { JSONContent } from '@tiptap/core'
 import { Task, TaskCategory } from 'common/todo'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -2020,6 +2021,32 @@ export const API = (_apiTypeCheck = {
     authed: true,
     returns: {} as { schedule: any[] },
     props: z.object({}).strict(),
+  },
+  'get-market-props': {
+    method: 'GET',
+    visibility: 'public',
+    cache: DEFAULT_CACHE_STRATEGY,
+    // Could set authed false and preferAuth with an api secret if we want it to replace static props
+    authed: true,
+    returns: {} as {
+      contract: Contract
+      chartAnnotations: ChartAnnotation[]
+      topics: Topic[]
+      comments: ContractComment[]
+      pinnedComments: ContractComment[]
+      userPositionsByOutcome: {
+        YES: ContractMetric[]
+        NO: ContractMetric[]
+      }
+      topContractMetrics: ContractMetric[]
+      totalPositions: number
+      dashboards: Dashboard[]
+      siblingContract: Contract | undefined
+    },
+    props: z.object({
+      slug: z.string().optional(),
+      id: z.string().optional(),
+    }),
   },
 } as const)
 

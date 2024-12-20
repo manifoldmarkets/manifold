@@ -29,7 +29,7 @@ import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
 import { MAX_ANSWERS, sortAnswers } from './answer'
 import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
-import { getBetPoints, getTotalBetCount } from 'web/lib/supabase/bets'
+import { getTotalBetCount, getBetPoints } from './bets'
 
 export async function getContractParams(
   contract: Contract,

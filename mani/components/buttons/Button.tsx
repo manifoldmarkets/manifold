@@ -1,5 +1,5 @@
 import { FontSize, ThemedText, ThemedTextProps } from 'components/ThemedText'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import {
   StyleProp,
   TouchableOpacity,

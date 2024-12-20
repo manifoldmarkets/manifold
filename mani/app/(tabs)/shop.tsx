@@ -3,7 +3,7 @@ import { ExternalLink } from 'components/ExternalLink'
 import Page from 'components/Page'
 import { ThemedText } from 'components/ThemedText'
 import { ThemedView } from 'components/ThemedView'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { Platform, StyleSheet } from 'react-native'
 
 export default function TabTwoScreen() {

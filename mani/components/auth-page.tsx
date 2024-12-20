@@ -26,7 +26,7 @@ import {
   updateProfile,
 } from 'firebase/auth'
 import { signInWithCredential } from '@firebase/auth'
-import { ENV_CONFIG, auth } from '../init'
+import { ENV_CONFIG, auth } from 'lib/init'
 import WebView from 'react-native-webview'
 import * as Google from 'expo-auth-session/providers/google'
 import { Text } from 'components/text'

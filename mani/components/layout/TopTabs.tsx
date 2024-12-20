@@ -6,7 +6,7 @@ import {
   LayoutChangeEvent,
 } from 'react-native'
 import { ReactNode, useRef, useState, useEffect } from 'react'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { Col } from './col'
 import { ThemedText } from 'components/ThemedText'
 

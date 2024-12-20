@@ -5,7 +5,7 @@ import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { buildArray } from 'common/util/array'
 import { SizedBinaryChart } from '../charts/contract/binary'
-import { getBetPoints } from 'web/lib/supabase/bets'
+import { getBetPoints } from 'common/bets'
 
 // defaults to the previous day, unless you set a startDate
 export function FeedBinaryChart(props: {

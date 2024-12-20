@@ -2,23 +2,18 @@ import { Row } from 'components/layout/row'
 import { BinaryProbability } from '../Probability'
 import { BinaryContract } from 'common/contract'
 import { ThemedText } from 'components/ThemedText'
-import { useTokenMode } from 'hooks/useTokenMode'
-import { EXAMPLE_POINTS } from 'constants/examples/ExampleData'
 import { BinaryGraph } from '../graph/BinaryGraph'
 import { Col } from 'components/layout/col'
 import { NumberText } from 'components/NumberText'
 import { useState } from 'react'
+import { HistoryPoint } from 'common/chart'
+import { Bet } from 'common/bet'
+export function BinaryOverview(props: {
+  contract: BinaryContract
+  betPoints: HistoryPoint<Partial<Bet>>[]
+}) {
+  const { contract, betPoints } = props
 
-export function BinaryOverview({ contract }: { contract: BinaryContract }) {
-  const data = EXAMPLE_POINTS[contract.id as keyof typeof EXAMPLE_POINTS]
-
-  if (!data) return null
-  const { cash: cashBetData, play: playBetData } = data
-
-  const { token } = useTokenMode()
-
-  // TODO: actually grab data
-  const { betPoints } = token === 'CASH' ? cashBetData : playBetData
   const [graphProbability, setGraphProbability] = useState<number | undefined>(
     undefined
   )
@@ -39,13 +34,15 @@ export function BinaryOverview({ contract }: { contract: BinaryContract }) {
         <ThemedText size="xl">chance</ThemedText>
       </Row>
 
-      <BinaryGraph
-        betPoints={betPoints}
-        contract={contract}
-        onScrollPositionChange={(percent) => {
-          setGraphProbability(percent)
-        }}
-      />
+      {betPoints.length > 0 && (
+        <BinaryGraph
+          betPoints={betPoints}
+          contract={contract}
+          onScrollPositionChange={(percent) => {
+            setGraphProbability(percent)
+          }}
+        />
+      )}
     </Col>
   )
 }

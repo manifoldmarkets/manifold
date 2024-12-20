@@ -1,7 +1,6 @@
 import { Bet } from 'common/bet'
 import { HistoryPoint } from 'common/chart'
 import { Period } from 'common/period'
-import { useColor } from 'hooks/useColor'
 import { View, PanResponder } from 'react-native'
 import { hexToRgb } from 'constants/Colors'
 import { LineChart } from 'react-native-svg-charts'
@@ -12,6 +11,8 @@ import { Row } from 'components/layout/row'
 import { Col } from 'components/layout/col'
 import { BinaryContract } from 'common/contract'
 import { ThemedText } from 'components/ThemedText'
+import { useColor } from 'hooks/use-color'
+import * as shape from 'd3-shape'
 
 // see graph examples here: https://github.com/JesperLekland/react-native-svg-charts-examples
 
@@ -230,6 +231,7 @@ export function BinaryGraph({
                 strokeWidth: 2,
                 stroke: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 1)`,
               }}
+              curve={shape.curveMonotoneX}
               animate={true}
               animationDuration={300}
             />

@@ -13,6 +13,11 @@ export async function callWithAuth(
   return baseApiCall(url, method, params, auth.currentUser)
 }
 
+export type apiWithoutAuth<P extends APIPath> = (
+  path: P,
+  params: APIParams<P>
+) => Promise<APIResponse<P>>
+
 // This is the preferred way of using the api going forward
 export async function apiWithAuth<P extends APIPath>(
   path: P,

@@ -1,5 +1,5 @@
 import { Modal, ScrollView, Pressable } from 'react-native'
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 
 export function BottomModal({
   open,

@@ -32,5 +32,5 @@ Notifications.setNotificationHandler({
   }),
 })
 
-// log('using', ENV, 'env')
+log('using', ENV, 'env')
 log('env not switching? run `npx expo start --clear` and then try again')

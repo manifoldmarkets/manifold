@@ -17,7 +17,7 @@ import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 import { getMultiBetPoints } from 'common/contract-params'
 import { PolicyContractType, PolicyData } from 'web/public/data/policy-data'
 import { mapValues } from 'lodash'
-import { getBetPoints } from 'web/lib/supabase/bets'
+import { getBetPoints } from 'common/bets'
 
 export const ELECTION_PARTY_CONTRACT_SLUG =
   // 'which-party-will-win-the-2024-us-pr-f4158bf9278a'
