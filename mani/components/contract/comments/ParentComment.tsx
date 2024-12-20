@@ -3,19 +3,14 @@ import { ThemedText } from 'components/ThemedText'
 import { Comment } from './Comment'
 export function ParentComment({
   comment,
-  seeReplies,
   numReplies,
+  onPress,
 }: {
   comment: ContractComment
-  seeReplies: boolean
   numReplies: number
 }) {
   return (
-    <Comment
-      comment={comment}
-      isParent
-      showParentLine={seeReplies && numReplies > 0}
-    >
+    <Comment comment={comment} isParent>
       {/* TODO: Implement ReplyToggle */}
       <ThemedText>Prent Reply</ThemedText>
     </Comment>
