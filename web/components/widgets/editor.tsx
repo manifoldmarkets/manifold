@@ -31,7 +31,7 @@ import { nodeViewMiddleware } from '../editor/nodeview-middleware'
 import { BasicImage, DisplayImage, MediumDisplayImage } from '../editor/image'
 
 import { LinkPreviewExtension } from 'web/components/editor/link-preview-extension'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 
 import { Row } from 'web/components/layout/row'
 import {

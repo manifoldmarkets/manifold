@@ -13,7 +13,7 @@ import {
   getGroupsWhereUserHasRole,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useIsAuthorized } from './use-user'
 import { useAsyncData } from 'web/hooks/use-async-data'
 import { isAdminId, isModId } from 'common/envs/constants'

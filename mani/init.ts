@@ -1,18 +1,28 @@
-import { getApp, getApps, initializeApp } from 'firebase/app'
-import { CONFIGS } from 'common/envs/constants'
 import * as Notifications from 'expo-notifications'
 import { log } from 'components/logger'
+import { getApps, getApp, initializeApp, FirebaseApp } from 'firebase/app'
+import { CONFIGS } from 'common/envs/constants'
 import Constants from 'expo-constants'
-import { getFirebaseAuth } from 'lib/firebase/auth'
-import { createFirebaseAuth } from 'common/auth/firebase'
+import { Auth, initializeAuth, getReactNativePersistence } from 'firebase/auth'
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage'
 
 export const ENV =
   Constants.expoConfig?.extra?.eas.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
+export const ENV_CONFIG = CONFIGS[ENV]
 export const app = getApps().length
   ? getApp()
-  : initializeApp(CONFIGS[ENV].firebaseConfig)
+  : initializeApp(ENV_CONFIG.firebaseConfig)
+let initAuth: Auth | null = null
 
-export const auth = createFirebaseAuth({ getFirebaseAuth })
+export const getAuth = (app: FirebaseApp) => {
+  if (!initAuth) {
+    initAuth = initializeAuth(app, {
+      persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+    })
+  }
+  return initAuth
+}
+export const auth = getAuth(app)
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -22,5 +32,5 @@ Notifications.setNotificationHandler({
   }),
 })
 
-log('using', ENV, 'env')
+// log('using', ENV, 'env')
 log('env not switching? run `npx expo start --clear` and then try again')

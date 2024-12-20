@@ -44,7 +44,8 @@ module.exports = {
   ...defaultConfig,
   watchFolders: [
     ...defaultConfig.watchFolders,
-    path.resolve(__dirname + '/../common/src'),
+    path.resolve(workspaceRoot, 'common/src'),
+    path.resolve(workspaceRoot, 'client-common/src'),
   ],
   transformer: {
     ...defaultConfig.transformer,
@@ -58,13 +59,7 @@ module.exports = {
   resolver: {
     ...defaultConfig.resolver,
     nodeModulesPaths: [path.resolve(projectRoot, 'node_modules')],
-    extraNodeModules: new Proxy(extraNodeModules, {
-      get: (target, name) =>
-        //redirects dependencies referenced from common/ to local node_modules
-        name in target
-          ? target[name]
-          : path.join(process.cwd(), `node_modules/${name}`),
-    }),
+    extraNodeModules,
     assetExts: [...defaultConfig.resolver.assetExts, 'cjs'],
     sourceExts: [...defaultConfig.resolver.sourceExts, 'cjs'],
   },

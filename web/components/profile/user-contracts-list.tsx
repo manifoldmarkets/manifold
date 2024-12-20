@@ -31,7 +31,7 @@ import { ContractsTable } from '../contract/contracts-table'
 import { UserReviews } from '../reviews/user-reviews'
 import { SearchInput } from '../search/search-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
+import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { ContractFilters } from '../search/contract-filters'
 
 export function UserContractsList(props: {

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { debounce } from 'lodash'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 export const useSaveScroll = (
   locationKey: string,

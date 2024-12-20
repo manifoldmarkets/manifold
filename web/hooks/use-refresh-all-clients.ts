@@ -1,4 +1,4 @@
-import { useApiSubscription } from './use-api-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 
 // sending broadcast message from server left as an exercise for the coder. good luck!
 export const useRefreshAllClients = () => {

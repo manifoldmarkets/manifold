@@ -58,7 +58,7 @@ import { filterDefined } from 'common/util/array'
 import {
   removePersistentInMemoryState,
   usePersistentInMemoryState,
-} from 'web/hooks/use-persistent-in-memory-state'
+} from 'client-common/hooks/use-persistent-in-memory-state'
 import { compareTwoStrings } from 'string-similarity'
 import { CostSection } from 'web/components/new-contract/cost-section'
 import { CloseTimeSection } from 'web/components/new-contract/close-time-section'

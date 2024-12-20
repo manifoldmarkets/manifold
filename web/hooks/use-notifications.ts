@@ -19,7 +19,7 @@ import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notificatio
 import { User } from 'common/user'
 
 import { api } from 'web/lib/api/api'
-import { useApiSubscription } from 'web/hooks/use-api-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export type NotificationGroup = {

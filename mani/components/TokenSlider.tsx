@@ -6,18 +6,18 @@ import { useTokenMode } from 'hooks/useTokenMode'
 
 export function TokenSlider() {
   const color = useColor()
-  const { mode, setMode } = useTokenMode()
+  const { token, setToken } = useTokenMode()
 
   const slideAnim = React.useRef(
-    new Animated.Value(mode === 'play' ? 0 : 1)
+    new Animated.Value(token === 'MANA' ? 0 : 1)
   ).current
 
   const toggleMode = () => {
-    const newMode = mode === 'play' ? 'sweep' : 'play'
-    setMode(newMode)
+    const newToken = token === 'MANA' ? 'CASH' : 'MANA'
+    setToken(newToken)
     // Animate the slide
     Animated.spring(slideAnim, {
-      toValue: newMode === 'play' ? 0 : 1,
+      toValue: newToken === 'MANA' ? 0 : 1,
       useNativeDriver: true,
     }).start()
   }
@@ -57,7 +57,7 @@ export function TokenSlider() {
           style={{
             width: 20,
             height: 20,
-            opacity: mode === 'sweep' ? 0 : 1,
+            opacity: token === 'CASH' ? 0 : 1,
           }}
           source={require('../assets/images/masses_mana_flat.png')}
         />
@@ -65,7 +65,7 @@ export function TokenSlider() {
           style={{
             width: 20,
             height: 20,
-            opacity: mode === 'play' ? 0 : 1,
+            opacity: token === 'MANA' ? 0 : 1,
           }}
           source={require('../assets/images/masses_sweeps_flat.png')}
         />

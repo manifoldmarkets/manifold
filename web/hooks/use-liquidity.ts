@@ -1,7 +1,7 @@
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { useEffect, useState } from 'react'
 import { getLiquidityDocs } from 'web/lib/supabase/liquidity'
-import { useApiSubscription } from './use-api-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useIsPageVisible } from './use-page-visible'
 
 export const useLiquidity = (contractId: string) => {

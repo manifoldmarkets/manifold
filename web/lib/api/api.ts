@@ -1,16 +1,15 @@
 import { auth } from '../firebase/users'
 import { getApiUrl } from 'common/api/utils'
 import { JSONContent } from '@tiptap/core'
-import { Group, PrivacyStatusType } from 'common/group'
+import { Group } from 'common/group'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { ContractComment } from 'common/comment'
 import { ReportProps } from 'common/report'
 import { BaseDashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
-import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
-import { baseApiCall, formatApiUrlWithParams } from 'common/util/api'
-import { sleep } from 'common/util/time'
+import { APIParams, APIPath } from 'common/api/schema'
 import { Contract } from 'common/contract'
+import { apiWithAuth, callWithAuth } from 'client-common/lib/api'
 export { APIError } from 'common/api/utils'
 
 export async function call(
@@ -18,34 +17,13 @@ export async function call(
   method: 'POST' | 'PUT' | 'GET',
   params?: any
 ) {
-  return baseApiCall(url, method, params, auth.currentUser)
+  return callWithAuth(url, method, auth, params)
 }
-
-// This is the preferred way of using the api going forward
 export async function api<P extends APIPath>(
   path: P,
   params: APIParams<P> = {}
 ) {
-  const pathProps = API[path]
-  const preferAuth = 'preferAuth' in pathProps && pathProps.preferAuth
-  // If the api is authed and the user is not loaded, wait for the user to load.
-  if ((pathProps.authed || preferAuth) && !auth.currentUser) {
-    let i = 0
-    while (!auth.currentUser) {
-      i++
-      await sleep(i * 10)
-      if (i > 30) {
-        console.error('User did not load after 30 iterations')
-        break
-      }
-    }
-  }
-
-  return (await call(
-    formatApiUrlWithParams(path, params),
-    pathProps.method,
-    params
-  )) as Promise<APIResponse<P>>
+  return apiWithAuth(path, auth, params)
 }
 
 // helper function for the old apis so we don't have to migrate them
@@ -53,24 +31,8 @@ function curriedAPI<P extends APIPath>(path: P) {
   return (params: APIParams<P>) => api(path, params)
 }
 
-export function createAnswer(params: any) {
-  return call(getApiUrl('createanswer'), 'POST', params)
-}
-
-export function claimDestinySub(params: any) {
-  return call(getApiUrl('claimdestinysub'), 'POST', params)
-}
-
 export function createUser(params: any) {
   return call(getApiUrl('createuser'), 'POST', params)
-}
-
-export function swapCert(params: any) {
-  return call(getApiUrl('swapcert'), 'POST', params)
-}
-
-export function dividendCert(params: any) {
-  return call(getApiUrl('dividendcert'), 'POST', params)
 }
 
 export function claimManalink(params: any) {
@@ -83,10 +45,6 @@ export function createGroup(params: any) {
 
 export function updateGroup(params: { id: string } & Partial<Group>) {
   return call(getApiUrl('updategroup'), 'POST', params)
-}
-
-export function acceptChallenge(params: any) {
-  return call(getApiUrl('acceptchallenge'), 'POST', params)
 }
 
 export function boostMarket(params: any) {
@@ -111,21 +69,6 @@ export function validateIapReceipt(params: any) {
 
 export function markAllNotifications(params: any) {
   return call(getApiUrl('markallnotifications'), 'POST', params)
-}
-
-export function updateMemberRole(params: {
-  groupId: string
-  memberId: string
-  role: string
-}) {
-  return call(getApiUrl('updatememberrole'), 'POST', params)
-}
-
-export function updateGroupPrivacy(params: {
-  groupId: string
-  privacy: PrivacyStatusType
-}) {
-  return call(getApiUrl('updategroupprivacy'), 'POST', params)
 }
 
 export function registerDiscordId(params: any) {
@@ -161,12 +104,6 @@ export function deleteMarket(params: { contractId: string }) {
   }>
 }
 
-export function saveTopic(params: { topic: string }) {
-  return call(getApiUrl('save-topic'), 'POST', params) as Promise<{
-    status: 'success'
-  }>
-}
-
 export function setTV(params: {
   streamId: string
   slug: string
@@ -184,10 +121,6 @@ export function deleteTV(id: string) {
   return call(getApiUrl('deletetv'), 'POST', { id }) as Promise<{
     status: 'success'
   }>
-}
-
-export function joinGroupThroughInvite(params: { inviteId: string }) {
-  return call(getApiUrl('joingroupthroughinvite'), 'POST', params)
 }
 
 export function followTopic(params: { groupId: string }) {
@@ -355,15 +288,4 @@ export function createChartAnnotation(params: {
 
 export function deleteChartAnnotation(params: { id: number }) {
   return call(getApiUrl('delete-chart-annotation'), 'POST', params)
-}
-export function getAdAnalytics(params: { contractId: string }) {
-  return call(getApiUrl('get-ad-analytics'), 'POST', params)
-}
-
-export function requestLoan() {
-  return call(getApiUrl('request-loan'), 'GET')
-}
-
-export function getMonthlyBets2024(params: { userId: string }) {
-  return call(getApiUrl('get-monthly-bets-2024'), 'POST', params)
 }

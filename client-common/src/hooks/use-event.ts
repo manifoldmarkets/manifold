@@ -3,7 +3,7 @@
 // TODO: Once React adds this hook, use it instead.
 
 import { useRef, useCallback } from 'react'
-import { useSafeLayoutEffect } from './use-safe-layout-effect'
+import { useSafeLayoutEffect } from 'client-common/hooks/use-safe-layout-effect'
 
 type AnyFunction = (...args: any[]) => any
 

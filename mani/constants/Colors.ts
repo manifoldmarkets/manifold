@@ -100,12 +100,12 @@ const white = '#FFFFFF'
 
 // Mode-specific colors
 export const modes = {
-  play: {
+  MANA: {
     primary: purple[300],
     sliderBackground: purple[500],
     primaryButton: purple[600],
   },
-  sweep: {
+  CASH: {
     primary: emerald[300],
     sliderBackground: emerald[500],
     primaryButton: emerald[600],

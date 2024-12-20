@@ -6,7 +6,7 @@ import {
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { MINUTE_MS } from 'common/util/time'
 import { useNativeMessages } from './use-native-messages'
-import { useEvent } from './use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { useNativeInfo } from 'web/components/native-message-provider'
 import { removeUndefinedProps } from 'common/util/object'
 

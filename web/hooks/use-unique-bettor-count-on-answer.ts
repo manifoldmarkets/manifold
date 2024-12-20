@@ -1,4 +1,4 @@
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { getAnswerBettorCount } from 'common/supabase/answers'
 import { useEffect } from 'react'
 import { db } from 'web/lib/supabase/db'

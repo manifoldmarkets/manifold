@@ -46,7 +46,7 @@ import { SizedContainer } from 'web/components/sized-container'
 import { useAnnotateChartTools } from 'web/hooks/use-chart-annotations'
 import { useChartPositions } from 'web/hooks/use-chart-positions'
 import { useLiveContract } from 'web/hooks/use-contract'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useUser } from 'web/hooks/use-user'
 import {
   AnswersResolvePanel,

@@ -6,8 +6,8 @@ import {
   useYourDashboards,
   useYourFollowedDashboards,
 } from 'web/hooks/use-dashboard'
-import { useEvent } from 'web/hooks/use-event'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useEvent } from 'client-common/hooks/use-event'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import {
   historyStore,
