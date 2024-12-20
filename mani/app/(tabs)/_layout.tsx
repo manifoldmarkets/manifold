@@ -5,6 +5,7 @@ import { Tabs } from 'expo-router'
 import { useColor } from 'hooks/use-color'
 import { Platform, View, Image } from 'react-native'
 import { PlatformPressable } from '@react-navigation/elements'
+import { Rounded } from 'constants/border-radius'
 
 export default function TabLayout() {
   const maniColor = useColor()
@@ -76,7 +77,7 @@ export default function TabLayout() {
               style={{
                 width: 28,
                 height: 28,
-                borderRadius: 14,
+                borderRadius: Rounded.full,
                 backgroundColor:
                   // user?.avatarUrl ? 'transparent' :
                   maniColor.blue,
@@ -93,7 +94,7 @@ export default function TabLayout() {
                     // user?.avatarUrl ? 28 :
                     20,
                   borderRadius:
-                    // user?.avatarUrl ? 14 :
+                    // user?.avatarUrl ? Rounded.full, :
                     0,
                 }}
                 source={

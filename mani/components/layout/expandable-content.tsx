@@ -2,6 +2,7 @@ import { useColor } from 'hooks/use-color'
 import { useState } from 'react'
 import { Pressable } from 'react-native'
 import { BottomModal } from './bottom-modal'
+import { Rounded } from 'constants/border-radius'
 
 export function ExpandableContent({
   previewContent,
@@ -20,7 +21,7 @@ export function ExpandableContent({
           backgroundColor: color.backgroundSecondary,
           paddingHorizontal: 16,
           paddingVertical: 8,
-          borderRadius: 4,
+          borderRadius: Rounded.sm,
           gap: 8,
         }}
       >

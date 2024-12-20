@@ -31,6 +31,7 @@ import WebView from 'react-native-webview'
 import * as Google from 'expo-auth-session/providers/google'
 import { Text } from 'components/text'
 import { log } from 'components/logger'
+import { Rounded } from 'constants/border-radius'
 
 export const AuthPage = (props: { height: number; width: number }) => {
   const { height, width } = props
@@ -214,7 +215,7 @@ function useAppleAuthentication() {
 const styles = StyleSheet.create({
   googleButton: {
     backgroundColor: 'white',
-    borderRadius: 5,
+    borderRadius: Rounded.sm,
     width: '100%',
     height: 48,
   },
@@ -245,7 +246,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 500,
     backgroundColor: 'white',
-    borderRadius: 20,
+    borderRadius: Rounded['2xl'],
     padding: 35,
     alignItems: 'center',
     shadowColor: '#000',

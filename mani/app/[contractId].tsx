@@ -13,19 +13,18 @@ import { Col } from 'components/layout/col'
 import Page from 'components/page'
 import { ThemedText } from 'components/themed-text'
 import { useLocalSearchParams } from 'expo-router'
-import { useColor } from 'hooks/use-color'
 import { useEffect, useState } from 'react'
 import { ContractDescription } from 'components/contract/contract-description'
 import { CommentsSection } from 'components/contract/comments/comments-section'
 
 import { api } from 'lib/api'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
-import { BinaryProbability } from 'components/contract/probability'
 import { useAPIGetter } from 'hooks/use-api-getter'
 import { getBetPoints } from 'common/bets'
 import { HistoryPoint } from 'common/chart'
 import { Bet } from 'common/bet'
 import { useTokenMode } from 'hooks/use-token-mode'
+import { ContractPageLoading } from 'components/contract/loading-contract'
 export const LARGE_QUESTION_LENGTH = 95
 
 // TODO: this is just a placeholder, let's share the contract listener with web
@@ -33,6 +32,7 @@ export const useContract = (contractId: string | undefined) => {
   const [contract, setContract] = useState<Contract | undefined | null>(
     undefined
   )
+
   useApiSubscription({
     topics: [`contract/${contractId}`],
     onBroadcast: ({ data }) => {
@@ -55,13 +55,13 @@ export const useContract = (contractId: string | undefined) => {
   return contract
 }
 
-export default function ContractPage() {
-  const { contractId } = useLocalSearchParams()
-  const color = useColor()
-  const [descriptionOpen, setDescriptionOpen] = useState(false)
+type ContractPageContentProps = {
+  contractId: string
+}
 
+function ContractPageContent({ contractId }: ContractPageContentProps) {
   const { data: contractProps } = useAPIGetter('get-market-props', {
-    id: contractId as string,
+    id: contractId,
   })
   const siblingContract = contractProps?.siblingContract
   const { token } = useTokenMode()
@@ -83,14 +83,23 @@ export default function ContractPage() {
     }
   }, [contractToShow?.id])
 
-  if (!contract) {
-    return <ThemedText>Contract not found</ThemedText>
+  if (contract === null) {
+    return (
+      <Page>
+        <ThemedText>Contract not found</ThemedText>
+      </Page>
+    )
+  }
+
+  if (contract === undefined) {
+    return <ContractPageLoading />
   }
 
   const isBinaryMc = isBinaryMulti(contract)
   const isMultipleChoice =
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
+
   return (
     <Page>
       <Col style={{ gap: 16 }}>
@@ -124,5 +133,20 @@ export default function ContractPage() {
         <CommentsSection contract={contract} />
       </Col>
     </Page>
+  )
+}
+
+export default function ContractPage() {
+  const { contractId } = useLocalSearchParams()
+
+  if (!contractId) {
+    return <ContractPageLoading />
+  }
+
+  return (
+    <ContractPageContent
+      key={contractId as string}
+      contractId={contractId as string}
+    />
   )
 }

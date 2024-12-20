@@ -2,6 +2,7 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native'
 import { Period } from 'common/period'
 import { useColor } from 'hooks/use-color'
 import { ThemedText } from 'components/themed-text'
+import { Rounded } from 'constants/border-radius'
 
 const labels: { [label: string]: Period } = {
   '1D': 'daily',
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
   button: {
     paddingVertical: 2,
     paddingHorizontal: 8,
-    borderRadius: 4,
+    borderRadius: Rounded.sm,
     backgroundColor: 'transparent',
   },
 })
