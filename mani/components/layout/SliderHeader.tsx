@@ -10,7 +10,7 @@ import { isTabPath } from 'components/Page'
 
 export function SliderHeader() {
   const color = useColor()
-  const { mode } = useTokenMode()
+  const { token } = useTokenMode()
   const pathname = usePathname()
   const router = useRouter()
 
@@ -46,7 +46,7 @@ export function SliderHeader() {
           <ThemedText weight={'bold'} color={color.primary}>
             0{' '}
           </ThemedText>
-          {mode === 'play' ? 'Mana' : 'Sweep'}
+          {token === 'MANA' ? 'Mana' : 'Sweep'}
         </ThemedText>
         <TokenSlider />
       </Row>

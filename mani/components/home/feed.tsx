@@ -4,65 +4,41 @@ import { Col } from 'components/layout/col'
 import { api } from 'lib/api'
 import { useEffect, useState } from 'react'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { orderBy } from 'lodash'
 import { uniqBy } from 'lodash'
 import { Text } from 'components/text'
 import { View } from 'react-native'
-function MarketsList(
-  props: {
-    fetchProps: APIParams<'search-markets-full'>
-  } & { sweepScoreBoost?: number }
-) {
-  const { sweepScoreBoost, fetchProps } = props
+import { Contract } from 'common/contract'
+import { useTokenMode } from 'hooks/useTokenMode'
+function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
+  const { fetchProps } = props
   const limit = 10
   const [loading, setLoading] = useState(false)
+  const { token } = useTokenMode()
+
   const [data, setData] = usePersistentInMemoryState<{
-    markets: any[]
-    manaOffset: number
+    markets: Contract[]
     cashOffset: number
   }>(
-    { markets: [], manaOffset: 0, cashOffset: 0 },
+    { markets: [], cashOffset: 0 },
     `markets-list-${JSON.stringify(fetchProps)}`
   )
   // We could also find all the sweeps markets, then when we run out, show mana markets
   const loadMore = async () => {
-    if (loading) return false
+    if (loading) return
     setLoading(true)
     try {
-      const [manaMarkets, cashMarkets] = await Promise.all([
-        api('search-markets-full', {
-          ...fetchProps,
-          token: 'MANA',
-          limit,
-          contractType: 'BINARY',
-          offset: data.manaOffset,
-        }),
-        api('search-markets-full', {
-          ...fetchProps,
-          token: 'CASH',
-          limit,
-          contractType: 'BINARY',
-          offset: data.cashOffset,
-        }),
-      ])
-
-      const cashMarketsAdjusted = cashMarkets.map((m) => ({
-        ...m,
-        importanceScore: m.importanceScore + (sweepScoreBoost ?? 0.25),
-      }))
-
-      const newMarkets = orderBy(
-        uniqBy([...cashMarketsAdjusted, ...manaMarkets], 'id'),
-        (m) => m.importanceScore,
-        'desc'
-      )
+      const cashMarkets = await api('search-markets-full', {
+        ...fetchProps,
+        token,
+        limit,
+        contractType: 'BINARY',
+        offset: data.cashOffset,
+      })
 
       setData({
-        markets: uniqBy([...data.markets, ...newMarkets], 'id'),
-        manaOffset: data.manaOffset + manaMarkets.length,
+        markets: uniqBy([...data.markets, ...cashMarkets], 'id'),
         cashOffset: data.cashOffset + cashMarkets.length,
       })
-      return true
     } finally {
       setTimeout(() => setLoading(false), 50)
     }
@@ -149,7 +125,6 @@ function ForecastsContent() {
         sort: 'score',
         // gids: ALL_IDS,
       }}
-      sweepScoreBoost={0.2}
     />
   )
 }

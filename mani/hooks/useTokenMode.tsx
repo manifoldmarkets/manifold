@@ -1,30 +1,35 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState } from 'react'
 
-
-type TokenMode = 'play' | 'sweep';
+type TokenMode = 'MANA' | 'CASH'
 
 type TokenModeContextType = {
-  mode: TokenMode;
-  setMode: (mode: TokenMode) => void;
-};
+  token: TokenMode
+  setToken: (mode: TokenMode) => void
+}
 
-const TokenModeContext = createContext<TokenModeContextType | undefined>(undefined);
+const TokenModeContext = createContext<TokenModeContextType | undefined>(
+  undefined
+)
 
 export function TokenModeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState<TokenMode>('play');
+  const [token, setToken] = useState<TokenMode>('MANA')
 
   const value = {
-    mode,
-    setMode,
-  };
+    token,
+    setToken,
+  }
 
-  return <TokenModeContext.Provider value={value}>{children}</TokenModeContext.Provider>;
+  return (
+    <TokenModeContext.Provider value={value}>
+      {children}
+    </TokenModeContext.Provider>
+  )
 }
 
 export function useTokenMode() {
-  const context = useContext(TokenModeContext);
+  const context = useContext(TokenModeContext)
   if (!context) {
-    throw new Error('useTokenMode must be used within an TokenModeProvider');
+    throw new Error('useTokenMode must be used within an TokenModeProvider')
   }
-  return context;
-} 
+  return context
+}
