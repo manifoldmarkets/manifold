@@ -1,10 +1,10 @@
 import type { PropsWithChildren } from 'react'
 import { StyleSheet, View } from 'react-native'
 import Animated, { useAnimatedRef } from 'react-native-reanimated'
-import { SliderHeader } from './layout/SliderHeader'
-import { useBottomTabOverflow } from './ui/TabBarBackground.ios'
-import { ThemedView } from './ThemedView'
-import { Colors } from 'constants/Colors'
+import { SliderHeader } from './layout/slider-header'
+import { useBottomTabOverflow } from './ui/tab-bar-background.ios'
+import { ThemedView } from './themed-view'
+import { Colors } from 'constants/colors'
 import { usePathname } from 'expo-router'
 
 const HEADER_HEIGHT = 250

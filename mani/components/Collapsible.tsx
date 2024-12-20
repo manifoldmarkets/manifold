@@ -1,7 +1,7 @@
 import { PropsWithChildren, useState } from 'react'
 import { StyleSheet, TouchableOpacity } from 'react-native'
-import { ThemedView } from './ThemedView'
-import { ThemedText } from './ThemedText'
+import { ThemedView } from './themed-view'
+import { ThemedText } from './themed-text'
 
 export function Collapsible({
   children,

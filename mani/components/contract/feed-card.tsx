@@ -4,17 +4,17 @@ import {
   CPMMMultiContract,
   MultiContract,
 } from 'common/contract'
-import { ThemedText } from 'components/ThemedText'
+import { ThemedText } from 'components/themed-text'
 import { TouchableOpacity } from 'react-native'
 import { isBinaryMulti } from 'common/contract'
 import { Row } from 'components/layout/row'
 import { useColor } from 'hooks/use-color'
-import { AnswerProbability, BinaryProbability } from './Probability'
+import { AnswerProbability, BinaryProbability } from './probability'
 import { useState } from 'react'
-import { BinaryBetButtons } from './bet/BinaryBetButtons'
-import { MultiBetButtons } from './bet/MultiBetButtons'
+import { BinaryBetButtons } from './bet/binary-bet-buttons'
+import { MultiBetButtons } from './bet/multi-bet-buttons'
 import { useRouter } from 'expo-router'
-import { MultiBinaryBetButtons } from './bet/MultiBinaryBetButtons'
+import { MultiBinaryBetButtons } from './bet/multi-binary-bet-buttons'
 
 export function FeedCard({ contract }: { contract: Contract }) {
   const router = useRouter()

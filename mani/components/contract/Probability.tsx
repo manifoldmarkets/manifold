@@ -1,8 +1,8 @@
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { BinaryContract, MultiContract } from 'common/contract'
 import { getPercent } from 'common/util/format'
-import { NumberText } from 'components/NumberText'
-import { ThemedTextProps } from 'components/ThemedText'
+import { NumberText } from 'components/number-text'
+import { ThemedTextProps } from 'components/themed-text'
 
 export function AnswerProbability({
   contract,

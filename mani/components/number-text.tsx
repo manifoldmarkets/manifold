@@ -1,4 +1,4 @@
-import { ThemedText, ThemedTextProps } from './ThemedText'
+import { ThemedText, ThemedTextProps } from './themed-text'
 
 export function NumberText({ children, style, ...rest }: ThemedTextProps) {
   return (

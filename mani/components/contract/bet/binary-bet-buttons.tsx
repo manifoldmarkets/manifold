@@ -1,20 +1,14 @@
 import { Contract } from 'common/contract'
-import { YesNoButton } from 'components/buttons/YesNoButtons'
+import { YesNoButton } from 'components/buttons/yes-no-buttons'
 import { Row } from 'components/layout/row'
 import { useState } from 'react'
-import { BetPanel, BinaryOutcomes } from './BetPanel'
-import { ButtonProps } from 'components/buttons/Button'
+import { BetPanel, BinaryOutcomes } from './bet-panel'
+import { ButtonProps } from 'components/buttons/button'
 
-export function MultiBetButtons({
+export function BinaryBetButtons({
   contract,
-  answerId,
-  gap = 8,
   ...rest
-}: {
-  contract: Contract
-  answerId: string
-  gap?: number
-} & ButtonProps) {
+}: { contract: Contract } & ButtonProps) {
   const [openBetPanel, setOpenBetPanel] = useState(false)
   const [outcome, setOutcome] = useState<BinaryOutcomes>('YES')
 
@@ -25,15 +19,17 @@ export function MultiBetButtons({
 
   return (
     <>
-      <Row style={{ gap: gap, alignItems: 'center' }}>
+      <Row style={{ gap: 12, alignItems: 'center' }}>
         <YesNoButton
           onPress={() => handleBetClick('YES')}
           variant="yes"
+          style={{ flex: 1 }}
           {...rest}
         />
         <YesNoButton
           onPress={() => handleBetClick('NO')}
           variant="no"
+          style={{ flex: 1 }}
           {...rest}
         />
       </Row>
@@ -42,7 +38,6 @@ export function MultiBetButtons({
         open={openBetPanel}
         setOpen={setOpenBetPanel}
         outcome={outcome}
-        answerId={answerId}
       />
     </>
   )

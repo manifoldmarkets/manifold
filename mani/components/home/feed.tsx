@@ -1,5 +1,5 @@
 import { APIParams } from 'common/api/schema'
-import { FeedCard } from 'components/contract/FeedCard'
+import { FeedCard } from 'components/contract/feed-card'
 import { Col } from 'components/layout/col'
 import { api } from 'lib/api'
 import { useEffect, useState } from 'react'
@@ -8,7 +8,7 @@ import { uniqBy } from 'lodash'
 import { Text } from 'components/text'
 import { View } from 'react-native'
 import { Contract } from 'common/contract'
-import { useTokenMode } from 'hooks/useTokenMode'
+import { useTokenMode } from 'hooks/use-token-mode'
 function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
   const { fetchProps } = props
   const limit = 10

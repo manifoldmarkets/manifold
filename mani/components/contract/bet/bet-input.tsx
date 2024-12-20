@@ -1,9 +1,9 @@
 import { Col } from 'components/layout/col'
 import { Row } from 'components/layout/row'
-import { NumberText } from 'components/NumberText'
-import { Colors } from 'constants/Colors'
+import { NumberText } from 'components/number-text'
+import { Colors } from 'constants/colors'
 import { useColor } from 'hooks/use-color'
-import { useTokenMode } from 'hooks/useTokenMode'
+import { useTokenMode } from 'hooks/use-token-mode'
 import { useState } from 'react'
 import {
   Image,

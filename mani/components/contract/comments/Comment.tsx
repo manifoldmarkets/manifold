@@ -2,14 +2,13 @@ import { ContractComment } from 'common/comment'
 import { ContentRenderer } from 'components/content/ContentRenderer'
 import { Col } from 'components/layout/col'
 import { Row } from 'components/layout/row'
-import { ThemedText } from 'components/ThemedText'
-import { useColor } from 'hooks/useColor'
+import { ThemedText } from 'components/themed-text'
 import { ReactNode } from 'react'
 import { Image, TouchableOpacity } from 'react-native'
-// eslint-disable-next-line
-import relativeTime from 'dayjs/plugin/relativeTime'
+
 import { fromNow } from 'util/time'
-import { IconSymbol } from 'components/ui/IconSymbol'
+import { IconSymbol } from 'components/ui/icon-symbol'
+import { useColor } from 'hooks/use-color'
 
 export function Comment({
   comment,

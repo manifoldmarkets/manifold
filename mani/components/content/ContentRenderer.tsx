@@ -1,7 +1,7 @@
 import { Image, Pressable, StyleSheet, View } from 'react-native'
 import { Linking } from 'react-native'
 // Your existing user link component
-import { ThemedText } from 'components/ThemedText'
+import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 import React from 'react'
 

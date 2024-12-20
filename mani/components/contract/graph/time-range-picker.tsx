@@ -1,7 +1,7 @@
 import { View, TouchableOpacity, StyleSheet } from 'react-native'
 import { Period } from 'common/period'
 import { useColor } from 'hooks/use-color'
-import { ThemedText } from 'components/ThemedText'
+import { ThemedText } from 'components/themed-text'
 
 const labels: { [label: string]: Period } = {
   '1D': 'daily',

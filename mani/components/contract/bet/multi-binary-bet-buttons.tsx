@@ -1,10 +1,10 @@
 import { Row } from 'components/layout/row'
 import { useState } from 'react'
-import { BetPanel, BinaryOutcomes } from './BetPanel'
+import { BetPanel, BinaryOutcomes } from './bet-panel'
 import { CPMMMultiContract } from 'common/contract'
-import { Button, ButtonProps } from 'components/buttons/Button'
-import { AnswerProbability } from '../Probability'
-import { ThemedText } from 'components/ThemedText'
+import { Button, ButtonProps } from 'components/buttons/button'
+import { AnswerProbability } from '../probability'
+import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 
 export function MultiBinaryBetButtons({

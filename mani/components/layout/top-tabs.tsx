@@ -8,7 +8,7 @@ import {
 import { ReactNode, useRef, useState, useEffect } from 'react'
 import { useColor } from 'hooks/use-color'
 import { Col } from './col'
-import { ThemedText } from 'components/ThemedText'
+import { ThemedText } from 'components/themed-text'
 
 export type TopTab = {
   title: string

@@ -5,27 +5,27 @@ import {
   isBinaryMulti,
   MultiContract,
 } from 'common/contract'
-import { BinaryBetButtons } from 'components/contract/bet/BinaryBetButtons'
-import { MultiBinaryBetButtons } from 'components/contract/bet/MultiBinaryBetButtons'
-import { BinaryOverview } from 'components/contract/overview/BinaryOverview'
-import { MultiOverview } from 'components/contract/overview/MultiOverview'
+import { BinaryBetButtons } from 'components/contract/bet/binary-bet-buttons'
+import { MultiBinaryBetButtons } from 'components/contract/bet/multi-binary-bet-buttons'
+import { BinaryOverview } from 'components/contract/overview/binary-overview'
+import { MultiOverview } from 'components/contract/overview/multi-overview'
 import { Col } from 'components/layout/col'
-import Page from 'components/Page'
-import { ThemedText } from 'components/ThemedText'
+import Page from 'components/page'
+import { ThemedText } from 'components/themed-text'
 import { useLocalSearchParams } from 'expo-router'
 import { useColor } from 'hooks/use-color'
 import { useEffect, useState } from 'react'
-import { ContractDescription } from 'components/contract/ContractDescription'
-import { CommentsSection } from 'components/contract/comments/CommentsSection'
+import { ContractDescription } from 'components/contract/contract-description'
+import { CommentsSection } from 'components/contract/comments/comments-section'
 
 import { api } from 'lib/api'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
-import { BinaryProbability } from 'components/contract/Probability'
+import { BinaryProbability } from 'components/contract/probability'
 import { useAPIGetter } from 'hooks/use-api-getter'
 import { getBetPoints } from 'common/bets'
 import { HistoryPoint } from 'common/chart'
 import { Bet } from 'common/bet'
-import { useTokenMode } from 'hooks/useTokenMode'
+import { useTokenMode } from 'hooks/use-token-mode'
 export const LARGE_QUESTION_LENGTH = 95
 
 // TODO: this is just a placeholder, let's share the contract listener with web

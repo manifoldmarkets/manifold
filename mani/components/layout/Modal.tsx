@@ -1,9 +1,9 @@
-import { useColor } from 'hooks/useColor'
+import { useColor } from 'hooks/use-color'
 import { ReactNode } from 'react'
 import { SafeAreaView, TouchableOpacity, View } from 'react-native'
 import { Row } from './row'
-import { IconSymbol } from 'components/ui/IconSymbol'
-import { ThemedText } from 'components/ThemedText'
+import { IconSymbol } from 'components/ui/icon-symbol'
+import { ThemedText } from 'components/themed-text'
 import { Col } from './col'
 import RNModal from 'react-native-modal'
 

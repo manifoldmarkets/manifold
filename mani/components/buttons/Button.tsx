@@ -1,4 +1,4 @@
-import { FontSize, ThemedText, ThemedTextProps } from 'components/ThemedText'
+import { FontSize, ThemedText, ThemedTextProps } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 import {
   StyleProp,

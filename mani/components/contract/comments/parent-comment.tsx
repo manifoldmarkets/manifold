@@ -1,12 +1,12 @@
 import { ContractComment } from 'common/comment'
 import { Col } from 'components/layout/col'
-import { useEvent } from 'hooks/useEvent'
+import { useEvent } from 'hooks/use-event'
 import { useState } from 'react'
-import { Comment } from './Comment'
 import { TouchableOpacity } from 'react-native'
-import { Modal } from 'components/layout/Modal'
-import { ThemedText } from 'components/ThemedText'
-import { useColor } from 'hooks/useColor'
+import { ThemedText } from 'components/themed-text'
+import { useColor } from 'hooks/use-color'
+import { Modal } from 'components/layout/modal'
+import { Comment } from './comment'
 
 export function ParentComment({
   parentComment,

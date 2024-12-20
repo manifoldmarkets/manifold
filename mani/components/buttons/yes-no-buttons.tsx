@@ -1,4 +1,4 @@
-import { Button, ButtonProps } from './Button'
+import { Button, ButtonProps } from './button'
 
 const getWidth = (size?: ButtonProps['size']) => {
   return size === 'xs' ? 44 : undefined

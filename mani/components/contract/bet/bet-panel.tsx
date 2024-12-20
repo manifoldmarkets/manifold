@@ -1,6 +1,6 @@
 import { Contract, isBinaryMulti } from 'common/contract'
 import { Col } from 'components/layout/col'
-import { ThemedText } from 'components/ThemedText'
+import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 import { useState } from 'react'
 import {
@@ -9,11 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
-import { BetAmountInput } from './BetInput'
+import { BetAmountInput } from './bet-input'
 import { Row } from 'components/layout/row'
-import { NumberText } from 'components/NumberText'
-import { YesNoButton } from 'components/buttons/YesNoButtons'
-import { Button } from 'components/buttons/Button'
+import { NumberText } from 'components/number-text'
+import { YesNoButton } from 'components/buttons/yes-no-buttons'
+import { Button } from 'components/buttons/button'
 import { api } from 'lib/api'
 import Toast from 'react-native-toast-message'
 

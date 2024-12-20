@@ -5,8 +5,8 @@ import {
   isEmptyDescription,
 } from 'components/content/contentUtils'
 import { Col } from 'components/layout/col'
-import { ExpandableContent } from 'components/layout/ExpandableContent'
-import { ThemedText } from 'components/ThemedText'
+import { ExpandableContent } from 'components/layout/expandable-content'
+import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 
 export function ContractDescription({ contract }: { contract: Contract }) {

@@ -1,8 +1,8 @@
-import { Collapsible } from 'components/Collapsible'
-import { ExternalLink } from 'components/ExternalLink'
-import Page from 'components/Page'
-import { ThemedText } from 'components/ThemedText'
-import { ThemedView } from 'components/ThemedView'
+import { Collapsible } from 'components/collapsible'
+import { ExternalLink } from 'components/external-link'
+import Page from 'components/page'
+import { ThemedText } from 'components/themed-text'
+import { ThemedView } from 'components/themed-view'
 import { useColor } from 'hooks/use-color'
 import { Platform, StyleSheet } from 'react-native'
 

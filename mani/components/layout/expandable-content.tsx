@@ -1,7 +1,7 @@
 import { useColor } from 'hooks/use-color'
 import { useState } from 'react'
 import { Pressable } from 'react-native'
-import { BottomModal } from './BottomModal'
+import { BottomModal } from './bottom-modal'
 
 export function ExpandableContent({
   previewContent,

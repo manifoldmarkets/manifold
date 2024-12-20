@@ -1,12 +1,12 @@
 import { useColor } from 'hooks/use-color'
-import { useTokenMode } from 'hooks/useTokenMode'
+import { useTokenMode } from 'hooks/use-token-mode'
 import { Row } from './row'
-import { ThemedText } from 'components/ThemedText'
-import { TokenSlider } from 'components/TokenSlider'
+import { ThemedText } from 'components/themed-text'
+import { TokenSlider } from 'components/token-slider'
 import { usePathname, useRouter } from 'expo-router'
-import { IconSymbol } from 'components/ui/IconSymbol'
+import { IconSymbol } from 'components/ui/icon-symbol'
 import { TouchableOpacity } from 'react-native'
-import { isTabPath } from 'components/Page'
+import { isTabPath } from 'components/page'
 
 export function SliderHeader() {
   const color = useColor()
