@@ -4,6 +4,7 @@ import { Linking } from 'react-native'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 import React from 'react'
+import { Rounded } from 'constants/border-radius'
 
 // Define the base node types
 type NodeType =
@@ -179,7 +180,7 @@ function renderNode(node: JSONContent, index: string): React.ReactNode {
           onPress={() => node.attrs?.url && Linking.openURL(node.attrs.url)}
           style={{
             marginVertical: 16,
-            borderRadius: 8,
+            borderRadius: Rounded.lg,
             overflow: 'hidden',
             backgroundColor: color.backgroundSecondary, // or use your theme color
           }}
@@ -275,6 +276,6 @@ const styles = StyleSheet.create({
   code: {
     backgroundColor: '#f5f5f5',
     padding: 4,
-    borderRadius: 4,
+    borderRadius: Rounded.sm,
   },
 })

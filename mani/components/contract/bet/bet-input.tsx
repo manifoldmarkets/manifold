@@ -1,6 +1,7 @@
 import { Col } from 'components/layout/col'
 import { Row } from 'components/layout/row'
 import { NumberText } from 'components/number-text'
+import { Rounded } from 'constants/border-radius'
 import { Colors } from 'constants/colors'
 import { useColor } from 'hooks/use-color'
 import { useTokenMode } from 'hooks/use-token-mode'
@@ -60,7 +61,7 @@ export function BetAmountInput({
   return (
     <View
       style={{
-        borderRadius: 6,
+        borderRadius: Rounded.md,
       }}
     >
       <Row
@@ -69,7 +70,7 @@ export function BetAmountInput({
           borderWidth: 1,
           borderColor: color.borderSecondary,
           padding: 8,
-          borderRadius: 6,
+          borderRadius: Rounded.md,
           gap: 8,
           justifyContent: 'space-between',
           width: '100%',
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.grayButtonBackground,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: Rounded.md,
   },
   incrementButtonText: {
     color: 'white',

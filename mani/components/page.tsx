@@ -28,6 +28,7 @@ export default function Page({ children }: PropsWithChildren) {
         scrollEventThrottle={16}
         scrollIndicatorInsets={{ bottom }}
         contentContainerStyle={{ paddingBottom: bottom }}
+        
       >
         <ThemedView style={styles.content}>
           <View style={styles.contentPadding}>{children}</View>

@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
+import { Rounded } from 'constants/border-radius'
 
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
 type ButtonVariant = 'primary' | 'gray' | 'yes' | 'no' | 'danger' // add more variants as needed
@@ -28,22 +29,22 @@ const sizeStyles: Record<
 > = {
   xs: {
     padding: 2,
-    borderRadius: 4,
+    borderRadius: Rounded.sm,
     fontSize: 'sm',
   },
   sm: {
     padding: 3,
-    borderRadius: 4,
+    borderRadius: Rounded.sm,
     fontSize: 'sm',
   },
   md: {
     padding: 4,
-    borderRadius: 4,
+    borderRadius: Rounded.sm,
     fontSize: 'md',
   },
   lg: {
     padding: 8,
-    borderRadius: 4,
+    borderRadius: Rounded.sm,
     fontSize: 'lg',
   },
 }

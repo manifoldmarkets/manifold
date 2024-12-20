@@ -57,8 +57,8 @@ export function CommentsSection({ contract }: { contract: Contract }) {
   )
   // TODO: add reply input
   return (
-    <Col style={{ gap: 16 }}>
-      <ThemedText size="xl" weight="semibold">
+    <Col>
+      <ThemedText size="xl" weight="semibold" style={{ paddingVertical: 16 }}>
         Comments
       </ThemedText>
 

@@ -3,6 +3,7 @@ import { Animated, Image, TouchableOpacity } from 'react-native'
 import { Row } from './layout/row'
 import { useColor } from 'hooks/use-color'
 import { useTokenMode } from 'hooks/use-token-mode'
+import { Rounded } from 'constants/border-radius'
 
 export function TokenSlider() {
   const color = useColor()
@@ -29,7 +30,7 @@ export function TokenSlider() {
           gap: 2,
           backgroundColor: color.sliderBackground,
           padding: 2,
-          borderRadius: 20,
+          borderRadius: Rounded.full,
           alignItems: 'center',
           height: 'auto',
         }}
@@ -39,7 +40,7 @@ export function TokenSlider() {
           style={{
             width: 24,
             height: 24,
-            borderRadius: 20,
+            borderRadius: Rounded.full,
             backgroundColor: 'white',
             position: 'absolute',
             transform: [
