@@ -1,17 +1,36 @@
-import { Contract } from 'common/contract'
-import { FeedCard } from 'components/contract/FeedCard'
-import { Col } from 'components/layout/col'
+import { Feed } from 'components/home/feed'
+import { TopTabs } from 'components/layout/TopTabs'
 import Page from 'components/Page'
-import { EXAMPLE_CONTRACTS } from 'constants/examples/ExampleContracts'
+
+export type HomeTabs = 'home' | 'news' | 'sports' | 'politics' | 'entertainment'
 
 export default function HomeScreen() {
   return (
     <Page>
-      <Col>
-        {EXAMPLE_CONTRACTS.map((contract, index) => (
-          <FeedCard key={index} contract={contract as Contract} />
-        ))}
-      </Col>
+      <TopTabs
+        tabs={[
+          {
+            title: 'Home',
+            content: <Feed tab="home" />,
+          },
+          {
+            title: 'News',
+            content: <Feed tab="news" />,
+          },
+          {
+            title: 'Sports',
+            content: <Feed tab="sports" />,
+          },
+          {
+            title: 'Entertainment',
+            content: <Feed tab="entertainment" />,
+          },
+          {
+            title: 'Politics',
+            content: <Feed tab="politics" />,
+          },
+        ]}
+      />
     </Page>
   )
 }
