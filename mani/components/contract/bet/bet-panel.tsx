@@ -3,20 +3,16 @@ import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 import { useState } from 'react'
-import {
-  Modal,
-  TouchableWithoutFeedback,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native'
+import { KeyboardAvoidingView, Platform } from 'react-native'
 import { BetAmountInput } from './bet-input'
 import { Row } from 'components/layout/row'
-import { NumberText } from 'components/number-text'
 import { YesNoButton } from 'components/buttons/yes-no-buttons'
 import { Button } from 'components/buttons/button'
 import { api } from 'lib/api'
 import Toast from 'react-native-toast-message'
-
+import { Modal } from 'components/layout/modal'
+import { TokenNumber } from 'components/token/token-number'
+import { NumberText } from 'components/number-text'
 export type BinaryOutcomes = 'YES' | 'NO'
 
 export function BetPanel({
@@ -72,83 +68,61 @@ export function BetPanel({
 
   // TODO: figure out keyboard clicking behavior
   return (
-    <Modal
-      visible={open}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setOpen(false)}
-    >
+    <Modal isOpen={open} onClose={() => setOpen(false)} mode="close">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 108 : 0}
+        style={{
+          flex: 1,
+          justifyContent: 'flex-start',
+          flexDirection: 'column',
+        }}
       >
-        <TouchableWithoutFeedback onPress={() => setOpen(false)}>
-          <Col
-            style={{
-              flex: 1,
-              justifyContent: 'flex-end',
-              backgroundColor: color.modalOverlay,
-            }}
-          >
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <Col
-                style={{
-                  backgroundColor: color.backgroundSecondary,
-                  padding: 20,
-                  paddingBottom: 32,
-                  borderTopLeftRadius: 20,
-                  borderTopRightRadius: 20,
-                  width: '100%',
-                  maxHeight: '70%',
-                  minHeight: 400,
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Col style={{ gap: 4 }}>
-                  <ThemedText size="lg" weight="semibold">
-                    {contract.question}
-                  </ThemedText>
+        <Col style={{ flex: 1, justifyContent: 'space-between' }}>
+          <Col style={{ gap: 4 }}>
+            <ThemedText size="lg" weight="semibold">
+              {contract.question}
+            </ThemedText>
 
-                  <ThemedText size="md" color={color.textSecondary}>
-                    {!!answer && !isBinaryMC && answer.text}
-                  </ThemedText>
-                </Col>
-                <BetAmountInput amount={amount} setAmount={setAmount} />
-                <Col style={{ gap: 8 }}>
-                  <Row
-                    style={{ justifyContent: 'space-between', width: '100%' }}
-                  >
-                    <ThemedText color={color.textTertiary} size="lg">
-                      Payout if win
-                    </ThemedText>
-
-                    {/* TODO: get real payout */}
-                    <NumberText size="lg" weight="semibold">
-                      ${(amount * 2).toFixed(2)}{' '}
-                      <ThemedText color={color.profitText}>(+200%)</ThemedText>
-                    </NumberText>
-                  </Row>
-                  {isBinaryMC ? (
-                    <Button size="lg" onPress={onPress} disabled={loading}>
-                      <ThemedText weight="normal">
-                        Buy{' '}
-                        <ThemedText weight="semibold">{answer.text}</ThemedText>
-                      </ThemedText>
-                    </Button>
-                  ) : (
-                    <YesNoButton
-                      disabled={loading}
-                      variant={outcome === 'YES' ? 'yes' : 'no'}
-                      size="lg"
-                      title={`Buy ${outcome === 'YES' ? 'Yes' : 'No'}`}
-                      onPress={onPress}
-                    />
-                  )}
-                </Col>
-              </Col>
-            </TouchableWithoutFeedback>
+            <ThemedText size="md" color={color.textSecondary}>
+              {!!answer && !isBinaryMC && answer.text}
+            </ThemedText>
           </Col>
-        </TouchableWithoutFeedback>
+          <BetAmountInput amount={amount} setAmount={setAmount} />
+          <Col style={{ gap: 8 }}>
+            <Row style={{ justifyContent: 'space-between', width: '100%' }}>
+              <ThemedText color={color.textTertiary} size="lg">
+                Payout if win
+              </ThemedText>
+
+              {/* TODO: get real payout */}
+              {/* <NumberText size="lg" weight="semibold">
+                ${(amount * 2).toFixed(2)}{' '} */}
+              <Row style={{ alignItems: 'center', gap: 4 }}>
+                <TokenNumber amount={amount * 2} size="lg" />
+                <NumberText size="lg" color={color.profitText}>
+                  (+200%)
+                </NumberText>
+              </Row>
+              {/* </NumberText> */}
+            </Row>
+            {isBinaryMC ? (
+              <Button size="lg" onPress={onPress} disabled={loading}>
+                <ThemedText weight="normal">
+                  Buy <ThemedText weight="semibold">{answer.text}</ThemedText>
+                </ThemedText>
+              </Button>
+            ) : (
+              <YesNoButton
+                disabled={loading}
+                variant={outcome === 'YES' ? 'yes' : 'no'}
+                size="lg"
+                title={`Buy ${outcome === 'YES' ? 'Yes' : 'No'}`}
+                onPress={onPress}
+              />
+            )}
+          </Col>
+        </Col>
       </KeyboardAvoidingView>
     </Modal>
   )

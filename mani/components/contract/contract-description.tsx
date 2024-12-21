@@ -29,12 +29,10 @@ export function ContractDescription({ contract }: { contract: Contract }) {
       }
       modalContent={
         <Col style={{ gap: 16 }}>
-          <ThemedText size="lg" weight="semibold">
-            Description
-          </ThemedText>
           <ContentRenderer content={contract.description} />
         </Col>
       }
+      modalTitle="Description"
     />
   )
 }

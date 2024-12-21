@@ -27,9 +27,8 @@ export function Modal({
     <RNModal
       isVisible={isOpen}
       onBackdropPress={onClose}
-      animationIn="slideInRight"
-      animationOut="slideOutRight"
-      backdropTransitionOutTiming={0}
+      animationIn={mode == 'close' ? 'slideInUp' : 'slideInRight'}
+      animationOut={mode == 'close' ? 'slideOutUp' : 'slideOutRight'}
       style={{ margin: 0 }}
     >
       <View style={{ flex: 1, backgroundColor: color.background }}>
